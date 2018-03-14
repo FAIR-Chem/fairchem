@@ -1,0 +1,119 @@
+#------------------------------------------------------------------------------
+#$Date: 2016-03-26 17:23:40 +0200 (Sat, 26 Mar 2016) $
+#$Revision: 180391 $
+#$URL: svn://www.crystallography.net/cod/cif/7/20/60/7206075.cif $
+#------------------------------------------------------------------------------
+#
+# This file is available in the Crystallography Open Database (COD),
+# http://www.crystallography.net/
+#
+# All data on this site have been placed in the public domain by the
+# contributors.
+#
+data_7206075
+loop_
+_publ_author_name
+'Rezaee, Masih'
+'Mousavi Khoie, Seyyed Mohammad'
+'Liu, Kun Hua'
+_publ_section_title
+;
+ The role of brookite in mechanical activation of anatase-to-rutile
+ transformation of nanocrystalline TiO2: An XRD and Raman spectroscopy
+ investigation
+;
+_journal_issue                   16
+_journal_name_full               CrystEngComm
+_journal_page_first              5055
+_journal_paper_doi               10.1039/c1ce05185g
+_journal_volume                  13
+_journal_year                    2011
+_chemical_formula_structural     'Ti O2'
+_chemical_formula_sum            'O2 Ti'
+_chemical_name_mineral           Anatase
+_chemical_name_systematic        'Titanium oxide'
+_space_group_IT_number           141
+_symmetry_cell_setting           tetragonal
+_symmetry_Int_Tables_number      141
+_symmetry_space_group_name_Hall  'I 4bw 2bw -1bw'
+_symmetry_space_group_name_H-M   'I 41/a m d :1'
+_audit_update_record
+;
+2011-02-06 # Formatted by publCIF
+;
+_cell_angle_alpha                90
+_cell_angle_beta                 90
+_cell_angle_gamma                90
+_cell_formula_units_Z            4
+_cell_length_a                   3.7850
+_cell_length_b                   3.7850
+_cell_length_c                   9.5196
+_cell_measurement_temperature    298
+_cell_volume                     136.380
+_computing_cell_refinement       MAUD
+_computing_data_collection       X'Pert
+_computing_data_reduction        MAUD
+_computing_publication_material  publCIF
+_computing_structure_refinement  MAUD
+_computing_structure_solution    MAUD
+_diffrn_measurement_device_type  'GBC MMA X-ray diffractometer'
+_diffrn_radiation_source         'Cu K\a'
+_diffrn_radiation_type           'Cu K\a'
+_diffrn_radiation_wavelength     1.541874
+_diffrn_reflns_theta_max         50
+_cod_data_source_file            400a_anatase_.txt
+_cod_data_source_block           11A
+_cod_original_sg_symbol_H-M      'I 41/a m d S'
+_cod_database_code               7206075
+loop_
+_symmetry_equiv_pos_as_xyz
+x,y,z
+-x,-y,z
+x,1/2+y,1/4-z
+-x,1/2-y,1/4-z
+-x,y,z
+x,-y,z
+-x,1/2+y,1/4-z
+x,1/2-y,1/4-z
+y,x,-z
+-y,-x,-z
+y,1/2+x,1/4+z
+-y,1/2-x,1/4+z
+-y,x,-z
+y,-x,-z
+-y,1/2+x,1/4+z
+y,1/2-x,1/4+z
+1/2+x,1/2+y,1/2+z
+1/2-x,1/2-y,1/2+z
+1/2+x,y,3/4-z
+1/2-x,-y,3/4-z
+1/2-x,1/2+y,1/2+z
+1/2+x,1/2-y,1/2+z
+1/2-x,y,3/4-z
+1/2+x,-y,3/4-z
+1/2+y,1/2+x,1/2-z
+1/2-y,1/2-x,1/2-z
+1/2+y,x,3/4+z
+1/2-y,-x,3/4+z
+1/2-y,1/2+x,1/2-z
+1/2+y,1/2-x,1/2-z
+1/2-y,x,3/4+z
+1/2+y,-x,3/4+z
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_symmetry_multiplicity
+_atom_site_Wyckoff_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+_atom_site_attached_hydrogens
+_atom_site_calc_flag
+Ti1 Ti4+ 4 a 0. 0. 0. 1. 0 d
+O1 O2- 8 e 0. 0. 0.21017 1. 0 d
+loop_
+_atom_type_symbol
+_atom_type_oxidation_number
+Ti4+ 4.000
+O2- -2.000

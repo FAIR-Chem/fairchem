@@ -1,0 +1,85 @@
+#------------------------------------------------------------------------------
+#$Date: 2017-09-12 14:39:55 +0300 (Tue, 12 Sep 2017) $
+#$Revision: 200785 $
+#$URL: file:///home/coder/svn-repositories/cod/cif/1/10/10/1101051.cif $
+#------------------------------------------------------------------------------
+#
+# This file is available in the Crystallography Open Database (COD),
+# http://www.crystallography.net/
+#
+# All data on this site have been placed in the public domain by the
+# contributors.
+#
+data_1101051
+loop_
+_publ_author_name
+'Kisi, E. H.'
+'Elcombe, M. M.'
+_publ_section_title
+;
+ u parameters for the wurtzite structure of ZnS and ZnO using powder
+ neutron diffraction
+;
+_journal_coden_ASTM              ACSCEE
+_journal_issue                   12
+_journal_name_full
+;
+ Acta Crystallographica, Section C: Crystal Structure Communications
+;
+_journal_page_first              1867
+_journal_page_last               1870
+_journal_paper_doi               10.1107/s0108270189004269
+_journal_volume                  45
+_journal_year                    1989
+_chemical_formula_structural     'Zn S'
+_chemical_formula_sum            'S Zn'
+_chemical_name_mineral           Wurtzite
+_chemical_name_systematic        'Zinc sulfide'
+_space_group_IT_number           186
+_symmetry_cell_setting           hexagonal
+_symmetry_Int_Tables_number      186
+_symmetry_space_group_name_Hall  'P 6c -2c'
+_symmetry_space_group_name_H-M   'P 63 m c'
+_cell_angle_alpha                90
+_cell_angle_beta                 90
+_cell_angle_gamma                120
+_cell_formula_units_Z            2
+_cell_length_a                   3.8227(1)
+_cell_length_b                   3.8227(1)
+_cell_length_c                   6.2607(1)
+_cell_volume                     79.2
+_exptl_crystal_density_meas      4.09
+_refine_ls_R_factor_all          0.0575
+_cod_database_code               1101051
+loop_
+_symmetry_equiv_pos_as_xyz
+x,y,z
+-y,x-y,z
+y-x,-x,z
+-y,-x,z
+y-x,y,z
+x,x-y,z
+-x,-y,1/2+z
+y,y-x,1/2+z
+x-y,x,1/2+z
+y,x,1/2+z
+x-y,-y,1/2+z
+-x,y-x,1/2+z
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_symmetry_multiplicity
+_atom_site_Wyckoff_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+_atom_site_attached_hydrogens
+_atom_site_calc_flag
+Zn1 Zn2+ 2 b 0.3333 0.6667 0. 1. 0 d
+S1 S2- 2 b 0.3333 0.6667 0.3748(2) 1. 0 d
+loop_
+_atom_type_symbol
+_atom_type_oxidation_number
+Zn2+ 2.000
+S2- -2.000
