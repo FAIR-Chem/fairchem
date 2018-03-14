@@ -11,6 +11,17 @@ The following paper describes the details of the CGCNN framework:
 
 [Crystal Graph Convolutional Neural Networks for Accurate and Interpretable Prediction of Material Properties](https://arxiv.org/abs/1710.10324)
 
+## Table of Contents
+
+- [How to cite](#how-to-cite)
+- [Prerequisites](#prerequisites)
+- [Usage](#usage)
+  - [Define a customized dataset](#define-a-customized-dataset)
+  - [Train a CGCNN model](#train-a-cgcnn-model)
+  - [Predict material properties with a pre-trained CGCNN model](#predict-material-properties-with-a-pre-trained-CGCNN-model)
+- [Authors](#authors)
+- [License](#license)
+
 ## How to cite
 
 Please cite the following work if you want to use CGCNN.
@@ -28,6 +39,7 @@ This package requires:
 If you are new to Python, the easiest way of installing the prerequisites is via [conda](https://conda.io/docs/index.html). After installing [conda](http://conda.pydata.org/), run the following command to create a new [environment](https://conda.io/docs/user-guide/tasks/manage-environments.html) named `cgcnn` and install all prerequisites:
 
 ```bash
+conda upgrade conda
 conda create -n cgcnn python=3.6 scikit-learn pytorch torchvision pymatgen -c pytorch -c matsci
 ```
 
@@ -94,7 +106,7 @@ The above method of creating a customized dataset uses the `CIFData` class in `c
 
 Before training a new CGCNN model, you will need to:
 
-- Define a customized dataset at `root_dir` to store the structure-property relations of interest.
+- [Define a customized dataset](#define-a-customized-dataset) at `root_dir` to store the structure-property relations of interest.
 
 Then, in directory `cgcnn`, you can train a CGCNN model for your customized dataset by:
 
@@ -124,8 +136,8 @@ After training, you will get three files in `cgcnn` directory.
 
 Before predicting the material properties, you will need to:
 
-- Define a customized dataset at `root_dir` for all the crystal structures that you want to predict.
-- Obtain a pre-trained CGCNN model at `pre-trained.pth.tar`.
+- [Define a customized dataset](#define-a-customized-dataset) at `root_dir` for all the crystal structures that you want to predict.
+- Obtain a [pre-trained CGCNN model](pre-trained) named `pre-trained.pth.tar`.
 
 Then, in directory `cgcnn`, you can predict the properties of the crystals in `root_dir`:
 
@@ -153,7 +165,7 @@ After predicting, you will get one file in `cgcnn` directory:
 
 ## Authors
 
-This software was primarily written by [Tian Xie](txie.me) who was adviced by [Prof. Jeffrey Grossman](https://dmse.mit.edu/faculty/profile/grossman). 
+This software was primarily written by [Tian Xie](http://txie.me) who was adviced by [Prof. Jeffrey Grossman](https://dmse.mit.edu/faculty/profile/grossman). 
 
 ## License
 
