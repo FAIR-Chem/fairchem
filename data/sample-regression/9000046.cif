@@ -1,0 +1,84 @@
+#------------------------------------------------------------------------------
+#$Date: 2013-05-05 17:21:46 +0300 (Sun, 05 May 2013) $
+#$Revision: 85285 $
+#$URL: svn://www.crystallography.net/cod/cif/9/00/00/9000046.cif $
+#------------------------------------------------------------------------------
+#
+# This file is available in the Crystallography Open Database (COD),
+# http://www.crystallography.net/. The original data for this entry
+# were provided the American Mineralogist Crystal Structure Database,
+# http://rruff.geo.arizona.edu/AMS/amcsd.php
+#
+# The file may be used within the scientific community so long as
+# proper attribution is given to the journal article from which the
+# data were obtained.
+#
+data_9000046
+loop_
+_publ_author_name
+'Kukesh, J. S.'
+'Pauling, L.'
+_publ_section_title
+;
+ The problem of the graphite structure
+;
+_journal_name_full               'American Mineralogist'
+_journal_page_first              125
+_journal_page_last               125
+_journal_volume                  35
+_journal_year                    1950
+_chemical_formula_sum            C
+_chemical_name_common            Graphite
+_chemical_name_mineral           Graphite
+_space_group_IT_number           69
+_symmetry_space_group_name_Hall  '-F 2 2'
+_symmetry_space_group_name_H-M   'F m m m'
+_cell_angle_alpha                90
+_cell_angle_beta                 90
+_cell_angle_gamma                90
+_cell_length_a                   2.456
+_cell_length_b                   4.254
+_cell_length_c                   6.696
+_cell_volume                     69.959
+_exptl_crystal_density_diffrn    2.281
+_cod_database_code               9000046
+loop_
+_symmetry_equiv_pos_as_xyz
+x,y,z
+x,1/2+y,1/2+z
+1/2+x,y,1/2+z
+1/2+x,1/2+y,z
+x,-y,z
+x,1/2-y,1/2+z
+1/2+x,-y,1/2+z
+1/2+x,1/2-y,z
+-x,y,-z
+-x,1/2+y,1/2-z
+1/2-x,y,1/2-z
+1/2-x,1/2+y,-z
+-x,y,z
+-x,1/2+y,1/2+z
+1/2-x,y,1/2+z
+1/2-x,1/2+y,z
+x,-y,-z
+x,1/2-y,1/2-z
+1/2+x,-y,1/2-z
+1/2+x,1/2-y,-z
+x,y,-z
+x,1/2+y,1/2-z
+1/2+x,y,1/2-z
+1/2+x,1/2+y,-z
+-x,-y,z
+-x,1/2-y,1/2+z
+1/2-x,-y,1/2+z
+1/2-x,1/2-y,z
+-x,-y,-z
+-x,1/2-y,1/2-z
+1/2-x,-y,1/2-z
+1/2-x,1/2-y,-z
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C 0.00000 0.16667 0.00000
