@@ -93,6 +93,7 @@ def collate_pool(dataset_list):
       nbr_fea: torch.Tensor shape (n_i, M, nbr_fea_len)
       nbr_fea_idx: torch.LongTensor shape (n_i, M)
       target: torch.Tensor shape (1, )
+      cif_id: str or int
 
     Returns
     -------
@@ -108,6 +109,7 @@ def collate_pool(dataset_list):
       Mapping from the crystal idx to atom idx
     target: torch.Tensor shape (N, 1)
       Target value for prediction
+    batch_cif_ids: list
     """
     batch_atom_fea, batch_nbr_fea, batch_nbr_fea_idx = [], [], []
     crystal_atom_idx, batch_target = [], []
@@ -252,6 +254,31 @@ class CIFData(Dataset):
 
     ID.cif: a CIF file that recodes the crystal structure, where ID is the
     unique ID for the crystal.
+
+    Parameters
+    ----------
+
+    root_dir: str
+        The path to the root directory of the dataset
+    max_num_nbr: int
+        The maximum number of neighbors while constructing the crystal graph
+    radius: float
+        The cutoff radius for searching neighbors
+    dmin: float
+        The minimum distance for constructing GaussianDistance
+    step: float
+        The step size for constructing GaussianDistance
+    random_seed: int
+        Random seed for shuffling the dataset
+
+    Returns
+    -------
+
+    atom_fea: torch.Tensor shape (n_i, atom_fea_len)
+    nbr_fea: torch.Tensor shape (n_i, M, nbr_fea_len)
+    nbr_fea_idx: torch.LongTensor shape (n_i, M)
+    target: torch.Tensor shape (1, )
+    cif_id: str or int
     """
     def __init__(self, root_dir, max_num_nbr=12, radius=8, dmin=0, step=0.2,
                  random_seed=123):
