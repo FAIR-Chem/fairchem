@@ -163,7 +163,7 @@ After predicting, you will get one file in `cgcnn` directory:
 
 ## Authors
 
-This software was primarily written by [Tian Xie](http://txie.me) who was adviced by [Prof. Jeffrey Grossman](https://dmse.mit.edu/faculty/profile/grossman). 
+This software was primarily written by [Tian Xie](http://txie.me) who was advised by [Prof. Jeffrey Grossman](https://dmse.mit.edu/faculty/profile/grossman). 
 
 ## License
 
