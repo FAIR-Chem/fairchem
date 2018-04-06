@@ -9,7 +9,7 @@ The package provides two major functions:
 
 The following paper describes the details of the CGCNN framework:
 
-[Crystal Graph Convolutional Neural Networks for Accurate and Interpretable Prediction of Material Properties](https://arxiv.org/abs/1710.10324)
+[Crystal Graph Convolutional Neural Networks for an Accurate and Interpretable Prediction of Material Properties](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301)
 
 ## Table of Contents
 
@@ -26,7 +26,22 @@ The following paper describes the details of the CGCNN framework:
 
 Please cite the following work if you want to use CGCNN.
 
-Coming soon, please cite the [arXiv:1710.10324](https://arxiv.org/abs/1710.10324) first.
+```
+@article{PhysRevLett.120.145301,
+  title = {Crystal Graph Convolutional Neural Networks for an Accurate and Interpretable Prediction of Material Properties},
+  author = {Xie, Tian and Grossman, Jeffrey C.},
+  journal = {Phys. Rev. Lett.},
+  volume = {120},
+  issue = {14},
+  pages = {145301},
+  numpages = {6},
+  year = {2018},
+  month = {Apr},
+  publisher = {American Physical Society},
+  doi = {10.1103/PhysRevLett.120.145301},
+  url = {https://link.aps.org/doi/10.1103/PhysRevLett.120.145301}
+}
+```
 
 ##  Prerequisites
 
@@ -77,7 +92,7 @@ Before defining a customized dataset, you will need:
 
 You can create a customized dataset by creating a directory `root_dir` with the following files: 
 
-1. `id_prop.csv`: a CSV file with two columns. The first column recodes a unique `ID` for each crystal, and the second column recodes the value of target property. If you want to predict material properties with `predict.py`, you can put any number in the second column. (The second column is still needed.)
+1. `id_prop.csv`: a [CSV](https://en.wikipedia.org/wiki/Comma-separated_values) file with two columns. The first column recodes a unique `ID` for each crystal, and the second column recodes the value of target property. If you want to predict material properties with `predict.py`, you can put any number in the second column. (The second column is still needed.)
 
 2. `atom_init.json`: a [JSON](https://en.wikipedia.org/wiki/JSON) file that stores the initialization vector for each element. An example of `atom_init.json` is `data/sample-regression/atom_init.json`, which should be good for most applications.
 
