@@ -5,6 +5,7 @@ import re
 import json
 import functools
 import random
+import warnings
 
 import torch
 import numpy as np
@@ -310,10 +311,23 @@ class CIFData(Dataset):
         atom_fea = torch.Tensor(atom_fea)
         all_nbrs = crystal.get_all_neighbors(self.radius, include_index=True)
         all_nbrs = [sorted(nbrs, key=lambda x: x[1]) for nbrs in all_nbrs]
-        nbr_fea_idx = np.array([list(map(lambda x: x[2],
-                                nbr[:self.max_num_nbr])) for nbr in all_nbrs])
-        nbr_fea = np.array([list(map(lambda x: x[1], nbr[:self.max_num_nbr]))
-                            for nbr in all_nbrs])
+        nbr_fea_idx, nbr_fea = [], []
+        for nbr in all_nbrs:
+            if len(nbr) < self.max_num_nbr:
+                warnings.warn('{} not find enough neighbors to build graph. '
+                              'If it happens frequently, consider increase '
+                              'radius.'.format(cif_id))
+                nbr_fea_idx.append(list(map(lambda x: x[2], nbr)) +
+                                   [0] * (self.max_num_nbr - len(nbr)))
+                nbr_fea.append(list(map(lambda x: x[1], nbr)) +
+                               [self.radius + 1.] * (self.max_num_nbr -
+                                                     len(nbr)))
+            else:
+                nbr_fea_idx.append(list(map(lambda x: x[2],
+                                            nbr[:self.max_num_nbr])))
+                nbr_fea.append(list(map(lambda x: x[1],
+                                        nbr[:self.max_num_nbr])))
+        nbr_fea_idx, nbr_fea = np.array(nbr_fea_idx), np.array(nbr_fea)
         nbr_fea = self.gdf.expand(nbr_fea)
         atom_fea = torch.Tensor(atom_fea)
         nbr_fea = torch.Tensor(nbr_fea)
