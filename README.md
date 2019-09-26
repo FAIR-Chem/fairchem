@@ -88,7 +88,19 @@ conda deactivate
 
 ## Usage
 
-### Define a customized dataset 
+#### Setting up the dataset
+
+##### 2019/09/19
+
+For now, we are working with a dataset of DFT results for CO absorption on various slabs (shared by [Jun](http://ulissigroup.cheme.cmu.edu/2017-11-28-junwoong-yoon/)).
+
+The data is available for download here: [dropbox.com/s/nbwc8eobd8zrj37/2019_09_19_co_absorption_data.zip](https://www.dropbox.com/s/nbwc8eobd8zrj37/2019_09_19_co_absorption_data.zip).
+
+This dataset was constructed using `data/curate_dataset_from_api.py` from the initial `docs.pkl` shared by Jun. We obtain CIF information corresponding to each `mpid` for each row in `docs.pkl` from the the [Materials Project API](https://materialsproject.org/open) and set the `energy` value as the target to regress to for each crystal (this might not be correct; yet to verify from Jun).
+
+If you are working with this dataset, download and unzip it in `data/`, and skip ahead to training instructions.
+
+#### Defining your own customized dataset
 
 To input crystal structures to CGCNN, you will need to define a customized dataset. Note that this is required for both training and predicting. 
 
