@@ -1,5 +1,7 @@
 # Crystal Graph Convolutional Neural Networks
 
+Forked from [ulissigroup/cgnn](https://github.com/ulissigroup/cgcnn).
+
 This software package implements the Crystal Graph Convolutional Neural Networks (CGCNN) that takes an arbitary crystal structure to predict material properties. 
 
 The package provides two major functions:
@@ -55,7 +57,10 @@ If you are new to Python, the easiest way of installing the prerequisites is via
 
 ```bash
 conda upgrade conda
-conda create -n cgcnn python=3.6 scikit-learn pytorch=0.3.1 torchvision pymatgen -c pytorch -c matsci
+conda create -n cgcnn python=3.6
+
+conda activate cgcnn
+pip install -r requirements.txt
 ```
 
 *Note: since PyTorch introduced some breaking changes in v0.4.0, this code only works up to v0.3.1*
@@ -63,7 +68,7 @@ conda create -n cgcnn python=3.6 scikit-learn pytorch=0.3.1 torchvision pymatgen
 This creates a conda environment for running CGCNN. Before using CGCNN, activate the environment by:
 
 ```bash
-source activate cgcnn
+conda activate cgcnn
 ```
 
 Then, in directory `cgcnn`, you can test if all the prerequisites are installed properly by running:
@@ -78,7 +83,7 @@ This should display the help messages for `main.py` and `predict.py`. If you fin
 After you finished using CGCNN, exit the environment by:
 
 ```bash
-source deactivate
+conda deactivate
 ```
 
 ## Usage
