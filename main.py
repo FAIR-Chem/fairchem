@@ -173,7 +173,7 @@ def main():
         train(train_loader, model, criterion, optimizer, epoch, normalizer)
 
         # evaluate on validation set
-        mae_error = validate(val_loader, model, criterion, normalizer)
+        mae_error = validate(val_loader, model, criterion, epoch, normalizer)
 
         if mae_error != mae_error:
             print('Exit due to NaN')
@@ -201,7 +201,7 @@ def main():
     print('---------Evaluate Model on Test Set---------------')
     best_checkpoint = torch.load(os.path.join(args.checkpoint_dir, 'model_best.pth.tar'))
     model.load_state_dict(best_checkpoint['state_dict'])
-    validate(test_loader, model, criterion, normalizer, test=True)
+    validate(test_loader, model, criterion, epoch, normalizer, test=True)
 
 
 def train(train_loader, model, criterion, optimizer, epoch, normalizer):
@@ -274,15 +274,15 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
         end = time.time()
 
         if args.task == 'regression':
-            tf_log_writer.add_scalar("Training Loss", losses.val, i)
-            tf_log_writer.add_scalar("Training MAE", mae_errors.val, i)
+            tf_log_writer.add_scalar("Training Loss", losses.val, epoch * len(train_loader) + i)
+            tf_log_writer.add_scalar("Training MAE", mae_errors.val, epoch * len(train_loader) + i)
         else:
-            tf_log_writer.add_scalar("Training Loss", losses.val, i)
-            tf_log_writer.add_scalar("Training Accuracy", accuracies.val, i)
-            tf_log_writer.add_scalar("Training Precision", precisions.val, i)
-            tf_log_writer.add_scalar("Training Recall", recalls.val, i)
-            tf_log_writer.add_scalar("Training F1", fscores.val, i)
-            tf_log_writer.add_scalar("Training AUC", auc_scores.val, i)
+            tf_log_writer.add_scalar("Training Loss", losses.val, epoch * len(train_loader) + i)
+            tf_log_writer.add_scalar("Training Accuracy", accuracies.val, epoch * len(train_loader) + i)
+            tf_log_writer.add_scalar("Training Precision", precisions.val, epoch * len(train_loader) + i)
+            tf_log_writer.add_scalar("Training Recall", recalls.val, epoch * len(train_loader) + i)
+            tf_log_writer.add_scalar("Training F1", fscores.val, epoch * len(train_loader) + i)
+            tf_log_writer.add_scalar("Training AUC", auc_scores.val, epoch * len(train_loader) + i)
 
         if i % args.print_freq == 0:
             if args.task == 'regression':
@@ -311,7 +311,7 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
                       )
 
 
-def validate(val_loader, model, criterion, normalizer, test=False):
+def validate(val_loader, model, criterion, epoch, normalizer, test=False):
     batch_time = AverageMeter()
     losses = AverageMeter()
     if args.task == 'regression':
@@ -390,15 +390,15 @@ def validate(val_loader, model, criterion, normalizer, test=False):
 
         if not test:
             if args.task == 'regression':
-                tf_log_writer.add_scalar("Validation Loss", losses.val, i)
-                tf_log_writer.add_scalar("Validation MAE", mae_errors.val, i)
+                tf_log_writer.add_scalar("Validation Loss", losses.val, epoch * len(val_loader) + i)
+                tf_log_writer.add_scalar("Validation MAE", mae_errors.val, epoch * len(val_loader) + i)
             else:
-                tf_log_writer.add_scalar("Validation Loss", losses.val, i)
-                tf_log_writer.add_scalar("Validation Accuracy", accuracies.val, i)
-                tf_log_writer.add_scalar("Validation Precision", precisions.val, i)
-                tf_log_writer.add_scalar("Validation Recall", recalls.val, i)
-                tf_log_writer.add_scalar("Validation F1", fscores.val, i)
-                tf_log_writer.add_scalar("Validation AUC", auc_scores.val, i)
+                tf_log_writer.add_scalar("Validation Loss", losses.val, epoch * len(val_loader) + i)
+                tf_log_writer.add_scalar("Validation Accuracy", accuracies.val, epoch * len(val_loader) + i)
+                tf_log_writer.add_scalar("Validation Precision", precisions.val, epoch * len(val_loader) + i)
+                tf_log_writer.add_scalar("Validation Recall", recalls.val, epoch * len(val_loader) + i)
+                tf_log_writer.add_scalar("Validation F1", fscores.val, epoch * len(val_loader) + i)
+                tf_log_writer.add_scalar("Validation AUC", auc_scores.val, epoch * len(val_loader) + i)
 
 
         if i % args.print_freq == 0:
