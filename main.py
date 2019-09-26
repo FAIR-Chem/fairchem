@@ -86,7 +86,7 @@ args.log_dir = os.path.join('logs', args.timestamp)
 os.makedirs(args.log_dir)
 
 # Tensorboard
-writer = SummaryWriter(args.log_dir)
+tf_log_writer = SummaryWriter(args.log_dir)
 
 if args.task == 'regression':
     best_mae_error = 1e10
@@ -199,7 +199,7 @@ def main():
 
     # test best model
     print('---------Evaluate Model on Test Set---------------')
-    best_checkpoint = torch.load('model_best.pth.tar')
+    best_checkpoint = torch.load(os.path.join(args.checkpoint_dir, 'model_best.pth.tar'))
     model.load_state_dict(best_checkpoint['state_dict'])
     validate(test_loader, model, criterion, normalizer, test=True)
 
@@ -274,15 +274,15 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
         end = time.time()
 
         if args.task == 'regression':
-            writer.add_scalar("Training Loss", losses.val, i)
-            writer.add_scalar("Training MAE", mae_errors.val, i)
+            tf_log_writer.add_scalar("Training Loss", losses.val, i)
+            tf_log_writer.add_scalar("Training MAE", mae_errors.val, i)
         else:
-            writer.add_scalar("Training Loss", losses.val, i)
-            writer.add_scalar("Training Accuracy", accuracies.val, i)
-            writer.add_scalar("Training Precision", precisions.val, i)
-            writer.add_scalar("Training Recall", recalls.val, i)
-            writer.add_scalar("Training F1", fscores.val, i)
-            writer.add_scalar("Training AUC", auc_scores.val, i)
+            tf_log_writer.add_scalar("Training Loss", losses.val, i)
+            tf_log_writer.add_scalar("Training Accuracy", accuracies.val, i)
+            tf_log_writer.add_scalar("Training Precision", precisions.val, i)
+            tf_log_writer.add_scalar("Training Recall", recalls.val, i)
+            tf_log_writer.add_scalar("Training F1", fscores.val, i)
+            tf_log_writer.add_scalar("Training AUC", auc_scores.val, i)
 
         if i % args.print_freq == 0:
             if args.task == 'regression':
@@ -390,15 +390,15 @@ def validate(val_loader, model, criterion, normalizer, test=False):
 
         if not test:
             if args.task == 'regression':
-                writer.add_scalar("Validation Loss", losses.val, i)
-                writer.add_scalar("Validation MAE", mae_errors.val, i)
+                tf_log_writer.add_scalar("Validation Loss", losses.val, i)
+                tf_log_writer.add_scalar("Validation MAE", mae_errors.val, i)
             else:
-                writer.add_scalar("Validation Loss", losses.val, i)
-                writer.add_scalar("Validation Accuracy", accuracies.val, i)
-                writer.add_scalar("Validation Precision", precisions.val, i)
-                writer.add_scalar("Validation Recall", recalls.val, i)
-                writer.add_scalar("Validation F1", fscores.val, i)
-                writer.add_scalar("Validation AUC", auc_scores.val, i)
+                tf_log_writer.add_scalar("Validation Loss", losses.val, i)
+                tf_log_writer.add_scalar("Validation Accuracy", accuracies.val, i)
+                tf_log_writer.add_scalar("Validation Precision", precisions.val, i)
+                tf_log_writer.add_scalar("Validation Recall", recalls.val, i)
+                tf_log_writer.add_scalar("Validation F1", fscores.val, i)
+                tf_log_writer.add_scalar("Validation AUC", auc_scores.val, i)
 
 
         if i % args.print_freq == 0:
