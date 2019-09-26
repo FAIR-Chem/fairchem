@@ -3,6 +3,7 @@ import sys
 import os
 import shutil
 import time
+import datetime
 import warnings
 from random import sample
 
@@ -13,6 +14,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import MultiStepLR
+from tensorboardX import SummaryWriter
 
 from cgcnn.model import CrystalGraphConvNet
 from cgcnn.data import collate_pool, get_train_val_test_loader
@@ -30,7 +32,7 @@ parser.add_argument('--disable-cuda', action='store_true',
                     help='Disable CUDA')
 parser.add_argument('-j', '--workers', default=0, type=int, metavar='N',
                     help='number of data loading workers (default: 0)')
-parser.add_argument('--epochs', default=30, type=int, metavar='N',
+parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run (default: 30)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
@@ -71,6 +73,20 @@ parser.add_argument('--n-h', default=1, type=int, metavar='N',
 args = parser.parse_args(sys.argv[1:])
 
 args.cuda = not args.disable_cuda and torch.cuda.is_available()
+
+args.timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+
+args.checkpoint_dir = os.path.join('checkpoints', args.timestamp)
+os.makedirs(args.checkpoint_dir)
+
+args.results_dir = os.path.join('results', args.timestamp)
+os.makedirs(args.results_dir)
+
+args.log_dir = os.path.join('logs', args.timestamp)
+os.makedirs(args.log_dir)
+
+# Tensorboard
+writer = SummaryWriter(args.log_dir)
 
 if args.task == 'regression':
     best_mae_error = 1e10
@@ -179,7 +195,7 @@ def main():
             'optimizer': optimizer.state_dict(),
             'normalizer': normalizer.state_dict(),
             'args': vars(args)
-        }, is_best)
+        }, is_best, args.checkpoint_dir)
 
     # test best model
     print('---------Evaluate Model on Test Set---------------')
@@ -256,6 +272,17 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
+
+        if args.task == 'regression':
+            writer.add_scalar("Training Loss", losses.val, i)
+            writer.add_scalar("Training MAE", mae_errors.val, i)
+        else:
+            writer.add_scalar("Training Loss", losses.val, i)
+            writer.add_scalar("Training Accuracy", accuracies.val, i)
+            writer.add_scalar("Training Precision", precisions.val, i)
+            writer.add_scalar("Training Recall", recalls.val, i)
+            writer.add_scalar("Training F1", fscores.val, i)
+            writer.add_scalar("Training AUC", auc_scores.val, i)
 
         if i % args.print_freq == 0:
             if args.task == 'regression':
@@ -361,6 +388,19 @@ def validate(val_loader, model, criterion, normalizer, test=False):
         batch_time.update(time.time() - end)
         end = time.time()
 
+        if not test:
+            if args.task == 'regression':
+                writer.add_scalar("Validation Loss", losses.val, i)
+                writer.add_scalar("Validation MAE", mae_errors.val, i)
+            else:
+                writer.add_scalar("Validation Loss", losses.val, i)
+                writer.add_scalar("Validation Accuracy", accuracies.val, i)
+                writer.add_scalar("Validation Precision", precisions.val, i)
+                writer.add_scalar("Validation Recall", recalls.val, i)
+                writer.add_scalar("Validation F1", fscores.val, i)
+                writer.add_scalar("Validation AUC", auc_scores.val, i)
+
+
         if i % args.print_freq == 0:
             if args.task == 'regression':
                 print('Test: [{0}/{1}]\t'
@@ -385,7 +425,7 @@ def validate(val_loader, model, criterion, normalizer, test=False):
     if test:
         star_label = '**'
         import csv
-        with open('test_results.csv', 'w') as f:
+        with open(os.path.join(args.results_dir, 'test_results.csv'), 'w') as f:
             writer = csv.writer(f)
             for cif_id, target, pred in zip(test_cif_ids, test_targets,
                                             test_preds):
@@ -470,10 +510,11 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, checkpoint_dir='checkpoints/'):
+    filename = os.path.join(checkpoint_dir, 'checkpoint.pth.tar')
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        shutil.copyfile(filename, os.path.join(checkpoint_dir, 'model_best.pth.tar'))
 
 
 def adjust_learning_rate(optimizer, epoch, k):
