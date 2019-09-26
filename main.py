@@ -38,7 +38,7 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=256, type=int,
                     metavar='N', help='mini-batch size (default: 256)')
-parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
+parser.add_argument('--lr', '--learning-rate', default=0.001, type=float,
                     metavar='LR', help='initial learning rate (default: '
                     '0.01)')
 parser.add_argument('--lr-milestones', default=[100], nargs='+', type=int,
@@ -59,8 +59,8 @@ parser.add_argument('--val-size', default=1000, type=int, metavar='N',
                     '1000)')
 parser.add_argument('--test-size', default=1000, type=int, metavar='N',
                     help='number of test data to be loaded (default 1000)')
-parser.add_argument('--optim', default='SGD', type=str, metavar='SGD',
-                    help='choose an optimizer, SGD or Adam, (default: SGD)')
+parser.add_argument('--optim', default='Adam', type=str, metavar='Adam',
+                    help='choose an optimizer, SGD or Adam, (default: Adam)')
 parser.add_argument('--atom-fea-len', default=64, type=int, metavar='N',
                     help='number of hidden atom features in conv layers')
 parser.add_argument('--h-fea-len', default=128, type=int, metavar='N',
