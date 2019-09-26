@@ -9,7 +9,7 @@ API_KEY = "XRpCxuAEdfTHIhtw"
 API_CIF_SUFFIX = "/vasp/cif"
 
 DATA_FILE = "/srv/share2/abhshkdz/data/electrocatalyst-design/2019_09_19/docs.pkl"
-DATA_OUTPUT_DIR = "/srv/share2/abhshkdz/data/electrocatalyst-design/2019_09_19/energy-regression/"
+DATA_OUTPUT_DIR = "/srv/share2/abhshkdz/data/electrocatalyst-design/2019_09_23/energy-regression/"
 
 
 if __name__ == "__main__":
@@ -50,4 +50,4 @@ if __name__ == "__main__":
 
         # Write target.
         with open(os.path.join(DATA_OUTPUT_DIR, "id_prop.csv"), "a+") as f:
-            f.write(mongo_id + "," + str(i["results"]["energy"]) + "\n")
+            f.write(mongo_id + "," + str(i["energy"]) + "\n")

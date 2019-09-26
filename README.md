@@ -90,13 +90,28 @@ conda deactivate
 
 #### Setting up the dataset
 
-##### 2019/09/19
+##### 2019/09/23
 
 For now, we are working with a dataset of DFT results for CO absorption on various slabs (shared by [Jun](http://ulissigroup.cheme.cmu.edu/2017-11-28-junwoong-yoon/)).
 
-The data is available for download here: [dropbox.com/s/nbwc8eobd8zrj37/2019_09_19_co_absorption_data.zip](https://www.dropbox.com/s/nbwc8eobd8zrj37/2019_09_19_co_absorption_data.zip).
+The data is available for download here: [dropbox.com/s/ckthvf2tzb6nzql/2019_09_23_co_absorption_data.zip](https://www.dropbox.com/s/ckthvf2tzb6nzql/2019_09_23_co_absorption_data.zip).
 
 This dataset was constructed using `data/curate_dataset_from_api.py` from the initial `docs.pkl` shared by Jun. We obtain CIF information corresponding to each `mpid` for each row in `docs.pkl` from the the [Materials Project API](https://materialsproject.org/open) and set the `energy` value as the target to regress to for each crystal (this might not be correct; yet to verify from Jun).
+
+Each entry in `docs.pkl` has the following keys:
+
+`['mongo_id', 'adsorbate', 'mpid', 'miller', 'shift', 'top', 'coordination', 'neighborcoord', 'energy', 'atoms', 'results', 'calc', 'initial_configuration’]`
+
+`energy` is a target energy we want to fit, this is what we call binding energy.
+
+`atoms` contains information of atoms mainly atom types and atom positions (x,y,z).
+
+`results` shows the energy, E(slab+adsorbate) of the system and forces of each atom in the system in the FINAL DFT configuration.
+The energy in `results` is different from `energy` above. 
+`energy` was calculated as E(slab+adsorbate) - E(slab) - E(adsorbate).
+E(slab) and E(adsorbate) are calculated separately and not shown in our dataset, and they are constant.
+
+`initial_configuration` contains `atoms` and `results` for INITIAL DFT configuration.
 
 If you are working with this dataset, download and unzip it in `data/`, and skip ahead to training instructions.
 
