@@ -40,7 +40,7 @@ parser.add_argument('-b', '--batch-size', default=256, type=int,
                     metavar='N', help='mini-batch size (default: 256)')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float,
                     metavar='LR', help='initial learning rate (default: '
-                    '0.01)')
+                    '0.001)')
 parser.add_argument('--lr-milestones', default=[100], nargs='+', type=int,
                     metavar='N', help='milestones for scheduler (default: '
                     '[100])')
@@ -139,7 +139,8 @@ def main():
     if args.task == 'classification':
         criterion = nn.NLLLoss()
     else:
-        criterion = nn.MSELoss()
+        criterion = nn.L1Loss()
+        #  criterion = nn.MSELoss()
     if args.optim == 'SGD':
         optimizer = optim.SGD(model.parameters(), args.lr,
                               momentum=args.momentum,
