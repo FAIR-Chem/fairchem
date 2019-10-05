@@ -1,29 +1,26 @@
 import argparse
-import sys
-import os
-import json
-import shutil
-import time
 import datetime
+import json
+import os
+import pickle
+import random
+import shutil
+import sys
+import time
 import warnings
 from random import sample
 
-import pickle
-import random
-
 import numpy as np
-from sklearn import metrics
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from sklearn import metrics
+from tensorboardX import SummaryWriter
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import MultiStepLR
-from tensorboardX import SummaryWriter
 
+from cgcnn.data import MergeDataset, collate_pool, get_train_val_test_loader
 from cgcnn.model import CrystalGraphConvNet
-from cgcnn.data import collate_pool, get_train_val_test_loader
-from cgcnn.data import MergeDataset
-
 
 parser = argparse.ArgumentParser(
     description="Crystal Graph Convolutional Neural Networks"
