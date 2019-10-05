@@ -7,7 +7,7 @@ import random
 import warnings
 
 import copy
-import mongo
+from utils import mongo
 
 import torch
 import numpy as np
