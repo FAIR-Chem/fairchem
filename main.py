@@ -461,6 +461,12 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
                 "Training AUC", auc_scores.val, epoch * len(train_loader) + i
             )
 
+        tf_log_writer.add_scalar(
+            "Learning rate",
+            optimizer.param_groups[0]["lr"],
+            epoch * len(train_loader) + i,
+        )
+
         if i % args.print_freq == 0:
             if args.task == "regression":
                 print(
