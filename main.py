@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import json
 import shutil
 import time
 import datetime
@@ -32,6 +33,11 @@ parser.add_argument(
     metavar="OPTIONS",
     nargs="+",
     help="dataset options, started with the path to root dir",
+)
+parser.add_argument(
+    "--identifier",
+    default="",
+    help="identifier to append to checkpoint / logging directory",
 )
 parser.add_argument(
     "--task",
@@ -165,21 +171,33 @@ parser.add_argument(
     help="number of hidden layers after pooling",
 )
 
+# For reproducibility.
+# Refer https://pytorch.org/docs/stable/notes/randomness.html
+torch.manual_seed(0)
+torch.cuda.manual_seed_all(0)
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
+
 args = parser.parse_args(sys.argv[1:])
 
 args.cuda = not args.disable_cuda and torch.cuda.is_available()
 
 args.timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+if args.identifier:
+    args.timestamp += "-{}".format(args.identifier)
 args.checkpoint_dir = os.path.join("checkpoints", args.timestamp)
 args.results_dir = os.path.join("results", args.timestamp)
 args.log_dir = os.path.join("logs", args.timestamp)
 
 for arg in vars(args):
     print("{:<20}: {}".format(arg, getattr(args, arg)))
-
 os.makedirs(args.checkpoint_dir)
 os.makedirs(args.results_dir)
 os.makedirs(args.log_dir)
+
+json.dump(
+    args.__dict__, open(os.path.join(args.checkpoint_dir, "config.json"), "w")
+)
 
 # Tensorboard
 tf_log_writer = SummaryWriter(args.log_dir)
@@ -192,8 +210,6 @@ else:
 
 def main():
     global args, best_mae_error
-
-    print("Loading data...")
 
     docs = pickle.load(
         open(
@@ -221,7 +237,6 @@ def main():
     orig_atom_fea_len = structures[0].shape[-1]
     nbr_fea_len = structures[1].shape[-1]
 
-    print("Merging datasets.")
     dataset = MergeDataset(input_list, target_list)
 
     collate_fn = collate_pool
@@ -237,27 +252,16 @@ def main():
         return_test=True,
     )
 
-    print("Loaded dataloaders")
-
     # obtain target value normalizer
     if args.task == "classification":
         normalizer = Normalizer(torch.zeros(2))
         normalizer.load_state_dict({"mean": 0.0, "std": 1.0})
     else:
-        if len(dataset) < 500:
-            warnings.warn(
-                "Dataset has less than 500 data points. \
-                Lower accuracy is expected. "
-            )
-            sample_data_list = [dataset[i] for i in range(len(dataset))]
-        else:
-            sample_data_list = [
-                dataset[i] for i in sample(range(len(dataset)), 2000)
-            ]
+        sample_data_list = [
+            dataset[i] for i in sample(range(len(dataset)), args.train_size)
+        ]
         _, sample_target = collate_fn(sample_data_list)
         normalizer = Normalizer(sample_target)
-
-    normalizer = None
 
     # build model
     model = CrystalGraphConvNet(
