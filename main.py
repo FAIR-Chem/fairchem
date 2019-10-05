@@ -56,7 +56,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--epochs",
-    default=100,
+    default=200,
     type=int,
     metavar="N",
     help="number of total epochs to run (default: 30)",
@@ -79,10 +79,10 @@ parser.add_argument(
 parser.add_argument(
     "--lr",
     "--learning-rate",
-    default=0.001,
+    default=0.01,
     type=float,
     metavar="LR",
-    help="initial learning rate (default: " "0.001)",
+    help="initial learning rate (default: " "0.01)",
 )
 parser.add_argument(
     "--lr-milestones",
@@ -120,7 +120,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--train-size",
-    default=None,
+    default=14000,
     type=int,
     metavar="N",
     help="number of training data to be loaded (default none)",
@@ -161,11 +161,11 @@ parser.add_argument(
     help="number of hidden features after pooling",
 )
 parser.add_argument(
-    "--n-conv", default=3, type=int, metavar="N", help="number of conv layers"
+    "--n-conv", default=8, type=int, metavar="N", help="number of conv layers"
 )
 parser.add_argument(
     "--n-h",
-    default=1,
+    default=4,
     type=int,
     metavar="N",
     help="number of hidden layers after pooling",
@@ -281,7 +281,6 @@ def main():
         criterion = nn.NLLLoss()
     else:
         criterion = nn.L1Loss()
-        # criterion = nn.MSELoss()
     if args.optim == "SGD":
         optimizer = optim.SGD(
             model.parameters(),
