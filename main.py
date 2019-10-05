@@ -86,7 +86,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--lr-milestones",
-    default=[100],
+    default=[100, 150],
     nargs="+",
     type=int,
     metavar="N",
@@ -161,7 +161,7 @@ parser.add_argument(
     help="number of hidden features after pooling",
 )
 parser.add_argument(
-    "--n-conv", default=8, type=int, metavar="N", help="number of conv layers"
+    "--n-conv", default=6, type=int, metavar="N", help="number of conv layers"
 )
 parser.add_argument(
     "--n-h",
