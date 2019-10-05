@@ -1,26 +1,26 @@
-from __future__ import print_function, division
-import os
+from __future__ import division, print_function
+
+import copy
 import csv
-import json
 import functools
+import json
+import os
 import random
 import warnings
 
-import copy
-from utils import mongo
-
-import torch
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
-from torch.utils.data.dataloader import default_collate
-from torch.utils.data.sampler import SubsetRandomSampler
-from pymatgen.core.structure import Structure
-
-from pymatgen.analysis.structure_analyzer import VoronoiConnectivity
-from sklearn.preprocessing import OneHotEncoder
+import torch
 from ase.constraints import FixAtoms
+from pymatgen.analysis.structure_analyzer import VoronoiConnectivity
+from pymatgen.core.structure import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
 from sklearn.base import TransformerMixin
+from sklearn.preprocessing import OneHotEncoder
+from torch.utils.data import DataLoader, Dataset
+from torch.utils.data.dataloader import default_collate
+from torch.utils.data.sampler import SubsetRandomSampler
+
+from utils import mongo
 
 
 def get_train_val_test_loader(
