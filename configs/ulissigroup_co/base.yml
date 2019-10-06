@@ -1,0 +1,9 @@
+dataset:
+  src: /srv/share2/abhshkdz/data/electrocatalyst-design/2019_10_05/docs_energy.pkl
+  train_size: 14000
+  val_size: 1000
+  test_size: 1000
+
+task:
+  description: "Binding energy regression on a dataset of DFT results for CO adsorption on various slabs."
+  type: regression
