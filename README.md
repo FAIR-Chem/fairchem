@@ -1,6 +1,6 @@
 # Crystal Graph Convolutional Neural Networks
 
-Forked from [ulissigroup/cgnn](https://github.com/ulissigroup/cgcnn).
+Forked from [ulissigroup/cgcnn](https://github.com/ulissigroup/cgcnn).
 
 This software package implements the Crystal Graph Convolutional Neural Networks (CGCNN) that takes an arbitary crystal structure to predict material properties.
 
