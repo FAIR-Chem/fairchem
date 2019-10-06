@@ -4,7 +4,6 @@ import json
 import os
 import pickle
 import random
-import shutil
 import sys
 import time
 import warnings
@@ -14,307 +13,173 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sklearn import metrics
+import yaml
 from tensorboardX import SummaryWriter
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import MultiStepLR
 
-from cgcnn.data import MergeDataset, collate_pool, get_train_val_test_loader
+from cgcnn.data import collate_pool, get_train_val_test_loader
+from cgcnn.meter import AverageMeter, mae
 from cgcnn.model import CrystalGraphConvNet
+from cgcnn.normalizer import Normalizer
+from cgcnn.utils import class_eval, save_checkpoint
 
 parser = argparse.ArgumentParser(
-    description="Crystal Graph Convolutional Neural Networks"
+    description="Graph Neural Networks for Chemistry"
 )
 parser.add_argument(
-    "data_options",
-    metavar="OPTIONS",
-    nargs="+",
-    help="dataset options, started with the path to root dir",
+    "--config-yml",
+    default="configs/ulissigroup_co/cgcnn.yml",
+    help="Path to a config file listing data, model, optim parameters.",
 )
 parser.add_argument(
     "--identifier",
     default="",
-    help="identifier to append to checkpoint / logging directory",
+    help="Experiment identifier to append to checkpoint/log/result directory",
 )
 parser.add_argument(
-    "--task",
-    choices=["regression", "classification"],
-    default="regression",
-    help="complete a regression or classification task (default: regression)",
-)
-parser.add_argument("--disable-cuda", action="store_true", help="Disable CUDA")
-parser.add_argument(
-    "-j",
-    "--workers",
+    "--num-workers",
     default=0,
     type=int,
-    metavar="N",
-    help="number of data loading workers (default: 0)",
+    help="Number of dataloader workers (default: 0 i.e. use main proc)",
 )
 parser.add_argument(
-    "--epochs",
-    default=200,
-    type=int,
-    metavar="N",
-    help="number of total epochs to run (default: 30)",
-)
-parser.add_argument(
-    "--start-epoch",
-    default=0,
-    type=int,
-    metavar="N",
-    help="manual epoch number (useful on restarts)",
-)
-parser.add_argument(
-    "-b",
-    "--batch-size",
-    default=256,
-    type=int,
-    metavar="N",
-    help="mini-batch size (default: 256)",
-)
-parser.add_argument(
-    "--lr",
-    "--learning-rate",
-    default=0.01,
-    type=float,
-    metavar="LR",
-    help="initial learning rate (default: " "0.01)",
-)
-parser.add_argument(
-    "--lr-milestones",
-    default=[100, 150],
-    nargs="+",
-    type=int,
-    metavar="N",
-    help="milestones for scheduler (default: " "[100])",
-)
-parser.add_argument(
-    "--momentum", default=0.9, type=float, metavar="M", help="momentum"
-)
-parser.add_argument(
-    "--weight-decay",
-    "--wd",
-    default=0,
-    type=float,
-    metavar="W",
-    help="weight decay (default: 0)",
-)
-parser.add_argument(
-    "--print-freq",
-    "-p",
+    "--print-every",
     default=10,
     type=int,
-    metavar="N",
-    help="print frequency (default: 10)",
-)
-parser.add_argument(
-    "--resume",
-    default="",
-    type=str,
-    metavar="PATH",
-    help="path to latest checkpoint (default: none)",
-)
-parser.add_argument(
-    "--train-size",
-    default=14000,
-    type=int,
-    metavar="N",
-    help="number of training data to be loaded (default none)",
-)
-parser.add_argument(
-    "--val-size",
-    default=1000,
-    type=int,
-    metavar="N",
-    help="number of validation data to be loaded (default " "1000)",
-)
-parser.add_argument(
-    "--test-size",
-    default=1000,
-    type=int,
-    metavar="N",
-    help="number of test data to be loaded (default 1000)",
-)
-parser.add_argument(
-    "--optim",
-    default="Adam",
-    type=str,
-    metavar="Adam",
-    help="choose an optimizer, SGD or Adam, (default: Adam)",
-)
-parser.add_argument(
-    "--atom-fea-len",
-    default=64,
-    type=int,
-    metavar="N",
-    help="number of hidden atom features in conv layers",
-)
-parser.add_argument(
-    "--h-fea-len",
-    default=128,
-    type=int,
-    metavar="N",
-    help="number of hidden features after pooling",
-)
-parser.add_argument(
-    "--n-conv", default=6, type=int, metavar="N", help="number of conv layers"
-)
-parser.add_argument(
-    "--n-h",
-    default=4,
-    type=int,
-    metavar="N",
-    help="number of hidden layers after pooling",
+    help="Log every N iterations (default: 10)",
 )
 
-# For reproducibility.
-# Refer https://pytorch.org/docs/stable/notes/randomness.html
+# https://pytorch.org/docs/stable/notes/randomness.html
 torch.manual_seed(0)
 torch.cuda.manual_seed_all(0)
-torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
-args = parser.parse_args(sys.argv[1:])
+# =============================================================================
+#   INPUT ARGUMENTS AND CONFIG
+# =============================================================================
 
-args.cuda = not args.disable_cuda and torch.cuda.is_available()
+args = parser.parse_args()
+
+config = yaml.safe_load(open(args.config_yml, "r"))
+
+includes = config.get("includes", [])
+if not isinstance(includes, list):
+    raise AttributeError(
+        "Includes must be a list, {} provided".format(type(includes))
+    )
+
+for include in includes:
+    include_config = yaml.safe_load(open(include, "r"))
+    config.update(include_config)
+
+config.pop("includes")
+
+args.cuda = torch.cuda.is_available()
 
 args.timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 if args.identifier:
     args.timestamp += "-{}".format(args.identifier)
 args.checkpoint_dir = os.path.join("checkpoints", args.timestamp)
 args.results_dir = os.path.join("results", args.timestamp)
-args.log_dir = os.path.join("logs", args.timestamp)
+args.logs_dir = os.path.join("logs", args.timestamp)
 
-for arg in vars(args):
-    print("{:<20}: {}".format(arg, getattr(args, arg)))
 os.makedirs(args.checkpoint_dir)
 os.makedirs(args.results_dir)
-os.makedirs(args.log_dir)
+os.makedirs(args.logs_dir)
 
+print(yaml.dump(config, default_flow_style=False))
+for arg in vars(args):
+    print("{:<20}: {}".format(arg, getattr(args, arg)))
+
+config["cmd"] = args.__dict__
+del args
+
+# Dump config parameters
 json.dump(
-    args.__dict__, open(os.path.join(args.checkpoint_dir, "config.json"), "w")
+    config,
+    open(os.path.join(config["cmd"]["checkpoint_dir"], "config.json"), "w"),
 )
 
 # Tensorboard
-tf_log_writer = SummaryWriter(args.log_dir)
-
-if args.task == "regression":
-    best_mae_error = 1e10
-else:
-    best_mae_error = 0.0
+tf_log_writer = SummaryWriter(config["cmd"]["logs_dir"])
 
 
 def main():
-    global args, best_mae_error
+    # =========================================================================
+    #   SETUP DATALOADER, NORMALIZER, MODEL, LOSS, OPTIMIZER
+    # =========================================================================
 
-    docs = pickle.load(
-        open(
-            "/srv/share2/abhshkdz/data/electrocatalyst-design/2019_09_19/docs.pkl",
-            "rb",
-        )
-    )
-    random.seed(42)
-    random.shuffle(docs)
-    docs = [doc for doc in docs if -3 < doc["energy"] < 1.0]
+    if config["task"]["type"] == "regression":
+        best_mae_error = 1e10
+    else:
+        best_mae_error = 0.0
 
-    input_list = pickle.load(
-        open(
-            "/srv/share2/abhshkdz/data/electrocatalyst-design/2019_09_19/distance_all_docs.pkl",
-            "rb",
-        )
-    )
-    target_list = torch.Tensor(
-        np.array([doc["energy"] for doc in docs], dtype=np.float32).reshape(
-            -1, 1
-        )
-    )
+    data = pickle.load(open(config["dataset"]["src"], "rb"))
 
-    structures = input_list[0]
+    structures = data[0]
     orig_atom_fea_len = structures[0].shape[-1]
     nbr_fea_len = structures[1].shape[-1]
 
-    dataset = MergeDataset(input_list, target_list)
-
-    collate_fn = collate_pool
     train_loader, val_loader, test_loader = get_train_val_test_loader(
-        dataset=dataset,
-        collate_fn=collate_fn,
-        batch_size=args.batch_size,
-        train_size=args.train_size,
-        num_workers=args.workers,
-        val_size=args.val_size,
-        test_size=args.test_size,
-        pin_memory=args.cuda,
+        dataset=data,
+        collate_fn=collate_pool,
+        batch_size=config["optim"]["batch_size"],
+        train_size=config["dataset"]["train_size"],
+        val_size=config["dataset"]["val_size"],
+        test_size=config["dataset"]["test_size"],
+        num_workers=config["cmd"]["num_workers"],
+        pin_memory=config["cmd"]["cuda"],
         return_test=True,
     )
 
-    # obtain target value normalizer
-    if args.task == "classification":
+    # Obtain target value normalizer
+    if config["task"]["type"] == "classification":
         normalizer = Normalizer(torch.zeros(2))
         normalizer.load_state_dict({"mean": 0.0, "std": 1.0})
     else:
-        sample_data_list = [
-            dataset[i] for i in sample(range(len(dataset)), args.train_size)
-        ]
-        _, sample_target = collate_fn(sample_data_list)
-        normalizer = Normalizer(sample_target)
+        # Compute mean, std of training set labels.
+        _, targets = collate_pool(
+            [data[i] for i in range(config["dataset"]["train_size"])]
+        )
+        normalizer = Normalizer(targets)
 
-    # build model
+    # Build model
+    # [TODO] Pass params more cleanly as **config["model"]
+    # [TODO] Fix naming misalignment (e.g. h_fea_len vs. fc_feat_size)
     model = CrystalGraphConvNet(
         orig_atom_fea_len,
         nbr_fea_len,
-        atom_fea_len=args.atom_fea_len,
-        n_conv=args.n_conv,
-        h_fea_len=args.h_fea_len,
-        n_h=args.n_h,
-        classification=True if args.task == "classification" else False,
+        atom_fea_len=config["model"]["atom_embedding_size"],
+        n_conv=config["model"]["num_graph_conv_layers"],
+        h_fea_len=config["model"]["fc_feat_size"],
+        n_h=config["model"]["num_fc_layers"],
+        classification=True
+        if config["task"]["type"] == "classification"
+        else False,
     )
-    if args.cuda:
+    if config["cmd"]["cuda"]:
         model.cuda()
 
-    # define loss func and optimizer
-    if args.task == "classification":
+    if config["task"]["type"] == "classification":
         criterion = nn.NLLLoss()
     else:
         criterion = nn.L1Loss()
-    if args.optim == "SGD":
-        optimizer = optim.SGD(
-            model.parameters(),
-            args.lr,
-            momentum=args.momentum,
-            weight_decay=args.weight_decay,
-        )
-    elif args.optim == "Adam":
-        optimizer = optim.Adam(
-            model.parameters(), args.lr, weight_decay=args.weight_decay
-        )
-    else:
-        raise NameError("Only SGD or Adam is allowed as --optim")
 
-    # optionally resume from a checkpoint
-    if args.resume:
-        if os.path.isfile(args.resume):
-            print("=> loading checkpoint '{}'".format(args.resume))
-            checkpoint = torch.load(args.resume)
-            args.start_epoch = checkpoint["epoch"]
-            best_mae_error = checkpoint["best_mae_error"]
-            model.load_state_dict(checkpoint["state_dict"])
-            optimizer.load_state_dict(checkpoint["optimizer"])
-            normalizer.load_state_dict(checkpoint["normalizer"])
-            print(
-                "=> loaded checkpoint '{}' (epoch {})".format(
-                    args.resume, checkpoint["epoch"]
-                )
-            )
-        else:
-            print("=> no checkpoint found at '{}'".format(args.resume))
+    optimizer = optim.Adam(model.parameters(), config["optim"]["lr_initial"])
 
     scheduler = MultiStepLR(
-        optimizer, milestones=args.lr_milestones, gamma=0.1
+        optimizer,
+        milestones=config["optim"]["lr_milestones"],
+        gamma=config["optim"]["lr_gamma"],
     )
 
-    for epoch in range(args.start_epoch, args.epochs):
+    # =========================================================================
+    #   TRAINING LOOP
+    # =========================================================================
+
+    for epoch in range(config["optim"]["max_epochs"]):
         # train for one epoch
         train(train_loader, model, criterion, optimizer, epoch, normalizer)
 
@@ -328,7 +193,7 @@ def main():
         scheduler.step()
 
         # remember the best mae_eror and save checkpoint
-        if args.task == "regression":
+        if config["task"]["type"] == "regression":
             is_best = mae_error < best_mae_error
             best_mae_error = min(mae_error, best_mae_error)
         else:
@@ -341,16 +206,16 @@ def main():
                 "best_mae_error": best_mae_error,
                 "optimizer": optimizer.state_dict(),
                 "normalizer": normalizer.state_dict(),
-                "args": vars(args),
+                "config": config,
             },
             is_best,
-            args.checkpoint_dir,
+            config["cmd"]["checkpoint_dir"],
         )
 
-    # test best model
+    # Evaluate best model
     print("---------Evaluate Model on Test Set---------------")
     best_checkpoint = torch.load(
-        os.path.join(args.checkpoint_dir, "model_best.pth.tar")
+        os.path.join(config["cmd"]["checkpoint_dir"], "model_best.pth.tar")
     )
     model.load_state_dict(best_checkpoint["state_dict"])
     validate(test_loader, model, criterion, epoch, normalizer, test=True)
@@ -360,7 +225,7 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
-    if args.task == "regression":
+    if config["task"]["type"] == "regression":
         mae_errors = AverageMeter()
     else:
         accuracies = AverageMeter()
@@ -377,7 +242,7 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
         # measure data loading time
         data_time.update(time.time() - end)
 
-        if args.cuda:
+        if config["cmd"]["cuda"]:
             input_var = (
                 Variable(input[0].cuda()),
                 Variable(input[1].cuda()),
@@ -392,11 +257,11 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
                 input[3],
             )
         # normalize target
-        if args.task == "regression":
+        if config["task"]["type"] == "regression":
             target_normed = normalizer.norm(target)
         else:
             target_normed = target.view(-1).long()
-        if args.cuda:
+        if config["cmd"]["cuda"]:
             target_var = Variable(target_normed.cuda())
         else:
             target_var = Variable(target_normed)
@@ -406,15 +271,15 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
         loss = criterion(output, target_var)
 
         # measure accuracy and record loss
-        if args.task == "regression":
+        if config["task"]["type"] == "regression":
             mae_error = mae(normalizer.denorm(output.data.cpu()), target)
-            losses.update(loss.data.cpu()[0], target.size(0))
+            losses.update(loss.item(), target.size(0))
             mae_errors.update(mae_error, target.size(0))
         else:
             accuracy, precision, recall, fscore, auc_score = class_eval(
                 output.data.cpu(), target
             )
-            losses.update(loss.data.cpu()[0], target.size(0))
+            losses.update(loss.item(), target.size(0))
             accuracies.update(accuracy, target.size(0))
             precisions.update(precision, target.size(0))
             recalls.update(recall, target.size(0))
@@ -424,17 +289,13 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
         # compute gradient and do SGD step
         optimizer.zero_grad()
         loss.backward()
-
-        # clip gradients
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.25)
-
         optimizer.step()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if args.task == "regression":
+        if config["task"]["type"] == "regression":
             tf_log_writer.add_scalar(
                 "Training Loss", losses.val, epoch * len(train_loader) + i
             )
@@ -471,8 +332,8 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
             epoch * len(train_loader) + i,
         )
 
-        if i % args.print_freq == 0:
-            if args.task == "regression":
+        if i % config["cmd"]["print_every"] == 0:
+            if config["task"]["type"] == "regression":
                 print(
                     "Epoch: [{0}][{1}/{2}]\t"
                     "Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t"
@@ -517,7 +378,7 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
 def validate(val_loader, model, criterion, epoch, normalizer, test=False):
     batch_time = AverageMeter()
     losses = AverageMeter()
-    if args.task == "regression":
+    if config["task"]["type"] == "regression":
         mae_errors = AverageMeter()
     else:
         accuracies = AverageMeter()
@@ -535,37 +396,39 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
 
     end = time.time()
     for i, (input, target) in enumerate(val_loader):
-        if args.cuda:
-            input_var = (
-                Variable(input[0].cuda(), volatile=True),
-                Variable(input[1].cuda(), volatile=True),
-                input[2].cuda(),
-                [crys_idx.cuda() for crys_idx in input[3]],
-            )
-        else:
-            input_var = (
-                Variable(input[0], volatile=True),
-                Variable(input[1], volatile=True),
-                input[2],
-                input[3],
-            )
-        if args.task == "regression":
+        with torch.no_grad():
+            if config["cmd"]["cuda"]:
+                input_var = (
+                    Variable(input[0].cuda()),
+                    Variable(input[1].cuda()),
+                    input[2].cuda(),
+                    [crys_idx.cuda() for crys_idx in input[3]],
+                )
+            else:
+                input_var = (
+                    Variable(input[0]),
+                    Variable(input[1]),
+                    input[2],
+                    input[3],
+                )
+        if config["task"]["type"] == "regression":
             target_normed = normalizer.norm(target)
         else:
             target_normed = target.view(-1).long()
-        if args.cuda:
-            target_var = Variable(target_normed.cuda(), volatile=True)
-        else:
-            target_var = Variable(target_normed, volatile=True)
+        with torch.no_grad():
+            if config["cmd"]["cuda"]:
+                target_var = Variable(target_normed.cuda())
+            else:
+                target_var = Variable(target_normed)
 
         # compute output
         output = model(*input_var)
         loss = criterion(output, target_var)
 
         # measure accuracy and record loss
-        if args.task == "regression":
+        if config["task"]["type"] == "regression":
             mae_error = mae(normalizer.denorm(output.data.cpu()), target)
-            losses.update(loss.data.cpu()[0], target.size(0))
+            losses.update(loss.item(), target.size(0))
             mae_errors.update(mae_error, target.size(0))
             if test:
                 test_pred = normalizer.denorm(output.data.cpu())
@@ -576,7 +439,7 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
             accuracy, precision, recall, fscore, auc_score = class_eval(
                 output.data.cpu(), target
             )
-            losses.update(loss.data.cpu()[0], target.size(0))
+            losses.update(loss.item(), target.size(0))
             accuracies.update(accuracy, target.size(0))
             precisions.update(precision, target.size(0))
             recalls.update(recall, target.size(0))
@@ -594,7 +457,7 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
         end = time.time()
 
         if not test:
-            if args.task == "regression":
+            if config["task"]["type"] == "regression":
                 tf_log_writer.add_scalar(
                     "Validation Loss", losses.val, epoch * len(val_loader) + i
                 )
@@ -631,8 +494,8 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
                     epoch * len(val_loader) + i,
                 )
 
-        if i % args.print_freq == 0:
-            if args.task == "regression":
+        if i % config["cmd"]["print_every"] == 0:
+            if config["task"]["type"] == "regression":
                 print(
                     "Test: [{0}/{1}]\t"
                     "Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t"
@@ -672,7 +535,7 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
         import csv
 
         with open(
-            os.path.join(args.results_dir, "test_results.csv"), "w"
+            os.path.join(config["cmd"]["results_dir"], "test_results.csv"), "w"
         ) as f:
             writer = csv.writer(f)
             for cif_id, target, pred in zip(
@@ -681,7 +544,7 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
                 writer.writerow((cif_id, target, pred))
     else:
         star_label = "*"
-    if args.task == "regression":
+    if config["task"]["type"] == "regression":
         print(
             " {star} MAE {mae_errors.avg:.3f}".format(
                 star=star_label, mae_errors=mae_errors
@@ -693,93 +556,6 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
             " {star} AUC {auc.avg:.3f}".format(star=star_label, auc=auc_scores)
         )
         return auc_scores.avg
-
-
-class Normalizer(object):
-    """Normalize a Tensor and restore it later. """
-
-    def __init__(self, tensor):
-        """tensor is taken as a sample to calculate the mean and std"""
-        self.mean = torch.mean(tensor)
-        self.std = torch.std(tensor)
-
-    def norm(self, tensor):
-        return (tensor - self.mean) / self.std
-
-    def denorm(self, normed_tensor):
-        return normed_tensor * self.std + self.mean
-
-    def state_dict(self):
-        return {"mean": self.mean, "std": self.std}
-
-    def load_state_dict(self, state_dict):
-        self.mean = state_dict["mean"]
-        self.std = state_dict["std"]
-
-
-def mae(prediction, target):
-    """
-    Computes the mean absolute error between prediction and target
-
-    Parameters
-    ----------
-
-    prediction: torch.Tensor (N, 1)
-    target: torch.Tensor (N, 1)
-    """
-    return torch.mean(torch.abs(target - prediction))
-
-
-def class_eval(prediction, target):
-    prediction = np.exp(prediction.numpy())
-    target = target.numpy()
-    pred_label = np.argmax(prediction, axis=1)
-    target_label = np.squeeze(target)
-    if prediction.shape[1] == 2:
-        precision, recall, fscore, _ = metrics.precision_recall_fscore_support(
-            target_label, pred_label, average="binary"
-        )
-        auc_score = metrics.roc_auc_score(target_label, prediction[:, 1])
-        accuracy = metrics.accuracy_score(target_label, pred_label)
-    else:
-        raise NotImplementedError
-    return accuracy, precision, recall, fscore, auc_score
-
-
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-
-
-def save_checkpoint(state, is_best, checkpoint_dir="checkpoints/"):
-    filename = os.path.join(checkpoint_dir, "checkpoint.pth.tar")
-    torch.save(state, filename)
-    if is_best:
-        shutil.copyfile(
-            filename, os.path.join(checkpoint_dir, "model_best.pth.tar")
-        )
-
-
-def adjust_learning_rate(optimizer, epoch, k):
-    """Sets the learning rate to the initial LR decayed by 10 every k epochs"""
-    assert type(k) is int
-    lr = args.lr * (0.1 ** (epoch // k))
-    for param_group in optimizer.param_groups:
-        param_group["lr"] = lr
 
 
 if __name__ == "__main__":

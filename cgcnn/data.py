@@ -20,7 +20,7 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.dataloader import default_collate
 from torch.utils.data.sampler import SubsetRandomSampler
 
-from utils import mongo
+from cgcnn import mongo
 
 
 def get_train_val_test_loader(
@@ -142,9 +142,7 @@ def collate_pool(dataset_list):
     batch_atom_fea, batch_nbr_fea, batch_nbr_fea_idx = [], [], []
     crystal_atom_idx, batch_target = [], []
     base_idx = 0
-    for i, ((atom_fea, nbr_fea, nbr_fea_idx), target) in enumerate(
-        dataset_list
-    ):
+    for i, (atom_fea, nbr_fea, nbr_fea_idx, target) in enumerate(dataset_list):
         n_i = atom_fea.shape[0]  # number of atoms for this crystal
         batch_atom_fea.append(atom_fea)
         batch_nbr_fea.append(nbr_fea)
