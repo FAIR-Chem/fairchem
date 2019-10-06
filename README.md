@@ -26,7 +26,7 @@ conda activate cgcnn
 pip install -r requirements.txt
 ```
 
-*Note: since PyTorch introduced some breaking changes in v0.4.0, this code only works up to v0.3.1*
+*Note: This code has currently only been tested with PyTorch v0.4.1.*
 
 This creates a conda environment for running CGCNN. Before using CGCNN, activate the environment by:
 
