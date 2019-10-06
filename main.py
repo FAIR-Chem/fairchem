@@ -424,6 +424,10 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
         # compute gradient and do SGD step
         optimizer.zero_grad()
         loss.backward()
+
+        # clip gradients
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.25)
+
         optimizer.step()
 
         # measure elapsed time
