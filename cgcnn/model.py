@@ -60,8 +60,9 @@ class ConvLayer(nn.Module):
         """
         # TODO will there be problems with the index zero padding?
         N, M = nbr_fea_idx.shape
-        # convolution
+        # N x M x atom_embedding_size
         atom_nbr_fea = atom_in_fea[nbr_fea_idx, :]
+        # N x M x (2 * atom_embedding_size + nbr_fea_len)
         total_nbr_fea = torch.cat(
             [
                 atom_in_fea.unsqueeze(1).expand(
@@ -72,15 +73,20 @@ class ConvLayer(nn.Module):
             ],
             dim=2,
         )
+        # N x M x 2 * atom_embedding_size
         total_gated_fea = self.fc_full(total_nbr_fea)
         total_gated_fea = self.bn1(
             total_gated_fea.view(-1, self.atom_embedding_size * 2)
         ).view(N, M, self.atom_embedding_size * 2)
+        # TODO: Why are we chunking here?
+        # N x M x atom_embedding_size each
         nbr_filter, nbr_core = total_gated_fea.chunk(2, dim=2)
         nbr_filter = self.sigmoid(nbr_filter)
         nbr_core = self.softplus1(nbr_core)
+        # N x atom_embedding_size
         nbr_sumed = torch.sum(nbr_filter * nbr_core, dim=1)
         nbr_sumed = self.bn2(nbr_sumed)
+        # N x atom_embedding_size
         out = self.softplus2(atom_in_fea + nbr_sumed)
         return out
 
