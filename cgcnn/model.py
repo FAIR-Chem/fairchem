@@ -9,28 +9,29 @@ class ConvLayer(nn.Module):
     Convolutional operation on graphs
     """
 
-    def __init__(self, atom_fea_len, nbr_fea_len):
+    def __init__(self, atom_embedding_size, nbr_fea_len):
         """
         Initialize ConvLayer.
 
         Parameters
         ----------
 
-        atom_fea_len: int
+        atom_embedding_size: int
           Number of atom hidden features.
         nbr_fea_len: int
           Number of bond features.
         """
         super(ConvLayer, self).__init__()
-        self.atom_fea_len = atom_fea_len
+        self.atom_embedding_size = atom_embedding_size
         self.nbr_fea_len = nbr_fea_len
         self.fc_full = nn.Linear(
-            2 * self.atom_fea_len + self.nbr_fea_len, 2 * self.atom_fea_len
+            2 * self.atom_embedding_size + self.nbr_fea_len,
+            2 * self.atom_embedding_size,
         )
         self.sigmoid = nn.Sigmoid()
         self.softplus1 = nn.Softplus()
-        self.bn1 = nn.BatchNorm1d(2 * self.atom_fea_len)
-        self.bn2 = nn.BatchNorm1d(self.atom_fea_len)
+        self.bn1 = nn.BatchNorm1d(2 * self.atom_embedding_size)
+        self.bn2 = nn.BatchNorm1d(self.atom_embedding_size)
         self.softplus2 = nn.Softplus()
 
     def forward(self, atom_in_fea, nbr_fea, nbr_fea_idx):
@@ -43,7 +44,7 @@ class ConvLayer(nn.Module):
         Parameters
         ----------
 
-        atom_in_fea: Variable(torch.Tensor) shape (N, atom_fea_len)
+        atom_in_fea: Variable(torch.Tensor) shape (N, atom_embedding_size)
           Atom hidden features before convolution
         nbr_fea: Variable(torch.Tensor) shape (N, M, nbr_fea_len)
           Bond features of each atom's M neighbors
@@ -53,7 +54,7 @@ class ConvLayer(nn.Module):
         Returns
         -------
 
-        atom_out_fea: nn.Variable shape (N, atom_fea_len)
+        atom_out_fea: nn.Variable shape (N, atom_embedding_size)
           Atom hidden features after convolution
 
         """
@@ -63,7 +64,9 @@ class ConvLayer(nn.Module):
         atom_nbr_fea = atom_in_fea[nbr_fea_idx, :]
         total_nbr_fea = torch.cat(
             [
-                atom_in_fea.unsqueeze(1).expand(N, M, self.atom_fea_len),
+                atom_in_fea.unsqueeze(1).expand(
+                    N, M, self.atom_embedding_size
+                ),
                 atom_nbr_fea,
                 nbr_fea,
             ],
@@ -71,8 +74,8 @@ class ConvLayer(nn.Module):
         )
         total_gated_fea = self.fc_full(total_nbr_fea)
         total_gated_fea = self.bn1(
-            total_gated_fea.view(-1, self.atom_fea_len * 2)
-        ).view(N, M, self.atom_fea_len * 2)
+            total_gated_fea.view(-1, self.atom_embedding_size * 2)
+        ).view(N, M, self.atom_embedding_size * 2)
         nbr_filter, nbr_core = total_gated_fea.chunk(2, dim=2)
         nbr_filter = self.sigmoid(nbr_filter)
         nbr_core = self.softplus1(nbr_core)
@@ -92,10 +95,10 @@ class CrystalGraphConvNet(nn.Module):
         self,
         orig_atom_fea_len,
         nbr_fea_len,
-        atom_fea_len=64,
-        n_conv=3,
-        h_fea_len=128,
-        n_h=1,
+        atom_embedding_size=64,
+        num_graph_conv_layers=3,
+        fc_feat_size=128,
+        num_fc_layers=1,
         classification=False,
     ):
         """
@@ -108,39 +111,45 @@ class CrystalGraphConvNet(nn.Module):
           Number of atom features in the input.
         nbr_fea_len: int
           Number of bond features.
-        atom_fea_len: int
+        atom_embedding_size: int
           Number of hidden atom features in the convolutional layers
-        n_conv: int
+        num_graph_conv_layers: int
           Number of convolutional layers
-        h_fea_len: int
+        fc_feat_size: int
           Number of hidden features after pooling
-        n_h: int
+        num_fc_layers: int
           Number of hidden layers after pooling
         """
         super(CrystalGraphConvNet, self).__init__()
         self.classification = classification
-        self.embedding = nn.Linear(orig_atom_fea_len, atom_fea_len)
+        self.embedding = nn.Linear(orig_atom_fea_len, atom_embedding_size)
         self.convs = nn.ModuleList(
             [
-                ConvLayer(atom_fea_len=atom_fea_len, nbr_fea_len=nbr_fea_len)
-                for _ in range(n_conv)
+                ConvLayer(
+                    atom_embedding_size=atom_embedding_size,
+                    nbr_fea_len=nbr_fea_len,
+                )
+                for _ in range(num_graph_conv_layers)
             ]
         )
-        self.conv_to_fc = nn.Linear(atom_fea_len, h_fea_len)
+        self.conv_to_fc = nn.Linear(atom_embedding_size, fc_feat_size)
         self.conv_to_fc_softplus = nn.Softplus()
-        if n_h > 1:
+        if num_fc_layers > 1:
             self.fcs = nn.ModuleList(
-                [nn.Linear(h_fea_len, h_fea_len) for _ in range(n_h - 1)]
+                [
+                    nn.Linear(fc_feat_size, fc_feat_size)
+                    for _ in range(num_fc_layers - 1)
+                ]
             )
             self.softpluses = nn.ModuleList(
-                [nn.Softplus() for _ in range(n_h - 1)]
+                [nn.Softplus() for _ in range(num_fc_layers - 1)]
             )
-            # self.bn = nn.ModuleList([nn.BatchNorm1d(h_fea_len)
-            #                                 for _ in range(n_h-1)])
+            # self.bn = nn.ModuleList([nn.BatchNorm1d(fc_feat_size)
+            #                                 for _ in range(num_fc_layers-1)])
         if self.classification:
-            self.fc_out = nn.Linear(h_fea_len, 2)
+            self.fc_out = nn.Linear(fc_feat_size, 2)
         else:
-            self.fc_out = nn.Linear(h_fea_len, 1)
+            self.fc_out = nn.Linear(fc_feat_size, 1)
         if self.classification:
             self.logsoftmax = nn.LogSoftmax()
             self.dropout = nn.Dropout()

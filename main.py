@@ -150,18 +150,11 @@ def main():
         normalizer = Normalizer(targets)
 
     # Build model
-    # [TODO] Pass params more cleanly as **config["model"]
-    # [TODO] Fix naming misalignment (e.g. h_fea_len vs. fc_feat_size)
     model = CrystalGraphConvNet(
         orig_atom_fea_len,
         nbr_fea_len,
-        atom_fea_len=config["model"]["atom_embedding_size"],
-        n_conv=config["model"]["num_graph_conv_layers"],
-        h_fea_len=config["model"]["fc_feat_size"],
-        n_h=config["model"]["num_fc_layers"],
-        classification=True
-        if config["task"]["type"] == "classification"
-        else False,
+        classification=config["task"]["type"] == "classification",
+        **config["model"],
     )
     if config["cmd"]["cuda"]:
         model.cuda()
@@ -340,10 +333,10 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
             if config["task"]["type"] == "regression":
                 print(
                     "Epoch: [{0}][{1}/{2}]\t"
-                    "Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t"
-                    "Data {data_time.val:.3f} ({data_time.avg:.3f})\t"
-                    "Loss {loss.val:.4f} ({loss.avg:.4f})\t"
-                    "MAE {mae_errors.val:.3f} ({mae_errors.avg:.3f})".format(
+                    "Loss: {loss.val:.4f} ({loss.avg:.4f})\t"
+                    "MAE: {mae_errors.val:.3f} ({mae_errors.avg:.3f})\t"
+                    "Data: {data_time.val:.3f}s\t"
+                    "Fwd/bwd: {batch_time.val:.3f}s\t".format(
                         epoch,
                         i,
                         len(train_loader),
@@ -356,14 +349,14 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
             else:
                 print(
                     "Epoch: [{0}][{1}/{2}]\t"
-                    "Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t"
-                    "Data {data_time.val:.3f} ({data_time.avg:.3f})\t"
-                    "Loss {loss.val:.4f} ({loss.avg:.4f})\t"
-                    "Accu {accu.val:.3f} ({accu.avg:.3f})\t"
-                    "Precision {prec.val:.3f} ({prec.avg:.3f})\t"
-                    "Recall {recall.val:.3f} ({recall.avg:.3f})\t"
-                    "F1 {f1.val:.3f} ({f1.avg:.3f})\t"
-                    "AUC {auc.val:.3f} ({auc.avg:.3f})".format(
+                    "Loss: {loss.val:.4f} ({loss.avg:.4f})\t"
+                    "Accu: {accu.val:.3f} ({accu.avg:.3f})\t"
+                    "Precision: {prec.val:.3f} ({prec.avg:.3f})\t"
+                    "Recall: {recall.val:.3f} ({recall.avg:.3f})\t"
+                    "F1: {f1.val:.3f} ({f1.avg:.3f})\t"
+                    "AUC: {auc.val:.3f} ({auc.avg:.3f})"
+                    "Data: {data_time.val:.3f}s\t"
+                    "Fwd/bwd: {batch_time.val:.3f}s\t".format(
                         epoch,
                         i,
                         len(train_loader),
@@ -501,10 +494,10 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
         if i % config["cmd"]["print_every"] == 0:
             if config["task"]["type"] == "regression":
                 print(
-                    "Test: [{0}/{1}]\t"
-                    "Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t"
-                    "Loss {loss.val:.4f} ({loss.avg:.4f})\t"
-                    "MAE {mae_errors.val:.3f} ({mae_errors.avg:.3f})".format(
+                    "Val:   [{0}/{1}]\t\t"
+                    "Loss: {loss.val:.4f} ({loss.avg:.4f})\t"
+                    "MAE: {mae_errors.val:.3f} ({mae_errors.avg:.3f})\t"
+                    "Fwd: {batch_time.val:.3f}s\t".format(
                         i,
                         len(val_loader),
                         batch_time=batch_time,
@@ -514,14 +507,14 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
                 )
             else:
                 print(
-                    "Test: [{0}/{1}]\t"
-                    "Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t"
-                    "Loss {loss.val:.4f} ({loss.avg:.4f})\t"
-                    "Accu {accu.val:.3f} ({accu.avg:.3f})\t"
-                    "Precision {prec.val:.3f} ({prec.avg:.3f})\t"
-                    "Recall {recall.val:.3f} ({recall.avg:.3f})\t"
-                    "F1 {f1.val:.3f} ({f1.avg:.3f})\t"
-                    "AUC {auc.val:.3f} ({auc.avg:.3f})".format(
+                    "Val:   [{0}/{1}]\t\t"
+                    "Loss: {loss.val:.4f} ({loss.avg:.4f})\t"
+                    "Accu: {accu.val:.3f} ({accu.avg:.3f})\t"
+                    "Precision: {prec.val:.3f} ({prec.avg:.3f})\t"
+                    "Recall: {recall.val:.3f} ({recall.avg:.3f})\t"
+                    "F1: {f1.val:.3f} ({f1.avg:.3f})\t"
+                    "AUC: {auc.val:.3f} ({auc.avg:.3f})\t"
+                    "Fwd: {batch_time.val:.3f}s\t".format(
                         i,
                         len(val_loader),
                         batch_time=batch_time,
