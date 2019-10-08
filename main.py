@@ -49,18 +49,22 @@ parser.add_argument(
     type=int,
     help="Log every N iterations (default: 10)",
 )
-
-# https://pytorch.org/docs/stable/notes/randomness.html
-torch.manual_seed(0)
-torch.cuda.manual_seed_all(0)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
+parser.add_argument(
+    "--seed", default=0, type=int, help="Seed for torch, cuda, numpy"
+)
 
 # =============================================================================
 #   INPUT ARGUMENTS AND CONFIG
 # =============================================================================
 
 args = parser.parse_args()
+
+# https://pytorch.org/docs/stable/notes/randomness.html
+np.random.seed(args.seed)
+torch.manual_seed(args.seed)
+torch.cuda.manual_seed_all(args.seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 config = yaml.safe_load(open(args.config_yml, "r"))
 
