@@ -27,7 +27,7 @@ def get_train_val_test_loader(
     dataset,
     collate_fn=default_collate,
     batch_size=64,
-    train_size=None,
+    train_size=14000,
     val_size=1000,
     test_size=1000,
     return_test=False,
