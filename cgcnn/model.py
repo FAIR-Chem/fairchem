@@ -101,6 +101,7 @@ class CrystalGraphConvNet(nn.Module):
         self,
         orig_atom_fea_len,
         nbr_fea_len,
+        num_targets,
         atom_embedding_size=64,
         num_graph_conv_layers=3,
         fc_feat_size=128,
@@ -117,6 +118,8 @@ class CrystalGraphConvNet(nn.Module):
           Number of atom features in the input.
         nbr_fea_len: int
           Number of bond features.
+        num_targets: int
+          Number of target features
         atom_embedding_size: int
           Number of hidden atom features in the convolutional layers
         num_graph_conv_layers: int
@@ -153,9 +156,10 @@ class CrystalGraphConvNet(nn.Module):
             # self.bn = nn.ModuleList([nn.BatchNorm1d(fc_feat_size)
             #                                 for _ in range(num_fc_layers-1)])
         if self.classification:
+            raise NotImplementedError
             self.fc_out = nn.Linear(fc_feat_size, 2)
         else:
-            self.fc_out = nn.Linear(fc_feat_size, 1)
+            self.fc_out = nn.Linear(fc_feat_size, num_targets)
         if self.classification:
             self.logsoftmax = nn.LogSoftmax()
             self.dropout = nn.Dropout()

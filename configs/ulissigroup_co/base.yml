@@ -5,5 +5,9 @@ dataset:
   test_size: 1000
 
 task:
+  dataset: ulissigroup_co
   description: "Binding energy regression on a dataset of DFT results for CO adsorption on various slabs."
   type: regression
+  metric: mae
+  labels:
+    - binding energy
