@@ -31,3 +31,19 @@ def mae(prediction, target):
     target: torch.Tensor (N, 1)
     """
     return torch.mean(torch.abs(target - prediction))
+
+
+def mae_ratio(prediction, target):
+    """
+    Computes the mean absolute error between prediction and target
+    divided by the absolute values of target
+
+    Parameters
+    ----------
+
+    prediction: torch.Tensor (N, T)
+    target: torch.Tensor (N, T)
+    """
+    return torch.mean(
+        torch.abs(target - prediction) / (torch.abs(target) + 1e-7)
+    )

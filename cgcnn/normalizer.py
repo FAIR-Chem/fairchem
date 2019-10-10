@@ -6,8 +6,8 @@ class Normalizer(object):
 
     def __init__(self, tensor):
         """tensor is taken as a sample to calculate the mean and std"""
-        self.mean = torch.mean(tensor)
-        self.std = torch.std(tensor)
+        self.mean = torch.mean(tensor, dim=0)
+        self.std = torch.std(tensor, dim=0)
 
     def norm(self, tensor):
         return (tensor - self.mean) / self.std

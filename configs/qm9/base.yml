@@ -1,0 +1,38 @@
+dataset:
+  src: data/data/qm9/docs.pkl
+  train_size: 112000
+  val_size: 10000
+  test_size: 10000
+
+task:
+  dataset: qm9
+  description: "TODO"
+  type: regression
+  metric: mae_ratio
+  labels:
+    - dipole moment
+    - isotropic polarizability
+    - energy of homo
+    - energy of lumo
+    - difference between homo and lumo
+    - electronic spatial extent
+    - zero point vibrational energy
+    - internal energy at 0K
+    - internal energy at 298.15K
+    - enthalpy at 298.15K
+    - free energy at 298.15K
+    - heat capacity at 298.15K
+  label_multipliers:
+    - 1.0
+    - 1.0
+    - 27211.3825435 # Hartree to meV
+    - 27211.3825435
+    - 27211.3825435
+    - 1.0
+    - 27211.3825435
+    - 27211.3825435
+    - 27211.3825435
+    - 27211.3825435
+    - 27211.3825435
+    - 1.0
+  # label_index: 3
