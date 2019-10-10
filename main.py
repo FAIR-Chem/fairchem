@@ -18,9 +18,7 @@ from tensorboardX import SummaryWriter
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import MultiStepLR
 
-from cgcnn.data import collate_pool, get_train_val_test_loader
-from cgcnn.datasets import qm9_utils
-from cgcnn.datasets.qm9 import Qm9
+from cgcnn.data import CIFData, collate_pool, get_train_val_test_loader
 from cgcnn.meter import AverageMeter, mae, mae_ratio
 from cgcnn.model import CrystalGraphConvNet
 from cgcnn.normalizer import Normalizer
@@ -124,15 +122,24 @@ def main():
 
     # TODO: move this out to a separate dataloader interface.
     print("### Loading {}".format(config["task"]["dataset"]))
-    data = pickle.load(open(config["dataset"]["src"], "rb"))
+    if config["task"]["dataset"] in ["ulissigroup_co", "qm9"]:
+        data = pickle.load(open(config["dataset"]["src"], "rb"))
 
-    structures = data[0]
-    orig_atom_fea_len = structures[0].shape[-1]
-    nbr_fea_len = structures[1].shape[-1]
-    num_targets = len(structures[-1])
+        structures = data[0]
+        orig_atom_fea_len = structures[0].shape[-1]
+        nbr_fea_len = structures[1].shape[-1]
+        num_targets = len(structures[-1])
 
-    if "label_index" in config["task"]:
-        num_targets = 1
+        if "label_index" in config["task"]:
+            num_targets = 1
+
+    elif config["task"]["dataset"] in ["xie_grossman_mat_proj"]:
+
+        data = CIFData(config["dataset"]["src"])
+
+        structures, _ = data[0]
+        orig_atom_fea_len = structures[0].shape[-1]
+        nbr_fea_len = structures[1].shape[-1]
 
     train_loader, val_loader, test_loader = get_train_val_test_loader(
         dataset=data,
