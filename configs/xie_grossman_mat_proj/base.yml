@@ -1,0 +1,13 @@
+dataset:
+  src: data/data/xie_grossman_mat_proj/cifs
+  train_size: 40000
+  val_size: 2900
+  test_size: 3000
+
+task:
+  dataset: xie_grossman_mat_proj
+  description: "Formation energy per atom regression on the Materials Project dataset from Xie and Grossman."
+  type: regression
+  metric: mae
+  labels:
+    - formation energy per atom
