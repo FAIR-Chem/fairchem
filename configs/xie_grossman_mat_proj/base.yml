@@ -1,6 +1,6 @@
 dataset:
-  src: data/data/xie_grossman_mat_proj/cifs
-  train_size: 40000
+  src: data/data/xie_grossman_mat_proj/docs.pkl
+  train_size: 28000
   val_size: 2900
   test_size: 3000
 
