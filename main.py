@@ -14,11 +14,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
-from tensorboardX import SummaryWriter
-from torch.autograd import Variable
 from torch.optim.lr_scheduler import MultiStepLR
+from torch.utils.tensorboard import SummaryWriter
 
-from cgcnn.data import CIFData, collate_pool, get_train_val_test_loader
+from cgcnn.data import collate_pool, get_train_val_test_loader
 from cgcnn.meter import AverageMeter, mae, mae_ratio
 from cgcnn.model import CrystalGraphConvNet
 from cgcnn.normalizer import Normalizer
@@ -107,7 +106,7 @@ json.dump(
 )
 
 # Tensorboard
-tf_log_writer = SummaryWriter(config["cmd"]["logs_dir"])
+log_writer = SummaryWriter(config["cmd"]["logs_dir"])
 
 
 def main():
@@ -122,7 +121,11 @@ def main():
 
     # TODO: move this out to a separate dataloader interface.
     print("### Loading {}".format(config["task"]["dataset"]))
-    if config["task"]["dataset"] in ["ulissigroup_co", "qm9"]:
+    if config["task"]["dataset"] in [
+        "ulissigroup_co",
+        "qm9",
+        "xie_grossman_mat_proj",
+    ]:
         data = pickle.load(open(config["dataset"]["src"], "rb"))
 
         structures = data[0]
@@ -133,13 +136,9 @@ def main():
         if "label_index" in config["task"]:
             num_targets = 1
 
-    elif config["task"]["dataset"] in ["xie_grossman_mat_proj"]:
+    else:
 
-        data = CIFData(config["dataset"]["src"])
-
-        structures, _ = data[0]
-        orig_atom_fea_len = structures[0].shape[-1]
-        nbr_fea_len = structures[1].shape[-1]
+        raise NotImplementedError
 
     train_loader, val_loader, test_loader = get_train_val_test_loader(
         dataset=data,
@@ -183,7 +182,7 @@ def main():
     else:
         criterion = nn.L1Loss()
 
-    optimizer = optim.Adam(model.parameters(), config["optim"]["lr_initial"])
+    optimizer = optim.AdamW(model.parameters(), config["optim"]["lr_initial"])
 
     scheduler = MultiStepLR(
         optimizer,
@@ -263,27 +262,22 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
 
         if config["cmd"]["cuda"]:
             input_var = (
-                Variable(input[0].cuda()),
-                Variable(input[1].cuda()),
+                input[0].cuda(),
+                input[1].cuda(),
                 input[2].cuda(),
                 [crys_idx.cuda() for crys_idx in input[3]],
             )
         else:
-            input_var = (
-                Variable(input[0]),
-                Variable(input[1]),
-                input[2],
-                input[3],
-            )
+            input_var = (input[0], input[1], input[2], input[3])
         # normalize target
         if config["task"]["type"] == "regression":
             target_normed = normalizer.norm(target)
         else:
             target_normed = target.view(-1).long()
         if config["cmd"]["cuda"]:
-            target_var = Variable(target_normed.cuda())
+            target_var = target_normed.cuda()
         else:
-            target_var = Variable(target_normed)
+            target_var = target_normed
 
         # compute output
         output = model(*input_var)
@@ -317,37 +311,37 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
         end = time.time()
 
         if config["task"]["type"] == "regression":
-            tf_log_writer.add_scalar(
+            log_writer.add_scalar(
                 "Training Loss", losses.val, epoch * len(train_loader) + i
             )
-            tf_log_writer.add_scalar(
+            log_writer.add_scalar(
                 "Training MAE", mae_errors.val, epoch * len(train_loader) + i
             )
         else:
-            tf_log_writer.add_scalar(
+            log_writer.add_scalar(
                 "Training Loss", losses.val, epoch * len(train_loader) + i
             )
-            tf_log_writer.add_scalar(
+            log_writer.add_scalar(
                 "Training Accuracy",
                 accuracies.val,
                 epoch * len(train_loader) + i,
             )
-            tf_log_writer.add_scalar(
+            log_writer.add_scalar(
                 "Training Precision",
                 precisions.val,
                 epoch * len(train_loader) + i,
             )
-            tf_log_writer.add_scalar(
+            log_writer.add_scalar(
                 "Training Recall", recalls.val, epoch * len(train_loader) + i
             )
-            tf_log_writer.add_scalar(
+            log_writer.add_scalar(
                 "Training F1", fscores.val, epoch * len(train_loader) + i
             )
-            tf_log_writer.add_scalar(
+            log_writer.add_scalar(
                 "Training AUC", auc_scores.val, epoch * len(train_loader) + i
             )
 
-        tf_log_writer.add_scalar(
+        log_writer.add_scalar(
             "Learning rate",
             optimizer.param_groups[0]["lr"],
             epoch * len(train_loader) + i,
@@ -418,27 +412,22 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
         with torch.no_grad():
             if config["cmd"]["cuda"]:
                 input_var = (
-                    Variable(input[0].cuda()),
-                    Variable(input[1].cuda()),
+                    input[0].cuda(),
+                    input[1].cuda(),
                     input[2].cuda(),
                     [crys_idx.cuda() for crys_idx in input[3]],
                 )
             else:
-                input_var = (
-                    Variable(input[0]),
-                    Variable(input[1]),
-                    input[2],
-                    input[3],
-                )
+                input_var = (input[0], input[1], input[2], input[3])
         if config["task"]["type"] == "regression":
             target_normed = normalizer.norm(target)
         else:
             target_normed = target.view(-1).long()
         with torch.no_grad():
             if config["cmd"]["cuda"]:
-                target_var = Variable(target_normed.cuda())
+                target_var = target_normed.cuda()
             else:
-                target_var = Variable(target_normed)
+                target_var = target_normed
 
         # compute output
         output = model(*input_var)
@@ -463,10 +452,10 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
 
         if not test:
             if config["task"]["type"] == "regression":
-                tf_log_writer.add_scalar(
+                log_writer.add_scalar(
                     "Validation Loss", losses.val, epoch * len(val_loader) + i
                 )
-                tf_log_writer.add_scalar(
+                log_writer.add_scalar(
                     "Validation MAE",
                     mae_errors.val,
                     epoch * len(val_loader) + i,
