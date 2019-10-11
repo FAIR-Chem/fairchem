@@ -44,9 +44,9 @@ class ConvLayer(nn.Module):
         Parameters
         ----------
 
-        atom_in_fea: Variable(torch.Tensor) shape (N, atom_embedding_size)
+        atom_in_fea: torch.Tensor shape (N, atom_embedding_size)
           Atom hidden features before convolution
-        nbr_fea: Variable(torch.Tensor) shape (N, M, nbr_fea_len)
+        nbr_fea: torch.Tensor shape (N, M, nbr_fea_len)
           Bond features of each atom's M neighbors
         nbr_fea_idx: torch.LongTensor shape (N, M)
           Indices of M neighbors of each atom
@@ -54,7 +54,7 @@ class ConvLayer(nn.Module):
         Returns
         -------
 
-        atom_out_fea: nn.Variable shape (N, atom_embedding_size)
+        atom_out_fea: torch.Tensor shape (N, atom_embedding_size)
           Atom hidden features after convolution
 
         """
@@ -179,9 +179,9 @@ class CrystalGraphConvNet(nn.Module):
         Parameters
         ----------
 
-        atom_fea: Variable(torch.Tensor) shape (N, orig_atom_fea_len)
+        atom_fea: torch.Tensor shape (N, orig_atom_fea_len)
           Atom features from atom type
-        nbr_fea: Variable(torch.Tensor) shape (N, M, nbr_fea_len)
+        nbr_fea: torch.Tensor shape (N, M, nbr_fea_len)
           Bond features of each atom's M neighbors
         nbr_fea_idx: torch.LongTensor shape (N, M)
           Indices of M neighbors of each atom
@@ -191,7 +191,7 @@ class CrystalGraphConvNet(nn.Module):
         Returns
         -------
 
-        prediction: nn.Variable shape (N, )
+        prediction: torch.Tensor shape (N, )
           Atom hidden features after convolution
 
         """
@@ -221,7 +221,7 @@ class CrystalGraphConvNet(nn.Module):
         Parameters
         ----------
 
-        atom_fea: Variable(torch.Tensor) shape (N, atom_fea_len)
+        atom_fea: torch.Tensor shape (N, atom_fea_len)
           Atom feature vectors of the batch
         crystal_atom_idx: list of torch.LongTensor of length N0
           Mapping from the crystal idx to atom idx
