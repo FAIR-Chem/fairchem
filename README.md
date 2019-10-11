@@ -50,18 +50,21 @@ conda deactivate
 
 ## Usage
 
-### Download the dataset
+### Download the datasets
 
-#### 2019/10/05
+For now, we are working with the following datasets:
+- ulissigroup_co: dataset of DFT results for CO adsorption on various slabs (shared by [Jun](http://ulissigroup.cheme.cmu.edu/2017-11-28-junwoong-yoon/))
+- [QM9](http://www.quantum-machine.org/datasets/)
+- [Materials Project](https://materialsproject.org): subset used in [Xie and Grossman](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.120.145301)
 
-For now, we are working with a dataset of DFT results for CO adsorption on various slabs (shared by [Jun](http://ulissigroup.cheme.cmu.edu/2017-11-28-junwoong-yoon/)).
-
-To download the dataset:
+To download the datasets:
 
 ```
 cd data
 ./download_data.sh
 ```
+
+#### ulissigroup_co
 
 `docs_energy.pkl` has the dataset prepackaged for training. Make sure `configs/ulissigroup_co/base.yml` has the correct path to it.
 

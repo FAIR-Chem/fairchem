@@ -58,7 +58,6 @@ class ConvLayer(nn.Module):
           Atom hidden features after convolution
 
         """
-        # TODO will there be problems with the index zero padding?
         N, M = nbr_fea_idx.shape
         # N x M x atom_embedding_size
         atom_nbr_fea = atom_in_fea[nbr_fea_idx, :]
@@ -78,7 +77,6 @@ class ConvLayer(nn.Module):
         total_gated_fea = self.bn1(
             total_gated_fea.view(-1, self.atom_embedding_size * 2)
         ).view(N, M, self.atom_embedding_size * 2)
-        # TODO: Why are we chunking here?
         # N x M x atom_embedding_size each
         nbr_filter, nbr_core = total_gated_fea.chunk(2, dim=2)
         nbr_filter = self.sigmoid(nbr_filter)
