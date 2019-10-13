@@ -15,3 +15,5 @@ optim:
   lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
     - 100
     - 150
+  warmup_epochs: 10
+  warmup_factor: 0.2

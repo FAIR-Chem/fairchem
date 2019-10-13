@@ -7,6 +7,7 @@ import random
 import sys
 import time
 import warnings
+from bisect import bisect
 from random import sample
 
 import numpy as np
@@ -14,7 +15,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim import lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
 
 from cgcnn.data import collate_pool, get_train_val_test_loader
@@ -184,11 +185,19 @@ def main():
 
     optimizer = optim.AdamW(model.parameters(), config["optim"]["lr_initial"])
 
-    scheduler = MultiStepLR(
-        optimizer,
-        milestones=config["optim"]["lr_milestones"],
-        gamma=config["optim"]["lr_gamma"],
-    )
+    def lr_lambda_fun(current_epoch):
+        """Returns a learning rate multiplier.
+        Till `warmup_epochs`, learning rate linearly increases to `initial_lr`,
+        and then gets multiplied by `lr_gamma` every time a milestone is crossed.
+        """
+        if current_epoch <= config["optim"]["warmup_epochs"]:
+            alpha = current_epoch / float(config["optim"]["warmup_epochs"])
+            return config["optim"]["warmup_factor"] * (1.0 - alpha) + alpha
+        else:
+            idx = bisect(config["optim"]["lr_milestones"], current_epoch)
+            return pow(config["optim"]["lr_gamma"], idx)
+
+    scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda_fun)
 
     # =========================================================================
     #   TRAINING LOOP
