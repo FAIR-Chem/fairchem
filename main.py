@@ -2,28 +2,23 @@ import argparse
 import datetime
 import json
 import os
-import pickle
-import random
-import sys
 import time
-import warnings
 from bisect import bisect
-from random import sample
 
 import numpy as np
+import yaml
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import yaml
-from torch.optim import lr_scheduler
-from torch.utils.tensorboard import SummaryWriter
-from torch_geometric.data import DataLoader
-
-from cgcnn.datasets import UlissigroupCO
+from cgcnn.datasets import UlissigroupCO, XieGrossmanMatProj
 from cgcnn.meter import AverageMeter, mae, mae_ratio
 from cgcnn.models import CGCNN
 from cgcnn.normalizer import Normalizer
 from cgcnn.utils import save_checkpoint
+from torch.optim import lr_scheduler
+from torch.utils.tensorboard import SummaryWriter
+from torch_geometric.data import DataLoader
 
 parser = argparse.ArgumentParser(
     description="Graph Neural Networks for Chemistry"
@@ -123,6 +118,9 @@ def main():
     if config["task"]["dataset"] == "ulissigroup_co":
         dataset = UlissigroupCO(config["dataset"]["src"]).shuffle()
         num_targets = 1
+    elif config["task"]["dataset"] == "xie_grossman_mat_proj":
+        dataset = XieGrossmanMatProj(config["dataset"]["src"]).shuffle()
+        num_targets = 1
     else:
         raise NotImplementedError
 
@@ -194,10 +192,6 @@ def main():
 
         # evaluate on validation set
         mae_error = validate(val_loader, model, criterion, epoch, normalizer)
-
-        if mae_error != mae_error:
-            print("Exit due to NaN")
-            sys.exit(1)
 
         scheduler.step()
 
