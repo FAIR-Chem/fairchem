@@ -1,12 +1,12 @@
 dataset:
-  src: data/data/qm9/docs.pkl
+  src: data/data/qm9
   train_size: 112000
   val_size: 10000
   test_size: 10000
 
 task:
   dataset: qm9
-  description: "TODO"
+  description: "A dataset of ~130k organic molecules with 16 regression targets from https://arxiv.org/abs/1703.00564."
   type: regression
   metric: mae_ratio
   labels:
@@ -22,17 +22,8 @@ task:
     - enthalpy at 298.15K
     - free energy at 298.15K
     - heat capacity at 298.15K
-  label_multipliers:
-    - 1.0
-    - 1.0
-    - 27211.3825435 # Hartree to meV
-    - 27211.3825435
-    - 27211.3825435
-    - 1.0
-    - 27211.3825435
-    - 27211.3825435
-    - 27211.3825435
-    - 27211.3825435
-    - 27211.3825435
-    - 1.0
-  # label_index: 3
+    - atomization energy at 0K
+    - atomization energy at 298.15K
+    - atomization enthalpy at 298.15K
+    - atomization free energy at 298.15K
+  label_index: 0
