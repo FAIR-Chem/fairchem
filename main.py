@@ -2,9 +2,11 @@ import argparse
 import datetime
 import json
 import os
+import random
 import time
 from bisect import bisect
 
+import demjson
 import numpy as np
 import torch
 import torch.nn as nn
@@ -19,7 +21,7 @@ from cgcnn.datasets import UlissigroupCO, XieGrossmanMatProj
 from cgcnn.meter import AverageMeter, mae, mae_ratio
 from cgcnn.models import CGCNN
 from cgcnn.normalizer import Normalizer
-from cgcnn.utils import save_checkpoint
+from cgcnn.utils import save_checkpoint, update_config
 
 parser = argparse.ArgumentParser(
     description="Graph Neural Networks for Chemistry"
@@ -28,6 +30,11 @@ parser.add_argument(
     "--config-yml",
     default="configs/ulissigroup_co/cgcnn.yml",
     help="Path to a config file listing data, model, optim parameters.",
+)
+parser.add_argument(
+    "--config-override",
+    default=None,
+    help="Optional override for parameters defined in config yaml",
 )
 parser.add_argument(
     "--identifier",
@@ -57,6 +64,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 # https://pytorch.org/docs/stable/notes/randomness.html
+random.seed(args.seed)
 np.random.seed(args.seed)
 torch.manual_seed(args.seed)
 torch.cuda.manual_seed_all(args.seed)
@@ -76,6 +84,10 @@ for include in includes:
     config.update(include_config)
 
 config.pop("includes")
+
+if args.config_override:
+    overrides = demjson.decode(args.config_override)
+    config = update_config(config, overrides)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
