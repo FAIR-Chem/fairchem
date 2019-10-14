@@ -212,7 +212,10 @@ def main():
         train(train_loader, model, criterion, optimizer, epoch, normalizer)
 
         # evaluate on validation set
-        mae_error = validate(val_loader, model, criterion, epoch, normalizer)
+        with torch.no_grad():
+            mae_error = validate(
+                val_loader, model, criterion, epoch, normalizer
+            )
 
         scheduler.step()
 
