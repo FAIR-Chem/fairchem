@@ -6,19 +6,20 @@ import time
 from bisect import bisect
 
 import numpy as np
-import yaml
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import yaml
+from torch.optim import lr_scheduler
+from torch.utils.tensorboard import SummaryWriter
+from torch_geometric.data import DataLoader
+from torch_geometric.datasets import QM9
+
 from cgcnn.datasets import UlissigroupCO, XieGrossmanMatProj
 from cgcnn.meter import AverageMeter, mae, mae_ratio
 from cgcnn.models import CGCNN
 from cgcnn.normalizer import Normalizer
 from cgcnn.utils import save_checkpoint
-from torch.optim import lr_scheduler
-from torch.utils.tensorboard import SummaryWriter
-from torch_geometric.data import DataLoader
 
 parser = argparse.ArgumentParser(
     description="Graph Neural Networks for Chemistry"
@@ -121,6 +122,14 @@ def main():
     elif config["task"]["dataset"] == "xie_grossman_mat_proj":
         dataset = XieGrossmanMatProj(config["dataset"]["src"]).shuffle()
         num_targets = 1
+    elif config["task"]["dataset"] == "qm9":
+        dataset = QM9(config["dataset"]["src"]).shuffle()
+        num_targets = dataset.data.y.shape[-1]
+        if "label_index" in config["task"]:
+            dataset.data.y = dataset.data.y[
+                :, int(config["task"]["label_index"])
+            ]
+            num_targets = 1
     else:
         raise NotImplementedError
 
@@ -147,7 +156,7 @@ def main():
     )
 
     # Compute mean, std of training set labels.
-    normalizer = Normalizer(dataset.data.y[:tr_sz])
+    normalizer = Normalizer(dataset.data.y[:tr_sz], device)
 
     # Build model
     model = CGCNN(
@@ -240,20 +249,18 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
 
         data = data.to(device)
 
-        # if "label_index" in config["task"]:
-        #     target = target[:, int(config["task"]["label_index"])].view(-1, 1)
-
         # normalize target
         target_normed = normalizer.norm(data.y)
 
         # compute output
-        # TODO: adapt this reshape for more than one target
-        output = model(data).view(-1)
+        output = model(data)
+        if data.y.dim() == 1:
+            output = output.view(-1)
         loss = criterion(output, target_normed)
 
         # measure accuracy and record loss
         mae_error = eval(config["task"]["metric"])(
-            normalizer.denorm(output.data.cpu()), data.y.cpu()
+            normalizer.denorm(output).cpu(), data.y.cpu()
         )
         losses.update(loss.item(), data.y.size(0))
         mae_errors.update(mae_error, data.y.size(0))
@@ -314,25 +321,23 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
     for i, data in enumerate(val_loader):
         data = data.to(device)
 
-        # if "label_index" in config["task"]:
-        #     target = target[:, int(config["task"]["label_index"])].view(-1, 1)
-
         # normalize target
         target_normed = normalizer.norm(data.y)
 
         # compute output
-        # TODO: adapt this reshape for more than one target
-        output = model(data).view(-1)
+        output = model(data)
+        if data.y.dim() == 1:
+            output = output.view(-1)
         loss = criterion(output, target_normed)
 
         # measure accuracy and record loss
         mae_error = eval(config["task"]["metric"])(
-            normalizer.denorm(output.data.cpu()), data.y.cpu()
+            normalizer.denorm(output).cpu(), data.y.cpu()
         )
         losses.update(loss.item(), data.y.size(0))
         mae_errors.update(mae_error, data.y.size(0))
         if test:
-            test_pred = normalizer.denorm(output.data.cpu())
+            test_pred = normalizer.denorm(output).cpu()
             test_target = data.y
             test_preds += test_pred.view(-1).tolist()
             test_targets += test_target.view(-1).tolist()
@@ -367,15 +372,9 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
         print(
             "MAE",
             torch.mean(
-                torch.abs(data.y.cpu() - output.data.cpu()), dim=0
-            ).data.numpy()
-            * np.array(
-                [
-                    config["task"]["label_multipliers"][
-                        config["task"]["label_index"]
-                    ]
-                ]
-            ),
+                torch.abs(data.y.cpu() - normalizer.denorm(output).cpu()),
+                dim=0,
+            ).data.numpy(),
         )
 
     if test:
