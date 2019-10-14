@@ -17,12 +17,13 @@ import torch.optim as optim
 import yaml
 from torch.optim import lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
+from torch_geometric.data import DataLoader
 
-from cgcnn.data import collate_pool, get_train_val_test_loader
+from cgcnn.datasets import UlissigroupCO
 from cgcnn.meter import AverageMeter, mae, mae_ratio
-from cgcnn.model import CrystalGraphConvNet
+from cgcnn.models import CGCNN
 from cgcnn.normalizer import Normalizer
-from cgcnn.utils import class_eval, save_checkpoint
+from cgcnn.utils import save_checkpoint
 
 parser = argparse.ArgumentParser(
     description="Graph Neural Networks for Chemistry"
@@ -80,7 +81,7 @@ for include in includes:
 
 config.pop("includes")
 
-args.cuda = torch.cuda.is_available()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 args.timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 if args.identifier:
@@ -115,73 +116,57 @@ def main():
     #   SETUP DATALOADER, NORMALIZER, MODEL, LOSS, OPTIMIZER
     # =========================================================================
 
-    if config["task"]["type"] == "regression":
-        best_mae_error = 1e10
-    else:
-        best_mae_error = 0.0
+    best_mae_error = 1e10
 
     # TODO: move this out to a separate dataloader interface.
     print("### Loading {}".format(config["task"]["dataset"]))
-    if config["task"]["dataset"] in [
-        "ulissigroup_co",
-        "qm9",
-        "xie_grossman_mat_proj",
-    ]:
-        data = pickle.load(open(config["dataset"]["src"], "rb"))
-
-        structures = data[0]
-        orig_atom_fea_len = structures[0].shape[-1]
-        nbr_fea_len = structures[1].shape[-1]
-        num_targets = len(structures[-1])
-
-        if "label_index" in config["task"]:
-            num_targets = 1
-
+    if config["task"]["dataset"] == "ulissigroup_co":
+        dataset = UlissigroupCO(config["dataset"]["src"]).shuffle()
+        num_targets = 1
     else:
-
         raise NotImplementedError
 
-    train_loader, val_loader, test_loader = get_train_val_test_loader(
-        dataset=data,
-        collate_fn=collate_pool,
-        batch_size=config["optim"]["batch_size"],
-        train_size=config["dataset"]["train_size"],
-        val_size=config["dataset"]["val_size"],
-        test_size=config["dataset"]["test_size"],
-        num_workers=config["cmd"]["num_workers"],
-        pin_memory=config["cmd"]["cuda"],
-        return_test=True,
+    tr_sz, va_sz, te_sz = (
+        config["dataset"]["train_size"],
+        config["dataset"]["val_size"],
+        config["dataset"]["test_size"],
     )
 
-    # Obtain target value normalizer
-    if config["task"]["type"] == "classification":
-        raise NotImplementedError
-        normalizer = Normalizer(torch.zeros(2))
-        normalizer.load_state_dict({"mean": 0.0, "std": 1.0})
-    else:
-        # Compute mean, std of training set labels.
-        _, targets = collate_pool(
-            [data[i] for i in range(config["dataset"]["train_size"])]
-        )
-        if "label_index" in config["task"]:
-            targets = targets[:, int(config["task"]["label_index"])]
-        normalizer = Normalizer(targets)
+    assert len(dataset) > tr_sz + va_sz + te_sz
+
+    train_dataset = dataset[:tr_sz]
+    val_dataset = dataset[tr_sz : tr_sz + va_sz]
+    test_dataset = dataset[tr_sz + va_sz : tr_sz + va_sz + te_sz]
+
+    train_loader = DataLoader(
+        train_dataset, batch_size=config["optim"]["batch_size"], shuffle=True
+    )
+    val_loader = DataLoader(
+        val_dataset, batch_size=config["optim"]["batch_size"]
+    )
+    test_loader = DataLoader(
+        test_dataset, batch_size=config["optim"]["batch_size"]
+    )
+
+    # Compute mean, std of training set labels.
+    normalizer = Normalizer(dataset.data.y[:tr_sz])
 
     # Build model
-    model = CrystalGraphConvNet(
-        orig_atom_fea_len,
-        nbr_fea_len,
+    model = CGCNN(
+        dataset.data.x.shape[-1],
+        dataset.data.edge_attr.shape[-1],
         num_targets,
-        classification=config["task"]["type"] == "classification",
         **config["model"],
-    )
-    if config["cmd"]["cuda"]:
-        model.cuda()
+    ).to(device)
 
-    if config["task"]["type"] == "classification":
-        criterion = nn.NLLLoss()
-    else:
-        criterion = nn.L1Loss()
+    num_params = sum(p.numel() for p in model.parameters())
+    print(
+        "### Loaded {} with {} parameters.".format(
+            model.__class__.__name__, num_params
+        )
+    )
+
+    criterion = nn.L1Loss()
 
     optimizer = optim.AdamW(model.parameters(), config["optim"]["lr_initial"])
 
@@ -249,66 +234,35 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
-    if config["task"]["type"] == "regression":
-        mae_errors = AverageMeter()
-    else:
-        accuracies = AverageMeter()
-        precisions = AverageMeter()
-        recalls = AverageMeter()
-        fscores = AverageMeter()
-        auc_scores = AverageMeter()
+    mae_errors = AverageMeter()
 
     # switch to train mode
     model.train()
 
     end = time.time()
-    for i, (input, target) in enumerate(train_loader):
+    for i, data in enumerate(train_loader):
         # measure data loading time
         data_time.update(time.time() - end)
 
-        if "label_index" in config["task"]:
-            target = target[:, int(config["task"]["label_index"])].view(-1, 1)
+        data = data.to(device)
 
-        if config["cmd"]["cuda"]:
-            input_var = (
-                input[0].cuda(),
-                input[1].cuda(),
-                input[2].cuda(),
-                [crys_idx.cuda() for crys_idx in input[3]],
-            )
-        else:
-            input_var = (input[0], input[1], input[2], input[3])
+        # if "label_index" in config["task"]:
+        #     target = target[:, int(config["task"]["label_index"])].view(-1, 1)
+
         # normalize target
-        if config["task"]["type"] == "regression":
-            target_normed = normalizer.norm(target)
-        else:
-            target_normed = target.view(-1).long()
-        if config["cmd"]["cuda"]:
-            target_var = target_normed.cuda()
-        else:
-            target_var = target_normed
+        target_normed = normalizer.norm(data.y)
 
         # compute output
-        output = model(*input_var)
-        loss = criterion(output, target_var)
+        # TODO: adapt this reshape for more than one target
+        output = model(data).view(-1)
+        loss = criterion(output, target_normed)
 
         # measure accuracy and record loss
-        if config["task"]["type"] == "regression":
-            mae_error = eval(config["task"]["metric"])(
-                normalizer.denorm(output.data.cpu()), target
-            )
-            losses.update(loss.item(), target.size(0))
-            mae_errors.update(mae_error, target.size(0))
-        else:
-            accuracy, precision, recall, fscore, auc_score = class_eval(
-                output.data.cpu(), target
-            )
-            losses.update(loss.item(), target.size(0))
-            accuracies.update(accuracy, target.size(0))
-            precisions.update(precision, target.size(0))
-            recalls.update(recall, target.size(0))
-            fscores.update(fscore, target.size(0))
-            auc_scores.update(auc_score, target.size(0))
+        mae_error = eval(config["task"]["metric"])(
+            normalizer.denorm(output.data.cpu()), data.y.cpu()
+        )
+        losses.update(loss.item(), data.y.size(0))
+        mae_errors.update(mae_error, data.y.size(0))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -319,37 +273,12 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if config["task"]["type"] == "regression":
-            log_writer.add_scalar(
-                "Training Loss", losses.val, epoch * len(train_loader) + i
-            )
-            log_writer.add_scalar(
-                "Training MAE", mae_errors.val, epoch * len(train_loader) + i
-            )
-        else:
-            log_writer.add_scalar(
-                "Training Loss", losses.val, epoch * len(train_loader) + i
-            )
-            log_writer.add_scalar(
-                "Training Accuracy",
-                accuracies.val,
-                epoch * len(train_loader) + i,
-            )
-            log_writer.add_scalar(
-                "Training Precision",
-                precisions.val,
-                epoch * len(train_loader) + i,
-            )
-            log_writer.add_scalar(
-                "Training Recall", recalls.val, epoch * len(train_loader) + i
-            )
-            log_writer.add_scalar(
-                "Training F1", fscores.val, epoch * len(train_loader) + i
-            )
-            log_writer.add_scalar(
-                "Training AUC", auc_scores.val, epoch * len(train_loader) + i
-            )
-
+        log_writer.add_scalar(
+            "Training Loss", losses.val, epoch * len(train_loader) + i
+        )
+        log_writer.add_scalar(
+            "Training MAE", mae_errors.val, epoch * len(train_loader) + i
+        )
         log_writer.add_scalar(
             "Learning rate",
             optimizer.param_groups[0]["lr"],
@@ -357,53 +286,27 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
         )
 
         if i % config["cmd"]["print_every"] == 0:
-            if config["task"]["type"] == "regression":
-                print(
-                    "Epoch: [{0}][{1}/{2}]\t"
-                    "Loss: {loss.val:.4f} ({loss.avg:.4f})\t"
-                    "MAE: {mae_errors.val:.3f} ({mae_errors.avg:.3f})\t"
-                    "Data: {data_time.val:.3f}s\t"
-                    "Fwd/bwd: {batch_time.val:.3f}s\t".format(
-                        epoch,
-                        i,
-                        len(train_loader),
-                        batch_time=batch_time,
-                        data_time=data_time,
-                        loss=losses,
-                        mae_errors=mae_errors,
-                    )
+            print(
+                "Epoch: [{0}][{1}/{2}]\t"
+                "Loss: {loss.val:.4f} ({loss.avg:.4f})\t"
+                "MAE: {mae_errors.val:.3f} ({mae_errors.avg:.3f})\t"
+                "Data: {data_time.val:.3f}s\t"
+                "Fwd/bwd: {batch_time.val:.3f}s\t".format(
+                    epoch,
+                    i,
+                    len(train_loader),
+                    batch_time=batch_time,
+                    data_time=data_time,
+                    loss=losses,
+                    mae_errors=mae_errors,
                 )
-            else:
-                print(
-                    "Epoch: [{0}][{1}/{2}]\t"
-                    "Loss: {loss.val:.4f} ({loss.avg:.4f})\t"
-                    "Accu: {accu.val:.3f} ({accu.avg:.3f})\t"
-                    "Precision: {prec.val:.3f} ({prec.avg:.3f})\t"
-                    "Recall: {recall.val:.3f} ({recall.avg:.3f})\t"
-                    "F1: {f1.val:.3f} ({f1.avg:.3f})\t"
-                    "AUC: {auc.val:.3f} ({auc.avg:.3f})"
-                    "Data: {data_time.val:.3f}s\t"
-                    "Fwd/bwd: {batch_time.val:.3f}s\t".format(
-                        epoch,
-                        i,
-                        len(train_loader),
-                        batch_time=batch_time,
-                        data_time=data_time,
-                        loss=losses,
-                        accu=accuracies,
-                        prec=precisions,
-                        recall=recalls,
-                        f1=fscores,
-                        auc=auc_scores,
-                    )
-                )
+            )
 
 
 def validate(val_loader, model, criterion, epoch, normalizer, test=False):
     batch_time = AverageMeter()
     losses = AverageMeter()
-    if config["task"]["type"] == "regression":
-        mae_errors = AverageMeter()
+    mae_errors = AverageMeter()
 
     if test:
         test_targets = []
@@ -414,81 +317,64 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
     model.eval()
 
     end = time.time()
-    for i, (input, target) in enumerate(val_loader):
-        if "label_index" in config["task"]:
-            target = target[:, int(config["task"]["label_index"])].view(-1, 1)
+    for i, data in enumerate(val_loader):
+        data = data.to(device)
 
-        with torch.no_grad():
-            if config["cmd"]["cuda"]:
-                input_var = (
-                    input[0].cuda(),
-                    input[1].cuda(),
-                    input[2].cuda(),
-                    [crys_idx.cuda() for crys_idx in input[3]],
-                )
-            else:
-                input_var = (input[0], input[1], input[2], input[3])
-        if config["task"]["type"] == "regression":
-            target_normed = normalizer.norm(target)
-        else:
-            target_normed = target.view(-1).long()
-        with torch.no_grad():
-            if config["cmd"]["cuda"]:
-                target_var = target_normed.cuda()
-            else:
-                target_var = target_normed
+        # if "label_index" in config["task"]:
+        #     target = target[:, int(config["task"]["label_index"])].view(-1, 1)
+
+        # normalize target
+        target_normed = normalizer.norm(data.y)
 
         # compute output
-        output = model(*input_var)
-        loss = criterion(output, target_var)
+        # TODO: adapt this reshape for more than one target
+        output = model(data).view(-1)
+        loss = criterion(output, target_normed)
 
         # measure accuracy and record loss
-        if config["task"]["type"] == "regression":
-            mae_error = eval(config["task"]["metric"])(
-                normalizer.denorm(output.data.cpu()), target
-            )
-            losses.update(loss.item(), target.size(0))
-            mae_errors.update(mae_error, target.size(0))
-            if test:
-                test_pred = normalizer.denorm(output.data.cpu())
-                test_target = target
-                test_preds += test_pred.view(-1).tolist()
-                test_targets += test_target.view(-1).tolist()
+        mae_error = eval(config["task"]["metric"])(
+            normalizer.denorm(output.data.cpu()), data.y.cpu()
+        )
+        losses.update(loss.item(), data.y.size(0))
+        mae_errors.update(mae_error, data.y.size(0))
+        if test:
+            test_pred = normalizer.denorm(output.data.cpu())
+            test_target = data.y
+            test_preds += test_pred.view(-1).tolist()
+            test_targets += test_target.view(-1).tolist()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
 
         if not test:
-            if config["task"]["type"] == "regression":
-                log_writer.add_scalar(
-                    "Validation Loss", losses.val, epoch * len(val_loader) + i
-                )
-                log_writer.add_scalar(
-                    "Validation MAE",
-                    mae_errors.val,
-                    epoch * len(val_loader) + i,
-                )
+            log_writer.add_scalar(
+                "Validation Loss", losses.val, epoch * len(val_loader) + i
+            )
+            log_writer.add_scalar(
+                "Validation MAE", mae_errors.val, epoch * len(val_loader) + i
+            )
 
         if i % config["cmd"]["print_every"] == 0:
-            if config["task"]["type"] == "regression":
-                print(
-                    "Val:   [{0}/{1}]\t\t"
-                    "Loss: {loss.val:.4f} ({loss.avg:.4f})\t"
-                    "MAE: {mae_errors.val:.3f} ({mae_errors.avg:.3f})\t"
-                    "Fwd: {batch_time.val:.3f}s\t".format(
-                        i,
-                        len(val_loader),
-                        batch_time=batch_time,
-                        loss=losses,
-                        mae_errors=mae_errors,
-                    )
+            print(
+                "Val:   [{0}/{1}]\t\t"
+                "Loss: {loss.val:.4f} ({loss.avg:.4f})\t"
+                "MAE: {mae_errors.val:.3f} ({mae_errors.avg:.3f})\t"
+                "Fwd: {batch_time.val:.3f}s\t".format(
+                    i,
+                    len(val_loader),
+                    batch_time=batch_time,
+                    loss=losses,
+                    mae_errors=mae_errors,
                 )
+            )
 
     if config["task"]["dataset"] == "qm9":
         print(
             "MAE",
-            torch.mean(torch.abs(target - output.cpu()), dim=0).data.numpy()
+            torch.mean(
+                torch.abs(data.y.cpu() - output.data.cpu()), dim=0
+            ).data.numpy()
             * np.array(
                 [
                     config["task"]["label_multipliers"][
@@ -512,13 +398,13 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
                 writer.writerow((cif_id, target, pred))
     else:
         star_label = "*"
-    if config["task"]["type"] == "regression":
-        print(
-            " {star} MAE {mae_errors.avg:.3f}".format(
-                star=star_label, mae_errors=mae_errors
-            )
+
+    print(
+        " {star} MAE {mae_errors.avg:.3f}".format(
+            star=star_label, mae_errors=mae_errors
         )
-        return mae_errors.avg
+    )
+    return mae_errors.avg
 
 
 if __name__ == "__main__":
