@@ -26,4 +26,4 @@ task:
     - atomization energy at 298.15K
     - atomization enthalpy at 298.15K
     - atomization free energy at 298.15K
-  label_index: 0
+  label_index: false # pass an integer index to train on a single target

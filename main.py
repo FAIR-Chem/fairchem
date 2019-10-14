@@ -137,7 +137,10 @@ def main():
     elif config["task"]["dataset"] == "qm9":
         dataset = QM9(config["dataset"]["src"]).shuffle()
         num_targets = dataset.data.y.shape[-1]
-        if "label_index" in config["task"]:
+        if (
+            "label_index" in config["task"]
+            and config["task"]["label_index"] is not False
+        ):
             dataset.data.y = dataset.data.y[
                 :, int(config["task"]["label_index"])
             ]
@@ -333,6 +336,7 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
     model.eval()
 
     end = time.time()
+
     for i, data in enumerate(val_loader):
         data = data.to(device)
 
@@ -351,6 +355,7 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
         )
         losses.update(loss.item(), data.y.size(0))
         mae_errors.update(mae_error, data.y.size(0))
+
         if test:
             test_pred = normalizer.denorm(output).cpu()
             test_target = data.y
