@@ -8,7 +8,7 @@ task:
   dataset: qm9
   description: "A dataset of ~130k organic molecules with 16 regression targets from https://arxiv.org/abs/1703.00564."
   type: regression
-  metric: mae_ratio
+  metric: mae
   labels:
     - dipole moment
     - isotropic polarizability
