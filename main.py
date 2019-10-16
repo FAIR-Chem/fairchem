@@ -6,22 +6,23 @@ import random
 import time
 from bisect import bisect
 
-import demjson
 import numpy as np
+import yaml
+
+import demjson
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import yaml
-from torch.optim import lr_scheduler
-from torch.utils.tensorboard import SummaryWriter
-from torch_geometric.data import DataLoader
-from torch_geometric.datasets import QM9
-
+import torch_geometric.transforms as T
 from cgcnn.datasets import UlissigroupCO, XieGrossmanMatProj
 from cgcnn.meter import AverageMeter, mae, mae_ratio
 from cgcnn.models import CGCNN
 from cgcnn.normalizer import Normalizer
-from cgcnn.utils import save_checkpoint, update_config
+from cgcnn.utils import Complete, save_checkpoint, update_config
+from torch.optim import lr_scheduler
+from torch.utils.tensorboard import SummaryWriter
+from torch_geometric.data import DataLoader
+from torch_geometric.datasets import QM9
 
 parser = argparse.ArgumentParser(
     description="Graph Neural Networks for Chemistry"
@@ -135,7 +136,8 @@ def main():
         dataset = XieGrossmanMatProj(config["dataset"]["src"]).shuffle()
         num_targets = 1
     elif config["task"]["dataset"] == "qm9":
-        dataset = QM9(config["dataset"]["src"]).shuffle()
+        transform = T.Compose([Complete(), T.Distance(norm=False)])
+        dataset = QM9(config["dataset"]["src"], transform=transform).shuffle()
         num_targets = dataset.data.y.shape[-1]
         if (
             "label_index" in config["task"]
@@ -176,7 +178,9 @@ def main():
     # Build model
     model = CGCNN(
         dataset.data.x.shape[-1],
-        dataset.data.edge_attr.shape[-1],
+        dataset.data.edge_attr.shape[-1] + 1
+        if hasattr(dataset.data, "pos")
+        else dataset.data.edge_attr.shape[-1],
         num_targets,
         **config["model"],
     ).to(device)
