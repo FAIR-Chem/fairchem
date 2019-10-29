@@ -17,3 +17,8 @@ rm qm9.zip
 wget https://www.dropbox.com/s/41s1wnmje3krsh6/xie_grossman_mat_proj.zip
 unzip xie_grossman_mat_proj.zip
 rm xie_grossman_mat_proj.zip
+
+# ISO17 -- MD trajectories of C7O2H10 with total energies and atomic forces
+wget http://www.quantum-machine.org/datasets/iso17.tar.gz
+tar -xvzf iso17.tar.gz
+rm iso17.tar.gz
