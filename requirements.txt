@@ -6,3 +6,4 @@ torch-cluster
 torch-scatter
 torch-sparse
 torch-geometric
+pre-commit
