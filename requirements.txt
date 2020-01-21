@@ -8,3 +8,4 @@ torch-sparse
 torch-geometric
 pre-commit
 ase
+tqdm
