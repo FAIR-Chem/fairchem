@@ -149,6 +149,12 @@ def main():
             num_targets = 1
     elif config["task"]["dataset"] == "iso17":
         dataset = ISO17(config["dataset"]["src"])
+        if config["dataset"]["test_fold"] == "test_within":
+            config["dataset"]["test_size"] = 101000
+        elif config["dataset"]["test_fold"] == "test_other":
+            config["dataset"]["test_size"] = 130000
+        else:
+            raise NotImplementedError
         num_targets = 1
     else:
         raise NotImplementedError
@@ -164,6 +170,16 @@ def main():
     train_dataset = dataset[:tr_sz]
     val_dataset = dataset[tr_sz : tr_sz + va_sz]
     test_dataset = dataset[tr_sz + va_sz : tr_sz + va_sz + te_sz]
+
+    if config["task"]["dataset"] == "iso17":
+        if config["dataset"]["test_fold"] == "test_within":
+            test_dataset = dataset[tr_sz + va_sz : tr_sz + va_sz + te_sz]
+        elif config["dataset"]["test_fold"] == "test_other":
+            test_dataset = dataset[
+                tr_sz + va_sz + 101000 : tr_sz + va_sz + 101000 + te_sz
+            ]
+        else:
+            raise NotImplementedError
 
     train_loader = DataLoader(
         train_dataset, batch_size=config["optim"]["batch_size"], shuffle=True
