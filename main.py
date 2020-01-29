@@ -18,7 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch_geometric.data import DataLoader
 from torch_geometric.datasets import QM9
 
-from cgcnn.datasets import UlissigroupCO, XieGrossmanMatProj
+from cgcnn.datasets import ISO17, UlissigroupCO, XieGrossmanMatProj
 from cgcnn.meter import AverageMeter, mae, mae_ratio
 from cgcnn.models import CGCNN
 from cgcnn.normalizer import Normalizer
@@ -147,6 +147,9 @@ def main():
                 :, int(config["task"]["label_index"])
             ]
             num_targets = 1
+    elif config["task"]["dataset"] == "iso17":
+        dataset = ISO17(config["dataset"]["src"])
+        num_targets = 1
     else:
         raise NotImplementedError
 
