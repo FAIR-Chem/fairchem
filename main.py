@@ -192,7 +192,14 @@ def main():
     )
 
     # Compute mean, std of training set labels.
-    normalizer = Normalizer(dataset.data.y[:tr_sz], device)
+    normalizers = {}
+    normalizers["target"] = Normalizer(dataset.data.y[:tr_sz], device)
+
+    # If we're computing gradients wrt input compute mean, std of these targets.
+    if "grad_input" in config["task"]:
+        normalizers["grad_target"] = Normalizer(
+            dataset.data.forces[:tr_sz], device
+        )
 
     # Build model
     model = CGCNN(
@@ -235,12 +242,12 @@ def main():
 
     for epoch in range(config["optim"]["max_epochs"]):
         # train for one epoch
-        train(train_loader, model, criterion, optimizer, epoch, normalizer)
+        train(train_loader, model, criterion, optimizer, epoch, normalizers)
 
         # evaluate on validation set
         with torch.no_grad():
             mae_error = validate(
-                val_loader, model, criterion, epoch, normalizer
+                val_loader, model, criterion, epoch, normalizers
             )
 
         scheduler.step()
@@ -258,7 +265,7 @@ def main():
                 "state_dict": model.state_dict(),
                 "best_mae_error": best_mae_error,
                 "optimizer": optimizer.state_dict(),
-                "normalizer": normalizer.state_dict(),
+                "normalizer": normalizers["target"].state_dict(),
                 "config": config,
             },
             is_best,
@@ -271,14 +278,17 @@ def main():
         os.path.join(config["cmd"]["checkpoint_dir"], "model_best.pth.tar")
     )
     model.load_state_dict(best_checkpoint["state_dict"])
-    validate(test_loader, model, criterion, epoch, normalizer, test=True)
+    validate(test_loader, model, criterion, epoch, normalizers, test=True)
 
 
-def train(train_loader, model, criterion, optimizer, epoch, normalizer):
+def train(train_loader, model, criterion, optimizer, epoch, normalizers):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
     mae_errors = AverageMeter()
+    if "grad_input" in config["task"]:
+        grad_losses = AverageMeter()
+        grad_mae_errors = AverageMeter()
 
     # switch to train mode
     model.train()
@@ -291,20 +301,54 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
         data = data.to(device)
 
         # normalize target
-        target_normed = normalizer.norm(data.y)
+        target_normed = normalizers["target"].norm(data.y)
+        if "grad_input" in config["task"]:
+            data.x = data.x.requires_grad_(True)
+            grad_target_normed = normalizers["grad_target"].norm(data.forces)
 
         # compute output
         output = model(data)
         if data.y.dim() == 1:
             output = output.view(-1)
+        if "grad_input" in config["task"]:
+            force_output = (
+                config["task"]["grad_input_mult"]
+                * torch.autograd.grad(
+                    output,
+                    data.x,
+                    # TODO(abhshkdz): check correctness. should this be `output`?
+                    grad_outputs=torch.ones_like(output),
+                    create_graph=True,
+                    retain_graph=True,
+                )[0]
+            )
+            force_output = force_output[
+                :,
+                config["task"]["grad_input_start_idx"] : config["task"][
+                    "grad_input_end_idx"
+                ],
+            ]
+
+        # compute loss
         loss = criterion(output, target_normed)
+        if "grad_input" in config["task"]:
+            force_loss = criterion(force_output, grad_target_normed)
+            loss += force_loss
 
         # measure accuracy and record loss
         mae_error = eval(config["task"]["metric"])(
-            normalizer.denorm(output).cpu(), data.y.cpu()
+            normalizers["target"].denorm(output).cpu(), data.y.cpu()
         )
         losses.update(loss.item(), data.y.size(0))
         mae_errors.update(mae_error, data.y.size(0))
+
+        if "grad_input" in config["task"]:
+            grad_mae_error = eval(config["task"]["metric"])(
+                normalizers["grad_target"].denorm(force_output).cpu(),
+                data.forces.cpu(),
+            )
+            grad_losses.update(force_loss.item(), data.y.size(0))
+            grad_mae_errors.update(grad_mae_error, data.y.size(0))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -343,12 +387,27 @@ def train(train_loader, model, criterion, optimizer, epoch, normalizer):
                     mae_errors=mae_errors,
                 )
             )
+            if "grad_input" in config["task"]:
+                print(
+                    "Epoch: [{0}][{1}/{2}]\t"
+                    "Force loss: {loss.val:.4f} ({loss.avg:.4f})\t"
+                    "Force MAE: {mae_errors.val:.3f} ({mae_errors.avg:.3f})\t".format(
+                        epoch,
+                        i,
+                        len(train_loader),
+                        loss=grad_losses,
+                        mae_errors=grad_mae_errors,
+                    )
+                )
 
 
-def validate(val_loader, model, criterion, epoch, normalizer, test=False):
+def validate(val_loader, model, criterion, epoch, normalizers, test=False):
     batch_time = AverageMeter()
     losses = AverageMeter()
     mae_errors = AverageMeter()
+    if "grad_input" in config["task"]:
+        grad_losses = AverageMeter()
+        grad_mae_errors = AverageMeter()
 
     if test:
         test_targets = []
@@ -364,23 +423,57 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
         data = data.to(device)
 
         # normalize target
-        target_normed = normalizer.norm(data.y)
+        target_normed = normalizers["target"].norm(data.y)
+        if "grad_input" in config["task"]:
+            data.x = data.x.requires_grad_(True)
+            grad_target_normed = normalizers["grad_target"].norm(data.forces)
 
         # compute output
         output = model(data)
         if data.y.dim() == 1:
             output = output.view(-1)
+        if "grad_input" in config["task"]:
+            force_output = (
+                config["task"]["grad_input_mult"]
+                * torch.autograd.grad(
+                    output,
+                    data.x,
+                    # TODO(abhshkdz): check correctness. should this be `output`?
+                    grad_outputs=torch.ones_like(output),
+                    create_graph=True,
+                    retain_graph=True,
+                )[0]
+            )
+            force_output = force_output[
+                :,
+                config["task"]["grad_input_start_idx"] : config["task"][
+                    "grad_input_end_idx"
+                ],
+            ]
+
+        # compute loss
         loss = criterion(output, target_normed)
+        if "grad_input" in config["task"]:
+            force_loss = criterion(force_output, grad_target_normed)
+            loss += force_loss
 
         # measure accuracy and record loss
         mae_error = eval(config["task"]["metric"])(
-            normalizer.denorm(output).cpu(), data.y.cpu()
+            normalizers["target"].denorm(output).cpu(), data.y.cpu()
         )
         losses.update(loss.item(), data.y.size(0))
         mae_errors.update(mae_error, data.y.size(0))
 
+        if "grad_input" in config["task"]:
+            grad_mae_error = eval(config["task"]["metric"])(
+                normalizers["grad_target"].denorm(force_output).cpu(),
+                data.forces.cpu(),
+            )
+            grad_losses.update(force_loss.item(), data.y.size(0))
+            grad_mae_errors.update(grad_mae_error, data.y.size(0))
+
         if test:
-            test_pred = normalizer.denorm(output).cpu()
+            test_pred = normalizers["target"].denorm(output).cpu()
             test_target = data.y
             test_preds += test_pred.view(-1).tolist()
             test_targets += test_target.view(-1).tolist()
@@ -415,7 +508,9 @@ def validate(val_loader, model, criterion, epoch, normalizer, test=False):
         print(
             "MAE",
             torch.mean(
-                torch.abs(data.y.cpu() - normalizer.denorm(output).cpu()),
+                torch.abs(
+                    data.y.cpu() - normalizers["target"].denorm(output).cpu()
+                ),
                 dim=0,
             ).data.numpy(),
         )
