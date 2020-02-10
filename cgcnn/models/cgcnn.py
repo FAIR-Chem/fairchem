@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch_geometric.nn import global_mean_pool
 
-from cgcnn.layers import CGCNNConv
+from cgcnn.modules.layers import CGCNNConv
 
 
 class CGCNN(nn.Module):
