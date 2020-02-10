@@ -11,10 +11,10 @@ import torch.nn as nn
 import torch.optim as optim
 import torch_geometric.transforms as T
 import yaml
-from torch.utils.tensorboard import SummaryWriter
 from torch_geometric.data import DataLoader
 from torch_geometric.datasets import QM9
 
+from cgcnn.common.logger import TensorboardLogger, WandBLogger
 from cgcnn.common.meter import Meter, mae, mae_ratio
 from cgcnn.common.utils import (
     Complete,
@@ -78,7 +78,9 @@ class BaseTrainer:
 
         args.checkpoint_dir = os.path.join("checkpoints", args.timestamp)
         args.results_dir = os.path.join("results", args.timestamp)
-        args.logs_dir = os.path.join("logs", args.timestamp)
+        args.logs_dir = os.path.join(
+            "logs", self.config["logger"], args.timestamp
+        )
 
         print(yaml.dump(self.config, default_flow_style=False))
         for arg in vars(args):
@@ -119,9 +121,13 @@ class BaseTrainer:
 
     def load_logger(self):
         self.logger = None
-        # Careful; this internally creates the directory it is passed.
         if not self.is_debug:
-            self.logger = SummaryWriter(self.config["cmd"]["logs_dir"])
+            # TODO(abhshkdz): remove if-else by moving to registry class mapping
+            if self.config["logger"] == "tensorboard":
+                # Careful; this internally creates the directory it is passed.
+                self.logger = TensorboardLogger(self.config)
+            elif self.config["logger"] == "wandb":
+                self.logger = WandBLogger(self.config)
 
     def load_task(self):
         # TODO(abhshkdz): move this out to a separate dataloader interface.
@@ -230,6 +236,9 @@ class BaseTrainer:
             )
         )
 
+        if self.logger is not None:
+            self.logger.watch(self.model)
+
     # TODO(abhshkdz): Rename function to something nicer.
     # TODO(abhshkdz): Support multiple loss functions.
     def load_criterion(self):
@@ -269,8 +278,15 @@ class BaseTrainer:
                 meter_update_dict.update(metrics)
                 self.meter.update(meter_update_dict)
 
+                # Make plots.
+                if self.logger is not None:
+                    self.logger.log(
+                        meter_update_dict,
+                        step=epoch * len(self.train_loader) + i + 1,
+                        split="train",
+                    )
+
                 # Print metrics.
-                # TODO(abhshkdz): Logging to tensorboard.
                 # TODO(abhshkdz): Checkpointing.
                 if i % self.config["cmd"]["print_every"] == 0:
                     print(self.meter)
@@ -278,9 +294,10 @@ class BaseTrainer:
             self.scheduler.step()
 
             with torch.no_grad():
-                self.validate()
+                self.validate(epoch)
 
-    def validate(self):
+    # TODO(abhshkdz): Support test split as well.
+    def validate(self, epoch=None):
         print("### Evaluating on val.")
         self.model.eval()
 
@@ -297,6 +314,14 @@ class BaseTrainer:
             meter_update_dict = {"loss": loss.item()}
             meter_update_dict.update(metrics)
             meter.update(meter_update_dict)
+
+        # Make plots.
+        if self.logger is not None and epoch is not None:
+            self.logger.log(
+                meter_update_dict,
+                step=(epoch + 1) * len(self.train_loader),
+                split="val",
+            )
 
         print(meter)
 

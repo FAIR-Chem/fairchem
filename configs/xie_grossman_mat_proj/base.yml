@@ -4,6 +4,8 @@ dataset:
   val_size: 2900
   test_size: 3000
 
+logger: wandb
+
 task:
   dataset: xie_grossman_mat_proj
   description: "Formation energy per atom regression on the Materials Project dataset from Xie and Grossman."
