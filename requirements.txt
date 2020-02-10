@@ -9,3 +9,4 @@ torch-geometric
 pre-commit
 ase
 tqdm
+wandb

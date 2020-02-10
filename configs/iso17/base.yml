@@ -4,6 +4,8 @@ dataset:
   val_size: 4000
   test_fold: test_other # or test_other
 
+logger: wandb
+
 task:
   dataset: iso17
   description: "A dataset of 129 organic molecules each containing 5,000 conformational geometries, energies and forces with a resolution of 1 femtosecond in the molecular dynamics trajectories."
