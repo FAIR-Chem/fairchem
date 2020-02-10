@@ -1,10 +1,10 @@
 import os
 import shutil
+from bisect import bisect
 
 import numpy as np
-from sklearn import metrics
-
 import torch
+from sklearn import metrics
 from torch_geometric.utils import remove_self_loops
 
 
@@ -55,3 +55,26 @@ class Complete(object):
         data.edge_index = edge_index
 
         return data
+
+
+def warmup_lr_lambda(current_epoch, optim_config):
+    """Returns a learning rate multiplier.
+        Till `warmup_epochs`, learning rate linearly increases to `initial_lr`,
+        and then gets multiplied by `lr_gamma` every time a milestone is crossed.
+        """
+    if current_epoch <= optim_config["warmup_epochs"]:
+        alpha = current_epoch / float(optim_config["warmup_epochs"])
+        return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
+    else:
+        idx = bisect(optim_config["lr_milestones"], current_epoch)
+        return pow(optim_config["lr_gamma"], idx)
+
+
+def print_cuda_usage():
+    print("Memory Allocated:", torch.cuda.memory_allocated() / (1024 * 1024))
+    print(
+        "Max Memory Allocated:",
+        torch.cuda.max_memory_allocated() / (1024 * 1024),
+    )
+    print("Memory Cached:", torch.cuda.memory_cached() / (1024 * 1024))
+    print("Max Memory Cached:", torch.cuda.max_memory_cached() / (1024 * 1024))
