@@ -2,9 +2,11 @@ import torch
 import torch.nn as nn
 from torch_geometric.nn import global_mean_pool
 
+from cgcnn.common.registry import registry
 from cgcnn.modules.layers import CGCNNConv
 
 
+@registry.register_model("cgcnn")
 class CGCNN(nn.Module):
     def __init__(
         self,

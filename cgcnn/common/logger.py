@@ -2,6 +2,8 @@ import torch
 import wandb
 from torch.utils.tensorboard import SummaryWriter
 
+from cgcnn.common.registry import registry
+
 
 class Logger:
     """Generic class to interface with various logging modules, e.g. wandb,
@@ -30,6 +32,7 @@ class Logger:
         return update_dict
 
 
+@registry.register_logger("wandb")
 class WandBLogger(Logger):
     def __init__(self, config):
         super().__init__(config)
@@ -47,6 +50,7 @@ class WandBLogger(Logger):
         wandb.log(update_dict, step=step)
 
 
+@registry.register_logger("tensorboard")
 class TensorboardLogger(Logger):
     def __init__(self, config):
         super().__init__(config)
