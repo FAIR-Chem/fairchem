@@ -16,6 +16,7 @@ from torch_geometric.datasets import QM9
 
 from cgcnn.common.logger import TensorboardLogger, WandBLogger
 from cgcnn.common.meter import Meter, mae, mae_ratio
+from cgcnn.common.registry import registry
 from cgcnn.common.utils import (
     Complete,
     save_checkpoint,
@@ -122,12 +123,12 @@ class BaseTrainer:
     def load_logger(self):
         self.logger = None
         if not self.is_debug:
-            # TODO(abhshkdz): remove if-else by moving to registry class mapping
-            if self.config["logger"] == "tensorboard":
-                # Careful; this internally creates the directory it is passed.
-                self.logger = TensorboardLogger(self.config)
-            elif self.config["logger"] == "wandb":
-                self.logger = WandBLogger(self.config)
+            assert (
+                self.config["logger"] is not None
+            ), "Specify logger in config"
+            self.logger = registry.get_logger_class(self.config["logger"])(
+                self.config
+            )
 
     def load_task(self):
         # TODO(abhshkdz): move this out to a separate dataloader interface.
