@@ -275,7 +275,10 @@ class BaseTrainer:
                 self._backward(loss)
 
                 # Update meter.
-                meter_update_dict = {"loss": loss.item()}
+                meter_update_dict = {
+                    "epoch": epoch + (i + 1) / len(self.train_loader),
+                    "loss": loss.item(),
+                }
                 meter_update_dict.update(metrics)
                 self.meter.update(meter_update_dict)
 
@@ -295,16 +298,18 @@ class BaseTrainer:
             self.scheduler.step()
 
             with torch.no_grad():
-                self.validate(epoch)
+                self.validate(split="val", epoch=epoch)
+                self.validate(split="test", epoch=epoch)
 
-    # TODO(abhshkdz): Support test split as well.
-    def validate(self, epoch=None):
-        print("### Evaluating on val.")
+    def validate(self, split="val", epoch=None):
+        print("### Evaluating on {}.".format(split))
         self.model.eval()
 
         meter = Meter()
 
-        for i, batch in enumerate(self.val_loader):
+        loader = self.val_loader if split == "val" else self.test_loader
+
+        for i, batch in enumerate(loader):
             batch = batch.to(self.device)
 
             # Forward.
@@ -318,10 +323,12 @@ class BaseTrainer:
 
         # Make plots.
         if self.logger is not None and epoch is not None:
+            log_dict = meter.get_scalar_dict()
+            log_dict.update({"epoch": epoch + 1})
             self.logger.log(
-                meter_update_dict,
+                log_dict,
                 step=(epoch + 1) * len(self.train_loader),
-                split="val",
+                split=split,
             )
 
         print(meter)
