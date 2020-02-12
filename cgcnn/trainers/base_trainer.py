@@ -132,7 +132,7 @@ class BaseTrainer:
 
     def load_task(self):
         # TODO(abhshkdz): move this out to a separate dataloader interface.
-        print("### Loading {}".format(self.config["task"]["dataset"]))
+        print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
         if self.config["task"]["dataset"] == "ulissigroup_co":
             dataset = UlissigroupCO(self.config["dataset"]["src"]).shuffle()
             num_targets = 1
@@ -218,20 +218,18 @@ class BaseTrainer:
 
     def load_model(self):
         # Build model
-        print("### Loading model")
-        # TODO(abhshkdz): This currently only supports CGCNN.
+        print("### Loading model: {}".format(self.config["model"]))
         # TODO(abhshkdz): Remove dependency on self.train_loader.
-        self.model = CGCNN(
+        self.model = registry.get_model_class(self.config["model"])(
             self.train_loader.dataset[0].x.shape[-1],
             self.train_loader.dataset[0].edge_attr.shape[-1],
             self.num_targets,
-            **self.config["model"],
+            **self.config["model_attributes"],
         ).to(self.device)
 
-        num_params = sum(p.numel() for p in self.model.parameters())
         print(
             "### Loaded {} with {} parameters.".format(
-                self.model.__class__.__name__, num_params
+                self.model.__class__.__name__, self.model.num_params
             )
         )
 
