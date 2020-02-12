@@ -3,11 +3,12 @@ import torch.nn as nn
 from torch_geometric.nn import global_mean_pool
 
 from cgcnn.common.registry import registry
+from cgcnn.models.base import BaseModel
 from cgcnn.modules.layers import CGCNNConv
 
 
 @registry.register_model("cgcnn")
-class CGCNN(nn.Module):
+class CGCNN(BaseModel):
     def __init__(
         self,
         num_atoms,
@@ -18,12 +19,14 @@ class CGCNN(nn.Module):
         fc_feat_size=128,
         num_fc_layers=4,
     ):
-        super(CGCNN, self).__init__()
-        self.embedding = nn.Linear(num_atoms, atom_embedding_size)
+        super(CGCNN, self).__init__(num_atoms, bond_feat_dim, num_targets)
+        self.embedding = nn.Linear(self.num_atoms, atom_embedding_size)
 
         self.convs = nn.ModuleList(
             [
-                CGCNNConv(node_dim=atom_embedding_size, edge_dim=bond_feat_dim)
+                CGCNNConv(
+                    node_dim=atom_embedding_size, edge_dim=self.bond_feat_dim
+                )
                 for _ in range(num_graph_conv_layers)
             ]
         )
@@ -38,7 +41,7 @@ class CGCNN(nn.Module):
                 layers.append(nn.Linear(fc_feat_size, fc_feat_size))
                 layers.append(nn.Softplus())
             self.fcs = nn.Sequential(*layers)
-        self.fc_out = nn.Linear(fc_feat_size, num_targets)
+        self.fc_out = nn.Linear(fc_feat_size, self.num_targets)
 
     def forward(self, data):
         node_feats = self.embedding(data.x)
