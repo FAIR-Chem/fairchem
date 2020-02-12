@@ -23,10 +23,34 @@ class Registry:
         # Mappings to respective classes.
         # Use decorator "register_task" in cgcnn.common.decorators to register a
         # class with a specific name.
+        "dataset_name_mapping": {},
         "model_name_mapping": {},
         "logger_name_mapping": {},
         "state": {},
     }
+
+    @classmethod
+    def register_dataset(cls, name):
+        r"""Register a dataset to registry with key 'name'
+
+        Args:
+            name: Key with which the dataset will be registered.
+
+        Usage::
+
+            from cgcnn.common.registry import registry
+            from cgcnn.datasets import BaseDataset
+
+            @registry.register_dataset("qm9")
+            class QM9(BaseDataset):
+                ...
+        """
+
+        def wrap(func):
+            cls.mapping["dataset_name_mapping"][name] = func
+            return func
+
+        return wrap
 
     @classmethod
     def register_model(cls, name):
@@ -99,6 +123,10 @@ class Registry:
             current = current[part]
 
         current[path[-1]] = obj
+
+    @classmethod
+    def get_dataset_class(cls, name):
+        return cls.mapping["dataset_name_mapping"].get(name, None)
 
     @classmethod
     def get_model_class(cls, name):

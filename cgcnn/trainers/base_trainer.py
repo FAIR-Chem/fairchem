@@ -9,21 +9,14 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch_geometric.transforms as T
 import yaml
 from torch_geometric.data import DataLoader
-from torch_geometric.datasets import QM9
 
 from cgcnn.common.logger import TensorboardLogger, WandBLogger
 from cgcnn.common.meter import Meter, mae, mae_ratio
 from cgcnn.common.registry import registry
-from cgcnn.common.utils import (
-    Complete,
-    save_checkpoint,
-    update_config,
-    warmup_lr_lambda,
-)
-from cgcnn.datasets import ISO17, UlissigroupCO, XieGrossmanMatProj
+from cgcnn.common.utils import save_checkpoint, update_config, warmup_lr_lambda
+from cgcnn.datasets import ISO17, QM9Dataset, UlissigroupCO, XieGrossmanMatProj
 from cgcnn.models import CGCNN
 from cgcnn.modules.normalizer import Normalizer
 
@@ -131,21 +124,11 @@ class BaseTrainer:
             )
 
     def load_task(self):
-        # TODO(abhshkdz): move this out to a separate dataloader interface.
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
-        if self.config["task"]["dataset"] == "ulissigroup_co":
-            dataset = UlissigroupCO(self.config["dataset"]["src"]).shuffle()
-            num_targets = 1
-        elif self.config["task"]["dataset"] == "xie_grossman_mat_proj":
-            dataset = XieGrossmanMatProj(
-                self.config["dataset"]["src"]
-            ).shuffle()
-            num_targets = 1
-        elif self.config["task"]["dataset"] == "qm9":
-            transform = T.Compose([Complete(), T.Distance(norm=False)])
-            dataset = QM9(
-                self.config["dataset"]["src"], transform=transform
-            ).shuffle()
+        dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
+            self.config["dataset"]["src"]
+        )
+        if self.config["task"]["dataset"] == "qm9":
             num_targets = dataset.data.y.shape[-1]
             if (
                 "label_index" in self.config["task"]
@@ -155,18 +138,19 @@ class BaseTrainer:
                     :, int(self.config["task"]["label_index"])
                 ]
                 num_targets = 1
-        elif self.config["task"]["dataset"] == "iso17":
+        else:
+            num_targets = 1
+
+        if self.config["task"]["dataset"] == "iso17":
             # TODO(abhshkdz): ISO17.test_other is currently broken.
-            dataset = ISO17(self.config["dataset"]["src"])
             if self.config["dataset"]["test_fold"] == "test_within":
                 self.config["dataset"]["test_size"] = 101000
             elif self.config["dataset"]["test_fold"] == "test_other":
                 self.config["dataset"]["test_size"] = 130000
             else:
                 raise NotImplementedError
-            num_targets = 1
         else:
-            raise NotImplementedError
+            dataset = dataset.shuffle()
 
         tr_sz, va_sz, te_sz = (
             self.config["dataset"]["train_size"],
