@@ -223,9 +223,7 @@ class BaseTrainer:
         # TODO(abhshkdz): Remove dependency on self.train_loader.
         self.model = CGCNN(
             self.train_loader.dataset[0].x.shape[-1],
-            self.train_loader.dataset[0].edge_attr.shape[-1] + 1
-            if self.config["task"]["dataset"] == "qm9"
-            else self.train_loader.dataset[0].edge_attr.shape[-1],
+            self.train_loader.dataset[0].edge_attr.shape[-1],
             self.num_targets,
             **self.config["model"],
         ).to(self.device)
