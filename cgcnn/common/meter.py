@@ -89,6 +89,8 @@ class Meter:
                         name, meter.median, meter.global_avg
                     )
                 )
+            elif "epoch" in name or "step" in name:
+                loss_str.append("{}: {:.4f}".format(name, meter.get_latest()))
             else:
                 # In case of val print global avg
                 loss_str.append("{}: {:.4f}".format(name, meter.global_avg))
