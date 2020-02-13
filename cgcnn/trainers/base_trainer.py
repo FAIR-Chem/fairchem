@@ -4,14 +4,13 @@ import os
 import random
 import time
 
-import demjson
 import numpy as np
+import yaml
+
+import demjson
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import yaml
-from torch_geometric.data import DataLoader
-
 from cgcnn.common.logger import TensorboardLogger, WandBLogger
 from cgcnn.common.meter import Meter, mae, mae_ratio
 from cgcnn.common.registry import registry
@@ -19,6 +18,7 @@ from cgcnn.common.utils import save_checkpoint, update_config, warmup_lr_lambda
 from cgcnn.datasets import ISO17, QM9Dataset, UlissigroupCO, XieGrossmanMatProj
 from cgcnn.models import CGCNN
 from cgcnn.modules.normalizer import Normalizer
+from torch_geometric.data import DataLoader
 
 
 class BaseTrainer:
@@ -347,16 +347,44 @@ class BaseTrainer:
             ]
             out["force_output"] = force_output
 
-        # compute some metrics; don't compute loss here.
-        # NOTE: only supports mean absolute error.
-        metrics["mae"] = eval(self.config["task"]["metric"])(
+        errors = eval(self.config["task"]["metric"])(
             self.normalizers["target"].denorm(output).cpu(), batch.y.cpu()
-        )
+        ).view(-1)
+        if (
+            "label_index" in self.config["task"]
+            and self.config["task"]["label_index"] is not False
+        ):
+            # TODO(abhshkdz): Get rid of this edge case for QM9.
+            # This is only because QM9 has multiple targets and we can either
+            # jointly predict all of them or one particular target.
+            metrics[
+                "{}/{}".format(
+                    self.config["task"]["labels"][
+                        self.config["task"]["label_index"],
+                        self.config["task"]["metric"],
+                    ]
+                )
+            ] = errors[0]
+        else:
+            for i, label in enumerate(self.config["task"]["labels"]):
+                metrics[
+                    "{}/{}".format(label, self.config["task"]["metric"])
+                ] = errors[i]
+
         if "grad_input" in self.config["task"]:
-            metrics["grad_mae"] = eval(self.config["task"]["metric"])(
+            grad_input_errors = eval(self.config["task"]["metric"])(
                 self.normalizers["grad_target"].denorm(force_output).cpu(),
                 batch.forces.cpu(),
             )
+            metrics[
+                "force_x/{}".format(self.config["task"]["metric"])
+            ] = grad_input_errors[0]
+            metrics[
+                "force_y/{}".format(self.config["task"]["metric"])
+            ] = grad_input_errors[1]
+            metrics[
+                "force_z/{}".format(self.config["task"]["metric"])
+            ] = grad_input_errors[2]
 
         return out, metrics
 

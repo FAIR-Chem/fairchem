@@ -108,7 +108,7 @@ def mae(prediction, target):
     prediction: torch.Tensor (N, 1)
     target: torch.Tensor (N, 1)
     """
-    return torch.mean(torch.abs(target - prediction))
+    return torch.mean(torch.abs(target - prediction), dim=0)
 
 
 def mae_ratio(prediction, target):
@@ -123,5 +123,5 @@ def mae_ratio(prediction, target):
     target: torch.Tensor (N, T)
     """
     return torch.mean(
-        torch.abs(target - prediction) / (torch.abs(target) + 1e-7)
+        torch.abs(target - prediction) / (torch.abs(target) + 1e-7), dim=0
     )
