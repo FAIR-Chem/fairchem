@@ -4,13 +4,14 @@ import os
 import random
 import time
 
-import numpy as np
-import yaml
-
 import demjson
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import yaml
+from torch_geometric.data import DataLoader
+
 from cgcnn.common.logger import TensorboardLogger, WandBLogger
 from cgcnn.common.meter import Meter, mae, mae_ratio
 from cgcnn.common.registry import registry
@@ -18,7 +19,6 @@ from cgcnn.common.utils import save_checkpoint, update_config, warmup_lr_lambda
 from cgcnn.datasets import ISO17, QM9Dataset, UlissigroupCO, XieGrossmanMatProj
 from cgcnn.models import CGCNN
 from cgcnn.modules.normalizer import Normalizer
-from torch_geometric.data import DataLoader
 
 
 class BaseTrainer:
@@ -271,7 +271,6 @@ class BaseTrainer:
                     )
 
                 # Print metrics.
-                # TODO(abhshkdz): Checkpointing.
                 if i % self.config["cmd"]["print_every"] == 0:
                     print(self.meter)
 
@@ -280,6 +279,21 @@ class BaseTrainer:
             with torch.no_grad():
                 self.validate(split="val", epoch=epoch)
                 self.validate(split="test", epoch=epoch)
+
+            if not self.is_debug:
+                save_checkpoint(
+                    {
+                        "epoch": epoch + 1,
+                        "state_dict": self.model.state_dict(),
+                        "optimizer": self.optimizer.state_dict(),
+                        "normalizers": {
+                            key: value.state_dict()
+                            for key, value in self.normalizers.items()
+                        },
+                        "config": self.config,
+                    },
+                    self.config["cmd"]["checkpoint_dir"],
+                )
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
