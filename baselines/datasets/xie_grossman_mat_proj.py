@@ -1,5 +1,5 @@
-from cgcnn.common.registry import registry
-from cgcnn.datasets.base import BaseDataset
+from baselines.common.registry import registry
+from baselines.datasets.base import BaseDataset
 
 
 @registry.register_dataset("xie_grossman_mat_proj")

@@ -1,5 +1,5 @@
-from cgcnn.common.flags import flags
-from cgcnn.trainers import BaseTrainer
+from baselines.common.flags import flags
+from baselines.trainers import BaseTrainer
 
 if __name__ == "__main__":
     parser = flags.get_parser()

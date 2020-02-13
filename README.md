@@ -1,12 +1,8 @@
-# Crystal Graph Convolutional Neural Networks
+# Baselines
 
-Forked from [ulissigroup/cgcnn](https://github.com/ulissigroup/cgcnn).
-
-This software package implements the Crystal Graph Convolutional Neural Networks (CGCNN) that takes an arbitary crystal structure to predict material properties.
-
-The following paper describes the details of the CGCNN framework:
-
-[Crystal Graph Convolutional Neural Networks for an Accurate and Interpretable Prediction of Material Properties](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301)
+Implements the Crystal Graph Convolutional Neural Networks (CGCNN) that takes an
+arbitary crystal structure to predict material properties, as described in
+[this paper](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301).
 
 ##  Prerequisites
 
@@ -16,20 +12,24 @@ This package requires:
 - [scikit-learn](http://scikit-learn.org/stable/)
 - [pymatgen](http://pymatgen.org)
 
-If you are new to Python, the easiest way of installing the prerequisites is via [conda](https://conda.io/docs/index.html). After installing [conda](http://conda.pydata.org/), run the following command to create a new [environment](https://conda.io/docs/user-guide/tasks/manage-environments.html) named `cgcnn` and install all prerequisites:
+The easiest way of installing the prerequisites is via [conda](https://conda.io/docs/index.html).
+After installing [conda](http://conda.pydata.org/), run the following command to
+create a new [environment](https://conda.io/docs/user-guide/tasks/manage-environments.html)
+named `ocp-baselines` and install all prerequisites:
 
 ```bash
 conda upgrade conda
-conda create -n cgcnn python=3.6
+conda create -n ocp-baselines python=3.6
 
-conda activate cgcnn
+conda activate ocp-baselines
 pip install -r requirements.txt
 ```
 
-This creates a conda environment for running CGCNN. Before using CGCNN, activate the environment by:
+This creates a conda environment and installs necessary python packages for
+running various baselines. Activate the environment by:
 
 ```bash
-conda activate cgcnn
+conda activate ocp-baselines
 ```
 
 Then, in directory `cgcnn`, you can test if all the prerequisites are installed properly by running:
@@ -52,8 +52,9 @@ conda deactivate
 
 For now, we are working with the following datasets:
 - ulissigroup_co: dataset of DFT results for CO adsorption on various slabs (shared by [Jun](http://ulissigroup.cheme.cmu.edu/2017-11-28-junwoong-yoon/))
-- [QM9](http://www.quantum-machine.org/datasets/)
 - [Materials Project](https://materialsproject.org): subset used in [Xie and Grossman](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.120.145301)
+- [QM9](http://www.quantum-machine.org/datasets/)
+- [ISO17](http://www.quantum-machine.org/datasets/)
 
 To download the datasets:
 
@@ -86,16 +87,18 @@ E(slab) and E(adsorbate) are calculated separately and not shown in our dataset,
 To train a model on the CO adsorption data to predict energy (with default params):
 
 ```bash
-python main.py --identifier my-first-experiment
+python main.py --identifier my-first-experiment --config-yml configs/ulissigroup_co/cgcnn.yml
 ```
 
 See `configs/ulissigroup_co/base.yml` and `configs/ulissigroup_co/cgcnn.yml` for dataset, model and optimizer parameters.
 
 ## Acknowledgements
 
-This codebase is based on [CGCNN](https://github.com/txie-93/cgcnn) by [Tian Xie](http://txie.me) who was advised by [Prof. Jeffrey Grossman](https://dmse.mit.edu/faculty/profile/grossman).
+- This codebase was initially forked from [CGCNN](https://github.com/txie-93/cgcnn)
+by [Tian Xie](http://txie.me), but has undergone significant changes since.
+- A lot of engineering ideas have been borrowed from [github.com/facebookresearch/pythia](https://github.com/facebookresearch/pythia).
 
-If you use this codebase for your research, consider citing:
+If you use the CGCNN implementation for your research, consider citing:
 
 ```
 @article{PhysRevLett.120.145301,
@@ -116,4 +119,4 @@ If you use this codebase for your research, consider citing:
 
 ## License
 
-CGCNN is released under the MIT License.
+TBD
