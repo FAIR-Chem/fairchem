@@ -4,17 +4,12 @@ from bisect import bisect
 
 import numpy as np
 import torch
-from sklearn import metrics
 from torch_geometric.utils import remove_self_loops
 
 
-def save_checkpoint(state, is_best, checkpoint_dir="checkpoints/"):
-    filename = os.path.join(checkpoint_dir, "checkpoint.pth.tar")
+def save_checkpoint(state, checkpoint_dir="checkpoints/"):
+    filename = os.path.join(checkpoint_dir, "checkpoint.pt")
     torch.save(state, filename)
-    if is_best:
-        shutil.copyfile(
-            filename, os.path.join(checkpoint_dir, "model_best.pth.tar")
-        )
 
 
 # https://stackoverflow.com/questions/38987/how-to-merge-two-dictionaries-in-a-single-expression
