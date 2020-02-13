@@ -2,7 +2,7 @@ dataset:
   src: data/data/iso17
   train_size: 400000
   val_size: 4000
-  test_fold: test_other # or test_other
+  test_fold: test_within # or test_other
 
 logger: wandb
 

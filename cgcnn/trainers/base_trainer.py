@@ -10,7 +10,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
-from torch_geometric.data import DataLoader
 
 from cgcnn.common.logger import TensorboardLogger, WandBLogger
 from cgcnn.common.meter import Meter, mae, mae_ratio
@@ -126,7 +125,7 @@ class BaseTrainer:
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
-            self.config["dataset"]["src"]
+            self.config["dataset"]
         )
         if self.config["task"]["dataset"] == "qm9":
             num_targets = dataset.data.y.shape[-1]
@@ -141,63 +140,22 @@ class BaseTrainer:
         else:
             num_targets = 1
 
-        if self.config["task"]["dataset"] == "iso17":
-            # TODO(abhshkdz): ISO17.test_other is currently broken.
-            if self.config["dataset"]["test_fold"] == "test_within":
-                self.config["dataset"]["test_size"] = 101000
-            elif self.config["dataset"]["test_fold"] == "test_other":
-                self.config["dataset"]["test_size"] = 130000
-            else:
-                raise NotImplementedError
-        else:
-            dataset = dataset.shuffle()
-
-        tr_sz, va_sz, te_sz = (
-            self.config["dataset"]["train_size"],
-            self.config["dataset"]["val_size"],
-            self.config["dataset"]["test_size"],
-        )
-
-        assert len(dataset) > tr_sz + va_sz + te_sz
-
-        train_dataset = dataset[:tr_sz]
-        val_dataset = dataset[tr_sz : tr_sz + va_sz]
-        test_dataset = dataset[tr_sz + va_sz : tr_sz + va_sz + te_sz]
-
-        if self.config["task"]["dataset"] == "iso17":
-            if self.config["dataset"]["test_fold"] == "test_within":
-                test_dataset = dataset[tr_sz + va_sz : tr_sz + va_sz + te_sz]
-            elif self.config["dataset"]["test_fold"] == "test_other":
-                test_dataset = dataset[
-                    tr_sz + va_sz + 101000 : tr_sz + va_sz + 101000 + te_sz
-                ]
-            else:
-                raise NotImplementedError
-
         self.num_targets = num_targets
-        self.train_loader = DataLoader(
-            train_dataset,
-            batch_size=self.config["optim"]["batch_size"],
-            shuffle=True,
-        )
-        self.val_loader = DataLoader(
-            val_dataset, batch_size=self.config["optim"]["batch_size"]
-        )
-        self.test_loader = DataLoader(
-            test_dataset, batch_size=self.config["optim"]["batch_size"]
+        self.train_loader, self.val_loader, self.test_loader = dataset.get_dataloaders(
+            batch_size=self.config["optim"]["batch_size"]
         )
 
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
         self.normalizers["target"] = Normalizer(
-            dataset.data.y[:tr_sz], self.device
+            self.train_loader.dataset.data.y, self.device
         )
 
         # If we're computing gradients wrt input, compute mean, std of targets.
         if "grad_input" in self.config["task"]:
             self.normalizers["grad_target"] = Normalizer(
-                dataset.data.forces[:tr_sz], self.device
+                self.train_loader.dataset.data.forces, self.device
             )
 
     def load_model(self):
@@ -374,9 +332,9 @@ class BaseTrainer:
             metrics[
                 "{}/{}".format(
                     self.config["task"]["labels"][
-                        self.config["task"]["label_index"],
-                        self.config["task"]["metric"],
-                    ]
+                        self.config["task"]["label_index"]
+                    ],
+                    self.config["task"]["metric"],
                 )
             ] = errors[0]
         else:
