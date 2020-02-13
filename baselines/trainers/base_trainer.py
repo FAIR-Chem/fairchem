@@ -4,20 +4,29 @@ import os
 import random
 import time
 
-import demjson
 import numpy as np
+import yaml
+
+import demjson
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import yaml
-
-from cgcnn.common.logger import TensorboardLogger, WandBLogger
-from cgcnn.common.meter import Meter, mae, mae_ratio
-from cgcnn.common.registry import registry
-from cgcnn.common.utils import save_checkpoint, update_config, warmup_lr_lambda
-from cgcnn.datasets import ISO17, QM9Dataset, UlissigroupCO, XieGrossmanMatProj
-from cgcnn.models import CGCNN
-from cgcnn.modules.normalizer import Normalizer
+from baselines.common.logger import TensorboardLogger, WandBLogger
+from baselines.common.meter import Meter, mae, mae_ratio
+from baselines.common.registry import registry
+from baselines.common.utils import (
+    save_checkpoint,
+    update_config,
+    warmup_lr_lambda,
+)
+from baselines.datasets import (
+    ISO17,
+    QM9Dataset,
+    UlissigroupCO,
+    XieGrossmanMatProj,
+)
+from baselines.models import CGCNN
+from baselines.modules.normalizer import Normalizer
 
 
 class BaseTrainer:

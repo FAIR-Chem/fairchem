@@ -1,8 +1,7 @@
 import torch
 import wandb
+from baselines.common.registry import registry
 from torch.utils.tensorboard import SummaryWriter
-
-from cgcnn.common.registry import registry
 
 
 class Logger:

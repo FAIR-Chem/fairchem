@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
+from baselines.common.registry import registry
+from baselines.models.base import BaseModel
+from baselines.modules.layers import CGCNNConv
 from torch_geometric.nn import global_mean_pool
-
-from cgcnn.common.registry import registry
-from cgcnn.models.base import BaseModel
-from cgcnn.modules.layers import CGCNNConv
 
 
 @registry.register_model("cgcnn")

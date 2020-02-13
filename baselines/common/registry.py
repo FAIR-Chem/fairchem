@@ -8,7 +8,7 @@ different kind of classes.
 
 Import the global registry object using
 
-``from cgcnn.common.registry import registry``
+``from baselines.common.registry import registry``
 
 Various decorators for registry different kind of classes with unique keys
 
@@ -21,8 +21,6 @@ class Registry:
     """
     mapping = {
         # Mappings to respective classes.
-        # Use decorator "register_task" in cgcnn.common.decorators to register a
-        # class with a specific name.
         "dataset_name_mapping": {},
         "model_name_mapping": {},
         "logger_name_mapping": {},
@@ -38,8 +36,8 @@ class Registry:
 
         Usage::
 
-            from cgcnn.common.registry import registry
-            from cgcnn.datasets import BaseDataset
+            from baselines.common.registry import registry
+            from baselines.datasets import BaseDataset
 
             @registry.register_dataset("qm9")
             class QM9(BaseDataset):
@@ -61,8 +59,8 @@ class Registry:
 
         Usage::
 
-            from cgcnn.common.registry import registry
-            from cgcnn.modules.layers import CGCNNConv
+            from baselines.common.registry import registry
+            from baselines.modules.layers import CGCNNConv
 
             @registry.register_model("cgcnn")
             class CGCNN():
@@ -83,7 +81,7 @@ class Registry:
 
         Usage::
 
-            from cgcnn.common.registry import registry
+            from baselines.common.registry import registry
 
             @registry.register_model("tensorboard")
             class WandB():
@@ -91,7 +89,7 @@ class Registry:
         """
 
         def wrap(func):
-            from cgcnn.common.logger import Logger
+            from baselines.common.logger import Logger
 
             assert issubclass(
                 func, Logger
@@ -110,7 +108,7 @@ class Registry:
 
         Usage::
 
-            from cgcnn.common.registry import registry
+            from baselines.common.registry import registry
 
             registry.register("config", {})
         """
@@ -149,7 +147,7 @@ class Registry:
                                internal operations. Default: False
         Usage::
 
-            from cgcnn.common.registry import registry
+            from baselines.common.registry import registry
 
             config = registry.get("config")
         """
@@ -180,7 +178,7 @@ class Registry:
             name: Key which needs to be removed.
         Usage::
 
-            from cgcnn.common.registry import registry
+            from baselines.common.registry import registry
 
             config = registry.unregister("config")
         """

@@ -3,6 +3,7 @@ import shutil
 from bisect import bisect
 
 import numpy as np
+
 import torch
 from torch_geometric.utils import remove_self_loops
 
