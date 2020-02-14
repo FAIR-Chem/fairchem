@@ -32,7 +32,7 @@ running various baselines. Activate the environment by:
 conda activate ocp-baselines
 ```
 
-Then, in directory `cgcnn`, you can test if all the prerequisites are installed properly by running:
+Then you can test if all the prerequisites are installed properly by running:
 
 ```bash
 python main.py -h
@@ -40,7 +40,7 @@ python main.py -h
 
 This should display the help messages for `main.py`. If you find no error messages, it means that the prerequisites are installed properly.
 
-After you are done using CGCNN, exit the environment by:
+After you are done, exit the environment by:
 
 ```bash
 conda deactivate
