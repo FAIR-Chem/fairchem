@@ -1,7 +1,8 @@
 import torch
 import wandb
-from baselines.common.registry import registry
 from torch.utils.tensorboard import SummaryWriter
+
+from baselines.common.registry import registry
 
 
 class Logger:
@@ -30,6 +31,9 @@ class Logger:
             update_dict = new_dict
         return update_dict
 
+    def log_plots(self, plots):
+        raise NotImplementedError
+
 
 @registry.register_logger("wandb")
 class WandBLogger(Logger):
@@ -48,6 +52,11 @@ class WandBLogger(Logger):
     def log(self, update_dict, step=None, split=""):
         update_dict = super().log(update_dict, step, split)
         wandb.log(update_dict, step=step)
+
+    def log_plots(self, plots, caption=""):
+        assert isinstance(plots, list)
+        plots = [wandb.Image(x, caption=caption) for x in plots]
+        wandb.log({"data": plots})
 
 
 @registry.register_logger("tensorboard")

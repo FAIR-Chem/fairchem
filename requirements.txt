@@ -10,3 +10,4 @@ pre-commit
 ase
 tqdm
 wandb
+matplotlib

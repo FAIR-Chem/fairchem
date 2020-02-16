@@ -3,8 +3,9 @@ import shutil
 from bisect import bisect
 
 import numpy as np
-
 import torch
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 from torch_geometric.utils import remove_self_loops
 
 
@@ -74,3 +75,31 @@ def print_cuda_usage():
     )
     print("Memory Cached:", torch.cuda.memory_cached() / (1024 * 1024))
     print("Max Memory Cached:", torch.cuda.max_memory_cached() / (1024 * 1024))
+
+
+def plot_histogram(data, xlabel="", ylabel="", title=""):
+    assert isinstance(data, list)
+
+    # Preset
+    fig = Figure(figsize=(5, 4), dpi=150)
+    canvas = FigureCanvas(fig)
+    ax = fig.gca()
+
+    # Plot
+    ax.hist(data, bins=20, rwidth=0.9, zorder=3)
+
+    # Axes
+    ax.grid(color="0.95", zorder=0)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    fig.tight_layout(pad=2)
+
+    # Return numpy array
+    canvas.draw()
+    image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    image_from_plot = image_from_plot.reshape(
+        fig.canvas.get_width_height()[::-1] + (3,)
+    )
+
+    return image_from_plot

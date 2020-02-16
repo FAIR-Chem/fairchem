@@ -4,17 +4,18 @@ import os
 import random
 import time
 
-import numpy as np
-import yaml
-
 import demjson
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import yaml
+
 from baselines.common.logger import TensorboardLogger, WandBLogger
 from baselines.common.meter import Meter, mae, mae_ratio
 from baselines.common.registry import registry
 from baselines.common.utils import (
+    plot_histogram,
     save_checkpoint,
     update_config,
     warmup_lr_lambda,
@@ -34,6 +35,7 @@ class BaseTrainer:
         # defaults.
         self.device = "cpu"
         self.is_debug = True
+        self.is_vis = True
         # load config.
         self.load_config_from_yaml_and_cmd(args)
 
@@ -72,6 +74,7 @@ class BaseTrainer:
 
         # Are we just running sanity checks?
         self.is_debug = args.debug
+        self.is_vis = args.vis
 
         # timestamps and directories
         args.timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -166,6 +169,30 @@ class BaseTrainer:
             self.normalizers["grad_target"] = Normalizer(
                 self.train_loader.dataset.data.forces, self.device
             )
+
+        if self.is_vis and self.config["task"]["dataset"] != "qm9":
+            # Plot label distribution.
+            plots = [
+                plot_histogram(
+                    self.train_loader.dataset.data.y.tolist(),
+                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
+                    ylabel="# Examples",
+                    title="Split: train",
+                ),
+                plot_histogram(
+                    self.val_loader.dataset.data.y.tolist(),
+                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
+                    ylabel="# Examples",
+                    title="Split: val",
+                ),
+                plot_histogram(
+                    self.test_loader.dataset.data.y.tolist(),
+                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
+                    ylabel="# Examples",
+                    title="Split: test",
+                ),
+            ]
+            self.logger.log_plots(plots)
 
     def load_model(self):
         # Build model
