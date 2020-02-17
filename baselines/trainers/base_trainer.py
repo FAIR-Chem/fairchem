@@ -26,7 +26,7 @@ from baselines.datasets import (
     UlissigroupCO,
     XieGrossmanMatProj,
 )
-from baselines.models import CGCNN
+from baselines.models import CGCNN, Transformer
 from baselines.modules.normalizer import Normalizer
 
 

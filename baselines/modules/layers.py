@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch_geometric.nn import MessagePassing
+from torch_geometric.utils import softmax
 
 
 class CGCNNConv(MessagePassing):
@@ -60,4 +61,102 @@ class CGCNNConv(MessagePassing):
             tensor of shape [num_nodes, node_dim]
         """
         aggr_out = nn.Softplus()(x + self.fc_post(aggr_out))
+        return aggr_out
+
+
+class AttentionConv(MessagePassing):
+    """Implements the graph attentional operator from
+    `"Path-Augmented Graph Transformer Network" <https://arxiv.org/abs/1905.12712>`.
+
+    Also related to `"Graph Transformer" <https://openreview.net/forum?id=HJei-2RcK7>`
+    and `"Graph Attention Networks" <https://arxiv.org/abs/1710.10903>`.
+    """
+
+    def __init__(
+        self,
+        node_dim,
+        edge_dim,
+        hidden_dim=64,
+        num_heads=3,
+        concat=True,
+        negative_slope=0.2,
+        dropout=0,
+        **kwargs
+    ):
+        super(AttentionConv, self).__init__(aggr="add")
+
+        self.node_dim = node_dim
+        self.edge_dim = edge_dim
+        self.hidden_dim = hidden_dim
+        self.num_heads = num_heads
+        self.concat = concat
+        self.negative_slope = negative_slope
+
+        self.att = nn.Sequential(
+            nn.Linear(
+                2 * self.node_dim + self.edge_dim,
+                self.hidden_dim * self.num_heads,
+            ),
+            nn.LeakyReLU(negative_slope=self.negative_slope),
+            nn.Linear(self.hidden_dim * self.num_heads, self.num_heads),
+        )
+        self.dropout = nn.Dropout(p=dropout)
+        self.value = nn.Linear(
+            self.node_dim + self.edge_dim, self.hidden_dim * self.num_heads
+        )
+
+        if self.concat is True:
+            self.fc_post = nn.Linear(
+                self.num_heads * self.hidden_dim, self.node_dim
+            )
+        else:
+            self.fc_post = nn.Linear(self.hidden_dim, self.node_dim)
+
+    def forward(self, x, edge_index, edge_attr):
+        """
+        Arguments:
+            x has shape [num_nodes, node_dim]
+            edge_index has shape [2, num_edges]
+            edge_attr is [num_edges, edge_dim]
+        """
+        return self.propagate(edge_index, x=x, edge_attr=edge_attr)
+
+    def message(self, x_i, x_j, edge_attr, edge_index_i, size_i):
+        """
+        Arguments:
+            x_i has shape [num_edges, node_dim]
+            x_j has shape [num_edges, node_dim]
+            edge_attr has shape [num_edges, edge_dim]
+
+        Returns:
+            tensor of shape [num_edges, num_heads, hidden_dim]
+        """
+        alpha = self.att(torch.cat([x_i, x_j, edge_attr], dim=-1))
+        alpha = softmax(alpha, edge_index_i, size_i)
+        alpha = self.dropout(alpha).view(-1, self.num_heads, 1)
+
+        value = self.value(torch.cat([x_j, edge_attr], dim=-1)).view(
+            -1, self.num_heads, self.hidden_dim
+        )
+        return value * alpha
+
+    def update(self, aggr_out, x):
+        """
+        Arguments:
+            aggr_out has shape [num_nodes, num_heads, hidden_dim]
+                This is the result of aggregating features output by the
+                `message` function from neighboring nodes. The aggregation
+                function is specified in the constructor (`add` in this case).
+            x has shape [num_nodes, node_dim]
+
+        Returns:
+            tensor of shape [num_nodes, node_dim]
+        """
+        if self.concat is True:
+            aggr_out = aggr_out.view(-1, self.num_heads * self.hidden_dim)
+        else:
+            aggr_out = aggr_out.mean(dim=1)
+
+        aggr_out = nn.ReLU()(x + self.fc_post(aggr_out))
+
         return aggr_out
