@@ -1,8 +1,11 @@
 # Baselines
 
-Implements the Crystal Graph Convolutional Neural Networks (CGCNN) that takes an
-arbitary crystal structure to predict material properties, as described in
-[this paper](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301).
+Implements the following baselines that take arbitrary chemical structures as
+input to predict material properties:
+- [Crystal Graph Convolutional Neural Networks (CGCNN)](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301).
+- [Path-Augmented Graph Transformer Network](https://arxiv.org/abs/1905.12712).
+Also related to [Graph Attention Networks](https://arxiv.org/abs/1710.10903) and
+[Graph Transformer](https://openreview.net/forum?id=HJei-2RcK7).
 
 ##  Prerequisites
 
