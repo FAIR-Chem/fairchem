@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
-from torch_geometric.nn import global_mean_pool
-
 from baselines.common.registry import registry
 from baselines.models.base import BaseModel
 from baselines.modules.layers import AttentionConv
+from torch_geometric.nn import global_mean_pool
 
 
 @registry.register_model("transformer")
@@ -17,6 +16,7 @@ class Transformer(BaseModel):
         atom_embedding_size=64,
         num_graph_conv_layers=6,
         num_attention_heads=3,
+        attention_dropout=0,
         fc_feat_size=128,
         num_fc_layers=4,
     ):
@@ -31,6 +31,7 @@ class Transformer(BaseModel):
                     node_dim=atom_embedding_size,
                     edge_dim=self.bond_feat_dim,
                     num_heads=num_attention_heads,
+                    dropout=attention_dropout,
                 )
                 for _ in range(num_graph_conv_layers)
             ]
