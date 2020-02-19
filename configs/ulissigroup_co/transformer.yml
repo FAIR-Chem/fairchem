@@ -7,6 +7,7 @@ model_attributes:
   atom_embedding_size: 64
   num_graph_conv_layers: 6
   num_attention_heads: 3
+  attention_dropout: 0
   fc_feat_size: 128 # projection layer after conv + pool layers
   num_fc_layers: 4
 
