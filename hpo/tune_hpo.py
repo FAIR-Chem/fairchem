@@ -9,7 +9,7 @@ from ray import tune
 
 from baselines.modules.normalizer import Normalizer
 from baselines.models.cgcnn import CGCNN
-from dataloader import UlissiDataset, get_data_loaders
+from baselines.datasets.base import BaseDataset
 from train_hpo import train, validate
 
 
@@ -18,15 +18,16 @@ class TrainCGCNN(tune.Trainable):
     def _setup(self, config):
         use_cuda = config.get("use_gpu") and torch.cuda.is_available()
         self.device = torch.device("cuda" if use_cuda else "cpu")
-        self.train_loader, self.val_loader, self.test_loader = get_data_loaders(config.get("save_dir"), 
-                                                                                batch_size=config.get("batch_size", 80))
-        self.model = CGCNN(num_atoms=self.train_loader.dataset.data.x.shape[-1], 
+        self.dataset = BaseDataset(config.get("data_config"))
+        self.train_loader, self.val_loader, self.test_loader = \
+            self.dataset.get_dataloaders(batch_size=config.get("batch_size", 80))
+        self.model = CGCNN(num_atoms=self.train_loader.dataset.data.x.shape[-1],
                            bond_feat_dim=self.train_loader.dataset.data.edge_attr.shape[-1],
-                           num_targets=1).to(self.device)
+                           num_targets=1,
+                           atom_embedding_size=config.get("atom_embedding_size", 64)).to(self.device)
         self.criterion = nn.L1Loss()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=config.get("lr", 0.01))
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=config.get("lr", 0.01))
         self.normalizer = Normalizer(self.train_loader.dataset.data.y, self.device)
-        # self.scheduler
 
     def _train(self):
         t_loss, t_mae = train(self.model, self.criterion, self.optimizer,
