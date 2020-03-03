@@ -1,0 +1,19 @@
+dataset:
+  src: data/data/ulissigroup_co
+  init_train_size: 1000
+  max_train_size: 14000
+  # TODO: how many epochs to increase training data in.
+  increase_data_every: 2
+  val_size: 1000
+  test_size: 1000
+
+trainer: active_discovery
+logger: wandb
+
+task:
+  dataset: active_discovery
+  description: "Binding energy regression on a dataset of DFT results for CO adsorption on various slabs."
+  type: regression
+  metric: mae
+  labels:
+    - binding energy
