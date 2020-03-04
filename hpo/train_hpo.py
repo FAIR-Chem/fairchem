@@ -35,7 +35,7 @@ def train(model, criterion, optimizer, train_loader, normalizer, device):
         loss.backward()
         optimizer.step()
             
-        return float(meter.loss.global_avg), float(meter.mae.global_avg)
+    return float(meter.loss.global_avg), float(meter.mae.global_avg)
     
         
 def validate(model, criterion, optimizer, val_loader, normalizer, device, mae_print=False):

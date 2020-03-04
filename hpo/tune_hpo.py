@@ -7,6 +7,9 @@ import ray
 from ray import tune
 # from ray.tune.schedulers import ASHAScheduler
 
+import sys
+sys.path.append("/global/homes/b/bwood/machine_learning/ulissi_cnn/hpo/ocp_cgcnn/cgcnn")
+
 from baselines.modules.normalizer import Normalizer
 from baselines.models.cgcnn import CGCNN
 from baselines.datasets.base import BaseDataset
