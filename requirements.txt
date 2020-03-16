@@ -11,3 +11,4 @@ ase
 tqdm
 wandb
 matplotlib
+ray[tune]
