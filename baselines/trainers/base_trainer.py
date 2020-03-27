@@ -24,6 +24,7 @@ from baselines.datasets import (
     ISO17,
     QM9Dataset,
     UlissigroupCO,
+    Gasdb,
     XieGrossmanMatProj,
 )
 from baselines.models import CGCNN, Transformer

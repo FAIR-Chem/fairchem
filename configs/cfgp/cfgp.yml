@@ -1,5 +1,5 @@
 includes:
-- configs/kevin_active_discovery/base.yml
+- configs/cfgp/base.yml
 
 model: cgcnn
 
