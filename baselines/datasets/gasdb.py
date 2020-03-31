@@ -9,14 +9,22 @@ import copy
 from itertools import product
 import numpy as np
 import torch
-from tqdm import tqdm
-from sklearn.base import TransformerMixin
 from torch_geometric.data import Data, DataLoader
 import ase.db
 from pymatgen.io.ase import AseAtomsAdaptor
 from ..common.registry import registry
 from .base import BaseDataset
 from .elemental_embeddings import EMBEDDINGS
+
+# Import the correct TQDM depending on where we are
+try:
+    shell = get_ipython().__class__.__name__
+    if shell == 'ZMQInteractiveShell':
+        from tqdm.notebook import tqdm
+    else:
+        from tqdm import tqdm
+except NameError:
+    from tqdm import tqdm
 
 
 @registry.register_dataset("gasdb")
@@ -34,6 +42,9 @@ class Gasdb:
 
         self._collate_atomic_features()
 
+    def __len__(self):
+        return self.ase_db.count()
+
     @property
     def train_size(self):
         return self.config["train_size"]
@@ -47,14 +58,16 @@ class Gasdb:
         return self.config["test_size"]
 
     def _collate_atomic_features(self):
-        atomic_transformer = AtomicTransformer(radius=1)
-        atomic_features = atomic_transformer.transform(self.ase_db)
+        feature_generator = AtomicFeatureGenerator(self.ase_db)
         energies = [row.adsorption_energy for row in self.ase_db.select()]
 
         data_list = []
 
-        zipped_data = zip(atomic_features, energies)
-        for (embedding, distance, index), energy in tqdm(zipped_data, desc='collating atomic features'):
+        zipped_data = zip(feature_generator, energies)
+        for (embedding, distance, index), energy in tqdm(zipped_data,
+                                                         desc='collating atomic features',
+                                                         total=len(energies),
+                                                         unit='structure'):
 
             edge_index = [[], []]
             edge_attr = torch.FloatTensor(
@@ -97,24 +110,9 @@ class Gasdb:
         return train_loader, val_loader, test_loader
 
 
-class AtomicTransformer(TransformerMixin):
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        return
-
-    def transform(self, ase_db):
-        calculator = AtomicFeatureCalculator(ase_db, *self.args, **self.kwargs)
-        return calculator
-
-    def fit(self):
-        return self
-
-
-class AtomicFeatureCalculator:
+class AtomicFeatureGenerator:
     """
-    This class is meant to be used in a `sklearn.base.TransformerMixin` to
-    convert an `ase.Atoms` object into a set of atomic features.
+    Iterator meant to generate the features of the atoms objects within an `ase.db`
 
     Parameters
     ----------
@@ -137,16 +135,30 @@ class AtomicFeatureCalculator:
     gaussian_distances: torch.Tensor shape (n_i, M, nbr_fea_len)
     all_indices: torch.LongTensor shape (n_i, M)
     """
-    def __init__(self, ase_db, max_num_nbr=12, radius=8, dmin=0, step=0.2):
+    def __init__(self, ase_db, max_num_nbr=12, radius=6, dmin=0, step=0.2, start=0):
         self.ase_db = ase_db
         self.max_num_nbr, self.radius = max_num_nbr, radius
         self.gdf = GaussianDistance(dmin=dmin, dmax=self.radius, step=step)
+        self.num = start
 
     def __len__(self):
         return self.ase_db.count()
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            item = self.__getitem__(self.num)
+            self.num += 1
+            return item
+
+        except KeyError:
+            assert self.num == self.__len__()
+            raise StopIteration
+
     def __getitem__(self, index):
-        atoms = self.ase_db.select(index + 1)
+        atoms = self.ase_db.get_atoms(index + 1)
         structure = AseAtomsAdaptor.get_structure(atoms)
 
         # `all_neighbors` is a nested list containing the neighbors of each
@@ -158,16 +170,26 @@ class AtomicFeatureCalculator:
 
         # Grab the distances and indices of each atoms' neighbors
         all_distances, all_indices = [], []
+        dummy_distance, dummy_index = self.radius + 1, 0
         for neighbors in all_neighbors:
-            _, distances, indices, _ = list(zip(*neighbors))
-            distances = list(distances)
-            indices = list(indices)
+            try:
+                _, distances, indices, _ = list(zip(*neighbors))
+                distances = list(distances)
+                indices = list(indices)
+            # If there are no neighbors
+            except ValueError:
+                distances, indices = [dummy_distance], [dummy_index]
 
             # Pad empty elements in the features
-            if len(neighbors) < self.max_num_nbr:
-                padding_length = self.max_num_nbr - len(neighbors)
-                distances.extend([self.radius + 1] * padding_length)
-                indices.extend([0] * padding_length)
+            if len(distances) < self.max_num_nbr:
+                padding_length = self.max_num_nbr - len(distances)
+                distances.extend([dummy_distance] * padding_length)
+                indices.extend([dummy_index] * padding_length)
+
+            # Trim extra elements
+            elif len(distances) > self.max_num_nbr:
+                distances = distances[:self.max_num_nbr]
+                indices = indices[:self.max_num_nbr]
 
             # Concatenation/formatting
             all_distances.append(distances)
