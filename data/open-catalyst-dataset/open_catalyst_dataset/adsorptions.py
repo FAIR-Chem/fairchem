@@ -52,6 +52,23 @@ MIN_XY = 8.
 
 def sample_structures(bulk_database='bulks.db', n_species_weights=None):
     '''
+    This parent function will randomly select an adsorption structure from a
+    given set of bulks.
+
+    Args:
+        bulk_database       A string pointing to the ASE *.db object that
+                            contains the bulks you want to consider.
+        n_species_weights   A dictionary whose keys are integers containing the
+                            number of species you want to consider and whose
+                            values are the probabilities of selecting this
+                            number. The probabilities must sum to 1.
+    Returns:
+        adsorbed_surface    `ase.Atoms` object containing a surface with a
+                            random adsorbate placed on it. The surface atoms
+                            will be tagged with `0` while the adsorbate atoms
+                            will be tagged with `1`.
+        surface             `ase.Atoms` object containing only the surface that
+                            we sampled.
     '''
     # Choose which surface we want
     n_species = choose_n_species(n_species_weights)
@@ -72,6 +89,15 @@ def sample_structures(bulk_database='bulks.db', n_species_weights=None):
 
 def choose_n_species(n_species_weights):
     '''
+    Chooses the number of species we should look for in this sample.
+
+    Arg:
+        n_species_weights   A dictionary whose keys are integers containing the
+                            number of species you want to consider and whose
+                            values are the probabilities of selecting this
+                            number. The probabilities must sum to 1.
+    Returns:
+        n_species   An integer showing how many species have been chosen.
     '''
     if n_species_weights is None:
         n_species_weights = {1: 0.05, 2: 0.65, 3: 0.3}
@@ -86,6 +112,16 @@ def choose_n_species(n_species_weights):
 
 def choose_elements(bulk_database, n):
     '''
+    Chooses `n` elements at random from the set of elements inside the given
+    database.
+
+    Args:
+        bulk_database   A string pointing to the ASE *.db object that contains
+                        the bulks you want to consider.
+        n               A positive integer indicating how many elements you
+                        want to choose.
+    Returns:
+        elements    A list of strings indicating the chosen elements
     '''
     db = ase.db.connect(bulk_database)
     all_elements = {ELEMENTS[number] for row in db.select() for number in row.numbers}
@@ -104,6 +140,17 @@ def choose_elements(bulk_database, n):
 
 def choose_bulk(bulk_database, elements):
     '''
+    Chooses a bulks from our database at random as long as the bulk contains
+    all the specified elements.
+
+    Args:
+        bulk_database   A string pointing to the ASE *.db object that contains
+                        the bulks you want to consider.
+        elements        A list of strings indicating the elements you want to
+                        show up in the bulk. The strings much match one of the
+                        values in the `ELEMENTS` constant in this submodule.
+    Returns:
+        atoms   `ase.Atoms` of the chosen bulk structure.
     '''
     db = ase.db.connect(bulk_database)
     all_atoms = [row.toatoms() for row in db.select(elements)]
@@ -113,6 +160,13 @@ def choose_bulk(bulk_database, elements):
 
 def choose_surface(bulk_atoms):
     '''
+    Enumerates and chooses a random surface from a bulk structure.
+
+    Arg:
+        bulk_atoms  `ase.Atoms` object of the bulk you want to choose a
+                    surfaces from.
+    Returns:
+        surface_atoms   `ase.Atoms` of the chosen surface
     '''
     surfaces = enumerate_surfaces(bulk_atoms)
     surface_struct = random.choice(surfaces)
@@ -120,8 +174,24 @@ def choose_surface(bulk_atoms):
     return surface_atoms
 
 
-def enumerate_surfaces(bulk_atoms):
+def enumerate_surfaces(bulk_atoms, max_miller=MAX_MILLER):
     '''
+    Enumerate all the symmetrically distinct surfaces of a bulk structure. It
+    will not enumerate surfaces with Miller indices above the `max_miller`
+    argument. Note that we also look at the bottoms of slabs if they are
+    distinct from the top. If they are distinct, we flip the slab so the bottom
+    is pointing upwards.
+
+    Args:
+        bulk_atoms  `ase.Atoms` object of the bulk you want to enumerate
+                    surfaces from.
+        max_miller  An integer indicating the maximum Miller index of the surfaces
+                    you are willing to enumerate. Increasing this argument will
+                    increase the number of surfaces, but the surfaces will
+                    generally become larger.
+    Returns:
+        all_slabs   A list of `pymatgen.Structure` objects for each of the
+                    surfaces we have enumerated.
     '''
     bulk_struct = standardize_bulk(bulk_atoms)
 
@@ -152,6 +222,17 @@ def enumerate_surfaces(bulk_atoms):
 
 def standardize_bulk(atoms):
     '''
+    There are many ways to define a bulk unit cell. If you change the unit cell
+    itself but also change the locations of the atoms within the unit cell, you
+    can get effectively the same bulk structure. To address this, there is a
+    standardization method used to reduce the degrees of freedom such that each
+    unit cell only has one "true" configuration. This function will align a
+    unit cell you give it to fit within this standardization.
+
+    Arg:
+        atoms   `ase.Atoms` object of the bulk you want to standardize
+    Returns:
+        standardized_struct     `pymatgen.Structure` of the standardized bulk
     '''
     struct = AseAtomsAdaptor.get_structure(atoms)
     sga = SpacegroupAnalyzer(struct, symprec=0.1)
@@ -216,6 +297,15 @@ def flip_struct(struct):
 
 def choose_site(surface_atoms, adsorbate):
     '''
+    Enumerate all the sites of a surface and then select one of them at random.
+
+    Args:
+        surface_atoms   `ase.Atoms` of the surface that you want to choose a
+                        site from
+        adsorbate       `ase.Atoms` of the adsorbate you want to place
+    Returns:
+        site    A 3-tuple of floats indicating the location of the chosen
+                adsorption site.
     '''
     # TODO:  Pari to update this section and add bidentate site selection
     surface_atoms = tile_atoms(surface_atoms)
@@ -263,6 +353,10 @@ def enumerate_adsorption_sites(atoms):
 
 def choose_adsorbate():
     '''
+    Randomly chooses an adsorbate from our pool of adsorbates.
+
+    Returns:
+        adsorbate   `ase.Atoms` object of the chosen adsorbate.
     '''
     # TODO:  Kevin to add the real adsorbates here
     CO = ase.Atoms('CO', positions=[[0., 0., 0.], [0., 0., 1.2]])
