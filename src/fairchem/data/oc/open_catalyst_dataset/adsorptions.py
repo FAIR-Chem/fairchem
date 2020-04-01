@@ -224,23 +224,6 @@ def choose_site(surface_atoms, adsorbate):
     return site
 
 
-def enumerate_adsorption_sites(atoms):
-    '''
-    A wrapper for pymatgen to get all of the adsorption sites of a slab.
-
-    Arg:
-        atoms   The slab where you are trying to find adsorption sites in
-                `ase.Atoms` format
-    Output:
-        sites   A `numpy.ndarray` object that contains the x-y-z coordinates of
-                the adsorptions sites
-    '''
-    struct = AseAtomsAdaptor.get_structure(atoms)
-    sites_dict = AdsorbateSiteFinder(struct).find_adsorption_sites(put_inside=True)
-    sites = sites_dict['all']
-    return sites
-
-
 def tile_atoms(atoms):
     '''
     This function will repeat an atoms structure in the x and y direction until
@@ -259,6 +242,23 @@ def tile_atoms(atoms):
     n_xyz = (nx, ny, 1)
     atoms_tiled = atoms.repeat(n_xyz)
     return atoms_tiled
+
+
+def enumerate_adsorption_sites(atoms):
+    '''
+    A wrapper for pymatgen to get all of the adsorption sites of a slab.
+
+    Arg:
+        atoms   The slab where you are trying to find adsorption sites in
+                `ase.Atoms` format
+    Output:
+        sites   A `numpy.ndarray` object that contains the x-y-z coordinates of
+                the adsorptions sites
+    '''
+    struct = AseAtomsAdaptor.get_structure(atoms)
+    sites_dict = AdsorbateSiteFinder(struct).find_adsorption_sites(put_inside=True)
+    sites = sites_dict['all']
+    return sites
 
 
 def choose_adsorbate():
