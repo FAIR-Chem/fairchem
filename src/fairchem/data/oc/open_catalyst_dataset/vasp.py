@@ -35,14 +35,12 @@ VASP_PP_PATH = ''
 
 def run_vasp(atoms, vasp_flags=None):
     '''
-    This function is meant to be sent to each cluster and then used to run our
-    rockets. As such, it has algorithms to run differently depending on the
-    cluster that is trying to use this function.
+    Will relax the input atoms given the VASP flag inputs.
 
     Args:
         atoms       `ase.Atoms` object that we want to relax.
         vasp_flags  A dictionary of settings we want to pass to the `Vasp2`
-                    calculator
+                    calculator. Defaults to a standerd set of values if `None`
     Returns:
     '''
     if vasp_flags is None:  # Immutable default
@@ -56,8 +54,7 @@ def run_vasp(atoms, vasp_flags=None):
 
 def _clean_up_inputs(atoms, vasp_flags):
     '''
-    There are some VASP settings that are used across all our clusters. This
-    function takes care of these settings.
+    Parses the inputs and makes sure some things are straightened out.
 
     Arg:
         atoms       `ase.Atoms` object of the structure we want to relax
