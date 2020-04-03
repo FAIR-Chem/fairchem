@@ -9,7 +9,6 @@ Note that some of these scripts were taken from
 __author__ = 'Kevin Tran'
 __email__ = 'ktran@andrew.cmu.edu'
 
-import warnings
 import math
 import random
 import numpy as np
@@ -124,18 +123,17 @@ def choose_elements(bulk_database, n):
         elements    A list of strings indicating the chosen elements
     '''
     db = ase.db.connect(bulk_database)
-    all_elements = {ELEMENTS[number] for row in db.select() for number in row.numbers}
-    elements = random.sample(all_elements, n)
+    candidate_combinations = {tuple(sorted(set(ELEMENTS[number] for number in row.numbers)))
+                              for row in db.select() if len(set(row.numbers)) == n}
+    try:
+        elements = list(random.choice(list(candidate_combinations)))
+        return elements
 
-    # Make sure we choose a combination of elements that exists in our bulk
-    # database
-    while db.count(elements) == 0:
-        warnings.warn('Sampled the elements %s, but could not find any matching '
-                      'bulks in the database (%s). Trying to re-sample'
-                      % (elements, bulk_database), RuntimeWarning)
-        elements = random.sample(all_elements, n)
-
-    return elements
+    except IndexError:
+        raise ValueError('Randomly chose to look for a %i-component material, '
+                         'but no such materials exist in %s. Please add one '
+                         'to the database or change the weights to exclude '
+                         'this number of components.' % (n, n, bulk_database))
 
 
 def choose_bulk(bulk_database, elements):
