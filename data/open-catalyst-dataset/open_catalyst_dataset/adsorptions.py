@@ -6,19 +6,23 @@ Note that some of these scripts were taken from
 [GASpy](https://github.com/ulissigroup/GASpy) with permission of author.
 '''
 
-__author__ = 'Kevin Tran'
-__email__ = 'ktran@andrew.cmu.edu'
+__author__ = ['Kevin Tran, Aini Palizhati']
+__email__ = ['ktran@andrew.cmu.edu', 'apalizha@andrew.cmu.edu']
 
 import math
 import random
 import numpy as np
+import catkit
 import ase
 import ase.db
+from ase import neighborlist
 from ase.constraints import FixAtoms
+from ase.utils import natural_cutoffs
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.core.surface import SlabGenerator, get_symmetrically_distinct_miller_indices
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
+from pymatgen.analysis.local_env import VoronoiNN
 
 
 ELEMENTS = {1: 'H', 2: 'He', 3: 'Li', 4: 'Be', 5: 'B', 6: 'C', 7: 'N', 8: 'O',
@@ -40,6 +44,30 @@ ELEMENTS = {1: 'H', 2: 'He', 3: 'Li', 4: 'Be', 5: 'B', 6: 'C', 7: 'N', 8: 'O',
             107: 'Bh', 108: 'Hs', 109: 'Mt', 110: 'Ds', 111: 'Rg', 112: 'Cn',
             113: 'Nh', 114: 'Fl', 115: 'Mc', 116: 'Lv', 117: 'Ts', 118: 'Og'}
 
+# Covalent radius of elements (unit is pm, 1pm=0.01 angstrom)
+# Value are taken from https://github.com/lmmentel/mendeleev
+covalent_radius = {'H': 32.0, 'He': 46.0, 'O': 63.0, 'F': 64.0, 'Ne': 67.0, 'N': 71.0,
+                   'C': 75.0, 'B': 85.0, 'Ar': 96.0, 'Cl': 99.0, 'Be': 102.0, 'S': 103.0,
+                   'Ni': 110.0, 'P': 111.0, 'Co': 111.0, 'Cu': 112.0, 'Br': 114.0,
+                   'Si': 116.0, 'Fe': 116.0, 'Se': 116.0, 'Kr': 117.0, 'Zn': 118.0,
+                   'Mn': 119.0, 'Pd': 120.0, 'Ge': 121.0, 'As': 121.0, 'Rg': 121.0,
+                   'Cr': 122.0, 'Ir': 122.0, 'Cn': 122.0, 'Pt': 123.0, 'Ga': 124.0,
+                   'Au': 124.0, 'Ru': 125.0, 'Rh': 125.0, 'Al': 126.0, 'Tc': 128.0,
+                   'Ag': 128.0, 'Ds': 128.0, 'Os': 129.0, 'Mt': 129.0, 'Xe': 131.0, 'Re': 131.0,
+                   'Li': 133.0, 'I': 133.0, 'Hg': 133.0, 'V': 134.0, 'Hs': 134.0, 'Ti': 136.0,
+                   'Cd': 136.0, 'Te': 136.0, 'Nh': 136.0, 'W': 137.0, 'Mo': 138.0, 'Mg': 139.0,
+                   'Sn': 140.0, 'Sb': 140.0, 'Bh': 141.0, 'In': 142.0, 'Rn': 142.0, 'Sg': 143.0,
+                   'Fl': 143.0, 'Tl': 144.0, 'Pb': 144.0, 'Po': 145.0, 'Ta': 146.0, 'Nb': 147.0,
+                   'At': 147.0, 'Sc': 148.0, 'Db': 149.0, 'Bi': 151.0, 'Hf': 152.0, 'Zr': 154.0,
+                   'Na': 155.0, 'Rf': 157.0, 'Og': 157.0, 'Lr': 161.0, 'Lu': 162.0, 'Mc': 162.0,
+                   'Y': 163.0, 'Ce': 163.0, 'Tm': 164.0, 'Er': 165.0, 'Es': 165.0, 'Ts': 165.0,
+                   'Ho': 166.0, 'Am': 166.0, 'Cm': 166.0, 'Dy': 167.0, 'Fm': 167.0, 'Eu': 168.0,
+                   'Tb': 168.0, 'Bk': 168.0, 'Cf': 168.0, 'Gd': 169.0, 'Pa': 169.0, 'Yb': 170.0,
+                   'U': 170.0, 'Ca': 171.0, 'Np': 171.0, 'Sm': 172.0, 'Pu': 172.0, 'Pm': 173.0,
+                   'Md': 173.0, 'Nd': 174.0, 'Th': 175.0, 'Lv': 175.0, 'Pr': 176.0, 'No': 176.0,
+                   'La': 180.0, 'Sr': 185.0, 'Ac': 186.0, 'K': 196.0, 'Ba': 196.0, 'Ra': 201.0,
+                   'Rb': 210.0, 'Fr': 223.0, 'Cs': 232.0}
+
 # We will enumerate surfaces with Miller indices <= MAX_MILLER
 MAX_MILLER = 2
 
@@ -49,7 +77,7 @@ MAX_MILLER = 2
 MIN_XY = 8.
 
 
-def sample_structures(bulk_database='bulks.db', n_species_weights=None):
+def sample_structures(bulk_database='bulks.db', adsorbate_database='adsorbates.db', n_species_weights=None):
     '''
     This parent function will randomly select an adsorption structure from a
     given set of bulks.
@@ -70,20 +98,22 @@ def sample_structures(bulk_database='bulks.db', n_species_weights=None):
                             we sampled.
     '''
     # Choose which surface we want
+    print('choosing a slab...')
     n_species = choose_n_species(n_species_weights)
     elements = choose_elements(bulk_database, n_species)
     bulk = choose_bulk(bulk_database, elements)
-    surface = choose_surface(bulk)
+    unit_surface_slab = choose_surface(bulk)
+    slab = tile_atoms(unit_surface_slab)
+    surface_atoms = find_surface_atoms_indices(bulk, slab)
 
     # Choose the adsorbate and place it on the surface
-    adsorbate = choose_adsorbate()
-    site = choose_site(surface, adsorbate)
-    adsorbed_surface = add_adsorbate_onto_surface(surface, adsorbate, site)
+    adsorbate = choose_adsorbate(adsorbate_database)
+    adsorbed_slab = add_adsorbate_onto_surface(slab, surface_atoms, adsorbate)
 
     # Add appropriate constraints
-    adsorbed_surface = constrain_surface(adsorbed_surface)
-    surface = constrain_surface(surface)
-    return adsorbed_surface, surface
+    adsorbed_slab = constrain_slab(adsorbed_slab, surface_atoms)
+    slab = constrain_slab(slab, surface_atoms)
+    return adsorbed_slab, slab
 
 
 def choose_n_species(n_species_weights):
@@ -171,6 +201,24 @@ def choose_surface(bulk_atoms):
     surface_atoms = AseAtomsAdaptor.get_atoms(surface_struct)
     return surface_atoms
 
+def choose_adsorbate(adsorbate_database):
+    '''
+    Chooses a bulks from our database at random as long as the bulk contains
+    all the specified elements.
+
+    Args:
+        adsorbate_database   A string pointing to the ASE *.db object that contains
+                             the adsorbates you want to consider.
+      
+    Returns:
+        adsorbate            A dictionary that has the following format:
+                             {'atoms_obj': Atoms(...), 'bond_index': ...}
+
+    '''
+    db = ase.db.connect(adsorbate_database)
+    all_adsorbates = [{'atoms_obj':row.toatoms(), 'bond_idx':row.data['bond_idx']} for row in db.select()]
+    adsorbate = random.choice(all_adsorbates)
+    return adsorbate
 
 def enumerate_surfaces(bulk_atoms, max_miller=MAX_MILLER):
     '''
@@ -293,25 +341,6 @@ def flip_struct(struct):
     return flipped_struct
 
 
-def choose_site(surface_atoms, adsorbate):
-    '''
-    Enumerate all the sites of a surface and then select one of them at random.
-
-    Args:
-        surface_atoms   `ase.Atoms` of the surface that you want to choose a
-                        site from
-        adsorbate       `ase.Atoms` of the adsorbate you want to place
-    Returns:
-        site    A 3-tuple of floats indicating the location of the chosen
-                adsorption site.
-    '''
-    # TODO:  Pari to update this section and add bidentate site selection
-    surface_atoms = tile_atoms(surface_atoms)
-    sites = enumerate_adsorption_sites(surface_atoms)
-    site = random.choice(sites)
-    return site
-
-
 def tile_atoms(atoms):
     '''
     This function will repeat an atoms structure in the x and y direction until
@@ -332,128 +361,202 @@ def tile_atoms(atoms):
     return atoms_tiled
 
 
-def enumerate_adsorption_sites(atoms):
+def find_surface_atoms_indices(bulk_atoms, slab_atoms):
     '''
-    A wrapper for pymatgen to get all of the adsorption sites of a slab.
-
+    A helper function referencing codes from pymatgen to
+    get a list of surface atoms indices of a slab's
+    top surface. Due to how our workflow is setup, the
+    pymatgen method cannot be directly applied.
+    Taken from pymatgen.core.surface Class Slab,
+    `get_surface_sites`.
+    https://pymatgen.org/pymatgen.core.surface.html
     Arg:
-        atoms   The slab where you are trying to find adsorption sites in
-                `ase.Atoms` format
+        bulk_atoms      `ase.Atoms` format of the respective bulk structure
+        slab_atoms      The slab where you are trying to find surface sites in
+                        `ase.Atoms` format
     Output:
-        sites   A `numpy.ndarray` object that contains the x-y-z coordinates of
-                the adsorptions sites
+        indices_list    A list that contains the indices of
+                        the surface atoms
     '''
-    struct = AseAtomsAdaptor.get_structure(atoms)
-    sites_dict = AdsorbateSiteFinder(struct).find_adsorption_sites(put_inside=True)
-    sites = sites_dict['all']
-    return sites
+    # Get a dictionary of unique coordination numbers
+    # for atoms in a bulk structure.
+    # for example, Pt would have cn=3 and cn=12 in Pt bulk
+    bulk_struct = AseAtomsAdaptor.get_structure(bulk_atoms)
+    sga = SpacegroupAnalyzer(bulk_struct)
+    sym_struct = sga.get_symmetrized_structure()
+    unique_indices = [equ[0] for equ in sym_struct.equivalent_indices]
+    voronoi_nn = VoronoiNN()
+    bulk_cn_dict = {}
+    for idx in unique_indices:
+        elem = sym_struct[idx].species_string
+        if elem not in bulk_cn_dict.keys():
+            bulk_cn_dict[elem] = []
+        cn = voronoi_nn.get_cn(sym_struct, idx, use_weights=True)
+        cn = float('%.5f' % (round(cn, 5)))
+        if cn not in bulk_cn_dict[elem]:
+            bulk_cn_dict[elem].append(cn)
+
+    # Determine the surface atoms indices from here
+    slab_struct = AseAtomsAdaptor.get_structure(slab_atoms)
+    voronoi_nn = VoronoiNN()
+    indices_list = []
+    weights = [site.species.weight for site in slab_struct]
+    center_of_mass = np.average(slab_struct.frac_coords,
+                                weights=weights, axis=0)
+
+    for idx, site in enumerate(slab_struct):
+        if site.frac_coords[2] > center_of_mass[2]:
+            try:
+                cn = voronoi_nn.get_cn(slab_struct, idx, use_weights=True)
+                cn = float('%.5f' % (round(cn, 5)))
+                # surface atoms are under-coordinated
+                if cn < min(bulk_cn_dict[site.species_string]):
+                    indices_list.append(idx)
+            except RuntimeError:
+                # or if pathological error is returned,
+                # indicating a surface site
+                indices_list.append(idx)
+    return indices_list
 
 
-def choose_adsorbate():
-    '''
-    Randomly chooses an adsorbate from our pool of adsorbates.
 
-    Returns:
-        adsorbate   `ase.Atoms` object of the chosen adsorbate.
-    '''
-    # TODO:  Kevin to add the real adsorbates here
-    CO = ase.Atoms('CO', positions=[[0., 0., 0.], [0., 0., 1.2]])
-    return CO
-
-
-def add_adsorbate_onto_surface(surface, adsorbate, site):
+def add_adsorbate_onto_surface(slab_atoms, surface_sites, adsorbate):
     '''
     There are a lot of small details that need to be considered when adding an
     adsorbate onto a surface. This function will take care of those details for
     you.
 
     Args:
-        surface     An `ase.Atoms` object of the surface
-        adsorbate   An `ase.Atoms` object of the adsorbate
-        site        A 3-long sequence containing floats that indicate the
-                    cartesian coordinates of the site you want to add the
-                    adsorbate onto.
+        slab           An `ase.Atoms` object of the slab
+        surface_sites  A list of surface atoms' indices of the slab
+        adsorbate      An `ase.Atoms` object of the adsorbate
+
     Returns:
-        ads_surface     An `ase.Atoms` object containing the adsorbate and
-                        surface. Slab atoms will be tagged with a `0` and
-                        adsorbate atoms will be tagged with a `1`.
+        ads_slab       An `ase graphic Atoms` object containing the adsorbate and
+                       surface. Slab atoms will be tagged with a `0` and
+                       adsorbate atoms will be tagged with a `1`.
     '''
-    adsorbate = adsorbate.copy()  # To make sure we don't mess with the original
-    adsorbate.translate(site)
-    # TODO:  Pari to incorporate the adsorption vector changes around here
+    # convert slab atoms into graphic atoms object
+    slab_gratoms = catkit.Gratoms(slab_atoms)
+    slab_gratoms.set_surface_atoms(surface_sites)
+    slab_gratoms.pbc = np.array([True, True, False])
 
-    ads_surface = adsorbate + surface
-    ads_surface.cell = surface.cell
-    ads_surface.pbc = [True, True, True]
+    # set up the adsorbate into graphic atoms object
+    # with its connectivity matrix
+    adsorbate_gratoms = convert_adsorbate_atoms_to_gratoms(adsorbate['atoms_obj'])
 
-    # We set the tags of surface atoms to 0, and set the tags of the adsorbate to 1.
-    tags = [1] * len(adsorbate)
-    tags.extend([0] * len(surface))
-    ads_surface.set_tags(tags)
-    return ads_surface
+    # generate all possible adsorption configurations on that slab.
+    # The "bonds" argument automatically take care of mono vs.
+    # bidentate adsorption configuration.
+    builder = catkit.gen.adsorption.Builder(slab_gratoms)
+    adslabs = builder.add_adsorbate(adsorbate_gratoms, bonds=adsorbate['bond_idx'], index=-1)
+
+    # Filter out unreasonable structures.
+    # Then pick one from the reasonable configurations list as an output.
+    reasonable_adslabs = [adslab for adslab in adslabs if is_config_reasonable(adslab) is True]
+    ads_slab = random.choice(reasonable_adslabs)
+    return ads_slab
 
 
-def constrain_surface(atoms, z_cutoff=3.):
+def get_connectivity(adsorbate):
+    """
+    helper function that gets connectivity of an atoms obj.
+    We use it for the adsorbate.
+
+    Args:
+        adsorbate  An `ase.Atoms` object of the adsorbate
+
+    Returns:
+        matrix     The connectivity matrix of the adsorbate.
+    """
+    cutoff = natural_cutoffs(adsorbate)
+    neighborList = neighborlist.NeighborList(cutoff, self_interaction=False, bothways=True)
+    neighborList.update(adsorbate)
+    matrix = neighborlist.get_connectivity_matrix(neighborList.nl).toarray()
+    return matrix
+
+
+def convert_adsorbate_atoms_to_gratoms(adsorbate):
+    """
+    convert adsorbate atoms object into graphic atoms object,
+    so the adsorbate can be placed onto the slab with optimal
+    configuration. Set tags for adsorbate atoms to 1, to distinguish
+    them from slab atoms.
+
+    Args:
+        adsorbate           An `ase.Atoms` object of the adsorbate
+
+    Returns:
+        adsorbate_gratoms   An graphic atoms object of the adsorbate.
+    """
+    connectivity = get_connectivity(adsorbate)
+    adsorbate_gratoms = catkit.Gratoms(adsorbate, edges=connectivity)
+    adsorbate_gratoms.set_tags([1]*len(adsorbate_gratoms))
+    return adsorbate_gratoms
+
+
+def is_config_reasonable(adslab):
+    """
+    helper function check to make sure adsorbate placement
+    is reasonable. For any atom in the adsorbate, if the distance
+    between the atom and slab atoms are closer than 80% of
+    their expected covalent bond, we reject that placement.
+
+    Args:
+        adslab          An `ase.Atoms` object of the adsorbate+slab complex.
+
+    Returns:
+        A boolean indicating whether or not the adsorbate placement is
+        reasonable.
+    """
+    vnn = VoronoiNN(allow_pathological=True, tol=0.2, cutoff=10)
+    adsorbate_indices = [atom.index for atom in adslab if atom.tag == 1]
+    structure = AseAtomsAdaptor.get_structure(adslab)
+
+    # check the covalent radius between each adsorbate atoms
+    # and its nearest neighbors that are slab atoms
+    for idx in adsorbate_indices:
+        nearneighbors = vnn.get_nn_info(structure, n=idx)
+        slab_nn = [nn for nn in nearneighbors if nn['site_index'] not in adsorbate_indices]
+        for nn in slab_nn:
+            ads_elem = structure[idx].species_string
+            nn_elem = structure[nn['site_index']].species_string
+            cov_bond_thres = 0.8*(covalent_radius[ads_elem]+ covalent_radius[nn_elem])/100
+            actual_dist = adslab.get_distance(idx, nn['site_index'], mic=True)
+            if actual_dist < cov_bond_thres:
+                return False
+    return True
+
+
+def constrain_slab(slab_atoms, surface_sites):
     '''
-    This function fixes sub-surface atoms of a surface. Also works on systems that
+    This function fixes sub-surface atoms of a slab. Also works on systems that
     have surface + adsorbate(s), as long as the surface atoms are tagged with `0`
     and the adsorbate atoms are tagged with positive integers.
 
     Inputs:
-        atoms       `ase.Atoms` class of the surface system. The tags of these
-                    atoms must be set such that any surface atom is tagged with
-                    `0`, and any adsorbate atom is tagged with a positive
-                    integer.
-        z_cutoff    The threshold to see if surface atoms are in the same plane
-                    as the highest atom in the surface
+        slab_atoms      `ase.Atoms` class of the surface system. The tags of these
+                        atoms must be set such that any surface atom is tagged with
+                        `0`, and any adsorbate atom is tagged with a positive
+                        integer.
+        surface_sites   A list that has the indices of top layer atoms,
+                        anything below that is fixed.
     Returns:
-        atoms   A deep copy of the `atoms` argument, but where the appropriate
-                atoms are constrained
+        atoms           A deep copy of the `atoms` argument, but where the appropriate
+                        atoms are constrained.
     '''
     # Work on a copy so that we don't modify the original
-    atoms = atoms.copy()
+    atoms = slab_atoms.copy()
 
     # We'll be making a `mask` list to feed to the `FixAtoms` class. This list
     # should contain a `True` if we want an atom to be constrained, and `False`
     # otherwise
     mask = []
-
-    # If we assume that the third component of the unit cell lattice is
-    # orthogonal to the slab surface, then atoms with higher values in the
-    # third coordinate of their scaled positions are higher in the slab. We
-    # make this assumption here, which means that we will be working with
-    # scaled positions instead of Cartesian ones.
-    scaled_positions = atoms.get_scaled_positions()
-    unit_cell_height = np.linalg.norm(atoms.cell[2])
-
-    # If the slab is pointing upwards, then fix atoms that are below the
-    # threshold
-    if atoms.cell[2, 2] > 0:
-        max_height = max(position[2] for position, atom in zip(scaled_positions, atoms)
-                         if atom.tag == 0)
-        threshold = max_height - z_cutoff / unit_cell_height
-        for position, atom in zip(scaled_positions, atoms):
-            if atom.tag == 0 and position[2] < threshold:
-                mask.append(True)
-            else:
-                mask.append(False)
-
-    # If the slab is pointing downwards, then fix atoms that are above the
-    # threshold
-    elif atoms.cell[2, 2] < 0:
-        min_height = min(position[2] for position, atom in zip(scaled_positions, atoms)
-                         if atom.tag == 0)
-        threshold = min_height + z_cutoff / unit_cell_height
-        for position, atom in zip(scaled_positions, atoms):
-            if atom.tag == 0 and position[2] > threshold:
-                mask.append(True)
-            else:
-                mask.append(False)
-
-    else:
-        raise RuntimeError('Tried to constrain a slab that points in neither '
-                           'the positive nor negative z directions, so we do '
-                           'not know which side to fix')
+    for atom in atoms:
+        if atom.tag == 0 and atom.index not in surface_sites:
+            mask.append(True)
+        else:
+            mask.append(False)
 
     atoms.constraints += [FixAtoms(mask=mask)]
     return atoms
