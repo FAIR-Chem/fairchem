@@ -5,11 +5,10 @@ Note that much of this code was taken from
 '''
 
 import os
-import copy
 from itertools import product
 import numpy as np
 import torch
-from torch_geometric.data import Data, DataLoader
+from torch_geometric.data import InMemoryDataset, Data
 import ase.db
 from pymatgen.io.ase import AseAtomsAdaptor
 from ..common.registry import registry
@@ -28,44 +27,45 @@ except NameError:
 
 
 @registry.register_dataset("gasdb")
-class Gasdb:
-    def __init__(self, config):
+class Gasdb(BaseDataset):
+    def __init__(self, config, transform=None, pre_transform=None):
+        super(BaseDataset, self).__init__(
+            config, transform, pre_transform
+        )
+
         self.config = config
-        db_dir = self.config['src']
+        ase_db_path = self.raw_file_names[0]
+        self.ase_db = ase.db.connect(ase_db_path)
 
-        for file_ in os.listdir(db_dir):
-            if file_.endswith('.db'):
-                db_path = os.path.join(db_dir, file_)
-                print("### Loading atoms objects from:  {}".format(db_path))
-                self.ase_db = ase.db.connect(db_path)
-                break
-
-        self._collate_atomic_features()
+        try:
+            self.data, self.slices = torch.load(self.processed_file_names[0])
+            print("### Loaded preprocessed data from:  {}".format(self.preprocessed_file_names))
+        except FileNotFoundError:
+            self.process()
 
     def __len__(self):
         return self.ase_db.count()
 
     @property
-    def train_size(self):
-        return self.config["train_size"]
+    def raw_file_names(self):
+        for file_ in os.listdir(self.config['src']):
+            if file_.endswith('.db'):
+                raw_file_name = os.path.join(self.config['src'], file_)
+                return [raw_file_name]
 
     @property
-    def val_size(self):
-        return self.config["val_size"]
+    def processed_file_names(self):
+        return [os.path.join(self.config['src'], 'data.pt')]
 
-    @property
-    def test_size(self):
-        return self.config["test_size"]
-
-    def _collate_atomic_features(self):
+    def process(self):
+        print("### Preprocessing atoms objects from:  {}".format(self.raw_file_names[0]))
         feature_generator = AtomicFeatureGenerator(self.ase_db)
         energies = [row.adsorption_energy for row in self.ase_db.select()]
 
         data_list = []
-
         zipped_data = zip(feature_generator, energies)
         for (embedding, distance, index), energy in tqdm(zipped_data,
-                                                         desc='collating atomic features',
+                                                         desc='preprocessing atomic features',
                                                          total=len(energies),
                                                          unit='structure'):
 
@@ -85,29 +85,47 @@ class Gasdb:
                 )
             )
 
-        self.data, _ = collate(data_list)
+        self.data, self.slices = self.collate(data_list)
+        torch.save((self.data, self.slices), self.processed_file_names[0])
 
-    def get_dataloaders(self, batch_size=None):
-        assert batch_size is not None
-        assert self.train_size + self.val_size + self.test_size <= len(self)
+    @staticmethod
+    def collate(data_list):
+        r"""Override the collation method in
+        `pytorch_geometric.data.InMemoryDataset` with Abhi's changes"""
+        keys = data_list[0].keys
+        data = data_list[0].__class__()
 
-        test_dataset = self.data[-self.test_size :]
-        train_val_dataset = self.data[: self.train_size + self.val_size].shuffle()
+        for key in keys:
+            data[key] = []
+        slices = {key: [0] for key in keys}
 
-        train_loader = DataLoader(
-            train_val_dataset[: self.train_size],
-            batch_size=batch_size,
-            shuffle=True,
-        )
-        val_loader = DataLoader(
-            train_val_dataset[
-                self.train_size : self.train_size + self.val_size
-            ],
-            batch_size=batch_size,
-        )
-        test_loader = DataLoader(test_dataset, batch_size=batch_size)
+        for item, key in product(data_list, keys):
+            data[key].append(item[key])
+            if torch.is_tensor(item[key]):
+                s = slices[key][-1] + item[key].size(
+                    item.__cat_dim__(key, item[key])
+                )
+            elif isinstance(item[key], int) or isinstance(item[key], float):
+                s = slices[key][-1] + 1
+            else:
+                raise ValueError("Unsupported attribute type")
+            slices[key].append(s)
 
-        return train_loader, val_loader, test_loader
+        if hasattr(data_list[0], "__num_nodes__"):
+            data.__num_nodes__ = []
+            for item in data_list:
+                data.__num_nodes__.append(item.num_nodes)
+
+        for key in keys:
+            if torch.is_tensor(data_list[0][key]):
+                data[key] = torch.cat(
+                    data[key], dim=data.__cat_dim__(key, data_list[0][key])
+                )
+            else:
+                data[key] = torch.tensor(data[key])
+            slices[key] = torch.tensor(slices[key], dtype=torch.long)
+
+        return data, slices
 
 
 class AtomicFeatureGenerator:
@@ -249,40 +267,3 @@ class GaussianDistance:
           len(self.filter)
         """
         return np.exp(-(distances[..., np.newaxis] - self.filter)**2 / self.var**2)
-
-
-def collate(data_list):
-    keys = data_list[0].keys
-    data = data_list[0].__class__()
-
-    for key in keys:
-        data[key] = []
-    slices = {key: [0] for key in keys}
-
-    for item, key in product(data_list, keys):
-        data[key].append(item[key])
-        if torch.is_tensor(item[key]):
-            s = slices[key][-1] + item[key].size(
-                item.__cat_dim__(key, item[key])
-            )
-        elif isinstance(item[key], int) or isinstance(item[key], float):
-            s = slices[key][-1] + 1
-        else:
-            raise ValueError("Unsupported attribute type")
-        slices[key].append(s)
-
-    if hasattr(data_list[0], "__num_nodes__"):
-        data.__num_nodes__ = []
-        for item in data_list:
-            data.__num_nodes__.append(item.num_nodes)
-
-    for key in keys:
-        if torch.is_tensor(data_list[0][key]):
-            data[key] = torch.cat(
-                data[key], dim=data.__cat_dim__(key, data_list[0][key])
-            )
-        else:
-            data[key] = torch.tensor(data[key])
-        slices[key] = torch.tensor(slices[key], dtype=torch.long)
-
-    return data, slices
