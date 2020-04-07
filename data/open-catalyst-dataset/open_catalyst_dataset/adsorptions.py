@@ -392,7 +392,7 @@ def tag_surface_atoms(bulk_atoms, surface_atoms):
                 cn = float('%.5f' % (round(cn, 5)))
                 # surface atoms are under-coordinated
                 if cn < min(bulk_cn_dict[site.species_string]):
-                    surface_indices.append(idx)
+                    surface_indices.add(idx)
             except RuntimeError:
                 # or if pathological error is returned,
                 # indicating a surface site
