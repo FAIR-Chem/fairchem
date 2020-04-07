@@ -98,13 +98,10 @@ def sample_structures(bulk_database='bulks.db', adsorbate_database='adsorbates.d
                             we sampled.
     '''
     # Choose which surface we want
-    print('choosing a slab...')
     n_species = choose_n_species(n_species_weights)
     elements = choose_elements(bulk_database, n_species)
     bulk = choose_bulk(bulk_database, elements)
-    unit_surface_slab = choose_surface(bulk)
-    slab = tile_atoms(unit_surface_slab)
-    surface_atoms = find_surface_atoms_indices(bulk, slab)
+    slab, surface_atoms = choose_surface(bulk)
 
     # Choose the adsorbate and place it on the surface
     adsorbate = choose_adsorbate(adsorbate_database)
@@ -191,15 +188,20 @@ def choose_surface(bulk_atoms):
     Enumerates and chooses a random surface from a bulk structure.
 
     Arg:
-        bulk_atoms  `ase.Atoms` object of the bulk you want to choose a
-                    surfaces from.
+        bulk_atoms           `ase.Atoms` object of the bulk you want to choose a
+                              surfaces from.
     Returns:
-        surface_atoms   `ase.Atoms` of the chosen surface
+        slab_atoms            `ase.Atoms` of the chosen surface
+        surface_atoms_list    A list that contains the indices of
+                              the surface atoms
+        
     '''
-    surfaces = enumerate_surfaces(bulk_atoms)
-    surface_struct = random.choice(surfaces)
-    surface_atoms = AseAtomsAdaptor.get_atoms(surface_struct)
-    return surface_atoms
+    slabs = enumerate_surfaces(bulk_atoms)
+    slab_struct = random.choice(slabs)
+    unit_slab_atoms = AseAtomsAdaptor.get_atoms(slab_struct)
+    slab_atoms = tile_atoms(unit_surface_slab)
+    surface_atoms_list = find_surface_atoms_indices(bulk_atoms, slab_atoms)
+    return slab_atoms, surface_atoms_list
 
 def choose_adsorbate(adsorbate_database):
     '''
@@ -208,15 +210,14 @@ def choose_adsorbate(adsorbate_database):
 
     Args:
         adsorbate_database   A string pointing to the ASE *.db object that contains
-                             the adsorbates you want to consider.
-      
+                             the adsorbates you want to consider.      
     Returns:
         adsorbate            A dictionary that has the following format:
                              {'atoms_obj': Atoms(...), 'bond_index': ...}
 
     '''
     db = ase.db.connect(adsorbate_database)
-    all_adsorbates = [{'atoms_obj':row.toatoms(), 'bond_idx':row.data['bond_idx']} for row in db.select()]
+    all_adsorbates = [{'atoms_obj': row.toatoms(), 'bond_idx': row.data['bond_idx']} for row in db.select()]
     adsorbate = random.choice(all_adsorbates)
     return adsorbate
 
@@ -363,10 +364,8 @@ def tile_atoms(atoms):
 
 def find_surface_atoms_indices(bulk_atoms, slab_atoms):
     '''
-    A helper function referencing codes from pymatgen to
-    get a list of surface atoms indices of a slab's
-    top surface. Due to how our workflow is setup, the
-    pymatgen method cannot be directly applied.
+    Referencing codes from pymatgen to get a list of surface 
+    atoms indices of a slab's top surface. 
     Taken from pymatgen.core.surface Class Slab,
     `get_surface_sites`.
     https://pymatgen.org/pymatgen.core.surface.html
@@ -419,7 +418,6 @@ def find_surface_atoms_indices(bulk_atoms, slab_atoms):
     return indices_list
 
 
-
 def add_adsorbate_onto_surface(slab_atoms, surface_sites, adsorbate):
     '''
     There are a lot of small details that need to be considered when adding an
@@ -460,8 +458,7 @@ def add_adsorbate_onto_surface(slab_atoms, surface_sites, adsorbate):
 
 def get_connectivity(adsorbate):
     """
-    helper function that gets connectivity of an atoms obj.
-    We use it for the adsorbate.
+    Generate the connectivity of an adsorbate atoms obj.
 
     Args:
         adsorbate  An `ase.Atoms` object of the adsorbate
@@ -478,7 +475,7 @@ def get_connectivity(adsorbate):
 
 def convert_adsorbate_atoms_to_gratoms(adsorbate):
     """
-    convert adsorbate atoms object into graphic atoms object,
+    Convert adsorbate atoms object into graphic atoms object,
     so the adsorbate can be placed onto the slab with optimal
     configuration. Set tags for adsorbate atoms to 1, to distinguish
     them from slab atoms.
@@ -497,7 +494,7 @@ def convert_adsorbate_atoms_to_gratoms(adsorbate):
 
 def is_config_reasonable(adslab):
     """
-    helper function check to make sure adsorbate placement
+    Function that check weather the adsorbate placement
     is reasonable. For any atom in the adsorbate, if the distance
     between the atom and slab atoms are closer than 80% of
     their expected covalent bond, we reject that placement.
