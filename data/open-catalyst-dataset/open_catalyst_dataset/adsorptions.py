@@ -22,6 +22,7 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.core.surface import SlabGenerator, get_symmetrically_distinct_miller_indices
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.analysis.local_env import VoronoiNN
+from .ase_db import ADSORBATE_DB
 
 
 ELEMENTS = {1: 'H', 2: 'He', 3: 'Li', 4: 'Be', 5: 'B', 6: 'C', 7: 'N', 8: 'O',
@@ -77,7 +78,7 @@ MIN_XY = 8.
 
 
 def sample_structures(bulk_database='bulks.db',
-                      adsorbate_database='adsorbates.db',
+                      adsorbate_database=ADSORBATE_DB,
                       n_cat_elems_weights=None):
     '''
     This parent function will randomly select an adsorption structure from a
