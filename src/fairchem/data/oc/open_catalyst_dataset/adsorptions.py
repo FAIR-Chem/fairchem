@@ -415,12 +415,13 @@ def choose_adsorbate(adsorbate_database):
                              {'atoms_obj': Atoms(...), 'bond_index': ...}
     '''
     db = ase.db.connect(adsorbate_database)
-    all_adsorbates = [{'atoms_obj': row.toatoms(), 'bond_idx': row.data['bond_idx']} for row in db.select()]
+    all_adsorbates = [{'atoms_obj': row.toatoms(),
+                       'bond_idx': row.data['bond_idx']} for row in db.select()]
     adsorbate = random.choice(all_adsorbates)
     return adsorbate
 
 
-def add_adsorbate_onto_surface(surface_atoms, surface_sites, adsorbate):
+def add_adsorbate_onto_surface(surface_atoms, adsorbate):
     '''
     There are a lot of small details that need to be considered when adding an
     adsorbate onto a surface. This function will take care of those details for
@@ -428,9 +429,7 @@ def add_adsorbate_onto_surface(surface_atoms, surface_sites, adsorbate):
 
     Args:
         surface         An `ase.Atoms` object of the surface
-        surface_sites   A list of surface atoms' indices of the surface
         adsorbate       An `ase.Atoms` object of the adsorbate
-
     Returns:
         ads_surface     An `ase graphic Atoms` object containing the adsorbate and
                         surface. The bulk atoms will be tagged with `0`; the
