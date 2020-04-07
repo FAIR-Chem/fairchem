@@ -92,9 +92,10 @@ def sample_structures(bulk_database='bulks.db',
                             number. The probabilities must sum to 1.
     Returns:
         adsorbed_surface    `ase.Atoms` object containing a surface with a
-                            random adsorbate placed on it. The surface atoms
-                            will be tagged with `0` while the adsorbate atoms
-                            will be tagged with `1`.
+                            random adsorbate placed on it. The bulk atoms
+                            will be tagged with `0`; the surface atoms will be
+                            tagged with `1`, and the the adsorbate atoms will
+                            be tagged with `2` or above.
         surface             `ase.Atoms` object containing only the surface that
                             we sampled.
     '''
@@ -102,15 +103,15 @@ def sample_structures(bulk_database='bulks.db',
     n_species = choose_n_species(n_species_weights)
     elements = choose_elements(bulk_database, n_species)
     bulk = choose_bulk(bulk_database, elements)
-    surface, surface_atoms = choose_surface(bulk)
+    surface = choose_surface(bulk)
 
     # Choose the adsorbate and place it on the surface
     adsorbate = choose_adsorbate(adsorbate_database)
-    adsorbed_surface = add_adsorbate_onto_surface(surface, surface_atoms, adsorbate)
+    adsorbed_surface = add_adsorbate_onto_surface(surface, adsorbate)
 
     # Add appropriate constraints
-    adsorbed_surface = constrain_surface(adsorbed_surface, surface_atoms)
-    surface = constrain_surface(surface, surface_atoms)
+    adsorbed_surface = constrain_surface(adsorbed_surface)
+    surface = constrain_surface(surface)
     return adsorbed_surface, surface
 
 
@@ -193,15 +194,13 @@ def choose_surface(bulk_atoms):
                              surfaces from.
     Returns:
         surface_atoms       `ase.Atoms` of the chosen surface
-        surface_atoms_list  A list that contains the indices of the surface
-                            atoms
     '''
     surfaces = enumerate_surfaces(bulk_atoms)
     surface_struct = random.choice(surfaces)
     unit_surface_atoms = AseAtomsAdaptor.get_atoms(surface_struct)
     surface_atoms = tile_atoms(unit_surface_atoms)
-    surface_atoms_list = find_surface_atoms_indices(bulk_atoms, surface_atoms)
-    return surface_atoms, surface_atoms_list
+    tag_surface_atoms(bulk_atoms, surface_atoms)
+    return surface_atoms
 
 
 def choose_adsorbate(adsorbate_database):
@@ -363,7 +362,7 @@ def tile_atoms(atoms):
     return atoms_tiled
 
 
-def find_surface_atoms_indices(bulk_atoms, surface_atoms):
+def tag_surface_atoms(bulk_atoms, surface_atoms):
     '''
     Referencing codes from pymatgen to get a list of surface atoms indices of a
     surface's top surface.  Taken from pymatgen.core.surface Class Slab,
@@ -398,11 +397,11 @@ def find_surface_atoms_indices(bulk_atoms, surface_atoms):
     # Determine the surface atoms indices from here
     surface_struct = AseAtomsAdaptor.get_structure(surface_atoms)
     voronoi_nn = VoronoiNN()
-    indices_list = []
     weights = [site.species.weight for site in surface_struct]
     center_of_mass = np.average(surface_struct.frac_coords,
                                 weights=weights, axis=0)
 
+    surface_indices = set()
     for idx, site in enumerate(surface_struct):
         if site.frac_coords[2] > center_of_mass[2]:
             try:
@@ -410,12 +409,15 @@ def find_surface_atoms_indices(bulk_atoms, surface_atoms):
                 cn = float('%.5f' % (round(cn, 5)))
                 # surface atoms are under-coordinated
                 if cn < min(bulk_cn_dict[site.species_string]):
-                    indices_list.append(idx)
+                    surface_indices.append(idx)
             except RuntimeError:
                 # or if pathological error is returned,
                 # indicating a surface site
-                indices_list.append(idx)
-    return indices_list
+                surface_indices.add(idx)
+
+    tags = [1 if i in surface_indices else 0
+            for i, _ in enumerate(surface_atoms)]
+    surface_atoms.set_tags(tags)
 
 
 def add_adsorbate_onto_surface(surface_atoms, surface_sites, adsorbate):
@@ -431,12 +433,15 @@ def add_adsorbate_onto_surface(surface_atoms, surface_sites, adsorbate):
 
     Returns:
         ads_surface     An `ase graphic Atoms` object containing the adsorbate and
-                        surface. Slab atoms will be tagged with a `0` and
-                        adsorbate atoms will be tagged with a `1`.
+                        surface. The bulk atoms will be tagged with `0`; the
+                        surface atoms will be tagged with `1`, and the the
+                        adsorbate atoms will be tagged with `2` or above.
     '''
     # convert surface atoms into graphic atoms object
     surface_gratoms = catkit.Gratoms(surface_atoms)
-    surface_gratoms.set_surface_atoms(surface_sites)
+    surface_atom_indices = [i for i, atom in enumerate(surface_atoms)
+                            if atom.tag == 1]
+    surface_gratoms.set_surface_atoms(surface_atom_indices)
     surface_gratoms.pbc = np.array([True, True, False])
 
     # set up the adsorbate into graphic atoms object
@@ -480,7 +485,7 @@ def convert_adsorbate_atoms_to_gratoms(adsorbate):
     """
     Convert adsorbate atoms object into graphic atoms object,
     so the adsorbate can be placed onto the surface with optimal
-    configuration. Set tags for adsorbate atoms to 1, to distinguish
+    configuration. Set tags for adsorbate atoms to 2, to distinguish
     them from surface atoms.
 
     Args:
@@ -491,7 +496,7 @@ def convert_adsorbate_atoms_to_gratoms(adsorbate):
     """
     connectivity = get_connectivity(adsorbate)
     adsorbate_gratoms = catkit.Gratoms(adsorbate, edges=connectivity)
-    adsorbate_gratoms.set_tags([1]*len(adsorbate_gratoms))
+    adsorbate_gratoms.set_tags([2]*len(adsorbate_gratoms))
     return adsorbate_gratoms
 
 
@@ -510,7 +515,7 @@ def is_config_reasonable(adslab):
         reasonable.
     """
     vnn = VoronoiNN(allow_pathological=True, tol=0.2, cutoff=10)
-    adsorbate_indices = [atom.index for atom in adslab if atom.tag == 1]
+    adsorbate_indices = [atom.index for atom in adslab if atom.tag == 2]
     structure = AseAtomsAdaptor.get_structure(adslab)
 
     # check the covalent radius between each adsorbate atoms
@@ -528,19 +533,18 @@ def is_config_reasonable(adslab):
     return True
 
 
-def constrain_surface(atoms, surface_sites):
+def constrain_surface(atoms):
     '''
-    This function fixes sub-surface atoms of a surface. Also works on systems that
-    have surface + adsorbate(s), as long as the surface atoms are tagged with `0`
-    and the adsorbate atoms are tagged with positive integers.
+    This function fixes sub-surface atoms of a surface. Also works on systems
+    that have surface + adsorbate(s), as long as the bulk atoms are tagged with
+    `0`, surface atoms are tagged with `1`, and the adsorbate atoms are tagged
+    with `2` or above
 
     Inputs:
-        atoms           `ase.Atoms` class of the surface system. The tags of these
-                        atoms must be set such that any surface atom is tagged with
-                        `0`, and any adsorbate atom is tagged with a positive
-                        integer.
-        surface_sites   A list that has the indices of top layer atoms,
-                        anything below that is fixed.
+        atoms           `ase.Atoms` class of the surface system. The tags of
+                        these atoms must be set such that any bulk/surface
+                        atoms are tagged with `0` or `1`, resectively, and any
+                        adsorbate atom is tagged with a 2 or above.
     Returns:
         atoms           A deep copy of the `atoms` argument, but where the appropriate
                         atoms are constrained.
@@ -551,12 +555,6 @@ def constrain_surface(atoms, surface_sites):
     # We'll be making a `mask` list to feed to the `FixAtoms` class. This list
     # should contain a `True` if we want an atom to be constrained, and `False`
     # otherwise
-    mask = []
-    for atom in atoms:
-        if atom.tag == 0 and atom.index not in surface_sites:
-            mask.append(True)
-        else:
-            mask.append(False)
-
+    mask = [True if atom.tag == 0 else False for atom in atoms]
     atoms.constraints += [FixAtoms(mask=mask)]
     return atoms
