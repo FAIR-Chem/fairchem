@@ -11,5 +11,5 @@ setup(name='open_catalyst_dataset',
       packages=['open_catalyst_dataset'],
       scripts=[],
       include_package_data=True,
-      install_requires=['pymatgen','ase', 'catkit>=0.5.4'],
+      install_requires=['pymatgen', 'ase>=3.19', 'catkit>=0.5.4'],
       long_description='''Module for generating random catalyst adsorption configurations for high-throughput dataset generation.''',)
