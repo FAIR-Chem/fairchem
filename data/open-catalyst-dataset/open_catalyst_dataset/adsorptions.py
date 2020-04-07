@@ -78,7 +78,7 @@ MIN_XY = 8.
 
 def sample_structures(bulk_database='bulks.db',
                       adsorbate_database='adsorbates.db',
-                      n_species_weights=None):
+                      n_cat_elems_weights=None):
     '''
     This parent function will randomly select an adsorption structure from a
     given set of bulks.
@@ -86,7 +86,7 @@ def sample_structures(bulk_database='bulks.db',
     Args:
         bulk_database       A string pointing to the ASE *.db object that
                             contains the bulks you want to consider.
-        n_species_weights   A dictionary whose keys are integers containing the
+        n_cat_elems_weights A dictionary whose keys are integers containing the
                             number of species you want to consider and whose
                             values are the probabilities of selecting this
                             number. The probabilities must sum to 1.
@@ -100,8 +100,8 @@ def sample_structures(bulk_database='bulks.db',
                             we sampled.
     '''
     # Choose which surface we want
-    n_species = choose_n_species(n_species_weights)
-    elements = choose_elements(bulk_database, n_species)
+    n_elems = choose_n_elems(n_cat_elems_weights)
+    elements = choose_elements(bulk_database, n_elems)
     bulk = choose_bulk(bulk_database, elements)
     surface = choose_surface(bulk)
 
@@ -115,27 +115,27 @@ def sample_structures(bulk_database='bulks.db',
     return adsorbed_surface, surface
 
 
-def choose_n_species(n_species_weights):
+def choose_n_elems(n_cat_elems_weights):
     '''
     Chooses the number of species we should look for in this sample.
 
     Arg:
-        n_species_weights   A dictionary whose keys are integers containing the
+        n_cat_elems_weights A dictionary whose keys are integers containing the
                             number of species you want to consider and whose
                             values are the probabilities of selecting this
                             number. The probabilities must sum to 1.
     Returns:
-        n_species   An integer showing how many species have been chosen.
+        n_elems     An integer showing how many species have been chosen.
     '''
-    if n_species_weights is None:
-        n_species_weights = {1: 0.05, 2: 0.65, 3: 0.3}
+    if n_cat_elems_weights is None:
+        n_cat_elems_weights = {1: 0.05, 2: 0.65, 3: 0.3}
 
-    n_species = list(n_species_weights.keys())
-    weights = list(n_species_weights.values())
+    n_elems = list(n_cat_elems_weights.keys())
+    weights = list(n_cat_elems_weights.values())
     assert math.isclose(sum(weights), 1)
 
-    n_species = np.random.choice(n_species, p=weights)
-    return n_species
+    n_elems = np.random.choice(n_elems, p=weights)
+    return n_elems
 
 
 def choose_elements(bulk_database, n):
