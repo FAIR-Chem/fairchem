@@ -6,8 +6,8 @@ Note that some of these scripts were taken from
 [GASpy](https://github.com/ulissigroup/GASpy) with permission of author.
 '''
 
-__author__ = ['Kevin Tran, Aini Palizhati']
-__email__ = ['ktran@andrew.cmu.edu', 'apalizha@andrew.cmu.edu']
+__authors__ = ['Kevin Tran, Aini Palizhati']
+__emails__ = ['ktran@andrew.cmu.edu', 'apalizha@andrew.cmu.edu']
 
 import math
 import random
@@ -21,7 +21,6 @@ from ase.neighborlist import natural_cutoffs
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.core.surface import SlabGenerator, get_symmetrically_distinct_miller_indices
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from pymatgen.analysis.local_env import VoronoiNN
 
 
@@ -77,7 +76,9 @@ MAX_MILLER = 2
 MIN_XY = 8.
 
 
-def sample_structures(bulk_database='bulks.db', adsorbate_database='adsorbates.db', n_species_weights=None):
+def sample_structures(bulk_database='bulks.db',
+                      adsorbate_database='adsorbates.db',
+                      n_species_weights=None):
     '''
     This parent function will randomly select an adsorption structure from a
     given set of bulks.
@@ -194,7 +195,6 @@ def choose_surface(bulk_atoms):
         slab_atoms            `ase.Atoms` of the chosen surface
         surface_atoms_list    A list that contains the indices of
                               the surface atoms
-        
     '''
     slabs = enumerate_surfaces(bulk_atoms)
     slab_struct = random.choice(slabs)
@@ -203,6 +203,7 @@ def choose_surface(bulk_atoms):
     surface_atoms_list = find_surface_atoms_indices(bulk_atoms, slab_atoms)
     return slab_atoms, surface_atoms_list
 
+
 def choose_adsorbate(adsorbate_database):
     '''
     Chooses a bulks from our database at random as long as the bulk contains
@@ -210,16 +211,16 @@ def choose_adsorbate(adsorbate_database):
 
     Args:
         adsorbate_database   A string pointing to the ASE *.db object that contains
-                             the adsorbates you want to consider.      
+                             the adsorbates you want to consider.
     Returns:
         adsorbate            A dictionary that has the following format:
                              {'atoms_obj': Atoms(...), 'bond_index': ...}
-
     '''
     db = ase.db.connect(adsorbate_database)
     all_adsorbates = [{'atoms_obj': row.toatoms(), 'bond_idx': row.data['bond_idx']} for row in db.select()]
     adsorbate = random.choice(all_adsorbates)
     return adsorbate
+
 
 def enumerate_surfaces(bulk_atoms, max_miller=MAX_MILLER):
     '''
@@ -364,11 +365,10 @@ def tile_atoms(atoms):
 
 def find_surface_atoms_indices(bulk_atoms, slab_atoms):
     '''
-    Referencing codes from pymatgen to get a list of surface 
-    atoms indices of a slab's top surface. 
-    Taken from pymatgen.core.surface Class Slab,
-    `get_surface_sites`.
-    https://pymatgen.org/pymatgen.core.surface.html
+    Referencing codes from pymatgen to get a list of surface atoms indices of a
+    slab's top surface.  Taken from pymatgen.core.surface Class Slab,
+    `get_surface_sites`.  https://pymatgen.org/pymatgen.core.surface.html
+
     Arg:
         bulk_atoms      `ase.Atoms` format of the respective bulk structure
         slab_atoms      The slab where you are trying to find surface sites in
@@ -518,7 +518,7 @@ def is_config_reasonable(adslab):
         for nn in slab_nn:
             ads_elem = structure[idx].species_string
             nn_elem = structure[nn['site_index']].species_string
-            cov_bond_thres = 0.8*(covalent_radius[ads_elem]+ covalent_radius[nn_elem])/100
+            cov_bond_thres = 0.8 * (covalent_radius[ads_elem] + covalent_radius[nn_elem])/100
             actual_dist = adslab.get_distance(idx, nn['site_index'], mic=True)
             if actual_dist < cov_bond_thres:
                 return False
