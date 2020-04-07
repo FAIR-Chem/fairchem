@@ -199,7 +199,7 @@ def choose_surface(bulk_atoms):
     slabs = enumerate_surfaces(bulk_atoms)
     slab_struct = random.choice(slabs)
     unit_slab_atoms = AseAtomsAdaptor.get_atoms(slab_struct)
-    slab_atoms = tile_atoms(unit_surface_slab)
+    slab_atoms = tile_atoms(unit_slab_atoms)
     surface_atoms_list = find_surface_atoms_indices(bulk_atoms, slab_atoms)
     return slab_atoms, surface_atoms_list
 
