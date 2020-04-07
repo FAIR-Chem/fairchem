@@ -203,24 +203,6 @@ def choose_surface(bulk_atoms):
     return surface_atoms
 
 
-def choose_adsorbate(adsorbate_database):
-    '''
-    Chooses a bulks from our database at random as long as the bulk contains
-    all the specified elements.
-
-    Args:
-        adsorbate_database   A string pointing to the ASE *.db object that contains
-                             the adsorbates you want to consider.
-    Returns:
-        adsorbate            A dictionary that has the following format:
-                             {'atoms_obj': Atoms(...), 'bond_index': ...}
-    '''
-    db = ase.db.connect(adsorbate_database)
-    all_adsorbates = [{'atoms_obj': row.toatoms(), 'bond_idx': row.data['bond_idx']} for row in db.select()]
-    adsorbate = random.choice(all_adsorbates)
-    return adsorbate
-
-
 def enumerate_surfaces(bulk_atoms, max_miller=MAX_MILLER):
     '''
     Enumerate all the symmetrically distinct surfaces of a bulk structure. It
@@ -418,6 +400,24 @@ def tag_surface_atoms(bulk_atoms, surface_atoms):
     tags = [1 if i in surface_indices else 0
             for i, _ in enumerate(surface_atoms)]
     surface_atoms.set_tags(tags)
+
+
+def choose_adsorbate(adsorbate_database):
+    '''
+    Chooses a bulks from our database at random as long as the bulk contains
+    all the specified elements.
+
+    Args:
+        adsorbate_database   A string pointing to the ASE *.db object that contains
+                             the adsorbates you want to consider.
+    Returns:
+        adsorbate            A dictionary that has the following format:
+                             {'atoms_obj': Atoms(...), 'bond_index': ...}
+    '''
+    db = ase.db.connect(adsorbate_database)
+    all_adsorbates = [{'atoms_obj': row.toatoms(), 'bond_idx': row.data['bond_idx']} for row in db.select()]
+    adsorbate = random.choice(all_adsorbates)
+    return adsorbate
 
 
 def add_adsorbate_onto_surface(surface_atoms, surface_sites, adsorbate):
