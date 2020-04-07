@@ -17,7 +17,7 @@ import ase
 import ase.db
 from ase import neighborlist
 from ase.constraints import FixAtoms
-from ase.utils import natural_cutoffs
+from ase.neighborlist import natural_cutoffs
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.core.surface import SlabGenerator, get_symmetrically_distinct_miller_indices
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
