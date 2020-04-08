@@ -4,13 +4,13 @@ import os
 import random
 import time
 
-import demjson
 import numpy as np
+import yaml
+
+import demjson
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import yaml
-
 from baselines.common.logger import TensorboardLogger, WandBLogger
 from baselines.common.meter import Meter, mae, mae_ratio
 from baselines.common.registry import registry
@@ -27,7 +27,7 @@ from baselines.datasets import (
     UlissigroupCO,
     XieGrossmanMatProj,
 )
-from baselines.models import CGCNN, Transformer
+from baselines.models import CGCNN, CGCNNGu, Transformer
 from baselines.modules.normalizer import Normalizer
 
 
