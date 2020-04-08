@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
+from torch_geometric.nn import global_mean_pool
+
 from baselines.common.registry import registry
 from baselines.models.base import BaseModel
 from baselines.modules.layers import AttentionConv
-from torch_geometric.nn import global_mean_pool
 
 
 @registry.register_model("transformer")

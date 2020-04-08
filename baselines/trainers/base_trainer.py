@@ -22,6 +22,7 @@ from baselines.common.utils import (
 )
 from baselines.datasets import (
     ISO17,
+    Gasdb,
     QM9Dataset,
     UlissigroupCO,
     XieGrossmanMatProj,
@@ -30,6 +31,7 @@ from baselines.models import CGCNN, Transformer
 from baselines.modules.normalizer import Normalizer
 
 
+@registry.register_trainer("base")
 class BaseTrainer:
     def __init__(self, args=None):
         # defaults.
