@@ -1,8 +1,9 @@
-# Baselines
+# Open-Catalyst-Project Models
 
 Implements the following baselines that take arbitrary chemical structures as
 input to predict material properties:
 - [Crystal Graph Convolutional Neural Networks (CGCNN)](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301).
+- Modified version of CGCNN as proposed in [Gu et al., 2020](https://pubs.acs.org/doi/abs/10.1021/acs.jpclett.0c00634).
 - [Path-Augmented Graph Transformer Network](https://arxiv.org/abs/1905.12712).
 Also related to [Graph Attention Networks](https://arxiv.org/abs/1710.10903) and
 [Graph Transformer](https://openreview.net/forum?id=HJei-2RcK7).
@@ -18,21 +19,22 @@ This package requires:
 The easiest way of installing the prerequisites is via [conda](https://conda.io/docs/index.html).
 After installing [conda](http://conda.pydata.org/), run the following command to
 create a new [environment](https://conda.io/docs/user-guide/tasks/manage-environments.html)
-named `ocp-baselines` and install all prerequisites:
+named `ocp-models` and install all prerequisites:
 
 ```bash
 conda upgrade conda
-conda create -n ocp-baselines python=3.6
+conda create -n ocp-models python=3.6
 
-conda activate ocp-baselines
+conda activate ocp-models
 pip install -r requirements.txt
+pre-commit install
 ```
 
 This creates a conda environment and installs necessary python packages for
-running various baselines. Activate the environment by:
+running various models. Activate the environment by:
 
 ```bash
-conda activate ocp-baselines
+conda activate ocp-models
 ```
 
 Then you can test if all the prerequisites are installed properly by running:

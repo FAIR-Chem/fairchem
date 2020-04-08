@@ -2,7 +2,7 @@ import torch
 import wandb
 from torch.utils.tensorboard import SummaryWriter
 
-from baselines.common.registry import registry
+from ocpmodels.common.registry import registry
 
 
 class Logger:
