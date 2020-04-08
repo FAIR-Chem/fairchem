@@ -39,12 +39,9 @@ class Gasdb(BaseDataset):
 
         try:
             self.data, self.slices = torch.load(self.processed_file_names[0])
-            print("### Loaded preprocessed data from:  {}".format(self.preprocessed_file_names))
+            print("### Loaded preprocessed data from:  {}".format(self.processed_file_names))
         except FileNotFoundError:
             self.process()
-
-    def __len__(self):
-        return self.ase_db.count()
 
     @property
     def raw_file_names(self):
@@ -159,11 +156,11 @@ class AtomicFeatureGenerator:
         self.gdf = GaussianDistance(dmin=dmin, dmax=self.radius, step=step)
         self.num = start
 
-    def __len__(self):
-        return self.ase_db.count()
-
     def __iter__(self):
         return self
+
+    def __len__(self):
+        return self.ase_db.count()
 
     def __next__(self):
         try:
