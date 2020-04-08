@@ -1,9 +1,10 @@
 import torch_geometric.transforms as T
+from torch_geometric.data import DataLoader
+from torch_geometric.datasets import QM9
+
 from baselines.common.registry import registry
 from baselines.common.utils import Complete
 from baselines.datasets.base import BaseDataset
-from torch_geometric.data import DataLoader
-from torch_geometric.datasets import QM9
 
 
 @registry.register_dataset("qm9")

@@ -1,6 +1,7 @@
+from torch_geometric.data import DataLoader
+
 from baselines.common.registry import registry
 from baselines.datasets.base import BaseDataset
-from torch_geometric.data import DataLoader
 
 
 @registry.register_dataset("iso17")
