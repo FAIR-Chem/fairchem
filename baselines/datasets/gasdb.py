@@ -45,6 +45,8 @@ class Gasdb(BaseDataset):
 
     @property
     def raw_file_names(self):
+        r'''This method/property will use the first `*.db` object in the source
+        directory.'''
         for file_ in os.listdir(self.config['src']):
             if file_.endswith('.db'):
                 raw_file_name = os.path.join(self.config['src'], file_)
