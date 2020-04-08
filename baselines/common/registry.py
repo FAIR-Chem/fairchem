@@ -24,6 +24,7 @@ class Registry:
         "dataset_name_mapping": {},
         "model_name_mapping": {},
         "logger_name_mapping": {},
+        "trainer_name_mapping": {},
         "state": {},
     }
 
@@ -73,6 +74,7 @@ class Registry:
 
         return wrap
 
+    @classmethod
     def register_logger(cls, name):
         r"""Register a logger to registry with key 'name'
 
@@ -83,7 +85,7 @@ class Registry:
 
             from baselines.common.registry import registry
 
-            @registry.register_model("tensorboard")
+            @registry.register_logger("tensorboard")
             class WandB():
                 ...
         """
@@ -95,6 +97,28 @@ class Registry:
                 func, Logger
             ), "All loggers must inherit Logger class"
             cls.mapping["logger_name_mapping"][name] = func
+            return func
+
+        return wrap
+
+    @classmethod
+    def register_trainer(cls, name):
+        r"""Register a trainer to registry with key 'name'
+
+        Args:
+            name: Key with which the trainer will be registered.
+
+        Usage::
+
+            from baselines.common.registry import registry
+
+            @registry.register_trainer("active_discovery")
+            class ActiveDiscoveryTrainer():
+                ...
+        """
+
+        def wrap(func):
+            cls.mapping["trainer_name_mapping"][name] = func
             return func
 
         return wrap
@@ -133,6 +157,10 @@ class Registry:
     @classmethod
     def get_logger_class(cls, name):
         return cls.mapping["logger_name_mapping"].get(name, None)
+
+    @classmethod
+    def get_trainer_class(cls, name):
+        return cls.mapping["trainer_name_mapping"].get(name, None)
 
     @classmethod
     def get(cls, name, default=None, no_warning=False):

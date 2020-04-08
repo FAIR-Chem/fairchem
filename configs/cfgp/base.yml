@@ -1,0 +1,15 @@
+dataset:
+  src: data/data/gasdb
+  train_size: 37000
+  val_size: 8000
+  test_size: 2000
+
+logger: wandb
+
+task:
+  dataset: gasdb
+  description: "Binding energy regression on a dataset of DFT results for CO, H, N, O, and OH adsorption on various slabs."
+  type: regression
+  metric: mae
+  labels:
+    - binding energy

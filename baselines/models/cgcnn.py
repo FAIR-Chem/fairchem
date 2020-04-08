@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
+from torch_geometric.nn import global_mean_pool
+
 from baselines.common.registry import registry
 from baselines.models.base import BaseModel
 from baselines.modules.layers import CGCNNConv
-from torch_geometric.nn import global_mean_pool
 
 
 @registry.register_model("cgcnn")
@@ -43,12 +44,20 @@ class CGCNN(BaseModel):
         self.fc_out = nn.Linear(fc_feat_size, self.num_targets)
 
     def forward(self, data):
-        node_feats = self.embedding(data.x)
-        for f in self.convs:
-            node_feats = f(node_feats, data.edge_index, data.edge_attr)
-        mol_feats = global_mean_pool(node_feats, data.batch)
+        mol_feats = self._convolve(data)
         mol_feats = self.conv_to_fc(mol_feats)
         if hasattr(self, "fcs"):
             mol_feats = self.fcs(mol_feats)
         out = self.fc_out(mol_feats)
         return out
+
+    def _convolve(self, data):
+        """
+        Returns the output of the convolution layers before they are passed
+        into the dense layers.
+        """
+        node_feats = self.embedding(data.x)
+        for f in self.convs:
+            node_feats = f(node_feats, data.edge_index, data.edge_attr)
+        mol_feats = global_mean_pool(node_feats, data.batch)
+        return mol_feats
