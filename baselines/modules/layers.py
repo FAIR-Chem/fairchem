@@ -13,34 +13,37 @@ class CGCNNConv(MessagePassing):
 
     def __init__(self, node_dim, edge_dim, **kwargs):
         super(CGCNNConv, self).__init__(aggr="add")
-        self.node_dim = node_dim
-        self.edge_dim = edge_dim
+        self.node_feat_size = node_dim
+        self.edge_feat_size = edge_dim
 
         self.fc_pre = nn.Sequential(
-            nn.Linear(2 * self.node_dim + self.edge_dim, 2 * self.node_dim),
-            nn.BatchNorm1d(2 * self.node_dim),
+            nn.Linear(
+                2 * self.node_feat_size + self.edge_feat_size,
+                2 * self.node_feat_size,
+            ),
+            nn.BatchNorm1d(2 * self.node_feat_size),
         )
 
-        self.fc_post = nn.Sequential(nn.BatchNorm1d(self.node_dim))
+        self.fc_post = nn.Sequential(nn.BatchNorm1d(self.node_feat_size))
 
     def forward(self, x, edge_index, edge_attr):
         """
         Arguments:
-            x has shape [num_nodes, node_dim]
+            x has shape [num_nodes, node_feat_size]
             edge_index has shape [2, num_edges]
-            edge_attr is [num_edges, edge_dim]
+            edge_attr is [num_edges, edge_feat_size]
         """
         return self.propagate(edge_index, x=x, edge_attr=edge_attr)
 
     def message(self, x_i, x_j, edge_attr):
         """
         Arguments:
-            x_i has shape [num_edges, node_dim]
-            x_j has shape [num_edges, node_dim]
-            edge_attr has shape [num_edges, edge_dim]
+            x_i has shape [num_edges, node_feat_size]
+            x_j has shape [num_edges, node_feat_size]
+            edge_attr has shape [num_edges, edge_feat_size]
 
         Returns:
-            tensor of shape [num_edges, node_dim]
+            tensor of shape [num_edges, node_feat_size]
         """
         z = self.fc_pre(torch.cat([x_i, x_j, edge_attr], dim=1))
         z1, z2 = z.chunk(2, dim=1)
@@ -51,14 +54,14 @@ class CGCNNConv(MessagePassing):
     def update(self, aggr_out, x):
         """
         Arguments:
-            aggr_out has shape [num_nodes, node_dim]
+            aggr_out has shape [num_nodes, node_feat_size]
                 This is the result of aggregating features output by the
                 `message` function from neighboring nodes. The aggregation
                 function is specified in the constructor (`add` for CGCNN).
-            x has shape [num_nodes, node_dim]
+            x has shape [num_nodes, node_feat_size]
 
         Returns:
-            tensor of shape [num_nodes, node_dim]
+            tensor of shape [num_nodes, node_feat_size]
         """
         aggr_out = nn.Softplus()(x + self.fc_post(aggr_out))
         return aggr_out
@@ -74,34 +77,37 @@ class CGCNNGuConv(MessagePassing):
 
     def __init__(self, node_dim, edge_dim, **kwargs):
         super(CGCNNGuConv, self).__init__(aggr="add")
-        self.node_dim = node_dim
-        self.edge_dim = edge_dim
+        self.node_feat_size = node_dim
+        self.edge_feat_size = edge_dim
 
         self.fc_pre = nn.Sequential(
-            nn.Linear(2 * self.node_dim + self.edge_dim, 2 * self.node_dim),
-            nn.BatchNorm1d(2 * self.node_dim),
+            nn.Linear(
+                2 * self.node_feat_size + self.edge_feat_size,
+                2 * self.node_feat_size,
+            ),
+            nn.BatchNorm1d(2 * self.node_feat_size),
         )
 
-        self.fc_post = nn.Sequential(nn.BatchNorm1d(self.node_dim))
+        self.fc_post = nn.Sequential(nn.BatchNorm1d(self.node_feat_size))
 
     def forward(self, x, edge_index, edge_attr):
         """
         Arguments:
-            x has shape [num_nodes, node_dim]
+            x has shape [num_nodes, node_feat_size]
             edge_index has shape [2, num_edges]
-            edge_attr is [num_edges, edge_dim]
+            edge_attr is [num_edges, edge_feat_size]
         """
         return self.propagate(edge_index, x=x, edge_attr=edge_attr)
 
     def message(self, x_i, x_j, edge_attr):
         """
         Arguments:
-            x_i has shape [num_edges, node_dim]
-            x_j has shape [num_edges, node_dim]
-            edge_attr has shape [num_edges, edge_dim]
+            x_i has shape [num_edges, node_feat_size]
+            x_j has shape [num_edges, node_feat_size]
+            edge_attr has shape [num_edges, edge_feat_size]
 
         Returns:
-            tensor of shape [num_edges, node_dim]
+            tensor of shape [num_edges, node_feat_size]
         """
         z = self.fc_pre(torch.cat([x_i, x_j, edge_attr], dim=1))
         z1, z2 = z.chunk(2, dim=1)
@@ -112,14 +118,14 @@ class CGCNNGuConv(MessagePassing):
     def update(self, aggr_out, x):
         """
         Arguments:
-            aggr_out has shape [num_nodes, node_dim]
+            aggr_out has shape [num_nodes, node_feat_size]
                 This is the result of aggregating features output by the
                 `message` function from neighboring nodes. The aggregation
                 function is specified in the constructor (`add` for CGCNN).
-            x has shape [num_nodes, node_dim]
+            x has shape [num_nodes, node_feat_size]
 
         Returns:
-            tensor of shape [num_nodes, node_dim]
+            tensor of shape [num_nodes, node_feat_size]
         """
         aggr_out = nn.Tanh()(x + self.fc_post(aggr_out))
         return aggr_out
@@ -146,8 +152,8 @@ class AttentionConv(MessagePassing):
     ):
         super(AttentionConv, self).__init__(aggr="add")
 
-        self.node_dim = node_dim
-        self.edge_dim = edge_dim
+        self.node_feat_size = node_dim
+        self.edge_feat_size = edge_dim
         self.hidden_dim = hidden_dim
         self.num_heads = num_heads
         self.concat = concat
@@ -155,7 +161,7 @@ class AttentionConv(MessagePassing):
 
         self.att = nn.Sequential(
             nn.Linear(
-                2 * self.node_dim + self.edge_dim,
+                2 * self.node_feat_size + self.edge_feat_size,
                 self.hidden_dim * self.num_heads,
             ),
             nn.LeakyReLU(negative_slope=self.negative_slope),
@@ -163,31 +169,32 @@ class AttentionConv(MessagePassing):
         )
         self.dropout = nn.Dropout(p=dropout)
         self.value = nn.Linear(
-            self.node_dim + self.edge_dim, self.hidden_dim * self.num_heads
+            self.node_feat_size + self.edge_feat_size,
+            self.hidden_dim * self.num_heads,
         )
 
         if self.concat is True:
             self.fc_post = nn.Linear(
-                self.num_heads * self.hidden_dim, self.node_dim
+                self.num_heads * self.hidden_dim, self.node_feat_size
             )
         else:
-            self.fc_post = nn.Linear(self.hidden_dim, self.node_dim)
+            self.fc_post = nn.Linear(self.hidden_dim, self.node_feat_size)
 
     def forward(self, x, edge_index, edge_attr):
         """
         Arguments:
-            x has shape [num_nodes, node_dim]
+            x has shape [num_nodes, node_feat_size]
             edge_index has shape [2, num_edges]
-            edge_attr is [num_edges, edge_dim]
+            edge_attr is [num_edges, edge_feat_size]
         """
         return self.propagate(edge_index, x=x, edge_attr=edge_attr)
 
     def message(self, x_i, x_j, edge_attr, edge_index_i, size_i):
         """
         Arguments:
-            x_i has shape [num_edges, node_dim]
-            x_j has shape [num_edges, node_dim]
-            edge_attr has shape [num_edges, edge_dim]
+            x_i has shape [num_edges, node_feat_size]
+            x_j has shape [num_edges, node_feat_size]
+            edge_attr has shape [num_edges, edge_feat_size]
 
         Returns:
             tensor of shape [num_edges, num_heads, hidden_dim]
@@ -208,10 +215,10 @@ class AttentionConv(MessagePassing):
                 This is the result of aggregating features output by the
                 `message` function from neighboring nodes. The aggregation
                 function is specified in the constructor (`add` in this case).
-            x has shape [num_nodes, node_dim]
+            x has shape [num_nodes, node_feat_size]
 
         Returns:
-            tensor of shape [num_nodes, node_dim]
+            tensor of shape [num_nodes, node_feat_size]
         """
         if self.concat is True:
             aggr_out = aggr_out.view(-1, self.num_heads * self.hidden_dim)
