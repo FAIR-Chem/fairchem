@@ -4,31 +4,31 @@ import os
 import random
 import time
 
-import numpy as np
-import yaml
-
 import demjson
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from baselines.common.logger import TensorboardLogger, WandBLogger
-from baselines.common.meter import Meter, mae, mae_ratio
-from baselines.common.registry import registry
-from baselines.common.utils import (
+import yaml
+
+from ocpmodels.common.logger import TensorboardLogger, WandBLogger
+from ocpmodels.common.meter import Meter, mae, mae_ratio
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import (
     plot_histogram,
     save_checkpoint,
     update_config,
     warmup_lr_lambda,
 )
-from baselines.datasets import (
+from ocpmodels.datasets import (
     ISO17,
     Gasdb,
     QM9Dataset,
     UlissigroupCO,
     XieGrossmanMatProj,
 )
-from baselines.models import CGCNN, CGCNNGu, Transformer
-from baselines.modules.normalizer import Normalizer
+from ocpmodels.models import CGCNN, CGCNNGu, Transformer
+from ocpmodels.modules.normalizer import Normalizer
 
 
 @registry.register_trainer("base")
