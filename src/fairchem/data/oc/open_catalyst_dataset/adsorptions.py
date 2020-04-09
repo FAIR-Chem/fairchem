@@ -361,7 +361,6 @@ def tag_surface_atoms(bulk_atoms, surface_atoms):
     '''
     voronoi_tags = _find_surface_atoms_with_voronoi(bulk_atoms, surface_atoms)
     height_tags = _find_surface_atoms_by_height(surface_atoms)
-
     # If either of the methods consider an atom a "surface atom", then tag it as such.
     tags = [max(v_tag, h_tag) for v_tag, h_tag in zip(voronoi_tags, height_tags)]
     surface_atoms.set_tags(tags)
@@ -391,9 +390,9 @@ def _find_surface_atoms_with_voronoi(bulk_atoms, surface_atoms):
                 surface atom.
     '''
     # Initializations
-    surface_struct = AseAtomsAdaptor.get_structure(surface_atoms)
     bulk_cn_dict = calculate_coordination_of_bulk_atoms(bulk_atoms)
-    center_of_mass = calculate_center_of_mass(surface_atoms)
+    surface_struct = AseAtomsAdaptor.get_structure(surface_atoms)
+    center_of_mass = calculate_center_of_mass(surface_struct)
     voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
 
     tags = []
@@ -408,6 +407,7 @@ def _find_surface_atoms_with_voronoi(bulk_atoms, surface_atoms):
                 cn = round(cn, 5)
                 if cn < min(bulk_cn_dict[site.species_string]):
                     tags.append(1)
+                else: tags.append(0)
 
             # Tag as surface if we get a pathological error
             except RuntimeError:
@@ -453,9 +453,9 @@ def calculate_coordination_of_bulk_atoms(bulk_atoms):
 
     # We'll only loop over the symmetrically distinct sites for speed's sake
     bulk_cn_dict = defaultdict(set)
-    for idx, _ in sym_struct.equivalent_indices:
-        site = sym_struct(idx)
-        cn = voronoi_nn.get_cn(sym_struct, idx, use_weights=True)
+    for idx in sym_struct.equivalent_indices:
+        site = sym_struct[idx[0]]
+        cn = voronoi_nn.get_cn(sym_struct, idx[0], use_weights=True)
         cn = round(cn, 5)
         bulk_cn_dict[site.species_string].add(cn)
     return bulk_cn_dict
@@ -486,7 +486,7 @@ def _find_surface_atoms_by_height(surface_atoms):
     scaled_threshold = scaled_max_height - 2. / unit_cell_height
 
     tags = [0 if scaled_position[2] < scaled_threshold else 1
-            for scaled_position, atom in scaled_positions]
+            for scaled_position in scaled_positions]
     return tags
 
 
