@@ -366,7 +366,7 @@ def tag_surface_atoms(bulk_atoms, surface_atoms):
     sga = SpacegroupAnalyzer(bulk_struct)
     sym_struct = sga.get_symmetrized_structure()
     unique_indices = [equ[0] for equ in sym_struct.equivalent_indices]
-    voronoi_nn = VoronoiNN(tol=0.1) #0.1 chosen for better detection
+    voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
     bulk_cn_dict = {}
     for idx in unique_indices:
         elem = sym_struct[idx].species_string
@@ -379,7 +379,7 @@ def tag_surface_atoms(bulk_atoms, surface_atoms):
 
     # Determine the surface atoms indices from here
     surface_struct = AseAtomsAdaptor.get_structure(surface_atoms)
-    voronoi_nn = VoronoiNN(tol=0.1)  #0.1 chosen for better detection
+    voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
     weights = [site.species.weight for site in surface_struct]
     center_of_mass = np.average(surface_struct.frac_coords,
                                 weights=weights, axis=0)
@@ -402,29 +402,29 @@ def tag_surface_atoms(bulk_atoms, surface_atoms):
             for i, _ in enumerate(surface_atoms)]
 
     # In addition to voronoi detection, some elements (esp S/F/Se)
-    # still get flagged as bulk while on the surface. Adding an additional 
+    # still get flagged as bulk while on the surface. Adding an additional
     # check for any atoms that are within two angstroms of the top most atom
     # in the direction of the second unit cell vector seems to help
     height_tags = []
     scaled_positions = surface_atoms.get_scaled_positions()
-    unit_cell_height = np.linalg.norm(surface_atoms.cell[2])    
+    unit_cell_height = np.linalg.norm(surface_atoms.cell[2])
 
     # Get the max height in the unit cell
     max_height = max(position[2] for position, atom in zip(scaled_positions, surface_atoms)
                       if atom.tag == 0)
 
     #Determine atoms within 2 angstroms of max height
-    threshold = max_height - 2. / unit_cell_height 
+    threshold = max_height - 2. / unit_cell_height
     for position, atom in zip(scaled_positions, surface_atoms):
         if position[2] < threshold:
             height_tags.append(0)
         else:
             height_tags.append(1)
 
-    # Flag an atom as surface if either the voronoi or the height 
+    # Flag an atom as surface if either the voronoi or the height
     # classification flags it
-    tags = (tags + np.array(height_tags))>0
-        
+    tags = (tags + np.array(height_tags)) > 0
+
     surface_atoms.set_tags(tags)
 
 
