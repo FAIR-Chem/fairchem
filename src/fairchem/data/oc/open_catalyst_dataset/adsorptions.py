@@ -11,6 +11,7 @@ __emails__ = ['ktran@andrew.cmu.edu', 'apalizha@andrew.cmu.edu']
 
 import math
 import random
+from collections import defaultdict
 import numpy as np
 import catkit
 import ase
@@ -347,86 +348,146 @@ def tile_atoms(atoms):
 
 def tag_surface_atoms(bulk_atoms, surface_atoms):
     '''
-    Referencing codes from pymatgen to get a list of surface atoms indices of a
-    surface's top surface.  Taken from pymatgen.core.surface Class Slab,
-    `get_surface_sites`.  https://pymatgen.org/pymatgen.core.surface.html
+    Sets the tags of an `ase.Atoms` object. Any atom that we consider a "bulk"
+    atom will have a tag of 0, and any atom that we consider a "surface" atom
+    will have a tag of 1. We use a combination of Voronoi neighbor algorithms
+    (adapted from from `pymatgen.core.surface.Slab.get_surface_sites`; see
+    https://pymatgen.org/pymatgen.core.surface.html) and a distance cutoff.
 
     Arg:
         bulk_atoms      `ase.Atoms` format of the respective bulk structure
         surface_atoms   The surface where you are trying to find surface sites in
                         `ase.Atoms` format
-    Output:
-        indices_list    A list that contains the indices of
-                        the surface atoms
     '''
-    # Get a dictionary of unique coordination numbers
-    # for atoms in a bulk structure.
-    # for example, Pt would have cn=3 and cn=12 in Pt bulk
+    voronoi_tags = _find_surface_atoms_with_voronoi(bulk_atoms, surface_atoms)
+    height_tags = _find_surface_atoms_by_height(surface_atoms)
+
+    # If either of the methods consider an atom a "surface atom", then tag it as such.
+    tags = [max(v_tag, h_tag) for v_tag, h_tag in zip(voronoi_tags, height_tags)]
+    surface_atoms.set_tags(tags)
+
+
+def _find_surface_atoms_with_voronoi(bulk_atoms, surface_atoms):
+    '''
+    Labels atoms as surface or bulk atoms according to their coordination
+    relative to their bulk structure. If an atom's coordination is less than it
+    normally is in a bulk, then we consider it a surface atom. We calculate the
+    coordination using pymatgen's Voronoi algorithms.
+
+    Note that if a single element has different sites within a bulk and these
+    sites have different coordinations, then we consider slab atoms
+    "under-coordinated" only if they are less coordinated than the most under
+    undercoordinated bulk atom. For example:  Say we have a bulk with two Cu
+    sites. One site has a coordination of 12 and another a coordination of 9.
+    If a slab atom has a coordination of 10, we will consider it a bulk atom.
+
+    Args:
+        bulk_atoms      `ase.Atoms` of the bulk structure the surface was cut
+                        from.
+        surface_atoms   `ase.Atoms` of the surface
+    Returns:
+        tags    A list of 0's and 1's whose indices align with the atoms in
+                `surface_atoms`. 0's indicate a bulk atom and 1 indicates a
+                surface atom.
+    '''
+    # Initializations
+    surface_struct = AseAtomsAdaptor.get_structure(surface_atoms)
+    bulk_cn_dict = calculate_coordination_of_bulk_atoms(bulk_atoms)
+    center_of_mass = calculate_center_of_mass(surface_atoms)
+    voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
+
+    tags = []
+    for idx, site in enumerate(surface_struct):
+
+        # Tag as surface atom only if it's above the center of mass
+        if site.frac_coords[2] > center_of_mass[2]:
+            try:
+
+                # Tag as surface if atom is under-coordinated
+                cn = voronoi_nn.get_cn(surface_struct, idx, use_weights=True)
+                cn = round(cn, 5)
+                if cn < min(bulk_cn_dict[site.species_string]):
+                    tags.append(1)
+
+            # Tag as surface if we get a pathological error
+            except RuntimeError:
+                tags.append(1)
+
+        # Tag as bulk otherwise
+        else:
+            tags.append(0)
+    return tags
+
+
+def calculate_center_of_mass(struct):
+    '''
+    Determine the surface atoms indices from here
+    '''
+    weights = [site.species.weight for site in struct]
+    center_of_mass = np.average(struct.frac_coords,
+                                weights=weights, axis=0)
+    return center_of_mass
+
+
+def calculate_coordination_of_bulk_atoms(bulk_atoms):
+    '''
+    Finds all unique atoms in a bulk structure and then determines their
+    coordination number. Then parses these coordination numbers into a
+    dictionary whose keys are the elements of the atoms and whose values are
+    their possible coordination numbers.
+    For example: `bulk_cns = {'Pt': {3., 12.}, 'Pd': {12.}}`
+
+    Arg:
+        bulk_atoms  An `ase.Atoms` object of the bulk structure.
+    Returns:
+        bulk_cns    A defaultdict whose keys are the elements within
+                    `bulk_atoms` and whose values are a set of integers of the
+                    coordination numbers of that element.
+    '''
+    voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
+
+    # Object type conversion so we can use Voronoi
     bulk_struct = AseAtomsAdaptor.get_structure(bulk_atoms)
     sga = SpacegroupAnalyzer(bulk_struct)
     sym_struct = sga.get_symmetrized_structure()
-    unique_indices = [equ[0] for equ in sym_struct.equivalent_indices]
-    voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
-    bulk_cn_dict = {}
-    for idx in unique_indices:
-        elem = sym_struct[idx].species_string
-        if elem not in bulk_cn_dict.keys():
-            bulk_cn_dict[elem] = []
+
+    # We'll only loop over the symmetrically distinct sites for speed's sake
+    bulk_cn_dict = defaultdict(set)
+    for idx, _ in sym_struct.equivalent_indices:
+        site = sym_struct(idx)
         cn = voronoi_nn.get_cn(sym_struct, idx, use_weights=True)
-        cn = float('%.5f' % (round(cn, 5)))
-        if cn not in bulk_cn_dict[elem]:
-            bulk_cn_dict[elem].append(cn)
+        cn = round(cn, 5)
+        bulk_cn_dict[site.species_string].add(cn)
+    return bulk_cn_dict
 
-    # Determine the surface atoms indices from here
-    surface_struct = AseAtomsAdaptor.get_structure(surface_atoms)
-    voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
-    weights = [site.species.weight for site in surface_struct]
-    center_of_mass = np.average(surface_struct.frac_coords,
-                                weights=weights, axis=0)
 
-    surface_indices = set()
-    for idx, site in enumerate(surface_struct):
-        if site.frac_coords[2] > center_of_mass[2]:
-            try:
-                cn = voronoi_nn.get_cn(surface_struct, idx, use_weights=True)
-                cn = float('%.5f' % (round(cn, 5)))
-                # surface atoms are under-coordinated
-                if cn < min(bulk_cn_dict[site.species_string]):
-                    surface_indices.add(idx)
-            except RuntimeError:
-                # or if pathological error is returned,
-                # indicating a surface site
-                surface_indices.add(idx)
+def _find_surface_atoms_by_height(surface_atoms):
+    '''
+    As discussed in the docstring for `_find_surface_atoms_with_voronoi`,
+    sometimes we might accidentally tag a surface atom as a bulk atom if there
+    are multiple coordination environments for that atom type within the bulk.
+    One heuristic that we use to address this is to simply figure out if an
+    atom is close to the surface. This function will figure that out.
 
-    tags = [1 if i in surface_indices else 0
-            for i, _ in enumerate(surface_atoms)]
+    Specifically:  We consider an atom a surface atom if it is within 2
+    Angstroms of the heighest atom in the z-direction (or more accurately, the
+    direction of the 3rd unit cell vector).
 
-    # In addition to voronoi detection, some elements (esp S/F/Se)
-    # still get flagged as bulk while on the surface. Adding an additional
-    # check for any atoms that are within two angstroms of the top most atom
-    # in the direction of the second unit cell vector seems to help
-    height_tags = []
-    scaled_positions = surface_atoms.get_scaled_positions()
+    Arg:
+        surface_atoms   The surface where you are trying to find surface sites in
+                        `ase.Atoms` format
+    Returns:
+        indices_list    A list that contains the indices of
+                        the surface atoms
+    '''
     unit_cell_height = np.linalg.norm(surface_atoms.cell[2])
+    scaled_positions = surface_atoms.get_scaled_positions()
+    scaled_max_height = max(scaled_position[2] for scaled_position in scaled_positions)
+    scaled_threshold = scaled_max_height - 2. / unit_cell_height
 
-    # Get the max height in the unit cell
-    max_height = max(position[2]
-                     for position, atom in zip(scaled_positions, surface_atoms)
-                     if atom.tag >= 1)
-
-    #Determine atoms within 2 angstroms of max height
-    threshold = max_height - 2. / unit_cell_height
-    for position, atom in zip(scaled_positions, surface_atoms):
-        if position[2] < threshold:
-            height_tags.append(0)
-        else:
-            height_tags.append(1)
-
-    # Flag an atom as surface if either the voronoi or the height
-    # classification flags it
-    tags = (tags + np.array(height_tags)) > 0
-
-    surface_atoms.set_tags(tags)
+    tags = [0 if scaled_position[2] < scaled_threshold else 1
+            for scaled_position, atom in scaled_positions]
+    return tags
 
 
 def choose_adsorbate(adsorbate_database):
