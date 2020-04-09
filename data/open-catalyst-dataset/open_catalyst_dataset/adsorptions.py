@@ -410,8 +410,9 @@ def tag_surface_atoms(bulk_atoms, surface_atoms):
     unit_cell_height = np.linalg.norm(surface_atoms.cell[2])
 
     # Get the max height in the unit cell
-    max_height = max(position[2] for position, atom in zip(scaled_positions, surface_atoms)
-                      if atom.tag == 0)
+    max_height = max(position[2]
+                     for position, atom in zip(scaled_positions, surface_atoms)
+                     if atom.tag >= 1)
 
     #Determine atoms within 2 angstroms of max height
     threshold = max_height - 2. / unit_cell_height
