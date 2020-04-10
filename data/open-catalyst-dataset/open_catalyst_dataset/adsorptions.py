@@ -407,7 +407,8 @@ def _find_surface_atoms_with_voronoi(bulk_atoms, surface_atoms):
                 cn = round(cn, 5)
                 if cn < min(bulk_cn_dict[site.species_string]):
                     tags.append(1)
-                else: tags.append(0)
+                else:
+                    tags.append(0)
 
             # Tag as surface if we get a pathological error
             except RuntimeError:
