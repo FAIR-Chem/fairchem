@@ -2,4 +2,13 @@
 Workflow for creating and analyzing the Open Catalyst Dataset
 
 # Dependencies
-`conda install ase pymatgen`
+See `setup.py`
+
+# Usage
+```
+from ocdata.adsorptions import sample_structures
+from ocdata.vasp import run_vasp, write_vasp_input_files
+
+adslab, slab = sample_structures()  # To run VASP
+write_vasp_input_files(adslab)  # To write input files only
+```
