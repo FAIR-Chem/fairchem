@@ -42,6 +42,8 @@ def run_vasp(atoms, vasp_flags=None):
         vasp_flags  A dictionary of settings we want to pass to the `Vasp2`
                     calculator. Defaults to a standerd set of values if `None`
     Returns:
+        trajectory  A list of `ase.Atoms` objects where each element represents
+        each step during the relaxation.
     '''
     if vasp_flags is None:  # Immutable default
         vasp_flags = VASP_FLAGS.copy()
