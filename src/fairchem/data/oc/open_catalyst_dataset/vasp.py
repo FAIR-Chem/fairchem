@@ -24,7 +24,6 @@ VASP_FLAGS = {'ibrion': 2,
               'ediffg': -0.03,
               'symprec': 1e-10,
               'encut': 350.,
-              'pp_version': '5.4',
               'gga': 'RP',
               'pp': 'PBE',
               'xc': 'PBE'}
@@ -75,6 +74,8 @@ def _clean_up_inputs(atoms, vasp_flags):
 
     # Push the pseudopotentials into the OS environment for VASP to pull from
     os.environ['VASP_PP_PATH'] = VASP_PP_PATH
+    if not os.environ['VASP_PP_PATH']:  # Can take this out when line 32 is fixed
+        raise NotImplementedError  
 
     # Calculate and set the k points
     k_pts = calculate_surface_k_points(atoms)
@@ -151,3 +152,21 @@ def relax_atoms(atoms, vasp_flags):
         for atoms in images:
             tj.write(atoms)
     return images
+
+
+def write_vasp_input_files(atoms, vasp_flags=None):
+    '''
+    Effectively goes through the same motions as the `run_vasp` function,
+    except it only writes the input files instead of running.
+
+    Args:
+        atoms       `ase.Atoms` object that we want to relax.
+        vasp_flags  A dictionary of settings we want to pass to the `Vasp2`
+                    calculator. Defaults to a standerd set of values if `None`
+    '''
+    if vasp_flags is None:  # Immutable default
+        vasp_flags = VASP_FLAGS.copy()
+
+    atoms, vasp_flags = _clean_up_inputs(atoms, vasp_flags)
+    calc = Vasp2(**vasp_flags)
+    calc.write_input(atoms)
