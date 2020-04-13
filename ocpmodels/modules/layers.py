@@ -67,6 +67,70 @@ class CGCNNConv(MessagePassing):
         return aggr_out
 
 
+class CGCNNGuConv(MessagePassing):
+    """Implements the message passing layer from
+    `"Crystal Graph Convolutional Neural Networks for an
+    Accurate and Interpretable Prediction of Material Properties"
+    <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.120.145301>`
+    with modifications from https://pubs.acs.org/doi/abs/10.1021/acs.jpclett.0c00634.
+    """
+
+    def __init__(self, node_dim, edge_dim, **kwargs):
+        super(CGCNNGuConv, self).__init__(aggr="add")
+        self.node_feat_size = node_dim
+        self.edge_feat_size = edge_dim
+
+        self.fc_pre = nn.Sequential(
+            nn.Linear(
+                2 * self.node_feat_size + self.edge_feat_size,
+                2 * self.node_feat_size,
+            ),
+            nn.BatchNorm1d(2 * self.node_feat_size),
+        )
+
+        self.fc_post = nn.Sequential(nn.BatchNorm1d(self.node_feat_size))
+
+    def forward(self, x, edge_index, edge_attr):
+        """
+        Arguments:
+            x has shape [num_nodes, node_feat_size]
+            edge_index has shape [2, num_edges]
+            edge_attr is [num_edges, edge_feat_size]
+        """
+        return self.propagate(edge_index, x=x, edge_attr=edge_attr)
+
+    def message(self, x_i, x_j, edge_attr):
+        """
+        Arguments:
+            x_i has shape [num_edges, node_feat_size]
+            x_j has shape [num_edges, node_feat_size]
+            edge_attr has shape [num_edges, edge_feat_size]
+
+        Returns:
+            tensor of shape [num_edges, node_feat_size]
+        """
+        z = self.fc_pre(torch.cat([x_i, x_j, edge_attr], dim=1))
+        z1, z2 = z.chunk(2, dim=1)
+        z1 = nn.Sigmoid()(z1)
+        z2 = nn.Tanh()(z2)
+        return z1 * z2
+
+    def update(self, aggr_out, x):
+        """
+        Arguments:
+            aggr_out has shape [num_nodes, node_feat_size]
+                This is the result of aggregating features output by the
+                `message` function from neighboring nodes. The aggregation
+                function is specified in the constructor (`add` for CGCNN).
+            x has shape [num_nodes, node_feat_size]
+
+        Returns:
+            tensor of shape [num_nodes, node_feat_size]
+        """
+        aggr_out = nn.Tanh()(x + self.fc_post(aggr_out))
+        return aggr_out
+
+
 class AttentionConv(MessagePassing):
     """Implements the graph attentional operator from
     `"Path-Augmented Graph Transformer Network" <https://arxiv.org/abs/1905.12712>`.

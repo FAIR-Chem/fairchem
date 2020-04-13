@@ -8,7 +8,7 @@ different kind of classes.
 
 Import the global registry object using
 
-``from baselines.common.registry import registry``
+``from ocpmodels.common.registry import registry``
 
 Various decorators for registry different kind of classes with unique keys
 
@@ -37,8 +37,8 @@ class Registry:
 
         Usage::
 
-            from baselines.common.registry import registry
-            from baselines.datasets import BaseDataset
+            from ocpmodels.common.registry import registry
+            from ocpmodels.datasets import BaseDataset
 
             @registry.register_dataset("qm9")
             class QM9(BaseDataset):
@@ -60,8 +60,8 @@ class Registry:
 
         Usage::
 
-            from baselines.common.registry import registry
-            from baselines.modules.layers import CGCNNConv
+            from ocpmodels.common.registry import registry
+            from ocpmodels.modules.layers import CGCNNConv
 
             @registry.register_model("cgcnn")
             class CGCNN():
@@ -83,7 +83,7 @@ class Registry:
 
         Usage::
 
-            from baselines.common.registry import registry
+            from ocpmodels.common.registry import registry
 
             @registry.register_logger("tensorboard")
             class WandB():
@@ -91,7 +91,7 @@ class Registry:
         """
 
         def wrap(func):
-            from baselines.common.logger import Logger
+            from ocpmodels.common.logger import Logger
 
             assert issubclass(
                 func, Logger
@@ -110,7 +110,7 @@ class Registry:
 
         Usage::
 
-            from baselines.common.registry import registry
+            from ocpmodels.common.registry import registry
 
             @registry.register_trainer("active_discovery")
             class ActiveDiscoveryTrainer():
@@ -132,7 +132,7 @@ class Registry:
 
         Usage::
 
-            from baselines.common.registry import registry
+            from ocpmodels.common.registry import registry
 
             registry.register("config", {})
         """
@@ -175,7 +175,7 @@ class Registry:
                                internal operations. Default: False
         Usage::
 
-            from baselines.common.registry import registry
+            from ocpmodels.common.registry import registry
 
             config = registry.get("config")
         """
@@ -206,7 +206,7 @@ class Registry:
             name: Key which needs to be removed.
         Usage::
 
-            from baselines.common.registry import registry
+            from ocpmodels.common.registry import registry
 
             config = registry.unregister("config")
         """

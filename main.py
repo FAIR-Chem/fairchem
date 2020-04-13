@@ -1,5 +1,5 @@
-from baselines.common.flags import flags
-from baselines.trainers import BaseTrainer
+from ocpmodels.common.flags import flags
+from ocpmodels.trainers import BaseTrainer
 
 if __name__ == "__main__":
     parser = flags.get_parser()

@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
-from baselines.common.registry import registry
-from baselines.models.base import BaseModel
-from baselines.modules.layers import CGCNNConv
 from torch_geometric.nn import global_mean_pool
+
+from ocpmodels.common.registry import registry
+from ocpmodels.models.base import BaseModel
+from ocpmodels.modules.layers import CGCNNConv
 
 
 @registry.register_model("cgcnn")
@@ -51,10 +52,10 @@ class CGCNN(BaseModel):
         return out
 
     def _convolve(self, data):
-        '''
+        """
         Returns the output of the convolution layers before they are passed
         into the dense layers.
-        '''
+        """
         node_feats = self.embedding(data.x)
         for f in self.convs:
             node_feats = f(node_feats, data.edge_index, data.edge_attr)
