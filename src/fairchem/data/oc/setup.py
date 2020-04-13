@@ -1,6 +1,6 @@
 from setuptools import setup
 
-setup(name='open_catalyst_dataset',
+setup(name='ocdata',
       version='0.0.1',
       description='Module for generating random catalyst adsorption configurations',
       url='http://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset',
@@ -8,7 +8,7 @@ setup(name='open_catalyst_dataset',
       author_email='zulissi@andrew.cmu.edu',
       license='GPL',
       platforms=[],
-      packages=['open_catalyst_dataset'],
+      packages=['ocdata'],
       scripts=[],
       include_package_data=True,
       install_requires=['pymatgen', 'ase>=3.19', 'catkit>=0.5.4'],
