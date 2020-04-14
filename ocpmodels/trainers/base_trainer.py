@@ -11,33 +11,37 @@ import torch.nn as nn
 import torch.optim as optim
 import yaml
 
-from baselines.common.logger import TensorboardLogger, WandBLogger
-from baselines.common.meter import Meter, mae, mae_ratio
-from baselines.common.registry import registry
-from baselines.common.utils import (
+from ocpmodels.common.logger import TensorboardLogger, WandBLogger
+from ocpmodels.common.meter import Meter, mae, mae_ratio
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import (
     plot_histogram,
     save_checkpoint,
     update_config,
     warmup_lr_lambda,
 )
-from baselines.datasets import (
+from ocpmodels.datasets import (
     ISO17,
+    Gasdb,
     QM9Dataset,
     UlissigroupCO,
     XieGrossmanMatProj,
 )
-from baselines.models import CGCNN, Transformer
-from baselines.modules.normalizer import Normalizer
+from ocpmodels.models import CGCNN, CGCNNGu, Transformer
+from ocpmodels.modules.normalizer import Normalizer
 
 
+@registry.register_trainer("base")
 class BaseTrainer:
-    def __init__(self, args):
+    def __init__(self, args=None):
         # defaults.
         self.device = "cpu"
         self.is_debug = True
         self.is_vis = True
+
         # load config.
-        self.load_config_from_yaml_and_cmd(args)
+        if args is not None:
+            self.load_config_from_yaml_and_cmd(args)
 
     def load(self):
         self.load_seed_from_config()

@@ -8,7 +8,7 @@ different kind of classes.
 
 Import the global registry object using
 
-``from baselines.common.registry import registry``
+``from ocpmodels.common.registry import registry``
 
 Various decorators for registry different kind of classes with unique keys
 
@@ -24,6 +24,7 @@ class Registry:
         "dataset_name_mapping": {},
         "model_name_mapping": {},
         "logger_name_mapping": {},
+        "trainer_name_mapping": {},
         "state": {},
     }
 
@@ -36,8 +37,8 @@ class Registry:
 
         Usage::
 
-            from baselines.common.registry import registry
-            from baselines.datasets import BaseDataset
+            from ocpmodels.common.registry import registry
+            from ocpmodels.datasets import BaseDataset
 
             @registry.register_dataset("qm9")
             class QM9(BaseDataset):
@@ -59,8 +60,8 @@ class Registry:
 
         Usage::
 
-            from baselines.common.registry import registry
-            from baselines.modules.layers import CGCNNConv
+            from ocpmodels.common.registry import registry
+            from ocpmodels.modules.layers import CGCNNConv
 
             @registry.register_model("cgcnn")
             class CGCNN():
@@ -73,6 +74,7 @@ class Registry:
 
         return wrap
 
+    @classmethod
     def register_logger(cls, name):
         r"""Register a logger to registry with key 'name'
 
@@ -81,20 +83,42 @@ class Registry:
 
         Usage::
 
-            from baselines.common.registry import registry
+            from ocpmodels.common.registry import registry
 
-            @registry.register_model("tensorboard")
+            @registry.register_logger("tensorboard")
             class WandB():
                 ...
         """
 
         def wrap(func):
-            from baselines.common.logger import Logger
+            from ocpmodels.common.logger import Logger
 
             assert issubclass(
                 func, Logger
             ), "All loggers must inherit Logger class"
             cls.mapping["logger_name_mapping"][name] = func
+            return func
+
+        return wrap
+
+    @classmethod
+    def register_trainer(cls, name):
+        r"""Register a trainer to registry with key 'name'
+
+        Args:
+            name: Key with which the trainer will be registered.
+
+        Usage::
+
+            from ocpmodels.common.registry import registry
+
+            @registry.register_trainer("active_discovery")
+            class ActiveDiscoveryTrainer():
+                ...
+        """
+
+        def wrap(func):
+            cls.mapping["trainer_name_mapping"][name] = func
             return func
 
         return wrap
@@ -108,7 +132,7 @@ class Registry:
 
         Usage::
 
-            from baselines.common.registry import registry
+            from ocpmodels.common.registry import registry
 
             registry.register("config", {})
         """
@@ -135,6 +159,10 @@ class Registry:
         return cls.mapping["logger_name_mapping"].get(name, None)
 
     @classmethod
+    def get_trainer_class(cls, name):
+        return cls.mapping["trainer_name_mapping"].get(name, None)
+
+    @classmethod
     def get(cls, name, default=None, no_warning=False):
         r"""Get an item from registry with key 'name'
 
@@ -147,7 +175,7 @@ class Registry:
                                internal operations. Default: False
         Usage::
 
-            from baselines.common.registry import registry
+            from ocpmodels.common.registry import registry
 
             config = registry.get("config")
         """
@@ -178,7 +206,7 @@ class Registry:
             name: Key which needs to be removed.
         Usage::
 
-            from baselines.common.registry import registry
+            from ocpmodels.common.registry import registry
 
             config = registry.unregister("config")
         """
