@@ -10,8 +10,10 @@ from .base_trainer import BaseTrainer
 @registry.register_trainer("sktrainer")
 class SKTrainer(BaseTrainer):
     def __init__(self, task, model, dataset, optimizer, identifier,
-                 run_dir=".", is_debug=False, is_vis=False,
+                 run_dir=None, is_debug=False, is_vis=False,
                  print_every=100, seed=None, logger="wandb"):
+        if run_dir is None:
+            run_dir = os.getcwd()
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
         self.config = {"task": task,
@@ -26,7 +28,7 @@ class SKTrainer(BaseTrainer):
                                "timestamp": timestamp,
                                "checkpoint_dir": os.path.join(run_dir, "checkpoints", timestamp),
                                "results_dir": os.path.join(run_dir, "results", timestamp),
-                               "logs_dir": os.path.join(run_dir, "logs", logger, timestamp)}}
+                               "logs_dir": os.path.join(run_dir, "logs", timestamp)}}
 
         os.makedirs(self.config["cmd"]["checkpoint_dir"])
         os.makedirs(self.config["cmd"]["results_dir"])
