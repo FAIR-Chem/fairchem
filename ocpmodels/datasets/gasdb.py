@@ -213,7 +213,7 @@ class AtomicFeatureGenerator:
         dummy_distance, dummy_index = self.radius + 1, 0
         for neighbors in all_neighbors:
             try:
-                _, distances, indices, _ = list(zip(*neighbors))
+                _, distances, indices = list(zip(*neighbors))
                 distances = list(distances)
                 indices = list(indices)
             # If there are no neighbors
