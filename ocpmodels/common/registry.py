@@ -110,7 +110,11 @@ class Registry:
 
         Usage::
 
+<<<<<<< HEAD:ocpmodels/common/registry.py
             from ocpmodels.common.registry import registry
+=======
+            from baselines.common.registry import registry
+>>>>>>> 6250bedc5973f77a7c45057f28bc4c627598a3d2:baselines/common/registry.py
 
             @registry.register_trainer("active_discovery")
             class ActiveDiscoveryTrainer():

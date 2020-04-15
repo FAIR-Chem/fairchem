@@ -25,6 +25,7 @@ from ocpmodels.datasets import (
     Gasdb,
     QM9Dataset,
     UlissigroupCO,
+    UlissigroupH,
     XieGrossmanMatProj,
 )
 from ocpmodels.models import CGCNN, CGCNNGu, Transformer
