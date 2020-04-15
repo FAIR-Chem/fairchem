@@ -5,8 +5,11 @@ import datetime
 import torch
 from ocpmodels.common.registry import registry
 from .base_trainer import BaseTrainer
+from ..datasets.gasdb import Gasdb
 
 
+# TODO:  Think of a better name. This is now hard-coded to use the `Gasdb`
+# dataset.
 @registry.register_trainer("sktrainer")
 class SKTrainer(BaseTrainer):
     def __init__(self, task, model, dataset, optimizer, identifier,
@@ -41,5 +44,14 @@ class SKTrainer(BaseTrainer):
         self.load()
         print(yaml.dump(self.config, default_flow_style=False))
 
-    def predict(self):
-        raise NotImplementedError
+    def predict(self, src, batch_size=32):
+        config = {'src': src}
+        dataset = Gasdb(config)
+        data_loader = dataset.get_full_dataloader(batch_size=batch_size)
+
+        predictions = []
+        for i, batch in enumerate(data_loader):
+            batch.to(self.device)
+            out, metrics = self._forward(batch)
+            predictions.extend(out['output'].tolist())
+        return predictions
