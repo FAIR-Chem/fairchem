@@ -12,8 +12,7 @@ from ..models.gps import ExactGPModel
 @registry.register_trainer("gpytorch")
 class GPyTorchTrainer:
     ''' Much of this code was adapted from the GPyTorch tutorial documentation '''
-    def __init__(self, train_x, train_y,
-                 Gp=None, Optimizer=None, Likelihood=None, Loss=None,
+    def __init__(self, Gp=None, Optimizer=None, Likelihood=None, Loss=None,
                  lr=0.1, preconditioner_size=100,
                  device=None, n_devices=None):
 
@@ -31,25 +30,57 @@ class GPyTorchTrainer:
         if Loss is None:
             Loss = gpytorch.mlls.ExactMarginalLogLikelihood
 
-        self.train_x = train_x
-        self.train_y = train_y
         self.device = device
         self.n_devices = n_devices
         self.preconditioner_size = preconditioner_size
 
+        self.Gp = Gp
+        self.Optimizer = Optimizer
         self.likelihood = Likelihood().to(self.device)
-        self.gp = Gp(self.train_x, self.train_y, self.likelihood,
-                     self.device, self.n_devices).to(self.device)
-        self.optimizer = Optimizer(self.gp.parameters(), lr=lr)
         self.loss = Loss(self.likelihood, self.gp)
 
-        self._calculate_checkpoint_size()
+    def train(self, train_x, train_y, lr=0.1, n_training_iter=20):
+        self.gp = self.Gp(train_x, train_y, self.likelihood,
+                          self.device, self.n_devices).to(self.device)
+        self.optimizer = self.Optimizer(self.gp.parameters(), lr=lr)
+        checkpoint_size = self._calculate_checkpoint_size(train_x, train_y, lr)
 
-    def train(self, n_training_iter=20):
+        self._train(train_x=train_x, train_y=train_y,
+                    checkpoint_size=checkpoint_size, lr=lr,
+                    n_training_iter=n_training_iter)
+
+    def _calculate_checkpoint_size(self, train_x, train_y, lr):
+        ''' Runs through one set of training loops to figure out the best
+        checkpointing size to use '''
+        N = train_x.size(0)
+
+        # Find the optimum partition/checkpoint size by decreasing in powers of 2
+        # Start with no partitioning (size = 0)
+        settings = [0] + [int(n) for n in np.ceil(N / 2**np.arange(1, np.floor(np.log2(N))))]
+
+        for checkpoint_size in settings:
+            print('Number of devices: {} -- Kernel partition size: {}'.format(self.n_devices, checkpoint_size))
+            try:
+                # Try a full forward and backward pass with this setting to check memory usage
+                _, _ = self._train(train_x, train_y, checkpoint_size, lr, n_training_iter=1)
+
+                # when successful, break out of for-loop and jump to finally block
+                break
+            except RuntimeError as e:
+                print('RuntimeError: {}'.format(e))
+            except AttributeError as e:
+                print('AttributeError: {}'.format(e))
+            finally:
+                # handle CUDA OOM error
+                gc.collect()
+                torch.cuda.empty_cache()
+        self.checkpoint_size = checkpoint_size
+
+    def _train(self, train_x, train_y, checkpoint_size, lr=0.1, n_training_iter=20):
         self.gp.train()
         self.likelihood.train()
 
-        with (gpytorch.beta_features.checkpoint_kernel(self.checkpoint_size),
+        with (gpytorch.beta_features.checkpoint_kernel(checkpoint_size),
               gpytorch.settings.max_preconditioner_size(self.preconditioner_size)):
 
             loss = self.__closure()
@@ -78,32 +109,6 @@ class GPyTorchTrainer:
         output = self.gp(self.train_x)
         loss = -self.likelihood(output, self.train_y)
         return loss
-
-    def _calculate_checkpoint_size(self):
-        ''' Define routine for getting GPU settings '''
-        N = self.train_x.size(0)
-
-        # Find the optimum partition/checkpoint size by decreasing in powers of 2
-        # Start with no partitioning (size = 0)
-        settings = [0] + [int(n) for n in np.ceil(N / 2**np.arange(1, np.floor(np.log2(N))))]
-
-        for checkpoint_size in settings:
-            print('Number of devices: {} -- Kernel partition size: {}'.format(self.n_devices, checkpoint_size))
-            try:
-                # Try a full forward and backward pass with this setting to check memory usage
-                _, _ = self.train(n_training_iter=1)
-
-                # when successful, break out of for-loop and jump to finally block
-                break
-            except RuntimeError as e:
-                print('RuntimeError: {}'.format(e))
-            except AttributeError as e:
-                print('AttributeError: {}'.format(e))
-            finally:
-                # handle CUDA OOM error
-                gc.collect()
-                torch.cuda.empty_cache()
-        self.checkpoint_size = checkpoint_size
 
     def predict(self, input_):
         # Make and save the predictions
