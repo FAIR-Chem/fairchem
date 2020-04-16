@@ -11,7 +11,7 @@ import ase.db
 import numpy as np
 import torch
 from pymatgen.io.ase import AseAtomsAdaptor
-from torch_geometric.data import Data, InMemoryDataset
+from torch_geometric.data import Data, InMemoryDataset, DataLoader
 
 from ..common.registry import registry
 from .base import BaseDataset
@@ -139,6 +139,10 @@ class Gasdb(BaseDataset):
             slices[key] = torch.tensor(slices[key], dtype=torch.long)
 
         return data, slices
+
+    def get_full_dataloader(self, batch_size):
+        data_loader = DataLoader(self, batch_size=batch_size)
+        return data_loader
 
 
 class AtomicFeatureGenerator:
