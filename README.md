@@ -56,10 +56,8 @@ conda deactivate
 ### Download the datasets
 
 For now, we are working with the following datasets:
-- ulissigroup_co: dataset of DFT results for CO adsorption on various slabs (shared by [Jun](http://ulissigroup.cheme.cmu.edu/2017-11-28-junwoong-yoon/))
-- [Materials Project](https://materialsproject.org): subset used in [Xie and Grossman](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.120.145301)
-- [QM9](http://www.quantum-machine.org/datasets/)
-- [ISO17](http://www.quantum-machine.org/datasets/)
+- `ulissigroup_co`: dataset of DFT results for CO adsorption on various slabs (shared by Junwoong Yoon) already in pytorch-geometric format.
+- `gasdb`: tiny dataset of DFT results for CO, H, N, O, and OH adsorption on various slabs (shared by Kevin Tran) in raw ase format.
 
 To download the datasets:
 
@@ -68,34 +66,72 @@ cd data
 ./download_data.sh
 ```
 
-#### ulissigroup_co
+### Train models to predict energies from structures
 
-`docs_energy.pkl` has the dataset prepackaged for training. Make sure `configs/ulissigroup_co/base.yml` has the correct path to it.
+To quickly get started with training a CGCNN model on the `gasdb` dataset
+with reasonable defaults, take a look at
+[scripts/train_example.py](https://github.com/Open-Catalyst-Project/baselines/blob/master/scripts/train_example.py)
+(reproduced below):
 
-`docs.pkl` is the original (raw) dataset from Jun. Each entry in `docs.pkl` has the following keys:
+```
+from ocpmodels.trainers import SimpleTrainer
 
-`['mongo_id', 'adsorbate', 'mpid', 'miller', 'shift', 'top', 'coordination', 'neighborcoord', 'energy', 'atoms', 'results', 'calc', 'initial_configuration’]`
+task = {
+    "dataset": "gasdb",
+    "description": "Binding energy regression on a dataset of DFT results for CO, H, N, O, and OH adsorption on various slabs.",
+    "labels": ["binding energy"],
+    "metric": "mae",
+    "type": "regression",
+}
 
-`energy` is a target energy we want to fit, this is what we call binding energy.
+model = {
+    "name": "cgcnn",
+    "atom_embedding_size": 64,
+    "fc_feat_size": 128,
+    "num_fc_layers": 4,
+    "num_graph_conv_layers": 6,
+}
 
-`atoms` contains information of atoms mainly atom types and atom positions (x,y,z).
+dataset = {
+    "src": "data/data/gasdb",
+    "train_size": 800,
+    "val_size": 100,
+    "test_size": 100,
+}
 
-`results` shows the energy, E(slab+adsorbate) of the system and forces of each atom in the system in the FINAL DFT configuration.
-The energy in `results` is different from `energy` above.
-`energy` was calculated as E(slab+adsorbate) - E(slab) - E(adsorbate).
-E(slab) and E(adsorbate) are calculated separately and not shown in our dataset, and they are constant.
+optimizer = {
+    "batch_size": 10,
+    "lr_gamma": 0.1,
+    "lr_initial": 0.001,
+    "lr_milestones": [100, 150],
+    "max_epochs": 50,
+    "warmup_epochs": 10,
+    "warmup_factor": 0.2,
+}
 
-`initial_configuration` contains `atoms` and `results` for INITIAL DFT configuration.
+trainer = SimpleTrainer(
+    task=task,
+    model=model,
+    dataset=dataset,
+    optimizer=optimizer,
+    identifier="my-first-experiment",
+)
 
-### Train a CGCNN model
+trainer.train()
 
-To train a model on the CO adsorption data to predict energy (with default params):
+predictions = trainer.predict("data/data/gasdb")
+```
+
+For more advanced usage and digging deeper into default parameters, take a look
+at [`BaseTrainer`](https://github.com/Open-Catalyst-Project/baselines/blob/master/ocpmodels/trainers/base_trainer.py). To use `BaseTrainer` to train a CGCNN model
+on the `ulissigroup_co` CO adsorption data to predict binding energy (with
+default params):
 
 ```bash
 python main.py --identifier my-first-experiment --config-yml configs/ulissigroup_co/cgcnn.yml
 ```
 
-See `configs/ulissigroup_co/base.yml` and `configs/ulissigroup_co/cgcnn.yml` for dataset, model and optimizer parameters.
+See [`configs/ulissigroup_co/base.yml`](https://github.com/Open-Catalyst-Project/baselines/blob/master/configs/ulissigroup_co/base.yml) and [`configs/ulissigroup_co/cgcnn.yml`](https://github.com/Open-Catalyst-Project/baselines/blob/master/configs/ulissigroup_co/cgcnn.yml) for dataset, model and optimizer parameters.
 
 ## Acknowledgements
 
