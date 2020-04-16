@@ -12,7 +12,7 @@ from ..models.gps import ExactGPModel
 @registry.register_trainer("gpytorch")
 class GPyTorchTrainer:
     ''' Much of this code was adapted from the GPyTorch tutorial documentation '''
-    def __init__(self, convolution_trainer, train_x, train_y,
+    def __init__(self, train_x, train_y,
                  Gp=None, Optimizer=None, Likelihood=None, Loss=None,
                  lr=0.1, preconditioner_size=100,
                  device=None, n_devices=None):
@@ -31,7 +31,6 @@ class GPyTorchTrainer:
         if Loss is None:
             Loss = gpytorch.mlls.ExactMarginalLogLikelihood
 
-        self.convolution_trainer = convolution_trainer
         self.train_x = train_x
         self.train_y = train_y
         self.device = device
