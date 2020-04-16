@@ -83,6 +83,10 @@ class SimpleTrainer(BaseTrainer):
         for i, batch in enumerate(data_loader):
             batch.to(self.device)
             out, metrics = self._forward(batch)
+            if self.normalizers is not None and "target" in self.normalizers:
+                out["output"] = self.normalizers["target"].denorm(
+                    out["output"]
+                )
             predictions.extend(out["output"].tolist())
 
         return predictions
