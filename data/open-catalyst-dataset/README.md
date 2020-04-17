@@ -9,7 +9,9 @@ See `setup.py`
 from ocdata.adsorptions import sample_structures
 from ocdata.vasp import run_vasp, write_vasp_input_files
 
-adslab, slab = sample_structures()  
+structures = adslab, slab = sample_structures()  
+adslab_hash, slab_hash = structures.keys()
+adslab, slab = structures.values()
 
 #run_vasp(adslab)                # To run VASP
 write_vasp_input_files(adslab)  # To write input files only
