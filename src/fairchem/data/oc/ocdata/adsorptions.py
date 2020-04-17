@@ -93,28 +93,35 @@ def sample_structures(bulk_database=BULK_DB,
                             values are the probabilities of selecting this
                             number. The probabilities must sum to 1.
     Returns:
-        adsorbed_surface    `ase.Atoms` object containing a surface with a
-                            random adsorbate placed on it. The bulk atoms
-                            will be tagged with `0`; the surface atoms will be
-                            tagged with `1`, and the the adsorbate atoms will
-                            be tagged with `2` or above.
-        surface             `ase.Atoms` object containing only the surface that
-                            we sampled.
+        structures  A dictionary whose keys are the hashes for the structures
+                    and whose values are `ase.Atoms` objects of the structures.
+                    The hash for the adsorbed system contains the Materials
+                    Project bulk ID, Miller indices, surface shift, the
+                    top/bottom flag, and the coordinates of the binding atom.
+                    The hash for the bare surface contains the same hash, but
+                    without the binding site information.
     '''
     # Choose which surface we want
     n_elems = choose_n_elems(n_cat_elems_weights)
     elements = choose_elements(bulk_database, n_elems)
-    bulk = choose_bulk(bulk_database, elements)
-    surface = choose_surface(bulk)
+    bulk, mpid = choose_bulk(bulk_database, elements)
+    surface, millers, shift, top = choose_surface(bulk)
 
     # Choose the adsorbate and place it on the surface
     adsorbate = choose_adsorbate(adsorbate_database)
-    adsorbed_surface = add_adsorbate_onto_surface(surface, adsorbate)
+    adsorbed_surface, site = add_adsorbate_onto_surface(surface, adsorbate)
 
     # Add appropriate constraints
     adsorbed_surface = constrain_surface(adsorbed_surface)
     surface = constrain_surface(surface)
-    return adsorbed_surface, surface
+
+    # Do the hashing
+    shift = round(shift, 3)
+    site = tuple([round(coord, 2) for coord in site])
+    # TODO:  add hash for adsorbate. Probably use a SMILES string?
+    structures = {(mpid, millers, shift, top, site): adsorbed_surface,
+                  (mpid, millers, shift, top): surface}
+    return structures
 
 
 def choose_n_elems(n_cat_elems_weights):
@@ -180,11 +187,12 @@ def choose_bulk(bulk_database, elements):
                         values in the `ELEMENTS` constant in this submodule.
     Returns:
         atoms   `ase.Atoms` of the chosen bulk structure.
+        mpid    A string indicating which MPID the bulk is
     '''
     db = ase.db.connect(bulk_database)
-    all_atoms = [row.toatoms() for row in db.select(elements)]
-    atoms = random.choice(all_atoms)
-    return atoms
+    all_atoms = [(row.toatoms(), row.mpid) for row in db.select(elements)]
+    atoms, mpid = random.choice(all_atoms)
+    return atoms, mpid
 
 
 def choose_surface(bulk_atoms):
@@ -192,17 +200,23 @@ def choose_surface(bulk_atoms):
     Enumerates and chooses a random surface from a bulk structure.
 
     Arg:
-        bulk_atoms          `ase.Atoms` object of the bulk you want to choose a
-                             surfaces from.
+        bulk_atoms      `ase.Atoms` object of the bulk you want to choose a
+                        surfaces from.
     Returns:
-        surface_atoms       `ase.Atoms` of the chosen surface
+        surface_atoms   `ase.Atoms` of the chosen surface
+        millers         A 3-tuple of integers indicating the Miller indices of
+                        the chosen surface
+        shift           The y-direction shift used to determination the
+                        termination/cutoff of the surface
+        top             A Boolean indicating whether the chose surfaces was the
+                        top or the bottom of the originally enumerated surface.
     '''
-    surfaces = enumerate_surfaces(bulk_atoms)
-    surface_struct = random.choice(surfaces)
+    surfaces_info = enumerate_surfaces(bulk_atoms)
+    surface_struct, millers, shift, top = random.choice(surfaces_info)
     unit_surface_atoms = AseAtomsAdaptor.get_atoms(surface_struct)
     surface_atoms = tile_atoms(unit_surface_atoms)
     tag_surface_atoms(bulk_atoms, surface_atoms)
-    return surface_atoms
+    return surface_atoms, millers, shift, top
 
 
 def enumerate_surfaces(bulk_atoms, max_miller=MAX_MILLER):
@@ -221,15 +235,16 @@ def enumerate_surfaces(bulk_atoms, max_miller=MAX_MILLER):
                     increase the number of surfaces, but the surfaces will
                     generally become larger.
     Returns:
-        all_slabs   A list of `pymatgen.Structure` objects for each of the
-                    surfaces we have enumerated.
+        all_slabs_info  A list of 4-tuples containing:  `pymatgen.Structure`
+                        objects for surfaces we have enumerated, the Miller
+                        indices, floats for the shifts, and Booleans for "top".
     '''
     bulk_struct = standardize_bulk(bulk_atoms)
 
-    all_slabs = []
-    for miller_indices in get_symmetrically_distinct_miller_indices(bulk_struct, MAX_MILLER):
+    all_slabs_info = []
+    for millers in get_symmetrically_distinct_miller_indices(bulk_struct, MAX_MILLER):
         slab_gen = SlabGenerator(initial_structure=bulk_struct,
-                                 miller_index=miller_indices,
+                                 miller_index=millers,
                                  min_slab_size=7.,
                                  min_vacuum_size=20.,
                                  lll_reduce=False,
@@ -243,12 +258,13 @@ def enumerate_surfaces(bulk_atoms, max_miller=MAX_MILLER):
 
         # If the bottoms of the slabs are different than the tops, then we want
         # to consider them, too
-        flipped_slabs = [flip_struct(slab) for slab in slabs
-                         if is_structure_invertible(slab) is False]
-        slabs.extend(flipped_slabs)
+        flipped_slabs_info = [(flip_struct(slab), millers, slab.shift, False)
+                              for slab in slabs if is_structure_invertible(slab) is False]
 
-        all_slabs.extend(slabs)
-    return all_slabs
+        # Concatenate all the results together
+        slabs_info = [(slab, millers, slab.shift, True) for slab in slabs]
+        all_slabs_info.extend(slabs_info + flipped_slabs_info)
+    return all_slabs_info
 
 
 def standardize_bulk(atoms):
@@ -524,6 +540,8 @@ def add_adsorbate_onto_surface(surface_atoms, adsorbate):
                         surface. The bulk atoms will be tagged with `0`; the
                         surface atoms will be tagged with `1`, and the the
                         adsorbate atoms will be tagged with `2` or above.
+        site            A 3-tuple containing the Cartesian coordinates of the
+                        binding atom.
     '''
     # convert surface atoms into graphic atoms object
     surface_gratoms = catkit.Gratoms(surface_atoms)
@@ -549,7 +567,11 @@ def add_adsorbate_onto_surface(surface_atoms, adsorbate):
     reasonable_adsorbed_surfaces = [surface for surface in adsorbed_surfaces
                                     if is_config_reasonable(surface) is True]
     adsorbed_surface = random.choice(reasonable_adsorbed_surfaces)
-    return adsorbed_surface
+
+    # Find the location of the binding site
+    adsorbate_index = adsorbed_surface.get_tags().tolist().index(2)
+    site = tuple(adsorbed_surface[adsorbate_index].position)
+    return adsorbed_surface, site
 
 
 def get_connectivity(adsorbate):
