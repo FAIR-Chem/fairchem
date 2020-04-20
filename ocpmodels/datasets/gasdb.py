@@ -13,9 +13,9 @@ import torch
 from pymatgen.io.ase import AseAtomsAdaptor
 from torch_geometric.data import Data, DataLoader, InMemoryDataset
 
-from ..common.registry import registry
-from .base import BaseDataset
-from .elemental_embeddings import EMBEDDINGS
+from ocpmodels.common.registry import registry
+from ocpmodels.datasets import BaseDataset
+from ocpmodels.datasets.elemental_embeddings import EMBEDDINGS
 
 # Import the correct TQDM depending on where we are
 try:
