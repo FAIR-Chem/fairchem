@@ -108,8 +108,8 @@ def sample_structures(bulk_database=BULK_DB,
     surface, millers, shift, top = choose_surface(bulk)
 
     # Choose the adsorbate and place it on the surface
-    adsorbate = choose_adsorbate(adsorbate_database)
-    adsorbed_surface, site = add_adsorbate_onto_surface(surface, adsorbate)
+    adsorbate, smiles, bond_indices = choose_adsorbate(adsorbate_database)
+    adsorbed_surface = add_adsorbate_onto_surface(surface, adsorbate, bond_indices)
 
     # Add appropriate constraints
     adsorbed_surface = constrain_surface(adsorbed_surface)
@@ -117,9 +117,8 @@ def sample_structures(bulk_database=BULK_DB,
 
     # Do the hashing
     shift = round(shift, 3)
-    site = tuple([round(coord, 2) for coord in site])
-    # TODO:  add hash for adsorbate. Probably use a SMILES string?
-    structures = {(mpid, millers, shift, top, site): adsorbed_surface,
+    sites = find_sites(surface, adsorbed_surface, bond_indices)
+    structures = {(mpid, millers, shift, top, smiles, sites): adsorbed_surface,
                   (mpid, millers, shift, top): surface}
     return structures
 
@@ -516,17 +515,23 @@ def choose_adsorbate(adsorbate_database):
         adsorbate_database   A string pointing to the ASE *.db object that contains
                              the adsorbates you want to consider.
     Returns:
-        adsorbate            A dictionary that has the following format:
-                             {'atoms_obj': Atoms(...), 'bond_index': ...}
+        atoms           `ase.Atoms` object of the adsorbate
+        simles          SMILES-formatted representation of the adsorbate
+        bond_indices    list of integers indicating the indices of the atoms in
+                        the adsorbate that are meant to be bonded to the surface
     '''
     db = ase.db.connect(adsorbate_database)
-    all_adsorbates = [{'atoms_obj': row.toatoms(),
-                       'bond_idx': row.data['bond_idx']} for row in db.select()]
-    adsorbate = random.choice(all_adsorbates)
-    return adsorbate
+    ads_idx = random.choice(list(range(db.count())))
+    row = db.get(ads_idx + 1)  # ase.db's don't 0-index
+
+    atoms = row.toatoms()
+    data = row.data
+    smiles = data['SMILE']
+    bond_indices = data['bond_idx']
+    return atoms, smiles, bond_indices
 
 
-def add_adsorbate_onto_surface(surface_atoms, adsorbate):
+def add_adsorbate_onto_surface(surface, adsorbate, bond_indices):
     '''
     There are a lot of small details that need to be considered when adding an
     adsorbate onto a surface. This function will take care of those details for
@@ -535,31 +540,31 @@ def add_adsorbate_onto_surface(surface_atoms, adsorbate):
     Args:
         surface         An `ase.Atoms` object of the surface
         adsorbate       An `ase.Atoms` object of the adsorbate
+        bond_indices    A list of integers indicating the indices of the
+                        binding atoms of the adsorbate
     Returns:
         ads_surface     An `ase graphic Atoms` object containing the adsorbate and
                         surface. The bulk atoms will be tagged with `0`; the
                         surface atoms will be tagged with `1`, and the the
                         adsorbate atoms will be tagged with `2` or above.
-        site            A 3-tuple containing the Cartesian coordinates of the
-                        binding atom.
     '''
     # convert surface atoms into graphic atoms object
-    surface_gratoms = catkit.Gratoms(surface_atoms)
-    surface_atom_indices = [i for i, atom in enumerate(surface_atoms)
+    surface_gratoms = catkit.Gratoms(surface)
+    surface_atom_indices = [i for i, atom in enumerate(surface)
                             if atom.tag == 1]
     surface_gratoms.set_surface_atoms(surface_atom_indices)
     surface_gratoms.pbc = np.array([True, True, False])
 
     # set up the adsorbate into graphic atoms object
     # with its connectivity matrix
-    adsorbate_gratoms = convert_adsorbate_atoms_to_gratoms(adsorbate['atoms_obj'])
+    adsorbate_gratoms = convert_adsorbate_atoms_to_gratoms(adsorbate)
 
     # generate all possible adsorption configurations on that surface.
     # The "bonds" argument automatically take care of mono vs.
     # bidentate adsorption configuration.
     builder = catkit.gen.adsorption.Builder(surface_gratoms)
     adsorbed_surfaces = builder.add_adsorbate(adsorbate_gratoms,
-                                              bonds=adsorbate['bond_idx'],
+                                              bonds=bond_indices,
                                               index=-1)
 
     # Filter out unreasonable structures.
@@ -567,11 +572,7 @@ def add_adsorbate_onto_surface(surface_atoms, adsorbate):
     reasonable_adsorbed_surfaces = [surface for surface in adsorbed_surfaces
                                     if is_config_reasonable(surface) is True]
     adsorbed_surface = random.choice(reasonable_adsorbed_surfaces)
-
-    # Find the location of the binding site
-    adsorbate_index = adsorbed_surface.get_tags().tolist().index(2)
-    site = tuple(adsorbed_surface[adsorbate_index].position)
-    return adsorbed_surface, site
+    return adsorbed_surface
 
 
 def get_connectivity(adsorbate):
@@ -668,3 +669,27 @@ def constrain_surface(atoms):
     mask = [True if atom.tag == 0 else False for atom in atoms]
     atoms.constraints += [FixAtoms(mask=mask)]
     return atoms
+
+
+def find_sites(surface, adsorbed_surface, bond_indices):
+    '''
+    Finds the Cartesian coordinates of the bonding atoms of the adsorbate.
+
+    Args:
+        surface             `ase.Atoms` of the chosen surface
+        adsorbed_surface    An `ase graphic Atoms` object containing the
+                            adsorbate and surface.
+        bond_indices        A list of integers indicating the indices of the
+                            binding atoms of the adsorbate
+    Returns:
+        sites   A tuple of 3-tuples containing the Cartesian coordinates of
+                each of the binding atoms
+    '''
+    sites = []
+    for idx in bond_indices:
+        binding_atom_index = len(surface) + idx + 1
+        atom = adsorbed_surface[binding_atom_index]
+        positions = tuple(round(coord, 2) for coord in atom.position)
+        sites.append(positions)
+
+    return tuple(sites)
