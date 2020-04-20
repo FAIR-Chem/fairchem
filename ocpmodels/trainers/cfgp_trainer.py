@@ -17,12 +17,10 @@ class CfgpTrainer:
         self.conv_trainer = conv_trainer
         self.gpytorch_trainer = gpytorch_trainer
 
-    @property
-    def train_loader(self):
-        config = self.conv_trainer.config
-        dataset = registry.get_dataset_class(config['task']['dataset'])(config)
-        train_loader, _, _ = dataset.get_dataloaders(batchsize=32)
-        return train_loader
+        self.device = self.conv_trainer.device
+        self.train_loader = self.conv_trainer.train_loader
+        self.val_loader = self.conv_trainer.val_loader
+        self.test_loader = self.conv_trainer.test_loader
 
     def train(self, lr=0.1, n_training_iter=20):
         print("### Beggining training on convolutional network.")
@@ -30,7 +28,8 @@ class CfgpTrainer:
 
         print("### Beggining training on GP.")
         convolutions = self._get_training_convolutions()
-        train_y = self.train_loader.dataset.data.y
+        train_indices = self.train_loader.dataset.__indices__
+        train_y = self.train_loader.dataset.data.y[train_indices].to(self.device)
         self.gpytorch_trainer.train(train_x=convolutions,
                                     train_y=train_y,
                                     lr=lr,
@@ -38,9 +37,9 @@ class CfgpTrainer:
 
     def _get_training_convolutions(self):
         train_convs = self._get_convolutions(self.train_loader)
-        train_convs = torch.Tensor(train_convs)
+        train_convs = torch.Tensor(train_convs).to(self.device)
 
-        self.conv_normalizer = Normalizer(train_convs, self.conv_trainer.device)
+        self.conv_normalizer = Normalizer(train_convs, self.device)
         normed_convs = self.conv_normalizer.norm(train_convs)
         return normed_convs
 
@@ -49,9 +48,10 @@ class CfgpTrainer:
         convolutions = []
 
         for i, batch in enumerate(data_loader):
-            batch.to(self.conv_trainer.device)
-            out, metrics = self.conv_trainer.model._convolv(batch)
-            convolutions.extend(out["output"].tolist())
+            batch.to(self.device)
+            out = self.conv_trainer.model._convolve(batch)
+            for conv in out.tolist():
+                convolutions.append(conv)
 
         return convolutions
 
@@ -66,10 +66,10 @@ class CfgpTrainer:
         data_loader = dataset.get_full_dataloader(batch_size=batch_size)
 
         # Get the convolutions
-        convs = self._get_convolutions(self, data_loader)
+        convs = self._get_convolutions(data_loader)
+        convs = torch.Tensor(convs).to(self.device)
         try:
             normed_convs = self.conv_normalizer.norm(convs)
-
         except AttributeError as error:
             raise type(error)(error.message + '; error may have occurred '
                               'because the CFGP may not have been trained yet')

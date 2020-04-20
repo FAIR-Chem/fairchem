@@ -23,7 +23,7 @@ class GPyTorchTrainer:
         if Likelihood is None:
             Likelihood = gpytorch.likelihoods.GaussianLikelihood
         if device is None:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if n_devices is None:
             n_devices = torch.cuda.device_count()
             print('Planning to run on {} GPUs.'.format(n_devices))
@@ -36,12 +36,13 @@ class GPyTorchTrainer:
 
         self.Gp = Gp
         self.Optimizer = Optimizer
+        self.Loss = Loss
         self.likelihood = Likelihood().to(self.device)
-        self.loss = Loss(self.likelihood, self.gp)
 
     def train(self, train_x, train_y, lr=0.1, n_training_iter=20):
         self.gp = self.Gp(train_x, train_y, self.likelihood,
                           self.device, self.n_devices).to(self.device)
+        self.loss = self.Loss(self.likelihood, self.gp)
         self.optimizer = self.Optimizer(self.gp.parameters(), lr=lr)
         checkpoint_size = self._calculate_checkpoint_size(train_x, train_y, lr)
 
@@ -80,14 +81,20 @@ class GPyTorchTrainer:
         self.gp.train()
         self.likelihood.train()
 
-        with (gpytorch.beta_features.checkpoint_kernel(checkpoint_size),
-              gpytorch.settings.max_preconditioner_size(self.preconditioner_size)):
+        with gpytorch.beta_features.checkpoint_kernel(checkpoint_size), \
+                gpytorch.settings.max_preconditioner_size(self.preconditioner_size):
 
-            loss = self.__closure()
+            def closure():
+                self.optimizer.zero_grad()
+                output = self.gp(train_x)
+                loss = -self.loss(output, train_y)
+                return loss
+
+            loss = closure()
             loss.backward()
 
             for i in range(n_training_iter):
-                options = {'closure': self.__closure,
+                options = {'closure': closure,
                            'current_loss': loss,
                            'max_ls': 10}
                 loss, _, _, _, _, _, _, fail = self.optimizer.step(options)
@@ -101,14 +108,8 @@ class GPyTorchTrainer:
                     print('Convergence reached!')
                     break
 
-        print(f"Finished training on {self.train_x.size(0)} data points using {self.n_devices} GPUs.")
+        print(f"Finished training on {train_x.size(0)} data points using {self.n_devices} GPUs.")
         return self.gp, self.likelihood
-
-    def __closure(self):
-        self.optimizer.zero_grad()
-        output = self.gp(self.train_x)
-        loss = -self.likelihood(output, self.train_y)
-        return loss
 
     def predict(self, input_):
         # Make and save the predictions
