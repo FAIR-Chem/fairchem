@@ -1,4 +1,5 @@
 from collections import defaultdict, deque
+
 import torch
 
 
@@ -125,7 +126,8 @@ def mae_ratio(prediction, target):
         torch.abs(target - prediction) / (torch.abs(target) + 1e-7), dim=0
     )
 
-def mean_dist(prediction, target):
+
+def mean_l2_distance(prediction, target):
     """
     Computes the mean atomic distances
 
@@ -134,13 +136,10 @@ def mean_dist(prediction, target):
 
     prediction: torch.Tensor (N, 3)
     target: torch.Tensor (N, 3)
-    
+
     Return
     ----------
     avg distance: (N,1)
     """
-    dist = torch.sqrt(torch.sum((target - prediction)**2, dim=1))
+    dist = torch.sqrt(torch.sum((target - prediction) ** 2, dim=1))
     return torch.mean(dist)
-    
-    
-    
