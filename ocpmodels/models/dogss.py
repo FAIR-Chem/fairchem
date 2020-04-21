@@ -1,25 +1,24 @@
 import torch
 import torch.nn as nn
-from torch_geometric.nn import global_mean_pool
 import numpy as np
-# from ocpmodels.common.registry import registry
-# from ocpmodels.models.base import BaseModel
 
-# TODO: change CGCNNConv -> DOGSSConv
-from layers import DOGSSConv
+from ocpmodels.common.registry import registry
+from ocpmodels.models.base import BaseModel
+from ocpmodels.modules.layers import DOGSSConv
 
 
-# @registry.register_model("dogss")
-class DOGSS(nn.Module):
+@registry.register_model("dogss")
+class DOGSS(BaseModel):
     def __init__(
         self,
         num_atoms,
         bond_feat_dim,
+        num_targets,
         atom_embedding_size=64,
-        num_graph_conv_layers=6,
-        num_dist_layers=0,
-        num_const_layers = 0,
         fc_feat_size=128,
+        num_graph_conv_layers=6,
+        num_dist_layers=4,
+        num_const_layers = 4,
         dist_feat_dim = 128,
         const_feat_dim = 128,
         D_feat_dim = 128,
@@ -97,6 +96,7 @@ class DOGSS(nn.Module):
         
         atom_fea = self.embedding(data.x)
         for conv in self.convs:
+#             atom_fea, edge_attr = conv(x=atom_fea, edge_index=edge_index, edge_attr=edge_attr)  
             atom_fea = conv(x=atom_fea, edge_index=edge_index, edge_attr=edge_attr)
         
         distance = self.get_distance(atom_pos, cells, edge_index, nbr_fea_offset)  # N x 1
@@ -104,7 +104,7 @@ class DOGSS(nn.Module):
         bond_fea = torch.cat((atom_fea[edge_index[0]], atom_fea[edge_index[1]], edge_attr), dim=1)
         
         # Network to learn equilibrium spring bond distances
-        bond_dist_fea = bond_fea
+        bond_dist_fea = bond_fea.requires_grad_(True)
         bond_distance = self.conv_to_bond_distance(bond_dist_fea)
         if hasattr(self, 'layers_dist'):
             bond_distance = self.softplus(self.bond_distance_bn(bond_distance))
@@ -115,7 +115,7 @@ class DOGSS(nn.Module):
             bond_distance = torch.mean(bond_distance, dim=1).unsqueeze(-1)
             
         # Netwok to learn spring constants
-        bond_const_fea = bond_fea
+        bond_const_fea = bond_fea.requires_grad_(True)
         bond_constant = self.conv_to_bond_constant(bond_const_fea)
         if hasattr(self, 'layers_const'):
             bond_constant = self.layers_const(bond_constant)
@@ -144,9 +144,8 @@ class DOGSS(nn.Module):
             else:
                 potential_E = bond_constant*(bond_distance-distance)**2
             
-            
             grad_E = potential_E.sum() 
-            
+#             print('grad', grad_E.requires_grad)
             grad = torch.autograd.grad(grad_E, atom_pos, retain_graph=True, create_graph=True)[0]
             grad[fixed_atom_idx] = 0
             
@@ -167,9 +166,9 @@ class DOGSS(nn.Module):
             atom_pos = atom_pos - self.opt_step_size * V
             step_count += 1
             
-            del grad, potential_E
-            torch.cuda.empty_cache()
-#         print('out',atom_pos[free_atom_idx].shape)
+#             del grad, potential_E
+#             torch.cuda.empty_cache()
+        print('output shape', atom_pos[free_atom_idx].shape)
         return atom_pos[free_atom_idx]
         
         

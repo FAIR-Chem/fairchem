@@ -12,7 +12,7 @@ import torch.optim as optim
 import yaml
 
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
-from ocpmodels.common.meter import Meter, mae, mae_ratio
+from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_dist
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     plot_histogram,
@@ -273,10 +273,15 @@ class BaseTrainer:
                     print(self.meter)
 
             self.scheduler.step()
-
-            with torch.no_grad():
+            
+            ### torch.no_grad() should be disenabled for the inner-optimization loop in DOGSS
+            if self.config["task"]["dataset"] == "DOGSS":
                 self.validate(split="val", epoch=epoch)
                 self.validate(split="test", epoch=epoch)
+            else:
+                with torch.no_grad():
+                    self.validate(split="val", epoch=epoch)
+                    self.validate(split="test", epoch=epoch)
 
             if not self.is_debug:
                 save_checkpoint(
