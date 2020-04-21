@@ -5,17 +5,18 @@ import os
 import ray
 import torch
 from ray import tune
+import copy
 
-from baselines.common.meter import Meter, mae, mae_ratio
-from baselines.common.registry import registry
-from baselines.modules.normalizer import Normalizer
-from baselines.trainers import BaseTrainer
+from ocpmodels.common.meter import Meter, mae, mae_ratio
+from ocpmodels.common.registry import registry
+from ocpmodels.modules.normalizer import Normalizer
+from ocpmodels.trainers import BaseTrainer
 
 
 @registry.register_trainer("tune_hpo")
 class TuneHPOTrainer(tune.Trainable, BaseTrainer):
     def _setup(self, config):
-        self.load_config_from_dict_and_cmd(config)
+        self.load_config_from_dict_and_cmd()
         self.load_seed_from_config()
         self.load_task()
         self.load_model()
@@ -23,6 +24,7 @@ class TuneHPOTrainer(tune.Trainable, BaseTrainer):
         self.load_optimizer()
 
     def _train(self):
+        self.current_ip()
         tr_loss, tr_mae = self.train_for_one_epoch()
         va_loss, va_mae = self.validate(split="val")
         return {
@@ -39,8 +41,14 @@ class TuneHPOTrainer(tune.Trainable, BaseTrainer):
 
     def _restore(self, checkpoint_path):
         self.model.load_state_dict(torch.load(checkpoint_path))
+    
+    def current_ip(self):
+        import socket
+        hostname = socket.getfqdn(socket.gethostname())
+        self._local_ip = socket.gethostbyname(hostname)
+        return self._local_ip
 
-    def load_config_from_dict_and_cmd(self, config):
+    def load_config_from_dict_and_cmd(self):
         # defaults.
         self.is_debug = False
         self.is_vis = False
@@ -48,15 +56,16 @@ class TuneHPOTrainer(tune.Trainable, BaseTrainer):
 
         # Assumes this config has all the parameters,
         # even those from included files.
-        self.config = config
-
+        #print(self.config)
+        #self.config = config
+        
         # device
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
 
         # timestamps and directories
-        self.config["cmd"]["timestamp"] = datetime.datetime.now().strftime(
+        """self.config["cmd"]["timestamp"] = datetime.datetime.now().strftime(
             "%Y-%m-%d-%H-%M-%S"
         )
         if self.config["cmd"]["identifier"]:
@@ -70,8 +79,9 @@ class TuneHPOTrainer(tune.Trainable, BaseTrainer):
         self.config["cmd"]["results_dir"] = os.path.join(
             "results", self.config["cmd"]["timestamp"]
         )
-
+        """
         # TODO(abhshkdz): Handle these parameters better. Maybe move to yaml.
+        """
         os.makedirs(self.config["cmd"]["checkpoint_dir"])
         os.makedirs(self.config["cmd"]["results_dir"])
 
@@ -84,7 +94,7 @@ class TuneHPOTrainer(tune.Trainable, BaseTrainer):
                 ),
                 "w",
             ),
-        )
+        )"""
 
     def train_for_one_epoch(self):
         self.model.train()

@@ -159,7 +159,7 @@ class BaseTrainer:
 
         self.num_targets = num_targets
         self.train_loader, self.val_loader, self.test_loader = dataset.get_dataloaders(
-            batch_size=self.config["optim"]["batch_size"]
+            batch_size=int(self.config["optim"]["batch_size"])
         )
 
         # Normalizer for the dataset.
