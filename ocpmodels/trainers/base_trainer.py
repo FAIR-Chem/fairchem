@@ -12,7 +12,7 @@ import torch.optim as optim
 import yaml
 
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
-from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_dist
+from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     plot_histogram,
@@ -143,7 +143,7 @@ class BaseTrainer:
         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
             self.config["dataset"]
         )
-        if self.config["task"]["dataset"] == "qm9":
+        if self.config["task"]["dataset"] in ["qm9", "dogss"]:
             num_targets = dataset.data.y.shape[-1]
             if (
                 "label_index" in self.config["task"]
@@ -164,15 +164,17 @@ class BaseTrainer:
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
-        self.normalizers["target"] = Normalizer(
-            self.train_loader.dataset.data.y, self.device
-        )
+        if self.config["dataset"].get("normalize_labels", True):
+            self.normalizers["target"] = Normalizer(
+                self.train_loader.dataset.data.y, self.device
+            )
 
         # If we're computing gradients wrt input, compute mean, std of targets.
         if "grad_input" in self.config["task"]:
-            self.normalizers["grad_target"] = Normalizer(
-                self.train_loader.dataset.data.forces, self.device
-            )
+            if self.config["dataset"].get("normalize_labels", True):
+                self.normalizers["grad_target"] = Normalizer(
+                    self.train_loader.dataset.data.forces, self.device
+                )
 
         if self.is_vis and self.config["task"]["dataset"] != "qm9":
             # Plot label distribution.
@@ -273,15 +275,10 @@ class BaseTrainer:
                     print(self.meter)
 
             self.scheduler.step()
-            
-            ### torch.no_grad() should be disenabled for the inner-optimization loop in DOGSS
-            if self.config["task"]["dataset"] == "DOGSS":
+
+            with torch.no_grad():
                 self.validate(split="val", epoch=epoch)
                 self.validate(split="test", epoch=epoch)
-            else:
-                with torch.no_grad():
-                    self.validate(split="val", epoch=epoch)
-                    self.validate(split="test", epoch=epoch)
 
             if not self.is_debug:
                 save_checkpoint(
@@ -364,9 +361,15 @@ class BaseTrainer:
             ]
             out["force_output"] = force_output
 
-        errors = eval(self.config["task"]["metric"])(
-            self.normalizers["target"].denorm(output).cpu(), batch.y.cpu()
-        ).view(-1)
+        if self.config["dataset"].get("normalize_labels", True):
+            errors = eval(self.config["task"]["metric"])(
+                self.normalizers["target"].denorm(output).cpu(), batch.y.cpu()
+            ).view(-1)
+        else:
+            errors = eval(self.config["task"]["metric"])(
+                output.cpu(), batch.y.cpu()
+            ).view(-1)
+
         if (
             "label_index" in self.config["task"]
             and self.config["task"]["label_index"] is not False
@@ -389,10 +392,15 @@ class BaseTrainer:
                 ] = errors[i]
 
         if "grad_input" in self.config["task"]:
-            grad_input_errors = eval(self.config["task"]["metric"])(
-                self.normalizers["grad_target"].denorm(force_output).cpu(),
-                batch.forces.cpu(),
-            )
+            if self.config["dataset"].get("normalize_labels", True):
+                grad_input_errors = eval(self.config["task"]["metric"])(
+                    self.normalizers["grad_target"].denorm(force_output).cpu(),
+                    batch.forces.cpu(),
+                )
+            else:
+                grad_input_errors = eval(self.config["task"]["metric"])(
+                    force_output.cpu(), batch.forces.cpu()
+                )
             metrics[
                 "force_x/{}".format(self.config["task"]["metric"])
             ] = grad_input_errors[0]
@@ -408,15 +416,22 @@ class BaseTrainer:
     def _compute_loss(self, out, batch):
         loss = []
 
-        target_normed = self.normalizers["target"].norm(batch.y)
+        if self.config["dataset"].get("normalize_labels", True):
+            target_normed = self.normalizers["target"].norm(batch.y)
+        else:
+            target_normed = batch.y
+
         loss.append(self.criterion(out["output"], target_normed))
 
         # TODO(abhshkdz): Test support for gradients wrt input.
         # TODO(abhshkdz): Make this general; remove dependence on `.forces`.
         if "grad_input" in self.config["task"]:
-            grad_target_normed = self.normalizers["grad_target"].norm(
-                batch.forces
-            )
+            if self.config["dataset"].get("normalize_labels", True):
+                grad_target_normed = self.normalizers["grad_target"].norm(
+                    batch.forces
+                )
+            else:
+                grad_target_normed = batch.forces
             loss.append(
                 self.criterion(out["force_output"], grad_target_normed)
             )

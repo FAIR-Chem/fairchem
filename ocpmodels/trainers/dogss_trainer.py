@@ -3,13 +3,14 @@ import os
 import warnings
 
 import torch
-import yaml
 import torch.optim as optim
+import yaml
 
+from ocpmodels.common.meter import Meter, mean_l2_distance
 from ocpmodels.common.registry import registry
-from ocpmodels.datasets import *
+from ocpmodels.common.utils import save_checkpoint
+from ocpmodels.datasets import DOGSS
 from ocpmodels.trainers.base_trainer import BaseTrainer
-from ocpmodels.common.meter import Meter, mean_dist
 
 
 @registry.register_trainer("dogss")
@@ -69,44 +70,72 @@ class DOGSSTrainer(BaseTrainer):
         self.load()
         print(yaml.dump(self.config, default_flow_style=False))
 
-        
     def load_criterion(self):
-        self.criterion = mean_dist
-    
-    
+        self.criterion = mean_l2_distance
+
     def load_optimizer(self):
         self.optimizer = optim.AdamW(
             self.model.parameters(), self.config["optim"]["lr_initial"]
         )
-        
+
     def load_extras(self):
+        # learning rate scheduler.
         self.scheduler = optim.lr_scheduler.MultiStepLR(
-            self.optimizer, milestones=self.config["optim"]["lr_milestones"], gamma=self.config["optim"]["lr_gamma"]
+            self.optimizer,
+            milestones=self.config["optim"]["lr_milestones"],
+            gamma=self.config["optim"]["lr_gamma"],
         )
 
         # metrics.
-        self.meter = Meter()   
-        
-    # Takes in a new data source and generates predictions on it.
-#     def predict(self, src, batch_size=32):
-#         print("### Generating predictions on {}.".format(src))
+        self.meter = Meter()
 
-#         dataset_config = {"src": src}
-#         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
-#             dataset_config
-#         )
-#         data_loader = dataset.get_full_dataloader(batch_size=batch_size)
+    def train(self):
+        for epoch in range(self.config["optim"]["max_epochs"]):
+            self.model.train()
+            for i, batch in enumerate(self.train_loader):
+                batch = batch.to(self.device)
 
-#         self.model.eval()
-#         predictions = []
+                # Forward, loss, backward.
+                out, metrics = self._forward(batch)
+                loss = self._compute_loss(out, batch)
+                self._backward(loss)
 
-#         for i, batch in enumerate(data_loader):
-#             batch.to(self.device)
-#             out, metrics = self._forward(batch)
-#             if self.normalizers is not None and "target" in self.normalizers:
-#                 out["output"] = self.normalizers["target"].denorm(
-#                     out["output"]
-#                 )
-#             predictions.extend(out["output"].tolist())
+                # Update meter.
+                meter_update_dict = {
+                    "epoch": epoch + (i + 1) / len(self.train_loader),
+                    "loss": loss.item(),
+                }
+                meter_update_dict.update(metrics)
+                self.meter.update(meter_update_dict)
 
-#         return predictions
+                # Make plots.
+                if self.logger is not None:
+                    self.logger.log(
+                        meter_update_dict,
+                        step=epoch * len(self.train_loader) + i + 1,
+                        split="train",
+                    )
+
+                # Print metrics.
+                if i % self.config["cmd"]["print_every"] == 0:
+                    print(self.meter)
+
+            self.scheduler.step()
+
+            self.validate(split="val", epoch=epoch)
+            self.validate(split="test", epoch=epoch)
+
+            if not self.is_debug:
+                save_checkpoint(
+                    {
+                        "epoch": epoch + 1,
+                        "state_dict": self.model.state_dict(),
+                        "optimizer": self.optimizer.state_dict(),
+                        "normalizers": {
+                            key: value.state_dict()
+                            for key, value in self.normalizers.items()
+                        },
+                        "config": self.config,
+                    },
+                    self.config["cmd"]["checkpoint_dir"],
+                )
