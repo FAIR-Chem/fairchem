@@ -8,47 +8,44 @@ input to predict material properties:
 Also related to [Graph Attention Networks](https://arxiv.org/abs/1710.10903) and
 [Graph Transformer](https://openreview.net/forum?id=HJei-2RcK7).
 
-##  Prerequisites
+##  Installation
 
-This package requires:
+[last updated April 20, 2020]
 
-- [PyTorch](http://pytorch.org)
-- [scikit-learn](http://scikit-learn.org/stable/)
-- [pymatgen](http://pymatgen.org)
+The easiest way of installing prerequisites is via [conda](https://conda.io/docs/index.html).
+After installing [conda](http://conda.pydata.org/), run the following commands
+to create a new [environment](https://conda.io/docs/user-guide/tasks/manage-environments.html)
+named `ocp-models` and install dependencies:
 
-The easiest way of installing the prerequisites is via [conda](https://conda.io/docs/index.html).
-After installing [conda](http://conda.pydata.org/), run the following command to
-create a new [environment](https://conda.io/docs/user-guide/tasks/manage-environments.html)
-named `ocp-models` and install all prerequisites:
+### GPU machines
+
+Commands are for CUDA 10.0 specifically.
+
+- `conda create -n ocp-models python=3.6`
+- `conda activate ocp-models`
+- `conda install pytorch cudatoolkit=10.0 pyyaml pymatgen ase matplotlib tensorboard pre-commit tqdm -c pytorch -c conda-forge`
+- Check if PyTorch is installed with CUDA support:
+    - `python -c "import torch; print(torch.cuda.is_available())"` should return true
+- Add CUDA to `$PATH` and `$CPATH`
+    - `export PATH=/usr/local/cuda/bin:$PATH`
+    - `export CPATH=/usr/local/cuda/include:$CPATH`
+- Add CUDA to `$LD_LIBRARY_PATH`
+    - `export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH`
+    - `export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH`
+- Ensure that PyTorch and system CUDA versions match
+    - `python -c "import torch; print(torch.version.cuda)"` and `nvcc --version` should both return 10.0
+- `pip install torch-scatter==latest+cu100 torch-sparse==latest+cu100 torch-cluster==latest+cu100 torch-spline-conv==latest+cu100 -f https://pytorch-geometric.com/whl/torch-1.4.0.html`
+- `pip install torch-geometric demjson wandb`
+- `pre-commit install`
+
+### CPU-only machines
+
+Please skip the following if you completed the with-GPU installation from above.
 
 ```bash
-conda upgrade conda
-conda create -n ocp-models python=3.6
-
+conda env create -f env.cpu.yml
 conda activate ocp-models
-pip install -r requirements.txt
 pre-commit install
-```
-
-This creates a conda environment and installs necessary python packages for
-running various models. Activate the environment by:
-
-```bash
-conda activate ocp-models
-```
-
-Then you can test if all the prerequisites are installed properly by running:
-
-```bash
-python main.py -h
-```
-
-This should display the help messages for `main.py`. If you find no error messages, it means that the prerequisites are installed properly.
-
-After you are done, exit the environment by:
-
-```bash
-conda deactivate
 ```
 
 ## Usage
@@ -138,25 +135,6 @@ See [`configs/ulissigroup_co/base.yml`](https://github.com/Open-Catalyst-Project
 - This codebase was initially forked from [CGCNN](https://github.com/txie-93/cgcnn)
 by [Tian Xie](http://txie.me), but has undergone significant changes since.
 - A lot of engineering ideas have been borrowed from [github.com/facebookresearch/pythia](https://github.com/facebookresearch/pythia).
-
-If you use the CGCNN implementation for your research, consider citing:
-
-```
-@article{PhysRevLett.120.145301,
-  title = {Crystal Graph Convolutional Neural Networks for an Accurate and Interpretable Prediction of Material Properties},
-  author = {Xie, Tian and Grossman, Jeffrey C.},
-  journal = {Phys. Rev. Lett.},
-  volume = {120},
-  issue = {14},
-  pages = {145301},
-  numpages = {6},
-  year = {2018},
-  month = {Apr},
-  publisher = {American Physical Society},
-  doi = {10.1103/PhysRevLett.120.145301},
-  url = {https://link.aps.org/doi/10.1103/PhysRevLett.120.145301}
-}
-```
 
 ## License
 
