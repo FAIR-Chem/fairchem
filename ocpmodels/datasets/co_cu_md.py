@@ -50,7 +50,7 @@ class COCuMD(BaseDataset):
                 self.raw_file_names[0]
             )
         )
-        traj = Trajectory(self.raw_file_names[0])[:100]
+        traj = Trajectory(self.raw_file_names[0])
         feature_generator = TrajectoryFeatureGenerator(traj)
 
         positions = [i.get_positions() for i in traj]
