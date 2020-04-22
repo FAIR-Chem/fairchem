@@ -1,6 +1,7 @@
-__all__ = ["CGCNN", "CGCNNGu", "Transformer", "DOGSS"]
+__all__ = ["CGCNN", "CGCNNGu", "DOGSS", "ExactGP", "Transformer"]
 
 from .cgcnn import CGCNN
 from .cgcnn_gu import CGCNNGu
-from .transformer import Transformer
 from .dogss import DOGSS
+from .gps import ExactGP
+from .transformer import Transformer
