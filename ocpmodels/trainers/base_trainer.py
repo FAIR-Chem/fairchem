@@ -395,11 +395,11 @@ class BaseTrainer:
             if self.config["dataset"].get("normalize_labels", True):
                 grad_input_errors = eval(self.config["task"]["metric"])(
                     self.normalizers["grad_target"].denorm(force_output).cpu(),
-                    batch.forces.cpu(),
+                    batch.force.cpu(),
                 )
             else:
                 grad_input_errors = eval(self.config["task"]["metric"])(
-                    force_output.cpu(), batch.forces.cpu()
+                    force_output.cpu(), batch.force.cpu()
                 )
             metrics[
                 "force_x/{}".format(self.config["task"]["metric"])
@@ -428,10 +428,10 @@ class BaseTrainer:
         if "grad_input" in self.config["task"]:
             if self.config["dataset"].get("normalize_labels", True):
                 grad_target_normed = self.normalizers["grad_target"].norm(
-                    batch.forces
+                    batch.force
                 )
             else:
-                grad_target_normed = batch.forces
+                grad_target_normed = batch.force
             loss.append(
                 self.criterion(out["force_output"], grad_target_normed)
             )

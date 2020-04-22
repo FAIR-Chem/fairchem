@@ -6,7 +6,7 @@ import torch
 import yaml
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import plot_histogram
+from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.datasets import *
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -143,3 +143,54 @@ class MDTrainer(BaseTrainer):
             predictions.extend(out["output"].tolist())
 
         return predictions
+
+    def train(self):
+        for epoch in range(self.config["optim"]["max_epochs"]):
+            self.model.train()
+            for i, batch in enumerate(self.train_loader):
+                batch = batch.to(self.device)
+
+                # Forward, loss, backward.
+                out, metrics = self._forward(batch)
+                loss = self._compute_loss(out, batch)
+                self._backward(loss)
+
+                # Update meter.
+                meter_update_dict = {
+                    "epoch": epoch + (i + 1) / len(self.train_loader),
+                    "loss": loss.item(),
+                }
+                meter_update_dict.update(metrics)
+                self.meter.update(meter_update_dict)
+
+                # Make plots.
+                if self.logger is not None:
+                    self.logger.log(
+                        meter_update_dict,
+                        step=epoch * len(self.train_loader) + i + 1,
+                        split="train",
+                    )
+
+                # Print metrics.
+                if i % self.config["cmd"]["print_every"] == 0:
+                    print(self.meter)
+
+            self.scheduler.step()
+
+            self.validate(split="val", epoch=epoch)
+            self.validate(split="test", epoch=epoch)
+
+            if not self.is_debug:
+                save_checkpoint(
+                    {
+                        "epoch": epoch + 1,
+                        "state_dict": self.model.state_dict(),
+                        "optimizer": self.optimizer.state_dict(),
+                        "normalizers": {
+                            key: value.state_dict()
+                            for key, value in self.normalizers.items()
+                        },
+                        "config": self.config,
+                    },
+                    self.config["cmd"]["checkpoint_dir"],
+                )
