@@ -6,7 +6,9 @@ import torch
 import yaml
 
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import plot_histogram
 from ocpmodels.datasets import *
+from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
@@ -50,13 +52,14 @@ class MDTrainer(BaseTrainer):
                     run_dir, "checkpoints", timestamp
                 ),
                 "results_dir": os.path.join(run_dir, "results", timestamp),
-                "logs_dir": os.path.join(run_dir, "logs", timestamp),
+                "logs_dir": os.path.join(run_dir, "logs", logger, timestamp),
             },
         }
 
-        os.makedirs(self.config["cmd"]["checkpoint_dir"])
-        os.makedirs(self.config["cmd"]["results_dir"])
-        os.makedirs(self.config["cmd"]["logs_dir"])
+        if not is_debug:
+            os.makedirs(self.config["cmd"]["checkpoint_dir"])
+            os.makedirs(self.config["cmd"]["results_dir"])
+            os.makedirs(self.config["cmd"]["logs_dir"])
 
         self.is_debug = is_debug
         self.is_vis = is_vis
@@ -64,5 +67,79 @@ class MDTrainer(BaseTrainer):
             "cuda" if torch.cuda.is_available() else "cpu"
         )
 
-        self.load()
         print(yaml.dump(self.config, default_flow_style=False))
+        self.load()
+
+    def load_task(self):
+        print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
+        dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
+            self.config["dataset"]
+        )
+        num_targets = 1
+
+        self.num_targets = num_targets
+        self.train_loader, self.val_loader, self.test_loader = dataset.get_dataloaders(
+            batch_size=self.config["optim"]["batch_size"]
+        )
+
+        # Normalizer for the dataset.
+        # Compute mean, std of training set labels.
+        self.normalizers = {}
+        self.normalizers["target"] = Normalizer(
+            self.train_loader.dataset.data.y, self.device
+        )
+
+        # If we're computing gradients wrt input, compute mean, std of targets.
+        if "grad_input" in self.config["task"]:
+            self.normalizers["grad_target"] = Normalizer(
+                self.train_loader.dataset.data.force, self.device
+            )
+
+        if self.is_vis and self.config["task"]["dataset"] != "qm9":
+            # Plot label distribution.
+            plots = [
+                plot_histogram(
+                    self.train_loader.dataset.data.y.tolist(),
+                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
+                    ylabel="# Examples",
+                    title="Split: train",
+                ),
+                plot_histogram(
+                    self.val_loader.dataset.data.y.tolist(),
+                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
+                    ylabel="# Examples",
+                    title="Split: val",
+                ),
+                plot_histogram(
+                    self.test_loader.dataset.data.y.tolist(),
+                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
+                    ylabel="# Examples",
+                    title="Split: test",
+                ),
+            ]
+            self.logger.log_plots(plots)
+
+    # Takes in a new data source and generates predictions on it.
+    def predict(self, dataset_config, batch_size=32):
+        print(
+            "### Generating predictions on {}.".format(dataset_config["src"])
+        )
+
+        dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
+            dataset_config
+        )
+        data_loader = dataset.get_full_dataloader(batch_size=batch_size)
+
+        self.model.eval()
+        predictions = []
+
+        for i, batch in enumerate(data_loader):
+            batch.to(self.device)
+            out, metrics = self._forward(batch)
+            if self.normalizers is not None and "target" in self.normalizers:
+                out["output"] = self.normalizers["target"].denorm(
+                    out["output"]
+                )
+            predictions.extend(out["output"].tolist())
+
+        return predictions
