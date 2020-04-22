@@ -1,5 +1,6 @@
 from .base import BaseDataset
 from .co_cu_md import COCuMD
+from .dogss import DOGSS
 from .gasdb import Gasdb
 from .iso17 import ISO17
 from .qm9 import QM9Dataset

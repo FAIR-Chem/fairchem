@@ -180,14 +180,13 @@ class AtomicFeatureGenerator:
         all_distances, all_indices = [], []
         dummy_distance, dummy_index = self.radius + 1, 0
         for neighbors in all_neighbors:
-            try:
-                _, distances, indices = list(zip(*neighbors))
+            if len(neighbors) == 0:
+                distances, indices = [dummy_distance], [dummy_index]
+            else:
+                # If the following throws an error, update to pymatgen>=2020.4.2
+                _, distances, indices, _ = list(zip(*neighbors))
                 distances = list(distances)
                 indices = list(indices)
-            # If there are no neighbors
-            except ValueError:
-                distances, indices = [dummy_distance], [dummy_index]
-
             # Pad empty elements in the features
             if len(distances) < self.max_num_nbr:
                 padding_length = self.max_num_nbr - len(distances)
