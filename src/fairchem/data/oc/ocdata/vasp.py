@@ -28,7 +28,6 @@ VASP_FLAGS = {'ibrion': 2,
               'pp': 'PBE',
               'xc': 'PBE'}
 
-# TODO:  Sid/Caleb to put the location of the directory of pseudopotentials
 VASP_PP_PATH = '/private/home/sidgoyal/vasp_pp/'
 
 
@@ -154,13 +153,15 @@ def relax_atoms(atoms, vasp_flags):
     return images
 
 
-def write_vasp_input_files(atoms, opdir='.', vasp_flags=None):
+def write_vasp_input_files(atoms, outdir='.', vasp_flags=None):
     '''
     Effectively goes through the same motions as the `run_vasp` function,
     except it only writes the input files instead of running.
 
     Args:
         atoms       `ase.Atoms` object that we want to relax.
+        outdir      A string indicating where you want to save the input files.
+                    Defaults to '.'
         vasp_flags  A dictionary of settings we want to pass to the `Vasp2`
                     calculator. Defaults to a standerd set of values if `None`
     '''
@@ -168,5 +169,5 @@ def write_vasp_input_files(atoms, opdir='.', vasp_flags=None):
         vasp_flags = VASP_FLAGS.copy()
 
     atoms, vasp_flags = _clean_up_inputs(atoms, vasp_flags)
-    calc = Vasp2(directory=opdir, **vasp_flags)
+    calc = Vasp2(directory=outdir, **vasp_flags)
     calc.write_input(atoms)
