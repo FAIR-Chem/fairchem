@@ -29,7 +29,7 @@ VASP_FLAGS = {'ibrion': 2,
               'xc': 'PBE'}
 
 # TODO:  Sid/Caleb to put the location of the directory of pseudopotentials
-VASP_PP_PATH = ''
+VASP_PP_PATH = '/private/home/sidgoyal/vasp_pp/'
 
 
 def run_vasp(atoms, vasp_flags=None):
@@ -154,7 +154,7 @@ def relax_atoms(atoms, vasp_flags):
     return images
 
 
-def write_vasp_input_files(atoms, vasp_flags=None):
+def write_vasp_input_files(atoms, opdir='.', vasp_flags=None):
     '''
     Effectively goes through the same motions as the `run_vasp` function,
     except it only writes the input files instead of running.
@@ -168,5 +168,5 @@ def write_vasp_input_files(atoms, vasp_flags=None):
         vasp_flags = VASP_FLAGS.copy()
 
     atoms, vasp_flags = _clean_up_inputs(atoms, vasp_flags)
-    calc = Vasp2(**vasp_flags)
+    calc = Vasp2(directory=opdir, **vasp_flags)
     calc.write_input(atoms)

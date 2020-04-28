@@ -10,8 +10,8 @@ __authors__ = ['Kevin Tran, Aini Palizhati']
 __emails__ = ['ktran@andrew.cmu.edu', 'apalizha@andrew.cmu.edu']
 
 import math
-import random
 from collections import defaultdict
+import random
 import numpy as np
 import catkit
 import ase
@@ -160,11 +160,22 @@ def choose_elements(bulk_database, n):
         elements    A list of strings indicating the chosen elements
     '''
     db = ase.db.connect(bulk_database)
-    candidate_combinations = {tuple(sorted(set(ELEMENTS[number] for number in row.numbers)))
-                              for row in db.select() if len(set(row.numbers)) == n}
+    
+    ans = set()
+    for row in db.select():
+        if len(set(row.numbers)) == n:
+            temp = set()
+            for number in row.numbers:
+                temp.add(ELEMENTS[number])
+            ans.add(tuple(sorted(temp)))
+    candidate_combinations = sorted(list(ans)) # sorting is necessary to ensure reproducbility
+                                               # convertion from set to list isn't guaranteed 
+                                               # to produce same order
+
     try:
-        elements = list(random.choice(list(candidate_combinations)))
-        return elements
+        elements_index = np.random.choice(len(candidate_combinations), 1)[0]
+        ret = list(candidate_combinations[elements_index])
+        return ret
 
     except IndexError:
         raise ValueError('Randomly chose to look for a %i-component material, '
