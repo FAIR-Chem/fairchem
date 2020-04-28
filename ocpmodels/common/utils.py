@@ -144,7 +144,9 @@ def collate(data_list):
     return data, slices
 
 
-def add_edge_distance_to_graph(batch, device="cpu"):
+def add_edge_distance_to_graph(
+    batch, device="cpu", dmin=0.0, dmax=6.0, step=0.2
+):
     # Make sure x has positions.
     assert all(batch.pos[0][:] == batch.x[0][-3:])
     # First set computations to be tracked for positions.
@@ -157,8 +159,8 @@ def add_edge_distance_to_graph(batch, device="cpu"):
     )
     # Expand it using a gaussian basis filter.
     gdf_filter, var = (
-        torch.from_numpy(np.arange(0.0, 6.0 + 0.2, 0.2)),
-        torch.tensor(0.2),
+        torch.from_numpy(np.arange(dmin, dmax + step, step)),
+        torch.tensor(step),
     )
     gdf_filter, var = gdf_filter.to(device), var.to(device)
     gdf_distances = torch.exp(
