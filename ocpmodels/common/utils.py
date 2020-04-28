@@ -142,3 +142,24 @@ def collate(data_list):
         slices[key] = torch.tensor(slices[key], dtype=torch.long)
 
     return data, slices
+
+
+def add_edge_distance_to_graph(batch):
+    # Make sure x has positions.
+    assert all(batch.pos[0][:] == batch.x[0][-3:])
+    # First set computations to be tracked for positions.
+    batch.x = batch.x.requires_grad_(True)
+    # Then compute Euclidean distance between edge endpoints.
+    pdist = torch.nn.PairwiseDistance(p=2.0)
+    distances = pdist(
+        batch.x[batch.edge_index[0]][:, -3:],
+        batch.x[batch.edge_index[1]][:, -3:],
+    )
+    # Expand it using a gaussian basis filter.
+    gdf_filter, var = torch.from_numpy(np.arange(0.0, 6.0 + 0.2, 0.2)), 0.2
+    gdf_distances = torch.exp(
+        -(distances.view(-1, 1) - gdf_filter) ** 2 / var ** 2
+    )
+    # Reassign edge attributes.
+    batch.edge_attr = gdf_distances.float()
+    return batch

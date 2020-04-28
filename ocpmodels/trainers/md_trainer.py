@@ -5,8 +5,13 @@ import warnings
 import torch
 import yaml
 
+from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import plot_histogram, save_checkpoint
+from ocpmodels.common.utils import (
+    add_edge_distance_to_graph,
+    plot_histogram,
+    save_checkpoint,
+)
 from ocpmodels.datasets import *
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -149,6 +154,7 @@ class MDTrainer(BaseTrainer):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 batch = batch.to(self.device)
+                batch = add_edge_distance_to_graph(batch)
 
                 # Forward, loss, backward.
                 out, metrics = self._forward(batch)
@@ -194,3 +200,36 @@ class MDTrainer(BaseTrainer):
                     },
                     self.config["cmd"]["checkpoint_dir"],
                 )
+
+    def validate(self, split="val", epoch=None):
+        print("### Evaluating on {}.".format(split))
+        self.model.eval()
+
+        meter = Meter()
+
+        loader = self.val_loader if split == "val" else self.test_loader
+
+        for i, batch in enumerate(loader):
+            batch = batch.to(self.device)
+            batch = add_edge_distance_to_graph(batch)
+
+            # Forward.
+            out, metrics = self._forward(batch)
+            loss = self._compute_loss(out, batch)
+
+            # Update meter.
+            meter_update_dict = {"loss": loss.item()}
+            meter_update_dict.update(metrics)
+            meter.update(meter_update_dict)
+
+        # Make plots.
+        if self.logger is not None and epoch is not None:
+            log_dict = meter.get_scalar_dict()
+            log_dict.update({"epoch": epoch + 1})
+            self.logger.log(
+                log_dict,
+                step=(epoch + 1) * len(self.train_loader),
+                split=split,
+            )
+
+        print(meter)
