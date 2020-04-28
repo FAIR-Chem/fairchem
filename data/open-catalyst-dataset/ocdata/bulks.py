@@ -20,4 +20,5 @@ def dump_bulks(output_file_name='bulks.db'):
     db = ase.db.connect(output_file_name)
     for doc in tqdm(docs, desc='writing to database'):
         atoms = make_atoms_from_doc(doc)
-        _ = db.write(atoms, mpid=doc['fwname']['mpid'])
+        n_elements = len(set(atoms.symbols))
+        _ = db.write(atoms, mpid=doc['fwname']['mpid'], n_elements=n_elements)
