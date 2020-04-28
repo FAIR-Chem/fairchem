@@ -103,8 +103,7 @@ def sample_structures(bulk_database=BULK_DB,
     '''
     # Choose which surface we want
     n_elems = choose_n_elems(n_cat_elems_weights)
-    elements = choose_elements(bulk_database, n_elems)
-    bulk, mpid = choose_bulk(bulk_database, elements)
+    bulk, mpid = choose_bulk(bulk_database, n_elems)
     surface, millers, shift, top = choose_surface(bulk)
 
     # Choose the adsorbate and place it on the surface
@@ -146,45 +145,7 @@ def choose_n_elems(n_cat_elems_weights):
     return n_elems
 
 
-def choose_elements(bulk_database, n):
-    '''
-    Chooses `n` elements at random from the set of elements inside the given
-    database.
-
-    Args:
-        bulk_database   A string pointing to the ASE *.db object that contains
-                        the bulks you want to consider.
-        n               A positive integer indicating how many elements you
-                        want to choose.
-    Returns:
-        elements    A list of strings indicating the chosen elements
-    '''
-    db = ase.db.connect(bulk_database)
-
-    combinations = set()
-    for row in db.select():
-        if len(set(row.numbers)) == n:
-            combination = set()
-            for number in row.numbers:
-                combination.add(ELEMENTS[number])
-            combinations.add(tuple(sorted(combination)))
-    # Sorting is necessary to ensure reproducbility. Convertion from set to list
-    # isn't guaranteed to produce same order
-    candidate_combinations = sorted(list(combinations))
-
-    try:
-        elements_index = np.random.choice(len(candidate_combinations), 1)[0]
-        elements = list(candidate_combinations[elements_index])
-        return elements
-
-    except IndexError:
-        raise ValueError('Randomly chose to look for a %i-component material, '
-                         'but no such materials exist in %s. Please add one '
-                         'to the database or change the weights to exclude '
-                         'this number of components.' % (n, n, bulk_database))
-
-
-def choose_bulk(bulk_database, elements):
+def choose_bulk(bulk_database, n_elems):
     '''
     Chooses a bulks from our database at random as long as the bulk contains
     all the specified elements.
@@ -192,17 +153,25 @@ def choose_bulk(bulk_database, elements):
     Args:
         bulk_database   A string pointing to the ASE *.db object that contains
                         the bulks you want to consider.
-        elements        A list of strings indicating the elements you want to
-                        show up in the bulk. The strings much match one of the
-                        values in the `ELEMENTS` constant in this submodule.
+        n_elems         An integer indicating how many elements should be
+                        inside the bulk to be selected.
     Returns:
         atoms   `ase.Atoms` of the chosen bulk structure.
         mpid    A string indicating which MPID the bulk is
     '''
     db = ase.db.connect(bulk_database)
-    all_atoms = [(row.toatoms(), row.mpid) for row in db.select(elements)]
-    atoms, mpid = random.choice(all_atoms)
-    return atoms, mpid
+    rows = list(db.select(n_elements=n_elems))
+    row_index = np.random.choice(range(len(rows)))
+    try:
+        atoms, mpid = rows[row_index].toatoms(), rows[row_index].mpid
+        return atoms, mpid
+
+    except IndexError:
+        raise ValueError('Randomly chose to look for a %i-component material, '
+                         'but no such materials exist in %s. Please add one '
+                         'to the database or change the weights to exclude '
+                         'this number of components.'
+                         % (n_elems, n_elems, bulk_database))
 
 
 def choose_surface(bulk_atoms):
