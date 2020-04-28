@@ -154,7 +154,7 @@ class MDTrainer(BaseTrainer):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 batch = batch.to(self.device)
-                batch = add_edge_distance_to_graph(batch)
+                batch = add_edge_distance_to_graph(batch, device=self.device)
 
                 # Forward, loss, backward.
                 out, metrics = self._forward(batch)
@@ -211,7 +211,7 @@ class MDTrainer(BaseTrainer):
 
         for i, batch in enumerate(loader):
             batch = batch.to(self.device)
-            batch = add_edge_distance_to_graph(batch)
+            batch = add_edge_distance_to_graph(batch, device=self.device)
 
             # Forward.
             out, metrics = self._forward(batch)
