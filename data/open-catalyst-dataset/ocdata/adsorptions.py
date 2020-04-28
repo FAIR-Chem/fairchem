@@ -160,22 +160,22 @@ def choose_elements(bulk_database, n):
         elements    A list of strings indicating the chosen elements
     '''
     db = ase.db.connect(bulk_database)
-    
-    ans = set()
+
+    combinations = set()
     for row in db.select():
         if len(set(row.numbers)) == n:
-            temp = set()
+            combination = set()
             for number in row.numbers:
-                temp.add(ELEMENTS[number])
-            ans.add(tuple(sorted(temp)))
-    candidate_combinations = sorted(list(ans)) # sorting is necessary to ensure reproducbility
-                                               # convertion from set to list isn't guaranteed 
-                                               # to produce same order
+                combination.add(ELEMENTS[number])
+            combinations.add(tuple(sorted(combination)))
+    # Sorting is necessary to ensure reproducbility. Convertion from set to list
+    # isn't guaranteed to produce same order
+    candidate_combinations = sorted(list(combinations))
 
     try:
         elements_index = np.random.choice(len(candidate_combinations), 1)[0]
-        ret = list(candidate_combinations[elements_index])
-        return ret
+        elements = list(candidate_combinations[elements_index])
+        return elements
 
     except IndexError:
         raise ValueError('Randomly chose to look for a %i-component material, '
