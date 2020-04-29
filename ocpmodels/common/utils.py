@@ -148,7 +148,8 @@ def add_edge_distance_to_graph(
     batch, device="cpu", dmin=0.0, dmax=6.0, step=0.2
 ):
     # Make sure x has positions.
-    assert all(batch.pos[0][:] == batch.x[0][-3:])
+    if not all(batch.pos[0][:] == batch.x[0][-3:]):
+        batch.x = torch.cat([batch.x, batch.pos.float()], dim=1)
     # First set computations to be tracked for positions.
     batch.x = batch.x.requires_grad_(True)
     # Then compute Euclidean distance between edge endpoints.
