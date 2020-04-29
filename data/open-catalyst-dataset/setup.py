@@ -17,5 +17,5 @@ setup(name='ocdata',
       scripts=[],
       data_files=[('ocdata/ase_dbs', ['ocdata/ase_dbs/bulks.db', 'ocdata/ase_dbs/adsorbates.db'])],
       include_package_data=True,
-      install_requires=['pymatgen==2020.4.2', 'ase>=3.19.1', 'catkit @ git+https://github.com/SUNCAT-Center/CatKit.git@v0.5.4#egg=catkit'],
+      install_requires=['pymatgen==2020.4.2', 'ase>=3.19.1', 'catkit @ git+https://github.com/SUNCAT-Center/CatKit.git#egg=catkit'],
       long_description='''Module for generating random catalyst adsorption configurations for high-throughput dataset generation.''',)
