@@ -11,5 +11,5 @@ setup(name='ocdata',
       packages=['ocdata'],
       scripts=[],
       include_package_data=True,
-      install_requires=['pymatgen==2020.4.2', 'ase>=3.19.1', 'catkit @ git+ssh://git@github.com:SUNCAT-Center/CatKit.git@v0.5.2#egg=catkit'],
+      install_requires=['pymatgen==2020.4.2', 'ase>=3.19.1', 'catkit @ git+https://github.com/SUNCAT-Center/CatKit.gitv0.5.2#egg=catkit'],
       long_description='''Module for generating random catalyst adsorption configurations for high-throughput dataset generation.''',)
