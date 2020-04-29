@@ -667,7 +667,7 @@ def find_sites(surface, adsorbed_surface, bond_indices):
     '''
     sites = []
     for idx in bond_indices:
-        binding_atom_index = len(surface) + idx + 1
+        binding_atom_index = len(surface) + idx
         atom = adsorbed_surface[binding_atom_index]
         positions = tuple(round(coord, 2) for coord in atom.position)
         sites.append(positions)
