@@ -6,8 +6,8 @@ Note that some of these scripts were taken from
 [GASpy](https://github.com/ulissigroup/GASpy) with permission of author.
 '''
 
-__authors__ = ['Kevin Tran, Aini Palizhati']
-__emails__ = ['ktran@andrew.cmu.edu', 'apalizha@andrew.cmu.edu']
+__authors__ = ['Kevin Tran, Aini Palizhati', 'Siddharth Goyal', 'Zachary Ulissi']
+__email__ = ['ktran@andrew.cmu.edu']
 
 import math
 from collections import defaultdict
