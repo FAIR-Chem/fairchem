@@ -1,4 +1,9 @@
 from setuptools import setup, find_packages
+from distutils.command.install import INSTALL_SCHEMES
+
+
+for scheme in INSTALL_SCHEMES.values():
+    scheme['data'] = scheme['purelib']
 
 setup(name='ocdata',
       version='0.0.1',
@@ -10,6 +15,7 @@ setup(name='ocdata',
       platforms=[],
       packages=find_packages(),
       scripts=[],
+      data_files=[('ocdata/ase_dbs', ['ocdata/ase_dbs/bulks.db', 'ocdata/ase_dbs/adsorbates.db'])],
       include_package_data=True,
       install_requires=['pymatgen==2020.4.2', 'ase>=3.19.1', 'catkit @ git+https://github.com/SUNCAT-Center/CatKit.git@v0.5.2#egg=catkit'],
       long_description='''Module for generating random catalyst adsorption configurations for high-throughput dataset generation.''',)
