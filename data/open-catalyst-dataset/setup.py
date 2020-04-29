@@ -2,7 +2,6 @@ from setuptools import setup
 
 setup(name='ocdata',
       version='0.0.1',
-      packages=find_packages(),
       description='Module for generating random catalyst adsorption configurations',
       url='http://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset',
       author='Pari Palizhati, Kevin Tran, Javi Heras Domingo, Zack Ulissi, and others',
