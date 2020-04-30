@@ -2,6 +2,8 @@
 Helper script convert db files to pkl files.
 '''
 
+__author__ = 'Siddharth Goyal'
+
 import ase
 import ase.db
 import pickle
@@ -36,14 +38,14 @@ def convert_adsorbate(input_adsorbate_database, output_pkl):
     db = ase.db.connect(input_adsorbate_database)
 
     index = {}
-   
+
     for i, row in enumerate(db.select()):
         atoms = row.toatoms()
         data = row.data
         smiles = data['SMILE']
         bond_indices = data['bond_idx']
         index[i] = (atoms, smiles, bond_indices)
-       
+
     with open(output_pkl, 'wb') as f:
         pickle.dump(index, f)
 
@@ -52,8 +54,8 @@ def convert_adsorbate(input_adsorbate_database, output_pkl):
 
 
 def main():
-    #convert_bulk("ase_dbs/bulks.db", 3, "ase_pkl/bulks.pkl")
-    convert_adsorbate("ase_dbs/adsorbates.db", "ase_pkl/adsorbates.pkl")
+    convert_bulk("../ase_dbs/bulks.db", 3, "bulks.pkl")
+    convert_adsorbate("../ase_dbs/adsorbates.db", "adsorbates.pkl")
 
 
 if __name__ == "__main__":

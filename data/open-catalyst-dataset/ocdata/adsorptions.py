@@ -12,6 +12,7 @@ __email__ = ['ktran@andrew.cmu.edu']
 import math
 from collections import defaultdict
 import random
+import pickle
 import numpy as np
 import catkit
 import ase
@@ -23,9 +24,7 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.core.surface import SlabGenerator, get_symmetrically_distinct_miller_indices
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.analysis.local_env import VoronoiNN
-from .ase_pkl import BULK_PKL, ADSORBATE_PKL
-import time
-import pickle
+from .base_atoms.pkls import BULK_PKL, ADSORBATE_PKL
 
 ELEMENTS = {1: 'H', 2: 'He', 3: 'Li', 4: 'Be', 5: 'B', 6: 'C', 7: 'N', 8: 'O',
             9: 'F', 10: 'Ne', 11: 'Na', 12: 'Mg', 13: 'Al', 14: 'Si', 15: 'P',
@@ -163,14 +162,13 @@ def choose_bulk_pkl(bulk_database, n_elems):
     try:
         with open(bulk_database, 'rb') as f:
             inv_index = pickle.load(f)
+        assert n_elems in inv_index.keys()
 
-            assert n_elems in inv_index.keys()
-          
-            # choose an index from the appropriate key,value pair in inv_index
-            row_bulk_index = np.random.choice(len(inv_index[n_elems]))
-            return inv_index[n_elems][row_bulk_index]
+        # choose an index from the appropriate key, value pair in inv_index
+        row_bulk_index = np.random.choice(len(inv_index[n_elems]))
+        return inv_index[n_elems][row_bulk_index]
 
-    except:
+    except IndexError:
         raise ValueError('Randomly chose to look for a %i-component material, '
                          'but no such materials exist in %s. Please add one '
                          'to the database or change the weights to exclude '
@@ -532,11 +530,10 @@ def choose_adsorbate_pkl(adsorbate_database):
         bond_indices    list of integers indicating the indices of the atoms in
                         the adsorbate that are meant to be bonded to the surface
     '''
-
     with open(adsorbate_database, 'rb') as f:
         inv_index = pickle.load(f)
-        element = np.random.choice(len(inv_index))
-        return inv_index[element]
+    element = np.random.choice(len(inv_index))
+    return inv_index[element]
 
 
 def choose_adsorbate(adsorbate_database):
