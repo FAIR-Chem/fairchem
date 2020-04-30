@@ -148,23 +148,10 @@ class DOGSS(BaseModel):
             distance = self.get_distance(
                 atom_pos, cells, edge_index, nbr_fea_offset
             )
-
-            # TODO(junwoony): const_D is undefined.
-            if self.energy_mode == "Morse":
-                alpha = torch.sqrt(bond_constant / (2 * const_D))
-                potential_E = (
-                    const_D
-                    * (1 - torch.exp(-alpha * (distance - bond_distance))) ** 2
-                )
-            elif self.energy_mode == "LJ":
-                bond_energy = bond_constant * (bond_distance - distance) ** 2
-                LJ_energy = (const_D / len(const_D)) * (
-                    (bond_distance / distance) ** 12
-                    - 2 * (bond_distance / distance) ** 6
-                )
-                potential_E = LJ_energy + bond_energy
-            else:
+   
+            if self.energy_mode == "Harmonic":
                 potential_E = bond_constant * (bond_distance - distance) ** 2
+
 
             grad_E = potential_E.sum()
 
