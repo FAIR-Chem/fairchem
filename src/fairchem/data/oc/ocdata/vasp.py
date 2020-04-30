@@ -24,11 +24,13 @@ VASP_FLAGS = {'ibrion': 2,
               'ediffg': -0.03,
               'symprec': 1e-10,
               'encut': 350.,
+              'laechg': True,
+              'ncore': 4,
               'gga': 'RP',
               'pp': 'PBE',
               'xc': 'PBE'}
 
-VASP_PP_PATH = '/private/home/sidgoyal/vasp_pp/'
+VASP_PP_PATH = '/private/home/sidgoyal/vasp_pp/5.4'
 
 
 def run_vasp(atoms, vasp_flags=None):
