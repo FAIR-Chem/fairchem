@@ -92,7 +92,7 @@ class DOGSS(BaseModel):
 
         atom_fea = self.embedding(data.x)
         for conv in self.convs:
-            atom_fea = conv(
+            atom_fea, edge_attr = conv(
                 x=atom_fea, edge_index=edge_index, edge_attr=edge_attr
             )
 

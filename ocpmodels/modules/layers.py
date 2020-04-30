@@ -231,23 +231,29 @@ class AttentionConv(MessagePassing):
 
 
 class DOGSSConv(MessagePassing):
-    # TODO(junwoony): Currently a clone of the CGCNN operator but to be updated.
-
     def __init__(self, node_dim, edge_dim, **kwargs):
         super(DOGSSConv, self).__init__(aggr="add")
         self.node_feat_size = node_dim
         self.edge_feat_size = edge_dim
 
-        self.fc_pre = nn.Sequential(
+        self.fc_pre_node = nn.Sequential(
             nn.Linear(
                 2 * self.node_feat_size + self.edge_feat_size,
                 2 * self.node_feat_size,
             ),
             nn.BatchNorm1d(2 * self.node_feat_size),
         )
-
-        self.fc_post = nn.Sequential(nn.BatchNorm1d(self.node_feat_size))
-
+        
+        self.fc_pre_edge = nn.Sequential(
+            nn.Linear(
+                2 * self.node_feat_size + self.edge_feat_size,
+                2 * self.edge_feat_size,
+            ),
+            nn.BatchNorm1d(2 * self.edge_feat_size),
+        )
+        self.fc_node = nn.Sequential(nn.BatchNorm1d(self.node_feat_size))
+        self.fc_edge = nn.Sequential(nn.BatchNorm1d(self.edge_feat_size))
+        
     def forward(self, x, edge_index, edge_attr):
         """
         Arguments:
@@ -255,6 +261,7 @@ class DOGSSConv(MessagePassing):
             edge_index has shape [2, num_edges]
             edge_attr is [num_edges, edge_feat_size]
         """
+        
         return self.propagate(edge_index, x=x, edge_attr=edge_attr)
 
     def message(self, x_i, x_j, edge_attr):
@@ -267,11 +274,25 @@ class DOGSSConv(MessagePassing):
         Returns:
             tensor of shape [num_edges, node_feat_size]
         """
-        z = self.fc_pre(torch.cat([x_i, x_j, edge_attr], dim=1))
-        z1, z2 = z.chunk(2, dim=1)
-        z1 = nn.Sigmoid()(z1)
-        z2 = nn.Softplus()(z2)
-        return z1 * z2
+        z = torch.cat([x_i, x_j, edge_attr], dim=1)
+        
+        z_node = self.fc_pre_node(z)
+        z1_node, z2_node = z_node.chunk(2, dim=1)
+        z1_node = nn.Sigmoid()(z1_node)
+        z2_node = nn.Softplus()(z2_node)
+        
+        z_edge = self.fc_pre_edge(z)
+        z1_edge, z2_edge = z_edge.chunk(2, dim=1)
+        z1_edge = nn.Sigmoid()(z1_edge)
+        z2_edge = nn.Softplus()(z2_edge)
+        
+        msg_node = z1_node * z2_node
+        msg_edge = z1_edge * z2_edge
+        
+        # Edge messages are not being passed to aggregation. 
+        self.edge_attr = edge_attr
+        self.msg_edge = msg_edge
+        return msg_node
 
     def update(self, aggr_out, x):
         """
@@ -284,6 +305,9 @@ class DOGSSConv(MessagePassing):
 
         Returns:
             tensor of shape [num_nodes, node_feat_size]
+            tensor of shape [num_edgs, edge_feat_size]
         """
-        aggr_out = nn.Softplus()(x + self.fc_post(aggr_out))
-        return aggr_out
+        aggr_node = nn.Softplus()(x + self.fc_node(aggr_out))
+        aggr_edge = nn.Softplus()(self.edge_attr + self.fc_edge(self.msg_edge))
+        return aggr_node, aggr_edge
+
