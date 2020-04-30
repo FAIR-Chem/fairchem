@@ -23,8 +23,9 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.core.surface import SlabGenerator, get_symmetrically_distinct_miller_indices
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.analysis.local_env import VoronoiNN
-from .ase_dbs import BULK_DB, ADSORBATE_DB
-
+from .ase_pkl import BULK_PKL, ADSORBATE_PKL
+import time
+import pickle
 
 ELEMENTS = {1: 'H', 2: 'He', 3: 'Li', 4: 'Be', 5: 'B', 6: 'C', 7: 'N', 8: 'O',
             9: 'F', 10: 'Ne', 11: 'Na', 12: 'Mg', 13: 'Al', 14: 'Si', 15: 'P',
@@ -78,8 +79,8 @@ MAX_MILLER = 2
 MIN_XY = 8.
 
 
-def sample_structures(bulk_database=BULK_DB,
-                      adsorbate_database=ADSORBATE_DB,
+def sample_structures(bulk_database=BULK_PKL,
+                      adsorbate_database=ADSORBATE_PKL,
                       n_cat_elems_weights=None):
     '''
     This parent function will randomly select an adsorption structure from a
@@ -103,11 +104,11 @@ def sample_structures(bulk_database=BULK_DB,
     '''
     # Choose which surface we want
     n_elems = choose_n_elems(n_cat_elems_weights)
-    bulk, mpid = choose_bulk(bulk_database, n_elems)
+    bulk, mpid = choose_bulk_pkl(bulk_database, n_elems)
     surface, millers, shift, top = choose_surface(bulk)
 
     # Choose the adsorbate and place it on the surface
-    adsorbate, smiles, bond_indices = choose_adsorbate(adsorbate_database)
+    adsorbate, smiles, bond_indices = choose_adsorbate_pkl(adsorbate_database)
     adsorbed_surface = add_adsorbate_onto_surface(surface, adsorbate, bond_indices)
 
     # Add appropriate constraints
@@ -143,6 +144,38 @@ def choose_n_elems(n_cat_elems_weights):
 
     n_elems = np.random.choice(n_elems, p=weights)
     return n_elems
+
+
+def choose_bulk_pkl(bulk_database, n_elems):
+    '''
+    Chooses a bulk from our pkl file at random as long as the bulk contains
+    the specified number of elements in any composition.
+
+    Args:
+        bulk_database   A string pointing to the pkl file that contains
+                        the bulks you want to consider.
+        n_elems         An integer indicating how many elements should be
+                        inside the bulk to be selected.
+    Returns:
+        atoms   `ase.Atoms` of the chosen bulk structure.
+        mpid    A string indicating which MPID the bulk is
+    '''
+    try:
+        with open(bulk_database, 'rb') as f:
+            inv_index = pickle.load(f)
+
+            assert n_elems in inv_index.keys()
+          
+            # choose an index from the appropriate key,value pair in inv_index
+            row_bulk_index = np.random.choice(len(inv_index[n_elems]))
+            return inv_index[n_elems][row_bulk_index]
+
+    except:
+        raise ValueError('Randomly chose to look for a %i-component material, '
+                         'but no such materials exist in %s. Please add one '
+                         'to the database or change the weights to exclude '
+                         'this number of components.'
+                         % (n_elems, n_elems, bulk_database))
 
 
 def choose_bulk(bulk_database, n_elems):
@@ -484,6 +517,26 @@ def _find_surface_atoms_by_height(surface_atoms):
     tags = [0 if scaled_position[2] < scaled_threshold else 1
             for scaled_position in scaled_positions]
     return tags
+
+
+def choose_adsorbate_pkl(adsorbate_database):
+    '''
+    Chooses an adsorbate from our pkl based inverted index at random.
+
+    Args:
+        adsorbate_database   A string pointing to the a pkl file that contains
+                             an inverted index over different adsorbates.
+    Returns:
+        atoms           `ase.Atoms` object of the adsorbate
+        simles          SMILES-formatted representation of the adsorbate
+        bond_indices    list of integers indicating the indices of the atoms in
+                        the adsorbate that are meant to be bonded to the surface
+    '''
+
+    with open(adsorbate_database, 'rb') as f:
+        inv_index = pickle.load(f)
+        element = np.random.choice(len(inv_index))
+        return inv_index[element]
 
 
 def choose_adsorbate(adsorbate_database):
