@@ -628,10 +628,17 @@ def is_config_reasonable(adslab):
     vnn = VoronoiNN(allow_pathological=True, tol=0.2, cutoff=10)
     adsorbate_indices = [atom.index for atom in adslab if atom.tag == 2]
     structure = AseAtomsAdaptor.get_structure(adslab)
+    slab_lattice = structure.lattice
 
-    # check the covalent radius between each adsorbate atoms
-    # and its nearest neighbors that are slab atoms
+    # Check to see if adsorpton site is within the unit cell
     for idx in adsorbate_indices:
+        coord = slab_lattice.get_fractional_coords(structure[idx].coords)
+        if np.any((coord < 0) | (coord > 1)):
+            return False
+
+        # Then, check the covalent radius between each adsorbate atoms
+        # and its nearest neighbors that are slab atoms
+        # to make sure adsorbate is not buried into the surface
         nearneighbors = vnn.get_nn_info(structure, n=idx)
         slab_nn = [nn for nn in nearneighbors if nn['site_index'] not in adsorbate_indices]
         for nn in slab_nn:
