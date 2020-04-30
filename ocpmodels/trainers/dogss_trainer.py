@@ -84,7 +84,7 @@ class DOGSSTrainer(BaseTrainer):
 
     def load_optimizer(self):
         self.optimizer = optim.AdamW(
-            self.model.parameters(), self.config["optim"]["lr_initial"]
+            self.model.parameters(), self.config["optim"]["lr_initial"], weight_decay=self.config["optim"]["weight_decay"]
         )
 
     def load_extras(self):
