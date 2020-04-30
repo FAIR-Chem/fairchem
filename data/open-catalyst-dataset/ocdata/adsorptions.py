@@ -159,11 +159,11 @@ def choose_bulk_pkl(bulk_database, n_elems):
         atoms   `ase.Atoms` of the chosen bulk structure.
         mpid    A string indicating which MPID the bulk is
     '''
-    try:
-        with open(bulk_database, 'rb') as f:
-            inv_index = pickle.load(f)
-        assert n_elems in inv_index.keys()
+    with open(bulk_database, 'rb') as f:
+        inv_index = pickle.load(f)
+    assert n_elems in inv_index.keys()
 
+    try:
         # choose an index from the appropriate key, value pair in inv_index
         row_bulk_index = np.random.choice(len(inv_index[n_elems]))
         return inv_index[n_elems][row_bulk_index]
