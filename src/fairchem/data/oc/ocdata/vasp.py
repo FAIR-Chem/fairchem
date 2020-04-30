@@ -73,8 +73,6 @@ def _clean_up_inputs(atoms, vasp_flags):
 
     # Push the pseudopotentials into the OS environment for VASP to pull from
     os.environ['VASP_PP_PATH'] = VASP_PP_PATH
-    if not os.environ['VASP_PP_PATH']:  # Can take this out when line 32 is fixed
-        raise NotImplementedError  
 
     # Calculate and set the k points
     k_pts = calculate_surface_k_points(atoms)
