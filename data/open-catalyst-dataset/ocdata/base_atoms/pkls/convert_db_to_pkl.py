@@ -27,8 +27,8 @@ def convert_bulk(input_bulk_database, max_num_elements, output_pkl):
     with open(output_pkl, 'wb') as f:
         pickle.dump(index, f)
 
-    # As of bulk.db file from Kevin on April 29 2020
-    assert total_entries == 16180
+    # As of bulk.db file from Kevin on 01 May 2020
+    assert total_entries == 11010
 
 
 def convert_adsorbate(input_adsorbate_database, output_pkl):
