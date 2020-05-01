@@ -74,9 +74,9 @@ class DOGSSTrainer(BaseTrainer):
         initial_train_loss = self.get_initial_loss(self.train_loader)
         initial_val_loss = self.get_initial_loss(self.val_loader)
         initial_test_loss = self.get_initial_loss(self.test_loader)
-        print(" initial train loss: %f\n" %initial_train_loss,
-              "initial val loss: %f\n" %initial_val_loss,
-              "initial test loss: %f\n" %initial_test_loss,
+        print(" ### initial train loss: %f\n" %initial_train_loss,
+              "### initial val loss: %f\n" %initial_val_loss,
+              "### initial test loss: %f\n" %initial_test_loss,
              )
         
     def load_criterion(self):
