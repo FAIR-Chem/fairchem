@@ -1,32 +1,33 @@
-"""
-Note that much of this code was taken from
-`https://github.com/ulissigroup/cgcnn/`, which in turn was based on
-`https://github.com/txie-93/cgcnn`.
-"""
+from ocpmodels.common.registry import registry
+from ocpmodels.datasets import BaseDataset
+from torch_geometric.data import DataLoader, InMemoryDataset
 
-import os
-from itertools import product
-
-import ase.db
-import numpy as np
-import torch
-from pymatgen.io.ase import AseAtomsAdaptor
-from torch_geometric.data import Data, InMemoryDataset, DataLoader
-
-from ..common.registry import registry
-from .base import BaseDataset
-from .elemental_embeddings import EMBEDDINGS
-
-
-
-@registry.register_dataset("DOGSS")
+@registry.register_dataset("dogss")
 class DOGSS(BaseDataset):
+    
     def __init__(self, config, transform=None, pre_transform=None):
-        super(BaseDataset, self).__init__(config["src"], transform=None, pre_transform=None)
-
-        self.data, self.slices = torch.load("ocpmodels/datasets/data_surfaces.pt")
-        self.config = config
+        super(DOGSS, self).__init__(config, transform, pre_transform)
         
-    @property
-    def processed_file_names(self):
-        return "data_surfaces.pt"
+    def get_dataloaders(self, batch_size=None):
+        assert batch_size is not None
+        assert self.train_size + self.val_size + self.test_size <= len(self)
+        
+        self = self.shuffle()
+        
+        test_dataset = self[-self.test_size :]
+        train_val_dataset = self[: self.train_size + self.val_size].shuffle()
+
+        train_loader = DataLoader(
+            train_val_dataset[: self.train_size],
+            batch_size=batch_size,
+            shuffle=True,
+        )
+        val_loader = DataLoader(
+            train_val_dataset[
+                self.train_size : self.train_size + self.val_size
+            ],
+            batch_size=batch_size,
+        )
+        test_loader = DataLoader(test_dataset, batch_size=batch_size)
+
+        return train_loader, val_loader, test_loader

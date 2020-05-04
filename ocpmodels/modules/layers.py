@@ -228,68 +228,86 @@ class AttentionConv(MessagePassing):
         aggr_out = nn.ReLU()(x + self.fc_post(aggr_out))
 
         return aggr_out
-    
-    
-class DOGSSConv(MessagePassing):
-    """Implements the message passing layer from
-    `"Crystal Graph Convolutional Neural Networks for an
-    Accurate and Interpretable Prediction of Material Properties"
-    <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.120.145301>`.
-    """
 
+
+class DOGSSConv(MessagePassing):
     def __init__(self, node_dim, edge_dim, **kwargs):
         super(DOGSSConv, self).__init__(aggr="add")
-        self.node_dim = node_dim
-        self.edge_dim = edge_dim
+        self.node_feat_size = node_dim
+        self.edge_feat_size = edge_dim
 
-        self.fc_pre = nn.Sequential(
-            nn.Linear(2 * self.node_dim + self.edge_dim, 2 * self.node_dim),
-            nn.BatchNorm1d(2 * self.node_dim),
+        self.fc_pre_node = nn.Sequential(
+            nn.Linear(
+                2 * self.node_feat_size + self.edge_feat_size,
+                2 * self.node_feat_size,
+            ),
+            nn.BatchNorm1d(2 * self.node_feat_size),
         )
-
-        self.fc_post = nn.Sequential(nn.BatchNorm1d(self.node_dim))
-
+        
+        self.fc_pre_edge = nn.Sequential(
+            nn.Linear(
+                2 * self.node_feat_size + self.edge_feat_size,
+                2 * self.edge_feat_size,
+            ),
+            nn.BatchNorm1d(2 * self.edge_feat_size),
+        )
+        self.fc_node = nn.Sequential(nn.BatchNorm1d(self.node_feat_size))
+        self.fc_edge = nn.Sequential(nn.BatchNorm1d(self.edge_feat_size))
+        
     def forward(self, x, edge_index, edge_attr):
         """
         Arguments:
-            x has shape [num_nodes, node_dim]
+            x has shape [num_nodes, node_feat_size]
             edge_index has shape [2, num_edges]
-            edge_attr is [num_edges, edge_dim]
+            edge_attr is [num_edges, edge_feat_size]
         """
-#         print(edge_index.is_cuda, x.is_cuda, edge_attr.is_cuda)
-        if not edge_index.is_cuda:
-            edge_index = edge_index.cuda()
         
         return self.propagate(edge_index, x=x, edge_attr=edge_attr)
 
     def message(self, x_i, x_j, edge_attr):
         """
         Arguments:
-            x_i has shape [num_edges, node_dim]
-            x_j has shape [num_edges, node_dim]
-            edge_attr has shape [num_edges, edge_dim]
+            x_i has shape [num_edges, node_feat_size]
+            x_j has shape [num_edges, node_feat_size]
+            edge_attr has shape [num_edges, edge_feat_size]
 
         Returns:
-            tensor of shape [num_edges, node_dim]
+            tensor of shape [num_edges, node_feat_size]
         """
-        z = self.fc_pre(torch.cat([x_i, x_j, edge_attr], dim=1))
-        z1, z2 = z.chunk(2, dim=1)
-        z1 = nn.Sigmoid()(z1)
-        z2 = nn.Softplus()(z2)
-        return z1 * z2
+        z = torch.cat([x_i, x_j, edge_attr], dim=1)
+        
+        z_node = self.fc_pre_node(z)
+        z1_node, z2_node = z_node.chunk(2, dim=1)
+        z1_node = nn.Sigmoid()(z1_node)
+        z2_node = nn.Softplus()(z2_node)
+        
+        z_edge = self.fc_pre_edge(z)
+        z1_edge, z2_edge = z_edge.chunk(2, dim=1)
+        z1_edge = nn.Sigmoid()(z1_edge)
+        z2_edge = nn.Softplus()(z2_edge)
+        
+        msg_node = z1_node * z2_node
+        msg_edge = z1_edge * z2_edge
+        
+        # Edge messages are not being passed to aggregation. 
+        self.edge_attr = edge_attr
+        self.msg_edge = msg_edge
+        return msg_node
 
     def update(self, aggr_out, x):
         """
         Arguments:
-            aggr_out has shape [num_nodes, node_dim]
+            aggr_out has shape [num_nodes, node_feat_size]
                 This is the result of aggregating features output by the
                 `message` function from neighboring nodes. The aggregation
                 function is specified in the constructor (`add` for CGCNN).
-            x has shape [num_nodes, node_dim]
+            x has shape [num_nodes, node_feat_size]
 
         Returns:
-            tensor of shape [num_nodes, node_dim]
+            tensor of shape [num_nodes, node_feat_size]
+            tensor of shape [num_edgs, edge_feat_size]
         """
-        aggr_out = nn.Softplus()(x + self.fc_post(aggr_out))
-        return aggr_out
+        aggr_node = nn.Softplus()(x + self.fc_node(aggr_out))
+        aggr_edge = nn.Softplus()(self.edge_attr + self.fc_edge(self.msg_edge))
+        return aggr_node, aggr_edge
 
