@@ -94,11 +94,14 @@ class MDTrainer(BaseTrainer):
             self.train_loader.dataset.data.y, self.device
         )
 
-        # If we're computing gradients wrt input, compute mean, std of targets.
+        # If we're computing gradients wrt input, set mean of normalizer to 0 --
+        # since it is lost when compute dy / dx -- and std to forward target std
         if "grad_input" in self.config["task"]:
-            self.normalizers["grad_target"] = Normalizer(
-                self.train_loader.dataset.data.force, self.device
-            )
+            if self.config["dataset"].get("normalize_labels", True):
+                self.normalizers["grad_target"] = Normalizer(
+                    self.train_loader.dataset.data.y, self.device
+                )
+                self.normalizers["grad_target"].mean.fill_(0)
 
         if self.is_vis and self.config["task"]["dataset"] != "qm9":
             # Plot label distribution.
