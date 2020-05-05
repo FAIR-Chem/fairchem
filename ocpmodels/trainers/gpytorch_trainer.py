@@ -1,13 +1,13 @@
 import gc
 import pickle
 
+import gpytorch
 import numpy as np
 import torch
 
-import gpytorch
+from ocpmodels.common.lbfgs import FullBatchLBFGS
 from ocpmodels.common.registry import registry
 from ocpmodels.models import ExactGP
-from ocpmodels.trainers.LBFGS import FullBatchLBFGS
 
 
 @registry.register_trainer("gpytorch")

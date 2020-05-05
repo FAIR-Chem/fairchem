@@ -2,7 +2,6 @@ import torch
 
 from ocpmodels.common.registry import registry
 from ocpmodels.modules.normalizer import Normalizer
-from ocpmodels.trainers import GPyTorchTrainer, SimpleTrainer
 
 
 @registry.register_trainer("cfgp")
@@ -22,10 +21,10 @@ class CfgpTrainer:
         self.test_loader = self.conv_trainer.test_loader
 
     def train(self, lr=0.1, n_training_iter=20):
-        print("### Beggining training on convolutional network.")
+        print("### Beginning training on convolutional network.")
         self.conv_trainer.train()
 
-        print("### Beggining training on GP.")
+        print("### Beginning training on GP.")
         convolutions = self._get_training_convolutions()
         train_indices = self.train_loader.dataset.__indices__
         train_y = self.train_loader.dataset.data.y[train_indices].to(
