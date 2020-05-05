@@ -166,7 +166,10 @@ class BaseTrainer:
         self.normalizers = {}
         if self.config["dataset"].get("normalize_labels", True):
             self.normalizers["target"] = Normalizer(
-                self.train_loader.dataset.data.y, self.device
+                self.train_loader.dataset.data.y[
+                    self.train_loader.dataset.__indices__
+                ],
+                self.device,
             )
 
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
@@ -174,7 +177,10 @@ class BaseTrainer:
         if "grad_input" in self.config["task"]:
             if self.config["dataset"].get("normalize_labels", True):
                 self.normalizers["grad_target"] = Normalizer(
-                    self.train_loader.dataset.data.y, self.device
+                    self.train_loader.dataset.data.y[
+                        self.train_loader.dataset.__indices__
+                    ],
+                    self.device,
                 )
                 self.normalizers["grad_target"].mean.fill_(0)
 

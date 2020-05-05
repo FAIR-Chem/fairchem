@@ -90,16 +90,23 @@ class MDTrainer(BaseTrainer):
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
-        self.normalizers["target"] = Normalizer(
-            self.train_loader.dataset.data.y, self.device
-        )
+        if self.config["dataset"].get("normalize_labels", True):
+            self.normalizers["target"] = Normalizer(
+                self.train_loader.dataset.data.y[
+                    self.train_loader.dataset.__indices__
+                ],
+                self.device,
+            )
 
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
         if "grad_input" in self.config["task"]:
             if self.config["dataset"].get("normalize_labels", True):
                 self.normalizers["grad_target"] = Normalizer(
-                    self.train_loader.dataset.data.y, self.device
+                    self.train_loader.dataset.data.y[
+                        self.train_loader.dataset.__indices__
+                    ],
+                    self.device,
                 )
                 self.normalizers["grad_target"].mean.fill_(0)
 
