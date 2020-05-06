@@ -1,3 +1,4 @@
+import pickle
 import torch
 
 from ocpmodels.common.registry import registry
@@ -23,7 +24,9 @@ class CfgpTrainer:
     def train(self, lr=0.1, n_training_iter=20):
         print("### Beginning training on convolutional network.")
         self.conv_trainer.train()
+        self._train_gp(lr, n_training_iter)
 
+    def _train_gp(self, lr, n_training_iter):
         print("### Beginning training on GP.")
         convolutions = self._get_training_convolutions()
         train_indices = self.train_loader.dataset.__indices__
@@ -73,11 +76,35 @@ class CfgpTrainer:
         try:
             normed_convs = self.conv_normalizer.norm(convs)
         except AttributeError as error:
-            raise type(error)(
-                error.message + "; error may have occurred "
-                "because the CFGP may not have been trained yet"
-            )
+            raise type(error)(str(error) + "; error may have occurred "
+                              "because the CFGP may not have been trained yet")
 
         # Feed the convolutions into the GP
         targets_pred, targets_std = self.gpytorch_trainer.predict(normed_convs)
         return targets_pred, targets_std
+
+    def save_state(self, gp_path='gp_state.pth', normalizer_path='normalizer.pth'):
+        self.gpytorch_trainer.save_state(gp_path)
+        with open(normalizer_path, 'wb') as f:
+            pickle.dump(self.conv_normalizer.state_dict(), f)
+
+    def load_state(self, nn_checkpoint_file, gp_checkpoint_file,
+                   normalizer_checkpoint_file):
+        self._load_conv(nn_checkpoint_file)
+        self._load_gp(gp_checkpoint_file)
+        self._load_normalizer(normalizer_checkpoint_file)
+
+    def _load_conv(self, nn_checkpoint_file):
+        self.conv_trainer.load_state(nn_checkpoint_file)
+
+    def _load_gp(self, gp_checkpoint_file):
+        convolutions = self._get_training_convolutions()
+        train_indices = self.train_loader.dataset.__indices__
+        train_y = self.train_loader.dataset.data.y[train_indices].to(self.device)
+        self.gpytorch_trainer._init_gp(convolutions, train_y, 0.1)
+        self.gpytorch_trainer.load_state(gp_checkpoint_file)
+
+    def _load_normalizer(self, normalizer_checkpoint_file):
+        with open(normalizer_checkpoint_file, 'rb') as f:
+            normalizer_state_dict = pickle.load(f)
+        self.conv_normalizer.load_state_dict(normalizer_state_dict)

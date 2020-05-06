@@ -90,3 +90,7 @@ class SimpleTrainer(BaseTrainer):
             predictions.extend(out["output"].tolist())
 
         return predictions
+
+    def load_state(self, checkpoint_file):
+        state_dict = torch.load(checkpoint_file)["state_dict"]
+        self.model.load_state_dict(state_dict)

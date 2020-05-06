@@ -52,11 +52,7 @@ class GPyTorchTrainer:
         self.likelihood = Likelihood().to(self.device)
 
     def train(self, train_x, train_y, lr=0.1, n_training_iter=20):
-        self.gp = self.Gp(
-            train_x, train_y, self.likelihood, self.device, self.n_devices
-        ).to(self.device)
-        self.loss = self.Loss(self.likelihood, self.gp)
-        self.optimizer = self.Optimizer(self.gp.parameters(), lr=lr)
+        self._init_gp(train_x, train_y, lr)
         checkpoint_size = self._calculate_checkpoint_size(train_x, train_y, lr)
 
         self._train(
@@ -66,6 +62,13 @@ class GPyTorchTrainer:
             lr=lr,
             n_training_iter=n_training_iter,
         )
+
+    def _init_gp(self, train_x, train_y, lr):
+        self.gp = self.Gp(
+            train_x, train_y, self.likelihood, self.device, self.n_devices
+        ).to(self.device)
+        self.loss = self.Loss(self.likelihood, self.gp)
+        self.optimizer = self.Optimizer(self.gp.parameters(), lr=lr)
 
     def _calculate_checkpoint_size(self, train_x, train_y, lr):
         """ Runs through one set of training loops to figure out the best
@@ -162,9 +165,9 @@ class GPyTorchTrainer:
         targets_std = preds.stddev.detach().cpu().numpy()
         return targets_pred, targets_std
 
-    def save_gp(self, path="gp_state.pth"):
+    def save_state(self, path='gp_state.pth'):
         torch.save(self.gp.state_dict(), (path))
 
-    def load_gp(self, path):
+    def load_state(self, path):
         state_dict = torch.load(path)
         self.gp.load_state_dict(state_dict)
