@@ -2,9 +2,9 @@ import datetime
 import os
 import warnings
 
-import torch
 import yaml
 
+import torch
 from ocpmodels.common.registry import registry
 from ocpmodels.datasets import *
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -65,7 +65,7 @@ class SimpleTrainer(BaseTrainer):
         )
 
         self.load()
-        print(yaml.dump(self.config, default_flow_style=False))
+        # print(yaml.dump(self.config, default_flow_style=False))
 
     # Takes in a new data source and generates predictions on it.
     def predict(self, src, batch_size=32):

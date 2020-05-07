@@ -1,16 +1,23 @@
 includes:
 - /global/homes/b/bwood/machine_learning/open_catalyst_project/baselines/configs/ulissigroup_h/base.yml
 
-model: cgcnn
+# model: cgcnn
 
-model_attributes:
+# model_attributes:
+  # atom_embedding_size: tune.randint(46, 66)
+  # num_graph_conv_layers: tune.randint(3, 11)
+  # fc_feat_size: tune.randint(80, 131) # projection layer after conv + pool layers
+  # num_fc_layers: tune.randint(3, 9)
+
+model:
+  name: cgcnn
   atom_embedding_size: tune.randint(46, 66)
   num_graph_conv_layers: tune.randint(3, 11)
   fc_feat_size: tune.randint(80, 131) # projection layer after conv + pool layers
   num_fc_layers: tune.randint(3, 9)
 
 optim:
-  max_epochs: 30
+  max_epochs: 5
   batch_size: tune.choice([80, 64, 40])
   lr_initial: tune.uniform(0.005, 0.02)
   lr_gamma: 0.1
@@ -22,11 +29,18 @@ optim:
 # tune settings
 tune:
   ray_init_default: False
-  local_dir: /global/homes/b/bwood/machine_learning/hpo/ocp_test
-  num_samples: 240
-  max_t: 30
+  local_dir: /global/homes/b/bwood/machine_learning/hpo/ocp_update_05052020_test
+  num_samples: 8
+  max_t: 5
   checkpoint_freq: 15
+  resources_per_trial:
+     cpu: 5
+     gpu: 1
   resume: False
 
-
-
+# wandb logger info
+monitor: True
+env_config:
+  wandb:
+    name: test_hpo
+    project: cgcnn_h_data_hpo

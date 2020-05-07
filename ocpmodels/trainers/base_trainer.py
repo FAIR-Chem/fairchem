@@ -4,13 +4,13 @@ import os
 import random
 import time
 
-import demjson
 import numpy as np
+import yaml
+
+import demjson
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import yaml
-
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
@@ -158,7 +158,11 @@ class BaseTrainer:
             num_targets = 1
 
         self.num_targets = num_targets
-        self.train_loader, self.val_loader, self.test_loader = dataset.get_dataloaders(
+        (
+            self.train_loader,
+            self.val_loader,
+            self.test_loader,
+        ) = dataset.get_dataloaders(
             batch_size=int(self.config["optim"]["batch_size"])
         )
 
@@ -243,9 +247,12 @@ class BaseTrainer:
         # metrics.
         self.meter = Meter()
 
-    def train(self):
+    def train(self, max_epochs=None, return_metrics=False):
         # TODO(abhshkdz): Timers for dataloading and forward pass.
-        for epoch in range(self.config["optim"]["max_epochs"]):
+        num_epochs = (
+            max_epochs if not None else self.config["optim"]["max_epochs"]
+        )
+        for epoch in range(num_epochs):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 batch = batch.to(self.device)
@@ -278,8 +285,8 @@ class BaseTrainer:
             self.scheduler.step()
 
             with torch.no_grad():
-                self.validate(split="val", epoch=epoch)
-                self.validate(split="test", epoch=epoch)
+                v_loss, v_mae = self.validate(split="val", epoch=epoch)
+                test_loss, test_mae = self.validate(split="test", epoch=epoch)
 
             if not self.is_debug:
                 save_checkpoint(
@@ -295,6 +302,17 @@ class BaseTrainer:
                     },
                     self.config["cmd"]["checkpoint_dir"],
                 )
+        if return_metrics:
+            return {
+                "training_loss": float(self.meter.loss.global_avg),
+                "training_mae": float(
+                    self.meter.meters["binding energy/mae"].global_avg
+                ),
+                "validation_loss": v_loss,
+                "validation_mae": v_mae,
+                "test_loss": test_loss,
+                "test_mae": test_mae,
+            }
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
@@ -327,6 +345,10 @@ class BaseTrainer:
             )
 
         print(meter)
+        return (
+            float(meter.loss.global_avg),
+            float(meter.meters["binding energy/mae"].global_avg),
+        )
 
     def _forward(self, batch):
         out, metrics = {}, {}
