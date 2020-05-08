@@ -28,11 +28,7 @@ class CfgpTrainer:
 
     def _train_gp(self, lr, n_training_iter):
         print("### Beginning training on GP.")
-        convolutions = self._get_training_convolutions()
-        train_indices = self.train_loader.dataset.__indices__
-        train_y = self.train_loader.dataset.data.y[train_indices].to(
-            self.device
-        )
+        convolutions, train_y = self._get_training_convolutions()
         self.gpytorch_trainer.train(
             train_x=convolutions,
             train_y=train_y,
@@ -41,24 +37,27 @@ class CfgpTrainer:
         )
 
     def _get_training_convolutions(self):
-        train_convs = self._get_convolutions(self.train_loader)
-        train_convs = torch.Tensor(train_convs).to(self.device)
+        train_convs, train_y = self._get_convolutions(self.train_loader)
 
         self.conv_normalizer = Normalizer(train_convs, self.device)
         normed_convs = self.conv_normalizer.norm(train_convs)
-        return normed_convs
+        return normed_convs, train_y
 
     def _get_convolutions(self, data_loader):
         self.conv_trainer.model.eval()
         convolutions = []
+        targets = []
 
         for i, batch in enumerate(data_loader):
             batch.to(self.device)
             out = self.conv_trainer.model._convolve(batch)
-            for conv in out.tolist():
+            for conv, target in zip(out.tolist(), batch.y):
                 convolutions.append(conv)
+                targets.append(target)
 
-        return convolutions
+        convolutions = torch.Tensor(convolutions).to(self.device)
+        targets = torch.Tensor(targets).to(self.device)
+        return convolutions, targets
 
     def predict(self, src, batch_size=32):
         print("### Generating predictions on {}.".format(src))
@@ -71,8 +70,7 @@ class CfgpTrainer:
         data_loader = dataset.get_full_dataloader(batch_size=batch_size)
 
         # Get the convolutions
-        convs = self._get_convolutions(data_loader)
-        convs = torch.Tensor(convs).to(self.device)
+        convs, _ = self._get_convolutions(data_loader)
         try:
             normed_convs = self.conv_normalizer.norm(convs)
         except AttributeError as error:
