@@ -2,9 +2,9 @@ import datetime
 import os
 import warnings
 
-import torch
 import yaml
 
+import torch
 from ocpmodels.common.registry import registry
 from ocpmodels.datasets import *
 from ocpmodels.trainers.base_trainer import BaseTrainer
