@@ -30,9 +30,16 @@ if __name__ == "__main__":
     parser = flags.get_parser()
     args = parser.parse_args()
 
-    # Loads configs from yaml files.
+    # get cwd, assumes it to be in the scripts dir of this package
+    cwd = os.getcwd()
+    # load configs from yaml files.
     config = yaml.safe_load(open(args.config_yml, "r"))
     includes = config.get("includes", [])
+    # update include paths from rel paths to abs paths
+    includes = [
+        os.path.abspath(os.path.join(cwd, "..", rel_path))
+        for rel_path in includes
+    ]
     if not isinstance(includes, list):
         raise AttributeError(
             "Includes must be a list, {} provided".format(type(includes))
@@ -47,8 +54,15 @@ if __name__ == "__main__":
 
     # converts tune str from YAML to tune functions
     hpo_config = tune_str_to_func(config)
+    # update all remaining rel paths to abs paths
+    hpo_config["dataset"]["src"] = os.path.abspath(
+        os.path.join(cwd, "..", hpo_config["dataset"]["src"])
+    )
+    hpo_config["tune"]["local_dir"] = os.path.abspath(
+        os.path.join(cwd, "..", hpo_config["tune"]["local_dir"])
+    )
 
-    # Initialize and run Tune.
+    # initialize and run Tune.
     if hpo_config["tune"]["ray_init_default"]:
         ray.init()
     else:

@@ -1,5 +1,5 @@
 dataset:
-  src: /global/homes/b/bwood/machine_learning/ulissi_cnn/hpo/ocp_cgcnn/cgcnn/hpo/data_voronoi_H_4k_surface
+  src: data/data/ulissigroup_h
   train_size: 2560
   val_size: 640
   test_size: 800

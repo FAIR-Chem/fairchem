@@ -1,13 +1,8 @@
 includes:
-- /global/homes/b/bwood/machine_learning/open_catalyst_project/baselines/configs/ulissigroup_h/base.yml
+- configs/ulissigroup_h/base.yml
 
-# model: cgcnn
-
-# model_attributes:
-  # atom_embedding_size: tune.randint(46, 66)
-  # num_graph_conv_layers: tune.randint(3, 11)
-  # fc_feat_size: tune.randint(80, 131) # projection layer after conv + pool layers
-  # num_fc_layers: tune.randint(3, 9)
+# this is an toy example of HPO, i.e. only 8 trials running for 5 epochs with a small dataset
+# please adjust for your own purposes
 
 model:
   name: cgcnn
@@ -29,12 +24,12 @@ optim:
 # tune settings
 tune:
   ray_init_default: False
-  local_dir: /global/homes/b/bwood/machine_learning/hpo/ocp_update_05052020_test
+  local_dir: hpo_results
   num_samples: 8
   max_t: 5
   checkpoint_freq: 15
   resources_per_trial:
-     cpu: 5
+     cpu: 1
      gpu: 1
   resume: False
 
