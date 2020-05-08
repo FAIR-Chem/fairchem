@@ -1,0 +1,13 @@
+dataset:
+  src: data/data/ulissigroup_h
+  train_size: 2560
+  val_size: 640
+  test_size: 800
+
+task:
+  dataset: ulissigroup_h
+  description: "Binding energy regression on a dataset of DFT results for H adsorption on various slabs."
+  type: regression
+  metric: mae
+  labels:
+    - binding energy
