@@ -1,7 +1,13 @@
-__all__ = ["BaseTrainer", "SimpleTrainer", "DOGSSTrainer", "TuneHPOTrainer"]
+__all__ = [
+    "BaseTrainer",
+    "MDTrainer",
+    "SimpleTrainer",
+    "DOGSSTrainer",
+    "TuneHPOTrainer",
+]
 
 from .base_trainer import BaseTrainer
-from .simple_trainer import SimpleTrainer
 from .dogss_trainer import DOGSSTrainer
+from .md_trainer import MDTrainer
+from .simple_trainer import SimpleTrainer
 from .tune_hpo_trainer import TuneHPOTrainer
-
