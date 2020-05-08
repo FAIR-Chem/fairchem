@@ -4,13 +4,13 @@ import os
 import random
 import time
 
-import numpy as np
-import yaml
-
 import demjson
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import yaml
+
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
@@ -177,12 +177,17 @@ class BaseTrainer:
                 self.device,
             )
 
-        # If we're computing gradients wrt input, compute mean, std of targets.
+        # If we're computing gradients wrt input, set mean of normalizer to 0 --
+        # since it is lost when compute dy / dx -- and std to forward target std
         if "grad_input" in self.config["task"]:
             if self.config["dataset"].get("normalize_labels", True):
                 self.normalizers["grad_target"] = Normalizer(
-                    self.train_loader.dataset.data.forces, self.device
+                    self.train_loader.dataset.data.y[
+                        self.train_loader.dataset.__indices__
+                    ],
+                    self.device,
                 )
+                self.normalizers["grad_target"].mean.fill_(0)
 
         if self.is_vis and self.config["task"]["dataset"] != "qm9":
             # Plot label distribution.
@@ -421,11 +426,11 @@ class BaseTrainer:
             if self.config["dataset"].get("normalize_labels", True):
                 grad_input_errors = eval(self.config["task"]["metric"])(
                     self.normalizers["grad_target"].denorm(force_output).cpu(),
-                    batch.forces.cpu(),
+                    batch.force.cpu(),
                 )
             else:
                 grad_input_errors = eval(self.config["task"]["metric"])(
-                    force_output.cpu(), batch.forces.cpu()
+                    force_output.cpu(), batch.force.cpu()
                 )
             metrics[
                 "force_x/{}".format(self.config["task"]["metric"])
@@ -454,10 +459,10 @@ class BaseTrainer:
         if "grad_input" in self.config["task"]:
             if self.config["dataset"].get("normalize_labels", True):
                 grad_target_normed = self.normalizers["grad_target"].norm(
-                    batch.forces
+                    batch.force
                 )
             else:
-                grad_target_normed = batch.forces
+                grad_target_normed = batch.force
             loss.append(
                 self.criterion(out["force_output"], grad_target_normed)
             )
