@@ -162,7 +162,7 @@ class GPyTorchTrainer:
         ):
             preds = self.gp(input_)
         targets_pred = preds.mean
-        targets_std = preds.stddev.detach().cpu().numpy()
+        targets_std = preds.stddev
         return targets_pred, targets_std
 
     def save_state(self, path='gp_state.pth'):
