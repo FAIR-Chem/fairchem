@@ -25,6 +25,7 @@ from ocpmodels.datasets import (
     Gasdb,
     QM9Dataset,
     UlissigroupCO,
+    UlissigroupH,
     XieGrossmanMatProj,
 )
 from ocpmodels.models import CGCNN, CGCNNGu, Transformer
@@ -157,8 +158,12 @@ class BaseTrainer:
             num_targets = 1
 
         self.num_targets = num_targets
-        self.train_loader, self.val_loader, self.test_loader = dataset.get_dataloaders(
-            batch_size=self.config["optim"]["batch_size"]
+        (
+            self.train_loader,
+            self.val_loader,
+            self.test_loader,
+        ) = dataset.get_dataloaders(
+            batch_size=int(self.config["optim"]["batch_size"])
         )
 
         # Normalizer for the dataset.
@@ -166,15 +171,23 @@ class BaseTrainer:
         self.normalizers = {}
         if self.config["dataset"].get("normalize_labels", True):
             self.normalizers["target"] = Normalizer(
-                self.train_loader.dataset.data.y, self.device
+                self.train_loader.dataset.data.y[
+                    self.train_loader.dataset.__indices__
+                ],
+                self.device,
             )
 
-        # If we're computing gradients wrt input, compute mean, std of targets.
+        # If we're computing gradients wrt input, set mean of normalizer to 0 --
+        # since it is lost when compute dy / dx -- and std to forward target std
         if "grad_input" in self.config["task"]:
             if self.config["dataset"].get("normalize_labels", True):
                 self.normalizers["grad_target"] = Normalizer(
-                    self.train_loader.dataset.data.forces, self.device
+                    self.train_loader.dataset.data.y[
+                        self.train_loader.dataset.__indices__
+                    ],
+                    self.device,
                 )
+                self.normalizers["grad_target"].mean.fill_(0)
 
         if self.is_vis and self.config["task"]["dataset"] != "qm9":
             # Plot label distribution.
@@ -242,9 +255,14 @@ class BaseTrainer:
         # metrics.
         self.meter = Meter()
 
-    def train(self):
+    def train(self, max_epochs=None, return_metrics=False):
         # TODO(abhshkdz): Timers for dataloading and forward pass.
-        for epoch in range(self.config["optim"]["max_epochs"]):
+        num_epochs = (
+            max_epochs
+            if max_epochs is not None
+            else self.config["optim"]["max_epochs"]
+        )
+        for epoch in range(num_epochs):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 batch = batch.to(self.device)
@@ -277,8 +295,8 @@ class BaseTrainer:
             self.scheduler.step()
 
             with torch.no_grad():
-                self.validate(split="val", epoch=epoch)
-                self.validate(split="test", epoch=epoch)
+                v_loss, v_mae = self.validate(split="val", epoch=epoch)
+                test_loss, test_mae = self.validate(split="test", epoch=epoch)
 
             if not self.is_debug:
                 save_checkpoint(
@@ -294,6 +312,17 @@ class BaseTrainer:
                     },
                     self.config["cmd"]["checkpoint_dir"],
                 )
+        if return_metrics:
+            return {
+                "training_loss": float(self.meter.loss.global_avg),
+                "training_mae": float(
+                    self.meter.meters["binding energy/mae"].global_avg
+                ),
+                "validation_loss": v_loss,
+                "validation_mae": v_mae,
+                "test_loss": test_loss,
+                "test_mae": test_mae,
+            }
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
@@ -326,6 +355,10 @@ class BaseTrainer:
             )
 
         print(meter)
+        return (
+            float(meter.loss.global_avg),
+            float(meter.meters["binding energy/mae"].global_avg),
+        )
 
     def _forward(self, batch):
         out, metrics = {}, {}
@@ -395,11 +428,11 @@ class BaseTrainer:
             if self.config["dataset"].get("normalize_labels", True):
                 grad_input_errors = eval(self.config["task"]["metric"])(
                     self.normalizers["grad_target"].denorm(force_output).cpu(),
-                    batch.forces.cpu(),
+                    batch.force.cpu(),
                 )
             else:
                 grad_input_errors = eval(self.config["task"]["metric"])(
-                    force_output.cpu(), batch.forces.cpu()
+                    force_output.cpu(), batch.force.cpu()
                 )
             metrics[
                 "force_x/{}".format(self.config["task"]["metric"])
@@ -428,10 +461,10 @@ class BaseTrainer:
         if "grad_input" in self.config["task"]:
             if self.config["dataset"].get("normalize_labels", True):
                 grad_target_normed = self.normalizers["grad_target"].norm(
-                    batch.forces
+                    batch.force
                 )
             else:
-                grad_target_normed = batch.forces
+                grad_target_normed = batch.force
             loss.append(
                 self.criterion(out["force_output"], grad_target_normed)
             )
