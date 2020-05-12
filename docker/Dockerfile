@@ -42,7 +42,8 @@ RUN pip install -f https://pytorch-geometric.com/whl/torch-1.4.0.html \
 RUN pip install \
     torch-geometric \
     demjson \
-    wandb
+    wandb \
+    scikit-image==0.16.2
 
 # Only the development version of ipycache works right now
 RUN pip install git+https://github.com/rossant/ipycache.git
