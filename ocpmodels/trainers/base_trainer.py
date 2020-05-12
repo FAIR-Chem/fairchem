@@ -12,7 +12,7 @@ import torch.optim as optim
 import yaml
 
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
-from ocpmodels.common.meter import Meter, mae, mae_ratio
+from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     plot_histogram,
@@ -25,6 +25,7 @@ from ocpmodels.datasets import (
     Gasdb,
     QM9Dataset,
     UlissigroupCO,
+    UlissigroupH,
     XieGrossmanMatProj,
 )
 from ocpmodels.models import CGCNN, CGCNNGu, Transformer
@@ -143,7 +144,7 @@ class BaseTrainer:
         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
             self.config["dataset"]
         )
-        if self.config["task"]["dataset"] == "qm9":
+        if self.config["task"]["dataset"] in ["qm9", "dogss"]:
             num_targets = dataset.data.y.shape[-1]
             if (
                 "label_index" in self.config["task"]
@@ -157,22 +158,36 @@ class BaseTrainer:
             num_targets = 1
 
         self.num_targets = num_targets
-        self.train_loader, self.val_loader, self.test_loader = dataset.get_dataloaders(
-            batch_size=self.config["optim"]["batch_size"]
+        (
+            self.train_loader,
+            self.val_loader,
+            self.test_loader,
+        ) = dataset.get_dataloaders(
+            batch_size=int(self.config["optim"]["batch_size"])
         )
 
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
-        self.normalizers["target"] = Normalizer(
-            self.train_loader.dataset.data.y, self.device
-        )
-
-        # If we're computing gradients wrt input, compute mean, std of targets.
-        if "grad_input" in self.config["task"]:
-            self.normalizers["grad_target"] = Normalizer(
-                self.train_loader.dataset.data.forces, self.device
+        if self.config["dataset"].get("normalize_labels", True):
+            self.normalizers["target"] = Normalizer(
+                self.train_loader.dataset.data.y[
+                    self.train_loader.dataset.__indices__
+                ],
+                self.device,
             )
+
+        # If we're computing gradients wrt input, set mean of normalizer to 0 --
+        # since it is lost when compute dy / dx -- and std to forward target std
+        if "grad_input" in self.config["task"]:
+            if self.config["dataset"].get("normalize_labels", True):
+                self.normalizers["grad_target"] = Normalizer(
+                    self.train_loader.dataset.data.y[
+                        self.train_loader.dataset.__indices__
+                    ],
+                    self.device,
+                )
+                self.normalizers["grad_target"].mean.fill_(0)
 
         if self.is_vis and self.config["task"]["dataset"] != "qm9":
             # Plot label distribution.
@@ -240,9 +255,14 @@ class BaseTrainer:
         # metrics.
         self.meter = Meter()
 
-    def train(self):
+    def train(self, max_epochs=None, return_metrics=False):
         # TODO(abhshkdz): Timers for dataloading and forward pass.
-        for epoch in range(self.config["optim"]["max_epochs"]):
+        num_epochs = (
+            max_epochs
+            if max_epochs is not None
+            else self.config["optim"]["max_epochs"]
+        )
+        for epoch in range(num_epochs):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 batch = batch.to(self.device)
@@ -275,8 +295,8 @@ class BaseTrainer:
             self.scheduler.step()
 
             with torch.no_grad():
-                self.validate(split="val", epoch=epoch)
-                self.validate(split="test", epoch=epoch)
+                v_loss, v_mae = self.validate(split="val", epoch=epoch)
+                test_loss, test_mae = self.validate(split="test", epoch=epoch)
 
             if not self.is_debug:
                 save_checkpoint(
@@ -292,6 +312,17 @@ class BaseTrainer:
                     },
                     self.config["cmd"]["checkpoint_dir"],
                 )
+        if return_metrics:
+            return {
+                "training_loss": float(self.meter.loss.global_avg),
+                "training_mae": float(
+                    self.meter.meters["binding energy/mae"].global_avg
+                ),
+                "validation_loss": v_loss,
+                "validation_mae": v_mae,
+                "test_loss": test_loss,
+                "test_mae": test_mae,
+            }
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
@@ -324,6 +355,10 @@ class BaseTrainer:
             )
 
         print(meter)
+        return (
+            float(meter.loss.global_avg),
+            float(meter.meters["binding energy/mae"].global_avg),
+        )
 
     def _forward(self, batch):
         out, metrics = {}, {}
@@ -359,9 +394,15 @@ class BaseTrainer:
             ]
             out["force_output"] = force_output
 
-        errors = eval(self.config["task"]["metric"])(
-            self.normalizers["target"].denorm(output).cpu(), batch.y.cpu()
-        ).view(-1)
+        if self.config["dataset"].get("normalize_labels", True):
+            errors = eval(self.config["task"]["metric"])(
+                self.normalizers["target"].denorm(output).cpu(), batch.y.cpu()
+            ).view(-1)
+        else:
+            errors = eval(self.config["task"]["metric"])(
+                output.cpu(), batch.y.cpu()
+            ).view(-1)
+
         if (
             "label_index" in self.config["task"]
             and self.config["task"]["label_index"] is not False
@@ -384,10 +425,15 @@ class BaseTrainer:
                 ] = errors[i]
 
         if "grad_input" in self.config["task"]:
-            grad_input_errors = eval(self.config["task"]["metric"])(
-                self.normalizers["grad_target"].denorm(force_output).cpu(),
-                batch.forces.cpu(),
-            )
+            if self.config["dataset"].get("normalize_labels", True):
+                grad_input_errors = eval(self.config["task"]["metric"])(
+                    self.normalizers["grad_target"].denorm(force_output).cpu(),
+                    batch.force.cpu(),
+                )
+            else:
+                grad_input_errors = eval(self.config["task"]["metric"])(
+                    force_output.cpu(), batch.force.cpu()
+                )
             metrics[
                 "force_x/{}".format(self.config["task"]["metric"])
             ] = grad_input_errors[0]
@@ -403,15 +449,22 @@ class BaseTrainer:
     def _compute_loss(self, out, batch):
         loss = []
 
-        target_normed = self.normalizers["target"].norm(batch.y)
+        if self.config["dataset"].get("normalize_labels", True):
+            target_normed = self.normalizers["target"].norm(batch.y)
+        else:
+            target_normed = batch.y
+
         loss.append(self.criterion(out["output"], target_normed))
 
         # TODO(abhshkdz): Test support for gradients wrt input.
         # TODO(abhshkdz): Make this general; remove dependence on `.forces`.
         if "grad_input" in self.config["task"]:
-            grad_target_normed = self.normalizers["grad_target"].norm(
-                batch.forces
-            )
+            if self.config["dataset"].get("normalize_labels", True):
+                grad_target_normed = self.normalizers["grad_target"].norm(
+                    batch.force
+                )
+            else:
+                grad_target_normed = batch.force
             loss.append(
                 self.criterion(out["force_output"], grad_target_normed)
             )

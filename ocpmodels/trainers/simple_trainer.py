@@ -83,10 +83,14 @@ class SimpleTrainer(BaseTrainer):
         for i, batch in enumerate(data_loader):
             batch.to(self.device)
             out, metrics = self._forward(batch)
-            if self.normalizers is not None and "target" in self.normalizers:
+            if self.config["dataset"].get("normalize_labels", True):
                 out["output"] = self.normalizers["target"].denorm(
                     out["output"]
                 )
             predictions.extend(out["output"].tolist())
 
         return predictions
+
+    def load_state(self, checkpoint_file):
+        state_dict = torch.load(checkpoint_file)["state_dict"]
+        self.model.load_state_dict(state_dict)
