@@ -29,7 +29,6 @@ RUN conda install \
     pymatgen==2020.1.10 \
     matplotlib \
     gpytorch
-RUN conda install -c bioconda ray
 RUN conda clean -ity
 
 # Install pip packages
@@ -43,10 +42,14 @@ RUN pip install \
     torch-geometric \
     demjson \
     wandb \
-    scikit-image==0.16.2
+    scikit-image==0.16.2 \
+    ray
 
 # Only the development version of ipycache works right now
 RUN pip install git+https://github.com/rossant/ipycache.git
+
+# Install the baselines repo, which will show up as the ocpmodels python module
+RUN pip install git+https://github.com/Open-Catalyst-Project/baselines.git
 
 # Make the default user `user` instead of `root`. Necessary when working with Shifter.
 RUN chown -R user:group $HOME
