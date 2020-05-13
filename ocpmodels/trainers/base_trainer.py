@@ -258,7 +258,9 @@ class BaseTrainer:
     def train(self, max_epochs=None, return_metrics=False):
         # TODO(abhshkdz): Timers for dataloading and forward pass.
         num_epochs = (
-            max_epochs if not None else self.config["optim"]["max_epochs"]
+            max_epochs
+            if max_epochs is not None
+            else self.config["optim"]["max_epochs"]
         )
         for epoch in range(num_epochs):
             self.model.train()

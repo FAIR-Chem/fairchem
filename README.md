@@ -10,7 +10,7 @@ Also related to [Graph Attention Networks](https://arxiv.org/abs/1710.10903) and
 
 ##  Installation
 
-[last updated April 20, 2020]
+[last updated May 5, 2020]
 
 The easiest way of installing prerequisites is via [conda](https://conda.io/docs/index.html).
 After installing [conda](http://conda.pydata.org/), run the following commands
@@ -47,6 +47,11 @@ conda env create -f env.cpu.yml
 conda activate ocp-models
 pre-commit install
 ```
+
+### Additional experiment-specific setup
+
+- [Kevin Tran](https://github.com/ktran9891)'s Convolution-Fed Gaussian Process
+  (CFGP) pipeline requires `gpytorch`, installable via `pip install gpytorch`.
 
 ## Usage
 
