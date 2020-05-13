@@ -51,6 +51,10 @@ RUN pip install git+https://github.com/rossant/ipycache.git
 # Install the baselines repo, which will show up as the ocpmodels python module
 RUN pip install git+https://github.com/Open-Catalyst-Project/baselines.git
 
+# Expose the `/home/.config` folder so that it can be mounted when the
+# container is opened. This will enable us to use wandb.
+VOLUME $HOME/.config
+
 # Make the default user `user` instead of `root`. Necessary when working with Shifter.
 RUN chown -R user:group $HOME
 USER user
