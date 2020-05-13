@@ -67,7 +67,10 @@ class Gasdb(BaseDataset):
             )
         )
         feature_generator = AtomicFeatureGenerator(self.ase_db)
-        energies = [row.adsorption_energy for row in self.ase_db.select()]
+        try:
+            energies = [row.adsorption_energy for row in self.ase_db.select()]
+        except AttributeError:
+            energies = [row.data['adsorption_energy'] for row in self.ase_db.select()]
 
         data_list = []
         zipped_data = zip(feature_generator, energies)
