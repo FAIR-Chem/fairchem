@@ -6,12 +6,11 @@ from ocpmodels.common.registry import registry
 class ExactGP(gpytorch.models.ExactGP):
     """ Modified from GPyTorch tutorial documentation """
 
-    def __init__(self, train_x, train_y, likelihood, device, n_devices,
-                 kernel=None, cov_matrix=None):
-        if kernel is None:
-            kernel = gpytorch.kernels.MaternKernel()
-        if cov_matrix is None:
-            self.cov_matrix = gpytorch.distributions.MultivariateNormal
+    def __init__(self, kernel, cov_matrix, likelihood,
+                 train_x, train_y,
+                 device, n_devices,
+                 ):
+        self.cov_matrix = cov_matrix
 
         super(ExactGP, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()

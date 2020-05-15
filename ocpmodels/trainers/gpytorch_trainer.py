@@ -20,6 +20,8 @@ class GPyTorchTrainer:
         Optimizer=None,
         Likelihood=None,
         Loss=None,
+        kernel=None,
+        cov_matrix=None,
         lr=0.1,
         preconditioner_size=100,
         device=None,
@@ -32,6 +34,12 @@ class GPyTorchTrainer:
             Optimizer = FullBatchLBFGS
         if Likelihood is None:
             Likelihood = gpytorch.likelihoods.GaussianLikelihood
+        if Loss is None:
+            Loss = gpytorch.mlls.ExactMarginalLogLikelihood
+        if kernel is None:
+            kernel = gpytorch.kernels.MaternKernel()
+        if cov_matrix is None:
+            self.cov_matrix = gpytorch.distributions.MultivariateNormal
         if device is None:
             device = torch.device(
                 "cuda" if torch.cuda.is_available() else "cpu"
@@ -39,8 +47,6 @@ class GPyTorchTrainer:
         if n_devices is None:
             n_devices = torch.cuda.device_count()
             print("Planning to run on {} GPUs.".format(n_devices))
-        if Loss is None:
-            Loss = gpytorch.mlls.ExactMarginalLogLikelihood
 
         self.device = device
         self.n_devices = n_devices
@@ -50,6 +56,8 @@ class GPyTorchTrainer:
         self.Optimizer = Optimizer
         self.Loss = Loss
         self.likelihood = Likelihood().to(self.device)
+        self.kernel = kernel
+        self.cov_matrix = cov_matrix
 
     def train(self, train_x, train_y, lr=0.1, n_training_iter=20):
         self._init_gp(train_x, train_y, lr)
@@ -65,7 +73,13 @@ class GPyTorchTrainer:
 
     def _init_gp(self, train_x, train_y, lr):
         self.gp = self.Gp(
-            train_x, train_y, self.likelihood, self.device, self.n_devices
+            kernel=self.kernel,
+            cov_matrix=self.cov_matrix,
+            likelihood=self.likelihood,
+            train_x=train_x,
+            train_y=train_y,
+            device=self.device,
+            n_devices=self.n_devices
         ).to(self.device)
         self.loss = self.Loss(self.likelihood, self.gp)
         self.optimizer = self.Optimizer(self.gp.parameters(), lr=lr)
