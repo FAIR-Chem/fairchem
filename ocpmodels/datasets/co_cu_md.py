@@ -38,6 +38,9 @@ class COCuMD(BaseDataset):
 
     @property
     def processed_file_names(self):
+        os.makedirs(
+            os.path.join(self.config["src"], "processed"), exist_ok=True
+        )
         return [
             os.path.join(
                 self.config["src"], "processed", self.config["traj"] + ".pt"
