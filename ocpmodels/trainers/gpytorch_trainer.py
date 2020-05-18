@@ -174,7 +174,7 @@ class GPyTorchTrainer:
         with torch.no_grad(), gpytorch.settings.fast_pred_var(), gpytorch.beta_features.checkpoint_kernel(
             1000
         ):
-            preds = self.gp(input_)
+            preds = self.gp.forward(input_)
         targets_pred = preds.mean
         targets_std = preds.stddev
         return targets_pred, targets_std
