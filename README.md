@@ -52,6 +52,7 @@ pre-commit install
 
 - [Kevin Tran](https://github.com/ktran9891)'s Convolution-Fed Gaussian Process
   (CFGP) pipeline requires `gpytorch`, installable via `pip install gpytorch`.
+- Hyperparameter optimization (HPO) requires `Tune`, installable via `pip install ray`. 
 
 ## Usage
 

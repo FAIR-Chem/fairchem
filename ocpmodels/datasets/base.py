@@ -44,12 +44,20 @@ class BaseDataset(InMemoryDataset):
             batch_size=batch_size,
             shuffle=True,
         )
-        val_loader = DataLoader(
-            train_val_dataset[
-                self.train_size : self.train_size + self.val_size
-            ],
-            batch_size=batch_size,
-        )
-        test_loader = DataLoader(test_dataset, batch_size=batch_size)
+
+        if self.val_size == 0:
+            val_loader = None
+        else:
+            val_loader = DataLoader(
+                train_val_dataset[
+                    self.train_size : self.train_size + self.val_size
+                ],
+                batch_size=batch_size,
+            )
+
+        if self.test_size == 0:
+            test_loader = None
+        else:
+            test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
         return train_loader, val_loader, test_loader
