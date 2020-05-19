@@ -1,5 +1,6 @@
 import os.path
 import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import ase.io
 import numpy as np
@@ -7,8 +8,6 @@ import numpy as np
 from ocpmodels.common.ase_calc import OCP
 from ocpmodels.datasets import *
 from ocpmodels.trainers import *
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 
