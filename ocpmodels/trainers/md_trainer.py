@@ -83,7 +83,11 @@ class MDTrainer(BaseTrainer):
         num_targets = 1
 
         self.num_targets = num_targets
-        self.train_loader, self.val_loader, self.test_loader = dataset.get_dataloaders(
+        (
+            self.train_loader,
+            self.val_loader,
+            self.test_loader,
+        ) = dataset.get_dataloaders(
             batch_size=self.config["optim"]["batch_size"]
         )
 
@@ -143,19 +147,32 @@ class MDTrainer(BaseTrainer):
         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
             dataset_config
         )
-        data_loader = dataset.get_full_dataloader(batch_size=batch_size)
+        data_loader = dataset.get_dataloader(batch_size=batch_size)
 
         self.model.eval()
-        predictions = []
+        predictions = {"energy": [], "forces": []}
 
         for i, batch in enumerate(data_loader):
             batch.to(self.device)
-            out, metrics = self._forward(batch)
+            batch = add_edge_distance_to_graph(batch, device=self.device)
+            out, _ = self._forward(batch)
             if self.normalizers is not None and "target" in self.normalizers:
                 out["output"] = self.normalizers["target"].denorm(
                     out["output"]
                 )
-            predictions.extend(out["output"].tolist())
+                out["force_output"] = self.normalizers["grad_target"].denorm(
+                    out["force_output"]
+                )
+                atoms_sum = 0
+            predictions["energy"].extend(out["output"].tolist())
+            for natoms in batch.natoms:
+                predictions["forces"].append(
+                    out["force_output"][atoms_sum : natoms + atoms_sum]
+                    .cpu()
+                    .detach()
+                    .numpy()
+                )
+                atoms_sum += natoms
 
         return predictions
 

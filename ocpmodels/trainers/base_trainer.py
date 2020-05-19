@@ -4,13 +4,13 @@ import os
 import random
 import time
 
-import demjson
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
 
+import demjson
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
@@ -217,8 +217,9 @@ class BaseTrainer:
         # Build model
         print("### Loading model: {}".format(self.config["model"]))
         # TODO(abhshkdz): Remove dependency on self.train_loader.
+        # TODO: neater way to add the additional +3 position dimension
         self.model = registry.get_model_class(self.config["model"])(
-            self.train_loader.dataset[0].x.shape[-1],
+            self.train_loader.dataset[0].x.shape[-1] + 3,
             self.train_loader.dataset[0].edge_attr.shape[-1],
             self.num_targets,
             **self.config["model_attributes"],

@@ -1,8 +1,12 @@
 """
 Integrates models into an ASE calculator to be used for atomistic simulations
 """
+import os
 
+import ase.io
 from ase.calculators.calculator import Calculator
+
+from ocpmodels.common.registry import registry
 
 
 class OCP(Calculator):
@@ -13,12 +17,8 @@ class OCP(Calculator):
     def __init__(self, trainer):
         Calculator.__init__(self)
         self.trainer = trainer
-        # define model to be trained - trainer should contain all necessarry
-        # information specified beforehand
 
-    def train(self,):
-        # TODO
-        # train model
+    def train(self):
         self.trainer.train()
 
     def load(self, trained_model):
@@ -27,14 +27,13 @@ class OCP(Calculator):
         raise
 
     def calculate(self, atoms, properties, system_changes):
-        # TODO predict energy and forces using trained model
-        # Identify how atoms object is fed into model
         Calculator.calculate(self, atoms, properties, system_changes)
+        # TODO: allow atoms objects to be fed into model directly
+        # rather than read from traj file to avoid this unnecessary I/O
+        ase.io.write("temp.traj", atoms)
+        dataset_config = {"src": "./", "traj": "temp.traj"}
+        predictions = self.trainer.predict(dataset_config)
+        os.system("rm -rf processed/ temp.traj")
 
-        predictions = self.trainer.predict(atoms)
-
-        energy = None
-        forces = None
-
-        self.results["energy"] = energy
-        self.results["forces"] = forces
+        self.results["energy"] = predictions["energy"][0]
+        self.results["forces"] = predictions["forces"][0]

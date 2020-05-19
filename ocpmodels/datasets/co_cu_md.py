@@ -5,7 +5,6 @@ import numpy as np
 import torch
 from ase.io.trajectory import Trajectory
 from pymatgen.io.ase import AseAtomsAdaptor
-from torch_geometric.data import Data, DataLoader
 from tqdm import tqdm
 
 from ocpmodels.common.registry import registry
@@ -13,6 +12,7 @@ from ocpmodels.common.utils import collate
 from ocpmodels.datasets import BaseDataset
 from ocpmodels.datasets.elemental_embeddings import EMBEDDINGS
 from ocpmodels.datasets.gasdb import AtomicFeatureGenerator, GaussianDistance
+from torch_geometric.data import Data, DataLoader
 
 
 @registry.register_dataset("co_cu_md")
@@ -48,6 +48,7 @@ class COCuMD(BaseDataset):
         ]
 
     def process(self):
+        # TODO suppress this for ase calculator predictions
         print(
             "### Preprocessing atoms objects from:  {}".format(
                 self.raw_file_names[0]
@@ -57,10 +58,16 @@ class COCuMD(BaseDataset):
         feature_generator = TrajectoryFeatureGenerator(traj)
 
         positions = [i.get_positions() for i in traj]
-        forces = [i.get_forces(apply_constraint=False) for i in traj]
-        p_energies = [
-            i.get_potential_energy(apply_constraint=False) for i in traj
-        ]
+        try:
+            forces = [i.get_forces(apply_constraint=False) for i in traj]
+            p_energies = [
+                i.get_potential_energy(apply_constraint=False) for i in traj
+            ]
+        except Exception:
+            # TODO: cleaner way to bypass the requirement for energies, forces.
+            # fooling it for now
+            forces = [[0] for i in traj]
+            p_energies = [0 for i in traj]
 
         data_list = []
         zipped_data = zip(feature_generator, positions, forces, p_energies)
@@ -68,10 +75,9 @@ class COCuMD(BaseDataset):
         for (embedding, distance, index), pos, force, p_energy in tqdm(
             zipped_data,
             desc="preprocessing atomic features",
-            total=len(p_energies),
+            total=len(traj),
             unit="structure",
         ):
-
             edge_index = [[], []]
             edge_attr = torch.FloatTensor(
                 index.shape[0] * index.shape[1], distance.shape[-1]
@@ -90,9 +96,9 @@ class COCuMD(BaseDataset):
                     y=p_energy,
                     pos=torch.tensor(pos),
                     force=torch.tensor(force),
+                    natoms=torch.tensor([pos.shape[0]]),
                 )
             )
-
         self.data, self.slices = collate(data_list)
         torch.save((self.data, self.slices), self.processed_file_names[0])
 
@@ -122,6 +128,10 @@ class COCuMD(BaseDataset):
         test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
         return train_loader, val_loader, test_loader
+
+    def get_dataloader(self, batch_size=None):
+        data_loader = DataLoader(self, batch_size=batch_size)
+        return data_loader
 
 
 class TrajectoryFeatureGenerator(AtomicFeatureGenerator):
