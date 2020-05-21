@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.optim as optim
 import yaml
 
+from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
@@ -143,6 +144,7 @@ class BaseTrainer:
         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
             self.config["dataset"]
         )
+
         if self.config["task"]["dataset"] in ["qm9", "dogss"]:
             num_targets = dataset.data.y.shape[-1]
             if (
@@ -157,7 +159,11 @@ class BaseTrainer:
             num_targets = 1
 
         self.num_targets = num_targets
-        self.train_loader, self.val_loader, self.test_loader = dataset.get_dataloaders(
+        (
+            self.train_loader,
+            self.val_loader,
+            self.test_loader,
+        ) = dataset.get_dataloaders(
             batch_size=self.config["optim"]["batch_size"]
         )
 
@@ -227,7 +233,8 @@ class BaseTrainer:
 
     def load_optimizer(self):
         self.optimizer = optim.AdamW(
-            self.model.parameters(), self.config["optim"]["lr_initial"]
+            self.model.parameters(),
+            self.config["optim"]["lr_initial"],  # weight_decay=3.0
         )
 
     def load_extras(self):
@@ -243,9 +250,11 @@ class BaseTrainer:
         self.meter = Meter()
 
     def train(self):
+
         # TODO(abhshkdz): Timers for dataloading and forward pass.
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
+
             for i, batch in enumerate(self.train_loader):
                 batch = batch.to(self.device)
 
@@ -335,13 +344,23 @@ class BaseTrainer:
             batch.x = batch.x.requires_grad_(True)
 
         # forward pass.
-        output = self.model(batch)
+        if self.config["model_attributes"]["regress_forces"] is True:
+            output, output_forces = self.model(batch)
+        else:
+            output = self.model(batch)
         if batch.y.dim() == 1:
             output = output.view(-1)
         out["output"] = output
 
         force_output = None
-        if "grad_input" in self.config["task"]:
+        if self.config["model_attributes"]["regress_forces"] is True:
+            out["force_output"] = output_forces
+            force_output = output_forces
+
+        if (
+            "grad_input" in self.config["task"]
+            and self.config["model_attributes"]["regress_forces"] is False
+        ):
             force_output = (
                 self.config["task"]["grad_input_mult"]
                 * torch.autograd.grad(
@@ -395,11 +414,11 @@ class BaseTrainer:
             if self.config["dataset"].get("normalize_labels", True):
                 grad_input_errors = eval(self.config["task"]["metric"])(
                     self.normalizers["grad_target"].denorm(force_output).cpu(),
-                    batch.forces.cpu(),
+                    batch.force.cpu(),
                 )
             else:
                 grad_input_errors = eval(self.config["task"]["metric"])(
-                    force_output.cpu(), batch.forces.cpu()
+                    force_output.cpu(), batch.force.cpu()
                 )
             metrics[
                 "force_x/{}".format(self.config["task"]["metric"])
@@ -428,10 +447,10 @@ class BaseTrainer:
         if "grad_input" in self.config["task"]:
             if self.config["dataset"].get("normalize_labels", True):
                 grad_target_normed = self.normalizers["grad_target"].norm(
-                    batch.forces
+                    batch.force
                 )
             else:
-                grad_target_normed = batch.forces
+                grad_target_normed = batch.force
             loss.append(
                 self.criterion(out["force_output"], grad_target_normed)
             )
