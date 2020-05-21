@@ -1,8 +1,10 @@
 import os
+import sys
 
 import numpy as np
-import submitit
+#  import submitit
 
+sys.path.insert(0, os.getcwd())
 from ocpmodels.datasets import *
 from ocpmodels.trainers import MDTrainer
 
@@ -74,7 +76,7 @@ def main_helper():
 if __name__ == "__main__":
     main_helper()
 
-    # executor = submitit.AutoExecutor(folder="logs")
-    # executor.update_parameters(timeout_min=1, slurm_partition="learnfair")
-    # job = executor.submit(main_helper)
-    # print(job.job_id)
+    #  executor = submitit.AutoExecutor(folder="logs")
+    #  executor.update_parameters(timeout_min=1, slurm_partition="learnfair")
+    #  job = executor.submit(main_helper)
+    #  print(job.job_id)

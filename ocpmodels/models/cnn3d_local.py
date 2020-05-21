@@ -74,7 +74,7 @@ class CNN3D_LOCAL(BaseModel):
 
         self.embedding_table = torch.zeros(
             max_num_elements, element_embedding_size
-        ).cuda()
+        )
         self.num_embeddings = 0
 
     def forward(self, data):
@@ -147,15 +147,20 @@ class CNN3D_LOCAL(BaseModel):
         """
         grid_size = self.grid_size
         num_atoms = len(data.x)
+        device = data.x.device
 
         # get the position of the atoms
         atom_pos = torch.narrow(data.x, 1, 92, 3)
 
-        # Convert the atom embeddings to one hot embedding. Would be easier to do this when original embeddings are computed
+        # Convert the atom embeddings to one hot embedding.
+        # TODO: dataloader should return atomic numbers, will avoid the
+        #       following feature-matching-to-embed logic.
         atom_embeddings = torch.narrow(
             data.x, 1, 0, self.element_embedding_size
         )
-        atom_feats = torch.zeros(num_atoms, self.max_num_elements).cuda()
+        atom_feats = torch.zeros(
+            num_atoms, self.max_num_elements, device=device
+        )
         for i, embedding in enumerate(atom_embeddings):
             found_match = False
             for j in range(self.num_embeddings):
@@ -179,25 +184,28 @@ class CNN3D_LOCAL(BaseModel):
             self.max_num_elements,
             self.num_input_filters,
             grid_size * grid_size * grid_size,
-        ).cuda()
-
-        grid_pos = torch.zeros(3, grid_size * grid_size * grid_size).cuda()
-        # Initialize the grid position values - probably a better way to do this
-        grid_pos_ct = (
-            torch.arange(grid_size * grid_size * grid_size).cuda().float()
+            device=device,
         )
+
+        grid_pos = torch.zeros(
+            3, grid_size * grid_size * grid_size, device=device
+        )
+        # Initialize the grid position values - probably a better way to do this
+        grid_pos_ct = torch.arange(
+            grid_size * grid_size * grid_size, device=device
+        ).float()
         grid_pos[2] = torch.fmod(grid_pos_ct, float(grid_size))
         grid_pos_ct = (grid_pos_ct - grid_pos[2]) / float(grid_size)
         grid_pos[1] = torch.fmod(grid_pos_ct, float(grid_size))
         grid_pos_ct = (grid_pos_ct - grid_pos[1]) / float(grid_size)
         grid_pos[0] = torch.fmod(grid_pos_ct, float(grid_size))
         grid_pos = torch.transpose(grid_pos, 0, 1)
-        grid_center = torch.zeros(3).cuda() + grid_size / 2.0
+        grid_center = torch.zeros(3, device=device) + grid_size / 2.0
         grid_pos = (grid_pos - grid_center) * self.grid_resolution
 
-        range_idx = torch.arange(num_atoms).cuda()
-        freq_scalar = torch.zeros(self.num_input_filters).cuda()
-        freq_offset = torch.zeros(self.num_input_filters).cuda()
+        range_idx = torch.arange(num_atoms, device=device)
+        freq_scalar = torch.zeros(self.num_input_filters, device=device)
+        freq_offset = torch.zeros(self.num_input_filters, device=device)
         for i in range(self.num_input_filters):
             freq_scalar[i] = 0.015 * pow(1.9, float(math.floor(i / 2)))
             freq_offset[i] = 0.0
