@@ -261,7 +261,9 @@ class BaseTrainer:
     def train(self, max_epochs=None, return_metrics=False):
         # TODO(abhshkdz): Timers for dataloading and forward pass.
         num_epochs = (
-            max_epochs if not None else self.config["optim"]["max_epochs"]
+            max_epochs
+            if max_epochs is not None
+            else self.config["optim"]["max_epochs"]
         )
         for epoch in range(num_epochs):
             self.model.train()
@@ -297,8 +299,13 @@ class BaseTrainer:
             self.scheduler.step()
 
             with torch.no_grad():
-                v_loss, v_mae = self.validate(split="val", epoch=epoch)
-                test_loss, test_mae = self.validate(split="test", epoch=epoch)
+                if self.val_loader is not None:
+                    v_loss, v_mae = self.validate(split="val", epoch=epoch)
+
+                if self.test_loader is not None:
+                    test_loss, test_mae = self.validate(
+                        split="test", epoch=epoch
+                    )
 
             if not self.is_debug:
                 save_checkpoint(

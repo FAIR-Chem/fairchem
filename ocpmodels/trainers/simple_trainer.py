@@ -2,9 +2,9 @@ import datetime
 import os
 import warnings
 
+import torch
 import yaml
 
-import torch
 from ocpmodels.common.registry import registry
 from ocpmodels.datasets import *
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -90,3 +90,7 @@ class SimpleTrainer(BaseTrainer):
             predictions.extend(out["output"].tolist())
 
         return predictions
+
+    def load_state(self, checkpoint_file):
+        state_dict = torch.load(checkpoint_file)["state_dict"]
+        self.model.load_state_dict(state_dict)
