@@ -10,7 +10,7 @@ Also related to [Graph Attention Networks](https://arxiv.org/abs/1710.10903) and
 
 ##  Installation
 
-[last updated May 5, 2020]
+[last updated May 21, 2020]
 
 The easiest way of installing prerequisites is via [conda](https://conda.io/docs/index.html).
 After installing [conda](http://conda.pydata.org/), run the following commands
@@ -19,11 +19,11 @@ named `ocp-models` and install dependencies:
 
 ### GPU machines
 
-Commands are for CUDA 10.0 specifically.
+Instructions are for PyTorch 1.4, CUDA 10.0 specifically.
 
 - `conda create -n ocp-models python=3.6`
 - `conda activate ocp-models`
-- `conda install pytorch cudatoolkit=10.0 pyyaml pymatgen ase matplotlib tensorboard pre-commit tqdm -c pytorch -c conda-forge`
+- `conda install pytorch=1.4 cudatoolkit=10.0 pyyaml pymatgen ase matplotlib tensorboard pre-commit tqdm -c pytorch -c conda-forge`
 - Check if PyTorch is installed with CUDA support:
     - `python -c "import torch; print(torch.cuda.is_available())"` should return true
 - Add CUDA to `$PATH` and `$CPATH`
@@ -51,8 +51,8 @@ pre-commit install
 ### Additional experiment-specific setup
 
 - [Kevin Tran](https://github.com/ktran9891)'s Convolution-Fed Gaussian Process
-  (CFGP) pipeline requires `gpytorch`, installable via `pip install gpytorch`.
-- Hyperparameter optimization (HPO) requires `Tune`, installable via `pip install ray`. 
+  (CFGP) pipeline requires `gpytorch`, installable via `conda install gpytorch -c conda-forge`.
+- Hyperparameter optimization (HPO) requires `Tune`, installable via `pip install ray[tune]`.
 
 ## Usage
 
