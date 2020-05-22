@@ -149,6 +149,9 @@ class CNN3D_LOCAL(BaseModel):
         num_atoms = len(data.x)
         device = data.x.device
 
+        if self.embedding_table.device != device:
+            self.embedding_table = self.embedding_table.to(device)
+
         # get the position of the atoms
         atom_pos = torch.narrow(data.x, 1, 92, 3)
 
