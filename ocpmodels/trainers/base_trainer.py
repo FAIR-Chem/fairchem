@@ -377,7 +377,7 @@ class BaseTrainer:
             batch.x = batch.x.requires_grad_(True)
 
         # forward pass.
-        if self.config["model_attributes"]["regress_forces"] is True:
+        if self.config["model_attributes"].get("regress_forces", False):
             output, output_forces = self.model(batch)
         else:
             output = self.model(batch)
@@ -386,13 +386,14 @@ class BaseTrainer:
         out["output"] = output
 
         force_output = None
-        if self.config["model_attributes"]["regress_forces"] is True:
+        if self.config["model_attributes"].get("regress_forces", False):
             out["force_output"] = output_forces
             force_output = output_forces
 
         if (
             "grad_input" in self.config["task"]
-            and self.config["model_attributes"]["regress_forces"] is False
+            and self.config["model_attributes"].get("regress_forces", False)
+            is False
         ):
             force_output = (
                 self.config["task"]["grad_input_mult"]
