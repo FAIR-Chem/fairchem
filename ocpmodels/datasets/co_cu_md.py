@@ -22,15 +22,18 @@ class COCuMD(BaseDataset):
 
         self.config = config
 
-        try:
+        if (
+            config.get("override_process", False)
+            or os.path.isfile(self.processed_file_names[0]) is False
+        ):
+            self.process()
+        else:
             self.data, self.slices = torch.load(self.processed_file_names[0])
             print(
                 "### Loaded preprocessed data from:  {}".format(
                     self.processed_file_names
                 )
             )
-        except FileNotFoundError:
-            self.process()
 
     @property
     def raw_file_names(self):
