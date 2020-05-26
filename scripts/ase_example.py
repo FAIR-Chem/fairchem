@@ -1,17 +1,52 @@
 import os.path
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import ase.io
 import numpy as np
+from ase import Atoms, units
+from ase.build import add_adsorbate, fcc100, molecule
+from ase.calculators.emt import EMT
+from ase.constraints import FixAtoms
+from ase.md import nvtberendsen
+from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 
 from ocpmodels.common.ase_calc import OCP
 from ocpmodels.datasets import *
 from ocpmodels.trainers import *
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+
+def run_md(calculator, steps, filename):
+    slab = fcc100("Cu", size=(3, 3, 3))
+    ads = molecule("CO")
+    add_adsorbate(slab, ads, 4, offset=(1, 1))
+    cons = FixAtoms(
+        indices=[
+            atom.index for atom in slab if (atom.tag == 2 or atom.tag == 3)
+        ]
+    )
+    slab.set_constraint([cons])
+    slab.center(vacuum=13.0, axis=2)
+    slab.set_pbc(True)
+    slab.wrap(pbc=[True] * 3)
+    slab.set_calculator(calculator)
+    np.random.seed(1)
+    MaxwellBoltzmannDistribution(slab, 300 * units.kB)
+    dyn = nvtberendsen.NVTBerendsen(
+        slab, 1 * units.fs, 300, taut=300 * units.fs
+    )
+    traj = ase.io.Trajectory(filename, "w", slab)
+    dyn.attach(traj.write, interval=1)
+    dyn.run(steps)
 
 
 if __name__ == "__main__":
+    # Generate training data
+    run_md(
+        calculator=EMT(), steps=5000, filename="../data/data/COCu_emt_5k.traj"
+    )
+
     task = {
         "dataset": "co_cu_md",
         "description": "Regressing to binding energies for an MD trajectory of CO on Cu",
@@ -37,10 +72,10 @@ if __name__ == "__main__":
 
     dataset = {
         "src": "../data/data/",
-        "traj": "COCu_ber_50ps_300K.traj",
-        "train_size": 10,
-        "val_size": 0,
-        "test_size": 0,
+        "traj": "COCu_emt_5k.traj",
+        "train_size": 3000,
+        "val_size": 1000,
+        "test_size": 1000,
     }
 
     optimizer = {
@@ -48,7 +83,7 @@ if __name__ == "__main__":
         "lr_gamma": 0.1,
         "lr_initial": 0.0003,
         "lr_milestones": [20, 30],
-        "max_epochs": 10,
+        "max_epochs": 100,
         "warmup_epochs": 10,
         "warmup_factor": 0.2,
     }
@@ -64,36 +99,8 @@ if __name__ == "__main__":
         seed=1,
     )
 
-    test_traj = ase.io.read("../data/data/COCu_ber_50ps_300K.traj", ":10")
-    calc = OCP(trainer)
-    calc.train()
+    gnn_calc = OCP(trainer)
+    gnn_calc.train()
 
-    actual_energies = np.array(
-        [
-            image.get_potential_energy(apply_constraint=False)
-            for image in test_traj
-        ]
-    )
-    actual_forces = np.concatenate(
-        np.array(
-            [image.get_forces(apply_constraint=False) for image in test_traj]
-        )
-    )
-
-    pred_energies = np.array(
-        [calc.get_potential_energy(image) for image in test_traj]
-    )
-    pred_forces = np.concatenate(
-        np.array([calc.get_forces(image) for image in test_traj])
-    )
-
-    # Consistency check with reported losses
-    energy_mae = np.mean(np.abs(actual_energies - pred_energies))
-    force_x_mae = np.mean(np.abs(actual_forces[:, 0] - pred_forces[:, 0]))
-    force_y_mae = np.mean(np.abs(actual_forces[:, 1] - pred_forces[:, 1]))
-    force_z_mae = np.mean(np.abs(actual_forces[:, 2] - pred_forces[:, 2]))
-
-    print(energy_mae)
-    print(force_x_mae)
-    print(force_y_mae)
-    print(force_z_mae)
+    # Replicate MD with trained model
+    run_md(calculator=gnn_calc, steps=5000, filename="./gnn_md.traj")
