@@ -139,15 +139,18 @@ class MDTrainer(BaseTrainer):
             self.logger.log_plots(plots)
 
     # Takes in a new data source and generates predictions on it.
-    def predict(self, dataset_config, batch_size=32):
-        print(
-            "### Generating predictions on {}.".format(dataset_config["src"])
-        )
+    def predict(self, dataset_config, batch_size=32, train=True, verbose=True):
+        if verbose:
+            print(
+                "### Generating predictions on {}.".format(
+                    dataset_config["src"]
+                )
+            )
 
         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
-            dataset_config
+            dataset_config, train=train, verbose=verbose
         )
-        data_loader = dataset.get_dataloader(batch_size=batch_size)
+        data_loader = dataset.get_dataloaders(batch_size=batch_size)
 
         self.model.eval()
         predictions = {"energy": [], "forces": []}
@@ -163,7 +166,7 @@ class MDTrainer(BaseTrainer):
                 out["force_output"] = self.normalizers["grad_target"].denorm(
                     out["force_output"]
                 )
-                atoms_sum = 0
+            atoms_sum = 0
             predictions["energy"].extend(out["output"].tolist())
             for natoms in batch.natoms:
                 predictions["forces"].append(

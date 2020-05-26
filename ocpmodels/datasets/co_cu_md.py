@@ -17,10 +17,19 @@ from torch_geometric.data import Data, DataLoader
 
 @registry.register_dataset("co_cu_md")
 class COCuMD(BaseDataset):
-    def __init__(self, config, transform=None, pre_transform=None):
+    def __init__(
+        self,
+        config,
+        transform=None,
+        pre_transform=None,
+        train=True,
+        verbose=True,
+    ):
         super(BaseDataset, self).__init__(config, transform, pre_transform)
 
         self.config = config
+        self.train = train
+        self.verbose = verbose
 
         try:
             self.data, self.slices = torch.load(self.processed_file_names[0])
@@ -48,12 +57,12 @@ class COCuMD(BaseDataset):
         ]
 
     def process(self):
-        # TODO suppress this for ase calculator predictions
-        print(
-            "### Preprocessing atoms objects from:  {}".format(
-                self.raw_file_names[0]
+        if self.verbose:
+            print(
+                "### Preprocessing atoms objects from:  {}".format(
+                    self.raw_file_names[0]
+                )
             )
-        )
         traj = Trajectory(self.raw_file_names[0])
         feature_generator = TrajectoryFeatureGenerator(traj)
 
@@ -77,6 +86,7 @@ class COCuMD(BaseDataset):
             desc="preprocessing atomic features",
             total=len(traj),
             unit="structure",
+            disable=not self.verbose,
         ):
             edge_index = [[], []]
             edge_attr = torch.FloatTensor(
@@ -103,6 +113,9 @@ class COCuMD(BaseDataset):
         torch.save((self.data, self.slices), self.processed_file_names[0])
 
     def get_dataloaders(self, batch_size=None):
+        if not self.train:
+            return DataLoader(self, batch_size=batch_size)
+
         assert batch_size is not None
         assert self.train_size + self.val_size + self.test_size <= len(self)
 
@@ -128,10 +141,6 @@ class COCuMD(BaseDataset):
         test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
         return train_loader, val_loader, test_loader
-
-    def get_dataloader(self, batch_size=None):
-        data_loader = DataLoader(self, batch_size=batch_size)
-        return data_loader
 
 
 class TrajectoryFeatureGenerator(AtomicFeatureGenerator):
