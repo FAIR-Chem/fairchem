@@ -53,22 +53,24 @@ class COCuMD(BaseDataset):
         traj = Trajectory(self.raw_file_names[0])
         feature_generator = TrajectoryFeatureGenerator(traj)
 
-        positions = [i.get_positions() for i in traj]
         forces = [i.get_forces(apply_constraint=False) for i in traj]
         p_energies = [
             i.get_potential_energy(apply_constraint=False) for i in traj
         ]
 
         data_list = []
-        zipped_data = zip(feature_generator, positions, forces, p_energies)
+        zipped_data = zip(feature_generator, forces, p_energies)
 
-        for (embedding, distance, index), pos, force, p_energy in tqdm(
+        for (
+            (embedding, distance, index, positions, atomic_numbers),
+            force,
+            p_energy,
+        ) in tqdm(
             zipped_data,
             desc="preprocessing atomic features",
             total=len(p_energies),
             unit="structure",
         ):
-
             edge_index = [[], []]
             edge_attr = torch.FloatTensor(
                 index.shape[0] * index.shape[1], distance.shape[-1]
@@ -85,7 +87,8 @@ class COCuMD(BaseDataset):
                     edge_index=edge_index,
                     edge_attr=edge_attr,
                     y=p_energy,
-                    pos=torch.tensor(pos),
+                    pos=positions,
+                    atomic_numbers=atomic_numbers,
                     force=torch.tensor(force),
                 )
             )
