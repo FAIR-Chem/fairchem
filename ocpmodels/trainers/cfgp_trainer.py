@@ -70,7 +70,7 @@ class CfgpTrainer:
         data_loader = dataset.get_full_dataloader(batch_size=batch_size)
 
         # Get the convolutions
-        convs, _ = self._get_convolutions(data_loader)
+        convs, targets_actual = self._get_convolutions(data_loader)
         try:
             normed_convs = self.conv_normalizer.norm(convs)
         except AttributeError as error:
@@ -96,9 +96,7 @@ class CfgpTrainer:
         self.conv_trainer.load_state(nn_checkpoint_file)
 
     def _load_gp(self, gp_checkpoint_file):
-        convolutions = self._get_training_convolutions()
-        train_indices = self.train_loader.dataset.__indices__
-        train_y = self.train_loader.dataset.data.y[train_indices].to(self.device)
+        convolutions, train_y = self._get_training_convolutions()
         self.gpytorch_trainer._init_gp(convolutions, train_y, 0.1)
         self.gpytorch_trainer.load_state(gp_checkpoint_file)
 
