@@ -61,12 +61,12 @@ class GPyTorchTrainer:
 
     def train(self, train_x, train_y, lr=0.1, n_training_iter=20):
         self._init_gp(train_x, train_y, lr)
-        checkpoint_size = self._calculate_checkpoint_size(train_x, train_y, lr)
+        self._calculate_checkpoint_size(train_x, train_y, lr)
 
         self._train(
             train_x=train_x,
             train_y=train_y,
-            checkpoint_size=checkpoint_size,
+            checkpoint_size=self.checkpoint_size,
             lr=lr,
             n_training_iter=n_training_iter,
         )
