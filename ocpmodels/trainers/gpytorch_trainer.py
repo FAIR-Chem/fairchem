@@ -39,7 +39,7 @@ class GPyTorchTrainer:
         if kernel is None:
             kernel = gpytorch.kernels.MaternKernel()
         if cov_matrix is None:
-            self.cov_matrix = gpytorch.distributions.MultivariateNormal
+            cov_matrix = gpytorch.distributions.MultivariateNormal
         if device is None:
             device = torch.device(
                 "cuda" if torch.cuda.is_available() else "cpu"
