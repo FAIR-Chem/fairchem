@@ -506,7 +506,7 @@ class BaseTrainer:
             else:
                 grad_target_normed = batch.force
             loss.append(
-                self.criterion(out["force_output"], grad_target_normed)
+                self.config["optim"]["force_coefficient"] * self.criterion(out["force_output"], grad_target_normed)
             )
 
         loss = sum(loss)
