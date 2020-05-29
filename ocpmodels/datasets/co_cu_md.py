@@ -114,7 +114,7 @@ class COCuMD(BaseDataset):
                     pos=positions,
                     atomic_numbers=atomic_numbers,
                     force=torch.tensor(force),
-                    natoms=torch.tensor([pos.shape[0]]),
+                    natoms=torch.tensor([positions.shape[0]]),
                 )
             )
         self.data, self.slices = collate(data_list)
