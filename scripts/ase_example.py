@@ -1,5 +1,6 @@
 import os.path
 import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import ase.io
 import numpy as np
@@ -13,9 +14,6 @@ from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ocpmodels.common.ase_calc import OCP
 from ocpmodels.datasets import *
 from ocpmodels.trainers import *
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
 
 def run_md(calculator, steps, filename):
     slab = fcc100("Cu", size=(3, 3, 3))
