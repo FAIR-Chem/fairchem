@@ -31,15 +31,18 @@ class COCuMD(BaseDataset):
         self.train = train
         self.verbose = verbose
 
-        try:
+        if (
+            config.get("override_process", False)
+            or os.path.isfile(self.processed_file_names[0]) is False
+        ):
+            self.process()
+        else:
             self.data, self.slices = torch.load(self.processed_file_names[0])
             print(
                 "### Loaded preprocessed data from:  {}".format(
                     self.processed_file_names
                 )
             )
-        except FileNotFoundError:
-            self.process()
 
     @property
     def raw_file_names(self):
@@ -79,9 +82,13 @@ class COCuMD(BaseDataset):
             p_energies = [0 for i in traj]
 
         data_list = []
-        zipped_data = zip(feature_generator, positions, forces, p_energies)
+        zipped_data = zip(feature_generator, forces, p_energies)
 
-        for (embedding, distance, index), pos, force, p_energy in tqdm(
+        for (
+            (embedding, distance, index, positions, atomic_numbers),
+            force,
+            p_energy,
+        ) in tqdm(
             zipped_data,
             desc="preprocessing atomic features",
             total=len(traj),
@@ -104,7 +111,8 @@ class COCuMD(BaseDataset):
                     edge_index=edge_index,
                     edge_attr=edge_attr,
                     y=p_energy,
-                    pos=torch.tensor(pos),
+                    pos=positions,
+                    atomic_numbers=atomic_numbers,
                     force=torch.tensor(force),
                     natoms=torch.tensor([pos.shape[0]]),
                 )
@@ -132,13 +140,21 @@ class COCuMD(BaseDataset):
             batch_size=batch_size,
             shuffle=True,
         )
-        val_loader = DataLoader(
-            train_val_dataset[
-                self.train_size : self.train_size + self.val_size
-            ],
-            batch_size=batch_size,
-        )
-        test_loader = DataLoader(test_dataset, batch_size=batch_size)
+
+        if self.val_size == 0:
+            val_loader = None
+        else:
+            val_loader = DataLoader(
+                train_val_dataset[
+                    self.train_size : self.train_size + self.val_size
+                ],
+                batch_size=batch_size,
+            )
+
+        if self.test_size == 0:
+            test_loader = None
+        else:
+            test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
         return train_loader, val_loader, test_loader
 

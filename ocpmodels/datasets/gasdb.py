@@ -70,11 +70,16 @@ class Gasdb(BaseDataset):
         try:
             energies = [row.adsorption_energy for row in self.ase_db.select()]
         except AttributeError:
-            energies = [row.data['adsorption_energy'] for row in self.ase_db.select()]
+            energies = [
+                row.data["adsorption_energy"] for row in self.ase_db.select()
+            ]
 
         data_list = []
         zipped_data = zip(feature_generator, energies)
-        for (embedding, distance, index), energy in tqdm(
+        for (
+            (embedding, distance, index, positions, atomic_numbers),
+            energy,
+        ) in tqdm(
             zipped_data,
             desc="preprocessing atomic features",
             total=len(energies),
@@ -91,13 +96,15 @@ class Gasdb(BaseDataset):
                     edge_index[1].append(index[j, k])
                     edge_attr[j * index.shape[1] + k] = distance[j, k].clone()
             edge_index = torch.LongTensor(edge_index)
+
             data_list.append(
                 Data(
                     x=embedding,
                     edge_index=edge_index,
                     edge_attr=edge_attr,
                     y=energy,
-                    pos=None,
+                    pos=positions,
+                    atomic_numbers=atomic_numbers,
                 )
             )
 
@@ -219,7 +226,17 @@ class AtomicFeatureGenerator:
         embeddings = torch.Tensor(embeddings)
         gaussian_distances = torch.Tensor(gaussian_distances)
         all_indices = torch.LongTensor(all_indices)
-        return embeddings, gaussian_distances, all_indices
+
+        positions = torch.Tensor(atoms.get_positions())
+        atomic_numbers = torch.Tensor(atoms.get_atomic_numbers())
+
+        return (
+            embeddings,
+            gaussian_distances,
+            all_indices,
+            positions,
+            atomic_numbers,
+        )
 
 
 class GaussianDistance:

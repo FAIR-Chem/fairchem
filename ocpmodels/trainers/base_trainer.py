@@ -11,6 +11,7 @@ import torch.optim as optim
 import yaml
 
 import demjson
+from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
@@ -144,6 +145,7 @@ class BaseTrainer:
         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
             self.config["dataset"]
         )
+
         if self.config["task"]["dataset"] in ["qm9", "dogss"]:
             num_targets = dataset.data.y.shape[-1]
             if (
@@ -241,7 +243,8 @@ class BaseTrainer:
 
     def load_optimizer(self):
         self.optimizer = optim.AdamW(
-            self.model.parameters(), self.config["optim"]["lr_initial"]
+            self.model.parameters(),
+            self.config["optim"]["lr_initial"],  # weight_decay=3.0
         )
 
     def load_extras(self):
@@ -265,6 +268,7 @@ class BaseTrainer:
         )
         for epoch in range(num_epochs):
             self.model.train()
+
             for i, batch in enumerate(self.train_loader):
                 batch = batch.to(self.device)
 
@@ -296,8 +300,13 @@ class BaseTrainer:
             self.scheduler.step()
 
             with torch.no_grad():
-                v_loss, v_mae = self.validate(split="val", epoch=epoch)
-                test_loss, test_mae = self.validate(split="test", epoch=epoch)
+                if self.val_loader is not None:
+                    v_loss, v_mae = self.validate(split="val", epoch=epoch)
+
+                if self.test_loader is not None:
+                    test_loss, test_mae = self.validate(
+                        split="test", epoch=epoch
+                    )
 
             if not self.is_debug:
                 save_checkpoint(
@@ -369,13 +378,24 @@ class BaseTrainer:
             batch.x = batch.x.requires_grad_(True)
 
         # forward pass.
-        output = self.model(batch)
+        if self.config["model_attributes"].get("regress_forces", False):
+            output, output_forces = self.model(batch)
+        else:
+            output = self.model(batch)
         if batch.y.dim() == 1:
             output = output.view(-1)
         out["output"] = output
 
         force_output = None
-        if "grad_input" in self.config["task"]:
+        if self.config["model_attributes"].get("regress_forces", False):
+            out["force_output"] = output_forces
+            force_output = output_forces
+
+        if (
+            "grad_input" in self.config["task"]
+            and self.config["model_attributes"].get("regress_forces", False)
+            is False
+        ):
             force_output = (
                 self.config["task"]["grad_input_mult"]
                 * torch.autograd.grad(

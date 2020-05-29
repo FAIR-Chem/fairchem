@@ -213,8 +213,11 @@ class MDTrainer(BaseTrainer):
 
             self.scheduler.step()
 
-            self.validate(split="val", epoch=epoch)
-            self.validate(split="test", epoch=epoch)
+            if self.val_loader is not None:
+                self.validate(split="val", epoch=epoch)
+
+            if self.test_loader is not None:
+                self.validate(split="test", epoch=epoch)
 
             if not self.is_debug:
                 save_checkpoint(
