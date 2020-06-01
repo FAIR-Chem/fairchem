@@ -276,7 +276,7 @@ class BaseTrainer:
         )
 
         # metrics.
-        self.meter = Meter()
+        self.meter = Meter(split="train")
 
     def train(self, max_epochs=None, return_metrics=False):
         # TODO(abhshkdz): Timers for dataloading and forward pass.
@@ -357,7 +357,7 @@ class BaseTrainer:
         print("### Evaluating on {}.".format(split))
         self.model.eval()
 
-        meter = Meter()
+        meter = Meter(split=split)
 
         loader = self.val_loader if split == "val" else self.test_loader
 
