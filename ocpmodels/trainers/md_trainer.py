@@ -4,7 +4,6 @@ import warnings
 
 import torch
 import yaml
-
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
@@ -218,7 +217,7 @@ class MDTrainer(BaseTrainer):
         print("### Evaluating on {}.".format(split))
         self.model.eval()
 
-        meter = Meter()
+        meter = Meter(split=split)
 
         loader = self.val_loader if split == "val" else self.test_loader
 
