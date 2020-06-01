@@ -258,7 +258,7 @@ class BaseTrainer:
     # TODO(abhshkdz): Rename function to something nicer.
     # TODO(abhshkdz): Support multiple loss functions.
     def load_criterion(self):
-        self.criterion = nn.L1Loss(reduction='sum')
+        self.criterion = self.config["optim"]["criterion"]
 
     def load_optimizer(self):
         self.optimizer = optim.AdamW(
