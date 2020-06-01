@@ -6,43 +6,39 @@ import numpy as np
 from ocpmodels.datasets import *
 from ocpmodels.trainers import MDTrainer
 
-#  import submitit
+# import submitit
 
 sys.path.insert(0, os.getcwd())
 
 
 def main_helper():
     task = {
-        "dataset": "co_cu_md",
+        "dataset": "ulissigroup_co",
         "description": "Regressing to binding energies for an MD trajectory of CO on Cu",
-        "labels": ["potential energy"],
+        "labels": ["binding energy"],
         "metric": "mae",
         "type": "regression",
-        "grad_input": "atomic forces",
+        # "grad_input": "atomic forces",
         # whether to multiply / scale gradient wrt input
         "grad_input_mult": -1,
         # indexing which attributes in the input vector to compute gradients for.
         # data.x[:, grad_input_start_idx:grad_input_end_idx]
-        "grad_input_start_idx": 92,
-        "grad_input_end_idx": 95,
+        # "grad_input_start_idx": 92,
+        # "grad_input_end_idx": 95,
     }
 
     model = {
         "name": "cnn3d_local",
-        "regress_forces": True,
+        "regress_forces": False,
         "max_atomic_number": 90,
-        "num_conv1_filters": 16,
-        "num_conv2_filters": 32,
-        "num_conv3_filters": 32,
-        "num_conv4_filters": 32,
         "display_weights": False,
+        "display_base_name": "/",  # change to directory of your choice
     }
 
     dataset = {
-        "src": "data/data/2020_04_14_muhammed_md",
-        "traj": "COCu_DFT_10ps.traj",
-        "train_size": 1000,
-        "val_size": 1000,
+        "src": "data/data/2020_05_21_ulissigroup_co_with_positions/",
+        "train_size": 15000,
+        "val_size": 2000,
         "test_size": 2000,
         "normalize_labels": True,
     }
@@ -51,8 +47,8 @@ def main_helper():
         "batch_size": 32,
         "lr_gamma": 0.1,
         "lr_initial": 0.001,
-        "lr_milestones": [30, 60],
-        "max_epochs": 100,
+        "lr_milestones": [50, 120],
+        "max_epochs": 200,
         "warmup_epochs": 1,
         "warmup_factor": 0.2,
     }
@@ -61,7 +57,7 @@ def main_helper():
         model=model,
         dataset=dataset,
         optimizer=optimizer,
-        identifier="p_energy_with_positions_forces_1ktrain_seed2",
+        identifier="binding_energy_forces_15ktrain_seed2",
         print_every=5,
         is_debug=False,
         seed=2,
@@ -70,8 +66,7 @@ def main_helper():
     trainer.train()
 
     dataset_config = {
-        "src": "data/data/2020_04_14_muhammed_md",
-        "traj": "COCu_DFT_10ps.traj",
+        "src": "data/data/2020_05_21_ulissigroup_co_with_positions/",
     }
     predictions = trainer.predict(dataset_config)
     np.save(

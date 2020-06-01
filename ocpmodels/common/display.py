@@ -6,7 +6,7 @@ from PIL import Image
 
 
 class Display:
-    def display_grid_values(grid, grid_idx):
+    def display_grid_values(grid, grid_idx, base_name):
         start_time = time.time()
         # print('{}'.format(len(grid)))
         num_channels = len(grid)
@@ -92,10 +92,10 @@ class Display:
         blue_cpu = blue_cpu.view(-1)
         img.putdata(list(zip(red_cpu, green_cpu, blue_cpu)))
 
-        img.save("/checkpoint/zitnick/ase/grid_{}.png".format(grid_idx))
+        img.save("{}grid_{}.png".format(base_name, grid_idx))
         print("TIME: display_grid_values: {}".format(time.time() - start_time))
 
-    def display_model_conv_weights(weights, conv_layer_idx):
+    def display_model_conv_weights(weights, conv_layer_idx, base_name):
         start_time = time.time()
         weights = weights.clone().detach().cpu()
         weight_size = weights.size()
@@ -225,12 +225,12 @@ class Display:
         blue_cpu = blue_cpu.view(-1)
         img.putdata(list(zip(red_cpu, green_cpu, blue_cpu)))
 
-        img.save("/checkpoint/zitnick/ase/conv{}.png".format(conv_layer_idx))
+        img.save("{}conv{}.png".format(base_name, conv_layer_idx))
         print(
             "TIME: display_model_weights: {}".format(time.time() - start_time)
         )
 
-    def display_model_fc_weights(weights, fc_layer_idx):
+    def display_model_fc_weights(weights, fc_layer_idx, base_name):
         start_time = time.time()
         weights = weights.clone().detach().cpu()
         weight_size = weights.size()
@@ -252,12 +252,12 @@ class Display:
                 if val < 0:
                     img.putpixel((oc, ic), (-val, 0, 0))
 
-        img.save("/checkpoint/zitnick/ase/fc{}.png".format(fc_layer_idx))
+        img.save("{}fc{}.png".format(base_name, fc_layer_idx))
         print(
             "TIME: display_model_weights: {}".format(time.time() - start_time)
         )
 
-    def display_output_tracker(tracker, idx):
+    def display_output_tracker(tracker, idx, base_name):
         output = tracker[0]
         target = tracker[1]
 
@@ -292,4 +292,4 @@ class Display:
             img.putpixel((c, r), (255, 255, 0))
             img.putpixel((c, tr), (255, 0, 0))
 
-        img.save("/checkpoint/zitnick/ase/tracker{}.png".format(idx))
+        img.save("{}tracker{}.png".format(base_name, idx))
