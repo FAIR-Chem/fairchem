@@ -44,9 +44,10 @@ class SmoothedValue:
 
 
 class Meter:
-    def __init__(self, delimiter=", "):
+    def __init__(self, delimiter=", ", split="train"):
         self.meters = defaultdict(SmoothedValue)
         self.delimiter = delimiter
+        self.split = split
 
     def update(self, update_dict):
         for k, v in update_dict.items():
@@ -83,17 +84,17 @@ class Meter:
     def __str__(self):
         loss_str = []
         for name, meter in self.meters.items():
-            if "train" in name:
-                loss_str.append(
-                    "{}: {:.4f} ({:.4f})".format(
-                        name, meter.median, meter.global_avg
-                    )
-                )
-            elif "epoch" in name or "step" in name:
+            # Regardless of split, if "epoch" or "step", print latest.
+            if "epoch" in name or "step" in name:
                 loss_str.append("{}: {:.4f}".format(name, meter.get_latest()))
-            else:
-                # In case of val print global avg
+            # If training split, print mean over the past window_size points.
+            elif "train" in self.split:
+                loss_str.append("{}: {:.4f}".format(name, meter.avg))
+            # If val / test splits, print global average over the entire split.
+            elif "val" in self.split or "test" in self.split:
                 loss_str.append("{}: {:.4f}".format(name, meter.global_avg))
+            else:
+                raise NotImplementedError
 
         return self.delimiter.join(loss_str)
 

@@ -6,7 +6,6 @@ import numpy as np
 import torch
 import torch.optim as optim
 import yaml
-
 from ocpmodels.common.meter import Meter, mean_l2_distance
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import save_checkpoint
@@ -99,7 +98,7 @@ class DOGSSTrainer(BaseTrainer):
         )
 
         # metrics.
-        self.meter = Meter()
+        self.meter = Meter(split="train")
 
     def train(self):
         for epoch in range(self.config["optim"]["max_epochs"]):
