@@ -1,3 +1,4 @@
+wandb/
 data/data
 checkpoints
 results
