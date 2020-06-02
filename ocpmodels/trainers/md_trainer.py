@@ -4,6 +4,7 @@ import warnings
 
 import torch
 import yaml
+
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
@@ -82,7 +83,11 @@ class MDTrainer(BaseTrainer):
         num_targets = 1
 
         self.num_targets = num_targets
-        self.train_loader, self.val_loader, self.test_loader = dataset.get_dataloaders(
+        (
+            self.train_loader,
+            self.val_loader,
+            self.test_loader,
+        ) = dataset.get_dataloaders(
             batch_size=self.config["optim"]["batch_size"]
         )
 
@@ -134,27 +139,43 @@ class MDTrainer(BaseTrainer):
             self.logger.log_plots(plots)
 
     # Takes in a new data source and generates predictions on it.
-    def predict(self, dataset_config, batch_size=32):
-        print(
-            "### Generating predictions on {}.".format(dataset_config["src"])
-        )
+    def predict(self, dataset_config, batch_size=32, verbose=True):
+        if verbose:
+            print(
+                "### Generating predictions on {}.".format(
+                    dataset_config["src"]
+                )
+            )
 
         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
-            dataset_config
+            dataset_config, mode="predict", verbose=verbose
         )
-        data_loader = dataset.get_full_dataloader(batch_size=batch_size)
+        data_loader = dataset.get_dataloaders(batch_size=batch_size)
 
         self.model.eval()
-        predictions = []
+        predictions = {"energy": [], "forces": []}
 
         for i, batch in enumerate(data_loader):
             batch.to(self.device)
-            out, metrics = self._forward(batch)
+            batch = add_edge_distance_to_graph(batch, device=self.device)
+            out, _ = self._forward(batch)
             if self.normalizers is not None and "target" in self.normalizers:
                 out["output"] = self.normalizers["target"].denorm(
                     out["output"]
                 )
-            predictions.extend(out["output"].tolist())
+                out["force_output"] = self.normalizers["grad_target"].denorm(
+                    out["force_output"]
+                )
+            atoms_sum = 0
+            predictions["energy"].extend(out["output"].tolist())
+            for natoms in batch.natoms:
+                predictions["forces"].append(
+                    out["force_output"][atoms_sum : natoms + atoms_sum]
+                    .cpu()
+                    .detach()
+                    .numpy()
+                )
+                atoms_sum += natoms
 
         return predictions
 

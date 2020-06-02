@@ -4,7 +4,6 @@ import os
 import random
 import time
 
-import demjson
 import numpy as np
 import torch
 import torch.nn as nn
@@ -258,7 +257,7 @@ class BaseTrainer:
     # TODO(abhshkdz): Rename function to something nicer.
     # TODO(abhshkdz): Support multiple loss functions.
     def load_criterion(self):
-        self.criterion = nn.L1Loss()
+        self.criterion = self.config["optim"].get("criterion", nn.L1Loss())
 
     def load_optimizer(self):
         self.optimizer = optim.AdamW(
@@ -506,7 +505,7 @@ class BaseTrainer:
             else:
                 grad_target_normed = batch.force
             loss.append(
-                self.criterion(out["force_output"], grad_target_normed)
+                self.config["optim"].get("force_coefficient", 30) * self.criterion(out["force_output"], grad_target_normed)
             )
 
         loss = sum(loss)
