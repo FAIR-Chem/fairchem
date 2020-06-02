@@ -10,6 +10,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
+
+from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
@@ -143,6 +145,7 @@ class BaseTrainer:
         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
             self.config["dataset"]
         )
+
         if self.config["task"]["dataset"] in ["qm9", "dogss"]:
             num_targets = dataset.data.y.shape[-1]
             if (
@@ -216,12 +219,32 @@ class BaseTrainer:
         # Build model
         print("### Loading model: {}".format(self.config["model"]))
         # TODO(abhshkdz): Remove dependency on self.train_loader.
-        self.model = registry.get_model_class(self.config["model"])(
-            self.train_loader.dataset[0].x.shape[-1],
-            self.train_loader.dataset[0].edge_attr.shape[-1],
-            self.num_targets,
-            **self.config["model_attributes"],
-        ).to(self.device)
+
+        # Hackish workaround for force models:
+        # If 1) train_loader.dataset has positions, 2) the last 3 dimensions of
+        # x don't match positions, and 3) we're using the COCuMD dataset class,
+        # we'll likely use positions in the model forward pass. Add those here.
+        if (
+            self.train_loader.dataset.__class__.__name__ == "COCuMD"
+            and hasattr(self.train_loader.dataset[0], "pos")
+            and not all(
+                self.train_loader.dataset[0].pos[0]
+                == self.train_loader.dataset[0].x[0][-3:]
+            )
+        ):
+            self.model = registry.get_model_class(self.config["model"])(
+                self.train_loader.dataset[0].x.shape[-1] + 3,
+                self.train_loader.dataset[0].edge_attr.shape[-1],
+                self.num_targets,
+                **self.config["model_attributes"],
+            ).to(self.device)
+        else:
+            self.model = registry.get_model_class(self.config["model"])(
+                self.train_loader.dataset[0].x.shape[-1],
+                self.train_loader.dataset[0].edge_attr.shape[-1],
+                self.num_targets,
+                **self.config["model_attributes"],
+            ).to(self.device)
 
         print(
             "### Loaded {} with {} parameters.".format(
@@ -239,7 +262,8 @@ class BaseTrainer:
 
     def load_optimizer(self):
         self.optimizer = optim.AdamW(
-            self.model.parameters(), self.config["optim"]["lr_initial"]
+            self.model.parameters(),
+            self.config["optim"]["lr_initial"],  # weight_decay=3.0
         )
 
     def load_extras(self):
@@ -263,6 +287,7 @@ class BaseTrainer:
         )
         for epoch in range(num_epochs):
             self.model.train()
+
             for i, batch in enumerate(self.train_loader):
                 batch = batch.to(self.device)
 
@@ -372,13 +397,24 @@ class BaseTrainer:
             batch.x = batch.x.requires_grad_(True)
 
         # forward pass.
-        output = self.model(batch)
+        if self.config["model_attributes"].get("regress_forces", False):
+            output, output_forces = self.model(batch)
+        else:
+            output = self.model(batch)
         if batch.y.dim() == 1:
             output = output.view(-1)
         out["output"] = output
 
         force_output = None
-        if "grad_input" in self.config["task"]:
+        if self.config["model_attributes"].get("regress_forces", False):
+            out["force_output"] = output_forces
+            force_output = output_forces
+
+        if (
+            "grad_input" in self.config["task"]
+            and self.config["model_attributes"].get("regress_forces", False)
+            is False
+        ):
             force_output = (
                 self.config["task"]["grad_input_mult"]
                 * torch.autograd.grad(
