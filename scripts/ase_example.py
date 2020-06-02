@@ -1,10 +1,9 @@
-import numpy as np
 import os.path
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import ase.io
 import numpy as np
+import torch.nn as nn
 from ase import Atoms, units
 from ase.build import add_adsorbate, fcc100, molecule
 from ase.calculators.emt import EMT
@@ -12,14 +11,12 @@ from ase.constraints import FixAtoms
 from ase.md import nvtberendsen
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.optimize import BFGS
+from matplotlib import pyplot as plt
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from ocpmodels.common.ase_calc import OCPCalculator
 from ocpmodels.datasets import *
 from ocpmodels.trainers import *
-
-import torch.nn as nn
-
-from matplotlib import pyplot as plt
 
 
 def run_relaxation(calculator, filename, steps=500):
@@ -27,10 +24,10 @@ def run_relaxation(calculator, filename, steps=500):
     ads = molecule("CO")
     add_adsorbate(slab, ads, 4, offset=(1, 1))
     cons = FixAtoms(
-            indices=[
-                atom.index for atom in slab if (atom.tag == 2 or atom.tag ==3)
-                ]
-            )
+        indices=[
+            atom.index for atom in slab if (atom.tag == 2 or atom.tag == 3)
+        ]
+    )
     slab.set_constraint([cons])
     slab.center(vacuum=13.0, axis=2)
     slab.set_pbc(True)
@@ -38,10 +35,13 @@ def run_relaxation(calculator, filename, steps=500):
     dyn = BFGS(slab, trajectory=filename)
     dyn.run(fmax=0.01, steps=steps)
 
+
 if __name__ == "__main__":
 
     # Generate sample training data
-    run_relaxation(calculator=EMT(), filename="./COCu_emt_relax.traj", steps=200)
+    run_relaxation(
+        calculator=EMT(), filename="./COCu_emt_relax.traj", steps=200
+    )
 
     task = {
         "dataset": "co_cu_md",
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     src = "./"
     traj = "COCu_emt_relax.traj"
-    full_traj = ase.io.read(src+traj, ":")
+    full_traj = ase.io.read(src + traj, ":")
 
     dataset = {
         "src": src,
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         "warmup_epochs": 10,
         "warmup_factor": 0.2,
         "force_coefficient": 30,
-        "criterion": nn.L1Loss()
+        "criterion": nn.L1Loss(),
     }
 
     identifier = "CGCNN_COCu_emt_relax"
@@ -103,4 +103,6 @@ if __name__ == "__main__":
     gnn_calc.train()
 
     # Run relaxation with trained ML model
-    run_relaxation(calculator=gnn_calc, filename=f"{identifier}.traj", steps=200)
+    run_relaxation(
+        calculator=gnn_calc, filename=f"{identifier}.traj", steps=200
+    )

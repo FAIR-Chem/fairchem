@@ -4,6 +4,7 @@ import warnings
 
 import torch
 import yaml
+
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
@@ -147,7 +148,7 @@ class MDTrainer(BaseTrainer):
             )
 
         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
-            dataset_config, mode='predict', verbose=verbose
+            dataset_config, mode="predict", verbose=verbose
         )
         data_loader = dataset.get_dataloaders(batch_size=batch_size)
 

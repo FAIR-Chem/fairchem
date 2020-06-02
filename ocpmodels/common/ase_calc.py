@@ -35,7 +35,7 @@ class OCPCalculator(Calculator):
         # gain.
         ase.io.write("temp.traj", atoms)
         dataset_config = {"src": "./", "traj": "temp.traj"}
-        predictions = self.trainer.predict( dataset_config, verbose=False)
+        predictions = self.trainer.predict(dataset_config, verbose=False)
         os.system("rm -rf processed/ temp.traj")
 
         self.results["energy"] = predictions["energy"][0]
