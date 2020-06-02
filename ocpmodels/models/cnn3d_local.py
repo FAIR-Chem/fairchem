@@ -67,6 +67,8 @@ class CNN3D_LOCAL(BaseModel):
         self.conv4_forces = nn.Conv3d(
             num_conv3_filters, num_conv4_filters, conv4_kernal_size
         )
+        self.fc1_energy = nn.Linear(num_conv4_filters, max_atomic_number)
+        self.fc1_forces = nn.Linear(num_conv4_filters, max_atomic_number * 3)
         self.num_input_filters = num_input_filters
         self.grid_size = grid_size
         self.grid_resolution = grid_resolution
@@ -221,7 +223,6 @@ class CNN3D_LOCAL(BaseModel):
         """
         Initializes the input convolutional input features from the atom positions
         """
-
         start_time = time.time()
         grid_size = self.grid_size
         device = data.x.device
