@@ -70,6 +70,8 @@ class COCuMD(BaseDataset):
         feature_generator = TrajectoryFeatureGenerator(traj)
 
         positions = [i.get_positions() for i in traj]
+        #Hacky approach to bypass prediction time where energy and forces
+        #are not available
         try:
             forces = [i.get_forces(apply_constraint=False) for i in traj]
             p_energies = [

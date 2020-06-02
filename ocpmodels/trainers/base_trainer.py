@@ -10,7 +10,6 @@ import torch.nn as nn
 import torch.optim as optim
 import yaml
 
-import demjson
 from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
