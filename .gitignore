@@ -1,7 +1,9 @@
+wandb/
 data/data
 checkpoints
 results
 logs
+*.traj
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
