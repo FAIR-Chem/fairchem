@@ -3,12 +3,11 @@ import sys
 
 import numpy as np
 
-from ocpmodels.datasets import *
-from ocpmodels.trainers import MDTrainer
-
 #  import submitit
 
 sys.path.insert(0, os.getcwd())
+from ocpmodels.datasets import *
+from ocpmodels.trainers import MDTrainer
 
 
 def main_helper():

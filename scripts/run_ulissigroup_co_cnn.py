@@ -3,12 +3,11 @@ import sys
 
 import numpy as np
 
-from ocpmodels.datasets import *
-from ocpmodels.trainers import MDTrainer
-
 # import submitit
 
 sys.path.insert(0, os.getcwd())
+from ocpmodels.datasets import *
+from ocpmodels.trainers import MDTrainer
 
 
 def main_helper():
@@ -18,13 +17,6 @@ def main_helper():
         "labels": ["binding energy"],
         "metric": "mae",
         "type": "regression",
-        # "grad_input": "atomic forces",
-        # whether to multiply / scale gradient wrt input
-        "grad_input_mult": -1,
-        # indexing which attributes in the input vector to compute gradients for.
-        # data.x[:, grad_input_start_idx:grad_input_end_idx]
-        # "grad_input_start_idx": 92,
-        # "grad_input_end_idx": 95,
     }
 
     model = {
