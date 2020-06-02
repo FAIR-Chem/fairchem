@@ -138,7 +138,7 @@ class MDTrainer(BaseTrainer):
             self.logger.log_plots(plots)
 
     # Takes in a new data source and generates predictions on it.
-    def predict(self, dataset_config, batch_size=32, train=True, verbose=True):
+    def predict(self, dataset_config, batch_size=32, verbose=True):
         if verbose:
             print(
                 "### Generating predictions on {}.".format(
@@ -147,7 +147,7 @@ class MDTrainer(BaseTrainer):
             )
 
         dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
-            dataset_config, train=train, verbose=verbose
+            dataset_config, mode='predict', verbose=verbose
         )
         data_loader = dataset.get_dataloaders(batch_size=batch_size)
 

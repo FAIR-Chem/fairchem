@@ -257,7 +257,7 @@ class BaseTrainer:
     # TODO(abhshkdz): Rename function to something nicer.
     # TODO(abhshkdz): Support multiple loss functions.
     def load_criterion(self):
-        self.criterion = self.config["optim"]["criterion"]
+        self.criterion = self.config["optim"].get("criterion", nn.L1Loss())
 
     def load_optimizer(self):
         self.optimizer = optim.AdamW(
@@ -505,7 +505,7 @@ class BaseTrainer:
             else:
                 grad_target_normed = batch.force
             loss.append(
-                self.config["optim"]["force_coefficient"] * self.criterion(out["force_output"], grad_target_normed)
+                self.config["optim"].get("force_coefficient", 30) * self.criterion(out["force_output"], grad_target_normed)
             )
 
         loss = sum(loss)

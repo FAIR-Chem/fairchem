@@ -9,7 +9,7 @@ from ase.calculators.calculator import Calculator
 from ocpmodels.common.registry import registry
 
 
-class OCP(Calculator):
+class OCPCalculator(Calculator):
     """OCP-ASE calculator"""
 
     implemented_properties = ["energy", "forces"]
@@ -35,9 +35,7 @@ class OCP(Calculator):
         # gain.
         ase.io.write("temp.traj", atoms)
         dataset_config = {"src": "./", "traj": "temp.traj"}
-        predictions = self.trainer.predict(
-            dataset_config, verbose=False, train=False
-        )
+        predictions = self.trainer.predict( dataset_config, verbose=False)
         os.system("rm -rf processed/ temp.traj")
 
         self.results["energy"] = predictions["energy"][0]

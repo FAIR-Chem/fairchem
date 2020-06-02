@@ -22,13 +22,13 @@ class COCuMD(BaseDataset):
         config,
         transform=None,
         pre_transform=None,
-        train=True,
+        mode='train',
         verbose=True,
     ):
         super(BaseDataset, self).__init__(config, transform, pre_transform)
 
         self.config = config
-        self.train = train
+        self.mode = mode
         self.verbose = verbose
 
         if (
@@ -69,7 +69,6 @@ class COCuMD(BaseDataset):
         traj = Trajectory(self.raw_file_names[0])
         feature_generator = TrajectoryFeatureGenerator(traj)
 
-        positions = [i.get_positions() for i in traj]
         #Hacky approach to bypass prediction time where energy and forces
         #are not available
         try:
@@ -123,7 +122,7 @@ class COCuMD(BaseDataset):
         torch.save((self.data, self.slices), self.processed_file_names[0])
 
     def get_dataloaders(self, batch_size=None):
-        if not self.train:
+        if self.mode != 'train':
             return DataLoader(self, batch_size=batch_size)
 
         assert batch_size is not None

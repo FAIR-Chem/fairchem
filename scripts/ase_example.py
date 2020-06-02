@@ -1,3 +1,4 @@
+import numpy as np
 import os.path
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -10,40 +11,37 @@ from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
 from ase.md import nvtberendsen
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
+from ase.optimize import BFGS
 
-from ocpmodels.common.ase_calc import OCP
+from ocpmodels.common.ase_calc import OCPCalculator
 from ocpmodels.datasets import *
 from ocpmodels.trainers import *
 
-def run_md(calculator, steps, filename):
+import torch.nn as nn
+
+from matplotlib import pyplot as plt
+
+
+def run_relaxation(calculator, filename, steps=500):
     slab = fcc100("Cu", size=(3, 3, 3))
     ads = molecule("CO")
     add_adsorbate(slab, ads, 4, offset=(1, 1))
     cons = FixAtoms(
-        indices=[
-            atom.index for atom in slab if (atom.tag == 2 or atom.tag == 3)
-        ]
-    )
+            indices=[
+                atom.index for atom in slab if (atom.tag == 2 or atom.tag ==3)
+                ]
+            )
     slab.set_constraint([cons])
     slab.center(vacuum=13.0, axis=2)
     slab.set_pbc(True)
-    slab.wrap(pbc=[True] * 3)
     slab.set_calculator(calculator)
-    np.random.seed(1)
-    MaxwellBoltzmannDistribution(slab, 300 * units.kB)
-    dyn = nvtberendsen.NVTBerendsen(
-        slab, 1 * units.fs, 300, taut=300 * units.fs
-    )
-    traj = ase.io.Trajectory(filename, "w", slab)
-    dyn.attach(traj.write, interval=1)
-    dyn.run(steps)
-
+    dyn = BFGS(slab, trajectory=filename)
+    dyn.run(fmax=0.01, steps=steps)
 
 if __name__ == "__main__":
-    # Generate training data
-    run_md(
-        calculator=EMT(), steps=5000, filename="../data/data/COCu_emt_5k.traj"
-    )
+
+    # Generate sample training data
+    run_relaxation(calculator=EMT(), filename="./COCu_emt_relax.traj", steps=200)
 
     task = {
         "dataset": "co_cu_md",
@@ -52,10 +50,7 @@ if __name__ == "__main__":
         "metric": "mae",
         "type": "regression",
         "grad_input": "atomic forces",
-        # whether to multiply / scale gradient wrt input
         "grad_input_mult": -1,
-        # indexing which attributes in the input vector to compute gradients for.
-        # data.x[:, grad_input_start_idx:grad_input_end_idx]
         "grad_input_start_idx": 92,
         "grad_input_end_idx": 95,
     }
@@ -68,12 +63,16 @@ if __name__ == "__main__":
         "num_graph_conv_layers": 3,
     }
 
+    src = "./"
+    traj = "COCu_emt_relax.traj"
+    full_traj = ase.io.read(src+traj, ":")
+
     dataset = {
-        "src": "../data/data/",
-        "traj": "COCu_emt_5k.traj",
-        "train_size": 3000,
-        "val_size": 1000,
-        "test_size": 1000,
+        "src": src,
+        "traj": traj,
+        "train_size": len(full_traj),
+        "val_size": 0,
+        "test_size": 0,
     }
 
     optimizer = {
@@ -84,21 +83,24 @@ if __name__ == "__main__":
         "max_epochs": 100,
         "warmup_epochs": 10,
         "warmup_factor": 0.2,
+        "force_coefficient": 30,
+        "criterion": nn.L1Loss()
     }
 
+    identifier = "CGCNN_COCu_emt_relax"
     trainer = MDTrainer(
         task=task,
         model=model,
         dataset=dataset,
         optimizer=optimizer,
-        identifier="p_energy_forces_emt_traj_1ktrain_seed1",
+        identifier=identifier,
         print_every=5,
-        is_debug=True,
+        is_debug=False,
         seed=1,
     )
 
-    gnn_calc = OCP(trainer)
+    gnn_calc = OCPCalculator(trainer)
     gnn_calc.train()
 
-    # Replicate MD with trained model
-    run_md(calculator=gnn_calc, steps=5000, filename="./gnn_md.traj")
+    # Run relaxation with trained ML model
+    run_relaxation(calculator=gnn_calc, filename=f"{identifier}.traj", steps=200)
