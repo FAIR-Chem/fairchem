@@ -10,7 +10,7 @@ Also related to [Graph Attention Networks](https://arxiv.org/abs/1710.10903) and
 
 ##  Installation
 
-[last updated May 21, 2020]
+[last updated June 3, 2020]
 
 The easiest way of installing prerequisites is via [conda](https://conda.io/docs/index.html).
 After installing [conda](http://conda.pydata.org/), run the following commands
@@ -18,36 +18,13 @@ to create a new [environment](https://conda.io/docs/user-guide/tasks/manage-envi
 named `ocp-models` and install dependencies:
 
 ### Pre-install step
+
 Install `conda-merge`:
 ```bash
 pip install conda-merge
 ```
 If you're using system `pip`, then you may want to add the `--user` flag to avoid using `sudo`.
-Check that you can invoke `conda-merge`:
-```
-$ conda-merge -h
-usage: conda-merge [-h] files [files ...]
-
-Tool to merge environment files of the conda package manager.
-
-Given a list of environment files, print a unified environment file.
-Usage: conda-merge file1 file2 ... [> unified-environment]
-
-Merge strategy for each part of the definition:
-  name: keep the last name, if any is given (according to the order of the files).
-  channels: merge the channel priorities of all files and keep each file's priorities
-    in the same order. If there is a collision between files, report an error.
-  dependencies: merge the dependencies and remove duplicates, sorts alphabetically.
-    conda itself can handle cases like [numpy, numpy=1.7] gracefully so no need
-    to do that. You may beautify the dependencies by hand if you wish.
-    The script also doesn't detect collisions, relying on conda to point that out.
-
-positional arguments:
-  files
-
-optional arguments:
-  -h, --help  show this help message and exit
-```
+Check that you can invoke `conda-merge` by running `conda-merge -h`.
 
 ### GPU machines
 
@@ -81,18 +58,6 @@ conda env create -f env.yml
 conda activate ocp-models
 pre-commit install
 ```
-
-### Additional experiment-specific setup
-
-Append `env.extras.yml` to the `conda-merge` command, e.g. for CPU machines:
-```
-conda-merge env.common.yml env.cpu.yml env.extras.yml > env.yml
-```
-
-The extras contain:
-- [Kevin Tran](https://github.com/ktran9891)'s Convolution-Fed Gaussian Process
-  (CFGP) pipeline requires `gpytorch`, installable via `conda install gpytorch -c conda-forge`.
-- Hyperparameter optimization (HPO) requires `Tune`, installable via `pip install ray[tune]`.
 
 ## Usage
 
