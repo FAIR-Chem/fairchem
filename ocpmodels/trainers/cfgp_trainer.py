@@ -97,8 +97,7 @@ class CfgpTrainer:
 
     def _load_gp(self, gp_checkpoint_file):
         convolutions, train_y = self._get_training_convolutions()
-        self.gpytorch_trainer._init_gp(convolutions, train_y, 0.1)
-        self.gpytorch_trainer.load_state(gp_checkpoint_file)
+        self.gpytorch_trainer.load_state(gp_checkpoint_file, convolutions, train_y)
 
     def _load_normalizer(self, normalizer_checkpoint_file):
         with open(normalizer_checkpoint_file, 'rb') as f:
