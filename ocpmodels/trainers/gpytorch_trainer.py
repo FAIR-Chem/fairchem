@@ -20,9 +20,9 @@ class GPyTorchTrainer:
         Optimizer=None,
         Likelihood=None,
         Loss=None,
-        kernel=None,
-        cov_matrix=None,
-        lr=0.1,
+        MeanKernel=None,
+        CovKernel=None,
+        OutputDist=None,
         preconditioner_size=100,
         device=None,
         n_devices=None,
@@ -36,10 +36,12 @@ class GPyTorchTrainer:
             Likelihood = gpytorch.likelihoods.GaussianLikelihood
         if Loss is None:
             Loss = gpytorch.mlls.ExactMarginalLogLikelihood
-        if kernel is None:
-            kernel = gpytorch.kernels.MaternKernel()
-        if cov_matrix is None:
-            cov_matrix = gpytorch.distributions.MultivariateNormal
+        if MeanKernel is None:
+            MeanKernel = gpytorch.means.ConstantMean
+        if CovKernel is None:
+            CovKernel = gpytorch.kernels.MaternKernel
+        if OutputDist is None:
+            OutputDist = gpytorch.distributions.MultivariateNormal
         if device is None:
             device = torch.device(
                 "cuda" if torch.cuda.is_available() else "cpu"
@@ -55,12 +57,12 @@ class GPyTorchTrainer:
         self.Gp = Gp
         self.Optimizer = Optimizer
         self.Loss = Loss
-        self.likelihood = Likelihood().to(self.device)
-        self.kernel = kernel
-        self.cov_matrix = cov_matrix
+        self.Likelihood = Likelihood
+        self.MeanKernel = MeanKernel
+        self.CovKernel = CovKernel
+        self.OutputDist = OutputDist
 
     def train(self, train_x, train_y, lr=0.1, n_training_iter=20):
-        self._init_gp(train_x, train_y, lr)
         self._calculate_checkpoint_size(train_x, train_y, lr)
 
         self._train(
@@ -70,19 +72,6 @@ class GPyTorchTrainer:
             lr=lr,
             n_training_iter=n_training_iter,
         )
-
-    def _init_gp(self, train_x, train_y, lr):
-        self.gp = self.Gp(
-            kernel=self.kernel,
-            cov_matrix=self.cov_matrix,
-            likelihood=self.likelihood,
-            train_x=train_x,
-            train_y=train_y,
-            device=self.device,
-            n_devices=self.n_devices
-        ).to(self.device)
-        self.loss = self.Loss(self.likelihood, self.gp)
-        self.optimizer = self.Optimizer(self.gp.parameters(), lr=lr)
 
     def _calculate_checkpoint_size(self, train_x, train_y, lr):
         """ Runs through one set of training loops to figure out the best
@@ -123,8 +112,15 @@ class GPyTorchTrainer:
     def _train(
         self, train_x, train_y, checkpoint_size, lr=0.1, n_training_iter=20
     ):
+        train_x = train_x.contiguous()
+        train_y = train_y.contiguous()
+
+        self._init_gp(train_x, train_y)
         self.gp.train()
         self.likelihood.train()
+
+        self.optimizer = self.Optimizer(self.gp.parameters(), lr=0.1)
+        self.loss = self.Loss(self.likelihood, self.gp)
 
         with gpytorch.beta_features.checkpoint_kernel(
             checkpoint_size
@@ -167,14 +163,25 @@ class GPyTorchTrainer:
         )
         return self.gp, self.likelihood
 
+    def _init_gp(self, train_x, train_y):
+        self.likelihood = self.Likelihood().to(self.device)
+        self.gp = self.Gp(self.MeanKernel, self.CovKernel, self.OutputDist,
+                          self.likelihood, train_x, train_y,
+                          self.device, self.n_devices).to(self.device)
+
     def predict(self, input_):
+        # Format the input
+        if not isinstance(input_, torch.Tensor):
+            input_ = torch.Tensor(input_)
+        input_ = input_.contiguous()
+
         # Make and save the predictions
         self.gp.eval()
         self.likelihood.eval()
         with torch.no_grad(), gpytorch.settings.fast_pred_var(), gpytorch.beta_features.checkpoint_kernel(
             1000
         ):
-            preds = self.gp.forward(input_)
+            preds = self.gp(input_)
         targets_pred = preds.mean
         targets_std = preds.stddev
         return targets_pred, targets_std
@@ -182,6 +189,7 @@ class GPyTorchTrainer:
     def save_state(self, path='gp_state.pth'):
         torch.save(self.gp.state_dict(), (path))
 
-    def load_state(self, path):
+    def load_state(self, path, train_x, train_y):
+        self._init_gp(train_x, train_y)
         state_dict = torch.load(path)
         self.gp.load_state_dict(state_dict)
