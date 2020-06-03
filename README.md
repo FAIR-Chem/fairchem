@@ -10,49 +10,54 @@ Also related to [Graph Attention Networks](https://arxiv.org/abs/1710.10903) and
 
 ##  Installation
 
-[last updated May 21, 2020]
+[last updated June 3, 2020]
 
 The easiest way of installing prerequisites is via [conda](https://conda.io/docs/index.html).
 After installing [conda](http://conda.pydata.org/), run the following commands
 to create a new [environment](https://conda.io/docs/user-guide/tasks/manage-environments.html)
 named `ocp-models` and install dependencies:
 
+### Pre-install step
+
+Install `conda-merge`:
+```bash
+pip install conda-merge
+```
+If you're using system `pip`, then you may want to add the `--user` flag to avoid using `sudo`.
+Check that you can invoke `conda-merge` by running `conda-merge -h`.
+
 ### GPU machines
 
 Instructions are for PyTorch 1.4, CUDA 10.0 specifically.
 
-- `conda create -n ocp-models python=3.6`
-- `conda activate ocp-models`
-- `conda install pytorch=1.4 cudatoolkit=10.0 pyyaml pymatgen ase matplotlib tensorboard pre-commit tqdm -c pytorch -c conda-forge`
-- Check if PyTorch is installed with CUDA support:
-    - `python -c "import torch; print(torch.cuda.is_available())"` should return true
-- Add CUDA to `$PATH` and `$CPATH`
-    - `export PATH=/usr/local/cuda/bin:$PATH`
-    - `export CPATH=/usr/local/cuda/include:$CPATH`
-- Add CUDA to `$LD_LIBRARY_PATH`
-    - `export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH`
-    - `export DYLD_LIBRARY_PATH=/usr/local/cuda/lib:$DYLD_LIBRARY_PATH`
-- Ensure that PyTorch and system CUDA versions match
-    - `python -c "import torch; print(torch.version.cuda)"` and `nvcc --version` should both return 10.0
-- `pip install torch-scatter==latest+cu100 torch-sparse==latest+cu100 torch-cluster==latest+cu100 torch-spline-conv==latest+cu100 -f https://pytorch-geometric.com/whl/torch-1.4.0.html`
-- `pip install torch-geometric demjson wandb`
-- `pre-commit install`
+First, check that CUDA is in your `PATH` and `LD_LIBRARY_PATH`, e.g.
+```
+$ echo $PATH | tr ':' '\n' | grep cuda
+/public/apps/cuda/10.0/bin
+$ echo $LD_LIBRARY_PATH | tr ':' '\n' | grep cuda
+/public/apps/cuda/10.0/lib64
+```
+The exact paths may differ on your system. Then install the dependencies:
+```bash
+conda-merge env.common.yml env.gpu.yml > env.yml
+conda env create -f env.yml
+```
+Activate the conda environment with `conda activate ocp-models`.
+Finally, install the pre-commit hooks:
+```bash
+pre-commit install
+```
 
 ### CPU-only machines
 
 Please skip the following if you completed the with-GPU installation from above.
 
 ```bash
-conda env create -f env.cpu.yml
+conda-merge env.common.yml env.cpu.yml > env.yml
+conda env create -f env.yml
 conda activate ocp-models
 pre-commit install
 ```
-
-### Additional experiment-specific setup
-
-- [Kevin Tran](https://github.com/ktran9891)'s Convolution-Fed Gaussian Process
-  (CFGP) pipeline requires `gpytorch`, installable via `conda install gpytorch -c conda-forge`.
-- Hyperparameter optimization (HPO) requires `Tune`, installable via `pip install ray[tune]`.
 
 ## Usage
 
