@@ -3,9 +3,7 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, os.getcwd())
-from ocpmodels.datasets import *
-from ocpmodels.trainers import *
+from ocpmodels.trainers import MDTrainer
 
 if __name__ == "__main__":
     task = {

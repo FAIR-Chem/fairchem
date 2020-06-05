@@ -510,6 +510,7 @@ class BaseTrainer:
                 )
             else:
                 grad_target_normed = batch.force
+            # Force coefficient = 30 has been working well for us.
             loss.append(
                 self.config["optim"].get("force_coefficient", 30)
                 * self.criterion(out["force_output"], grad_target_normed)
