@@ -1,9 +1,7 @@
 import os.path
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from ocpmodels.trainers import SimpleTrainer
-
 
 if __name__ == "__main__":
     task = {
@@ -23,7 +21,7 @@ if __name__ == "__main__":
     }
 
     dataset = {
-        "src": "data/data/gasdb",
+        "src": "data/data/2020_04_06_kevin_gasdb",
         "train_size": 800,
         "val_size": 100,
         "test_size": 100,
@@ -45,6 +43,7 @@ if __name__ == "__main__":
         dataset=dataset,
         optimizer=optimizer,
         identifier="my-first-experiment",
+        is_debug=True,
     )
 
     trainer.train()

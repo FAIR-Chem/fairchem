@@ -43,6 +43,7 @@ conda-merge env.common.yml env.gpu.yml > env.yml
 conda env create -f env.yml
 ```
 Activate the conda environment with `conda activate ocp-models`.
+Install this package with `pip install -e .`.
 Finally, install the pre-commit hooks:
 ```bash
 pre-commit install
@@ -56,6 +57,7 @@ Please skip the following if you completed the with-GPU installation from above.
 conda-merge env.common.yml env.cpu.yml > env.yml
 conda env create -f env.yml
 conda activate ocp-models
+pip install -e .
 pre-commit install
 ```
 
