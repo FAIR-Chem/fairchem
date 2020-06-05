@@ -4,6 +4,7 @@ import os
 import random
 import time
 
+import demjson
 import numpy as np
 import torch
 import torch.nn as nn
@@ -393,7 +394,12 @@ class BaseTrainer:
 
         # enable gradient wrt input.
         if "grad_input" in self.config["task"]:
-            batch.x = batch.x.requires_grad_(True)
+            if self.config["model"] == "schnet":
+                inp_for_grad = batch.pos
+                batch.pos = batch.pos.requires_grad_(True)
+            else:
+                inp_for_grad = batch.x
+                batch.x = batch.x.requires_grad_(True)
 
         # forward pass.
         if self.config["model_attributes"].get("regress_forces", False):
@@ -418,7 +424,7 @@ class BaseTrainer:
                 self.config["task"]["grad_input_mult"]
                 * torch.autograd.grad(
                     output,
-                    batch.x,
+                    inp_for_grad,
                     # TODO(abhshkdz): check correctness. should this be `output`?
                     grad_outputs=torch.ones_like(output),
                     create_graph=True,
@@ -504,8 +510,10 @@ class BaseTrainer:
                 )
             else:
                 grad_target_normed = batch.force
+            # Force coefficient = 30 has been working well for us.
             loss.append(
-                self.config["optim"].get("force_coefficient", 30) * self.criterion(out["force_output"], grad_target_normed)
+                self.config["optim"].get("force_coefficient", 30)
+                * self.criterion(out["force_output"], grad_target_normed)
             )
 
         loss = sum(loss)
