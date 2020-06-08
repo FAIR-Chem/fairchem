@@ -10,7 +10,7 @@ Also related to [Graph Attention Networks](https://arxiv.org/abs/1710.10903) and
 
 ##  Installation
 
-[last updated June 3, 2020]
+[last updated June 8, 2020]
 
 The easiest way of installing prerequisites is via [conda](https://conda.io/docs/index.html).
 After installing [conda](http://conda.pydata.org/), run the following commands
@@ -28,7 +28,7 @@ Check that you can invoke `conda-merge` by running `conda-merge -h`.
 
 ### GPU machines
 
-Instructions are for PyTorch 1.4, CUDA 10.0 specifically.
+Instructions are for PyTorch 1.5, CUDA 10.1 specifically.
 
 First, check that CUDA is in your `PATH` and `LD_LIBRARY_PATH`, e.g.
 ```
