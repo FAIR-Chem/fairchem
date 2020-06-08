@@ -33,9 +33,9 @@ Instructions are for PyTorch 1.5, CUDA 10.1 specifically.
 First, check that CUDA is in your `PATH` and `LD_LIBRARY_PATH`, e.g.
 ```
 $ echo $PATH | tr ':' '\n' | grep cuda
-/public/apps/cuda/10.0/bin
+/public/apps/cuda/10.1/bin
 $ echo $LD_LIBRARY_PATH | tr ':' '\n' | grep cuda
-/public/apps/cuda/10.0/lib64
+/public/apps/cuda/10.1/lib64
 ```
 The exact paths may differ on your system. Then install the dependencies:
 ```bash
