@@ -13,5 +13,5 @@ from .cgcnn_gu import CGCNNGu
 from .cnn3d_local import CNN3D_LOCAL
 from .dogss import DOGSS
 from .gps import ExactGP
-from .schnet import SchNet
+from .schnet import SchNetWrap as SchNet
 from .transformer import Transformer
