@@ -18,6 +18,8 @@ class CGCNN(BaseModel):
         num_graph_conv_layers=6,
         fc_feat_size=128,
         num_fc_layers=4,
+        radius=6.0,
+        num_gaussians=50,
     ):
         super(CGCNN, self).__init__(num_atoms, bond_feat_dim, num_targets)
         self.embedding = nn.Linear(self.num_atoms, atom_embedding_size)
@@ -25,7 +27,9 @@ class CGCNN(BaseModel):
         self.convs = nn.ModuleList(
             [
                 CGCNNConv(
-                    node_dim=atom_embedding_size, edge_dim=self.bond_feat_dim
+                    node_dim=atom_embedding_size,
+                    edge_dim=num_gaussians,
+                    radius=radius,
                 )
                 for _ in range(num_graph_conv_layers)
             ]
@@ -58,6 +62,8 @@ class CGCNN(BaseModel):
         """
         node_feats = self.embedding(data.x)
         for f in self.convs:
-            node_feats = f(node_feats, data.edge_index, data.edge_attr)
+            node_feats = f(
+                node_feats, data.edge_index, data.edge_weight, data.edge_attr
+            )
         mol_feats = global_mean_pool(node_feats, data.batch)
         return mol_feats
