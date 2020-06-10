@@ -5,6 +5,7 @@ import os
 
 import ase.io
 from ase.calculators.calculator import Calculator
+
 from ocpmodels.common.registry import registry
 
 
@@ -25,15 +26,11 @@ class OCPCalculator(Calculator):
 
     def calculate(self, atoms, properties, system_changes):
         Calculator.calculate(self, atoms, properties, system_changes)
-        # TODO: allow atoms objects to be fed into model directly
-        # rather than read from traj file to avoid this unnecessary I/O
         # TODO: do we want to hash the atoms object to store preprocessed data,
         # or discard entirely for each step. Storage issues likely with little
         # gain.
-        ase.io.write("temp.traj", atoms)
-        dataset_config = {"src": "./", "traj": "temp.traj"}
-        predictions = self.trainer.predict(dataset_config, verbose=False)
-        os.system("rm -rf processed/ temp.traj")
+        batch = self.trainer.dataset.ase_atoms_to_batch(atoms)
+        predictions = self.trainer.predict(batch, verbose=False)
 
         self.results["energy"] = predictions["energy"][0]
         self.results["forces"] = predictions["forces"][0]
