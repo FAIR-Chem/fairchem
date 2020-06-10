@@ -4,13 +4,13 @@ import os
 import random
 import time
 
-import demjson
 import numpy as np
+import yaml
+
+import demjson
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import yaml
-
 from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
@@ -250,6 +250,24 @@ class BaseTrainer:
 
         if self.logger is not None:
             self.logger.watch(self.model)
+
+    def load_pretrained(self, checkpoint_path=None):
+        if checkpoint_path is None or os.path.isfile(checkpoint_path) is False:
+            return False
+
+        print("### Loading checkpoint from: {}".format(checkpoint_path))
+        checkpoint = torch.load(checkpoint_path)
+
+        # Load model, optimizer, normalizer state dict.
+        self.model.load_state_dict(checkpoint["state_dict"])
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
+        for key in checkpoint["normalizers"]:
+            if key in self.normalizers:
+                self.normalizers[key].load_state_dict(
+                    checkpoint["normalizers"][key]
+                )
+
+        return True
 
     # TODO(abhshkdz): Rename function to something nicer.
     # TODO(abhshkdz): Support multiple loss functions.
