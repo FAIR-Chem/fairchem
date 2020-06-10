@@ -1,5 +1,6 @@
+from torch_geometric.nn import SchNet
+
 from ocpmodels.common.registry import registry
-from ocpmodels.models.schnet_core import SchNet
 
 
 @registry.register_model("schnet")
