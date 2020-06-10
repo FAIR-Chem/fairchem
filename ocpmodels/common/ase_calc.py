@@ -5,7 +5,6 @@ import os
 
 import ase.io
 from ase.calculators.calculator import Calculator
-
 from ocpmodels.common.registry import registry
 
 
@@ -21,10 +20,8 @@ class OCPCalculator(Calculator):
     def train(self):
         self.trainer.train()
 
-    def load(self, trained_model):
-        # TODO
-        # load previously trained model
-        raise
+    def load_pretrained(self, checkpoint_path):
+        self.trainer.load_pretrained(checkpoint_path)
 
     def calculate(self, atoms, properties, system_changes):
         Calculator.calculate(self, atoms, properties, system_changes)
