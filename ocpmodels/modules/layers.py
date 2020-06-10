@@ -13,11 +13,11 @@ class CGCNNConv(MessagePassing):
     <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.120.145301>`.
     """
 
-    def __init__(self, node_dim, edge_dim, radius=6.0, **kwargs):
+    def __init__(self, node_dim, edge_dim, cutoff=6.0, **kwargs):
         super(CGCNNConv, self).__init__(aggr="add")
         self.node_feat_size = node_dim
         self.edge_feat_size = edge_dim
-        self.radius = radius
+        self.cutoff = cutoff
 
         self.fc_pre = nn.Sequential(
             nn.Linear(
@@ -38,7 +38,7 @@ class CGCNNConv(MessagePassing):
         """
         # This weighting is not in the original cgcnn implementation, but helps
         # performance quite a bit. Idea borrowed from SchNet.
-        edge_weight = 0.5 * (torch.cos(edge_weight * PI / self.radius) + 1.0)
+        edge_weight = 0.5 * (torch.cos(edge_weight * PI / self.cutoff) + 1.0)
 
         return self.propagate(
             edge_index, x=x, edge_weight=edge_weight, edge_attr=edge_attr

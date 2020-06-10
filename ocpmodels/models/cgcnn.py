@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+from torch_geometric.nn import global_mean_pool
+from torch_geometric.nn.models.schnet import GaussianSmearing
+
 from ocpmodels.common.registry import registry
 from ocpmodels.models.base import BaseModel
 from ocpmodels.modules.layers import CGCNNConv
-from torch_geometric.nn import global_mean_pool
-from torch_geometric.nn.models.schnet import GaussianSmearing
 
 
 @registry.register_model("cgcnn")
@@ -18,7 +19,7 @@ class CGCNN(BaseModel):
         num_graph_conv_layers=6,
         fc_feat_size=128,
         num_fc_layers=4,
-        radius=6.0,
+        cutoff=6.0,
         num_gaussians=50,
     ):
         super(CGCNN, self).__init__(num_atoms, bond_feat_dim, num_targets)
@@ -29,7 +30,7 @@ class CGCNN(BaseModel):
                 CGCNNConv(
                     node_dim=atom_embedding_size,
                     edge_dim=bond_feat_dim,
-                    radius=radius,
+                    cutoff=cutoff,
                 )
                 for _ in range(num_graph_conv_layers)
             ]
@@ -47,7 +48,7 @@ class CGCNN(BaseModel):
             self.fcs = nn.Sequential(*layers)
         self.fc_out = nn.Linear(fc_feat_size, self.num_targets)
 
-        self.distance_expansion = GaussianSmearing(0.0, radius, num_gaussians)
+        self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
 
     def forward(self, data):
         row, col = data.edge_index
