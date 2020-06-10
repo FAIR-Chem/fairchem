@@ -148,9 +148,9 @@ def relax_atoms(atoms, vasp_flags):
         images += [image]
 
     # Write the trajectory
-    with TrajectoryWriter('relaxation.traj', 'a') as tj:
+    with TrajectoryWriter('relaxation.traj', 'a') as writer:
         for atoms in images:
-            tj.write(atoms)
+            writer.write(atoms)
     return images
 
 
@@ -172,3 +172,27 @@ def write_vasp_input_files(atoms, outdir='.', vasp_flags=None):
     atoms, vasp_flags = _clean_up_inputs(atoms, vasp_flags)
     calc = Vasp2(directory=outdir, **vasp_flags)
     calc.write_input(atoms)
+
+
+def read_xml(xml='vasprun.xml', outfile='relaxation.traj'):
+    '''
+    Converts an XML file into both a trajectory file while also returning the
+    trajectory as a list of `ase.Atoms` objects
+
+    Args:
+        xml     String indicating the XML file to read from
+        outfile String indicating the filename to save the trajectory as.
+                Should probabbly end with '.traj'.
+    Returns:
+        traj    A list of `ase.Atoms` objects
+    '''
+    traj = ase.io.read(xml, ':')
+    for atoms in traj:
+        atoms.set_calculator(SPC(atoms,
+                                 energy=atoms.get_potential_energy(),
+                                 forces=atoms.get_forces()))
+
+    with TrajectoryWriter(outfile, 'a') as writer:
+        for atoms in traj:
+            writer.write(atoms)
+    return traj
