@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from ase.io.trajectory import Trajectory
 from pymatgen.io.ase import AseAtomsAdaptor
+from torch_geometric.data import Data, DataLoader
 from tqdm import tqdm
 
 from ocpmodels.common.registry import registry
@@ -12,7 +13,6 @@ from ocpmodels.common.utils import collate
 from ocpmodels.datasets import BaseDataset
 from ocpmodels.datasets.elemental_embeddings import EMBEDDINGS
 from ocpmodels.datasets.gasdb import AtomicFeatureGenerator, GaussianDistance
-from torch_geometric.data import Data, DataLoader
 
 
 @registry.register_dataset("co_cu_md")
@@ -121,9 +121,10 @@ class COCuMD(BaseDataset):
         self.data, self.slices = collate(data_list)
         torch.save((self.data, self.slices), self.processed_file_names[0])
 
-    def get_dataloaders(self, batch_size=None):
+    def get_dataloaders(self, batch_size=None, shuffle=True):
         if self.mode != "train":
-            return DataLoader(self, batch_size=batch_size)
+            # If not train, we don't want to shuffle batches around.
+            return DataLoader(self, batch_size=batch_size, shuffle=False)
 
         assert batch_size is not None
         assert self.train_size + self.val_size + self.test_size <= len(self)
@@ -139,7 +140,7 @@ class COCuMD(BaseDataset):
         train_loader = DataLoader(
             train_val_dataset[: self.train_size],
             batch_size=batch_size,
-            shuffle=True,
+            shuffle=shuffle,
         )
 
         if self.val_size == 0:
