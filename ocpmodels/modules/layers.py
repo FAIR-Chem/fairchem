@@ -1,3 +1,5 @@
+from math import pi as PI
+
 import torch
 import torch.nn as nn
 from torch_geometric.nn import MessagePassing
@@ -11,10 +13,11 @@ class CGCNNConv(MessagePassing):
     <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.120.145301>`.
     """
 
-    def __init__(self, node_dim, edge_dim, **kwargs):
+    def __init__(self, node_dim, edge_dim, cutoff=6.0, **kwargs):
         super(CGCNNConv, self).__init__(aggr="add")
         self.node_feat_size = node_dim
         self.edge_feat_size = edge_dim
+        self.cutoff = cutoff
 
         self.fc_pre = nn.Sequential(
             nn.Linear(
@@ -26,16 +29,22 @@ class CGCNNConv(MessagePassing):
 
         self.fc_post = nn.Sequential(nn.BatchNorm1d(self.node_feat_size))
 
-    def forward(self, x, edge_index, edge_attr):
+    def forward(self, x, edge_index, edge_weight, edge_attr):
         """
         Arguments:
             x has shape [num_nodes, node_feat_size]
             edge_index has shape [2, num_edges]
             edge_attr is [num_edges, edge_feat_size]
         """
-        return self.propagate(edge_index, x=x, edge_attr=edge_attr)
+        # This weighting is not in the original cgcnn implementation, but helps
+        # performance quite a bit. Idea borrowed from SchNet.
+        edge_weight = 0.5 * (torch.cos(edge_weight * PI / self.cutoff) + 1.0)
 
-    def message(self, x_i, x_j, edge_attr):
+        return self.propagate(
+            edge_index, x=x, edge_weight=edge_weight, edge_attr=edge_attr
+        )
+
+    def message(self, x_i, x_j, edge_weight, edge_attr):
         """
         Arguments:
             x_i has shape [num_edges, node_feat_size]
@@ -45,7 +54,9 @@ class CGCNNConv(MessagePassing):
         Returns:
             tensor of shape [num_edges, node_feat_size]
         """
-        z = self.fc_pre(torch.cat([x_i, x_j, edge_attr], dim=1))
+        z = self.fc_pre(
+            torch.cat([x_i, x_j, edge_attr], dim=1)
+        ) * edge_weight.view(-1, 1)
         z1, z2 = z.chunk(2, dim=1)
         z1 = nn.Sigmoid()(z1)
         z2 = nn.Softplus()(z2)
@@ -243,7 +254,7 @@ class DOGSSConv(MessagePassing):
             ),
             nn.BatchNorm1d(2 * self.node_feat_size),
         )
-        
+
         self.fc_pre_edge = nn.Sequential(
             nn.Linear(
                 2 * self.node_feat_size + self.edge_feat_size,
@@ -253,7 +264,7 @@ class DOGSSConv(MessagePassing):
         )
         self.fc_node = nn.Sequential(nn.BatchNorm1d(self.node_feat_size))
         self.fc_edge = nn.Sequential(nn.BatchNorm1d(self.edge_feat_size))
-        
+
     def forward(self, x, edge_index, edge_attr):
         """
         Arguments:
@@ -261,7 +272,7 @@ class DOGSSConv(MessagePassing):
             edge_index has shape [2, num_edges]
             edge_attr is [num_edges, edge_feat_size]
         """
-        
+
         return self.propagate(edge_index, x=x, edge_attr=edge_attr)
 
     def message(self, x_i, x_j, edge_attr):
@@ -275,21 +286,21 @@ class DOGSSConv(MessagePassing):
             tensor of shape [num_edges, node_feat_size]
         """
         z = torch.cat([x_i, x_j, edge_attr], dim=1)
-        
+
         z_node = self.fc_pre_node(z)
         z1_node, z2_node = z_node.chunk(2, dim=1)
         z1_node = nn.Sigmoid()(z1_node)
         z2_node = nn.Softplus()(z2_node)
-        
+
         z_edge = self.fc_pre_edge(z)
         z1_edge, z2_edge = z_edge.chunk(2, dim=1)
         z1_edge = nn.Sigmoid()(z1_edge)
         z2_edge = nn.Softplus()(z2_edge)
-        
+
         msg_node = z1_node * z2_node
         msg_edge = z1_edge * z2_edge
-        
-        # Edge messages are not being passed to aggregation. 
+
+        # Edge messages are not being passed to aggregation.
         self.edge_attr = edge_attr
         self.msg_edge = msg_edge
         return msg_node
@@ -310,4 +321,3 @@ class DOGSSConv(MessagePassing):
         aggr_node = nn.Softplus()(x + self.fc_node(aggr_out))
         aggr_edge = nn.Softplus()(self.edge_attr + self.fc_edge(self.msg_edge))
         return aggr_node, aggr_edge
-

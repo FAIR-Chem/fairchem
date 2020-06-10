@@ -2,16 +2,12 @@ import datetime
 import os
 import warnings
 
-import torch
 import yaml
 
+import torch
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    add_edge_distance_to_graph,
-    plot_histogram,
-    save_checkpoint,
-)
+from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.datasets import *
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -157,7 +153,6 @@ class MDTrainer(BaseTrainer):
 
         for i, batch in enumerate(data_loader):
             batch.to(self.device)
-            batch = add_edge_distance_to_graph(batch, device=self.device)
             out, _ = self._forward(batch)
             if self.normalizers is not None and "target" in self.normalizers:
                 out["output"] = self.normalizers["target"].denorm(
@@ -184,7 +179,6 @@ class MDTrainer(BaseTrainer):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 batch = batch.to(self.device)
-                batch = add_edge_distance_to_graph(batch, device=self.device)
 
                 # Forward, loss, backward.
                 out, metrics = self._forward(batch)
@@ -244,7 +238,6 @@ class MDTrainer(BaseTrainer):
 
         for i, batch in enumerate(loader):
             batch = batch.to(self.device)
-            batch = add_edge_distance_to_graph(batch, device=self.device)
 
             # Forward.
             out, metrics = self._forward(batch)
