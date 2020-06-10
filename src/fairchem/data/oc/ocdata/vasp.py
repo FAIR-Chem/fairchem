@@ -174,15 +174,35 @@ def write_vasp_input_files(atoms, outdir='.', vasp_flags=None):
     calc.write_input(atoms)
 
 
-def read_xml(xml='vasprun.xml', outfile='relaxation.traj'):
+def xml_to_tuples(xml='vasprun.xml'):
     '''
     Converts an XML file into both a trajectory file while also returning the
     trajectory as a list of `ase.Atoms` objects
 
     Args:
         xml     String indicating the XML file to read from
-        outfile String indicating the filename to save the trajectory as.
-                Should probabbly end with '.traj'.
+    '''
+    traj = xml_to_traj(xml)
+
+    images = []
+    for atoms in traj:
+        symbols = atoms.get_chemical_symbols()
+        positions = atoms.get_positions()
+        forces = atoms.get_forces()
+        energy = atoms.get_potential_energy()
+        atoms_tuple = (symbols, positions, forces, energy)
+        images.append(atoms_tuple)
+
+    return images
+
+
+def xml_to_traj(xml='vasprun.xml'):
+    '''
+    Converts an XML file into both a trajectory file while also returning the
+    trajectory as a list of `ase.Atoms` objects
+
+    Args:
+        xml     String indicating the XML file to read from
     Returns:
         traj    A list of `ase.Atoms` objects
     '''
@@ -191,8 +211,4 @@ def read_xml(xml='vasprun.xml', outfile='relaxation.traj'):
         atoms.set_calculator(SPC(atoms,
                                  energy=atoms.get_potential_energy(),
                                  forces=atoms.get_forces()))
-
-    with TrajectoryWriter(outfile, 'a') as writer:
-        for atoms in traj:
-            writer.write(atoms)
     return traj
