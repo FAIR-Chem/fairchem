@@ -181,6 +181,11 @@ def xml_to_tuples(xml='vasprun.xml'):
 
     Args:
         xml     String indicating the XML file to read from
+    Returns:
+        images  A list of 5-tuples for each images in the trajectory. The
+                tuples include a list of symbols for each atom; the positions
+                of the atoms; the forces each atom sees; the unit cell
+                dimensions; and the potential energy of the whole system.
     '''
     traj = xml_to_traj(xml)
 
@@ -189,8 +194,9 @@ def xml_to_tuples(xml='vasprun.xml'):
         symbols = atoms.get_chemical_symbols()
         positions = atoms.get_positions()
         forces = atoms.get_forces()
+        cell = np.array(atoms.get_cell())
         energy = atoms.get_potential_energy()
-        atoms_tuple = (symbols, positions, forces, energy)
+        atoms_tuple = (symbols, positions, forces, cell, energy)
         images.append(atoms_tuple)
 
     return images
