@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
-from torch_geometric.nn import global_mean_pool
-
 from ocpmodels.common.registry import registry
 from ocpmodels.models.base import BaseModel
 from ocpmodels.modules.layers import CGCNNConv
+from torch_geometric.nn import global_mean_pool
+from torch_geometric.nn.models.schnet import GaussianSmearing
 
 
 @registry.register_model("cgcnn")
@@ -28,7 +28,7 @@ class CGCNN(BaseModel):
             [
                 CGCNNConv(
                     node_dim=atom_embedding_size,
-                    edge_dim=num_gaussians,
+                    edge_dim=bond_feat_dim,
                     radius=radius,
                 )
                 for _ in range(num_graph_conv_layers)
@@ -47,7 +47,17 @@ class CGCNN(BaseModel):
             self.fcs = nn.Sequential(*layers)
         self.fc_out = nn.Linear(fc_feat_size, self.num_targets)
 
+        self.distance_expansion = GaussianSmearing(0.0, radius, num_gaussians)
+
     def forward(self, data):
+        row, col = data.edge_index
+        if hasattr(data, "pos") and data.pos is not None:
+            data.edge_weight = (data.pos[row] - data.pos[col]).norm(dim=-1)
+            data.edge_attr = self.distance_expansion(data.edge_weight)
+        else:
+            # placeholder edge weights for backward-compatibility.
+            data.edge_weight = torch.ones_like(row)
+
         mol_feats = self._convolve(data)
         mol_feats = self.conv_to_fc(mol_feats)
         if hasattr(self, "fcs"):
