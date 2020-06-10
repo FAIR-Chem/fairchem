@@ -1,14 +1,15 @@
-from torch import nn
-from torch_geometric.nn import DimeNet, radius_graph
-
+import torch
 from ocpmodels.common.registry import registry
+from torch import nn
+from torch_geometric.nn import DimeNet
+from torch_scatter import scatter
 
 
 @registry.register_model("dimenet")
 class DimeNetWrap(DimeNet):
     def __init__(
         self,
-        num_atoms,  # not used
+        num_atoms,
         bond_feat_dim,  # not used
         num_targets,
         hidden_channels=128,
@@ -26,7 +27,7 @@ class DimeNetWrap(DimeNet):
         self.cutoff = cutoff
 
         super(DimeNetWrap, self).__init__(
-            in_channels=95,
+            in_channels=num_atoms,
             hidden_channels=hidden_channels,
             out_channels=num_targets,
             num_blocks=num_blocks,
@@ -40,18 +41,45 @@ class DimeNetWrap(DimeNet):
             num_output_layers=num_output_layers,
         )
 
-        # self.atom_embedding = nn.Embedding(100, hidden_channels)
-        # self.atom_embedding.reset_parameters()
-
     def forward(self, data):
-        # x = self.atom_embedding(data.atomic_numbers.long())
         x = data.x
-        # pos = data.pos
-        pos = x[:, -3:]
-        # edge_index = radius_graph(pos, r=self.cutoff, batch=data.batch)
+        pos = data.pos
         edge_index = data.edge_index
+        batch = data.batch
 
-        return super(DimeNetWrap, self).forward(x, pos, edge_index, data.batch)
+        j, i = edge_index
+        idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
+            edge_index, num_nodes=x.size(0)
+        )
+
+        # Calculate distances.
+        dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
+
+        # Calculate angles.
+        pos_i = pos[idx_i].detach()
+        pos_ji, pos_ki = (
+            pos[idx_j].detach() - pos_i,
+            pos[idx_k].detach() - pos_i,
+        )
+        a = (pos_ji * pos_ki).sum(dim=-1)
+        b = torch.cross(pos_ji, pos_ki).norm(dim=-1)
+        angle = torch.atan2(b, a)
+
+        rbf = self.rbf(dist)
+        sbf = self.sbf(dist, angle, idx_kj)
+
+        # Embedding block.
+        x = self.emb(x, rbf, i, j)
+        P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
+
+        # Interaction blocks.
+        for interaction_block, output_block in zip(
+            self.interaction_blocks, self.output_blocks[1:]
+        ):
+            x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
+            P += output_block(x, rbf, i)
+
+        return P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
 
     @property
     def num_params(self):
