@@ -43,7 +43,8 @@ class WandBLogger(Logger):
             config=self.config,
             id=self.config["cmd"]["timestamp"],
             name=self.config["cmd"]["identifier"],
-            dir=self.config["cmd"]["logs_dir"]
+            dir=self.config["cmd"]["logs_dir"],
+            project=self.config.get("logger_project", None),
         )
 
     def watch(self, model):
