@@ -145,7 +145,7 @@ def collate(data_list):
 
 
 def add_edge_distance_to_graph(
-    batch, device="cpu", dmin=0.0, dmax=6.0, step=0.2
+    batch, device="cpu", dmin=0.0, dmax=6.0, num_gaussians=50,
 ):
     # Make sure x has positions.
     if not all(batch.pos[0][:] == batch.x[0][-3:]):
@@ -159,14 +159,13 @@ def add_edge_distance_to_graph(
         batch.x[batch.edge_index[1]][:, -3:],
     )
     # Expand it using a gaussian basis filter.
-    gdf_filter, var = (
-        torch.from_numpy(np.arange(dmin, dmax + step, step)),
-        torch.tensor(step),
-    )
+    gdf_filter = torch.linspace(dmin, dmax, num_gaussians)
+    var = gdf_filter[1] - gdf_filter[0]
     gdf_filter, var = gdf_filter.to(device), var.to(device)
     gdf_distances = torch.exp(
-        -(distances.view(-1, 1) - gdf_filter) ** 2 / var ** 2
+        -((distances.view(-1, 1) - gdf_filter) ** 2) / var ** 2
     )
     # Reassign edge attributes.
+    batch.edge_weight = distances
     batch.edge_attr = gdf_distances.float()
     return batch
