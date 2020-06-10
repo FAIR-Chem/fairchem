@@ -218,33 +218,29 @@ class BaseTrainer:
     def load_model(self):
         # Build model
         print("### Loading model: {}".format(self.config["model"]))
-        # TODO(abhshkdz): Remove dependency on self.train_loader.
 
-        # Hackish workaround for force models:
-        # If 1) train_loader.dataset has positions, 2) the last 3 dimensions of
-        # x don't match positions, and 3) we're using the COCuMD dataset class,
-        # we'll likely use positions in the model forward pass. Add those here.
-        if (
-            self.train_loader.dataset.__class__.__name__ == "COCuMD"
-            and hasattr(self.train_loader.dataset[0], "pos")
-            and not all(
-                self.train_loader.dataset[0].pos[0]
-                == self.train_loader.dataset[0].x[0][-3:]
+        # TODO(abhshkdz): Eventually move towards computing features on-the-fly
+        # and remove dependence from `.edge_attr`.
+        bond_feat_dim = None
+        if self.config["task"]["dataset"] in [
+            "ulissigroup_co",
+            "ulissigroup_h",
+            "xie_grossman_mat_proj",
+        ]:
+            bond_feat_dim = self.train_loader.dataset[0].edge_attr.shape[-1]
+        elif "md" in self.config["task"]["dataset"]:
+            bond_feat_dim = self.config["model_attributes"].get(
+                "num_gaussians", 50
             )
-        ):
-            self.model = registry.get_model_class(self.config["model"])(
-                self.train_loader.dataset[0].x.shape[-1] + 3,
-                self.train_loader.dataset[0].edge_attr.shape[-1],
-                self.num_targets,
-                **self.config["model_attributes"],
-            ).to(self.device)
         else:
-            self.model = registry.get_model_class(self.config["model"])(
-                self.train_loader.dataset[0].x.shape[-1],
-                self.train_loader.dataset[0].edge_attr.shape[-1],
-                self.num_targets,
-                **self.config["model_attributes"],
-            ).to(self.device)
+            raise NotImplementedError
+
+        self.model = registry.get_model_class(self.config["model"])(
+            self.train_loader.dataset[0].x.shape[-1],
+            bond_feat_dim,
+            self.num_targets,
+            **self.config["model_attributes"],
+        ).to(self.device)
 
         print(
             "### Loaded {} with {} parameters.".format(
@@ -394,12 +390,8 @@ class BaseTrainer:
 
         # enable gradient wrt input.
         if "grad_input" in self.config["task"]:
-            if self.config["model"] == "schnet":
-                inp_for_grad = batch.pos
-                batch.pos = batch.pos.requires_grad_(True)
-            else:
-                inp_for_grad = batch.x
-                batch.x = batch.x.requires_grad_(True)
+            inp_for_grad = batch.pos
+            batch.pos = batch.pos.requires_grad_(True)
 
         # forward pass.
         if self.config["model_attributes"].get("regress_forces", False):
@@ -421,7 +413,7 @@ class BaseTrainer:
             is False
         ):
             force_output = (
-                self.config["task"]["grad_input_mult"]
+                -1
                 * torch.autograd.grad(
                     output,
                     inp_for_grad,
@@ -431,12 +423,6 @@ class BaseTrainer:
                     retain_graph=True,
                 )[0]
             )
-            force_output = force_output[
-                :,
-                self.config["task"]["grad_input_start_idx"] : self.config[
-                    "task"
-                ]["grad_input_end_idx"],
-            ]
             out["force_output"] = force_output
 
         if self.config["dataset"].get("normalize_labels", True):
