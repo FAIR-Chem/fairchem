@@ -4,13 +4,13 @@ import os
 import random
 import time
 
-import numpy as np
-import yaml
-
 import demjson
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import yaml
+
 from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
@@ -403,8 +403,8 @@ class BaseTrainer:
             float(meter.meters["binding energy/mae"].global_avg),
         )
 
-    def _forward(self, batch):
-        out, metrics = {}, {}
+    def _forward(self, batch, compute_metrics=True):
+        out = {}
 
         # enable gradient wrt input.
         if "grad_input" in self.config["task"]:
@@ -416,8 +416,10 @@ class BaseTrainer:
             output, output_forces = self.model(batch)
         else:
             output = self.model(batch)
-        if batch.y.dim() == 1:
+
+        if output.shape[-1] == 1:
             output = output.view(-1)
+
         out["output"] = output
 
         force_output = None
@@ -442,6 +444,11 @@ class BaseTrainer:
                 )[0]
             )
             out["force_output"] = force_output
+
+        if not compute_metrics:
+            return out, None
+
+        metrics = {}
 
         if self.config["dataset"].get("normalize_labels", True):
             errors = eval(self.config["task"]["metric"])(

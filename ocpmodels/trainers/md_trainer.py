@@ -157,7 +157,7 @@ class MDTrainer(BaseTrainer):
 
         for i, batch in enumerate(data_loader):
             batch.to(self.device)
-            out, _ = self._forward(batch)
+            out, _ = self._forward(batch, compute_metrics=False)
             if self.normalizers is not None and "target" in self.normalizers:
                 out["output"] = self.normalizers["target"].denorm(
                     out["output"]

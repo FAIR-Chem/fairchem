@@ -160,6 +160,7 @@ class COCuMD(BaseDataset):
 
         return train_loader, val_loader, test_loader
 
+    # This is primarily meant for evaluation, and so doesn't return targets.
     def ase_atoms_to_batch(self, atoms):
         generator = AtomicFeatureGenerator(None).extract_atom_features(atoms)
         embedding, distance, index, positions, atomic_numbers = generator
@@ -182,8 +183,6 @@ class COCuMD(BaseDataset):
                     pos=positions,
                     atomic_numbers=atomic_numbers,
                     natoms=torch.tensor([positions.shape[0]]),
-                    y=torch.tensor([0]),
-                    force=torch.tensor([0]),
                 )
             ]
         )
