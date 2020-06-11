@@ -13,12 +13,6 @@ if __name__ == "__main__":
         "metric": "mae",
         "type": "regression",
         "grad_input": "atomic forces",
-        # whether to multiply / scale gradient wrt input
-        "grad_input_mult": -1,
-        # indexing which attributes in the input vector to compute gradients for.
-        # data.x[:, grad_input_start_idx:grad_input_end_idx]
-        "grad_input_start_idx": 0,
-        "grad_input_end_idx": 3,
     }
 
     model = {
