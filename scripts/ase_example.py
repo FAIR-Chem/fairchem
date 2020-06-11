@@ -13,10 +13,9 @@ from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.optimize import BFGS
 from matplotlib import pyplot as plt
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from ocpmodels.common.ase_calc import OCPCalculator
-from ocpmodels.datasets import *
-from ocpmodels.trainers import *
+from ocpmodels.datasets import COCuMD
+from ocpmodels.trainers import MDTrainer
 
 
 def run_relaxation(calculator, filename, steps=500):
@@ -50,9 +49,6 @@ if __name__ == "__main__":
         "metric": "mae",
         "type": "regression",
         "grad_input": "atomic forces",
-        "grad_input_mult": -1,
-        "grad_input_start_idx": 92,
-        "grad_input_end_idx": 95,
     }
 
     model = {
