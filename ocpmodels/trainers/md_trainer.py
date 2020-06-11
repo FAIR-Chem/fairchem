@@ -2,9 +2,10 @@ import datetime
 import os
 import warnings
 
+import torch
+import torch_geometric
 import yaml
 
-import torch
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
@@ -73,9 +74,9 @@ class MDTrainer(BaseTrainer):
 
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
-        dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
-            self.config["dataset"]
-        )
+        self.dataset = registry.get_dataset_class(
+            self.config["task"]["dataset"]
+        )(self.config["dataset"])
         num_targets = 1
 
         self.num_targets = num_targets
@@ -83,7 +84,7 @@ class MDTrainer(BaseTrainer):
             self.train_loader,
             self.val_loader,
             self.test_loader,
-        ) = dataset.get_dataloaders(
+        ) = self.dataset.get_dataloaders(
             batch_size=self.config["optim"]["batch_size"]
         )
 
@@ -135,25 +136,28 @@ class MDTrainer(BaseTrainer):
             self.logger.log_plots(plots)
 
     # Takes in a new data source and generates predictions on it.
-    def predict(self, dataset_config, batch_size=32, verbose=True):
-        if verbose:
-            print(
-                "### Generating predictions on {}.".format(
-                    dataset_config["src"]
+    def predict(self, dataset, batch_size=32, verbose=True):
+        if isinstance(dataset, dict):
+            if verbose:
+                print(
+                    "### Generating predictions on {}.".format(dataset["src"])
                 )
-            )
 
-        dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
-            dataset_config, mode="predict", verbose=verbose
-        )
-        data_loader = dataset.get_dataloaders(batch_size=batch_size)
+            dataset = registry.get_dataset_class(
+                self.config["task"]["dataset"]
+            )(dataset, mode="predict", verbose=verbose)
+            data_loader = dataset.get_dataloaders(batch_size=batch_size)
+        elif isinstance(dataset, torch_geometric.data.Batch):
+            data_loader = [dataset]
+        else:
+            raise NotImplementedError
 
         self.model.eval()
         predictions = {"energy": [], "forces": []}
 
         for i, batch in enumerate(data_loader):
             batch.to(self.device)
-            out, _ = self._forward(batch)
+            out, _ = self._forward(batch, compute_metrics=False)
             if self.normalizers is not None and "target" in self.normalizers:
                 out["output"] = self.normalizers["target"].denorm(
                     out["output"]
