@@ -31,6 +31,6 @@ Assumes the same directory structure as needed by `merge_traj.py`. Assumes that 
 
 ---------------------------------------------------------------
 
-`rattle_test.py`: Tests whether ASE's .rattle() method rattles constrained atoms.
+`rattle_test.py`: Tests whether ASE's `.rattle()` method rattles constrained atoms.
 
 Tests passed --> rattle does not modify fixed atom positions.
