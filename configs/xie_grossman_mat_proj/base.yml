@@ -1,10 +1,12 @@
+trainer: simple
+
 dataset:
   src: data/data/xie_grossman_mat_proj
   train_size: 28000
   val_size: 2900
   test_size: 3000
 
-logger: wandb
+logger: tensorboard
 
 task:
   dataset: xie_grossman_mat_proj
