@@ -223,6 +223,7 @@ class BaseTrainer:
         # and remove dependence from `.edge_attr`.
         bond_feat_dim = None
         if self.config["task"]["dataset"] in [
+            "gasdb",
             "ulissigroup_co",
             "ulissigroup_h",
             "xie_grossman_mat_proj",
