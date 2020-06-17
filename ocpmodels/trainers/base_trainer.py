@@ -345,7 +345,9 @@ class BaseTrainer:
             return {
                 "training_loss": float(self.meter.loss.global_avg),
                 "training_mae": float(
-                    self.meter.meters["binding energy/mae"].global_avg
+                    self.meter.meters[
+                        self.config["task"]["labels"][0] + "/mae"
+                    ].global_avg
                 ),
                 "validation_loss": v_loss,
                 "validation_mae": v_mae,
@@ -386,7 +388,11 @@ class BaseTrainer:
         print(meter)
         return (
             float(meter.loss.global_avg),
-            float(meter.meters["binding energy/mae"].global_avg),
+            float(
+                meter.meters[
+                    self.config["task"]["labels"][0] + "/mae"
+                ].global_avg
+            ),
         )
 
     def _forward(self, batch, compute_metrics=True):

@@ -2,9 +2,9 @@ import datetime
 import os
 import warnings
 
-import torch
 import yaml
 
+import torch
 from ocpmodels.common.registry import registry
 from ocpmodels.datasets import *
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -24,7 +24,7 @@ class SimpleTrainer(BaseTrainer):
         is_vis=False,
         print_every=100,
         seed=None,
-        logger="wandb",
+        logger="tensorboard",
     ):
 
         if run_dir is None:
@@ -50,13 +50,14 @@ class SimpleTrainer(BaseTrainer):
                     run_dir, "checkpoints", timestamp
                 ),
                 "results_dir": os.path.join(run_dir, "results", timestamp),
-                "logs_dir": os.path.join(run_dir, "logs", timestamp),
+                "logs_dir": os.path.join(run_dir, "logs", logger, timestamp),
             },
         }
 
-        os.makedirs(self.config["cmd"]["checkpoint_dir"])
-        os.makedirs(self.config["cmd"]["results_dir"])
-        os.makedirs(self.config["cmd"]["logs_dir"])
+        if not is_debug:
+            os.makedirs(self.config["cmd"]["checkpoint_dir"])
+            os.makedirs(self.config["cmd"]["results_dir"])
+            os.makedirs(self.config["cmd"]["logs_dir"])
 
         self.is_debug = is_debug
         self.is_vis = is_vis
@@ -64,8 +65,8 @@ class SimpleTrainer(BaseTrainer):
             "cuda" if torch.cuda.is_available() else "cpu"
         )
 
-        self.load()
         print(yaml.dump(self.config, default_flow_style=False))
+        self.load()
 
     # Takes in a new data source and generates predictions on it.
     def predict(self, src, batch_size=32):
