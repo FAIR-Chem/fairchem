@@ -1,0 +1,24 @@
+includes:
+- configs/co_cu_emt/base.yml
+
+model:
+  name: cnn3d_local
+  regress_forces: True
+  max_atomic_number: 90
+  num_conv1_filters: 16
+  num_conv2_filters: 32
+  num_conv3_filters: 32
+  num_conv4_filters: 32
+  display_weights: False
+
+optim:
+  batch_size: 5
+  lr_initial: 0.001
+  lr_gamma: 0.1
+  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+    - 100
+    - 125
+  warmup_epochs: 50
+  warmup_factor: 0.2
+  max_epochs: 200
+  force_coefficient: 30
