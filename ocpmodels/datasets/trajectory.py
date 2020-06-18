@@ -15,8 +15,8 @@ from ocpmodels.datasets.elemental_embeddings import EMBEDDINGS
 from ocpmodels.datasets.gasdb import AtomicFeatureGenerator, GaussianDistance
 
 
-@registry.register_dataset("co_cu_md")
-class COCuMD(BaseDataset):
+@registry.register_dataset("trajectory")
+class TrajectoryDataset(BaseDataset):
     def __init__(
         self,
         config,

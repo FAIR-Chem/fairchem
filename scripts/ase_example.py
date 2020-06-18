@@ -13,9 +13,8 @@ from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.optimize import BFGS
 from matplotlib import pyplot as plt
 
-from ocpmodels.common.ase_calc import OCPCalculator
-from ocpmodels.datasets import COCuMD
-from ocpmodels.trainers import MDTrainer
+from ocpmodels.datasets import TrajectoryDataset
+from ocpmodels.trainers import ForcesTrainer
 
 
 def run_relaxation(calculator, filename, steps=500):
@@ -43,20 +42,24 @@ if __name__ == "__main__":
     )
 
     task = {
-        "dataset": "co_cu_md",
-        "description": "Regressing to binding energies for an MD trajectory of CO on Cu",
+        "dataset": "trajectory",
+        "description": "Regressing to energies and trajectory for a trajectory dataset",
         "labels": ["potential energy"],
         "metric": "mae",
         "type": "regression",
-        "grad_input": "atomic forces",
+        "grad_input": "atomic trajectory",
+        "ml_relax": False,
+        "relaxation_steps": 100,
+        "relaxation_fmax": 0.01,
     }
 
     model = {
-        "name": "cgcnn",
-        "atom_embedding_size": 32,
-        "fc_feat_size": 64,
-        "num_fc_layers": 2,
-        "num_graph_conv_layers": 3,
+        "name": "schnet",
+        "hidden_channels": 128,
+        "num_filters": 128,
+        "num_interactions": 3,
+        "num_gaussians": 200,
+        "cutoff": 6.0,
     }
 
     src = "./"
@@ -84,21 +87,16 @@ if __name__ == "__main__":
     }
 
     identifier = "CGCNN_COCu_emt_relax"
-    trainer = MDTrainer(
+    trainer = ForcesTrainer(
         task=task,
         model=model,
         dataset=dataset,
         optimizer=optimizer,
         identifier=identifier,
         print_every=5,
-        is_debug=False,
+        is_debug=True,
         seed=1,
     )
 
-    gnn_calc = OCPCalculator(trainer)
-    gnn_calc.train()
-
-    # Run relaxation with trained ML model
-    run_relaxation(
-        calculator=gnn_calc, filename=f"{identifier}.traj", steps=200
-    )
+    trainer.train()
+    mae_energy, mae_structure_ratio = trainer.validate_relaxation(test_dir="./relax_eval/")

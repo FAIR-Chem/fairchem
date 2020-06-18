@@ -3,9 +3,11 @@ import os
 import warnings
 
 import torch
+from torch.multiprocessing import Pool
 import torch_geometric
 import yaml
 
+from ocpmodels.common.ase_utils import relax_eval
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
@@ -14,8 +16,8 @@ from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
-@registry.register_trainer("md")
-class MDTrainer(BaseTrainer):
+@registry.register_trainer("forces")
+class ForcesTrainer(BaseTrainer):
     def __init__(
         self,
         task,
@@ -217,6 +219,13 @@ class MDTrainer(BaseTrainer):
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
 
+            if self.config["task"].get("ml_relax", False):
+                self.validate_relaxation(
+                        test_dir="./relax_eval",
+                        split="test",
+                        epoch=epoch
+                    )
+
             if not self.is_debug:
                 save_checkpoint(
                     {
@@ -263,3 +272,40 @@ class MDTrainer(BaseTrainer):
             )
 
         print(meter)
+
+    def validate_relaxation(self, test_dir, split="test", epoch=None):
+        print("### Evaluating ML-relaxation")
+        self.model.eval()
+        metrics = {}
+        meter = Meter(split=split)
+
+        mae_energy, mae_structure_ratio = relax_eval(
+                    trainer=self,
+                    filedir=test_dir,
+                    steps=self.config["task"].get("relaxation_steps", 300),
+                    fmax=self.config["task"].get("relaxation_fmax", 0.01),
+                )
+
+        metrics[
+            "relaxed_energy/{}".format(self.config["task"]["metric"])
+        ] = mae_energy
+
+        metrics[
+            "relaxed_structure_ratio/{} ratio".format(self.config["task"]["metric"])
+        ] = mae_structure_ratio
+
+        meter.update(metrics)
+
+        # Make plots.
+        if self.logger is not None and epoch is not None:
+            log_dict = meter.get_scalar_dict()
+            log_dict.update({"epoch": epoch + 1})
+            self.logger.log(
+                log_dict,
+                step=(epoch + 1) * len(self.train_loader),
+                split=split,
+            )
+
+        print(meter)
+
+        return mae_energy, mae_structure_ratio

@@ -229,7 +229,7 @@ class BaseTrainer:
             "xie_grossman_mat_proj",
         ]:
             bond_feat_dim = self.train_loader.dataset[0].edge_attr.shape[-1]
-        elif "md" in self.config["task"]["dataset"]:
+        elif "trajectory" in self.config["task"]["dataset"]:
             bond_feat_dim = self.config["model_attributes"].get(
                 "num_gaussians", 50
             )

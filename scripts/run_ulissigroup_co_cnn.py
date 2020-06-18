@@ -7,7 +7,7 @@ import numpy as np
 
 sys.path.insert(0, os.getcwd())
 from ocpmodels.datasets import *
-from ocpmodels.trainers import MDTrainer
+from ocpmodels.trainers import ForcesTrainer
 
 
 def main_helper():
@@ -44,7 +44,7 @@ def main_helper():
         "warmup_epochs": 1,
         "warmup_factor": 0.2,
     }
-    trainer = MDTrainer(
+    trainer = ForcesTrainer(
         task=task,
         model=model,
         dataset=dataset,

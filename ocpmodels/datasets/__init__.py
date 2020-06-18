@@ -1,5 +1,5 @@
 from .base import BaseDataset
-from .co_cu_md import COCuMD
+from .trajectory import TrajectoryDataset
 from .dogss import DOGSS
 from .gasdb import Gasdb
 from .iso17 import ISO17

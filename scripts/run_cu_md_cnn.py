@@ -4,12 +4,12 @@ import sys
 import numpy as np
 
 from ocpmodels.datasets import COCuMD
-from ocpmodels.trainers import MDTrainer
+from ocpmodels.trainers import ForcesTrainer
 
 
 def main_helper():
     task = {
-        "dataset": "co_cu_md",
+        "dataset": "trajectory",
         "description": "Regressing to binding energies for an MD trajectory of CO on Cu",
         "labels": ["potential energy"],
         "metric": "mae",
@@ -46,7 +46,7 @@ def main_helper():
         "warmup_epochs": 1,
         "warmup_factor": 0.2,
     }
-    trainer = MDTrainer(
+    trainer = ForcesTrainer(
         task=task,
         model=model,
         dataset=dataset,
