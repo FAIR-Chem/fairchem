@@ -36,9 +36,10 @@ class OCPCalculator(Calculator):
             checkpoint_path: string
                 Path to trained model
         """
-        # try:
-            # self.trainer.load_pretrained(checkpoint_path)
-        # except Exceptionk"Unable to load model!")
+        try:
+            self.trainer.load_pretrained(checkpoint_path)
+        except NotImplementedError:
+            print("Unable to load checkpoint!")
 
     def calculate(self, atoms, properties, system_changes):
         Calculator.calculate(self, atoms, properties, system_changes)
