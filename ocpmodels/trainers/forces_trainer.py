@@ -3,7 +3,7 @@ import os
 import warnings
 
 import torch
-from torch.multiprocessing import Pool
+import torch.multiprocessing as mp
 import torch_geometric
 import yaml
 
@@ -219,9 +219,10 @@ class ForcesTrainer(BaseTrainer):
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
 
-            if self.config["task"].get("ml_relax", False):
+            if ("relaxation_dir" in self.config["task"] and
+                    self.config["task"].get("ml_relax", "end") == "train"):
                 self.validate_relaxation(
-                        test_dir="./relax_eval",
+                        test_dir=self.config["task"]["relaxation_dir"],
                         split="test",
                         epoch=epoch
                     )
@@ -239,6 +240,13 @@ class ForcesTrainer(BaseTrainer):
                         "config": self.config,
                     },
                     self.config["cmd"]["checkpoint_dir"],
+                )
+        if ("relaxation_dir" in self.config["task"] and
+                self.config["task"].get("ml_relax", "end") == "end"):
+            self.validate_relaxation(
+                    test_dir=self.config["task"]["relaxation_dir"],
+                    split="test",
+                    epoch=epoch
                 )
 
     def validate(self, split="val", epoch=None):
@@ -281,9 +289,11 @@ class ForcesTrainer(BaseTrainer):
 
         mae_energy, mae_structure_ratio = relax_eval(
                     trainer=self,
+                    metric=self.config["task"]["metric"],
                     filedir=test_dir,
                     steps=self.config["task"].get("relaxation_steps", 300),
                     fmax=self.config["task"].get("relaxation_fmax", 0.01),
+                    ncores=self.config["task"].get("cores", mp.cpu_count())
                 )
 
         metrics[

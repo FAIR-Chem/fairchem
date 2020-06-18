@@ -1,6 +1,8 @@
 import os
 from os import path
 
+import torch
+
 import ase.io
 from ase import Atoms
 from ase.calculators.calculator import Calculator
@@ -10,6 +12,7 @@ from ase.optimize import BFGS
 import numpy as np
 
 from ocpmodels.common.registry import registry
+from ocpmodels.common.meter import mae, mean_l2_distance, mae_ratio
 
 
 class OCPCalculator(Calculator):
@@ -113,36 +116,59 @@ class Relaxation:
 
         return full_trajectory if full else full_trajectory[-1]
 
-def relax_eval(trainer, filedir, steps=300, fmax=0.01):
+def relax_eval(trainer, filedir, metric, ncores, steps, fmax):
     calc = OCPCalculator(trainer)
 
     mae_energy = 0
     mae_structure_ratio = 0
-    os.makedirs("./ml_relax_trajs/", exist_ok=True)
+    n_test_systems = 0
+    os.makedirs("./ml_relax_trajs/", exist_ok=True) # store elsewhere?
 
     #TODO Parallelize ml-relaxations
     for traj in os.listdir(filedir):
         if traj.endswith("traj"):
-            starting_image = ase.io.read(traj, "0")
-            relaxed_image = ase.io.read(traj, "-1")
-            structure_optimizer = Relaxation(starting_image, f"ml_relax_trajs/ml_relax_{traj}")
+            traj_path = os.path.join(filedir, traj)
+            initial_structure = ase.io.read(traj_path, "0")
+            dft_relaxed_structure = ase.io.read(traj_path, "-1")
+
+            # Run ML-based relaxation
+            structure_optimizer = Relaxation(initial_structure, f"ml_relax_trajs/ml_relax_{traj}")
             structure_optimizer.run(calc, steps=steps, fmax=fmax)
-            final_traj = structure_optimizer.get_trajectory()
+            ml_trajectory = structure_optimizer.get_trajectory(full=True)
+            ml_relaxed_structure = ml_trajectory[-1]
 
-            pred_final_energy = final_traj.get_potential_energy(apply_constraint=False)
-            true_final_energy = relaxed_image.get_potential_energy(apply_constraint=False)
-            energy_error = np.abs(true_final_energy - pred_final_energy)
+            # Compute energy MAE
+            ml_final_energy = torch.tensor(
+                    ml_relaxed_structure.get_potential_energy(apply_constraint=False)
+                    )
+            dft_final_energy = torch.tensor(
+                    dft_relaxed_structure.get_potential_energy(apply_constraint=False)
+                    )
+            energy_error = eval(metric)(dft_final_energy, ml_final_energy)
 
-            initial_structure_error = np.mean(
-                    np.abs(starting_image.get_positions() - relaxed_image.get_positions())
-                    )
-            final_structure_error = np.mean(
-                    np.abs(relaxed_image.get_positions() - final_traj.get_positions())
-                    )
+            # Compute structure MAE
+            initial_structure_positions = torch.tensor(initial_structure.get_positions())
+            dft_relaxed_structure_positions = torch.tensor(dft_relaxed_structure.get_positions())
+            ml_relaxed_structure_positions = torch.tensor(ml_relaxed_structure.get_positions())
+            #TODO Explore alternative structure metrics
+            initial_structure_error = torch.mean(
+                    eval(metric)(
+                    initial_structure_positions,
+                    dft_relaxed_structure_positions,
+                    ))
+            final_structure_error = torch.mean(
+                    eval(metric)(
+                    ml_relaxed_structure_positions,
+                    dft_relaxed_structure_positions
+                    ))
             structure_error_ratio = final_structure_error/initial_structure_error
 
             mae_energy += energy_error
             mae_structure_ratio += structure_error_ratio
+            n_test_systems += 1
+
+    # Average across all test systems
+    mae_energy /= n_test_systems
+    mae_structure_ratio /= n_test_systems
 
     return mae_energy, mae_structure_ratio
-

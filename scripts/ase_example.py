@@ -1,9 +1,10 @@
 import os.path
 import sys
 
-import ase.io
 import numpy as np
 import torch.nn as nn
+
+import ase.io
 from ase import Atoms, units
 from ase.build import add_adsorbate, fcc100, molecule
 from ase.calculators.emt import EMT
@@ -11,6 +12,7 @@ from ase.constraints import FixAtoms
 from ase.md import nvtberendsen
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.optimize import BFGS
+
 from matplotlib import pyplot as plt
 
 from ocpmodels.datasets import TrajectoryDataset
@@ -37,8 +39,9 @@ def run_relaxation(calculator, filename, steps=500):
 if __name__ == "__main__":
 
     # Generate sample training data
+    os.makedirs("./example/", exist_ok=True)
     run_relaxation(
-        calculator=EMT(), filename="./COCu_emt_relax.traj", steps=200
+            calculator=EMT(), filename="./example/COCu_emt_relax.traj", steps=200
     )
 
     task = {
@@ -48,9 +51,10 @@ if __name__ == "__main__":
         "metric": "mae",
         "type": "regression",
         "grad_input": "atomic trajectory",
-        "ml_relax": False,
-        "relaxation_steps": 100,
-        "relaxation_fmax": 0.01,
+        "relaxation_dir": "./example/", # directory to evaluate ml relaxations
+        "ml_relax": "end", # "end" to run relaxations after training, "train" o/w
+        "relaxation_steps": 100, # number of relaxation steps
+        "relaxation_fmax": 0.01, # convergence criteria for relaxations
     }
 
     model = {
@@ -62,7 +66,7 @@ if __name__ == "__main__":
         "cutoff": 6.0,
     }
 
-    src = "./"
+    src = "./example/"
     traj = "COCu_emt_relax.traj"
     full_traj = ase.io.read(src + traj, ":")
 
@@ -86,7 +90,7 @@ if __name__ == "__main__":
         "criterion": nn.L1Loss(),
     }
 
-    identifier = "CGCNN_COCu_emt_relax"
+    identifier = "schnet_example"
     trainer = ForcesTrainer(
         task=task,
         model=model,
@@ -99,4 +103,3 @@ if __name__ == "__main__":
     )
 
     trainer.train()
-    mae_energy, mae_structure_ratio = trainer.validate_relaxation(test_dir="./relax_eval/")
