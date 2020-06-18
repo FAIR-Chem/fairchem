@@ -178,9 +178,9 @@ class GPyTorchTrainer:
         # Make and save the predictions
         self.gp.eval()
         self.likelihood.eval()
-        with torch.no_grad(), gpytorch.settings.fast_pred_var(), gpytorch.beta_features.checkpoint_kernel(
-            1000
-        ):
+        with torch.no_grad(), \
+                gpytorch.settings.fast_pred_var(), \
+                gpytorch.settings.max_preconditioner_size(self.preconditioner_size):
             preds = self.gp(input_)
         targets_pred = preds.mean
         targets_std = preds.stddev
