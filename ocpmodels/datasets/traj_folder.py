@@ -30,18 +30,13 @@ class TrajectoryFolderDataset(Dataset):
         energies and forces during training.
         """
         raw_traj = Trajectory(self.raw_traj_files[idx])
-
-        # TODO(abhshkdz): this is where sampling logic goes.
-        # Add parameters for how many points to sample from each trajectory,
-        # and whether to sample uniformly or bias towards beginning / end.
-
-        # To be removed: uniformly sample 10 points from this trajectory.
-        inds = np.random.choice(
-            len(raw_traj), min(10, len(raw_traj)), replace=False
+        traj, _ = self.subsample_trajectory(
+            raw_traj,
+            self.config.get("mode", "all"),
+            self.config.get("num_points", 1e6),
+            self.config.get("minp", 0.0),
+            self.config.get("maxp", 1.0),
         )
-
-        # Now prune the trajectory based on the above indices.
-        traj = [raw_traj[i] for i in inds]
         feature_generator = TrajectoryFeatureGenerator(traj)
 
         # Extract torch_geometric.data.Data objects for each step.
@@ -77,3 +72,46 @@ class TrajectoryFolderDataset(Dataset):
             )
 
         return data_list
+
+    def subsample_trajectory(
+        self, traj, mode="all", num_points=1e6, minp=0.0, maxp=1.0
+    ):
+        """
+        Returns subsampled trajectory and corresponding indices, depending on
+        subsampling config parameters.
+
+        We first subselect part of the trajectory based on `minp` and `maxp`:
+        traj = traj[minp * len(traj) : maxp * len(traj)]
+        `minp` and `maxp` to be specified as fractions (of trajectory length).
+
+        1) If mode == "all", returns the entire traj. Ignores num_points.
+        2) If mode == "uniform", uniformly samples num_points from the traj. (In
+           case the traj is shorter than num_points, will return all points.)
+
+        Common intended use cases:
+
+        For training / validation on non-overlapping sets of full trajectories,
+        pass mode = "all" and use the traj_paths txt file to specify splits.
+
+        For training / validation on non-overlapping parts of the same traj,
+        use different `minp` and `maxp` for training and val splits, with mode
+        == "uniform" or mode == "all".
+        """
+        assert mode in ["all", "uniform"]
+        assert minp >= 0.0 and maxp >= 0.0
+
+        inds = list(range(len(traj)))
+
+        traj = traj[int(minp * len(traj)) : int(maxp * len(traj))]
+        inds = inds[int(minp * len(inds)) : int(maxp * len(inds))]
+
+        if mode == "all":
+            return traj, inds
+
+        if mode == "uniform":
+            sub_inds = np.random.choice(
+                len(traj), min(num_points, len(traj)), replace=False
+            )
+            traj = [traj[i] for i in sub_inds]
+            inds = [inds[i] for i in sub_inds]
+            return traj, inds
