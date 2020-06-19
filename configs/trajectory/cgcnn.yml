@@ -1,13 +1,12 @@
 includes:
-- configs/co_cu_emt/base.yml
+- configs/trajectory/base.yml
 
 model:
-  name: schnet
-  hidden_channels: 128
-  num_filters: 128
-  num_interactions: 6
-  num_gaussians: 50
-  cutoff: 6.0
+  name: cgcnn
+  atom_embedding_size: 32
+  fc_feat_size: 64
+  num_fc_layers: 3
+  num_graph_conv_layers: 3
 
 optim:
   batch_size: 5

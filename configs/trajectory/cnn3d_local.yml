@@ -1,5 +1,5 @@
 includes:
-- configs/co_cu_emt/base.yml
+- configs/trajectory/base.yml
 
 model:
   name: cnn3d_local

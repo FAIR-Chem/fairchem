@@ -1,13 +1,13 @@
 includes:
-- configs/co_cu_emt/base.yml
+- configs/trajectory/base.yml
 
 model:
-  name: dimenet
+  name: schnet
   hidden_channels: 128
-  num_blocks: 1
-  cutoff: 10.0
-  num_after_skip: 1
-  num_output_layers: 1
+  num_filters: 128
+  num_interactions: 6
+  num_gaussians: 50
+  cutoff: 6.0
 
 optim:
   batch_size: 5
