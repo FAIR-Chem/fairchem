@@ -3,12 +3,11 @@ import os
 import warnings
 
 import ase.io
-
-import yaml
 import torch
 import torch_geometric
+import yaml
 
-from ocpmodels.common.ase_utils import Relaxation, OCPCalculator, relax_eval
+from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
@@ -220,13 +219,15 @@ class ForcesTrainer(BaseTrainer):
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
 
-            if ("relaxation_dir" in self.config["task"] and
-                    self.config["task"].get("ml_relax", "end") == "train"):
+            if (
+                "relaxation_dir" in self.config["task"]
+                and self.config["task"].get("ml_relax", "end") == "train"
+            ):
                 self.validate_relaxation(
-                        traj_dir=self.config["task"]["relaxation_dir"],
-                        split="test",
-                        epoch=epoch
-                    )
+                    traj_dir=self.config["task"]["relaxation_dir"],
+                    split="test",
+                    epoch=epoch,
+                )
 
             if not self.is_debug:
                 save_checkpoint(
@@ -242,13 +243,15 @@ class ForcesTrainer(BaseTrainer):
                     },
                     self.config["cmd"]["checkpoint_dir"],
                 )
-        if ("relaxation_dir" in self.config["task"] and
-                self.config["task"].get("ml_relax", "end") == "end"):
+        if (
+            "relaxation_dir" in self.config["task"]
+            and self.config["task"].get("ml_relax", "end") == "end"
+        ):
             self.validate_relaxation(
-                    traj_dir=self.config["task"]["relaxation_dir"],
-                    split="test",
-                    epoch=epoch
-                )
+                traj_dir=self.config["task"]["relaxation_dir"],
+                split="test",
+                epoch=epoch,
+            )
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
@@ -289,13 +292,13 @@ class ForcesTrainer(BaseTrainer):
         meter = Meter(split=split)
 
         mae_energy, mae_structure = relax_eval(
-                    trainer=self,
-                    traj_dir=traj_dir,
-                    metric=self.config["task"]["metric"],
-                    steps=self.config["task"].get("relaxation_steps", 300),
-                    fmax=self.config["task"].get("relaxation_fmax", 0.01),
-                    results_dir=self.config["cmd"]["results_dir"],
-                )
+            trainer=self,
+            traj_dir=traj_dir,
+            metric=self.config["task"]["metric"],
+            steps=self.config["task"].get("relaxation_steps", 300),
+            fmax=self.config["task"].get("relaxation_fmax", 0.01),
+            results_dir=self.config["cmd"]["results_dir"],
+        )
 
         metrics[
             "relaxed_energy/{}".format(self.config["task"]["metric"])

@@ -9,7 +9,7 @@ __all__ = [
 
 from .base_trainer import BaseTrainer
 from .dogss_trainer import DOGSSTrainer
-from .gpytorch_trainer import GPyTorchTrainer
 from .forces_trainer import ForcesTrainer
+from .gpytorch_trainer import GPyTorchTrainer
 from .simple_trainer import SimpleTrainer
 from .tune_hpo_trainer import TuneHPOTrainer

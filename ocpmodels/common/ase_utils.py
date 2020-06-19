@@ -1,22 +1,21 @@
 import os
 from os import path
 
-import torch
-
 import ase.io
+import numpy as np
+import torch
 from ase import Atoms
 from ase.calculators.calculator import Calculator
-from ase.optimize.optimize import Optimizer
 from ase.optimize import BFGS
+from ase.optimize.optimize import Optimizer
 
-import numpy as np
-
+from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
-from ocpmodels.common.meter import mae, mean_l2_distance, mae_ratio
 
 
 class OCPCalculator(Calculator):
     implemented_properties = ["energy", "forces"]
+
     def __init__(self, trainer):
         """
         OCP-ASE Calculator
@@ -72,7 +71,9 @@ class Relaxation:
                 Optimizer to be used for relaxations. Currently limited to
                 ASE-based optimizers: https://wiki.fysik.dtu.dk/ase/ase/optimize.html.
         """
-        assert isinstance(structure, Atoms), f"Invalid structure type! Expected {Atoms}"
+        assert isinstance(
+            structure, Atoms
+        ), f"Invalid structure type! Expected {Atoms}"
         assert issubclass(optimizer, Optimizer), "Invalid optimizer!"
         self.structure = structure.copy()
         self.optimizer = optimizer
@@ -97,8 +98,9 @@ class Relaxation:
                 to terminal.
         """
         self.structure.set_calculator(calculator)
-        dyn = self.optimizer(atoms=self.structure, trajectory=self.filename,
-                logfile=logfile)
+        dyn = self.optimizer(
+            atoms=self.structure, trajectory=self.filename, logfile=logfile
+        )
         dyn.run(fmax=fmax, steps=steps)
 
     def get_trajectory(self, full=False):
@@ -115,6 +117,7 @@ class Relaxation:
         assert len(full_trajectory) > 0, "Trajectory empty!"
 
         return full_trajectory if full else full_trajectory[-1]
+
 
 def relax_eval(trainer, traj_dir, metric, steps, fmax, results_dir):
     """
@@ -149,7 +152,7 @@ def relax_eval(trainer, traj_dir, metric, steps, fmax, results_dir):
     mae_structure = []
     os.makedirs(os.path.join(results_dir, "ml_relaxations"), exist_ok=True)
 
-    #TODO Parallelize ml-relaxations
+    # TODO Parallelize ml-relaxations
     for traj in os.listdir(traj_dir):
         if traj.endswith("traj"):
             traj_path = os.path.join(traj_dir, traj)
@@ -157,30 +160,40 @@ def relax_eval(trainer, traj_dir, metric, steps, fmax, results_dir):
             dft_relaxed_structure = ase.io.read(traj_path, "-1")
 
             # Run ML-based relaxation
-            structure_optimizer = Relaxation(initial_structure,
-                    f"{results_dir}/ml_relaxations/ml_{traj}")
+            structure_optimizer = Relaxation(
+                initial_structure, f"{results_dir}/ml_relaxations/ml_{traj}"
+            )
             structure_optimizer.run(calc, steps=steps, fmax=fmax)
             ml_trajectory = structure_optimizer.get_trajectory(full=True)
             ml_relaxed_structure = ml_trajectory[-1]
 
             # Compute relaxed energy MAE
             ml_final_energy = torch.tensor(
-                    ml_relaxed_structure.get_potential_energy(apply_constraint=False)
-                    )
+                ml_relaxed_structure.get_potential_energy(
+                    apply_constraint=False
+                )
+            )
             dft_final_energy = torch.tensor(
-                    dft_relaxed_structure.get_potential_energy(apply_constraint=False)
-                    )
+                dft_relaxed_structure.get_potential_energy(
+                    apply_constraint=False
+                )
+            )
             energy_error = eval(metric)(dft_final_energy, ml_final_energy)
 
             # Compute relaxed structure MAE
-            dft_relaxed_structure_positions = torch.tensor(dft_relaxed_structure.get_positions())
-            ml_relaxed_structure_positions = torch.tensor(ml_relaxed_structure.get_positions())
-            #TODO Explore alternative structure metrics
+            dft_relaxed_structure_positions = torch.tensor(
+                dft_relaxed_structure.get_positions()
+            )
+            ml_relaxed_structure_positions = torch.tensor(
+                ml_relaxed_structure.get_positions()
+            )
+            # TODO Explore alternative structure metrics
             structure_error = torch.mean(
-                    eval(metric)(
+                eval(metric)(
                     ml_relaxed_structure_positions,
-                    dft_relaxed_structure_positions
-                    ))
+                    dft_relaxed_structure_positions,
+                )
+            )
 
             mae_energy.append(energy_error)
             mae_structure.append(structure_error)
