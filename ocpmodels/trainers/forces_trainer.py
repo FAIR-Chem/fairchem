@@ -6,10 +6,9 @@ import ase.io
 
 import yaml
 import torch
-import torch.multiprocessing as mp
 import torch_geometric
 
-from ocpmodels.common.ase_utils import Relaxation, OCPCalculator
+from ocpmodels.common.ase_utils import Relaxation, OCPCalculator, relax_eval
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
@@ -224,7 +223,7 @@ class ForcesTrainer(BaseTrainer):
             if ("relaxation_dir" in self.config["task"] and
                     self.config["task"].get("ml_relax", "end") == "train"):
                 self.validate_relaxation(
-                        test_dir=self.config["task"]["relaxation_dir"],
+                        traj_dir=self.config["task"]["relaxation_dir"],
                         split="test",
                         epoch=epoch
                     )
@@ -246,7 +245,7 @@ class ForcesTrainer(BaseTrainer):
         if ("relaxation_dir" in self.config["task"] and
                 self.config["task"].get("ml_relax", "end") == "end"):
             self.validate_relaxation(
-                    test_dir=self.config["task"]["relaxation_dir"],
+                    traj_dir=self.config["task"]["relaxation_dir"],
                     split="test",
                     epoch=epoch
                 )
@@ -283,18 +282,19 @@ class ForcesTrainer(BaseTrainer):
 
         print(meter)
 
-    def validate_relaxation(self, test_dir, split="test", epoch=None):
+    def validate_relaxation(self, traj_dir, split="val", epoch=None):
         print("### Evaluating ML-relaxation")
         self.model.eval()
         metrics = {}
         meter = Meter(split=split)
 
-        mae_energy, mae_structure = self.relax_eval(
+        mae_energy, mae_structure = relax_eval(
+                    trainer=self,
+                    traj_dir=traj_dir,
                     metric=self.config["task"]["metric"],
-                    filedir=test_dir,
                     steps=self.config["task"].get("relaxation_steps", 300),
                     fmax=self.config["task"].get("relaxation_fmax", 0.01),
-                    ncores=self.config["task"].get("cores", mp.cpu_count())
+                    results_dir=self.config["cmd"]["results_dir"],
                 )
 
         metrics[
@@ -320,51 +320,3 @@ class ForcesTrainer(BaseTrainer):
         print(meter)
 
         return mae_energy, mae_structure
-
-    def _relax_parallel(self, inputs):
-        filedir, traj, steps, fmax, metric = inputs
-        traj_path = os.path.join(filedir, traj)
-        initial_structure = ase.io.read(traj_path, "0")
-        dft_relaxed_structure = ase.io.read(traj_path, "-1")
-
-        # Run ML-based relaxation
-        calc = OCPCalculator(self)
-        structure_optimizer = Relaxation(initial_structure, f"ml_relax_trajs/ml_relax_{traj}")
-        structure_optimizer.run(calc, steps=steps, fmax=fmax)
-        ml_trajectory = structure_optimizer.get_trajectory(full=True)
-        ml_relaxed_structure = ml_trajectory[-1]
-
-        # Compute energy MAE
-        ml_final_energy = torch.tensor(
-                ml_relaxed_structure.get_potential_energy(apply_constraint=False)
-                )
-        dft_final_energy = torch.tensor(
-                dft_relaxed_structure.get_potential_energy(apply_constraint=False)
-                )
-        energy_error = eval(metric)(dft_final_energy, ml_final_energy)
-
-        # Compute structure MAE
-        dft_relaxed_structure_positions = torch.tensor(dft_relaxed_structure.get_positions())
-        ml_relaxed_structure_positions = torch.tensor(ml_relaxed_structure.get_positions())
-        #TODO Explore alternative structure metrics
-        final_structure_error = torch.mean(
-                eval(metric)(
-                ml_relaxed_structure_positions,
-                dft_relaxed_structure_positions
-                ))
-
-        return [energy_error, final_structure_error]
-
-
-    def relax_eval(self, filedir, metric, ncores, steps, fmax):
-        n_test_systems = 0
-        os.makedirs("./ml_relax_trajs/", exist_ok=True) # store elsewhere?
-
-        #TODO Parallelize ml-relaxations
-        inputs = []
-        for traj in os.listdir(filedir):
-            if traj.endswith("traj"):
-                input = (filedir, traj, steps, fmax, metric)
-                inputs.append(input)
-        pool = mp.Pool(ncores)
-        relaxation_errors = pool.starmap(self._relax_parallel, inputs)

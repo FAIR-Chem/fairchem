@@ -9,8 +9,6 @@ from ase import Atoms, units
 from ase.build import add_adsorbate, fcc100, molecule
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
-from ase.md import nvtberendsen
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.optimize import BFGS
 
 from matplotlib import pyplot as plt
@@ -32,16 +30,17 @@ def run_relaxation(calculator, filename, steps=500):
     slab.center(vacuum=13.0, axis=2)
     slab.set_pbc(True)
     slab.set_calculator(calculator)
-    dyn = BFGS(slab, trajectory=filename)
+    print("### Generating data")
+    dyn = BFGS(slab, trajectory=filename, logfile=None)
     dyn.run(fmax=0.01, steps=steps)
 
 
 if __name__ == "__main__":
 
     # Generate sample training data
-    os.makedirs("./example/", exist_ok=True)
+    os.makedirs("../data/data/example/", exist_ok=True)
     run_relaxation(
-            calculator=EMT(), filename="./example/COCu_emt_relax.traj", steps=200
+            calculator=EMT(), filename="../data/data/example/COCu_emt_relax.traj", steps=200
     )
 
     task = {
@@ -51,8 +50,8 @@ if __name__ == "__main__":
         "metric": "mae",
         "type": "regression",
         "grad_input": "atomic forces",
-        "relaxation_dir": "./example/", # directory to evaluate ml relaxations
-        "ml_relax": "end", # "end" to run relaxations after training, "train" o/w
+        "relaxation_dir": "../data/data/example/", # directory to evaluate ml relaxations
+        "ml_relax": "end", # "end" to run relaxations after training, "train" for during
         "relaxation_steps": 100, # number of relaxation steps
         "relaxation_fmax": 0.01, # convergence criteria for relaxations
     }
@@ -66,7 +65,7 @@ if __name__ == "__main__":
         "cutoff": 6.0,
     }
 
-    src = "./example/"
+    src = "../data/data/example/"
     traj = "COCu_emt_relax.traj"
     full_traj = ase.io.read(src + traj, ":")
 

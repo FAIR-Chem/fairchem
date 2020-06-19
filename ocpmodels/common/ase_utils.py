@@ -116,28 +116,54 @@ class Relaxation:
 
         return full_trajectory if full else full_trajectory[-1]
 
-def relax_eval(trainer, filedir, metric, ncores, steps, fmax):
+def relax_eval(trainer, traj_dir, metric, steps, fmax, results_dir):
+    """
+    Evaluation of ML-based relaxations.
+
+    Args:
+
+        trainer: object
+            Trainer class necessary to build OCP-ASE calculator
+
+        traj_dir: str
+            Directory path containing trajectory files to be run
+            by the model.
+
+        metric: str
+            Evaluation metric to be used.
+
+        steps: int
+            Max number of steps in the structure relaxation.
+
+        fmax: float
+                Structure relaxation terminates when the max force
+                of the system is no bigger than fmax.
+
+        results_dir: str
+            Path to save model generated relaxations.
+
+    """
     calc = OCPCalculator(trainer)
 
-    mae_energy = 0
-    mae_structure = 0
-    n_test_systems = 0
-    os.makedirs("./ml_relax_trajs/", exist_ok=True) # store elsewhere?
+    mae_energy = []
+    mae_structure = []
+    os.makedirs(os.path.join(results_dir, "ml_relaxations"), exist_ok=True)
 
     #TODO Parallelize ml-relaxations
-    for traj in os.listdir(filedir):
+    for traj in os.listdir(traj_dir):
         if traj.endswith("traj"):
-            traj_path = os.path.join(filedir, traj)
+            traj_path = os.path.join(traj_dir, traj)
             initial_structure = ase.io.read(traj_path, "0")
             dft_relaxed_structure = ase.io.read(traj_path, "-1")
 
             # Run ML-based relaxation
-            structure_optimizer = Relaxation(initial_structure, f"ml_relax_trajs/ml_relax_{traj}")
+            structure_optimizer = Relaxation(initial_structure,
+                    f"{results_dir}/ml_relaxations/ml_{traj}")
             structure_optimizer.run(calc, steps=steps, fmax=fmax)
             ml_trajectory = structure_optimizer.get_trajectory(full=True)
             ml_relaxed_structure = ml_trajectory[-1]
 
-            # Compute energy MAE
+            # Compute relaxed energy MAE
             ml_final_energy = torch.tensor(
                     ml_relaxed_structure.get_potential_energy(apply_constraint=False)
                     )
@@ -146,7 +172,7 @@ def relax_eval(trainer, filedir, metric, ncores, steps, fmax):
                     )
             energy_error = eval(metric)(dft_final_energy, ml_final_energy)
 
-            # Compute structure MAE
+            # Compute relaxed structure MAE
             dft_relaxed_structure_positions = torch.tensor(dft_relaxed_structure.get_positions())
             ml_relaxed_structure_positions = torch.tensor(ml_relaxed_structure.get_positions())
             #TODO Explore alternative structure metrics
@@ -156,12 +182,11 @@ def relax_eval(trainer, filedir, metric, ncores, steps, fmax):
                     dft_relaxed_structure_positions
                     ))
 
-            mae_energy += energy_error
-            mae_structure += structure_error
-            n_test_systems += 1
+            mae_energy.append(energy_error)
+            mae_structure.append(structure_error)
 
     # Average across all test systems
-    mae_energy /= n_test_systems
-    mae_structure /= n_test_systems
+    mae_energy = torch.mean(torch.tensor(mae_energy))
+    mae_structure = torch.mean(torch.tensor(mae_structure))
 
     return mae_energy, mae_structure
