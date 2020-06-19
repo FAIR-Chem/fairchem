@@ -8,14 +8,11 @@ from ase import Atoms, units
 from ase.build import add_adsorbate, fcc100, molecule
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
-from ase.md import nvtberendsen
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.optimize import BFGS
 from matplotlib import pyplot as plt
 
-from ocpmodels.common.ase_calc import OCPCalculator
-from ocpmodels.datasets import COCuMD
-from ocpmodels.trainers import MDTrainer
+from ocpmodels.datasets import TrajectoryDataset
+from ocpmodels.trainers import ForcesTrainer
 
 
 def run_relaxation(calculator, filename, steps=500):
@@ -31,35 +28,44 @@ def run_relaxation(calculator, filename, steps=500):
     slab.center(vacuum=13.0, axis=2)
     slab.set_pbc(True)
     slab.set_calculator(calculator)
-    dyn = BFGS(slab, trajectory=filename)
+    print("### Generating data")
+    dyn = BFGS(slab, trajectory=filename, logfile=None)
     dyn.run(fmax=0.01, steps=steps)
 
 
 if __name__ == "__main__":
 
     # Generate sample training data
+    os.makedirs("data/data/example/", exist_ok=True)
     run_relaxation(
-        calculator=EMT(), filename="./COCu_emt_relax.traj", steps=200
+        calculator=EMT(),
+        filename="data/data/example/COCu_emt_relax.traj",
+        steps=200,
     )
 
     task = {
-        "dataset": "co_cu_md",
-        "description": "Regressing to binding energies for an MD trajectory of CO on Cu",
+        "dataset": "trajectory",
+        "description": "Regressing to energies and forces for a trajectory dataset",
         "labels": ["potential energy"],
         "metric": "mae",
         "type": "regression",
         "grad_input": "atomic forces",
+        "relaxation_dir": "data/data/example/",  # directory to evaluate ml relaxations
+        "ml_relax": "end",  # "end" to run relaxations after training, "train" for during
+        "relaxation_steps": 100,  # number of relaxation steps
+        "relaxation_fmax": 0.01,  # convergence criteria for relaxations
     }
 
     model = {
-        "name": "cgcnn",
-        "atom_embedding_size": 32,
-        "fc_feat_size": 64,
-        "num_fc_layers": 2,
-        "num_graph_conv_layers": 3,
+        "name": "schnet",
+        "hidden_channels": 128,
+        "num_filters": 128,
+        "num_interactions": 3,
+        "num_gaussians": 200,
+        "cutoff": 6.0,
     }
 
-    src = "./"
+    src = "data/data/example/"
     traj = "COCu_emt_relax.traj"
     full_traj = ase.io.read(src + traj, ":")
 
@@ -83,22 +89,16 @@ if __name__ == "__main__":
         "criterion": nn.L1Loss(),
     }
 
-    identifier = "CGCNN_COCu_emt_relax"
-    trainer = MDTrainer(
+    identifier = "schnet_example"
+    trainer = ForcesTrainer(
         task=task,
         model=model,
         dataset=dataset,
         optimizer=optimizer,
         identifier=identifier,
         print_every=5,
-        is_debug=False,
+        is_debug=True,
         seed=1,
     )
 
-    gnn_calc = OCPCalculator(trainer)
-    gnn_calc.train()
-
-    # Run relaxation with trained ML model
-    run_relaxation(
-        calculator=gnn_calc, filename=f"{identifier}.traj", steps=200
-    )
+    trainer.train()

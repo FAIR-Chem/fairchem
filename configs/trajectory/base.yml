@@ -1,4 +1,4 @@
-trainer: md
+trainer: forces
 
 dataset:
   src: data/data/co_cu_emt
@@ -11,7 +11,7 @@ dataset:
 logger: tensorboard
 
 task:
-  dataset: co_cu_md
+  dataset: trajectory
   description: "Regressing to energies and forces for an EMT trajectory of CO on Cu"
   type: regression
   metric: mae
