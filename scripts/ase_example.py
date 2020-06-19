@@ -1,16 +1,14 @@
 import os.path
 import sys
 
+import ase.io
 import numpy as np
 import torch.nn as nn
-
-import ase.io
 from ase import Atoms, units
 from ase.build import add_adsorbate, fcc100, molecule
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
 from ase.optimize import BFGS
-
 from matplotlib import pyplot as plt
 
 from ocpmodels.datasets import TrajectoryDataset
@@ -38,9 +36,11 @@ def run_relaxation(calculator, filename, steps=500):
 if __name__ == "__main__":
 
     # Generate sample training data
-    os.makedirs("../data/data/example/", exist_ok=True)
+    os.makedirs("data/data/example/", exist_ok=True)
     run_relaxation(
-            calculator=EMT(), filename="../data/data/example/COCu_emt_relax.traj", steps=200
+        calculator=EMT(),
+        filename="data/data/example/COCu_emt_relax.traj",
+        steps=200,
     )
 
     task = {
@@ -50,10 +50,10 @@ if __name__ == "__main__":
         "metric": "mae",
         "type": "regression",
         "grad_input": "atomic forces",
-        "relaxation_dir": "../data/data/example/", # directory to evaluate ml relaxations
-        "ml_relax": "end", # "end" to run relaxations after training, "train" for during
-        "relaxation_steps": 100, # number of relaxation steps
-        "relaxation_fmax": 0.01, # convergence criteria for relaxations
+        "relaxation_dir": "data/data/example/",  # directory to evaluate ml relaxations
+        "ml_relax": "end",  # "end" to run relaxations after training, "train" for during
+        "relaxation_steps": 100,  # number of relaxation steps
+        "relaxation_fmax": 0.01,  # convergence criteria for relaxations
     }
 
     model = {
@@ -65,7 +65,7 @@ if __name__ == "__main__":
         "cutoff": 6.0,
     }
 
-    src = "../data/data/example/"
+    src = "data/data/example/"
     traj = "COCu_emt_relax.traj"
     full_traj = ase.io.read(src + traj, ":")
 
