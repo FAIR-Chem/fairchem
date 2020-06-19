@@ -1,8 +1,7 @@
 import torch
 import wandb
-from torch.utils.tensorboard import SummaryWriter
-
 from ocpmodels.common.registry import registry
+from torch.utils.tensorboard import SummaryWriter
 
 
 class Logger:
@@ -67,11 +66,16 @@ class TensorboardLogger(Logger):
         super().__init__(config)
         self.writer = SummaryWriter(self.config["cmd"]["logs_dir"])
 
+    # TODO: add a model hook for watching gradients.
+    def watch(self, model):
+        print("NOTE: model gradient logging to tensorboard not yet supported.")
+        return False
+
     def log(self, update_dict, step=None, split=""):
         update_dict = super().log(update_dict, step, split)
         for key in update_dict:
             if torch.is_tensor(update_dict[key]):
-                self.writer.add_scalar(key, update_dict[key].val, step)
+                self.writer.add_scalar(key, update_dict[key].item(), step)
             else:
                 assert isinstance(update_dict[key], int) or isinstance(
                     update_dict[key], float

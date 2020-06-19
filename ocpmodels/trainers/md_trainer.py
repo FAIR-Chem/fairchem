@@ -2,10 +2,10 @@ import datetime
 import os
 import warnings
 
-import torch
-import torch_geometric
 import yaml
 
+import torch
+import torch_geometric
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
@@ -28,7 +28,7 @@ class MDTrainer(BaseTrainer):
         is_vis=False,
         print_every=100,
         seed=None,
-        logger="wandb",
+        logger="tensorboard",
     ):
 
         if run_dir is None:

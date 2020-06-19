@@ -4,7 +4,6 @@ import os
 import random
 import time
 
-import demjson
 import numpy as np
 import torch
 import torch.nn as nn
@@ -16,6 +15,7 @@ from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
+    build_config,
     plot_histogram,
     save_checkpoint,
     update_config,
@@ -54,24 +54,10 @@ class BaseTrainer:
         self.load_optimizer()
         self.load_extras()
 
+    # Note: this function is now deprecated. We build config outside of trainer.
+    # See build_config in ocpmodels.common.utils.py.
     def load_config_from_yaml_and_cmd(self, args):
-        self.config = yaml.safe_load(open(args.config_yml, "r"))
-
-        includes = self.config.get("includes", [])
-        if not isinstance(includes, list):
-            raise AttributeError(
-                "Includes must be a list, {} provided".format(type(includes))
-            )
-
-        for include in includes:
-            include_config = yaml.safe_load(open(include, "r"))
-            self.config.update(include_config)
-
-        self.config.pop("includes")
-
-        if args.config_override:
-            overrides = demjson.decode(args.config_override)
-            self.config = update_config(self.config, overrides)
+        self.config = build_config(args)
 
         # device
         self.device = torch.device(
@@ -359,7 +345,11 @@ class BaseTrainer:
             return {
                 "training_loss": float(self.meter.loss.global_avg),
                 "training_mae": float(
-                    self.meter.meters["binding energy/mae"].global_avg
+                    self.meter.meters[
+                        self.config["task"]["labels"][0]
+                        + "/"
+                        + self.config["task"]["metric"]
+                    ].global_avg
                 ),
                 "validation_loss": v_loss,
                 "validation_mae": v_mae,
@@ -400,7 +390,13 @@ class BaseTrainer:
         print(meter)
         return (
             float(meter.loss.global_avg),
-            float(meter.meters["binding energy/mae"].global_avg),
+            float(
+                meter.meters[
+                    self.config["task"]["labels"][0]
+                    + "/"
+                    + self.config["task"]["metric"]
+                ].global_avg
+            ),
         )
 
     def _forward(self, batch, compute_metrics=True):

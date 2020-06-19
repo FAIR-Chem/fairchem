@@ -1,0 +1,20 @@
+trainer: md
+
+dataset:
+  src: data/data/co_cu_emt
+  traj: COCu_emt_5images.traj
+  train_size: 5
+  val_size: 0
+  test_size: 0
+  normalize_labels: True
+
+logger: tensorboard
+
+task:
+  dataset: co_cu_md
+  description: "Regressing to energies and forces for an EMT trajectory of CO on Cu"
+  type: regression
+  metric: mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
