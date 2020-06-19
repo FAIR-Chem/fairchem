@@ -1,12 +1,17 @@
+import glob
+import importlib
 import os
 import shutil
 from bisect import bisect
 from itertools import product
 
 import numpy as np
-import torch
+import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+
+import demjson
+import torch
 from torch_geometric.utils import remove_self_loops
 
 
@@ -169,3 +174,78 @@ def add_edge_distance_to_graph(
     batch.edge_weight = distances
     batch.edge_attr = gdf_distances.float()
     return batch
+
+
+# Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
+def setup_imports():
+    from ocpmodels.common.registry import registry
+
+    # First, check if imports are already setup
+    has_already_setup = registry.get("imports_setup", no_warning=True)
+    if has_already_setup:
+        return
+    # Automatically load all of the modules, so that
+    # they register with registry
+    root_folder = registry.get("ocpmodels_root", no_warning=True)
+
+    if root_folder is None:
+        root_folder = os.path.dirname(os.path.abspath(__file__))
+        root_folder = os.path.join(root_folder, "..")
+
+    trainer_folder = os.path.join(root_folder, "trainers")
+    trainer_pattern = os.path.join(trainer_folder, "**", "*.py")
+    datasets_folder = os.path.join(root_folder, "datasets")
+    datasets_pattern = os.path.join(datasets_folder, "**", "*.py")
+    model_folder = os.path.join(root_folder, "models")
+    model_pattern = os.path.join(model_folder, "**", "*.py")
+
+    importlib.import_module("ocpmodels.common.meter")
+
+    files = (
+        glob.glob(datasets_pattern, recursive=True)
+        + glob.glob(model_pattern, recursive=True)
+        + glob.glob(trainer_pattern, recursive=True)
+    )
+
+    for f in files:
+        for key in ["/trainers", "/datasets", "/models"]:
+            if f.find(key) != -1:
+                splits = f.split(os.sep)
+                file_name = splits[-1]
+                module_name = file_name[: file_name.find(".py")]
+                importlib.import_module(
+                    "ocpmodels.%s.%s" % (key[1:], module_name)
+                )
+
+    registry.register("imports_setup", True)
+
+
+def build_config(args):
+    config = yaml.safe_load(open(args.config_yml, "r"))
+
+    # Load config from included files.
+    includes = config.get("includes", [])
+    if not isinstance(includes, list):
+        raise AttributeError(
+            "Includes must be a list, {} provided".format(type(includes))
+        )
+
+    for include in includes:
+        include_config = yaml.safe_load(open(include, "r"))
+        config.update(include_config)
+
+    config.pop("includes")
+
+    # Check for overriden parameters.
+    if args.config_override:
+        overrides = demjson.decode(args.config_override)
+        config = update_config(config, overrides)
+
+    # Some other flags.
+    config["identifier"] = args.identifier
+    config["seed"] = args.seed
+    config["is_debug"] = args.debug
+    config["is_vis"] = args.vis
+    config["print_every"] = args.print_every
+
+    return config

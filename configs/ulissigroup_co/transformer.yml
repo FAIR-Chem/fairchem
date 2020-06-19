@@ -1,9 +1,8 @@
 includes:
 - configs/ulissigroup_co/base.yml
 
-model: transformer
-
-model_attributes:
+model:
+  name: transformer
   atom_embedding_size: 64
   num_graph_conv_layers: 6
   num_attention_heads: 3
