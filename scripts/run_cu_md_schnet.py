@@ -25,7 +25,7 @@ if __name__ == "__main__":
     }
 
     dataset = {
-        "src": "data/data/",
+        "src": "data/data/2020_06_03_rattle_emt",
         "traj": "COCu_emt_5images.traj",
         "train_size": 5,
         "val_size": 0,

@@ -46,11 +46,11 @@ if __name__ == "__main__":
 
     task = {
         "dataset": "trajectory",
-        "description": "Regressing to energies and trajectory for a trajectory dataset",
+        "description": "Regressing to energies and forces for a trajectory dataset",
         "labels": ["potential energy"],
         "metric": "mae",
         "type": "regression",
-        "grad_input": "atomic trajectory",
+        "grad_input": "atomic forces",
         "relaxation_dir": "./example/", # directory to evaluate ml relaxations
         "ml_relax": "end", # "end" to run relaxations after training, "train" o/w
         "relaxation_steps": 100, # number of relaxation steps

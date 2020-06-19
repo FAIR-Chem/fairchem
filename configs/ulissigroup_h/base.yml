@@ -1,3 +1,5 @@
+trainer: simple
+
 dataset:
   src: data/data/ulissigroup_h
   train_size: 2560

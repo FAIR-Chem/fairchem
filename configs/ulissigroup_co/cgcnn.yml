@@ -1,9 +1,8 @@
 includes:
 - configs/ulissigroup_co/base.yml
 
-model: cgcnn
-
-model_attributes:
+model:
+  name: cgcnn
   atom_embedding_size: 64
   num_graph_conv_layers: 6
   fc_feat_size: 128 # projection layer after conv + pool layers

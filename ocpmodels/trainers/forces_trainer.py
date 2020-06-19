@@ -4,10 +4,10 @@ import warnings
 
 import ase.io
 
+import yaml
 import torch
 import torch.multiprocessing as mp
 import torch_geometric
-import yaml
 
 from ocpmodels.common.ase_utils import Relaxation, OCPCalculator
 from ocpmodels.common.meter import Meter
@@ -32,7 +32,7 @@ class ForcesTrainer(BaseTrainer):
         is_vis=False,
         print_every=100,
         seed=None,
-        logger="wandb",
+        logger="tensorboard",
     ):
 
         if run_dir is None:
