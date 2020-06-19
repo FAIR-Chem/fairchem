@@ -3,11 +3,8 @@ import sys
 
 import numpy as np
 
-# import submitit
-
-sys.path.insert(0, os.getcwd())
 from ocpmodels.datasets import *
-from ocpmodels.trainers import MDTrainer
+from ocpmodels.trainers import SimpleTrainer
 
 
 def main_helper():
@@ -44,7 +41,7 @@ def main_helper():
         "warmup_epochs": 1,
         "warmup_factor": 0.2,
     }
-    trainer = MDTrainer(
+    trainer = SimpleTrainer(
         task=task,
         model=model,
         dataset=dataset,

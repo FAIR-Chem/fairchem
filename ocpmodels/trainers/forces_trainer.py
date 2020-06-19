@@ -2,10 +2,12 @@ import datetime
 import os
 import warnings
 
-import yaml
-
+import ase.io
 import torch
 import torch_geometric
+import yaml
+
+from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
@@ -14,8 +16,8 @@ from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
-@registry.register_trainer("md")
-class MDTrainer(BaseTrainer):
+@registry.register_trainer("forces")
+class ForcesTrainer(BaseTrainer):
     def __init__(
         self,
         task,
@@ -217,6 +219,16 @@ class MDTrainer(BaseTrainer):
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
 
+            if (
+                "relaxation_dir" in self.config["task"]
+                and self.config["task"].get("ml_relax", "end") == "train"
+            ):
+                self.validate_relaxation(
+                    traj_dir=self.config["task"]["relaxation_dir"],
+                    split="test",
+                    epoch=epoch,
+                )
+
             if not self.is_debug:
                 save_checkpoint(
                     {
@@ -231,6 +243,15 @@ class MDTrainer(BaseTrainer):
                     },
                     self.config["cmd"]["checkpoint_dir"],
                 )
+        if (
+            "relaxation_dir" in self.config["task"]
+            and self.config["task"].get("ml_relax", "end") == "end"
+        ):
+            self.validate_relaxation(
+                traj_dir=self.config["task"]["relaxation_dir"],
+                split="test",
+                epoch=epoch,
+            )
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
@@ -263,3 +284,42 @@ class MDTrainer(BaseTrainer):
             )
 
         print(meter)
+
+    def validate_relaxation(self, traj_dir, split="val", epoch=None):
+        print("### Evaluating ML-relaxation")
+        self.model.eval()
+        metrics = {}
+        meter = Meter(split=split)
+
+        mae_energy, mae_structure = relax_eval(
+            trainer=self,
+            traj_dir=traj_dir,
+            metric=self.config["task"]["metric"],
+            steps=self.config["task"].get("relaxation_steps", 300),
+            fmax=self.config["task"].get("relaxation_fmax", 0.01),
+            results_dir=self.config["cmd"]["results_dir"],
+        )
+
+        metrics[
+            "relaxed_energy/{}".format(self.config["task"]["metric"])
+        ] = mae_energy
+
+        metrics[
+            "relaxed_structure/{}".format(self.config["task"]["metric"])
+        ] = mae_structure
+
+        meter.update(metrics)
+
+        # Make plots.
+        if self.logger is not None and epoch is not None:
+            log_dict = meter.get_scalar_dict()
+            log_dict.update({"epoch": epoch + 1})
+            self.logger.log(
+                log_dict,
+                step=(epoch + 1) * len(self.train_loader),
+                split=split,
+            )
+
+        print(meter)
+
+        return mae_energy, mae_structure

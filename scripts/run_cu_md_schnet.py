@@ -3,11 +3,11 @@ import sys
 
 import numpy as np
 
-from ocpmodels.trainers import MDTrainer
+from ocpmodels.trainers import ForcesTrainer
 
 if __name__ == "__main__":
     task = {
-        "dataset": "co_cu_md",
+        "dataset": "trajectory",
         "description": "Regressing to binding energies for an MD trajectory of CO on Cu",
         "labels": ["potential energy"],
         "metric": "mae",
@@ -44,7 +44,7 @@ if __name__ == "__main__":
         "force_coefficient": 10,
     }
 
-    trainer = MDTrainer(
+    trainer = ForcesTrainer(
         task=task,
         model=model,
         dataset=dataset,
