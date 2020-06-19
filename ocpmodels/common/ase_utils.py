@@ -120,7 +120,7 @@ def relax_eval(trainer, filedir, metric, ncores, steps, fmax):
     calc = OCPCalculator(trainer)
 
     mae_energy = 0
-    mae_structure_ratio = 0
+    mae_structure = 0
     n_test_systems = 0
     os.makedirs("./ml_relax_trajs/", exist_ok=True) # store elsewhere?
 
@@ -147,28 +147,21 @@ def relax_eval(trainer, filedir, metric, ncores, steps, fmax):
             energy_error = eval(metric)(dft_final_energy, ml_final_energy)
 
             # Compute structure MAE
-            initial_structure_positions = torch.tensor(initial_structure.get_positions())
             dft_relaxed_structure_positions = torch.tensor(dft_relaxed_structure.get_positions())
             ml_relaxed_structure_positions = torch.tensor(ml_relaxed_structure.get_positions())
             #TODO Explore alternative structure metrics
-            initial_structure_error = torch.mean(
-                    eval(metric)(
-                    initial_structure_positions,
-                    dft_relaxed_structure_positions,
-                    ))
-            final_structure_error = torch.mean(
+            structure_error = torch.mean(
                     eval(metric)(
                     ml_relaxed_structure_positions,
                     dft_relaxed_structure_positions
                     ))
-            structure_error_ratio = final_structure_error/initial_structure_error
 
             mae_energy += energy_error
-            mae_structure_ratio += structure_error_ratio
+            mae_structure += structure_error
             n_test_systems += 1
 
     # Average across all test systems
     mae_energy /= n_test_systems
-    mae_structure_ratio /= n_test_systems
+    mae_structure /= n_test_systems
 
-    return mae_energy, mae_structure_ratio
+    return mae_energy, mae_structure
