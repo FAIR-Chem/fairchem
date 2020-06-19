@@ -5,11 +5,11 @@ import random
 import time
 
 import numpy as np
-import yaml
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import yaml
+
 from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
@@ -209,13 +209,12 @@ class BaseTrainer:
         # and remove dependence from `.edge_attr`.
         bond_feat_dim = None
         if self.config["task"]["dataset"] in [
-            "gasdb",
             "ulissigroup_co",
             "ulissigroup_h",
             "xie_grossman_mat_proj",
         ]:
             bond_feat_dim = self.train_loader.dataset[0].edge_attr.shape[-1]
-        elif "md" in self.config["task"]["dataset"]:
+        elif self.config["task"]["dataset"] in ["gasdb", "md"]:
             bond_feat_dim = self.config["model_attributes"].get(
                 "num_gaussians", 50
             )
@@ -347,7 +346,9 @@ class BaseTrainer:
                 "training_loss": float(self.meter.loss.global_avg),
                 "training_mae": float(
                     self.meter.meters[
-                        self.config["task"]["labels"][0] + "/mae"
+                        self.config["task"]["labels"][0]
+                        + "/"
+                        + self.config["task"]["metric"]
                     ].global_avg
                 ),
                 "validation_loss": v_loss,
@@ -391,7 +392,9 @@ class BaseTrainer:
             float(meter.loss.global_avg),
             float(
                 meter.meters[
-                    self.config["task"]["labels"][0] + "/mae"
+                    self.config["task"]["labels"][0]
+                    + "/"
+                    + self.config["task"]["metric"]
                 ].global_avg
             ),
         )
