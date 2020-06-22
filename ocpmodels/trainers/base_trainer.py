@@ -214,7 +214,11 @@ class BaseTrainer:
             "xie_grossman_mat_proj",
         ]:
             bond_feat_dim = self.train_loader.dataset[0].edge_attr.shape[-1]
-        elif self.config["task"]["dataset"] in ["gasdb", "trajectory"]:
+        elif self.config["task"]["dataset"] in [
+            "gasdb",
+            "trajectory",
+            "traj_folder",
+        ]:
             bond_feat_dim = self.config["model_attributes"].get(
                 "num_gaussians", 50
             )
@@ -222,7 +226,8 @@ class BaseTrainer:
             raise NotImplementedError
 
         self.model = registry.get_model_class(self.config["model"])(
-            self.train_loader.dataset[0].x.shape[-1],
+            # self.train_loader.dataset[0].x.shape[-1],
+            128,
             bond_feat_dim,
             self.num_targets,
             **self.config["model_attributes"],

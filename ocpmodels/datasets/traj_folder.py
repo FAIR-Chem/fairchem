@@ -6,7 +6,7 @@ from ase.io.trajectory import Trajectory
 from torch_geometric.data import Data, Dataset
 
 from ocpmodels.common.registry import registry
-from ocpmodels.datasets.co_cu_md import TrajectoryFeatureGenerator
+from ocpmodels.datasets.trajectory import TrajectoryFeatureGenerator
 
 
 @registry.register_dataset("traj_folder")

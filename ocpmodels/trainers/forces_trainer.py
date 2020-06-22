@@ -1,11 +1,14 @@
 import datetime
 import os
 import warnings
+from itertools import chain
 
 import ase.io
 import torch
 import torch_geometric
 import yaml
+from torch.utils.data import DataLoader
+from torch_geometric.data import Batch
 
 from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
 from ocpmodels.common.meter import Meter
@@ -14,6 +17,17 @@ from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.datasets import *
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+
+
+def collater(data_list):
+    # data_list is a list of lists of Data objects.
+    # len(data_list) is no. of trajectories (batch_size in the DataLoader).
+    # len(data_list[0]) is no. of points sampled from first trajectory.
+
+    # flatten the list and make it into a torch_geometric.data.Batch.
+    data_list = list(chain.from_iterable(data_list))
+    batch = Batch.from_data_list(data_list)
+    return batch
 
 
 @registry.register_trainer("forces")
@@ -82,22 +96,35 @@ class ForcesTrainer(BaseTrainer):
         num_targets = 1
 
         self.num_targets = num_targets
-        (
-            self.train_loader,
-            self.val_loader,
-            self.test_loader,
-        ) = self.dataset.get_dataloaders(
-            batch_size=self.config["optim"]["batch_size"]
+        # (
+        #     self.train_loader,
+        #     self.val_loader,
+        #     self.test_loader,
+        # ) = self.dataset.get_dataloaders(
+        #     batch_size=self.config["optim"]["batch_size"]
+        # )
+        self.train_loader = DataLoader(
+            self.dataset,
+            batch_size=5,
+            shuffle=False,
+            collate_fn=collater,
+            num_workers=16,
         )
+        self.val_loader, self.test_loader = None, None
 
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
         if self.config["dataset"].get("normalize_labels", True):
-            self.normalizers["target"] = Normalizer(
-                self.train_loader.dataset.data.y[
-                    self.train_loader.dataset.__indices__
-                ],
+            # self.normalizers["target"] = Normalizer(
+            #     self.train_loader.dataset.data.y[
+            #         self.train_loader.dataset.__indices__
+            #     ],
+            #     self.device,
+            # )
+            self.normalizers["target"] = Normalizer().from_precomputed(
+                self.config["dataset"]["target_mean"],
+                self.config["dataset"]["target_std"],
                 self.device,
             )
 
@@ -105,13 +132,20 @@ class ForcesTrainer(BaseTrainer):
         # since it is lost when compute dy / dx -- and std to forward target std
         if "grad_input" in self.config["task"]:
             if self.config["dataset"].get("normalize_labels", True):
-                self.normalizers["grad_target"] = Normalizer(
-                    self.train_loader.dataset.data.y[
-                        self.train_loader.dataset.__indices__
-                    ],
+                # self.normalizers["grad_target"] = Normalizer(
+                #     self.train_loader.dataset.data.y[
+                #         self.train_loader.dataset.__indices__
+                #     ],
+                #     self.device,
+                # )
+                # self.normalizers["grad_target"].mean.fill_(0)
+                self.normalizers[
+                    "grad_target"
+                ] = Normalizer().from_precomputed(
+                    self.config["dataset"]["grad_target_mean"],
+                    self.config["dataset"]["grad_target_std"],
                     self.device,
                 )
-                self.normalizers["grad_target"].mean.fill_(0)
 
         if self.is_vis and self.config["task"]["dataset"] != "qm9":
             # Plot label distribution.
