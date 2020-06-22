@@ -224,9 +224,7 @@ class ForcesTrainer(BaseTrainer):
                 and self.config["task"].get("ml_relax", "end") == "train"
             ):
                 self.validate_relaxation(
-                    traj_dir=self.config["task"]["relaxation_dir"],
-                    split="test",
-                    epoch=epoch,
+                    split="val", epoch=epoch,
                 )
 
             if not self.is_debug:
@@ -248,9 +246,7 @@ class ForcesTrainer(BaseTrainer):
             and self.config["task"].get("ml_relax", "end") == "end"
         ):
             self.validate_relaxation(
-                traj_dir=self.config["task"]["relaxation_dir"],
-                split="test",
-                epoch=epoch,
+                split="val", epoch=epoch,
             )
 
     def validate(self, split="val", epoch=None):
@@ -285,7 +281,7 @@ class ForcesTrainer(BaseTrainer):
 
         print(meter)
 
-    def validate_relaxation(self, traj_dir, split="val", epoch=None):
+    def validate_relaxation(self, split="val", epoch=None):
         print("### Evaluating ML-relaxation")
         self.model.eval()
         metrics = {}
@@ -293,7 +289,7 @@ class ForcesTrainer(BaseTrainer):
 
         mae_energy, mae_structure = relax_eval(
             trainer=self,
-            traj_dir=traj_dir,
+            traj_dir=self.config["task"]["relaxation_dir"],
             metric=self.config["task"]["metric"],
             steps=self.config["task"].get("relaxation_steps", 300),
             fmax=self.config["task"].get("relaxation_fmax", 0.01),
