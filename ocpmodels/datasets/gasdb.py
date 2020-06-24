@@ -151,6 +151,8 @@ class AtomicFeatureGenerator:
         self.max_num_nbr, self.radius = max_num_nbr, radius
         self.gdf = GaussianDistance(dmin=dmin, dmax=self.radius, step=step)
         self.num = start
+        self.dummy_index = -1
+        self.dummy_distance = 7.0
 
     def __iter__(self):
         return self
@@ -171,6 +173,72 @@ class AtomicFeatureGenerator:
     def __getitem__(self, index):
         atoms = self.ase_db.get_atoms(index + 1)
         return self.extract_atom_features(atoms)
+
+    # Copied from Brandon's preprocessor class. To be removed soon.
+    def extract_atom_features_faster(self, atoms):
+        # from _get_neighbors_pymatgen.
+        structure = AseAtomsAdaptor.get_structure(atoms)
+        # these return jagged arrays meaning certain atoms have more neighbors than others
+        _c_index, n_index, _images, n_distance = structure.get_neighbor_list(
+            r=self.radius
+        )
+        # find the delimiters, the number of neighbors varies
+        delim = np.where(np.diff(_c_index))[0] + 1
+        # split the neighbor distance and neighbor index based on delimiter
+        split_n_distances = np.split(n_distance, delim)
+        split_n_index = np.split(n_index, delim)
+
+        # from _pad_arrays.
+        # add dummy variables to desired array length
+        all_n_index = np.full((len(atoms), self.max_num_nbr), self.dummy_index)
+        all_distances = np.full(
+            (len(atoms), self.max_num_nbr), float(self.dummy_distance)
+        )
+
+        # loop over the stucture and replace dummy variables where values exist
+        for i, (n_index, distances) in enumerate(
+            zip(split_n_index, split_n_distances)
+        ):
+            if len(distances) == self.max_num_nbr:
+                all_n_index[i] = n_index
+                all_distances[i] = distances
+                continue
+            # padding arrays
+            elif len(distances) < self.max_num_nbr:
+                n_len = len(distances)
+                # potentially add if n_len == 0: print (increase radius)
+                all_n_index[i][:n_len] = n_index
+                all_distances[i][:n_len] = distances
+                continue
+            # removing extra values so the length is equal to max_num_nbr
+            # values are sorted by distance so only nearest neighbors are kept
+            elif len(distances) > self.max_num_nbr:
+                # this sorts the list min -> max and returns the indicies
+                sorted_dist_i = np.argsort(distances)
+                all_n_index[i] = n_index[sorted_dist_i[: self.max_num_nbr]]
+                all_distances[i] = distances[sorted_dist_i[: self.max_num_nbr]]
+
+        # from _gen_features.
+        # expand distances in gaussian basis
+        gaussian_distances = torch.Tensor(self.gdf.expand(all_distances))
+
+        # One-hot encoding for atom type embeddings
+        embeddings = np.vstack(
+            [EMBEDDINGS[site.specie.number] for site in structure]
+        )
+
+        # convert to torch tensor
+        embeddings = torch.Tensor(embeddings)
+        positions = torch.Tensor(atoms.get_positions())
+        atomic_numbers = torch.Tensor(atoms.get_atomic_numbers())
+
+        return (
+            embeddings,
+            gaussian_distances,
+            all_n_index,
+            positions,
+            atomic_numbers,
+        )
 
     def extract_atom_features(self, atoms):
         structure = AseAtomsAdaptor.get_structure(atoms)
@@ -284,5 +352,5 @@ class GaussianDistance:
           len(self.filter)
         """
         return np.exp(
-            -(distances[..., np.newaxis] - self.filter) ** 2 / self.var ** 2
+            -((distances[..., np.newaxis] - self.filter) ** 2) / self.var ** 2
         )

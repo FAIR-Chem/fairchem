@@ -1,15 +1,16 @@
 import os
+from itertools import chain
 
 import numpy as np
 import torch
 from ase.io.trajectory import Trajectory
-from torch_geometric.data import Data, Dataset
+from torch_geometric.data import Batch, Data, Dataset
 
 from ocpmodels.common.registry import registry
 from ocpmodels.datasets.trajectory import TrajectoryFeatureGenerator
 
 
-@registry.register_dataset("traj_folder")
+@registry.register_dataset("trajectory_folder")
 class TrajectoryFolderDataset(Dataset):
     def __init__(self, config):
         super(TrajectoryFolderDataset, self).__init__(
@@ -53,23 +54,22 @@ class TrajectoryFolderDataset(Dataset):
                     edge_index[1].append(index[j, k])
             edge_index = torch.LongTensor(edge_index)
 
+            data_object = Data(
+                atomic_numbers=atomic_numbers,
+                pos=positions,
+                natoms=torch.tensor([positions.shape[0]]),
+                edge_index=edge_index,
+            )
+
             # energy, forces.
-            # TODO(abhshkdz): currently throws an error when is_training=False.
             p_energy, force = None, None
             if self.config["is_training"]:
                 p_energy = traj[i].get_potential_energy(apply_constraint=False)
                 force = traj[i].get_forces(apply_constraint=False)
+                data_object.y = p_energy
+                data_object.force = torch.tensor(force)
 
-            data_list.append(
-                Data(
-                    atomic_numbers=atomic_numbers,
-                    pos=positions,
-                    natoms=torch.tensor([positions.shape[0]]),
-                    edge_index=edge_index,
-                    y=p_energy,
-                    force=torch.tensor(force),
-                )
-            )
+            data_list.append(data_object)
 
         return data_list
 
@@ -115,3 +115,10 @@ class TrajectoryFolderDataset(Dataset):
             traj = [traj[i] for i in sub_inds]
             inds = [inds[i] for i in sub_inds]
             return traj, inds
+
+
+def data_list_collater(data_list):
+    # flatten the list and make it into a torch_geometric.data.Batch.
+    data_list = list(chain.from_iterable(data_list))
+    batch = Batch.from_data_list(data_list)
+    return batch
