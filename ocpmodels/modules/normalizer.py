@@ -21,10 +21,6 @@ class Normalizer(object):
             self.mean = torch.tensor(mean).to(device)
             self.std = torch.tensor(std).to(device)
 
-    @staticmethod
-    def from_precomputed(mean, std, device):
-        return Normalizer(mean=mean, std=std, device=device)
-
     def norm(self, tensor):
         return (tensor - self.mean) / self.std
 

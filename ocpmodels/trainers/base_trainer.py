@@ -217,7 +217,7 @@ class BaseTrainer:
         elif self.config["task"]["dataset"] in [
             "gasdb",
             "trajectory",
-            "traj_folder",
+            "trajectory_folder",
         ]:
             bond_feat_dim = self.config["model_attributes"].get(
                 "num_gaussians", 50
@@ -438,9 +438,7 @@ class BaseTrainer:
                 * torch.autograd.grad(
                     output,
                     inp_for_grad,
-                    # TODO(abhshkdz): check correctness. should this be `output`?
                     grad_outputs=torch.ones_like(output),
-                    create_graph=True,
                     retain_graph=True,
                 )[0]
             )
