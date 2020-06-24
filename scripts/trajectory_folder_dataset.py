@@ -1,52 +1,77 @@
 import time
 from itertools import chain
 
+import torch
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch
 from tqdm import tqdm
 
-from ocpmodels.datasets.traj_folder import TrajectoryFolderDataset
+from ocpmodels.datasets import (
+    TrajectoryDataset,
+    TrajectoryFolderDataset,
+    data_list_collater,
+)
 from ocpmodels.trainers import ForcesTrainer
 
-
-# TODO(abhshkdz): move this to the dataset file.
-def collater(data_list):
-    # data_list is a list of lists of Data objects.
-    # len(data_list) is no. of trajectories (batch_size in the DataLoader).
-    # len(data_list[0]) is no. of points sampled from first trajectory.
-
-    # flatten the list and make it into a torch_geometric.data.Batch.
-    data_list = list(chain.from_iterable(data_list))
-    batch = Batch.from_data_list(data_list)
-
-    return batch
-
-
 if __name__ == "__main__":
+    ########### BENCHMARKING DATALOADER
     # train_dataset_config = {
-    #     "src": "data/data/2020_06_17_fbdft",
-    #     "traj_paths": "train_debug.txt",
+    #     "src": "data/data/2020_06_23_fbdft_1k",
+    #     "traj_paths": "train.txt",
     #     "is_training": True,
     #     "mode": "uniform",
-    #     "num_points": 10,
+    #     "num_points": 50,
     #     "minp": 0.0,
     #     "maxp": 1.0,
+    #     "normalize_labels": True,
+    #     "target_mean": -343.19077959979006,
+    #     "target_std": 229.0456275834696,
+    #     "grad_target_mean": 0.0,
+    #     "grad_target_std": 229.0456275834696,
     # }
 
     # val_dataset_config = {
-    #     "src": "data/data/2020_06_17_fbdft",
-    #     "traj_paths": "val_debug.txt",
-    #     "is_training": True,
-    #     "mode": "uniform",
-    #     "num_points": 10,
-    #     "minp": 0.0,
-    #     "maxp": 1.0,
+    #     "src": "data/data/2020_06_23_fbdft_1k",
+    #     "traj_paths": "val.txt",
+    #     "is_training": False,
+    #     "mode": "all"
     # }
 
-    # train_dataset = TrajectoryFolderDataset(train_dataset_config)
+    # dataset = TrajectoryFolderDataset(val_dataset_config)
+    # data_loader = DataLoader(
+    #     dataset,
+    #     batch_size=5,
+    #     shuffle=False,
+    #     collate_fn=data_list_collater,
+    #     num_workers=16,
+    # )
 
+    # start_time = time.time()
+    # for i, batch in tqdm(enumerate(data_loader)):
+    #     pass
+    # print("time", time.time() - start_time)
+
+    ########### BENCHMARKING OLDER TRAJECTORY LOADER
+    # dataset_config = {
+    #     "src": "/checkpoint/mshuaibi/06_23_2020_ocpdata_expt/val",
+    #     "traj": "06_23_20_all_val.traj",
+    #     "train_size": 42006,
+    #     "val_size": 0,
+    #     "test_size": 0,
+    #     "normalize_labels": True,
+    # }
+
+    # print(time.time())
+    # dataset = TrajectoryDataset(dataset_config)
+    # data_loader = dataset.get_dataloaders(batch_size=1000, shuffle=False)
+    # start_time = time.time()
+    # for i, batch in tqdm(enumerate(data_loader)):
+    #     pass
+    # print("time", time.time() - start_time)
+
+    ########### TRAINING SCRIPT
     task = {
-        "dataset": "traj_folder",
+        "dataset": "trajectory_folder",
         "description": "Regressing to binding energies for an MD trajectory of CO on Cu",
         "labels": ["potential energy"],
         "metric": "mae",
@@ -64,27 +89,34 @@ if __name__ == "__main__":
     }
 
     train_dataset_config = {
-        "src": "data/data/2020_06_17_fbdft",
-        "traj_paths": "train_debug.txt",
-        "is_training": True,
+        "src": "data/data/2020_06_23_fbdft_1k",
+        "traj_paths": "train.txt",
+        "is_training": True,  # energy, force annotations will be loaded.
         "mode": "uniform",
-        "num_points": 50,
+        "num_points": 32,
         "minp": 0.0,
         "maxp": 1.0,
         "normalize_labels": True,
-        # mean, std on the training set.
+        # normalization coefficients computed on the training set.
         # energy.
-        "target_mean": -343.19077959979006,
-        "target_std": 229.0456275834696,
+        "target_mean": 0.8607078617927244,
+        "target_std": 26.649523952775112,
         # forces.
-        # "grad_target_mean": [-7.15396186e-12, -1.36794091e-12,  1.22005523e-12],
-        # "grad_target_std": [0.29951202, 0.37459846, 0.49785002],
         "grad_target_mean": 0.0,
-        "grad_target_std": 229.0456275834696,
+        "grad_target_std": 26.649523952775112,
+    }
+
+    val_dataset_config = {
+        "src": "data/data/2020_06_23_fbdft_1k",
+        "traj_paths": "val.txt",
+        "is_training": True,
+        "mode": "uniform",
+        "num_points": 100,
     }
 
     optimizer = {
-        "batch_size": 5,
+        "batch_size": 16,
+        "num_workers": 16,
         "lr_gamma": 0.1,
         "lr_initial": 0.001,
         "lr_milestones": [100, 125],
@@ -97,11 +129,11 @@ if __name__ == "__main__":
     trainer = ForcesTrainer(
         task=task,
         model=model,
-        dataset=train_dataset_config,
+        dataset=[train_dataset_config, val_dataset_config],
         optimizer=optimizer,
-        identifier="schnet-debug",
+        identifier="ocp-1k-schnet-t16-i32",
         print_every=1,
-        is_debug=True,
+        is_debug=False,
         seed=1,
     )
 

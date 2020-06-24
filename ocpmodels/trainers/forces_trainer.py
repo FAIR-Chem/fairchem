@@ -1,5 +1,6 @@
 import datetime
 import os
+import time
 import warnings
 
 import ase.io
@@ -47,7 +48,8 @@ class ForcesTrainer(BaseTrainer):
 
         self.config = {
             "task": task,
-            "dataset": dataset,
+            "dataset": dataset[0],
+            "val_dataset": dataset[1],
             "model": model.pop("name"),
             "model_attributes": model,
             "optim": optimizer,
@@ -81,9 +83,12 @@ class ForcesTrainer(BaseTrainer):
 
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
-        self.dataset = registry.get_dataset_class(
+        self.train_dataset = registry.get_dataset_class(
             self.config["task"]["dataset"]
         )(self.config["dataset"])
+        self.val_dataset = registry.get_dataset_class(
+            self.config["task"]["dataset"]
+        )(self.config["val_dataset"])
 
         self.num_targets = 1
 
@@ -95,13 +100,20 @@ class ForcesTrainer(BaseTrainer):
         #     batch_size=self.config["optim"]["batch_size"]
         # )
         self.train_loader = DataLoader(
-            self.dataset,
+            self.train_dataset,
             batch_size=self.config["optim"]["batch_size"],
+            shuffle=True,
+            collate_fn=data_list_collater,
+            num_workers=self.config["optim"]["num_workers"],
+        )
+        self.val_loader = DataLoader(
+            self.val_dataset,
+            batch_size=1,
             shuffle=False,
             collate_fn=data_list_collater,
             num_workers=self.config["optim"]["num_workers"],
         )
-        self.val_loader, self.test_loader = None, None
+        self.test_loader = None
 
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
@@ -210,6 +222,8 @@ class ForcesTrainer(BaseTrainer):
     def train(self):
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
+            num_batches = 0
+            start_time = time.time()
             for i, batch in enumerate(self.train_loader):
                 batch = batch.to(self.device)
 
@@ -237,6 +251,11 @@ class ForcesTrainer(BaseTrainer):
                 # Print metrics.
                 if i % self.config["cmd"]["print_every"] == 0:
                     print(self.meter)
+
+                num_batches += 1
+
+            print("time", time.time() - start_time)
+            print("num batches", num_batches)
 
             self.scheduler.step()
 
