@@ -439,6 +439,7 @@ class BaseTrainer:
                     output,
                     inp_for_grad,
                     grad_outputs=torch.ones_like(output),
+                    create_graph=True,
                     retain_graph=True,
                 )[0]
             )
@@ -525,6 +526,10 @@ class BaseTrainer:
                 self.config["optim"].get("force_coefficient", 30)
                 * self.criterion(out["force_output"], grad_target_normed)
             )
+
+        # Sanity check to make sure the compute graph is correct.
+        for lc in loss:
+            assert hasattr(lc, "grad_fn")
 
         loss = sum(loss)
         return loss
