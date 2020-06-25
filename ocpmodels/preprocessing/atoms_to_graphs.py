@@ -18,106 +18,183 @@ except NameError:
 
 
 class AtomsToGraphs:
+    """A class to help convert periodic atomic structures to graphs.
+
+    The AtomsToGraphs class takes in periodic atomic structures in form of ASE atoms objects and converts
+    them into graph representations for use in PyTorch. The primary purpose of this class is to determine the
+    nearest neighbors within some radius around each individual atom, taking into account PBC, and set the
+    pair index and distance between atom pairs appropriately. Additionally, arrays are padded because not all atoms
+    have the same number of neighbors. Lastly, atomic properties and the graph information are put into a
+    PyTorch geometric data object for use with PyTorch.
+
+    Args:
+        max_neigh (int): Maximum number of neighbors to consider.
+        radius (int or float): Cutoff radius in Angstroms to search for neighbors.
+        dummy_distance (int or float): A dummy distance to pad with, should be larger than radius cutoff.
+        dummy_index (int): A dummy index to pad with.
+        r_energy (bool): Return the energy with other properties. Default is False, so the energy will not be returned.
+        r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
+        r_distances (bool): Return the distances with other properties.
+        Default is False, so the distances will not be returned.
+
+    Attributes:
+        max_neigh (int): Maximum number of neighbors to consider.
+        radius (int or float): Cutoff radius in Angstoms to search for neighbors.
+        dummy_distance (int or float): A dummy distance to pad with.
+        dummy_index (int): A dummy index to pad with.
+        r_energy (bool): Return the energy with other properties. Default is False, so the energy will not be returned.
+        r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
+        r_distances (bool): Return the distances with other properties.
+        Default is False, so the distances will not be returned.
+    """
+
     def __init__(
-        self, max_neigh=12, radius=6, dummy_distance=7, dummy_index=-1
+        self,
+        max_neigh=12,
+        radius=6,
+        dummy_distance=7,
+        dummy_index=-1,
+        r_energy=False,
+        r_forces=False,
+        r_distances=False,
     ):
         self.max_neigh = max_neigh
         self.radius = radius
         self.dummy_distance = dummy_distance
         self.dummy_index = dummy_index
-        self.data_list = []
+        self.r_energy = r_energy
+        self.r_forces = r_forces
+        self.r_distances = r_distances
 
     def _get_neighbors_pymatgen(self, atoms):
-        self.atoms = atoms
-        self.struct = AseAtomsAdaptor.get_structure(self.atoms)
+        """Preforms nearest neighbor search and returns split neighbors indices and distances"""
+        struct = AseAtomsAdaptor.get_structure(atoms)
         # these return jagged arrays meaning certain atoms have more neighbors than others
-        _c_index, n_index, _images, n_distance = self.struct.get_neighbor_list(
+        _c_index, n_index, _images, n_distance = struct.get_neighbor_list(
             r=self.radius
         )
         # find the delimiters, the number of neighbors varies
         delim = np.where(np.diff(_c_index))[0] + 1
         # split the neighbor distance and neighbor index based on delimiter
-        self.split_n_distances = np.split(n_distance, delim)
-        self.split_n_index = np.split(n_index, delim)
+        split_n_index = np.split(n_index, delim)
+        split_n_distances = np.split(n_distance, delim)
+        return split_n_index, split_n_distances
 
-    def _pad_arrays(self):
+    def _pad_arrays(self, atoms, split_n_index, split_n_distances):
+        """Pads arrays to standardize the length"""
         # c_index is the center index, the atom to find the neighbors of
-        c_index = np.arange(0, len(self.atoms), 1)
+        c_index = np.arange(0, len(atoms), 1)
         # pad c_index
-        self.all_c_index = np.repeat(c_index, self.max_neigh)
+        pad_c_index = np.repeat(c_index, self.max_neigh)
         # add dummy variables to desired array length
-        self.all_n_index = np.full(
-            (len(self.atoms), self.max_neigh), self.dummy_index
-        )
-        self.all_distances = np.full(
-            (len(self.atoms), self.max_neigh), float(self.dummy_distance)
+        pad_n_index = np.full((len(atoms), self.max_neigh), self.dummy_index)
+        pad_distances = np.full(
+            (len(atoms), self.max_neigh), float(self.dummy_distance)
         )
 
-        # loop over the stucture and replace dummy variables where values exist
+        # loop over the stucture and replace dummy variables where values do not exist
         for i, (n_index, distances) in enumerate(
-            zip(self.split_n_index, self.split_n_distances)
+            zip(split_n_index, split_n_distances)
         ):
             if len(distances) == self.max_neigh:
-                self.all_n_index[i] = n_index
-                self.all_distances[i] = distances
+                pad_n_index[i] = n_index
+                pad_distances[i] = distances
                 continue
             # padding arrays
             elif len(distances) < self.max_neigh:
                 n_len = len(distances)
                 # potentially add if n_len == 0: print (increase radius)
-                self.all_n_index[i][:n_len] = n_index
-                self.all_distances[i][:n_len] = distances
+                pad_n_index[i][:n_len] = n_index
+                pad_distances[i][:n_len] = distances
                 continue
             # removing extra values so the length is equal to max_neigh
             # values are sorted by distance so only nearest neighbors are kept
             elif len(distances) > self.max_neigh:
                 # this sorts the list min -> max and returns the indicies
                 sorted_dist_i = np.argsort(distances)
-                self.all_n_index[i] = n_index[sorted_dist_i[: self.max_neigh]]
-                self.all_distances[i] = distances[
-                    sorted_dist_i[: self.max_neigh]
-                ]
+                pad_n_index[i] = n_index[sorted_dist_i[: self.max_neigh]]
+                pad_distances[i] = distances[sorted_dist_i[: self.max_neigh]]
+        return pad_c_index, pad_n_index, pad_distances
 
-    def _gen_features(self):
-        # expand distances in gaussian basis
-        gaussian_distances = expand_distance_gauss(self.all_distances)
-        # reshape the array
-        self.gauss_distances = gaussian_distances.reshape(
-            (
-                gaussian_distances.shape[0] * gaussian_distances.shape[1],
-                gaussian_distances.shape[2],
-            )
+    def _reshape_features(self, pad_c_index, pad_n_index, pad_distances):
+        """Processes the center and neighbor index and reshapes distances,
+        takes in np.arrays and returns torch tensors"""
+        # edge_index reshape, combine, and define in torch
+        pad_n_index = pad_n_index.reshape(
+            (pad_n_index.shape[0] * pad_n_index.shape[1],)
         )
-        # convert to torch tensor, gauss_distances == edge_attr
-        self.edge_attr = torch.FloatTensor(self.gauss_distances)
-        # One-hot encoding for atom type embeddings
-        embeddings = np.vstack(
-            [EMBEDDINGS[site.specie.number] for site in self.struct]
+        edge_index = torch.LongTensor([pad_c_index, pad_n_index])
+        # reshape distance to match indices
+        pad_distances = pad_distances.reshape(
+            (pad_distances.shape[0] * pad_distances.shape[1],)
         )
-        # conver to torch tensor
-        self.embeddings = torch.Tensor(embeddings)
-        # edge_index
-        self.all_n_index = self.all_n_index.reshape(
-            (self.all_n_index.shape[0] * self.all_n_index.shape[1],)
-        )
-        self.edge_index = torch.LongTensor(
-            [self.all_c_index, self.all_n_index]
-        )
-
-    def _clear(self):
-        self.atoms = None
-        self.struct = None
-        self.embedding = None
-        self.edge_index = None
-        self.edge_attr = None
+        all_distances = torch.Tensor(pad_distances)
+        return edge_index, all_distances
 
     def convert(
+        self, atoms,
+    ):
+        """Convert a single atomic stucture to a graph.
+
+        Args:
+            atoms (ase.atoms.Atoms): An ASE atoms object.
+
+        Returns:
+            data (torch_geometric.data.Data): A torch geometic data object with edge_index, positions, atomic_numbers,
+            and optionally, energy, forces, and distances.
+            Optional properties can included by setting r_property=True when constructing the class.
+        """
+
+        # run internal functions to get padded indices and distances
+        split_idx_dist = self._get_neighbors_pymatgen(atoms)
+        padded_idx_dist = self._pad_arrays(atoms, *split_idx_dist)
+        edge_index, all_distances = self._reshape_features(*padded_idx_dist)
+
+        # set the atomic numbers and positions
+        atomic_numbers = torch.Tensor(atoms.get_atomic_numbers())
+        positions = torch.Tensor(atoms.get_positions())
+
+        # put the minimum data in torch geometric data object
+        data = Data(
+            edge_index=edge_index,
+            pos=positions,
+            atomic_numbers=atomic_numbers,
+        )
+
+        # optionally include other properties
+        if self.r_energy:
+            energy = atoms.get_potential_energy(apply_constraint=False)
+            data.y = energy
+        if self.r_forces:
+            forces = torch.Tensor(atoms.get_forces(apply_constraint=False))
+            data.forces = forces
+        if self.r_distances:
+            data.distances = all_distances
+
+        return data
+
+    def convert_all(
         self,
         atoms_collection,
         processed_file_path=None,
         collate_and_save=False,
     ):
+        """Convert all atoms objects in a list or in an ase.db to graphs.
 
+        Args:
+            atoms_collection (list of ase.atoms.Atoms or ase.db.sqlite.SQLite3Database):
+            Either a list of ASE atoms objects or an ASE database.
+            processed_file_path (str):
+            A string of the path to where the processed file will be written. Default is None.
+            collate_and_save (bool): A boolean to collate and save or not. Default is False, so will not write a file.
+
+        Returns:
+            data_list (list of torch_geometric.data.Data):
+            A list of torch geometric data objects containing molecular graph info and properties.
+        """
+
+        # list for all data
+        data_list = []
         if isinstance(atoms_collection, list):
             atoms_iter = atoms_collection
         elif isinstance(atoms_collection, ase.db.sqlite.SQLite3Database):
@@ -132,55 +209,11 @@ class AtomsToGraphs:
             # check if atoms is an ASE Atoms object this for the ase.db case
             if not isinstance(atoms, ase.atoms.Atoms):
                 atoms = atoms.toatoms()
-            energy = atoms.get_potential_energy()
-            self._get_neighbors_pymatgen(atoms)
-            self._pad_arrays()
-            self._gen_features()
-
-            # put data in torch geometric format
-            data = Data(
-                x=self.embeddings,
-                edge_index=self.edge_index,
-                edge_attr=self.edge_attr,
-                y=energy,
-                pos=None,
-            )
-            self.data_list.append(data)
-            # clears temp self variables
-            self._clear()
+            data = self.convert(atoms)
+            data_list.append(data)
 
         if collate_and_save:
-            data, slices = collate(self.data_list)
+            data, slices = collate(data_list)
             torch.save((data, slices), processed_file_path)
 
-
-def expand_distance_gauss(distances, dmin=0, dmax=6, step=0.2, var=None):
-    """
-    Expands the distance by Gaussian basis.
-    Unit: angstrom
-    """
-    """
-    Parameters
-    ----------
-    distance: np.array shape n-d array
-      A distance matrix of any shape
-    dmin: float
-      Minimum interatomic distance
-    dmax: float
-      Maximum interatomic distance
-    step: float
-      Step size for the Gaussian filter
-
-    Returns
-    -------
-    expanded_distance: shape (n+1)-d array
-      Expanded distance matrix with the last dimension of length
-      len(self.filter)
-    """
-    assert dmin < dmax
-    assert dmax - dmin > step
-    _filter = np.arange(dmin, dmax + step, step)
-    if var is None:
-        var = step
-
-    return np.exp(-((distances[..., np.newaxis] - _filter) ** 2) / var ** 2)
+        return data_list
