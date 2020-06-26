@@ -226,8 +226,9 @@ class BaseTrainer:
             raise NotImplementedError
 
         self.model = registry.get_model_class(self.config["model"])(
-            # self.train_loader.dataset[0].x.shape[-1],
-            128,
+            self.train_loader.dataset[0].x.shape[-1]
+            if hasattr(self.train_loader.dataset[0], "x")
+            else None,
             bond_feat_dim,
             self.num_targets,
             **self.config["model_attributes"],

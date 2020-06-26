@@ -151,8 +151,6 @@ class AtomicFeatureGenerator:
         self.max_num_nbr, self.radius = max_num_nbr, radius
         self.gdf = GaussianDistance(dmin=dmin, dmax=self.radius, step=step)
         self.num = start
-        self.dummy_index = -1
-        self.dummy_distance = 7.0
 
     def __iter__(self):
         return self
@@ -286,5 +284,5 @@ class GaussianDistance:
           len(self.filter)
         """
         return np.exp(
-            -((distances[..., np.newaxis] - self.filter) ** 2) / self.var ** 2
+            -(distances[..., np.newaxis] - self.filter) ** 2 / self.var ** 2
         )

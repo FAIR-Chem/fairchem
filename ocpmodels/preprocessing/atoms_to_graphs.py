@@ -6,7 +6,6 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from torch_geometric.data import Data
 
 from ocpmodels.common.utils import collate
-from ocpmodels.datasets.elemental_embeddings import EMBEDDINGS
 
 try:
     shell = get_ipython().__class__.__name__
@@ -169,7 +168,7 @@ class AtomsToGraphs:
             data.y = energy
         if self.r_forces:
             forces = torch.Tensor(atoms.get_forces(apply_constraint=False))
-            data.forces = forces
+            data.force = forces
         if self.r_distances:
             data.distances = all_distances
 

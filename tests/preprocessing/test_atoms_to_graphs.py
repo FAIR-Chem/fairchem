@@ -1,14 +1,23 @@
+import os
+
+import ase
 import numpy as np
+import pytest
 from ase.io import read
 from pymatgen.io.ase import AseAtomsAdaptor
 
-import pytest
-from atoms_to_graphs import AtomsToGraphs
+from ocpmodels.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")
 def atoms_to_graphs_internals(request):
-    atoms = read("test_atoms.json", index=0, format="json")
+    atoms = read(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "test_atoms.json"
+        ),
+        index=0,
+        format="json",
+    )
     test_object = AtomsToGraphs(
         max_neigh=12,
         radius=6,
@@ -102,7 +111,7 @@ class TestAtomsToGraphs:
         np.testing.assert_equal(act_energy, test_energy)
         # forces
         act_forces = self.atoms.get_forces(apply_constraint=False)
-        forces = data.forces.numpy()
+        forces = data.force.numpy()
         np.testing.assert_allclose(act_forces, forces)
         # distances
         act_distances_shape = (len(self.atoms) * self.atg.max_neigh,)
@@ -133,7 +142,7 @@ class TestAtomsToGraphs:
         np.testing.assert_equal(act_energy, test_energy)
         # forces
         act_forces = self.atoms.get_forces(apply_constraint=False)
-        forces = data_list[0].forces.numpy()
+        forces = data_list[0].force.numpy()
         np.testing.assert_allclose(act_forces, forces)
         # distances
         act_distances_shape = (len(self.atoms) * self.atg.max_neigh,)
