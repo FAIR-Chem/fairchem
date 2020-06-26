@@ -8,6 +8,7 @@ from torch_geometric.data import Batch, Data, Dataset
 
 from ocpmodels.common.registry import registry
 from ocpmodels.datasets.trajectory import TrajectoryFeatureGenerator
+from ocpmodels.preprocessing import AtomsToGraphs
 
 
 @registry.register_dataset("trajectory_folder")
@@ -18,8 +19,19 @@ class TrajectoryFolderDataset(Dataset):
         )
 
         self.config = config
+
         with open(os.path.join(config["src"], config["traj_paths"]), "r") as f:
             self.raw_traj_files = f.read().splitlines()
+
+        self.a2g = AtomsToGraphs(
+            max_neigh=self.config.get("max_neigh", 12),
+            radius=self.config.get("radius", 6),
+            dummy_distance=self.config.get("dummy_distance", 7),
+            dummy_index=self.config.get("dummy_index", -1),
+            r_energy=self.config.get("is_training", False),
+            r_forces=self.config.get("is_training", False),
+            r_distances=False,
+        )
 
     def len(self):
         return len(self.raw_traj_files)
@@ -38,38 +50,9 @@ class TrajectoryFolderDataset(Dataset):
             self.config.get("minp", 0.0),
             self.config.get("maxp", 1.0),
         )
-        feature_generator = TrajectoryFeatureGenerator(traj)
 
-        # Extract torch_geometric.data.Data objects for each step.
-        data_list = []
-        for i, (_, _, index, positions, atomic_numbers) in enumerate(
-            feature_generator
-        ):
-            edge_index = [[], []]
-
-            # edge index.
-            for j in range(index.shape[0]):
-                for k in range(index.shape[1]):
-                    edge_index[0].append(j)
-                    edge_index[1].append(index[j, k])
-            edge_index = torch.LongTensor(edge_index)
-
-            data_object = Data(
-                atomic_numbers=atomic_numbers,
-                pos=positions,
-                natoms=torch.tensor([positions.shape[0]]),
-                edge_index=edge_index,
-            )
-
-            # energy, forces.
-            p_energy, force = None, None
-            if self.config["is_training"]:
-                p_energy = traj[i].get_potential_energy(apply_constraint=False)
-                force = traj[i].get_forces(apply_constraint=False)
-                data_object.y = p_energy
-                data_object.force = torch.tensor(force)
-
-            data_list.append(data_object)
+        # construct graph.
+        data_list = self.a2g.convert_all(traj, disable_tqdm=True)
 
         return data_list
 

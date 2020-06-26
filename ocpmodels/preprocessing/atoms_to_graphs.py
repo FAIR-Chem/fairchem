@@ -1,11 +1,12 @@
-import ase.db
+import ase.db.sqlite
+import ase.io.trajectory
 import numpy as np
-from pymatgen.io.ase import AseAtomsAdaptor
-
 import torch
+from pymatgen.io.ase import AseAtomsAdaptor
+from torch_geometric.data import Data
+
 from ocpmodels.common.utils import collate
 from ocpmodels.datasets.elemental_embeddings import EMBEDDINGS
-from torch_geometric.data import Data
 
 try:
     shell = get_ipython().__class__.__name__
@@ -159,6 +160,7 @@ class AtomsToGraphs:
             edge_index=edge_index,
             pos=positions,
             atomic_numbers=atomic_numbers,
+            natoms=positions.shape[0],
         )
 
         # optionally include other properties
@@ -178,6 +180,7 @@ class AtomsToGraphs:
         atoms_collection,
         processed_file_path=None,
         collate_and_save=False,
+        disable_tqdm=False,
     ):
         """Convert all atoms objects in a list or in an ase.db to graphs.
 
@@ -199,12 +202,19 @@ class AtomsToGraphs:
             atoms_iter = atoms_collection
         elif isinstance(atoms_collection, ase.db.sqlite.SQLite3Database):
             atoms_iter = atoms_collection.select()
+        elif isinstance(
+            atoms_collection, ase.io.trajectory.SlicedTrajectory
+        ) or isinstance(atoms_collection, ase.io.trajectory.TrajectoryReader):
+            atoms_iter = atoms_collection
+        else:
+            raise NotImplementedError
 
         for atoms in tqdm(
             atoms_iter,
             desc="converting ASE atoms collection to graphs",
             total=len(atoms_collection),
             unit=" systems",
+            disable=disable_tqdm,
         ):
             # check if atoms is an ASE Atoms object this for the ase.db case
             if not isinstance(atoms, ase.atoms.Atoms):
