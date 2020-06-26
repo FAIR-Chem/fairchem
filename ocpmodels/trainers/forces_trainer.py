@@ -1,7 +1,5 @@
 import datetime
 import os
-import time
-import warnings
 
 import ase.io
 import torch
