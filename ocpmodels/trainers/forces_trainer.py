@@ -65,7 +65,8 @@ class ForcesTrainer(BaseTrainer):
 
         if isinstance(dataset, list):
             self.config["dataset"] = dataset[0]
-            self.config["val_dataset"] = dataset[1]
+            if len(dataset) > 1:
+                self.config["val_dataset"] = dataset[1]
         else:
             self.config["dataset"] = dataset
 
@@ -86,13 +87,10 @@ class ForcesTrainer(BaseTrainer):
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
 
-        if "val_dataset" in self.config:
+        if self.config["task"]["dataset"] == "trajectory_lmdb":
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
-            self.val_dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
-            )(self.config["val_dataset"])
 
             self.train_loader = DataLoader(
                 self.train_dataset,
@@ -101,14 +99,20 @@ class ForcesTrainer(BaseTrainer):
                 collate_fn=data_list_collater,
                 num_workers=self.config["optim"]["num_workers"],
             )
-            self.val_loader = DataLoader(
-                self.val_dataset,
-                batch_size=1,
-                shuffle=False,
-                collate_fn=data_list_collater,
-                num_workers=self.config["optim"]["num_workers"],
-            )
-            self.test_loader = None
+
+            self.val_loader = self.test_loader = None
+
+            if "val_dataset" in self.config:
+                self.val_dataset = registry.get_dataset_class(
+                    self.config["task"]["dataset"]
+                )(self.config["val_dataset"])
+                self.val_loader = DataLoader(
+                    self.val_dataset,
+                    batch_size=1,
+                    shuffle=False,
+                    collate_fn=data_list_collater,
+                    num_workers=self.config["optim"]["num_workers"],
+                )
         else:
             self.dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
@@ -126,20 +130,20 @@ class ForcesTrainer(BaseTrainer):
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
-        if self.config["dataset"].get("normalize_labels", True):
-            if "target_mean" in self.config["dataset"]:
-                self.normalizers["target"] = Normalizer(
-                    mean=self.config["dataset"]["target_mean"],
-                    std=self.config["dataset"]["target_std"],
-                    device=self.device,
-                )
-            else:
-                self.normalizers["target"] = Normalizer(
-                    tensor=self.train_loader.dataset.data.y[
-                        self.train_loader.dataset.__indices__
-                    ],
-                    device=self.device,
-                )
+        assert "normalize_labels" in self.config["dataset"]
+        if "target_mean" in self.config["dataset"]:
+            self.normalizers["target"] = Normalizer(
+                mean=self.config["dataset"]["target_mean"],
+                std=self.config["dataset"]["target_std"],
+                device=self.device,
+            )
+        else:
+            self.normalizers["target"] = Normalizer(
+                tensor=self.train_loader.dataset.data.y[
+                    self.train_loader.dataset.__indices__
+                ],
+                device=self.device,
+            )
 
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
