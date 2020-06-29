@@ -1,5 +1,6 @@
-"""Reads a folder of ASE Trajectory files and saves binary files with extracted
-features. Writes one binary file for each num-trajs-per-chunk trajectories."""
+"""
+Reads a folder of Trajectory files and saves an LMDB with extracted features.
+"""
 
 import argparse
 import os
