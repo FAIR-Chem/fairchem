@@ -217,7 +217,7 @@ class BaseTrainer:
         elif self.config["task"]["dataset"] in [
             "gasdb",
             "trajectory",
-            "trajectory_folder",
+            "trajectory_lmdb",
         ]:
             bond_feat_dim = self.config["model_attributes"].get(
                 "num_gaussians", 50
@@ -228,6 +228,7 @@ class BaseTrainer:
         self.model = registry.get_model_class(self.config["model"])(
             self.train_loader.dataset[0].x.shape[-1]
             if hasattr(self.train_loader.dataset[0], "x")
+            and self.train_loader.dataset[0].x is not None
             else None,
             bond_feat_dim,
             self.num_targets,

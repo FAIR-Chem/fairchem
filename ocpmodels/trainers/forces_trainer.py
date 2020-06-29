@@ -13,7 +13,7 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.datasets import (
     TrajectoryDataset,
-    TrajectoryFolderDataset,
+    TrajectoryLmdbDataset,
     data_list_collater,
 )
 from ocpmodels.modules.normalizer import Normalizer
