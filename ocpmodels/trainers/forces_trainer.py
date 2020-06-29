@@ -108,7 +108,7 @@ class ForcesTrainer(BaseTrainer):
                 )(self.config["val_dataset"])
                 self.val_loader = DataLoader(
                     self.val_dataset,
-                    batch_size=self.config["optim"]["batch_size"],
+                    self.config["optim"].get("eval_batch_size", 64),
                     shuffle=False,
                     collate_fn=data_list_collater,
                     num_workers=self.config["optim"]["num_workers"],
