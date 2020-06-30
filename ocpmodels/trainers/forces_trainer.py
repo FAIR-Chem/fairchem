@@ -130,20 +130,20 @@ class ForcesTrainer(BaseTrainer):
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
-        assert "normalize_labels" in self.config["dataset"]
-        if "target_mean" in self.config["dataset"]:
-            self.normalizers["target"] = Normalizer(
-                mean=self.config["dataset"]["target_mean"],
-                std=self.config["dataset"]["target_std"],
-                device=self.device,
-            )
-        else:
-            self.normalizers["target"] = Normalizer(
-                tensor=self.train_loader.dataset.data.y[
-                    self.train_loader.dataset.__indices__
-                ],
-                device=self.device,
-            )
+        if self.config["dataset"].get("normalize_labels", True):
+            if "target_mean" in self.config["dataset"]:
+                self.normalizers["target"] = Normalizer(
+                    mean=self.config["dataset"]["target_mean"],
+                    std=self.config["dataset"]["target_std"],
+                    device=self.device,
+                )
+            else:
+                self.normalizers["target"] = Normalizer(
+                    tensor=self.train_loader.dataset.data.y[
+                        self.train_loader.dataset.__indices__
+                    ],
+                    device=self.device,
+                )
 
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
