@@ -214,7 +214,11 @@ class BaseTrainer:
             "xie_grossman_mat_proj",
         ]:
             bond_feat_dim = self.train_loader.dataset[0].edge_attr.shape[-1]
-        elif self.config["task"]["dataset"] in ["gasdb", "trajectory"]:
+        elif self.config["task"]["dataset"] in [
+            "gasdb",
+            "trajectory",
+            "trajectory_lmdb",
+        ]:
             bond_feat_dim = self.config["model_attributes"].get(
                 "num_gaussians", 50
             )
@@ -222,7 +226,10 @@ class BaseTrainer:
             raise NotImplementedError
 
         self.model = registry.get_model_class(self.config["model"])(
-            self.train_loader.dataset[0].x.shape[-1],
+            self.train_loader.dataset[0].x.shape[-1]
+            if hasattr(self.train_loader.dataset[0], "x")
+            and self.train_loader.dataset[0].x is not None
+            else None,
             bond_feat_dim,
             self.num_targets,
             **self.config["model_attributes"],
@@ -433,7 +440,6 @@ class BaseTrainer:
                 * torch.autograd.grad(
                     output,
                     inp_for_grad,
-                    # TODO(abhshkdz): check correctness. should this be `output`?
                     grad_outputs=torch.ones_like(output),
                     create_graph=True,
                     retain_graph=True,
@@ -522,6 +528,10 @@ class BaseTrainer:
                 self.config["optim"].get("force_coefficient", 30)
                 * self.criterion(out["force_output"], grad_target_normed)
             )
+
+        # Sanity check to make sure the compute graph is correct.
+        for lc in loss:
+            assert hasattr(lc, "grad_fn")
 
         loss = sum(loss)
         return loss

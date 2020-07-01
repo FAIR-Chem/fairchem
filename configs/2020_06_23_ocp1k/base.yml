@@ -1,0 +1,21 @@
+trainer: forces
+
+dataset:
+  - src: data/data/2020_06_23_fbdft_1k/train/data.lmdb
+    normalize_labels: True
+    target_mean: 0.7369207149473669
+    target_std: 1.541133966241752
+    grad_target_mean: 0.0
+    grad_target_std: 1.541133966241752
+  - src: data/data/2020_06_23_fbdft_1k/val/data.lmdb
+
+logger: tensorboard
+
+task:
+  dataset: trajectory_lmdb
+  description: "Regressing to energies and forces for DFT trajectories from OCP"
+  type: regression
+  metric: mae
+  labels:
+    - potential energy
+  grad_input: atomic forces

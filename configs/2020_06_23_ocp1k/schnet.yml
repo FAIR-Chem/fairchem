@@ -1,0 +1,24 @@
+includes:
+- configs/2020_06_23_ocp1k/base.yml
+
+model:
+  name: schnet
+  hidden_channels: 128
+  num_filters: 128
+  num_interactions: 3
+  num_gaussians: 200
+  cutoff: 6.0
+
+optim:
+  batch_size: 128
+  eval_batch_size: 16
+  num_workers: 16
+  lr_initial: 0.001
+  lr_gamma: 0.1
+  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+    - 15
+    - 20
+  warmup_epochs: 10
+  warmup_factor: 0.2
+  max_epochs: 50
+  force_coefficient: 10
