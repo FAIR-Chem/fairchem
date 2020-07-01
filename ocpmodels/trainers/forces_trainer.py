@@ -1,17 +1,21 @@
 import datetime
 import os
-import warnings
 
 import ase.io
 import torch
 import torch_geometric
 import yaml
+from torch.utils.data import DataLoader
 
 from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
-from ocpmodels.datasets import *
+from ocpmodels.datasets import (
+    TrajectoryDataset,
+    TrajectoryLmdbDataset,
+    data_list_collater,
+)
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
@@ -42,7 +46,6 @@ class ForcesTrainer(BaseTrainer):
 
         self.config = {
             "task": task,
-            "dataset": dataset,
             "model": model.pop("name"),
             "model_attributes": model,
             "optim": optimizer,
@@ -60,6 +63,13 @@ class ForcesTrainer(BaseTrainer):
             },
         }
 
+        if isinstance(dataset, list):
+            self.config["dataset"] = dataset[0]
+            if len(dataset) > 1:
+                self.config["val_dataset"] = dataset[1]
+        else:
+            self.config["dataset"] = dataset
+
         if not is_debug:
             os.makedirs(self.config["cmd"]["checkpoint_dir"])
             os.makedirs(self.config["cmd"]["results_dir"])
@@ -76,42 +86,83 @@ class ForcesTrainer(BaseTrainer):
 
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
-        self.dataset = registry.get_dataset_class(
-            self.config["task"]["dataset"]
-        )(self.config["dataset"])
-        num_targets = 1
 
-        self.num_targets = num_targets
-        (
-            self.train_loader,
-            self.val_loader,
-            self.test_loader,
-        ) = self.dataset.get_dataloaders(
-            batch_size=self.config["optim"]["batch_size"]
-        )
+        if self.config["task"]["dataset"] == "trajectory_lmdb":
+            self.train_dataset = registry.get_dataset_class(
+                self.config["task"]["dataset"]
+            )(self.config["dataset"])
+
+            self.train_loader = DataLoader(
+                self.train_dataset,
+                batch_size=self.config["optim"]["batch_size"],
+                shuffle=True,
+                collate_fn=data_list_collater,
+                num_workers=self.config["optim"]["num_workers"],
+            )
+
+            self.val_loader = self.test_loader = None
+
+            if "val_dataset" in self.config:
+                self.val_dataset = registry.get_dataset_class(
+                    self.config["task"]["dataset"]
+                )(self.config["val_dataset"])
+                self.val_loader = DataLoader(
+                    self.val_dataset,
+                    self.config["optim"].get("eval_batch_size", 64),
+                    shuffle=False,
+                    collate_fn=data_list_collater,
+                    num_workers=self.config["optim"]["num_workers"],
+                )
+        else:
+            self.dataset = registry.get_dataset_class(
+                self.config["task"]["dataset"]
+            )(self.config["dataset"])
+            (
+                self.train_loader,
+                self.val_loader,
+                self.test_loader,
+            ) = self.dataset.get_dataloaders(
+                batch_size=self.config["optim"]["batch_size"]
+            )
+
+        self.num_targets = 1
 
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
         if self.config["dataset"].get("normalize_labels", True):
-            self.normalizers["target"] = Normalizer(
-                self.train_loader.dataset.data.y[
-                    self.train_loader.dataset.__indices__
-                ],
-                self.device,
-            )
+            if "target_mean" in self.config["dataset"]:
+                self.normalizers["target"] = Normalizer(
+                    mean=self.config["dataset"]["target_mean"],
+                    std=self.config["dataset"]["target_std"],
+                    device=self.device,
+                )
+            else:
+                self.normalizers["target"] = Normalizer(
+                    tensor=self.train_loader.dataset.data.y[
+                        self.train_loader.dataset.__indices__
+                    ],
+                    device=self.device,
+                )
 
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
         if "grad_input" in self.config["task"]:
             if self.config["dataset"].get("normalize_labels", True):
-                self.normalizers["grad_target"] = Normalizer(
-                    self.train_loader.dataset.data.y[
-                        self.train_loader.dataset.__indices__
-                    ],
-                    self.device,
-                )
-                self.normalizers["grad_target"].mean.fill_(0)
+                if "target_mean" in self.config["dataset"]:
+                    self.normalizers["grad_target"] = Normalizer(
+                        mean=self.config["dataset"]["grad_target_mean"],
+                        std=self.config["dataset"]["grad_target_std"],
+                        device=self.device,
+                    )
+                else:
+                    self.normalizers["grad_target"] = Normalizer(
+                        tensor=self.train_loader.dataset.data.y[
+                            self.train_loader.dataset.__indices__
+                        ],
+                        device=self.device,
+                    )
+                    self.normalizers["grad_target"].mean.fill_(0)
 
         if self.is_vis and self.config["task"]["dataset"] != "qm9":
             # Plot label distribution.

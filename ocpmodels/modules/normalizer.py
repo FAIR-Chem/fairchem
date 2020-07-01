@@ -4,10 +4,22 @@ import torch
 class Normalizer(object):
     """Normalize a Tensor and restore it later. """
 
-    def __init__(self, tensor, device):
+    def __init__(self, tensor=None, mean=None, std=None, device=None):
         """tensor is taken as a sample to calculate the mean and std"""
-        self.mean = torch.mean(tensor, dim=0).to(device)
-        self.std = torch.std(tensor, dim=0).to(device)
+        if tensor is None and mean is None:
+            return
+
+        if device is None:
+            device = "cpu"
+
+        if tensor is not None:
+            self.mean = torch.mean(tensor, dim=0).to(device)
+            self.std = torch.std(tensor, dim=0).to(device)
+            return
+
+        if mean is not None and std is not None:
+            self.mean = torch.tensor(mean).to(device)
+            self.std = torch.tensor(std).to(device)
 
     def norm(self, tensor):
         return (tensor - self.mean) / self.std
