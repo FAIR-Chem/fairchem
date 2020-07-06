@@ -1,5 +1,4 @@
 import os
-import sys
 
 import ase
 import numpy as np
