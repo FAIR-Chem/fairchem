@@ -147,36 +147,6 @@ class TrajectoryDataset(BaseDataset):
 
         return train_loader, val_loader, test_loader
 
-    # This is primarily meant for evaluation, and so doesn't return targets.
-    @staticmethod
-    def ase_atoms_to_batch(atoms):
-        generator = AtomicFeatureGenerator(None).extract_atom_features(atoms)
-        embedding, distance, index, positions, atomic_numbers = generator
-        edge_index = [[], []]
-        edge_attr = torch.FloatTensor(
-            index.shape[0] * index.shape[1], distance.shape[-1]
-        )
-        for j in range(index.shape[0]):
-            for k in range(index.shape[1]):
-                edge_index[0].append(j)
-                edge_index[1].append(index[j, k])
-                edge_attr[j * index.shape[1] + k] = distance[j, k].clone()
-        edge_index = torch.LongTensor(edge_index)
-        data = Batch.from_data_list(
-            [
-                Data(
-                    x=embedding,
-                    edge_index=edge_index,
-                    edge_attr=edge_attr,
-                    pos=positions,
-                    atomic_numbers=atomic_numbers,
-                    natoms=torch.tensor([positions.shape[0]]),
-                )
-            ]
-        )
-
-        return data
-
 
 class TrajectoryFeatureGenerator(AtomicFeatureGenerator):
     """
