@@ -11,6 +11,7 @@ from ase.optimize.optimize import Optimizer
 
 from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
+from ocpmodels.datasets.trajectory import TrajectoryDataset
 
 
 class OCPCalculator(Calculator):
@@ -45,11 +46,8 @@ class OCPCalculator(Calculator):
 
     def calculate(self, atoms, properties, system_changes):
         Calculator.calculate(self, atoms, properties, system_changes)
-        # TODO: do we want to hash the atoms object to store preprocessed data,
-        # or discard entirely for each step. Storage issues likely with little
-        # gain.
-        batch = self.trainer.dataset.ase_atoms_to_batch(atoms)
-        predictions = self.trainer.predict(batch, verbose=False)
+        batch = TrajectoryDataset.ase_atoms_to_batch(atoms)
+        predictions = self.trainer.predict(batch)
 
         self.results["energy"] = predictions["energy"][0]
         self.results["forces"] = predictions["forces"][0]

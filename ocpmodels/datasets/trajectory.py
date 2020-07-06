@@ -1,4 +1,5 @@
 import os
+import sys
 
 import ase
 import numpy as np
@@ -18,18 +19,11 @@ from ocpmodels.datasets.gasdb import AtomicFeatureGenerator, GaussianDistance
 @registry.register_dataset("trajectory")
 class TrajectoryDataset(BaseDataset):
     def __init__(
-        self,
-        config,
-        transform=None,
-        pre_transform=None,
-        mode="train",
-        verbose=True,
+        self, config, transform=None, pre_transform=None,
     ):
         super(BaseDataset, self).__init__(config, transform, pre_transform)
 
         self.config = config
-        self.mode = mode
-        self.verbose = verbose
 
         if (
             config.get("override_process", False)
@@ -60,12 +54,11 @@ class TrajectoryDataset(BaseDataset):
         ]
 
     def process(self):
-        if self.verbose:
-            print(
-                "### Preprocessing atoms objects from:  {}".format(
-                    self.raw_file_names[0]
-                )
+        print(
+            "### Preprocessing atoms objects from:  {}".format(
+                self.raw_file_names[0]
             )
+        )
         traj = Trajectory(self.raw_file_names[0])
         feature_generator = TrajectoryFeatureGenerator(traj)
 
@@ -94,7 +87,6 @@ class TrajectoryDataset(BaseDataset):
             desc="preprocessing atomic features",
             total=len(traj),
             unit="structure",
-            disable=not self.verbose,
         ):
             edge_index = [[], []]
             edge_attr = torch.FloatTensor(
@@ -122,10 +114,6 @@ class TrajectoryDataset(BaseDataset):
         torch.save((self.data, self.slices), self.processed_file_names[0])
 
     def get_dataloaders(self, batch_size=None, shuffle=True):
-        if self.mode != "train":
-            # If not train, we don't want to shuffle batches around.
-            return DataLoader(self, batch_size=batch_size, shuffle=False)
-
         assert batch_size is not None
         assert self.train_size + self.val_size + self.test_size <= len(self)
 
@@ -161,7 +149,8 @@ class TrajectoryDataset(BaseDataset):
         return train_loader, val_loader, test_loader
 
     # This is primarily meant for evaluation, and so doesn't return targets.
-    def ase_atoms_to_batch(self, atoms):
+    @staticmethod
+    def ase_atoms_to_batch(atoms):
         generator = AtomicFeatureGenerator(None).extract_atom_features(atoms)
         embedding, distance, index, positions, atomic_numbers = generator
         edge_index = [[], []]
