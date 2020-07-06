@@ -189,17 +189,29 @@ class ForcesTrainer(BaseTrainer):
             self.logger.log_plots(plots)
 
     # Takes in a new data source and generates predictions on it.
-    def predict(self, dataset, batch_size=32, verbose=True):
+    def predict(self, dataset, batch_size=32):
         if isinstance(dataset, dict):
-            if verbose:
+            if self.config["task"]["dataset"] == "trajectory_lmdb":
                 print(
                     "### Generating predictions on {}.".format(dataset["src"])
+                )
+            else:
+                print(
+                    "### Generating predictions on {}.".format(
+                        dataset["src"] + dataset["traj"]
+                    )
                 )
 
             dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
-            )(dataset, mode="predict", verbose=verbose)
-            data_loader = dataset.get_dataloaders(batch_size=batch_size)
+            )(dataset)
+
+            data_loader = DataLoader(
+                dataset,
+                batch_size=batch_size,
+                shuffle=False,
+                collate_fn=data_list_collater,
+            )
         elif isinstance(dataset, torch_geometric.data.Batch):
             data_loader = [dataset]
         else:
