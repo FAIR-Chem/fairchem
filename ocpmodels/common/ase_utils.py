@@ -8,9 +8,11 @@ from ase import Atoms
 from ase.calculators.calculator import Calculator
 from ase.optimize import BFGS
 from ase.optimize.optimize import Optimizer
+from torch_geometric.data import Batch
 
 from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
+from ocpmodels.preprocessing import AtomsToGraphs
 
 
 class OCPCalculator(Calculator):
@@ -26,6 +28,15 @@ class OCPCalculator(Calculator):
         """
         Calculator.__init__(self)
         self.trainer = trainer
+        self.a2g = AtomsToGraphs(
+            max_neigh=12,
+            radius=6,
+            dummy_distance=7,
+            dummy_index=-1,
+            r_energy=False,
+            r_forces=False,
+            r_distances=False,
+        )
 
     def train(self):
         self.trainer.train()
@@ -45,11 +56,9 @@ class OCPCalculator(Calculator):
 
     def calculate(self, atoms, properties, system_changes):
         Calculator.calculate(self, atoms, properties, system_changes)
-        # TODO: do we want to hash the atoms object to store preprocessed data,
-        # or discard entirely for each step. Storage issues likely with little
-        # gain.
-        batch = self.trainer.dataset.ase_atoms_to_batch(atoms)
-        predictions = self.trainer.predict(batch, verbose=False)
+        data_object = self.a2g.convert(atoms)
+        batch = Batch.from_data_list([data_object])
+        predictions = self.trainer.predict(batch)
 
         self.results["energy"] = predictions["energy"][0]
         self.results["forces"] = predictions["forces"][0]
