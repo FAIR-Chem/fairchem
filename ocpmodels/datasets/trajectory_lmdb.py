@@ -29,6 +29,7 @@ class TrajectoryLmdbDataset(Dataset):
         ]
 
         self.inds = []
+        self.transform = None
 
     def __len__(self):
         return len(self._keys)
@@ -36,6 +37,7 @@ class TrajectoryLmdbDataset(Dataset):
     def __getitem__(self, idx):
         datapoint_pickled = self.db_txn.get(self._keys[idx])
         data_object = pickle.loads(datapoint_pickled)
+        data_object = data_object if self.transform is None else self.transform(data_object)
         self.inds.append(idx)
         return data_object
 
