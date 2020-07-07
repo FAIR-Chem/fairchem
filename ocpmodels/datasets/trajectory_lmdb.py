@@ -11,7 +11,7 @@ from ocpmodels.common.registry import registry
 
 @registry.register_dataset("trajectory_lmdb")
 class TrajectoryLmdbDataset(Dataset):
-    def __init__(self, config):
+    def __init__(self, config, transform=None):
         super(TrajectoryLmdbDataset, self).__init__()
 
         self.config = config
@@ -29,6 +29,7 @@ class TrajectoryLmdbDataset(Dataset):
         ]
 
         self.inds = []
+        self.transform = transform
 
     def __len__(self):
         return len(self._keys)
@@ -36,6 +37,11 @@ class TrajectoryLmdbDataset(Dataset):
     def __getitem__(self, idx):
         datapoint_pickled = self.db_txn.get(self._keys[idx])
         data_object = pickle.loads(datapoint_pickled)
+        data_object = (
+            data_object
+            if self.transform is None
+            else self.transform(data_object)
+        )
         self.inds.append(idx)
         return data_object
 
