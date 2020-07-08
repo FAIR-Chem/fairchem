@@ -71,8 +71,11 @@ if __name__ == "__main__":
 
     # Extract features.
     idx = 0
-    for i in tqdm(range(num_trajectories)):
-        dl = read_trajectory_and_extract_features(a2g, raw_traj_files[i])
+    for i in tqdm(range(62054, num_trajectories)):
+        try:
+            dl = read_trajectory_and_extract_features(a2g, raw_traj_files[i])
+        except NotImplementedError:
+            continue
         for do in dl:
             txn = db.begin(write=True)
             txn.put(f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1))
