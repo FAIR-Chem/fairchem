@@ -1,13 +1,13 @@
 trainer: forces
 
 dataset:
-  - src: data/data/2020_06_23_fbdft_1k/train/data.lmdb
+  - src: data/data/2020_07_07_ocp_1k_original_fixed_correction/train/data.lmdb
     normalize_labels: True
-    target_mean: 0.7369207149473669
-    target_std: 1.541133966241752
+    target_mean: -0.7879174947738647
+    target_std: 2.895169973373413
     grad_target_mean: 0.0
-    grad_target_std: 1.541133966241752
-  - src: data/data/2020_06_23_fbdft_1k/val/data.lmdb
+    grad_target_std: 2.895169973373413
+  - src: data/data/2020_07_07_ocp_1k_original_fixed_correction/val/data.lmdb
 
 logger: tensorboard
 

@@ -75,12 +75,16 @@ class AtomsToGraphs:
         )
         # find the delimiters, the number of neighbors varies
         delim = np.where(np.diff(_c_index))[0] + 1
-        # split the neighbor distance and neighbor index based on delimiter
+        # split the neighbor index, distance, lattice offsets based on delimiter
         split_n_index = np.split(n_index, delim)
         split_n_distances = np.split(n_distance, delim)
-        return split_n_index, split_n_distances
+        split_offsets = np.split(_images, delim)
 
-    def _pad_arrays(self, atoms, split_n_index, split_n_distances):
+        return split_n_index, split_n_distances, split_offsets
+
+    def _pad_arrays(
+        self, atoms, split_n_index, split_n_distances, split_offsets
+    ):
         """Pads arrays to standardize the length"""
         # c_index is the center index, the atom to find the neighbors of
         c_index = np.arange(0, len(atoms), 1)
@@ -91,14 +95,16 @@ class AtomsToGraphs:
         pad_distances = np.full(
             (len(atoms), self.max_neigh), float(self.dummy_distance)
         )
+        pad_offsets = np.zeros((len(atoms), self.max_neigh, 3), dtype=np.int)
 
-        # loop over the stucture and replace dummy variables where values do not exist
-        for i, (n_index, distances) in enumerate(
-            zip(split_n_index, split_n_distances)
+        # loop over the stucture and replace dummy variables where values exist
+        for i, (n_index, distances, offsets) in enumerate(
+            zip(split_n_index, split_n_distances, split_offsets)
         ):
             if len(distances) == self.max_neigh:
                 pad_n_index[i] = n_index
                 pad_distances[i] = distances
+                pad_offsets[i] = offsets
                 continue
             # padding arrays
             elif len(distances) < self.max_neigh:
@@ -106,17 +112,21 @@ class AtomsToGraphs:
                 # potentially add if n_len == 0: print (increase radius)
                 pad_n_index[i][:n_len] = n_index
                 pad_distances[i][:n_len] = distances
+                pad_offsets[i][:n_len] = offsets
                 continue
             # removing extra values so the length is equal to max_neigh
             # values are sorted by distance so only nearest neighbors are kept
             elif len(distances) > self.max_neigh:
-                # this sorts the list min -> max and returns the indicies
+                # this sorts the list min -> max and returns the indices
                 sorted_dist_i = np.argsort(distances)
                 pad_n_index[i] = n_index[sorted_dist_i[: self.max_neigh]]
                 pad_distances[i] = distances[sorted_dist_i[: self.max_neigh]]
-        return pad_c_index, pad_n_index, pad_distances
+                pad_offsets[i] = offsets[sorted_dist_i[: self.max_neigh]]
+        return pad_c_index, pad_n_index, pad_distances, pad_offsets
 
-    def _reshape_features(self, pad_c_index, pad_n_index, pad_distances):
+    def _reshape_features(
+        self, pad_c_index, pad_n_index, pad_distances, pad_offsets
+    ):
         """Processes the center and neighbor index and reshapes distances,
         takes in np.arrays and returns torch tensors"""
         # edge_index reshape, combine, and define in torch
@@ -129,7 +139,12 @@ class AtomsToGraphs:
             (pad_distances.shape[0] * pad_distances.shape[1],)
         )
         all_distances = torch.Tensor(pad_distances)
-        return edge_index, all_distances
+        # reshape offsets to match indices
+        pad_offsets = pad_offsets.reshape(
+            (pad_offsets.shape[0] * pad_offsets.shape[1], -1)
+        )
+        cell_offsets = torch.LongTensor(pad_offsets)
+        return edge_index, all_distances, cell_offsets
 
     def convert(
         self, atoms,
@@ -148,15 +163,20 @@ class AtomsToGraphs:
         # run internal functions to get padded indices and distances
         split_idx_dist = self._get_neighbors_pymatgen(atoms)
         padded_idx_dist = self._pad_arrays(atoms, *split_idx_dist)
-        edge_index, all_distances = self._reshape_features(*padded_idx_dist)
+        edge_index, all_distances, cell_offsets = self._reshape_features(
+            *padded_idx_dist
+        )
 
-        # set the atomic numbers and positions
+        # set the atomic numbers, positions, and cell
         atomic_numbers = torch.Tensor(atoms.get_atomic_numbers())
         positions = torch.Tensor(atoms.get_positions())
+        cell = torch.Tensor(atoms.get_cell()).view(1, 3, 3)
 
         # put the minimum data in torch geometric data object
         data = Data(
             edge_index=edge_index,
+            cell=cell,
+            cell_offsets=cell_offsets,
             pos=positions,
             atomic_numbers=atomic_numbers,
             natoms=positions.shape[0],
