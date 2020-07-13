@@ -72,6 +72,9 @@ if __name__ == "__main__":
     # Extract features.
     idx = 0
     for i in tqdm(range(num_trajectories)):
+        raw_traj_files[i] = raw_traj_files[i].replace(
+            "10k/adslab_ref", "10k/adslab_ref/filtered"
+        )
         dl = read_trajectory_and_extract_features(a2g, raw_traj_files[i])
         for do in dl:
             txn = db.begin(write=True)

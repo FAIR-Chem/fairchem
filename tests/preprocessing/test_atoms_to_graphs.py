@@ -35,9 +35,11 @@ def atoms_to_graphs_internals(request):
 class TestAtomsToGraphs:
     def test_gen_neighbors_pymatgen(self):
         # call the internal function
-        split_n_index, split_n_distances = self.atg._get_neighbors_pymatgen(
-            self.atoms
-        )
+        (
+            split_n_index,
+            split_n_distances,
+            split_offsets,
+        ) = self.atg._get_neighbors_pymatgen(self.atoms)
         act_struct = AseAtomsAdaptor.get_structure(self.atoms)
         # use the old pymatgen method to get distance and indicies
         act_neigh = act_struct.get_all_neighbors(r=self.atg.radius)
