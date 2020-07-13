@@ -33,7 +33,7 @@ def write_images_to_lmdb(mp_arg):
             a2g, traj_paths[traj_idx], sampled_unique_ids
         )
         for do in dl:
-            # filter out images with excessivley large forces, if applicable
+            # filter out images with excessively large forces, if applicable
             if (
                 torch.max(torch.abs(do.force)).item()
                 <= args.force_filter_threshold
