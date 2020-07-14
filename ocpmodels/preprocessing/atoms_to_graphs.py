@@ -36,7 +36,7 @@ class AtomsToGraphs:
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
-        r_fixed (bool): Return the indices corresponding to Fixed atoms.
+        r_fixed (bool): Return a binary vector with flags for fixed (1) vs free (0) atoms.
         Default is False, so the fixed indices will not be returned.
 
     Attributes:
@@ -48,7 +48,7 @@ class AtomsToGraphs:
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
-        r_fixed (bool): Return the indices corresponding to Fixed atoms.
+        r_fixed (bool): Return a binary vector with flags for fixed (1) vs free (0) atoms.
         Default is False, so the fixed indices will not be returned.
 
     """
