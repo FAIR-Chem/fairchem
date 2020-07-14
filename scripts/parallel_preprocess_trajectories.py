@@ -131,6 +131,7 @@ if __name__ == "__main__":
         r_energy=True,
         r_forces=True,
         r_distances=False,
+        r_fixed=True,
     )
 
     # Create output directory if it doesn't exist.
