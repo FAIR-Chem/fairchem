@@ -160,13 +160,14 @@ class AtomsToGraphs:
         # set the atomic numbers and positions
         atomic_numbers = torch.Tensor(atoms.get_atomic_numbers())
         positions = torch.Tensor(atoms.get_positions())
+        natoms = positions.shape[0]
 
         # put the minimum data in torch geometric data object
         data = Data(
             edge_index=edge_index,
             pos=positions,
             atomic_numbers=atomic_numbers,
-            natoms=positions.shape[0],
+            natoms=natoms,
         )
 
         # optionally include other properties
@@ -179,7 +180,8 @@ class AtomsToGraphs:
         if self.r_distances:
             data.distances = all_distances
         if self.r_fixed:
-            fixed_idx = torch.Tensor(atoms.constraints[0].index)
+            fixed_idx = torch.zeros(natoms)
+            fixed_idx[atoms.constraints[0].index] = 1
             data.fixed = fixed_idx
 
         return data
