@@ -36,6 +36,8 @@ class AtomsToGraphs:
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
+        r_fixed (bool): Return a binary vector with flags for fixed (1) vs free (0) atoms.
+        Default is False, so the fixed indices will not be returned.
 
     Attributes:
         max_neigh (int): Maximum number of neighbors to consider.
@@ -46,6 +48,9 @@ class AtomsToGraphs:
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
+        r_fixed (bool): Return a binary vector with flags for fixed (1) vs free (0) atoms.
+        Default is False, so the fixed indices will not be returned.
+
     """
 
     def __init__(
@@ -57,6 +62,7 @@ class AtomsToGraphs:
         r_energy=False,
         r_forces=False,
         r_distances=False,
+        r_fixed=False,
     ):
         self.max_neigh = max_neigh
         self.radius = radius
@@ -65,6 +71,7 @@ class AtomsToGraphs:
         self.r_energy = r_energy
         self.r_forces = r_forces
         self.r_distances = r_distances
+        self.r_fixed = r_fixed
 
     def _get_neighbors_pymatgen(self, atoms):
         """Preforms nearest neighbor search and returns split neighbors indices and distances"""
@@ -171,6 +178,7 @@ class AtomsToGraphs:
         atomic_numbers = torch.Tensor(atoms.get_atomic_numbers())
         positions = torch.Tensor(atoms.get_positions())
         cell = torch.Tensor(atoms.get_cell()).view(1, 3, 3)
+        natoms = positions.shape[0]
 
         # put the minimum data in torch geometric data object
         data = Data(
@@ -179,7 +187,7 @@ class AtomsToGraphs:
             cell_offsets=cell_offsets,
             pos=positions,
             atomic_numbers=atomic_numbers,
-            natoms=positions.shape[0],
+            natoms=natoms,
         )
 
         # optionally include other properties
@@ -191,6 +199,10 @@ class AtomsToGraphs:
             data.force = forces
         if self.r_distances:
             data.distances = all_distances
+        if self.r_fixed:
+            fixed_idx = torch.zeros(natoms)
+            fixed_idx[atoms.constraints[0].index] = 1
+            data.fixed = fixed_idx
 
         return data
 
