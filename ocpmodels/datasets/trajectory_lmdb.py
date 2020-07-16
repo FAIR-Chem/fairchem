@@ -55,8 +55,7 @@ class TrajectoryLmdbDataset(Dataset):
 
         # Return features.
         env = self.connect_db(self.db_paths[db_idx])
-        db_txn = env.begin()
-        datapoint_pickled = db_txn.get(self._keys[db_idx][el_idx])
+        datapoint_pickled = env.begin().get(self._keys[db_idx][el_idx])
         data_object = pickle.loads(datapoint_pickled)
         data_object = (
             data_object
