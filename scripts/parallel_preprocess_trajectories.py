@@ -29,15 +29,22 @@ def write_images_to_lmdb(mp_arg):
 
     try:
         traj_idx = random.randrange(0, len(traj_paths))
-        dl, sampled_unique_ids = read_trajectory_and_extract_features(
+        dl, process_samples = read_trajectory_and_extract_features(
             a2g, traj_paths[traj_idx], sampled_unique_ids
         )
-        for do in dl:
+        sampled_unique_ids += process_samples
+        for i, do in enumerate(dl):
             # filter out images with excessively large forces, if applicable
             if (
                 torch.max(torch.abs(do.force)).item()
                 <= args.force_filter_threshold
             ):
+                # subtract off reference energy, if applicable
+                if adslab_ref:
+                    randomid = os.path.splitext(
+                        process_samples[i].split(" ")[0].split("/")[4]
+                    )[0]
+                    do.y -= adslab_ref[randomid]
                 txn = db.begin(write=True)
                 txn.put(
                     f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1)
@@ -60,13 +67,14 @@ def read_trajectory_and_extract_features(a2g, traj_path, sampled_unique_ids):
     # 20 * num_trajectories (each trajectory has 200 images on average).
     sample_count = int(0.1 * traj_len)
     sample_idx = random.sample(range(traj_len), sample_count)
+    process_samples = []
     images = []
     for idx in sample_idx:
         uid = os.path.join(traj_path, f" {idx}\n")
         if uid not in sampled_unique_ids:
-            sampled_unique_ids.append(uid)
+            process_samples.append(uid)
             images.append(traj[idx])
-    return a2g.convert_all(images, disable_tqdm=True), sampled_unique_ids
+    return a2g.convert_all(images, disable_tqdm=True), process_samples
 
 
 def chunk_list(lst, num_splits):
@@ -109,6 +117,12 @@ if __name__ == "__main__":
         default=1.0e9,
         help="Max force to filter out, default: no filter",
     )
+    parser.add_argument(
+        "--adslab_ref",
+        type=str,
+        default=None,
+        help="Path to reference energies, default: None",
+    )
 
     args = parser.parse_args()
 
@@ -116,6 +130,12 @@ if __name__ == "__main__":
     with open(os.path.join(args.traj_paths_txt), "r") as f:
         raw_traj_files = f.read().splitlines()
     num_trajectories = len(raw_traj_files)
+
+    if args.adslab_ref:
+        with open(os.path.join(args.adslab_ref), "rb") as g:
+            adslab_ref = pickle.load(g)
+    else:
+        adslab_ref = args.adslab_ref
 
     print(
         "### Found %d trajectories in %s"
