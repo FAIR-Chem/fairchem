@@ -62,7 +62,7 @@ def read_trajectory_and_extract_features(a2g, traj_path, sampled_unique_ids):
     sample_idx = random.sample(range(traj_len), sample_count)
     images = []
     for idx in sample_idx:
-        uid = os.path.join(traj_path, f" {idx}\n")
+        uid = "{},{},{}\n".format(traj_path, idx, traj_len)
         if uid not in sampled_unique_ids:
             sampled_unique_ids.append(uid)
             images.append(traj[idx])
