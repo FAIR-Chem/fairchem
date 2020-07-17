@@ -20,17 +20,9 @@ class TrajectoryLmdbDataset(Dataset):
 
         self.db_paths = glob.glob(self.config["src"] + "*lmdb")
         envs = [
-            lmdb.open(
-                self.db_paths[i],
-                subdir=False,
-                readonly=True,
-                lock=False,
-                readahead=False,
-                map_size=1099511627776 * 2,
-            )
+            self.connect_db(self.db_paths[i])
             for i in range(len(self.db_paths))
         ]
-        self.db_txn = [envs[i].begin() for i in range(len(self.db_paths))]
 
         self._keys = [
             [f"{j}".encode("ascii") for j in range(envs[i].stat()["entries"])]
@@ -40,6 +32,9 @@ class TrajectoryLmdbDataset(Dataset):
         self._keylen_cumulative = np.cumsum(self._keylens).tolist()
 
         self.transform = transform
+
+        for i in range(len(envs)):
+            envs[i].close()
 
     def __len__(self):
         return sum(self._keylens)
@@ -59,14 +54,28 @@ class TrajectoryLmdbDataset(Dataset):
         assert el_idx >= 0
 
         # Return features.
-        datapoint_pickled = self.db_txn[db_idx].get(self._keys[db_idx][el_idx])
+        env = self.connect_db(self.db_paths[db_idx])
+        datapoint_pickled = env.begin().get(self._keys[db_idx][el_idx])
         data_object = pickle.loads(datapoint_pickled)
         data_object = (
             data_object
             if self.transform is None
             else self.transform(data_object)
         )
+        env.close()
+
         return data_object
+
+    def connect_db(self, lmdb_path=None):
+        env = lmdb.open(
+            lmdb_path,
+            subdir=False,
+            readonly=True,
+            lock=False,
+            readahead=False,
+            map_size=1099511627776 * 2,
+        )
+        return env
 
 
 def data_list_collater(data_list):
