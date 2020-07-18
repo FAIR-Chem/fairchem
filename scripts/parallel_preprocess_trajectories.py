@@ -117,7 +117,7 @@ if __name__ == "__main__":
         help="Max force to filter out, default: no filter",
     )
     parser.add_argument(
-        "--adslab_ref",
+        "--adslab-ref",
         type=str,
         required=True,
         help="Path to reference energies, default: None",
