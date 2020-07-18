@@ -270,8 +270,7 @@ class BaseTrainer:
     def load_optimizer(self):
         self.optimizer = optim.AdamW(
             self.model.parameters(),
-            self.config["optim"]["lr_initial"],
-            weight_decay=3.0,
+            self.config["optim"]["lr_initial"],  # weight_decay=3.0
         )
 
     def load_extras(self):
