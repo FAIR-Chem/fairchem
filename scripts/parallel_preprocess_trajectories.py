@@ -39,12 +39,11 @@ def write_images_to_lmdb(mp_arg):
                 torch.max(torch.abs(do.force)).item()
                 <= args.force_filter_threshold
             ):
-                # subtract off reference energy, if applicable
-                if adslab_ref:
-                    randomid = os.path.splitext(
-                        process_samples[i].split(" ")[0].split("/")[4]
-                    )[0]
-                    do.y -= adslab_ref[randomid]
+                # subtract off reference energy
+                randomid = os.path.splitext(
+                    process_samples[i].split(" ")[0].split("/")[4]
+                )[0]
+                do.y -= adslab_ref[randomid]
                 txn = db.begin(write=True)
                 txn.put(
                     f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1)
@@ -120,7 +119,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--adslab_ref",
         type=str,
-        default=None,
+        required=True,
         help="Path to reference energies, default: None",
     )
 
@@ -131,11 +130,8 @@ if __name__ == "__main__":
         raw_traj_files = f.read().splitlines()
     num_trajectories = len(raw_traj_files)
 
-    if args.adslab_ref:
-        with open(os.path.join(args.adslab_ref), "rb") as g:
-            adslab_ref = pickle.load(g)
-    else:
-        adslab_ref = args.adslab_ref
+    with open(os.path.join(args.adslab_ref), "rb") as g:
+        adslab_ref = pickle.load(g)
 
     print(
         "### Found %d trajectories in %s"
