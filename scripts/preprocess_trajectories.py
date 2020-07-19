@@ -10,10 +10,10 @@ import random
 import ase.io
 import lmdb
 import numpy as np
+import torch
 from ase.io.trajectory import Trajectory
 from tqdm import tqdm
 
-import torch
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
