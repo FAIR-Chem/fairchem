@@ -487,9 +487,9 @@ class BaseTrainer:
             force_target = batch.force
 
             if self.config["task"].get("eval_on_free_atoms", True):
-                mask = batch.fixed.view(-1, 1) == 0
-                force_pred = force_pred.masked_select(mask).view(-1, 3)
-                force_target = force_target.masked_select(mask).view(-1, 3)
+                mask = batch.fixed == 0
+                force_pred = force_pred[mask]
+                force_target = force_target[mask]
 
             if self.config["dataset"].get("normalize_labels", True):
                 grad_input_errors = eval(self.config["task"]["metric"])(
@@ -535,7 +535,7 @@ class BaseTrainer:
             # Force coefficient = 30 has been working well for us.
             force_mult = self.config["optim"].get("force_coefficient", 30)
             if self.config["task"].get("train_on_free_atoms", False):
-                mask = (batch.fixed == 0).nonzero().view(-1)
+                mask = batch.fixed == 0
                 loss.append(
                     force_mult
                     * self.criterion(

@@ -1,5 +1,5 @@
 includes:
-- configs/2020_06_23_ocp1k/base.yml
+- configs/2020_07_13_ocp_reset_200k/base.yml
 
 model:
   name: schnet
