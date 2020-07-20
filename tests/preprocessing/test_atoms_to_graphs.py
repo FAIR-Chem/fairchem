@@ -35,9 +35,11 @@ def atoms_to_graphs_internals(request):
 class TestAtomsToGraphs:
     def test_gen_neighbors_pymatgen(self):
         # call the internal function
-        split_n_index, split_n_distances = self.atg._get_neighbors_pymatgen(
-            self.atoms
-        )
+        (
+            split_n_index,
+            split_n_distances,
+            split_offsets,
+        ) = self.atg._get_neighbors_pymatgen(self.atoms)
         act_struct = AseAtomsAdaptor.get_structure(self.atoms)
         # use the old pymatgen method to get distance and indicies
         act_neigh = act_struct.get_all_neighbors(r=self.atg.radius)
@@ -61,9 +63,12 @@ class TestAtomsToGraphs:
     def test_pad_arrays(self):
         # call internal functions
         split_idx_dist = self.atg._get_neighbors_pymatgen(self.atoms)
-        pad_c_index, pad_n_index, pad_distances = self.atg._pad_arrays(
-            self.atoms, *split_idx_dist
-        )
+        (
+            pad_c_index,
+            pad_n_index,
+            pad_distances,
+            pad_offsets,
+        ) = self.atg._pad_arrays(self.atoms, *split_idx_dist)
         # check the shape to ensure padding
         act_shape = (len(self.atoms), self.atg.max_neigh)
         index_shape = pad_n_index.shape
@@ -75,7 +80,7 @@ class TestAtomsToGraphs:
         # call internal functions
         split_idx_dist = self.atg._get_neighbors_pymatgen(self.atoms)
         padded_idx_dist = self.atg._pad_arrays(self.atoms, *split_idx_dist)
-        edge_index, all_distances = self.atg._reshape_features(
+        edge_index, all_distances, cell_offsets = self.atg._reshape_features(
             *padded_idx_dist
         )
         # check the shapes of various tensors
