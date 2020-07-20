@@ -483,14 +483,22 @@ class BaseTrainer:
                 ] = errors[i]
 
         if "grad_input" in self.config["task"]:
+            force_pred = force_output
+            force_target = batch.force
+
+            if self.config["task"].get("eval_on_free_atoms", True):
+                mask = batch.fixed.view(-1, 1) == 0
+                force_pred = force_pred.masked_select(mask).view(-1, 3)
+                force_target = force_target.masked_select(mask).view(-1, 3)
+
             if self.config["dataset"].get("normalize_labels", True):
                 grad_input_errors = eval(self.config["task"]["metric"])(
-                    self.normalizers["grad_target"].denorm(force_output).cpu(),
-                    batch.force.cpu(),
+                    self.normalizers["grad_target"].denorm(force_pred).cpu(),
+                    force_target.cpu(),
                 )
             else:
                 grad_input_errors = eval(self.config["task"]["metric"])(
-                    force_output.cpu(), batch.force.cpu()
+                    force_pred.cpu(), force_target.cpu()
                 )
             metrics[
                 "force_x/{}".format(self.config["task"]["metric"])
@@ -523,11 +531,22 @@ class BaseTrainer:
                 )
             else:
                 grad_target_normed = batch.force
+
             # Force coefficient = 30 has been working well for us.
-            loss.append(
-                self.config["optim"].get("force_coefficient", 30)
-                * self.criterion(out["force_output"], grad_target_normed)
-            )
+            force_mult = self.config["optim"].get("force_coefficient", 30)
+            if self.config["task"].get("train_on_free_atoms", False):
+                mask = (batch.fixed == 0).nonzero().view(-1)
+                loss.append(
+                    force_mult
+                    * self.criterion(
+                        out["force_output"][mask], grad_target_normed[mask]
+                    )
+                )
+            else:
+                loss.append(
+                    force_mult
+                    * self.criterion(out["force_output"], grad_target_normed)
+                )
 
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
