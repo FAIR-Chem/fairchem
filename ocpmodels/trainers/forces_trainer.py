@@ -338,8 +338,6 @@ class ForcesTrainer(BaseTrainer):
         loader = self.val_loader if split == "val" else self.test_loader
 
         for i, batch in enumerate(loader):
-            batch = batch.to(self.device)
-
             # Forward.
             out, metrics = self._forward(batch)
             loss = self._compute_loss(out, batch)
