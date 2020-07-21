@@ -199,44 +199,7 @@ class ForcesTrainer(BaseTrainer):
             self.logger.log_plots(plots)
 
     def load_model(self):
-        # Build model
-        print("### Loading model: {}".format(self.config["model"]))
-
-        # TODO(abhshkdz): Eventually move towards computing features on-the-fly
-        # and remove dependence from `.edge_attr`.
-        bond_feat_dim = None
-        if self.config["task"]["dataset"] in [
-            "ulissigroup_co",
-            "ulissigroup_h",
-            "xie_grossman_mat_proj",
-        ]:
-            bond_feat_dim = self.train_loader.dataset[0].edge_attr.shape[-1]
-        elif self.config["task"]["dataset"] in [
-            "gasdb",
-            "trajectory",
-            "trajectory_lmdb",
-        ]:
-            bond_feat_dim = self.config["model_attributes"].get(
-                "num_gaussians", 50
-            )
-        else:
-            raise NotImplementedError
-
-        self.model = registry.get_model_class(self.config["model"])(
-            self.train_loader.dataset[0].x.shape[-1]
-            if hasattr(self.train_loader.dataset[0], "x")
-            and self.train_loader.dataset[0].x is not None
-            else None,
-            bond_feat_dim,
-            self.num_targets,
-            **self.config["model_attributes"],
-        )
-
-        print(
-            "### Loaded {} with {} parameters.".format(
-                self.model.__class__.__name__, self.model.num_params
-            )
-        )
+        super(ForcesTrainer, self).load_model()
 
         self.model = OCPDataParallel(
             self.model,
@@ -244,9 +207,6 @@ class ForcesTrainer(BaseTrainer):
             num_gpus=self.config["optim"].get("num_gpus", 1),
         )
         self.model.to(self.device)
-
-        if self.logger is not None:
-            self.logger.watch(self.model)
 
     # Takes in a new data source and generates predictions on it.
     def predict(self, dataset, batch_size=32):
