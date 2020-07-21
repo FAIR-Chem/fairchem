@@ -11,7 +11,7 @@ class SchNetWrap(SchNet):
         num_atoms,  # not used
         bond_feat_dim,  # not used
         num_targets,
-        forcetraining=True,
+        regress_forces=True,
         hidden_channels=128,
         num_filters=128,
         num_interactions=6,
@@ -19,7 +19,7 @@ class SchNetWrap(SchNet):
         cutoff=10.0,
     ):
         self.num_targets = num_targets
-        self.calc_forces = forcetraining
+        self.regress_forces = regress_forces
 
         super(SchNetWrap, self).__init__(
             hidden_channels=hidden_channels,
@@ -32,12 +32,12 @@ class SchNetWrap(SchNet):
     def forward(self, data):
         z = data.atomic_numbers.long()
         pos = data.pos
-        if self.calc_forces:
+        if self.regress_forces:
             pos = pos.requires_grad_(True)
         batch = data.batch
 
         energy = super(SchNetWrap, self).forward(z, pos, batch)
-        if self.calc_forces:
+        if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,

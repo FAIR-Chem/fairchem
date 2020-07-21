@@ -9,6 +9,8 @@ class OCPDataParallel(torch.nn.DataParallel):
     def __init__(self, module, output_device, num_gpus):
         if num_gpus < 0:
             raise ValueError("# GPUs must be positive.")
+        if num_gpus > torch.cuda.device_count():
+            raise ValueError("# GPUs specified larger than available")
 
         if num_gpus == 1:
             device_ids = [output_device]

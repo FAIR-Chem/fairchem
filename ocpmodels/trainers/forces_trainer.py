@@ -6,10 +6,11 @@ import torch
 import torch_geometric
 import yaml
 from torch.utils.data import DataLoader
+from torch_geometric.nn import DataParallel
 
 from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
-from ocpmodels.common.data_parallel import ParallelCollater
-from ocpmodels.common.meter import Meter
+from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
+from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.datasets import (
@@ -79,7 +80,11 @@ class ForcesTrainer(BaseTrainer):
         self.is_debug = is_debug
         self.is_vis = is_vis
         if torch.cuda.is_available():
-            self.device = self.config["optim"].get("output_device", 0)
+            device_ids = list(range(torch.cuda.device_count()))
+            self.output_device = self.config["optim"].get(
+                "output_device", device_ids[0]
+            )
+            self.device = f"cuda:{self.output_device}"
         else:
             self.device = "cpu"
 
@@ -90,7 +95,7 @@ class ForcesTrainer(BaseTrainer):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
 
         self.parallel_collater = ParallelCollater(
-            self.config["optim"]["num_gpus"]
+            self.config["optim"].get("num_gpus", 1)
         )
         if self.config["task"]["dataset"] == "trajectory_lmdb":
             self.train_dataset = registry.get_dataset_class(
@@ -193,6 +198,56 @@ class ForcesTrainer(BaseTrainer):
             ]
             self.logger.log_plots(plots)
 
+    def load_model(self):
+        # Build model
+        print("### Loading model: {}".format(self.config["model"]))
+
+        # TODO(abhshkdz): Eventually move towards computing features on-the-fly
+        # and remove dependence from `.edge_attr`.
+        bond_feat_dim = None
+        if self.config["task"]["dataset"] in [
+            "ulissigroup_co",
+            "ulissigroup_h",
+            "xie_grossman_mat_proj",
+        ]:
+            bond_feat_dim = self.train_loader.dataset[0].edge_attr.shape[-1]
+        elif self.config["task"]["dataset"] in [
+            "gasdb",
+            "trajectory",
+            "trajectory_lmdb",
+        ]:
+            bond_feat_dim = self.config["model_attributes"].get(
+                "num_gaussians", 50
+            )
+        else:
+            raise NotImplementedError
+
+        self.model = registry.get_model_class(self.config["model"])(
+            self.train_loader.dataset[0].x.shape[-1]
+            if hasattr(self.train_loader.dataset[0], "x")
+            and self.train_loader.dataset[0].x is not None
+            else None,
+            bond_feat_dim,
+            self.num_targets,
+            **self.config["model_attributes"],
+        )
+
+        print(
+            "### Loaded {} with {} parameters.".format(
+                self.model.__class__.__name__, self.model.num_params
+            )
+        )
+
+        self.model = OCPDataParallel(
+            self.model,
+            output_device=self.output_device,
+            num_gpus=self.config["optim"].get("num_gpus", 1),
+        )
+        self.model.to(self.device)
+
+        if self.logger is not None:
+            self.logger.watch(self.model)
+
     # Takes in a new data source and generates predictions on it.
     def predict(self, dataset, batch_size=32):
         if isinstance(dataset, dict):
@@ -215,7 +270,7 @@ class ForcesTrainer(BaseTrainer):
                 dataset,
                 batch_size=batch_size,
                 shuffle=False,
-                collate_fn=data_list_collater,
+                collate_fn=self.parallel_collater,
             )
         elif isinstance(dataset, torch_geometric.data.Batch):
             data_loader = [dataset]
@@ -226,7 +281,6 @@ class ForcesTrainer(BaseTrainer):
         predictions = {"energy": [], "forces": []}
 
         for i, batch in enumerate(data_loader):
-            batch.to(self.device)
             out, _ = self._forward(batch, compute_metrics=False)
             if self.normalizers is not None and "target" in self.normalizers:
                 out["output"] = self.normalizers["target"].denorm(
@@ -385,3 +439,144 @@ class ForcesTrainer(BaseTrainer):
         print(meter)
 
         return mae_energy, mae_structure
+
+    def _forward(self, batch_list, compute_metrics=True):
+        out = {}
+
+        # forward pass.
+        if self.config["model_attributes"].get("regress_forces", True):
+            output, output_forces = self.model(batch_list)
+        else:
+            output = self.model(batch_list)
+
+        if output.shape[-1] == 1:
+            output = output.view(-1)
+
+        out["output"] = output
+
+        force_output = None
+        if self.config["model_attributes"].get("regress_forces", True):
+            out["force_output"] = output_forces
+            force_output = output_forces
+
+        if not compute_metrics:
+            return out, None
+
+        metrics = {}
+        energy_target = torch.cat(
+            [batch.y.to(self.device) for batch in batch_list], dim=0
+        )
+
+        if self.config["dataset"].get("normalize_labels", True):
+            errors = eval(self.config["task"]["metric"])(
+                self.normalizers["target"].denorm(output).cpu(),
+                energy_target.cpu(),
+            ).view(-1)
+        else:
+            errors = eval(self.config["task"]["metric"])(
+                output.cpu(), energy_target.cpu()
+            ).view(-1)
+
+        if (
+            "label_index" in self.config["task"]
+            and self.config["task"]["label_index"] is not False
+        ):
+            # TODO(abhshkdz): Get rid of this edge case for QM9.
+            # This is only because QM9 has multiple targets and we can either
+            # jointly predict all of them or one particular target.
+            metrics[
+                "{}/{}".format(
+                    self.config["task"]["labels"][
+                        self.config["task"]["label_index"]
+                    ],
+                    self.config["task"]["metric"],
+                )
+            ] = errors[0]
+        else:
+            for i, label in enumerate(self.config["task"]["labels"]):
+                metrics[
+                    "{}/{}".format(label, self.config["task"]["metric"])
+                ] = errors[i]
+
+        if "grad_input" in self.config["task"]:
+            force_pred = force_output
+            force_target = torch.cat(
+                [batch.force.to(self.device) for batch in batch_list], dim=0
+            )
+
+            if self.config["task"].get("eval_on_free_atoms", True):
+                fixed = torch.cat([batch.fixed for batch in batch_list])
+                mask = fixed == 0
+                force_pred = force_pred[mask]
+                force_target = force_target[mask]
+
+            if self.config["dataset"].get("normalize_labels", True):
+                grad_input_errors = eval(self.config["task"]["metric"])(
+                    self.normalizers["grad_target"].denorm(force_pred).cpu(),
+                    force_target.cpu(),
+                )
+            else:
+                grad_input_errors = eval(self.config["task"]["metric"])(
+                    force_pred.cpu(), force_target.cpu()
+                )
+            metrics[
+                "force_x/{}".format(self.config["task"]["metric"])
+            ] = grad_input_errors[0]
+            metrics[
+                "force_y/{}".format(self.config["task"]["metric"])
+            ] = grad_input_errors[1]
+            metrics[
+                "force_z/{}".format(self.config["task"]["metric"])
+            ] = grad_input_errors[2]
+
+        return out, metrics
+
+    def _compute_loss(self, out, batch_list):
+        loss = []
+        energy_target = torch.cat(
+            [batch.y.to(self.device) for batch in batch_list], dim=0
+        )
+        force_target = torch.cat(
+            [batch.force.to(self.device) for batch in batch_list], dim=0
+        )
+
+        if self.config["dataset"].get("normalize_labels", True):
+            target_normed = self.normalizers["target"].norm(energy_target)
+        else:
+            target_normed = energy_target
+
+        loss.append(self.criterion(out["output"], target_normed))
+
+        # TODO(abhshkdz): Test support for gradients wrt input.
+        # TODO(abhshkdz): Make this general; remove dependence on `.forces`.
+        if "grad_input" in self.config["task"]:
+            if self.config["dataset"].get("normalize_labels", True):
+                grad_target_normed = self.normalizers["grad_target"].norm(
+                    force_target
+                )
+            else:
+                grad_target_normed = force_target
+
+            # Force coefficient = 30 has been working well for us.
+            force_mult = self.config["optim"].get("force_coefficient", 30)
+            if self.config["task"].get("train_on_free_atoms", False):
+                fixed = torch.cat([batch.fixed for batch in batch_list])
+                mask = fixed == 0
+                loss.append(
+                    force_mult
+                    * self.criterion(
+                        out["force_output"][mask], grad_target_normed[mask]
+                    )
+                )
+            else:
+                loss.append(
+                    force_mult
+                    * self.criterion(out["force_output"], grad_target_normed)
+                )
+
+        # Sanity check to make sure the compute graph is correct.
+        for lc in loss:
+            assert hasattr(lc, "grad_fn")
+
+        loss = sum(loss)
+        return loss

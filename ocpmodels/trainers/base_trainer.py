@@ -10,7 +10,6 @@ import torch.nn as nn
 import torch.optim as optim
 import yaml
 
-from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
@@ -61,10 +60,9 @@ class BaseTrainer:
         self.config = build_config(args)
 
         # device
-        if torch.cuda.is_available():
-            self.device = self.config["optim"].get("output_device", 0)
-        else:
-            self.device = "cpu"
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
 
         # Are we just running sanity checks?
         self.is_debug = args.debug
@@ -235,20 +233,13 @@ class BaseTrainer:
             bond_feat_dim,
             self.num_targets,
             **self.config["model_attributes"],
-        )
+        ).to(self.device)
 
         print(
             "### Loaded {} with {} parameters.".format(
                 self.model.__class__.__name__, self.model.num_params
             )
         )
-
-        self.model = OCPDataParallel(
-            self.model,
-            output_device=self.device,
-            num_gpus=self.config["optim"]["num_gpus"],
-        )
-        self.model.to(self.device)
 
         if self.logger is not None:
             self.logger.watch(self.model)
@@ -305,6 +296,8 @@ class BaseTrainer:
             self.model.train()
 
             for i, batch in enumerate(self.train_loader):
+                batch = batch.to(self.device)
+
                 # Forward, loss, backward.
                 out, metrics = self._forward(batch)
                 loss = self._compute_loss(out, batch)
@@ -380,6 +373,8 @@ class BaseTrainer:
         loader = self.val_loader if split == "val" else self.test_loader
 
         for i, batch in enumerate(loader):
+            batch = batch.to(self.device)
+
             # Forward.
             out, metrics = self._forward(batch)
             loss = self._compute_loss(out, batch)
@@ -411,14 +406,19 @@ class BaseTrainer:
             ),
         )
 
-    def _forward(self, batch_list, compute_metrics=True):
+    def _forward(self, batch, compute_metrics=True):
         out = {}
 
+        # enable gradient wrt input.
+        if "grad_input" in self.config["task"]:
+            inp_for_grad = batch.pos
+            batch.pos = batch.pos.requires_grad_(True)
+
         # forward pass.
-        if self.config["model_attributes"].get("force_training", True):
-            output, output_forces = self.model(batch_list)
+        if self.config["model_attributes"].get("regress_forces", False):
+            output, output_forces = self.model(batch)
         else:
-            output = self.model(batch_list)
+            output = self.model(batch)
 
         if output.shape[-1] == 1:
             output = output.view(-1)
@@ -426,25 +426,39 @@ class BaseTrainer:
         out["output"] = output
 
         force_output = None
-        if self.config["model_attributes"].get("force_training", True):
+        if self.config["model_attributes"].get("regress_forces", False):
             out["force_output"] = output_forces
             force_output = output_forces
+
+        if (
+            "grad_input" in self.config["task"]
+            and self.config["model_attributes"].get("regress_forces", False)
+            is False
+        ):
+            force_output = (
+                -1
+                * torch.autograd.grad(
+                    output,
+                    inp_for_grad,
+                    grad_outputs=torch.ones_like(output),
+                    create_graph=True,
+                    retain_graph=True,
+                )[0]
+            )
+            out["force_output"] = force_output
 
         if not compute_metrics:
             return out, None
 
         metrics = {}
-        energy_target = torch.cat(
-            [batch.y.cpu() for batch in batch_list], dim=0
-        )
 
         if self.config["dataset"].get("normalize_labels", True):
             errors = eval(self.config["task"]["metric"])(
-                self.normalizers["target"].denorm(output).cpu(), energy_target
+                self.normalizers["target"].denorm(output).cpu(), batch.y.cpu()
             ).view(-1)
         else:
             errors = eval(self.config["task"]["metric"])(
-                output.cpu(), energy_target
+                output.cpu(), batch.y.cpu()
             ).view(-1)
 
         if (
@@ -470,13 +484,10 @@ class BaseTrainer:
 
         if "grad_input" in self.config["task"]:
             force_pred = force_output
-            force_target = torch.cat(
-                [batch.force.cpu() for batch in batch_list], dim=0
-            )
+            force_target = batch.force
 
             if self.config["task"].get("eval_on_free_atoms", True):
-                fixed = torch.cat([batch.fixed for batch in batch_list])
-                mask = fixed == 0
+                mask = batch.fixed == 0
                 force_pred = force_pred[mask]
                 force_target = force_target[mask]
 
@@ -501,19 +512,13 @@ class BaseTrainer:
 
         return out, metrics
 
-    def _compute_loss(self, out, batch_list):
+    def _compute_loss(self, out, batch):
         loss = []
-        energy_target = torch.cat(
-            [batch.y.to(self.device) for batch in batch_list], dim=0
-        )
-        force_target = torch.cat(
-            [batch.force.to(self.device) for batch in batch_list], dim=0
-        )
 
         if self.config["dataset"].get("normalize_labels", True):
-            target_normed = self.normalizers["target"].norm(energy_target)
+            target_normed = self.normalizers["target"].norm(batch.y)
         else:
-            target_normed = energy_target
+            target_normed = batch.y
 
         loss.append(self.criterion(out["output"], target_normed))
 
@@ -522,16 +527,15 @@ class BaseTrainer:
         if "grad_input" in self.config["task"]:
             if self.config["dataset"].get("normalize_labels", True):
                 grad_target_normed = self.normalizers["grad_target"].norm(
-                    force_target
+                    batch.force
                 )
             else:
-                grad_target_normed = force_target
+                grad_target_normed = batch.force
 
             # Force coefficient = 30 has been working well for us.
             force_mult = self.config["optim"].get("force_coefficient", 30)
             if self.config["task"].get("train_on_free_atoms", False):
-                fixed = torch.cat([batch.fixed for batch in batch_list])
-                mask = fixed == 0
+                mask = batch.fixed == 0
                 loss.append(
                     force_mult
                     * self.criterion(
