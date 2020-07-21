@@ -37,6 +37,7 @@ class SchNetWrap(SchNet):
         batch = data.batch
 
         energy = super(SchNetWrap, self).forward(z, pos, batch)
+
         if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(

@@ -1,8 +1,9 @@
 import torch
-from ocpmodels.common.registry import registry
 from torch import nn
 from torch_geometric.nn import DimeNet
 from torch_scatter import scatter
+
+from ocpmodels.common.registry import registry
 
 
 @registry.register_model("dimenet")
@@ -12,6 +13,7 @@ class DimeNetWrap(DimeNet):
         num_atoms,
         bond_feat_dim,  # not used
         num_targets,
+        regress_forces=True,
         hidden_channels=128,
         num_blocks=6,
         num_bilinear=8,
@@ -24,6 +26,7 @@ class DimeNetWrap(DimeNet):
         num_output_layers=3,
     ):
         self.num_targets = num_targets
+        self.regress_forces = regress_forces
         self.cutoff = cutoff
 
         super(DimeNetWrap, self).__init__(
@@ -44,6 +47,8 @@ class DimeNetWrap(DimeNet):
     def forward(self, data):
         x = data.x
         pos = data.pos
+        if self.regress_forces:
+            pos = pos.requires_grad_(True)
         edge_index = data.edge_index
         batch = data.batch
 
@@ -79,7 +84,20 @@ class DimeNetWrap(DimeNet):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
             P += output_block(x, rbf, i)
 
-        return P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+        energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+
+        if self.regress_forces:
+            forces = -1 * (
+                torch.autograd.grad(
+                    energy,
+                    pos,
+                    grad_outputs=torch.ones_like(energy),
+                    create_graph=True,
+                )[0]
+            )
+            return energy, forces
+        else:
+            return energy
 
     @property
     def num_params(self):

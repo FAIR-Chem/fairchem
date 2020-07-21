@@ -15,6 +15,7 @@ class CGCNN(BaseModel):
         num_atoms,
         bond_feat_dim,
         num_targets,
+        regress_forces=True,
         atom_embedding_size=64,
         num_graph_conv_layers=6,
         fc_feat_size=128,
@@ -23,6 +24,7 @@ class CGCNN(BaseModel):
         num_gaussians=50,
     ):
         super(CGCNN, self).__init__(num_atoms, bond_feat_dim, num_targets)
+        self.regress_forces = regress_forces
         self.embedding = nn.Linear(self.num_atoms, atom_embedding_size)
 
         self.convs = nn.ModuleList(
@@ -53,7 +55,10 @@ class CGCNN(BaseModel):
     def forward(self, data):
         row, col = data.edge_index
         if hasattr(data, "pos") and data.pos is not None:
-            data.edge_weight = (data.pos[row] - data.pos[col]).norm(dim=-1)
+            pos = data.pos
+            if self.regress_forces:
+                pos = pos.requires_grad_(True)
+            data.edge_weight = (pos[row] - pos[col]).norm(dim=-1)
             data.edge_attr = self.distance_expansion(data.edge_weight)
         else:
             # placeholder edge weights for backward-compatibility.
@@ -63,8 +68,20 @@ class CGCNN(BaseModel):
         mol_feats = self.conv_to_fc(mol_feats)
         if hasattr(self, "fcs"):
             mol_feats = self.fcs(mol_feats)
-        out = self.fc_out(mol_feats)
-        return out
+
+        energy = self.fc_out(mol_feats)
+        if self.regress_forces:
+            forces = -1 * (
+                torch.autograd.grad(
+                    energy,
+                    pos,
+                    grad_outputs=torch.ones_like(energy),
+                    create_graph=True,
+                )[0]
+            )
+            return energy, forces
+        else:
+            return energy
 
     def _convolve(self, data):
         """
