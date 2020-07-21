@@ -8,6 +8,7 @@ import yaml
 from torch.utils.data import DataLoader
 
 from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
+from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
@@ -77,9 +78,10 @@ class ForcesTrainer(BaseTrainer):
 
         self.is_debug = is_debug
         self.is_vis = is_vis
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
+        if torch.cuda.is_available():
+            self.device = self.config["optim"].get("output_device", 0)
+        else:
+            self.device = "cpu"
 
         print(yaml.dump(self.config, default_flow_style=False))
         self.load()
@@ -87,6 +89,9 @@ class ForcesTrainer(BaseTrainer):
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
 
+        self.parallel_collater = ParallelCollater(
+            self.config["optim"]["num_gpus"]
+        )
         if self.config["task"]["dataset"] == "trajectory_lmdb":
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
@@ -96,7 +101,7 @@ class ForcesTrainer(BaseTrainer):
                 self.train_dataset,
                 batch_size=self.config["optim"]["batch_size"],
                 shuffle=True,
-                collate_fn=data_list_collater,
+                collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
             )
 
@@ -110,7 +115,7 @@ class ForcesTrainer(BaseTrainer):
                     self.val_dataset,
                     self.config["optim"].get("eval_batch_size", 64),
                     shuffle=False,
-                    collate_fn=data_list_collater,
+                    collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
                 )
         else:
@@ -247,8 +252,6 @@ class ForcesTrainer(BaseTrainer):
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
-                batch = batch.to(self.device)
-
                 # Forward, loss, backward.
                 out, metrics = self._forward(batch)
                 loss = self._compute_loss(out, batch)
