@@ -37,7 +37,7 @@ class AtomsToGraphs:
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
         r_fixed (bool): Return a binary vector with flags for fixed (1) vs free (0) atoms.
-        Default is False, so the fixed indices will not be returned.
+        Default is True, so the fixed indices will be returned.
 
     Attributes:
         max_neigh (int): Maximum number of neighbors to consider.
@@ -49,7 +49,7 @@ class AtomsToGraphs:
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
         r_fixed (bool): Return a binary vector with flags for fixed (1) vs free (0) atoms.
-        Default is False, so the fixed indices will not be returned.
+        Default is True, so the fixed indices will be returned.
 
     """
 
@@ -62,7 +62,7 @@ class AtomsToGraphs:
         r_energy=False,
         r_forces=False,
         r_distances=False,
-        r_fixed=False,
+        r_fixed=True,
     ):
         self.max_neigh = max_neigh
         self.radius = radius

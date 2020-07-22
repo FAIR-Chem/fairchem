@@ -5,7 +5,8 @@ import numpy as np
 import torch
 from ase.io.trajectory import Trajectory
 from pymatgen.io.ase import AseAtomsAdaptor
-from torch_geometric.data import Batch, Data, DataLoader
+from torch.utils.data import DataLoader
+from torch_geometric.data import Batch, Data
 from tqdm import tqdm
 
 from ocpmodels.common.registry import registry
@@ -83,7 +84,7 @@ class TrajectoryDataset(BaseDataset):
         self.data, self.slices = collate(data_list)
         torch.save((self.data, self.slices), self.processed_file_names[0])
 
-    def get_dataloaders(self, batch_size=None, shuffle=True):
+    def get_dataloaders(self, batch_size=None, shuffle=True, collate_fn=None):
         assert batch_size is not None
         assert self.train_size + self.val_size + self.test_size <= len(self)
 
@@ -99,6 +100,7 @@ class TrajectoryDataset(BaseDataset):
             train_val_dataset[: self.train_size],
             batch_size=batch_size,
             shuffle=shuffle,
+            collate_fn=collate_fn,
         )
 
         if self.val_size == 0:
@@ -109,11 +111,14 @@ class TrajectoryDataset(BaseDataset):
                     self.train_size : self.train_size + self.val_size
                 ],
                 batch_size=batch_size,
+                collate_fn=collate_fn,
             )
 
         if self.test_size == 0:
             test_loader = None
         else:
-            test_loader = DataLoader(test_dataset, batch_size=batch_size)
+            test_loader = DataLoader(
+                test_dataset, batch_size=batch_size, collate_fn=collate_fn
+            )
 
         return train_loader, val_loader, test_loader
