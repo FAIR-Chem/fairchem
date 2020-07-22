@@ -294,6 +294,7 @@ class ForcesTrainer(BaseTrainer):
                     print(self.meter)
 
             self.scheduler.step()
+            torch.cuda.empty_cache()
 
             if self.val_loader is not None:
                 self.validate(split="val", epoch=epoch)
