@@ -132,7 +132,8 @@ class ForcesTrainer(BaseTrainer):
                 self.val_loader,
                 self.test_loader,
             ) = self.dataset.get_dataloaders(
-                batch_size=self.config["optim"]["batch_size"]
+                batch_size=self.config["optim"]["batch_size"],
+                collate_fn=self.parallel_collater,
             )
 
         self.num_targets = 1
@@ -233,15 +234,15 @@ class ForcesTrainer(BaseTrainer):
                 collate_fn=self.parallel_collater,
             )
         elif isinstance(dataset, torch_geometric.data.Batch):
-            data_loader = [dataset]
+            data_loader = [[dataset]]
         else:
             raise NotImplementedError
 
         self.model.eval()
         predictions = {"energy": [], "forces": []}
 
-        for i, batch in enumerate(data_loader):
-            out, _ = self._forward(batch, compute_metrics=False)
+        for i, batch_list in enumerate(data_loader):
+            out, _ = self._forward(batch_list, compute_metrics=False)
             if self.normalizers is not None and "target" in self.normalizers:
                 out["output"] = self.normalizers["target"].denorm(
                     out["output"]
@@ -251,7 +252,8 @@ class ForcesTrainer(BaseTrainer):
                 )
             atoms_sum = 0
             predictions["energy"].extend(out["output"].tolist())
-            for natoms in batch.natoms:
+            batch_natoms = torch.cat([batch.natoms for batch in batch_list])
+            for natoms in batch_natoms:
                 predictions["forces"].append(
                     out["force_output"][atoms_sum : natoms + atoms_sum]
                     .cpu()
