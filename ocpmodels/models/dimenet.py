@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from torch_geometric.nn import DimeNet
+from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
@@ -30,7 +30,7 @@ class DimeNetWrap(DimeNet):
         self.cutoff = cutoff
 
         super(DimeNetWrap, self).__init__(
-            in_channels=num_atoms,
+            in_channels=hidden_channels,
             hidden_channels=hidden_channels,
             out_channels=num_targets,
             num_blocks=num_blocks,
@@ -44,13 +44,15 @@ class DimeNetWrap(DimeNet):
             num_output_layers=num_output_layers,
         )
 
+        self.embedding = nn.Embedding(100, hidden_channels)
+
     def forward(self, data):
-        x = data.x
         pos = data.pos
         if self.regress_forces:
             pos = pos.requires_grad_(True)
-        edge_index = data.edge_index
         batch = data.batch
+        x = self.embedding(data.atomic_numbers.long())
+        edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
 
         j, i = edge_index
         idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
