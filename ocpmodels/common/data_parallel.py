@@ -46,6 +46,8 @@ class OCPDataParallel(torch.nn.DataParallel):
                 "force",
                 "atomic_numbers",
                 "batch",
+                "cell",
+                "cell_offsets",
             )
             for i, batch in enumerate(batch_list)
         ]
