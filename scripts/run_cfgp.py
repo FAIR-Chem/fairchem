@@ -1,13 +1,15 @@
 import os
 import sys
+
 import gpytorch
 
-sys.path.insert(0, os.getcwd())
 from ocpmodels.common.lbfgs import FullBatchLBFGS
 from ocpmodels.models.gps import ExactGP
 from ocpmodels.trainers.cfgp_trainer import CfgpTrainer
 from ocpmodels.trainers.gpytorch_trainer import GPyTorchTrainer
 from ocpmodels.trainers.simple_trainer import SimpleTrainer
+
+sys.path.insert(0, os.getcwd())
 
 
 if __name__ == "__main__":
@@ -26,10 +28,11 @@ if __name__ == "__main__":
         "fc_feat_size": 128,
         "num_fc_layers": 4,
         "num_graph_conv_layers": 6,
+        "regress_forces": False,
     }
 
     dataset = {
-        "src": "path/to/dataset",
+        "src": "/path/to/dataset/",
         "train_size": 640,
         "val_size": 160,
         "test_size": 200,
@@ -43,6 +46,7 @@ if __name__ == "__main__":
         "max_epochs": 50,
         "warmup_epochs": 10,
         "warmup_factor": 0.2,
+        "num_gpus": 2,
     }
 
     cnn_trainer = SimpleTrainer(

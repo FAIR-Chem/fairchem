@@ -1,5 +1,6 @@
 import torch
-from torch_geometric.data import DataLoader, InMemoryDataset
+from torch.utils.data import DataLoader
+from torch_geometric.data import InMemoryDataset
 
 
 class BaseDataset(InMemoryDataset):
@@ -32,7 +33,7 @@ class BaseDataset(InMemoryDataset):
     def test_size(self):
         return self.config["test_size"]
 
-    def get_dataloaders(self, batch_size=None):
+    def get_dataloaders(self, batch_size=None, collate_fn=None):
         assert batch_size is not None
         assert self.train_size + self.val_size + self.test_size <= len(self)
 
@@ -43,6 +44,7 @@ class BaseDataset(InMemoryDataset):
             train_val_dataset[: self.train_size],
             batch_size=batch_size,
             shuffle=True,
+            collate_fn=collate_fn,
         )
 
         if self.val_size == 0:
@@ -53,11 +55,14 @@ class BaseDataset(InMemoryDataset):
                     self.train_size : self.train_size + self.val_size
                 ],
                 batch_size=batch_size,
+                collate_fn=collate_fn,
             )
 
         if self.test_size == 0:
             test_loader = None
         else:
-            test_loader = DataLoader(test_dataset, batch_size=batch_size)
+            test_loader = DataLoader(
+                test_dataset, batch_size=batch_size, collate_fn=collate_fn
+            )
 
         return train_loader, val_loader, test_loader
