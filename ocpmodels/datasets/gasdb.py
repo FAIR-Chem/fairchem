@@ -10,7 +10,8 @@ import ase.db
 import numpy as np
 import torch
 from pymatgen.io.ase import AseAtomsAdaptor
-from torch_geometric.data import Data, DataLoader
+from torch.utils.data import DataLoader
+from torch_geometric.data import Data
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import collate
@@ -113,8 +114,10 @@ class Gasdb(BaseDataset):
         self.data, self.slices = collate(data_list)
         torch.save((self.data, self.slices), self.processed_file_names[0])
 
-    def get_full_dataloader(self, batch_size):
-        data_loader = DataLoader(self, batch_size=batch_size)
+    def get_full_dataloader(self, batch_size, collate_fn=None):
+        data_loader = DataLoader(
+            self, batch_size=batch_size, collate_fn=collate_fn
+        )
         return data_loader
 
 
@@ -284,5 +287,5 @@ class GaussianDistance:
           len(self.filter)
         """
         return np.exp(
-            -(distances[..., np.newaxis] - self.filter) ** 2 / self.var ** 2
+            -((distances[..., np.newaxis] - self.filter) ** 2) / self.var ** 2
         )

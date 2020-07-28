@@ -40,7 +40,7 @@ class CfgpTrainer:
     def _get_training_convolutions(self):
         train_convs, train_y = self._get_convolutions(self.train_loader)
 
-        self.conv_normalizer = Normalizer(train_convs, self.device)
+        self.conv_normalizer = Normalizer(train_convs, device=self.device)
         normed_convs = self.conv_normalizer.norm(train_convs)
         return normed_convs, train_y
 
@@ -51,7 +51,9 @@ class CfgpTrainer:
 
         for batches in data_loader:
             for batch in batches:
-                out = self.conv_trainer.model.module._convolve(batch)
+                out = self.conv_trainer.model.module._convolve(
+                    batch.to(self.device)
+                )
                 for conv, target in zip(out.tolist(), batch.y):
                     convolutions.append(conv)
                     targets.append(target)
@@ -68,7 +70,10 @@ class CfgpTrainer:
         dataset = registry.get_dataset_class(
             self.conv_trainer.config["task"]["dataset"]
         )(dataset_config)
-        data_loader = dataset.get_full_dataloader(batch_size=batch_size)
+        data_loader = dataset.get_full_dataloader(
+            batch_size=batch_size,
+            collate_fn=self.conv_trainer.parallel_collater,
+        )
 
         # Get the convolutions
         convs, targets_actual = self._get_convolutions(data_loader)
