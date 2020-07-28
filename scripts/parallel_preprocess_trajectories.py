@@ -17,13 +17,19 @@ from tqdm import tqdm
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
-def get_ads_idx(data, randomid):
-    ads_id = sysid_mappings[randomid]["ads"]
-    symbols = ads_to_symbols[ads_id].split(" ")[1].replace("*", "")
-    ads_len = len(symbols)
-    ads_flags = torch.zeros_like(data.atomic_numbers)
-    ads_flags[-ads_len:] = 1
-    return ads_flags
+def get_tags(data, randomid):
+    input_dir = os.path.join(sysid_mappings[randomid], "metadata.pkl")
+    k = open(input_dir, "rb")
+    metadata = pickle.load(k)
+    k.close()
+    input_atoms = metadata["adsorbed_bulk_atomsobject"]
+    # sanity check indices match up
+    assert (
+        input_atoms.get_atomic_numbers().all()
+        == data.atomic_numbers.numpy().all()
+    )
+    tags = torch.tensor(input_atoms.get_tags())
+    return tags
 
 
 def write_images_to_lmdb(mp_arg):
@@ -52,7 +58,7 @@ def write_images_to_lmdb(mp_arg):
                 randomid = os.path.splitext(
                     process_samples[i].split(" ")[0].split("/")[4]
                 )[0]
-                do.ads_idx = get_ads_idx(do, randomid)
+                do.tags = get_tags(do, randomid)
                 do.y -= adslab_ref[randomid]
                 txn = db.begin(write=True)
                 txn.put(
@@ -144,15 +150,9 @@ if __name__ == "__main__":
         adslab_ref = pickle.load(g)
 
     with open(
-        "/checkpoint/mshuaibi/mappings/sysid_to_bulk_adsorbate_idx.pkl", "rb"
+        "/checkpoint/mshuaibi/mappings/sysid_to_bulkads_dir.pkl", "rb"
     ) as h:
         sysid_mappings = pickle.load(h)
-
-    with open(
-        "/private/home/mshuaibi/Open-Catalyst-Dataset/mapping_adsorbatesamplingindex_to_symbols.txt",
-        "r",
-    ) as adsmap:
-        ads_to_symbols = adsmap.read().splitlines()
 
     print(
         "### Found %d trajectories in %s"
