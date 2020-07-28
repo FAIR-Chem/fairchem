@@ -17,6 +17,21 @@ from tqdm import tqdm
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
+def get_tags(data, randomid):
+    input_dir = os.path.join(sysid_mappings[randomid], "metadata.pkl")
+    k = open(input_dir, "rb")
+    metadata = pickle.load(k)
+    k.close()
+    input_atoms = metadata["adsorbed_bulk_atomsobject"]
+    # sanity check indices match up
+    assert (
+        input_atoms.get_atomic_numbers().all()
+        == data.atomic_numbers.numpy().all()
+    )
+    tags = torch.tensor(input_atoms.get_tags())
+    return tags
+
+
 def write_images_to_lmdb(mp_arg):
     a2g, db_path, traj_paths, sampled_unique_ids, idx = mp_arg
     db = lmdb.open(
@@ -43,6 +58,7 @@ def write_images_to_lmdb(mp_arg):
                 randomid = os.path.splitext(
                     process_samples[i].split(" ")[0].split("/")[4]
                 )[0]
+                do.tags = get_tags(do, randomid)
                 do.y -= adslab_ref[randomid]
                 txn = db.begin(write=True)
                 txn.put(
@@ -119,7 +135,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--adslab-ref",
         type=str,
-        required=True,
+        default="/checkpoint/mshuaibi/mappings/adslab_ref_energies_ocp728k.pkl",
         help="Path to reference energies, default: None",
     )
 
@@ -132,6 +148,11 @@ if __name__ == "__main__":
 
     with open(os.path.join(args.adslab_ref), "rb") as g:
         adslab_ref = pickle.load(g)
+
+    with open(
+        "/checkpoint/mshuaibi/mappings/sysid_to_bulkads_dir.pkl", "rb"
+    ) as h:
+        sysid_mappings = pickle.load(h)
 
     print(
         "### Found %d trajectories in %s"
