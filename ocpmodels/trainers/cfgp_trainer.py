@@ -49,11 +49,12 @@ class CfgpTrainer:
         convolutions = []
         targets = []
 
-        for i, batch in enumerate(data_loader):
-            out = self.conv_trainer.model._convolve(batch)
-            for conv, target in zip(out.tolist(), batch.y):
-                convolutions.append(conv)
-                targets.append(target)
+        for batches in data_loader:
+            for batch in batches:
+                out = self.conv_trainer.model.module._convolve(batch)
+                for conv, target in zip(out.tolist(), batch.y):
+                    convolutions.append(conv)
+                    targets.append(target)
 
         convolutions = torch.Tensor(convolutions).to(self.device)
         targets = torch.Tensor(targets).to(self.device)

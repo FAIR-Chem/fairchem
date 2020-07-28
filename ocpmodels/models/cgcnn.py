@@ -60,6 +60,31 @@ class CGCNN(BaseModel):
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
 
     def forward(self, data):
+        # Forward pass through the network
+        mol_feats = self._convolve(data)
+        mol_feats = self.conv_to_fc(mol_feats)
+        if hasattr(self, "fcs"):
+            mol_feats = self.fcs(mol_feats)
+
+        energy = self.fc_out(mol_feats)
+        if self.regress_forces:
+            forces = -1 * (
+                torch.autograd.grad(
+                    energy,
+                    data.pos,
+                    grad_outputs=torch.ones_like(energy),
+                    create_graph=True,
+                )[0]
+            )
+            return energy, forces
+        else:
+            return energy
+
+    def _convolve(self, data):
+        """
+        Returns the output of the convolution layers before they are passed
+        into the dense layers.
+        """
         # Get node features
         if self.embedding.device != data.atomic_numbers.device:
             self.embedding = self.embedding.to(data.atomic_numbers.device)
@@ -76,31 +101,7 @@ class CGCNN(BaseModel):
         data.edge_weight = (pos[row] - pos[col]).norm(dim=-1)
         data.edge_attr = self.distance_expansion(data.edge_weight)
 
-        # Forward pass through the network
-        mol_feats = self._convolve(data)
-        mol_feats = self.conv_to_fc(mol_feats)
-        if hasattr(self, "fcs"):
-            mol_feats = self.fcs(mol_feats)
-
-        energy = self.fc_out(mol_feats)
-        if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
-            )
-            return energy, forces
-        else:
-            return energy
-
-    def _convolve(self, data):
-        """
-        Returns the output of the convolution layers before they are passed
-        into the dense layers.
-        """
+        # Perform convolution
         node_feats = self.embedding_fc(data.x)
         for f in self.convs:
             node_feats = f(
