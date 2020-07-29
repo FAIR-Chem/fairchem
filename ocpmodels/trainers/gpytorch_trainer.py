@@ -26,6 +26,7 @@ class GPyTorchTrainer:
         preconditioner_size=100,
         device=None,
         n_devices=None,
+        checkpoint_size='auto'
     ):
 
         if Gp is None:
@@ -53,6 +54,7 @@ class GPyTorchTrainer:
         self.device = device
         self.n_devices = n_devices
         self.preconditioner_size = preconditioner_size
+        self.checkpoint_size = checkpoint_size
 
         self.Gp = Gp
         self.Optimizer = Optimizer
@@ -63,12 +65,15 @@ class GPyTorchTrainer:
         self.OutputDist = OutputDist
 
     def train(self, train_x, train_y, lr=0.1, n_training_iter=20):
-        self._calculate_checkpoint_size(train_x, train_y, lr)
+        if self.checkpoint_size == 'auto':
+            checkpoint_size = self._calculate_checkpoint_size(train_x, train_y, lr)
+        else:
+            checkpoint_size = self.checkpoint_size
 
         self._train(
             train_x=train_x,
             train_y=train_y,
-            checkpoint_size=self.checkpoint_size,
+            checkpoint_size=checkpoint_size,
             lr=lr,
             n_training_iter=n_training_iter,
         )
