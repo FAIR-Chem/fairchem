@@ -103,9 +103,7 @@ class ForcesTrainer(BaseTrainer):
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
 
-            traj_per_batch = self.config["task"]["dataset"].get(
-                "traj_per_batch", 1
-            )
+            traj_per_batch = self.config["optim"].get("traj_per_batch", 1)
             sampler = BatchSampler(
                 TrajSampler(self.train_dataset, traj_per_batch),
                 batch_size=self.config["optim"]["batch_size"],
