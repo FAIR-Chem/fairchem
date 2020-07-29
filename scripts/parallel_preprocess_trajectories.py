@@ -64,7 +64,7 @@ def write_images_to_lmdb(mp_arg):
                     f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1)
                 )
                 txn.commit()
-                sampled_unique_ids += process_samples[i]
+                sampled_unique_ids.append(process_samples[i])
                 idx += 1
     except Exception:
         pass
