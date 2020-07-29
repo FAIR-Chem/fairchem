@@ -2,10 +2,12 @@ import glob
 import json
 import os
 import pickle
+import random
+from collections import defaultdict
 
 import lmdb
 import numpy as np
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, Sampler
 from torch_geometric.data import Batch
 
 from ocpmodels.common.registry import registry
@@ -20,6 +22,9 @@ class TrajectoryLmdbDataset(Dataset):
 
         self.db_paths = glob.glob(
             os.path.join(self.config["src"], "") + "*lmdb"
+        )
+        self.txt_paths = glob.glob(
+            os.path.join(self.config["src"], "") + "*txt"
         )
         assert len(self.db_paths) > 0, "No LMDBs found in {}".format(
             self.config["src"]
@@ -36,6 +41,19 @@ class TrajectoryLmdbDataset(Dataset):
         ]
         self._keylens = [len(k) for k in self._keys]
         self._keylen_cumulative = np.cumsum(self._keylens).tolist()
+
+        self._system_samples = defaultdict(list)
+        self._keyidx = 0
+        for kidx, i in enumerate(self.txt_paths):
+            with open(i, "r") as k:
+                traj_steps = k.read().splitlines()[: self._keylens[kidx]]
+            k.close()
+            for idx, sample in enumerate(traj_steps):
+                systemid = os.path.splitext(
+                    os.path.basename(sample).split(",")[0]
+                )[0]
+                self._system_samples[systemid].append(self._keyidx)
+                self._keyidx += 1
 
         self.transform = transform
 
@@ -82,6 +100,32 @@ class TrajectoryLmdbDataset(Dataset):
             map_size=1099511627776 * 2,
         )
         return env
+
+
+class TrajSampler(Sampler):
+    "Randomly samples batches of trajectories"
+
+    def __init__(self, data_source, traj_per_batch=5):
+        self.data_source = data_source
+        self.system_samples = data_source._system_samples
+        self.systemids = list(self.system_samples.keys())
+        self.traj_batch = traj_per_batch
+
+    def __len__(self):
+        return len(self.data_source)
+
+    def __iter__(self):
+        indices = []
+        while len(indices) <= len(self):
+            systemid = random.sample(self.systemids, 1)[0]
+            system_indices = self.system_samples[systemid]
+            if len(system_indices) < self.traj_batch:
+                indices += system_indices
+            else:
+                indices += random.sample(system_indices, self.traj_batch)
+        # trim excess samples
+        indices = indices[: len(self)]
+        return iter(indices)
 
 
 def data_list_collater(data_list):

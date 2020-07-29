@@ -47,7 +47,6 @@ def write_images_to_lmdb(mp_arg):
         dl, process_samples = read_trajectory_and_extract_features(
             a2g, traj_paths[traj_idx], sampled_unique_ids
         )
-        sampled_unique_ids += process_samples
         for i, do in enumerate(dl):
             # filter out images with excessively large forces, if applicable
             if (
@@ -65,6 +64,7 @@ def write_images_to_lmdb(mp_arg):
                     f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1)
                 )
                 txn.commit()
+                sampled_unique_ids.append(process_samples[i])
                 idx += 1
     except Exception:
         pass
