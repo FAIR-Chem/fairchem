@@ -103,6 +103,8 @@ class TrajectoryLmdbDataset(Dataset):
 
 
 class TrajSampler(Sampler):
+    "Randomly samples batches of trajectories"
+
     def __init__(self, data_source, traj_per_batch=5):
         self.data_source = data_source
         self.system_samples = data_source._system_samples
