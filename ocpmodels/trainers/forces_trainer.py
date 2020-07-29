@@ -114,7 +114,7 @@ class ForcesTrainer(BaseTrainer):
                 self.train_dataset,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
-                sampler=sampler,
+                batch_sampler=sampler,
             )
 
             self.val_loader = self.test_loader = None
