@@ -43,17 +43,17 @@ class TrajectoryLmdbDataset(Dataset):
         self._keylen_cumulative = np.cumsum(self._keylens).tolist()
 
         self._system_samples = defaultdict(list)
-        _keyidx = 0
-        for i in self.txt_paths:
+        self._keyidx = 0
+        for kidx, i in enumerate(self.txt_paths):
             with open(i, "r") as k:
-                traj_steps = k.read().splitlines()
+                traj_steps = k.read().splitlines()[: self._keylens[kidx]]
             k.close()
             for idx, sample in enumerate(traj_steps):
                 systemid = os.path.splitext(
                     os.path.basename(sample).split(",")[0]
                 )[0]
-                self._system_samples[systemid].append(_keyidx)
-                _keyidx += 1
+                self._system_samples[systemid].append(self._keyidx)
+                self._keyidx += 1
 
         self.transform = transform
 
