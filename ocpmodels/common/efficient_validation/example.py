@@ -1,14 +1,69 @@
-from ase import Atoms
-
-from bfgs_torch import BFGS
-from ase.calculators.emt import EMT
+import ase.io
 import numpy as np
-d = 0.9575
-t = np.pi / 180 * 104.51
-water = Atoms('H2O',
-              positions=[(d, 0, 0),
-                         (d * np.cos(t), d * np.sin(t), 0),
-                         (0, 0, 0)],
-              calculator=EMT())
-dyn = BFGS(water)
+import torch
+from ase.optimize import BFGS
+from torch import nn
+
+from bfgs_torch import BFGS as BFGS_torch
+from bfgs_torch import TorchCalc
+from ocpmodels.trainers import ForcesTrainer
+
+task = {
+    "dataset": "trajectory",
+    "description": "Regressing to energies and forces for a trajectory dataset",
+    "labels": ["potential energy"],
+    "metric": "mae",
+    "type": "regression",
+    "grad_input": "atomic forces",
+}
+
+model = {
+    "name": "schnet",
+    "hidden_channels": 128,
+    "num_filters": 128,
+    "num_interactions": 3,
+    "num_gaussians": 200,
+    "cutoff": 6.0,
+}
+
+dataset = {
+    "src": "./",
+    "traj": "slab.traj",
+    "train_size": 1,
+    "val_size": 0,
+    "test_size": 0,
+    "normalize_labels": False,
+}
+
+optimizer = {
+    "batch_size": 32,
+    "lr_gamma": 0.1,
+    "lr_initial": 0.0003,
+    "lr_milestones": [20, 30],
+    "max_epochs": 100,
+    "warmup_epochs": 10,
+    "warmup_factor": 0.2,
+    "force_coefficient": 30,
+    "criterion": nn.L1Loss(),
+}
+
+identifier = "slab_example"
+trainer = ForcesTrainer(
+    task=task,
+    model=model,
+    dataset=dataset,
+    optimizer=optimizer,
+    identifier=identifier,
+    print_every=5,
+    is_debug=True,
+    seed=1,
+)
+
+trainer.load_pretrained(
+    "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/checkpoint.pt"
+)
+
+atoms = ase.io.read("slab.traj")
+model = TorchCalc(atoms, trainer)
+dyn = BFGS_torch(model)
 dyn.run(fmax=0.05)
