@@ -12,17 +12,47 @@ import random
 import ase.io
 import lmdb
 import torch
+from ase import Atoms
 from tqdm import tqdm
 
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
+def gratoms_to_atoms(gratoms):
+    atomsobj = Atoms(
+        gratoms.symbols,
+        gratoms.positions,
+        None,
+        gratoms.get_tags(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        gratoms.cell,
+        gratoms.pbc,
+        None,
+        gratoms.constraints,
+        gratoms.info,
+    )
+    return atomsobj
+
+
 def get_tags(data, randomid):
-    input_dir = os.path.join(sysid_mappings[randomid], "metadata.pkl")
-    k = open(input_dir, "rb")
+    mdata_path = os.path.join(sysid_mappings[randomid], "metadata.pkl")
+    sort_path = os.path.join(sysid_mappings[randomid], "ase-sort.dat")
+    k = open(mdata_path, "rb")
     metadata = pickle.load(k)
     k.close()
-    input_atoms = metadata["adsorbed_bulk_atomsobject"]
+    sorts = []
+    with open(sort_path, "r") as f:
+        for line in f:
+            sort, resort = line.split()
+            sorts.append(int(sort))
+    # pre-vasp sorted structure
+    input_atoms = gratoms_to_atoms(metadata["adsorbed_bulk_atomsobject"])
+    # sort to post-vasp structure
+    input_atoms = input_atoms[sorts]
     # sanity check indices match up
     assert (
         input_atoms.get_atomic_numbers().all()
