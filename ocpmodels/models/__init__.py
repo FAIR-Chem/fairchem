@@ -7,7 +7,6 @@ __all__ = [
     "ExactGP",
     "SchNet",
     "Transformer",
-    "SchNetPBCWrap",
 ]
 
 from .cgcnn import CGCNN
@@ -17,5 +16,4 @@ from .dimenet import DimeNet
 from .dogss import DOGSS
 from .gps import ExactGP
 from .schnet import SchNetWrap as SchNet
-from .schnetpbc import SchNetPBCWrap
 from .transformer import Transformer

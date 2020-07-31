@@ -167,7 +167,7 @@ class ForcesTrainer(BaseTrainer):
         # since it is lost when compute dy / dx -- and std to forward target std
         if self.config["model_attributes"].get("regress_forces", True):
             if self.config["dataset"].get("normalize_labels", True):
-                if "target_mean" in self.config["dataset"]:
+                if "grad_target_mean" in self.config["dataset"]:
                     self.normalizers["grad_target"] = Normalizer(
                         mean=self.config["dataset"]["grad_target_mean"],
                         std=self.config["dataset"]["grad_target_std"],
