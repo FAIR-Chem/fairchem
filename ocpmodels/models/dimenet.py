@@ -1,5 +1,3 @@
-from math import sqrt
-
 import torch
 from torch import nn
 from torch_geometric.nn import DimeNet, radius_graph
