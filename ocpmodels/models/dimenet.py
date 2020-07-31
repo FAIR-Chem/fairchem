@@ -13,6 +13,7 @@ class DimeNetWrap(DimeNet):
         num_atoms,
         bond_feat_dim,  # not used
         num_targets,
+        use_pbc=True,
         regress_forces=True,
         hidden_channels=128,
         num_blocks=6,
@@ -27,6 +28,7 @@ class DimeNetWrap(DimeNet):
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
+        self.use_pbc = use_pbc
         self.cutoff = cutoff
 
         super(DimeNetWrap, self).__init__(
@@ -52,7 +54,34 @@ class DimeNetWrap(DimeNet):
             pos = pos.requires_grad_(True)
         batch = data.batch
         x = self.embedding(data.atomic_numbers.long())
-        edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
+        if self.use_pbc:
+            edge_index = data.edge_index
+            row, col = edge_index
+
+            edge_weight = pos[row] - pos[col]
+
+            # correct for pbc
+            cell = torch.repeat_interleave(data.cell, data.natoms * 12, dim=0)
+            cell_offsets = data.cell_offsets
+            offsets = (
+                cell_offsets.float()
+                .view(-1, 1, 3)
+                .bmm(cell.float())
+                .view(-1, 3)
+            )
+            edge_weight += offsets
+
+            # compute distances
+            edge_weight = edge_weight.norm(dim=-1)
+
+            # remove zero distances
+            nonzero_idx = torch.nonzero(edge_weight).flatten()
+            edge_index = edge_index[:, nonzero_idx]
+            # remove -1 indices
+            nonnegative_idx = (edge_index[1] != -1).nonzero().view(-1)
+            edge_index = edge_index[:, nonnegative_idx]
+        else:
+            edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
 
         j, i = edge_index
         idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
