@@ -16,6 +16,7 @@ class CGCNN(BaseModel):
         num_atoms,
         bond_feat_dim,
         num_targets,
+        use_pbc=True,
         regress_forces=True,
         atom_embedding_size=64,
         num_graph_conv_layers=6,
@@ -26,6 +27,7 @@ class CGCNN(BaseModel):
     ):
         super(CGCNN, self).__init__(num_atoms, bond_feat_dim, num_targets)
         self.regress_forces = regress_forces
+        self.use_pbc = use_pbc
 
         # Get CGCNN atom embeddings
         self.embedding = torch.zeros(100, 92)
@@ -65,10 +67,38 @@ class CGCNN(BaseModel):
             self.embedding = self.embedding.to(data.atomic_numbers.device)
         data.x = self.embedding[data.atomic_numbers.long() - 1]
 
-        # Construct graph, get edge features
-        data.edge_index = radius_graph(
-            data.pos, r=self.cutoff, batch=data.batch
-        )
+        if self.use_pbc:
+            pos = data.pos
+            edge_index = data.edge_index
+            row, col = edge_index
+
+            edge_weight = pos[row] - pos[col]
+
+            # correct for pbc
+            cell = torch.repeat_interleave(data.cell, data.natoms * 12, dim=0)
+            cell_offsets = data.cell_offsets
+            offsets = (
+                cell_offsets.float()
+                .view(-1, 1, 3)
+                .bmm(cell.float())
+                .view(-1, 3)
+            )
+            edge_weight += offsets
+
+            # compute distances
+            edge_weight = edge_weight.norm(dim=-1)
+
+            # remove zero distances
+            nonzero_idx = torch.nonzero(edge_weight).flatten()
+            edge_index = edge_index[:, nonzero_idx]
+            # remove -1 indices
+            nonnegative_idx = (edge_index[1] != -1).nonzero().view(-1)
+            edge_index = edge_index[:, nonnegative_idx]
+            data.edge_index = edge_index
+        else:
+            data.edge_index = radius_graph(
+                data.pos, r=self.cutoff, batch=data.batch
+            )
         row, col = data.edge_index
         pos = data.pos
         if self.regress_forces:
