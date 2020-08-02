@@ -9,12 +9,12 @@ import os
 import pickle
 import random
 
+from tqdm import tqdm
+
 import ase.io
 import lmdb
 import torch
 from ase import Atoms
-from tqdm import tqdm
-
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
