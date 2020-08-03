@@ -68,6 +68,7 @@ class SchNetWrap(SchNet):
             nonzero_idx = torch.nonzero(edge_weight).flatten()
             edge_weight = edge_weight[nonzero_idx]
             edge_index = edge_index[:, nonzero_idx]
+
             # remove -1 indices
             nonnegative_idx = (edge_index[1] != -1).nonzero().view(-1)
             edge_index = edge_index[:, nonnegative_idx]
