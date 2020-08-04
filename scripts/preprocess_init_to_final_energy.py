@@ -142,7 +142,7 @@ if __name__ == "__main__":
         map_async=True,
     )
 
-    # Chunk the trajectories into args.num_workers splits
+    # Prune the trajectories list based on args.size
     pruned_traj_files = raw_traj_files[: args.size]
 
     # Extract features
