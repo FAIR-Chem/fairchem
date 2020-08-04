@@ -9,12 +9,12 @@ import os
 import pickle
 import random
 
-from tqdm import tqdm
-
 import ase.io
 import lmdb
 import torch
 from ase import Atoms
+from tqdm import tqdm
+
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -162,6 +162,9 @@ if __name__ == "__main__":
             del dl[0].y
         except Exception as e:
             print(str(e), traj_path)
+            continue
+
+        if dl[0].y_relaxed > 50 or dl[0].y_relaxed < -50:
             continue
 
         txn = db.begin(write=True)
