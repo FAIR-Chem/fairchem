@@ -5,13 +5,12 @@ import shutil
 from bisect import bisect
 from itertools import product
 
+import demjson
 import numpy as np
+import torch
 import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
-
-import demjson
-import torch
 from torch_geometric.utils import remove_self_loops
 
 
@@ -249,3 +248,29 @@ def build_config(args):
     config["print_every"] = args.print_every
 
     return config
+
+
+def get_pbc_distances(pos, edge_index, cell, cell_offsets, natoms):
+    row, col = edge_index
+
+    distance_vectors = pos[row] - pos[col]
+
+    # correct for pbc
+    cell = torch.repeat_interleave(cell, natoms * 12, dim=0)
+    offsets = cell_offsets.float().view(-1, 1, 3).bmm(cell.float()).view(-1, 3)
+    distance_vectors -= offsets
+
+    # compute distances
+    distances = distance_vectors.norm(dim=-1)
+
+    # remove zero distances
+    nonzero_idx = torch.nonzero(distances).flatten()
+    edge_index = edge_index[:, nonzero_idx]
+    distances = distances[nonzero_idx]
+
+    # remove -1 indices
+    nonnegative_idx = (edge_index[1] != -1).nonzero().view(-1)
+    edge_index = edge_index[:, nonnegative_idx]
+    distances = distances[nonnegative_idx]
+
+    return edge_index, distances
