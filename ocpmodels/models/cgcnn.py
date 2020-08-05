@@ -4,6 +4,7 @@ from torch_geometric.nn import global_mean_pool, radius_graph
 from torch_geometric.nn.models.schnet import GaussianSmearing
 
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances
 from ocpmodels.datasets.elemental_embeddings import EMBEDDINGS
 from ocpmodels.models.base import BaseModel
 from ocpmodels.modules.layers import CGCNNConv
@@ -72,36 +73,9 @@ class CGCNN(BaseModel):
             pos = pos.requires_grad_(True)
 
         if self.use_pbc:
-            edge_index = data.edge_index
-            row, col = edge_index
-
-            edge_weight = pos[row] - pos[col]
-
-            # correct for pbc
-            cell = torch.repeat_interleave(data.cell, data.natoms * 12, dim=0)
-            cell_offsets = data.cell_offsets
-            offsets = (
-                cell_offsets.float()
-                .view(-1, 1, 3)
-                .bmm(cell.float())
-                .view(-1, 3)
+            data.edge_index, data.edge_weight = get_pbc_distances(
+                pos, data.edge_index, data.cell, data.cell_offsets, data.natoms
             )
-            edge_weight -= offsets
-
-            # compute distances
-            edge_weight = edge_weight.norm(dim=-1)
-
-            # remove zero distances
-            nonzero_idx = torch.nonzero(edge_weight).flatten()
-            edge_index = edge_index[:, nonzero_idx]
-            edge_weight = edge_weight[nonzero_idx]
-            # remove -1 indices
-            nonnegative_idx = (edge_index[1] != -1).nonzero().view(-1)
-            edge_index = edge_index[:, nonnegative_idx]
-            edge_weight = edge_weight[nonnegative_idx]
-
-            data.edge_index = edge_index
-            data.edge_weight = edge_weight
         else:
             data.edge_index = radius_graph(
                 data.pos, r=self.cutoff, batch=data.batch
