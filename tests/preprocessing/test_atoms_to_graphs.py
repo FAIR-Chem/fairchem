@@ -12,9 +12,7 @@ from ocpmodels.preprocessing import AtomsToGraphs
 @pytest.fixture(scope="class")
 def atoms_to_graphs_internals(request):
     atoms = read(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "test_atoms.json"
-        ),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "atoms.json"),
         index=0,
         format="json",
     )

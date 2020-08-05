@@ -3,6 +3,7 @@ from torch_geometric.nn import SchNet
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances
 
 
 @registry.register_model("schnet")
@@ -41,40 +42,13 @@ class SchNetWrap(SchNet):
 
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
-            batch = torch.zeros_like(z) if batch is None else batch
 
-            h = self.embedding(z)
-
-            edge_index = data.edge_index
-            row, col = edge_index
-
-            edge_weight = pos[row] - pos[col]
-
-            # correct for pbc
-            cell = torch.repeat_interleave(data.cell, data.natoms * 12, dim=0)
-            cell_offsets = data.cell_offsets
-            offsets = (
-                cell_offsets.float()
-                .view(-1, 1, 3)
-                .bmm(cell.float())
-                .view(-1, 3)
+            edge_index, edge_weight = get_pbc_distances(
+                pos, data.edge_index, data.cell, data.cell_offsets, data.natoms
             )
-            edge_weight += offsets
-
-            # compute distances
-            edge_weight = edge_weight.norm(dim=-1)
-
-            # remove zero distances
-            nonzero_idx = torch.nonzero(edge_weight).flatten()
-            edge_weight = edge_weight[nonzero_idx]
-            edge_index = edge_index[:, nonzero_idx]
-            # remove -1 indices
-            nonnegative_idx = (edge_index[1] != -1).nonzero().view(-1)
-            edge_index = edge_index[:, nonnegative_idx]
-            edge_weight = edge_weight[nonnegative_idx]
-
             edge_attr = self.distance_expansion(edge_weight)
 
+            h = self.embedding(z)
             for interaction in self.interactions:
                 h = h + interaction(h, edge_index, edge_weight, edge_attr)
 
@@ -82,6 +56,7 @@ class SchNetWrap(SchNet):
             h = self.act(h)
             h = self.lin2(h)
 
+            batch = torch.zeros_like(z) if batch is None else batch
             energy = scatter(h, batch, dim=0, reduce=self.readout)
         else:
             energy = super(SchNetWrap, self).forward(z, pos, batch)
