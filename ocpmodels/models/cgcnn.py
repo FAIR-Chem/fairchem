@@ -67,8 +67,11 @@ class CGCNN(BaseModel):
             self.embedding = self.embedding.to(data.atomic_numbers.device)
         data.x = self.embedding[data.atomic_numbers.long() - 1]
 
+        pos = data.pos
+        if self.regress_forces:
+            pos = pos.requires_grad_(True)
+
         if self.use_pbc:
-            pos = data.pos
             edge_index = data.edge_index
             row, col = edge_index
 
@@ -91,21 +94,22 @@ class CGCNN(BaseModel):
             # remove zero distances
             nonzero_idx = torch.nonzero(edge_weight).flatten()
             edge_index = edge_index[:, nonzero_idx]
+            edge_weight = edge_weight[nonzero_idx]
             # remove -1 indices
             nonnegative_idx = (edge_index[1] != -1).nonzero().view(-1)
             edge_index = edge_index[:, nonnegative_idx]
+            edge_weight = edge_weight[nonnegative_idx]
+
             data.edge_index = edge_index
+            data.edge_weight = edge_weight
         else:
             data.edge_index = radius_graph(
                 data.pos, r=self.cutoff, batch=data.batch
             )
-        row, col = data.edge_index
-        pos = data.pos
-        if self.regress_forces:
-            pos = pos.requires_grad_(True)
-        data.edge_weight = (pos[row] - pos[col]).norm(dim=-1)
-        data.edge_attr = self.distance_expansion(data.edge_weight)
+            row, col = data.edge_index
+            data.edge_weight = (pos[row] - pos[col]).norm(dim=-1)
 
+        data.edge_attr = self.distance_expansion(data.edge_weight)
         # Forward pass through the network
         mol_feats = self._convolve(data)
         mol_feats = self.conv_to_fc(mol_feats)
