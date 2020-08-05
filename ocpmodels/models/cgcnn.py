@@ -86,7 +86,7 @@ class CGCNN(BaseModel):
                 .bmm(cell.float())
                 .view(-1, 3)
             )
-            edge_weight += offsets
+            edge_weight -= offsets
 
             # compute distances
             edge_weight = edge_weight.norm(dim=-1)
