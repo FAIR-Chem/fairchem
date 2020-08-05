@@ -56,19 +56,18 @@ class DimeNetWrap(DimeNet):
         batch = data.batch
         x = self.embedding(data.atomic_numbers.long())
         if self.use_pbc:
-            edge_index, distances = get_pbc_distances(
+            edge_index, dist = get_pbc_distances(
                 pos, data.edge_index, data.cell, data.cell_offsets, data.natoms
             )
+            j, i = edge_index
         else:
             edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
+            j, i = edge_index
+            dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
-        j, i = edge_index
         idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
             edge_index, num_nodes=x.size(0)
         )
-
-        # Calculate distances.
-        dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
         # Calculate angles.
         pos_i = pos[idx_i].detach()
