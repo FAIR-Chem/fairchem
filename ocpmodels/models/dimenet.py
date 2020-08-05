@@ -4,6 +4,7 @@ from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances
 
 
 @registry.register_model("dimenet")
@@ -55,41 +56,18 @@ class DimeNetWrap(DimeNet):
         batch = data.batch
         x = self.embedding(data.atomic_numbers.long())
         if self.use_pbc:
-            edge_index = data.edge_index
-            row, col = edge_index
-
-            edge_weight = pos[row] - pos[col]
-
-            # correct for pbc
-            cell = torch.repeat_interleave(data.cell, data.natoms * 12, dim=0)
-            cell_offsets = data.cell_offsets
-            offsets = (
-                cell_offsets.float()
-                .view(-1, 1, 3)
-                .bmm(cell.float())
-                .view(-1, 3)
+            edge_index, dist = get_pbc_distances(
+                pos, data.edge_index, data.cell, data.cell_offsets, data.natoms
             )
-            edge_weight += offsets
-
-            # compute distances
-            edge_weight = edge_weight.norm(dim=-1)
-
-            # remove zero distances
-            nonzero_idx = torch.nonzero(edge_weight).flatten()
-            edge_index = edge_index[:, nonzero_idx]
-            # remove -1 indices
-            nonnegative_idx = (edge_index[1] != -1).nonzero().view(-1)
-            edge_index = edge_index[:, nonnegative_idx]
+            j, i = edge_index
         else:
             edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
+            j, i = edge_index
+            dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
-        j, i = edge_index
         idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
             edge_index, num_nodes=x.size(0)
         )
-
-        # Calculate distances.
-        dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
         # Calculate angles.
         pos_i = pos[idx_i].detach()
