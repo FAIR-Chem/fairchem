@@ -9,10 +9,10 @@ import os
 import pickle
 import random
 
-import ase.io
 import lmdb
 import torch
 from ase import Atoms
+from ase.io.trajectory import Trajectory
 from tqdm import tqdm
 
 from ocpmodels.preprocessing import AtomsToGraphs
@@ -63,7 +63,7 @@ def get_tags(data, randomid):
 
 
 def read_trajectory_and_extract_features(a2g, traj_path):
-    traj = ase.io.read(traj_path, ":")
+    traj = Trajectory(traj_path)
     images = [traj[0], traj[-1]]
     return a2g.convert_all(images, disable_tqdm=True)
 
