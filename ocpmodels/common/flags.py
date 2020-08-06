@@ -54,6 +54,25 @@ class Flags:
         self.parser.add_argument(
             "--seed", default=0, type=int, help="Seed for torch, cuda, numpy"
         )
+        # Cluster args
+        self.parser.add_argument(
+            "--submit", action='store_true', help="Submit job to cluster"
+        )
+        self.parser.add_argument(
+            "--logdir", default='logs', type=str, help="Where to store logs"
+        )
+        self.parser.add_argument(
+            "--slurm-partition", default="dev", type=str, help="Name of partition"
+        )
+        self.parser.add_argument(
+            "--slurm-mem", default=80, type=int, help="Memory (in gigabytes)"
+        )
+        self.parser.add_argument(
+            "--slurm-timeout", default=72, type=int, help="Time (in hours)"
+        )
+        self.parser.add_argument(
+            "--num-gpus", default=1, type=int, help="Number of GPUs to request"
+        )
 
 
 flags = Flags()
