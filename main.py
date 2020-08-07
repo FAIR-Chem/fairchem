@@ -2,7 +2,7 @@ import submitit
 
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import build_config, setup_imports
+from ocpmodels.common.utils import build_config, setup_imports, create_grid, save_experiment_log
 
 
 def main(config):
@@ -28,7 +28,13 @@ if __name__ == "__main__":
     config = build_config(args)
 
     if args.submit:  # Run on cluster
-        executor = submitit.AutoExecutor(folder=args.logdir)
+        if args.sweep_yml:  # Run grid search
+            configs = create_grid(config, args.sweep_yml)
+        else:
+            configs = [config]
+
+        print(f'Submitting {len(configs)} jobs')
+        executor = submitit.AutoExecutor(folder=args.logdir / '%j')
         executor.update_parameters(
             name=args.identifier,
             mem_gb=args.slurm_mem,
@@ -36,10 +42,12 @@ if __name__ == "__main__":
             slurm_partition=args.slurm_partition,
             gpus_per_node=args.num_gpus,
             cpus_per_task=(args.num_workers + 1),
-            ntasks_per_node=1,
+            tasks_per_node=1,
         )
-        job = executor.submit(main, config)
-        print('Submitted job:', job.job_id)
+        jobs = executor.map_array(main, configs)
+        print('Submitted jobs:', ', '.join([job.job_id for job in jobs]))
+        log_file = save_experiment_log(args, jobs, configs)
+        print(f'Experiment log saved to: {log_file}')
 
     else:  # Run locally
         main(config)

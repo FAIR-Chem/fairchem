@@ -1,6 +1,5 @@
 import argparse
-import sys
-
+from pathlib import Path
 
 class Flags:
     def __init__(self):
@@ -56,10 +55,14 @@ class Flags:
         )
         # Cluster args
         self.parser.add_argument(
+            "--sweep-yml", default=None, type=Path,
+            help="Path to a config file with parameter sweeps"
+        )
+        self.parser.add_argument(
             "--submit", action='store_true', help="Submit job to cluster"
         )
         self.parser.add_argument(
-            "--logdir", default='logs', type=str, help="Where to store logs"
+            "--logdir", default='logs', type=Path, help="Where to store logs"
         )
         self.parser.add_argument(
             "--slurm-partition", default="dev", type=str, help="Name of partition"
