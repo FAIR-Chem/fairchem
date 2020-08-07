@@ -103,3 +103,6 @@ Local
 
 # VIM swap files
 *.swp
+
+# PyCharm
+.idea/

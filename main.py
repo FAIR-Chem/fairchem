@@ -1,14 +1,17 @@
+import submitit
+
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import build_config, setup_imports
+from ocpmodels.common.utils import (
+    build_config,
+    create_grid,
+    save_experiment_log,
+    setup_imports,
+)
 
-if __name__ == "__main__":
-    parser = flags.get_parser()
-    args = parser.parse_args()
 
+def main(config):
     setup_imports()
-    config = build_config(args)
-
     trainer = registry.get_trainer_class(config.get("trainer", "simple"))(
         task=config["task"],
         model=config["model"],
@@ -22,3 +25,34 @@ if __name__ == "__main__":
         logger=config.get("logger", "tensorboard"),
     )
     trainer.train()
+
+
+if __name__ == "__main__":
+    parser = flags.get_parser()
+    args = parser.parse_args()
+    config = build_config(args)
+
+    if args.submit:  # Run on cluster
+        if args.sweep_yml:  # Run grid search
+            configs = create_grid(config, args.sweep_yml)
+        else:
+            configs = [config]
+
+        print(f"Submitting {len(configs)} jobs")
+        executor = submitit.AutoExecutor(folder=args.logdir / "%j")
+        executor.update_parameters(
+            name=args.identifier,
+            mem_gb=args.slurm_mem,
+            timeout_min=args.slurm_timeout * 60,
+            slurm_partition=args.slurm_partition,
+            gpus_per_node=args.num_gpus,
+            cpus_per_task=(args.num_workers + 1),
+            tasks_per_node=1,
+        )
+        jobs = executor.map_array(main, configs)
+        print("Submitted jobs:", ", ".join([job.job_id for job in jobs]))
+        log_file = save_experiment_log(args, jobs, configs)
+        print(f"Experiment log saved to: {log_file}")
+
+    else:  # Run locally
+        main(config)

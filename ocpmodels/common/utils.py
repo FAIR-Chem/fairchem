@@ -1,7 +1,11 @@
+import collections
+import copy
 import glob
 import importlib
+import itertools
+import json
 import os
-import shutil
+import time
 from bisect import bisect
 from itertools import product
 
@@ -248,6 +252,58 @@ def build_config(args):
     config["print_every"] = args.print_every
 
     return config
+
+
+def create_grid(base_config, sweep_file):
+    def _flatten_sweeps(sweeps, root_key="", sep="."):
+        flat_sweeps = []
+        for key, value in sweeps.items():
+            new_key = root_key + sep + key if root_key else key
+            if isinstance(value, collections.MutableMapping):
+                flat_sweeps.extend(_flatten_sweeps(value, new_key).items())
+            else:
+                flat_sweeps.append((new_key, value))
+        return collections.OrderedDict(flat_sweeps)
+
+    def _update_config(config, keys, override_vals, sep="."):
+        for key, value in zip(keys, override_vals):
+            key_path = key.split(sep)
+            child_config = config
+            for name in key_path[:-1]:
+                child_config = child_config[name]
+            child_config[key_path[-1]] = value
+        return config
+
+    sweeps = yaml.safe_load(open(sweep_file, "r"))
+    flat_sweeps = _flatten_sweeps(sweeps)
+    keys = list(flat_sweeps.keys())
+    values = list(itertools.product(*flat_sweeps.values()))
+
+    configs = []
+    for i, override_vals in enumerate(values):
+        config = copy.deepcopy(base_config)
+        config = _update_config(config, keys, override_vals)
+        config["identifier"] = config["identifier"] + f"_run{i}"
+        configs.append(config)
+    return configs
+
+
+def save_experiment_log(args, jobs, configs):
+    log_file = args.logdir / "exp" / time.strftime("%Y-%m-%d-%I-%M-%S%p.log")
+    log_file.parent.mkdir(exist_ok=True, parents=True)
+    with open(log_file, "w") as f:
+        for job, config in zip(jobs, configs):
+            print(
+                json.dumps(
+                    {
+                        "config": config,
+                        "slurm_id": job.job_id,
+                        "timestamp": time.strftime("%I:%M:%S%p %Z %b %d, %Y"),
+                    }
+                ),
+                file=f,
+            )
+    return log_file
 
 
 def get_pbc_distances(pos, edge_index, cell, cell_offsets, natoms):
