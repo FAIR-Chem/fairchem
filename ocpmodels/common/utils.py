@@ -255,7 +255,7 @@ def build_config(args):
 
 
 def create_grid(base_config, sweep_file):
-    def _flatten_sweeps(sweeps, root_key='', sep='.'):
+    def _flatten_sweeps(sweeps, root_key="", sep="."):
         flat_sweeps = []
         for key, value in sweeps.items():
             new_key = root_key + sep + key if root_key else key
@@ -265,7 +265,7 @@ def create_grid(base_config, sweep_file):
                 flat_sweeps.append((new_key, value))
         return collections.OrderedDict(flat_sweeps)
 
-    def _update_config(config, keys, override_vals, sep='.'):
+    def _update_config(config, keys, override_vals, sep="."):
         for key, value in zip(keys, override_vals):
             key_path = key.split(sep)
             child_config = config
@@ -283,23 +283,25 @@ def create_grid(base_config, sweep_file):
     for i, override_vals in enumerate(values):
         config = copy.deepcopy(base_config)
         config = _update_config(config, keys, override_vals)
-        config['identifier'] = config['identifier'] + f'_run{i}'
+        config["identifier"] = config["identifier"] + f"_run{i}"
         configs.append(config)
     return configs
 
 
 def save_experiment_log(args, jobs, configs):
-    log_file = args.logdir / 'exp' / time.strftime("%Y-%m-%d-%I-%M-%S%p.log")
+    log_file = args.logdir / "exp" / time.strftime("%Y-%m-%d-%I-%M-%S%p.log")
     log_file.parent.mkdir(exist_ok=True, parents=True)
-    with open(log_file, 'w') as f:
+    with open(log_file, "w") as f:
         for job, config in zip(jobs, configs):
             print(
-                json.dumps({
-                    "config": config,
-                    "slurm_id": job.job_id,
-                    "timestamp": time.strftime("%I:%M:%S%p %Z %b %d, %Y"),
-                }),
-                file=f
+                json.dumps(
+                    {
+                        "config": config,
+                        "slurm_id": job.job_id,
+                        "timestamp": time.strftime("%I:%M:%S%p %Z %b %d, %Y"),
+                    }
+                ),
+                file=f,
             )
     return log_file
 

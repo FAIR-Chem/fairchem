@@ -2,7 +2,12 @@ import submitit
 
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import build_config, setup_imports, create_grid, save_experiment_log
+from ocpmodels.common.utils import (
+    build_config,
+    create_grid,
+    save_experiment_log,
+    setup_imports,
+)
 
 
 def main(config):
@@ -33,8 +38,8 @@ if __name__ == "__main__":
         else:
             configs = [config]
 
-        print(f'Submitting {len(configs)} jobs')
-        executor = submitit.AutoExecutor(folder=args.logdir / '%j')
+        print(f"Submitting {len(configs)} jobs")
+        executor = submitit.AutoExecutor(folder=args.logdir / "%j")
         executor.update_parameters(
             name=args.identifier,
             mem_gb=args.slurm_mem,
@@ -45,9 +50,9 @@ if __name__ == "__main__":
             tasks_per_node=1,
         )
         jobs = executor.map_array(main, configs)
-        print('Submitted jobs:', ', '.join([job.job_id for job in jobs]))
+        print("Submitted jobs:", ", ".join([job.job_id for job in jobs]))
         log_file = save_experiment_log(args, jobs, configs)
-        print(f'Experiment log saved to: {log_file}')
+        print(f"Experiment log saved to: {log_file}")
 
     else:  # Run locally
         main(config)
