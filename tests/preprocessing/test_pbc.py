@@ -7,6 +7,7 @@ from ase.io import read
 from pymatgen.io.ase import AseAtomsAdaptor
 
 from ocpmodels.common.utils import get_pbc_distances
+from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -34,19 +35,20 @@ def load_data(request):
 class TestPBC:
     def test_pbc_distances(self):
         data = self.data
+        batch = data_list_collater([data] * 5)
         edge_index, pbc_distances = get_pbc_distances(
-            data.pos,
-            data.edge_index,
-            data.cell,
-            data.cell_offsets,
-            data.natoms,
+            batch.pos,
+            batch.edge_index,
+            batch.cell,
+            batch.cell_offsets,
+            batch.natoms,
         )
 
         # consider non-dummy edges only
-        nonnegative_idx = (data.edge_index[1] != -1).nonzero().view(-1)
+        nonnegative_idx = (batch.edge_index[1] != -1).nonzero().view(-1)
         np.testing.assert_array_equal(
-            data.edge_index[:, nonnegative_idx], edge_index,
+            batch.edge_index[:, nonnegative_idx], edge_index,
         )
         np.testing.assert_array_almost_equal(
-            data.distances[nonnegative_idx], pbc_distances
+            batch.distances[nonnegative_idx], pbc_distances
         )
