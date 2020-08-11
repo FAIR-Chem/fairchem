@@ -129,14 +129,11 @@ class TrajSampler(Sampler):
 
 
 def data_list_collater(data_list):
-    _padded_indices = []
-    _cumulative_idx = 0
-    for data in data_list:
-        image_pad = (data.edge_index[1, :] == -1).nonzero().view(
-            -1
-        ) + 12 * _cumulative_idx
-        _padded_indices += image_pad
-        _cumulative_idx += data.natoms
     batch = Batch.from_data_list(data_list)
-    batch.edge_index[1, _padded_indices] = -1
+    cum_edges = 0
+    for i, data in enumerate(data_list):
+        pad_idx = (data.edge_index[1, :] == -1).nonzero().view(-1)
+        n_edges = data.edge_index.shape[-1]
+        batch.edge_index[1, cum_edges : cum_edges + n_edges][pad_idx] = -1
+        cum_edges += n_edges
     return batch
