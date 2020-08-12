@@ -50,6 +50,7 @@ class OCPDataParallel(torch.nn.DataParallel):
                 "cell_offsets",
                 "natoms",
                 "edge_index",
+                "neighbors",
             )
             for i, batch in enumerate(batch_list)
         ]
