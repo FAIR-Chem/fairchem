@@ -42,7 +42,7 @@ class TestPBC:
             batch.cell,
             batch.cell_offsets,
             batch.neighbors,
-            cutoff=6,
+            cutoff=6.0,
         )
 
         np.testing.assert_array_equal(
