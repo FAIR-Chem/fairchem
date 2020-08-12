@@ -132,7 +132,7 @@ class TrajSampler(Sampler):
 def data_list_collater(data_list):
     n_neighbors = []
     for i, data in enumerate(data_list):
-        pad_idx = (data.edge_index[1, :] != -1).nonzero().view(-1)
+        pad_idx = torch.nonzero(data.edge_index[1, :] != -1).flatten()
         n_neighbors.append(pad_idx.shape[0])
         data.edge_index = data.edge_index[:, pad_idx]
         data.cell_offsets = data.cell_offsets[pad_idx]

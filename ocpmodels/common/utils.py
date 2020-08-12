@@ -328,7 +328,7 @@ def get_pbc_distances(pos, edge_index, cell, cell_offsets, neighbors, cutoff):
     # thinks they're less than the cutoff radius, but not ase. They're about
     # 0.01% of all remaining edges after the above steps. Manually remove these.
     # TODO: get rid of this whenever we figure out pymatgen / ase inconsistency.
-    small_idx = (distances < cutoff).nonzero().flatten()
+    small_idx = torch.nonzero(distances < cutoff).nonzero()
     edge_index = edge_index[:, small_idx]
     distances = distances[small_idx]
 
@@ -336,7 +336,7 @@ def get_pbc_distances(pos, edge_index, cell, cell_offsets, neighbors, cutoff):
     # thinks they're less than the cutoff radius, but not ase. They're about
     # 0.01% of all remaining edges after the above steps. Manually remove these.
     # TODO: get rid of this whenever we figure out pymatgen / ase inconsistency.
-    small_idx = (distances < 6.0).nonzero().flatten()
+    small_idx = torch.nonzero(distances < 6.0).flatten()
     edge_index = edge_index[:, small_idx]
     distances = distances[small_idx]
 
