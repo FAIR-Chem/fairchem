@@ -74,7 +74,12 @@ class CGCNN(BaseModel):
 
         if self.use_pbc:
             data.edge_index, data.edge_weight = get_pbc_distances(
-                pos, data.edge_index, data.cell, data.cell_offsets, data.natoms
+                pos,
+                data.edge_index,
+                data.cell,
+                data.cell_offsets,
+                data.neighbors,
+                self.cutoff,
             )
         else:
             data.edge_index = radius_graph(
