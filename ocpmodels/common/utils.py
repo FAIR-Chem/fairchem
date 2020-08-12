@@ -306,13 +306,13 @@ def save_experiment_log(args, jobs, configs):
     return log_file
 
 
-def get_pbc_distances(pos, edge_index, cell, cell_offsets, natoms):
+def get_pbc_distances(pos, edge_index, cell, cell_offsets, neighbors, cutoff):
     row, col = edge_index
 
     distance_vectors = pos[row] - pos[col]
 
     # correct for pbc
-    cell = torch.repeat_interleave(cell, natoms * 12, dim=0)
+    cell = torch.repeat_interleave(cell, neighbors, dim=0)
     offsets = cell_offsets.float().view(-1, 1, 3).bmm(cell.float()).view(-1, 3)
     distance_vectors -= offsets
 
@@ -324,16 +324,11 @@ def get_pbc_distances(pos, edge_index, cell, cell_offsets, natoms):
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
 
-    # remove -1 indices
-    nonnegative_idx = (edge_index[1] != -1).nonzero().view(-1)
-    edge_index = edge_index[:, nonnegative_idx]
-    distances = distances[nonnegative_idx]
-
     # Some edges have inconsistent distances b/w pymatgen and ase. pymatgen
     # thinks they're less than the cutoff radius, but not ase. They're about
     # 0.01% of all remaining edges after the above steps. Manually remove these.
     # TODO: get rid of this whenever we figure out pymatgen / ase inconsistency.
-    small_idx = (distances < 6.0).nonzero().flatten()
+    small_idx = torch.nonzero(distances < cutoff).flatten()
     edge_index = edge_index[:, small_idx]
     distances = distances[small_idx]
 

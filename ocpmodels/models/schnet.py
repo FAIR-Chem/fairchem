@@ -44,7 +44,12 @@ class SchNetWrap(SchNet):
             assert z.dim() == 1 and z.dtype == torch.long
 
             edge_index, edge_weight = get_pbc_distances(
-                pos, data.edge_index, data.cell, data.cell_offsets, data.natoms
+                pos,
+                data.edge_index,
+                data.cell,
+                data.cell_offsets,
+                data.neighbors,
+                self.cutoff,
             )
             edge_attr = self.distance_expansion(edge_weight)
 

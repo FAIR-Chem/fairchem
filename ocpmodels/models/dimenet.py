@@ -57,7 +57,12 @@ class DimeNetWrap(DimeNet):
         x = self.embedding(data.atomic_numbers.long())
         if self.use_pbc:
             edge_index, dist = get_pbc_distances(
-                pos, data.edge_index, data.cell, data.cell_offsets, data.natoms
+                pos,
+                data.edge_index,
+                data.cell,
+                data.cell_offsets,
+                data.neighbors,
+                self.cutoff,
             )
             j, i = edge_index
         else:
