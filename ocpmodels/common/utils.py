@@ -329,4 +329,12 @@ def get_pbc_distances(pos, edge_index, cell, cell_offsets, natoms):
     edge_index = edge_index[:, nonnegative_idx]
     distances = distances[nonnegative_idx]
 
+    # Some edges have inconsistent distances b/w pymatgen and ase. pymatgen
+    # thinks they're less than the cutoff radius, but not ase. They're about
+    # 0.01% of all remaining edges after the above steps. Manually remove these.
+    # TODO: get rid of this whenever we figure out pymatgen / ase inconsistency.
+    small_idx = (distances < 6.0).nonzero().flatten()
+    edge_index = edge_index[:, small_idx]
+    distances = distances[small_idx]
+
     return edge_index, distances
