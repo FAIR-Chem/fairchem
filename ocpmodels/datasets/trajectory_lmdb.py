@@ -23,10 +23,10 @@ class TrajectoryLmdbDataset(Dataset):
 
         self.db_paths = glob.glob(
             os.path.join(self.config["src"], "") + "*lmdb"
-        )[:60]
+        )
         self.txt_paths = glob.glob(
             os.path.join(self.config["src"], "") + "*txt"
-        )[:60]
+        )
         assert len(self.db_paths) > 0, "No LMDBs found in {}".format(
             self.config["src"]
         )
