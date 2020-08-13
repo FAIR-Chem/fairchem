@@ -23,10 +23,10 @@ class TrajectoryLmdbDataset(Dataset):
 
         self.db_paths = glob.glob(
             os.path.join(self.config["src"], "") + "*lmdb"
-        )
+        )[:60]
         self.txt_paths = glob.glob(
             os.path.join(self.config["src"], "") + "*txt"
-        )
+        )[:60]
         assert len(self.db_paths) > 0, "No LMDBs found in {}".format(
             self.config["src"]
         )
@@ -132,14 +132,8 @@ class TrajSampler(Sampler):
 def data_list_collater(data_list):
     n_neighbors = []
     for i, data in enumerate(data_list):
-        pad_idx = torch.nonzero(data.edge_index[1, :] != -1).flatten()
-        n_neighbors.append(pad_idx.shape[0])
-        data.edge_index = data.edge_index[:, pad_idx]
-        data.cell_offsets = data.cell_offsets[pad_idx]
-        try:
-            data.distances = data.distances[pad_idx]
-        except Exception:
-            continue
+        n_index = data.edge_index[1, :]
+        n_neighbors.append(n_index.shape[0])
     batch = Batch.from_data_list(data_list)
     batch.neighbors = torch.tensor(n_neighbors)
     return batch
