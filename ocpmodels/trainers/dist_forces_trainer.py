@@ -6,7 +6,7 @@ import torch
 import torch_geometric
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import BatchSampler, DataLoader
+from torch.utils.data import BatchSampler, DataLoader, DistributedSampler
 from torch_geometric.nn import DataParallel
 
 from ocpmodels.common import distutils
@@ -77,7 +77,6 @@ class DistributedForcesTrainer(BaseTrainer):
             self.config["dataset"] = dataset
 
         if not is_debug and distutils.is_master():
-            print(f'Creating Dirs [Rank {distutils.get_rank()} {distutils.is_master()}]')
             os.makedirs(self.config["cmd"]["checkpoint_dir"])
             os.makedirs(self.config["cmd"]["results_dir"])
             os.makedirs(self.config["cmd"]["logs_dir"])
@@ -89,15 +88,14 @@ class DistributedForcesTrainer(BaseTrainer):
         else:
             self.device = "cpu"
 
-        print(yaml.dump(self.config, default_flow_style=False))
+        if distutils.is_master():
+            print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
 
-        self.parallel_collater = ParallelCollater(
-            self.config["optim"].get("num_gpus", 1)
-        )
+        self.parallel_collater = ParallelCollater(1)
         if self.config["task"]["dataset"] == "trajectory_lmdb":
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
@@ -123,12 +121,20 @@ class DistributedForcesTrainer(BaseTrainer):
                 self.val_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(self.config["val_dataset"])
+                val_sampler = None
+                if distutils.is_dist_initialized():
+                    val_sampler = DistributedSampler(
+                        self.val_dataset,
+                        num_replicas=distutils.get_world_size(),
+                        rank=distutils.get_rank(),
+                        shuffle=False)
                 self.val_loader = DataLoader(
                     self.val_dataset,
                     self.config["optim"].get("eval_batch_size", 64),
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
+                    sampler=val_sampler,
                 )
         else:
             self.dataset = registry.get_dataset_class(
@@ -182,7 +188,7 @@ class DistributedForcesTrainer(BaseTrainer):
                     )
                     self.normalizers["grad_target"].mean.fill_(0)
 
-        if self.is_vis and self.config["task"]["dataset"] != "qm9":
+        if self.is_vis and self.config["task"]["dataset"] != "qm9" and distutils.is_master():
             # Plot label distribution.
             plots = [
                 plot_histogram(
@@ -275,15 +281,17 @@ class DistributedForcesTrainer(BaseTrainer):
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
+                # print(f'[Rank {distutils.get_rank()}] Epoch {epoch} Iter {i}')
                 # Forward, loss, backward.
                 out, metrics = self._forward(batch)
                 loss = self._compute_loss(out, batch)
                 self._backward(loss)
 
                 # Update meter.
+                total_loss = distutils.all_reduce_tensor(loss)
                 meter_update_dict = {
                     "epoch": epoch + (i + 1) / len(self.train_loader),
-                    "loss": loss.item(),
+                    "loss": total_loss.item(),
                 }
                 meter_update_dict.update(metrics)
                 self.meter.update(meter_update_dict)
@@ -297,7 +305,7 @@ class DistributedForcesTrainer(BaseTrainer):
                     )
 
                 # Print metrics.
-                if i % self.config["cmd"]["print_every"] == 0:
+                if i % self.config["cmd"]["print_every"] == 0 and distutils.is_master():
                     print(self.meter)
 
             self.scheduler.step()
@@ -317,7 +325,7 @@ class DistributedForcesTrainer(BaseTrainer):
                     split="val", epoch=epoch,
                 )
 
-            if not self.is_debug:
+            if not self.is_debug and distutils.is_master():
                 save_checkpoint(
                     {
                         "epoch": epoch + 1,
@@ -351,9 +359,10 @@ class DistributedForcesTrainer(BaseTrainer):
             # Forward.
             out, metrics = self._forward(batch)
             loss = self._compute_loss(out, batch)
+            total_loss = distutils.all_reduce_tensor(loss)
 
             # Update meter.
-            meter_update_dict = {"loss": loss.item()}
+            meter_update_dict = {"loss": total_loss.item()}
             meter_update_dict.update(metrics)
             meter.update(meter_update_dict)
 
@@ -367,7 +376,8 @@ class DistributedForcesTrainer(BaseTrainer):
                 split=split,
             )
 
-        print(meter)
+        if distutils.is_master():
+            print(meter)
 
     def validate_relaxation(self, split="val", epoch=None):
         print("### Evaluating ML-relaxation")

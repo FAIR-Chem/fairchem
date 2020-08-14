@@ -28,7 +28,7 @@ def main(config):
         local_rank=config["local_rank"]
     )
     print(f'[Rank {distutils.get_rank()}] Created Trainer')
-    # trainer.train()
+    trainer.train()
     distutils.synchronize()
 
 
@@ -58,9 +58,13 @@ if __name__ == "__main__":
             slurm_partition=args.slurm_partition,
             gpus_per_node=args.num_gpus,
             cpus_per_task=(args.num_workers + 1),
-            tasks_per_node=1,
+            tasks_per_node=(args.num_gpus if args.distributed else 1),
+            nodes=args.num_nodes,
         )
-        jobs = executor.map_array(main, configs)
+        if args.distributed:
+            jobs = executor.map_array(distributed_main, configs)
+        else:
+            jobs = executor.map_array(main, configs)
         print("Submitted jobs:", ", ".join([job.job_id for job in jobs]))
         log_file = save_experiment_log(args, jobs, configs)
         print(f"Experiment log saved to: {log_file}")
