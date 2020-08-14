@@ -19,13 +19,7 @@ def load_data(request):
         format="json",
     )
     a2g = AtomsToGraphs(
-        max_neigh=12,
-        radius=6,
-        dummy_distance=7,
-        dummy_index=-1,
-        r_energy=True,
-        r_forces=True,
-        r_distances=True,
+        max_neigh=12, radius=6, r_energy=True, r_forces=True, r_distances=True,
     )
     data_list = a2g.convert_all([atoms])
     request.cls.data = data_list[0]
@@ -41,14 +35,11 @@ class TestPBC:
             batch.edge_index,
             batch.cell,
             batch.cell_offsets,
-            batch.natoms,
+            batch.neighbors,
+            cutoff=6.0,
         )
 
-        # consider non-dummy edges only
-        nonnegative_idx = (batch.edge_index[1] != -1).nonzero().view(-1)
         np.testing.assert_array_equal(
-            batch.edge_index[:, nonnegative_idx], edge_index,
+            batch.edge_index, edge_index,
         )
-        np.testing.assert_array_almost_equal(
-            batch.distances[nonnegative_idx], pbc_distances
-        )
+        np.testing.assert_array_almost_equal(batch.distances, pbc_distances)
