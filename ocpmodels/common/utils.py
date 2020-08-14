@@ -319,4 +319,9 @@ def get_pbc_distances(pos, edge_index, cell, cell_offsets, neighbors, cutoff):
     # compute distances
     distances = distance_vectors.norm(dim=-1)
 
+    # redundancy: remove zero distances
+    nonzero_idx = torch.nonzero(distances).flatten()
+    edge_index = edge_index[:, nonzero_idx]
+    distances = distances[nonzero_idx]
+
     return edge_index, distances
