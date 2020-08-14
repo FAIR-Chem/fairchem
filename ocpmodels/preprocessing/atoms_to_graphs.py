@@ -50,7 +50,7 @@ class AtomsToGraphs:
 
     def __init__(
         self,
-        max_neigh=12,
+        max_neigh=200,
         radius=6,
         r_energy=False,
         r_forces=False,
@@ -71,6 +71,19 @@ class AtomsToGraphs:
         _c_index, _n_index, _offsets, n_distance = struct.get_neighbor_list(
             r=self.radius, numerical_tol=0, exclude_self=True
         )
+
+        # remove edges larger than max_neighbors
+        _nonmax_idx = np.concatenate(
+            [
+                (_c_index == i).nonzero()[0][: self.max_neigh]
+                for i in range(len(atoms))
+            ]
+        )
+
+        _c_index = _c_index[_nonmax_idx]
+        _n_index = _n_index[_nonmax_idx]
+        n_distance = n_distance[_nonmax_idx]
+        _offsets = _offsets[_nonmax_idx]
 
         return _c_index, _n_index, n_distance, _offsets
 
