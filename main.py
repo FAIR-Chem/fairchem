@@ -1,5 +1,6 @@
 import submitit
 
+from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
@@ -12,6 +13,7 @@ from ocpmodels.common.utils import (
 
 def main(config):
     setup_imports()
+    print(f'[Rank {distutils.get_rank()}] Creating Trainer {distutils.get_world_size()}')
     trainer = registry.get_trainer_class(config.get("trainer", "simple"))(
         task=config["task"],
         model=config["model"],
@@ -23,8 +25,17 @@ def main(config):
         print_every=config.get("print_every", 10),
         seed=config.get("seed", 0),
         logger=config.get("logger", "tensorboard"),
+        local_rank=config["local_rank"]
     )
-    trainer.train()
+    print(f'[Rank {distutils.get_rank()}] Created Trainer')
+    # trainer.train()
+    distutils.synchronize()
+
+
+def distributed_main(config):
+    distutils.setup(config)
+    main(config)
+    distutils.cleanup()
 
 
 if __name__ == "__main__":
@@ -55,4 +66,7 @@ if __name__ == "__main__":
         print(f"Experiment log saved to: {log_file}")
 
     else:  # Run locally
-        main(config)
+        if args.distributed:
+            distributed_main(config)
+        else:
+            main(config)

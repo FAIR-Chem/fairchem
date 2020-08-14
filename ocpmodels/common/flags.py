@@ -82,6 +82,12 @@ class Flags:
         self.parser.add_argument(
             "--num-gpus", default=1, type=int, help="Number of GPUs to request"
         )
+        self.parser.add_argument(
+            "--distributed", action='store_true', help='Run with DDP'
+        )
+        self.parser.add_argument(
+            "--local_rank", default=0, type=int, help="Local rank"
+        )
 
 
 flags = Flags()

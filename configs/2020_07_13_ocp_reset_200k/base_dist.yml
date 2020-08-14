@@ -1,0 +1,23 @@
+trainer: dist_forces
+
+dataset:
+  - src: data/data/2020_07_13_ocp_reset_200k/train/
+    normalize_labels: True
+    target_mean: -0.6545229554176331
+    target_std: 3.066107988357544
+    grad_target_mean: 0.0
+    grad_target_std: 3.066107988357544
+  - src: data/data/2020_07_13_ocp_reset_200k/val/
+
+logger: tensorboard
+
+task:
+  dataset: trajectory_lmdb
+  description: "Regressing to energies and forces for DFT trajectories from OCP"
+  type: regression
+  metric: mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: False
+  eval_on_free_atoms: True
