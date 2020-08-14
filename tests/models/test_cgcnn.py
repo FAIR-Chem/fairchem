@@ -19,10 +19,8 @@ def load_data(request):
         format="json",
     )
     a2g = AtomsToGraphs(
-        max_neigh=12,
+        max_neigh=200,
         radius=6,
-        dummy_distance=7,
-        dummy_index=-1,
         r_energy=True,
         r_forces=True,
         r_distances=True,

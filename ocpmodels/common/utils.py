@@ -319,17 +319,9 @@ def get_pbc_distances(pos, edge_index, cell, cell_offsets, neighbors, cutoff):
     # compute distances
     distances = distance_vectors.norm(dim=-1)
 
-    # remove zero distances
+    # redundancy: remove zero distances
     nonzero_idx = torch.nonzero(distances).flatten()
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
-
-    # Some edges have inconsistent distances b/w pymatgen and ase. pymatgen
-    # thinks they're less than the cutoff radius, but not ase. They're about
-    # 0.01% of all remaining edges after the above steps. Manually remove these.
-    # TODO: get rid of this whenever we figure out pymatgen / ase inconsistency.
-    small_idx = torch.nonzero(distances < cutoff).flatten()
-    edge_index = edge_index[:, small_idx]
-    distances = distances[small_idx]
 
     return edge_index, distances
