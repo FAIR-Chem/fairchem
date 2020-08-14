@@ -250,6 +250,8 @@ def build_config(args):
     config["is_debug"] = args.debug
     config["is_vis"] = args.vis
     config["print_every"] = args.print_every
+    # Distributed
+    config["local_rank"] = args.local_rank
 
     return config
 
