@@ -1,5 +1,6 @@
 import glob
 import json
+import math
 import os
 import pickle
 import random
@@ -10,6 +11,7 @@ import numpy as np
 from torch.utils.data import Dataset, Sampler
 from torch_geometric.data import Batch
 
+from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 
 
@@ -111,8 +113,15 @@ class TrajSampler(Sampler):
         self.systemids = list(self.system_samples.keys())
         self.traj_batch = traj_per_batch
 
+        # If running in distributed mode, only include a
+        # subset of systems for each proces
+        world_size = distutils.get_world_size()
+        rank = distutils.get_rank()
+        self.systemids = self.systemids[rank::world_size]
+        self.num_samples = int(math.ceil(len(self.data_source) / world_size))
+
     def __len__(self):
-        return len(self.data_source)
+        return self.num_samples
 
     def __iter__(self):
         indices = []
