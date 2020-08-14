@@ -220,7 +220,11 @@ class DistributedForcesTrainer(BaseTrainer):
             output_device=self.device,
             num_gpus=1,
         )
-        self.model = DistributedDataParallel(self.model, device_ids=[self.device])
+        self.model = DistributedDataParallel(
+            self.model,
+            device_ids=[self.device],
+            find_unused_parameters=True
+        )
 
     # Takes in a new data source and generates predictions on it.
     def predict(self, dataset, batch_size=32):
@@ -506,6 +510,7 @@ class DistributedForcesTrainer(BaseTrainer):
             metrics[
                 "force_z/{}".format(self.config["task"]["metric"])
             ] = grad_input_errors[2]
+            # TODO(anuroops): AllReduce metrics
 
         return out, metrics
 

@@ -13,7 +13,6 @@ from ocpmodels.common.utils import (
 
 def main(config):
     setup_imports()
-    print(f'[Rank {distutils.get_rank()}] Creating Trainer {distutils.get_world_size()}')
     trainer = registry.get_trainer_class(config.get("trainer", "simple"))(
         task=config["task"],
         model=config["model"],
@@ -27,7 +26,6 @@ def main(config):
         logger=config.get("logger", "tensorboard"),
         local_rank=config["local_rank"]
     )
-    print(f'[Rank {distutils.get_rank()}] Created Trainer')
     trainer.train()
     distutils.synchronize()
 
