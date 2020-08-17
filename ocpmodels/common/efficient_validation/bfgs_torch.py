@@ -9,7 +9,7 @@ from ocpmodels.preprocessing import AtomsToGraphs
 
 
 class BFGS:
-    def __init__(self, atoms, maxstep=0.04, fmax=0.05, alpha=70):
+    def __init__(self, atoms, maxstep=0.04, alpha=70):
         """BFGS optimizer.
 
         Parameters:
@@ -33,24 +33,20 @@ class BFGS:
         self.H0 = torch.eye(3 * len(self.atoms), dtype=torch.float64) * alpha
         self.r0 = None
         self.f0 = None
-        self.fmax = fmax
         self.nsteps = 0
-        # maximum number of steps placeholder with maxint
-        self.max_steps = 100
 
-    def converged(self):
+    def converged(self, fmax):
         forces = self.atoms.get_forces()
-        return (forces ** 2).sum(axis=1).max() < self.fmax ** 2
+        return (forces ** 2).sum(axis=1).max() < fmax ** 2
 
-    def run(self, fmax=0.05):
-        while not self.converged() and self.nsteps < self.max_steps:
+    def run(self, fmax=0.05, steps=100):
+        while not self.converged(fmax) and self.nsteps < steps:
 
             self.step()
             self.nsteps += 1
 
             forces = self.atoms.get_forces()
             print(self.nsteps, np.sqrt((forces ** 2).sum(axis=1).max()))
-            print(self.atoms.get_positions())
 
     def get_forces(self):
         return self.atoms.get_forces()
@@ -121,11 +117,10 @@ class TorchCalc:
     def __init__(self, atoms, trainer):
         self.atoms = atoms
         self.trainer = trainer
+        # TODO: torchify AtomsToGraphs preprocessing call
         self.a2g = AtomsToGraphs(
             max_neigh=12,
             radius=6,
-            dummy_distance=7,
-            dummy_index=-1,
             r_energy=False,
             r_forces=False,
             r_distances=False,
@@ -147,7 +142,7 @@ class TorchCalc:
         return self.data_object.pos
 
     def set_positions(self, update):
-        self.data_object.pos = self.data_object.pos + update
+        self.data_object.pos = update
         self.update_graph()
         return self.data_object.pos
 

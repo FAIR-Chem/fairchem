@@ -24,12 +24,17 @@ model = {
     "num_interactions": 3,
     "num_gaussians": 200,
     "cutoff": 6.0,
+    "use_pbc": False,
 }
 
+trajectory = ase.io.read(
+    "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/water_relax.traj",
+    ":",
+)
 dataset = {
     "src": "./",
-    "traj": "slab.traj",
-    "train_size": 1,
+    "traj": "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/water_relax.traj",
+    "train_size": len(trajectory),
     "val_size": 0,
     "test_size": 0,
     "normalize_labels": False,
@@ -40,14 +45,14 @@ optimizer = {
     "lr_gamma": 0.1,
     "lr_initial": 0.0003,
     "lr_milestones": [20, 30],
-    "max_epochs": 100,
+    "max_epochs": 300,
     "warmup_epochs": 10,
     "warmup_factor": 0.2,
     "force_coefficient": 30,
     "criterion": nn.L1Loss(),
 }
 
-identifier = "slab_example"
+identifier = "water_example"
 trainer = ForcesTrainer(
     task=task,
     model=model,
@@ -63,7 +68,7 @@ trainer.load_pretrained(
     "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/checkpoint.pt"
 )
 
-atoms = ase.io.read("slab.traj")
-model = TorchCalc(atoms, trainer)
+initial = trajectory[0]
+model = TorchCalc(initial, trainer)
 dyn = BFGS_torch(model)
-dyn.run(fmax=0.05)
+dyn.run(fmax=0.01, steps=300)
