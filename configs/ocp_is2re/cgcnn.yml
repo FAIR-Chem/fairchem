@@ -1,13 +1,13 @@
 includes:
-- configs/2020_07_25_ocp_is2re/all/base.yml
+- configs/ocp_is2re/base.yml
 
 model:
   name: cgcnn
   atom_embedding_size: 128
-  fc_feat_size: 384
-  num_fc_layers: 7
-  num_graph_conv_layers: 4
-  num_gaussians: 50
+  fc_feat_size: 128
+  num_fc_layers: 4
+  num_graph_conv_layers: 3
+  num_gaussians: 100
   cutoff: 6.0
   regress_forces: False
   use_pbc: True
