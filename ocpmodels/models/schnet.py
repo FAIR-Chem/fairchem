@@ -1,7 +1,9 @@
 import torch
 from torch_geometric.nn import SchNet
+from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances
 
 
 @registry.register_model("schnet")
@@ -11,6 +13,7 @@ class SchNetWrap(SchNet):
         num_atoms,  # not used
         bond_feat_dim,  # not used
         num_targets,
+        use_pbc=True,
         regress_forces=True,
         hidden_channels=128,
         num_filters=128,
@@ -20,6 +23,7 @@ class SchNetWrap(SchNet):
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
+        self.use_pbc = use_pbc
 
         super(SchNetWrap, self).__init__(
             hidden_channels=hidden_channels,
@@ -36,7 +40,31 @@ class SchNetWrap(SchNet):
             pos = pos.requires_grad_(True)
         batch = data.batch
 
-        energy = super(SchNetWrap, self).forward(z, pos, batch)
+        if self.use_pbc:
+            assert z.dim() == 1 and z.dtype == torch.long
+
+            edge_index, edge_weight = get_pbc_distances(
+                pos,
+                data.edge_index,
+                data.cell,
+                data.cell_offsets,
+                data.neighbors,
+                self.cutoff,
+            )
+            edge_attr = self.distance_expansion(edge_weight)
+
+            h = self.embedding(z)
+            for interaction in self.interactions:
+                h = h + interaction(h, edge_index, edge_weight, edge_attr)
+
+            h = self.lin1(h)
+            h = self.act(h)
+            h = self.lin2(h)
+
+            batch = torch.zeros_like(z) if batch is None else batch
+            energy = scatter(h, batch, dim=0, reduce=self.readout)
+        else:
+            energy = super(SchNetWrap, self).forward(z, pos, batch)
 
         if self.regress_forces:
             forces = -1 * (

@@ -4,6 +4,7 @@ from torch_geometric.nn import global_mean_pool, radius_graph
 from torch_geometric.nn.models.schnet import GaussianSmearing
 
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances
 from ocpmodels.datasets.elemental_embeddings import EMBEDDINGS
 from ocpmodels.models.base import BaseModel
 from ocpmodels.modules.layers import CGCNNConv
@@ -16,6 +17,7 @@ class CGCNN(BaseModel):
         num_atoms,
         bond_feat_dim,
         num_targets,
+        use_pbc=True,
         regress_forces=True,
         atom_embedding_size=64,
         num_graph_conv_layers=6,
@@ -26,6 +28,7 @@ class CGCNN(BaseModel):
     ):
         super(CGCNN, self).__init__(num_atoms, bond_feat_dim, num_targets)
         self.regress_forces = regress_forces
+        self.use_pbc = use_pbc
 
         # Get CGCNN atom embeddings
         self.embedding = torch.zeros(100, 92)
@@ -65,17 +68,27 @@ class CGCNN(BaseModel):
             self.embedding = self.embedding.to(data.atomic_numbers.device)
         data.x = self.embedding[data.atomic_numbers.long() - 1]
 
-        # Construct graph, get edge features
-        data.edge_index = radius_graph(
-            data.pos, r=self.cutoff, batch=data.batch
-        )
-        row, col = data.edge_index
         pos = data.pos
         if self.regress_forces:
             pos = pos.requires_grad_(True)
-        data.edge_weight = (pos[row] - pos[col]).norm(dim=-1)
-        data.edge_attr = self.distance_expansion(data.edge_weight)
 
+        if self.use_pbc:
+            data.edge_index, data.edge_weight = get_pbc_distances(
+                pos,
+                data.edge_index,
+                data.cell,
+                data.cell_offsets,
+                data.neighbors,
+                self.cutoff,
+            )
+        else:
+            data.edge_index = radius_graph(
+                data.pos, r=self.cutoff, batch=data.batch
+            )
+            row, col = data.edge_index
+            data.edge_weight = (pos[row] - pos[col]).norm(dim=-1)
+
+        data.edge_attr = self.distance_expansion(data.edge_weight)
         # Forward pass through the network
         mol_feats = self._convolve(data)
         mol_feats = self.conv_to_fc(mol_feats)
