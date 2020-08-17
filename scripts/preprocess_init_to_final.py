@@ -157,6 +157,7 @@ if __name__ == "__main__":
             dl[0].tags = get_tags(dl[0], randomid)
             dl[0].y_init = dl[0].y - adslab_ref[randomid]
             dl[0].y_relaxed = dl[1].y - adslab_ref[randomid]
+            dl[0].pos_relaxed = dl[1].pos
             del dl[0].y
         except Exception as e:
             print(str(e), traj_path)
