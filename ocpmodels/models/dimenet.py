@@ -96,7 +96,7 @@ class DimeNetWrap(DimeNet):
             self.interaction_blocks, self.output_blocks[1:]
         ):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
-            P += output_block(x, rbf, i)
+            P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
 

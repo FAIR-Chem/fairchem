@@ -3,6 +3,7 @@ from .dogss import DOGSS
 from .gasdb import Gasdb
 from .iso17 import ISO17
 from .qm9 import QM9Dataset
+from .single_point_lmdb import SinglePointLmdbDataset
 from .trajectory import TrajectoryDataset
 from .trajectory_lmdb import (
     TrajectoryLmdbDataset,
