@@ -7,6 +7,7 @@ from collections import defaultdict
 
 import lmdb
 import numpy as np
+import torch
 from torch.utils.data import Dataset, Sampler
 from torch_geometric.data import Batch
 
@@ -129,5 +130,10 @@ class TrajSampler(Sampler):
 
 
 def data_list_collater(data_list):
+    n_neighbors = []
+    for i, data in enumerate(data_list):
+        n_index = data.edge_index[1, :]
+        n_neighbors.append(n_index.shape[0])
     batch = Batch.from_data_list(data_list)
+    batch.neighbors = torch.tensor(n_neighbors)
     return batch

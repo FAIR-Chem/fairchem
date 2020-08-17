@@ -12,17 +12,47 @@ import random
 import ase.io
 import lmdb
 import torch
+from ase import Atoms
 from tqdm import tqdm
 
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
+def gratoms_to_atoms(gratoms):
+    atomsobj = Atoms(
+        gratoms.symbols,
+        gratoms.positions,
+        None,
+        gratoms.get_tags(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        gratoms.cell,
+        gratoms.pbc,
+        None,
+        gratoms.constraints,
+        gratoms.info,
+    )
+    return atomsobj
+
+
 def get_tags(data, randomid):
-    input_dir = os.path.join(sysid_mappings[randomid], "metadata.pkl")
-    k = open(input_dir, "rb")
+    mdata_path = os.path.join(sysid_mappings[randomid], "metadata.pkl")
+    sort_path = os.path.join(sysid_mappings[randomid], "ase-sort.dat")
+    k = open(mdata_path, "rb")
     metadata = pickle.load(k)
     k.close()
-    input_atoms = metadata["adsorbed_bulk_atomsobject"]
+    sorts = []
+    with open(sort_path, "r") as f:
+        for line in f:
+            sort, resort = line.split()
+            sorts.append(int(sort))
+    # pre-vasp sorted structure
+    input_atoms = gratoms_to_atoms(metadata["adsorbed_bulk_atomsobject"])
+    # sort to post-vasp structure
+    input_atoms = input_atoms[sorts]
     # sanity check indices match up
     assert (
         input_atoms.get_atomic_numbers().all()
@@ -44,21 +74,35 @@ def write_images_to_lmdb(mp_arg):
 
     try:
         traj_idx = random.randrange(0, len(traj_paths))
-        dl, process_samples = read_trajectory_and_extract_features(
+        (
+            dl,
+            process_samples,
+            relaxed_structure,
+            pos_vectors,
+            idx_log,
+        ) = read_trajectory_and_extract_features(
             a2g, traj_paths[traj_idx], sampled_unique_ids
         )
         for i, do in enumerate(dl):
             # filter out images with excessively large forces, if applicable
-            if (
-                torch.max(torch.abs(do.force)).item()
-                <= args.force_filter_threshold
-            ):
-                # subtract off reference energy
+            if torch.max(torch.abs(do.force)).item() <= args.filter:
                 randomid = os.path.splitext(
                     process_samples[i].split(" ")[0].split("/")[4]
                 )[0]
-                do.tags = get_tags(do, randomid)
-                do.y -= adslab_ref[randomid]
+                # add atom tags
+                if args.tags:
+                    do.tags = get_tags(do, randomid)
+                # subtract off reference energy
+                if args.ref_energy:
+                    do.y -= adslab_ref[randomid]
+                # add vector to relaxed structure
+                if args.relax_vector:
+                    do.relax_vector = relaxed_structure - do.pos
+                # adds history of positional vectors
+                if args.pos_history:
+                    do.pos_history = pos_vectors[i]
+                    do.traj_idx = idx_log[i][0]
+                    do.traj_len = idx_log[i][1]
                 txn = db.begin(write=True)
                 txn.put(
                     f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1)
@@ -75,8 +119,25 @@ def write_images_to_lmdb(mp_arg):
     return sampled_unique_ids, idx
 
 
+def get_pos_vectors(images, idx):
+    "Stores history of positional vector differences between step N and N-1"
+    natoms = len(images[idx])
+    history_size = 5
+    pos_vectors = torch.zeros(history_size, natoms, 3)
+    for i, j in enumerate(range(idx, idx - history_size, -1)):
+        try:
+            assert j >= 1
+            current_pos = images[j].positions
+            previous_pos = images[j - 1].positions
+            pos_vectors[i] = torch.tensor(current_pos - previous_pos)
+        except Exception:
+            break
+    return pos_vectors
+
+
 def read_trajectory_and_extract_features(a2g, traj_path, sampled_unique_ids):
     traj = ase.io.read(traj_path, ":")
+    relaxed_structure = torch.tensor(traj[-1].get_positions())
     traj_len = len(traj)
     # 0.1 heuristic should work fine as long as args.size is greater than
     # 20 * num_trajectories (each trajectory has 200 images on average).
@@ -84,12 +145,22 @@ def read_trajectory_and_extract_features(a2g, traj_path, sampled_unique_ids):
     sample_idx = random.sample(range(traj_len), sample_count)
     process_samples = []
     images = []
+    pos_vectors = []
+    idx_log = []
     for idx in sample_idx:
         uid = "{},{},{}\n".format(traj_path, idx, traj_len)
         if uid not in sampled_unique_ids:
             process_samples.append(uid)
             images.append(traj[idx])
-    return a2g.convert_all(images, disable_tqdm=True), process_samples
+            pos_vectors.append(get_pos_vectors(traj, idx))
+            idx_log.append((idx, traj_len))
+    return (
+        a2g.convert_all(images, disable_tqdm=True),
+        process_samples,
+        relaxed_structure,
+        pos_vectors,
+        idx_log,
+    )
 
 
 def chunk_list(lst, num_splits):
@@ -127,16 +198,24 @@ if __name__ == "__main__":
         help="No. of images in the dataset",
     )
     parser.add_argument(
-        "--force-filter-threshold",
+        "--filter",
         type=float,
         default=1.0e9,
         help="Max force to filter out, default: no filter",
     )
     parser.add_argument(
-        "--adslab-ref",
-        type=str,
-        default="/checkpoint/mshuaibi/mappings/adslab_ref_energies_ocp728k.pkl",
-        help="Path to reference energies, default: None",
+        "--ref-energy", action="store_true", help="Subtract reference energies"
+    )
+    parser.add_argument("--tags", action="store_true", help="Add atom tags")
+    parser.add_argument(
+        "--relax-vector",
+        action="store_true",
+        help="Add vector to relaxed structure",
+    )
+    parser.add_argument(
+        "--pos-history",
+        action="store_true",
+        help="Add history of positional vectors",
     )
 
     args = parser.parse_args()
@@ -146,8 +225,12 @@ if __name__ == "__main__":
         raw_traj_files = f.read().splitlines()
     num_trajectories = len(raw_traj_files)
 
-    with open(os.path.join(args.adslab_ref), "rb") as g:
-        adslab_ref = pickle.load(g)
+    if args.ref_energy:
+        ref_path = (
+            "/checkpoint/mshuaibi/mappings/adslab_ref_energies_ocp728k.pkl"
+        )
+        with open(os.path.join(ref_path), "rb") as g:
+            adslab_ref = pickle.load(g)
 
     with open(
         "/checkpoint/mshuaibi/mappings/sysid_to_bulkads_dir.pkl", "rb"
@@ -161,10 +244,8 @@ if __name__ == "__main__":
 
     # Initialize feature extractor.
     a2g = AtomsToGraphs(
-        max_neigh=12,
+        max_neigh=200,
         radius=6,
-        dummy_distance=7,
-        dummy_index=-1,
         r_energy=True,
         r_forces=True,
         r_distances=False,

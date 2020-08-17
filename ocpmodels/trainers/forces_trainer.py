@@ -103,9 +103,9 @@ class ForcesTrainer(BaseTrainer):
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
 
-            traj_per_batch = self.config["optim"].get("traj_per_batch", 1)
+            img_per_traj = self.config["optim"].get("img_per_traj", 1)
             sampler = BatchSampler(
-                TrajSampler(self.train_dataset, traj_per_batch),
+                TrajSampler(self.train_dataset, img_per_traj),
                 batch_size=self.config["optim"]["batch_size"],
                 drop_last=False,
             )
@@ -165,9 +165,9 @@ class ForcesTrainer(BaseTrainer):
 
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
-        if "grad_input" in self.config["task"]:
+        if self.config["model_attributes"].get("regress_forces", True):
             if self.config["dataset"].get("normalize_labels", True):
-                if "target_mean" in self.config["dataset"]:
+                if "grad_target_mean" in self.config["dataset"]:
                     self.normalizers["grad_target"] = Normalizer(
                         mean=self.config["dataset"]["grad_target_mean"],
                         std=self.config["dataset"]["grad_target_std"],
@@ -466,7 +466,7 @@ class ForcesTrainer(BaseTrainer):
                     "{}/{}".format(label, self.config["task"]["metric"])
                 ] = errors[i]
 
-        if "grad_input" in self.config["task"]:
+        if self.config["model_attributes"].get("regress_forces", True):
             force_pred = force_output
             force_target = torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
@@ -508,16 +508,17 @@ class ForcesTrainer(BaseTrainer):
             [batch.force.to(self.device) for batch in batch_list], dim=0
         )
 
+        energy_mult = self.config["optim"].get("energy_coefficient", 1)
         if self.config["dataset"].get("normalize_labels", True):
             target_normed = self.normalizers["target"].norm(energy_target)
         else:
             target_normed = energy_target
 
-        loss.append(self.criterion(out["output"], target_normed))
+        loss.append(energy_mult * self.criterion(out["output"], target_normed))
 
         # TODO(abhshkdz): Test support for gradients wrt input.
         # TODO(abhshkdz): Make this general; remove dependence on `.forces`.
-        if "grad_input" in self.config["task"]:
+        if self.config["model_attributes"].get("regress_forces", True):
             if self.config["dataset"].get("normalize_labels", True):
                 grad_target_normed = self.normalizers["grad_target"].norm(
                     force_target

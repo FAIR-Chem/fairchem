@@ -29,10 +29,8 @@ class OCPCalculator(Calculator):
         Calculator.__init__(self)
         self.trainer = trainer
         self.a2g = AtomsToGraphs(
-            max_neigh=12,
+            max_neigh=200,
             radius=6,
-            dummy_distance=7,
-            dummy_index=-1,
             r_energy=False,
             r_forces=False,
             r_distances=False,
