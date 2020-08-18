@@ -56,13 +56,14 @@ class DimeNetWrap(DimeNet):
         batch = data.batch
         x = self.embedding(data.atomic_numbers.long())
         if self.use_pbc:
-            edge_index, dist = get_pbc_distances(
+            edge_index, dist, offsets = get_pbc_distances(
                 pos,
                 data.edge_index,
                 data.cell,
                 data.cell_offsets,
                 data.neighbors,
                 self.cutoff,
+                return_offsets=True,
             )
             j, i = edge_index
         else:
@@ -76,10 +77,17 @@ class DimeNetWrap(DimeNet):
 
         # Calculate angles.
         pos_i = pos[idx_i].detach()
-        pos_ji, pos_ki = (
-            pos[idx_j].detach() - pos_i,
-            pos[idx_k].detach() - pos_i,
-        )
+        if self.use_pbc:
+            pos_ji, pos_ki = (
+                pos[idx_j].detach() - pos_i + offsets[idx_ji],
+                pos[idx_k].detach() - pos_i + offsets[idx_kj],
+            )
+        else:
+            pos_ji, pos_ki = (
+                pos[idx_j].detach() - pos_i,
+                pos[idx_k].detach() - pos_i,
+            )
+
         a = (pos_ji * pos_ki).sum(dim=-1)
         b = torch.cross(pos_ji, pos_ki).norm(dim=-1)
         angle = torch.atan2(b, a)

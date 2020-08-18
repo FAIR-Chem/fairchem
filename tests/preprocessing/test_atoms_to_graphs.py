@@ -77,7 +77,7 @@ class TestAtomsToGraphs:
         act_dist = np.sort(act_dist)
         act_index = np.sort(ase_n_index)
         test_dist = np.sort(edge_distances)
-        test_index = np.sort(edge_index[1, :])
+        test_index = np.sort(edge_index[0, :])
         # check that the distance and neighbor index values are correct
         np.testing.assert_allclose(act_dist, test_dist)
         np.testing.assert_array_equal(act_index, test_index)

@@ -90,7 +90,7 @@ class AtomsToGraphs:
     def _reshape_features(self, c_index, n_index, n_distance, offsets):
         """Stack center and neighbor index and reshapes distances,
         takes in np.arrays and returns torch tensors"""
-        edge_index = torch.LongTensor(np.vstack((c_index, n_index)))
+        edge_index = torch.LongTensor(np.vstack((n_index, c_index)))
         edge_distances = torch.FloatTensor(n_distance)
         cell_offsets = torch.LongTensor(offsets)
 
