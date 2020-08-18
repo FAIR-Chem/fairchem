@@ -322,7 +322,7 @@ def get_pbc_distances(
     # correct for pbc
     cell = torch.repeat_interleave(cell, neighbors, dim=0)
     offsets = cell_offsets.float().view(-1, 1, 3).bmm(cell.float()).view(-1, 3)
-    distance_vectors -= offsets
+    distance_vectors += offsets
 
     # compute distances
     distances = distance_vectors.norm(dim=-1)
