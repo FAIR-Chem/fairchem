@@ -65,11 +65,6 @@ class DimeNetWrap(DimeNet):
                 self.cutoff,
                 return_offsets=True,
             )
-            # edge_index should be in direction of flow of message passing, i.e.
-            # target to source atoms, for angles to get computed accurately.
-            # TODO: make edge_index format consistent with radius_graph in
-            # preprocessing, and then remove the following line.
-            edge_index = edge_index[[1, 0]]
             j, i = edge_index
         else:
             edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
