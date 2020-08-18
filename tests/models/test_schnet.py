@@ -7,6 +7,7 @@ from ase.io import read
 from torch_geometric.data import Batch, Data
 
 from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.datasets import data_list_collater
 from ocpmodels.models import SchNet
 from ocpmodels.preprocessing import AtomsToGraphs
 
@@ -39,8 +40,7 @@ def load_model(request):
 @pytest.mark.usefixtures("load_model")
 class TestSchNet:
     def test_rotation_invariance(self):
-        # Recreate the Data object to only keep the necessary features.
-        data = Data(atomic_numbers=self.data.atomic_numbers, pos=self.data.pos)
+        data = self.data
 
         # Sampling a random rotation within [-180, 180] for all axes.
         transform = RandomRotate([-180, 180], [0, 1, 2])
@@ -48,7 +48,7 @@ class TestSchNet:
         assert not np.array_equal(data.pos, data_rotated.pos)
 
         # Pass it through the model.
-        batch = Batch.from_data_list([data, data_rotated])
+        batch = data_list_collater([data, data_rotated])
         out = self.model(batch)
 
         # Compare predicted energies and forces (after inv-rotation).
@@ -63,11 +63,10 @@ class TestSchNet:
         )
 
     def test_energy_force_shape(self):
-        # Recreate the Data object to only keep the necessary features.
-        data = Data(atomic_numbers=self.data.atomic_numbers, pos=self.data.pos)
+        data = self.data
 
         # Pass it through the model.
-        out = self.model(Batch.from_data_list([data]))
+        out = self.model(data_list_collater([data]))
 
         # Compare shape of predicted energies, forces.
         energy = out[0].detach()
