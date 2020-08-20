@@ -307,13 +307,7 @@ def save_experiment_log(args, jobs, configs):
 
 
 def get_pbc_distances(
-    pos,
-    edge_index,
-    cell,
-    cell_offsets,
-    neighbors,
-    cutoff,
-    return_offsets=False,
+    pos, edge_index, cell, cell_offsets, neighbors, return_offsets=False,
 ):
     row, col = edge_index
 

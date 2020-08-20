@@ -62,7 +62,6 @@ class DimeNetWrap(DimeNet):
                 data.cell,
                 data.cell_offsets,
                 data.neighbors,
-                self.cutoff,
                 return_offsets=True,
             )
             j, i = edge_index
