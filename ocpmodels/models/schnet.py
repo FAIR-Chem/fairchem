@@ -49,7 +49,6 @@ class SchNetWrap(SchNet):
                 data.cell,
                 data.cell_offsets,
                 data.neighbors,
-                self.cutoff,
             )
             edge_attr = self.distance_expansion(edge_weight)
 
