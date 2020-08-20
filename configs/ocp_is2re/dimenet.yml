@@ -11,12 +11,13 @@ model:
   num_before_skip: 1
   num_after_skip: 2
   num_output_layers: 3
+  max_angles_per_image: 30000
   use_pbc: True
   regress_forces: False
 
 optim:
   batch_size: 16
-  eval_batch_size: 16
+  eval_batch_size: 1
   num_workers: 16
   lr_initial: 0.0005
   lr_gamma: 0.1
