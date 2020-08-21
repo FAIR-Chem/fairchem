@@ -27,28 +27,30 @@ def write_images_to_lmdb(mp_arg):
         map_async=True,
     )
 
-    # try:
-    randomid_idx = random.randrange(0, len(randomids))
-    (dl, process_samples, idx_log,) = read_trajectory_and_extract_features(
-        a2g, randomids[randomid_idx], sampled_unique_ids
-    )
-    for i, do in enumerate(dl):
-        # filter out images with excessively large forces, if applicable
-        if torch.max(torch.abs(do.force)).item() <= args.filter:
-            randomid = randomids[randomid_idx]
-            # add atom tags
-            if args.tags:
-                do.tags = torch.LongTensor(tags_map[randomid])
-            # subtract off reference energy
-            if args.ref_energy:
-                do.y -= adslab_ref[randomid]
-            txn = db.begin(write=True)
-            txn.put(f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1))
-            txn.commit()
-            sampled_unique_ids.append(process_samples[i])
-            idx += 1
-    # except Exception:
-    # pass
+    try:
+        randomid_idx = random.randrange(0, len(randomids))
+        (dl, process_samples, idx_log,) = read_trajectory_and_extract_features(
+            a2g, randomids[randomid_idx], sampled_unique_ids
+        )
+        for i, do in enumerate(dl):
+            # filter out images with excessively large forces, if applicable
+            if torch.max(torch.abs(do.force)).item() <= args.filter:
+                randomid = randomids[randomid_idx]
+                # add atom tags
+                if args.tags:
+                    do.tags = torch.LongTensor(tags_map[randomid])
+                # subtract off reference energy
+                if args.ref_energy:
+                    do.y -= adslab_ref[randomid]
+                txn = db.begin(write=True)
+                txn.put(
+                    f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1)
+                )
+                txn.commit()
+                sampled_unique_ids.append(process_samples[i])
+                idx += 1
+    except Exception:
+        pass
 
     db.sync()
     db.close()
