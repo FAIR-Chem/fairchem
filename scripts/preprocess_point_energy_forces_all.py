@@ -11,6 +11,7 @@ import random
 
 import ase.io
 import lmdb
+import numpy as np
 import torch
 from tqdm import tqdm
 
@@ -27,28 +28,33 @@ def write_images_to_lmdb(mp_arg):
         map_async=True,
     )
 
-    # try:
-    randomid_idx = random.randrange(0, len(randomids))
-    (dl, process_samples, idx_log,) = read_trajectory_and_extract_features(
-        a2g, randomids[randomid_idx], sampled_unique_ids
-    )
-    for i, do in enumerate(dl):
-        # filter out images with excessively large forces, if applicable
-        if torch.max(torch.abs(do.force)).item() <= args.filter:
-            randomid = randomids[randomid_idx]
-            # add atom tags
-            if args.tags:
-                do.tags = torch.LongTensor(tags_map[randomid])
-            # subtract off reference energy
-            if args.ref_energy:
-                do.y -= adslab_ref[randomid]
-            txn = db.begin(write=True)
-            txn.put(f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1))
-            txn.commit()
-            sampled_unique_ids.append(process_samples[i])
-            idx += 1
-    # except Exception:
-    # pass
+    for randomid in randomids:
+        try:
+            (
+                dl,
+                process_samples,
+                idx_log,
+            ) = read_trajectory_and_extract_features(
+                a2g, randomid, sampled_unique_ids
+            )
+            for i, do in enumerate(dl):
+                # filter out images with excessively large forces, if applicable
+                if torch.max(torch.abs(do.force)).item() <= args.filter:
+                    # add atom tags
+                    if args.tags:
+                        do.tags = torch.LongTensor(tags_map[randomid])
+                    # subtract off reference energy
+                    if args.ref_energy:
+                        do.y -= adslab_ref[randomid]
+                    txn = db.begin(write=True)
+                    txn.put(
+                        f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1)
+                    )
+                    txn.commit()
+                    sampled_unique_ids.append(process_samples[i])
+                    idx += 1
+        except Exception:
+            pass
 
     db.sync()
     db.close()
@@ -61,10 +67,7 @@ def read_trajectory_and_extract_features(a2g, randomid, sampled_unique_ids):
     traj_path = adbulk_to_trajpath[adbulk_id]["adbulk_path"]
     traj = ase.io.read(traj_path, ":")
     traj_len = len(traj)
-    # 0.1 heuristic should work fine as long as args.size is greater than
-    # 20 * num_trajectories (each trajectory has 200 images on average).)
-    sample_count = int(0.1 * traj_len)
-    sample_idx = random.sample(range(traj_len), sample_count)
+    sample_idx = range(traj_len)
     process_samples = []
     images = []
     idx_log = []
@@ -115,7 +118,9 @@ if __name__ == "__main__":
         "--ref-energy", action="store_true", help="Subtract reference energies"
     )
     parser.add_argument("--tags", action="store_true", help="Add atom tags")
-    parser.add_argument("--size", type=int, help="Size of dataset")
+    parser.add_argument(
+        "--chunk", type=int, help="Chunk to of inputs to preprocess"
+    )
 
     args = parser.parse_args()
 
@@ -170,39 +175,40 @@ if __name__ == "__main__":
     # Create output directory if it doesn't exist.
     os.makedirs(os.path.join(args.out_path), exist_ok=True)
 
+    slurm_chunks = np.array_split(input_ids, 20)
+    lmdb_start_idx = args.chunk * args.num_workers
+    lmdb_end_idx = lmdb_start_idx + args.num_workers
+
     # Initialize lmdb paths
     db_paths = [
         os.path.join(args.out_path, "data.%04d.lmdb" % i)
-        for i in range(args.num_workers)
+        for i in range(lmdb_start_idx, lmdb_end_idx)
     ]
 
+    chunk_to_process = slurm_chunks[args.chunk]
+
     # Chunk the trajectories into args.num_workers splits
-    chunked_traj_files = chunk_list(input_ids, args.num_workers)
+    chunked_traj_files = chunk_list(chunk_to_process, args.num_workers)
 
     # Extract features
     sampled_unique_ids, idx = [[]] * args.num_workers, [0] * args.num_workers
-    pbar = tqdm(total=args.size)
     pool = mp.Pool(args.num_workers)
-    while sum(idx) <= args.size:
-        mp_args = [
-            (
-                a2g,
-                db_paths[i],
-                chunked_traj_files[i],
-                sampled_unique_ids[i],
-                idx[i],
-            )
-            for i in range(args.num_workers)
-        ]
-        op = list(zip(*pool.imap(write_images_to_lmdb, mp_args)))
-        sampled_unique_ids, idx = list(op[0]), list(op[1])
-        pbar.update(sum(idx) - pbar.last_print_n)
+    mp_args = [
+        (
+            a2g,
+            db_paths[i],
+            chunked_traj_files[i],
+            sampled_unique_ids[i],
+            idx[i],
+        )
+        for i in range(args.num_workers)
+    ]
+    op = list(zip(*pool.imap(write_images_to_lmdb, mp_args)))
+    sampled_unique_ids, idx = list(op[0]), list(op[1])
 
     # Log sampled image, trajectory trace
-    for i in range(args.num_workers):
+    for j, i in enumerate(range(lmdb_start_idx, lmdb_end_idx)):
         ids_log = open(
             os.path.join(args.out_path, "data_log.%04d.txt" % i), "w"
         )
-        ids_log.writelines(sampled_unique_ids[i])
-
-    pbar.close()
+        ids_log.writelines(sampled_unique_ids[j])
