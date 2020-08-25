@@ -3,6 +3,7 @@ from torch import nn
 from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
 
+from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances
 
@@ -87,11 +88,16 @@ class DimeNetWrap(DimeNet):
         P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
 
         # Interaction blocks.
+        n = 0
         for interaction_block, output_block in zip(
             self.interaction_blocks, self.output_blocks[1:]
         ):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
-            P += output_block(x, rbf, i)
+            # P += output_block(x, rbf, i)
+            tmp = output_block(x, rbf, i)
+            print(f'[{distutils.get_rank()}]', n, x.shape, P.shape, tmp.shape)
+            n += 1
+            P += tmp
 
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
 
