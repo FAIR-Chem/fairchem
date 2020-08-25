@@ -29,26 +29,26 @@ def write_images_to_lmdb(mp_arg):
     )
 
     for sample in samples:
-        # try:
-        splits = sample.split(",")
-        traj_path = splits[0]
-        traj_idx = int(splits[1])
-        randomid = splits[-1]
+        try:
+            splits = sample.split(",")
+            traj_path = splits[0]
+            traj_idx = int(splits[1])
+            randomid = splits[-1]
 
-        do = read_trajectory_and_extract_features(a2g, traj_path, traj_idx)
-        # add atom tags
-        if args.tags:
-            do.tags = torch.LongTensor(tags_map[randomid])
-        # subtract off reference energy
-        if args.ref_energy:
-            do.y -= adslab_ref[randomid]
-        txn = db.begin(write=True)
-        txn.put(f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1))
-        txn.commit()
-        idx += 1
-        sampled_ids.append(",".join(splits[:3]) + "\n")
-        # except Exception:
-        # pass
+            do = read_trajectory_and_extract_features(a2g, traj_path, traj_idx)
+            # add atom tags
+            if args.tags:
+                do.tags = torch.LongTensor(tags_map[randomid])
+            # subtract off reference energy
+            if args.ref_energy:
+                do.y -= adslab_ref[randomid]
+            txn = db.begin(write=True)
+            txn.put(f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1))
+            txn.commit()
+            idx += 1
+            sampled_ids.append(",".join(splits[:3]) + "\n")
+        except Exception:
+            pass
 
     db.sync()
     db.close()
