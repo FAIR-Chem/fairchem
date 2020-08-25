@@ -23,6 +23,7 @@ from ocpmodels.datasets import (
 )
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+import torch.distributed as dist
 
 
 @registry.register_trainer("dist_forces")
@@ -510,9 +511,12 @@ class DistributedForcesTrainer(BaseTrainer):
             metrics[
                 "force_z/{}".format(self.config["task"]["metric"])
             ] = grad_input_errors[2]
-            # TODO(anuroops): AllReduce metrics
-
-        return out, metrics
+        aggregated_metrics = {}
+        world_size = distutils.get_world_size()
+        for metric in sorted(metrics):
+            tensor = torch.tensor(metrics[metric]).to(self.device)
+            aggregated_metrics[metric] = distutils.all_reduce_tensor(tensor).item() / world_size
+        return out, aggregated_metrics
 
     def _compute_loss(self, out, batch_list):
         loss = []
