@@ -72,13 +72,13 @@ class AtomsToGraphs:
             r=self.radius, numerical_tol=0, exclude_self=True
         )
 
-        # remove edges larger than max_neighbors
-        _nonmax_idx = np.concatenate(
-            [
-                (_c_index == i).nonzero()[0][: self.max_neigh]
-                for i in range(len(atoms))
-            ]
-        )
+        _nonmax_idx = []
+        for i in range(len(atoms)):
+            idx_i = (_c_index == i).nonzero()[0]
+            # sort neighbors by distance, remove edges larger than max_neighbors
+            idx_sorted = np.argsort(n_distance[idx_i])[: self.max_neigh]
+            _nonmax_idx.append(idx_i[idx_sorted])
+        _nonmax_idx = np.concatenate(_nonmax_idx)
 
         _c_index = _c_index[_nonmax_idx]
         _n_index = _n_index[_nonmax_idx]
@@ -90,7 +90,7 @@ class AtomsToGraphs:
     def _reshape_features(self, c_index, n_index, n_distance, offsets):
         """Stack center and neighbor index and reshapes distances,
         takes in np.arrays and returns torch tensors"""
-        edge_index = torch.LongTensor(np.vstack((c_index, n_index)))
+        edge_index = torch.LongTensor(np.vstack((n_index, c_index)))
         edge_distances = torch.FloatTensor(n_distance)
         cell_offsets = torch.LongTensor(offsets)
 
