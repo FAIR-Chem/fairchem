@@ -98,7 +98,7 @@ class TrajectoryLmdbDataset(Dataset):
             readonly=True,
             lock=False,
             readahead=False,
-            map_size=1099511627776 * 2,
+            map_size=1099511627776 / len(self.db_paths),
         )
         return env
 
