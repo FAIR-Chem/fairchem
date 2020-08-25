@@ -1,0 +1,28 @@
+includes:
+- configs/ocp_is2re/base.yml
+
+model:
+  name: cgcnn
+  atom_embedding_size: 128
+  fc_feat_size: 128
+  num_fc_layers: 4
+  num_graph_conv_layers: 3
+  num_gaussians: 100
+  cutoff: 6.0
+  regress_forces: False
+  use_pbc: True
+
+optim:
+  batch_size: 64
+  eval_batch_size: 64
+  num_workers: 16
+  lr_initial: 0.005
+  lr_gamma: 0.1
+  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+    - 5
+    - 9
+    - 13
+  warmup_epochs: 3
+  warmup_factor: 0.2
+  max_epochs: 20
+  num_gpus: 1

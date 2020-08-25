@@ -79,7 +79,6 @@ class CGCNN(BaseModel):
                 data.cell,
                 data.cell_offsets,
                 data.neighbors,
-                self.cutoff,
             )
         else:
             data.edge_index = radius_graph(
