@@ -98,7 +98,7 @@ class TrajectoryLmdbDataset(Dataset):
             readonly=True,
             lock=False,
             readahead=False,
-            map_size=1099511627776 * 2,
+            map_size=1099511627776 / len(self.db_paths),
         )
         return env
 
@@ -106,7 +106,7 @@ class TrajectoryLmdbDataset(Dataset):
 class TrajSampler(Sampler):
     "Randomly samples batches of trajectories"
 
-    def __init__(self, data_source, traj_per_batch=5):
+    def __init__(self, data_source, traj_per_batch):
         self.data_source = data_source
         self.system_samples = data_source._system_samples
         self.systemids = list(self.system_samples.keys())
