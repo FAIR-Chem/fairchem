@@ -172,6 +172,11 @@ if __name__ == "__main__":
             removed.append(traj_path + " %f\n" % dl[0].y_relaxed)
             continue
 
+        # If no neighbors, skip.
+        if dl[0].edge_index.shape[1] == 0:
+            print("no neighbors", traj_path)
+            continue
+
         txn = db.begin(write=True)
         txn.put(f"{idx}".encode("ascii"), pickle.dumps(dl[0], protocol=-1))
         txn.commit()
