@@ -332,15 +332,15 @@ def get_pbc_distances(
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
 
-    if return_distance_vec:
-        distance_vec = distance_vectors[nonzero_idx]
-        if return_offsets:
-            return edge_index, distances, distance_vec, offsets
-        else:
-            return edge_index, distances, distance_vec
+    out = {
+        "edge_index": edge_index,
+        "distances": distances,
+    }
 
-    else:
-        if return_offsets:
-            return edge_index, distances, offsets
-        else:
-            return edge_index, distances
+    if return_distance_vec:
+        out["distance_vec"] = distance_vectors[nonzero_idx]
+
+    if return_offsets:
+        out["offsets"] = offsets
+
+    return out
