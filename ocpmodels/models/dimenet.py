@@ -1,9 +1,10 @@
 import torch
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances
 from torch import nn
 from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
+
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances
 
 
 @registry.register_model("dimenet")
@@ -57,7 +58,7 @@ class DimeNetWrap(DimeNet):
         batch = data.batch
         x = self.embedding(data.atomic_numbers.long())
         if self.use_pbc:
-            edge_index, dist, offsets = get_pbc_distances(
+            out = get_pbc_distances(
                 pos,
                 data.edge_index,
                 data.cell,
@@ -65,6 +66,11 @@ class DimeNetWrap(DimeNet):
                 data.neighbors,
                 return_offsets=True,
             )
+
+            edge_index = out["edge_index"]
+            dist = out["distances"]
+            offsets = out["offsets"]
+
             j, i = edge_index
         else:
             edge_index = radius_graph(pos, r=self.cutoff, batch=batch)

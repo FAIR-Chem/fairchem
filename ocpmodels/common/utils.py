@@ -307,7 +307,13 @@ def save_experiment_log(args, jobs, configs):
 
 
 def get_pbc_distances(
-    pos, edge_index, cell, cell_offsets, neighbors, return_offsets=False,
+    pos,
+    edge_index,
+    cell,
+    cell_offsets,
+    neighbors,
+    return_offsets=False,
+    return_distance_vec=False,
 ):
     row, col = edge_index
 
@@ -322,11 +328,19 @@ def get_pbc_distances(
     distances = distance_vectors.norm(dim=-1)
 
     # redundancy: remove zero distances
-    nonzero_idx = torch.nonzero(distances).flatten()
+    nonzero_idx = torch.arange(len(distances))[distances != 0]
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
 
+    out = {
+        "edge_index": edge_index,
+        "distances": distances,
+    }
+
+    if return_distance_vec:
+        out["distance_vec"] = distance_vectors[nonzero_idx]
+
     if return_offsets:
-        return edge_index, distances, offsets
-    else:
-        return edge_index, distances
+        out["offsets"] = offsets
+
+    return out
