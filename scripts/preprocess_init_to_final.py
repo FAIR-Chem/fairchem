@@ -145,7 +145,7 @@ if __name__ == "__main__":
 
     # Extract features
     idx = 0
-    high = 0
+    removed = []
     for i, traj_path in tqdm(enumerate(pruned_traj_files)):
         try:
             dl = read_trajectory_and_extract_features(a2g, traj_path)
@@ -168,8 +168,9 @@ if __name__ == "__main__":
             continue
 
         if dl[0].y_relaxed > 10 or dl[0].y_relaxed < -10:
-            high += 1
-            # continue
+            print(traj_path, dl[0].y_relaxed)
+            removed.append(traj_path + " %f\n" % dl[0].y_relaxed)
+            continue
 
         txn = db.begin(write=True)
         txn.put(f"{idx}".encode("ascii"), pickle.dumps(dl[0], protocol=-1))
@@ -179,4 +180,7 @@ if __name__ == "__main__":
     db.sync()
     db.close()
 
-    print("high", high)
+    # Log removed trajectories and their adsorption energies
+    print("### Filtered out %d trajectories" % len(removed))
+    removed_log = open(os.path.join(args.out_path, "removed.txt"), "w")
+    removed_log.writelines(removed)
