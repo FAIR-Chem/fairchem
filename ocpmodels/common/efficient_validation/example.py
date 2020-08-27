@@ -9,12 +9,15 @@ from bfgs_torch import TorchCalc
 from ocpmodels.trainers import ForcesTrainer
 
 task = {
-    "dataset": "trajectory",
+    "dataset": "trajectory_lmdb",
     "description": "Regressing to energies and forces for a trajectory dataset",
     "labels": ["potential energy"],
     "metric": "mae",
     "type": "regression",
     "grad_input": "atomic forces",
+    "relax_dataset": {
+        "src": "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/relax"
+    },
 }
 
 model = {
@@ -27,16 +30,8 @@ model = {
     "use_pbc": False,
 }
 
-trajectory = ase.io.read(
-    "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/water_relax.traj",
-    ":",
-)
-dataset = {
-    "src": "./",
-    "traj": "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/water_relax.traj",
-    "train_size": len(trajectory),
-    "val_size": 0,
-    "test_size": 0,
+train_dataset = {
+    "src": "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/train",
     "normalize_labels": False,
 }
 
@@ -45,7 +40,8 @@ optimizer = {
     "lr_gamma": 0.1,
     "lr_initial": 0.0003,
     "lr_milestones": [20, 30],
-    "max_epochs": 300,
+    "num_workers": 32,
+    "max_epochs": 50,
     "warmup_epochs": 10,
     "warmup_factor": 0.2,
     "force_coefficient": 30,
@@ -56,7 +52,7 @@ identifier = "water_example"
 trainer = ForcesTrainer(
     task=task,
     model=model,
-    dataset=dataset,
+    dataset=train_dataset,
     optimizer=optimizer,
     identifier=identifier,
     print_every=5,
@@ -67,8 +63,4 @@ trainer = ForcesTrainer(
 trainer.load_pretrained(
     "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/checkpoint.pt"
 )
-
-initial = trajectory[0]
-model = TorchCalc(initial, trainer)
-dyn = BFGS_torch(model)
-dyn.run(fmax=0.01, steps=300)
+trainer.validate_relaxation()

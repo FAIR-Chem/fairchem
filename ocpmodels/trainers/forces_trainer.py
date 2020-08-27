@@ -5,7 +5,7 @@ import ase.io
 import torch
 import torch_geometric
 import yaml
-from torch.utils.data import BatchSampler, DataLoader
+from torch.utils.data import DataLoader
 from torch_geometric.nn import DataParallel
 
 from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
@@ -16,7 +16,6 @@ from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.datasets import (
     TrajectoryDataset,
     TrajectoryLmdbDataset,
-    TrajSampler,
     data_list_collater,
 )
 from ocpmodels.modules.normalizer import Normalizer
@@ -103,18 +102,12 @@ class ForcesTrainer(BaseTrainer):
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
 
-            img_per_traj = self.config["optim"].get("img_per_traj", 1)
-            sampler = BatchSampler(
-                TrajSampler(self.train_dataset, img_per_traj),
-                batch_size=self.config["optim"]["batch_size"],
-                drop_last=False,
-            )
-
             self.train_loader = DataLoader(
                 self.train_dataset,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
-                batch_sampler=sampler,
+                shuffle=True,
+                batch_size=self.config["optim"]["batch_size"],
             )
 
             self.val_loader = self.test_loader = None
@@ -130,6 +123,18 @@ class ForcesTrainer(BaseTrainer):
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
                 )
+            if "relax_dataset" in self.config["task"]:
+                self.relax_dataset = registry.get_dataset_class(
+                    self.config["task"]["dataset"]
+                )(self.config["task"]["relax_dataset"])
+                self.relax_loader = DataLoader(
+                    self.relax_dataset,
+                    1,
+                    shuffle=False,
+                    collate_fn=self.parallel_collater,
+                    num_workers=self.config["optim"]["num_workers"],
+                )
+
         else:
             self.dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
@@ -310,7 +315,7 @@ class ForcesTrainer(BaseTrainer):
                 self.validate(split="test", epoch=epoch)
 
             if (
-                "relaxation_dir" in self.config["task"]
+                "relax_dataset" in self.config["task"]
                 and self.config["task"].get("ml_relax", "end") == "train"
             ):
                 self.validate_relaxation(
@@ -332,7 +337,7 @@ class ForcesTrainer(BaseTrainer):
                     self.config["cmd"]["checkpoint_dir"],
                 )
         if (
-            "relaxation_dir" in self.config["task"]
+            "relax_dir" in self.config["task"]
             and self.config["task"].get("ml_relax", "end") == "end"
         ):
             self.validate_relaxation(
@@ -372,25 +377,31 @@ class ForcesTrainer(BaseTrainer):
     def validate_relaxation(self, split="val", epoch=None):
         print("### Evaluating ML-relaxation")
         self.model.eval()
-        metrics = {}
+
         meter = Meter(split=split)
 
-        mae_energy, mae_structure = relax_eval(
-            trainer=self,
-            traj_dir=self.config["task"]["relaxation_dir"],
-            metric=self.config["task"]["metric"],
-            steps=self.config["task"].get("relaxation_steps", 300),
-            fmax=self.config["task"].get("relaxation_fmax", 0.01),
-            results_dir=self.config["cmd"]["results_dir"],
-        )
+        # only supports batch_size = 1
+        # TODO: Batch relaxation support
+        for i, batch in enumerate(self.relax_loader):
+            mae_energy, mae_structure = relax_eval(
+                batch=batch,
+                model=self,
+                metric=self.config["task"]["metric"],
+                steps=self.config["task"].get("relaxation_steps", 300),
+                fmax=self.config["task"].get("relaxation_fmax", 0.01),
+                results_dir=self.config["cmd"]["results_dir"],
+            )
+            metrics = {
+                "relaxed_energy/{}".format(
+                    self.config["task"]["metric"]
+                ): mae_energy,
+                "relaxed_pos/{}".format(
+                    self.config["task"]["metric"]
+                ): mae_structure,
+            }
 
-        metrics[
-            "relaxed_energy/{}".format(self.config["task"]["metric"])
-        ] = mae_energy
-
-        metrics[
-            "relaxed_structure/{}".format(self.config["task"]["metric"])
-        ] = mae_structure
+            meter_update_dict = {}
+            meter.update(meter_update_dict)
 
         meter.update(metrics)
 
@@ -405,8 +416,6 @@ class ForcesTrainer(BaseTrainer):
             )
 
         print(meter)
-
-        return mae_energy, mae_structure
 
     def _forward(self, batch_list, compute_metrics=True):
         out = {}
