@@ -8,7 +8,7 @@ from collections import defaultdict
 import lmdb
 import numpy as np
 import torch
-from torch.utils.data import Dataset, Sampler
+from torch.utils.data import Dataset
 from torch_geometric.data import Batch
 
 from ocpmodels.common.registry import registry
@@ -101,32 +101,6 @@ class TrajectoryLmdbDataset(Dataset):
             map_size=1099511627776 / len(self.db_paths),
         )
         return env
-
-
-class TrajSampler(Sampler):
-    "Randomly samples batches of trajectories"
-
-    def __init__(self, data_source, traj_per_batch):
-        self.data_source = data_source
-        self.system_samples = data_source._system_samples
-        self.systemids = list(self.system_samples.keys())
-        self.traj_batch = traj_per_batch
-
-    def __len__(self):
-        return len(self.data_source)
-
-    def __iter__(self):
-        indices = []
-        while len(indices) <= len(self):
-            systemid = random.sample(self.systemids, 1)[0]
-            system_indices = self.system_samples[systemid]
-            if len(system_indices) < self.traj_batch:
-                indices += system_indices
-            else:
-                indices += random.sample(system_indices, self.traj_batch)
-        # trim excess samples
-        indices = indices[: len(self)]
-        return iter(indices)
 
 
 def data_list_collater(data_list):
