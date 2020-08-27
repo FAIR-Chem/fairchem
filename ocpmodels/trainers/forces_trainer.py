@@ -5,7 +5,7 @@ import ase.io
 import torch
 import torch_geometric
 import yaml
-from torch.utils.data import BatchSampler, DataLoader
+from torch.utils.data import DataLoader
 from torch_geometric.nn import DataParallel
 
 from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
@@ -16,7 +16,6 @@ from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.datasets import (
     TrajectoryDataset,
     TrajectoryLmdbDataset,
-    TrajSampler,
     data_list_collater,
 )
 from ocpmodels.modules.normalizer import Normalizer
@@ -103,18 +102,12 @@ class ForcesTrainer(BaseTrainer):
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
 
-            img_per_traj = self.config["optim"].get("img_per_traj", 1)
-            sampler = BatchSampler(
-                TrajSampler(self.train_dataset, img_per_traj),
-                batch_size=self.config["optim"]["batch_size"],
-                drop_last=False,
-            )
-
             self.train_loader = DataLoader(
                 self.train_dataset,
+                batch_size=self.config["optim"]["batch_size"],
+                shuffle=True,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
-                batch_sampler=sampler,
             )
 
             self.val_loader = self.test_loader = None
