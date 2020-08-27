@@ -144,6 +144,7 @@ class EnergyTrainer(BaseTrainer):
         self.model.to(self.device)
 
     def train(self):
+        self.best_val_mae = 1e9
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
@@ -176,7 +177,7 @@ class EnergyTrainer(BaseTrainer):
             torch.cuda.empty_cache()
 
             if self.val_loader is not None:
-                self.validate(split="val", epoch=epoch)
+                val_metrics = self.validate(split="val", epoch=epoch)
 
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
@@ -189,20 +190,27 @@ class EnergyTrainer(BaseTrainer):
                     split="val", epoch=epoch,
                 )
 
-            if not self.is_debug:
-                save_checkpoint(
-                    {
-                        "epoch": epoch + 1,
-                        "state_dict": self.model.state_dict(),
-                        "optimizer": self.optimizer.state_dict(),
-                        "normalizers": {
-                            key: value.state_dict()
-                            for key, value in self.normalizers.items()
+            if (
+                val_metrics.meters["relaxed energy/mae"].global_avg
+                < self.best_val_mae
+            ):
+                self.best_val_mae = val_metrics.meters[
+                    "relaxed energy/mae"
+                ].global_avg
+                if not self.is_debug:
+                    save_checkpoint(
+                        {
+                            "epoch": epoch + 1,
+                            "state_dict": self.model.state_dict(),
+                            "optimizer": self.optimizer.state_dict(),
+                            "normalizers": {
+                                key: value.state_dict()
+                                for key, value in self.normalizers.items()
+                            },
+                            "config": self.config,
                         },
-                        "config": self.config,
-                    },
-                    self.config["cmd"]["checkpoint_dir"],
-                )
+                        self.config["cmd"]["checkpoint_dir"],
+                    )
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
@@ -233,6 +241,7 @@ class EnergyTrainer(BaseTrainer):
             )
 
         print(meter)
+        return meter
 
     def _forward(self, batch_list, compute_metrics=True):
         out = {}
