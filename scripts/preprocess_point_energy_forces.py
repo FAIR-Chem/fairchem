@@ -42,6 +42,9 @@ def write_images_to_lmdb(mp_arg):
             # subtract off reference energy
             if args.ref_energy:
                 do.y -= adslab_ref[randomid]
+            if do.edge_index.shape[1] == 0:
+                print("no neighbors", traj_path)
+                continue
             txn = db.begin(write=True)
             txn.put(f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1))
             txn.commit()
