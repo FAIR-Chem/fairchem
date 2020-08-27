@@ -1,7 +1,6 @@
 from itertools import chain
 
 import torch
-
 from ocpmodels.datasets import data_list_collater
 
 
@@ -39,19 +38,7 @@ class OCPDataParallel(torch.nn.DataParallel):
                 )
 
         inputs = [
-            batch.to(
-                f"cuda:{self.device_ids[i]}",
-                "pos",
-                "y",
-                "force",
-                "atomic_numbers",
-                "batch",
-                "cell",
-                "cell_offsets",
-                "natoms",
-                "edge_index",
-                "neighbors",
-            )
+            batch.to(f"cuda:{self.device_ids[i]}")
             for i, batch in enumerate(batch_list)
         ]
         replicas = self.replicate(self.module, self.device_ids[: len(inputs)])
