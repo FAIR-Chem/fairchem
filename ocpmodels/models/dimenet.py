@@ -3,7 +3,6 @@ from torch import nn
 from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
 
-from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances
 
@@ -27,11 +26,13 @@ class DimeNetWrap(DimeNet):
         num_before_skip=1,
         num_after_skip=2,
         num_output_layers=3,
+        max_angles_per_image=1e6,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
+        self.max_angles_per_image = max_angles_per_image
 
         super(DimeNetWrap, self).__init__(
             in_channels=hidden_channels,
@@ -57,9 +58,19 @@ class DimeNetWrap(DimeNet):
         batch = data.batch
         x = self.embedding(data.atomic_numbers.long())
         if self.use_pbc:
-            edge_index, dist = get_pbc_distances(
-                pos, data.edge_index, data.cell, data.cell_offsets, data.natoms
+            out = get_pbc_distances(
+                pos,
+                data.edge_index,
+                data.cell,
+                data.cell_offsets,
+                data.neighbors,
+                return_offsets=True,
             )
+
+            edge_index = out["edge_index"]
+            dist = out["distances"]
+            offsets = out["offsets"]
+
             j, i = edge_index
         else:
             edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
@@ -70,12 +81,27 @@ class DimeNetWrap(DimeNet):
             edge_index, num_nodes=x.size(0)
         )
 
+        # Cap no. of triplets during training.
+        if self.training:
+            sub_ix = torch.randperm(idx_i.size(0))[
+                : self.max_angles_per_image * data.natoms.size(0)
+            ]
+            idx_i, idx_j, idx_k = idx_i[sub_ix], idx_j[sub_ix], idx_k[sub_ix]
+            idx_kj, idx_ji = idx_kj[sub_ix], idx_ji[sub_ix]
+
         # Calculate angles.
         pos_i = pos[idx_i].detach()
-        pos_ji, pos_ki = (
-            pos[idx_j].detach() - pos_i,
-            pos[idx_k].detach() - pos_i,
-        )
+        if self.use_pbc:
+            pos_ji, pos_ki = (
+                pos[idx_j].detach() - pos_i + offsets[idx_ji],
+                pos[idx_k].detach() - pos_i + offsets[idx_kj],
+            )
+        else:
+            pos_ji, pos_ki = (
+                pos[idx_j].detach() - pos_i,
+                pos[idx_k].detach() - pos_i,
+            )
+
         a = (pos_ji * pos_ki).sum(dim=-1)
         b = torch.cross(pos_ji, pos_ki).norm(dim=-1)
         angle = torch.atan2(b, a)
@@ -88,16 +114,11 @@ class DimeNetWrap(DimeNet):
         P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
 
         # Interaction blocks.
-        n = 0
         for interaction_block, output_block in zip(
             self.interaction_blocks, self.output_blocks[1:]
         ):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
-            # P += output_block(x, rbf, i)
-            tmp = output_block(x, rbf, i)
-            print(f'[{distutils.get_rank()}]', n, x.shape, P.shape, tmp.shape)
-            n += 1
-            P += tmp
+            P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
 
