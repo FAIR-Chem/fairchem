@@ -466,7 +466,9 @@ class ForcesTrainer(BaseTrainer):
             )
 
             if self.config["task"].get("eval_on_free_atoms", True):
-                fixed = torch.cat([batch.fixed for batch in batch_list])
+                fixed = torch.cat(
+                    [batch.fixed.to(self.device) for batch in batch_list]
+                )
                 mask = fixed == 0
                 force_pred = force_pred[mask]
                 force_target = force_target[mask]
@@ -522,7 +524,9 @@ class ForcesTrainer(BaseTrainer):
             # Force coefficient = 30 has been working well for us.
             force_mult = self.config["optim"].get("force_coefficient", 30)
             if self.config["task"].get("train_on_free_atoms", False):
-                fixed = torch.cat([batch.fixed for batch in batch_list])
+                fixed = torch.cat(
+                    [batch.fixed.to(self.device) for batch in batch_list]
+                )
                 mask = fixed == 0
                 loss.append(
                     force_mult
