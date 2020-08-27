@@ -43,9 +43,16 @@ class SchNetWrap(SchNet):
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
 
-            edge_index, edge_weight = get_pbc_distances(
-                pos, data.edge_index, data.cell, data.cell_offsets, data.natoms
+            out = get_pbc_distances(
+                pos,
+                data.edge_index,
+                data.cell,
+                data.cell_offsets,
+                data.neighbors,
             )
+
+            edge_index = out["edge_index"]
+            edge_weight = out["distances"]
             edge_attr = self.distance_expansion(edge_weight)
 
             h = self.embedding(z)

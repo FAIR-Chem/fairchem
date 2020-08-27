@@ -23,15 +23,12 @@ class AtomsToGraphs:
     The AtomsToGraphs class takes in periodic atomic structures in form of ASE atoms objects and converts
     them into graph representations for use in PyTorch. The primary purpose of this class is to determine the
     nearest neighbors within some radius around each individual atom, taking into account PBC, and set the
-    pair index and distance between atom pairs appropriately. Additionally, arrays are padded because not all atoms
-    have the same number of neighbors. Lastly, atomic properties and the graph information are put into a
-    PyTorch geometric data object for use with PyTorch.
+    pair index and distance between atom pairs appropriately. Lastly, atomic properties and the graph information
+    are put into a PyTorch geometric data object for use with PyTorch.
 
     Args:
         max_neigh (int): Maximum number of neighbors to consider.
         radius (int or float): Cutoff radius in Angstroms to search for neighbors.
-        dummy_distance (int or float): A dummy distance to pad with, should be larger than radius cutoff.
-        dummy_index (int): A dummy index to pad with.
         r_energy (bool): Return the energy with other properties. Default is False, so the energy will not be returned.
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
         r_distances (bool): Return the distances with other properties.
@@ -42,8 +39,6 @@ class AtomsToGraphs:
     Attributes:
         max_neigh (int): Maximum number of neighbors to consider.
         radius (int or float): Cutoff radius in Angstoms to search for neighbors.
-        dummy_distance (int or float): A dummy distance to pad with.
-        dummy_index (int): A dummy index to pad with.
         r_energy (bool): Return the energy with other properties. Default is False, so the energy will not be returned.
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
         r_distances (bool): Return the distances with other properties.
@@ -55,10 +50,8 @@ class AtomsToGraphs:
 
     def __init__(
         self,
-        max_neigh=12,
+        max_neigh=200,
         radius=6,
-        dummy_distance=7,
-        dummy_index=-1,
         r_energy=False,
         r_forces=False,
         r_distances=False,
@@ -66,92 +59,50 @@ class AtomsToGraphs:
     ):
         self.max_neigh = max_neigh
         self.radius = radius
-        self.dummy_distance = dummy_distance
-        self.dummy_index = dummy_index
         self.r_energy = r_energy
         self.r_forces = r_forces
         self.r_distances = r_distances
         self.r_fixed = r_fixed
 
     def _get_neighbors_pymatgen(self, atoms):
-        """Preforms nearest neighbor search and returns split neighbors indices and distances"""
+        """Preforms nearest neighbor search and returns edge index, distances,
+        and cell offsets"""
         struct = AseAtomsAdaptor.get_structure(atoms)
-        # these return jagged arrays meaning certain atoms have more neighbors than others
-        _c_index, n_index, _images, n_distance = struct.get_neighbor_list(
-            r=self.radius
+        _c_index, _n_index, _offsets, n_distance = struct.get_neighbor_list(
+            r=self.radius, numerical_tol=0, exclude_self=True
         )
-        # find the delimiters, the number of neighbors varies
-        delim = np.where(np.diff(_c_index))[0] + 1
-        # split the neighbor index, distance, lattice offsets based on delimiter
-        split_n_index = np.split(n_index, delim)
-        split_n_distances = np.split(n_distance, delim)
-        split_offsets = np.split(_images, delim)
 
-        return split_n_index, split_n_distances, split_offsets
+        _nonmax_idx = []
+        for i in range(len(atoms)):
+            idx_i = (_c_index == i).nonzero()[0]
+            # sort neighbors by distance, remove edges larger than max_neighbors
+            idx_sorted = np.argsort(n_distance[idx_i])[: self.max_neigh]
+            _nonmax_idx.append(idx_i[idx_sorted])
+        _nonmax_idx = np.concatenate(_nonmax_idx)
 
-    def _pad_arrays(
-        self, atoms, split_n_index, split_n_distances, split_offsets
-    ):
-        """Pads arrays to standardize the length"""
-        # c_index is the center index, the atom to find the neighbors of
-        c_index = np.arange(0, len(atoms), 1)
-        # pad c_index
-        pad_c_index = np.repeat(c_index, self.max_neigh)
-        # add dummy variables to desired array length
-        pad_n_index = np.full((len(atoms), self.max_neigh), self.dummy_index)
-        pad_distances = np.full(
-            (len(atoms), self.max_neigh), float(self.dummy_distance)
-        )
-        pad_offsets = np.zeros((len(atoms), self.max_neigh, 3), dtype=np.int)
+        _c_index = _c_index[_nonmax_idx]
+        _n_index = _n_index[_nonmax_idx]
+        n_distance = n_distance[_nonmax_idx]
+        _offsets = _offsets[_nonmax_idx]
 
-        # loop over the stucture and replace dummy variables where values exist
-        for i, (n_index, distances, offsets) in enumerate(
-            zip(split_n_index, split_n_distances, split_offsets)
-        ):
-            if len(distances) == self.max_neigh:
-                pad_n_index[i] = n_index
-                pad_distances[i] = distances
-                pad_offsets[i] = offsets
-                continue
-            # padding arrays
-            elif len(distances) < self.max_neigh:
-                n_len = len(distances)
-                # potentially add if n_len == 0: print (increase radius)
-                pad_n_index[i][:n_len] = n_index
-                pad_distances[i][:n_len] = distances
-                pad_offsets[i][:n_len] = offsets
-                continue
-            # removing extra values so the length is equal to max_neigh
-            # values are sorted by distance so only nearest neighbors are kept
-            elif len(distances) > self.max_neigh:
-                # this sorts the list min -> max and returns the indices
-                sorted_dist_i = np.argsort(distances)
-                pad_n_index[i] = n_index[sorted_dist_i[: self.max_neigh]]
-                pad_distances[i] = distances[sorted_dist_i[: self.max_neigh]]
-                pad_offsets[i] = offsets[sorted_dist_i[: self.max_neigh]]
-        return pad_c_index, pad_n_index, pad_distances, pad_offsets
+        return _c_index, _n_index, n_distance, _offsets
 
-    def _reshape_features(
-        self, pad_c_index, pad_n_index, pad_distances, pad_offsets
-    ):
-        """Processes the center and neighbor index and reshapes distances,
+    def _reshape_features(self, c_index, n_index, n_distance, offsets):
+        """Stack center and neighbor index and reshapes distances,
         takes in np.arrays and returns torch tensors"""
-        # edge_index reshape, combine, and define in torch
-        pad_n_index = pad_n_index.reshape(
-            (pad_n_index.shape[0] * pad_n_index.shape[1],)
-        )
-        edge_index = torch.LongTensor([pad_c_index, pad_n_index])
-        # reshape distance to match indices
-        pad_distances = pad_distances.reshape(
-            (pad_distances.shape[0] * pad_distances.shape[1],)
-        )
-        all_distances = torch.Tensor(pad_distances)
-        # reshape offsets to match indices
-        pad_offsets = pad_offsets.reshape(
-            (pad_offsets.shape[0] * pad_offsets.shape[1], -1)
-        )
-        cell_offsets = torch.LongTensor(pad_offsets)
-        return edge_index, all_distances, cell_offsets
+        edge_index = torch.LongTensor(np.vstack((n_index, c_index)))
+        edge_distances = torch.FloatTensor(n_distance)
+        cell_offsets = torch.LongTensor(offsets)
+
+        # remove distances smaller than a tolerance ~ 0. The small tolerance is
+        # needed to correct for pymatgen's neighbor_list returning self atoms
+        # in a few edge cases.
+        nonzero = torch.nonzero(edge_distances >= 1e-8).flatten()
+        edge_index = edge_index[:, nonzero]
+        edge_distances = edge_distances[nonzero]
+        cell_offsets = cell_offsets[nonzero]
+
+        return edge_index, edge_distances, cell_offsets
 
     def convert(
         self, atoms,
@@ -169,9 +120,8 @@ class AtomsToGraphs:
 
         # run internal functions to get padded indices and distances
         split_idx_dist = self._get_neighbors_pymatgen(atoms)
-        padded_idx_dist = self._pad_arrays(atoms, *split_idx_dist)
-        edge_index, all_distances, cell_offsets = self._reshape_features(
-            *padded_idx_dist
+        edge_index, edge_distances, cell_offsets = self._reshape_features(
+            *split_idx_dist
         )
 
         # set the atomic numbers, positions, and cell
@@ -198,7 +148,7 @@ class AtomsToGraphs:
             forces = torch.Tensor(atoms.get_forces(apply_constraint=False))
             data.force = forces
         if self.r_distances:
-            data.distances = all_distances
+            data.distances = edge_distances
         if self.r_fixed:
             fixed_idx = torch.zeros(natoms)
             fixed_idx[atoms.constraints[0].index] = 1
