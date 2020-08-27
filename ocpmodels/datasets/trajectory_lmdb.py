@@ -5,13 +5,13 @@ import pickle
 import random
 from collections import defaultdict
 
-import numpy as np
-
 import lmdb
+import numpy as np
 import torch
-from ocpmodels.common.registry import registry
 from torch.utils.data import Dataset
 from torch_geometric.data import Batch
+
+from ocpmodels.common.registry import registry
 
 
 @registry.register_dataset("trajectory_lmdb")
@@ -37,7 +37,14 @@ class TrajectoryLmdbDataset(Dataset):
         ]
 
         self._keys = [
-            [j for j in range(envs[i].stat()["entries"])]
+            [
+                j
+                for j in range(
+                    pickle.loads(
+                        envs[i].begin().get(f"length".encode("ascii"))
+                    )
+                )
+            ]
             for i in range(len(self.db_paths))
         ]
         self._keylens = [len(k) for k in self._keys]
