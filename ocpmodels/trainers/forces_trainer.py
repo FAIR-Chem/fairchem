@@ -267,6 +267,7 @@ class ForcesTrainer(BaseTrainer):
 
     def train(self):
         self.best_val_mae = 1e9
+        iters = 0
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
@@ -295,11 +296,20 @@ class ForcesTrainer(BaseTrainer):
                 if i % self.config["cmd"]["print_every"] == 0:
                     print(self.meter)
 
+                iters += 1
+
+                # Evaluate val set. -1 for after each epoch.
+                eval_every = self.config["optim"].get("eval_every", -1)
+                if iters % eval_every == 0 and eval_every != -1:
+                    if self.val_loader is not None:
+                        val_metrics = self.validate(split="val", epoch=epoch)
+
             self.scheduler.step()
             torch.cuda.empty_cache()
 
-            if self.val_loader is not None:
-                val_metrics = self.validate(split="val", epoch=epoch)
+            if eval_every == -1:
+                if self.val_loader is not None:
+                    val_metrics = self.validate(split="val", epoch=epoch)
 
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
