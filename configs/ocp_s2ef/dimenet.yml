@@ -1,5 +1,5 @@
 includes:
-- configs/2020_07_13_ocp_reset_200k/base_dist.yml
+- configs/ocp_s2ef/base.yml
 
 model:
   name: dimenet
