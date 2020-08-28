@@ -7,7 +7,7 @@ dataset:
     target_std: 3.066107988357544
     grad_target_mean: 0.0
     grad_target_std: 3.066107988357544
-  - src: /checkpoint/electrocatalysis/relaxations/features/struct_to_energy_forces/val/is
+#  - src: /checkpoint/electrocatalysis/relaxations/features/struct_to_energy_forces/val/is
 
 logger: tensorboard
 

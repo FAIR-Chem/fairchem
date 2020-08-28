@@ -36,7 +36,7 @@ from ocpmodels.modules.normalizer import Normalizer
 
 @registry.register_trainer("base")
 class BaseTrainer:
-    def __init__(self, args=None):
+    def __init__(self, args=None, local_rank=0):
         # defaults.
         self.device = "cpu"
         self.is_debug = True

@@ -37,7 +37,7 @@ class ForcesTrainer(BaseTrainer):
         print_every=100,
         seed=None,
         logger="tensorboard",
-        local_rank=0
+        local_rank=0,
     ):
 
         if run_dir is None:
