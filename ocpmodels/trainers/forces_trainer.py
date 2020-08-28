@@ -294,6 +294,13 @@ class ForcesTrainer(BaseTrainer):
                 if i % self.config["cmd"]["print_every"] == 0:
                     print(self.meter)
 
+                iters_per_epoch = self.config["optim"].get(
+                    "iters_per_epoch", -1
+                )
+                if iters_per_epoch > 0:
+                    if i > iters_per_epoch:
+                        break
+
             self.scheduler.step()
             torch.cuda.empty_cache()
 
