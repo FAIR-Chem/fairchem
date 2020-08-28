@@ -319,6 +319,7 @@ def get_pbc_distances(
     cell,
     cell_offsets,
     neighbors,
+    max_neigh=1e9,
     return_offsets=False,
     return_distance_vec=False,
 ):
@@ -338,6 +339,17 @@ def get_pbc_distances(
     nonzero_idx = torch.arange(len(distances))[distances != 0]
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
+
+    # removes neighbors > max_neigh
+    _nonmax_idx = []
+    for i in range(pos.shape[0]):
+        idx_i = torch.arange(len(edge_index[1]))[(edge_index[1] == i)][
+            :max_neigh
+        ]
+        _nonmax_idx.append(idx_i)
+    _nonmax_idx = torch.cat(_nonmax_idx)
+    edge_index = edge_index[:, _nonmax_idx]
+    distances = distances[_nonmax_idx]
 
     out = {
         "edge_index": edge_index,
