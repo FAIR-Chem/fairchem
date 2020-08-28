@@ -3,6 +3,7 @@ import os
 
 import ase.io
 import torch
+import torch.distributed as dist
 import torch_geometric
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
@@ -22,7 +23,6 @@ from ocpmodels.datasets import (
 )
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
-import torch.distributed as dist
 
 
 @registry.register_trainer("dist_forces")
@@ -174,7 +174,11 @@ class DistributedForcesTrainer(BaseTrainer):
                     )
                     self.normalizers["grad_target"].mean.fill_(0)
 
-        if self.is_vis and self.config["task"]["dataset"] != "qm9" and distutils.is_master():
+        if (
+            self.is_vis
+            and self.config["task"]["dataset"] != "qm9"
+            and distutils.is_master()
+        ):
             # Plot label distribution.
             plots = [
                 plot_histogram(
@@ -202,14 +206,10 @@ class DistributedForcesTrainer(BaseTrainer):
         super(DistributedForcesTrainer, self).load_model()
 
         self.model = OCPDataParallel(
-            self.model,
-            output_device=self.device,
-            num_gpus=1,
+            self.model, output_device=self.device, num_gpus=1,
         )
         self.model = DistributedDataParallel(
-            self.model,
-            device_ids=[self.device],
-            find_unused_parameters=True
+            self.model, device_ids=[self.device], find_unused_parameters=True
         )
 
     # Takes in a new data source and generates predictions on it.
@@ -269,6 +269,7 @@ class DistributedForcesTrainer(BaseTrainer):
 
     def train(self):
         self.best_val_mae = 1e9
+        iters = 0
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
@@ -295,14 +296,26 @@ class DistributedForcesTrainer(BaseTrainer):
                     )
 
                 # Print metrics.
-                if i % self.config["cmd"]["print_every"] == 0 and distutils.is_master():
+                if (
+                    i % self.config["cmd"]["print_every"] == 0
+                    and distutils.is_master()
+                ):
                     print(self.meter)
+
+                iters += 1
+
+                # Evaluate val set. -1 for after each epoch.
+                eval_every = self.config["optim"].get("eval_every", -1)
+                if iters % eval_every == 0 and eval_every != -1:
+                    if self.val_loader is not None:
+                        val_metrics = self.validate(split="val", epoch=epoch)
 
             self.scheduler.step()
             torch.cuda.empty_cache()
 
-            if self.val_loader is not None:
-                val_metrics = self.validate(split="val", epoch=epoch)
+            if eval_every == -1:
+                if self.val_loader is not None:
+                    val_metrics = self.validate(split="val", epoch=epoch)
 
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
@@ -315,8 +328,9 @@ class DistributedForcesTrainer(BaseTrainer):
                     split="val", epoch=epoch,
                 )
 
-            self.best_val_mae = min(val_metrics.meters["force_z/mae"].global_avg,
-                                    self.best_val_mae)
+            self.best_val_mae = min(
+                val_metrics.meters["force_z/mae"].global_avg, self.best_val_mae
+            )
             if not self.is_debug and distutils.is_master():
                 save_checkpoint(
                     {
@@ -388,13 +402,15 @@ class DistributedForcesTrainer(BaseTrainer):
         )
 
         mae_energy = distutils.all_reduce(
-            mae_energy, average=True, device=self.device)
+            mae_energy, average=True, device=self.device
+        )
         metrics[
             "relaxed_energy/{}".format(self.config["task"]["metric"])
         ] = mae_energy
 
         mae_structure = distutils.all_reduce(
-            mae_structure, average=True, device=self.device)
+            mae_structure, average=True, device=self.device
+        )
         metrics[
             "relaxed_structure/{}".format(self.config["task"]["metric"])
         ] = mae_structure
@@ -509,7 +525,8 @@ class DistributedForcesTrainer(BaseTrainer):
         aggregated_metrics = {}
         for metric in sorted(metrics):
             aggregated_metrics[metric] = distutils.all_reduce(
-                metrics[metric], average=True, device=self.device)
+                metrics[metric], average=True, device=self.device
+            )
         return out, aggregated_metrics
 
     def _compute_loss(self, out, batch_list):
