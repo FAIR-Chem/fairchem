@@ -1,14 +1,13 @@
 trainer: dist_forces
 
 dataset:
-#  - src: /checkpoint/electrocatalysis/relaxations/features/struct_to_energy_forces/train/200k
-  - src: data/data/train
+  - src: data/data/2020_07_13_ocp_reset_200k/val/
     normalize_labels: True
     target_mean: -0.6545229554176331
     target_std: 3.066107988357544
     grad_target_mean: 0.0
     grad_target_std: 3.066107988357544
-  - src: data/data/val
+  - src: data/data/2020_07_13_ocp_reset_200k/val/
 
 logger: tensorboard
 
