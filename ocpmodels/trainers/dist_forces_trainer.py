@@ -18,7 +18,6 @@ from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.datasets import (
     TrajectoryDataset,
     TrajectoryLmdbDataset,
-    TrajSampler,
     data_list_collater,
 )
 from ocpmodels.modules.normalizer import Normalizer
@@ -102,18 +101,12 @@ class DistributedForcesTrainer(BaseTrainer):
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
 
-            img_per_traj = self.config["optim"].get("img_per_traj", 1)
-            sampler = BatchSampler(
-                TrajSampler(self.train_dataset, img_per_traj),
-                batch_size=self.config["optim"]["batch_size"],
-                drop_last=False,
-            )
-
             self.train_loader = DataLoader(
                 self.train_dataset,
+                batch_size=self.config["optim"]["batch_size"],
+                shuffle=True,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
-                batch_sampler=sampler,
             )
 
             self.val_loader = self.test_loader = None
@@ -122,20 +115,12 @@ class DistributedForcesTrainer(BaseTrainer):
                 self.val_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(self.config["val_dataset"])
-                val_sampler = None
-                if distutils.is_dist_initialized():
-                    val_sampler = DistributedSampler(
-                        self.val_dataset,
-                        num_replicas=distutils.get_world_size(),
-                        rank=distutils.get_rank(),
-                        shuffle=False)
                 self.val_loader = DataLoader(
                     self.val_dataset,
                     self.config["optim"].get("eval_batch_size", 64),
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
-                    sampler=val_sampler,
                 )
         else:
             self.dataset = registry.get_dataset_class(
@@ -283,17 +268,17 @@ class DistributedForcesTrainer(BaseTrainer):
         return predictions
 
     def train(self):
+        self.best_val_mae = 1e9
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
-                # print(f'[Rank {distutils.get_rank()}] Epoch {epoch} Iter {i}')
                 # Forward, loss, backward.
                 out, metrics = self._forward(batch)
                 loss = self._compute_loss(out, batch)
                 self._backward(loss)
 
                 # Update meter.
-                total_loss = distutils.all_reduce_tensor(loss)
+                total_loss = distutils.all_reduce(loss, average=True)
                 meter_update_dict = {
                     "epoch": epoch + (i + 1) / len(self.train_loader),
                     "loss": total_loss.item(),
@@ -317,7 +302,7 @@ class DistributedForcesTrainer(BaseTrainer):
             torch.cuda.empty_cache()
 
             if self.val_loader is not None:
-                self.validate(split="val", epoch=epoch)
+                val_metrics = self.validate(split="val", epoch=epoch)
 
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
@@ -330,6 +315,8 @@ class DistributedForcesTrainer(BaseTrainer):
                     split="val", epoch=epoch,
                 )
 
+            self.best_val_mae = min(val_metrics.meters["force_z/mae"].global_avg,
+                                    self.best_val_mae)
             if not self.is_debug and distutils.is_master():
                 save_checkpoint(
                     {
@@ -364,7 +351,7 @@ class DistributedForcesTrainer(BaseTrainer):
             # Forward.
             out, metrics = self._forward(batch)
             loss = self._compute_loss(out, batch)
-            total_loss = distutils.all_reduce_tensor(loss)
+            total_loss = distutils.all_reduce(loss, average=True)
 
             # Update meter.
             meter_update_dict = {"loss": total_loss.item()}
@@ -383,6 +370,7 @@ class DistributedForcesTrainer(BaseTrainer):
 
         if distutils.is_master():
             print(meter)
+        return meter
 
     def validate_relaxation(self, split="val", epoch=None):
         print("### Evaluating ML-relaxation")
@@ -399,10 +387,14 @@ class DistributedForcesTrainer(BaseTrainer):
             results_dir=self.config["cmd"]["results_dir"],
         )
 
+        mae_energy = distutils.all_reduce(
+            mae_energy, average=True, device=self.device)
         metrics[
             "relaxed_energy/{}".format(self.config["task"]["metric"])
         ] = mae_energy
 
+        mae_structure = distutils.all_reduce(
+            mae_structure, average=True, device=self.device)
         metrics[
             "relaxed_structure/{}".format(self.config["task"]["metric"])
         ] = mae_structure
@@ -488,7 +480,9 @@ class DistributedForcesTrainer(BaseTrainer):
             )
 
             if self.config["task"].get("eval_on_free_atoms", True):
-                fixed = torch.cat([batch.fixed for batch in batch_list])
+                fixed = torch.cat(
+                    [batch.fixed.to(self.device) for batch in batch_list]
+                )
                 mask = fixed == 0
                 force_pred = force_pred[mask]
                 force_target = force_target[mask]
@@ -511,11 +505,11 @@ class DistributedForcesTrainer(BaseTrainer):
             metrics[
                 "force_z/{}".format(self.config["task"]["metric"])
             ] = grad_input_errors[2]
+
         aggregated_metrics = {}
-        world_size = distutils.get_world_size()
         for metric in sorted(metrics):
-            # tensor = torch.tensor(metrics[metric]).to(self.device)
-            aggregated_metrics[metric] = distutils.all_reduce_tensor(metrics[metric]).item() / world_size
+            aggregated_metrics[metric] = distutils.all_reduce(
+                metrics[metric], average=True, device=self.device)
         return out, aggregated_metrics
 
     def _compute_loss(self, out, batch_list):
@@ -548,7 +542,9 @@ class DistributedForcesTrainer(BaseTrainer):
             # Force coefficient = 30 has been working well for us.
             force_mult = self.config["optim"].get("force_coefficient", 30)
             if self.config["task"].get("train_on_free_atoms", False):
-                fixed = torch.cat([batch.fixed for batch in batch_list])
+                fixed = torch.cat(
+                    [batch.fixed.to(self.device) for batch in batch_list]
+                )
                 mask = fixed == 0
                 loss.append(
                     force_mult

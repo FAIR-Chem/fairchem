@@ -81,8 +81,18 @@ def synchronize():
     dist.barrier()
 
 
-def all_reduce_tensor(tensor, op=dist.reduce_op.SUM, group=dist.group.WORLD):
+def all_reduce(data, group=dist.group.WORLD, average=False, device=None):
     if get_world_size() == 1:
-        return tensor
-    dist.all_reduce(tensor, op=op, group=group)
-    return tensor
+        return data
+    tensor = data
+    if not isinstance(data, torch.Tensor):
+        tensor = torch.tensor(data)
+    if device is not None:
+        tensor = tensor.cuda(device)
+    dist.all_reduce(tensor, group=group)
+    if average:
+        tensor /= get_world_size()
+    if not isinstance(data, torch.Tensor):
+        data = tensor.cpu().numpy() \
+            if tensor.numel() > 1 else tensor.item()
+    return data
