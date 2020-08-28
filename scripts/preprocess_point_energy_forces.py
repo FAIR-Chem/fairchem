@@ -53,6 +53,11 @@ def write_images_to_lmdb(mp_arg):
         except Exception:
             pass
 
+    # Save count of objects in lmdb.
+    txn = db.begin(write=True)
+    txn.put(f"length".encode("ascii"), pickle.dumps(idx, protocol=-1))
+    txn.commit()
+
     db.sync()
     db.close()
 

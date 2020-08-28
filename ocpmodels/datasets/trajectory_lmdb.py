@@ -37,24 +37,16 @@ class TrajectoryLmdbDataset(Dataset):
         ]
 
         self._keys = [
-            [f"{j}".encode("ascii") for j in range(envs[i].stat()["entries"])]
+            [
+                j
+                for j in range(
+                    pickle.loads(envs[i].begin().get("length".encode("ascii")))
+                )
+            ]
             for i in range(len(self.db_paths))
         ]
         self._keylens = [len(k) for k in self._keys]
         self._keylen_cumulative = np.cumsum(self._keylens).tolist()
-
-        self._system_samples = defaultdict(list)
-        self._keyidx = 0
-        for kidx, i in enumerate(self.txt_paths):
-            with open(i, "r") as k:
-                traj_steps = k.read().splitlines()[: self._keylens[kidx]]
-            k.close()
-            for idx, sample in enumerate(traj_steps):
-                systemid = os.path.splitext(
-                    os.path.basename(sample).split(",")[0]
-                )[0]
-                self._system_samples[systemid].append(self._keyidx)
-                self._keyidx += 1
 
         self.transform = transform
 
@@ -80,7 +72,9 @@ class TrajectoryLmdbDataset(Dataset):
 
         # Return features.
         env = self.connect_db(self.db_paths[db_idx])
-        datapoint_pickled = env.begin().get(self._keys[db_idx][el_idx])
+        datapoint_pickled = env.begin().get(
+            f"{self._keys[db_idx][el_idx]}".encode("ascii")
+        )
         data_object = pickle.loads(datapoint_pickled)
         data_object = (
             data_object
