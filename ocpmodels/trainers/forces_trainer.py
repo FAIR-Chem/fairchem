@@ -266,6 +266,7 @@ class ForcesTrainer(BaseTrainer):
         return predictions
 
     def train(self):
+        self.best_val_mae = 1e9
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
@@ -298,7 +299,7 @@ class ForcesTrainer(BaseTrainer):
             torch.cuda.empty_cache()
 
             if self.val_loader is not None:
-                self.validate(split="val", epoch=epoch)
+                val_metrics = self.validate(split="val", epoch=epoch)
 
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
@@ -311,20 +312,27 @@ class ForcesTrainer(BaseTrainer):
                     split="val", epoch=epoch,
                 )
 
-            if not self.is_debug:
-                save_checkpoint(
-                    {
-                        "epoch": epoch + 1,
-                        "state_dict": self.model.state_dict(),
-                        "optimizer": self.optimizer.state_dict(),
-                        "normalizers": {
-                            key: value.state_dict()
-                            for key, value in self.normalizers.items()
+            if (
+                val_metrics.meters["force_z/mae"].global_avg
+                < self.best_val_mae
+            ):
+                self.best_val_mae = val_metrics.meters[
+                    "force_z/mae"
+                ].global_avg
+                if not self.is_debug:
+                    save_checkpoint(
+                        {
+                            "epoch": epoch + 1,
+                            "state_dict": self.model.state_dict(),
+                            "optimizer": self.optimizer.state_dict(),
+                            "normalizers": {
+                                key: value.state_dict()
+                                for key, value in self.normalizers.items()
+                            },
+                            "config": self.config,
                         },
-                        "config": self.config,
-                    },
-                    self.config["cmd"]["checkpoint_dir"],
-                )
+                        self.config["cmd"]["checkpoint_dir"],
+                    )
         if (
             "relaxation_dir" in self.config["task"]
             and self.config["task"].get("ml_relax", "end") == "end"
@@ -362,6 +370,7 @@ class ForcesTrainer(BaseTrainer):
             )
 
         print(meter)
+        return meter
 
     def validate_relaxation(self, split="val", epoch=None):
         print("### Evaluating ML-relaxation")
