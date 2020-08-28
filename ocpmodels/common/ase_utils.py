@@ -8,10 +8,10 @@ from ase import Atoms
 from ase.calculators.calculator import Calculator
 from ase.optimize import BFGS
 from ase.optimize.optimize import Optimizer
-from torch_geometric.data import Batch
 
 from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
+from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -55,7 +55,7 @@ class OCPCalculator(Calculator):
     def calculate(self, atoms, properties, system_changes):
         Calculator.calculate(self, atoms, properties, system_changes)
         data_object = self.a2g.convert(atoms)
-        batch = Batch.from_data_list([data_object])
+        batch = data_list_collater([data_object])
         predictions = self.trainer.predict(batch)
 
         self.results["energy"] = predictions["energy"][0]
