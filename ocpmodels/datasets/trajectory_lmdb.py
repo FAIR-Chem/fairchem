@@ -1,9 +1,6 @@
-import glob
-import json
-import os
+import bisect
 import pickle
-import random
-from collections import defaultdict
+from pathlib import Path
 
 import lmdb
 import numpy as np
@@ -11,6 +8,7 @@ import torch
 from torch.utils.data import Dataset
 from torch_geometric.data import Batch
 
+from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 
 
@@ -18,52 +16,62 @@ from ocpmodels.common.registry import registry
 class TrajectoryLmdbDataset(Dataset):
     def __init__(self, config, transform=None):
         super(TrajectoryLmdbDataset, self).__init__()
-
         self.config = config
 
-        self.db_paths = glob.glob(
-            os.path.join(self.config["src"], "") + "*lmdb"
-        )
-        self.txt_paths = glob.glob(
-            os.path.join(self.config["src"], "") + "*txt"
-        )
-        assert len(self.db_paths) > 0, "No LMDBs found in {}".format(
-            self.config["src"]
-        )
+        # If running in distributed mode, only read a subset of database files
+        world_size = distutils.get_world_size()
+        rank = distutils.get_rank()
+        srcdir = Path(self.config["src"])
+        db_paths = sorted(srcdir.glob("*.lmdb"))
+        assert len(db_paths) > 0, f"No LMDBs found in {srcdir}"
+        # Each process only reads a subset of the DB files. However, since the
+        # number of DB files may not be divisible by world size, the final
+        # (num_dbs % world_size) are shared by all processes.
+        num_full_dbs = len(db_paths) - (len(db_paths) % world_size)
+        full_db_paths = db_paths[rank:num_full_dbs:world_size]
+        shared_db_paths = db_paths[num_full_dbs:]
+        self.db_paths = full_db_paths + shared_db_paths
 
-        envs = [
-            self.connect_db(self.db_paths[i])
-            for i in range(len(self.db_paths))
-        ]
-
-        self._keys = [
-            [
-                j
-                for j in range(
-                    pickle.loads(envs[i].begin().get("length".encode("ascii")))
-                )
-            ]
-            for i in range(len(self.db_paths))
-        ]
+        self._keys = []
+        for db_path in full_db_paths:
+            env = self.connect_db(db_path)
+            length = pickle.loads(env.begin().get("length".encode("ascii")))
+            self._keys.append(list(range(length)))
+            env.close()
+        for db_path in shared_db_paths:
+            env = self.connect_db(db_path)
+            length = pickle.loads(env.begin().get("length".encode("ascii")))
+            self._keys.append(list(range(rank, length, world_size)))
+            env.close()
         self._keylens = [len(k) for k in self._keys]
         self._keylen_cumulative = np.cumsum(self._keylens).tolist()
-
+        self.num_samples = sum(self._keylens)
         self.transform = transform
 
-        for i in range(len(envs)):
-            envs[i].close()
+        # self.db_paths = sorted(srcdir.glob("*.lmdb"))
+        # self.txt_paths = sorted(srcdir.glob("*.txt"))
+        # assert len(self.db_paths) > 0, f"No LMDBs found in {srcdir}"
+        #
+        # self.db_paths = self.db_paths[rank::world_size]
+        # self.txt_paths = self.txt_paths[rank::world_size]
+        #
+        # envs = [self.connect_db(dbpath) for dbpath in self.db_paths]
+        # self._keys = []
+        # for env in envs:
+        #     length = pickle.loads(env.begin().get("length".encode("ascii")))
+        #     self._keys.append(list(range(length)))
+        #     env.close()
+        # self._keylens = [len(k) for k in self._keys]
+        # self._keylen_cumulative = np.cumsum(self._keylens).tolist()
+        # self.num_samples = sum(self._keylens)
+        # self.transform = transform
 
     def __len__(self):
-        return sum(self._keylens)
+        return self.num_samples
 
     def __getitem__(self, idx):
         # Figure out which db this should be indexed from.
-        db_idx = 0
-        for i in range(len(self._keylen_cumulative)):
-            if self._keylen_cumulative[i] > idx:
-                db_idx = i
-                break
-
+        db_idx = bisect.bisect(self._keylen_cumulative, idx)
         # Extract index of element within that db.
         el_idx = idx
         if db_idx != 0:
@@ -76,23 +84,19 @@ class TrajectoryLmdbDataset(Dataset):
             f"{self._keys[db_idx][el_idx]}".encode("ascii")
         )
         data_object = pickle.loads(datapoint_pickled)
-        data_object = (
-            data_object
-            if self.transform is None
-            else self.transform(data_object)
-        )
+        if self.transform is not None:
+            data_object = self.transform(data_object)
         env.close()
 
         return data_object
 
     def connect_db(self, lmdb_path=None):
         env = lmdb.open(
-            lmdb_path,
+            str(lmdb_path),
             subdir=False,
             readonly=True,
             lock=False,
             readahead=False,
-            map_size=1099511627776 / len(self.db_paths),
         )
         return env
 
