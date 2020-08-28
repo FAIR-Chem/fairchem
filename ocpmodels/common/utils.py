@@ -319,7 +319,6 @@ def get_pbc_distances(
     cell,
     cell_offsets,
     neighbors,
-    max_neigh=1e9,
     return_offsets=False,
     return_distance_vec=False,
 ):
