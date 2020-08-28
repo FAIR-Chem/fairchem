@@ -1,5 +1,5 @@
 includes:
-- configs/ocp_s2ef/base.yml
+- configs/s2ef/base_dist.yml
 
 model:
   name: dimenet

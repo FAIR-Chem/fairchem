@@ -5,9 +5,11 @@ import ase.io
 import torch
 import torch_geometric
 import yaml
-from torch.utils.data import DataLoader
+from torch.nn.parallel.distributed import DistributedDataParallel
+from torch.utils.data import BatchSampler, DataLoader, DistributedSampler
 from torch_geometric.nn import DataParallel
 
+from ocpmodels.common import distutils
 from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
@@ -20,10 +22,11 @@ from ocpmodels.datasets import (
 )
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+import torch.distributed as dist
 
 
-@registry.register_trainer("forces")
-class ForcesTrainer(BaseTrainer):
+@registry.register_trainer("dist_forces")
+class DistributedForcesTrainer(BaseTrainer):
     def __init__(
         self,
         task,
@@ -73,7 +76,7 @@ class ForcesTrainer(BaseTrainer):
         else:
             self.config["dataset"] = dataset
 
-        if not is_debug:
+        if not is_debug and distutils.is_master():
             os.makedirs(self.config["cmd"]["checkpoint_dir"])
             os.makedirs(self.config["cmd"]["results_dir"])
             os.makedirs(self.config["cmd"]["logs_dir"])
@@ -81,23 +84,18 @@ class ForcesTrainer(BaseTrainer):
         self.is_debug = is_debug
         self.is_vis = is_vis
         if torch.cuda.is_available():
-            device_ids = list(range(torch.cuda.device_count()))
-            self.output_device = self.config["optim"].get(
-                "output_device", device_ids[0]
-            )
-            self.device = f"cuda:{self.output_device}"
+            self.device = local_rank
         else:
             self.device = "cpu"
 
-        print(yaml.dump(self.config, default_flow_style=False))
+        if distutils.is_master():
+            print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
 
-        self.parallel_collater = ParallelCollater(
-            self.config["optim"].get("num_gpus", 1)
-        )
+        self.parallel_collater = ParallelCollater(1)
         if self.config["task"]["dataset"] == "trajectory_lmdb":
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
@@ -176,7 +174,7 @@ class ForcesTrainer(BaseTrainer):
                     )
                     self.normalizers["grad_target"].mean.fill_(0)
 
-        if self.is_vis and self.config["task"]["dataset"] != "qm9":
+        if self.is_vis and self.config["task"]["dataset"] != "qm9" and distutils.is_master():
             # Plot label distribution.
             plots = [
                 plot_histogram(
@@ -201,14 +199,18 @@ class ForcesTrainer(BaseTrainer):
             self.logger.log_plots(plots)
 
     def load_model(self):
-        super(ForcesTrainer, self).load_model()
+        super(DistributedForcesTrainer, self).load_model()
 
         self.model = OCPDataParallel(
             self.model,
-            output_device=self.output_device,
-            num_gpus=self.config["optim"].get("num_gpus", 1),
+            output_device=self.device,
+            num_gpus=1,
         )
-        self.model.to(self.device)
+        self.model = DistributedDataParallel(
+            self.model,
+            device_ids=[self.device],
+            find_unused_parameters=True
+        )
 
     # Takes in a new data source and generates predictions on it.
     def predict(self, dataset, batch_size=32):
@@ -276,9 +278,10 @@ class ForcesTrainer(BaseTrainer):
                 self._backward(loss)
 
                 # Update meter.
+                total_loss = distutils.all_reduce(loss, average=True)
                 meter_update_dict = {
                     "epoch": epoch + (i + 1) / len(self.train_loader),
-                    "loss": loss.item(),
+                    "loss": total_loss.item(),
                 }
                 meter_update_dict.update(metrics)
                 self.meter.update(meter_update_dict)
@@ -292,7 +295,7 @@ class ForcesTrainer(BaseTrainer):
                     )
 
                 # Print metrics.
-                if i % self.config["cmd"]["print_every"] == 0:
+                if i % self.config["cmd"]["print_every"] == 0 and distutils.is_master():
                     print(self.meter)
 
             self.scheduler.step()
@@ -312,27 +315,22 @@ class ForcesTrainer(BaseTrainer):
                     split="val", epoch=epoch,
                 )
 
-            if (
-                val_metrics.meters["force_z/mae"].global_avg
-                < self.best_val_mae
-            ):
-                self.best_val_mae = val_metrics.meters[
-                    "force_z/mae"
-                ].global_avg
-                if not self.is_debug:
-                    save_checkpoint(
-                        {
-                            "epoch": epoch + 1,
-                            "state_dict": self.model.state_dict(),
-                            "optimizer": self.optimizer.state_dict(),
-                            "normalizers": {
-                                key: value.state_dict()
-                                for key, value in self.normalizers.items()
-                            },
-                            "config": self.config,
+            self.best_val_mae = min(val_metrics.meters["force_z/mae"].global_avg,
+                                    self.best_val_mae)
+            if not self.is_debug and distutils.is_master():
+                save_checkpoint(
+                    {
+                        "epoch": epoch + 1,
+                        "state_dict": self.model.state_dict(),
+                        "optimizer": self.optimizer.state_dict(),
+                        "normalizers": {
+                            key: value.state_dict()
+                            for key, value in self.normalizers.items()
                         },
-                        self.config["cmd"]["checkpoint_dir"],
-                    )
+                        "config": self.config,
+                    },
+                    self.config["cmd"]["checkpoint_dir"],
+                )
         if (
             "relaxation_dir" in self.config["task"]
             and self.config["task"].get("ml_relax", "end") == "end"
@@ -353,9 +351,10 @@ class ForcesTrainer(BaseTrainer):
             # Forward.
             out, metrics = self._forward(batch)
             loss = self._compute_loss(out, batch)
+            total_loss = distutils.all_reduce(loss, average=True)
 
             # Update meter.
-            meter_update_dict = {"loss": loss.item()}
+            meter_update_dict = {"loss": total_loss.item()}
             meter_update_dict.update(metrics)
             meter.update(meter_update_dict)
 
@@ -369,7 +368,8 @@ class ForcesTrainer(BaseTrainer):
                 split=split,
             )
 
-        print(meter)
+        if distutils.is_master():
+            print(meter)
         return meter
 
     def validate_relaxation(self, split="val", epoch=None):
@@ -387,10 +387,14 @@ class ForcesTrainer(BaseTrainer):
             results_dir=self.config["cmd"]["results_dir"],
         )
 
+        mae_energy = distutils.all_reduce(
+            mae_energy, average=True, device=self.device)
         metrics[
             "relaxed_energy/{}".format(self.config["task"]["metric"])
         ] = mae_energy
 
+        mae_structure = distutils.all_reduce(
+            mae_structure, average=True, device=self.device)
         metrics[
             "relaxed_structure/{}".format(self.config["task"]["metric"])
         ] = mae_structure
@@ -502,7 +506,11 @@ class ForcesTrainer(BaseTrainer):
                 "force_z/{}".format(self.config["task"]["metric"])
             ] = grad_input_errors[2]
 
-        return out, metrics
+        aggregated_metrics = {}
+        for metric in sorted(metrics):
+            aggregated_metrics[metric] = distutils.all_reduce(
+                metrics[metric], average=True, device=self.device)
+        return out, aggregated_metrics
 
     def _compute_loss(self, out, batch_list):
         loss = []

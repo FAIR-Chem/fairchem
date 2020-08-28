@@ -250,6 +250,13 @@ def build_config(args):
     config["is_debug"] = args.debug
     config["is_vis"] = args.vis
     config["print_every"] = args.print_every
+    # Submit
+    config["submit"] = args.submit
+    # Distributed
+    config["local_rank"] = args.local_rank
+    config["distributed_port"] = args.distributed_port
+    config["world_size"] = args.num_nodes * args.num_gpus
+    config["distributed_backend"] = args.distributed_backend
 
     return config
 

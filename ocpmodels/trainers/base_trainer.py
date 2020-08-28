@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 import yaml
 
+from ocpmodels.common import distutils
 from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
@@ -35,7 +36,7 @@ from ocpmodels.modules.normalizer import Normalizer
 
 @registry.register_trainer("base")
 class BaseTrainer:
-    def __init__(self, args=None):
+    def __init__(self, args=None, local_rank=0):
         # defaults.
         self.device = "cpu"
         self.is_debug = True
@@ -118,7 +119,7 @@ class BaseTrainer:
 
     def load_logger(self):
         self.logger = None
-        if not self.is_debug:
+        if not self.is_debug and distutils.is_master():
             assert (
                 self.config["logger"] is not None
             ), "Specify logger in config"
