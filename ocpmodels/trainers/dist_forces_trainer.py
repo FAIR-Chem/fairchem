@@ -514,8 +514,8 @@ class DistributedForcesTrainer(BaseTrainer):
         aggregated_metrics = {}
         world_size = distutils.get_world_size()
         for metric in sorted(metrics):
-            tensor = torch.tensor(metrics[metric]).to(self.device)
-            aggregated_metrics[metric] = distutils.all_reduce_tensor(tensor).item() / world_size
+            # tensor = torch.tensor(metrics[metric]).to(self.device)
+            aggregated_metrics[metric] = distutils.all_reduce_tensor(metrics[metric]).item() / world_size
         return out, aggregated_metrics
 
     def _compute_loss(self, out, batch_list):

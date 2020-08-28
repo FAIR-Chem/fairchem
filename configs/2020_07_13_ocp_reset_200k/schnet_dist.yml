@@ -10,8 +10,7 @@ model:
   cutoff: 6.0
 
 optim:
-#  batch_size: 128
-  batch_size: 32
+  batch_size: 16
   eval_batch_size: 16
   num_workers: 16
   lr_initial: 0.001

@@ -10,6 +10,7 @@ import lmdb
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from torch.utils.data.sampler import Sampler
 from torch_geometric.data import Batch
 
 from ocpmodels.common import distutils
@@ -20,6 +21,9 @@ from ocpmodels.common.registry import registry
 class TrajectoryLmdbDataset(Dataset):
     def __init__(self, config, transform=None):
         super(TrajectoryLmdbDataset, self).__init__()
+
+        world_size = distutils.get_world_size()
+        rank = distutils.get_rank()
 
         self.config = config
 
@@ -105,10 +109,20 @@ class TrajectoryLmdbDataset(Dataset):
         return env
 
 
+# class TrajSampler(Sampler):
+#     "Randomly samples batches of trajectories"
+#
+#     def __init__(self, data_source, traj_per_batch=5):
+#         super().__init__(data_source)
+#
+#
+
+
 class TrajSampler(Sampler):
     "Randomly samples batches of trajectories"
 
     def __init__(self, data_source, traj_per_batch=5):
+        super().__init__(data_source)
         self.data_source = data_source
         self.system_samples = data_source._system_samples
         self.systemids = list(self.system_samples.keys())
