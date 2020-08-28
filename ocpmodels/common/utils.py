@@ -340,27 +340,31 @@ def get_pbc_distances(
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
 
-    # removes neighbors > max_neigh
-    # assumes neighbors are sorted in increasing distance
-    _nonmax_idx = []
-    for i in range(pos.shape[0]):
-        idx_i = torch.arange(len(edge_index[1]))[(edge_index[1] == i)][
-            :max_neigh
-        ]
-        _nonmax_idx.append(idx_i)
-    _nonmax_idx = torch.cat(_nonmax_idx)
-    edge_index = edge_index[:, _nonmax_idx]
-    distances = distances[_nonmax_idx]
-
     out = {
         "edge_index": edge_index,
         "distances": distances,
     }
 
     if return_distance_vec:
-        out["distance_vec"] = distance_vectors[nonzero_idx][_nonmax_idx]
+        out["distance_vec"] = distance_vectors[nonzero_idx]
 
     if return_offsets:
-        out["offsets"] = offsets[nonzero_idx][_nonmax_idx]
+        out["offsets"] = offsets[nonzero_idx]
 
     return out
+
+
+def get_pruned_edge_idx(edge_index, num_atoms=None, max_neigh=1e9):
+    assert num_atoms is not None
+
+    # removes neighbors > max_neigh
+    # assumes neighbors are sorted in increasing distance
+    _nonmax_idx = []
+    for i in range(num_atoms):
+        idx_i = torch.arange(len(edge_index[1]))[(edge_index[1] == i)][
+            :max_neigh
+        ]
+        _nonmax_idx.append(idx_i)
+    _nonmax_idx = torch.cat(_nonmax_idx)
+
+    return _nonmax_idx
