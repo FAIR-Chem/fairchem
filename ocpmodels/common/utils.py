@@ -341,6 +341,7 @@ def get_pbc_distances(
     distances = distances[nonzero_idx]
 
     # removes neighbors > max_neigh
+    # assumes neighbors are sorted in increasing distance
     _nonmax_idx = []
     for i in range(pos.shape[0]):
         idx_i = torch.arange(len(edge_index[1]))[(edge_index[1] == i)][
@@ -357,9 +358,9 @@ def get_pbc_distances(
     }
 
     if return_distance_vec:
-        out["distance_vec"] = distance_vectors[nonzero_idx]
+        out["distance_vec"] = distance_vectors[nonzero_idx][_nonmax_idx]
 
     if return_offsets:
-        out["offsets"] = offsets
+        out["offsets"] = offsets[nonzero_idx][_nonmax_idx]
 
     return out
