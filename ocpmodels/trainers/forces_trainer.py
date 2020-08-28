@@ -300,7 +300,7 @@ class ForcesTrainer(BaseTrainer):
 
                 # Evaluate val set. -1 for after each epoch.
                 eval_every = self.config["optim"].get("eval_every", -1)
-                if iters % eval_every == 0 and iters / eval_every != -1:
+                if iters % eval_every == 0 and eval_every != -1:
                     if self.val_loader is not None:
                         val_metrics = self.validate(split="val", epoch=epoch)
 
