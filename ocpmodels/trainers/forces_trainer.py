@@ -300,7 +300,7 @@ class ForcesTrainer(BaseTrainer):
                 iters += 1
 
                 # Evaluate on val set every `eval_every` iterations.
-                if iters % eval_every == 0:
+                if eval_every != -1 and iters % eval_every == 0:
                     if self.val_loader is not None:
                         val_metrics = self.validate(split="val", epoch=epoch)
                         if (
