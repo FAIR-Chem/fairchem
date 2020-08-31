@@ -155,7 +155,7 @@ def cosine_similarity(prediction, target):
     return {
         "metric": torch.mean(error).item(),
         "total": torch.sum(error).item(),
-        "numel": prediction.numel(),
+        "numel": error.numel(),
     }
 
 
