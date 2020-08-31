@@ -267,6 +267,7 @@ class ForcesTrainer(BaseTrainer):
 
     def train(self):
         self.best_val_mae = 1e9
+        eval_every = self.config["optim"].get("eval_every", -1)
         iters = 0
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
@@ -298,11 +299,32 @@ class ForcesTrainer(BaseTrainer):
 
                 iters += 1
 
-                # Evaluate val set. -1 for after each epoch.
-                eval_every = self.config["optim"].get("eval_every", -1)
-                if iters % eval_every == 0 and eval_every != -1:
+                # Evaluate on val set every `eval_every` iterations.
+                if eval_every != -1 and iters % eval_every == 0:
                     if self.val_loader is not None:
                         val_metrics = self.validate(split="val", epoch=epoch)
+                        if (
+                            val_metrics.meters["force_z/mae"].global_avg
+                            < self.best_val_mae
+                        ):
+                            self.best_val_mae = val_metrics.meters[
+                                "force_z/mae"
+                            ].global_avg
+                            if not self.is_debug:
+                                save_checkpoint(
+                                    {
+                                        "epoch": epoch
+                                        + (i + 1) / len(self.train_loader),
+                                        "state_dict": self.model.state_dict(),
+                                        "optimizer": self.optimizer.state_dict(),
+                                        "normalizers": {
+                                            key: value.state_dict()
+                                            for key, value in self.normalizers.items()
+                                        },
+                                        "config": self.config,
+                                    },
+                                    self.config["cmd"]["checkpoint_dir"],
+                                )
 
             self.scheduler.step()
             torch.cuda.empty_cache()
@@ -310,6 +332,27 @@ class ForcesTrainer(BaseTrainer):
             if eval_every == -1:
                 if self.val_loader is not None:
                     val_metrics = self.validate(split="val", epoch=epoch)
+                    if (
+                        val_metrics.meters["force_z/mae"].global_avg
+                        < self.best_val_mae
+                    ):
+                        self.best_val_mae = val_metrics.meters[
+                            "force_z/mae"
+                        ].global_avg
+                        if not self.is_debug:
+                            save_checkpoint(
+                                {
+                                    "epoch": epoch + 1,
+                                    "state_dict": self.model.state_dict(),
+                                    "optimizer": self.optimizer.state_dict(),
+                                    "normalizers": {
+                                        key: value.state_dict()
+                                        for key, value in self.normalizers.items()
+                                    },
+                                    "config": self.config,
+                                },
+                                self.config["cmd"]["checkpoint_dir"],
+                            )
 
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
@@ -322,27 +365,6 @@ class ForcesTrainer(BaseTrainer):
                     split="val", epoch=epoch,
                 )
 
-            if (
-                val_metrics.meters["force_z/mae"].global_avg
-                < self.best_val_mae
-            ):
-                self.best_val_mae = val_metrics.meters[
-                    "force_z/mae"
-                ].global_avg
-                if not self.is_debug:
-                    save_checkpoint(
-                        {
-                            "epoch": epoch + 1,
-                            "state_dict": self.model.state_dict(),
-                            "optimizer": self.optimizer.state_dict(),
-                            "normalizers": {
-                                key: value.state_dict()
-                                for key, value in self.normalizers.items()
-                            },
-                            "config": self.config,
-                        },
-                        self.config["cmd"]["checkpoint_dir"],
-                    )
         if (
             "relaxation_dir" in self.config["task"]
             and self.config["task"].get("ml_relax", "end") == "end"
