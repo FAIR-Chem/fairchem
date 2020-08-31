@@ -245,20 +245,20 @@ class ForcesTrainer(BaseTrainer):
         predictions = {"energy": [], "forces": []}
 
         for i, batch_list in enumerate(data_loader):
-            out, _ = self._forward(batch_list, compute_metrics=False)
+            out = self._forward(batch_list)
             if self.normalizers is not None and "target" in self.normalizers:
-                out["output"] = self.normalizers["target"].denorm(
-                    out["output"]
+                out["energy"] = self.normalizers["target"].denorm(
+                    out["energy"]
                 )
-                out["force_output"] = self.normalizers["grad_target"].denorm(
-                    out["force_output"]
+                out["forces"] = self.normalizers["grad_target"].denorm(
+                    out["forces"]
                 )
             atoms_sum = 0
-            predictions["energy"].extend(out["output"].tolist())
+            predictions["energy"].extend(out["energy"].tolist())
             batch_natoms = torch.cat([batch.natoms for batch in batch_list])
             for natoms in batch_natoms:
                 predictions["forces"].append(
-                    out["force_output"][atoms_sum : natoms + atoms_sum]
+                    out["forces"][atoms_sum : natoms + atoms_sum]
                     .cpu()
                     .detach()
                     .numpy()
@@ -490,12 +490,12 @@ class ForcesTrainer(BaseTrainer):
                 )
 
             # Force coefficient = 30 has been working well for us.
+            force_mult = self.config["optim"].get("force_coefficient", 30)
             if self.config["task"].get("train_on_free_atoms", False):
                 fixed = torch.cat(
                     [batch.fixed.to(self.device) for batch in batch_list]
                 )
                 mask = fixed == 0
-                force_mult = self.config["optim"].get("force_coefficient", 30)
                 loss.append(
                     force_mult
                     * self.criterion(out["forces"][mask], force_target[mask])
