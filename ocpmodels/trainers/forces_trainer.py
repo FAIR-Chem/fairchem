@@ -322,27 +322,28 @@ class ForcesTrainer(BaseTrainer):
                     split="val", epoch=epoch,
                 )
 
-            if (
-                val_metrics.meters["force_z/mae"].global_avg
-                < self.best_val_mae
-            ):
-                self.best_val_mae = val_metrics.meters[
-                    "force_z/mae"
-                ].global_avg
-                if not self.is_debug:
-                    save_checkpoint(
-                        {
-                            "epoch": epoch + 1,
-                            "state_dict": self.model.state_dict(),
-                            "optimizer": self.optimizer.state_dict(),
-                            "normalizers": {
-                                key: value.state_dict()
-                                for key, value in self.normalizers.items()
+            if iters % eval_every == 0 or eval_every == -1:
+                if (
+                    val_metrics.meters["force_z/mae"].global_avg
+                    < self.best_val_mae
+                ):
+                    self.best_val_mae = val_metrics.meters[
+                        "force_z/mae"
+                    ].global_avg
+                    if not self.is_debug:
+                        save_checkpoint(
+                            {
+                                "epoch": epoch + 1,
+                                "state_dict": self.model.state_dict(),
+                                "optimizer": self.optimizer.state_dict(),
+                                "normalizers": {
+                                    key: value.state_dict()
+                                    for key, value in self.normalizers.items()
+                                },
+                                "config": self.config,
                             },
-                            "config": self.config,
-                        },
-                        self.config["cmd"]["checkpoint_dir"],
-                    )
+                            self.config["cmd"]["checkpoint_dir"],
+                        )
         if (
             "relaxation_dir" in self.config["task"]
             and self.config["task"].get("ml_relax", "end") == "end"
