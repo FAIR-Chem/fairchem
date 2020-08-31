@@ -313,7 +313,8 @@ class ForcesTrainer(BaseTrainer):
                             if not self.is_debug:
                                 save_checkpoint(
                                     {
-                                        "epoch": epoch + 1,
+                                        "epoch": epoch
+                                        + (i + 1) / len(self.train_loader),
                                         "state_dict": self.model.state_dict(),
                                         "optimizer": self.optimizer.state_dict(),
                                         "normalizers": {
