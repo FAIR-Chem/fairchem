@@ -22,8 +22,20 @@ import torch
 
 class Evaluator:
     task_metrics = {
-        # "s2ef": [forcex_mae, forcex_mse, forcey_mae, forcey_mse, forcez_mae, forcez_mse, force_mae, force_mse, force_cos, energy_mae, energy_mse],
-        # "is2rs": [positions_mae, positions_mse],
+        "s2ef": [
+            "forcesx_mae",
+            "forcesx_mse",
+            "forcesy_mae",
+            "forcesy_mse",
+            "forcesz_mae",
+            "forcesz_mse",
+            "forces_mae",
+            "forces_mse",
+            "forces_cos",
+            "energy_mae",
+            "energy_mse",
+        ],
+        "is2rs": ["positions_mae", "positions_mse"],
         "is2re": ["energy_mae", "energy_mse"],
     }
 
@@ -34,13 +46,13 @@ class Evaluator:
     }
 
     task_primary_metric = {
-        "s2ef": "force_mae",
+        "s2ef": "forces_mae",
         "is2rs": "positions_mae",
         "is2re": "energy_mae",
     }
 
     def __init__(self, task=None):
-        assert task in ["s2ef", "is2re", "is2re"]
+        assert task in ["s2ef", "is2rs", "is2re"]
         self.task = task
         self.metric_fn = self.task_metrics[task]
 
@@ -87,26 +99,79 @@ class Evaluator:
 
 
 def energy_mae(prediction, target):
-    error = absolute_error(prediction["energy"], target["energy"])
-    return {
-        "metric": torch.mean(error, dim=0).item(),
-        "total": torch.sum(error).item(),
-        "numel": prediction["energy"].numel(),
-    }
+    return absolute_error(prediction["energy"], target["energy"])
 
 
 def energy_mse(prediction, target):
-    error = squared_error(prediction["energy"], target["energy"])
+    return squared_error(prediction["energy"], target["energy"])
+
+
+def forcesx_mae(prediction, target):
+    return absolute_error(prediction["forces"][:, 0], target["forces"][:, 0])
+
+
+def forcesx_mse(prediction, target):
+    return squared_error(prediction["forces"][:, 0], target["forces"][:, 0])
+
+
+def forcesy_mae(prediction, target):
+    return absolute_error(prediction["forces"][:, 1], target["forces"][:, 1])
+
+
+def forcesy_mse(prediction, target):
+    return squared_error(prediction["forces"][:, 1], target["forces"][:, 1])
+
+
+def forcesz_mae(prediction, target):
+    return absolute_error(prediction["forces"][:, 2], target["forces"][:, 2])
+
+
+def forcesz_mse(prediction, target):
+    return squared_error(prediction["forces"][:, 2], target["forces"][:, 2])
+
+
+def forces_mae(prediction, target):
+    return absolute_error(prediction["forces"], target["forces"])
+
+
+def forces_mse(prediction, target):
+    return squared_error(prediction["forces"], target["forces"])
+
+
+def forces_cos(prediction, target):
+    return cosine_similarity(prediction["forces"], target["forces"])
+
+
+def positions_mae(prediction, target):
+    return absolute_error(prediction["positions"], target["positions"])
+
+
+def positions_mse(prediction, target):
+    return squared_error(prediction["positions"], target["positions"])
+
+
+def cosine_similarity(prediction, target):
+    error = torch.cosine_similarity(prediction, target)
     return {
-        "metric": torch.mean(error, dim=0).item(),
+        "metric": torch.mean(error).item(),
         "total": torch.sum(error).item(),
-        "numel": prediction["energy"].numel(),
+        "numel": prediction.numel(),
     }
 
 
 def absolute_error(prediction, target):
-    return torch.abs(target - prediction)
+    error = torch.abs(target - prediction)
+    return {
+        "metric": torch.mean(error).item(),
+        "total": torch.sum(error).item(),
+        "numel": prediction.numel(),
+    }
 
 
 def squared_error(prediction, target):
-    return (target - prediction) ** 2
+    error = (target - prediction) ** 2
+    return {
+        "metric": torch.mean(error).item(),
+        "total": torch.sum(error).item(),
+        "numel": prediction.numel(),
+    }
