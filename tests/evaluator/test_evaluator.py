@@ -2,7 +2,11 @@ import numpy as np
 import pytest
 import torch
 
-from ocpmodels.modules.evaluator import Evaluator, cosine_similarity
+from ocpmodels.modules.evaluator import (
+    Evaluator,
+    cosine_similarity,
+    magnitude_error,
+)
 
 
 @pytest.fixture(scope="class")
@@ -51,6 +55,14 @@ class TestMetrics:
         np.testing.assert_almost_equal(
             res["total"] / res["numel"], res["metric"]
         )
+
+    def test_magnitude_error(self):
+        v1, v2 = (
+            torch.tensor([[0.0, 1], [-1, 0]]),
+            torch.tensor([[0.0, 0], [0, 0]]),
+        )
+        res = magnitude_error(v1, v2)
+        np.testing.assert_equal(res["metric"], 1.0)
 
 
 @pytest.mark.usefixtures("load_evaluator_s2ef")

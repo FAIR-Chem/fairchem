@@ -32,6 +32,7 @@ class Evaluator:
             "forces_mae",
             "forces_mse",
             "forces_cos",
+            "forces_magnitude",
             "energy_mae",
             "energy_mse",
         ],
@@ -142,6 +143,10 @@ def forces_cos(prediction, target):
     return cosine_similarity(prediction["forces"], target["forces"])
 
 
+def forces_magnitude(prediction, target):
+    return magnitude_error(prediction["forces"], target["forces"], p=2)
+
+
 def positions_mae(prediction, target):
     return absolute_error(prediction["positions"], target["positions"])
 
@@ -174,4 +179,16 @@ def squared_error(prediction, target):
         "metric": torch.mean(error).item(),
         "total": torch.sum(error).item(),
         "numel": prediction.numel(),
+    }
+
+
+def magnitude_error(prediction, target, p=2):
+    assert prediction.shape[1] > 1
+    error = torch.abs(
+        torch.norm(prediction, p=p, dim=-1) - torch.norm(target, p=p, dim=-1)
+    )
+    return {
+        "metric": torch.mean(error).item(),
+        "total": torch.sum(error).item(),
+        "numel": error.numel(),
     }
