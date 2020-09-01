@@ -1,3 +1,4 @@
+# THIS IS NOW DEPRECATED. Consider using ocpmodels.modules.evaluator instead.
 from collections import defaultdict, deque
 
 import torch
