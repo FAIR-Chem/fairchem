@@ -564,9 +564,7 @@ class BaseTrainer:
         return loss
 
     def _backward(self, loss):
-        # self.optimizer.zero_grad()
-        for param in self.model.parameters():
-            param.grad = None
+        self.optimizer.zero_grad()
         loss.backward()
         # TODO(abhshkdz): Add support for gradient clipping.
         if self.scaler:

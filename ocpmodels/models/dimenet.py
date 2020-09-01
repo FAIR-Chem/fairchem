@@ -8,37 +8,6 @@ from ocpmodels.common.utils import get_pbc_distances
 import time
 
 
-class Timer:
-    def __init__(self):
-        self.times = {}
-        self.counts = {}
-        self.starts = {}
-
-    def start(self, name):
-        torch.cuda.synchronize()
-        self.starts[name] = time.time()
-
-    def end(self, name):
-        assert name in self.starts
-        torch.cuda.synchronize()
-        tm = time.time() - self.starts[name]
-        self.add(name, tm)
-        del self.starts[name]
-
-    def add(self, name, tm):
-        self.times[name] = self.times.get(name, [])
-        self.times[name].append(tm)
-        self.counts[name] = self.counts.get(name, 0) + 1
-
-    def __repr__(self):
-        reprs = []
-        for name in self.times:
-            tm = sum(self.times[name])
-            n = self.counts[name]
-            reprs.append(f'{name}: Total time = {tm} Num = {n} Avg time = {tm / n}')
-        return '\n'.join(reprs)
-
-
 @registry.register_model("dimenet")
 class DimeNetWrap(DimeNet):
     def __init__(
@@ -82,7 +51,6 @@ class DimeNetWrap(DimeNet):
         )
 
         self.embedding = nn.Embedding(100, hidden_channels)
-        self.timer = Timer()
 
     def forward(self, data):
         pos = data.pos
