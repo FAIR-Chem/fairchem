@@ -19,6 +19,7 @@ def main(config):
         dataset=config["dataset"],
         optimizer=config["optim"],
         identifier=config["identifier"],
+        run_dir=config.get("run_dir", "./"),
         is_debug=config.get("is_debug", False),
         is_vis=config.get("is_vis", False),
         print_every=config.get("print_every", 10),
