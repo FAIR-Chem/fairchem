@@ -489,7 +489,7 @@ class DistributedForcesTrainer(BaseTrainer):
         if self.config["dataset"].get("normalize_labels", True):
             energy_target = self.normalizers["target"].norm(energy_target)
         energy_mult = self.config["optim"].get("energy_coefficient", 1)
-        loss.append(energy_mult * self.criterion(out["output"], energy_target))
+        loss.append(energy_mult * self.criterion(out["energy"], energy_target))
 
         # Force loss.
         if self.config["model_attributes"].get("regress_forces", True):
@@ -510,14 +510,11 @@ class DistributedForcesTrainer(BaseTrainer):
                 mask = fixed == 0
                 loss.append(
                     force_mult
-                    * self.criterion(
-                        out["force_output"][mask], force_target[mask]
-                    )
+                    * self.criterion(out["forces"][mask], force_target[mask])
                 )
             else:
                 loss.append(
-                    force_mult
-                    * self.criterion(out["force_output"], force_target)
+                    force_mult * self.criterion(out["forces"], force_target)
                 )
 
         # Sanity check to make sure the compute graph is correct.
