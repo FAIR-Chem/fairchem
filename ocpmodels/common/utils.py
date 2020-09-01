@@ -250,6 +250,7 @@ def build_config(args):
     config["is_debug"] = args.debug
     config["is_vis"] = args.vis
     config["print_every"] = args.print_every
+    config["amp"] = args.amp
     # Submit
     config["submit"] = args.submit
     # Distributed

@@ -54,6 +54,9 @@ class Flags:
         self.parser.add_argument(
             "--seed", default=0, type=int, help="Seed for torch, cuda, numpy"
         )
+        self.parser.add_argument(
+            "--amp", action="store_true", help="Use mixed-precision training"
+        )
         # Cluster args
         self.parser.add_argument(
             "--sweep-yml",
