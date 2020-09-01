@@ -24,17 +24,12 @@ class Evaluator:
     task_metrics = {
         "s2ef": [
             "forcesx_mae",
-            "forcesx_mse",
             "forcesy_mae",
-            "forcesy_mse",
             "forcesz_mae",
-            "forcesz_mse",
             "forces_mae",
-            "forces_mse",
             "forces_cos",
             "forces_magnitude",
             "energy_mae",
-            "energy_mse",
         ],
         "is2rs": ["positions_mae", "positions_mse"],
         "is2re": ["energy_mae", "energy_mse"],
