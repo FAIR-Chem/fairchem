@@ -24,10 +24,14 @@ def main(config):
         print_every=config.get("print_every", 10),
         seed=config.get("seed", 0),
         logger=config.get("logger", "tensorboard"),
-        local_rank=config["local_rank"]
+        local_rank=config["local_rank"],
+        amp=config.get("amp", False),
     )
+    import time
+    start_time = time.time()
     trainer.train()
     distutils.synchronize()
+    print('Time = ', time.time() - start_time)
 
 
 def distributed_main(config):
@@ -58,6 +62,7 @@ if __name__ == "__main__":
             cpus_per_task=(args.num_workers + 1),
             tasks_per_node=(args.num_gpus if args.distributed else 1),
             nodes=args.num_nodes,
+            slurm_constraint='volta32gb',
         )
         if args.distributed:
             jobs = executor.map_array(distributed_main, configs)
