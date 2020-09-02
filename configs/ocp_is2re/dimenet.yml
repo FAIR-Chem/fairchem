@@ -3,7 +3,7 @@ includes:
 
 model:
   name: dimenet
-  hidden_channels: 512
+  hidden_channels: 128
   num_blocks: 2
   cutoff: 6.0
   num_radial: 3
