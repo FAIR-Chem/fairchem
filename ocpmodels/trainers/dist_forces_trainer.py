@@ -41,6 +41,7 @@ class DistributedForcesTrainer(BaseTrainer):
         seed=None,
         logger="tensorboard",
         local_rank=0,
+        amp=False,
     ):
 
         if run_dir is None:
@@ -68,6 +69,8 @@ class DistributedForcesTrainer(BaseTrainer):
                 "logs_dir": os.path.join(run_dir, "logs", logger, timestamp),
             },
         }
+        # AMP Scaler
+        self.scaler = torch.cuda.amp.GradScaler() if amp else None
 
         if isinstance(dataset, list):
             self.config["dataset"] = dataset[0]
@@ -245,7 +248,9 @@ class DistributedForcesTrainer(BaseTrainer):
         predictions = {"energy": [], "forces": []}
 
         for i, batch_list in enumerate(data_loader):
-            out, _ = self._forward(batch_list, compute_metrics=False)
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out, _ = self._forward(batch_list, compute_metrics=False)
+
             if self.normalizers is not None and "target" in self.normalizers:
                 out["output"] = self.normalizers["target"].denorm(
                     out["output"]
@@ -275,15 +280,19 @@ class DistributedForcesTrainer(BaseTrainer):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
-                out, metrics = self._forward(batch)
-                loss = self._compute_loss(out, batch)
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    out, metrics = self._forward(batch)
+                    loss = self._compute_loss(out, batch)
+                loss = self.scaler.scale(loss) if self.scaler else loss
+                self._backward(loss)
+                scale = self.scaler.get_scale() if self.scaler else 1.
                 self._backward(loss)
 
                 # Update meter.
                 total_loss = distutils.all_reduce(loss, average=True)
                 meter_update_dict = {
                     "epoch": epoch + (i + 1) / len(self.train_loader),
-                    "loss": total_loss.item(),
+                    "loss": total_loss.item() / scale,
                 }
                 meter_update_dict.update(metrics)
                 self.meter.update(meter_update_dict)
@@ -389,7 +398,8 @@ class DistributedForcesTrainer(BaseTrainer):
 
         for i, batch in enumerate(loader):
             # Forward.
-            out, metrics = self._forward(batch)
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out, metrics = self._forward(batch)
             loss = self._compute_loss(out, batch)
             total_loss = distutils.all_reduce(loss, average=True)
 
