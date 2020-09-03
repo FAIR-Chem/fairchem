@@ -448,7 +448,7 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold, device):
         max_num_neighbors <= max_num_neighbors_threshold
         or max_num_neighbors_threshold <= 0
     ):
-        return index1, index2, unit_cell
+        return torch.stack((index2, index1)), unit_cell
 
     atom_distance_sqr = torch.masked_select(atom_distance_sqr, mask)
 

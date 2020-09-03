@@ -16,7 +16,8 @@ task = {
     "type": "regression",
     "grad_input": "atomic forces",
     "relax_dataset": {
-        "src": "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/relax"
+        "src": "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/water_pair"
+#"src": "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/relax"
     },
 }
 

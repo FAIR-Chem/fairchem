@@ -29,44 +29,44 @@ class BFGS:
         self.H0 = (
             torch.eye(3 * len(self.atoms.atomic_numbers), dtype=torch.float64)
             * alpha
-        )
+        ).cuda() #TODO: add check for device and make it configurable
         self.r0 = None
         self.f0 = None
         self.nsteps = 0
 
     def converged(self, fmax):
         _, forces = self.model.get_forces(self.atoms)
-        return (forces ** 2).sum(axis=1).max() < fmax ** 2
+        return (forces ** 2).sum(axis=1).max().item() < fmax ** 2
 
     def run(self, fmax=0.05, steps=100):
-        while not self.converged(fmax) and self.nsteps < steps:
+            while not self.converged(fmax) and self.nsteps < steps:
 
-            self.step()
-            self.nsteps += 1
+                self.step()
+                self.nsteps += 1
 
-            energy, forces = self.model.get_forces(self.atoms)
-            print(self.nsteps, np.sqrt((forces ** 2).sum(axis=1).max()))
-        self.atoms.force = forces
-        self.atoms.y = energy
-        return self.atoms
+                energy, forces = self.model.get_forces(self.atoms)
+                print(self.nsteps, torch.sqrt((forces ** 2).sum(axis=1).max()))
+            self.atoms.force = forces
+            self.atoms.y = energy
+            return self.atoms
 
     def set_positions(self, update):
-        r = self.atoms.pos.to("cpu")
-        self.atoms.pos = r + update.float()
+        r = self.atoms.pos
+        self.atoms.pos = r + update.to(dtype=torch.float32)
+        self.model.update_graph(self.atoms)
 
     def step(self):
         r = self.atoms.pos
         _, f = self.model.get_forces(self.atoms)
         f = f.reshape(-1)
 
-        arg1 = torch.tensor(r, dtype=torch.float64).view(-1)
-        arg2 = torch.tensor(
-            f, dtype=torch.float64
-        )  # f has to be converted to torch tensor
+        arg1 = r.view(-1).to(dtype=torch.float64) #double()
+        arg2 = f.to(dtype=torch.float64)
 
         self.update(arg1, arg2, self.r0, self.f0)
 
         omega1, V1 = torch.symeig(self.H, eigenvectors=True)
+
         dr1 = torch.matmul(V1, torch.matmul(arg2, V1) / torch.abs(omega1))
         dr1 = dr1.view(-1, 3)
         steplengths1 = (dr1 ** 2).sum(1) ** 0.5
@@ -110,16 +110,15 @@ class BFGS:
 
 
 class TorchCalc:
-    def __init__(self, model, device="cpu"):
+    def __init__(self, model):
         self.model = model
-        self.device = device
 
     def get_forces(self, atoms):
         predictions = self.model.predict(atoms)
-        return predictions["energy"], predictions["forces"][0]
+        return predictions["output"], predictions["force_output"]
 
     def update_graph(self, atoms):
-        edge_index, cell_offsets = radius_graph_pbc(atoms, 6, 50, self.device)
+        edge_index, cell_offsets = radius_graph_pbc(atoms, 6, 50, atoms.pos.device)
         atoms.edge_index = edge_index
         atoms.cell_offsets = cell_offsets
         return atoms
