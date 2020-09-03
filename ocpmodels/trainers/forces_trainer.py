@@ -8,7 +8,7 @@ import yaml
 from torch.utils.data import DataLoader
 from torch_geometric.nn import DataParallel
 
-from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
+from ocpmodels.common.ase_utils import OCPCalculator,  relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
@@ -129,7 +129,7 @@ class ForcesTrainer(BaseTrainer):
                 )(self.config["task"]["relax_dataset"])
                 self.relax_loader = DataLoader(
                     self.relax_dataset,
-                    1,
+                    batch_size=self.config["optim"]["batch_size"],
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
@@ -263,6 +263,8 @@ class ForcesTrainer(BaseTrainer):
                     out["force_output"]
                 )
             atoms_sum = 0
+            predictions["output"] = out["output"].detach()
+            predictions["force_output"] = out["force_output"].detach()
             predictions["energy"].extend(out["output"].tolist())
             batch_natoms = torch.cat([batch.natoms for batch in batch_list])
             for natoms in batch_natoms:
@@ -383,6 +385,7 @@ class ForcesTrainer(BaseTrainer):
         # only supports batch_size = 1
         # TODO: Batch relaxation support
         for i, batch in enumerate(self.relax_loader):
+
             mae_energy, mae_structure = relax_eval(
                 batch=batch,
                 model=self,
