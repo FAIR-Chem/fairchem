@@ -39,16 +39,16 @@ class BFGS:
         return (forces ** 2).sum(axis=1).max().item() < fmax ** 2
 
     def run(self, fmax=0.05, steps=100):
-            while not self.converged(fmax) and self.nsteps < steps:
+        while not self.converged(fmax) and self.nsteps < steps:
 
-                self.step()
-                self.nsteps += 1
+            self.step()
+            self.nsteps += 1
 
-                energy, forces = self.model.get_forces(self.atoms)
-                print(self.nsteps, torch.sqrt((forces ** 2).sum(axis=1).max()))
-            self.atoms.force = forces
-            self.atoms.y = energy
-            return self.atoms
+            energy, forces = self.model.get_forces(self.atoms)
+            print(self.nsteps, torch.sqrt((forces ** 2).sum(axis=1).max()))
+        self.atoms.force = forces
+        self.atoms.y = energy
+        return self.atoms
 
     def set_positions(self, update):
         r = self.atoms.pos
