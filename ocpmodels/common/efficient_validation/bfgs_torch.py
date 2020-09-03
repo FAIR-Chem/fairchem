@@ -29,7 +29,7 @@ class BFGS:
         self.H0 = (
             torch.eye(3 * len(self.atoms.atomic_numbers), dtype=torch.float64)
             * alpha
-        ).cuda() #TODO: add check for device and make it configurable
+        ).cuda()  # TODO: add check for device and make it configurable
         self.r0 = None
         self.f0 = None
         self.nsteps = 0
@@ -60,7 +60,7 @@ class BFGS:
         _, f = self.model.get_forces(self.atoms)
         f = f.reshape(-1)
 
-        arg1 = r.view(-1).to(dtype=torch.float64) #double()
+        arg1 = r.view(-1).to(dtype=torch.float64)  # double()
         arg2 = f.to(dtype=torch.float64)
 
         self.update(arg1, arg2, self.r0, self.f0)
@@ -115,10 +115,12 @@ class TorchCalc:
 
     def get_forces(self, atoms):
         predictions = self.model.predict(atoms)
-        return predictions["output"], predictions["force_output"]
+        return predictions["energy"], predictions["forces"]
 
     def update_graph(self, atoms):
-        edge_index, cell_offsets = radius_graph_pbc(atoms, 6, 50, atoms.pos.device)
+        edge_index, cell_offsets = radius_graph_pbc(
+            atoms, 6, 50, atoms.pos.device
+        )
         atoms.edge_index = edge_index
         atoms.cell_offsets = cell_offsets
         return atoms

@@ -16,15 +16,15 @@ task = {
     "type": "regression",
     "grad_input": "atomic forces",
     "relax_dataset": {
-        "src": "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/water_pair"
-#"src": "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/relax"
+        "src": "/checkpoint/electrocatalysis/relaxations/features/init_to_relaxed/1k/train/"
     },
+    "relaxation_steps": 300,
 }
 
 model = {
     "name": "schnet",
-    "hidden_channels": 128,
-    "num_filters": 128,
+    "hidden_channels": 1024,
+    "num_filters": 256,
     "num_interactions": 3,
     "num_gaussians": 200,
     "cutoff": 6.0,
@@ -38,6 +38,7 @@ train_dataset = {
 
 optimizer = {
     "batch_size": 32,
+    "eval_batch_size": 32,
     "lr_gamma": 0.1,
     "lr_initial": 0.0003,
     "lr_milestones": [20, 30],
@@ -49,7 +50,7 @@ optimizer = {
     "criterion": nn.L1Loss(),
 }
 
-identifier = "water_example"
+identifier = "debug"
 trainer = ForcesTrainer(
     task=task,
     model=model,
@@ -62,6 +63,6 @@ trainer = ForcesTrainer(
 )
 
 trainer.load_pretrained(
-    "/private/home/mshuaibi/baselines/ocpmodels/common/efficient_validation/checkpoint.pt"
+    "/private/home/mshuaibi/baselines/expts/ocp_expts/pre_final/ocp20M_08_16/checkpoints/2020-08-16-21-53-06-ocp20Mv6_schnet_lr0.0001_ch1024_fltr256_gauss200_layrs3_pbc/checkpoint.pt"
 )
 trainer.validate_relaxation()
