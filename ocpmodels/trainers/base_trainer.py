@@ -247,6 +247,7 @@ class BaseTrainer:
 
     def load_pretrained(self, checkpoint_path=None):
         if checkpoint_path is None or os.path.isfile(checkpoint_path) is False:
+            print(f"Checkpoint: {checkpoint_path} not found!")
             return False
 
         print("### Loading checkpoint from: {}".format(checkpoint_path))
