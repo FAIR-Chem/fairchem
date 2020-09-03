@@ -4,6 +4,7 @@ import os
 import ase.io
 import torch
 import torch_geometric
+import numpy as np
 import yaml
 from torch.utils.data import DataLoader
 from torch_geometric.nn import DataParallel
@@ -129,7 +130,7 @@ class ForcesTrainer(BaseTrainer):
                 )(self.config["task"]["relax_dataset"])
                 self.relax_loader = DataLoader(
                     self.relax_dataset,
-                    batch_size=self.config["optim"]["batch_size"],
+                    batch_size=self.config["optim"].get("eval_batch_size", 64),
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
@@ -222,7 +223,7 @@ class ForcesTrainer(BaseTrainer):
         self.model.to(self.device)
 
     # Takes in a new data source and generates predictions on it.
-    def predict(self, dataset, batch_size=32):
+    def predict(self, dataset, batch_size=32, per_image=False):
         if isinstance(dataset, dict):
             if self.config["task"]["dataset"] == "trajectory_lmdb":
                 print(
@@ -262,19 +263,16 @@ class ForcesTrainer(BaseTrainer):
                 out["force_output"] = self.normalizers["grad_target"].denorm(
                     out["force_output"]
                 )
-            atoms_sum = 0
-            predictions["output"] = out["output"].detach()
-            predictions["force_output"] = out["force_output"].detach()
-            predictions["energy"].extend(out["output"].tolist())
-            batch_natoms = torch.cat([batch.natoms for batch in batch_list])
-            for natoms in batch_natoms:
-                predictions["forces"].append(
-                    out["force_output"][atoms_sum : natoms + atoms_sum]
-                    .cpu()
-                    .detach()
-                    .numpy()
-                )
-                atoms_sum += natoms
+            if per_image:
+                predictions["energy"].extend(out["output"].tolist())
+                batch_natoms = torch.cumsum(
+                    torch.cat([batch.natoms for batch in batch_list]), dim=0
+                ).tolist()
+                forces = out["force_output"].cpu().detach().numpy()
+                forces = np.split(forces, batch_natoms[:-1], axis=0)
+            else:
+                predictions["energy"] = out["output"].detach()
+                predictions["forces"] = out["force_output"].detach()
 
         return predictions
 
