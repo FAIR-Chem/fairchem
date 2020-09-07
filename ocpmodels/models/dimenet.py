@@ -26,7 +26,7 @@ class DimeNetWrap(DimeNet):
         num_before_skip=1,
         num_after_skip=2,
         num_output_layers=3,
-        max_angles_per_image=1e6,
+        max_angles_per_image=int(1e6),
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
@@ -35,7 +35,6 @@ class DimeNetWrap(DimeNet):
         self.max_angles_per_image = max_angles_per_image
 
         super(DimeNetWrap, self).__init__(
-            in_channels=hidden_channels,
             hidden_channels=hidden_channels,
             out_channels=num_targets,
             num_blocks=num_blocks,
@@ -49,14 +48,11 @@ class DimeNetWrap(DimeNet):
             num_output_layers=num_output_layers,
         )
 
-        self.embedding = nn.Embedding(100, hidden_channels)
-
     def forward(self, data):
         pos = data.pos
         if self.regress_forces:
             pos = pos.requires_grad_(True)
         batch = data.batch
-        x = self.embedding(data.atomic_numbers.long())
         if self.use_pbc:
             out = get_pbc_distances(
                 pos,
@@ -77,8 +73,8 @@ class DimeNetWrap(DimeNet):
             j, i = edge_index
             dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
-        idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
-            edge_index, num_nodes=x.size(0)
+        _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
+            edge_index, num_nodes=data.atomic_numbers.size(0)
         )
 
         # Cap no. of triplets during training.
@@ -110,7 +106,7 @@ class DimeNetWrap(DimeNet):
         sbf = self.sbf(dist, angle, idx_kj)
 
         # Embedding block.
-        x = self.emb(x, rbf, i, j)
+        x = self.emb(data.atomic_numbers.long(), rbf, i, j)
         P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
 
         # Interaction blocks.
