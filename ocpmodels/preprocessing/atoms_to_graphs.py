@@ -97,7 +97,7 @@ class AtomsToGraphs:
         # remove distances smaller than a tolerance ~ 0. The small tolerance is
         # needed to correct for pymatgen's neighbor_list returning self atoms
         # in a few edge cases.
-        nonzero = torch.nonzero(edge_distances >= 1e-8).flatten()
+        nonzero = torch.where(edge_distances >= 1e-8)[0]
         edge_index = edge_index[:, nonzero]
         edge_distances = edge_distances[nonzero]
         cell_offsets = cell_offsets[nonzero]
