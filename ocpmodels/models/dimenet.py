@@ -27,7 +27,7 @@ class DimeNetWrap(DimeNet):
         num_before_skip=1,
         num_after_skip=2,
         num_output_layers=3,
-        max_angles_per_image=1e6,
+        max_angles_per_image=1000000,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces

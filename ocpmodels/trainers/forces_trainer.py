@@ -38,6 +38,7 @@ class ForcesTrainer(BaseTrainer):
         seed=None,
         logger="tensorboard",
         local_rank=0,
+        amp=False,
     ):
 
         if run_dir is None:
@@ -91,6 +92,7 @@ class ForcesTrainer(BaseTrainer):
 
         print(yaml.dump(self.config, default_flow_style=False))
         self.load()
+        self.scaler = None
 
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))

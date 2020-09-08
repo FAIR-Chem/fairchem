@@ -57,6 +57,7 @@ class DistributedForcesTrainer(BaseTrainer):
             "model_attributes": model,
             "optim": optimizer,
             "logger": logger,
+            "amp": amp,
             "cmd": {
                 "identifier": identifier,
                 "print_every": print_every,
@@ -80,9 +81,9 @@ class DistributedForcesTrainer(BaseTrainer):
             self.config["dataset"] = dataset
 
         if not is_debug and distutils.is_master():
-            os.makedirs(self.config["cmd"]["checkpoint_dir"])
-            os.makedirs(self.config["cmd"]["results_dir"])
-            os.makedirs(self.config["cmd"]["logs_dir"])
+            os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
+            os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
+            os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
         self.is_debug = is_debug
         self.is_vis = is_vis
@@ -286,7 +287,6 @@ class DistributedForcesTrainer(BaseTrainer):
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.
-                self._backward(loss)
 
                 # Update meter.
                 total_loss = distutils.all_reduce(loss, average=True)
