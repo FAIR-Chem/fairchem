@@ -113,6 +113,7 @@ class DistributedForcesTrainer(BaseTrainer):
                 shuffle=True,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
+                pin_memory=True,
             )
 
             self.val_loader = self.test_loader = None
@@ -127,6 +128,7 @@ class DistributedForcesTrainer(BaseTrainer):
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
+                    pin_memory=True,
                 )
         else:
             self.dataset = registry.get_dataset_class(
