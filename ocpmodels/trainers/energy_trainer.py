@@ -249,6 +249,35 @@ class EnergyTrainer(BaseTrainer):
 
         return metrics
 
+    # Returns predictions in a format submittable to EvalAI.
+    def predict(self, loader, return_targets=False):
+        assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
+
+        self.model.eval()
+
+        predictions = []
+        if return_targets:
+            targets = []
+
+        for i, batch in tqdm(enumerate(loader), total=len(loader)):
+            out = self._forward(batch)
+            out["energy"] = self.normalizers["target"].denorm(out["energy"])
+
+            predictions.extend(out["energy"].tolist())
+            if return_targets:
+                energy_target = torch.cat(
+                    [b.y_relaxed.to(self.device) for b in batch], dim=0
+                )
+                targets.extend(energy_target.tolist())
+
+        out = {
+            "predictions": predictions,
+        }
+        if return_targets:
+            out.update({"targets": targets})
+
+        return out
+
     def _forward(self, batch_list):
         output = self.model(batch_list)
 
