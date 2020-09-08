@@ -6,7 +6,7 @@ import torch
 import torch_geometric
 import yaml
 from torch.utils.data import DataLoader
-from torch_geometric.nn import DataParallel
+from tqdm import tqdm
 
 from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
@@ -212,39 +212,17 @@ class ForcesTrainer(BaseTrainer):
         )
         self.model.to(self.device)
 
-    # Takes in a new data source and generates predictions on it.
-    def predict(self, dataset, batch_size=32):
-        if isinstance(dataset, dict):
-            if self.config["task"]["dataset"] == "trajectory_lmdb":
-                print(
-                    "### Generating predictions on {}.".format(dataset["src"])
-                )
-            else:
-                print(
-                    "### Generating predictions on {}.".format(
-                        dataset["src"] + dataset["traj"]
-                    )
-                )
-
-            dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
-            )(dataset)
-
-            data_loader = DataLoader(
-                dataset,
-                batch_size=batch_size,
-                shuffle=False,
-                collate_fn=self.parallel_collater,
-            )
-        elif isinstance(dataset, torch_geometric.data.Batch):
-            data_loader = [[dataset]]
-        else:
-            raise NotImplementedError
+    # Returns predictions in a format submittable to EvalAI.
+    def predict(self, loader, return_targets=False):
+        assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
 
         self.model.eval()
-        predictions = {"energy": [], "forces": []}
 
-        for i, batch_list in enumerate(data_loader):
+        predictions = []
+        if return_targets:
+            targets = []
+
+        for i, batch_list in tqdm(enumerate(loader), total=len(loader)):
             out = self._forward(batch_list)
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(
@@ -253,19 +231,46 @@ class ForcesTrainer(BaseTrainer):
                 out["forces"] = self.normalizers["grad_target"].denorm(
                     out["forces"]
                 )
-            atoms_sum = 0
-            predictions["energy"].extend(out["energy"].tolist())
-            batch_natoms = torch.cat([batch.natoms for batch in batch_list])
-            for natoms in batch_natoms:
-                predictions["forces"].append(
-                    out["forces"][atoms_sum : natoms + atoms_sum]
-                    .cpu()
-                    .detach()
-                    .numpy()
+
+            batch_natoms = torch.cat(
+                [batch.natoms.cpu() for batch in batch_list]
+            )
+            if return_targets:
+                energy_targets = torch.cat(
+                    [batch.y.cpu() for batch in batch_list]
                 )
+                force_targets = torch.cat(
+                    [batch.force.cpu() for batch in batch_list]
+                )
+
+            atoms_sum = 0
+            for i, natoms in enumerate(batch_natoms):
+                predictions.append(
+                    {
+                        "energy": out["energy"][i].item(),
+                        "forces": out["forces"][
+                            atoms_sum : natoms + atoms_sum
+                        ].tolist(),
+                    }
+                )
+                if return_targets:
+                    targets.append(
+                        {
+                            "energy": energy_targets[i].item(),
+                            "forces": force_targets[
+                                atoms_sum : natoms + atoms_sum
+                            ].tolist(),
+                        }
+                    )
                 atoms_sum += natoms
 
-        return predictions
+        out = {
+            "predictions": predictions,
+        }
+        if return_targets:
+            out.update({"targets": targets})
+
+        return out
 
     def train(self):
         self.best_val_mae = 1e9
