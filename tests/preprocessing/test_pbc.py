@@ -30,13 +30,14 @@ class TestPBC:
     def test_pbc_distances(self):
         data = self.data
         batch = data_list_collater([data] * 5)
-        edge_index, pbc_distances = get_pbc_distances(
+        out = get_pbc_distances(
             batch.pos,
             batch.edge_index,
             batch.cell,
             batch.cell_offsets,
             batch.neighbors,
         )
+        edge_index, pbc_distances = out["edge_index"], out["distances"]
 
         np.testing.assert_array_equal(
             batch.edge_index, edge_index,

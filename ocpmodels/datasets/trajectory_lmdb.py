@@ -48,24 +48,6 @@ class TrajectoryLmdbDataset(Dataset):
         self.num_samples = sum(self._keylens)
         self.transform = transform
 
-        # self.db_paths = sorted(srcdir.glob("*.lmdb"))
-        # self.txt_paths = sorted(srcdir.glob("*.txt"))
-        # assert len(self.db_paths) > 0, f"No LMDBs found in {srcdir}"
-        #
-        # self.db_paths = self.db_paths[rank::world_size]
-        # self.txt_paths = self.txt_paths[rank::world_size]
-        #
-        # envs = [self.connect_db(dbpath) for dbpath in self.db_paths]
-        # self._keys = []
-        # for env in envs:
-        #     length = pickle.loads(env.begin().get("length".encode("ascii")))
-        #     self._keys.append(list(range(length)))
-        #     env.close()
-        # self._keylens = [len(k) for k in self._keys]
-        # self._keylen_cumulative = np.cumsum(self._keylens).tolist()
-        # self.num_samples = sum(self._keylens)
-        # self.transform = transform
-
     def __len__(self):
         return self.num_samples
 

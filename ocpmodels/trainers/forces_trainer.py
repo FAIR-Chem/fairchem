@@ -10,7 +10,6 @@ from torch_geometric.nn import DataParallel
 
 from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
-from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.datasets import (
@@ -18,6 +17,7 @@ from ocpmodels.datasets import (
     TrajectoryLmdbDataset,
     data_list_collater,
 )
+from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
@@ -93,6 +93,8 @@ class ForcesTrainer(BaseTrainer):
         print(yaml.dump(self.config, default_flow_style=False))
         self.load()
         self.scaler = None
+
+        self.evaluator = Evaluator(task="s2ef")
 
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
@@ -245,20 +247,20 @@ class ForcesTrainer(BaseTrainer):
         predictions = {"energy": [], "forces": []}
 
         for i, batch_list in enumerate(data_loader):
-            out, _ = self._forward(batch_list, compute_metrics=False)
+            out = self._forward(batch_list)
             if self.normalizers is not None and "target" in self.normalizers:
-                out["output"] = self.normalizers["target"].denorm(
-                    out["output"]
+                out["energy"] = self.normalizers["target"].denorm(
+                    out["energy"]
                 )
-                out["force_output"] = self.normalizers["grad_target"].denorm(
-                    out["force_output"]
+                out["forces"] = self.normalizers["grad_target"].denorm(
+                    out["forces"]
                 )
             atoms_sum = 0
-            predictions["energy"].extend(out["output"].tolist())
+            predictions["energy"].extend(out["energy"].tolist())
             batch_natoms = torch.cat([batch.natoms for batch in batch_list])
             for natoms in batch_natoms:
                 predictions["forces"].append(
-                    out["force_output"][atoms_sum : natoms + atoms_sum]
+                    out["forces"][atoms_sum : natoms + atoms_sum]
                     .cpu()
                     .detach()
                     .numpy()
@@ -275,29 +277,35 @@ class ForcesTrainer(BaseTrainer):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
-                out, metrics = self._forward(batch)
+                out = self._forward(batch)
                 loss = self._compute_loss(out, batch)
                 self._backward(loss)
 
-                # Update meter.
-                meter_update_dict = {
-                    "epoch": epoch + (i + 1) / len(self.train_loader),
-                    "loss": loss.item(),
-                }
-                meter_update_dict.update(metrics)
-                self.meter.update(meter_update_dict)
+                # Compute metrics.
+                self.metrics = self._compute_metrics(
+                    out, batch, self.evaluator
+                )
+                self.metrics = self.evaluator.update(
+                    "loss", loss.item(), self.metrics
+                )
 
-                # Make plots.
+                # Print metrics, make plots.
+                log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
+                log_dict.update(
+                    {"epoch": epoch + (i + 1) / len(self.train_loader)}
+                )
+                if i % self.config["cmd"]["print_every"] == 0:
+                    log_str = [
+                        "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
+                    ]
+                    print(", ".join(log_str))
+
                 if self.logger is not None:
                     self.logger.log(
-                        meter_update_dict,
+                        log_dict,
                         step=epoch * len(self.train_loader) + i + 1,
                         split="train",
                     )
-
-                # Print metrics.
-                if i % self.config["cmd"]["print_every"] == 0:
-                    print(self.meter)
 
                 iters += 1
 
@@ -306,12 +314,14 @@ class ForcesTrainer(BaseTrainer):
                     if self.val_loader is not None:
                         val_metrics = self.validate(split="val", epoch=epoch)
                         if (
-                            val_metrics.meters["force_z/mae"].global_avg
+                            val_metrics[
+                                self.evaluator.task_primary_metric["s2ef"]
+                            ]["metric"]
                             < self.best_val_mae
                         ):
-                            self.best_val_mae = val_metrics.meters[
-                                "force_z/mae"
-                            ].global_avg
+                            self.best_val_mae = val_metrics[
+                                self.evaluator.task_primary_metric["s2ef"]
+                            ]["metric"]
                             if not self.is_debug:
                                 save_checkpoint(
                                     {
@@ -324,6 +334,7 @@ class ForcesTrainer(BaseTrainer):
                                             for key, value in self.normalizers.items()
                                         },
                                         "config": self.config,
+                                        "val_metrics": val_metrics,
                                     },
                                     self.config["cmd"]["checkpoint_dir"],
                                 )
@@ -335,12 +346,14 @@ class ForcesTrainer(BaseTrainer):
                 if self.val_loader is not None:
                     val_metrics = self.validate(split="val", epoch=epoch)
                     if (
-                        val_metrics.meters["force_z/mae"].global_avg
+                        val_metrics[
+                            self.evaluator.task_primary_metric["s2ef"]
+                        ]["metric"]
                         < self.best_val_mae
                     ):
-                        self.best_val_mae = val_metrics.meters[
-                            "force_z/mae"
-                        ].global_avg
+                        self.best_val_mae = val_metrics[
+                            self.evaluator.task_primary_metric["s2ef"]
+                        ]["metric"]
                         if not self.is_debug:
                             save_checkpoint(
                                 {
@@ -352,6 +365,7 @@ class ForcesTrainer(BaseTrainer):
                                         for key, value in self.normalizers.items()
                                     },
                                     "config": self.config,
+                                    "val_metrics": val_metrics,
                                 },
                                 self.config["cmd"]["checkpoint_dir"],
                             )
@@ -377,40 +391,39 @@ class ForcesTrainer(BaseTrainer):
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
-        self.model.eval()
 
-        meter = Meter(split=split)
+        self.model.eval()
+        evaluator, metrics = Evaluator(task="s2ef"), {}
 
         loader = self.val_loader if split == "val" else self.test_loader
 
         for i, batch in enumerate(loader):
             # Forward.
-            out, metrics = self._forward(batch)
+            out = self._forward(batch)
             loss = self._compute_loss(out, batch)
 
-            # Update meter.
-            meter_update_dict = {"loss": loss.item()}
-            meter_update_dict.update(metrics)
-            meter.update(meter_update_dict)
+            # Compute metrics.
+            metrics = self._compute_metrics(out, batch, evaluator, metrics)
+            metrics = evaluator.update("loss", loss.item(), metrics)
+
+        log_dict = {k: metrics[k]["metric"] for k in metrics}
+        log_dict.update({"epoch": epoch + 1})
+        log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
+        print(", ".join(log_str))
 
         # Make plots.
         if self.logger is not None and epoch is not None:
-            log_dict = meter.get_scalar_dict()
-            log_dict.update({"epoch": epoch + 1})
             self.logger.log(
                 log_dict,
                 step=(epoch + 1) * len(self.train_loader),
                 split=split,
             )
 
-        print(meter)
-        return meter
+        return metrics
 
     def validate_relaxation(self, split="val", epoch=None):
         print("### Evaluating ML-relaxation")
         self.model.eval()
-        metrics = {}
-        meter = Meter(split=split)
 
         mae_energy, mae_structure = relax_eval(
             trainer=self,
@@ -421,149 +434,62 @@ class ForcesTrainer(BaseTrainer):
             results_dir=self.config["cmd"]["results_dir"],
         )
 
-        metrics[
-            "relaxed_energy/{}".format(self.config["task"]["metric"])
-        ] = mae_energy
-
-        metrics[
-            "relaxed_structure/{}".format(self.config["task"]["metric"])
-        ] = mae_structure
-
-        meter.update(metrics)
+        log_dict = {
+            "relaxed_energy_mae": mae_energy,
+            "relaxed_structure_mae": mae_structure,
+            "epoch": epoch + 1,
+        }
 
         # Make plots.
         if self.logger is not None and epoch is not None:
-            log_dict = meter.get_scalar_dict()
-            log_dict.update({"epoch": epoch + 1})
             self.logger.log(
                 log_dict,
                 step=(epoch + 1) * len(self.train_loader),
                 split=split,
             )
 
-        print(meter)
-
+        print(log_dict)
         return mae_energy, mae_structure
 
-    def _forward(self, batch_list, compute_metrics=True):
-        out = {}
-
-        # forward pass.
+    def _forward(self, batch_list):
         if self.config["model_attributes"].get("regress_forces", True):
-            output, output_forces = self.model(batch_list)
+            out_energy, out_forces = self.model(batch_list)
         else:
-            output = self.model(batch_list)
+            out_energy = self.model(batch_list)
 
-        if output.shape[-1] == 1:
-            output = output.view(-1)
+        if out_energy.shape[-1] == 1:
+            out_energy = out_energy.view(-1)
 
-        out["output"] = output
-
-        force_output = None
-        if self.config["model_attributes"].get("regress_forces", True):
-            out["force_output"] = output_forces
-            force_output = output_forces
-
-        if not compute_metrics:
-            return out, None
-
-        metrics = {}
-        energy_target = torch.cat(
-            [batch.y.to(self.device) for batch in batch_list], dim=0
-        )
-
-        if self.config["dataset"].get("normalize_labels", True):
-            errors = eval(self.config["task"]["metric"])(
-                self.normalizers["target"].denorm(output).cpu(),
-                energy_target.cpu(),
-            ).view(-1)
-        else:
-            errors = eval(self.config["task"]["metric"])(
-                output.cpu(), energy_target.cpu()
-            ).view(-1)
-
-        if (
-            "label_index" in self.config["task"]
-            and self.config["task"]["label_index"] is not False
-        ):
-            # TODO(abhshkdz): Get rid of this edge case for QM9.
-            # This is only because QM9 has multiple targets and we can either
-            # jointly predict all of them or one particular target.
-            metrics[
-                "{}/{}".format(
-                    self.config["task"]["labels"][
-                        self.config["task"]["label_index"]
-                    ],
-                    self.config["task"]["metric"],
-                )
-            ] = errors[0]
-        else:
-            for i, label in enumerate(self.config["task"]["labels"]):
-                metrics[
-                    "{}/{}".format(label, self.config["task"]["metric"])
-                ] = errors[i]
+        out = {
+            "energy": out_energy,
+        }
 
         if self.config["model_attributes"].get("regress_forces", True):
-            force_pred = force_output
-            force_target = torch.cat(
-                [batch.force.to(self.device) for batch in batch_list], dim=0
-            )
+            out["forces"] = out_forces
 
-            if self.config["task"].get("eval_on_free_atoms", True):
-                fixed = torch.cat(
-                    [batch.fixed.to(self.device) for batch in batch_list]
-                )
-                mask = fixed == 0
-                force_pred = force_pred[mask]
-                force_target = force_target[mask]
-
-            if self.config["dataset"].get("normalize_labels", True):
-                grad_input_errors = eval(self.config["task"]["metric"])(
-                    self.normalizers["grad_target"].denorm(force_pred).cpu(),
-                    force_target.cpu(),
-                )
-            else:
-                grad_input_errors = eval(self.config["task"]["metric"])(
-                    force_pred.cpu(), force_target.cpu()
-                )
-            metrics[
-                "force_x/{}".format(self.config["task"]["metric"])
-            ] = grad_input_errors[0]
-            metrics[
-                "force_y/{}".format(self.config["task"]["metric"])
-            ] = grad_input_errors[1]
-            metrics[
-                "force_z/{}".format(self.config["task"]["metric"])
-            ] = grad_input_errors[2]
-
-        return out, metrics
+        return out
 
     def _compute_loss(self, out, batch_list):
         loss = []
+
+        # Energy loss.
         energy_target = torch.cat(
             [batch.y.to(self.device) for batch in batch_list], dim=0
         )
-        force_target = torch.cat(
-            [batch.force.to(self.device) for batch in batch_list], dim=0
-        )
-
-        energy_mult = self.config["optim"].get("energy_coefficient", 1)
         if self.config["dataset"].get("normalize_labels", True):
-            target_normed = self.normalizers["target"].norm(energy_target)
-        else:
-            target_normed = energy_target
+            energy_target = self.normalizers["target"].norm(energy_target)
+        energy_mult = self.config["optim"].get("energy_coefficient", 1)
+        loss.append(energy_mult * self.criterion(out["energy"], energy_target))
 
-        loss.append(energy_mult * self.criterion(out["output"], target_normed))
-
-        # TODO(abhshkdz): Test support for gradients wrt input.
-        # TODO(abhshkdz): Make this general; remove dependence on `.forces`.
+        # Forces loss.
         if self.config["model_attributes"].get("regress_forces", True):
+            force_target = torch.cat(
+                [batch.force.to(self.device) for batch in batch_list], dim=0
+            )
             if self.config["dataset"].get("normalize_labels", True):
-                grad_target_normed = self.normalizers["grad_target"].norm(
+                force_target = self.normalizers["grad_target"].norm(
                     force_target
                 )
-            else:
-                grad_target_normed = force_target
 
             # Force coefficient = 30 has been working well for us.
             force_mult = self.config["optim"].get("force_coefficient", 30)
@@ -574,14 +500,11 @@ class ForcesTrainer(BaseTrainer):
                 mask = fixed == 0
                 loss.append(
                     force_mult
-                    * self.criterion(
-                        out["force_output"][mask], grad_target_normed[mask]
-                    )
+                    * self.criterion(out["forces"][mask], force_target[mask])
                 )
             else:
                 loss.append(
-                    force_mult
-                    * self.criterion(out["force_output"], grad_target_normed)
+                    force_mult * self.criterion(out["forces"], force_target)
                 )
 
         # Sanity check to make sure the compute graph is correct.
@@ -590,3 +513,31 @@ class ForcesTrainer(BaseTrainer):
 
         loss = sum(loss)
         return loss
+
+    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+        target = {
+            "energy": torch.cat(
+                [batch.y.to(self.device) for batch in batch_list], dim=0
+            ),
+            "forces": torch.cat(
+                [batch.force.to(self.device) for batch in batch_list], dim=0
+            ),
+        }
+
+        if self.config["task"].get("eval_on_free_atoms", True):
+            fixed = torch.cat(
+                [batch.fixed.to(self.device) for batch in batch_list]
+            )
+            mask = fixed == 0
+            out["forces"] = out["forces"][mask]
+            target["forces"] = target["forces"][mask]
+
+        if self.config["dataset"].get("normalize_labels", True):
+            out["energy"] = self.normalizers["target"].denorm(out["energy"])
+            out["forces"] = self.normalizers["grad_target"].denorm(
+                out["forces"]
+            )
+
+        metrics = evaluator.eval(out, target, prev_metrics=metrics)
+
+        return metrics
