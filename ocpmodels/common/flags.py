@@ -35,6 +35,11 @@ class Flags:
             help="Whether this is a debugging run or not",
         )
         self.parser.add_argument(
+            "--run-dir",
+            default="./",
+            help="Directory to store checkpoint/log/result directory",
+        )
+        self.parser.add_argument(
             "--vis",
             action="store_true",
             help="Whether to visualize a few extra things",
