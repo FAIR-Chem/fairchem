@@ -3,6 +3,7 @@ import json
 import os
 import random
 import time
+from collections import OrderedDict
 
 import numpy as np
 import torch
@@ -249,7 +250,7 @@ class BaseTrainer:
         if self.logger is not None:
             self.logger.watch(self.model)
 
-    def load_pretrained(self, checkpoint_path=None):
+    def load_pretrained(self, checkpoint_path=None, ddp_to_dp=False):
         if checkpoint_path is None or os.path.isfile(checkpoint_path) is False:
             return False
 
@@ -257,7 +258,17 @@ class BaseTrainer:
         checkpoint = torch.load(checkpoint_path)
 
         # Load model, optimizer, normalizer state dict.
-        self.model.load_state_dict(checkpoint["state_dict"])
+        # if trained with ddp and want to load in non-ddp, modify keys from
+        # module.module.. -> module..
+        if ddp_to_dp:
+            new_dict = OrderedDict()
+            for k, v in checkpoint["state_dict"].items():
+                name = k[7:]
+                new_dict[name] = v
+            self.model.load_state_dict(new_dict)
+        else:
+            self.model.load_state_dict(checkpoint["state_dict"])
+
         self.optimizer.load_state_dict(checkpoint["optimizer"])
 
         for key in checkpoint["normalizers"]:
