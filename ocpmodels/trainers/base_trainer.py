@@ -247,7 +247,7 @@ class BaseTrainer:
         if self.logger is not None:
             self.logger.watch(self.model)
 
-    def load_pretrained(self, checkpoint_path=None, load_ddp=False):
+    def load_pretrained(self, checkpoint_path=None, ddp_to_dp=False):
         if checkpoint_path is None or os.path.isfile(checkpoint_path) is False:
             return False
 
@@ -257,7 +257,7 @@ class BaseTrainer:
         # Load model, optimizer, normalizer state dict.
         # if trained with ddp and want to load in non-ddp, modify keys from
         # module.module.. -> module..
-        if not load_ddp:
+        if ddp_to_dp:
             new_dict = OrderedDict()
             for k, v in checkpoint["state_dict"].items():
                 name = k[7:]
