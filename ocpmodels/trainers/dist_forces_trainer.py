@@ -401,11 +401,25 @@ class DistributedForcesTrainer(BaseTrainer):
             # Forward.
             out = self._forward(batch)
             loss = self._compute_loss(out, batch)
-            total_loss = distutils.all_reduce(loss, average=True)
 
             # Compute metrics.
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
-            metrics = evaluator.update("loss", total_loss.item(), metrics)
+            metrics = evaluator.update("loss", loss.item(), metrics)
+
+        aggregated_metrics = {}
+        for k in metrics:
+            aggregated_metrics[k] = {
+                "total": distutils.all_reduce(
+                    metrics[k]["total"], average=False, device=self.device
+                ),
+                "numel": distutils.all_reduce(
+                    metrics[k]["numel"], average=False, device=self.device
+                ),
+            }
+            aggregated_metrics[k]["metric"] = (
+                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
+            )
+        metrics = aggregated_metrics
 
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": epoch + 1})
@@ -549,19 +563,4 @@ class DistributedForcesTrainer(BaseTrainer):
             )
 
         metrics = evaluator.eval(out, target, prev_metrics=metrics)
-
-        aggregated_metrics = {}
-        for k in metrics:
-            aggregated_metrics[k] = {
-                "total": distutils.all_reduce(
-                    metrics[k]["total"], average=False, device=self.device
-                ),
-                "numel": distutils.all_reduce(
-                    metrics[k]["numel"], average=False, device=self.device
-                ),
-            }
-            aggregated_metrics[k]["metric"] = (
-                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
-            )
-
-        return aggregated_metrics
+        return metrics
