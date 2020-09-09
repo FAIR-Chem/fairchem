@@ -1,5 +1,5 @@
 includes:
-- configs/s2ef/base_dist.yml
+- configs/ocp_s2ef/base_dist.yml
 
 model:
   name: dimenet
@@ -9,12 +9,13 @@ model:
   num_after_skip: 1
   num_output_layers: 1
   use_pbc: False
+  max_angles_per_image: 30000
 
 optim:
-  batch_size: 4
-  eval_batch_size: 2
+  batch_size: 16
+  eval_batch_size: 8
   num_workers: 64
-  lr_initial: 0.0001
+  lr_initial: 0.001
   lr_gamma: 0.1
   num_gps: 8
   lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
