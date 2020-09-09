@@ -1,25 +1,18 @@
 import datetime
 import os
 
-import ase.io
 import torch
-import torch.distributed as dist
 import torch_geometric
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import BatchSampler, DataLoader, DistributedSampler
-from torch_geometric.nn import DataParallel
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from ocpmodels.common import distutils
-from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
+from ocpmodels.common.ase_utils import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
-from ocpmodels.datasets import (
-    TrajectoryDataset,
-    TrajectoryLmdbDataset,
-    data_list_collater,
-)
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -41,6 +34,7 @@ class DistributedForcesTrainer(BaseTrainer):
         seed=None,
         logger="tensorboard",
         local_rank=0,
+        amp=False,
     ):
 
         if run_dir is None:
@@ -56,6 +50,7 @@ class DistributedForcesTrainer(BaseTrainer):
             "model_attributes": model,
             "optim": optimizer,
             "logger": logger,
+            "amp": amp,
             "cmd": {
                 "identifier": identifier,
                 "print_every": print_every,
@@ -68,6 +63,8 @@ class DistributedForcesTrainer(BaseTrainer):
                 "logs_dir": os.path.join(run_dir, "logs", logger, timestamp),
             },
         }
+        # AMP Scaler
+        self.scaler = torch.cuda.amp.GradScaler() if amp else None
 
         if isinstance(dataset, list):
             self.config["dataset"] = dataset[0]
@@ -109,6 +106,7 @@ class DistributedForcesTrainer(BaseTrainer):
                 shuffle=True,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
+                pin_memory=True,
             )
 
             self.val_loader = self.test_loader = None
@@ -123,6 +121,7 @@ class DistributedForcesTrainer(BaseTrainer):
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
+                    pin_memory=True,
                 )
         else:
             self.dataset = registry.get_dataset_class(
@@ -247,7 +246,9 @@ class DistributedForcesTrainer(BaseTrainer):
         predictions = {"energy": [], "forces": []}
 
         for i, batch_list in enumerate(data_loader):
-            out = self._forward(batch_list)
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch_list)
+
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
@@ -277,16 +278,19 @@ class DistributedForcesTrainer(BaseTrainer):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
-                out = self._forward(batch)
-                loss = self._compute_loss(out, batch)
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    out = self._forward(batch)
+                    loss = self._compute_loss(out, batch)
+                loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
+                scale = self.scaler.get_scale() if self.scaler else 1.
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
                     out, batch, self.evaluator
                 )
                 self.metrics = self.evaluator.update(
-                    "loss", loss.item(), self.metrics
+                    "loss", loss.item() / scale, self.metrics
                 )
 
                 # Print metrics, make plots.
@@ -397,9 +401,10 @@ class DistributedForcesTrainer(BaseTrainer):
 
         loader = self.val_loader if split == "val" else self.test_loader
 
-        for i, batch in enumerate(loader):
+        for i, batch in tqdm(enumerate(loader), total=len(loader)):
             # Forward.
-            out = self._forward(batch)
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch)
             loss = self._compute_loss(out, batch)
 
             # Compute metrics.

@@ -1,9 +1,9 @@
 trainer: dist_forces
 
 dataset:
-  - src: data/data/s2ef/train/ocp200k/
+  - src: data/data/ocp_s2ef/train/200k/
     normalize_labels: False
-  - src: data/data/s2ef/val/is
+  - src: data/data/ocp_s2ef/val/is
 
 logger: tensorboard
 
@@ -15,5 +15,5 @@ task:
   labels:
     - potential energy
   grad_input: atomic forces
-  train_on_free_atoms: False
+  train_on_free_atoms: True
   eval_on_free_atoms: True

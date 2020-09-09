@@ -251,6 +251,7 @@ def build_config(args):
     config["run_dir"] = args.run_dir
     config["is_vis"] = args.vis
     config["print_every"] = args.print_every
+    config["amp"] = args.amp
     # Submit
     config["submit"] = args.submit
     # Distributed

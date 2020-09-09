@@ -25,10 +25,14 @@ def main(config):
         print_every=config.get("print_every", 10),
         seed=config.get("seed", 0),
         logger=config.get("logger", "tensorboard"),
-        local_rank=config["local_rank"]
+        local_rank=config["local_rank"],
+        amp=config.get("amp", False),
     )
+    import time
+    start_time = time.time()
     trainer.train()
     distutils.synchronize()
+    print('Time = ', time.time() - start_time)
 
 
 def distributed_main(config):
