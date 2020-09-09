@@ -5,13 +5,14 @@ import torch
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler
+from tqdm import tqdm
 
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
-from ocpmodels.common.meter import Meter, mae
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import save_checkpoint
 from ocpmodels.datasets import SinglePointLmdbDataset, data_list_collater
+from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
@@ -85,7 +86,9 @@ class DistributedEnergyTrainer(BaseTrainer):
 
         if distutils.is_master():
             print(yaml.dump(self.config, default_flow_style=False))
+
         self.load()
+        self.evaluator = Evaluator(task="is2re")
 
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
@@ -97,8 +100,11 @@ class DistributedEnergyTrainer(BaseTrainer):
             )(self.config["dataset"])
 
             self.train_sampler = DistributedSampler(
-                self.train_dataset, num_replicas=distutils.get_world_size(),
-                rank=distutils.get_rank(), shuffle=True)
+                self.train_dataset,
+                num_replicas=distutils.get_world_size(),
+                rank=distutils.get_rank(),
+                shuffle=True,
+            )
             self.train_loader = DataLoader(
                 self.train_dataset,
                 batch_size=self.config["optim"]["batch_size"],
@@ -116,15 +122,18 @@ class DistributedEnergyTrainer(BaseTrainer):
                     self.config["task"]["dataset"]
                 )(self.config["val_dataset"])
                 self.val_sampler = DistributedSampler(
-                    self.val_dataset, num_replicas=distutils.get_world_size(),
-                    rank=distutils.get_rank(), shuffle=False)
+                    self.val_dataset,
+                    num_replicas=distutils.get_world_size(),
+                    rank=distutils.get_rank(),
+                    shuffle=False,
+                )
                 self.val_loader = DataLoader(
                     self.val_dataset,
                     self.config["optim"].get("eval_batch_size", 64),
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
                     pin_memory=True,
-                    sampler=self.val_sampler
+                    sampler=self.val_sampler,
                 )
         else:
             raise NotImplementedError
@@ -164,32 +173,41 @@ class DistributedEnergyTrainer(BaseTrainer):
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out, metrics = self._forward(batch)
+                    out = self._forward(batch)
                     loss = self._compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
-                scale = self.scaler.get_scale() if self.scaler else 1.
+                scale = self.scaler.get_scale() if self.scaler else 1.0
 
-                # Update meter.
+                # Compute metrics.
                 total_loss = distutils.all_reduce(loss, average=True)
-                meter_update_dict = {
-                    "epoch": epoch + (i + 1) / len(self.train_loader),
-                    "loss": total_loss.item() / scale,
-                }
-                meter_update_dict.update(metrics)
-                self.meter.update(meter_update_dict)
+                self.metrics = self._compute_metrics(
+                    out, batch, self.evaluator
+                )
+                self.metrics = self.evaluator.update(
+                    "loss", total_loss.item() / scale, self.metrics
+                )
 
-                # Make plots.
+                # Print metrics, make plots.
+                log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
+                log_dict.update(
+                    {"epoch": epoch + (i + 1) / len(self.train_loader)}
+                )
+                if (
+                    i % self.config["cmd"]["print_every"] == 0
+                    and distutils.is_master()
+                ):
+                    log_str = [
+                        "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
+                    ]
+                    print(", ".join(log_str))
+
                 if self.logger is not None:
                     self.logger.log(
-                        meter_update_dict,
+                        log_dict,
                         step=epoch * len(self.train_loader) + i + 1,
                         split="train",
                     )
-
-                # Print metrics.
-                if i % self.config["cmd"]["print_every"] == 0 and distutils.is_master():
-                    print(self.meter)
 
             self.scheduler.step()
             torch.cuda.empty_cache()
@@ -201,21 +219,14 @@ class DistributedEnergyTrainer(BaseTrainer):
                 self.validate(split="test", epoch=epoch)
 
             if (
-                "relaxation_dir" in self.config["task"]
-                and self.config["task"].get("ml_relax", "end") == "train"
-            ):
-                self.validate_relaxation(
-                    split="val", epoch=epoch,
-                )
-
-            if (
-                self.val_loader is not None and
-                val_metrics.meters["relaxed energy/mae"].global_avg
+                val_metrics[self.evaluator.task_primary_metric["is2re"]][
+                    "metric"
+                ]
                 < self.best_val_mae
             ):
-                self.best_val_mae = val_metrics.meters[
-                    "relaxed energy/mae"
-                ].global_avg
+                self.best_val_mae = val_metrics[
+                    self.evaluator.task_primary_metric["is2re"]
+                ]["metric"]
                 if not self.is_debug and distutils.is_master():
                     save_checkpoint(
                         {
@@ -227,80 +238,58 @@ class DistributedEnergyTrainer(BaseTrainer):
                                 for key, value in self.normalizers.items()
                             },
                             "config": self.config,
-                            "amp": self.scaler.state_dict() if self.scaler else None,
+                            "val_metrics": val_metrics,
+                            "amp": self.scaler.state_dict()
+                            if self.scaler
+                            else None,
                         },
                         self.config["cmd"]["checkpoint_dir"],
                     )
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
-        self.model.eval()
 
-        meter = Meter(split=split)
+        self.model.eval()
+        evaluator, metrics = Evaluator(task="is2re"), {}
 
         loader = self.val_loader if split == "val" else self.test_loader
 
-        for i, batch in enumerate(loader):
+        for i, batch in tqdm(enumerate(loader), total=len(loader)):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out, metrics = self._forward(batch)
+                out = self._forward(batch)
             loss = self._compute_loss(out, batch)
-            total_loss = distutils.all_reduce(loss, average=True)
 
-            # Update meter.
-            meter_update_dict = {"loss": total_loss.item()}
-            meter_update_dict.update(metrics)
-            meter.update(meter_update_dict)
+            # Compute metrics.
+            total_loss = distutils.all_reduce(loss, average=True)
+            metrics = self._compute_metrics(out, batch, evaluator, metrics)
+            metrics = evaluator.update("loss", total_loss.item(), metrics)
+
+        log_dict = {k: metrics[k]["metric"] for k in metrics}
+        log_dict.update({"epoch": epoch + 1})
+        if distutils.is_master():
+            log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
+            print(", ".join(log_str))
 
         # Make plots.
         if self.logger is not None and epoch is not None:
-            log_dict = meter.get_scalar_dict()
-            log_dict.update({"epoch": epoch + 1})
             self.logger.log(
                 log_dict,
                 step=(epoch + 1) * len(self.train_loader),
                 split=split,
             )
 
-        if distutils.is_master():
-            print(meter)
-        return meter
+        return metrics
 
-    def _forward(self, batch_list, compute_metrics=True):
-        out = {}
-
-        # forward pass.
+    def _forward(self, batch_list):
         output = self.model(batch_list)
 
         if output.shape[-1] == 1:
             output = output.view(-1)
 
-        out["output"] = output
-
-        if not compute_metrics:
-            return out, None
-
-        metrics = {}
-        energy_target = torch.cat(
-            [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
-        )
-
-        if self.config["dataset"].get("normalize_labels", True):
-            errors = eval(self.config["task"]["metric"])(
-                self.normalizers["target"].denorm(output).cpu(),
-                energy_target.cpu(),
-            ).view(-1)
-        else:
-            errors = eval(self.config["task"]["metric"])(
-                output.cpu(), energy_target.cpu()
-            ).view(-1)
-
-        for i, label in enumerate(self.config["task"]["labels"]):
-            metrics[
-                "{}/{}".format(label, self.config["task"]["metric"])
-            ] = errors[i]
-
-        return out, metrics
+        return {
+            "energy": output,
+        }
 
     def _compute_loss(self, out, batch_list):
         energy_target = torch.cat(
@@ -312,5 +301,19 @@ class DistributedEnergyTrainer(BaseTrainer):
         else:
             target_normed = energy_target
 
-        loss = self.criterion(out["output"], target_normed)
+        loss = self.criterion(out["energy"], target_normed)
         return loss
+
+    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+        energy_target = torch.cat(
+            [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
+        )
+
+        if self.config["dataset"].get("normalize_labels", True):
+            out["energy"] = self.normalizers["target"].denorm(out["energy"])
+
+        metrics = evaluator.eval(
+            out, {"energy": energy_target}, prev_metrics=metrics,
+        )
+
+        return metrics
