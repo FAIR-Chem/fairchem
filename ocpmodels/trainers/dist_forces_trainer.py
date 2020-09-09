@@ -1,25 +1,18 @@
 import datetime
 import os
 
-import ase.io
 import torch
-import torch.distributed as dist
 import torch_geometric
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import BatchSampler, DataLoader, DistributedSampler
-from torch_geometric.nn import DataParallel
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from ocpmodels.common import distutils
-from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
+from ocpmodels.common.ase_utils import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
-from ocpmodels.datasets import (
-    TrajectoryDataset,
-    TrajectoryLmdbDataset,
-    data_list_collater,
-)
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -408,7 +401,7 @@ class DistributedForcesTrainer(BaseTrainer):
 
         loader = self.val_loader if split == "val" else self.test_loader
 
-        for i, batch in enumerate(loader):
+        for i, batch in tqdm(enumerate(loader), total=len(loader)):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
