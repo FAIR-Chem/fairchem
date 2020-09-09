@@ -65,6 +65,9 @@ if __name__ == "__main__":
             assert os.path.isfile(checkpoint_path)
             checkpoint = torch.load(checkpoint_path)
             config = checkpoint["config"]
+            config["dataset"]["src"] = os.path.join(
+                "/private/home/mshuaibi/baselines/", config["dataset"]["src"]
+            )
             config["dataset"] = [config["dataset"]]
             config["model_path"] = checkpoint_path
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -101,6 +104,7 @@ if __name__ == "__main__":
             tasks_per_node=(args.num_gpus if args.distributed else 1),
             nodes=args.num_nodes,
             slurm_additional_parameters={"begin": f"now+{args.begin*3600}"},
+            slurm_comment=args.slurm_comment,
         )
         if args.distributed:
             jobs = executor.map_array(distributed_main, configs)

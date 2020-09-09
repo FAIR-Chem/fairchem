@@ -100,6 +100,12 @@ class Flags:
             "--begin", default=0, type=int, help="Hours to delay job starting"
         )
         self.parser.add_argument(
+            "--slurm-comment",
+            default="OCP training",
+            type=str,
+            help="Slurm job comment",
+        )
+        self.parser.add_argument(
             "--distributed", action="store_true", help="Run with DDP"
         )
         self.parser.add_argument(
