@@ -3,20 +3,21 @@ import os
 
 import torch
 import yaml
-from torch.utils.data import DataLoader
+from torch.nn.parallel.distributed import DistributedDataParallel
+from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
+from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import save_checkpoint
-from ocpmodels.datasets import SinglePointLmdbDataset, data_list_collater
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
-@registry.register_trainer("energy")
-class EnergyTrainer(BaseTrainer):
+@registry.register_trainer("dist_energy")
+class DistributedEnergyTrainer(BaseTrainer):
     def __init__(
         self,
         task,
@@ -70,7 +71,7 @@ class EnergyTrainer(BaseTrainer):
         else:
             self.config["dataset"] = dataset
 
-        if not is_debug:
+        if not is_debug and distutils.is_master():
             os.makedirs(self.config["cmd"]["checkpoint_dir"])
             os.makedirs(self.config["cmd"]["results_dir"])
             os.makedirs(self.config["cmd"]["logs_dir"])
@@ -78,15 +79,12 @@ class EnergyTrainer(BaseTrainer):
         self.is_debug = is_debug
         self.is_vis = is_vis
         if torch.cuda.is_available():
-            device_ids = list(range(torch.cuda.device_count()))
-            self.output_device = self.config["optim"].get(
-                "output_device", device_ids[0]
-            )
-            self.device = f"cuda:{self.output_device}"
+            self.device = local_rank
         else:
             self.device = "cpu"
 
-        print(yaml.dump(self.config, default_flow_style=False))
+        if distutils.is_master():
+            print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
         self.evaluator = Evaluator(task="is2re")
@@ -94,36 +92,41 @@ class EnergyTrainer(BaseTrainer):
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
 
-        self.parallel_collater = ParallelCollater(
-            self.config["optim"].get("num_gpus", 1)
-        )
+        self.parallel_collater = ParallelCollater(1)
         if self.config["task"]["dataset"] == "single_point_lmdb":
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
 
+            self.train_sampler = DistributedSampler(
+                self.train_dataset, num_replicas=distutils.get_world_size(),
+                rank=distutils.get_rank(), shuffle=True)
             self.train_loader = DataLoader(
                 self.train_dataset,
                 batch_size=self.config["optim"]["batch_size"],
-                shuffle=True,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
                 pin_memory=True,
+                sampler=self.train_sampler,
             )
 
             self.val_loader = self.test_loader = None
+            self.val_sampler = None
 
             if "val_dataset" in self.config:
                 self.val_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(self.config["val_dataset"])
+                self.val_sampler = DistributedSampler(
+                    self.val_dataset, num_replicas=distutils.get_world_size(),
+                    rank=distutils.get_rank(), shuffle=False)
                 self.val_loader = DataLoader(
                     self.val_dataset,
                     self.config["optim"].get("eval_batch_size", 64),
-                    shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
                     pin_memory=True,
+                    sampler=self.val_sampler
                 )
         else:
             raise NotImplementedError
@@ -144,18 +147,21 @@ class EnergyTrainer(BaseTrainer):
                 raise NotImplementedError
 
     def load_model(self):
-        super(EnergyTrainer, self).load_model()
+        super(DistributedEnergyTrainer, self).load_model()
 
         self.model = OCPDataParallel(
             self.model,
-            output_device=self.output_device,
+            output_device=self.device,
             num_gpus=self.config["optim"].get("num_gpus", 1),
         )
-        self.model.to(self.device)
+        self.model = DistributedDataParallel(
+            self.model, device_ids=[self.device], find_unused_parameters=True
+        )
 
     def train(self):
         self.best_val_mae = 1e9
         for epoch in range(self.config["optim"]["max_epochs"]):
+            self.train_sampler.set_epoch(epoch)
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
@@ -244,6 +250,21 @@ class EnergyTrainer(BaseTrainer):
             # Compute metrics.
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
             metrics = evaluator.update("loss", loss.item(), metrics)
+
+        aggregated_metrics = {}
+        for k in metrics:
+            aggregated_metrics[k] = {
+                "total": distutils.all_reduce(
+                    metrics[k]["total"], average=False, device=self.device
+                ),
+                "numel": distutils.all_reduce(
+                    metrics[k]["numel"], average=False, device=self.device
+                ),
+            }
+            aggregated_metrics[k]["metric"] = (
+                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
+            )
+        metrics = aggregated_metrics
 
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": epoch + 1})

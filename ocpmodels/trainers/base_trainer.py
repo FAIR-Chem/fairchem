@@ -60,6 +60,9 @@ class BaseTrainer:
     def load_config_from_yaml_and_cmd(self, args):
         self.config = build_config(args)
 
+        # AMP Scaler
+        self.scaler = torch.cuda.amp.GradScaler() if self.config["amp"] else None
+
         # device
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
@@ -256,12 +259,14 @@ class BaseTrainer:
         # Load model, optimizer, normalizer state dict.
         self.model.load_state_dict(checkpoint["state_dict"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
+
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
                 self.normalizers[key].load_state_dict(
                     checkpoint["normalizers"][key]
                 )
-
+            if self.scaler and checkpoint["amp"]:
+                self.scaler.load_state_dict(checkpoint["amp"])
         return True
 
     # TODO(abhshkdz): Rename function to something nicer.
@@ -347,6 +352,7 @@ class BaseTrainer:
                             for key, value in self.normalizers.items()
                         },
                         "config": self.config,
+                        "amp": self.scaler.state_dict() if self.scaler else None,
                     },
                     self.config["cmd"]["checkpoint_dir"],
                 )
@@ -561,4 +567,8 @@ class BaseTrainer:
         self.optimizer.zero_grad()
         loss.backward()
         # TODO(abhshkdz): Add support for gradient clipping.
-        self.optimizer.step()
+        if self.scaler:
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+        else:
+            self.optimizer.step()
