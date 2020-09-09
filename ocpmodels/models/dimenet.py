@@ -1,10 +1,9 @@
 import torch
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances
 from torch import nn
 from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
-
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances
 
 
 @registry.register_model("dimenet")
@@ -87,19 +86,20 @@ class DimeNetWrap(DimeNet):
 
         # Calculate angles.
         pos_i = pos[idx_i].detach()
+        pos_j = pos[idx_j].detach()
         if self.use_pbc:
-            pos_ji, pos_ki = (
+            pos_ji, pos_kj = (
                 pos[idx_j].detach() - pos_i + offsets[idx_ji],
-                pos[idx_k].detach() - pos_i + offsets[idx_kj],
+                pos[idx_k].detach() - pos_j + offsets[idx_kj],
             )
         else:
-            pos_ji, pos_ki = (
+            pos_ji, pos_kj = (
                 pos[idx_j].detach() - pos_i,
-                pos[idx_k].detach() - pos_i,
+                pos[idx_k].detach() - pos_j,
             )
 
-        a = (pos_ji * pos_ki).sum(dim=-1)
-        b = torch.cross(pos_ji, pos_ki).norm(dim=-1)
+        a = (pos_ji * pos_kj).sum(dim=-1)
+        b = torch.cross(pos_ji, pos_kj).norm(dim=-1)
         angle = torch.atan2(b, a)
 
         rbf = self.rbf(dist)
