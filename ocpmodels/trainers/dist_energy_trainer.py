@@ -8,10 +8,9 @@ from torch.utils.data import DataLoader, DistributedSampler
 
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
-from ocpmodels.common.meter import Meter, mae
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import save_checkpoint
-from ocpmodels.datasets import SinglePointLmdbDataset, data_list_collater
+from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
