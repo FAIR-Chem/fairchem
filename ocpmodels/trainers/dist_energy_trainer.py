@@ -166,7 +166,7 @@ class DistributedEnergyTrainer(BaseTrainer):
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out = self._forward(batch)
+                    out, metrics = self._forward(batch)
                     loss = self._compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
@@ -193,10 +193,14 @@ class DistributedEnergyTrainer(BaseTrainer):
 
                 if self.logger is not None:
                     self.logger.log(
-                        log_dict,
+                        meter_update_dict,
                         step=epoch * len(self.train_loader) + i + 1,
                         split="train",
                     )
+
+                # Print metrics.
+                if i % self.config["cmd"]["print_every"] == 0 and distutils.is_master():
+                    print(self.meter)
 
             self.scheduler.step()
             torch.cuda.empty_cache()
@@ -208,9 +212,16 @@ class DistributedEnergyTrainer(BaseTrainer):
                 self.validate(split="test", epoch=epoch)
 
             if (
-                val_metrics[self.evaluator.task_primary_metric["is2re"]][
-                    "metric"
-                ]
+                "relaxation_dir" in self.config["task"]
+                and self.config["task"].get("ml_relax", "end") == "train"
+            ):
+                self.validate_relaxation(
+                    split="val", epoch=epoch,
+                )
+
+            if (
+                self.val_loader is not None and
+                val_metrics.meters["relaxed energy/mae"].global_avg
                 < self.best_val_mae
             ):
                 self.best_val_mae = val_metrics[
@@ -235,7 +246,6 @@ class DistributedEnergyTrainer(BaseTrainer):
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
-
         self.model.eval()
         evaluator, metrics = Evaluator(task="is2re"), {}
 
