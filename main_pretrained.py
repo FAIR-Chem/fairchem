@@ -52,7 +52,9 @@ if __name__ == "__main__":
         configs = []
         for job in range(9):
             trial = "schnet_all"
-            log_path = glob.glob(f"logs/{trial}/{slurm_job_id}{job}/*.out")[0]
+            log_path = glob.glob(
+                f"/private/home/mshuaibi/baselines/logs/{trial}/{slurm_job_id}{job}/*.out"
+            )[0]
             log = open(log_path, "r").read().splitlines()
             for i in log:
                 if "checkpoint_dir" in i:
@@ -98,7 +100,7 @@ if __name__ == "__main__":
             cpus_per_task=(args.num_workers + 1),
             tasks_per_node=(args.num_gpus if args.distributed else 1),
             nodes=args.num_nodes,
-            additional_parameters={"begin": f"now+{args.begin*3600}"},
+            slurm_additional_parameters={"begin": f"now+{args.begin*3600}"},
         )
         if args.distributed:
             jobs = executor.map_array(distributed_main, configs)
