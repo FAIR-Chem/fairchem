@@ -23,6 +23,13 @@ def save_checkpoint(state, checkpoint_dir="checkpoints/"):
     torch.save(state, filename)
 
 
+def save_checkpoint_train(state, checkpoint_dir="checkpoints/"):
+    filename = os.path.join(
+        checkpoint_dir, "checkpoint_{}.pt".format(state["epoch"])
+    )
+    torch.save(state, filename)
+
+
 # https://stackoverflow.com/questions/38987/how-to-merge-two-dictionaries-in-a-single-expression
 def update_config(original, update):
     """
