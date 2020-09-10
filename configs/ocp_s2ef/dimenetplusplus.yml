@@ -4,10 +4,14 @@ includes:
 model:
   name: dimenetplusplus
   hidden_channels: 64
-  out_emb_channels: 128
+  out_emb_channels: 192
+  num_blocks: 2
   cutoff: 6.0
-  num_radial: 3
-  num_spherical: 4
+  num_radial: 6
+  num_spherical: 7
+  num_before_skip: 1
+  num_after_skip: 2
+  num_output_layers: 3
   regress_forces: True
   use_pbc: True
 
