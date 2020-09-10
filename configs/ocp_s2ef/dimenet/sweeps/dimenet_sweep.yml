@@ -1,0 +1,4 @@
+model:
+  num_blocks: [2, 3]
+  hidden_channels: [128, 256]
+  num_output_layers: [1, 2, 3]

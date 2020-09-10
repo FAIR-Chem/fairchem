@@ -1,0 +1,4 @@
+model:
+  num_interactions: [3, 4, 5]
+  hidden_channels: [512, 1024]
+  num_filters: [128, 256]

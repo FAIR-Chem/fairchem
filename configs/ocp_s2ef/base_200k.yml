@@ -1,9 +1,9 @@
 trainer: dist_forces
 
 dataset:
-  - src: data/data/ocp_s2ef/train/200k/
+  - src: /private/home/mshuaibi/baselines/data/data/ocp_s2ef/train/200k/
     normalize_labels: False
-  - src: data/data/ocp_s2ef/val/is
+  - src: /private/home/mshuaibi/baselines/data/data/ocp_s2ef/val/is_1M/
 
 logger: tensorboard
 

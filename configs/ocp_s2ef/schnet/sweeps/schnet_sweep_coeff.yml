@@ -1,0 +1,8 @@
+model:
+  num_interactions: [5]
+  hidden_channels: [512]
+  num_filters: [256]
+
+optim:
+  lr_initial: [0.0005]
+  force_coefficient: [0, 10, 50, 100, 10000]
