@@ -38,6 +38,7 @@ class ForcesTrainer(BaseTrainer):
         print_every=100,
         seed=None,
         logger="tensorboard",
+        relax_opt="bfgs"
     ):
 
         if run_dir is None:
@@ -53,6 +54,7 @@ class ForcesTrainer(BaseTrainer):
             "model_attributes": model,
             "optim": optimizer,
             "logger": logger,
+            "relax_opt": relax_opt,
             "cmd": {
                 "identifier": identifier,
                 "print_every": print_every,
@@ -391,6 +393,7 @@ class ForcesTrainer(BaseTrainer):
                 steps=self.config["task"].get("relaxation_steps", 300),
                 fmax=self.config["task"].get("relaxation_fmax", 0.01),
                 results_dir=self.config["cmd"]["results_dir"],
+                relax_opt=self.config["relax_opt"],
             )
             metrics = {
                 "relaxed_energy/{}".format(
