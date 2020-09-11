@@ -3,49 +3,56 @@ from collections import deque
 import torch
 from ase import Atoms
 
+from ocpmodels.common.utils import radius_graph_pbc
+
 
 class LBFGS:
-    def __init__(self, atoms: Atoms, maxstep=0.04, memory=100, damping=1., alpha=70.,
-                 force_consistent=None, num_steps=100, force_threshold=1e-8, device='cuda:0'):
+    def __init__(self, atoms: Atoms, model, maxstep=0.04, memory=50, damping=1., alpha=70.,
+                 force_consistent=None, device='cuda:0'):
         self.atoms = atoms
+        self.model = model
         self.maxstep = maxstep
         self.memory = memory
         self.damping = damping
         self.alpha = alpha
         self.force_consistent = force_consistent
-        self.num_steps = num_steps
-        self.force_threshold = force_threshold
         self.device = device
 
     def get_forces(self):
-        return self.atoms.get_forces()
+        # return self.atoms.get_forces()
+        energy, forces = self.model.get_forces(self.atoms)
+        return energy, forces
 
     def get_positions(self):
-        return self.atoms.get_positions()
+        return self.atoms.pos
 
     def set_positions(self, update):
         r = self.get_positions()
-        self.atoms.set_positions(r + update)
+        self.atoms.pos = r + update.to(dtype=torch.float32)
+        self.model.update_graph(self.atoms)
 
-    def converged(self):
-        forces = self.atoms.get_forces()
-        return (forces ** 2).sum(axis=1).max() < self.force_threshold ** 2
+    def converged(self, force_threshold):
+        _, forces = self.get_forces()
+        return (forces ** 2).sum(axis=1).max() < force_threshold ** 2
 
-    def run(self):
+    def run(self, fmax, steps):
         s = deque(maxlen=self.memory)
         y = deque(maxlen=self.memory)
         rho = deque(maxlen=self.memory)
         r0 = f0 = None
         H0 = 1. / self.alpha
 
-        with torch.no_grad():
-            iteration = 0
-            while iteration < self.num_steps and not self.converged():
-                r0, f0 = self.step(iteration, r0, f0, H0, rho, s, y)
-                iteration += 1
-                forces = self.atoms.get_forces()
-                print(iteration, np.sqrt((forces ** 2).sum(axis=1).max()))
-                print(self.atoms.get_positions())
+        # with torch.no_grad():
+        iteration = 0
+        while iteration < steps and not self.converged(fmax):
+            r0, f0 = self.step(iteration, r0, f0, H0, rho, s, y)
+            iteration += 1
+            energy, forces = self.get_forces()
+            print(iteration, torch.sqrt((forces ** 2).sum(axis=1).max()))
+            # print(self.atoms.pos)
+        self.atoms.force = forces
+        self.atoms.y = energy
+        return self.atoms
 
     def step(self, iteration, r0, f0, H0, rho, s, y):
         def determine_step(dr):
@@ -55,8 +62,9 @@ class LBFGS:
                 dr *= self.maxstep / longest_step
             return dr * self.damping
 
-        f = torch.from_numpy(self.atoms.get_forces()).to(self.device)
-        r = torch.from_numpy(self.atoms.get_positions()).to(self.device)
+        # f = torch.from_numpy(self.get_forces()).to(self.device, dtype=torch.float64)
+        f = self.get_forces()[1].to(self.device, dtype=torch.float64)
+        r = self.atoms.pos.to(self.device, dtype=torch.float64)
 
         # Update s, y and rho
         if iteration > 0:
@@ -79,8 +87,28 @@ class LBFGS:
             z += s[i] * (alpha[i] - beta)
         p = - z.reshape((-1, 3))  # descent direction
         dr = determine_step(p)
-        self.atoms.set_positions((r + dr).cpu().numpy())
+        if torch.abs(dr).max() < 1e-7:
+            # Same configuration again (maybe a restart):
+            return
+        self.set_positions(dr)
         return r, f
+
+
+class TorchCalc:
+    def __init__(self, model):
+        self.model = model
+
+    def get_forces(self, atoms):
+        predictions = self.model.predict(atoms)
+        return predictions["energy"], predictions["forces"]
+
+    def update_graph(self, atoms):
+        edge_index, cell_offsets = radius_graph_pbc(
+            atoms, 6, 50, atoms.pos.device
+        )
+        atoms.edge_index = edge_index
+        atoms.cell_offsets = cell_offsets
+        return atoms
 
 
 if __name__ == '__main__':
@@ -96,5 +124,5 @@ if __name__ == '__main__':
                              (d * np.cos(t), d * np.sin(t), 0),
                              (0, 0, 0)],
                   calculator=EMT())
-    opt = LBFGS(water, num_steps=100)
-    opt.run()
+    opt = LBFGS(water)
+    opt.run(num_steps=100)

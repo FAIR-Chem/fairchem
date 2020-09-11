@@ -8,6 +8,13 @@ from bfgs_torch import BFGS as BFGS_torch
 from bfgs_torch import TorchCalc
 from ocpmodels.trainers import ForcesTrainer
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--relaxopt', choices=['bfgs', 'lbfgs'], default='bfgs')
+parser.add_argument('--batch-size', type=int, default=32)
+args = parser.parse_args()
+
 task = {
     "dataset": "trajectory_lmdb",
     "description": "Regressing to energies and forces for a trajectory dataset",
@@ -38,16 +45,17 @@ train_dataset = {
 
 optimizer = {
     "batch_size": 32,
-    "eval_batch_size": 32,
+    "eval_batch_size": args.batch_size,
     "lr_gamma": 0.1,
     "lr_initial": 0.0003,
     "lr_milestones": [20, 30],
-    "num_workers": 32,
+    "num_workers": 80,
     "max_epochs": 50,
     "warmup_epochs": 10,
     "warmup_factor": 0.2,
     "force_coefficient": 30,
     "criterion": nn.L1Loss(),
+    "relax_opt": args.relaxopt,
 }
 
 identifier = "debug"
@@ -60,6 +68,7 @@ trainer = ForcesTrainer(
     print_every=5,
     is_debug=True,
     seed=1,
+    relax_opt=optimizer["relax_opt"],
 )
 
 trainer.load_pretrained(
