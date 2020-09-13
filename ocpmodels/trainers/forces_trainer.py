@@ -38,7 +38,8 @@ class ForcesTrainer(BaseTrainer):
         print_every=100,
         seed=None,
         logger="tensorboard",
-        relax_opt="bfgs"
+        relax_opt="bfgs",
+        lbfgs_mem=50,
     ):
 
         if run_dir is None:
@@ -55,6 +56,7 @@ class ForcesTrainer(BaseTrainer):
             "optim": optimizer,
             "logger": logger,
             "relax_opt": relax_opt,
+            "lbfgs_mem": lbfgs_mem,
             "cmd": {
                 "identifier": identifier,
                 "print_every": print_every,
@@ -385,7 +387,6 @@ class ForcesTrainer(BaseTrainer):
         # only supports batch_size = 1
         # TODO: Batch relaxation support
         for i, batch in enumerate(self.relax_loader):
-
             mae_energy, mae_structure = relax_eval(
                 batch=batch,
                 model=self,
@@ -394,6 +395,7 @@ class ForcesTrainer(BaseTrainer):
                 fmax=self.config["task"].get("relaxation_fmax", 0.01),
                 results_dir=self.config["cmd"]["results_dir"],
                 relax_opt=self.config["relax_opt"],
+                lbfgs_mem=self.config["lbfgs_mem"],
             )
             metrics = {
                 "relaxed_energy/{}".format(
@@ -404,10 +406,7 @@ class ForcesTrainer(BaseTrainer):
                 ): mae_structure,
             }
 
-            meter_update_dict = {}
-            meter.update(meter_update_dict)
-
-        meter.update(metrics)
+            meter.update(metrics)
 
         # Make plots.
         if self.logger is not None and epoch is not None:

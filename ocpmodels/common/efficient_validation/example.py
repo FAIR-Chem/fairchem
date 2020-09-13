@@ -13,6 +13,8 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--relaxopt', choices=['bfgs', 'lbfgs'], default='bfgs')
 parser.add_argument('--batch-size', type=int, default=32)
+parser.add_argument('--lbfgs-mem', type=int, default=50)
+parser.add_argument('--steps', type=int, default=300)
 args = parser.parse_args()
 
 task = {
@@ -25,7 +27,7 @@ task = {
     "relax_dataset": {
         "src": "/checkpoint/electrocatalysis/relaxations/features/init_to_relaxed/1k/train/"
     },
-    "relaxation_steps": 300,
+    "relaxation_steps": args.steps,
 }
 
 model = {
@@ -56,6 +58,7 @@ optimizer = {
     "force_coefficient": 30,
     "criterion": nn.L1Loss(),
     "relax_opt": args.relaxopt,
+    "lbfgs_mem": args.lbfgs_mem,
 }
 
 identifier = "debug"
@@ -69,9 +72,14 @@ trainer = ForcesTrainer(
     is_debug=True,
     seed=1,
     relax_opt=optimizer["relax_opt"],
+    lbfgs_mem=optimizer["lbfgs_mem"],
 )
 
 trainer.load_pretrained(
     "/private/home/mshuaibi/baselines/expts/ocp_expts/pre_final/ocp20M_08_16/checkpoints/2020-08-16-21-53-06-ocp20Mv6_schnet_lr0.0001_ch1024_fltr256_gauss200_layrs3_pbc/checkpoint.pt"
 )
+
+import time
+start = time.time()
 trainer.validate_relaxation()
+print(f'Time = {time.time() - start}')
