@@ -64,7 +64,7 @@ class OCPCalculator(Calculator):
         self.results["forces"] = predictions["forces"][0]
 
 
-def relax_eval(batch, model, metric, steps, fmax, results_dir, relax_opt="bfgs"):
+def relax_eval(batch, model, metric, steps, fmax, results_dir, relax_opt="bfgs", lbfgs_mem=50):
     """
     Evaluation of ML-based relaxations.
     Args:
@@ -91,18 +91,19 @@ def relax_eval(batch, model, metric, steps, fmax, results_dir, relax_opt="bfgs")
     if relax_opt == "bfgs":
         dyn = BFGS(batch, calc)
     elif relax_opt == "lbfgs":
-        dyn = LBFGS(batch, calc)
+        dyn = LBFGS(batch, calc, memory=lbfgs_mem)
     else:
         raise ValueError(f"Unknown relax optimizer: {relax_opt}")
 
     ml_relaxed = dyn.run(fmax=fmax, steps=steps)
 
-    ml_relaxed_energy = ml_relaxed.y[0].cpu()
+    ml_relaxed_energy = ml_relaxed.y.cpu()
     ml_relaxed_pos = ml_relaxed.pos.cpu()
+
+    print('Energies', true_relaxed_energy, ml_relaxed_energy, sep='\n')
 
     energy_error = eval(metric)(true_relaxed_energy, ml_relaxed_energy)
     structure_error = torch.mean(
         eval(metric)(ml_relaxed_pos, true_relaxed_pos,)
     )
-
     return energy_error, structure_error

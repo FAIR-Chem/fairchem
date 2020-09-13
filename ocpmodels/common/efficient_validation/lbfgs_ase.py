@@ -2,20 +2,19 @@ from collections import deque
 
 import torch
 from ase import Atoms
+from ase.optimize import LBFGS
 
 from ocpmodels.common.utils import radius_graph_pbc
 
 
-class LBFGS:
-    def __init__(self, atoms: Atoms, model, maxstep=0.04, memory=50, damping=1., alpha=70.,
+class ASE_LBFGS:
+    def __init__(self, atoms, model, maxstep=0.04, memory=50, damping=1., alpha=70.,
                  force_consistent=None, device='cuda:0'):
         self.atoms = atoms
         self.model = model
-        self.maxstep = maxstep
-        self.memory = memory
-        self.damping = damping
-        self.alpha = alpha
-        self.force_consistent = force_consistent
+        atoms_ase = Atoms(positions=atoms.pos, )
+        self.optim = LBFGS(atoms_ase, memory=memory, maxstep=maxstep, damping=damping,
+                           alpha=alpha, force_consistent=force_consistent)
         self.device = device
 
     def get_forces(self):
