@@ -1,0 +1,24 @@
+includes:
+- configs/ocp_s2ef/base_dist2.yml
+
+model:
+  name: schnet
+  hidden_channels: 4096
+  num_filters: 1024
+  num_interactions: 3
+  num_gaussians: 200
+  cutoff: 6.0
+
+optim:
+  batch_size: 48
+  eval_batch_size: 16
+  num_workers: 10
+  lr_initial: 0.0001
+  lr_gamma: 0.1
+  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+    - 15
+    - 20
+  warmup_epochs: 10
+  warmup_factor: 0.2
+  max_epochs: 1
+  force_coefficient: 100
