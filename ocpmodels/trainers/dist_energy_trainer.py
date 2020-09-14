@@ -99,8 +99,11 @@ class DistributedEnergyTrainer(BaseTrainer):
             )(self.config["dataset"])
 
             self.train_sampler = DistributedSampler(
-                self.train_dataset, num_replicas=distutils.get_world_size(),
-                rank=distutils.get_rank(), shuffle=True)
+                self.train_dataset,
+                num_replicas=distutils.get_world_size(),
+                rank=distutils.get_rank(),
+                shuffle=True,
+            )
             self.train_loader = DataLoader(
                 self.train_dataset,
                 batch_size=self.config["optim"]["batch_size"],
@@ -118,15 +121,18 @@ class DistributedEnergyTrainer(BaseTrainer):
                     self.config["task"]["dataset"]
                 )(self.config["val_dataset"])
                 self.val_sampler = DistributedSampler(
-                    self.val_dataset, num_replicas=distutils.get_world_size(),
-                    rank=distutils.get_rank(), shuffle=False)
+                    self.val_dataset,
+                    num_replicas=distutils.get_world_size(),
+                    rank=distutils.get_rank(),
+                    shuffle=False,
+                )
                 self.val_loader = DataLoader(
                     self.val_dataset,
                     self.config["optim"].get("eval_batch_size", 64),
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
                     pin_memory=True,
-                    sampler=self.val_sampler
+                    sampler=self.val_sampler,
                 )
         else:
             raise NotImplementedError
@@ -170,11 +176,11 @@ class DistributedEnergyTrainer(BaseTrainer):
                     loss = self._compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
-                scale = self.scaler.get_scale() if self.scaler else 1.
+                scale = self.scaler.get_scale() if self.scaler else 1.0
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator
+                    out, batch, self.evaluator, metrics={},
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -228,7 +234,9 @@ class DistributedEnergyTrainer(BaseTrainer):
                             },
                             "config": self.config,
                             "val_metrics": val_metrics,
-                            "amp": self.scaler.state_dict() if self.scaler else None,
+                            "amp": self.scaler.state_dict()
+                            if self.scaler
+                            else None,
                         },
                         self.config["cmd"]["checkpoint_dir"],
                     )

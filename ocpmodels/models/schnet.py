@@ -20,6 +20,7 @@ class SchNetWrap(SchNet):
         num_interactions=6,
         num_gaussians=50,
         cutoff=10.0,
+        readout="add",
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
@@ -31,6 +32,7 @@ class SchNetWrap(SchNet):
             num_interactions=num_interactions,
             num_gaussians=num_gaussians,
             cutoff=cutoff,
+            readout=readout,
         )
 
     def forward(self, data):
