@@ -124,7 +124,7 @@ class TorchCalc:
         else:
             atoms_object = data_to_atoms(atoms)
             data_object = self.a2g.convert(atoms_object)
-            atoms_object = data_list_collater([data_object])
+            atoms = data_list_collater([data_object])
         return atoms
 
 
