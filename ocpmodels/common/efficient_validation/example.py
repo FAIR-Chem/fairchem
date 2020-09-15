@@ -4,8 +4,8 @@ import torch
 from ase.optimize import BFGS
 from torch import nn
 
-from bfgs_torch import BFGS as BFGS_torch
-from bfgs_torch import TorchCalc
+# from bfgs_torch import BFGS as BFGS_torch
+# from bfgs_torch import TorchCalc
 from ocpmodels.trainers import ForcesTrainer
 
 import argparse
@@ -37,7 +37,7 @@ model = {
     "num_interactions": 3,
     "num_gaussians": 200,
     "cutoff": 6.0,
-    "use_pbc": False,
+    "use_pbc": True,
 }
 
 train_dataset = {

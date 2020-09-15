@@ -16,6 +16,7 @@ import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from torch_geometric.utils import remove_self_loops
+from torch_scatter import scatter
 
 
 def save_checkpoint(state, checkpoint_dir="checkpoints/"):
@@ -448,7 +449,9 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold, device):
         max_num_neighbors <= max_num_neighbors_threshold
         or max_num_neighbors_threshold <= 0
     ):
-        return torch.stack((index2, index1)), unit_cell
+        edge_offsets = torch.repeat_interleave(torch.arange(batch_size, device=device), num_atoms_per_image)
+        num_neighbors_image = scatter(num_neighbors, edge_offsets)
+        return torch.stack((index2, index1)), unit_cell, num_neighbors_image
 
     atom_distance_sqr = torch.masked_select(atom_distance_sqr, mask)
 
@@ -500,4 +503,7 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold, device):
 
     edge_index = torch.stack((index2, index1))
 
-    return edge_index, unit_cell
+    edge_offsets = torch.repeat_interleave(torch.arange(batch_size, device=device), num_atoms_per_image)
+    num_neighbors_image = scatter(mask_num_neighbors, edge_offsets)
+
+    return edge_index, unit_cell, num_neighbors_image

@@ -47,8 +47,7 @@ class LBFGS:
             r0, f0 = self.step(iteration, r0, f0, H0, rho, s, y)
             iteration += 1
             energy, forces = self.get_forces()
-            print(iteration, torch.sqrt((forces ** 2).sum(axis=1).max()).item(), energy)
-            # print(self.atoms.pos)
+            print(iteration, torch.sqrt((forces ** 2).sum(axis=1).max()).item())
         self.atoms.force = forces
         self.atoms.y = energy
         return self.atoms
@@ -102,11 +101,12 @@ class TorchCalc:
         return predictions["energy"], predictions["forces"]
 
     def update_graph(self, atoms):
-        edge_index, cell_offsets = radius_graph_pbc(
-            atoms, 6, 50, atoms.pos.device
+        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
+            atoms, 6, 200, atoms.pos.device
         )
         atoms.edge_index = edge_index
         atoms.cell_offsets = cell_offsets
+        atoms.neighbors = num_neighbors
         return atoms
 
 
