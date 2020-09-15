@@ -7,6 +7,7 @@ from torch_geometric.data import Batch
 
 from ocpmodels.common.utils import radius_graph_pbc
 from ocpmodels.preprocessing import AtomsToGraphs
+from ase import Atoms
 
 
 class BFGS:
@@ -36,7 +37,10 @@ class BFGS:
 
     def converged(self, fmax):
         _, forces = self.model.get_forces(self.atoms)
-        return (forces ** 2).sum(axis=1).max().item() < fmax ** 2
+        free_idx = torch.where(self.atoms.fixed == 0)[0]
+        free_forces = forces[free_idx]
+        print(self.nsteps, torch.sqrt((free_forces ** 2).sum(axis=1).max()))
+        return (free_forces ** 2).sum(axis=1).max().item() < fmax ** 2
 
     def run(self, fmax=0.05, steps=100):
         while not self.converged(fmax) and self.nsteps < steps:
@@ -45,7 +49,6 @@ class BFGS:
             self.nsteps += 1
 
             energy, forces = self.model.get_forces(self.atoms)
-            print(self.nsteps, torch.sqrt((forces ** 2).sum(axis=1).max()))
         self.atoms.force = forces
         self.atoms.y = energy
         return self.atoms
@@ -53,7 +56,7 @@ class BFGS:
     def set_positions(self, update):
         r = self.atoms.pos
         self.atoms.pos = r + update.to(dtype=torch.float32)
-        self.model.update_graph(self.atoms)
+        self.atoms = self.model.update_graph(self.atoms)
 
     def step(self):
         r = self.atoms.pos
@@ -107,4 +110,3 @@ class BFGS:
             torch.ger(df, df) / a + torch.ger(dg, dg) / b
         )  # To batchify: https://discuss.pytorch.org/t/batch-outer-product/4025/4
         self.H -= val
-

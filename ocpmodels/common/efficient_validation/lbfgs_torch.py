@@ -2,8 +2,11 @@ from collections import deque
 
 import torch
 from ase import Atoms
+from ase.constraints import FixAtoms
 
 from ocpmodels.common.utils import radius_graph_pbc
+from ocpmodels.preprocessing import AtomsToGraphs
+from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 
 
 class LBFGS:
@@ -30,9 +33,12 @@ class LBFGS:
         self.atoms.pos = r + update.to(dtype=torch.float32)
         self.model.update_graph(self.atoms)
 
-    def converged(self, force_threshold):
+    def converged(self, force_threshold, iteration):
         _, forces = self.get_forces()
-        return (forces ** 2).sum(axis=1).max() < force_threshold ** 2
+        free_idx = torch.where(self.atoms.fixed == 0)[0]
+        free_forces = forces[free_idx]
+        print(iteration, torch.sqrt((free_forces ** 2).sum(axis=1).max()).item())
+        return (free_forces ** 2).sum(axis=1).max() < force_threshold ** 2
 
     def run(self, fmax, steps):
         s = deque(maxlen=self.memory)
@@ -43,11 +49,10 @@ class LBFGS:
 
         # with torch.no_grad():
         iteration = 0
-        while iteration < steps and not self.converged(fmax):
+        while iteration < steps and not self.converged(fmax, iteration):
             r0, f0 = self.step(iteration, r0, f0, H0, rho, s, y)
             iteration += 1
             energy, forces = self.get_forces()
-            print(iteration, torch.sqrt((forces ** 2).sum(axis=1).max()).item())
         self.atoms.force = forces
         self.atoms.y = energy
         return self.atoms
@@ -93,35 +98,41 @@ class LBFGS:
 
 
 class TorchCalc:
-    def __init__(self, model):
+    def __init__(self, model, pbc_graph=False):
         self.model = model
+        self.pbc_graph = pbc_graph
+        self.a2g = AtomsToGraphs(
+            max_neigh=50,
+            radius=6,
+            r_energy=False,
+            r_forces=False,
+            r_distances=False,
+        )
 
     def get_forces(self, atoms):
         predictions = self.model.predict(atoms)
         return predictions["energy"], predictions["forces"]
 
     def update_graph(self, atoms):
-        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
-            atoms, 6, 200, atoms.pos.device
-        )
-        atoms.edge_index = edge_index
-        atoms.cell_offsets = cell_offsets
-        atoms.neighbors = num_neighbors
+        if self.pbc_graph:
+            edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
+                atoms, 6, 50, atoms.pos.device
+            )
+            atoms.edge_index = edge_index
+            atoms.cell_offsets = cell_offsets
+            atoms.neighbors = num_neighbors
+        else:
+            atoms_object = data_to_atoms(atoms)
+            data_object = self.a2g.convert(atoms_object)
+            atoms_object = data_list_collater([data_object])
         return atoms
 
 
-if __name__ == '__main__':
-    from ase import Atoms
-
-    from ase.calculators.emt import EMT
-    import numpy as np
-
-    d = 0.9575
-    t = np.pi / 180 * 104.51
-    water = Atoms('H2O',
-                  positions=[(d, 0, 0),
-                             (d * np.cos(t), d * np.sin(t), 0),
-                             (0, 0, 0)],
-                  calculator=EMT())
-    opt = LBFGS(water)
-    opt.run(num_steps=100)
+def data_to_atoms(data):
+    atoms = Atoms(
+        numbers=data.atomic_numbers.tolist(),
+        cell=data.cell.view(3, 3).cpu().detach().numpy(),
+        positions=data.pos.cpu().detach().numpy(),
+        constraint=FixAtoms(mask=data.fixed.tolist())
+    )
+    return atoms
