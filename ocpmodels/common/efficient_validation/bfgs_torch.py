@@ -36,11 +36,9 @@ class BFGS:
         self.nsteps = 0
 
     def converged(self, fmax):
-        _, forces = self.model.get_forces(self.atoms)
-        free_idx = torch.where(self.atoms.fixed == 0)[0]
-        free_forces = forces[free_idx]
-        print(self.nsteps, torch.sqrt((free_forces ** 2).sum(axis=1).max()))
-        return (free_forces ** 2).sum(axis=1).max().item() < fmax ** 2
+        energy, forces = self.model.get_forces(self.atoms)
+        print(self.nsteps, torch.sqrt((forces ** 2).sum(axis=1).max()))
+        return (forces ** 2).sum(axis=1).max().item() < fmax ** 2
 
     def run(self, fmax=0.05, steps=100):
         while not self.converged(fmax) and self.nsteps < steps:
@@ -49,8 +47,9 @@ class BFGS:
             self.nsteps += 1
 
             energy, forces = self.model.get_forces(self.atoms)
-        self.atoms.force = forces
-        self.atoms.y = energy
+        self.atoms.y, self.atoms.force = self.model.get_forces(
+            self.atoms, apply_constraint=False
+        )
         return self.atoms
 
     def set_positions(self, update):

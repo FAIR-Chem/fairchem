@@ -21,8 +21,8 @@ class LBFGS:
         self.force_consistent = force_consistent
         self.device = device
 
-    def get_forces(self):
-        energy, forces = self.model.get_forces(self.atoms)
+    def get_forces(self, apply_constraint=True):
+        energy, forces = self.model.get_forces(self.atoms, apply_constraint)
         return energy, forces
 
     def get_positions(self):
@@ -35,10 +35,8 @@ class LBFGS:
 
     def converged(self, force_threshold, iteration):
         _, forces = self.get_forces()
-        free_idx = torch.where(self.atoms.fixed == 0)[0]
-        free_forces = forces[free_idx]
-        print(iteration, torch.sqrt((free_forces ** 2).sum(axis=1).max()).item())
-        return (free_forces ** 2).sum(axis=1).max() < force_threshold ** 2
+        print(iteration, torch.sqrt((forces ** 2).sum(axis=1).max()))
+        return (forces ** 2).sum(axis=1).max() < force_threshold ** 2
 
     def run(self, fmax, steps):
         s = deque(maxlen=self.memory)
@@ -53,8 +51,7 @@ class LBFGS:
             r0, f0 = self.step(iteration, r0, f0, H0, rho, s, y)
             iteration += 1
             energy, forces = self.get_forces()
-        self.atoms.force = forces
-        self.atoms.y = energy
+        self.atoms.y, self.atoms.force = self.get_forces(apply_constraint=False)
         return self.atoms
 
     def step(self, iteration, r0, f0, H0, rho, s, y):
@@ -109,9 +106,14 @@ class TorchCalc:
             r_distances=False,
         )
 
-    def get_forces(self, atoms):
+    def get_forces(self, atoms, apply_constraint=True):
         predictions = self.model.predict(atoms)
-        return predictions["energy"], predictions["forces"]
+        energy = predictions["energy"]
+        forces = predictions["forces"]
+        if apply_constraint:
+            fixed_idx = torch.where(atoms.fixed == 1)[0]
+            forces[fixed_idx] = 0
+        return energy, forces
 
     def update_graph(self, atoms):
         if self.pbc_graph:
