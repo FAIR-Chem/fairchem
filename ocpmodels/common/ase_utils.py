@@ -9,8 +9,8 @@ from ase import Atoms
 from ase.calculators.calculator import Calculator
 from torch_geometric.data import Batch
 
-from ocpmodels.common.efficient_validation.bfgs_torch import BFGS, TorchCalc
-from ocpmodels.common.efficient_validation.lbfgs_torch import LBFGS
+from ocpmodels.common.efficient_validation.bfgs_torch import BFGS
+from ocpmodels.common.efficient_validation.lbfgs_torch import LBFGS, TorchCalc
 from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
 from ocpmodels.datasets.trajectory_lmdb import data_list_collater

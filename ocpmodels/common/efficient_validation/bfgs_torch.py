@@ -108,19 +108,3 @@ class BFGS:
         )  # To batchify: https://discuss.pytorch.org/t/batch-outer-product/4025/4
         self.H -= val
 
-
-class TorchCalc:
-    def __init__(self, model):
-        self.model = model
-
-    def get_forces(self, atoms):
-        predictions = self.model.predict(atoms)
-        return predictions["energy"], predictions["forces"]
-
-    def update_graph(self, atoms):
-        edge_index, cell_offsets = radius_graph_pbc(
-            atoms, 6, 50, atoms.pos.device
-        )
-        atoms.edge_index = edge_index
-        atoms.cell_offsets = cell_offsets
-        return atoms
