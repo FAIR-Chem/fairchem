@@ -444,13 +444,20 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold, device):
     num_neighbors = num_neighbors.long()
     max_num_neighbors = torch.max(num_neighbors).long()
 
+    # Compute neighbors per image
+    _max_neighbors = copy.deepcopy(num_neighbors)
+    _max_neighbors[_max_neighbors > max_num_neighbors_threshold] = max_num_neighbors_threshold
+    _num_neighbors = torch.zeros(num_atoms + 1, device=device).long()
+    _natoms = torch.zeros(data.natoms.shape[0] + 1, device=device).long()
+    _num_neighbors[1:] = torch.cumsum(_max_neighbors, dim=0)
+    _natoms[1:] = torch.cumsum(data.natoms, dim=0)
+    num_neighbors_image = _num_neighbors[_natoms[1:]] - _num_neighbors[_natoms[:-1]]
+
     # If max_num_neighbors is below the threshold, return early
     if (
         max_num_neighbors <= max_num_neighbors_threshold
         or max_num_neighbors_threshold <= 0
     ):
-        edge_offsets = torch.repeat_interleave(torch.arange(batch_size, device=device), num_atoms_per_image)
-        num_neighbors_image = scatter(num_neighbors, edge_offsets)
         return torch.stack((index2, index1)), unit_cell, num_neighbors_image
 
     atom_distance_sqr = torch.masked_select(atom_distance_sqr, mask)
@@ -502,8 +509,5 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold, device):
     unit_cell = unit_cell.view(-1, 3)
 
     edge_index = torch.stack((index2, index1))
-
-    edge_offsets = torch.repeat_interleave(torch.arange(batch_size, device=device), num_atoms_per_image)
-    num_neighbors_image = scatter(mask_num_neighbors, edge_offsets)
 
     return edge_index, unit_cell, num_neighbors_image

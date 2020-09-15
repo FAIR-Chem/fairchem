@@ -15,12 +15,13 @@ from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
 from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
+from ocpmodels.common.utils import radius_graph_pbc
 
 
 class OCPCalculator(Calculator):
     implemented_properties = ["energy", "forces"]
 
-    def __init__(self, trainer):
+    def __init__(self, trainer, pbc_graph=False):
         """
         OCP-ASE Calculator
 
@@ -30,8 +31,9 @@ class OCPCalculator(Calculator):
         """
         Calculator.__init__(self)
         self.trainer = trainer
+        self.pbc_graph = pbc_graph
         self.a2g = AtomsToGraphs(
-            max_neigh=200,
+            max_neigh=50,
             radius=6,
             r_energy=False,
             r_forces=False,
@@ -58,10 +60,20 @@ class OCPCalculator(Calculator):
         Calculator.calculate(self, atoms, properties, system_changes)
         data_object = self.a2g.convert(atoms)
         batch = data_list_collater([data_object])
-        predictions = self.trainer.predict(batch)
+        if self.pbc_graph:
+            edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                batch,
+                6,
+                50,
+                batch.pos.device
+            )
+            batch.edge_index = edge_index
+            batch.cell_offsets = cell_offsets
+            batch.neighbors = neighbors
+        predictions = self.trainer.predict(batch, per_image=True)
 
         self.results["energy"] = predictions["energy"][0]
-        self.results["forces"] = predictions["forces"][0]
+        self.results["forces"] = predictions["forces"]
 
 
 def relax_eval(batch, model, metric, steps, fmax, results_dir, relax_opt="bfgs", lbfgs_mem=50):

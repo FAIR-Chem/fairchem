@@ -273,7 +273,9 @@ class ForcesTrainer(BaseTrainer):
                     torch.cat([batch.natoms for batch in batch_list]), dim=0
                 ).tolist()
                 forces = out["force_output"].cpu().detach().numpy()
-                forces = np.split(forces, batch_natoms[:-1], axis=0)
+                if len(batch_natoms) > 1:
+                    forces = np.split(forces, batch_natoms[:-1], axis=0)
+                predictions["forces"] = forces
             else:
                 predictions["energy"] = out["output"].detach()
                 predictions["forces"] = out["force_output"].detach()
