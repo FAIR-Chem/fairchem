@@ -25,7 +25,7 @@ class DimeNetWrap(DimeNet):
         num_before_skip=1,
         num_after_skip=2,
         num_output_layers=3,
-        max_angles_per_image=1e6,
+        max_angles_per_image=int(1e6),
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
@@ -34,7 +34,6 @@ class DimeNetWrap(DimeNet):
         self.max_angles_per_image = max_angles_per_image
 
         super(DimeNetWrap, self).__init__(
-            in_channels=hidden_channels,
             hidden_channels=hidden_channels,
             out_channels=num_targets,
             num_blocks=num_blocks,
@@ -48,16 +47,13 @@ class DimeNetWrap(DimeNet):
             num_output_layers=num_output_layers,
         )
 
-        self.embedding = nn.Embedding(100, hidden_channels)
-
     def forward(self, data):
         pos = data.pos
         if self.regress_forces:
             pos = pos.requires_grad_(True)
         batch = data.batch
-        x = self.embedding(data.atomic_numbers.long())
         if self.use_pbc:
-            edge_index, dist, offsets = get_pbc_distances(
+            out = get_pbc_distances(
                 pos,
                 data.edge_index,
                 data.cell,
@@ -65,14 +61,19 @@ class DimeNetWrap(DimeNet):
                 data.neighbors,
                 return_offsets=True,
             )
+
+            edge_index = out["edge_index"]
+            dist = out["distances"]
+            offsets = out["offsets"]
+
             j, i = edge_index
         else:
             edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
             j, i = edge_index
             dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
-        idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
-            edge_index, num_nodes=x.size(0)
+        _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
+            edge_index, num_nodes=data.atomic_numbers.size(0)
         )
 
         # Cap no. of triplets during training.
@@ -85,26 +86,27 @@ class DimeNetWrap(DimeNet):
 
         # Calculate angles.
         pos_i = pos[idx_i].detach()
+        pos_j = pos[idx_j].detach()
         if self.use_pbc:
-            pos_ji, pos_ki = (
+            pos_ji, pos_kj = (
                 pos[idx_j].detach() - pos_i + offsets[idx_ji],
-                pos[idx_k].detach() - pos_i + offsets[idx_kj],
+                pos[idx_k].detach() - pos_j + offsets[idx_kj],
             )
         else:
-            pos_ji, pos_ki = (
+            pos_ji, pos_kj = (
                 pos[idx_j].detach() - pos_i,
-                pos[idx_k].detach() - pos_i,
+                pos[idx_k].detach() - pos_j,
             )
 
-        a = (pos_ji * pos_ki).sum(dim=-1)
-        b = torch.cross(pos_ji, pos_ki).norm(dim=-1)
+        a = (pos_ji * pos_kj).sum(dim=-1)
+        b = torch.cross(pos_ji, pos_kj).norm(dim=-1)
         angle = torch.atan2(b, a)
 
         rbf = self.rbf(dist)
         sbf = self.sbf(dist, angle, idx_kj)
 
         # Embedding block.
-        x = self.emb(x, rbf, i, j)
+        x = self.emb(data.atomic_numbers.long(), rbf, i, j)
         P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
 
         # Interaction blocks.

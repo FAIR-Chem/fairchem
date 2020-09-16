@@ -1,11 +1,11 @@
-trainer: energy
+trainer: dist_energy
 
 dataset:
-  - src: data/data/2020_08_05_ocp_is2re_co/train/data.lmdb
+  - src: /checkpoint/electrocatalysis/relaxations/features/init_to_relaxed/all/train/data.lmdb
     normalize_labels: True
     target_mean: -0.969171404838562
     target_std: 1.3671793937683105
-  - src: data/data/2020_08_05_ocp_is2re_co/val/data.lmdb
+  - src: /checkpoint/electrocatalysis/relaxations/features/init_to_relaxed/all/val_is/data.lmdb
 
 logger: tensorboard
 

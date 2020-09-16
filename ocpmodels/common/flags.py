@@ -35,6 +35,11 @@ class Flags:
             help="Whether this is a debugging run or not",
         )
         self.parser.add_argument(
+            "--run-dir",
+            default="./",
+            help="Directory to store checkpoint/log/result directory",
+        )
+        self.parser.add_argument(
             "--vis",
             action="store_true",
             help="Whether to visualize a few extra things",
@@ -53,6 +58,9 @@ class Flags:
         )
         self.parser.add_argument(
             "--seed", default=0, type=int, help="Seed for torch, cuda, numpy"
+        )
+        self.parser.add_argument(
+            "--amp", action="store_true", help="Use mixed-precision training"
         )
         # Cluster args
         self.parser.add_argument(
@@ -81,6 +89,21 @@ class Flags:
         )
         self.parser.add_argument(
             "--num-gpus", default=1, type=int, help="Number of GPUs to request"
+        )
+        self.parser.add_argument(
+            "--num-nodes", default=1, type=int, help="Number of Nodes to request"
+        )
+        self.parser.add_argument(
+            "--distributed", action='store_true', help='Run with DDP'
+        )
+        self.parser.add_argument(
+            "--distributed-port", type=int, default=13356, help='Port on master for DDP'
+        )
+        self.parser.add_argument(
+            "--distributed-backend", type=str, default='nccl', help='Backend for DDP'
+        )
+        self.parser.add_argument(
+            "--local_rank", default=0, type=int, help="Local rank"
         )
 
 
