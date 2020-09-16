@@ -7,8 +7,12 @@ import numpy as np
 import torch
 from ase import Atoms
 from ase.calculators.calculator import Calculator
+from ase.calculators.singlepoint import SinglePointCalculator as sp
+from ase.calculators.vasp import Vasp2
+from ase.constraints import FixAtoms
 from torch_geometric.data import Batch
 
+from ocdata.vasp import write_vasp_input_files
 from ocpmodels.common.efficient_validation.bfgs_torch import BFGS
 from ocpmodels.common.efficient_validation.lbfgs_torch import LBFGS, TorchCalc
 from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
@@ -80,8 +84,9 @@ def relax_eval(
     steps,
     fmax,
     results_dir,
-    relax_opt="bfgs",
+    relax_opt="lbfgs",
     lbfgs_mem=50,
+    write_vasp_inputs=False,
 ):
     """
     Evaluation of ML-based relaxations.
@@ -113,13 +118,58 @@ def relax_eval(
     else:
         raise ValueError(f"Unknown relax optimizer: {relax_opt}")
 
-    ml_relaxed = dyn.run(fmax=fmax, steps=steps)
+    relaxed_batch = dyn.run(fmax=fmax, steps=steps)
 
-    ml_relaxed_energy = ml_relaxed.y.cpu()
-    ml_relaxed_pos = ml_relaxed.pos.cpu()
+    if write_vasp_inputs:
+        os.makedirs(results_dir, exist_ok=True)
+        atoms_objects = batch_to_atoms(relaxed_batch)
+        for idx, atoms in enumerate(atoms_objects):
+            atoms_path = os.path.join(results_dir, f"atoms_{idx}")
+            os.makedirs(atoms_path, exist_ok=True)
+            ase.io.write(os.path.join(atoms_path, "ml_predicted.traj"), atoms)
+            # TODO
+            # try:
+            # write_vasp_input_files(atoms, outdir=atoms_path)
+            # except NotImplementedError('VASP PP not found!'):
+            # continue
+
+    ml_relaxed_energy = relaxed_batch.y.cpu()
+    ml_relaxed_pos = relaxed_batch.pos.cpu()
 
     energy_error = eval(metric)(true_relaxed_energy, ml_relaxed_energy)
     structure_error = torch.mean(
         eval(metric)(ml_relaxed_pos, true_relaxed_pos,)
     )
     return energy_error, structure_error
+
+
+def batch_to_atoms(batch):
+    n_systems = batch.neighbors.shape[0]
+    natoms = batch.natoms.tolist()
+    numbers = torch.split(batch.atomic_numbers, natoms)
+    fixed = torch.split(batch.fixed, natoms)
+    forces = torch.split(batch.force, natoms)
+    positions = torch.split(batch.pos, natoms)
+    tags = torch.split(batch.tags, natoms)
+    cells = batch.cell
+    energies = batch.y.tolist()
+
+    atoms_objects = []
+    for idx in range(n_systems):
+        atoms = Atoms(
+            numbers=numbers[idx].tolist(),
+            positions=positions[idx].cpu().detach().numpy(),
+            tags=tags[idx].tolist(),
+            cell=cells[idx].cpu().detach().numpy(),
+            constraint=FixAtoms(mask=fixed[idx].tolist()),
+            pbc=True,
+        )
+        calc = sp(
+            atoms=atoms,
+            energy=energies[idx],
+            forces=forces[idx].cpu().detach().numpy(),
+        )
+        atoms.set_calculator(calc)
+        atoms_objects.append(atoms)
+
+    return atoms_objects
