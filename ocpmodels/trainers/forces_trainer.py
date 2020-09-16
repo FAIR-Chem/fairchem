@@ -2,15 +2,16 @@ import datetime
 import os
 
 import ase.io
+import numpy as np
 import torch
 import torch_geometric
-import numpy as np
 import yaml
 from torch.utils.data import DataLoader
 from torch_geometric.nn import DataParallel
 
-from ocpmodels.common.ase_utils import OCPCalculator,  relax_eval
+from ocpmodels.common.ase_utils import OCPCalculator, relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
+from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.datasets import (
@@ -55,8 +56,6 @@ class ForcesTrainer(BaseTrainer):
             "model_attributes": model,
             "optim": optimizer,
             "logger": logger,
-            "relax_opt": relax_opt,
-            "lbfgs_mem": lbfgs_mem,
             "cmd": {
                 "identifier": identifier,
                 "print_every": print_every,
@@ -280,8 +279,8 @@ class ForcesTrainer(BaseTrainer):
                     forces = np.split(forces, batch_natoms[:-1], axis=0)
                 predictions["forces"] = forces
             else:
-                predictions["energy"] = out["output"].detach()
-                predictions["forces"] = out["force_output"].detach()
+                predictions["energy"] = out["energy"].detach()
+                predictions["forces"] = out["forces"].detach()
 
         return predictions
 
@@ -443,8 +442,6 @@ class ForcesTrainer(BaseTrainer):
 
         meter = Meter(split=split)
 
-        # only supports batch_size = 1
-        # TODO: Batch relaxation support
         for i, batch in enumerate(self.relax_loader):
             mae_energy, mae_structure = relax_eval(
                 batch=batch,
@@ -453,8 +450,8 @@ class ForcesTrainer(BaseTrainer):
                 steps=self.config["task"].get("relaxation_steps", 300),
                 fmax=self.config["task"].get("relaxation_fmax", 0.01),
                 results_dir=self.config["cmd"]["results_dir"],
-                relax_opt=self.config["task"]["relax_opt"],
-                lbfgs_mem=self.config["task"]["lbfgs_mem"],
+                relax_opt=self.config["task"].get("relax_opt", "lbfgs"),
+                lbfgs_mem=self.config["task"].get("lbfgs_mem", 50),
             )
             metrics = {
                 "relaxed_energy/{}".format(
@@ -470,14 +467,14 @@ class ForcesTrainer(BaseTrainer):
         # Make plots.
         if self.logger is not None and epoch is not None:
             self.logger.log(
-                log_dict,
+                metrics,
                 step=(epoch + 1) * len(self.train_loader),
                 split=split,
             )
 
         print(meter)
 
-        return mae_energy, mae_structure
+        return meter
 
     def _forward(self, batch_list):
         if self.config["model_attributes"].get("regress_forces", True):

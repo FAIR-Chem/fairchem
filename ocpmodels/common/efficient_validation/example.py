@@ -1,9 +1,11 @@
-import sys
+import argparse
+import copy
+import glob
 import os
 import pickle
-import copy
 import random
-import glob
+import sys
+
 import ase.io
 import numpy as np
 import torch
@@ -11,22 +13,19 @@ from ase.optimize import BFGS, LBFGS
 from torch import nn
 
 from bfgs_torch import BFGS as BFGS_torch
-from ocpmodels.trainers import ForcesTrainer
-from ocpmodels.preprocessing import AtomsToGraphs
-from ocpmodels.datasets.trajectory_lmdb import data_list_collater
-from ocpmodels.common.utils import radius_graph_pbc
-from ocpmodels.common.ase_utils import OCPCalculator as OCP
-from lbfgs_torch import TorchCalc
 from lbfgs_torch import LBFGS as LBFGS_torch
-import ase.io
-
-import argparse
+from lbfgs_torch import TorchCalc
+from ocpmodels.common.ase_utils import OCPCalculator as OCP
+from ocpmodels.common.utils import radius_graph_pbc
+from ocpmodels.datasets.trajectory_lmdb import data_list_collater
+from ocpmodels.preprocessing import AtomsToGraphs
+from ocpmodels.trainers import ForcesTrainer
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--relaxopt', choices=['bfgs', 'lbfgs'], default='bfgs')
-parser.add_argument('--batch-size', type=int, default=32)
-parser.add_argument('--lbfgs-mem', type=int, default=50)
-parser.add_argument('--steps', type=int, default=300)
+parser.add_argument("--relaxopt", choices=["bfgs", "lbfgs"], default="bfgs")
+parser.add_argument("--batch-size", type=int, default=32)
+parser.add_argument("--lbfgs-mem", type=int, default=50)
+parser.add_argument("--steps", type=int, default=300)
 args = parser.parse_args()
 
 task = {
@@ -40,6 +39,8 @@ task = {
         "src": "/home/mshuaibi/Documents/ocp-baselines/data/ocp_is2re_1k/"
     },
     "relaxation_steps": args.steps,
+    "relax_opt": args.relaxopt,
+    "lbfgs_mem": args.lbfgs_mem,
 }
 
 model = {
@@ -69,8 +70,6 @@ optimizer = {
     "warmup_factor": 0.2,
     "force_coefficient": 30,
     "criterion": nn.L1Loss(),
-    "relax_opt": args.relaxopt,
-    "lbfgs_mem": args.lbfgs_mem,
 }
 
 identifier = "debug"
@@ -83,24 +82,30 @@ trainer = ForcesTrainer(
     print_every=5,
     is_debug=True,
     seed=1,
-    relax_opt=optimizer["relax_opt"],
-    lbfgs_mem=optimizer["lbfgs_mem"],
 )
 
 trainer.load_pretrained("./checkpoint.pt")
+trainer.validate_relaxation()
 
 ref = pickle.load(
-    open("/home/mshuaibi/Documents/ocp-baselines/mappings/adslab_ref_energies_full.pkl", "rb")
+    open(
+        "/home/mshuaibi/Documents/ocp-baselines/mappings/adslab_ref_energies_full.pkl",
+        "rb",
+    )
     # open("/checkpoint/electrocatalysis/relaxations/mapping/pickled_mapping/adslab_ref_energies_full.pkl", "rb")
 )
 
-paths = glob.glob("./debug_data/*.traj")
+paths = glob.glob("./test_data/*.traj")
 ase_maes = []
 torch_maes = []
 for traj in paths[:10]:
     images = ase.io.read(traj, ":")
     a2g = AtomsToGraphs(
-        max_neigh=50, radius=6, r_energy=True, r_forces=False, r_distances=False
+        max_neigh=50,
+        radius=6,
+        r_energy=True,
+        r_forces=False,
+        r_distances=False,
     )
     ref_energy = ref[os.path.basename(traj)[:-5]]
     data_list = a2g.convert_all(images)
@@ -110,7 +115,7 @@ for traj in paths[:10]:
     di.y_init = data_list[0].y - ref[os.path.basename(traj)[:-5]]
     del di.y
 
-    # Torch-ML Relaxation 
+    # Torch-ML Relaxation
     use_pbc_graph = True
     model = TorchCalc(trainer, pbc_graph=use_pbc_graph)
     dyn = LBFGS_torch(di, model)
@@ -125,11 +130,15 @@ for traj in paths[:10]:
     starting_image.set_calculator(calc)
     starting_image.get_potential_energy()
     relaxed = images[-1]
-    dyn = LBFGS(starting_image, trajectory="ml_{}".format(os.path.basename(traj)))
+    dyn = LBFGS(
+        starting_image, trajectory="ml_{}".format(os.path.basename(traj))
+    )
     dyn.run(steps=args.steps, fmax=0)
     ml_traj = ase.io.read("ml_{}".format(os.path.basename(traj)), ":")
     dft_energy = relaxed.get_potential_energy()
-    ml_energy = ml_traj[-1].get_potential_energy() + ref[os.path.basename(traj)[:-5]]
+    ml_energy = (
+        ml_traj[-1].get_potential_energy() + ref[os.path.basename(traj)[:-5]]
+    )
     mae = np.abs(dft_energy - ml_energy)
 
     ase_maes.append(mae)
@@ -140,7 +149,11 @@ data_list = []
 for traj in paths[:10]:
     images = ase.io.read(traj, ":")
     a2g = AtomsToGraphs(
-        max_neigh=50, radius=6, r_energy=True, r_forces=False, r_distances=False
+        max_neigh=50,
+        radius=6,
+        r_energy=True,
+        r_forces=False,
+        r_distances=False,
     )
     ref_energy = ref[os.path.basename(traj)[:-5]]
     images_list = a2g.convert_all(images)

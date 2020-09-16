@@ -5,13 +5,22 @@ from ase import Atoms
 from ase.constraints import FixAtoms
 
 from ocpmodels.common.utils import radius_graph_pbc
-from ocpmodels.preprocessing import AtomsToGraphs
 from ocpmodels.datasets.trajectory_lmdb import data_list_collater
+from ocpmodels.preprocessing import AtomsToGraphs
 
 
 class LBFGS:
-    def __init__(self, atoms: Atoms, model, maxstep=0.04, memory=50, damping=1., alpha=70.,
-                 force_consistent=None, device='cuda:0'):
+    def __init__(
+        self,
+        atoms: Atoms,
+        model,
+        maxstep=0.04,
+        memory=50,
+        damping=1.0,
+        alpha=70.0,
+        force_consistent=None,
+        device="cuda:0",
+    ):
         self.atoms = atoms
         self.model = model
         self.maxstep = maxstep
@@ -43,7 +52,7 @@ class LBFGS:
         y = deque(maxlen=self.memory)
         rho = deque(maxlen=self.memory)
         r0 = f0 = None
-        H0 = 1. / self.alpha
+        H0 = 1.0 / self.alpha
 
         # with torch.no_grad():
         iteration = 0
@@ -51,7 +60,9 @@ class LBFGS:
             r0, f0 = self.step(iteration, r0, f0, H0, rho, s, y)
             iteration += 1
             energy, forces = self.get_forces()
-        self.atoms.y, self.atoms.force = self.get_forces(apply_constraint=False)
+        self.atoms.y, self.atoms.force = self.get_forces(
+            apply_constraint=False
+        )
         return self.atoms
 
     def step(self, iteration, r0, f0, H0, rho, s, y):
@@ -72,7 +83,7 @@ class LBFGS:
             y0 = -(f - f0).flatten()
             s.append(s0)
             y.append(y0)
-            rho.append(1. / torch.dot(y0, s0))
+            rho.append(1.0 / torch.dot(y0, s0))
 
         loopmax = min(self.memory, iteration)
         alpha = f.new_empty(loopmax)
@@ -85,7 +96,7 @@ class LBFGS:
         for i in range(loopmax):
             beta = rho[i] * torch.dot(y[i], z)
             z += s[i] * (alpha[i] - beta)
-        p = - z.reshape((-1, 3))  # descent direction
+        p = -z.reshape((-1, 3))  # descent direction
         dr = determine_step(p)
         if torch.abs(dr).max() < 1e-7:
             # Same configuration again (maybe a restart):
@@ -95,16 +106,8 @@ class LBFGS:
 
 
 class TorchCalc:
-    def __init__(self, model, pbc_graph=False):
+    def __init__(self, model):
         self.model = model
-        self.pbc_graph = pbc_graph
-        self.a2g = AtomsToGraphs(
-            max_neigh=50,
-            radius=6,
-            r_energy=False,
-            r_forces=False,
-            r_distances=False,
-        )
 
     def get_forces(self, atoms, apply_constraint=True):
         predictions = self.model.predict(atoms)
@@ -116,25 +119,10 @@ class TorchCalc:
         return energy, forces
 
     def update_graph(self, atoms):
-        if self.pbc_graph:
-            edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
-                atoms, 6, 50, atoms.pos.device
-            )
-            atoms.edge_index = edge_index
-            atoms.cell_offsets = cell_offsets
-            atoms.neighbors = num_neighbors
-        else:
-            atoms_object = data_to_atoms(atoms)
-            data_object = self.a2g.convert(atoms_object)
-            atoms = data_list_collater([data_object])
+        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
+            atoms, 6, 50, atoms.pos.device
+        )
+        atoms.edge_index = edge_index
+        atoms.cell_offsets = cell_offsets
+        atoms.neighbors = num_neighbors
         return atoms
-
-
-def data_to_atoms(data):
-    atoms = Atoms(
-        numbers=data.atomic_numbers.tolist(),
-        cell=data.cell.view(3, 3).cpu().detach().numpy(),
-        positions=data.pos.cpu().detach().numpy(),
-        constraint=FixAtoms(mask=data.fixed.tolist())
-    )
-    return atoms
