@@ -16,7 +16,6 @@ import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from torch_geometric.utils import remove_self_loops
-from torch_scatter import scatter
 
 
 def save_checkpoint(state, checkpoint_dir="checkpoints/"):
@@ -469,12 +468,16 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold, device):
 
     # Compute neighbors per image
     _max_neighbors = copy.deepcopy(num_neighbors)
-    _max_neighbors[_max_neighbors > max_num_neighbors_threshold] = max_num_neighbors_threshold
+    _max_neighbors[
+        _max_neighbors > max_num_neighbors_threshold
+    ] = max_num_neighbors_threshold
     _num_neighbors = torch.zeros(num_atoms + 1, device=device).long()
     _natoms = torch.zeros(data.natoms.shape[0] + 1, device=device).long()
     _num_neighbors[1:] = torch.cumsum(_max_neighbors, dim=0)
     _natoms[1:] = torch.cumsum(data.natoms, dim=0)
-    num_neighbors_image = _num_neighbors[_natoms[1:]] - _num_neighbors[_natoms[:-1]]
+    num_neighbors_image = (
+        _num_neighbors[_natoms[1:]] - _num_neighbors[_natoms[:-1]]
+    )
 
     # If max_num_neighbors is below the threshold, return early
     if (
