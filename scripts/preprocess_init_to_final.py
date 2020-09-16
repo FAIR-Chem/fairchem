@@ -9,57 +9,13 @@ import os
 import pickle
 import random
 
+from tqdm import tqdm
+
 import lmdb
 import torch
 from ase import Atoms
 from ase.io.trajectory import Trajectory
-from tqdm import tqdm
-
 from ocpmodels.preprocessing import AtomsToGraphs
-
-
-def gratoms_to_atoms(gratoms):
-    atomsobj = Atoms(
-        gratoms.symbols,
-        gratoms.positions,
-        None,
-        gratoms.get_tags(),
-        None,
-        None,
-        None,
-        None,
-        None,
-        gratoms.cell,
-        gratoms.pbc,
-        None,
-        gratoms.constraints,
-        gratoms.info,
-    )
-    return atomsobj
-
-
-def get_tags(data, randomid):
-    mdata_path = os.path.join(sysid_mappings[randomid], "metadata.pkl")
-    sort_path = os.path.join(sysid_mappings[randomid], "ase-sort.dat")
-    k = open(mdata_path, "rb")
-    metadata = pickle.load(k)
-    k.close()
-    sorts = []
-    with open(sort_path, "r") as f:
-        for line in f:
-            sort, resort = line.split()
-            sorts.append(int(sort))
-    # pre-vasp sorted structure
-    input_atoms = gratoms_to_atoms(metadata["adsorbed_bulk_atomsobject"])
-    # sort to post-vasp structure
-    input_atoms = input_atoms[sorts]
-    # sanity check indices match up
-    assert (
-        input_atoms.get_atomic_numbers().all()
-        == data.atomic_numbers.numpy().all()
-    )
-    tags = torch.tensor(input_atoms.get_tags())
-    return tags
 
 
 def read_trajectory_and_extract_features(a2g, traj_path):
@@ -72,10 +28,10 @@ if __name__ == "__main__":
     # Parse a few arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--traj-paths-txt",
+        "--traj-ids",
         default=None,
         required=True,
-        help="Path to txt file containing trajectory paths (one per line)",
+        help="Path to file containing system ids (one per line)",
     )
     parser.add_argument(
         "--out-path",
@@ -91,35 +47,79 @@ if __name__ == "__main__":
         help="Size of the dataset",
     )
     parser.add_argument(
+        "--inputid-to-adbulkid",
+        type=str,
+        default="/checkpoint/electrocatalysis/relaxations/mapping/pickled_mapping/mapping_inputid_to_input_bulk_adbulk_paths.pkl",
+        help="Path to file containing input id to adbulk id mapping",
+    )
+    parser.add_argument(
+        "--traj-paths",
+        type=str,
+        default="/checkpoint/electrocatalysis/relaxations/mapping/pickled_mapping/mapping_inputid_to_bulkid_bulkenergy_adbulkid_adbulkpath.pkl",
+        help="Path to file containing adbulk id to path mapping",
+    )
+    parser.add_argument(
         "--adslab-ref",
         type=str,
-        default="/checkpoint/mshuaibi/mappings/adslab_ref_energies_ocp728k.pkl",
+        default="/checkpoint/electrocatalysis/relaxations/mapping/pickled_mapping/adslab_ref_energies_full.pkl",
         help="Path to reference energies, default: None",
+    )
+    parser.add_argument(
+        "--tags",
+        type=str,
+        default="/checkpoint/electrocatalysis/relaxations/mapping/pickled_mapping/adslab_tags_full.pkl",
+        help="Path to tags (0/1/2 for bulk / slab / adsorbates), default: None",
     )
 
     args = parser.parse_args()
 
     # Read the txt file with trajectory paths.
-    with open(os.path.join(args.traj_paths_txt), "r") as f:
-        raw_traj_files = f.read().splitlines()
+    with open(args.traj_ids, "r") as f:
+        raw_traj_ids = f.read().splitlines()
+
+    with open(args.inputid_to_adbulkid, "rb") as f:
+        inputid_to_adbulkid = pickle.load(f)
+
+    raw_traj_files, errors1, errors2 = [], [], []
+    with open(args.traj_paths, "rb") as f:
+        d = pickle.load(f)
+        for i in raw_traj_ids:
+            try:
+                adbulkid = inputid_to_adbulkid[i]["mapped_adbulk_id"]
+            except Exception as e:
+                print(str(e))
+                errors1.append(i)
+                continue
+
+            try:
+                raw_traj_files.append(d[adbulkid]["adbulk_path"])
+            except Exception as e:
+                print(str(e))
+                errors2.append(i)
+                continue
+
     num_trajectories = len(raw_traj_files)
 
-    with open(os.path.join(args.adslab_ref), "rb") as g:
-        adslab_ref = pickle.load(g)
-
-    with open(
-        "/checkpoint/mshuaibi/mappings/sysid_to_bulkads_dir.pkl", "rb"
-    ) as h:
-        sysid_mappings = pickle.load(h)
-
     print(
-        "### Found %d trajectories in %s"
-        % (num_trajectories, args.traj_paths_txt)
+        "### Found %d trajectories in %s" % (num_trajectories, args.traj_ids)
     )
+
+    if len(errors1) > 0 or len(errors2) > 0:
+        import pdb
+
+        pdb.set_trace()
+
+    # Read the adslab reference energies to subtract from potential energies.
+    with open(args.adslab_ref, "rb") as f:
+        adslab_ref = pickle.load(f)
+
+    # Read tag information for each atom.
+    with open(args.tags, "rb") as f:
+        sysid_to_tags = pickle.load(f)
 
     # Initialize feature extractor.
     a2g = AtomsToGraphs(
-        max_neigh=12,
+        max_neigh=50,
         radius=6,
         r_energy=True,
         r_forces=True,
@@ -145,6 +145,7 @@ if __name__ == "__main__":
 
     # Extract features
     idx = 0
+    removed = []
     for i, traj_path in tqdm(enumerate(pruned_traj_files)):
         try:
             dl = read_trajectory_and_extract_features(a2g, traj_path)
@@ -154,16 +155,26 @@ if __name__ == "__main__":
 
         randomid = os.path.split(traj_path)[1].split(".")[0]
         try:
-            dl[0].tags = get_tags(dl[0], randomid)
+            dl[0].tags = torch.LongTensor(sysid_to_tags[randomid])
             dl[0].y_init = dl[0].y - adslab_ref[randomid]
             dl[0].y_relaxed = dl[1].y - adslab_ref[randomid]
             dl[0].pos_relaxed = dl[1].pos
             del dl[0].y
         except Exception as e:
+            import pdb
+
+            pdb.set_trace()
             print(str(e), traj_path)
             continue
 
-        if dl[0].y_relaxed > 50 or dl[0].y_relaxed < -50:
+        if dl[0].y_relaxed > 10 or dl[0].y_relaxed < -10:
+            print(traj_path, dl[0].y_relaxed)
+            removed.append(traj_path + " %f\n" % dl[0].y_relaxed)
+            continue
+
+        # If no neighbors, skip.
+        if dl[0].edge_index.shape[1] == 0:
+            print("no neighbors", traj_path)
             continue
 
         txn = db.begin(write=True)
@@ -173,3 +184,8 @@ if __name__ == "__main__":
 
     db.sync()
     db.close()
+
+    # Log removed trajectories and their adsorption energies
+    print("### Filtered out %d trajectories" % len(removed))
+    removed_log = open(os.path.join(args.out_path, "removed.txt"), "w")
+    removed_log.writelines(removed)

@@ -249,8 +249,17 @@ def build_config(args):
     config["identifier"] = args.identifier
     config["seed"] = args.seed
     config["is_debug"] = args.debug
+    config["run_dir"] = args.run_dir
     config["is_vis"] = args.vis
     config["print_every"] = args.print_every
+    config["amp"] = args.amp
+    # Submit
+    config["submit"] = args.submit
+    # Distributed
+    config["local_rank"] = args.local_rank
+    config["distributed_port"] = args.distributed_port
+    config["world_size"] = args.num_nodes * args.num_gpus
+    config["distributed_backend"] = args.distributed_backend
 
     return config
 
@@ -308,7 +317,13 @@ def save_experiment_log(args, jobs, configs):
 
 
 def get_pbc_distances(
-    pos, edge_index, cell, cell_offsets, neighbors, return_offsets=False,
+    pos,
+    edge_index,
+    cell,
+    cell_offsets,
+    neighbors,
+    return_offsets=False,
+    return_distance_vec=False,
 ):
     row, col = edge_index
 
@@ -323,14 +338,22 @@ def get_pbc_distances(
     distances = distance_vectors.norm(dim=-1)
 
     # redundancy: remove zero distances
-    nonzero_idx = torch.nonzero(distances).flatten()
+    nonzero_idx = torch.arange(len(distances))[distances != 0]
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
 
+    out = {
+        "edge_index": edge_index,
+        "distances": distances,
+    }
+
+    if return_distance_vec:
+        out["distance_vec"] = distance_vectors[nonzero_idx]
+
     if return_offsets:
-        return edge_index, distances, offsets
-    else:
-        return edge_index, distances
+        out["offsets"] = offsets[nonzero_idx]
+
+    return out
 
 
 def radius_graph_pbc(data, radius, max_num_neighbors_threshold, device):
@@ -511,3 +534,19 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold, device):
     edge_index = torch.stack((index2, index1))
 
     return edge_index, unit_cell, num_neighbors_image
+
+
+def get_pruned_edge_idx(edge_index, num_atoms=None, max_neigh=1e9):
+    assert num_atoms is not None
+
+    # removes neighbors > max_neigh
+    # assumes neighbors are sorted in increasing distance
+    _nonmax_idx = []
+    for i in range(num_atoms):
+        idx_i = torch.arange(len(edge_index[1]))[(edge_index[1] == i)][
+            :max_neigh
+        ]
+        _nonmax_idx.append(idx_i)
+    _nonmax_idx = torch.cat(_nonmax_idx)
+
+    return _nonmax_idx

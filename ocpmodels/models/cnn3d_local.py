@@ -10,7 +10,6 @@ from ocpmodels.common.display import Display
 from ocpmodels.common.preprocess import Preprocess
 from ocpmodels.common.registry import registry
 from ocpmodels.models.base import BaseModel
-from ocpmodels.modules.layers import CGCNNConv
 
 
 @registry.register_model("cnn3d_local")
