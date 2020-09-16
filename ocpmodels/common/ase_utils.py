@@ -13,9 +13,9 @@ from ocpmodels.common.efficient_validation.bfgs_torch import BFGS
 from ocpmodels.common.efficient_validation.lbfgs_torch import LBFGS, TorchCalc
 from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import radius_graph_pbc
 from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
-from ocpmodels.common.utils import radius_graph_pbc
 
 
 class OCPCalculator(Calculator):
@@ -62,10 +62,7 @@ class OCPCalculator(Calculator):
         batch = data_list_collater([data_object])
         if self.pbc_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                batch,
-                6,
-                50,
-                batch.pos.device
+                batch, 6, 50, batch.pos.device
             )
             batch.edge_index = edge_index
             batch.cell_offsets = cell_offsets
@@ -76,7 +73,16 @@ class OCPCalculator(Calculator):
         self.results["forces"] = predictions["forces"]
 
 
-def relax_eval(batch, model, metric, steps, fmax, results_dir, relax_opt="bfgs", lbfgs_mem=50):
+def relax_eval(
+    batch,
+    model,
+    metric,
+    steps,
+    fmax,
+    results_dir,
+    relax_opt="bfgs",
+    lbfgs_mem=50,
+):
     """
     Evaluation of ML-based relaxations.
     Args:
@@ -92,7 +98,7 @@ def relax_eval(batch, model, metric, steps, fmax, results_dir, relax_opt="bfgs",
         results_dir: str
             Path to save model generated relaxations.
     """
-    # TODO: batchify
+    # TODO: Multi-GPU implementation
     batch = batch[0]
     calc = TorchCalc(model)
 
@@ -111,8 +117,6 @@ def relax_eval(batch, model, metric, steps, fmax, results_dir, relax_opt="bfgs",
 
     ml_relaxed_energy = ml_relaxed.y.cpu()
     ml_relaxed_pos = ml_relaxed.pos.cpu()
-
-    print('Energies', true_relaxed_energy, ml_relaxed_energy, sep='\n')
 
     energy_error = eval(metric)(true_relaxed_energy, ml_relaxed_energy)
     structure_error = torch.mean(
