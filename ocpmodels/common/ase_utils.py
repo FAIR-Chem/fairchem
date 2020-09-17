@@ -78,15 +78,7 @@ class OCPCalculator(Calculator):
 
 
 def relax_eval(
-    batch,
-    model,
-    metric,
-    steps,
-    fmax,
-    results_dir,
-    relax_opt="lbfgs",
-    lbfgs_mem=50,
-    write_vasp_inputs=False,
+    batch, model, metric, steps, fmax, relax_opt, return_relaxed_pos,
 ):
     """
     Evaluation of ML-based relaxations.
@@ -98,10 +90,13 @@ def relax_eval(
         steps: int
             Max number of steps in the structure relaxation.
         fmax: float
-                Structure relaxation terminates when the max force
-                of the system is no bigger than fmax.
-        results_dir: str
-            Path to save model generated relaxations.
+            Structure relaxation terminates when the max force
+            of the system is no bigger than fmax.
+        relax_opt: str
+            Optimizer and corresponding parameters to be used for structure relaxations.
+        return_relaxed_pos: bool
+            Whether to return relaxed positions to be written for dft
+            evaluation.
     """
     # TODO: Multi-GPU implementation
     batch = batch[0]
@@ -111,27 +106,21 @@ def relax_eval(
     true_relaxed_energy = batch.y_relaxed
 
     # Run ML-based relaxation
-    if relax_opt == "bfgs":
+    if relax_opt["name"] == "bfgs":
         dyn = BFGS(batch, calc)
-    elif relax_opt == "lbfgs":
-        dyn = LBFGS(batch, calc, memory=lbfgs_mem)
+    elif relax_opt["name"] == "lbfgs":
+        dyn = LBFGS(batch, calc, memory=relax_opt["memory"])
     else:
         raise ValueError(f"Unknown relax optimizer: {relax_opt}")
 
     relaxed_batch = dyn.run(fmax=fmax, steps=steps)
 
-    if write_vasp_inputs:
-        os.makedirs(results_dir, exist_ok=True)
-        atoms_objects = batch_to_atoms(relaxed_batch)
-        for idx, atoms in enumerate(atoms_objects):
-            atoms_path = os.path.join(results_dir, f"atoms_{idx}")
-            os.makedirs(atoms_path, exist_ok=True)
-            ase.io.write(os.path.join(atoms_path, "ml_predicted.traj"), atoms)
-            # TODO
-            # try:
-            # write_vasp_input_files(atoms, outdir=atoms_path)
-            # except NotImplementedError('VASP PP not found!'):
-            # continue
+    if return_relaxed_pos:
+        natoms = batch.natoms.tolist()
+        positions = torch.split(batch.pos, natoms)
+        relaxed_positions = [pos.tolist() for pos in positions]
+    else:
+        relaxed_positions = None
 
     ml_relaxed_energy = relaxed_batch.y.cpu()
     ml_relaxed_pos = relaxed_batch.pos.cpu()
@@ -140,9 +129,10 @@ def relax_eval(
     structure_error = torch.mean(
         eval(metric)(ml_relaxed_pos, true_relaxed_pos,)
     )
-    return energy_error, structure_error
+    return energy_error, structure_error, relaxed_positions
 
 
+# TODO write intermediate steps into traj file similar to ase optimizers
 def batch_to_atoms(batch):
     n_systems = batch.neighbors.shape[0]
     natoms = batch.natoms.tolist()
