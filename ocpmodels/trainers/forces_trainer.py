@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 
 import ase.io
@@ -270,11 +271,11 @@ class ForcesTrainer(BaseTrainer):
                     out["forces"]
                 )
             if per_image:
-                predictions["energy"].extend(out["output"].tolist())
+                predictions["energy"].extend(out["energy"].tolist())
                 batch_natoms = torch.cumsum(
                     torch.cat([batch.natoms for batch in batch_list]), dim=0
                 ).tolist()
-                forces = out["force_output"].cpu().detach().numpy()
+                forces = out["forces"].cpu().detach().numpy()
                 if len(batch_natoms) > 1:
                     forces = np.split(forces, batch_natoms[:-1], axis=0)
                 predictions["forces"] = forces
@@ -442,16 +443,16 @@ class ForcesTrainer(BaseTrainer):
 
         meter = Meter(split=split)
 
+        relaxed_positions = []
         for i, batch in enumerate(self.relax_loader):
-            mae_energy, mae_structure = relax_eval(
+            mae_energy, mae_structure, batch_relaxed_positions = relax_eval(
                 batch=batch,
                 model=self,
                 metric=self.config["task"]["metric"],
                 steps=self.config["task"].get("relaxation_steps", 300),
                 fmax=self.config["task"].get("relaxation_fmax", 0.01),
-                results_dir=self.config["cmd"]["results_dir"],
-                relax_opt=self.config["task"].get("relax_opt", "lbfgs"),
-                lbfgs_mem=self.config["task"].get("lbfgs_mem", 50),
+                return_relaxed_pos=self.config["task"].get("write_pos", False),
+                relax_opt=self.config["task"]["relax_opt"],
             )
             metrics = {
                 "relaxed_energy/{}".format(
@@ -463,6 +464,7 @@ class ForcesTrainer(BaseTrainer):
             }
 
             meter.update(metrics)
+            relaxed_positions += batch_relaxed_positions
 
         # Make plots.
         if self.logger is not None and epoch is not None:
@@ -471,6 +473,9 @@ class ForcesTrainer(BaseTrainer):
                 step=(epoch + 1) * len(self.train_loader),
                 split=split,
             )
+        if self.config["task"].get("write_pos", False):
+            with open("relaxed_pos.json", "w") as f:
+                json.dump(relaxed_positions, f)
 
         print(meter)
 
