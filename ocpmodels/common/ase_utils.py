@@ -1,18 +1,9 @@
-import os
-import sys
-from os import path
-
-import ase.io
-import numpy as np
 import torch
 from ase import Atoms
 from ase.calculators.calculator import Calculator
 from ase.calculators.singlepoint import SinglePointCalculator as sp
-from ase.calculators.vasp import Vasp2
 from ase.constraints import FixAtoms
-from torch_geometric.data import Batch
 
-from ocdata.vasp import write_vasp_input_files
 from ocpmodels.common.efficient_validation.bfgs_torch import BFGS
 from ocpmodels.common.efficient_validation.lbfgs_torch import LBFGS, TorchCalc
 from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
@@ -78,7 +69,7 @@ class OCPCalculator(Calculator):
 
 
 def relax_eval(
-    batch, model, metric, steps, fmax, relax_opt, return_relaxed_pos,
+    batch, model, metric, steps, fmax, relax_opt, return_relaxed_pos, device='cuda:0',
 ):
     """
     Evaluation of ML-based relaxations.
@@ -109,7 +100,7 @@ def relax_eval(
     if relax_opt["name"] == "bfgs":
         dyn = BFGS(batch, calc)
     elif relax_opt["name"] == "lbfgs":
-        dyn = LBFGS(batch, calc, memory=relax_opt["memory"])
+        dyn = LBFGS(batch, calc, memory=relax_opt["memory"], device=device)
     else:
         raise ValueError(f"Unknown relax optimizer: {relax_opt}")
 
@@ -122,8 +113,13 @@ def relax_eval(
     else:
         relaxed_positions = None
 
-    ml_relaxed_energy = relaxed_batch.y.cpu()
-    ml_relaxed_pos = relaxed_batch.pos.cpu()
+    if isinstance(relaxed_batch.y, list):
+        ml_relaxed_energy = relaxed_batch.pos.new_tensor(relaxed_batch.y).cpu()
+        ml_relaxed_pos = relaxed_batch.pos.cpu()
+    else:
+        print(relaxed_batch.y, relaxed_batch.pos)
+        ml_relaxed_energy = relaxed_batch.y.cpu()
+        ml_relaxed_pos = relaxed_batch.pos.cpu()
 
     energy_error = eval(metric)(true_relaxed_energy, ml_relaxed_energy)
     structure_error = torch.mean(

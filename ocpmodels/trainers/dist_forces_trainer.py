@@ -1,9 +1,11 @@
 import datetime
+import json
 import os
 
 import torch
 import torch_geometric
 import yaml
+from ocpmodels.common.meter import Meter
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -123,6 +125,20 @@ class DistributedForcesTrainer(BaseTrainer):
                     num_workers=self.config["optim"]["num_workers"],
                     pin_memory=True,
                 )
+
+            if "relax_dataset" in self.config["task"]:
+                self.relax_dataset = registry.get_dataset_class(
+                    self.config["task"]["dataset"]
+                )(self.config["task"]["relax_dataset"])
+                self.relax_loader = DataLoader(
+                    self.relax_dataset,
+                    batch_size=self.config["optim"].get("eval_batch_size", 64),
+                    shuffle=False,
+                    collate_fn=self.parallel_collater,
+                    num_workers=self.config["optim"]["num_workers"],
+                    pin_memory=True,
+                )
+
         else:
             self.dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
@@ -446,38 +462,51 @@ class DistributedForcesTrainer(BaseTrainer):
         print("### Evaluating ML-relaxation")
         self.model.eval()
 
-        mae_energy, mae_structure = relax_eval(
-            trainer=self,
-            traj_dir=self.config["task"]["relaxation_dir"],
-            metric=self.config["task"]["metric"],
-            steps=self.config["task"].get("relaxation_steps", 300),
-            fmax=self.config["task"].get("relaxation_fmax", 0.01),
-            results_dir=self.config["cmd"]["results_dir"],
-        )
+        meter = Meter(split=split)
 
-        mae_energy = distutils.all_reduce(
-            mae_energy, average=True, device=self.device
-        )
-        mae_structure = distutils.all_reduce(
-            mae_structure, average=True, device=self.device
-        )
+        relaxed_positions = []
+        for i, batch in enumerate(self.relax_loader):
+            mae_energy, mae_structure, batch_relaxed_positions = relax_eval(
+                batch=batch,
+                model=self,
+                metric=self.config["task"]["metric"],
+                steps=self.config["task"].get("relaxation_steps", 300),
+                fmax=self.config["task"].get("relaxation_fmax", 0.01),
+                return_relaxed_pos=self.config["task"].get("write_pos", False),
+                relax_opt=self.config["task"]["relax_opt"],
+                device=self.device
+            )
+            metrics = {
+                "relaxed_energy/{}".format(
+                    self.config["task"]["metric"]
+                ): mae_energy,
+                "relaxed_pos/{}".format(
+                    self.config["task"]["metric"]
+                ): mae_structure,
+            }
 
-        log_dict = {
-            "relaxed_energy_mae": mae_energy,
-            "relaxed_structure_mae": mae_structure,
-            "epoch": epoch + 1,
-        }
+            meter.update(metrics)
+            if batch_relaxed_positions is not None:
+                relaxed_positions += batch_relaxed_positions
+
+        print('Rank =', distutils.get_rank(), meter.get_scalar_dict())
+        meter.all_reduce(self.device)
+        print('Rank2 =', distutils.get_rank(), meter.get_scalar_dict())
 
         # Make plots.
         if self.logger is not None and epoch is not None:
             self.logger.log(
-                log_dict,
+                metrics,
                 step=(epoch + 1) * len(self.train_loader),
                 split=split,
             )
+        if distutils.is_master() and self.config["task"].get("write_pos", False):
+            with open("relaxed_pos.json", "w") as f:
+                json.dump(relaxed_positions, f)
 
-        print(log_dict)
-        return mae_energy, mae_structure
+        print(meter)
+
+        return meter
 
     def _forward(self, batch_list):
         # forward pass.

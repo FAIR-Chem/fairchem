@@ -41,6 +41,7 @@ class TrajectoryLmdbDataset(Dataset):
         for db_path in shared_db_paths:
             env = self.connect_db(db_path)
             length = pickle.loads(env.begin().get("length".encode("ascii")))
+            length -= length % world_size
             self._keys.append(list(range(rank, length, world_size)))
             env.close()
         self._keylens = [len(k) for k in self._keys]

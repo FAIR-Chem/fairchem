@@ -7,6 +7,7 @@ from ase.constraints import FixAtoms
 from ocpmodels.common.utils import radius_graph_pbc
 from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
+import numpy as np
 
 
 class LBFGS:
@@ -29,6 +30,7 @@ class LBFGS:
         self.alpha = alpha
         self.force_consistent = force_consistent
         self.device = device
+        print('DEVICE', self.device)
 
     def get_forces(self, apply_constraint=True):
         energy, forces = self.model.get_forces(self.atoms, apply_constraint)
@@ -113,6 +115,9 @@ class TorchCalc:
         predictions = self.model.predict(atoms)
         energy = predictions["energy"]
         forces = predictions["forces"]
+        if isinstance(forces, list):
+            forces = np.concatenate(forces)
+            forces = atoms.pos.new_tensor(forces)
         if apply_constraint:
             fixed_idx = torch.where(atoms.fixed == 1)[0]
             forces[fixed_idx] = 0
