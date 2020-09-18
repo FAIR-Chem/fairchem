@@ -93,6 +93,25 @@ def all_reduce(data, group=dist.group.WORLD, average=False, device=None):
     if average:
         tensor /= get_world_size()
     if not isinstance(data, torch.Tensor):
-        data = tensor.cpu().numpy() \
+        result = tensor.cpu().numpy() \
             if tensor.numel() > 1 else tensor.item()
-    return data
+    else:
+        result = tensor
+    return result
+
+
+def all_gather(data, group=dist.group.WORLD, device=None):
+    if get_world_size() == 1:
+        return data
+    tensor = data
+    if not isinstance(data, torch.Tensor):
+        tensor = torch.tensor(data)
+    if device is not None:
+        tensor = tensor.cuda(device)
+    tensor_list = [tensor.new_zeros(tensor.shape) for _ in range(get_world_size())]
+    dist.all_gather(tensor_list, tensor, group=group)
+    if not isinstance(data, torch.Tensor):
+        result = [tensor.cpu().numpy() for tensor in tensor_list]
+    else:
+        result = tensor_list
+    return result
