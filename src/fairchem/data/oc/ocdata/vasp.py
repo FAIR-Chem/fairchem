@@ -31,8 +31,6 @@ VASP_FLAGS = {'ibrion': 2,
               'pp': 'PBE',
               'xc': 'PBE'}
 
-VASP_PP_PATH = '/private/home/sidgoyal/vasp_pp/5.4'
-
 
 def run_vasp(atoms, vasp_flags=None):
     '''
@@ -73,9 +71,6 @@ def _clean_up_inputs(atoms, vasp_flags):
     # is happy.
     if np.dot(np.cross(atoms.cell[0], atoms.cell[1]), atoms.cell[2]) < 0:
         atoms.set_cell(atoms.cell[[1, 0, 2], :])
-
-    # Push the pseudopotentials into the OS environment for VASP to pull from
-    os.environ['VASP_PP_PATH'] = VASP_PP_PATH
 
     # Calculate and set the k points
     k_pts = calculate_surface_k_points(atoms)
