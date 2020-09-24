@@ -489,9 +489,7 @@ class DistributedForcesTrainer(BaseTrainer):
             if batch_relaxed_positions is not None:
                 relaxed_positions += batch_relaxed_positions
 
-        print('Rank =', distutils.get_rank(), meter.get_scalar_dict())
         meter.all_reduce(self.device)
-        print('Rank2 =', distutils.get_rank(), meter.get_scalar_dict())
 
         # Make plots.
         if self.logger is not None and epoch is not None:
