@@ -30,13 +30,14 @@ class Evaluator:
             "forces_cos",
             "forces_magnitude",
             "energy_mae",
+            "energy_force_within_threshold",
         ],
         "is2rs": ["positions_mae", "positions_mse"],
-        "is2re": ["energy_mae", "energy_mse"],
+        "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
     }
 
     task_attributes = {
-        "s2ef": ["energy", "forces"],
+        "s2ef": ["energy", "forces", "natoms"],
         "is2rs": ["positions"],
         "is2re": ["energy"],
     }
@@ -148,6 +149,54 @@ def positions_mae(prediction, target):
 
 def positions_mse(prediction, target):
     return squared_error(prediction["positions"], target["positions"])
+
+
+def energy_force_within_threshold(prediction, target):
+    # Note that this natoms should be the count of free atoms we evaluate over.
+    assert target["natoms"].sum() == prediction["forces"].size(0)
+    assert target["natoms"].size(0) == prediction["energy"].size(0)
+
+    # compute absolute error on per-atom forces and energy per system.
+    # then count the no. of systems where max force error is < 0.03 and max
+    # energy error is < 0.02.
+    f_thresh = 0.03
+    e_thresh = 0.02
+
+    success, total = 0.0, target["natoms"].size(0)
+
+    error_forces = torch.abs(target["forces"] - prediction["forces"])
+    error_energy = torch.abs(target["energy"] - prediction["energy"])
+
+    start_idx = 0
+    for i, n in enumerate(target["natoms"]):
+        if (
+            error_energy[i] < e_thresh
+            and error_forces[start_idx : start_idx + n].max() < f_thresh
+        ):
+            success += 1
+        start_idx += n
+
+    return {
+        "metric": success / total,
+        "total": success,
+        "numel": total,
+    }
+
+
+def energy_within_threshold(prediction, target):
+    # compute absolute error on energy per system.
+    # then count the no. of systems where max energy error is < 0.02.
+    e_thresh = 0.02
+    error_energy = torch.abs(target["energy"] - prediction["energy"])
+
+    success = (error_energy < e_thresh).sum().item()
+    total = target["energy"].size(0)
+
+    return {
+        "metric": success / total,
+        "total": success,
+        "numel": total,
+    }
 
 
 def cosine_similarity(prediction, target):
