@@ -92,3 +92,4 @@ class TestIS2REEval:
     def test_metrics_exist(self):
         assert "energy_mae" in self.metrics
         assert "energy_mse" in self.metrics
+        assert "energy_within_threshold" in self.metrics

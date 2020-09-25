@@ -33,7 +33,7 @@ class Evaluator:
             "energy_force_within_threshold",
         ],
         "is2rs": ["positions_mae", "positions_mse"],
-        "is2re": ["energy_mae", "energy_mse"],
+        "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
     }
 
     task_attributes = {
@@ -175,6 +175,22 @@ def energy_force_within_threshold(prediction, target):
         ):
             success += 1
         start_idx += n
+
+    return {
+        "metric": success / total,
+        "total": success,
+        "numel": total,
+    }
+
+
+def energy_within_threshold(prediction, target):
+    # compute absolute error on energy per system.
+    # then count the no. of systems where max energy error is < 0.02.
+    e_thresh = 0.02
+    error_energy = torch.abs(target["energy"] - prediction["energy"])
+
+    success = (error_energy < e_thresh).sum().item()
+    total = target["energy"].size(0)
 
     return {
         "metric": success / total,
