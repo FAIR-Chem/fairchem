@@ -22,6 +22,7 @@ def relax_eval(
     relax_opt,
     return_relaxed_pos,
     device="cuda:0",
+    transform=None
 ):
     """
     Evaluation of ML-based relaxations.
@@ -42,7 +43,7 @@ def relax_eval(
             evaluation.
     """
     batch = batch[0]
-    calc = TorchCalc(model)
+    calc = TorchCalc(model, transform)
 
     true_relaxed_pos = batch.pos_relaxed
     true_relaxed_energy = batch.y_relaxed
@@ -51,7 +52,8 @@ def relax_eval(
     if relax_opt["name"] == "bfgs":
         dyn = BFGS(batch, calc)
     elif relax_opt["name"] == "lbfgs":
-        dyn = LBFGS(batch, calc, memory=relax_opt["memory"], device=device)
+        dyn = LBFGS(
+            batch, calc, memory=relax_opt["memory"], device=device)
     else:
         raise ValueError(f"Unknown relax optimizer: {relax_opt}")
 
