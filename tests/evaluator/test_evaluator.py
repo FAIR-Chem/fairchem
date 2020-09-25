@@ -13,12 +13,18 @@ from ocpmodels.modules.evaluator import (
 def load_evaluator_s2ef(request):
     request.cls.evaluator = Evaluator(task="s2ef")
     prediction = {
-        "energy": torch.randn(50),
+        "energy": torch.randn(6),
         "forces": torch.randn(1000000, 3),
+        "natoms": torch.tensor(
+            (100000, 200000, 300000, 200000, 100000, 100000)
+        ),
     }
     target = {
-        "energy": torch.randn(50),
+        "energy": torch.randn(6),
         "forces": torch.randn(1000000, 3),
+        "natoms": torch.tensor(
+            (100000, 200000, 300000, 200000, 100000, 100000)
+        ),
     }
     request.cls.metrics = request.cls.evaluator.eval(prediction, target)
 
@@ -71,6 +77,7 @@ class TestS2EFEval:
         assert "energy_mae" in self.metrics
         assert "forces_mae" in self.metrics
         assert "forces_cos" in self.metrics
+        assert "energy_force_within_threshold" in self.metrics
 
 
 @pytest.mark.usefixtures("load_evaluator_is2rs")
@@ -85,3 +92,4 @@ class TestIS2REEval:
     def test_metrics_exist(self):
         assert "energy_mae" in self.metrics
         assert "energy_mse" in self.metrics
+        assert "energy_within_threshold" in self.metrics
