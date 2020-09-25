@@ -12,6 +12,7 @@ parser.add_argument("--batch-size", type=int, default=32)
 parser.add_argument("--lbfgs-mem", type=int, default=50)
 parser.add_argument("--steps", type=int, default=300)
 parser.add_argument("--local_rank", type=int, default=0)
+parser.add_argument("--write_pos", action='store_true')
 args = parser.parse_args()
 
 distutils.setup(
@@ -30,6 +31,7 @@ task = {
     "grad_input": "atomic forces",
     "relax_dataset": {"src": "data/init_to_relaxed/1k/train"},
     "relaxation_steps": args.steps,
+    "write_pos": args.write_pos,
     "relax_opt": {
         "name": args.relaxopt,
         "memory": args.lbfgs_mem,
