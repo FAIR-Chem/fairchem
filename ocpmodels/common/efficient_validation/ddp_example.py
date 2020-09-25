@@ -73,7 +73,7 @@ trainer = DistributedForcesTrainer(
     optimizer=optimizer,
     identifier=identifier,
     print_every=5,
-    is_debug=True,
+    is_debug=False,
     seed=1,
     local_rank=args.local_rank,
 )
