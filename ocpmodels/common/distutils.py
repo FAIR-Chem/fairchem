@@ -39,7 +39,8 @@ def setup(config):
                     config["rank"] = int(os.environ.get("SLURM_PROCID"))
                     config["local_rank"] = int(os.environ.get("SLURM_LOCALID"))
 
-                print("Init: ", config["init_method"], config["world_size"], config["rank"])
+                print("Init: ", config["init_method"],
+                      config["world_size"], config["rank"])
                 dist.init_process_group(
                     backend=config["distributed_backend"],
                     init_method=config["init_method"],
@@ -51,7 +52,8 @@ def setup(config):
             except FileNotFoundError:  # Slurm is not installed
                 pass
     else:
-        dist.init_process_group(backend=config["distributed_backend"], init_method='env://')
+        dist.init_process_group(
+            backend=config["distributed_backend"], init_method='env://')
     # TODO: SLURM
 
 
@@ -108,7 +110,8 @@ def all_gather(data, group=dist.group.WORLD, device=None):
         tensor = torch.tensor(data)
     if device is not None:
         tensor = tensor.cuda(device)
-    tensor_list = [tensor.new_zeros(tensor.shape) for _ in range(get_world_size())]
+    tensor_list = [tensor.new_zeros(tensor.shape)
+                   for _ in range(get_world_size())]
     dist.all_gather(tensor_list, tensor, group=group)
     if not isinstance(data, torch.Tensor):
         result = [tensor.cpu().numpy() for tensor in tensor_list]
