@@ -7,6 +7,7 @@ import torch_geometric
 import yaml
 from torch.utils.data import DataLoader
 from torch_geometric.nn import DataParallel
+from tqdm import tqdm
 
 from ocpmodels.common.ase_utils import OCPCalculator, Relaxation, relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
@@ -113,6 +114,7 @@ class ForcesTrainer(BaseTrainer):
                 shuffle=True,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
+                pin_memory=True,
             )
 
             self.val_loader = self.test_loader = None
@@ -127,6 +129,7 @@ class ForcesTrainer(BaseTrainer):
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
+                    pin_memory=True,
                 )
         else:
             self.dataset = registry.get_dataset_class(
@@ -273,6 +276,7 @@ class ForcesTrainer(BaseTrainer):
         self.best_val_mae = 1e9
         eval_every = self.config["optim"].get("eval_every", -1)
         iters = 0
+        self.metrics = {}
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
@@ -283,7 +287,7 @@ class ForcesTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator
+                    out, batch, self.evaluator, self.metrics,
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item(), self.metrics
@@ -299,6 +303,7 @@ class ForcesTrainer(BaseTrainer):
                         "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
                     ]
                     print(", ".join(log_str))
+                    self.metrics = {}
 
                 if self.logger is not None:
                     self.logger.log(
@@ -397,7 +402,7 @@ class ForcesTrainer(BaseTrainer):
 
         loader = self.val_loader if split == "val" else self.test_loader
 
-        for i, batch in enumerate(loader):
+        for i, batch in tqdm(enumerate(loader), total=len(loader)):
             # Forward.
             out = self._forward(batch)
             loss = self._compute_loss(out, batch)
