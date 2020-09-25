@@ -63,6 +63,9 @@ def relax_eval(
         natoms = batch.natoms.tolist()
         positions = torch.split(batch.pos, natoms)
         relaxed_positions = [pos.tolist() for pos in positions]
+        # ids = batch.ids
+        ids = list(range(len(relaxed_positions)))  # TODO: Remove
+        relaxed_positions = list(zip(ids, relaxed_positions))
     else:
         relaxed_positions = None
 
