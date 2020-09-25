@@ -455,7 +455,6 @@ class ForcesTrainer(BaseTrainer):
 
             meter.update(metrics)
             relaxed_positions += batch_relaxed_positions
-            break
 
         # Make plots.
         if self.logger is not None and epoch is not None:
