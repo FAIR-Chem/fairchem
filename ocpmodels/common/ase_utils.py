@@ -13,6 +13,107 @@ from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
+def relax_eval(
+    batch,
+    model,
+    metric,
+    steps,
+    fmax,
+    relax_opt,
+    return_relaxed_pos,
+    device="cuda:0",
+):
+    """
+    Evaluation of ML-based relaxations.
+    Args:
+        batch: object
+        model: object
+        metric: str
+            Evaluation metric to be used.
+        steps: int
+            Max number of steps in the structure relaxation.
+        fmax: float
+            Structure relaxation terminates when the max force
+            of the system is no bigger than fmax.
+        relax_opt: str
+            Optimizer and corresponding parameters to be used for structure relaxations.
+        return_relaxed_pos: bool
+            Whether to return relaxed positions to be written for dft
+            evaluation.
+    """
+    batch = batch[0]
+    calc = TorchCalc(model)
+
+    true_relaxed_pos = batch.pos_relaxed
+    true_relaxed_energy = batch.y_relaxed
+
+    # Run ML-based relaxation
+    if relax_opt["name"] == "bfgs":
+        dyn = BFGS(batch, calc)
+    elif relax_opt["name"] == "lbfgs":
+        dyn = LBFGS(batch, calc, memory=relax_opt["memory"], device=device)
+    else:
+        raise ValueError(f"Unknown relax optimizer: {relax_opt}")
+
+    relaxed_batch = dyn.run(fmax=fmax, steps=steps)
+
+    if return_relaxed_pos:
+        natoms = batch.natoms.tolist()
+        positions = torch.split(batch.pos, natoms)
+        relaxed_positions = [pos.tolist() for pos in positions]
+    else:
+        relaxed_positions = None
+
+    if isinstance(relaxed_batch.y, list):
+        ml_relaxed_energy = relaxed_batch.pos.new_tensor(relaxed_batch.y).cpu()
+        ml_relaxed_pos = relaxed_batch.pos.cpu()
+    else:
+        ml_relaxed_energy = relaxed_batch.y.cpu()
+        ml_relaxed_pos = relaxed_batch.pos.cpu()
+
+    energy_error = eval(metric)(true_relaxed_energy, ml_relaxed_energy)
+    structure_error = torch.mean(
+        eval(metric)(
+            ml_relaxed_pos,
+            true_relaxed_pos,
+        )
+    )
+    return energy_error, structure_error, relaxed_positions
+
+
+# TODO write intermediate steps into traj file similar to ase optimizers
+def batch_to_atoms(batch):
+    n_systems = batch.neighbors.shape[0]
+    natoms = batch.natoms.tolist()
+    numbers = torch.split(batch.atomic_numbers, natoms)
+    fixed = torch.split(batch.fixed, natoms)
+    forces = torch.split(batch.force, natoms)
+    positions = torch.split(batch.pos, natoms)
+    tags = torch.split(batch.tags, natoms)
+    cells = batch.cell
+    energies = batch.y.tolist()
+
+    atoms_objects = []
+    for idx in range(n_systems):
+        atoms = Atoms(
+            numbers=numbers[idx].tolist(),
+            positions=positions[idx].cpu().detach().numpy(),
+            tags=tags[idx].tolist(),
+            cell=cells[idx].cpu().detach().numpy(),
+            constraint=FixAtoms(mask=fixed[idx].tolist()),
+            pbc=True,
+        )
+        calc = sp(
+            atoms=atoms,
+            energy=energies[idx],
+            forces=forces[idx].cpu().detach().numpy(),
+        )
+        atoms.set_calculator(calc)
+        atoms_objects.append(atoms)
+
+    return atoms_objects
+
+
 class OCPCalculator(Calculator):
     implemented_properties = ["energy", "forces"]
 
@@ -66,96 +167,3 @@ class OCPCalculator(Calculator):
 
         self.results["energy"] = predictions["energy"][0]
         self.results["forces"] = predictions["forces"]
-
-
-def relax_eval(
-    batch, model, metric, steps, fmax, relax_opt, return_relaxed_pos, device='cuda:0',
-):
-    """
-    Evaluation of ML-based relaxations.
-    Args:
-        batch: object
-        model: object
-        metric: str
-            Evaluation metric to be used.
-        steps: int
-            Max number of steps in the structure relaxation.
-        fmax: float
-            Structure relaxation terminates when the max force
-            of the system is no bigger than fmax.
-        relax_opt: str
-            Optimizer and corresponding parameters to be used for structure relaxations.
-        return_relaxed_pos: bool
-            Whether to return relaxed positions to be written for dft
-            evaluation.
-    """
-    # TODO: Multi-GPU implementation
-    batch = batch[0]
-    calc = TorchCalc(model)
-
-    true_relaxed_pos = batch.pos_relaxed
-    true_relaxed_energy = batch.y_relaxed
-
-    # Run ML-based relaxation
-    if relax_opt["name"] == "bfgs":
-        dyn = BFGS(batch, calc)
-    elif relax_opt["name"] == "lbfgs":
-        dyn = LBFGS(batch, calc, memory=relax_opt["memory"], device=device)
-    else:
-        raise ValueError(f"Unknown relax optimizer: {relax_opt}")
-
-    relaxed_batch = dyn.run(fmax=fmax, steps=steps)
-
-    if return_relaxed_pos:
-        natoms = batch.natoms.tolist()
-        positions = torch.split(batch.pos, natoms)
-        relaxed_positions = [pos.tolist() for pos in positions]
-    else:
-        relaxed_positions = None
-
-    if isinstance(relaxed_batch.y, list):
-        ml_relaxed_energy = relaxed_batch.pos.new_tensor(relaxed_batch.y).cpu()
-        ml_relaxed_pos = relaxed_batch.pos.cpu()
-    else:
-        print(relaxed_batch.y, relaxed_batch.pos)
-        ml_relaxed_energy = relaxed_batch.y.cpu()
-        ml_relaxed_pos = relaxed_batch.pos.cpu()
-
-    energy_error = eval(metric)(true_relaxed_energy, ml_relaxed_energy)
-    structure_error = torch.mean(
-        eval(metric)(ml_relaxed_pos, true_relaxed_pos,)
-    )
-    return energy_error, structure_error, relaxed_positions
-
-
-# TODO write intermediate steps into traj file similar to ase optimizers
-def batch_to_atoms(batch):
-    n_systems = batch.neighbors.shape[0]
-    natoms = batch.natoms.tolist()
-    numbers = torch.split(batch.atomic_numbers, natoms)
-    fixed = torch.split(batch.fixed, natoms)
-    forces = torch.split(batch.force, natoms)
-    positions = torch.split(batch.pos, natoms)
-    tags = torch.split(batch.tags, natoms)
-    cells = batch.cell
-    energies = batch.y.tolist()
-
-    atoms_objects = []
-    for idx in range(n_systems):
-        atoms = Atoms(
-            numbers=numbers[idx].tolist(),
-            positions=positions[idx].cpu().detach().numpy(),
-            tags=tags[idx].tolist(),
-            cell=cells[idx].cpu().detach().numpy(),
-            constraint=FixAtoms(mask=fixed[idx].tolist()),
-            pbc=True,
-        )
-        calc = sp(
-            atoms=atoms,
-            energy=energies[idx],
-            forces=forces[idx].cpu().detach().numpy(),
-        )
-        atoms.set_calculator(calc)
-        atoms_objects.append(atoms)
-
-    return atoms_objects

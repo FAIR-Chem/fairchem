@@ -5,7 +5,6 @@ import os
 import torch
 import torch_geometric
 import yaml
-from ocpmodels.common.meter import Meter
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -13,6 +12,7 @@ from tqdm import tqdm
 from ocpmodels.common import distutils
 from ocpmodels.common.ase_utils import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
+from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
@@ -223,7 +223,9 @@ class DistributedForcesTrainer(BaseTrainer):
         super(DistributedForcesTrainer, self).load_model()
 
         self.model = OCPDataParallel(
-            self.model, output_device=self.device, num_gpus=1,
+            self.model,
+            output_device=self.device,
+            num_gpus=1,
         )
         self.model = DistributedDataParallel(
             self.model, device_ids=[self.device], find_unused_parameters=True
@@ -299,7 +301,7 @@ class DistributedForcesTrainer(BaseTrainer):
                     loss = self._compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
-                scale = self.scaler.get_scale() if self.scaler else 1.
+                scale = self.scaler.get_scale() if self.scaler else 1.0
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
@@ -393,20 +395,10 @@ class DistributedForcesTrainer(BaseTrainer):
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
 
-            if (
-                "relaxation_dir" in self.config["task"]
-                and self.config["task"].get("ml_relax", "end") == "train"
-            ):
-                self.validate_relaxation(
-                    split="val", epoch=epoch,
-                )
-
-        if (
-            "relaxation_dir" in self.config["task"]
-            and self.config["task"].get("ml_relax", "end") == "end"
-        ):
+        if "relax_dir" in self.config["task"]:
             self.validate_relaxation(
-                split="val", epoch=epoch,
+                split="val",
+                epoch=epoch,
             )
 
     def validate(self, split="val", epoch=None):
@@ -474,7 +466,7 @@ class DistributedForcesTrainer(BaseTrainer):
                 fmax=self.config["task"].get("relaxation_fmax", 0.01),
                 return_relaxed_pos=self.config["task"].get("write_pos", False),
                 relax_opt=self.config["task"]["relax_opt"],
-                device=self.device
+                device=self.device,
             )
             metrics = {
                 "relaxed_energy/{}".format(
@@ -498,8 +490,13 @@ class DistributedForcesTrainer(BaseTrainer):
                 step=(epoch + 1) * len(self.train_loader),
                 split=split,
             )
-        if distutils.is_master() and self.config["task"].get("write_pos", False):
-            with open("relaxed_pos.json", "w") as f:
+        if distutils.is_master() and self.config["task"].get(
+            "write_pos", False
+        ):
+            pos_filename = os.path.join(
+                self.config["cmd"]["results_dir"], "relaxed_pos.json"
+            )
+            with open(pos_filename, "w") as f:
                 json.dump(relaxed_positions, f)
 
         print(meter)
