@@ -490,12 +490,12 @@ class DistributedForcesTrainer(BaseTrainer):
                 step=(epoch + 1) * len(self.train_loader),
                 split=split,
             )
-        if distutils.is_master() and self.config["task"].get(
-            "write_pos", False
-        ):
+        if self.config["task"].get("write_pos", False):
+            rank = distutils.get_rank()
             pos_filename = os.path.join(
-                self.config["cmd"]["results_dir"], "relaxed_pos.json"
+                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.json"
             )
+            print("Writing relaxed pos to:", pos_filename)
             with open(pos_filename, "w") as f:
                 json.dump(relaxed_positions, f)
 
