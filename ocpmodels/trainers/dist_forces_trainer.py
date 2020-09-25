@@ -279,7 +279,7 @@ class DistributedForcesTrainer(BaseTrainer):
             batch_natoms = torch.cat([batch.natoms for batch in batch_list])
             for natoms in batch_natoms:
                 predictions["forces"].append(
-                    out["forces"][atoms_sum : natoms + atoms_sum]
+                    out["forces"][atoms_sum: natoms + atoms_sum]
                     .cpu()
                     .detach()
                     .numpy()
