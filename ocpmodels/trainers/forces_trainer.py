@@ -389,20 +389,10 @@ class ForcesTrainer(BaseTrainer):
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
 
-            if (
-                "relax_dataset" in self.config["task"]
-                and self.config["task"].get("ml_relax", "end") == "train"
-            ):
-                self.validate_relaxation(
-                    split="val", epoch=epoch,
-                )
-
-        if (
-            "relax_dir" in self.config["task"]
-            and self.config["task"].get("ml_relax", "end") == "end"
-        ):
+        if "relax_dir" in self.config["task"]:
             self.validate_relaxation(
-                split="val", epoch=epoch,
+                split="val",
+                epoch=epoch,
             )
 
     def validate(self, split="val", epoch=None):
@@ -465,6 +455,7 @@ class ForcesTrainer(BaseTrainer):
 
             meter.update(metrics)
             relaxed_positions += batch_relaxed_positions
+            break
 
         # Make plots.
         if self.logger is not None and epoch is not None:
@@ -474,7 +465,10 @@ class ForcesTrainer(BaseTrainer):
                 split=split,
             )
         if self.config["task"].get("write_pos", False):
-            with open("relaxed_pos.json", "w") as f:
+            pos_filename = os.path.join(
+                self.config["cmd"]["results_dir"], "relaxed_pos.json"
+            )
+            with open(pos_filename, "w") as f:
                 json.dump(relaxed_positions, f)
 
         print(meter)
