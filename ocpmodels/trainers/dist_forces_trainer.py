@@ -274,6 +274,7 @@ class DistributedForcesTrainer(BaseTrainer):
         self.best_val_mae = 1e9
         eval_every = self.config["optim"].get("eval_every", -1)
         iters = 0
+        self.metrics = {}
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
@@ -283,11 +284,11 @@ class DistributedForcesTrainer(BaseTrainer):
                     loss = self._compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
-                scale = self.scaler.get_scale() if self.scaler else 1.
+                scale = self.scaler.get_scale() if self.scaler else 1.0
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator
+                    out, batch, self.evaluator, self.metrics,
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -303,6 +304,7 @@ class DistributedForcesTrainer(BaseTrainer):
                         "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
                     ]
                     print(", ".join(log_str))
+                    self.metrics = {}
 
                 if self.logger is not None:
                     self.logger.log(

@@ -164,11 +164,11 @@ class EnergyTrainer(BaseTrainer):
                     loss = self._compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
-                scale = self.scaler.get_scale() if self.scaler else 1.
+                scale = self.scaler.get_scale() if self.scaler else 1.0
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator
+                    out, batch, self.evaluator, metrics={},
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -197,35 +197,36 @@ class EnergyTrainer(BaseTrainer):
 
             if self.val_loader is not None:
                 val_metrics = self.validate(split="val", epoch=epoch)
+                if (
+                    val_metrics[self.evaluator.task_primary_metric["is2re"]][
+                        "metric"
+                    ]
+                    < self.best_val_mae
+                ):
+                    self.best_val_mae = val_metrics[
+                        self.evaluator.task_primary_metric["is2re"]
+                    ]["metric"]
+                    if not self.is_debug:
+                        save_checkpoint(
+                            {
+                                "epoch": epoch + 1,
+                                "state_dict": self.model.state_dict(),
+                                "optimizer": self.optimizer.state_dict(),
+                                "normalizers": {
+                                    key: value.state_dict()
+                                    for key, value in self.normalizers.items()
+                                },
+                                "config": self.config,
+                                "val_metrics": val_metrics,
+                                "amp": self.scaler.state_dict()
+                                if self.scaler
+                                else None,
+                            },
+                            self.config["cmd"]["checkpoint_dir"],
+                        )
 
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
-
-            if (
-                val_metrics[self.evaluator.task_primary_metric["is2re"]][
-                    "metric"
-                ]
-                < self.best_val_mae
-            ):
-                self.best_val_mae = val_metrics[
-                    self.evaluator.task_primary_metric["is2re"]
-                ]["metric"]
-                if not self.is_debug:
-                    save_checkpoint(
-                        {
-                            "epoch": epoch + 1,
-                            "state_dict": self.model.state_dict(),
-                            "optimizer": self.optimizer.state_dict(),
-                            "normalizers": {
-                                key: value.state_dict()
-                                for key, value in self.normalizers.items()
-                            },
-                            "config": self.config,
-                            "val_metrics": val_metrics,
-                            "amp": self.scaler.state_dict() if self.scaler else None,
-                        },
-                        self.config["cmd"]["checkpoint_dir"],
-                    )
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
