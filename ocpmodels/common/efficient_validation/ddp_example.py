@@ -87,3 +87,5 @@ checkpoint = torch.load(
 trainer.model.module.load_state_dict(checkpoint["state_dict"])
 
 trainer.validate_relaxation()
+
+distutils.cleanup()
