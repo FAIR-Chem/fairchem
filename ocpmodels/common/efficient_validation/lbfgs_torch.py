@@ -1,6 +1,7 @@
 from collections import deque
 
 import torch
+from torch_geometric.data.batch import Batch
 from ase import Atoms
 from ase.constraints import FixAtoms
 
@@ -31,6 +32,8 @@ class LBFGS:
         self.force_consistent = force_consistent
         self.device = device
         print('DEVICE', self.device)
+
+        self.model.update_graph(self.atoms)
 
     def get_forces(self, apply_constraint=True):
         energy, forces = self.model.get_forces(self.atoms, apply_constraint)
@@ -108,8 +111,9 @@ class LBFGS:
 
 
 class TorchCalc:
-    def __init__(self, model):
+    def __init__(self, model, transform=None):
         self.model = model
+        self.transform = transform
 
     def get_forces(self, atoms, apply_constraint=True):
         predictions = self.model.predict(atoms)
@@ -130,4 +134,6 @@ class TorchCalc:
         atoms.edge_index = edge_index
         atoms.cell_offsets = cell_offsets
         atoms.neighbors = num_neighbors
+        if self.transform is not None:
+            atoms = self.transform(atoms)
         return atoms

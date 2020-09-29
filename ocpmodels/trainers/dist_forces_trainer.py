@@ -279,7 +279,7 @@ class DistributedForcesTrainer(BaseTrainer):
             batch_natoms = torch.cat([batch.natoms for batch in batch_list])
             for natoms in batch_natoms:
                 predictions["forces"].append(
-                    out["forces"][atoms_sum : natoms + atoms_sum]
+                    out["forces"][atoms_sum: natoms + atoms_sum]
                     .cpu()
                     .detach()
                     .numpy()
@@ -490,12 +490,12 @@ class DistributedForcesTrainer(BaseTrainer):
                 step=(epoch + 1) * len(self.train_loader),
                 split=split,
             )
-        if distutils.is_master() and self.config["task"].get(
-            "write_pos", False
-        ):
+        if self.config["task"].get("write_pos", False):
+            rank = distutils.get_rank()
             pos_filename = os.path.join(
-                self.config["cmd"]["results_dir"], "relaxed_pos.json"
+                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.json"
             )
+            print("Writing relaxed pos to:", pos_filename)
             with open(pos_filename, "w") as f:
                 json.dump(relaxed_positions, f)
 
