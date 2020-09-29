@@ -1,6 +1,7 @@
 from collections import deque
 
 import torch
+from torch_geometric.data.batch import Batch
 from ase import Atoms
 from ase.constraints import FixAtoms
 
@@ -134,5 +135,5 @@ class TorchCalc:
         atoms.cell_offsets = cell_offsets
         atoms.neighbors = num_neighbors
         if self.transform is not None:
-            atom = self.transform(atoms)
+            atoms = self.transform(atoms)
         return atoms
