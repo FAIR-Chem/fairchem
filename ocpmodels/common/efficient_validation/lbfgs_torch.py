@@ -47,8 +47,10 @@ class LBFGS:
         self.atoms.pos = r + update.to(dtype=torch.float32)
         self.model.update_graph(self.atoms)
 
-    def converged(self, force_threshold, iteration):
-        _, forces = self.get_forces()
+    def converged(self, force_threshold, iteration, forces):
+        if forces is None:
+            return False
+        # _, forces = self.get_forces()
         print(iteration, torch.sqrt((forces ** 2).sum(axis=1).max()))
         return (forces ** 2).sum(axis=1).max() < force_threshold ** 2
 
@@ -61,10 +63,10 @@ class LBFGS:
 
         # with torch.no_grad():
         iteration = 0
-        while iteration < steps and not self.converged(fmax, iteration):
+        while iteration < steps and not self.converged(fmax, iteration, f0):
             r0, f0 = self.step(iteration, r0, f0, H0, rho, s, y)
             iteration += 1
-            energy, forces = self.get_forces()
+            # energy, forces = self.get_forces()
         self.atoms.y, self.atoms.force = self.get_forces(
             apply_constraint=False
         )
