@@ -76,11 +76,11 @@ def relax_eval(
         ml_relaxed_energy = relaxed_batch.y.cpu()
         ml_relaxed_pos = relaxed_batch.pos.cpu()
 
-    energy_error = eval(metric)(true_relaxed_energy, ml_relaxed_energy)
+    energy_error = eval(metric)(true_relaxed_energy.cpu(), ml_relaxed_energy)
     structure_error = torch.mean(
         eval(metric)(
             ml_relaxed_pos,
-            true_relaxed_pos,
+            true_relaxed_pos.cpu(),
         )
     )
     return energy_error, structure_error, relaxed_positions
