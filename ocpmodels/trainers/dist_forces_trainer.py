@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
-from ocpmodels.common.ase_utils import relax_eval
+from ocpmodels.common.ase_relax import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry

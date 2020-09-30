@@ -10,7 +10,7 @@ import yaml
 from torch.utils.data import DataLoader
 from torch_geometric.nn import DataParallel
 
-from ocpmodels.common.ase_utils import OCPCalculator, relax_eval
+from ocpmodels.common.ase_relax import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
