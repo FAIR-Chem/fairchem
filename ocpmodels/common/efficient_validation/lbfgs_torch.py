@@ -1,10 +1,13 @@
 from collections import deque
+from pathlib import Path
 
+import ase
 import torch
 from torch_geometric.data.batch import Batch
 from ase import Atoms
 from ase.constraints import FixAtoms
 
+from ocpmodels.common.ase_utils import batch_to_atoms
 from ocpmodels.common.utils import radius_graph_pbc
 from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
@@ -22,6 +25,8 @@ class LBFGS:
         alpha=70.0,
         force_consistent=None,
         device="cuda:0",
+        traj_dir: Path = None,
+        traj_names=None,
     ):
         self.atoms = atoms
         self.model = model
@@ -31,6 +36,11 @@ class LBFGS:
         self.alpha = alpha
         self.force_consistent = force_consistent
         self.device = device
+        self.traj_dir = traj_dir
+        self.traj_names = traj_names
+        assert not self.traj_dir or (
+            traj_dir and traj_names), "Trajectory names should be specified to save trajectories"
+        # assert len(traj_names) == atoms.
         print('DEVICE', self.device)
 
         self.model.update_graph(self.atoms)
@@ -58,15 +68,29 @@ class LBFGS:
         s = deque(maxlen=self.memory)
         y = deque(maxlen=self.memory)
         rho = deque(maxlen=self.memory)
-        r0 = f0 = None
+        r0 = f0 = e0 = None
         H0 = 1.0 / self.alpha
 
-        # with torch.no_grad():
+        trajectories = None
+        if self.traj_dir:
+            self.traj_dir.mkdir(exist_ok=True, parents=True)
+            trajectories = [ase.io.Trajectory(
+                self.traj_dir / f"{name}.traj", mode="a") for name in self.traj_names]
+
         iteration = 0
         while iteration < steps and not self.converged(fmax, iteration, f0):
-            r0, f0 = self.step(iteration, r0, f0, H0, rho, s, y)
+            r0, f0, e0 = self.step(iteration, r0, f0, H0, rho, s, y)
             iteration += 1
-            # energy, forces = self.get_forces()
+            if trajectories is not None:
+                self.atoms.y, self.atoms.force = e0, f0
+                atoms_objects = batch_to_atoms(self.atoms)
+                for atm, traj in zip(atoms_objects, trajectories):
+                    traj.write(atm)
+
+        if trajectories is not None:
+            for traj in trajectories:
+                traj.close()
+
         self.atoms.y, self.atoms.force = self.get_forces(
             apply_constraint=False
         )
@@ -81,7 +105,9 @@ class LBFGS:
             return dr * self.damping
 
         # f = torch.from_numpy(self.get_forces()).to(self.device, dtype=torch.float64)
-        f = self.get_forces()[1].to(self.device, dtype=torch.float64)
+        e, f = self.get_forces()
+        e = torch.tensor(e)
+        f = f.to(self.device, dtype=torch.float64)
         r = self.atoms.pos.to(self.device, dtype=torch.float64)
 
         # Update s, y and rho
@@ -109,7 +135,7 @@ class LBFGS:
             # Same configuration again (maybe a restart):
             return
         self.set_positions(dr)
-        return r, f
+        return r, f, e
 
 
 class TorchCalc:

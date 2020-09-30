@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 import torch
 from torch import nn
@@ -8,6 +9,7 @@ from ocpmodels.trainers.dist_forces_trainer import DistributedForcesTrainer
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--relaxopt", choices=["bfgs", "lbfgs"], default="lbfgs")
+parser.add_argument("--traj-dir", type=Path, default=None)
 parser.add_argument("--batch-size", type=int, default=32)
 parser.add_argument("--lbfgs-mem", type=int, default=50)
 parser.add_argument("--steps", type=int, default=300)
@@ -35,6 +37,7 @@ task = {
     "relax_opt": {
         "name": args.relaxopt,
         "memory": args.lbfgs_mem,
+        "traj_dir": args.traj_dir
     },
 }
 
