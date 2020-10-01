@@ -1,4 +1,4 @@
-trainer: dist_forces
+trainer: forces
 
 dataset:
   - src: data/data/ocp_s2ef/train/200k/
