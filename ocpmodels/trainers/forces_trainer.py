@@ -20,8 +20,8 @@ from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
-@registry.register_trainer("dist_forces")
-class DistributedForcesTrainer(BaseTrainer):
+@registry.register_trainer("forces")
+class ForcesTrainer(BaseTrainer):
     def __init__(
         self,
         task,
@@ -220,7 +220,7 @@ class DistributedForcesTrainer(BaseTrainer):
             self.logger.log_plots(plots)
 
     def load_model(self):
-        super(DistributedForcesTrainer, self).load_model()
+        super(ForcesTrainer, self).load_model()
 
         self.model = OCPDataParallel(
             self.model,
