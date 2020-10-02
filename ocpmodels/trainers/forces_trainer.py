@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
-from ocpmodels.common.ase_relax import relax_eval
+from ocpmodels.common.ase_utils import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
@@ -292,6 +292,7 @@ class DistributedForcesTrainer(BaseTrainer):
         self.best_val_mae = 1e9
         eval_every = self.config["optim"].get("eval_every", -1)
         iters = 0
+        self.metrics = {}
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
@@ -305,7 +306,10 @@ class DistributedForcesTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator
+                    out,
+                    batch,
+                    self.evaluator,
+                    self.metrics,
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -321,6 +325,7 @@ class DistributedForcesTrainer(BaseTrainer):
                         "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
                     ]
                     print(", ".join(log_str))
+                    self.metrics = {}
 
                 if self.logger is not None:
                     self.logger.log(
@@ -462,7 +467,7 @@ class DistributedForcesTrainer(BaseTrainer):
                 batch=batch,
                 model=self,
                 metric=self.config["task"]["metric"],
-                steps=self.config["task"].get("relaxation_steps", 300),
+                steps=self.config["task"].get("relaxation_steps", 200),
                 fmax=self.config["task"].get("relaxation_fmax", 0.01),
                 return_relaxed_pos=self.config["task"].get("write_pos", False),
                 relax_opt=self.config["task"]["relax_opt"],

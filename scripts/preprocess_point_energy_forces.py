@@ -9,12 +9,12 @@ import os
 import pickle
 import random
 
-import ase.io
-import lmdb
 import numpy as np
-import torch
 from tqdm import tqdm
 
+import ase.io
+import lmdb
+import torch
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -115,12 +115,12 @@ if __name__ == "__main__":
     num_trajectories = len(input_ids)
 
     if args.ref_energy:
-        ref_path = "/checkpoint/electrocatalysis/relaxations/mapping/pickled_mapping/adslab_ref_energies_full.pkl"
+        ref_path = "/checkpoint/electrocatalysis/relaxations/mapping/new_adslab_ref_energies_09_22_20.pkl"
         with open(os.path.join(ref_path), "rb") as g:
             adslab_ref = pickle.load(g)
 
     if args.tags:
-        tag_path = "/checkpoint/electrocatalysis/relaxations/mapping/pickled_mapping/adslab_tags_full.pkl"
+        tag_path = "/checkpoint/electrocatalysis/relaxations/mapping_old/pickled_mapping/adslab_tags_full.pkl"
         with open(os.path.join(tag_path), "rb") as h:
             tags_map = pickle.load(h)
 
