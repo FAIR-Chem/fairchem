@@ -1,4 +1,4 @@
-trainer: dist_energy
+trainer: energy
 
 dataset:
   - src: /checkpoint/electrocatalysis/relaxations/features/init_to_relaxed/all/train/data.lmdb
