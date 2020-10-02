@@ -2,31 +2,26 @@ import datetime
 import json
 import os
 
-import ase.io
-import numpy as np
 import torch
 import torch_geometric
 import yaml
+from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
-from torch_geometric.nn import DataParallel
+from tqdm import tqdm
 
+from ocpmodels.common import distutils
 from ocpmodels.common.ase_relax import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
-from ocpmodels.datasets import (
-    TrajectoryDataset,
-    TrajectoryLmdbDataset,
-    data_list_collater,
-)
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
-@registry.register_trainer("forces")
-class ForcesTrainer(BaseTrainer):
+@registry.register_trainer("dist_forces")
+class DistributedForcesTrainer(BaseTrainer):
     def __init__(
         self,
         task,
@@ -57,6 +52,7 @@ class ForcesTrainer(BaseTrainer):
             "model_attributes": model,
             "optim": optimizer,
             "logger": logger,
+            "amp": amp,
             "cmd": {
                 "identifier": identifier,
                 "print_every": print_every,
@@ -69,6 +65,8 @@ class ForcesTrainer(BaseTrainer):
                 "logs_dir": os.path.join(run_dir, "logs", logger, timestamp),
             },
         }
+        # AMP Scaler
+        self.scaler = torch.cuda.amp.GradScaler() if amp else None
 
         if isinstance(dataset, list):
             self.config["dataset"] = dataset[0]
@@ -77,7 +75,7 @@ class ForcesTrainer(BaseTrainer):
         else:
             self.config["dataset"] = dataset
 
-        if not is_debug:
+        if not is_debug and distutils.is_master():
             os.makedirs(self.config["cmd"]["checkpoint_dir"])
             os.makedirs(self.config["cmd"]["results_dir"])
             os.makedirs(self.config["cmd"]["logs_dir"])
@@ -85,26 +83,20 @@ class ForcesTrainer(BaseTrainer):
         self.is_debug = is_debug
         self.is_vis = is_vis
         if torch.cuda.is_available():
-            device_ids = list(range(torch.cuda.device_count()))
-            self.output_device = self.config["optim"].get(
-                "output_device", device_ids[0]
-            )
-            self.device = f"cuda:{self.output_device}"
+            self.device = local_rank
         else:
             self.device = "cpu"
 
-        print(yaml.dump(self.config, default_flow_style=False))
+        if distutils.is_master():
+            print(yaml.dump(self.config, default_flow_style=False))
         self.load()
-        self.scaler = None
 
         self.evaluator = Evaluator(task="s2ef")
 
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
 
-        self.parallel_collater = ParallelCollater(
-            self.config["optim"].get("num_gpus", 1)
-        )
+        self.parallel_collater = ParallelCollater(1)
         if self.config["task"]["dataset"] == "trajectory_lmdb":
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
@@ -116,6 +108,7 @@ class ForcesTrainer(BaseTrainer):
                 shuffle=True,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
+                pin_memory=True,
             )
 
             self.val_loader = self.test_loader = None
@@ -130,7 +123,9 @@ class ForcesTrainer(BaseTrainer):
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
+                    pin_memory=True,
                 )
+
             if "relax_dataset" in self.config["task"]:
                 self.relax_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
@@ -141,6 +136,7 @@ class ForcesTrainer(BaseTrainer):
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
+                    pin_memory=True,
                 )
 
         else:
@@ -195,7 +191,11 @@ class ForcesTrainer(BaseTrainer):
                     )
                     self.normalizers["grad_target"].mean.fill_(0)
 
-        if self.is_vis and self.config["task"]["dataset"] != "qm9":
+        if (
+            self.is_vis
+            and self.config["task"]["dataset"] != "qm9"
+            and distutils.is_master()
+        ):
             # Plot label distribution.
             plots = [
                 plot_histogram(
@@ -220,17 +220,19 @@ class ForcesTrainer(BaseTrainer):
             self.logger.log_plots(plots)
 
     def load_model(self):
-        super(ForcesTrainer, self).load_model()
+        super(DistributedForcesTrainer, self).load_model()
 
         self.model = OCPDataParallel(
             self.model,
-            output_device=self.output_device,
-            num_gpus=self.config["optim"].get("num_gpus", 1),
+            output_device=self.device,
+            num_gpus=1,
         )
-        self.model.to(self.device)
+        self.model = DistributedDataParallel(
+            self.model, device_ids=[self.device], find_unused_parameters=True
+        )
 
     # Takes in a new data source and generates predictions on it.
-    def predict(self, dataset, batch_size=32, per_image=False):
+    def predict(self, dataset, batch_size=32):
         if isinstance(dataset, dict):
             if self.config["task"]["dataset"] == "trajectory_lmdb":
                 print(
@@ -262,7 +264,9 @@ class ForcesTrainer(BaseTrainer):
         predictions = {"energy": [], "forces": []}
 
         for i, batch_list in enumerate(data_loader):
-            out = self._forward(batch_list)
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch_list)
+
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
@@ -270,18 +274,17 @@ class ForcesTrainer(BaseTrainer):
                 out["forces"] = self.normalizers["grad_target"].denorm(
                     out["forces"]
                 )
-            if per_image:
-                predictions["energy"].extend(out["energy"].tolist())
-                batch_natoms = torch.cumsum(
-                    torch.cat([batch.natoms for batch in batch_list]), dim=0
-                ).tolist()
-                forces = out["forces"].cpu().detach().numpy()
-                if len(batch_natoms) > 1:
-                    forces = np.split(forces, batch_natoms[:-1], axis=0)
-                predictions["forces"] = forces
-            else:
-                predictions["energy"] = out["energy"].detach()
-                predictions["forces"] = out["forces"].detach()
+            atoms_sum = 0
+            predictions["energy"].extend(out["energy"].tolist())
+            batch_natoms = torch.cat([batch.natoms for batch in batch_list])
+            for natoms in batch_natoms:
+                predictions["forces"].append(
+                    out["forces"][atoms_sum : natoms + atoms_sum]
+                    .cpu()
+                    .detach()
+                    .numpy()
+                )
+                atoms_sum += natoms
 
         return predictions
 
@@ -293,16 +296,19 @@ class ForcesTrainer(BaseTrainer):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
-                out = self._forward(batch)
-                loss = self._compute_loss(out, batch)
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    out = self._forward(batch)
+                    loss = self._compute_loss(out, batch)
+                loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
+                scale = self.scaler.get_scale() if self.scaler else 1.0
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
                     out, batch, self.evaluator
                 )
                 self.metrics = self.evaluator.update(
-                    "loss", loss.item(), self.metrics
+                    "loss", loss.item() / scale, self.metrics
                 )
 
                 # Print metrics, make plots.
@@ -338,7 +344,7 @@ class ForcesTrainer(BaseTrainer):
                             self.best_val_mae = val_metrics[
                                 self.evaluator.task_primary_metric["s2ef"]
                             ]["metric"]
-                            if not self.is_debug:
+                            if not self.is_debug and distutils.is_master():
                                 save_checkpoint(
                                     {
                                         "epoch": epoch
@@ -370,7 +376,7 @@ class ForcesTrainer(BaseTrainer):
                         self.best_val_mae = val_metrics[
                             self.evaluator.task_primary_metric["s2ef"]
                         ]["metric"]
-                        if not self.is_debug:
+                        if not self.is_debug and distutils.is_master():
                             save_checkpoint(
                                 {
                                     "epoch": epoch + 1,
@@ -403,19 +409,36 @@ class ForcesTrainer(BaseTrainer):
 
         loader = self.val_loader if split == "val" else self.test_loader
 
-        for i, batch in enumerate(loader):
+        for i, batch in tqdm(enumerate(loader), total=len(loader)):
             # Forward.
-            out = self._forward(batch)
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch)
             loss = self._compute_loss(out, batch)
 
             # Compute metrics.
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
             metrics = evaluator.update("loss", loss.item(), metrics)
 
+        aggregated_metrics = {}
+        for k in metrics:
+            aggregated_metrics[k] = {
+                "total": distutils.all_reduce(
+                    metrics[k]["total"], average=False, device=self.device
+                ),
+                "numel": distutils.all_reduce(
+                    metrics[k]["numel"], average=False, device=self.device
+                ),
+            }
+            aggregated_metrics[k]["metric"] = (
+                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
+            )
+        metrics = aggregated_metrics
+
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": epoch + 1})
-        log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
-        print(", ".join(log_str))
+        if distutils.is_master():
+            log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
+            print(", ".join(log_str))
 
         # Make plots.
         if self.logger is not None and epoch is not None:
@@ -443,6 +466,7 @@ class ForcesTrainer(BaseTrainer):
                 fmax=self.config["task"].get("relaxation_fmax", 0.01),
                 return_relaxed_pos=self.config["task"].get("write_pos", False),
                 relax_opt=self.config["task"]["relax_opt"],
+                device=self.device,
             )
             metrics = {
                 "relaxed_energy/{}".format(
@@ -454,7 +478,10 @@ class ForcesTrainer(BaseTrainer):
             }
 
             meter.update(metrics)
-            relaxed_positions += batch_relaxed_positions
+            if batch_relaxed_positions is not None:
+                relaxed_positions += batch_relaxed_positions
+
+        meter.all_reduce(self.device)
 
         # Make plots.
         if self.logger is not None and epoch is not None:
@@ -464,9 +491,11 @@ class ForcesTrainer(BaseTrainer):
                 split=split,
             )
         if self.config["task"].get("write_pos", False):
+            rank = distutils.get_rank()
             pos_filename = os.path.join(
-                self.config["cmd"]["results_dir"], "relaxed_pos.json"
+                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.json"
             )
+            print("Writing relaxed pos to:", pos_filename)
             with open(pos_filename, "w") as f:
                 json.dump(relaxed_positions, f)
 
@@ -475,6 +504,7 @@ class ForcesTrainer(BaseTrainer):
         return meter
 
     def _forward(self, batch_list):
+        # forward pass.
         if self.config["model_attributes"].get("regress_forces", True):
             out_energy, out_forces = self.model(batch_list)
         else:
@@ -504,7 +534,7 @@ class ForcesTrainer(BaseTrainer):
         energy_mult = self.config["optim"].get("energy_coefficient", 1)
         loss.append(energy_mult * self.criterion(out["energy"], energy_target))
 
-        # Forces loss.
+        # Force loss.
         if self.config["model_attributes"].get("regress_forces", True):
             force_target = torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
@@ -562,5 +592,4 @@ class ForcesTrainer(BaseTrainer):
             )
 
         metrics = evaluator.eval(out, target, prev_metrics=metrics)
-
         return metrics
