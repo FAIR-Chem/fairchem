@@ -207,7 +207,9 @@ class ForcesTrainer(BaseTrainer):
         super(ForcesTrainer, self).load_model()
 
         self.model = OCPDataParallel(
-            self.model, output_device=self.device, num_gpus=1,
+            self.model,
+            output_device=self.device,
+            num_gpus=1,
         )
         self.model = DistributedDataParallel(
             self.model, device_ids=[self.device], find_unused_parameters=True
@@ -288,7 +290,10 @@ class ForcesTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator, self.metrics,
+                    out,
+                    batch,
+                    self.evaluator,
+                    self.metrics,
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -384,7 +389,8 @@ class ForcesTrainer(BaseTrainer):
                 and self.config["task"].get("ml_relax", "end") == "train"
             ):
                 self.validate_relaxation(
-                    split="val", epoch=epoch,
+                    split="val",
+                    epoch=epoch,
                 )
 
         if (
@@ -392,7 +398,8 @@ class ForcesTrainer(BaseTrainer):
             and self.config["task"].get("ml_relax", "end") == "end"
         ):
             self.validate_relaxation(
-                split="val", epoch=epoch,
+                split="val",
+                epoch=epoch,
             )
 
     def validate(self, split="val", epoch=None):
@@ -546,6 +553,10 @@ class ForcesTrainer(BaseTrainer):
         return loss
 
     def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+        natoms = torch.cat(
+            [batch.natoms.to(self.device) for batch in batch_list], dim=0
+        )
+
         target = {
             "energy": torch.cat(
                 [batch.y.to(self.device) for batch in batch_list], dim=0
@@ -553,7 +564,10 @@ class ForcesTrainer(BaseTrainer):
             "forces": torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
             ),
+            "natoms": natoms,
         }
+
+        out["natoms"] = natoms
 
         if self.config["task"].get("eval_on_free_atoms", True):
             fixed = torch.cat(
@@ -562,6 +576,16 @@ class ForcesTrainer(BaseTrainer):
             mask = fixed == 0
             out["forces"] = out["forces"][mask]
             target["forces"] = target["forces"][mask]
+
+            s_idx = 0
+            natoms_free = []
+            for natoms in target["natoms"]:
+                natoms_free.append(
+                    torch.sum(mask[s_idx : s_idx + natoms]).item()
+                )
+                s_idx += natoms
+            target["natoms"] = torch.LongTensor(natoms_free).to(self.device)
+            out["natoms"] = torch.LongTensor(natoms_free).to(self.device)
 
         if self.config["dataset"].get("normalize_labels", True):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
