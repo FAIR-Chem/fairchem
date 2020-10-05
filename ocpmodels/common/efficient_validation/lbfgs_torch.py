@@ -2,16 +2,16 @@ from collections import deque
 from pathlib import Path
 
 import ase
+import numpy as np
 import torch
-from torch_geometric.data.batch import Batch
 from ase import Atoms
 from ase.constraints import FixAtoms
+from torch_geometric.data.batch import Batch
 
 from ocpmodels.common.ase_utils import batch_to_atoms
 from ocpmodels.common.utils import radius_graph_pbc
 from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
-import numpy as np
 
 
 class LBFGS:
@@ -39,9 +39,9 @@ class LBFGS:
         self.traj_dir = traj_dir
         self.traj_names = traj_names
         assert not self.traj_dir or (
-            traj_dir and traj_names), "Trajectory names should be specified to save trajectories"
-        # assert len(traj_names) == atoms.
-        print('DEVICE', self.device)
+            traj_dir and traj_names
+        ), "Trajectory names should be specified to save trajectories"
+        print("DEVICE", self.device)
 
         self.model.update_graph(self.atoms)
 
@@ -60,7 +60,6 @@ class LBFGS:
     def converged(self, force_threshold, iteration, forces):
         if forces is None:
             return False
-        # _, forces = self.get_forces()
         print(iteration, torch.sqrt((forces ** 2).sum(axis=1).max()))
         return (forces ** 2).sum(axis=1).max() < force_threshold ** 2
 
@@ -74,8 +73,10 @@ class LBFGS:
         trajectories = None
         if self.traj_dir:
             self.traj_dir.mkdir(exist_ok=True, parents=True)
-            trajectories = [ase.io.Trajectory(
-                self.traj_dir / f"{name}.traj", mode="a") for name in self.traj_names]
+            trajectories = [
+                ase.io.Trajectory(self.traj_dir / f"{name}.traj", mode="a")
+                for name in self.traj_names
+            ]
 
         iteration = 0
         while iteration < steps and not self.converged(fmax, iteration, f0):
@@ -104,7 +105,6 @@ class LBFGS:
                 dr *= self.maxstep / longest_step
             return dr * self.damping
 
-        # f = torch.from_numpy(self.get_forces()).to(self.device, dtype=torch.float64)
         e, f = self.get_forces()
         e = torch.tensor(e)
         f = f.to(self.device, dtype=torch.float64)

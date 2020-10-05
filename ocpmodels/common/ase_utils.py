@@ -9,7 +9,6 @@ from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
-# TODO write intermediate steps into traj file similar to ase optimizers
 def batch_to_atoms(batch):
     n_systems = batch.neighbors.shape[0]
     natoms = batch.natoms.tolist()
