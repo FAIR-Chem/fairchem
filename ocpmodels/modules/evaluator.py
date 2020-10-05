@@ -43,7 +43,7 @@ class Evaluator:
     }
 
     task_primary_metric = {
-        "s2ef": "forces_mae",
+        "s2ef": "energy_force_within_threshold",
         "is2rs": "positions_mae",
         "is2re": "energy_mae",
     }
