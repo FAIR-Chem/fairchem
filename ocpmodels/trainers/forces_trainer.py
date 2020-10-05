@@ -2,13 +2,11 @@ import datetime
 import json
 import os
 
-import torch
-import torch_geometric
 import yaml
-from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+import torch
+import torch_geometric
 from ocpmodels.common import distutils
 from ocpmodels.common.ase_utils import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
@@ -18,6 +16,8 @@ from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from torch.nn.parallel.distributed import DistributedDataParallel
+from torch.utils.data import DataLoader
 
 
 @registry.register_trainer("forces")
@@ -289,7 +289,7 @@ class ForcesTrainer(BaseTrainer):
         return predictions
 
     def train(self):
-        self.best_val_mae = 1e9
+        self.best_val_metric = 0
         eval_every = self.config["optim"].get("eval_every", -1)
         iters = 0
         self.metrics = {}
@@ -344,9 +344,9 @@ class ForcesTrainer(BaseTrainer):
                             val_metrics[
                                 self.evaluator.task_primary_metric["s2ef"]
                             ]["metric"]
-                            < self.best_val_mae
+                            > self.best_val_metric
                         ):
-                            self.best_val_mae = val_metrics[
+                            self.best_val_metric = val_metrics[
                                 self.evaluator.task_primary_metric["s2ef"]
                             ]["metric"]
                             if not self.is_debug and distutils.is_master():
@@ -376,9 +376,9 @@ class ForcesTrainer(BaseTrainer):
                         val_metrics[
                             self.evaluator.task_primary_metric["s2ef"]
                         ]["metric"]
-                        < self.best_val_mae
+                        > self.best_val_metric
                     ):
-                        self.best_val_mae = val_metrics[
+                        self.best_val_metric = val_metrics[
                             self.evaluator.task_primary_metric["s2ef"]
                         ]["metric"]
                         if not self.is_debug and distutils.is_master():
@@ -573,6 +573,10 @@ class ForcesTrainer(BaseTrainer):
         return loss
 
     def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+        natoms = torch.cat(
+            [batch.natoms.to(self.device) for batch in batch_list], dim=0
+        )
+
         target = {
             "energy": torch.cat(
                 [batch.y.to(self.device) for batch in batch_list], dim=0
@@ -580,7 +584,10 @@ class ForcesTrainer(BaseTrainer):
             "forces": torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
             ),
+            "natoms": natoms,
         }
+
+        out["natoms"] = natoms
 
         if self.config["task"].get("eval_on_free_atoms", True):
             fixed = torch.cat(
@@ -589,6 +596,16 @@ class ForcesTrainer(BaseTrainer):
             mask = fixed == 0
             out["forces"] = out["forces"][mask]
             target["forces"] = target["forces"][mask]
+
+            s_idx = 0
+            natoms_free = []
+            for natoms in target["natoms"]:
+                natoms_free.append(
+                    torch.sum(mask[s_idx : s_idx + natoms]).item()
+                )
+                s_idx += natoms
+            target["natoms"] = torch.LongTensor(natoms_free).to(self.device)
+            out["natoms"] = torch.LongTensor(natoms_free).to(self.device)
 
         if self.config["dataset"].get("normalize_labels", True):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
