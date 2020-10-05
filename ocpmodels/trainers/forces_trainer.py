@@ -1,13 +1,11 @@
 import datetime
 import os
 
-import torch
-import torch_geometric
 import yaml
-from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+import torch
+import torch_geometric
 from ocpmodels.common import distutils
 from ocpmodels.common.ase_utils import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
@@ -16,6 +14,8 @@ from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from torch.nn.parallel.distributed import DistributedDataParallel
+from torch.utils.data import DataLoader
 
 
 @registry.register_trainer("forces")
@@ -207,9 +207,7 @@ class ForcesTrainer(BaseTrainer):
         super(ForcesTrainer, self).load_model()
 
         self.model = OCPDataParallel(
-            self.model,
-            output_device=self.device,
-            num_gpus=1,
+            self.model, output_device=self.device, num_gpus=1,
         )
         self.model = DistributedDataParallel(
             self.model, device_ids=[self.device], find_unused_parameters=True
@@ -273,7 +271,7 @@ class ForcesTrainer(BaseTrainer):
         return predictions
 
     def train(self):
-        self.best_val_mae = 1e9
+        self.best_val_metric = 0
         eval_every = self.config["optim"].get("eval_every", -1)
         iters = 0
         self.metrics = {}
@@ -290,10 +288,7 @@ class ForcesTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out,
-                    batch,
-                    self.evaluator,
-                    self.metrics,
+                    out, batch, self.evaluator, self.metrics,
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -328,9 +323,9 @@ class ForcesTrainer(BaseTrainer):
                             val_metrics[
                                 self.evaluator.task_primary_metric["s2ef"]
                             ]["metric"]
-                            < self.best_val_mae
+                            > self.best_val_metric
                         ):
-                            self.best_val_mae = val_metrics[
+                            self.best_val_metric = val_metrics[
                                 self.evaluator.task_primary_metric["s2ef"]
                             ]["metric"]
                             if not self.is_debug and distutils.is_master():
@@ -360,9 +355,9 @@ class ForcesTrainer(BaseTrainer):
                         val_metrics[
                             self.evaluator.task_primary_metric["s2ef"]
                         ]["metric"]
-                        < self.best_val_mae
+                        > self.best_val_metric
                     ):
-                        self.best_val_mae = val_metrics[
+                        self.best_val_metric = val_metrics[
                             self.evaluator.task_primary_metric["s2ef"]
                         ]["metric"]
                         if not self.is_debug and distutils.is_master():
@@ -389,8 +384,7 @@ class ForcesTrainer(BaseTrainer):
                 and self.config["task"].get("ml_relax", "end") == "train"
             ):
                 self.validate_relaxation(
-                    split="val",
-                    epoch=epoch,
+                    split="val", epoch=epoch,
                 )
 
         if (
@@ -398,8 +392,7 @@ class ForcesTrainer(BaseTrainer):
             and self.config["task"].get("ml_relax", "end") == "end"
         ):
             self.validate_relaxation(
-                split="val",
-                epoch=epoch,
+                split="val", epoch=epoch,
             )
 
     def validate(self, split="val", epoch=None):
