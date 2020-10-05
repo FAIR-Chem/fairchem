@@ -209,9 +209,8 @@ class ForcesTrainer(BaseTrainer):
         self.model = OCPDataParallel(
             self.model, output_device=self.device, num_gpus=1,
         )
-        self.model = DistributedDataParallel(
-            self.model, device_ids=[self.device], find_unused_parameters=True
-        )
+        if distutils.initialized():
+            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
 
     # Takes in a new data source and generates predictions on it.
     def predict(self, dataset, batch_size=32):
