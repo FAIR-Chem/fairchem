@@ -49,25 +49,25 @@ if __name__ == "__main__":
     parser.add_argument(
         "--inputid-to-adbulkid",
         type=str,
-        default="/checkpoint/electrocatalysis/relaxations/mapping/pickled_mapping/mapping_inputid_to_input_bulk_adbulk_paths.pkl",
+        default="/checkpoint/electrocatalysis/relaxations/mapping_old/pickled_mapping/mapping_inputid_to_input_bulk_adbulk_paths.pkl",
         help="Path to file containing input id to adbulk id mapping",
     )
     parser.add_argument(
         "--traj-paths",
         type=str,
-        default="/checkpoint/electrocatalysis/relaxations/mapping/pickled_mapping/mapping_inputid_to_bulkid_bulkenergy_adbulkid_adbulkpath.pkl",
+        default="/checkpoint/electrocatalysis/relaxations/mapping_old/pickled_mapping/mapping_inputid_to_bulkid_bulkenergy_adbulkid_adbulkpath.pkl",
         help="Path to file containing adbulk id to path mapping",
     )
     parser.add_argument(
         "--adslab-ref",
         type=str,
-        default="/checkpoint/electrocatalysis/relaxations/mapping/pickled_mapping/adslab_ref_energies_full.pkl",
+        default="/checkpoint/electrocatalysis/relaxations/mapping/new_adslab_ref_energies_09_22_20.pkl",
         help="Path to reference energies, default: None",
     )
     parser.add_argument(
         "--tags",
         type=str,
-        default="/checkpoint/electrocatalysis/relaxations/mapping/pickled_mapping/adslab_tags_full.pkl",
+        default="/checkpoint/electrocatalysis/relaxations/mapping_old/pickled_mapping/adslab_tags_full.pkl",
         help="Path to tags (0/1/2 for bulk / slab / adsorbates), default: None",
     )
 
