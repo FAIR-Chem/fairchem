@@ -3,7 +3,7 @@ from torch_geometric.nn import SchNet
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances
+from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 
 
 @registry.register_model("schnet")
@@ -15,6 +15,7 @@ class SchNetWrap(SchNet):
         num_targets,
         use_pbc=True,
         regress_forces=True,
+        otf_graph=False,
         hidden_channels=128,
         num_filters=128,
         num_interactions=6,
@@ -25,6 +26,8 @@ class SchNetWrap(SchNet):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
+        self.cutoff = cutoff
+        self.otf_graph = otf_graph
 
         super(SchNetWrap, self).__init__(
             hidden_channels=hidden_channels,
@@ -42,6 +45,16 @@ class SchNetWrap(SchNet):
             pos = pos.requires_grad_(True)
         batch = data.batch
 
+        if self.otf_graph:
+            edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                data, self.cutoff, 50, data.pos.device
+            )
+            data.edge_index = edge_index
+            data.cell_offsets = cell_offsets
+            data.neighbors = neighbors
+
+        # TODO return distance computation in radius_graph_pbc to remove need
+        # for get_pbc_distances call
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
 
