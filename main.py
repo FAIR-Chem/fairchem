@@ -29,10 +29,11 @@ def main(config):
         amp=config.get("amp", False),
     )
     import time
+
     start_time = time.time()
     trainer.train()
     distutils.synchronize()
-    print('Time = ', time.time() - start_time)
+    print("Time = ", time.time() - start_time)
 
 
 def distributed_main(config):
@@ -61,19 +62,13 @@ if __name__ == "__main__":
             slurm_partition=args.slurm_partition,
             gpus_per_node=args.num_gpus,
             cpus_per_task=(args.num_workers + 1),
-            tasks_per_node=(args.num_gpus if args.distributed else 1),
+            tasks_per_node=args.num_gpus,
             nodes=args.num_nodes,
         )
-        if args.distributed:
-            jobs = executor.map_array(distributed_main, configs)
-        else:
-            jobs = executor.map_array(main, configs)
+        jobs = executor.map_array(distributed_main, configs)
         print("Submitted jobs:", ", ".join([job.job_id for job in jobs]))
         log_file = save_experiment_log(args, jobs, configs)
         print(f"Experiment log saved to: {log_file}")
 
     else:  # Run locally
-        if args.distributed:
-            distributed_main(config)
-        else:
-            main(config)
+        distributed_main(config)
