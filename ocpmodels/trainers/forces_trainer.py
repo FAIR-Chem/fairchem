@@ -2,13 +2,15 @@ import datetime
 import json
 import os
 
-import yaml
-from tqdm import tqdm
-
 import torch
 import torch_geometric
+import yaml
+from torch.nn.parallel.distributed import DistributedDataParallel
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
 from ocpmodels.common import distutils
-from ocpmodels.common.ase_utils import relax_eval
+from ocpmodels.common.ase_relax import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
@@ -16,8 +18,6 @@ from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
-from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import DataLoader
 
 
 @registry.register_trainer("forces")

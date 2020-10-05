@@ -48,7 +48,13 @@ def relax_eval(
     elif relax_opt["name"] == "lbfgs":
         traj_dir = relax_opt.get("traj_dir", None)
         dyn = LBFGS(
-            batch, calc, memory=relax_opt["memory"], device=device, traj_dir=traj_dir, traj_names=ids)
+            batch,
+            calc,
+            memory=relax_opt["memory"],
+            device=device,
+            traj_dir=traj_dir,
+            traj_names=ids,
+        )
     else:
         raise ValueError(f"Unknown relax optimizer: {relax_opt}")
 
@@ -58,7 +64,6 @@ def relax_eval(
         natoms = batch.natoms.tolist()
         positions = torch.split(batch.pos, natoms)
         relaxed_positions = [pos.tolist() for pos in positions]
-        # ids = batch.ids
         relaxed_positions = list(zip(ids, relaxed_positions))
     else:
         relaxed_positions = None
