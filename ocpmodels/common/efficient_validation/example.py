@@ -43,17 +43,22 @@ task = {
 }
 
 model = {
-    "name": "schnet",
-    "hidden_channels": 1024,
-    "num_filters": 256,
-    "num_interactions": 5,
-    "num_gaussians": 200,
+    "name": "dimenet",
     "cutoff": 6.0,
+    "hidden_channels": 128,
+    "max_angles_per_image": 50000,
+    "num_after_skip": 2,
+    "num_before_skip": 1,
+    "num_blocks": 2,
+    "num_output_layers": 3,
+    "num_radial": 6,
+    "num_spherical": 7,
     "use_pbc": True,
 }
 
 train_dataset = {
-    "src": "/home/mshuaibi/baselines-backup/data_backup/1k_train/",
+    # "src": "/home/mshuaibi/baselines-backup/data_backup/1k_train/",
+    "src": "/private/home/mshuaibi/baselines/data/data/ocp_s2ef/train/200k/",
     "normalize_labels": False,
 }
 
@@ -85,7 +90,8 @@ trainer = ForcesTrainer(
 )
 
 trainer.load_pretrained(
-    "/home/mshuaibi/baselines-backup/checkpoints/2020-09-15-13-50-39-schnet_20M_restart_09_15_run8/checkpoint.pt",
+    # "/home/mshuaibi/baselines-backup/checkpoints/2020-09-15-13-50-39-schnet_20M_restart_09_15_run8/checkpoint.pt",
+    "/checkpoint/abhshkdz/ocp_baselines_run/checkpoints/2020-10-04-23-07-09-dimenet_2M_run1/checkpoint.pt",
 )
 
 trainer.validate_relaxation()

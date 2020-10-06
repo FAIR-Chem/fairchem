@@ -57,12 +57,17 @@ if __name__ == "__main__":
     }
 
     model = {
-        "name": "schnet",
-        "hidden_channels": 128,
-        "num_filters": 128,
-        "num_interactions": 3,
-        "num_gaussians": 200,
+        "name": "dimenet",
         "cutoff": 6.0,
+        "hidden_channels": 128,
+        "max_angles_per_image": 50000,
+        "num_after_skip": 2,
+        "num_before_skip": 1,
+        "num_blocks": 2,
+        "num_output_layers": 3,
+        "num_radial": 6,
+        "num_spherical": 7,
+        "use_pbc": True,
     }
 
     src = "data/data/example/"
