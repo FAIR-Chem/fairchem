@@ -271,7 +271,7 @@ class ForcesTrainer(BaseTrainer):
         return predictions
 
     def train(self):
-        self.best_val_metric = 0
+        self.best_val_metric = -1.
         eval_every = self.config["optim"].get("eval_every", -1)
         iters = 0
         self.metrics = {}
