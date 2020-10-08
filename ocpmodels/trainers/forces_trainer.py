@@ -279,7 +279,7 @@ class ForcesTrainer(BaseTrainer):
             batch_natoms = torch.cat([batch.natoms for batch in batch_list])
             for natoms in batch_natoms:
                 predictions["forces"].append(
-                    out["forces"][atoms_sum : natoms + atoms_sum]
+                    out["forces"][atoms_sum: natoms + atoms_sum]
                     .cpu()
                     .detach()
                     .numpy()
@@ -601,7 +601,7 @@ class ForcesTrainer(BaseTrainer):
             natoms_free = []
             for natoms in target["natoms"]:
                 natoms_free.append(
-                    torch.sum(mask[s_idx : s_idx + natoms]).item()
+                    torch.sum(mask[s_idx: s_idx + natoms]).item()
                 )
                 s_idx += natoms
             target["natoms"] = torch.LongTensor(natoms_free).to(self.device)

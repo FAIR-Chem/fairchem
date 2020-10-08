@@ -7,6 +7,7 @@ import torch
 from ase import Atoms
 from ase.constraints import FixAtoms
 from torch_geometric.data.batch import Batch
+from torch_scatter import scatter
 
 from ocpmodels.common.ase_utils import batch_to_atoms
 from ocpmodels.common.utils import radius_graph_pbc
@@ -100,9 +101,13 @@ class LBFGS:
     def step(self, iteration, r0, f0, H0, rho, s, y):
         def determine_step(dr):
             steplengths = torch.norm(dr, dim=1)
-            longest_step = steplengths.max()
-            if longest_step >= self.maxstep:
-                dr *= self.maxstep / longest_step
+            longest_steps = scatter(
+                steplengths, self.atoms.batch, reduce='max')
+            longest_steps = torch.repeat_interleave(
+                longest_steps, self.atoms.natoms)
+            maxstep = longest_steps.new_tensor(self.maxstep)
+            scale = longest_steps.reciprocal() * torch.min(longest_steps, maxstep)
+            dr *= scale.unsqueeze(1)
             return dr * self.damping
 
         e, f = self.get_forces()
