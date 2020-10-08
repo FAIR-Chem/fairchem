@@ -12,7 +12,10 @@ parser.add_argument("--relaxopt", choices=["bfgs", "lbfgs"], default="lbfgs")
 parser.add_argument("--traj-dir", type=Path, default=None)
 parser.add_argument("--src", type=Path, default=None)
 parser.add_argument("--batch-size", type=int, default=32)
+parser.add_argument("--lbfgs-maxstep", type=float, default=0.04)
 parser.add_argument("--lbfgs-mem", type=int, default=50)
+parser.add_argument("--lbfgs-damping", type=float, default=1.)
+parser.add_argument("--lbfgs-alpha", type=float, default=70.)
 parser.add_argument("--steps", type=int, default=200)
 parser.add_argument("--local_rank", type=int, default=0)
 parser.add_argument("--write_pos", action="store_true")
@@ -37,8 +40,11 @@ task = {
     "write_pos": args.write_pos,
     "relax_opt": {
         "name": args.relaxopt,
+        "maxstep": args.lbfgs_maxstep,
         "memory": args.lbfgs_mem,
-        "traj_dir": Path("./val_is2rs_10_05/torch"),
+        "damping": args.lbfgs_damping,
+        "alpha": args.lbfgs_alpha,
+        "traj_dir": args.traj_dir,
     },
 }
 

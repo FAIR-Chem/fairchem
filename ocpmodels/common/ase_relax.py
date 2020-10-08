@@ -50,7 +50,10 @@ def relax_eval(
         dyn = LBFGS(
             batch,
             calc,
+            maxstep=relax_opt.get("maxstep", 0.04),
             memory=relax_opt["memory"],
+            damping=relax_opt.get("damping", 1.),
+            alpha=relax_opt.get("alpha", 70.),
             device=device,
             traj_dir=traj_dir,
             traj_names=ids,
