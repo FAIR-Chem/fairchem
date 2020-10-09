@@ -288,81 +288,6 @@ class ForcesTrainer(BaseTrainer):
 
         return predictions
 
-    def train_epoch(self, epoch, iters):
-        self.model.train()
-        for i, batch in enumerate(self.train_loader):
-            # Forward, loss, backward.
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch)
-                loss = self._compute_loss(out, batch)
-            loss = self.scaler.scale(loss) if self.scaler else loss
-            self._backward(loss)
-            scale = self.scaler.get_scale() if self.scaler else 1.0
-
-            # Compute metrics.
-            self.metrics = self._compute_metrics(
-                out,
-                batch,
-                self.evaluator,
-                self.metrics,
-            )
-            self.metrics = self.evaluator.update(
-                "loss", loss.item() / scale, self.metrics
-            )
-
-            # Print metrics, make plots.
-            log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
-            log_dict.update(
-                {"epoch": epoch + (i + 1) / len(self.train_loader)}
-            )
-            print(type(self.evaluator))
-            # if i % self.config["cmd"]["print_every"] == 0:
-            #     log_str = [
-            #         "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
-            #     ]
-            #     print(", ".join(log_str))
-            #     self.metrics = {}
-
-            # if self.logger is not None:
-            #     self.logger.log(
-            #         log_dict,
-            #         step=epoch * len(self.train_loader) + i + 1,
-            #         split="train",
-            #     )
-
-            iters += 1
-
-            # # Evaluate on val set every `eval_every` iterations.
-            # if eval_every != -1 and iters % eval_every == 0:
-            #     if self.val_loader is not None:
-            #         val_metrics = self.validate(split="val", epoch=epoch)
-            #         if (
-            #             val_metrics[
-            #                 self.evaluator.task_primary_metric["s2ef"]
-            #             ]["metric"]
-            #             > self.best_val_metric
-            #         ):
-            #             self.best_val_metric = val_metrics[
-            #                 self.evaluator.task_primary_metric["s2ef"]
-            #             ]["metric"]
-            #             if not self.is_debug and distutils.is_master():
-            #                 save_checkpoint(
-            #                     {
-            #                         "epoch": epoch
-            #                         + (i + 1) / len(self.train_loader),
-            #                         "state_dict": self.model.state_dict(),
-            #                         "optimizer": self.optimizer.state_dict(),
-            #                         "normalizers": {
-            #                             key: value.state_dict()
-            #                             for key, value in self.normalizers.items()
-            #                         },
-            #                         "config": self.config,
-            #                         "val_metrics": val_metrics,
-            #                     },
-            #                     self.config["cmd"]["checkpoint_dir"],
-            #                 )
-        return iters
-
     def train(self):
         self.best_val_metric = -1.
         eval_every = self.config["optim"].get("eval_every", -1)
@@ -445,7 +370,6 @@ class ForcesTrainer(BaseTrainer):
                                 )
 
             self.scheduler.step()
-            torch.cuda.empty_cache()
 
             if eval_every == -1:
                 if self.val_loader is not None:
