@@ -369,45 +369,6 @@ class ForcesTrainer(BaseTrainer):
         iters = 0
         self.metrics = {}
         for epoch in range(self.config["optim"]["max_epochs"]):
-<<<<<<< HEAD
-            print('Epoch:', epoch)
-            iters = self.train_epoch(epoch, iters)
-            # self.scheduler.step()
-            # torch.cuda.empty_cache()
-
-            # if eval_every == -1:
-            #     if self.val_loader is not None:
-            #         val_metrics = self.validate(split="val", epoch=epoch)
-            #         if (
-            #             val_metrics[
-            #                 self.evaluator.task_primary_metric["s2ef"]
-            #             ]["metric"]
-            #             > self.best_val_metric
-            #         ):
-            #             self.best_val_metric = val_metrics[
-            #                 self.evaluator.task_primary_metric["s2ef"]
-            #             ]["metric"]
-            #             if not self.is_debug and distutils.is_master():
-            #                 save_checkpoint(
-            #                     {
-            #                         "epoch": epoch + 1,
-            #                         "state_dict": self.model.state_dict(),
-            #                         "optimizer": self.optimizer.state_dict(),
-            #                         "normalizers": {
-            #                             key: value.state_dict()
-            #                             for key, value in self.normalizers.items()
-            #                         },
-            #                         "config": self.config,
-            #                         "val_metrics": val_metrics,
-            #                     },
-            #                     self.config["cmd"]["checkpoint_dir"],
-            #                 )
-
-            # if self.test_loader is not None:
-            #     self.validate(split="test", epoch=epoch)
-
-        if "relax_dir" in self.config["task"]:
-=======
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
@@ -535,7 +496,6 @@ class ForcesTrainer(BaseTrainer):
             "relaxation_dir" in self.config["task"]
             and self.config["task"].get("ml_relax", "end") == "end"
         ):
->>>>>>> master
             self.validate_relaxation(
                 split="val",
                 epoch=epoch,
