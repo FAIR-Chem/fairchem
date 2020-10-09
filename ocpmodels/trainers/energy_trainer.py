@@ -160,9 +160,8 @@ class EnergyTrainer(BaseTrainer):
             output_device=self.device,
             num_gpus=self.config["optim"].get("num_gpus", 1),
         )
-        self.model = DistributedDataParallel(
-            self.model, device_ids=[self.device], find_unused_parameters=True
-        )
+        if distutils.initialized():
+            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
 
     def train(self):
         self.best_val_mae = 1e9
