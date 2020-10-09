@@ -2,7 +2,6 @@ import datetime
 import json
 import os
 import random
-import time
 from collections import OrderedDict
 
 import numpy as np
@@ -20,18 +19,8 @@ from ocpmodels.common.utils import (
     build_config,
     plot_histogram,
     save_checkpoint,
-    update_config,
     warmup_lr_lambda,
 )
-from ocpmodels.datasets import (
-    ISO17,
-    Gasdb,
-    QM9Dataset,
-    UlissigroupCO,
-    UlissigroupH,
-    XieGrossmanMatProj,
-)
-from ocpmodels.models import CGCNN, CGCNNGu, Transformer
 from ocpmodels.modules.normalizer import Normalizer
 
 
@@ -62,7 +51,9 @@ class BaseTrainer:
         self.config = build_config(args)
 
         # AMP Scaler
-        self.scaler = torch.cuda.amp.GradScaler() if self.config["amp"] else None
+        self.scaler = (
+            torch.cuda.amp.GradScaler() if self.config["amp"] else None
+        )
 
         # device
         self.device = torch.device(
@@ -364,7 +355,9 @@ class BaseTrainer:
                             for key, value in self.normalizers.items()
                         },
                         "config": self.config,
-                        "amp": self.scaler.state_dict() if self.scaler else None,
+                        "amp": self.scaler.state_dict()
+                        if self.scaler
+                        else None,
                     },
                     self.config["cmd"]["checkpoint_dir"],
                 )
@@ -455,16 +448,13 @@ class BaseTrainer:
             and self.config["model_attributes"].get("regress_forces", False)
             is False
         ):
-            force_output = (
-                -1
-                * torch.autograd.grad(
-                    output,
-                    inp_for_grad,
-                    grad_outputs=torch.ones_like(output),
-                    create_graph=True,
-                    retain_graph=True,
-                )[0]
-            )
+            force_output = -1 * torch.autograd.grad(
+                output,
+                inp_for_grad,
+                grad_outputs=torch.ones_like(output),
+                create_graph=True,
+                retain_graph=True,
+            )[0]
             out["force_output"] = force_output
 
         if not compute_metrics:
