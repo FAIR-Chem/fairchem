@@ -76,9 +76,9 @@ class ForcesTrainer(BaseTrainer):
             self.config["dataset"] = dataset
 
         if not is_debug and distutils.is_master():
-            os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
-            os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
-            os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
+            os.makedirs(self.config["cmd"]["checkpoint_dir"])
+            os.makedirs(self.config["cmd"]["results_dir"])
+            os.makedirs(self.config["cmd"]["logs_dir"])
 
         self.is_debug = is_debug
         self.is_vis = is_vis
@@ -228,7 +228,8 @@ class ForcesTrainer(BaseTrainer):
             num_gpus=1,
         )
         if distutils.initialized():
-            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
+            self.model = DistributedDataParallel(
+                self.model, device_ids=[self.device])
 
     # Takes in a new data source and generates predictions on it.
     def predict(self, dataset, batch_size=32):
@@ -305,7 +306,10 @@ class ForcesTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator, self.metrics,
+                    out,
+                    batch,
+                    self.evaluator,
+                    self.metrics,
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -369,6 +373,7 @@ class ForcesTrainer(BaseTrainer):
                                 )
 
             self.scheduler.step()
+            torch.cuda.empty_cache()
 
             if eval_every == -1:
                 if self.val_loader is not None:
@@ -407,18 +412,7 @@ class ForcesTrainer(BaseTrainer):
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
 
-            if (
-                "relaxation_dir" in self.config["task"]
-                and self.config["task"].get("ml_relax", "end") == "train"
-            ):
-                self.validate_relaxation(
-                    split="val", epoch=epoch,
-                )
-
-        if (
-            "relaxation_dir" in self.config["task"]
-            and self.config["task"].get("ml_relax", "end") == "end"
-        ):
+        if "relax_dir" in self.config["task"]:
             self.validate_relaxation(
                 split="val",
                 epoch=epoch,
@@ -486,7 +480,7 @@ class ForcesTrainer(BaseTrainer):
                 model=self,
                 metric=self.config["task"]["metric"],
                 steps=self.config["task"].get("relaxation_steps", 200),
-                fmax=self.config["task"].get("relaxation_fmax", 0.01),
+                fmax=self.config["task"].get("relaxation_fmax", 0.),
                 return_relaxed_pos=self.config["task"].get("write_pos", False),
                 relax_opt=self.config["task"]["relax_opt"],
                 device=self.device,
