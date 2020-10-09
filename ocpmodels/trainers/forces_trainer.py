@@ -227,9 +227,8 @@ class ForcesTrainer(BaseTrainer):
             output_device=self.device,
             num_gpus=1,
         )
-        self.model = DistributedDataParallel(
-            self.model, device_ids=[self.device], find_unused_parameters=True
-        )
+        if distutils.initialized():
+            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
 
     # Takes in a new data source and generates predictions on it.
     def predict(self, dataset, batch_size=32):
@@ -289,7 +288,7 @@ class ForcesTrainer(BaseTrainer):
         return predictions
 
     def train(self):
-        self.best_val_metric = 0
+        self.best_val_metric = -1.
         eval_every = self.config["optim"].get("eval_every", -1)
         iters = 0
         self.metrics = {}
@@ -342,12 +341,18 @@ class ForcesTrainer(BaseTrainer):
                         val_metrics = self.validate(split="val", epoch=epoch)
                         if (
                             val_metrics[
-                                self.evaluator.task_primary_metric["s2ef"]
+                                self.config["task"].get(
+                                    "primary_metric",
+                                    self.evaluator.task_primary_metric["s2ef"],
+                                )
                             ]["metric"]
                             > self.best_val_metric
                         ):
                             self.best_val_metric = val_metrics[
-                                self.evaluator.task_primary_metric["s2ef"]
+                                self.config["task"].get(
+                                    "primary_metric",
+                                    self.evaluator.task_primary_metric["s2ef"],
+                                )
                             ]["metric"]
                             if not self.is_debug and distutils.is_master():
                                 save_checkpoint(
@@ -374,12 +379,18 @@ class ForcesTrainer(BaseTrainer):
                     val_metrics = self.validate(split="val", epoch=epoch)
                     if (
                         val_metrics[
-                            self.evaluator.task_primary_metric["s2ef"]
+                            self.config["task"].get(
+                                "primary_metric",
+                                self.evaluator.task_primary_metric["s2ef"],
+                            )
                         ]["metric"]
                         > self.best_val_metric
                     ):
                         self.best_val_metric = val_metrics[
-                            self.evaluator.task_primary_metric["s2ef"]
+                            self.config["task"].get(
+                                "primary_metric",
+                                self.evaluator.task_primary_metric["s2ef"],
+                            )
                         ]["metric"]
                         if not self.is_debug and distutils.is_master():
                             save_checkpoint(
