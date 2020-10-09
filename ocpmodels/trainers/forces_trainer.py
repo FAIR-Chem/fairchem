@@ -1,11 +1,13 @@
 import datetime
 import os
 
-import yaml
-from tqdm import tqdm
-
 import torch
 import torch_geometric
+import yaml
+from torch.nn.parallel.distributed import DistributedDataParallel
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
 from ocpmodels.common import distutils
 from ocpmodels.common.ase_utils import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
@@ -14,8 +16,6 @@ from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
-from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import DataLoader
 
 
 @registry.register_trainer("forces")
@@ -321,12 +321,18 @@ class ForcesTrainer(BaseTrainer):
                         val_metrics = self.validate(split="val", epoch=epoch)
                         if (
                             val_metrics[
-                                self.evaluator.task_primary_metric["s2ef"]
+                                self.config["task"].get(
+                                    "primary_metric",
+                                    self.evaluator.task_primary_metric["s2ef"],
+                                )
                             ]["metric"]
                             > self.best_val_metric
                         ):
                             self.best_val_metric = val_metrics[
-                                self.evaluator.task_primary_metric["s2ef"]
+                                self.config["task"].get(
+                                    "primary_metric",
+                                    self.evaluator.task_primary_metric["s2ef"],
+                                )
                             ]["metric"]
                             if not self.is_debug and distutils.is_master():
                                 save_checkpoint(
@@ -353,12 +359,18 @@ class ForcesTrainer(BaseTrainer):
                     val_metrics = self.validate(split="val", epoch=epoch)
                     if (
                         val_metrics[
-                            self.evaluator.task_primary_metric["s2ef"]
+                            self.config["task"].get(
+                                "primary_metric",
+                                self.evaluator.task_primary_metric["s2ef"],
+                            )
                         ]["metric"]
                         > self.best_val_metric
                     ):
                         self.best_val_metric = val_metrics[
-                            self.evaluator.task_primary_metric["s2ef"]
+                            self.config["task"].get(
+                                "primary_metric",
+                                self.evaluator.task_primary_metric["s2ef"],
+                            )
                         ]["metric"]
                         if not self.is_debug and distutils.is_master():
                             save_checkpoint(
