@@ -2,7 +2,6 @@ import datetime
 import json
 import os
 import random
-import time
 from collections import OrderedDict
 
 import numpy as np
@@ -20,18 +19,8 @@ from ocpmodels.common.utils import (
     build_config,
     plot_histogram,
     save_checkpoint,
-    update_config,
     warmup_lr_lambda,
 )
-from ocpmodels.datasets import (
-    ISO17,
-    Gasdb,
-    QM9Dataset,
-    UlissigroupCO,
-    UlissigroupH,
-    XieGrossmanMatProj,
-)
-from ocpmodels.models import CGCNN, CGCNNGu, Transformer
 from ocpmodels.modules.normalizer import Normalizer
 
 
