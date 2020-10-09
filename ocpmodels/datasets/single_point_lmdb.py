@@ -1,14 +1,8 @@
-import glob
-import json
 import os
 import pickle
-import random
-from collections import defaultdict
 
 import lmdb
-import numpy as np
-from torch.utils.data import Dataset, Sampler
-from torch_geometric.data import Batch
+from torch.utils.data import Dataset
 
 from ocpmodels.common.registry import registry
 
