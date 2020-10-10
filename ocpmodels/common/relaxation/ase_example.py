@@ -7,7 +7,7 @@ from ase.optimize import BFGS, LBFGS
 from torch import nn
 
 from ocpmodels.common import distutils
-from ocpmodels.common.ase_utils import OCPCalculator, batch_to_atoms
+from ocpmodels.common.relaxation.ase_utils import OCPCalculator, batch_to_atoms
 from ocpmodels.datasets.single_point_lmdb import SinglePointLmdbDataset
 from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 from ocpmodels.trainers.forces_trainer import ForcesTrainer
@@ -92,7 +92,7 @@ for data in relax_dataset:
     collated_data = data_list_collater([data])
     atoms_object = batch_to_atoms(collated_data)[0]
     atoms_object.set_calculator(calc)
-    dyn = BFGS(atoms_object, trajectory="debug/ase/{}.traj".format(id))
-    dyn.run(steps=args.steps, fmax=0.01)
+    dyn = LBFGS(atoms_object, trajectory="debug/ase/{}.traj".format(id))
+    dyn.run(steps=args.steps, fmax=0)
 
 distutils.cleanup()
