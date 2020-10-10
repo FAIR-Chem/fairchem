@@ -488,7 +488,7 @@ class ForcesTrainer(BaseTrainer):
                 batch=batch,
                 model=self,
                 steps=self.config["task"].get("relaxation_steps", 200),
-                fmax=self.config["task"].get("relaxation_fmax", 0),
+                fmax=self.config["task"].get("relaxation_fmax", 0.0),
                 return_relaxed_pos=self.config["task"].get("write_pos", False),
                 relax_opt=self.config["task"]["relax_opt"],
                 device=self.device,
