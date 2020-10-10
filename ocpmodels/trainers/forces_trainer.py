@@ -526,8 +526,8 @@ class ForcesTrainer(BaseTrainer):
                 ids = relaxed_batch.id
                 natoms = relaxed_batch.natoms.tolist()
                 positions = torch.split(relaxed_batch.pos, natoms)
-                relaxed_positions = [pos.tolist() for pos in positions]
-                relaxed_positions += list(zip(ids, relaxed_positions))
+                batch_relaxed_positions = [pos.tolist() for pos in positions]
+                relaxed_positions += list(zip(ids, batch_relaxed_positions))
 
         aggregated_metrics = {}
         for k in metrics:
