@@ -9,7 +9,7 @@ from ase.constraints import FixAtoms
 from torch_geometric.data.batch import Batch
 from torch_scatter import scatter
 
-from ocpmodels.common.ase_utils import batch_to_atoms
+from ocpmodels.common.relaxation.ase_utils import batch_to_atoms
 from ocpmodels.common.utils import radius_graph_pbc
 from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
@@ -102,16 +102,19 @@ class LBFGS:
         def determine_step(dr):
             steplengths = torch.norm(dr, dim=1)
             longest_steps = scatter(
-                steplengths, self.atoms.batch, reduce='max')
+                steplengths, self.atoms.batch, reduce="max"
+            )
             longest_steps = torch.repeat_interleave(
-                longest_steps, self.atoms.natoms)
+                longest_steps, self.atoms.natoms
+            )
             maxstep = longest_steps.new_tensor(self.maxstep)
-            scale = longest_steps.reciprocal() * torch.min(longest_steps, maxstep)
+            scale = longest_steps.reciprocal() * torch.min(
+                longest_steps, maxstep
+            )
             dr *= scale.unsqueeze(1)
             return dr * self.damping
 
         e, f = self.get_forces()
-        e = torch.tensor(e)
         f = f.to(self.device, dtype=torch.float64)
         r = self.atoms.pos.to(self.device, dtype=torch.float64)
 
@@ -149,12 +152,9 @@ class TorchCalc:
         self.transform = transform
 
     def get_forces(self, atoms, apply_constraint=True):
-        predictions = self.model.predict(atoms)
+        predictions = self.model.predict(atoms, per_image=False)
         energy = predictions["energy"]
         forces = predictions["forces"]
-        if isinstance(forces, list):
-            forces = np.concatenate(forces)
-            forces = atoms.pos.new_tensor(forces)
         if apply_constraint:
             fixed_idx = torch.where(atoms.fixed == 1)[0]
             forces[fixed_idx] = 0

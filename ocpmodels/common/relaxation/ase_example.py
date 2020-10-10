@@ -35,22 +35,17 @@ task = {
 }
 
 model = {
-    "name": "dimenet",
+    "name": "schnet",
+    "hidden_channels": 1024,
+    "num_filters": 256,
+    "num_interactions": 5,
+    "num_gaussians": 200,
     "cutoff": 6.0,
-    "hidden_channels": 128,
-    "max_angles_per_image": 50000,
-    "num_after_skip": 2,
-    "num_before_skip": 1,
-    "num_blocks": 2,
-    "num_output_layers": 3,
-    "num_radial": 6,
-    "num_spherical": 7,
     "use_pbc": True,
 }
 
 train_dataset = {
-    # "src": "/home/mshuaibi/baselines-backup/data_backup/1k_train/",
-    "src": "/private/home/mshuaibi/baselines/data/data/ocp_s2ef/train/200k/",
+    "src": "/home/mshuaibi/projects/baselines-backup/data_backup/1k_train/",
     "normalize_labels": False,
 }
 
@@ -82,14 +77,13 @@ trainer = ForcesTrainer(
 )
 
 trainer.load_pretrained(
-    "/checkpoint/abhshkdz/ocp_baselines_run/checkpoints/2020-10-04-23-07-09-dimenet_2M_run1/checkpoint.pt",
-    # "/home/mshuaibi/baselines-backup/checkpoints/2020-09-15-13-50-39-schnet_20M_restart_09_15_run8/checkpoint.pt",
+    "/home/mshuaibi/projects/baselines-backup/checkpoints/2020-09-15-13-50-39-schnet_20M_restart_09_15_run8/checkpoint.pt",
 )
 
 relax_dataset = SinglePointLmdbDataset(
     {"src": "data/09_29_val_is2rs_lmdb/data.lmdb"}
 )
-os.makedirs("val_is2rs_10_05/ase", exist_ok=True)
+os.makedirs("debug", exist_ok=True)
 
 for data in relax_dataset:
     calc = OCPCalculator(trainer)
@@ -98,9 +92,7 @@ for data in relax_dataset:
     collated_data = data_list_collater([data])
     atoms_object = batch_to_atoms(collated_data)[0]
     atoms_object.set_calculator(calc)
-    dyn = BFGS(
-        atoms_object, trajectory="val_is2rs_10_05/ase/{}.traj".format(id)
-    )
+    dyn = BFGS(atoms_object, trajectory="debug/ase/{}.traj".format(id))
     dyn.run(steps=args.steps, fmax=0.01)
 
 distutils.cleanup()

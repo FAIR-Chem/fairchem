@@ -14,11 +14,11 @@ parser.add_argument("--src", type=Path, default=None)
 parser.add_argument("--batch-size", type=int, default=32)
 parser.add_argument("--lbfgs-maxstep", type=float, default=0.04)
 parser.add_argument("--lbfgs-mem", type=int, default=50)
-parser.add_argument("--lbfgs-damping", type=float, default=1.)
-parser.add_argument("--lbfgs-alpha", type=float, default=70.)
+parser.add_argument("--lbfgs-damping", type=float, default=1.0)
+parser.add_argument("--lbfgs-alpha", type=float, default=70.0)
 parser.add_argument("--steps", type=int, default=200)
 parser.add_argument("--local_rank", type=int, default=0)
-parser.add_argument("--write_pos", action="store_true")
+parser.add_argument("--write-pos", action="store_true")
 args = parser.parse_args()
 
 distutils.setup(
@@ -49,22 +49,17 @@ task = {
 }
 
 model = {
-    "name": "dimenet",
+    "name": "schnet",
+    "hidden_channels": 1024,
+    "num_filters": 256,
+    "num_interactions": 5,
+    "num_gaussians": 200,
     "cutoff": 6.0,
-    "hidden_channels": 128,
-    "max_angles_per_image": 50000,
-    "num_after_skip": 2,
-    "num_before_skip": 1,
-    "num_blocks": 2,
-    "num_output_layers": 3,
-    "num_radial": 6,
-    "num_spherical": 7,
     "use_pbc": True,
 }
 
 train_dataset = {
-    # "src": "/home/mshuaibi/baselines-backup/data_backup/1k_train/",
-    "src": "/private/home/mshuaibi/baselines/data/data/ocp_s2ef/train/200k/",
+    "src": "/home/mshuaibi/projects/baselines-backup/data_backup/1k_train/",
     "normalize_labels": False,
 }
 
@@ -96,8 +91,7 @@ trainer = ForcesTrainer(
 )
 
 trainer.load_pretrained(
-    # "/home/mshuaibi/baselines-backup/checkpoints/2020-09-15-13-50-39-schnet_20M_restart_09_15_run8/checkpoint.pt",
-    "/checkpoint/abhshkdz/ocp_baselines_run/checkpoints/2020-10-04-23-07-09-dimenet_2M_run1/checkpoint.pt",
+    "/home/mshuaibi/projects/baselines-backup/checkpoints/2020-09-15-13-50-39-schnet_20M_restart_09_15_run8/checkpoint.pt",
 )
 
 trainer.validate_relaxation()
