@@ -1,3 +1,4 @@
+import copy
 import datetime
 import json
 import os
@@ -10,10 +11,10 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
-from ocpmodels.common.ase_relax import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
+from ocpmodels.common.relaxation.eval_relaxation import relax_eval
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
@@ -228,10 +229,12 @@ class ForcesTrainer(BaseTrainer):
             num_gpus=1,
         )
         if distutils.initialized():
-            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
+            self.model = DistributedDataParallel(
+                self.model, device_ids=[self.device]
+            )
 
     # Takes in a new data source and generates predictions on it.
-    def predict(self, dataset, batch_size=32):
+    def predict(self, dataset, batch_size=32, per_image=True):
         if isinstance(dataset, dict):
             if self.config["task"]["dataset"] == "trajectory_lmdb":
                 print(
@@ -273,22 +276,29 @@ class ForcesTrainer(BaseTrainer):
                 out["forces"] = self.normalizers["grad_target"].denorm(
                     out["forces"]
                 )
-            atoms_sum = 0
-            predictions["energy"].extend(out["energy"].tolist())
-            batch_natoms = torch.cat([batch.natoms for batch in batch_list])
-            for natoms in batch_natoms:
-                predictions["forces"].append(
-                    out["forces"][atoms_sum: natoms + atoms_sum]
-                    .cpu()
-                    .detach()
-                    .numpy()
+            if per_image:
+                atoms_sum = 0
+                predictions["energy"].extend(out["energy"].tolist())
+                batch_natoms = torch.cat(
+                    [batch.natoms for batch in batch_list]
                 )
-                atoms_sum += natoms
+                for natoms in batch_natoms:
+                    predictions["forces"].append(
+                        out["forces"][atoms_sum : natoms + atoms_sum]
+                        .cpu()
+                        .detach()
+                        .numpy()
+                    )
+                    atoms_sum += natoms
+            else:
+                predictions["energy"] = out["energy"].detach()
+                predictions["forces"] = out["forces"].detach()
+                break
 
         return predictions
 
     def train(self):
-        self.best_val_metric = -1.
+        self.best_val_metric = -1.0
         eval_every = self.config["optim"].get("eval_every", -1)
         iters = 0
         self.metrics = {}
@@ -470,42 +480,79 @@ class ForcesTrainer(BaseTrainer):
         print("### Evaluating ML-relaxation")
         self.model.eval()
 
-        meter = Meter(split=split)
+        evaluator, metrics = Evaluator(task="is2rs"), {}
 
         relaxed_positions = []
         for i, batch in enumerate(self.relax_loader):
-            mae_energy, mae_structure, batch_relaxed_positions = relax_eval(
+            relaxed_batch = relax_eval(
                 batch=batch,
                 model=self,
-                metric=self.config["task"]["metric"],
                 steps=self.config["task"].get("relaxation_steps", 200),
-                fmax=self.config["task"].get("relaxation_fmax", 0.01),
+                fmax=self.config["task"].get("relaxation_fmax", 0),
                 return_relaxed_pos=self.config["task"].get("write_pos", False),
                 relax_opt=self.config["task"]["relax_opt"],
                 device=self.device,
+                transform=None,
             )
-            metrics = {
-                "relaxed_energy/{}".format(
-                    self.config["task"]["metric"]
-                ): mae_energy,
-                "relaxed_pos/{}".format(
-                    self.config["task"]["metric"]
-                ): mae_structure,
+
+            mask = relaxed_batch.fixed == 0
+            s_idx = 0
+            natoms_free = []
+            for natoms in relaxed_batch.natoms:
+                natoms_free.append(
+                    torch.sum(mask[s_idx : s_idx + natoms]).item()
+                )
+                s_idx += natoms
+
+            target = {
+                "energy": relaxed_batch.y_relaxed,
+                "positions": relaxed_batch.pos_relaxed[mask],
+                "cell": relaxed_batch.cell,
+                "pbc": torch.tensor([True, True, True]),
+                "natoms": torch.LongTensor(natoms_free),
             }
 
-            meter.update(metrics)
-            if batch_relaxed_positions is not None:
-                relaxed_positions += batch_relaxed_positions
+            prediction = {
+                "energy": relaxed_batch.y,
+                "positions": relaxed_batch.pos[mask],
+                "cell": relaxed_batch.cell,
+                "pbc": torch.tensor([True, True, True]),
+                "natoms": torch.LongTensor(natoms_free),
+            }
 
-        meter.all_reduce(self.device)
+            metrics = evaluator.eval(prediction, target, metrics)
+
+            if self.config["task"].get("write_pos", False):
+                ids = relaxed_batch.id
+                natoms = relaxed_batch.natoms.tolist()
+                positions = torch.split(relaxed_batch.pos, natoms)
+                relaxed_positions = [pos.tolist() for pos in positions]
+                relaxed_positions += list(zip(ids, relaxed_positions))
+
+        aggregated_metrics = {}
+        for k in metrics:
+            aggregated_metrics[k] = {
+                "total": distutils.all_reduce(
+                    metrics[k]["total"], average=False, device=self.device
+                ),
+                "numel": distutils.all_reduce(
+                    metrics[k]["numel"], average=False, device=self.device
+                ),
+            }
+            aggregated_metrics[k]["metric"] = (
+                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
+            )
+        metrics = aggregated_metrics
 
         # Make plots.
+        log_dict = {k: metrics[k]["metric"] for k in metrics}
         if self.logger is not None and epoch is not None:
             self.logger.log(
-                metrics,
+                log_dict,
                 step=(epoch + 1) * len(self.train_loader),
                 split=split,
             )
+
         if self.config["task"].get("write_pos", False):
             rank = distutils.get_rank()
             pos_filename = os.path.join(
@@ -515,9 +562,10 @@ class ForcesTrainer(BaseTrainer):
             with open(pos_filename, "w") as f:
                 json.dump(relaxed_positions, f)
 
-        print(meter)
+        if distutils.is_master():
+            print(metrics)
 
-        return meter
+        return metrics
 
     def _forward(self, batch_list):
         # forward pass.
@@ -612,7 +660,7 @@ class ForcesTrainer(BaseTrainer):
             natoms_free = []
             for natoms in target["natoms"]:
                 natoms_free.append(
-                    torch.sum(mask[s_idx: s_idx + natoms]).item()
+                    torch.sum(mask[s_idx : s_idx + natoms]).item()
                 )
                 s_idx += natoms
             target["natoms"] = torch.LongTensor(natoms_free).to(self.device)

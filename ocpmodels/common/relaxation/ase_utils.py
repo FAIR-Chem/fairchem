@@ -1,3 +1,7 @@
+"""
+Utilities to interface OCP models/trainers with the Atomic Simulation
+Environment (ASE)
+"""
 import torch
 from ase import Atoms
 from ase.calculators.calculator import Calculator
@@ -28,7 +32,7 @@ def batch_to_atoms(batch):
             tags=tags[idx].tolist(),
             cell=cells[idx].cpu().detach().numpy(),
             constraint=FixAtoms(mask=fixed[idx].tolist()),
-            pbc=True,
+            pbc=[True, True, True],
         )
         calc = sp(
             atoms=atoms,

@@ -10,6 +10,8 @@ import torch.nn as nn
 import torch.optim as optim
 import yaml
 
+import ocpmodels.datasets
+import ocpmodels.models
 from ocpmodels.common import distutils
 from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
@@ -205,14 +207,6 @@ class BaseTrainer:
         # and remove dependence from `.edge_attr`.
         bond_feat_dim = None
         if self.config["task"]["dataset"] in [
-            "ulissigroup_co",
-            "ulissigroup_h",
-            "xie_grossman_mat_proj",
-        ]:
-            bond_feat_dim = self.train_loader.dataset[0].edge_attr.shape[-1]
-        elif self.config["task"]["dataset"] in [
-            "gasdb",
-            "trajectory",
             "trajectory_lmdb",
             "single_point_lmdb",
         ]:

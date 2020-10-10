@@ -17,6 +17,7 @@ predictions and another for targets to check against. It returns a dictionary
 with the relevant metrics computed.
 """
 
+import numpy as np
 import torch
 
 
@@ -32,19 +33,19 @@ class Evaluator:
             "energy_mae",
             "energy_force_within_threshold",
         ],
-        "is2rs": ["positions_mae", "positions_mse"],
+        "is2rs": ["average_distance_within_threshold", "energy_mae"],
         "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
     }
 
     task_attributes = {
         "s2ef": ["energy", "forces", "natoms"],
-        "is2rs": ["positions"],
+        "is2rs": ["positions", "cell", "pbc", "energy", "natoms"],
         "is2re": ["energy"],
     }
 
     task_primary_metric = {
         "s2ef": "energy_force_within_threshold",
-        "is2rs": "positions_mae",
+        "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
     }
 
@@ -197,6 +198,53 @@ def energy_within_threshold(prediction, target):
         "total": success,
         "numel": total,
     }
+
+
+def average_distance_within_threshold(prediction, target):
+    pred_pos = torch.split(
+        prediction["positions"], prediction["natoms"].tolist()
+    )
+    target_pos = torch.split(target["positions"], target["natoms"].tolist())
+
+    mean_distance = []
+    for idx, ml_pos in enumerate(pred_pos):
+        mean_distance.append(
+            np.mean(
+                np.linalg.norm(
+                    min_diff(
+                        ml_pos.detach().cpu().numpy(),
+                        target_pos[idx].detach().cpu().numpy(),
+                        target["cell"][idx].detach().cpu().numpy(),
+                        target["pbc"].tolist(),
+                    ),
+                    axis=1,
+                )
+            )
+        )
+
+    success = 0
+    intv = np.arange(0.01, 0.5, 0.001)
+    for i in intv:
+        success += sum(np.array(mean_distance) < i)
+
+    total = len(mean_distance) * len(intv)
+
+    return {"metric": success / total, "total": success, "numel": total}
+
+
+def min_diff(pred_pos, dft_pos, cell, pbc):
+    pos_diff = pred_pos - dft_pos
+    fractional = np.linalg.solve(cell.T, pos_diff.T).T
+
+    for i, periodic in enumerate(pbc):
+        # Yes, we need to do it twice
+        if periodic:
+            fractional[:, i] %= 1.0
+            fractional[:, i] %= 1.0
+
+    fractional[fractional > 0.5] -= 1
+
+    return np.matmul(fractional, cell)
 
 
 def cosine_similarity(prediction, target):
