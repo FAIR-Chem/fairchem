@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     S2EF: config["mode"] = "predict"
     IS2RE: config["mode"] = "predict"
-    IS2RS: config["mode"] = "predict and "config["task"]["write_pos"] = True
+    IS2RS: config["mode"] = "run_relaxations" and config["task"]["write_pos"] = True
 
     Use this script to join the 4 results files in the format evalAI expects
     submissions.
