@@ -70,6 +70,8 @@ class ForcesTrainer(BaseTrainer):
             self.config["dataset"] = dataset[0]
             if len(dataset) > 1:
                 self.config["val_dataset"] = dataset[1]
+            if len(dataset) > 2:
+                self.config["test_dataset"] = dataset[2]
         else:
             self.config["dataset"] = dataset
 
@@ -117,6 +119,18 @@ class ForcesTrainer(BaseTrainer):
                 )(self.config["val_dataset"])
                 self.val_loader = DataLoader(
                     self.val_dataset,
+                    self.config["optim"].get("eval_batch_size", 64),
+                    shuffle=False,
+                    collate_fn=self.parallel_collater,
+                    num_workers=self.config["optim"]["num_workers"],
+                    pin_memory=True,
+                )
+            if "test_dataset" in self.config:
+                self.test_dataset = registry.get_dataset_class(
+                    self.config["task"]["dataset"]
+                )(self.config["test_dataset"])
+                self.test_loader = DataLoader(
+                    self.test_dataset,
                     self.config["optim"].get("eval_batch_size", 64),
                     shuffle=False,
                     collate_fn=self.parallel_collater,
@@ -212,42 +226,19 @@ class ForcesTrainer(BaseTrainer):
         if distutils.initialized():
             self.model = DistributedDataParallel(self.model, device_ids=[self.device])
 
-    # Takes in a new data source and generates predictions on it.
-    def predict(self, dataset, batch_size=32):
-        if isinstance(dataset, dict):
-            if self.config["task"]["dataset"] == "trajectory_lmdb":
-                print(
-                    "### Generating predictions on {}.".format(dataset["src"])
-                )
-            else:
-                print(
-                    "### Generating predictions on {}.".format(
-                        dataset["src"] + dataset["traj"]
-                    )
-                )
-
-            dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
-            )(dataset)
-
-            data_loader = DataLoader(
-                dataset,
-                batch_size=batch_size,
-                shuffle=False,
-                collate_fn=self.parallel_collater,
-            )
-        elif isinstance(dataset, torch_geometric.data.Batch):
-            data_loader = [[dataset]]
-        else:
-            raise NotImplementedError
+    def predict(self, loader, return_targets=False, results_file=None):
+        assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
 
         self.model.eval()
-        predictions = {"energy": [], "forces": []}
+        self.normalizers["target"].to(self.device)
+        self.normalizers["grad_target"].to(self.device)
 
-        for i, batch_list in enumerate(data_loader):
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch_list)
+        predictions = []
+        if return_targets:
+            targets = []
 
+        for i, batch_list in tqdm(enumerate(loader), total=len(loader)):
+            out = self._forward(batch_list)
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
@@ -255,19 +246,53 @@ class ForcesTrainer(BaseTrainer):
                 out["forces"] = self.normalizers["grad_target"].denorm(
                     out["forces"]
                 )
-            atoms_sum = 0
-            predictions["energy"].extend(out["energy"].tolist())
-            batch_natoms = torch.cat([batch.natoms for batch in batch_list])
-            for natoms in batch_natoms:
-                predictions["forces"].append(
-                    out["forces"][atoms_sum : natoms + atoms_sum]
-                    .cpu()
-                    .detach()
-                    .numpy()
+
+            batch_natoms = torch.cat(
+                [batch.natoms.cpu() for batch in batch_list]
+            )
+            if return_targets:
+                energy_targets = torch.cat(
+                    [batch.y.cpu() for batch in batch_list]
                 )
+                force_targets = torch.cat(
+                    [batch.force.cpu() for batch in batch_list]
+                )
+
+            atoms_sum = 0
+            for i, natoms in enumerate(batch_natoms):
+                predictions.append(
+                    {
+                        "energy": out["energy"][i].item(),
+                        "forces": out["forces"][
+                            atoms_sum : natoms + atoms_sum
+                        ].tolist(),
+                    }
+                )
+                if return_targets:
+                    targets.append(
+                        {
+                            "energy": energy_targets[i].item(),
+                            "forces": force_targets[
+                                atoms_sum : natoms + atoms_sum
+                            ].tolist(),
+                        }
+                    )
                 atoms_sum += natoms
 
-        return predictions
+        out = {
+            "predictions": predictions,
+        }
+        if return_targets:
+            out.update({"targets": targets})
+
+        if results_file is not None:
+            print(f"Writing results to {results_file}")
+            # TODO: Write in correct format
+            with open(results_file, "w") as resfile:
+                print(out, file=resfile)
+
+        return out
+
 
     def train(self):
         self.best_val_metric = -1.

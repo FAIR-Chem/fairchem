@@ -68,6 +68,8 @@ class EnergyTrainer(BaseTrainer):
             self.config["dataset"] = dataset[0]
             if len(dataset) > 1:
                 self.config["val_dataset"] = dataset[1]
+            if len(dataset) > 2:
+                self.config["test_dataset"] = dataset[2]
         else:
             self.config["dataset"] = dataset
 
@@ -134,6 +136,25 @@ class EnergyTrainer(BaseTrainer):
                     pin_memory=True,
                     sampler=self.val_sampler,
                 )
+            if "test_dataset" in self.config:
+                self.test_dataset = registry.get_dataset_class(
+                    self.config["task"]["dataset"]
+                )(self.config["test_dataset"])
+                self.test_sampler = DistributedSampler(
+                    self.test_dataset,
+                    num_replicas=distutils.get_world_size(),
+                    rank=distutils.get_rank(),
+                    shuffle=False,
+                )
+                self.test_loader = DataLoader(
+                    self.test_dataset,
+                    self.config["optim"].get("eval_batch_size", 64),
+                    collate_fn=self.parallel_collater,
+                    num_workers=self.config["optim"]["num_workers"],
+                    pin_memory=True,
+                    sampler=self.test_sampler,
+                )
+
         else:
             raise NotImplementedError
 
@@ -324,3 +345,40 @@ class EnergyTrainer(BaseTrainer):
         )
 
         return metrics
+
+    def predict(self, loader, return_targets=False, results_file=None):
+        assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
+
+        self.model.eval()
+        self.normalizers["target"].to(self.device)
+        predictions = []
+        if return_targets:
+            targets = []
+
+        for i, batch in tqdm(enumerate(loader), total=len(loader)):
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch)
+
+            if self.config["dataset"].get("normalize_labels", True):
+                out["energy"] = self.normalizers["target"].denorm(out["energy"])
+            predictions.extend(out["energy"].tolist())
+
+            if return_targets:
+                energy_target = torch.cat(
+                    [b.y_relaxed.to(self.device) for b in batch], dim=0
+                )
+                targets.extend(energy_target.tolist())
+
+        out = {
+            "predictions": predictions,
+        }
+        if return_targets:
+            out["targets"] = targets
+
+        if results_file is not None:
+            print(f"Writing results to {results_file}")
+            # TODO: Write in correct format
+            with open(results_file, "w") as resfile:
+                print(out, file=resfile)
+
+        return out

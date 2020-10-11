@@ -245,6 +245,7 @@ def build_config(args):
         config = update_config(config, overrides)
 
     # Some other flags.
+    config["mode"] = args.mode
     config["identifier"] = args.identifier
     config["seed"] = args.seed
     config["is_debug"] = args.debug
@@ -252,6 +253,7 @@ def build_config(args):
     config["is_vis"] = args.vis
     config["print_every"] = args.print_every
     config["amp"] = args.amp
+    config["checkpoint"] = args.checkpoint
     # Submit
     config["submit"] = args.submit
     # Distributed

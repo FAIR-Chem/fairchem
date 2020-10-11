@@ -1,3 +1,6 @@
+import time
+from pathlib import Path
+
 import submitit
 
 from ocpmodels.common import distutils
@@ -32,12 +35,24 @@ def main(config):
             local_rank=config["local_rank"],
             amp=config.get("amp", False),
         )
-        import time
+        if config["checkpoint"] is not None:
+            trainer.load_pretrained(config["checkpoint"])
 
         start_time = time.time()
-        trainer.train()
+
+        if config["mode"] == "train":
+            trainer.train()
+
+        elif config["mode"] == "predict":
+            assert trainer.test_loader is not None, "Please specify a test dataset for making predictions"
+            assert config["checkpoint"]
+            run_dir = config.get("run_dir", "./")
+            results_file = Path(run_dir) / "predictions.txt"
+            trainer.predict(trainer.test_loader, results_file=results_file)
+
         distutils.synchronize()
-        print("Time = ", time.time() - start_time)
+
+        print("Total time taken = ", time.time() - start_time)
 
     finally:
         if args.distributed:
