@@ -33,10 +33,18 @@ def load_evaluator_s2ef(request):
 def load_evaluator_is2rs(request):
     request.cls.evaluator = Evaluator(task="is2rs")
     prediction = {
+        "energy": torch.randn(5),
         "positions": torch.randn(50, 3),
+        "natoms": torch.tensor((5, 5, 10, 12, 18)),
+        "cell": torch.randn(5, 3, 3),
+        "pbc": torch.tensor([True, True, True]),
     }
     target = {
+        "energy": torch.randn(5),
         "positions": torch.randn(50, 3),
+        "cell": torch.randn(5, 3, 3),
+        "natoms": torch.tensor((5, 5, 10, 12, 18)),
+        "pbc": torch.tensor([True, True, True]),
     }
     request.cls.metrics = request.cls.evaluator.eval(prediction, target)
 
@@ -83,8 +91,8 @@ class TestS2EFEval:
 @pytest.mark.usefixtures("load_evaluator_is2rs")
 class TestIS2RSEval:
     def test_metrics_exist(self):
-        assert "positions_mae" in self.metrics
-        assert "positions_mse" in self.metrics
+        assert "average_distance_within_threshold" in self.metrics
+        assert "energy_mae" in self.metrics
 
 
 @pytest.mark.usefixtures("load_evaluator_is2re")
