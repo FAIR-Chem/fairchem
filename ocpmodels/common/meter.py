@@ -5,6 +5,9 @@ import torch
 
 
 # from github.com/facebookresearch/pythia/blob/12f67cd4f67499814bb0b3665ff14dd635800f63/pythia/common/meter.py
+from ocpmodels.common import distutils
+
+
 class SmoothedValue:
     """Track a series of values and provide access to smoothed values over a
     window or the global series average.
@@ -43,6 +46,15 @@ class SmoothedValue:
     def get_latest(self):
         return self.deque[-1]
 
+    def all_reduce(self, device):
+        print('Total', self.total)
+        self.total = distutils.all_reduce(self.total, device=device)
+        self.count = distutils.all_reduce(self.count, device=device)
+        series_list = distutils.all_gather(self.series, device=device)
+        self.series = list(zip(series_list))
+        deque_list = distutils.all_gather(self.deque, device=device)
+        self.deque = deque(list(zip(deque_list)), maxlen=self.window_size)
+
 
 class Meter:
     def __init__(self, delimiter=", ", split="train"):
@@ -79,8 +91,11 @@ class Meter:
         scalar_dict = {}
         for k, v in self.meters.items():
             scalar_dict[k] = v.global_avg
-
         return scalar_dict
+
+    def all_reduce(self, device):
+        for v in self.meters.values():
+            v.all_reduce(device)
 
     def __str__(self):
         loss_str = []

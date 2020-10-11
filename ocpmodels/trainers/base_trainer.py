@@ -10,6 +10,8 @@ import torch.nn as nn
 import torch.optim as optim
 import yaml
 
+import ocpmodels.datasets
+import ocpmodels.models
 from ocpmodels.common import distutils
 from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
@@ -51,7 +53,9 @@ class BaseTrainer:
         self.config = build_config(args)
 
         # AMP Scaler
-        self.scaler = torch.cuda.amp.GradScaler() if self.config["amp"] else None
+        self.scaler = (
+            torch.cuda.amp.GradScaler() if self.config["amp"] else None
+        )
 
         # device
         self.device = torch.device(
@@ -203,14 +207,6 @@ class BaseTrainer:
         # and remove dependence from `.edge_attr`.
         bond_feat_dim = None
         if self.config["task"]["dataset"] in [
-            "ulissigroup_co",
-            "ulissigroup_h",
-            "xie_grossman_mat_proj",
-        ]:
-            bond_feat_dim = self.train_loader.dataset[0].edge_attr.shape[-1]
-        elif self.config["task"]["dataset"] in [
-            "gasdb",
-            "trajectory",
             "trajectory_lmdb",
             "single_point_lmdb",
         ]:
@@ -241,6 +237,7 @@ class BaseTrainer:
 
     def load_pretrained(self, checkpoint_path=None, ddp_to_dp=False):
         if checkpoint_path is None or os.path.isfile(checkpoint_path) is False:
+            print(f"Checkpoint: {checkpoint_path} not found!")
             return False
 
         print("### Loading checkpoint from: {}".format(checkpoint_path))
@@ -352,7 +349,9 @@ class BaseTrainer:
                             for key, value in self.normalizers.items()
                         },
                         "config": self.config,
-                        "amp": self.scaler.state_dict() if self.scaler else None,
+                        "amp": self.scaler.state_dict()
+                        if self.scaler
+                        else None,
                     },
                     self.config["cmd"]["checkpoint_dir"],
                 )
@@ -443,16 +442,13 @@ class BaseTrainer:
             and self.config["model_attributes"].get("regress_forces", False)
             is False
         ):
-            force_output = (
-                -1
-                * torch.autograd.grad(
-                    output,
-                    inp_for_grad,
-                    grad_outputs=torch.ones_like(output),
-                    create_graph=True,
-                    retain_graph=True,
-                )[0]
-            )
+            force_output = -1 * torch.autograd.grad(
+                output,
+                inp_for_grad,
+                grad_outputs=torch.ones_like(output),
+                create_graph=True,
+                retain_graph=True,
+            )[0]
             out["force_output"] = force_output
 
         if not compute_metrics:
