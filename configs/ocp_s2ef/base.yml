@@ -8,6 +8,7 @@ dataset:
     grad_target_mean: 0.0
     grad_target_std: 2.981738567352295
   - src: data/data/2020_08_31_ocp_s2ef/val/is_1M/
+  - src: data/data/2020_08_31_ocp_s2ef/val/is_1M/
 
 logger: tensorboard
 
