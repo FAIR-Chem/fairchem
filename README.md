@@ -68,7 +68,7 @@ Dataset download links can be found at [opencatalstproject.org](https://opencata
 ### Preprocess datasets - S2EF only
 
 1. Untar the downloaded dataset: `tar -xzvf sample_xyz_compressed.tar`
-2. Uncompress the untarred directory contents: `baselines/scripts/uncompress.py --ipdir /path/to/sample_xyz_compressed --opdir raw_data/
+2. Uncompress the untarred directory contents: `baselines/scripts/uncompress.py --ipdir /path/to/sample_xyz_compressed --opdir raw_data/`
 3. Run the LMDB preprocessing script: `scripts/preprocess_ef.py --data-path raw_data/ --out-path processed_lmdb/ --num-workers 32 --get-edges --ref-energy`; where
     - `--get-edges`: includes edge information in LMDBs (~10x storage requirement, ~3-5x slowdown), otherwise, compute edges on the fly (larger GPU memory requirement).
     - `--ref-energy`: uses referenced energies instead of raw energies.
