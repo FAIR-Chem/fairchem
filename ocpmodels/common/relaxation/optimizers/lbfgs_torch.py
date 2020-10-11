@@ -2,17 +2,12 @@ from collections import deque
 from pathlib import Path
 
 import ase
-import numpy as np
 import torch
 from ase import Atoms
-from ase.constraints import FixAtoms
-from torch_geometric.data.batch import Batch
 from torch_scatter import scatter
 
 from ocpmodels.common.relaxation.ase_utils import batch_to_atoms
 from ocpmodels.common.utils import radius_graph_pbc
-from ocpmodels.datasets.trajectory_lmdb import data_list_collater
-from ocpmodels.preprocessing import AtomsToGraphs
 
 
 class LBFGS:

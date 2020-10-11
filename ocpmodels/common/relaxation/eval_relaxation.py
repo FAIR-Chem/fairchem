@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 
 from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
@@ -37,22 +39,18 @@ def relax_eval(
     calc = TorchCalc(model, transform)
 
     # Run ML-based relaxation
-    if relax_opt["name"] == "lbfgs":
-        traj_dir = relax_opt.get("traj_dir", None)
-        dyn = LBFGS(
-            batch,
-            calc,
-            maxstep=relax_opt.get("maxstep", 0.04),
-            memory=relax_opt["memory"],
-            damping=relax_opt.get("damping", 1.0),
-            alpha=relax_opt.get("alpha", 70.0),
-            device=device,
-            traj_dir=traj_dir,
-            traj_names=ids,
-        )
-    else:
-        raise ValueError(f"Unknown relax optimizer: {relax_opt}")
-
-    relaxed_batch = dyn.run(fmax=fmax, steps=steps)
+    traj_dir = relax_opt.get("traj_dir", None)
+    optimizer = LBFGS(
+        batch,
+        calc,
+        maxstep=relax_opt.get("maxstep", 0.04),
+        memory=relax_opt["memory"],
+        damping=relax_opt.get("damping", 1.0),
+        alpha=relax_opt.get("alpha", 70.0),
+        device=device,
+        traj_dir=Path(traj_dir),
+        traj_names=ids,
+    )
+    relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
 
     return relaxed_batch

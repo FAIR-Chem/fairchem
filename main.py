@@ -55,7 +55,7 @@ def main(config):
             assert isinstance(trainer, ForcesTrainer), "Relaxations are only possible for ForcesTrainer"
             assert trainer.relax_dataset is not None, "Relax dataset is required for making predictions"
             assert config["checkpoint"]
-            trainer.validate_relaxation(split="test")
+            trainer.validate_relaxation()
 
         distutils.synchronize()
 

@@ -346,14 +346,12 @@ class EnergyTrainer(BaseTrainer):
 
         return metrics
 
-    def predict(self, loader, return_targets=False, results_file=None):
+    def predict(self, loader, results_file=None):
         assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
 
         self.model.eval()
         self.normalizers["target"].to(self.device)
         predictions = []
-        if return_targets:
-            targets = []
 
         for i, batch in tqdm(enumerate(loader), total=len(loader)):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
@@ -363,22 +361,10 @@ class EnergyTrainer(BaseTrainer):
                 out["energy"] = self.normalizers["target"].denorm(out["energy"])
             predictions.extend(out["energy"].tolist())
 
-            if return_targets:
-                energy_target = torch.cat(
-                    [b.y_relaxed.to(self.device) for b in batch], dim=0
-                )
-                targets.extend(energy_target.tolist())
-
-        out = {
-            "predictions": predictions,
-        }
-        if return_targets:
-            out["targets"] = targets
-
         if results_file is not None:
             print(f"Writing results to {results_file}")
             # TODO: Write in correct format
             with open(results_file, "w") as resfile:
                 print(out, file=resfile)
 
-        return out
+        return predictions

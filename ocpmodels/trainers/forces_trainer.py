@@ -247,19 +247,22 @@ class ForcesTrainer(BaseTrainer):
                 self.model, device_ids=[self.device]
             )
 
-    def predict(self, loader, return_targets=False, results_file=None):
-        assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
+    # Takes in a new data source and generates predictions on it.
+    def predict(self, data_loader, per_image=True, results_file=None):
+        assert isinstance(data_loader, (torch.utils.data.dataloader.DataLoader, torch_geometric.data.Batch))
+
+        if isinstance(data_loader, torch_geometric.data.Batch):
+            data_loader = [[data_loader]]
 
         self.model.eval()
         self.normalizers["target"].to(self.device)
         self.normalizers["grad_target"].to(self.device)
+        predictions = {"energy": [], "forces": []}
 
-        predictions = []
-        if return_targets:
-            targets = []
+        for i, batch_list in enumerate(data_loader):
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch_list)
 
-        for i, batch_list in tqdm(enumerate(loader), total=len(loader)):
-            out = self._forward(batch_list)
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
@@ -267,53 +270,32 @@ class ForcesTrainer(BaseTrainer):
                 out["forces"] = self.normalizers["grad_target"].denorm(
                     out["forces"]
                 )
-
-            batch_natoms = torch.cat(
-                [batch.natoms.cpu() for batch in batch_list]
-            )
-            if return_targets:
-                energy_targets = torch.cat(
-                    [batch.y.cpu() for batch in batch_list]
+            if per_image:
+                atoms_sum = 0
+                predictions["energy"].extend(out["energy"].tolist())
+                batch_natoms = torch.cat(
+                    [batch.natoms for batch in batch_list]
                 )
-                force_targets = torch.cat(
-                    [batch.force.cpu() for batch in batch_list]
-                )
-
-            atoms_sum = 0
-            for i, natoms in enumerate(batch_natoms):
-                predictions.append(
-                    {
-                        "energy": out["energy"][i].item(),
-                        "forces": out["forces"][
-                            atoms_sum : natoms + atoms_sum
-                        ].tolist(),
-                    }
-                )
-                if return_targets:
-                    targets.append(
-                        {
-                            "energy": energy_targets[i].item(),
-                            "forces": force_targets[
-                                atoms_sum : natoms + atoms_sum
-                            ].tolist(),
-                        }
+                for natoms in batch_natoms:
+                    predictions["forces"].append(
+                        out["forces"][atoms_sum : natoms + atoms_sum]
+                        .cpu()
+                        .detach()
+                        .numpy()
                     )
-                atoms_sum += natoms
-
-        out = {
-            "predictions": predictions,
-        }
-        if return_targets:
-            out.update({"targets": targets})
+                    atoms_sum += natoms
+            else:
+                predictions["energy"] = out["energy"].detach()
+                predictions["forces"] = out["forces"].detach()
+                break
 
         if results_file is not None:
             print(f"Writing results to {results_file}")
-            # TODO: Write in correct format
+            # TODO: Write in correct format for EvalAI
             with open(results_file, "w") as resfile:
-                print(out, file=resfile)
+                print(predictions, file=resfile)
 
-        return out
-
+        return predictions
 
     def train(self):
         self.best_val_metric = -1.0
