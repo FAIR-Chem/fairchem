@@ -122,7 +122,7 @@ if __name__ == "__main__":
     ]
 
     # Chunk the trajectories into args.num_workers splits
-    chunked_traj_files = chunk_list(xyz_logs, args.num_workers)
+    chunked_txt_files = chunk_list(xyz_logs, args.num_workers)
 
     # Extract features
     sampled_ids, idx = [[]] * args.num_workers, [0] * args.num_workers
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         (
             a2g,
             db_paths[i],
-            chunked_traj_files[i],
+            chunked_txt_files[i],
             sampled_ids[i],
             idx[i],
         )
