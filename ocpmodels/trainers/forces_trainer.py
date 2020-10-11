@@ -249,7 +249,13 @@ class ForcesTrainer(BaseTrainer):
 
     # Takes in a new data source and generates predictions on it.
     def predict(self, data_loader, per_image=True, results_file=None):
-        assert isinstance(data_loader, (torch.utils.data.dataloader.DataLoader, torch_geometric.data.Batch))
+        assert isinstance(
+            data_loader,
+            (
+                torch.utils.data.dataloader.DataLoader,
+                torch_geometric.data.Batch,
+            ),
+        )
 
         if isinstance(data_loader, torch_geometric.data.Batch):
             data_loader = [[data_loader]]
@@ -291,9 +297,14 @@ class ForcesTrainer(BaseTrainer):
 
         if results_file is not None:
             print(f"Writing results to {results_file}")
-            # TODO: Write in correct format for EvalAI
+            # EvalAI expects a list of dicts with energy and forces
+            evalAI_results = []
+            for energy, forces in predictions["energy"], predictions["forces"]:
+                evalAI_results.append(
+                    {"energy": energy, "forces": forces.tolist()}
+                )
             with open(results_file, "w") as resfile:
-                print(predictions, file=resfile)
+                json.dump(evalAI_results, resfile)
 
         return predictions
 

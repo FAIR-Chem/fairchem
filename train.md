@@ -1,6 +1,6 @@
 
 The open compute challenge consists of three distinct tasks. This document is a tutorial 
-for training and evaluating models for each of these tasks.
+for training and evaluating models for each of these tasks as well as generating submission files for EvalAI.
 
 `main.py` serves as the entry point to run any task tasks. This script requires two command line 
 arguments at a minimum:
@@ -63,7 +63,7 @@ Next, run this model on the test data:
 python main.py --mode predict --config-yml configs/ocp_is2re/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
-The predictions are stored in `predictions.txt` which can be uploaded to EvalAI.
+The predictions are stored in `predictions.json` and later used to create a submission file to be uploaded to EvalAI. 
 
 ## Structure to Energy and Forces (S2EF)
 
@@ -103,17 +103,31 @@ Next, run this model on the test data:
 python main.py --mode predict --config-yml configs/ocp_s2ef/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
-The predictions are stored in `predictions.txt` which can be uploaded to EvalAI.
+The predictions are stored in `predictions.json` and later used to create a submission file to be uploaded to EvalAI. 
 
 ## Initial Structure to Relaxed Structure (IS2RS)
 
 In the IS2RS task the model takes as input an initial structure and predicts the atomic positions in their
 final, relaxed state. This can be done by training a model to predict per-atom forces similar to the S2EF
-task and then running an iterative relaxation. You can find examples configuration files in `configs/ocp_is2rs`.
+task and then running an iterative relaxation. Although we present an iterative approach, models that directly predict relaxed states are also possible. You can find example configuration files in `configs/ocp_is2rs`.
 
-To train a SchNet model for the IS2RS task, run: 
+To train a SchNet model for the IS2RS task, run:
 ```
 python main.py --mode train --config-yml configs/ocp_is2rs/schnet.yml
+```
+Note - iterative approaches to the IS2RS task use trained models that are no different than the S2EF task. Existing S2EF models may be used with the following additions to the configuration file:
+```
+# Relaxation options
+relax_dataset:
+  src: data/09_29_val_is2rs_lmdb
+write_pos: True
+relaxation_steps: 300
+relax_opt:
+  maxstep: 300
+  memory: 100
+  damping: 0.25
+  alpha: 100.
+  traj_dir: "trajectories"
 ```
 
 After training, you can generate trajectories using:
@@ -121,4 +135,21 @@ After training, you can generate trajectories using:
 python main.py --mode run_relaxations --config-yml configs/ocp_is2rs/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
-The predicted trajectories are stored in `trajectories` directory.
+The relaxed structure positions are stored in `[RESULTS_DIR]/relaxed_pos_[DEVICE #].json` and later used to create a submission file to be uploaded to EvalAI. Predicted trajectories are stored in `trajectories` directory for those interested in analyzing the complete relaxation trajectory.
+
+## Create EvalAI submission files
+
+EvalAI expects results to be structured in a specific format for a submission to be successful. A submission must contain results from the 4 different splits - in distribution (id), out of distribution adsorbate (ood ads), out of distribution catalyst (ood cat), and out of distribution adsorbate and catalyst (ood both). Constructing the submission file for each of the above tasks is as follows:
+
+### S2EF/IS2RE:
+1. Run predictions `--mode predict` on all 4 splits, generating `predictions.json` files for each split. 
+2. Modify `scripts/make_evalai_json.py` with the corresponding paths of the `predictions.json` files and run to generate your final submission file `taskname_split_submission.json` (filename may be modified).
+3. Upload `taskname_split_submission.json` to EvalAI.
+
+
+### IS2RS:
+1. Ensure `write_pos: True` is included in your configuration file. Run relaxations `--mode run_relaxations` on all 4 splits, generating `relaxed_pos_[DEVICE #].json` files for each split.
+2. For each split, if relaxations were run with multiple GPUs, combine `relaxed_pos_[DEVICE #].json` into one `relaxed_pos.json` file using `scripts/make_evalai_json.py`, otherwise skip to 3.
+2. Modify `scripts/make_evalai_json.py` with the corresponding paths of the `relaxed_pos.json` files and run to generate your final submission file `taskname_split_submission.json` (filename may be modified).
+3. Upload `taskname_split_submission.json` to EvalAI.
+

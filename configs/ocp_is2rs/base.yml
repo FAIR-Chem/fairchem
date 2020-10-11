@@ -26,6 +26,7 @@ task:
   # Relaxation options
   relax_dataset:
     src: data/09_29_val_is2rs_lmdb
+  write_pos: True
   relaxation_steps: 300
   relax_opt:
     maxstep: 300
