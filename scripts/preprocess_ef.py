@@ -1,5 +1,6 @@
 """
 Creates LMDB files with extracted graph features from provided *.extxyz files
+for the S2EF task.
 """
 
 import argparse
