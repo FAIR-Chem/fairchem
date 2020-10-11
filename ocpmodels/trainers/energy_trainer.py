@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 
 import torch
@@ -182,7 +183,9 @@ class EnergyTrainer(BaseTrainer):
             num_gpus=self.config["optim"].get("num_gpus", 1),
         )
         if distutils.initialized():
-            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
+            self.model = DistributedDataParallel(
+                self.model, device_ids=[self.device]
+            )
 
     def train(self):
         self.best_val_mae = 1e9
@@ -200,7 +203,10 @@ class EnergyTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator, metrics={},
+                    out,
+                    batch,
+                    self.evaluator,
+                    metrics={},
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -341,7 +347,9 @@ class EnergyTrainer(BaseTrainer):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
 
         metrics = evaluator.eval(
-            out, {"energy": energy_target}, prev_metrics=metrics,
+            out,
+            {"energy": energy_target},
+            prev_metrics=metrics,
         )
 
         return metrics
@@ -358,13 +366,15 @@ class EnergyTrainer(BaseTrainer):
                 out = self._forward(batch)
 
             if self.config["dataset"].get("normalize_labels", True):
-                out["energy"] = self.normalizers["target"].denorm(out["energy"])
+                out["energy"] = self.normalizers["target"].denorm(
+                    out["energy"]
+                )
             predictions.extend(out["energy"].tolist())
 
         if results_file is not None:
             print(f"Writing results to {results_file}")
-            # TODO: Write in correct format
+            # EvalAI expects a list of energies
             with open(results_file, "w") as resfile:
-                print(out, file=resfile)
+                json.dump(predictions, resfile)
 
         return predictions
