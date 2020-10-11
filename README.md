@@ -2,15 +2,13 @@
 
 Implements the following baselines that take arbitrary chemical structures as
 input to predict material properties:
+- [SchNet](https://arxiv.org/abs/1706.08566)
+- [DimeNet](https://arxiv.org/abs/2003.03123)
 - [Crystal Graph Convolutional Neural Networks (CGCNN)](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301).
-- Modified version of CGCNN as proposed in [Gu et al., 2020](https://pubs.acs.org/doi/abs/10.1021/acs.jpclett.0c00634).
-- [Path-Augmented Graph Transformer Network](https://arxiv.org/abs/1905.12712).
-Also related to [Graph Attention Networks](https://arxiv.org/abs/1710.10903) and
-[Graph Transformer](https://openreview.net/forum?id=HJei-2RcK7).
 
 ##  Installation
 
-[last updated September 1, 2020]
+[last updated October 10, 2020]
 
 The easiest way of installing prerequisites is via [conda](https://conda.io/docs/index.html).
 After installing [conda](http://conda.pydata.org/), run the following commands
@@ -65,83 +63,19 @@ pre-commit install
 
 ### Download the datasets
 
-For now, we are working with the following datasets:
-- `ulissigroup_co`: dataset of DFT results for CO adsorption on various slabs (shared by Junwoong Yoon) already in pytorch-geometric format.
-- `gasdb`: tiny dataset of DFT results for CO, H, N, O, and OH adsorption on various slabs (shared by Kevin Tran) in raw ase format.
+Dataset download links can be found at [opencatalstproject.org](https://opencatalystproject.org) for the S2EF, IS2RS, and IS2RE tasks. IS2* datasets are stored as LMDB files and are ready to be used upon download. S2EF datasets require an additional preprocessing step.
 
-To download the datasets:
+### Preprocess datasets - S2EF only
 
-```
-cd data
-./download_data.sh
-```
+1. Untar the downloaded dataset: `tar -xzvf sample_xyz_compressed.tar`
+2. Uncompress the untarred directory contents: `baselines/scripts/uncompress.py --ipdir /path/to/sample_xyz_compressed --opdir raw_data/`
+3. Run the LMDB preprocessing script: `scripts/preprocess_ef.py --data-path raw_data/ --out-path processed_lmdb/ --num-workers 32 --get-edges --ref-energy`; where
+    - `--get-edges`: includes edge information in LMDBs (~10x storage requirement, ~3-5x slowdown), otherwise, compute edges on the fly (larger GPU memory requirement).
+    - `--ref-energy`: uses referenced energies instead of raw energies.
 
-### Train models to predict energies from structures
+### Train models for the the desired tasks
 
-To quickly get started with training a CGCNN model on the `gasdb` dataset
-with reasonable defaults, take a look at
-[scripts/train_example.py](https://github.com/Open-Catalyst-Project/baselines/blob/master/scripts/train_example.py)
-(reproduced below):
-
-```
-from ocpmodels.trainers import SimpleTrainer
-
-task = {
-    "dataset": "gasdb",
-    "description": "Binding energy regression on a dataset of DFT results for CO, H, N, O, and OH adsorption on various slabs.",
-    "labels": ["binding energy"],
-    "metric": "mae",
-    "type": "regression",
-}
-
-model = {
-    "name": "cgcnn",
-    "atom_embedding_size": 64,
-    "fc_feat_size": 128,
-    "num_fc_layers": 4,
-    "num_graph_conv_layers": 6,
-}
-
-dataset = {
-    "src": "data/data/gasdb",
-    "train_size": 800,
-    "val_size": 100,
-    "test_size": 100,
-}
-
-optimizer = {
-    "batch_size": 10,
-    "lr_gamma": 0.1,
-    "lr_initial": 0.001,
-    "lr_milestones": [100, 150],
-    "max_epochs": 50,
-    "warmup_epochs": 10,
-    "warmup_factor": 0.2,
-}
-
-trainer = SimpleTrainer(
-    task=task,
-    model=model,
-    dataset=dataset,
-    optimizer=optimizer,
-    identifier="my-first-experiment",
-)
-
-trainer.train()
-
-predictions = trainer.predict("data/data/gasdb")
-```
-
-For more advanced usage and digging deeper into default parameters, take a look
-at [`BaseTrainer`](https://github.com/Open-Catalyst-Project/baselines/blob/master/ocpmodels/trainers/base_trainer.py). To use `BaseTrainer` to train a CGCNN model
-on the `ulissigroup_co` CO adsorption data to predict binding energy (with
-default params):
-
-```bash
-python main.py --identifier my-first-experiment --config-yml configs/ulissigroup_co/cgcnn.yml
-```
-
-See [`configs/ulissigroup_co/base.yml`](https://github.com/Open-Catalyst-Project/baselines/blob/master/configs/ulissigroup_co/base.yml) and [`configs/ulissigroup_co/cgcnn.yml`](https://github.com/Open-Catalyst-Project/baselines/blob/master/configs/ulissigroup_co/cgcnn.yml) for dataset, model and optimizer parameters.
+A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/baselines/blob/release_train/train.md).
 
 ## Acknowledgements
 
