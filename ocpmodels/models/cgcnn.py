@@ -69,6 +69,9 @@ class CGCNN(BaseModel):
         if self.embedding.device != data.atomic_numbers.device:
             self.embedding = self.embedding.to(data.atomic_numbers.device)
         data.x = self.embedding[data.atomic_numbers.long() - 1]
+        assert (
+            hasattr(data, "edge_index") or self.otf_graph
+        ), "LMDB does not contain edge indices, set self.otf_graph=True"
 
         pos = data.pos
         if self.regress_forces:

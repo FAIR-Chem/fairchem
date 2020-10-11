@@ -1,9 +1,10 @@
 import torch
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 from torch import nn
 from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
+
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 
 
 @registry.register_model("dimenet")
@@ -54,6 +55,9 @@ class DimeNetWrap(DimeNet):
         if self.regress_forces:
             pos = pos.requires_grad_(True)
         batch = data.batch
+        assert (
+            hasattr(data, "edge_index") or self.otf_graph
+        ), "LMDB does not contain edge indices, set self.otf_graph=True"
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
