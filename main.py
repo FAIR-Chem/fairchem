@@ -45,15 +45,21 @@ def main(config):
             trainer.train()
 
         elif config["mode"] == "predict":
-            assert trainer.test_loader is not None, "Test dataset is required for making predictions"
+            assert (
+                trainer.test_loader is not None
+            ), "Test dataset is required for making predictions"
             assert config["checkpoint"]
             run_dir = config.get("run_dir", "./")
-            results_file = Path(run_dir) / "predictions.txt"
+            results_file = Path(run_dir) / "predictions.json"
             trainer.predict(trainer.test_loader, results_file=results_file)
 
         elif config["mode"] == "run_relaxations":
-            assert isinstance(trainer, ForcesTrainer), "Relaxations are only possible for ForcesTrainer"
-            assert trainer.relax_dataset is not None, "Relax dataset is required for making predictions"
+            assert isinstance(
+                trainer, ForcesTrainer
+            ), "Relaxations are only possible for ForcesTrainer"
+            assert (
+                trainer.relax_dataset is not None
+            ), "Relax dataset is required for making predictions"
             assert config["checkpoint"]
             trainer.validate_relaxation()
 
