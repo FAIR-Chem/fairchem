@@ -4,7 +4,7 @@ from torch_geometric.nn import MessagePassing, global_mean_pool, radius_graph
 from torch_geometric.nn.models.schnet import GaussianSmearing
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances
+from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 from ocpmodels.datasets.elemental_embeddings import EMBEDDINGS
 from ocpmodels.models.base import BaseModel
 
@@ -22,12 +22,15 @@ class CGCNN(BaseModel):
         num_graph_conv_layers=6,
         fc_feat_size=128,
         num_fc_layers=4,
+        otf_graph=False,
         cutoff=6.0,
         num_gaussians=50,
     ):
         super(CGCNN, self).__init__(num_atoms, bond_feat_dim, num_targets)
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
+        self.cutoff = cutoff
+        self.otf_graph = otf_graph
 
         # Get CGCNN atom embeddings
         self.embedding = torch.zeros(100, 92)
@@ -70,6 +73,14 @@ class CGCNN(BaseModel):
         pos = data.pos
         if self.regress_forces:
             pos = pos.requires_grad_(True)
+
+        if self.otf_graph:
+            edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                data, self.cutoff, 50, data.pos.device
+            )
+            data.edge_index = edge_index
+            data.cell_offsets = cell_offsets
+            data.neighbors = neighbors
 
         if self.use_pbc:
             out = get_pbc_distances(
