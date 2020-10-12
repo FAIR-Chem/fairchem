@@ -14,7 +14,7 @@ from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
-from ocpmodels.common.relaxation.eval_relaxation import relax_eval
+from ocpmodels.common.relaxation.ml_relaxation import ml_relax
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
@@ -499,12 +499,11 @@ class ForcesTrainer(BaseTrainer):
 
         relaxed_positions = []
         for i, batch in enumerate(self.relax_loader):
-            relaxed_batch = relax_eval(
+            relaxed_batch = ml_relax(
                 batch=batch,
                 model=self,
                 steps=self.config["task"].get("relaxation_steps", 200),
                 fmax=self.config["task"].get("relaxation_fmax", 0.0),
-                return_relaxed_pos=self.config["task"].get("write_pos", False),
                 relax_opt=self.config["task"]["relax_opt"],
                 device=self.device,
                 transform=None,
