@@ -261,8 +261,10 @@ class ForcesTrainer(BaseTrainer):
             data_loader = [[data_loader]]
 
         self.model.eval()
-        self.normalizers["target"].to(self.device)
-        self.normalizers["grad_target"].to(self.device)
+        if self.normalizers is not None and "target" in self.normalizers:
+            self.normalizers["target"].to(self.device)
+            self.normalizers["grad_target"].to(self.device)
+
         predictions = {"energy": [], "forces": []}
 
         for i, batch_list in enumerate(data_loader):
@@ -299,7 +301,9 @@ class ForcesTrainer(BaseTrainer):
             print(f"Writing results to {results_file}")
             # EvalAI expects a list of dicts with energy and forces
             evalAI_results = []
-            for energy, forces in predictions["energy"], predictions["forces"]:
+            for energy, forces in zip(
+                predictions["energy"], predictions["forces"]
+            ):
                 evalAI_results.append(
                     {"energy": energy, "forces": forces.tolist()}
                 )
