@@ -85,4 +85,5 @@ by [Tian Xie](http://txie.me), but has undergone significant changes since.
 
 ## License
 
-TBD
+This code is MIT licensed, as found in the [LICENSE file](https://github.com/Open-Catalyst-Project/baselines/blob/master/LICENSE.md).
+

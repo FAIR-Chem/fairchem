@@ -1,4 +1,11 @@
 """
+Copyright (c) Facebook, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+
+"""
 An evaluation module for use with the OCP dataset and suite of tasks. It should
 be possible to import this independently of the rest of the codebase, e.g:
 
