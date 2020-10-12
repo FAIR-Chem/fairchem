@@ -1,6 +1,6 @@
 import torch
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances
+from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 from torch import nn
 from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
@@ -20,6 +20,7 @@ class DimeNetWrap(DimeNet):
         num_bilinear=8,
         num_spherical=7,
         num_radial=6,
+        otf_graph=False,
         cutoff=10.0,
         envelope_exponent=5,
         num_before_skip=1,
@@ -31,6 +32,7 @@ class DimeNetWrap(DimeNet):
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
+        self.otf_graph = otf_graph
         self.max_angles_per_image = max_angles_per_image
 
         super(DimeNetWrap, self).__init__(
@@ -52,6 +54,15 @@ class DimeNetWrap(DimeNet):
         if self.regress_forces:
             pos = pos.requires_grad_(True)
         batch = data.batch
+
+        if self.otf_graph:
+            edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                data, self.cutoff, 50, data.pos.device
+            )
+            data.edge_index = edge_index
+            data.cell_offsets = cell_offsets
+            data.neighbors = neighbors
+
         if self.use_pbc:
             out = get_pbc_distances(
                 pos,

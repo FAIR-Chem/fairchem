@@ -1,4 +1,6 @@
+import copy
 import datetime
+import json
 import os
 
 import torch
@@ -9,9 +11,10 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
-from ocpmodels.common.ase_utils import relax_eval
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
+from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
+from ocpmodels.common.relaxation.ml_relaxation import ml_relax
 from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
@@ -70,6 +73,8 @@ class ForcesTrainer(BaseTrainer):
             self.config["dataset"] = dataset[0]
             if len(dataset) > 1:
                 self.config["val_dataset"] = dataset[1]
+            if len(dataset) > 2:
+                self.config["test_dataset"] = dataset[2]
         else:
             self.config["dataset"] = dataset
 
@@ -123,6 +128,32 @@ class ForcesTrainer(BaseTrainer):
                     num_workers=self.config["optim"]["num_workers"],
                     pin_memory=True,
                 )
+            if "test_dataset" in self.config:
+                self.test_dataset = registry.get_dataset_class(
+                    self.config["task"]["dataset"]
+                )(self.config["test_dataset"])
+                self.test_loader = DataLoader(
+                    self.test_dataset,
+                    self.config["optim"].get("eval_batch_size", 64),
+                    shuffle=False,
+                    collate_fn=self.parallel_collater,
+                    num_workers=self.config["optim"]["num_workers"],
+                    pin_memory=True,
+                )
+
+            if "relax_dataset" in self.config["task"]:
+                self.relax_dataset = registry.get_dataset_class(
+                    self.config["task"]["dataset"]
+                )(self.config["task"]["relax_dataset"])
+                self.relax_loader = DataLoader(
+                    self.relax_dataset,
+                    batch_size=self.config["optim"].get("eval_batch_size", 64),
+                    shuffle=False,
+                    collate_fn=self.parallel_collater,
+                    num_workers=self.config["optim"]["num_workers"],
+                    pin_memory=True,
+                )
+
         else:
             self.dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
@@ -207,41 +238,33 @@ class ForcesTrainer(BaseTrainer):
         super(ForcesTrainer, self).load_model()
 
         self.model = OCPDataParallel(
-            self.model, output_device=self.device, num_gpus=1,
+            self.model,
+            output_device=self.device,
+            num_gpus=1,
         )
         if distutils.initialized():
-            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
+            self.model = DistributedDataParallel(
+                self.model, device_ids=[self.device]
+            )
 
     # Takes in a new data source and generates predictions on it.
-    def predict(self, dataset, batch_size=32):
-        if isinstance(dataset, dict):
-            if self.config["task"]["dataset"] == "trajectory_lmdb":
-                print(
-                    "### Generating predictions on {}.".format(dataset["src"])
-                )
-            else:
-                print(
-                    "### Generating predictions on {}.".format(
-                        dataset["src"] + dataset["traj"]
-                    )
-                )
+    def predict(self, data_loader, per_image=True, results_file=None):
+        assert isinstance(
+            data_loader,
+            (
+                torch.utils.data.dataloader.DataLoader,
+                torch_geometric.data.Batch,
+            ),
+        )
 
-            dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
-            )(dataset)
-
-            data_loader = DataLoader(
-                dataset,
-                batch_size=batch_size,
-                shuffle=False,
-                collate_fn=self.parallel_collater,
-            )
-        elif isinstance(dataset, torch_geometric.data.Batch):
-            data_loader = [[dataset]]
-        else:
-            raise NotImplementedError
+        if isinstance(data_loader, torch_geometric.data.Batch):
+            data_loader = [[data_loader]]
 
         self.model.eval()
+        if self.normalizers is not None and "target" in self.normalizers:
+            self.normalizers["target"].to(self.device)
+            self.normalizers["grad_target"].to(self.device)
+
         predictions = {"energy": [], "forces": []}
 
         for i, batch_list in enumerate(data_loader):
@@ -255,22 +278,42 @@ class ForcesTrainer(BaseTrainer):
                 out["forces"] = self.normalizers["grad_target"].denorm(
                     out["forces"]
                 )
-            atoms_sum = 0
-            predictions["energy"].extend(out["energy"].tolist())
-            batch_natoms = torch.cat([batch.natoms for batch in batch_list])
-            for natoms in batch_natoms:
-                predictions["forces"].append(
-                    out["forces"][atoms_sum : natoms + atoms_sum]
-                    .cpu()
-                    .detach()
-                    .numpy()
+            if per_image:
+                atoms_sum = 0
+                predictions["energy"].extend(out["energy"].tolist())
+                batch_natoms = torch.cat(
+                    [batch.natoms for batch in batch_list]
                 )
-                atoms_sum += natoms
+                for natoms in batch_natoms:
+                    predictions["forces"].append(
+                        out["forces"][atoms_sum : natoms + atoms_sum]
+                        .cpu()
+                        .detach()
+                        .numpy()
+                    )
+                    atoms_sum += natoms
+            else:
+                predictions["energy"] = out["energy"].detach()
+                predictions["forces"] = out["forces"].detach()
+                break
+
+        if results_file is not None:
+            print(f"Writing results to {results_file}")
+            # EvalAI expects a list of dicts with energy and forces
+            evalAI_results = []
+            for energy, forces in zip(
+                predictions["energy"], predictions["forces"]
+            ):
+                evalAI_results.append(
+                    {"energy": energy, "forces": forces.tolist()}
+                )
+            with open(results_file, "w") as resfile:
+                json.dump(evalAI_results, resfile)
 
         return predictions
 
     def train(self):
-        self.best_val_metric = -1.
+        self.best_val_metric = -1.0
         eval_every = self.config["optim"].get("eval_every", -1)
         iters = 0
         self.metrics = {}
@@ -287,7 +330,10 @@ class ForcesTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator, self.metrics,
+                    out,
+                    batch,
+                    self.evaluator,
+                    self.metrics,
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -390,20 +436,10 @@ class ForcesTrainer(BaseTrainer):
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
 
-            if (
-                "relaxation_dir" in self.config["task"]
-                and self.config["task"].get("ml_relax", "end") == "train"
-            ):
-                self.validate_relaxation(
-                    split="val", epoch=epoch,
-                )
-
-        if (
-            "relaxation_dir" in self.config["task"]
-            and self.config["task"].get("ml_relax", "end") == "end"
-        ):
+        if "relax_dir" in self.config["task"]:
             self.validate_relaxation(
-                split="val", epoch=epoch,
+                split="val",
+                epoch=epoch,
             )
 
     def validate(self, split="val", epoch=None):
@@ -459,29 +495,71 @@ class ForcesTrainer(BaseTrainer):
         print("### Evaluating ML-relaxation")
         self.model.eval()
 
-        mae_energy, mae_structure = relax_eval(
-            trainer=self,
-            traj_dir=self.config["task"]["relaxation_dir"],
-            metric=self.config["task"]["metric"],
-            steps=self.config["task"].get("relaxation_steps", 300),
-            fmax=self.config["task"].get("relaxation_fmax", 0.01),
-            results_dir=self.config["cmd"]["results_dir"],
-        )
+        evaluator, metrics = Evaluator(task="is2rs"), {}
 
-        mae_energy = distutils.all_reduce(
-            mae_energy, average=True, device=self.device
-        )
-        mae_structure = distutils.all_reduce(
-            mae_structure, average=True, device=self.device
-        )
+        relaxed_positions = []
+        for i, batch in enumerate(self.relax_loader):
+            relaxed_batch = ml_relax(
+                batch=batch,
+                model=self,
+                steps=self.config["task"].get("relaxation_steps", 200),
+                fmax=self.config["task"].get("relaxation_fmax", 0.0),
+                relax_opt=self.config["task"]["relax_opt"],
+                device=self.device,
+                transform=None,
+            )
 
-        log_dict = {
-            "relaxed_energy_mae": mae_energy,
-            "relaxed_structure_mae": mae_structure,
-            "epoch": epoch + 1,
-        }
+            mask = relaxed_batch.fixed == 0
+            s_idx = 0
+            natoms_free = []
+            for natoms in relaxed_batch.natoms:
+                natoms_free.append(
+                    torch.sum(mask[s_idx : s_idx + natoms]).item()
+                )
+                s_idx += natoms
+
+            target = {
+                "energy": relaxed_batch.y_relaxed,
+                "positions": relaxed_batch.pos_relaxed[mask],
+                "cell": relaxed_batch.cell,
+                "pbc": torch.tensor([True, True, True]),
+                "natoms": torch.LongTensor(natoms_free),
+            }
+
+            prediction = {
+                "energy": relaxed_batch.y,
+                "positions": relaxed_batch.pos[mask],
+                "cell": relaxed_batch.cell,
+                "pbc": torch.tensor([True, True, True]),
+                "natoms": torch.LongTensor(natoms_free),
+            }
+
+            metrics = evaluator.eval(prediction, target, metrics)
+
+            if self.config["task"].get("write_pos", False):
+                ids = relaxed_batch.id
+                natoms = relaxed_batch.natoms.tolist()
+                positions = torch.split(relaxed_batch.pos, natoms)
+                batch_relaxed_positions = [pos.tolist() for pos in positions]
+                relaxed_positions += list(zip(ids, batch_relaxed_positions))
+
+        aggregated_metrics = {}
+        for k in metrics:
+            aggregated_metrics[k] = {
+                "total": distutils.all_reduce(
+                    metrics[k]["total"], average=False, device=self.device
+                ),
+                "numel": distutils.all_reduce(
+                    metrics[k]["numel"], average=False, device=self.device
+                ),
+            }
+            aggregated_metrics[k]["metric"] = (
+                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
+            )
+        metrics = aggregated_metrics
 
         # Make plots.
+        log_dict = {k: metrics[k]["metric"] for k in metrics}
         if self.logger is not None and epoch is not None:
             self.logger.log(
                 log_dict,
@@ -489,8 +567,19 @@ class ForcesTrainer(BaseTrainer):
                 split=split,
             )
 
-        print(log_dict)
-        return mae_energy, mae_structure
+        if self.config["task"].get("write_pos", False):
+            rank = distutils.get_rank()
+            pos_filename = os.path.join(
+                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.json"
+            )
+            print("Writing relaxed pos to:", pos_filename)
+            with open(pos_filename, "w") as f:
+                json.dump(relaxed_positions, f)
+
+        if distutils.is_master():
+            print(metrics)
+
+        return metrics
 
     def _forward(self, batch_list):
         # forward pass.
