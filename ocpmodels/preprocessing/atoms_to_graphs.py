@@ -141,7 +141,7 @@ class AtomsToGraphs:
             )
 
             data.edge_index = edge_index
-            data.cell_offsets = (cell_offsets,)
+            data.cell_offsets = cell_offsets
         if self.r_energy:
             energy = atoms.get_potential_energy(apply_constraint=False)
             data.y = energy
