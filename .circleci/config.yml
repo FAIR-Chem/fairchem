@@ -1,0 +1,59 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.7
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+          - v0-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
+
+      - run:
+          name: Install conda
+          command: |
+            if [ ! -d "/home/circleci/miniconda" ]; then
+              wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+              bash miniconda.sh -b -p "$HOME"/miniconda
+              source /home/circleci/miniconda/etc/profile.d/conda.sh
+              conda activate base
+              # Conda configuration
+              conda config --set always_yes yes --set auto_update_conda false
+              # Update conda
+              conda update conda
+            fi
+      - run:
+          name: Create environment
+          command: |
+            if [ ! -d "/home/circleci/miniconda" ]; then
+              source /home/circleci/miniconda/etc/profile.d/conda.sh
+              conda activate base
+              conda install -c conda-forge conda-merge
+              conda-merge env.common.yml env.cpu.yml > env.yml
+              conda env create -f env.yml
+            fi
+      - save_cache:
+          paths:
+            - /home/circleci/miniconda
+          key: v0-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
+
+      - run:
+          name: Run tests
+          command: |
+            source /home/circleci/miniconda/etc/profile.d/conda.sh
+            conda activate ocp-models
+            pip install -e .
+            pre-commit install
+            pytest
+
+      - run:
+          name: Run black
+          command: |
+            source /home/circleci/miniconda/etc/profile.d/conda.sh
+            conda activate ocp-models
+            pip install black
+            black . --diff
+            black . --check
