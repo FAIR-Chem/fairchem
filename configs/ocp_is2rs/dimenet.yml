@@ -1,5 +1,5 @@
 includes:
-- configs/ocp_s2ef/base.yml
+- configs/ocp_is2rs/base.yml
 
 model:
   name: dimenet
@@ -10,6 +10,7 @@ model:
   num_output_layers: 1
   use_pbc: False
   max_angles_per_image: 30000
+  otf_graph: True
 
 optim:
   batch_size: 32

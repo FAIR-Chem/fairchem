@@ -45,7 +45,7 @@ class Flags:
         self.parser.add_argument(
             "--run-dir",
             default="./",
-            type=Path,
+            type=str,
             help="Directory to store checkpoint/log/result directory",
         )
         self.parser.add_argument(

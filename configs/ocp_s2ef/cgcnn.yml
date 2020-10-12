@@ -23,6 +23,6 @@ optim:
     - 20
   warmup_epochs: 3
   warmup_factor: 0.2
-  max_epochs: 50
+  max_epochs: 1
   force_coefficient: 100
   num_gpus: 3
