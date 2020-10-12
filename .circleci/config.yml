@@ -50,10 +50,9 @@ jobs:
             pytest
 
       - run:
-          name: Run black, isort
+          name: Run black
           command: |
             source /home/circleci/miniconda/etc/profile.d/conda.sh
             conda activate ocp-models
-            pip install black isort
+            pip install black
             black . --check
-            isort . --check
