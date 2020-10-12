@@ -56,4 +56,4 @@ jobs:
             conda activate ocp-models
             pip install black isort
             black . --check
-            isrot . --check
+            isort . --check
