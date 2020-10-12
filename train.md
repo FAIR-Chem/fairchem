@@ -28,7 +28,7 @@ In the rest of this tutorial, we explain how to train models for each task.
 
 In the IS2RE tasks, the model takes the initial structure as input and predict the structure’s energy
 in the relaxed state. To train a model for the IS2RE task, you can use the `EnergyTrainer`
-Trainer and `SinglePointLMDB` dataset by specifying the following in your configuration file:
+Trainer and `SinglePointLmdb` dataset by specifying the following in your configuration file:
 ```
 trainer: energy # Use the EnergyTrainer
 
@@ -69,7 +69,7 @@ The predictions are stored in `predictions.json` and later used to create a subm
 
 In the S2EF task, the model takes the positions of the atoms as input and predicts the energy and per-atom
 forces as calculated by DFT. To train a model for the S2EF task, you can use the `ForcesTrainer` Trainer 
-and `SinglePointLMDB` dataset by specifying the following in your configuration file:
+and `TrajectoryLmdb` dataset by specifying the following in your configuration file:
 ```
 trainer: forces  # Use the ForcesTrainer
 
