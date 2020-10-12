@@ -26,6 +26,39 @@ from ocpmodels.trainers.base_trainer import BaseTrainer
 
 @registry.register_trainer("energy")
 class EnergyTrainer(BaseTrainer):
+    """
+    Trainer class for the Initial Structure to Relaxed Energy (IS2RE) task.
+
+    .. note::
+
+        Examples of configurations for task, model, dataset and optimizer
+        can be found in `configs/ocp_is2re <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_.
+
+
+    Args:
+        task (dict): Task configuration.
+        model (dict): Model configuration.
+        dataset (dict): Dataset configuration. The dataset needs to be a SinglePointLMDB dataset.
+        optimizer (dict): Optimizer configuration.
+        identifier (str): Experiment identifier that is appended to log directory.
+        run_dir (str, optional): Path to the run directory where logs are to be saved.
+            (default: :obj:`None`)
+        is_debug (bool, optional): Run in debug mode.
+            (default: :obj:`False`)
+        is_vis (bool, optional): Run in debug mode.
+            (default: :obj:`False`)
+        print_every (int, optional): Frequency of printing logs.
+            (default: :obj:`100`)
+        seed (int, optional): Random number seed.
+            (default: :obj:`None`)
+        logger (str, optional): Type of logger to be used.
+            (default: :obj:`tensorboard`)
+        local_rank (int, optional): Local rank of the process, only applicable for distributed training.
+            (default: :obj:`0`)
+        amp (bool, optional): Run using automatic mixed precision.
+            (default: :obj:`False`)
+    """
+
     def __init__(
         self,
         task,
@@ -42,7 +75,6 @@ class EnergyTrainer(BaseTrainer):
         local_rank=0,
         amp=False,
     ):
-
         if run_dir is None:
             run_dir = os.getcwd()
 

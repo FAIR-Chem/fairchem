@@ -18,6 +18,35 @@ from ocpmodels.models.base import BaseModel
 
 @registry.register_model("cgcnn")
 class CGCNN(BaseModel):
+    r"""Wrapper around the Crystal Graph CNN model from the
+    `"Crystal Graph Convolutional Neural Networks for an Accurate
+    and Interpretable Prediction of Material Properties"
+    <https://arxiv.org/abs/1710.10324>`_ paper.
+
+    Args:
+        num_atoms (int): Number of atoms.
+        bond_feat_dim (int): Dimension of bond features.
+        num_targets (int): Number of targets to predict.
+        use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
+            (default: :obj:`True`)
+        regress_forces (bool, optional): If set to :obj:`True`, predict forces by differentiating
+            energy with respect to positions.
+            (default: :obj:`True`)
+        atom_embedding_size (int, optional): Size of atom embeddings.
+            (default: :obj:`64`)
+        num_graph_conv_layers (int, optional): Number of graph convolutional layers.
+            (default: :obj:`6`)
+        fc_feat_size (int, optional): Size of fully connected layers.
+            (default: :obj:`128`)
+        num_fc_layers (int, optional): Number of fully connected layers.
+            (default: :obj:`4`)
+        otf_graph (bool, optional): If set to :obj:`True`, compute graph edges on the fly.
+            (default: :obj:`False`)
+        cutoff (float, optional): Cutoff distance for interatomic interactions.
+            (default: :obj:`10.0`)
+        num_gaussians (int, optional): Number of Gaussians used for smearing.
+            (default: :obj:`50.0`)
+    """
     def __init__(
         self,
         num_atoms,
