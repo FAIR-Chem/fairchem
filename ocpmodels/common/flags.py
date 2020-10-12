@@ -79,7 +79,7 @@ class Flags:
             "--amp", action="store_true", help="Use mixed-precision training"
         )
         self.parser.add_argument(
-            "--checkpoint", type=Path, help="Model checkpoint to load"
+            "--checkpoint", type=str, help="Model checkpoint to load"
         )
         # Cluster args
         self.parser.add_argument(
