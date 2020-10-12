@@ -5,11 +5,11 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import os
 import subprocess
 
 import torch
 import torch.distributed as dist
-import os
 
 
 def setup(config):
@@ -46,13 +46,17 @@ def setup(config):
                     config["rank"] = int(os.environ.get("SLURM_PROCID"))
                     config["local_rank"] = int(os.environ.get("SLURM_LOCALID"))
 
-                print("Init: ", config["init_method"],
-                      config["world_size"], config["rank"])
+                print(
+                    "Init: ",
+                    config["init_method"],
+                    config["world_size"],
+                    config["rank"],
+                )
                 dist.init_process_group(
                     backend=config["distributed_backend"],
                     init_method=config["init_method"],
                     world_size=config["world_size"],
-                    rank=config["rank"]
+                    rank=config["rank"],
                 )
             except subprocess.CalledProcessError as e:  # scontrol failed
                 raise e
@@ -60,7 +64,8 @@ def setup(config):
                 pass
     else:
         dist.init_process_group(
-            backend=config["distributed_backend"], init_method='env://')
+            backend=config["distributed_backend"], init_method="env://"
+        )
     # TODO: SLURM
 
 
@@ -102,8 +107,7 @@ def all_reduce(data, group=dist.group.WORLD, average=False, device=None):
     if average:
         tensor /= get_world_size()
     if not isinstance(data, torch.Tensor):
-        result = tensor.cpu().numpy() \
-            if tensor.numel() > 1 else tensor.item()
+        result = tensor.cpu().numpy() if tensor.numel() > 1 else tensor.item()
     else:
         result = tensor
     return result
@@ -117,8 +121,9 @@ def all_gather(data, group=dist.group.WORLD, device=None):
         tensor = torch.tensor(data)
     if device is not None:
         tensor = tensor.cuda(device)
-    tensor_list = [tensor.new_zeros(tensor.shape)
-                   for _ in range(get_world_size())]
+    tensor_list = [
+        tensor.new_zeros(tensor.shape) for _ in range(get_world_size())
+    ]
     dist.all_gather(tensor_list, tensor, group=group)
     if not isinstance(data, torch.Tensor):
         result = [tensor.cpu().numpy() for tensor in tensor_list]

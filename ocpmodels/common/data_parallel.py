@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 from itertools import chain
 
 import torch
+
 from ocpmodels.datasets import data_list_collater
 
 
