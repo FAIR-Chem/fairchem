@@ -8,18 +8,17 @@ from ocpmodels.common.registry import registry
 from .optimizers.lbfgs_torch import LBFGS, TorchCalc
 
 
-def relax_eval(
+def ml_relax(
     batch,
     model,
     steps,
     fmax,
     relax_opt,
-    return_relaxed_pos,
     device="cuda:0",
     transform=None,
 ):
     """
-    Evaluation of ML-based relaxations.
+    Runs ML-based relaxations.
     Args:
         batch: object
         model: object
@@ -30,9 +29,6 @@ def relax_eval(
             of the system is no bigger than fmax.
         relax_opt: str
             Optimizer and corresponding parameters to be used for structure relaxations.
-        return_relaxed_pos: bool
-            Whether to return relaxed positions to be written for dft
-            evaluation.
     """
     batch = batch[0]
     ids = batch.id
