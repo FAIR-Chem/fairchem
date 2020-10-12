@@ -15,6 +15,49 @@ from torch_scatter import scatter
 
 @registry.register_model("dimenet")
 class DimeNetWrap(DimeNet):
+    r"""Wrapper around the directional message passing neural network (DimeNet) from the
+    `"Directional Message Passing for Molecular Graphs"
+    <https://arxiv.org/abs/2003.03123>`_ paper.
+
+    DimeNet transforms messages based on the angle between them in a
+    rotation-equivariant fashion.
+
+    Args:
+        num_atoms (int): Unused argument
+        bond_feat_dim (int): Unused argument
+        num_targets (int): Number of targets to predict.
+        use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
+            (default: :obj:`True`)
+        regress_forces (bool, optional): If set to :obj:`True`, predict forces by differentiating
+            energy with respect to positions.
+            (default: :obj:`True`)
+        hidden_channels (int, optional): Number of hidden channels.
+            (default: :obj:`128`)
+        num_blocks (int, optional): Number of building blocks.
+            (default: :obj:`6`)
+        num_bilinear (int, optional): Size of the bilinear layer tensor.
+            (default: :obj:`8`)
+        num_spherical (int, optional): Number of spherical harmonics.
+            (default: :obj:`7`)
+        num_radial (int, optional): Number of radial basis functions.
+            (default: :obj:`6`)
+        otf_graph (bool, optional): If set to :obj:`True`, compute graph edges on the fly.
+            (default: :obj:`False`)
+        cutoff (float, optional): Cutoff distance for interatomic interactions.
+            (default: :obj:`10.0`)
+        envelope_exponent (int, optional): Shape of the smooth cutoff.
+            (default: :obj:`5`)
+        num_before_skip: (int, optional): Number of residual layers in the
+            interaction blocks before the skip connection. (default: :obj:`1`)
+        num_after_skip: (int, optional): Number of residual layers in the
+            interaction blocks after the skip connection. (default: :obj:`2`)
+        num_output_layers: (int, optional): Number of linear layers for the
+            output blocks. (default: :obj:`3`)
+        max_angles_per_image (int, optional): The maximum number of angles used
+            per image. This can be used to reduce memory usage at the cost of
+            model performance. (default: :obj:`1e6`)
+    """
+
     def __init__(
         self,
         num_atoms,

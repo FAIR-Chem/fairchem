@@ -16,6 +16,15 @@ from ocpmodels.common.registry import registry
 
 @registry.register_dataset("single_point_lmdb")
 class SinglePointLmdbDataset(Dataset):
+    r"""Dataset class to load from LMDB files containing single point computations.
+    Useful for Initial Structure to Relaxed Energy (IS2RE) task.
+
+    Args:
+        config (dict): Dataset configuration
+        transform (callable, optional): Data transform function.
+            (default: :obj:`None`)
+    """
+
     def __init__(self, config, transform=None):
         super(SinglePointLmdbDataset, self).__init__()
 
