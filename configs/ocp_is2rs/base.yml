@@ -22,3 +22,15 @@ task:
   grad_input: atomic forces
   train_on_free_atoms: True
   eval_on_free_atoms: True
+
+  # Relaxation options
+  relax_dataset:
+    src: data/09_29_val_is2rs_lmdb
+  write_pos: True
+  relaxation_steps: 300
+  relax_opt:
+    maxstep: 300
+    memory: 100
+    damping: 0.25
+    alpha: 100.
+    traj_dir: "trajectories"

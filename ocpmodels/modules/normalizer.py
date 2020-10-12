@@ -21,6 +21,10 @@ class Normalizer(object):
             self.mean = torch.tensor(mean).to(device)
             self.std = torch.tensor(std).to(device)
 
+    def to(self, device):
+        self.mean = self.mean.to(device)
+        self.std = self.std.to(device)
+
     def norm(self, tensor):
         return (tensor - self.mean) / self.std
 

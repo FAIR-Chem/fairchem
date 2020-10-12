@@ -71,6 +71,8 @@ class TrajectoryLmdbDataset(Dataset):
             data_object = self.transform(data_object)
         env.close()
 
+        data_object.id = f"{db_idx}_{el_idx}"
+
         return data_object
 
     def connect_db(self, lmdb_path=None):

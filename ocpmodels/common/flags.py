@@ -15,8 +15,15 @@ class Flags:
     def add_core_args(self):
         self.parser.add_argument_group("Core Arguments")
         self.parser.add_argument(
+            "--mode",
+            choices=["train", "predict", "run_relaxations"],
+            required=True,
+            help="Whether to train the model, make predictions, or to run relaxations",
+        )
+        self.parser.add_argument(
             "--config-yml",
-            default="configs/ulissigroup_co/cgcnn.yml",
+            required=True,
+            type=Path,
             help="Path to a config file listing data, model, optim parameters.",
         )
         self.parser.add_argument(
@@ -27,6 +34,7 @@ class Flags:
         self.parser.add_argument(
             "--identifier",
             default="",
+            type=str,
             help="Experiment identifier to append to checkpoint/log/result directory",
         )
         self.parser.add_argument(
@@ -37,6 +45,7 @@ class Flags:
         self.parser.add_argument(
             "--run-dir",
             default="./",
+            type=Path,
             help="Directory to store checkpoint/log/result directory",
         )
         self.parser.add_argument(
@@ -61,6 +70,9 @@ class Flags:
         )
         self.parser.add_argument(
             "--amp", action="store_true", help="Use mixed-precision training"
+        )
+        self.parser.add_argument(
+            "--checkpoint", type=Path, help="Model checkpoint to load"
         )
         # Cluster args
         self.parser.add_argument(
