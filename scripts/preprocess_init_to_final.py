@@ -16,12 +16,12 @@ import os
 import pickle
 import random
 
-from tqdm import tqdm
-
 import lmdb
 import torch
 from ase import Atoms
 from ase.io.trajectory import Trajectory
+from tqdm import tqdm
+
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
