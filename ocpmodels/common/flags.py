@@ -1,3 +1,10 @@
+"""
+Copyright (c) Facebook, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+
 import argparse
 from pathlib import Path
 
@@ -45,7 +52,7 @@ class Flags:
         self.parser.add_argument(
             "--run-dir",
             default="./",
-            type=Path,
+            type=str,
             help="Directory to store checkpoint/log/result directory",
         )
         self.parser.add_argument(
@@ -72,7 +79,7 @@ class Flags:
             "--amp", action="store_true", help="Use mixed-precision training"
         )
         self.parser.add_argument(
-            "--checkpoint", type=Path, help="Model checkpoint to load"
+            "--checkpoint", type=str, help="Model checkpoint to load"
         )
         # Cluster args
         self.parser.add_argument(

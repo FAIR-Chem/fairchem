@@ -10,6 +10,7 @@ model:
   cutoff: 6.0
   use_pbc: True
   regress_forces: False
+  otf_graph: True
 
 optim:
   batch_size: 64

@@ -1,3 +1,10 @@
+"""
+Copyright (c) Facebook, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+
 import bisect
 import pickle
 from pathlib import Path
@@ -14,6 +21,16 @@ from ocpmodels.common.registry import registry
 
 @registry.register_dataset("trajectory_lmdb")
 class TrajectoryLmdbDataset(Dataset):
+    r"""Dataset class to load from LMDB files containing relaxation trajectories.
+    Useful for Structure to Energy & Force (S2EF) and Initial State to
+    Relaxed State (IS2RS) tasks.
+
+    Args:
+        config (dict): Dataset configuration
+        transform (callable, optional): Data transform function.
+            (default: :obj:`None`)
+    """
+
     def __init__(self, config, transform=None):
         super(TrajectoryLmdbDataset, self).__init__()
         self.config = config

@@ -11,6 +11,7 @@ model:
   cutoff: 6.0
   regress_forces: False
   use_pbc: True
+  otf_graph: True
 
 optim:
   batch_size: 64
@@ -24,5 +25,5 @@ optim:
     - 13
   warmup_epochs: 3
   warmup_factor: 0.2
-  max_epochs: 20
+  max_epochs: 1
   num_gpus: 1
