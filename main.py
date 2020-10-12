@@ -1,13 +1,3 @@
-"""
-Copyright (c) Facebook, Inc. and its affiliates.
-
-This source code is licensed under the MIT license found in the
-LICENSE file in the root directory of this source tree.
-"""
-
-import time
-from pathlib import Path
-
 import submitit
 
 from ocpmodels.common import distutils
@@ -19,7 +9,6 @@ from ocpmodels.common.utils import (
     save_experiment_log,
     setup_imports,
 )
-from ocpmodels.trainers import ForcesTrainer
 
 
 def main(config):
@@ -43,36 +32,12 @@ def main(config):
             local_rank=config["local_rank"],
             amp=config.get("amp", False),
         )
-        if config["checkpoint"] is not None:
-            trainer.load_pretrained(config["checkpoint"])
+        import time
 
         start_time = time.time()
-
-        if config["mode"] == "train":
-            trainer.train()
-
-        elif config["mode"] == "predict":
-            assert (
-                trainer.test_loader is not None
-            ), "Test dataset is required for making predictions"
-            assert config["checkpoint"]
-            run_dir = config.get("run_dir", "./")
-            results_file = Path(run_dir) / "predictions.json"
-            trainer.predict(trainer.test_loader, results_file=results_file)
-
-        elif config["mode"] == "run_relaxations":
-            assert isinstance(
-                trainer, ForcesTrainer
-            ), "Relaxations are only possible for ForcesTrainer"
-            assert (
-                trainer.relax_dataset is not None
-            ), "Relax dataset is required for making predictions"
-            assert config["checkpoint"]
-            trainer.validate_relaxation()
-
+        trainer.train()
         distutils.synchronize()
-
-        print("Total time taken = ", time.time() - start_time)
+        print("Time = ", time.time() - start_time)
 
     finally:
         if args.distributed:
