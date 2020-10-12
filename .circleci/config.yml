@@ -28,13 +28,13 @@ jobs:
       - run:
           name: Create environment
           command: |
-            #if [ ! -d "/home/circleci/miniconda" ]; then
-            source /home/circleci/miniconda/etc/profile.d/conda.sh
-            conda activate base
-            conda install -c conda-forge conda-merge
-            conda-merge env.common.yml env.cpu.yml > env.yml
-            conda env create -f env.yml
-            #fi
+            if [ ! -d "/home/circleci/miniconda/envs/ocp-models" ]; then
+              source /home/circleci/miniconda/etc/profile.d/conda.sh
+              conda activate base
+              conda install -c conda-forge conda-merge
+              conda-merge env.common.yml env.cpu.yml > env.yml
+              conda env create -f env.yml
+            fi
       - save_cache:
           paths:
             - /home/circleci/miniconda
