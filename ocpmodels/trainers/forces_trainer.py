@@ -213,7 +213,7 @@ class ForcesTrainer(BaseTrainer):
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
-        if self.config["dataset"].get("normalize_labels", True):
+        if self.config["dataset"].get("normalize_labels", False):
             if "target_mean" in self.config["dataset"]:
                 self.normalizers["target"] = Normalizer(
                     mean=self.config["dataset"]["target_mean"],
@@ -231,7 +231,7 @@ class ForcesTrainer(BaseTrainer):
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
         if self.config["model_attributes"].get("regress_forces", True):
-            if self.config["dataset"].get("normalize_labels", True):
+            if self.config["dataset"].get("normalize_labels", False):
                 if "grad_target_mean" in self.config["dataset"]:
                     self.normalizers["grad_target"] = Normalizer(
                         mean=self.config["dataset"]["grad_target_mean"],
@@ -648,7 +648,7 @@ class ForcesTrainer(BaseTrainer):
         energy_target = torch.cat(
             [batch.y.to(self.device) for batch in batch_list], dim=0
         )
-        if self.config["dataset"].get("normalize_labels", True):
+        if self.config["dataset"].get("normalize_labels", False):
             energy_target = self.normalizers["target"].norm(energy_target)
         energy_mult = self.config["optim"].get("energy_coefficient", 1)
         loss.append(energy_mult * self.criterion(out["energy"], energy_target))
@@ -658,7 +658,7 @@ class ForcesTrainer(BaseTrainer):
             force_target = torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
             )
-            if self.config["dataset"].get("normalize_labels", True):
+            if self.config["dataset"].get("normalize_labels", False):
                 force_target = self.normalizers["grad_target"].norm(
                     force_target
                 )
@@ -721,7 +721,7 @@ class ForcesTrainer(BaseTrainer):
             target["natoms"] = torch.LongTensor(natoms_free).to(self.device)
             out["natoms"] = torch.LongTensor(natoms_free).to(self.device)
 
-        if self.config["dataset"].get("normalize_labels", True):
+        if self.config["dataset"].get("normalize_labels", False):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
             out["forces"] = self.normalizers["grad_target"].denorm(
                 out["forces"]
