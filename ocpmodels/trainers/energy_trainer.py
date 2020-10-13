@@ -274,19 +274,34 @@ class EnergyTrainer(BaseTrainer):
 
             if self.val_loader is not None:
                 val_metrics = self.validate(split="val", epoch=epoch)
-
-            if self.test_loader is not None:
-                self.validate(split="test", epoch=epoch)
-
-            if (
-                val_metrics[self.evaluator.task_primary_metric["is2re"]][
-                    "metric"
-                ]
-                < self.best_val_mae
-            ):
-                self.best_val_mae = val_metrics[
-                    self.evaluator.task_primary_metric["is2re"]
-                ]["metric"]
+                if (
+                    val_metrics[self.evaluator.task_primary_metric["is2re"]][
+                        "metric"
+                    ]
+                    < self.best_val_mae
+                ):
+                    self.best_val_mae = val_metrics[
+                        self.evaluator.task_primary_metric["is2re"]
+                    ]["metric"]
+                    if not self.is_debug and distutils.is_master():
+                        save_checkpoint(
+                            {
+                                "epoch": epoch + 1,
+                                "state_dict": self.model.state_dict(),
+                                "optimizer": self.optimizer.state_dict(),
+                                "normalizers": {
+                                    key: value.state_dict()
+                                    for key, value in self.normalizers.items()
+                                },
+                                "config": self.config,
+                                "val_metrics": val_metrics,
+                                "amp": self.scaler.state_dict()
+                                if self.scaler
+                                else None,
+                            },
+                            self.config["cmd"]["checkpoint_dir"],
+                        )
+            else:
                 if not self.is_debug and distutils.is_master():
                     save_checkpoint(
                         {
@@ -298,13 +313,16 @@ class EnergyTrainer(BaseTrainer):
                                 for key, value in self.normalizers.items()
                             },
                             "config": self.config,
-                            "val_metrics": val_metrics,
+                            "metrics": self.metrics,
                             "amp": self.scaler.state_dict()
                             if self.scaler
                             else None,
                         },
                         self.config["cmd"]["checkpoint_dir"],
                     )
+
+            if self.test_loader is not None:
+                self.validate(split="test", epoch=epoch)
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
