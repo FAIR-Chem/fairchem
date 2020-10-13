@@ -110,7 +110,7 @@ class LBFGS:
                 longest_steps, self.atoms.natoms
             )
             maxstep = longest_steps.new_tensor(self.maxstep)
-            scale = longest_steps.reciprocal() * torch.min(
+            scale = (longest_steps + 1e-7).reciprocal() * torch.min(
                 longest_steps, maxstep
             )
             dr *= scale.unsqueeze(1)
