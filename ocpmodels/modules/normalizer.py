@@ -31,5 +31,5 @@ class Normalizer(object):
         return {"mean": self.mean, "std": self.std}
 
     def load_state_dict(self, state_dict):
-        self.mean = state_dict["mean"]
-        self.std = state_dict["std"]
+        self.mean = state_dict["mean"].to(self.mean.device)
+        self.std = state_dict["std"].to(self.std.device)
