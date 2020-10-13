@@ -6,11 +6,12 @@ LICENSE file in the root directory of this source tree.
 """
 
 import torch
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 from torch import nn
 from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
+
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 
 
 @registry.register_model("dimenet")
