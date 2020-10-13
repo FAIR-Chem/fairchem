@@ -397,14 +397,15 @@ class EnergyTrainer(BaseTrainer):
         assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
 
         self.model.eval()
-        self.normalizers["target"].to(self.device)
+        if self.normalizers is not None and "target" in self.normalizers:
+            self.normalizers["target"].to(self.device)
         predictions = []
 
         for i, batch in tqdm(enumerate(loader), total=len(loader)):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
 
-            if self.config["dataset"].get("normalize_labels", False):
+            if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
                 )
