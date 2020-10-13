@@ -9,7 +9,11 @@ using an existing model, or run machine learning based relaxations using an exis
 * `--config-yml PATH`: PATH is the path to a YAML configuration file. We use YAML files to supply all 
 parameters to the script. The `configs` directory contains a number of example config files.
 
-Running `main.py` directly runs the model on a single CPU or GPU if one is available. If you have multiple
+Running `main.py` directly runs the model on a single CPU or GPU if one is available:
+```
+python main.py --mode train --config-yml configs/TASK/MODEL.yml
+```
+If you have multiple
 GPUs, you can use distributed data parallel training by running:
 ```
 python -u -m torch.distributed.launch --nproc_per_node=8 main.py --distributed --num-gpus 8 [...] 

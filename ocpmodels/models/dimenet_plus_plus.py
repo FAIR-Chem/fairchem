@@ -6,8 +6,6 @@ LICENSE file in the root directory of this source tree.
 """
 
 import torch
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances
 from torch import nn
 from torch_geometric.nn import radius_graph
 from torch_geometric.nn.acts import swish
@@ -21,6 +19,9 @@ from torch_geometric.nn.models.dimenet import (
 )
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
+
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances
 
 try:
     import sympy as sym

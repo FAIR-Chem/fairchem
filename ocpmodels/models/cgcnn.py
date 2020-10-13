@@ -47,6 +47,7 @@ class CGCNN(BaseModel):
         num_gaussians (int, optional): Number of Gaussians used for smearing.
             (default: :obj:`50.0`)
     """
+
     def __init__(
         self,
         num_atoms,
