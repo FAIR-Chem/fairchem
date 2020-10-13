@@ -287,7 +287,7 @@ class EnergyTrainer(BaseTrainer):
                 self.best_val_mae = val_metrics[
                     self.evaluator.task_primary_metric["is2re"]
                 ]["metric"]
-                if not self.is_debug:
+                if not self.is_debug and distutils.is_master():
                     save_checkpoint(
                         {
                             "epoch": epoch + 1,
