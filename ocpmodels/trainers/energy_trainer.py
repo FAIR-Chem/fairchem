@@ -203,7 +203,7 @@ class EnergyTrainer(BaseTrainer):
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
-        if self.config["dataset"].get("normalize_labels", True):
+        if self.config["dataset"].get("normalize_labels", False):
             if "target_mean" in self.config["dataset"]:
                 self.normalizers["target"] = Normalizer(
                     mean=self.config["dataset"]["target_mean"],
@@ -369,7 +369,7 @@ class EnergyTrainer(BaseTrainer):
             [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
         )
 
-        if self.config["dataset"].get("normalize_labels", True):
+        if self.config["dataset"].get("normalize_labels", False):
             target_normed = self.normalizers["target"].norm(energy_target)
         else:
             target_normed = energy_target
@@ -382,7 +382,7 @@ class EnergyTrainer(BaseTrainer):
             [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
         )
 
-        if self.config["dataset"].get("normalize_labels", True):
+        if self.config["dataset"].get("normalize_labels", False):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
 
         metrics = evaluator.eval(
@@ -404,7 +404,7 @@ class EnergyTrainer(BaseTrainer):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
 
-            if self.config["dataset"].get("normalize_labels", True):
+            if self.config["dataset"].get("normalize_labels", False):
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
                 )
