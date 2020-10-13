@@ -473,6 +473,21 @@ class ForcesTrainer(BaseTrainer):
                                 },
                                 self.config["cmd"]["checkpoint_dir"],
                             )
+                elif not self.is_debug and distutils.is_master():
+                    save_checkpoint(
+                        {
+                            "epoch": epoch + 1,
+                            "state_dict": self.model.state_dict(),
+                            "optimizer": self.optimizer.state_dict(),
+                            "normalizers": {
+                                key: value.state_dict()
+                                for key, value in self.normalizers.items()
+                            },
+                            "config": self.config,
+                            "metrics": self.metrics,
+                        },
+                        self.config["cmd"]["checkpoint_dir"],
+                    )
 
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
