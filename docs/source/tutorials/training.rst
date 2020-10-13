@@ -33,7 +33,7 @@ Initial Structure to Relaxed Energy prediction (IS2RE)
 
 In the IS2RE tasks, the model takes the initial structure as input and predict the structure’s energy
 in the relaxed state. To train a model for the IS2RE task, you can use the :obj:`EnergyTrainer`
-Trainer and :obj:`SinglePointLMDB` dataset by specifying the following in your configuration file:
+Trainer and :obj:`SinglePointLmdb` dataset by specifying the following in your configuration file:
 
 .. code-block:: yaml
 
@@ -83,7 +83,7 @@ Structure to Energy and Forces (S2EF)
 
 In the S2EF task, the model takes the positions of the atoms as input and predicts the energy and per-atom
 forces as calculated by DFT. To train a model for the S2EF task, you can use the :obj:`ForcesTrainer` Trainer
-and :obj:`SinglePointLMDB` dataset by specifying the following in your configuration file:
+and :obj:`TrajectoryLmdb` dataset by specifying the following in your configuration file:
 
 .. code-block:: yaml
 
