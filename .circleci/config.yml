@@ -10,7 +10,7 @@ jobs:
 
       - restore_cache:
           keys:
-          - v0-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
+          - v0.1-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
 
       - run:
           name: Install conda
@@ -28,7 +28,7 @@ jobs:
       - run:
           name: Create environment
           command: |
-            if [ ! -d "/home/circleci/miniconda" ]; then
+            if [ ! -d "/home/circleci/miniconda/envs/ocp-models" ]; then
               source /home/circleci/miniconda/etc/profile.d/conda.sh
               conda activate base
               conda install -c conda-forge conda-merge
@@ -38,7 +38,7 @@ jobs:
       - save_cache:
           paths:
             - /home/circleci/miniconda
-          key: v0-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
+          key: v0.1-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
 
       - run:
           name: Run tests
@@ -55,5 +55,4 @@ jobs:
             source /home/circleci/miniconda/etc/profile.d/conda.sh
             conda activate ocp-models
             pip install black
-            black . --diff
             black . --check
