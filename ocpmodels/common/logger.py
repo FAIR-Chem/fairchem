@@ -6,9 +6,10 @@ LICENSE file in the root directory of this source tree.
 """
 
 import torch
+from torch.utils.tensorboard import SummaryWriter
+
 import wandb
 from ocpmodels.common.registry import registry
-from torch.utils.tensorboard import SummaryWriter
 
 
 class Logger:

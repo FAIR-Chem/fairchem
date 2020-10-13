@@ -16,12 +16,12 @@ import os
 import pickle
 import random
 
-import numpy as np
-from tqdm import tqdm
-
 import ase.io
 import lmdb
+import numpy as np
 import torch
+from tqdm import tqdm
+
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -168,7 +168,13 @@ if __name__ == "__main__":
     sampled_ids, idx = [[]] * args.num_workers, [0] * args.num_workers
     pool = mp.Pool(args.num_workers)
     mp_args = [
-        (a2g, db_paths[i], chunked_traj_files[i], sampled_ids[i], idx[i],)
+        (
+            a2g,
+            db_paths[i],
+            chunked_traj_files[i],
+            sampled_ids[i],
+            idx[i],
+        )
         for i in range(args.num_workers)
     ]
     op = list(zip(*pool.imap(write_images_to_lmdb, mp_args)))
