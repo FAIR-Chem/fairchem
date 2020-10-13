@@ -75,7 +75,7 @@ Dataset download links can be found at [opencatalstproject.org](https://opencata
 
 ### Train models for the the desired tasks
 
-A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/baselines/blob/release_train/train.md).
+A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/baselines/blob/release_train/docs/source/tutorials/training.rst).
 
 ## Acknowledgements
 
@@ -86,4 +86,3 @@ by [Tian Xie](http://txie.me), but has undergone significant changes since.
 ## License
 
 This code is MIT licensed, as found in the [LICENSE file](https://github.com/Open-Catalyst-Project/baselines/blob/master/LICENSE.md).
-

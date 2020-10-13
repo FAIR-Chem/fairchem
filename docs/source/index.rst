@@ -6,6 +6,8 @@ Open Catalyst Project
    :caption: Tutorials
 
    tutorials/data_playground.ipynb
+   tutorials/training
+   tutorials/submission
 
 .. toctree::
    :maxdepth: 1
