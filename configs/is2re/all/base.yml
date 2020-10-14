@@ -5,7 +5,7 @@ dataset:
     normalize_labels: True
     target_mean: -1.525913953781128
     target_std: 2.279365062713623
-  - src: data/is2re/all/val_is/data.lmdb
+  - src: data/is2re/all/val_id/data.lmdb
 
 logger: tensorboard
 
