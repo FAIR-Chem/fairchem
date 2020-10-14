@@ -14,7 +14,7 @@ import torch
 import torch_geometric
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
@@ -192,10 +192,16 @@ class ForcesTrainer(BaseTrainer):
                 self.relax_dataset = registry.get_dataset_class(
                     "single_point_lmdb"
                 )(self.config["task"]["relax_dataset"])
+
+                self.relax_sampler = DistributedSampler(
+                    self.relax_dataset,
+                    num_replicas=distutils.get_world_size(),
+                    rank=distutils.get_rank(),
+                    shuffle=False,
+                )
                 self.relax_loader = DataLoader(
                     self.relax_dataset,
                     batch_size=self.config["optim"].get("eval_batch_size", 64),
-                    shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
                     pin_memory=True,
@@ -573,7 +579,9 @@ class ForcesTrainer(BaseTrainer):
             split = "test"
 
         relaxed_positions = []
-        for i, batch in enumerate(self.relax_loader):
+        for i, batch in tqdm(
+            enumerate(self.relax_loader), total=len(self.relax_loader)
+        ):
             relaxed_batch = ml_relax(
                 batch=batch,
                 model=self,
