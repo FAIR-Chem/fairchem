@@ -61,9 +61,13 @@ pre-commit install
 
 ## Usage
 
+### Project website 
+
+The project website is [opencatalstproject.org](https://opencatalystproject.org). Links to dataset paper and the whitepaper can be found on the website.
+
 ### Download the datasets
 
-Dataset download links can be found at [opencatalstproject.org](https://opencatalystproject.org) for the S2EF, IS2RS, and IS2RE tasks. IS2* datasets are stored as LMDB files and are ready to be used upon download. S2EF datasets require an additional preprocessing step.
+Dataset download links can be found at [DATASET.md](https://github.com/Open-Catalyst-Project/baselines/blob/master/DATASET.md) for the S2EF, IS2RS, and IS2RE tasks. IS2* datasets are stored as LMDB files and are ready to be used upon download. S2EF datasets require an additional preprocessing step.
 
 ### Preprocess datasets - S2EF only
 
