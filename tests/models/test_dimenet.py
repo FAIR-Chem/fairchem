@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import os
+import random
 
 import numpy as np
 import pytest
@@ -49,6 +50,7 @@ def load_model(request):
 @pytest.mark.usefixtures("load_model")
 class TestDimeNet:
     def test_rotation_invariance(self):
+        random.seed(1)
         data = self.data
 
         # Sampling a random rotation within [-180, 180] for all axes.
