@@ -1,6 +1,0 @@
-model:
-  hidden_channels: [512, 1024]
-  num_filters: [64, 128, 256]
-
-optim:
-  lr_initial: [0.0001, 0.0005]
