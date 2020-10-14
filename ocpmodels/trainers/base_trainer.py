@@ -20,7 +20,6 @@ import yaml
 import ocpmodels.datasets
 import ocpmodels.models
 from ocpmodels.common import distutils
-from ocpmodels.common.display import Display
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
