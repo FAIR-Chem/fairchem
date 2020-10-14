@@ -103,11 +103,18 @@ class TrajectoryLmdbDataset(Dataset):
         return env
 
 
-def data_list_collater(data_list):
-    n_neighbors = []
-    for i, data in enumerate(data_list):
-        n_index = data.edge_index[1, :]
-        n_neighbors.append(n_index.shape[0])
+def data_list_collater(data_list, otf_graph=False):
     batch = Batch.from_data_list(data_list)
-    batch.neighbors = torch.tensor(n_neighbors)
+
+    if not otf_graph:
+        try:
+            n_neighbors = []
+            for i, data in enumerate(data_list):
+                n_index = data.edge_index[1, :]
+                n_neighbors.append(n_index.shape[0])
+            batch.neighbors = torch.tensor(n_neighbors)
+        except NotImplementedError:
+            print(
+                "LMDB does not contain edge index information, set otf_graph=True"
+            )
     return batch
