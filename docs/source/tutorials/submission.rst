@@ -14,7 +14,7 @@ S2EF / IS2RE
 IS2RS
 *****
 
-1. Ensure :obj:`write_pos: True` is included in your configuration file. Run relaxations :obj:`--mode run_relaxations` on all 4 splits, generating :obj:`relaxed_pos_[DEVICE #].json` files for each split.
+1. Ensure :obj:`write_pos: True` is included in your configuration file. Run relaxations :obj:`--mode run-relaxations` on all 4 splits, generating :obj:`relaxed_pos_[DEVICE #].json` files for each split.
 2. For each split, if relaxations were run with multiple GPUs, combine :obj:`relaxed_pos_[DEVICE #].json` into one :obj:`relaxed_pos.json` file using :obj:`scripts/make_evalai_json.py`, otherwise skip to 3.
 3. Modify :obj:`scripts/make_evalai_json.py` with the corresponding paths of the :obj:`relaxed_pos.json` files and run to generate your final submission file :obj:`taskname_split_submission.json` (filename may be modified).
 4. Upload :obj:`taskname_split_submission.json` to EvalAI.
