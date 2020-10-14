@@ -3,6 +3,12 @@
 
 This page summarizes the dataset download links for S2EF and IS2RE/IS2RS tasks and various splits. The main project website is https://opencatalystproject.org/ 
 
+The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode). Please cite the following paper in any research manuscript using the OC20 dataset:
+     
+   **The Open Catalyst 2020 (OC20) Dataset and Community Challenges,**
+      L. Chanussot, A. Das, S. Goyal, T. Lavril, M. Shuaibi, M. Riviere, 
+      K. Tran, J. Heras-Domingo, C. Ho, W. Hu, A. Palizhati, 
+      A. Sriram, B. Wood, J. Yoon, D. Parikh, C. L. Zitnick, Z. Ulissi, 2020
 
 ## Structure to Energy and Forces (S2EF) task
 
