@@ -80,7 +80,7 @@ Dataset download links can be found at [DATASET.md](https://github.com/Open-Cata
 
 ### Train models for the the desired tasks
 
-A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/baselines/blob/release/train.md).
+A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/baselines/blob/master/train.md).
 
 ## Acknowledgements
 
