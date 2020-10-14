@@ -7,7 +7,7 @@ for training and evaluating models for each of these tasks as well as generating
 :obj:`main.py` serves as the entry point to run any task tasks. This script requires two command line
 arguments at a minimum:
 
-* :obj:`--mode MODE`: MODE can be :obj:`train`, :obj:`predict` or :obj:`run_relaxations` to train a model, make predictions using an existing model, or run machine learning based relaxations using an existing model respectively.
+* :obj:`--mode MODE`: MODE can be :obj:`train`, :obj:`predict` or :obj:`run-relaxations` to train a model, make predictions using an existing model, or run machine learning based relaxations using an existing model respectively.
 
 * :obj:`--config-yml PATH`: PATH is the path to a YAML configuration file. We use YAML files to supply all parameters to the script. The :obj:`configs` directory contains a number of example config files.
 
@@ -164,7 +164,7 @@ After training, you can generate trajectories using:
 
 .. code-block:: sh
 
-    python main.py --mode run_relaxations --config-yml configs/ocp_is2rs/schnet.yml \
+    python main.py --mode run-relaxations --config-yml configs/ocp_is2rs/schnet.yml \
             --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 
 The relaxed structure positions are stored in :obj:`[RESULTS_DIR]/relaxed_pos_[DEVICE #].json` and later used to create a submission file to be uploaded to EvalAI. Predicted trajectories are stored in :obj:`trajectories` directory for those interested in analyzing the complete relaxation trajectory.
