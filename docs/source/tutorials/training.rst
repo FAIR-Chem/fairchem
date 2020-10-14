@@ -11,7 +11,13 @@ arguments at a minimum:
 
 * :obj:`--config-yml PATH`: PATH is the path to a YAML configuration file. We use YAML files to supply all parameters to the script. The :obj:`configs` directory contains a number of example config files.
 
-Running :obj:`main.py` directly runs the model on a single CPU or GPU if one is available. If you have multiple GPUs, you can use distributed data parallel training by running:
+Running :obj:`main.py` directly runs the model on a single CPU or GPU if one is available:
+
+.. code-block:: sh
+
+    python main.py --mode train --config-yml configs/TASK/MODEL.yml
+
+If you have multiple GPUs, you can use distributed data parallel training by running:
 
 .. code-block:: sh
 
