@@ -53,7 +53,7 @@ Each tarball has README file containing details about file formats, number of st
 
 |Splits	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|
 |---	|---	|---	|---	|
-|Train (all splits) + Validation (all splits)	|7.3G	|85G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_lmdbs.tar	|
+|Train (all splits) + Validation (all splits)	|7.3G	|85G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_lmdbs.tar.gz	|
 |	|	|	|	|
 |Test	|	|	|Coming soon	|
 
