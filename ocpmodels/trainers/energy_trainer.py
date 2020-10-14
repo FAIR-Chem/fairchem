@@ -203,7 +203,7 @@ class EnergyTrainer(BaseTrainer):
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
-        if self.config["dataset"].get("normalize_labels", True):
+        if self.config["dataset"].get("normalize_labels", False):
             if "target_mean" in self.config["dataset"]:
                 self.normalizers["target"] = Normalizer(
                     mean=self.config["dataset"]["target_mean"],
@@ -274,19 +274,34 @@ class EnergyTrainer(BaseTrainer):
 
             if self.val_loader is not None:
                 val_metrics = self.validate(split="val", epoch=epoch)
-
-            if self.test_loader is not None:
-                self.validate(split="test", epoch=epoch)
-
-            if (
-                val_metrics[self.evaluator.task_primary_metric["is2re"]][
-                    "metric"
-                ]
-                < self.best_val_mae
-            ):
-                self.best_val_mae = val_metrics[
-                    self.evaluator.task_primary_metric["is2re"]
-                ]["metric"]
+                if (
+                    val_metrics[self.evaluator.task_primary_metric["is2re"]][
+                        "metric"
+                    ]
+                    < self.best_val_mae
+                ):
+                    self.best_val_mae = val_metrics[
+                        self.evaluator.task_primary_metric["is2re"]
+                    ]["metric"]
+                    if not self.is_debug and distutils.is_master():
+                        save_checkpoint(
+                            {
+                                "epoch": epoch + 1,
+                                "state_dict": self.model.state_dict(),
+                                "optimizer": self.optimizer.state_dict(),
+                                "normalizers": {
+                                    key: value.state_dict()
+                                    for key, value in self.normalizers.items()
+                                },
+                                "config": self.config,
+                                "val_metrics": val_metrics,
+                                "amp": self.scaler.state_dict()
+                                if self.scaler
+                                else None,
+                            },
+                            self.config["cmd"]["checkpoint_dir"],
+                        )
+            else:
                 if not self.is_debug and distutils.is_master():
                     save_checkpoint(
                         {
@@ -298,13 +313,16 @@ class EnergyTrainer(BaseTrainer):
                                 for key, value in self.normalizers.items()
                             },
                             "config": self.config,
-                            "val_metrics": val_metrics,
+                            "metrics": self.metrics,
                             "amp": self.scaler.state_dict()
                             if self.scaler
                             else None,
                         },
                         self.config["cmd"]["checkpoint_dir"],
                     )
+
+            if self.test_loader is not None:
+                self.validate(split="test", epoch=epoch)
 
     def validate(self, split="val", epoch=None):
         print("### Evaluating on {}.".format(split))
@@ -369,7 +387,7 @@ class EnergyTrainer(BaseTrainer):
             [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
         )
 
-        if self.config["dataset"].get("normalize_labels", True):
+        if self.config["dataset"].get("normalize_labels", False):
             target_normed = self.normalizers["target"].norm(energy_target)
         else:
             target_normed = energy_target
@@ -382,7 +400,7 @@ class EnergyTrainer(BaseTrainer):
             [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
         )
 
-        if self.config["dataset"].get("normalize_labels", True):
+        if self.config["dataset"].get("normalize_labels", False):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
 
         metrics = evaluator.eval(
@@ -397,14 +415,15 @@ class EnergyTrainer(BaseTrainer):
         assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
 
         self.model.eval()
-        self.normalizers["target"].to(self.device)
+        if self.normalizers is not None and "target" in self.normalizers:
+            self.normalizers["target"].to(self.device)
         predictions = []
 
         for i, batch in tqdm(enumerate(loader), total=len(loader)):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
 
-            if self.config["dataset"].get("normalize_labels", True):
+            if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
                 )
