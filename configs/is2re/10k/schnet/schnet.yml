@@ -1,0 +1,26 @@
+includes:
+- configs/is2re/10k/base.yml
+
+model:
+  name: schnet
+  hidden_channels: 256
+  num_filters: 128
+  num_interactions: 3
+  num_gaussians: 100
+  cutoff: 6.0
+  use_pbc: True
+  regress_forces: False
+
+optim:
+  batch_size: 64
+  eval_batch_size: 32
+  num_workers: 32
+  lr_initial: 0.005
+  lr_gamma: 0.1
+  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+    - 10
+    - 15
+    - 20
+  warmup_epochs: 3
+  warmup_factor: 0.2
+  max_epochs: 30
