@@ -63,7 +63,7 @@ pre-commit install
 
 ### Project website
 
-The project website is [opencatalstproject.org](https://opencatalystproject.org). Links to dataset paper and the whitepaper can be found on the website.
+The project website is [opencatalystproject.org](https://opencatalystproject.org). Links to dataset paper and the whitepaper can be found on the website.
 
 ### Download the datasets
 
