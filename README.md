@@ -147,7 +147,7 @@ See [`configs/ulissigroup_co/base.yml`](https://github.com/Open-Catalyst-Project
 
 - This codebase was initially forked from [CGCNN](https://github.com/txie-93/cgcnn)
 by [Tian Xie](http://txie.me), but has undergone significant changes since.
-- A lot of engineering ideas have been borrowed from [github.com/facebookresearch/pythia](https://github.com/facebookresearch/pythia).
+- A lot of engineering ideas have been borrowed from [github.com/facebookresearch/mmf](https://github.com/facebookresearch/mmf).
 
 ## License
 
