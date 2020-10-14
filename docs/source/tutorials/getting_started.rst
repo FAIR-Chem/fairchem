@@ -81,6 +81,8 @@ For the S2EF task, run:
 
 1. Untar the downloaded dataset: :code:`tar -xzvf sample_xyz_compressed.tar`
 2. Uncompress the untarred directory contents: :code:`baselines/scripts/uncompress.py --ipdir /path/to/sample_xyz_compressed --opdir raw_data/`
-3. Run the LMDB preprocessing script: :code:`scripts/preprocess_ef.py --data-path raw_data/ --out-path processed_lmdb/ --num-workers 32 --get-edges --ref-energy`; where
+3. Run the LMDB preprocessing script:
+:code:`scripts/preprocess_ef.py --data-path raw_data/ --out-path processed_lmdb/ \ `
+:code:`--num-workers 32 --get-edges --ref-energy`; where
     - :code:`--get-edges`: includes edge information in LMDBs (~10x storage requirement, ~3-5x slowdown), otherwise, compute edges on the fly (larger GPU memory requirement).
     - :code:`--ref-energy`: uses referenced energies instead of raw energies.
