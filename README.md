@@ -61,13 +61,13 @@ pre-commit install
 
 ## Usage
 
-### Project website 
+### Project website
 
 The project website is [opencatalstproject.org](https://opencatalystproject.org). Links to dataset paper and the whitepaper can be found on the website.
 
 ### Download the datasets
 
-Dataset download links can be found at [DATASET.md](https://github.com/Open-Catalyst-Project/baselines/blob/master/DATASET.md) for the S2EF, IS2RS, and IS2RE tasks. IS2* datasets are stored as LMDB files and are ready to be used upon download. S2EF datasets require an additional preprocessing step.
+Dataset download links can be found at [DATASET.md](https://github.com/Open-Catalyst-Project/ocp/blob/master/DATASET.md) for the S2EF, IS2RS, and IS2RE tasks. IS2* datasets are stored as LMDB files and are ready to be used upon download. S2EF datasets require an additional preprocessing step.
 
 ### Preprocess datasets - S2EF only
 
@@ -80,7 +80,7 @@ Dataset download links can be found at [DATASET.md](https://github.com/Open-Cata
 
 ### Train models for the the desired tasks
 
-A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/baselines/blob/master/train.md).
+A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/release/train.md).
 
 ## Acknowledgements
 
@@ -90,4 +90,4 @@ by [Tian Xie](http://txie.me), but has undergone significant changes since.
 
 ## License
 
-This code is MIT licensed, as found in the [LICENSE file](https://github.com/Open-Catalyst-Project/baselines/blob/master/LICENSE.md).
+This code is MIT licensed, as found in the [LICENSE file](https://github.com/Open-Catalyst-Project/ocp/blob/master/LICENSE.md).
