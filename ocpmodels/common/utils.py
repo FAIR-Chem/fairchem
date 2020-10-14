@@ -72,9 +72,9 @@ class Complete(object):
 
 def warmup_lr_lambda(current_epoch, optim_config):
     """Returns a learning rate multiplier.
-        Till `warmup_epochs`, learning rate linearly increases to `initial_lr`,
-        and then gets multiplied by `lr_gamma` every time a milestone is crossed.
-        """
+    Till `warmup_epochs`, learning rate linearly increases to `initial_lr`,
+    and then gets multiplied by `lr_gamma` every time a milestone is crossed.
+    """
     if current_epoch <= optim_config["warmup_epochs"]:
         alpha = current_epoch / float(optim_config["warmup_epochs"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
@@ -160,7 +160,11 @@ def collate(data_list):
 
 
 def add_edge_distance_to_graph(
-    batch, device="cpu", dmin=0.0, dmax=6.0, num_gaussians=50,
+    batch,
+    device="cpu",
+    dmin=0.0,
+    dmax=6.0,
+    num_gaussians=50,
 ):
     # Make sure x has positions.
     if not all(batch.pos[0][:] == batch.x[0][-3:]):

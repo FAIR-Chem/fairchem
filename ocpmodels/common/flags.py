@@ -23,7 +23,7 @@ class Flags:
         self.parser.add_argument_group("Core Arguments")
         self.parser.add_argument(
             "--mode",
-            choices=["train", "predict", "run_relaxations"],
+            choices=["train", "predict", "run-relaxations"],
             required=True,
             help="Whether to train the model, make predictions, or to run relaxations",
         )
@@ -109,7 +109,9 @@ class Flags:
         self.parser.add_argument(
             "--num-gpus", default=1, type=int, help="Number of GPUs to request"
         )
-        self.parser.add_argument("--distributed", action="store_true", help="Run with DDP")
+        self.parser.add_argument(
+            "--distributed", action="store_true", help="Run with DDP"
+        )
 
         self.parser.add_argument(
             "--num-nodes",

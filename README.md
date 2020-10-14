@@ -30,9 +30,9 @@ Instructions are for PyTorch 1.6, CUDA 10.1 specifically.
 
 First, check that CUDA is in your `PATH` and `LD_LIBRARY_PATH`, e.g.
 ```
-$ echo $PATH | tr ':' '\n' | grep cuda
+$echo $PATH | tr ':' '\n' | grep cuda
 /public/apps/cuda/10.1/bin
-$ echo $LD_LIBRARY_PATH | tr ':' '\n' | grep cuda
+$echo $LD_LIBRARY_PATH | tr ':' '\n' | grep cuda
 /public/apps/cuda/10.1/lib64
 ```
 The exact paths may differ on your system. Then install the dependencies:
@@ -61,29 +61,33 @@ pre-commit install
 
 ## Usage
 
+### Project website
+
+The project website is [opencatalystproject.org](https://opencatalystproject.org). Links to dataset paper and the whitepaper can be found on the website.
+
 ### Download the datasets
 
-Dataset download links can be found at [opencatalstproject.org](https://opencatalystproject.org) for the S2EF, IS2RS, and IS2RE tasks. IS2* datasets are stored as LMDB files and are ready to be used upon download. S2EF datasets require an additional preprocessing step.
+Dataset download links can be found at [DATASET.md](https://github.com/Open-Catalyst-Project/ocp/blob/master/DATASET.md) for the S2EF, IS2RS, and IS2RE tasks. IS2* datasets are stored as LMDB files and are ready to be used upon download. S2EF datasets require an additional preprocessing step.
 
 ### Preprocess datasets - S2EF only
 
-1. Untar the downloaded dataset: `tar -xzvf sample_xyz_compressed.tar`
-2. Uncompress the untarred directory contents: `baselines/scripts/uncompress.py --ipdir /path/to/sample_xyz_compressed --opdir raw_data/`
-3. Run the LMDB preprocessing script: `scripts/preprocess_ef.py --data-path raw_data/ --out-path processed_lmdb/ --num-workers 32 --get-edges --ref-energy`; where
+1. Download the dataset of interest: `curl -O download_link`
+2. Untar the dataset `tar -xvf dataset_name.tar`
+3. Uncompress the untarred directory contents: `python ocp/scripts/uncompress.py --ipdir /path/to/dataset_name_compressed --opdir raw_data/`
+4. Run the LMDB preprocessing script: `python ocp/scripts/preprocess_ef.py --data-path raw_data/ --out-path processed_lmdb/ --num-workers 32 --get-edges --ref-energy`; where
     - `--get-edges`: includes edge information in LMDBs (~10x storage requirement, ~3-5x slowdown), otherwise, compute edges on the fly (larger GPU memory requirement).
     - `--ref-energy`: uses referenced energies instead of raw energies.
 
 ### Train models for the the desired tasks
 
-A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/baselines/blob/release/train.md).
+A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/release/train.md).
 
 ## Acknowledgements
 
 - This codebase was initially forked from [CGCNN](https://github.com/txie-93/cgcnn)
 by [Tian Xie](http://txie.me), but has undergone significant changes since.
-- A lot of engineering ideas have been borrowed from [github.com/facebookresearch/pythia](https://github.com/facebookresearch/pythia).
+- A lot of engineering ideas have been borrowed from [github.com/facebookresearch/mmf](https://github.com/facebookresearch/mmf).
 
 ## License
 
-This code is MIT licensed, as found in the [LICENSE file](https://github.com/Open-Catalyst-Project/baselines/blob/master/LICENSE.md).
-
+This code is MIT licensed, as found in the [LICENSE file](https://github.com/Open-Catalyst-Project/ocp/blob/master/LICENSE.md).

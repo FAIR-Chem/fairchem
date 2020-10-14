@@ -42,9 +42,9 @@ class LBFGS:
         self.traj_dir = traj_dir
         self.traj_names = traj_names
         assert not self.traj_dir or (
-            traj_dir and traj_names
+            traj_dir and len(traj_names)
         ), "Trajectory names should be specified to save trajectories"
-        print("DEVICE", self.device)
+        print("Step   Fmax(eV/A)")
 
         self.model.update_graph(self.atoms)
 
@@ -63,7 +63,7 @@ class LBFGS:
     def converged(self, force_threshold, iteration, forces):
         if forces is None:
             return False
-        print(iteration, torch.sqrt((forces ** 2).sum(axis=1).max()))
+        print(iteration, torch.sqrt((forces ** 2).sum(axis=1).max()).item())
         return (forces ** 2).sum(axis=1).max() < force_threshold ** 2
 
     def run(self, fmax, steps):
@@ -110,7 +110,7 @@ class LBFGS:
                 longest_steps, self.atoms.natoms
             )
             maxstep = longest_steps.new_tensor(self.maxstep)
-            scale = longest_steps.reciprocal() * torch.min(
+            scale = (longest_steps + 1e-7).reciprocal() * torch.min(
                 longest_steps, maxstep
             )
             dr *= scale.unsqueeze(1)

@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 from itertools import chain
 
 import torch
+
 from ocpmodels.datasets import data_list_collater
 
 
@@ -54,12 +55,13 @@ class OCPDataParallel(torch.nn.DataParallel):
 
 
 class ParallelCollater:
-    def __init__(self, num_gpus):
+    def __init__(self, num_gpus, otf_graph=False):
         self.num_gpus = num_gpus
+        self.otf_graph = otf_graph
 
     def __call__(self, data_list):
         if self.num_gpus == 1:
-            batch = data_list_collater(data_list)
+            batch = data_list_collater(data_list, otf_graph=self.otf_graph)
             return [batch]
 
         else:
