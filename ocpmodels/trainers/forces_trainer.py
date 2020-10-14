@@ -140,7 +140,9 @@ class ForcesTrainer(BaseTrainer):
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
 
-        self.parallel_collater = ParallelCollater(1)
+        self.parallel_collater = ParallelCollater(
+            1, self.config["model_attributes"].get("otf_graph", False)
+        )
         if self.config["task"]["dataset"] == "trajectory_lmdb":
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
