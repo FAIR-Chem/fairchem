@@ -62,6 +62,7 @@ class AtomsToGraphs:
         r_energy=False,
         r_forces=False,
         r_distances=False,
+        r_edges=True,
         r_fixed=True,
     ):
         self.max_neigh = max_neigh
@@ -70,6 +71,7 @@ class AtomsToGraphs:
         self.r_forces = r_forces
         self.r_distances = r_distances
         self.r_fixed = r_fixed
+        self.r_edges = r_edges
 
     def _get_neighbors_pymatgen(self, atoms):
         """Preforms nearest neighbor search and returns edge index, distances,
@@ -126,12 +128,6 @@ class AtomsToGraphs:
             Optional properties can included by setting r_property=True when constructing the class.
         """
 
-        # run internal functions to get padded indices and distances
-        split_idx_dist = self._get_neighbors_pymatgen(atoms)
-        edge_index, edge_distances, cell_offsets = self._reshape_features(
-            *split_idx_dist
-        )
-
         # set the atomic numbers, positions, and cell
         atomic_numbers = torch.Tensor(atoms.get_atomic_numbers())
         positions = torch.Tensor(atoms.get_positions())
@@ -140,22 +136,29 @@ class AtomsToGraphs:
 
         # put the minimum data in torch geometric data object
         data = Data(
-            edge_index=edge_index,
             cell=cell,
-            cell_offsets=cell_offsets,
             pos=positions,
             atomic_numbers=atomic_numbers,
             natoms=natoms,
         )
 
         # optionally include other properties
+        if self.r_edges:
+            # run internal functions to get padded indices and distances
+            split_idx_dist = self._get_neighbors_pymatgen(atoms)
+            edge_index, edge_distances, cell_offsets = self._reshape_features(
+                *split_idx_dist
+            )
+
+            data.edge_index = edge_index
+            data.cell_offsets = cell_offsets
         if self.r_energy:
             energy = atoms.get_potential_energy(apply_constraint=False)
             data.y = energy
         if self.r_forces:
             forces = torch.Tensor(atoms.get_forces(apply_constraint=False))
             data.force = forces
-        if self.r_distances:
+        if self.r_distances and self.r_edges:
             data.distances = edge_distances
         if self.r_fixed:
             fixed_idx = torch.zeros(natoms)

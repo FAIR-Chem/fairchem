@@ -4,7 +4,7 @@ for training and evaluating models for each of these tasks as well as generating
 
 `main.py` serves as the entry point to run any task tasks. This script requires two command line
 arguments at a minimum:
-* `--mode MODE`: MODE can be `train`, `predict` or `run_relaxations` to train a model, make predictions
+* `--mode MODE`: MODE can be `train`, `predict` or `run-relaxations` to train a model, make predictions
 using an existing model, or run machine learning based relaxations using an existing model respectively.
 * `--config-yml PATH`: PATH is the path to a YAML configuration file. We use YAML files to supply all
 parameters to the script. The `configs` directory contains a number of example config files.
@@ -136,7 +136,7 @@ relax_opt:
 
 After training, you can generate trajectories using:
 ```
-python main.py --mode run_relaxations --config-yml configs/ocp_is2rs/schnet.yml \
+python main.py --mode run-relaxations --config-yml configs/ocp_is2rs/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
 The relaxed structure positions are stored in `[RESULTS_DIR]/relaxed_pos_[DEVICE #].json` and later used to create a submission file to be uploaded to EvalAI. Predicted trajectories are stored in `trajectories` directory for those interested in analyzing the complete relaxation trajectory.
@@ -152,7 +152,7 @@ EvalAI expects results to be structured in a specific format for a submission to
 
 
 ### IS2RS:
-1. Ensure `write_pos: True` is included in your configuration file. Run relaxations `--mode run_relaxations` on all 4 splits, generating `relaxed_pos_[DEVICE #].json` files for each split.
+1. Ensure `write_pos: True` is included in your configuration file. Run relaxations `--mode run-relaxations` on all 4 splits, generating `relaxed_pos_[DEVICE #].json` files for each split.
 2. For each split, if relaxations were run with multiple GPUs, combine `relaxed_pos_[DEVICE #].json` into one `relaxed_pos.json` file using `scripts/make_evalai_json.py`, otherwise skip to 3.
 2. Modify `scripts/make_evalai_json.py` with the corresponding paths of the `relaxed_pos.json` files and run to generate your final submission file `taskname_split_submission.json` (filename may be modified).
 3. Upload `taskname_split_submission.json` to EvalAI.
