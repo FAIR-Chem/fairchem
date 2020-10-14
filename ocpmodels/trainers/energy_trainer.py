@@ -413,7 +413,7 @@ class EnergyTrainer(BaseTrainer):
 
         return metrics
 
-    def predict(self, loader, results_file=None):
+    def predict(self, loader, results_file=None, disable_tqdm=False):
         assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
 
         self.model.eval()
@@ -421,7 +421,9 @@ class EnergyTrainer(BaseTrainer):
             self.normalizers["target"].to(self.device)
         predictions = []
 
-        for i, batch in tqdm(enumerate(loader), total=len(loader)):
+        for i, batch in tqdm(
+            enumerate(loader), total=len(loader), disable=disable_tqdm
+        ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
 
