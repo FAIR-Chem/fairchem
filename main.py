@@ -58,9 +58,13 @@ def main(config):
             assert config["checkpoint"]
             run_dir = config.get("run_dir", "./")
             results_file = Path(run_dir) / "predictions.json"
-            trainer.predict(trainer.test_loader, results_file=results_file)
+            trainer.predict(
+                trainer.test_loader,
+                results_file=results_file,
+                disable_tqdm=False,
+            )
 
-        elif config["mode"] == "run_relaxations":
+        elif config["mode"] == "run-relaxations":
             assert isinstance(
                 trainer, ForcesTrainer
             ), "Relaxations are only possible for ForcesTrainer"
@@ -68,7 +72,7 @@ def main(config):
                 trainer.relax_dataset is not None
             ), "Relax dataset is required for making predictions"
             assert config["checkpoint"]
-            trainer.validate_relaxation()
+            trainer.run_relaxations()
 
         distutils.synchronize()
 

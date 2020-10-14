@@ -183,8 +183,12 @@ class ForcesTrainer(BaseTrainer):
                 )
 
             if "relax_dataset" in self.config["task"]:
+                assert os.path.isfile(
+                    self.config["task"]["relax_dataset"]["src"]
+                )
+
                 self.relax_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
+                    "single_point_lmdb"
                 )(self.config["task"]["relax_dataset"])
                 self.relax_loader = DataLoader(
                     self.relax_dataset,
@@ -289,7 +293,9 @@ class ForcesTrainer(BaseTrainer):
             )
 
     # Takes in a new data source and generates predictions on it.
-    def predict(self, data_loader, per_image=True, results_file=None):
+    def predict(
+        self, data_loader, per_image=True, results_file=None, disable_tqdm=True
+    ):
         assert isinstance(
             data_loader,
             (
@@ -308,7 +314,11 @@ class ForcesTrainer(BaseTrainer):
 
         predictions = {"energy": [], "forces": []}
 
-        for i, batch_list in enumerate(data_loader):
+        for i, batch_list in tqdm(
+            enumerate(data_loader),
+            total=len(data_loader),
+            disable=disable_tqdm,
+        ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch_list)
 
@@ -547,11 +557,18 @@ class ForcesTrainer(BaseTrainer):
 
         return metrics
 
-    def validate_relaxation(self, split="val", epoch=None):
-        print("### Evaluating ML-relaxation")
+    def run_relaxations(self, split="val", epoch=None):
+        print("### Running ML-relaxations")
         self.model.eval()
 
         evaluator, metrics = Evaluator(task="is2rs"), {}
+
+        if hasattr(self.relax_dataset[0], "pos_relaxed") and hasattr(
+            self.relax_dataset[0], "y_relaxed"
+        ):
+            split = "val"
+        else:
+            split = "test"
 
         relaxed_positions = []
         for i, batch in enumerate(self.relax_loader):
@@ -565,63 +582,42 @@ class ForcesTrainer(BaseTrainer):
                 transform=None,
             )
 
-            mask = relaxed_batch.fixed == 0
-            s_idx = 0
-            natoms_free = []
-            for natoms in relaxed_batch.natoms:
-                natoms_free.append(
-                    torch.sum(mask[s_idx : s_idx + natoms]).item()
-                )
-                s_idx += natoms
-
-            target = {
-                "energy": relaxed_batch.y_relaxed,
-                "positions": relaxed_batch.pos_relaxed[mask],
-                "cell": relaxed_batch.cell,
-                "pbc": torch.tensor([True, True, True]),
-                "natoms": torch.LongTensor(natoms_free),
-            }
-
-            prediction = {
-                "energy": relaxed_batch.y,
-                "positions": relaxed_batch.pos[mask],
-                "cell": relaxed_batch.cell,
-                "pbc": torch.tensor([True, True, True]),
-                "natoms": torch.LongTensor(natoms_free),
-            }
-
-            metrics = evaluator.eval(prediction, target, metrics)
-
             if self.config["task"].get("write_pos", False):
                 ids = relaxed_batch.id
                 natoms = relaxed_batch.natoms.tolist()
                 positions = torch.split(relaxed_batch.pos, natoms)
                 batch_relaxed_positions = [pos.tolist() for pos in positions]
-                relaxed_positions += list(zip(ids, batch_relaxed_positions))
+                relaxed_positions += list(
+                    zip(ids.tolist(), batch_relaxed_positions)
+                )
 
-        aggregated_metrics = {}
-        for k in metrics:
-            aggregated_metrics[k] = {
-                "total": distutils.all_reduce(
-                    metrics[k]["total"], average=False, device=self.device
-                ),
-                "numel": distutils.all_reduce(
-                    metrics[k]["numel"], average=False, device=self.device
-                ),
-            }
-            aggregated_metrics[k]["metric"] = (
-                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
-            )
-        metrics = aggregated_metrics
+            if split == "val":
+                mask = relaxed_batch.fixed == 0
+                s_idx = 0
+                natoms_free = []
+                for natoms in relaxed_batch.natoms:
+                    natoms_free.append(
+                        torch.sum(mask[s_idx : s_idx + natoms]).item()
+                    )
+                    s_idx += natoms
 
-        # Make plots.
-        log_dict = {k: metrics[k]["metric"] for k in metrics}
-        if self.logger is not None and epoch is not None:
-            self.logger.log(
-                log_dict,
-                step=(epoch + 1) * len(self.train_loader),
-                split=split,
-            )
+                target = {
+                    "energy": relaxed_batch.y_relaxed,
+                    "positions": relaxed_batch.pos_relaxed[mask],
+                    "cell": relaxed_batch.cell,
+                    "pbc": torch.tensor([True, True, True]),
+                    "natoms": torch.LongTensor(natoms_free),
+                }
+
+                prediction = {
+                    "energy": relaxed_batch.y,
+                    "positions": relaxed_batch.pos[mask],
+                    "cell": relaxed_batch.cell,
+                    "pbc": torch.tensor([True, True, True]),
+                    "natoms": torch.LongTensor(natoms_free),
+                }
+
+                metrics = evaluator.eval(prediction, target, metrics)
 
         if self.config["task"].get("write_pos", False):
             rank = distutils.get_rank()
@@ -632,10 +628,34 @@ class ForcesTrainer(BaseTrainer):
             with open(pos_filename, "w") as f:
                 json.dump(relaxed_positions, f)
 
-        if distutils.is_master():
-            print(metrics)
+        if split == "val":
+            aggregated_metrics = {}
+            for k in metrics:
+                aggregated_metrics[k] = {
+                    "total": distutils.all_reduce(
+                        metrics[k]["total"], average=False, device=self.device
+                    ),
+                    "numel": distutils.all_reduce(
+                        metrics[k]["numel"], average=False, device=self.device
+                    ),
+                }
+                aggregated_metrics[k]["metric"] = (
+                    aggregated_metrics[k]["total"]
+                    / aggregated_metrics[k]["numel"]
+                )
+            metrics = aggregated_metrics
 
-        return metrics
+            # Make plots.
+            log_dict = {k: metrics[k]["metric"] for k in metrics}
+            if self.logger is not None and epoch is not None:
+                self.logger.log(
+                    log_dict,
+                    step=(epoch + 1) * len(self.train_loader),
+                    split=split,
+                )
+
+            if distutils.is_master():
+                print(metrics)
 
     def _forward(self, batch_list):
         # forward pass.
