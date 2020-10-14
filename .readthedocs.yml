@@ -1,0 +1,11 @@
+# .readthedocs.yml
+
+# Required
+version: 2
+
+# Build documentation in the docs/ directory with Sphinx
+sphinx:
+  configuration: docs/conf.py
+
+conda:
+  environment: docs/env.yml
