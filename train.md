@@ -2,10 +2,10 @@
 The open compute challenge consists of three distinct tasks. This document is a tutorial
 for training and evaluating models for each of these tasks as well as generating submission files for EvalAI.
 
-`main.py` serves as the entry point to run any task tasks. This script requires two command line
+`main.py` serves as the entry point to run any task. This script requires two command line
 arguments at a minimum:
 * `--mode MODE`: MODE can be `train`, `predict` or `run-relaxations` to train a model, make predictions
-using an existing model, or run machine learning based relaxations using an existing model respectively.
+using an existing model, or run machine learning based relaxations using an existing model, respectively.
 * `--config-yml PATH`: PATH is the path to a YAML configuration file. We use YAML files to supply all
 parameters to the script. The `configs` directory contains a number of example config files.
 
@@ -21,7 +21,7 @@ python -u -m torch.distributed.launch --nproc_per_node=8 main.py --distributed -
 `torch.distributed.launch` launches multiple processes for distributed training. For more details, refer to
 https://pytorch.org/docs/stable/distributed.html#launch-utility
 
-If you have access to a slurm cluster, we use the `submitit` package to simplify multi-node distributed training:
+If you have access to a slurm cluster, we use the [submitit](https://github.com/facebookincubator/submitit) package to simplify multi-node distributed training:
 ```
 python main.py --distributed --num-gpus 8 --num-nodes 6 --submit [...]
 ```
@@ -30,7 +30,7 @@ In the rest of this tutorial, we explain how to train models for each task.
 
 ## Initial Structure to Relaxed Energy prediction (IS2RE)
 
-In the IS2RE tasks, the model takes the initial structure as input and predict the structure’s energy
+In the IS2RE tasks, the model takes the initial structure as an input and predicts the structure’s energy
 in the relaxed state. To train a model for the IS2RE task, you can use the `EnergyTrainer`
 Trainer and `SinglePointLmdb` dataset by specifying the following in your configuration file:
 ```
@@ -56,7 +56,7 @@ python main.py --mode train --config-yml configs/ocp_is2re/schnet.yml
 ```
 
 Training logs are stored in `logs/tensorboard/[TIMESTAMP]` where `[TIMESTAMP]` is
-the starting time stamp of the run. You can monitor the training process by running:
+the starting time-stamp of the run. You can monitor the training process by running:
 ```
 tensorboard --logdir logs/tensorboard/[TIMESTAMP]
 ```
@@ -134,7 +134,7 @@ relax_opt:
   traj_dir: "trajectories"
 ```
 
-After training, you can generate trajectories using:
+After training, trajectories can be generated using:
 ```
 python main.py --mode run-relaxations --config-yml configs/ocp_is2rs/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
