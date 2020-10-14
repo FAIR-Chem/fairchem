@@ -36,13 +36,14 @@ we provide baseline models and code at
    tutorials/training
    tutorials/submission
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Modules
+..
+    .. toctree::
+       :maxdepth: 1
+       :caption: Modules
 
-   modules/model
-   modules/dataset
-   modules/trainer
+       modules/model
+       modules/dataset
+       modules/trainer
 
 Indices and tables
 ==================
