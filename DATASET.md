@@ -6,7 +6,7 @@ This page summarizes the dataset download links for S2EF and IS2RE/IS2RS tasks a
 
 ## Structure to Energy and Forces (S2EF) task
 
-For this task, we provide compressed trajectory files with the input structures and output energies and forces. To use the datasets, first download the files and uncompress them. The uncompressed files are used to generate LMDBs, which are in turn used by the dataloaders to train the ML models. Code for the dataloaders and generating the LMBDs may be found in the Github repository.
+For this task, we provide compressed trajectory files with the input structures and output energies and forces. To use the datasets, first download the files and uncompress them. The uncompressed files are used to generate LMDBs, which are in turn used by the dataloaders to train the ML models. Code for the dataloaders and generating the LMDBs may be found in the Github repository.
 
 Four training datasets are provided with different sizes. Each is a subset of the other, i.e., the 2M dataset is contained in the 20M and all datasets.
 
@@ -42,7 +42,7 @@ Each tarball has a README file containing details about file formats, number of 
 
 For the IS2RS and IS2RE tasks, we are providing:
 
-* tarballs with precomputed LMDBs which once downloaded and uncompressed can be used directly to train ML models. The LMDBs contain the input initial structures and the output relaxed structures and energies. Training datasets are split by size, with each being a subset of the larger splits, similar to S2EF. The validation and test datasets are broken into subsplits based on different extrapolation evaluations (In Domain, OOD Adsorbate, OOD Catalyst, OOD Both).
+* One `.tar.gz` file with precomputed LMDBs which once downloaded and uncompressed, can be used directly to train ML models. The LMDBs contain the input initial structures and the output relaxed structures and energies. Training datasets are split by size, with each being a subset of the larger splits, similar to S2EF. The validation and test datasets are broken into subsplits based on different extrapolation evaluations (In Domain, OOD Adsorbate, OOD Catalyst, OOD Both).
 * underlying ASE relaxation trajectories for the adsorbate+catalyst in the entire training and validation sets for the IS2RE and IS2RS tasks. These are **not** required to download for training ML models, but are available for interested users.
 
 
@@ -53,22 +53,9 @@ Each tarball has README file containing details about file formats, number of st
 
 |Splits	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|
 |---	|---	|---	|---	|
-|Train	|	|	|	|
-|all	|	|	|	|
-|100K	|	|	|	|
-|10K	|	|	|	|
+|Train (all splits) + Validation (all splits)	|7.3G	|85G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_lmdbs.tar	|
 |	|	|	|	|
-|Validation	|	|	|	|
-|val_id	|	|	|	|
-|val_ood_ads	|	|	|	|
-|val_ood_cat	|	|	|	|
-|val_ood_both	|	|	|	|
-|	|	|	|	|
-|Test	|	|	|	|
-|test_id	|Coming soon	|
-|test_ood_ads	|Coming soon	|
-|test_ood_cat	|Coming soon	|
-|test_ood_both	|Coming soon	|
+|Test	|	|	|Coming soon	|
 
 
 
@@ -83,14 +70,6 @@ Each tarball has README file containing details about file formats, number of st
 |val_ood_ads (~25K trajectories)	|5.7G	|44G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_ads_trajectories.tar	|
 |val_ood_cat (~25K trajectories)	|6.0G	|46G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_cat_trajectories.tar	|
 |val_ood_both (~25K trajectories)	|4.4G	|35G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_both_trajectories.tar	|
-
-
-
-
-
-
-
-
 
 
 
