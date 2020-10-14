@@ -33,6 +33,7 @@ we provide baseline models and code at
 
    tutorials/getting_started
    tutorials/data_playground.ipynb
+   tutorials/train_s2ef_example.ipynb
    tutorials/training
    tutorials/submission
 
