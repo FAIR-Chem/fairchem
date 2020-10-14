@@ -7,18 +7,17 @@ LICENSE file in the root directory of this source tree.
 
 import torch
 import torch.nn as nn
-from torch_geometric.nn import MessagePassing, global_mean_pool, radius_graph
-from torch_geometric.nn.models.schnet import GaussianSmearing
-
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 from ocpmodels.datasets.elemental_embeddings import EMBEDDINGS
 from ocpmodels.models.base import BaseModel
+from torch_geometric.nn import MessagePassing, global_mean_pool, radius_graph
+from torch_geometric.nn.models.schnet import GaussianSmearing
 
 
 @registry.register_model("cgcnn")
 class CGCNN(BaseModel):
-    r"""Wrapper around the Crystal Graph CNN model from the
+    r"""Implementation of the Crystal Graph CNN model from the
     `"Crystal Graph Convolutional Neural Networks for an Accurate
     and Interpretable Prediction of Material Properties"
     <https://arxiv.org/abs/1710.10324>`_ paper.
