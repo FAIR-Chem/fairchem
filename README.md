@@ -81,9 +81,8 @@ A detailed description of how to train, predict, and run ML-based relaxations ca
 
 - This codebase was initially forked from [CGCNN](https://github.com/txie-93/cgcnn)
 by [Tian Xie](http://txie.me), but has undergone significant changes since.
-- A lot of engineering ideas have been borrowed from [github.com/facebookresearch/pythia](https://github.com/facebookresearch/pythia).
+- A lot of engineering ideas have been borrowed from [github.com/facebookresearch/mmf](https://github.com/facebookresearch/mmf).
 
 ## License
 
 This code is MIT licensed, as found in the [LICENSE file](https://github.com/Open-Catalyst-Project/baselines/blob/master/LICENSE.md).
-
