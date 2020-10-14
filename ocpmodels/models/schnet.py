@@ -85,9 +85,6 @@ class SchNetWrap(SchNet):
         if self.regress_forces:
             pos = pos.requires_grad_(True)
         batch = data.batch
-        assert (
-            hasattr(data, "edge_index") or self.otf_graph
-        ), "LMDB does not contain edge indices, set self.otf_graph=True"
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
