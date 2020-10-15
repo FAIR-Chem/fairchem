@@ -11,7 +11,7 @@ parameters to the script. The `configs` directory contains a number of example c
 
 Running `main.py` directly runs the model on a single CPU or GPU if one is available:
 ```
-python main.py --mode train --config-yml configs/TASK/MODEL.yml
+python main.py --mode train --config-yml configs/TASK/SIZE/MODEL/MODEL.yml
 ```
 If you have multiple
 GPUs, you can use distributed data parallel training by running:
@@ -48,11 +48,11 @@ dataset:
   # Test data (optional)
   - src: [Path to test data]
 ```
-You can find examples configuration files in `configs/ocp_is2re`.
+You can find examples configuration files in [`configs/is2re`](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs/is2re).
 
-To train a SchNet model for the IS2RE task, run:
+To train a SchNet model for the IS2RE task on the 10k split, run:
 ```
-python main.py --mode train --config-yml configs/ocp_is2re/schnet.yml
+python main.py --mode train --config-yml configs/is2re/10k/schnet/schnet.yml
 ```
 
 Training logs are stored in `logs/tensorboard/[TIMESTAMP]` where `[TIMESTAMP]` is
@@ -64,7 +64,7 @@ At the end of training, the model checkpoint is stored in `checkpoints/[TIMESTAM
 
 Next, run this model on the test data:
 ```
-python main.py --mode predict --config-yml configs/ocp_is2re/schnet.yml \
+python main.py --mode predict --config-yml configs/is2re/10k/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
 The predictions are stored in `predictions.json` and later used to create a submission file to be uploaded to EvalAI.
@@ -92,19 +92,19 @@ dataset:
   # Test data (optional)
   - src: [Path to test data]
 ```
-You can find examples configuration files in `configs/ocp_s2ef`.
+You can find examples configuration files in [`configs/s2ef`](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs/s2ef).
 
-To train a SchNet model for the S2EF task, run:
+To train a SchNet model for the S2EF task on the 2M split using 2 GPUs, run:
 ```
 python -u -m torch.distributed.launch --nproc_per_node=2 main.py \
-        --mode train --config-yml configs/ocp_s2ef/schnet.yml --num-gpus 2 --distributed
+        --mode train --config-yml configs/s2ef/2M/schnet/schnet.yml --num-gpus 2 --distributed
 ```
 Similar to the IS2RE task, tensorboard logs are stored in `logs/tensorboard/[TIMESTAMP]` and the
 checkpoint is stored in `checkpoints/[TIMESTAMP]/checkpoint.pt`.
 
 Next, run this model on the test data:
 ```
-python main.py --mode predict --config-yml configs/ocp_s2ef/schnet.yml \
+python main.py --mode predict --config-yml configs/s2ef/2M/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
 The predictions are stored in `predictions.json` and later used to create a submission file to be uploaded to EvalAI.
@@ -113,30 +113,26 @@ The predictions are stored in `predictions.json` and later used to create a subm
 
 In the IS2RS task the model takes as input an initial structure and predicts the atomic positions in their
 final, relaxed state. This can be done by training a model to predict per-atom forces similar to the S2EF
-task and then running an iterative relaxation. Although we present an iterative approach, models that directly predict relaxed states are also possible. You can find example configuration files in `configs/ocp_is2rs`.
+task and then running an iterative relaxation. Although we present an iterative approach, models that directly predict relaxed states are also possible. The iterative approach IS2RS task uses the same configuration files as the S2EF task `configs/s2ef` and follows the same training scheme above.
 
-To train a SchNet model for the IS2RS task, run:
-```
-python main.py --mode train --config-yml configs/ocp_is2rs/schnet.yml
-```
-Note - iterative approaches to the IS2RS task use trained models that are no different than the S2EF task. Existing S2EF models may be used with the following additions to the configuration file:
+To perform an iterative relaxation, ensure the following is added to the configuration files of the models you wish to run relaxations on:
 ```
 # Relaxation options
 relax_dataset:
-  src: data/09_29_val_is2rs_lmdb
+  src: data/is2re/all/val_id/data.lmdb # path to lmdb of systems to be relaxed (uses same lmdbs as is2re)
 write_pos: True
 relaxation_steps: 300
 relax_opt:
-  maxstep: 300
-  memory: 100
-  damping: 0.25
-  alpha: 100.
-  traj_dir: "trajectories"
+  maxstep: 0.04,
+  memory: 50,
+  damping: 1.0,
+  alpha: 70.0,
+  traj_dir: "trajectories" # specify directory you wish to log the entire relaxations, suppress otherwise
 ```
 
-After training, trajectories can be generated using:
+After training, relaxations can be run by:
 ```
-python main.py --mode run-relaxations --config-yml configs/ocp_is2rs/schnet.yml \
+python main.py --mode run-relaxations --config-yml configs/s2ef/2M/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
 The relaxed structure positions are stored in `[RESULTS_DIR]/relaxed_pos_[DEVICE #].json` and later used to create a submission file to be uploaded to EvalAI. Predicted trajectories are stored in `trajectories` directory for those interested in analyzing the complete relaxation trajectory.
