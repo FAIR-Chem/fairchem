@@ -285,7 +285,9 @@ class ForcesTrainer(BaseTrainer):
         super(ForcesTrainer, self).load_model()
 
         self.model = OCPDataParallel(
-            self.model, output_device=self.device, num_gpus=1,
+            self.model,
+            output_device=self.device,
+            num_gpus=1,
         )
         if distutils.initialized():
             self.model = DistributedDataParallel(
@@ -381,7 +383,10 @@ class ForcesTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator, self.metrics,
+                    out,
+                    batch,
+                    self.evaluator,
+                    self.metrics,
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -504,7 +509,8 @@ class ForcesTrainer(BaseTrainer):
 
         if "relax_dir" in self.config["task"]:
             self.validate_relaxation(
-                split="val", epoch=epoch,
+                split="val",
+                epoch=epoch,
             )
 
     def validate(self, split="val", epoch=None):
