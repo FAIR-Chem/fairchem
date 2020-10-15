@@ -153,7 +153,7 @@ class EnergyTrainer(BaseTrainer):
                 batch_size=self.config["optim"]["batch_size"],
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
-                pin_memory=self.config["optim"].get("pin_memory", True),
+                pin_memory=True,
                 sampler=self.train_sampler,
             )
 
@@ -175,7 +175,7 @@ class EnergyTrainer(BaseTrainer):
                     self.config["optim"].get("eval_batch_size", 64),
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=self.config["optim"].get("pin_memory", True),
+                    pin_memory=True,
                     sampler=self.val_sampler,
                 )
             if "test_dataset" in self.config:
@@ -193,7 +193,7 @@ class EnergyTrainer(BaseTrainer):
                     self.config["optim"].get("eval_batch_size", 64),
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=self.config["optim"].get("pin_memory", True),
+                    pin_memory=True,
                     sampler=self.test_sampler,
                 )
 
@@ -419,7 +419,7 @@ class EnergyTrainer(BaseTrainer):
         self.model.eval()
         if self.normalizers is not None and "target" in self.normalizers:
             self.normalizers["target"].to(self.device)
-        predictions = []
+        predictions = {"ids": [], "energy": []}
 
         for i, batch in tqdm(
             enumerate(loader), total=len(loader), disable=disable_tqdm
@@ -431,12 +431,18 @@ class EnergyTrainer(BaseTrainer):
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
                 )
-            predictions.extend(out["energy"].tolist())
+            predictions["ids"].extend([str(i) for i in batch[0].sid.tolist()])
+            predictions["energy"].extend(out["energy"].tolist())
 
         if results_file is not None:
             print(f"Writing results to {results_file}")
-            # EvalAI expects a list of energies
+
+            # EvalAI expects a list of dicts with ids and energies
+            evalAI_results = []
+            for sid, energy in zip(predictions["ids"], predictions["energy"]):
+                evalAI_results.append({"id": sid, "energy": energy})
+
             with open(results_file, "w") as resfile:
-                json.dump(predictions, resfile)
+                json.dump(evalAI_results, resfile)
 
         return predictions

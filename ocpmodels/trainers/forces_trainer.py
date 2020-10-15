@@ -154,7 +154,7 @@ class ForcesTrainer(BaseTrainer):
                 shuffle=True,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
-                pin_memory=self.config["optim"].get("pin_memory", True),
+                pin_memory=True,
             )
 
             self.val_loader = self.test_loader = None
@@ -169,7 +169,7 @@ class ForcesTrainer(BaseTrainer):
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=self.config["optim"].get("pin_memory", True),
+                    pin_memory=True,
                 )
             if "test_dataset" in self.config:
                 self.test_dataset = registry.get_dataset_class(
@@ -181,7 +181,7 @@ class ForcesTrainer(BaseTrainer):
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=self.config["optim"].get("pin_memory", True),
+                    pin_memory=True,
                 )
 
             if "relax_dataset" in self.config["task"]:
@@ -204,7 +204,7 @@ class ForcesTrainer(BaseTrainer):
                     batch_size=self.config["optim"].get("eval_batch_size", 64),
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=self.config["optim"].get("pin_memory", True),
+                    pin_memory=True,
                 )
 
         else:
@@ -320,7 +320,7 @@ class ForcesTrainer(BaseTrainer):
             self.normalizers["target"].to(self.device)
             self.normalizers["grad_target"].to(self.device)
 
-        predictions = {"energy": [], "forces": []}
+        predictions = {"ids": [], "energy": [], "forces": []}
 
         for i, batch_list in tqdm(
             enumerate(data_loader),
@@ -339,6 +339,13 @@ class ForcesTrainer(BaseTrainer):
                 )
             if per_image:
                 atoms_sum = 0
+                systemids = [
+                    str(i) + "_" + str(j)
+                    for i, j in zip(
+                        batch_list[0].sid.tolist(), batch_list[0].fid.tolist()
+                    )
+                ]
+                predictions["ids"].extend(systemids)
                 predictions["energy"].extend(out["energy"].tolist())
                 batch_natoms = torch.cat(
                     [batch.natoms for batch in batch_list]
@@ -358,13 +365,15 @@ class ForcesTrainer(BaseTrainer):
 
         if results_file is not None:
             print(f"Writing results to {results_file}")
-            # EvalAI expects a list of dicts with energy and forces
+            # EvalAI expects a list of dicts with ids, energy, and forces
             evalAI_results = []
-            for energy, forces in zip(
-                predictions["energy"], predictions["forces"]
+            for rid, energy, forces in zip(
+                predictions["ids"],
+                predictions["energy"],
+                predictions["forces"],
             ):
                 evalAI_results.append(
-                    {"energy": energy, "forces": forces.tolist()}
+                    {"id": rid, "energy": energy, "forces": forces.tolist()}
                 )
             with open(results_file, "w") as resfile:
                 json.dump(evalAI_results, resfile)
@@ -585,7 +594,7 @@ class ForcesTrainer(BaseTrainer):
             relaxed_batch = ml_relax(
                 batch=batch,
                 model=self,
-                steps=self.config["task"].get("relaxation_steps", 200),
+                steps=10,  # self.config["task"].get("relaxation_steps", 200),
                 fmax=self.config["task"].get("relaxation_fmax", 0.0),
                 relax_opt=self.config["task"]["relax_opt"],
                 device=self.device,
@@ -593,13 +602,14 @@ class ForcesTrainer(BaseTrainer):
             )
 
             if self.config["task"].get("write_pos", False):
-                ids = relaxed_batch.id
+                systemids = [str(i) for i in relaxed_batch.sid.tolist()]
                 natoms = relaxed_batch.natoms.tolist()
                 positions = torch.split(relaxed_batch.pos, natoms)
                 batch_relaxed_positions = [pos.tolist() for pos in positions]
-                relaxed_positions += list(
-                    zip(ids.tolist(), batch_relaxed_positions)
-                )
+                relaxed_positions += [
+                    {"ids": i, "positions": j}
+                    for i, j in zip(systemids, batch_relaxed_positions)
+                ]
 
             if split == "val":
                 mask = relaxed_batch.fixed == 0
@@ -628,6 +638,9 @@ class ForcesTrainer(BaseTrainer):
                 }
 
                 metrics = evaluator.eval(prediction, target, metrics)
+
+            if i == 9:
+                break
 
         if self.config["task"].get("write_pos", False):
             rank = distutils.get_rank()
