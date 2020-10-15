@@ -6,10 +6,10 @@ LICENSE file in the root directory of this source tree.
 """
 
 import time
+from copy import deepcopy
 from pathlib import Path
 
 import submitit
-
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
@@ -72,7 +72,9 @@ def main(config):
                 trainer.relax_dataset is not None
             ), "Relax dataset is required for making predictions"
             assert config["checkpoint"]
-            trainer.run_relaxations()
+            trainer.run_relaxations(
+                run_id=config["run_id"], num_runs=config["num_runs"]
+            )
 
         distutils.synchronize()
 
@@ -92,7 +94,14 @@ if __name__ == "__main__":
         if args.sweep_yml:  # Run grid search
             configs = create_grid(config, args.sweep_yml)
         else:
-            configs = [config]
+            # configs = [config]
+            configs = []
+            for i in range(args.num_runs):
+                config_run = deepcopy(config)
+                config_run.update({"run_id": i, "num_runs": args.num_runs})
+                configs.append(config_run)
+                # if i == 2:
+                #     break
 
         print(f"Submitting {len(configs)} jobs")
         executor = submitit.AutoExecutor(folder=args.logdir / "%j")
@@ -105,6 +114,8 @@ if __name__ == "__main__":
             cpus_per_task=(args.num_workers + 1),
             tasks_per_node=(args.num_gpus if args.distributed else 1),
             nodes=args.num_nodes,
+            slurm_comment="electrocatalysis_deadline",
+            slurm_constraint="volta32gb",
         )
         jobs = executor.map_array(main, configs)
         print("Submitted jobs:", ", ".join([job.job_id for job in jobs]))
@@ -112,4 +123,11 @@ if __name__ == "__main__":
         print(f"Experiment log saved to: {log_file}")
 
     else:  # Run locally
-        main(config)
+        for i in range(args.num_runs):
+            if i == 0:
+                continue
+
+            config_run = deepcopy(config)
+            config_run.update({"run_id": i, "num_runs": args.num_runs})
+            main(config_run)
+            # break

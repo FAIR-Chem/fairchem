@@ -62,7 +62,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--num-workers",
-            default=0,
+            default=9,
             type=int,
             help="Number of dataloader workers (default: 0 i.e. use main proc)",
         )
@@ -133,6 +133,10 @@ class Flags:
         )
         self.parser.add_argument(
             "--local_rank", default=0, type=int, help="Local rank"
+        )
+
+        self.parser.add_argument(
+            "--num-runs", default=1, type=int, help="Number of runs"
         )
 
 

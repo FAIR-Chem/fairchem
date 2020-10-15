@@ -10,13 +10,11 @@ import datetime
 import json
 import os
 
-import torch
-import torch_geometric
 import yaml
-from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
+import torch
+import torch_geometric
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.meter import Meter
@@ -26,6 +24,8 @@ from ocpmodels.common.utils import plot_histogram, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from torch.nn.parallel.distributed import DistributedDataParallel
+from torch.utils.data import DataLoader, DistributedSampler
 
 
 @registry.register_trainer("forces")
@@ -565,7 +565,7 @@ class ForcesTrainer(BaseTrainer):
 
         return metrics
 
-    def run_relaxations(self, split="val", epoch=None):
+    def run_relaxations(self, split="val", epoch=None, run_id=1, num_runs=1):
         print("### Running ML-relaxations")
         self.model.eval()
 
@@ -582,6 +582,15 @@ class ForcesTrainer(BaseTrainer):
         for i, batch in tqdm(
             enumerate(self.relax_loader), total=len(self.relax_loader)
         ):
+            # if i > 20:
+            #     break
+
+            if i % num_runs != run_id:
+                print("Skipping: ", i)
+                continue
+            else:
+                print("Running: ", i)
+
             relaxed_batch = ml_relax(
                 batch=batch,
                 model=self,
@@ -632,7 +641,8 @@ class ForcesTrainer(BaseTrainer):
         if self.config["task"].get("write_pos", False):
             rank = distutils.get_rank()
             pos_filename = os.path.join(
-                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.json"
+                self.config["cmd"]["results_dir"],
+                f"relaxed_pos_{run_id}_{rank}.json",
             )
             print("Writing relaxed pos to:", pos_filename)
             with open(pos_filename, "w") as f:
