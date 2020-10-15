@@ -38,7 +38,7 @@ def ml_relax(
             Optimizer and corresponding parameters to be used for structure relaxations.
     """
     batch = batch[0]
-    ids = batch.id
+    ids = batch.sid
     calc = TorchCalc(model, transform)
 
     # Run ML-based relaxation

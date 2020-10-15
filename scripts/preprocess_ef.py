@@ -39,9 +39,13 @@ def write_images_to_lmdb(mp_arg):
 
         for i, frame in enumerate(traj_frames):
             frame_log = traj_logs[i].split(",")
+            sid = int(frame_log[0].split("random")[1])
+            fid = int(frame_log[1].split("frame")[1])
             data_object = a2g.convert(frame)
             # add atom tags
             data_object.tags = torch.LongTensor(frame.get_tags())
+            data_object.sid = sid
+            data_object.fid = fid
             # subtract off reference energy
             if args.ref_energy and not args.test_data:
                 ref_energy = float(frame_log[2])
