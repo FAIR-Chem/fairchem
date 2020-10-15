@@ -154,7 +154,7 @@ class ForcesTrainer(BaseTrainer):
                 shuffle=True,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
-                pin_memory=True,
+                pin_memory=self.config["optim"].get("pin_memory", True),
             )
 
             self.val_loader = self.test_loader = None
@@ -169,7 +169,7 @@ class ForcesTrainer(BaseTrainer):
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=True,
+                    pin_memory=self.config["optim"].get("pin_memory", True),
                 )
             if "test_dataset" in self.config:
                 self.test_dataset = registry.get_dataset_class(
@@ -181,7 +181,7 @@ class ForcesTrainer(BaseTrainer):
                     shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=True,
+                    pin_memory=self.config["optim"].get("pin_memory", True),
                 )
 
             if "relax_dataset" in self.config["task"]:
@@ -204,7 +204,7 @@ class ForcesTrainer(BaseTrainer):
                     batch_size=self.config["optim"].get("eval_batch_size", 64),
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=True,
+                    pin_memory=self.config["optim"].get("pin_memory", True),
                 )
 
         else:
