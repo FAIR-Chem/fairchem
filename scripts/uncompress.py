@@ -6,8 +6,10 @@ script - preprocess_ef.py
 import argparse
 import glob
 import lzma
-import multiprocessing
+import multiprocessing as mp
 import os
+
+from tqdm import tqdm
 
 
 def read_lzma(inpfile, outfile):
@@ -17,10 +19,9 @@ def read_lzma(inpfile, outfile):
             op.write(contents)
 
 
-def decompress_list_of_files(indices, ip_op_pairs):
-    for index in indices:
-        ip_file, op_file = ip_op_pairs[index]
-        read_lzma(ip_file, op_file)
+def decompress_list_of_files(ip_op_pair):
+    ip_file, op_file = ip_op_pair
+    read_lzma(ip_file, op_file)
 
 
 if __name__ == "__main__":
@@ -29,7 +30,10 @@ if __name__ == "__main__":
         "--ipdir", type=str, help="Path to compressed dataset directory"
     )
     parser.add_argument(
-        "--opdir", type=str, help="Directory to uncompress files to"
+        "--opdir", type=str, help="Directory path to uncompress files to"
+    )
+    parser.add_argument(
+        "--num-workers", type=int, help="# of processes to parallelize across"
     )
     args = parser.parse_args()
 
@@ -42,17 +46,11 @@ if __name__ == "__main__":
     for i in filelist:
         fname_base = os.path.basename(i)
         ip_op_pairs.append((i, os.path.join(args.opdir, fname_base[:-3])))
-    k = multiprocessing.cpu_count()
-    indices = [i for i in range(len(ip_op_pairs))]
-    tasks = [indices[i::k] for i in range(k)]
-    procs = []
-    # instantiating processes
-    for t in tasks:
-        proc = multiprocessing.Process(
-            target=decompress_list_of_files, args=(t, ip_op_pairs)
+
+    pool = mp.Pool(args.num_workers)
+    list(
+        tqdm(
+            pool.imap(decompress_list_of_files, ip_op_pairs),
+            total=len(ip_op_pairs),
         )
-        procs.append(proc)
-        proc.start()
-    # complete the processes
-    for proc in procs:
-        proc.join()
+    )
