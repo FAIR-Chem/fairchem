@@ -153,7 +153,7 @@ class EnergyTrainer(BaseTrainer):
                 batch_size=self.config["optim"]["batch_size"],
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
-                pin_memory=True,
+                pin_memory=self.config["optim"].get("pin_memory", True),
                 sampler=self.train_sampler,
             )
 
@@ -175,7 +175,7 @@ class EnergyTrainer(BaseTrainer):
                     self.config["optim"].get("eval_batch_size", 64),
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=True,
+                    pin_memory=self.config["optim"].get("pin_memory", True),
                     sampler=self.val_sampler,
                 )
             if "test_dataset" in self.config:
@@ -193,7 +193,7 @@ class EnergyTrainer(BaseTrainer):
                     self.config["optim"].get("eval_batch_size", 64),
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=True,
+                    pin_memory=self.config["optim"].get("pin_memory", True),
                     sampler=self.test_sampler,
                 )
 
