@@ -639,9 +639,6 @@ class ForcesTrainer(BaseTrainer):
 
                 metrics = evaluator.eval(prediction, target, metrics)
 
-            if i == 9:
-                break
-
         if self.config["task"].get("write_pos", False):
             rank = distutils.get_rank()
             pos_filename = os.path.join(
