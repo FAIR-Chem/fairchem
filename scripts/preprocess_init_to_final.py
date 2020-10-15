@@ -77,6 +77,11 @@ if __name__ == "__main__":
         default="/checkpoint/electrocatalysis/relaxations/mapping_old/pickled_mapping/adslab_tags_full.pkl",
         help="Path to tags (0/1/2 for bulk / slab / adsorbates), default: None",
     )
+    parser.add_argument(
+        "--test-data",
+        action="store_true",
+        help="Store LMDBs for test data, does not save targets",
+    )
 
     args = parser.parse_args()
 
@@ -128,8 +133,8 @@ if __name__ == "__main__":
     a2g = AtomsToGraphs(
         max_neigh=50,
         radius=6,
-        r_energy=True,
-        r_forces=True,
+        r_energy=not args.test_data,
+        r_forces=not args.test_data,
         r_distances=True,
         r_fixed=True,
     )
@@ -164,10 +169,11 @@ if __name__ == "__main__":
         try:
             dl[0].id = torch.LongTensor([idx])
             dl[0].tags = torch.LongTensor(sysid_to_tags[randomid])
-            dl[0].y_init = dl[0].y - adslab_ref[randomid]
-            dl[0].y_relaxed = dl[1].y - adslab_ref[randomid]
-            dl[0].pos_relaxed = dl[1].pos
-            del dl[0].y
+            if not args.test_data:
+                dl[0].y_init = dl[0].y - adslab_ref[randomid]
+                dl[0].y_relaxed = dl[1].y - adslab_ref[randomid]
+                dl[0].pos_relaxed = dl[1].pos
+                del dl[0].y
         except Exception as e:
             import pdb
 
@@ -175,10 +181,11 @@ if __name__ == "__main__":
             print(str(e), traj_path)
             continue
 
-        if dl[0].y_relaxed > 10 or dl[0].y_relaxed < -10:
-            print(traj_path, dl[0].y_relaxed)
-            removed.append(traj_path + " %f\n" % dl[0].y_relaxed)
-            continue
+        if not args.test_data:
+            if dl[0].y_relaxed > 10 or dl[0].y_relaxed < -10:
+                print(traj_path, dl[0].y_relaxed)
+                removed.append(traj_path + " %f\n" % dl[0].y_relaxed)
+                continue
 
         # If no neighbors, skip.
         if dl[0].edge_index.shape[1] == 0:
