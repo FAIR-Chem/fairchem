@@ -594,7 +594,7 @@ class ForcesTrainer(BaseTrainer):
             relaxed_batch = ml_relax(
                 batch=batch,
                 model=self,
-                steps=10,  # self.config["task"].get("relaxation_steps", 200),
+                steps=self.config["task"].get("relaxation_steps", 200),
                 fmax=self.config["task"].get("relaxation_fmax", 0.0),
                 relax_opt=self.config["task"]["relax_opt"],
                 device=self.device,
