@@ -419,7 +419,7 @@ class EnergyTrainer(BaseTrainer):
         self.model.eval()
         if self.normalizers is not None and "target" in self.normalizers:
             self.normalizers["target"].to(self.device)
-        predictions = {"ids": [], "energy": []}
+        predictions = {"id": [], "energy": []}
 
         for i, batch in tqdm(
             enumerate(loader), total=len(loader), disable=disable_tqdm
@@ -431,7 +431,7 @@ class EnergyTrainer(BaseTrainer):
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
                 )
-            predictions["ids"].extend([str(i) for i in batch[0].sid.tolist()])
+            predictions["id"].extend([str(i) for i in batch[0].sid.tolist()])
             predictions["energy"].extend(out["energy"].tolist())
 
         if results_file is not None:
@@ -439,7 +439,7 @@ class EnergyTrainer(BaseTrainer):
 
             # EvalAI expects a list of dicts with ids and energies
             evalAI_results = []
-            for sid, energy in zip(predictions["ids"], predictions["energy"]):
+            for sid, energy in zip(predictions["id"], predictions["energy"]):
                 evalAI_results.append({"id": sid, "energy": energy})
 
             with open(results_file, "w") as resfile:
