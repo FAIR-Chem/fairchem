@@ -207,7 +207,8 @@ class BaseTrainer:
 
     def load_model(self):
         # Build model
-        print("### Loading model: {}".format(self.config["model"]))
+        if distutils.is_master():
+            print("### Loading model: {}".format(self.config["model"]))
 
         # TODO(abhshkdz): Eventually move towards computing features on-the-fly
         # and remove dependence from `.edge_attr`.
@@ -232,11 +233,12 @@ class BaseTrainer:
             **self.config["model_attributes"],
         ).to(self.device)
 
-        print(
-            "### Loaded {} with {} parameters.".format(
-                self.model.__class__.__name__, self.model.num_params
+        if distutils.is_master():
+            print(
+                "### Loaded {} with {} parameters.".format(
+                    self.model.__class__.__name__, self.model.num_params
+                )
             )
-        )
 
         if self.logger is not None:
             self.logger.watch(self.model)
