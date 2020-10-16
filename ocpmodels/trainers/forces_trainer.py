@@ -439,7 +439,10 @@ class ForcesTrainer(BaseTrainer):
                 # Evaluate on val set every `eval_every` iterations.
                 if eval_every != -1 and iters % eval_every == 0:
                     if self.val_loader is not None:
-                        val_metrics = self.validate(split="val", epoch=epoch)
+                        val_metrics = self.validate(
+                            split="val",
+                            epoch=epoch - 1 + (i + 1) / len(self.train_loader),
+                        )
                         if (
                             val_metrics[
                                 self.config["task"].get(
