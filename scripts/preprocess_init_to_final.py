@@ -166,8 +166,9 @@ if __name__ == "__main__":
             continue
 
         randomid = os.path.split(traj_path)[1].split(".")[0]
+        sid = int(randomid.split("random")[1])
         try:
-            dl[0].id = torch.LongTensor([idx])
+            dl[0].sid = sid
             dl[0].tags = torch.LongTensor(sysid_to_tags[randomid])
             if not args.test_data:
                 dl[0].y_init = dl[0].y - adslab_ref[randomid]
