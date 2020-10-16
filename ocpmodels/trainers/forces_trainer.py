@@ -320,7 +320,7 @@ class ForcesTrainer(BaseTrainer):
             self.normalizers["target"].to(self.device)
             self.normalizers["grad_target"].to(self.device)
 
-        predictions = {"ids": [], "energy": [], "forces": []}
+        predictions = {"id": [], "energy": [], "forces": []}
 
         for i, batch_list in tqdm(
             enumerate(data_loader),
@@ -345,19 +345,27 @@ class ForcesTrainer(BaseTrainer):
                         batch_list[0].sid.tolist(), batch_list[0].fid.tolist()
                     )
                 ]
-                predictions["ids"].extend(systemids)
+                predictions["id"].extend(systemids)
                 predictions["energy"].extend(out["energy"].tolist())
                 batch_natoms = torch.cat(
                     [batch.natoms for batch in batch_list]
                 )
+                batch_fixed = torch.cat([batch.fixed for batch in batch_list])
                 for natoms in batch_natoms:
-                    predictions["forces"].append(
+                    forces = (
                         out["forces"][atoms_sum : natoms + atoms_sum]
                         .cpu()
                         .detach()
                         .numpy()
                     )
+                    # evalAI only requires forces on free atoms
+                    if results_file is not None:
+                        _free_atoms = (
+                            batch_fixed[atoms_sum : natoms + atoms_sum] == 0
+                        ).tolist()
+                        forces = forces[_free_atoms]
                     atoms_sum += natoms
+                    predictions["forces"].append(forces)
             else:
                 predictions["energy"] = out["energy"].detach()
                 predictions["forces"] = out["forces"].detach()
@@ -368,7 +376,7 @@ class ForcesTrainer(BaseTrainer):
             # EvalAI expects a list of dicts with ids, energy, and forces
             evalAI_results = []
             for rid, energy, forces in zip(
-                predictions["ids"],
+                predictions["id"],
                 predictions["energy"],
                 predictions["forces"],
             ):
