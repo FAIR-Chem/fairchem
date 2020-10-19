@@ -8,7 +8,9 @@ LICENSE file in the root directory of this source tree.
 import datetime
 import json
 import os
+from collections import defaultdict
 
+import numpy as np
 import torch
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
@@ -258,7 +260,10 @@ class EnergyTrainer(BaseTrainer):
                 log_dict.update(
                     {"epoch": epoch + (i + 1) / len(self.train_loader)}
                 )
-                if i % self.config["cmd"]["print_every"] == 0:
+                if (
+                    i % self.config["cmd"]["print_every"] == 0
+                    and distutils.is_master()
+                ):
                     log_str = [
                         "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
                     ]
@@ -327,14 +332,21 @@ class EnergyTrainer(BaseTrainer):
                 self.validate(split="test", epoch=epoch)
 
     def validate(self, split="val", epoch=None):
-        print("### Evaluating on {}.".format(split))
+        if distutils.is_master():
+            print("### Evaluating on {}.".format(split))
 
         self.model.eval()
         evaluator, metrics = Evaluator(task="is2re"), {}
+        rank = distutils.get_rank()
 
         loader = self.val_loader if split == "val" else self.test_loader
 
-        for i, batch in tqdm(enumerate(loader), total=len(loader)):
+        for i, batch in tqdm(
+            enumerate(loader),
+            total=len(loader),
+            position=rank,
+            desc="device {}".format(rank),
+        ):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
@@ -361,8 +373,9 @@ class EnergyTrainer(BaseTrainer):
 
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": epoch + 1})
-        log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
-        print(", ".join(log_str))
+        if distutils.is_master():
+            log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
+            print(", ".join(log_str))
 
         # Make plots.
         if self.logger is not None and epoch is not None:
@@ -415,6 +428,7 @@ class EnergyTrainer(BaseTrainer):
 
     def predict(self, loader, results_file=None, disable_tqdm=False):
         assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
+        rank = distutils.get_rank()
 
         self.model.eval()
         if self.normalizers is not None and "target" in self.normalizers:
@@ -422,7 +436,11 @@ class EnergyTrainer(BaseTrainer):
         predictions = {"id": [], "energy": []}
 
         for i, batch in tqdm(
-            enumerate(loader), total=len(loader), disable=disable_tqdm
+            enumerate(loader),
+            total=len(loader),
+            position=rank,
+            desc="device {}".format(rank),
+            disable=disable_tqdm,
         ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
@@ -435,14 +453,36 @@ class EnergyTrainer(BaseTrainer):
             predictions["energy"].extend(out["energy"].tolist())
 
         if results_file is not None:
-            print(f"Writing results to {results_file}")
+            results_file_path = os.path.join(
+                self.config["cmd"]["results_dir"],
+                f"is2re_{results_file}_{rank}.npz",
+            )
 
-            # EvalAI expects a list of dicts with ids and energies
-            evalAI_results = []
-            for sid, energy in zip(predictions["id"], predictions["energy"]):
-                evalAI_results.append({"id": sid, "energy": energy})
+            np.savez(
+                results_file_path,
+                ids=predictions["id"],
+                energy=predictions["energy"],
+            )
 
-            with open(results_file, "w") as resfile:
-                json.dump(evalAI_results, resfile)
+            distutils.synchronize()
+            if distutils.is_master():
+                gather_results = defaultdict(list)
+                full_path = os.path.join(
+                    self.config["cmd"]["results_dir"],
+                    f"is2re_{results_file}.npz",
+                )
+
+                for i in range(distutils.get_world_size()):
+                    rank_path = os.path.join(
+                        self.config["cmd"]["results_dir"],
+                        f"is2re_{results_file}_{i}.npz",
+                    )
+                    rank_results = np.load(rank_path)
+                    gather_results["ids"].extend(rank_results["ids"])
+                    gather_results["energy"].extend(rank_results["energy"])
+                    os.remove(rank_path)
+
+                print(f"Writing results to {full_path}")
+                np.savez(full_path, **gather_results)
 
         return predictions

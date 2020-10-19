@@ -56,8 +56,7 @@ def main(config):
                 trainer.test_loader is not None
             ), "Test dataset is required for making predictions"
             assert config["checkpoint"]
-            run_dir = config.get("run_dir", "./")
-            results_file = Path(run_dir) / "predictions.json"
+            results_file = "predictions"
             trainer.predict(
                 trainer.test_loader,
                 results_file=results_file,
@@ -76,7 +75,8 @@ def main(config):
 
         distutils.synchronize()
 
-        print("Total time taken = ", time.time() - start_time)
+        if distutils.is_master():
+            print("Total time taken = ", time.time() - start_time)
 
     finally:
         if args.distributed:

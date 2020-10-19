@@ -9,7 +9,9 @@ import copy
 import datetime
 import json
 import os
+from collections import defaultdict
 
+import numpy as np
 import torch
 import torch_geometric
 import yaml
@@ -312,6 +314,7 @@ class ForcesTrainer(BaseTrainer):
                 torch_geometric.data.Batch,
             ),
         )
+        rank = distutils.get_rank()
 
         if isinstance(data_loader, torch_geometric.data.Batch):
             data_loader = [[data_loader]]
@@ -326,6 +329,8 @@ class ForcesTrainer(BaseTrainer):
         for i, batch_list in tqdm(
             enumerate(data_loader),
             total=len(data_loader),
+            position=rank,
+            desc="device {}".format(rank),
             disable=disable_tqdm,
         ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
@@ -373,19 +378,39 @@ class ForcesTrainer(BaseTrainer):
                 break
 
         if results_file is not None:
-            print(f"Writing results to {results_file}")
-            # EvalAI expects a list of dicts with ids, energy, and forces
-            evalAI_results = []
-            for rid, energy, forces in zip(
-                predictions["id"],
-                predictions["energy"],
-                predictions["forces"],
-            ):
-                evalAI_results.append(
-                    {"id": rid, "energy": energy, "forces": forces.tolist()}
+            results_file_path = os.path.join(
+                self.config["cmd"]["results_dir"],
+                f"s2ef_{results_file}_{rank}.npz",
+            )
+
+            np.savez(
+                results_file_path,
+                ids=predictions["id"],
+                energy=predictions["energy"],
+                forces=predictions["forces"],
+            )
+
+            distutils.synchronize()
+            if distutils.is_master():
+                gather_results = defaultdict(list)
+                full_path = os.path.join(
+                    self.config["cmd"]["results_dir"],
+                    f"s2ef_{results_file}.npz",
                 )
-            with open(results_file, "w") as resfile:
-                json.dump(evalAI_results, resfile)
+
+                for i in range(distutils.get_world_size()):
+                    rank_path = os.path.join(
+                        self.config["cmd"]["results_dir"],
+                        f"s2ef_{results_file}_{i}.npz",
+                    )
+                    rank_results = np.load(rank_path, allow_pickle=True)
+                    gather_results["ids"].extend(rank_results["ids"])
+                    gather_results["energy"].extend(rank_results["energy"])
+                    gather_results["forces"].extend(rank_results["forces"])
+                    os.remove(rank_path)
+
+                print(f"Writing results to {full_path}")
+                np.savez(full_path, **gather_results)
 
         return predictions
 
@@ -421,7 +446,10 @@ class ForcesTrainer(BaseTrainer):
                 log_dict.update(
                     {"epoch": epoch + (i + 1) / len(self.train_loader)}
                 )
-                if i % self.config["cmd"]["print_every"] == 0:
+                if (
+                    i % self.config["cmd"]["print_every"] == 0
+                    and distutils.is_master()
+                ):
                     log_str = [
                         "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
                     ]
@@ -531,21 +559,22 @@ class ForcesTrainer(BaseTrainer):
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
 
-        if "relax_dir" in self.config["task"]:
-            self.validate_relaxation(
-                split="val",
-                epoch=epoch,
-            )
-
     def validate(self, split="val", epoch=None):
-        print("### Evaluating on {}.".format(split))
+        if distutils.is_master():
+            print("### Evaluating on {}.".format(split))
 
         self.model.eval()
+        rank = distutils.get_rank()
         evaluator, metrics = Evaluator(task="s2ef"), {}
 
         loader = self.val_loader if split == "val" else self.test_loader
 
-        for i, batch in tqdm(enumerate(loader), total=len(loader)):
+        for i, batch in tqdm(
+            enumerate(loader),
+            total=len(loader),
+            position=rank,
+            desc="device {}".format(rank),
+        ):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
@@ -599,6 +628,7 @@ class ForcesTrainer(BaseTrainer):
         else:
             split = "test"
 
+        ids = []
         relaxed_positions = []
         for i, batch in tqdm(
             enumerate(self.relax_loader), total=len(self.relax_loader)
@@ -618,10 +648,9 @@ class ForcesTrainer(BaseTrainer):
                 natoms = relaxed_batch.natoms.tolist()
                 positions = torch.split(relaxed_batch.pos, natoms)
                 batch_relaxed_positions = [pos.tolist() for pos in positions]
-                relaxed_positions += [
-                    {"ids": i, "positions": j}
-                    for i, j in zip(systemids, batch_relaxed_positions)
-                ]
+
+                relaxed_positions += batch_relaxed_positions
+                ids += systemids
 
             if split == "val":
                 mask = relaxed_batch.fixed == 0
@@ -654,11 +683,30 @@ class ForcesTrainer(BaseTrainer):
         if self.config["task"].get("write_pos", False):
             rank = distutils.get_rank()
             pos_filename = os.path.join(
-                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.json"
+                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.npz"
             )
-            print("Writing relaxed pos to:", pos_filename)
-            with open(pos_filename, "w") as f:
-                json.dump(relaxed_positions, f)
+            np.savez(pos_filename, ids=ids, pos=relaxed_positions)
+
+            distutils.synchronize()
+            if distutils.is_master():
+                gather_results = defaultdict(list)
+                full_path = os.path.join(
+                    self.config["cmd"]["results_dir"],
+                    "relaxed_positions.npz",
+                )
+
+                for i in range(distutils.get_world_size()):
+                    rank_path = os.path.join(
+                        self.config["cmd"]["results_dir"],
+                        f"relaxed_pos_{i}.npz",
+                    )
+                    rank_results = np.load(rank_path, allow_pickle=True)
+                    gather_results["ids"].extend(rank_results["ids"])
+                    gather_results["pos"].extend(rank_results["pos"])
+                    os.remove(rank_path)
+
+                print(f"Writing results to {full_path}")
+                np.savez(full_path, **gather_results)
 
         if split == "val":
             aggregated_metrics = {}
