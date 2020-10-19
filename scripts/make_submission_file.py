@@ -8,16 +8,20 @@ LICENSE file in the root directory of this source tree.
 import json
 import os
 
+import numpy as np
 
-def main(paths, filename, data_split="val"):
+
+def main(paths, filename):
     submission_file = {}
 
     for idx, split in enumerate(["id", "ood_ads", "ood_cat", "ood_both"]):
-        key = "_".join([data_split, split])
-        submission_file[key] = json.load(open(os.path.join(paths[idx]), "r"))
+        res = np.load(paths[idx], allow_pickle=True)
+        contents = res.files
+        for i in contents:
+            key = "_".join([split, i])
+            submission_file[key] = res[i]
 
-    with open(filename, "w") as f:
-        json.dump(submission_file, f)
+    np.savez(filename, **submission_file)
 
 
 if __name__ == "__main__":
@@ -30,7 +34,7 @@ if __name__ == "__main__":
 
     S2EF: config["mode"] = "predict"
     IS2RE: config["mode"] = "predict"
-    IS2RS: config["mode"] = "run_relaxations" and config["task"]["write_pos"] = True
+    IS2RS: config["mode"] = "run-relaxations" and config["task"]["write_pos"] = True
 
     Use this script to join the 4 results files in the format evalAI expects
     submissions.
@@ -43,4 +47,4 @@ if __name__ == "__main__":
 
     paths = [id_path, ood_ads_path, ood_cat_path, ood_both_path]
 
-    main(paths, filename="TASKNAME_evalai_submission.json", data_split="val")
+    main(paths, filename="TASKNAME_evalai_submission.npz")
