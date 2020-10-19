@@ -67,7 +67,7 @@ Next, run this model on the test data:
 python main.py --mode predict --config-yml configs/is2re/10k/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
-The predictions are stored in `predictions.json` and later used to create a submission file to be uploaded to EvalAI.
+The predictions are stored in `[RESULTS_DIR]/is2re_predictions.npz` and later used to create a submission file to be uploaded to EvalAI.
 
 ## Structure to Energy and Forces (S2EF)
 
@@ -107,7 +107,7 @@ Next, run this model on the test data:
 python main.py --mode predict --config-yml configs/s2ef/2M/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
-The predictions are stored in `predictions.json` and later used to create a submission file to be uploaded to EvalAI.
+The predictions are stored in `[RESULTS_DIR]/s2ef_predictions.npz` and later used to create a submission file to be uploaded to EvalAI.
 
 ## Initial Structure to Relaxed Structure (IS2RS)
 
@@ -135,20 +135,19 @@ After training, relaxations can be run by:
 python main.py --mode run-relaxations --config-yml configs/s2ef/2M/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
-The relaxed structure positions are stored in `[RESULTS_DIR]/relaxed_pos_[DEVICE #].json` and later used to create a submission file to be uploaded to EvalAI. Predicted trajectories are stored in `trajectories` directory for those interested in analyzing the complete relaxation trajectory.
+The relaxed structure positions are stored in `[RESULTS_DIR]/relaxed_positions.npz` and later used to create a submission file to be uploaded to EvalAI. Predicted trajectories are stored in `trajectories` directory for those interested in analyzing the complete relaxation trajectory.
 
 ## Create EvalAI submission files
 
 EvalAI expects results to be structured in a specific format for a submission to be successful. A submission must contain results from the 4 different splits - in distribution (id), out of distribution adsorbate (ood ads), out of distribution catalyst (ood cat), and out of distribution adsorbate and catalyst (ood both). Constructing the submission file for each of the above tasks is as follows:
 
 ### S2EF/IS2RE:
-1. Run predictions `--mode predict` on all 4 splits, generating `predictions.json` files for each split.
-2. Modify `scripts/make_evalai_json.py` with the corresponding paths of the `predictions.json` files and run to generate your final submission file `taskname_split_submission.json` (filename may be modified).
-3. Upload `taskname_split_submission.json` to EvalAI.
+1. Run predictions `--mode predict` on all 4 splits, generating `[s2ef/is2re]_predictions.npz` files for each split.
+2. Modify `scripts/make_submission_file.py` with the corresponding paths of the `[s2ef/is2re]_predictions.npz` files and run to generate your final submission file `[s2ef/is2re]_submission.npz` (filename may be modified).
+3. Upload `[s2ef/is2re]_submission.npz` to EvalAI.
 
 
 ### IS2RS:
-1. Ensure `write_pos: True` is included in your configuration file. Run relaxations `--mode run-relaxations` on all 4 splits, generating `relaxed_pos_[DEVICE #].json` files for each split.
-2. For each split, if relaxations were run with multiple GPUs, combine `relaxed_pos_[DEVICE #].json` into one `relaxed_pos.json` file using `scripts/make_evalai_json.py`, otherwise skip to 3.
-2. Modify `scripts/make_evalai_json.py` with the corresponding paths of the `relaxed_pos.json` files and run to generate your final submission file `taskname_split_submission.json` (filename may be modified).
-3. Upload `taskname_split_submission.json` to EvalAI.
+1. Ensure `write_pos: True` is included in your configuration file. Run relaxations `--mode run-relaxations` on all 4 splits, generating `relaxed_positions.npz` files for each split.
+2. Modify `scripts/make_submission_file.py` with the corresponding paths of the `relaxed_positions.npz` files and run to generate your final submission file `[is2rs]_submission.npz` (filename may be modified).
+3. Upload `is2rs_submission.npz` to EvalAI.

@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 import datetime
 import json
 import os
+from collections import defaultdict
 
 import numpy as np
 import torch
@@ -456,12 +457,32 @@ class EnergyTrainer(BaseTrainer):
                 self.config["cmd"]["results_dir"],
                 f"is2re_{results_file}_{rank}.npz",
             )
-            print(f"Writing results to {results_file_path}")
 
             np.savez(
                 results_file_path,
                 ids=predictions["id"],
                 energy=predictions["energy"],
             )
+
+            distutils.synchronize()
+            if distutils.is_master():
+                gather_results = defaultdict(list)
+                full_path = os.path.join(
+                    self.config["cmd"]["results_dir"],
+                    f"is2re_{results_file}.npz",
+                )
+
+                for i in range(distutils.get_world_size()):
+                    rank_path = os.path.join(
+                        self.config["cmd"]["results_dir"],
+                        f"is2re_{results_file}_{i}.npz",
+                    )
+                    rank_results = np.load(rank_path)
+                    gather_results["ids"].extend(rank_results["ids"])
+                    gather_results["energy"].extend(rank_results["energy"])
+                    os.remove(rank_path)
+
+                print(f"Writing results to {full_path}")
+                np.savez(full_path, **gather_results)
 
         return predictions
