@@ -72,11 +72,6 @@ def write_images_to_lmdb(mp_arg):
     return sampled_ids, idx
 
 
-def chunk_list(lst, num_splits):
-    n = max(1, len(lst) // num_splits)
-    return [lst[i : i + n] for i in range(0, len(lst), n)]
-
-
 if __name__ == "__main__":
     # Parse a few arguments.
     parser = argparse.ArgumentParser()
@@ -139,7 +134,7 @@ if __name__ == "__main__":
     ]
 
     # Chunk the trajectories into args.num_workers splits
-    chunked_txt_files = chunk_list(xyz_logs, args.num_workers)
+    chunked_txt_files = np.array_split(xyz_logs, args.num_workers)
 
     # Extract features
     sampled_ids, idx = [[]] * args.num_workers, [0] * args.num_workers
