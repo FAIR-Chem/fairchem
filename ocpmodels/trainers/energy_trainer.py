@@ -454,16 +454,14 @@ class EnergyTrainer(BaseTrainer):
         if results_file is not None:
             results_file_path = os.path.join(
                 self.config["cmd"]["results_dir"],
-                f"is2re_{results_file}_{rank}.npy",
+                f"is2re_{results_file}_{rank}.npz",
             )
             print(f"Writing results to {results_file_path}")
 
-            # EvalAI expects a list of dicts with ids and energies
-            evalAI_results = []
-            for sid, energy in zip(predictions["id"], predictions["energy"]):
-                evalAI_results.append({"id": sid, "energy": energy})
-
-            with open(results_file_path, "wb") as resfile:
-                np.save(resfile, evalAI_results)
+            np.savez(
+                results_file_path,
+                ids=predictions["id"],
+                energy=predictions["energy"],
+            )
 
         return predictions

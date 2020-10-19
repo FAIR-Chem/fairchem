@@ -378,21 +378,16 @@ class ForcesTrainer(BaseTrainer):
         if results_file is not None:
             results_file_path = os.path.join(
                 self.config["cmd"]["results_dir"],
-                f"s2ef_{results_file}_{rank}.npy",
+                f"s2ef_{results_file}_{rank}.npz",
             )
             print(f"Writing results to {results_file_path}")
-            # EvalAI expects a list of dicts with ids, energy, and forces
-            evalAI_results = []
-            for rid, energy, forces in zip(
-                predictions["id"],
-                predictions["energy"],
-                predictions["forces"],
-            ):
-                evalAI_results.append(
-                    {"id": rid, "energy": energy, "forces": forces.tolist()}
-                )
-            with open(results_file_path, "wb") as resfile:
-                np.save(resfile, evalAI_results)
+
+            np.savez(
+                results_file_path,
+                ids=predictions["id"],
+                energy=predictions["energy"],
+                forces=predictions["forces"],
+            )
 
         return predictions
 
@@ -665,11 +660,10 @@ class ForcesTrainer(BaseTrainer):
         if self.config["task"].get("write_pos", False):
             rank = distutils.get_rank()
             pos_filename = os.path.join(
-                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.npy"
+                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.npz"
             )
-            print("Writing relaxed pos to:", pos_filename)
-            with open(pos_filename, "wb") as f:
-                np.save(f, relaxed_positions)
+            print("Writing relaxed positions to:", pos_filename)
+            np.savez(pos_filename, pos=relaxed_positions)
 
         if split == "val":
             aggregated_metrics = {}
