@@ -207,6 +207,7 @@ class ForcesTrainer(BaseTrainer):
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
                     pin_memory=True,
+                    sampler=self.relax_sampler,
                 )
 
         else:
