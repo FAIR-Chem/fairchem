@@ -605,6 +605,7 @@ class ForcesTrainer(BaseTrainer):
         else:
             split = "test"
 
+        ids = []
         relaxed_positions = []
         for i, batch in tqdm(
             enumerate(self.relax_loader), total=len(self.relax_loader)
@@ -624,10 +625,9 @@ class ForcesTrainer(BaseTrainer):
                 natoms = relaxed_batch.natoms.tolist()
                 positions = torch.split(relaxed_batch.pos, natoms)
                 batch_relaxed_positions = [pos.tolist() for pos in positions]
-                relaxed_positions += [
-                    {"ids": i, "positions": j}
-                    for i, j in zip(systemids, batch_relaxed_positions)
-                ]
+
+                relaxed_positions += batch_relaxed_positions
+                ids += systemids
 
             if split == "val":
                 mask = relaxed_batch.fixed == 0
@@ -663,7 +663,7 @@ class ForcesTrainer(BaseTrainer):
                 self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.npz"
             )
             print("Writing relaxed positions to:", pos_filename)
-            np.savez(pos_filename, pos=relaxed_positions)
+            np.savez(pos_filename, ids=ids, pos=relaxed_positions)
 
         if split == "val":
             aggregated_metrics = {}
