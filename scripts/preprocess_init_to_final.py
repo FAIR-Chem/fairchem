@@ -9,12 +9,12 @@ import os
 import pickle
 import random
 
-from tqdm import tqdm
-
 import lmdb
 import torch
 from ase import Atoms
 from ase.io.trajectory import Trajectory
+from tqdm import tqdm
+
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -123,7 +123,7 @@ if __name__ == "__main__":
         radius=6,
         r_energy=True,
         r_forces=True,
-        r_distances=True,
+        r_distances=False,
         r_fixed=True,
     )
 
@@ -154,7 +154,9 @@ if __name__ == "__main__":
             continue
 
         randomid = os.path.split(traj_path)[1].split(".")[0]
+        sid = int(randomid.split("random")[1])
         try:
+            dl[0].sid = sid
             dl[0].tags = torch.LongTensor(sysid_to_tags[randomid])
             dl[0].y_init = dl[0].y - adslab_ref[randomid]
             dl[0].y_relaxed = dl[1].y - adslab_ref[randomid]

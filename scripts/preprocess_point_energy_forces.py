@@ -9,12 +9,12 @@ import os
 import pickle
 import random
 
-import numpy as np
-from tqdm import tqdm
-
 import ase.io
 import lmdb
+import numpy as np
 import torch
+from tqdm import tqdm
+
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -34,6 +34,8 @@ def write_images_to_lmdb(mp_arg):
             traj_path = splits[0]
             traj_idx = int(splits[1])
             randomid = splits[-1]
+            sid = int(randomid.split("random")[1])
+            fid = int(traj_idx)
 
             do = read_trajectory_and_extract_features(a2g, traj_path, traj_idx)
             # add atom tags
@@ -45,6 +47,10 @@ def write_images_to_lmdb(mp_arg):
             if do.edge_index.shape[1] == 0:
                 print("no neighbors", traj_path)
                 continue
+
+            do.sid = torch.LongTensor([sid])
+            do.fid = torch.LongTensor([fid])
+
             txn = db.begin(write=True)
             txn.put(f"{idx}".encode("ascii"), pickle.dumps(do, protocol=-1))
             txn.commit()
