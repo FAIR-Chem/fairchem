@@ -8,7 +8,7 @@ input to predict material properties:
 
 ##  Installation
 
-[last updated October 10, 2020]
+[last updated October 20, 2020]
 
 The easiest way of installing prerequisites is via [conda](https://conda.io/docs/index.html).
 After installing [conda](http://conda.pydata.org/), run the following commands
