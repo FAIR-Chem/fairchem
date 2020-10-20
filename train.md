@@ -123,10 +123,10 @@ relax_dataset:
 write_pos: True
 relaxation_steps: 300
 relax_opt:
-  maxstep: 0.04,
-  memory: 50,
-  damping: 1.0,
-  alpha: 70.0,
+  maxstep: 0.04
+  memory: 50
+  damping: 1.0
+  alpha: 70.0
   traj_dir: "trajectories" # specify directory you wish to log the entire relaxations, suppress otherwise
 ```
 
