@@ -7,7 +7,7 @@ dataset:
     target_std: 2.887317180633545
     grad_target_mean: 0.0
     grad_target_std: 2.887317180633545
-  - src: data/s2ef/all/val_id/
+  - src: data/s2ef/all/is_30000/
 
 logger: tensorboard
 
