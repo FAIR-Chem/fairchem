@@ -359,7 +359,7 @@ class ForcesTrainer(BaseTrainer):
         self.best_val_metric = -1.0
         eval_every = self.config["optim"].get("eval_every", -1)
         primary_metric = self.config["task"].get(
-            "primary_metric", self.evaluator.task_primary_metric["s2ef"]
+            "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
         iters = 0
         self.metrics = {}

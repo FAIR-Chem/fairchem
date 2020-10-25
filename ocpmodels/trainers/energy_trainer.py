@@ -286,13 +286,13 @@ class EnergyTrainer(BaseTrainer):
             if self.val_loader is not None:
                 val_metrics = self.validate(split="val", epoch=epoch)
                 if (
-                    val_metrics[self.evaluator.task_primary_metric["is2re"]][
+                    val_metrics[self.evaluator.task_primary_metric[self.name]][
                         "metric"
                     ]
                     < self.best_val_mae
                 ):
                     self.best_val_mae = val_metrics[
-                        self.evaluator.task_primary_metric["is2re"]
+                        self.evaluator.task_primary_metric[self.name]
                     ]["metric"]
                     self.save(epoch + 1, val_metrics)
             else:
