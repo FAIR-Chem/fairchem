@@ -199,39 +199,7 @@ class EnergyTrainer(BaseTrainer):
             predictions["id"].extend([str(i) for i in batch[0].sid.tolist()])
             predictions["energy"].extend(out["energy"].tolist())
 
-        if results_file is not None:
-            results_file_path = os.path.join(
-                self.config["cmd"]["results_dir"],
-                f"{self.name}_{results_file}_{rank}.npz",
-            )
-
-            np.savez(
-                results_file_path,
-                ids=predictions["id"],
-                energy=predictions["energy"],
-            )
-
-            distutils.synchronize()
-            if distutils.is_master():
-                gather_results = defaultdict(list)
-                full_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
-                    f"{self.name}_{results_file}.npz",
-                )
-
-                for i in range(distutils.get_world_size()):
-                    rank_path = os.path.join(
-                        self.config["cmd"]["results_dir"],
-                        f"{self.name}_{results_file}_{i}.npz",
-                    )
-                    rank_results = np.load(rank_path)
-                    gather_results["ids"].extend(rank_results["ids"])
-                    gather_results["energy"].extend(rank_results["energy"])
-                    os.remove(rank_path)
-
-                print(f"Writing results to {full_path}")
-                np.savez(full_path, **gather_results)
-
+        self.save_results(predictions, results_file, keys=["energy"])
         return predictions
 
     def train(self):
