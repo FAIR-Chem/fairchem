@@ -9,7 +9,8 @@ import datetime
 import json
 import os
 import random
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+from pathlib import Path
 
 import numpy as np
 import yaml
@@ -20,6 +21,7 @@ import torch.nn as nn
 import torch.optim as optim
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import OCPDataParallel
+from ocpmodels.common.logger import TensorboardLogger, WandBLogger
 from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
@@ -56,6 +58,7 @@ class BaseTrainer:
 
         if run_dir is None:
             run_dir = os.getcwd()
+        run_dir = Path(run_dir)
 
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         if identifier:
@@ -73,11 +76,9 @@ class BaseTrainer:
                 "print_every": print_every,
                 "seed": seed,
                 "timestamp": timestamp,
-                "checkpoint_dir": os.path.join(
-                    run_dir, "checkpoints", timestamp
-                ),
-                "results_dir": os.path.join(run_dir, "results", timestamp),
-                "logs_dir": os.path.join(run_dir, "logs", logger, timestamp),
+                "checkpoint_dir": run_dir / "checkpoints" / timestamp,
+                "results_dir": run_dir / "results" / timestamp,
+                "logs_dir": run_dir / "logs" / logger / timestamp,
             },
         }
         # AMP Scaler
@@ -93,9 +94,9 @@ class BaseTrainer:
             self.config["dataset"] = dataset
 
         if not is_debug and distutils.is_master():
-            os.makedirs(self.config["cmd"]["checkpoint_dir"])
-            os.makedirs(self.config["cmd"]["results_dir"])
-            os.makedirs(self.config["cmd"]["logs_dir"])
+            os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
+            os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
+            os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
         self.is_debug = is_debug
         self.is_vis = is_vis
@@ -158,9 +159,9 @@ class BaseTrainer:
         del args
 
         if not self.is_debug:
-            os.makedirs(self.config["cmd"]["checkpoint_dir"])
-            os.makedirs(self.config["cmd"]["results_dir"])
-            os.makedirs(self.config["cmd"]["logs_dir"])
+            os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
+            os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
+            os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
             # Dump config parameters
             json.dump(
@@ -684,3 +685,39 @@ class BaseTrainer:
             self.scaler.update()
         else:
             self.optimizer.step()
+
+    def save_results(self, predictions, results_file, keys):
+        if results_file is None:
+            return
+
+        results_file_path = os.path.join(
+            self.config["cmd"]["results_dir"],
+            f"{self.name}_{results_file}_{distutils.get_rank()}.npz",
+        )
+        np.savez(
+            results_file_path,
+            ids=predictions["id"],
+            **{key: predictions[key] for key in keys},
+        )
+
+        distutils.synchronize()
+        if distutils.is_master():
+            gather_results = defaultdict(list)
+            full_path = os.path.join(
+                self.config["cmd"]["results_dir"],
+                f"{self.name}_{results_file}.npz",
+            )
+
+            for i in range(distutils.get_world_size()):
+                rank_path = os.path.join(
+                    self.config["cmd"]["results_dir"],
+                    f"{self.name}_{results_file}_{i}.npz",
+                )
+                rank_results = np.load(rank_path)
+                gather_results["ids"].extend(rank_results["ids"])
+                for key in keys:
+                    gather_results[key].extend(rank_results[key])
+                os.remove(rank_path)
+
+            print(f"Writing results to {full_path}")
+            np.savez(full_path, **gather_results)
