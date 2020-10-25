@@ -5,24 +5,18 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import datetime
-import json
 import os
 from collections import defaultdict
 
 import numpy as np
-import yaml
 from tqdm import tqdm
 
 import torch
 from ocpmodels.common import distutils
-from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
+from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import save_checkpoint
-from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
-from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler
 
 
