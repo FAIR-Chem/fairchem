@@ -13,12 +13,13 @@ from collections import OrderedDict, defaultdict
 from pathlib import Path
 
 import numpy as np
-import yaml
-from tqdm import tqdm
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import yaml
+from torch.nn.parallel.distributed import DistributedDataParallel
+from tqdm import tqdm
+
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
@@ -32,7 +33,6 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
-from torch.nn.parallel.distributed import DistributedDataParallel
 
 
 @registry.register_trainer("base")
@@ -76,9 +76,9 @@ class BaseTrainer:
                 "print_every": print_every,
                 "seed": seed,
                 "timestamp": timestamp,
-                "checkpoint_dir": run_dir / "checkpoints" / timestamp,
-                "results_dir": run_dir / "results" / timestamp,
-                "logs_dir": run_dir / "logs" / logger / timestamp,
+                "checkpoint_dir": str(run_dir / "checkpoints" / timestamp),
+                "results_dir": str(run_dir / "results" / timestamp),
+                "logs_dir": str(run_dir / "logs" / logger / timestamp),
             },
         }
         # AMP Scaler
