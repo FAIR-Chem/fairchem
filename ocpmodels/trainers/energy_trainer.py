@@ -5,25 +5,19 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import datetime
-import json
 import os
 from collections import defaultdict
 
 import numpy as np
-import torch
-import yaml
-from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
+import torch
 from ocpmodels.common import distutils
-from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
+from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import save_checkpoint
-from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from torch.utils.data import DataLoader, DistributedSampler
 
 
 @registry.register_trainer("energy")
@@ -77,130 +71,92 @@ class EnergyTrainer(BaseTrainer):
         local_rank=0,
         amp=False,
     ):
-        if run_dir is None:
-            run_dir = os.getcwd()
-
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        if identifier:
-            timestamp += "-{}".format(identifier)
-
-        self.config = {
-            "task": task,
-            "model": model.pop("name"),
-            "model_attributes": model,
-            "optim": optimizer,
-            "logger": logger,
-            "cmd": {
-                "identifier": identifier,
-                "print_every": print_every,
-                "seed": seed,
-                "timestamp": timestamp,
-                "checkpoint_dir": os.path.join(
-                    run_dir, "checkpoints", timestamp
-                ),
-                "results_dir": os.path.join(run_dir, "results", timestamp),
-                "logs_dir": os.path.join(run_dir, "logs", logger, timestamp),
-            },
-            "amp": amp,
-        }
-        # AMP Scaler
-        self.scaler = torch.cuda.amp.GradScaler() if amp else None
-
-        if isinstance(dataset, list):
-            self.config["dataset"] = dataset[0]
-            if len(dataset) > 1:
-                self.config["val_dataset"] = dataset[1]
-            if len(dataset) > 2:
-                self.config["test_dataset"] = dataset[2]
-        else:
-            self.config["dataset"] = dataset
-
-        if not is_debug and distutils.is_master():
-            os.makedirs(self.config["cmd"]["checkpoint_dir"])
-            os.makedirs(self.config["cmd"]["results_dir"])
-            os.makedirs(self.config["cmd"]["logs_dir"])
-
-        self.is_debug = is_debug
-        self.is_vis = is_vis
-        if torch.cuda.is_available():
-            self.device = local_rank
-        else:
-            self.device = "cpu"
-
-        if distutils.is_master():
-            print(yaml.dump(self.config, default_flow_style=False))
-        self.load()
-
-        self.evaluator = Evaluator(task="is2re")
+        super().__init__(
+            task=task,
+            model=model,
+            dataset=dataset,
+            optimizer=optimizer,
+            identifier=identifier,
+            run_dir=run_dir,
+            is_debug=is_debug,
+            is_vis=is_vis,
+            print_every=print_every,
+            seed=seed,
+            logger=logger,
+            local_rank=local_rank,
+            amp=amp,
+            name="is2re",
+        )
 
     def load_task(self):
+        assert (
+            self.config["task"]["dataset"] == "single_point_lmdb"
+        ), "EnergyTrainer requires single_point_lmdb dataset"
+
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
 
         self.parallel_collater = ParallelCollater(
             1, self.config["model_attributes"].get("otf_graph", False)
         )
-        if self.config["task"]["dataset"] == "single_point_lmdb":
-            self.train_dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
-            )(self.config["dataset"])
 
-            self.train_sampler = DistributedSampler(
-                self.train_dataset,
+        self.train_dataset = registry.get_dataset_class(
+            self.config["task"]["dataset"]
+        )(self.config["dataset"])
+
+        self.train_sampler = DistributedSampler(
+            self.train_dataset,
+            num_replicas=distutils.get_world_size(),
+            rank=distutils.get_rank(),
+            shuffle=True,
+        )
+        self.train_loader = DataLoader(
+            self.train_dataset,
+            batch_size=self.config["optim"]["batch_size"],
+            collate_fn=self.parallel_collater,
+            num_workers=self.config["optim"]["num_workers"],
+            pin_memory=True,
+            sampler=self.train_sampler,
+        )
+
+        self.val_loader = self.test_loader = None
+        self.val_sampler = None
+
+        if "val_dataset" in self.config:
+            self.val_dataset = registry.get_dataset_class(
+                self.config["task"]["dataset"]
+            )(self.config["val_dataset"])
+            self.val_sampler = DistributedSampler(
+                self.val_dataset,
                 num_replicas=distutils.get_world_size(),
                 rank=distutils.get_rank(),
-                shuffle=True,
+                shuffle=False,
             )
-            self.train_loader = DataLoader(
-                self.train_dataset,
-                batch_size=self.config["optim"]["batch_size"],
+            self.val_loader = DataLoader(
+                self.val_dataset,
+                self.config["optim"].get("eval_batch_size", 64),
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
                 pin_memory=True,
-                sampler=self.train_sampler,
+                sampler=self.val_sampler,
             )
-
-            self.val_loader = self.test_loader = None
-            self.val_sampler = None
-
-            if "val_dataset" in self.config:
-                self.val_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["val_dataset"])
-                self.val_sampler = DistributedSampler(
-                    self.val_dataset,
-                    num_replicas=distutils.get_world_size(),
-                    rank=distutils.get_rank(),
-                    shuffle=False,
-                )
-                self.val_loader = DataLoader(
-                    self.val_dataset,
-                    self.config["optim"].get("eval_batch_size", 64),
-                    collate_fn=self.parallel_collater,
-                    num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=True,
-                    sampler=self.val_sampler,
-                )
-            if "test_dataset" in self.config:
-                self.test_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["test_dataset"])
-                self.test_sampler = DistributedSampler(
-                    self.test_dataset,
-                    num_replicas=distutils.get_world_size(),
-                    rank=distutils.get_rank(),
-                    shuffle=False,
-                )
-                self.test_loader = DataLoader(
-                    self.test_dataset,
-                    self.config["optim"].get("eval_batch_size", 64),
-                    collate_fn=self.parallel_collater,
-                    num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=True,
-                    sampler=self.test_sampler,
-                )
-
-        else:
-            raise NotImplementedError
+        if "test_dataset" in self.config:
+            self.test_dataset = registry.get_dataset_class(
+                self.config["task"]["dataset"]
+            )(self.config["test_dataset"])
+            self.test_sampler = DistributedSampler(
+                self.test_dataset,
+                num_replicas=distutils.get_world_size(),
+                rank=distutils.get_rank(),
+                shuffle=False,
+            )
+            self.test_loader = DataLoader(
+                self.test_dataset,
+                self.config["optim"].get("eval_batch_size", 64),
+                collate_fn=self.parallel_collater,
+                num_workers=self.config["optim"]["num_workers"],
+                pin_memory=True,
+                sampler=self.test_sampler,
+            )
 
         self.num_targets = 1
 
@@ -217,18 +173,34 @@ class EnergyTrainer(BaseTrainer):
             else:
                 raise NotImplementedError
 
-    def load_model(self):
-        super(EnergyTrainer, self).load_model()
+    def predict(self, loader, results_file=None, disable_tqdm=False):
+        assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
+        rank = distutils.get_rank()
 
-        self.model = OCPDataParallel(
-            self.model,
-            output_device=self.device,
-            num_gpus=self.config["optim"].get("num_gpus", 1),
-        )
-        if distutils.initialized():
-            self.model = DistributedDataParallel(
-                self.model, device_ids=[self.device]
-            )
+        self.model.eval()
+        if self.normalizers is not None and "target" in self.normalizers:
+            self.normalizers["target"].to(self.device)
+        predictions = {"id": [], "energy": []}
+
+        for i, batch in tqdm(
+            enumerate(loader),
+            total=len(loader),
+            position=rank,
+            desc="device {}".format(rank),
+            disable=disable_tqdm,
+        ):
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch)
+
+            if self.normalizers is not None and "target" in self.normalizers:
+                out["energy"] = self.normalizers["target"].denorm(
+                    out["energy"]
+                )
+            predictions["id"].extend([str(i) for i in batch[0].sid.tolist()])
+            predictions["energy"].extend(out["energy"].tolist())
+
+        self.save_results(predictions, results_file, keys=["energy"])
+        return predictions
 
     def train(self):
         self.best_val_mae = 1e9
@@ -282,110 +254,20 @@ class EnergyTrainer(BaseTrainer):
             if self.val_loader is not None:
                 val_metrics = self.validate(split="val", epoch=epoch)
                 if (
-                    val_metrics[self.evaluator.task_primary_metric["is2re"]][
+                    val_metrics[self.evaluator.task_primary_metric[self.name]][
                         "metric"
                     ]
                     < self.best_val_mae
                 ):
                     self.best_val_mae = val_metrics[
-                        self.evaluator.task_primary_metric["is2re"]
+                        self.evaluator.task_primary_metric[self.name]
                     ]["metric"]
-                    if not self.is_debug and distutils.is_master():
-                        save_checkpoint(
-                            {
-                                "epoch": epoch + 1,
-                                "state_dict": self.model.state_dict(),
-                                "optimizer": self.optimizer.state_dict(),
-                                "normalizers": {
-                                    key: value.state_dict()
-                                    for key, value in self.normalizers.items()
-                                },
-                                "config": self.config,
-                                "val_metrics": val_metrics,
-                                "amp": self.scaler.state_dict()
-                                if self.scaler
-                                else None,
-                            },
-                            self.config["cmd"]["checkpoint_dir"],
-                        )
+                    self.save(epoch + 1, val_metrics)
             else:
-                if not self.is_debug and distutils.is_master():
-                    save_checkpoint(
-                        {
-                            "epoch": epoch + 1,
-                            "state_dict": self.model.state_dict(),
-                            "optimizer": self.optimizer.state_dict(),
-                            "normalizers": {
-                                key: value.state_dict()
-                                for key, value in self.normalizers.items()
-                            },
-                            "config": self.config,
-                            "metrics": self.metrics,
-                            "amp": self.scaler.state_dict()
-                            if self.scaler
-                            else None,
-                        },
-                        self.config["cmd"]["checkpoint_dir"],
-                    )
+                self.save(epoch + 1, self.metrics)
 
             if self.test_loader is not None:
                 self.validate(split="test", epoch=epoch)
-
-    def validate(self, split="val", epoch=None):
-        if distutils.is_master():
-            print("### Evaluating on {}.".format(split))
-
-        self.model.eval()
-        evaluator, metrics = Evaluator(task="is2re"), {}
-        rank = distutils.get_rank()
-
-        loader = self.val_loader if split == "val" else self.test_loader
-
-        for i, batch in tqdm(
-            enumerate(loader),
-            total=len(loader),
-            position=rank,
-            desc="device {}".format(rank),
-        ):
-            # Forward.
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch)
-            loss = self._compute_loss(out, batch)
-
-            # Compute metrics.
-            metrics = self._compute_metrics(out, batch, evaluator, metrics)
-            metrics = evaluator.update("loss", loss.item(), metrics)
-
-        aggregated_metrics = {}
-        for k in metrics:
-            aggregated_metrics[k] = {
-                "total": distutils.all_reduce(
-                    metrics[k]["total"], average=False, device=self.device
-                ),
-                "numel": distutils.all_reduce(
-                    metrics[k]["numel"], average=False, device=self.device
-                ),
-            }
-            aggregated_metrics[k]["metric"] = (
-                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
-            )
-        metrics = aggregated_metrics
-
-        log_dict = {k: metrics[k]["metric"] for k in metrics}
-        log_dict.update({"epoch": epoch + 1})
-        if distutils.is_master():
-            log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
-            print(", ".join(log_str))
-
-        # Make plots.
-        if self.logger is not None and epoch is not None:
-            self.logger.log(
-                log_dict,
-                step=(epoch + 1) * len(self.train_loader),
-                split=split,
-            )
-
-        return metrics
 
     def _forward(self, batch_list):
         output = self.model(batch_list)
@@ -425,64 +307,3 @@ class EnergyTrainer(BaseTrainer):
         )
 
         return metrics
-
-    def predict(self, loader, results_file=None, disable_tqdm=False):
-        assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
-        rank = distutils.get_rank()
-
-        self.model.eval()
-        if self.normalizers is not None and "target" in self.normalizers:
-            self.normalizers["target"].to(self.device)
-        predictions = {"id": [], "energy": []}
-
-        for i, batch in tqdm(
-            enumerate(loader),
-            total=len(loader),
-            position=rank,
-            desc="device {}".format(rank),
-            disable=disable_tqdm,
-        ):
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch)
-
-            if self.normalizers is not None and "target" in self.normalizers:
-                out["energy"] = self.normalizers["target"].denorm(
-                    out["energy"]
-                )
-            predictions["id"].extend([str(i) for i in batch[0].sid.tolist()])
-            predictions["energy"].extend(out["energy"].tolist())
-
-        if results_file is not None:
-            results_file_path = os.path.join(
-                self.config["cmd"]["results_dir"],
-                f"is2re_{results_file}_{rank}.npz",
-            )
-
-            np.savez(
-                results_file_path,
-                ids=predictions["id"],
-                energy=predictions["energy"],
-            )
-
-            distutils.synchronize()
-            if distutils.is_master():
-                gather_results = defaultdict(list)
-                full_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
-                    f"is2re_{results_file}.npz",
-                )
-
-                for i in range(distutils.get_world_size()):
-                    rank_path = os.path.join(
-                        self.config["cmd"]["results_dir"],
-                        f"is2re_{results_file}_{i}.npz",
-                    )
-                    rank_results = np.load(rank_path)
-                    gather_results["ids"].extend(rank_results["ids"])
-                    gather_results["energy"].extend(rank_results["energy"])
-                    os.remove(rank_path)
-
-                print(f"Writing results to {full_path}")
-                np.savez(full_path, **gather_results)
-
-        return predictions

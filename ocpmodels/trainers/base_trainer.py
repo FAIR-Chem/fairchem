@@ -9,19 +9,20 @@ import datetime
 import json
 import os
 import random
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+from pathlib import Path
 
 import numpy as np
+import yaml
+from tqdm import tqdm
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import yaml
-
-import ocpmodels.datasets
-import ocpmodels.models
 from ocpmodels.common import distutils
+from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
-from ocpmodels.common.meter import Meter, mae, mae_ratio, mean_l2_distance
+from ocpmodels.common.meter import Meter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     build_config,
@@ -29,20 +30,86 @@ from ocpmodels.common.utils import (
     save_checkpoint,
     warmup_lr_lambda,
 )
+from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
+from torch.nn.parallel.distributed import DistributedDataParallel
 
 
 @registry.register_trainer("base")
 class BaseTrainer:
-    def __init__(self, args=None, local_rank=0):
-        # defaults.
-        self.device = "cpu"
-        self.is_debug = True
-        self.is_vis = True
+    def __init__(
+        self,
+        task,
+        model,
+        dataset,
+        optimizer,
+        identifier,
+        run_dir=None,
+        is_debug=False,
+        is_vis=False,
+        print_every=100,
+        seed=None,
+        logger="tensorboard",
+        local_rank=0,
+        amp=False,
+        name="base_trainer",
+    ):
+        self.name = name
 
-        # load config.
-        if args is not None:
-            self.load_config_from_yaml_and_cmd(args)
+        if run_dir is None:
+            run_dir = os.getcwd()
+        run_dir = Path(run_dir)
+
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        if identifier:
+            timestamp += "-{}".format(identifier)
+
+        self.config = {
+            "task": task,
+            "model": model.pop("name"),
+            "model_attributes": model,
+            "optim": optimizer,
+            "logger": logger,
+            "amp": amp,
+            "cmd": {
+                "identifier": identifier,
+                "print_every": print_every,
+                "seed": seed,
+                "timestamp": timestamp,
+                "checkpoint_dir": run_dir / "checkpoints" / timestamp,
+                "results_dir": run_dir / "results" / timestamp,
+                "logs_dir": run_dir / "logs" / logger / timestamp,
+            },
+        }
+        # AMP Scaler
+        self.scaler = torch.cuda.amp.GradScaler() if amp else None
+
+        if isinstance(dataset, list):
+            self.config["dataset"] = dataset[0]
+            if len(dataset) > 1:
+                self.config["val_dataset"] = dataset[1]
+            if len(dataset) > 2:
+                self.config["test_dataset"] = dataset[2]
+        else:
+            self.config["dataset"] = dataset
+
+        if not is_debug and distutils.is_master():
+            os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
+            os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
+            os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
+
+        self.is_debug = is_debug
+        self.is_vis = is_vis
+        if torch.cuda.is_available():
+            self.device = local_rank
+        else:
+            self.device = "cpu"
+
+        if distutils.is_master():
+            print(yaml.dump(self.config, default_flow_style=False))
+        self.load()
+
+        self.evaluator = Evaluator(task=name)
 
     def load(self):
         self.load_seed_from_config()
@@ -92,9 +159,9 @@ class BaseTrainer:
         del args
 
         if not self.is_debug:
-            os.makedirs(self.config["cmd"]["checkpoint_dir"])
-            os.makedirs(self.config["cmd"]["results_dir"])
-            os.makedirs(self.config["cmd"]["logs_dir"])
+            os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
+            os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
+            os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
             # Dump config parameters
             json.dump(
@@ -243,6 +310,16 @@ class BaseTrainer:
         if self.logger is not None:
             self.logger.watch(self.model)
 
+        self.model = OCPDataParallel(
+            self.model,
+            output_device=self.device,
+            num_gpus=1,
+        )
+        if distutils.initialized():
+            self.model = DistributedDataParallel(
+                self.model, device_ids=[self.device]
+            )
+
     def load_pretrained(self, checkpoint_path=None, ddp_to_dp=False):
         if checkpoint_path is None or os.path.isfile(checkpoint_path) is False:
             print(f"Checkpoint: {checkpoint_path} not found!")
@@ -296,6 +373,24 @@ class BaseTrainer:
 
         # metrics.
         self.meter = Meter(split="train")
+
+    def save(self, epoch, metrics):
+        if not self.is_debug and distutils.is_master():
+            save_checkpoint(
+                {
+                    "epoch": epoch,
+                    "state_dict": self.model.state_dict(),
+                    "optimizer": self.optimizer.state_dict(),
+                    "normalizers": {
+                        key: value.state_dict()
+                        for key, value in self.normalizers.items()
+                    },
+                    "config": self.config,
+                    "val_metrics": metrics,
+                    "amp": self.scaler.state_dict() if self.scaler else None,
+                },
+                self.config["cmd"]["checkpoint_dir"],
+            )
 
     def train(self, max_epochs=None, return_metrics=False):
         # TODO(abhshkdz): Timers for dataloading and forward pass.
@@ -380,46 +475,60 @@ class BaseTrainer:
             }
 
     def validate(self, split="val", epoch=None):
-        print("### Evaluating on {}.".format(split))
-        self.model.eval()
+        if distutils.is_master():
+            print("### Evaluating on {}.".format(split))
 
-        meter = Meter(split=split)
+        self.model.eval()
+        evaluator, metrics = Evaluator(task=self.name), {}
+        rank = distutils.get_rank()
 
         loader = self.val_loader if split == "val" else self.test_loader
 
-        for i, batch in enumerate(loader):
-            batch = batch.to(self.device)
-
+        for i, batch in tqdm(
+            enumerate(loader),
+            total=len(loader),
+            position=rank,
+            desc="device {}".format(rank),
+        ):
             # Forward.
-            out, metrics = self._forward(batch)
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch)
             loss = self._compute_loss(out, batch)
 
-            # Update meter.
-            meter_update_dict = {"loss": loss.item()}
-            meter_update_dict.update(metrics)
-            meter.update(meter_update_dict)
+            # Compute metrics.
+            metrics = self._compute_metrics(out, batch, evaluator, metrics)
+            metrics = evaluator.update("loss", loss.item(), metrics)
+
+        aggregated_metrics = {}
+        for k in metrics:
+            aggregated_metrics[k] = {
+                "total": distutils.all_reduce(
+                    metrics[k]["total"], average=False, device=self.device
+                ),
+                "numel": distutils.all_reduce(
+                    metrics[k]["numel"], average=False, device=self.device
+                ),
+            }
+            aggregated_metrics[k]["metric"] = (
+                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
+            )
+        metrics = aggregated_metrics
+
+        log_dict = {k: metrics[k]["metric"] for k in metrics}
+        log_dict.update({"epoch": epoch + 1})
+        if distutils.is_master():
+            log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
+            print(", ".join(log_str))
 
         # Make plots.
         if self.logger is not None and epoch is not None:
-            log_dict = meter.get_scalar_dict()
-            log_dict.update({"epoch": epoch + 1})
             self.logger.log(
                 log_dict,
                 step=(epoch + 1) * len(self.train_loader),
                 split=split,
             )
 
-        print(meter)
-        return (
-            float(meter.loss.global_avg),
-            float(
-                meter.meters[
-                    self.config["task"]["labels"][0]
-                    + "/"
-                    + self.config["task"]["metric"]
-                ].global_avg
-            ),
-        )
+        return metrics
 
     def _forward(self, batch, compute_metrics=True):
         out = {}
@@ -576,3 +685,39 @@ class BaseTrainer:
             self.scaler.update()
         else:
             self.optimizer.step()
+
+    def save_results(self, predictions, results_file, keys):
+        if results_file is None:
+            return
+
+        results_file_path = os.path.join(
+            self.config["cmd"]["results_dir"],
+            f"{self.name}_{results_file}_{distutils.get_rank()}.npz",
+        )
+        np.savez(
+            results_file_path,
+            ids=predictions["id"],
+            **{key: predictions[key] for key in keys},
+        )
+
+        distutils.synchronize()
+        if distutils.is_master():
+            gather_results = defaultdict(list)
+            full_path = os.path.join(
+                self.config["cmd"]["results_dir"],
+                f"{self.name}_{results_file}.npz",
+            )
+
+            for i in range(distutils.get_world_size()):
+                rank_path = os.path.join(
+                    self.config["cmd"]["results_dir"],
+                    f"{self.name}_{results_file}_{i}.npz",
+                )
+                rank_results = np.load(rank_path)
+                gather_results["ids"].extend(rank_results["ids"])
+                for key in keys:
+                    gather_results[key].extend(rank_results[key])
+                os.remove(rank_path)
+
+            print(f"Writing results to {full_path}")
+            np.savez(full_path, **gather_results)
