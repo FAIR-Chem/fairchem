@@ -63,17 +63,14 @@ class BaseTrainer:
             run_dir = os.getcwd()
         run_dir = Path(run_dir)
 
-        _timestamp = torch.tensor(
-            int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
-        ).to(self.device)
-
+        timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(
+            self.device
+        )
         # create directories from master rank only
-        timestamp = distutils.all_gather(_timestamp)
-        if distutils.get_world_size() > 1:
-            timestamp = timestamp[0]
-        timestamp = datetime.datetime.strptime(
-            str(timestamp.item()), "%Y%m%d%H%M%S"
-        ).strftime("%Y-%m-%d-%H-%M-%S")
+        distutils.broadcast(timestamp, 0)
+        timestamp = datetime.datetime.fromtimestamp(timestamp).strftime(
+            "%Y-%m-%d-%H-%M-%S"
+        )
         if identifier:
             timestamp += "-{}".format(identifier)
 
