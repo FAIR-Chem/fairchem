@@ -65,7 +65,7 @@ class BaseTrainer:
 
         _timestamp = torch.tensor(
             int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
-        ).cuda(self.device)
+        ).to(self.device)
 
         # create directories from master rank only
         timestamp = distutils.all_gather(_timestamp)
