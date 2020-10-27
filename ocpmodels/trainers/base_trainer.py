@@ -4,7 +4,6 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
-
 import datetime
 import json
 import os
@@ -55,12 +54,26 @@ class BaseTrainer:
         name="base_trainer",
     ):
         self.name = name
+        if torch.cuda.is_available():
+            self.device = local_rank
+        else:
+            self.device = "cpu"
 
         if run_dir is None:
             run_dir = os.getcwd()
         run_dir = Path(run_dir)
 
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        _timestamp = torch.tensor(
+            int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+        ).cuda(self.device)
+
+        # create directories from master rank only
+        timestamp = distutils.all_gather(_timestamp)
+        if distutils.get_world_size() > 1:
+            timestamp = timestamp[0]
+        timestamp = datetime.datetime.strptime(
+            str(timestamp.item()), "%Y%m%d%H%M%S"
+        ).strftime("%Y-%m-%d-%H-%M-%S")
         if identifier:
             timestamp += "-{}".format(identifier)
 
@@ -100,10 +113,6 @@ class BaseTrainer:
 
         self.is_debug = is_debug
         self.is_vis = is_vis
-        if torch.cuda.is_available():
-            self.device = local_rank
-        else:
-            self.device = "cpu"
 
         if distutils.is_master():
             print(yaml.dump(self.config, default_flow_style=False))
