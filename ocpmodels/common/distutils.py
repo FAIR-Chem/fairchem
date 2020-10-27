@@ -95,6 +95,12 @@ def synchronize():
     dist.barrier()
 
 
+def broadcast(tensor, src, group=dist.group.WORLD, async_op=False):
+    if get_world_size() == 1:
+        return
+    dist.broadcast(tensor, src, group, async_op)
+
+
 def all_reduce(data, group=dist.group.WORLD, average=False, device=None):
     if get_world_size() == 1:
         return data
