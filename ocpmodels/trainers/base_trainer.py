@@ -700,7 +700,7 @@ class BaseTrainer:
             self.config["cmd"]["results_dir"],
             f"{self.name}_{results_file}_{distutils.get_rank()}.npz",
         )
-        np.savez(
+        np.savez_compressed(
             results_file_path,
             ids=predictions["id"],
             **{key: predictions[key] for key in keys},
@@ -733,4 +733,4 @@ class BaseTrainer:
                 gather_results[k] = gather_results[k][idx]
 
             print(f"Writing results to {full_path}")
-            np.savez(full_path, **gather_results)
+            np.savez_compressed(full_path, **gather_results)
