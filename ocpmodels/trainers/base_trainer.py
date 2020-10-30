@@ -725,5 +725,12 @@ class BaseTrainer:
                     gather_results[key].extend(rank_results[key])
                 os.remove(rank_path)
 
+            # Because of how distributed sampler works, some system ids
+            # might be repeated to make no. of samples even across GPUs.
+            _, idx = np.unique(gather_results["ids"], return_index=True)
+            gather_results["ids"] = gather_results["ids"][idx]
+            for k in keys:
+                gather_results[k] = gather_results[k][idx]
+
             print(f"Writing results to {full_path}")
             np.savez(full_path, **gather_results)

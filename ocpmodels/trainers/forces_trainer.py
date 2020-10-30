@@ -612,8 +612,14 @@ class ForcesTrainer(BaseTrainer):
                     gather_results["pos"].extend(rank_results["pos"])
                     os.remove(rank_path)
 
+                # Because of how distributed sampler works, some system ids
+                # might be repeated to make no. of samples even across GPUs.
+                _, idx = np.unique(gather_results["ids"], return_index=True)
+                gather_results["ids"] = gather_results["ids"][idx]
+                gather_results["pos"] = gather_results["pos"][idx]
+
                 print(f"Writing results to {full_path}")
-                np.savez(full_path, **gather_results)
+                np.savez_compressed(full_path, **gather_results)
 
         if split == "val":
             aggregated_metrics = {}
