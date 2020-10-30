@@ -21,7 +21,7 @@ def main(paths, filename):
             key = "_".join([split, i])
             submission_file[key] = res[i]
 
-    np.savez(filename, **submission_file)
+    np.savez_compressed(filename, **submission_file)
 
 
 if __name__ == "__main__":
