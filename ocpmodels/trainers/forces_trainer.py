@@ -293,7 +293,9 @@ class ForcesTrainer(BaseTrainer):
                     )
                 ]
                 predictions["id"].extend(systemids)
-                predictions["energy"].extend(out["energy"].tolist())
+                predictions["energy"].extend(
+                    out["energy"].to(torch.float16).tolist()
+                )
                 batch_natoms = torch.cat(
                     [batch.natoms for batch in batch_list]
                 )
@@ -303,6 +305,7 @@ class ForcesTrainer(BaseTrainer):
                         out["forces"][atoms_sum : natoms + atoms_sum]
                         .cpu()
                         .detach()
+                        .to(torch.float16)
                         .numpy()
                     )
                     # evalAI only requires forces on free atoms
