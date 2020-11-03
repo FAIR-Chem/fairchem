@@ -719,7 +719,7 @@ class BaseTrainer:
                     self.config["cmd"]["results_dir"],
                     f"{self.name}_{results_file}_{i}.npz",
                 )
-                rank_results = np.load(rank_path)
+                rank_results = np.load(rank_path, allow_pickle=True)
                 gather_results["ids"].extend(rank_results["ids"])
                 for key in keys:
                     gather_results[key].extend(rank_results[key])
@@ -728,9 +728,14 @@ class BaseTrainer:
             # Because of how distributed sampler works, some system ids
             # might be repeated to make no. of samples even across GPUs.
             _, idx = np.unique(gather_results["ids"], return_index=True)
-            gather_results["ids"] = gather_results["ids"][idx]
+            gather_results["ids"] = np.array(gather_results["ids"])[idx]
             for k in keys:
-                gather_results[k] = gather_results[k][idx]
+                if k == "forces":
+                    gather_results[k] = np.array(
+                        gather_results[k], dtype=object
+                    )[idx]
+                else:
+                    gather_results[k] = np.array(gather_results[k])[idx]
 
             print(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)

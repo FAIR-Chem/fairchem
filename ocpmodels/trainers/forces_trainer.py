@@ -9,10 +9,11 @@ import os
 from collections import defaultdict
 
 import numpy as np
-from tqdm import tqdm
-
 import torch
 import torch_geometric
+from torch.utils.data import DataLoader, DistributedSampler
+from tqdm import tqdm
+
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
@@ -21,7 +22,6 @@ from ocpmodels.common.utils import plot_histogram
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
-from torch.utils.data import DataLoader, DistributedSampler
 
 
 @registry.register_trainer("forces")
@@ -248,6 +248,8 @@ class ForcesTrainer(BaseTrainer):
     def predict(
         self, data_loader, per_image=True, results_file=None, disable_tqdm=True
     ):
+        if distutils.is_master() and not disable_tqdm:
+            print("### Predicting on test.")
         assert isinstance(
             data_loader,
             (
@@ -319,8 +321,11 @@ class ForcesTrainer(BaseTrainer):
             else:
                 predictions["energy"] = out["energy"].detach()
                 predictions["forces"] = out["forces"].detach()
-                break
+                return predictions
 
+        predictions["forces"] = np.array(predictions["forces"], dtype=object)
+        predictions["energy"] = np.array(predictions["energy"])
+        predictions["id"] = np.array(predictions["id"])
         self.save_results(predictions, results_file, keys=["energy", "forces"])
         return predictions
 
@@ -396,6 +401,12 @@ class ForcesTrainer(BaseTrainer):
                                 self.train_loader
                             )
                             self.save(current_epoch, val_metrics)
+                            if self.test_loader is not None:
+                                self.predict(
+                                    self.test_loader,
+                                    results_file="predictions",
+                                    disable_tqdm=False,
+                                )
 
             self.scheduler.step()
             torch.cuda.empty_cache()
@@ -411,11 +422,14 @@ class ForcesTrainer(BaseTrainer):
                             "metric"
                         ]
                         self.save(epoch + 1, val_metrics)
+                        if self.test_loader is not None:
+                            self.predict(
+                                self.test_loader,
+                                results_file="predictions",
+                                disable_tqdm=False,
+                            )
                 else:
                     self.save(epoch + 1, self.metrics)
-
-            if self.test_loader is not None:
-                self.validate(split="test", epoch=epoch)
 
     def _forward(self, batch_list):
         # forward pass.
@@ -595,7 +609,11 @@ class ForcesTrainer(BaseTrainer):
             pos_filename = os.path.join(
                 self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.npz"
             )
-            np.savez(pos_filename, ids=ids, pos=relaxed_positions)
+            np.savez_compressed(
+                pos_filename,
+                ids=ids,
+                pos=np.array(relaxed_positions, dtype=object),
+            )
 
             distutils.synchronize()
             if distutils.is_master():
@@ -618,8 +636,10 @@ class ForcesTrainer(BaseTrainer):
                 # Because of how distributed sampler works, some system ids
                 # might be repeated to make no. of samples even across GPUs.
                 _, idx = np.unique(gather_results["ids"], return_index=True)
-                gather_results["ids"] = gather_results["ids"][idx]
-                gather_results["pos"] = gather_results["pos"][idx]
+                gather_results["ids"] = np.array(gather_results["ids"])[idx]
+                gather_results["pos"] = np.array(
+                    gather_results["pos"], dtype=object
+                )[idx]
 
                 print(f"Writing results to {full_path}")
                 np.savez_compressed(full_path, **gather_results)

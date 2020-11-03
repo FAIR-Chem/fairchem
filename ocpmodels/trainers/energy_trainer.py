@@ -9,15 +9,15 @@ import os
 from collections import defaultdict
 
 import numpy as np
+import torch
+from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
-import torch
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
-from torch.utils.data import DataLoader, DistributedSampler
 
 
 @registry.register_trainer("energy")
@@ -174,6 +174,8 @@ class EnergyTrainer(BaseTrainer):
                 raise NotImplementedError
 
     def predict(self, loader, results_file=None, disable_tqdm=False):
+        if distutils.is_master() and not disable_tqdm:
+            print("### Predicting on test.")
         assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
         rank = distutils.get_rank()
 
@@ -263,11 +265,14 @@ class EnergyTrainer(BaseTrainer):
                         self.evaluator.task_primary_metric[self.name]
                     ]["metric"]
                     self.save(epoch + 1, val_metrics)
+                    if self.test_loader is not None:
+                        self.predict(
+                            self.test_loader,
+                            results_file="predictions",
+                            disable_tqdm=False,
+                        )
             else:
                 self.save(epoch + 1, self.metrics)
-
-            if self.test_loader is not None:
-                self.validate(split="test", epoch=epoch)
 
     def _forward(self, batch_list):
         output = self.model(batch_list)
