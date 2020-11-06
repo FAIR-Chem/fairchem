@@ -9,7 +9,6 @@ import time
 from pathlib import Path
 
 import submitit
-
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
@@ -95,7 +94,8 @@ if __name__ == "__main__":
             configs = [config]
 
         print(f"Submitting {len(configs)} jobs")
-        executor = submitit.AutoExecutor(folder=args.logdir / "%j")
+        logdir = Path(args.run_dir) / args.logdir
+        executor = submitit.AutoExecutor(folder=logdir / "%j")
         executor.update_parameters(
             name=args.identifier,
             mem_gb=args.slurm_mem,
@@ -105,6 +105,7 @@ if __name__ == "__main__":
             cpus_per_task=(args.num_workers + 1),
             tasks_per_node=(args.num_gpus if args.distributed else 1),
             nodes=args.num_nodes,
+            slurm_constraint="volta32gb",
         )
         jobs = executor.map_array(main, configs)
         print("Submitted jobs:", ", ".join([job.job_id for job in jobs]))

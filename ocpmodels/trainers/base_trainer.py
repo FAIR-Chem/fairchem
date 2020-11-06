@@ -12,13 +12,12 @@ from collections import OrderedDict, defaultdict
 from pathlib import Path
 
 import numpy as np
+import yaml
+from tqdm import tqdm
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import yaml
-from torch.nn.parallel.distributed import DistributedDataParallel
-from tqdm import tqdm
-
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
@@ -32,6 +31,7 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
+from torch.nn.parallel.distributed import DistributedDataParallel
 
 
 @registry.register_trainer("base")
@@ -524,7 +524,7 @@ class BaseTrainer:
         log_dict.update({"epoch": epoch + 1})
         if distutils.is_master():
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
-            print(", ".join(log_str))
+            print("Validation:", ", ".join(log_str))
 
         # Make plots.
         if self.logger is not None and epoch is not None:
