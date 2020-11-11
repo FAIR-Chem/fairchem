@@ -9,15 +9,15 @@ import os
 from collections import defaultdict
 
 import numpy as np
-import torch
-from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
+import torch
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from torch.utils.data import DataLoader, DistributedSampler
 
 
 @registry.register_trainer("energy")
@@ -206,7 +206,10 @@ class EnergyTrainer(BaseTrainer):
 
     def train(self):
         self.best_val_mae = 1e9
-        for epoch in range(self.config["optim"]["max_epochs"]):
+        self.scheduler.step(self.start_epoch)
+        for epoch in range(
+            self.start_epoch, self.config["optim"]["max_epochs"]
+        ):
             self.train_sampler.set_epoch(epoch)
             self.model.train()
             for i, batch in enumerate(self.train_loader):
@@ -250,7 +253,7 @@ class EnergyTrainer(BaseTrainer):
                         split="train",
                     )
 
-            self.scheduler.step()
+            self.scheduler.step(epoch)
             torch.cuda.empty_cache()
 
             if self.val_loader is not None:

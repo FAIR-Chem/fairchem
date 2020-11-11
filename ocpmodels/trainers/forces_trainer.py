@@ -9,11 +9,10 @@ import os
 from collections import defaultdict
 
 import numpy as np
-import torch
-import torch_geometric
-from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
+import torch
+import torch_geometric
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
@@ -22,6 +21,7 @@ from ocpmodels.common.utils import plot_histogram
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from torch.utils.data import DataLoader, DistributedSampler
 
 
 @registry.register_trainer("forces")
@@ -337,7 +337,10 @@ class ForcesTrainer(BaseTrainer):
         )
         iters = 0
         self.metrics = {}
-        for epoch in range(self.config["optim"]["max_epochs"]):
+        self.scheduler.step(epoch=self.start_epoch)
+        for epoch in range(
+            self.start_epoch, self.config["optim"]["max_epochs"]
+        ):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
@@ -408,7 +411,7 @@ class ForcesTrainer(BaseTrainer):
                                     disable_tqdm=False,
                                 )
 
-            self.scheduler.step()
+            self.scheduler.step(epoch)
             torch.cuda.empty_cache()
 
             if eval_every == -1:
