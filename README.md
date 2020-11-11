@@ -78,9 +78,13 @@ Dataset download links can be found at [DATASET.md](https://github.com/Open-Cata
     - `--get-edges`: includes edge information in LMDBs (~10x storage requirement, ~3-5x slowdown), otherwise, compute edges on the fly (larger GPU memory requirement).
     - `--ref-energy`: uses referenced energies instead of raw energies.
 
-### Train models for the the desired tasks
+### Train models for the desired tasks
 
 A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/train.md).
+
+### Pretrained models
+
+Pretrained models accompanying https://arxiv.org/abs/2010.09990v1 can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/models.md).
 
 ## Acknowledgements
 
