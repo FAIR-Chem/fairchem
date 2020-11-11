@@ -60,4 +60,3 @@ Please cite the following paper in any research manuscript using the OC20 datase
     archivePrefix={arXiv}
 }
 ```
-
