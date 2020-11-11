@@ -29,5 +29,5 @@ optim:
   warmup_epochs: 2
   warmup_factor: 0.2
   max_epochs: 7
-  energy_coefficient: 0
+  energy_coefficient: 0 # set primary_metric to forces_mae in base config else it'll wait for efwt to improve
   force_coefficient: 100
