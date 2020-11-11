@@ -80,11 +80,11 @@ Dataset download links can be found at [DATASET.md](https://github.com/Open-Cata
 
 ### Train models for the desired tasks
 
-A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/train.md).
+A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md).
 
 ### Pretrained models
 
-Pretrained models accompanying https://arxiv.org/abs/2010.09990v1 can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/models.md).
+Pretrained models accompanying https://arxiv.org/abs/2010.09990v1 can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md).
 
 ## Acknowledgements
 
