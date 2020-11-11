@@ -8,8 +8,6 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 
 ## S2EF baselines: optimized for EFwT
 
-
-
 |model	|split	|downloadable link	|val ID force MAE	|val ID EFwT	|
 |---	|---	|---	|---	|---	|
 |CGCNN	|200k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/cgcnn_200k.pt	|0.08	|0%	|
@@ -27,16 +25,12 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 
 ## S2EF baselines: optimized for force only
 
-## 
-
 |model	|split	|downloadable link	|val ID force MAE	|
 |---	|---	|---	|---	|
 |SchNet	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/schnet_all_forceonly.pt	|0.0443	|
 |DimeNet++	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/dimenetpp_all_forceonly.pt	|0.0334	|
 
 ## IS2RE baselines
-
-
 
 |model	|split	|downloadable link	|val ID energy MAE	|
 |---	|---	|---	|---	|
@@ -49,6 +43,8 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 |SchNet	|10k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/schnet_10k.pt	|1.0858	|
 |SchNet	|100k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/schnet_100k.pt	|0.7266	|
 |SchNet	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/schnet_all.pt	|0.6691	|
+
+---
 
 The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
 
