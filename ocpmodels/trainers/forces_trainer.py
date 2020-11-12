@@ -337,7 +337,6 @@ class ForcesTrainer(BaseTrainer):
         )
         iters = 0
         self.metrics = {}
-        self.scheduler.step(epoch=self.start_epoch)
         for epoch in range(
             self.start_epoch, self.config["optim"]["max_epochs"]
         ):
