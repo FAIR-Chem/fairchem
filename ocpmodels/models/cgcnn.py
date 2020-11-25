@@ -7,12 +7,13 @@ LICENSE file in the root directory of this source tree.
 
 import torch
 import torch.nn as nn
+from torch_geometric.nn import MessagePassing, global_mean_pool, radius_graph
+from torch_geometric.nn.models.schnet import GaussianSmearing
+
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 from ocpmodels.datasets.elemental_embeddings import EMBEDDINGS
 from ocpmodels.models.base import BaseModel
-from torch_geometric.nn import MessagePassing, global_mean_pool, radius_graph
-from torch_geometric.nn.models.schnet import GaussianSmearing
 
 
 @registry.register_model("cgcnn")
@@ -148,7 +149,7 @@ class CGCNN(BaseModel):
             forces = -1 * (
                 torch.autograd.grad(
                     energy,
-                    pos,
+                    data.pos,
                     grad_outputs=torch.ones_like(energy),
                     create_graph=True,
                 )[0]
@@ -162,6 +163,23 @@ class CGCNN(BaseModel):
         Returns the output of the convolution layers before they are passed
         into the dense layers.
         """
+        # Get node features
+        if self.embedding.device != data.atomic_numbers.device:
+            self.embedding = self.embedding.to(data.atomic_numbers.device)
+        data.x = self.embedding[data.atomic_numbers.long() - 1]
+
+        # Construct graph, get edge features
+        data.edge_index = radius_graph(
+            data.pos, r=self.cutoff, batch=data.batch
+        )
+        row, col = data.edge_index
+        pos = data.pos
+        if self.regress_forces:
+            pos = pos.requires_grad_(True)
+        data.edge_weight = (pos[row] - pos[col]).norm(dim=-1)
+        data.edge_attr = self.distance_expansion(data.edge_weight)
+
+        # Perform convolution
         node_feats = self.embedding_fc(data.x)
         for f in self.convs:
             node_feats = f(node_feats, data.edge_index, data.edge_attr)
