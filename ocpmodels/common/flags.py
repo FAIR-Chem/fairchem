@@ -101,10 +101,22 @@ class Flags:
             help="Name of partition",
         )
         self.parser.add_argument(
-            "--slurm-mem", default=80, type=int, help="Memory (in gigabytes)"
+            "--slurm-account",
+            default="m1759",
+            type=str,
+            help="Name of account",
         )
         self.parser.add_argument(
-            "--slurm-timeout", default=72, type=int, help="Time (in hours)"
+            "--slurm-constraint",
+            default="gpu",
+            type=str,
+            help="Slurm constraint",
+        )
+        self.parser.add_argument(
+            "--slurm-mem", default=40, type=int, help="Memory (in gigabytes)"
+        )
+        self.parser.add_argument(
+            "--slurm-timeout", default=4, type=int, help="Time (in hours)"
         )
         self.parser.add_argument(
             "--num-gpus", default=1, type=int, help="Number of GPUs to request"
