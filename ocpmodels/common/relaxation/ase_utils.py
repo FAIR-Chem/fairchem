@@ -101,7 +101,7 @@ class OCPCalculator(Calculator):
             batch.edge_index = edge_index
             batch.cell_offsets = cell_offsets
             batch.neighbors = neighbors
-        predictions = self.trainer.predict(batch)
+        predictions = self.trainer.predict(batch, per_image=False)
 
-        self.results["energy"] = predictions["energy"][0]
-        self.results["forces"] = predictions["forces"][0]
+        self.results["energy"] = predictions["energy"].item()
+        self.results["forces"] = predictions["forces"].cpu().numpy()
