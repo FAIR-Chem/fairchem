@@ -1,7 +1,9 @@
 import pickle
 
 import torch
+from torch.utils.data import DataLoader, DistributedSampler
 
+from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.modules.normalizer import Normalizer
 
@@ -10,7 +12,7 @@ from ocpmodels.modules.normalizer import Normalizer
 class CfgpTrainer:
     def __init__(self, conv_trainer, gpytorch_trainer):
         """
-        The `conv_trainer` needs to be a `SimpleTrainer` whose model has the
+        The `conv_trainer` needs to be a `EnergyTrainer` whose model has the
         `_convolve` method. The `gpytorch_trainer` needs to be a
         `GPyTorchTrainer`.
         """
@@ -23,38 +25,68 @@ class CfgpTrainer:
         self.test_loader = self.conv_trainer.test_loader
 
     def train(self, lr=0.1, n_training_iter=20):
-        print("### Beginning training on convolutional network.")
+        if distutils.is_master():
+            print("### Beginning training on convolutional network.")
         self.conv_trainer.train()
         self._train_gp(lr, n_training_iter)
+        distutils.synchronize()
 
     def _train_gp(self, lr, n_training_iter):
-        print("### Beginning training on GP.")
         convolutions, train_y = self._get_training_convolutions()
-        self.gpytorch_trainer.train(
-            train_x=convolutions,
-            train_y=train_y,
-            lr=lr,
-            n_training_iter=n_training_iter,
-        )
+        if distutils.is_master():
+            self.gpytorch_trainer.train(
+                train_x=convolutions,
+                train_y=train_y,
+                lr=lr,
+                n_training_iter=n_training_iter,
+            )
 
     def _get_training_convolutions(self):
         train_convs, train_y = self._get_convolutions(self.train_loader)
+        if distutils.initialized():
+            train_convs = torch.cat(
+                distutils.all_gather(train_convs, device=self.device), dim=0
+            )
+            train_y = torch.cat(
+                distutils.all_gather(train_y, device=self.device)
+            )
 
         self.conv_normalizer = Normalizer(train_convs, device=self.device)
         normed_convs = self.conv_normalizer.norm(train_convs)
         return normed_convs, train_y
 
+    def _get_test_convolutions(self, data_loader):
+        convs, targets = self._get_convolutions(data_loader)
+        if distutils.initialized():
+            convs = torch.cat(
+                distutils.all_gather(convs, device=self.device), dim=0
+            )
+            targets = torch.cat(
+                distutils.all_gather(targets, device=self.device)
+            )
+
+        try:
+            normed_convs = self.conv_normalizer.norm(convs)
+        except AttributeError as error:
+            raise type(error)(
+                str(error) + "; error may have occurred "
+                "because the CFGP may not have been trained yet"
+            )
+        return normed_convs, targets
+
     def _get_convolutions(self, data_loader):
         self.conv_trainer.model.eval()
+        module = self.conv_trainer.model.module
+        # DDP models are wrapped in DistributedDataParallel
+        if distutils.initialized():
+            module = module.module
         convolutions = []
         targets = []
 
         for batches in data_loader:
             for batch in batches:
-                out = self.conv_trainer.model.module._convolve(
-                    batch.to(self.device)
-                )
-                for conv, target in zip(out.tolist(), batch.y):
+                out = module._convolve(batch.to(self.device))
+                for conv, target in zip(out.tolist(), batch.y_relaxed):
                     convolutions.append(conv)
                     targets.append(target)
 
@@ -63,31 +95,40 @@ class CfgpTrainer:
         return convolutions, targets
 
     def predict(self, src, batch_size=32):
-        print("### Generating predictions on {}.".format(src))
+        if distutils.is_master():
+            print(f"### Generating predictions on {src}")
 
         # Parse the data
         dataset_config = {"src": src}
         dataset = registry.get_dataset_class(
             self.conv_trainer.config["task"]["dataset"]
         )(dataset_config)
-        data_loader = dataset.get_full_dataloader(
+        test_sampler = DistributedSampler(
+            dataset,
+            num_replicas=distutils.get_world_size(),
+            rank=distutils.get_rank(),
+            shuffle=False,
+        )
+        data_loader = DataLoader(
+            dataset,
             batch_size=batch_size,
             collate_fn=self.conv_trainer.parallel_collater,
+            num_workers=self.conv_trainer.config["optim"]["num_workers"],
+            sampler=test_sampler,
         )
 
         # Get the convolutions
-        convs, targets_actual = self._get_convolutions(data_loader)
-        try:
-            normed_convs = self.conv_normalizer.norm(convs)
-        except AttributeError as error:
-            raise type(error)(
-                str(error) + "; error may have occurred "
-                "because the CFGP may not have been trained yet"
-            )
+        normed_convs, targets = self._get_test_convolutions(data_loader)
 
         # Feed the convolutions into the GP
-        targets_pred, targets_std = self.gpytorch_trainer.predict(normed_convs)
-        return targets_pred, targets_std
+        if distutils.is_master():
+            targets_pred, targets_std = self.gpytorch_trainer.predict(
+                normed_convs
+            )
+            results = {"pred": targets_pred, "std": targets_std}
+            results_path = f'{self.conv_trainer.config["cmd"]["results_dir"]}/predictions.pt'
+            torch.save(results, results_path)
+            print(f"### Predictions saved to {results_path}")
 
     def save_state(
         self, gp_path="gp_state.pth", normalizer_path="normalizer.pth"
@@ -107,7 +148,7 @@ class CfgpTrainer:
         self._load_normalizer(normalizer_checkpoint_file)
 
     def _load_conv(self, nn_checkpoint_file):
-        self.conv_trainer.load_state(nn_checkpoint_file)
+        self.conv_trainer.load_pretrained(nn_checkpoint_file)
 
     def _load_gp(self, gp_checkpoint_file):
         convolutions, train_y = self._get_training_convolutions()

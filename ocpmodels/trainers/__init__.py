@@ -7,8 +7,12 @@ __all__ = [
     "BaseTrainer",
     "ForcesTrainer",
     "EnergyTrainer",
+    "GPyTorchTrainer",
+    "CfgpTrainer",
 ]
 
 from .base_trainer import BaseTrainer
+from .cfgp_trainer import CfgpTrainer
 from .energy_trainer import EnergyTrainer
 from .forces_trainer import ForcesTrainer
+from .gpytorch_trainer import GPyTorchTrainer

@@ -5,6 +5,7 @@ import gpytorch
 import numpy as np
 import torch
 
+from ocpmodels.common import distutils
 from ocpmodels.common.lbfgs import FullBatchLBFGS
 from ocpmodels.common.registry import registry
 from ocpmodels.models import ExactGP
@@ -49,7 +50,8 @@ class GPyTorchTrainer:
             )
         if n_devices is None:
             n_devices = torch.cuda.device_count()
-            print("Planning to run on {} GPUs.".format(n_devices))
+            if distutils.is_master():
+                print("Planning to run on {} GPUs.".format(n_devices))
 
         self.device = device
         self.n_devices = n_devices
@@ -78,6 +80,10 @@ class GPyTorchTrainer:
             checkpoint_size=checkpoint_size,
             lr=lr,
             n_training_iter=n_training_iter,
+        )
+
+        print(
+            f"Finished training on {train_x.size(0)} data points using {self.n_devices} GPUs."
         )
 
     def _calculate_checkpoint_size(self, train_x, train_y, lr):
@@ -165,9 +171,6 @@ class GPyTorchTrainer:
                     print("Convergence reached!")
                     break
 
-        print(
-            f"Finished training on {train_x.size(0)} data points using {self.n_devices} GPUs."
-        )
         return self.gp, self.likelihood
 
     def _init_gp(self, train_x, train_y):
