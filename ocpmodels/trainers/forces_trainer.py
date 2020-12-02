@@ -472,21 +472,50 @@ class ForcesTrainer(BaseTrainer):
                     force_target
                 )
 
-            # Force coefficient = 30 has been working well for us.
-            force_mult = self.config["optim"].get("force_coefficient", 30)
-            if self.config["task"].get("train_on_free_atoms", False):
-                fixed = torch.cat(
-                    [batch.fixed.to(self.device) for batch in batch_list]
+            tag_specific_weights = self.config["task"].get(
+                "tag_specific_weights", []
+            )
+
+            if tag_specific_weights != []:
+                assert len(tag_specific_weights) == 3
+
+                batch_tags = torch.cat(
+                    [batch.tags.to(self.device) for batch in batch_list], dim=0
                 )
-                mask = fixed == 0
+                weight = torch.zeros_like(batch_tags)
+                weight[batch_tags == 0] = tag_specific_weights[0]
+                weight[batch_tags == 1] = tag_specific_weights[1]
+                weight[batch_tags == 2] = tag_specific_weights[2]
+
+                loss_force_list = torch.abs(out["forces"] - force_target)
+                print(loss_force_list.shape, weight.view(-1, 1).shape)
+                train_loss_force_unnormalized = torch.sum(
+                    loss_force_list * weight.view(-1, 1)
+                )
+                train_loss_force_normalizer = 3 * weight.sum()
                 loss.append(
-                    force_mult
-                    * self.criterion(out["forces"][mask], force_target[mask])
+                    train_loss_force_unnormalized / train_loss_force_normalizer
                 )
+
             else:
-                loss.append(
-                    force_mult * self.criterion(out["forces"], force_target)
-                )
+                # Force coefficient = 30 has been working well for us.
+                force_mult = self.config["optim"].get("force_coefficient", 30)
+                if self.config["task"].get("train_on_free_atoms", False):
+                    fixed = torch.cat(
+                        [batch.fixed.to(self.device) for batch in batch_list]
+                    )
+                    mask = fixed == 0
+                    loss.append(
+                        force_mult
+                        * self.criterion(
+                            out["forces"][mask], force_target[mask]
+                        )
+                    )
+                else:
+                    loss.append(
+                        force_mult
+                        * self.criterion(out["forces"], force_target)
+                    )
 
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
