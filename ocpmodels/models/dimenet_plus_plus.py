@@ -220,21 +220,21 @@ class InteractionPPBlock2(nn.Module):
             act
         )
         self.edge_wise_module1 = nn.DataParallel(self.edge_wise_module1)
-        # self.triplet_wise_module = nn.DataParallel(self.triplet_wise_module)
-        # self.edge_wise_module2 = nn.DataParallel(self.edge_wise_module2)
-        # self.edge_wise_module3 = nn.DataParallel(self.edge_wise_module3)
+        self.triplet_wise_module = nn.DataParallel(self.triplet_wise_module)
+        self.edge_wise_module2 = nn.DataParallel(self.edge_wise_module2)
+        self.edge_wise_module3 = nn.DataParallel(self.edge_wise_module3)
         self.reset_parameters()
 
     def reset_parameters(self):
         # self.edge_wise_module1.reset_parameters()
-        self.triplet_wise_module.reset_parameters()
-        self.edge_wise_module2.reset_parameters()
-        self.edge_wise_module3.reset_parameters()
+        # self.triplet_wise_module.reset_parameters()
+        # self.edge_wise_module2.reset_parameters()
+        # self.edge_wise_module3.reset_parameters()
 
         self.edge_wise_module1.module.reset_parameters()
-        # self.triplet_wise_module.module.reset_parameters()
-        # self.edge_wise_module2.module.reset_parameters()
-        # self.edge_wise_module3.module.reset_parameters()
+        self.triplet_wise_module.module.reset_parameters()
+        self.edge_wise_module2.module.reset_parameters()
+        self.edge_wise_module3.module.reset_parameters()
 
     def forward(self, x, rbf, sbf, idx_kj, idx_ji):
         x_ji, x_kj = self.edge_wise_module1(x, rbf)
@@ -415,15 +415,15 @@ class OutputPPBlock2(torch.nn.Module):
             num_layers,
             act,
         )
-        # self.edge_wise_module = nn.DataParallel(self.edge_wise_module)
-        # self.node_wise_module = nn.DataParallel(self.node_wise_module)
+        self.edge_wise_module = nn.DataParallel(self.edge_wise_module)
+        self.node_wise_module = nn.DataParallel(self.node_wise_module)
         self.reset_parameters()
 
     def reset_parameters(self):
-        self.edge_wise_module.reset_parameters()
-        self.node_wise_module.reset_parameters()
-        # self.edge_wise_module.module.reset_parameters()
-        # self.node_wise_module.module.reset_parameters()
+        # self.edge_wise_module.reset_parameters()
+        # self.node_wise_module.reset_parameters()
+        self.edge_wise_module.module.reset_parameters()
+        self.node_wise_module.module.reset_parameters()
 
     def forward(self, x, rbf, i, num_nodes=None):
         x = self.edge_wise_module(x, rbf)
