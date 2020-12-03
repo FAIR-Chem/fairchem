@@ -325,6 +325,7 @@ class BaseTrainer:
             self.model = DistributedDataParallel(
                 self.model, device_ids=[self.device]
             )
+        print(self.model)
 
     def load_pretrained(self, checkpoint_path=None, ddp_to_dp=False):
         if checkpoint_path is None or os.path.isfile(checkpoint_path) is False:
