@@ -15,6 +15,7 @@ from .base import BaseModel
 from .cgcnn import CGCNN
 from .dimenet import DimeNetWrap as DimeNet
 from .dimenet_plus_plus import DimeNetPlusPlusWrap as DimeNetPlusPlus
+from .parallel_dimenet_plus_plus import ParallelDimeNetPlusPlusWrap as ParallelDimeNetPlusPlus
 from .schnet import SchNetWrap as SchNet
 
 DimeNet.__module__ = __name__

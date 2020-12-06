@@ -96,7 +96,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--slurm-partition",
-            default="dev",
+            default="Wav2Vec",
             type=str,
             help="Name of partition",
         )
