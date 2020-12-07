@@ -31,6 +31,7 @@ S2EF_COUNTS = {
     },
 }
 
+import argparse
 import glob
 import os
 
@@ -55,7 +56,8 @@ def get_data(task, split, del_intmd_files):
 
     os.system(f"wget {download_link}")
     filename = os.path.basename(download_link)
-    os.system(f"tar -xvf {filename}")
+    print("Extracting contents...")
+    os.system(f"tar -xf {filename}")
     dirname = filename.split(".")[0]
     if task == "s2ef" and split != "test":
         compressed_dir = os.path.join(dirname, dirname)
@@ -117,3 +119,18 @@ def cleanup(filename, dirname):
         shutil.rmtree(dirname)
     if os.path.exists(dirname + "_uncompressed"):
         shutil.rmtree(dirname + "_uncompressed")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--task", type=str, help="Task to download")
+    parser.add_argument(
+        "--split", type=str, help="Corresponding data split to download"
+    )
+    parser.add_argument(
+        "--keep",
+        action="store_true",
+        help="Keep intermediate directories and files upon data retrieval/processing",
+    )
+    args, _ = parser.parse_known_args()
+    get_data(task=args.task, split=args.split, del_intmd_files=not args.keep)
