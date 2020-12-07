@@ -23,6 +23,7 @@ def decompress_list_of_files(ip_op_pair):
     ip_file, op_file = ip_op_pair
     read_lzma(ip_file, op_file)
 
+
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -35,6 +36,7 @@ def get_parser():
         "--num-workers", type=int, help="# of processes to parallelize across"
     )
     return parser
+
 
 def main(args):
     os.makedirs(args.opdir, exist_ok=True)
