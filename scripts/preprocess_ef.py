@@ -75,6 +75,7 @@ def write_images_to_lmdb(mp_arg):
 
     return sampled_ids, idx
 
+
 def main(args):
     xyz_logs = glob.glob(os.path.join(args.data_path, "*.txt"))
     if not xyz_logs:
@@ -110,7 +111,15 @@ def main(args):
 
     pool = mp.Pool(args.num_workers)
     mp_args = [
-        (a2g, db_paths[i], chunked_txt_files[i], sampled_ids[i], idx[i], i, args)
+        (
+            a2g,
+            db_paths[i],
+            chunked_txt_files[i],
+            sampled_ids[i],
+            idx[i],
+            i,
+            args,
+        )
         for i in range(args.num_workers)
     ]
     op = list(zip(*pool.imap(write_images_to_lmdb, mp_args)))
@@ -122,6 +131,7 @@ def main(args):
             os.path.join(args.out_path, "data_log.%04d.txt" % i), "w"
         )
         ids_log.writelines(sampled_ids[j])
+
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -153,6 +163,7 @@ def get_parser():
         help="Is data being processed test data?",
     )
     return parser
+
 
 if __name__ == "__main__":
     parser = get_parser()
