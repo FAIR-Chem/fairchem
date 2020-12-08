@@ -248,7 +248,8 @@ def build_config(args):
         include_config = yaml.safe_load(open(include, "r"))
         config.update(include_config)
 
-    config.pop("includes")
+    if includes != []:
+        config.pop("includes")
 
     # Check for overriden parameters.
     if args.config_override:
