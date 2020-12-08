@@ -33,7 +33,6 @@ class ForceNet(nn.Module):
         depth_mlp_node=1,
         act="ssp",
         ablation="None",
-        sph=None,
         decoder_final_channels=64,
         decoder_type="mlp",
         training=True,
@@ -84,7 +83,6 @@ class ForceNet(nn.Module):
         self.num_freqs = num_freqs
         self.num_layers = num_interactions
         self.max_n = max_n
-        self.sph = sph
 
         if self.ablation == "edgelinear":
             depth_mlp_edge = 0
@@ -187,13 +185,13 @@ class ForceNet(nn.Module):
                     "Under onlydist ablation, spherical basis is reduced to powersine basis."
                 )
                 self.basis_type = "powersine"
-                sph = None
+                self.pbc_sph = None
 
         else:
             in_feature = 7
         # basis function for edge feature
         self.basis_fun = Basis(
-            in_feature, num_freqs, self.basis_type, act, sph=sph
+            in_feature, num_freqs, self.basis_type, act, sph=self.pbc_sph
         )
 
         self.interactions = torch.nn.ModuleList()
