@@ -132,5 +132,21 @@ if __name__ == "__main__":
         action="store_true",
         help="Keep intermediate directories and files upon data retrieval/processing",
     )
+    # Flags for S2EF train/val set preprocessing:
+    parser.add_argument(
+        "--get-edges",
+        action="store_true",
+        help="Store edge indices in LMDB, ~10x storage requirement. Default: compute edge indices on-the-fly.",
+    )
+    parser.add_argument(
+        "--num-workers",
+        type=int,
+        default=1,
+        help="No. of feature-extracting processes or no. of dataset chunks",
+    )
+    parser.add_argument(
+        "--ref-energy", action="store_true", help="Subtract reference energies"
+    )
+
     args, _ = parser.parse_known_args()
     get_data(task=args.task, split=args.split, del_intmd_files=not args.keep)
