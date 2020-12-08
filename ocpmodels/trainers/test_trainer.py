@@ -25,7 +25,7 @@ from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
 @registry.register_trainer("test")
-class TestTrainer(BaseTrainer):
+class TestTrainer:
     """
     Trainer class for the Structure to Energy & Force (S2EF) and Initial State to
     Relaxed State (IS2RS) tasks.
@@ -76,22 +76,21 @@ class TestTrainer(BaseTrainer):
         local_rank=0,
         amp=False,
     ):
-        super().__init__(
-            task=task,
-            model=model,
-            dataset=dataset,
-            optimizer=optimizer,
-            identifier=identifier,
-            run_dir=run_dir,
-            is_debug=is_debug,
-            is_vis=is_vis,
-            print_every=print_every,
-            seed=seed,
-            logger=logger,
-            local_rank=local_rank,
-            amp=amp,
-            name="s2ef",
-        )
+        self.config = {
+            "task": task,
+            "model": model.pop("name"),
+            "model_attributes": model,
+            "optim": optimizer,
+            "logger": logger,
+            "amp": amp,
+            "cmd": {
+                "identifier": identifier,
+                "print_every": print_every,
+                "seed": seed,
+            },
+        }
+        self.config["dataset"] = dataset[0]
+        self.load_task()
 
     def load_task(self):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
