@@ -3,8 +3,12 @@ includes:
 
 model:
   name: dimenetplusplus
-  hidden_channels: 768
-  out_emb_channels: 576
+  # hidden_channels: 768
+  # out_emb_channels: 576
+  
+  hidden_channels: 256
+  out_emb_channels: 192
+  
   num_blocks: 3
   cutoff: 6.0
   num_radial: 6
@@ -17,8 +21,10 @@ model:
   int_emb_size: 32
 
 optim:
-  batch_size: 2
-  eval_batch_size: 1
+  # batch_size: 2
+  # eval_batch_size: 1
+  batch_size: 16
+  eval_batch_size: 8
 
   eval_every: 500
   num_workers: 12
@@ -28,8 +34,13 @@ optim:
   #   - 1
   #   - 3
   #   - 4
-  warmup_epochs: 1
+  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+    - 6
+    - 8
+    - 10
+  # warmup_epochs: 1
+  warmup_epochs: 4
   warmup_factor: 0.8
-  max_epochs: 5
+  max_epochs: 10
   energy_coefficient: 0
   force_coefficient: 100
