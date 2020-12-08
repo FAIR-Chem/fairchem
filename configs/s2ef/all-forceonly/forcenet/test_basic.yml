@@ -4,18 +4,7 @@ dataset:
   - src: /checkpoint/electrocatalysis/relaxations/features/struct_to_energy_forces/train/200k/
 
 model:
-  name: forcenet
-  num_interactions: 5
-  cutoff: 6
-  basis: "sphallmul"
-  ablation: None
-  depth_mlp_edge: 2
-  depth_mlp_node: 1
-  act: "swish"
-  feat: "full"
-  hidden_channels: 128
-  decoder_final_channels: 128
-  max_n: 5
+  name: schnet 
 
 optim:
   batch_size: 8
