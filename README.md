@@ -8,7 +8,7 @@ input to predict material properties:
 
 ##  Installation
 
-[last updated October 10, 2020]
+[last updated December 09, 2020]
 
 The easiest way of installing prerequisites is via [conda](https://conda.io/docs/index.html).
 After installing [conda](http://conda.pydata.org/), run the following commands
@@ -67,16 +67,17 @@ The project website is [opencatalystproject.org](https://opencatalystproject.org
 
 ### Download the datasets
 
-Dataset download links can be found at [DATASET.md](https://github.com/Open-Catalyst-Project/ocp/blob/master/DATASET.md) for the S2EF, IS2RS, and IS2RE tasks. IS2* datasets are stored as LMDB files and are ready to be used upon download. S2EF datasets require an additional preprocessing step.
+Dataset download links can be found at [DATASET.md](https://github.com/Open-Catalyst-Project/ocp/blob/master/DATASET.md) for the S2EF, IS2RS, and IS2RE tasks. IS2* datasets are stored as LMDB files and are ready to be used upon download. S2EF train+val datasets require an additional preprocessing step. For convenience, a self-contained script can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/scripts/download_data.py) to download, preprocess, and organize the data directories to be readily usable by the existing [configs](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs):
 
-### Preprocess datasets - S2EF only
+IS2* datasets: `python scripts/download_data.py --task is2re`
 
-1. Download the dataset of interest: `curl -O download_link`
-2. Untar the dataset `tar -xvf dataset_name.tar`
-3. Uncompress the untarred directory contents: `python ocp/scripts/uncompress.py --ipdir /path/to/dataset_name_compressed --opdir raw_data/`
-4. Run the LMDB preprocessing script: `python ocp/scripts/preprocess_ef.py --data-path raw_data/ --out-path processed_lmdb/ --num-workers 32 --get-edges --ref-energy`; where
+S2EF datasets:
+- train/val splits: `python scripts/download_data.py --task s2ef --split SPLIT_SIZE --get-edges --num-workers WORKERS --ref-energy`; where
     - `--get-edges`: includes edge information in LMDBs (~10x storage requirement, ~3-5x slowdown), otherwise, compute edges on the fly (larger GPU memory requirement).
     - `--ref-energy`: uses referenced energies instead of raw energies.
+    - `--split`: split size to download: `"200k", "2M", "20M", "all", "val_id", "val_ood_ads", "val_ood_cat", or "val_ood"both"`.
+    - `--num-workers`: number of workers to parallelize preprocessing across.
+- test splits: `python scripts/download_data.py --task s2ef --split test`
 
 ### Train models for the desired tasks
 

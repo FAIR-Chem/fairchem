@@ -1,5 +1,5 @@
 wandb/
-data/data
+*data*
 checkpoints
 results
 logs

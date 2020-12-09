@@ -24,7 +24,7 @@ def decompress_list_of_files(ip_op_pair):
     read_lzma(ip_file, op_file)
 
 
-if __name__ == "__main__":
+def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--ipdir", type=str, help="Path to compressed dataset directory"
@@ -35,8 +35,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num-workers", type=int, help="# of processes to parallelize across"
     )
-    args = parser.parse_args()
+    return parser
 
+
+def main(args):
     os.makedirs(args.opdir, exist_ok=True)
 
     filelist = glob.glob(os.path.join(args.ipdir, "*txt.xz")) + glob.glob(
@@ -52,5 +54,12 @@ if __name__ == "__main__":
         tqdm(
             pool.imap(decompress_list_of_files, ip_op_pairs),
             total=len(ip_op_pairs),
+            desc=f"Uncompressing {args.ipdir}",
         )
     )
+
+
+if __name__ == "__main__":
+    parser = get_parser()
+    args = parser.parse_args()
+    main(args)
