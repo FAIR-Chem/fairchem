@@ -350,7 +350,10 @@ class ForcesTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator, self.metrics,
+                    out,
+                    batch,
+                    self.evaluator,
+                    self.metrics,
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -625,7 +628,8 @@ class ForcesTrainer(BaseTrainer):
             if distutils.is_master():
                 gather_results = defaultdict(list)
                 full_path = os.path.join(
-                    self.config["cmd"]["results_dir"], "relaxed_positions.npz",
+                    self.config["cmd"]["results_dir"],
+                    "relaxed_positions.npz",
                 )
 
                 for i in range(distutils.get_world_size()):
