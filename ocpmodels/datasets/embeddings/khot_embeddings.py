@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 Original CGCNN k-hot elemental embeddings.
 """
 
-EMBEDDINGS = {
+KHOT_EMBEDDINGS = {
     1: [
         0,
         1,

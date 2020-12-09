@@ -12,8 +12,8 @@ from torch_geometric.nn.models.schnet import GaussianSmearing
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
+from ocpmodels.datasets.embeddings import KHOT_EMBEDDINGS
 from ocpmodels.models.base import BaseModel
-from ocpmodels.models.utils.embeddings import EMBEDDINGS
 
 
 @registry.register_model("cgcnn")
@@ -72,7 +72,7 @@ class CGCNN(BaseModel):
         # Get CGCNN atom embeddings
         self.embedding = torch.zeros(100, 92)
         for i in range(100):
-            self.embedding[i] = torch.tensor(EMBEDDINGS[i + 1])
+            self.embedding[i] = torch.tensor(KHOT_EMBEDDINGS[i + 1])
         self.embedding_fc = nn.Linear(92, atom_embedding_size)
 
         self.convs = nn.ModuleList(
