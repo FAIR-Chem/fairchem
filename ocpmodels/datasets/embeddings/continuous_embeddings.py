@@ -14,7 +14,7 @@ Properties:
 
 NaN stored for unavaialable parameters.
 """
-FORCENET_EMBEDDINGS = {
+CONTINUOUS_EMBEDDINGS = {
     0: [
         float("NaN"),
         float("NaN"),
