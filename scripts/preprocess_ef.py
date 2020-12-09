@@ -21,7 +21,7 @@ from ocpmodels.preprocessing import AtomsToGraphs
 
 
 def write_images_to_lmdb(mp_arg):
-    a2g, db_path, samples, sampled_ids, idx, pid = mp_arg
+    a2g, db_path, samples, sampled_ids, idx, pid, args = mp_arg
     db = lmdb.open(
         db_path,
         map_size=1099511627776 * 2,
@@ -30,7 +30,11 @@ def write_images_to_lmdb(mp_arg):
         map_async=True,
     )
 
-    pbar = tqdm(total=5000 * len(samples), position=pid)
+    pbar = tqdm(
+        total=5000 * len(samples),
+        position=pid,
+        desc="Preprocessing data into LMDBs",
+    )
     for sample in samples:
         traj_logs = open(sample, "r").read().splitlines()
         xyz_idx = os.path.splitext(os.path.basename(sample))[0]
@@ -72,42 +76,8 @@ def write_images_to_lmdb(mp_arg):
     return sampled_ids, idx
 
 
-if __name__ == "__main__":
-    # Parse a few arguments.
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--data-path",
-        required=True,
-        help="Path to dir containing *.extxyz and *.txt files",
-    )
-    parser.add_argument(
-        "--out-path",
-        required=True,
-        help="Directory to save extracted features. Will create if doesn't exist",
-    )
-    parser.add_argument(
-        "--get-edges",
-        action="store_true",
-        help="Store edge indices in LMDB, ~10x storage requirement. Default: compute edge indices on-the-fly.",
-    )
-    parser.add_argument(
-        "--num-workers",
-        type=int,
-        default=1,
-        help="No. of feature-extracting processes or no. of dataset chunks",
-    )
-    parser.add_argument(
-        "--ref-energy", action="store_true", help="Subtract reference energies"
-    )
-    parser.add_argument(
-        "--test-data",
-        action="store_true",
-        help="Is data being processed test data?",
-    )
-    args = parser.parse_args()
-
+def main(args):
     xyz_logs = glob.glob(os.path.join(args.data_path, "*.txt"))
-
     if not xyz_logs:
         raise RuntimeError("No *.txt files found. Did you uncompress?")
     if args.num_workers > len(xyz_logs):
@@ -141,7 +111,15 @@ if __name__ == "__main__":
 
     pool = mp.Pool(args.num_workers)
     mp_args = [
-        (a2g, db_paths[i], chunked_txt_files[i], sampled_ids[i], idx[i], i)
+        (
+            a2g,
+            db_paths[i],
+            chunked_txt_files[i],
+            sampled_ids[i],
+            idx[i],
+            i,
+            args,
+        )
         for i in range(args.num_workers)
     ]
     op = list(zip(*pool.imap(write_images_to_lmdb, mp_args)))
@@ -153,3 +131,41 @@ if __name__ == "__main__":
             os.path.join(args.out_path, "data_log.%04d.txt" % i), "w"
         )
         ids_log.writelines(sampled_ids[j])
+
+
+def get_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--data-path",
+        help="Path to dir containing *.extxyz and *.txt files",
+    )
+    parser.add_argument(
+        "--out-path",
+        help="Directory to save extracted features. Will create if doesn't exist",
+    )
+    parser.add_argument(
+        "--get-edges",
+        action="store_true",
+        help="Store edge indices in LMDB, ~10x storage requirement. Default: compute edge indices on-the-fly.",
+    )
+    parser.add_argument(
+        "--num-workers",
+        type=int,
+        default=1,
+        help="No. of feature-extracting processes or no. of dataset chunks",
+    )
+    parser.add_argument(
+        "--ref-energy", action="store_true", help="Subtract reference energies"
+    )
+    parser.add_argument(
+        "--test-data",
+        action="store_true",
+        help="Is data being processed test data?",
+    )
+    return parser
+
+
+if __name__ == "__main__":
+    parser = get_parser()
+    args = parser.parse_args()
+    main(args)
