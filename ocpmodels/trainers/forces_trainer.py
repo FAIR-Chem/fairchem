@@ -330,11 +330,11 @@ class ForcesTrainer(BaseTrainer):
         return predictions
 
     def train(self):
-        self.best_val_metric = -1.0
         eval_every = self.config["optim"].get("eval_every", -1)
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
+        self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
         iters = 0
         self.metrics = {}
         for epoch in range(self.config["optim"]["max_epochs"]):
@@ -391,6 +391,10 @@ class ForcesTrainer(BaseTrainer):
                             epoch=epoch - 1 + (i + 1) / len(self.train_loader),
                         )
                         if (
+                            "mae" in primary_metric
+                            and val_metrics[primary_metric]["metric"]
+                            < self.best_val_metric
+                        ) or (
                             val_metrics[primary_metric]["metric"]
                             > self.best_val_metric
                         ):
@@ -414,7 +418,12 @@ class ForcesTrainer(BaseTrainer):
             if eval_every == -1:
                 if self.val_loader is not None:
                     val_metrics = self.validate(split="val", epoch=epoch)
+
                     if (
+                        "mae" in primary_metric
+                        and val_metrics[primary_metric]["metric"]
+                        < self.best_val_metric
+                    ) or (
                         val_metrics[primary_metric]["metric"]
                         > self.best_val_metric
                     ):
