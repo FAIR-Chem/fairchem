@@ -75,6 +75,7 @@ class ForcesTrainer(BaseTrainer):
         logger="tensorboard",
         local_rank=0,
         amp=False,
+        cpu=False,
     ):
         super().__init__(
             task=task,
@@ -90,6 +91,7 @@ class ForcesTrainer(BaseTrainer):
             logger=logger,
             local_rank=local_rank,
             amp=amp,
+            cpu=cpu,
             name="s2ef",
         )
 
@@ -97,7 +99,8 @@ class ForcesTrainer(BaseTrainer):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
 
         self.parallel_collater = ParallelCollater(
-            1, self.config["model_attributes"].get("otf_graph", False)
+            1 if not self.cpu else 0,
+            self.config["model_attributes"].get("otf_graph", False),
         )
         if self.config["task"]["dataset"] == "trajectory_lmdb":
             self.train_dataset = registry.get_dataset_class(
