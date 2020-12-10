@@ -70,6 +70,7 @@ class EnergyTrainer(BaseTrainer):
         logger="tensorboard",
         local_rank=0,
         amp=False,
+        cpu=False,
     ):
         super().__init__(
             task=task,
@@ -85,6 +86,7 @@ class EnergyTrainer(BaseTrainer):
             logger=logger,
             local_rank=local_rank,
             amp=amp,
+            cpu=cpu,
             name="is2re",
         )
 
@@ -96,7 +98,8 @@ class EnergyTrainer(BaseTrainer):
         print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
 
         self.parallel_collater = ParallelCollater(
-            1, self.config["model_attributes"].get("otf_graph", False)
+            1 if not self.cpu else 0,
+            self.config["model_attributes"].get("otf_graph", False),
         )
 
         self.train_dataset = registry.get_dataset_class(
