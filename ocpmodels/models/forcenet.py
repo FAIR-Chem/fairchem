@@ -9,6 +9,7 @@ from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
+from ocpmodels.datasets.embeddings import ATOMIC_RADII, CONTINUOUS_EMBEDDINGS
 
 from .activations import Act
 from .basis import Basis, SphericalSmearing
@@ -89,22 +90,17 @@ class ForceNet(nn.Module):
             depth_mlp_node = 0
 
         ### reading atom radii
-        path = os.path.join(os.path.dirname(__file__), "embeddings")
-        atom_map = torch.stack(
-            torch.load(os.path.join(path, "cgcnn_embeddings.pt"))
-        )
-        self.missing_ind = torch.load(os.path.join(path, "missing_radii.pt"))
 
-        atom_radii = (
-            torch.stack(
-                [torch.tensor([np.nan])]
-                + torch.load(os.path.join(path, "atomic_radii.pt"))[1:]
-            ).view(
-                -1,
-            )
-            / 100
-        )
-        atom_radii[self.missing_ind] = np.nan
+        atom_map = torch.zeros(101, 9)
+        for i in range(101):
+            atom_map[i] = torch.tensor(CONTINUOUS_EMBEDDINGS[i])
+
+        atom_radii = torch.zeros(101)
+        for i in range(101):
+            atom_radii[i] = ATOMIC_RADII[i]
+
+        atom_radii = atom_radii / 100
+
         self.atom_radii = nn.Parameter(atom_radii, requires_grad=False)
         self.basis_type = basis
 
@@ -129,12 +125,10 @@ class ForceNet(nn.Module):
 
             # set up dummy atom_map that only contains atomic_number information
             atom_map = torch.linspace(0, 1, 101).view(-1, 1).repeat(1, 9)
-            atom_map[self.missing_ind] = np.nan
             self.atom_map = nn.Parameter(atom_map, requires_grad=False)
 
         elif self.feat == "full":
             # Normalize along each dimaension
-            atom_map[self.missing_ind] = np.nan
             atom_map[0] = np.nan
             atom_map_notnan = atom_map[atom_map[:, 0] == atom_map[:, 0]]
             atom_map_min = torch.min(atom_map_notnan, dim=0)[0]
