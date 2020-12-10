@@ -214,9 +214,9 @@ def setup_imports():
     trainer_folder = os.path.join(root_folder, "trainers")
     trainer_pattern = os.path.join(trainer_folder, "**", "*.py")
     datasets_folder = os.path.join(root_folder, "datasets")
-    datasets_pattern = os.path.join(datasets_folder, "**", "*.py")
+    datasets_pattern = os.path.join(datasets_folder, "*.py")
     model_folder = os.path.join(root_folder, "models")
-    model_pattern = os.path.join(model_folder, "**", "*.py")
+    model_pattern = os.path.join(model_folder, "*.py")
 
     importlib.import_module("ocpmodels.common.meter")
 
