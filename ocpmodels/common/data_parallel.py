@@ -19,20 +19,33 @@ class OCPDataParallel(torch.nn.DataParallel):
         if num_gpus > torch.cuda.device_count():
             raise ValueError("# GPUs specified larger than available")
 
-        if num_gpus == 1:
+        self.cpu = False
+        if num_gpus == 0:
+            self.cpu = True
+        elif num_gpus == 1:
             device_ids = [output_device]
         else:
             if output_device >= num_gpus:
                 raise ValueError("Main device must be less than # of GPUs")
             device_ids = list(range(num_gpus))
 
-        super(OCPDataParallel, self).__init__(
-            module=module, device_ids=device_ids, output_device=output_device
-        )
+        if self.cpu:
+            super(torch.nn.DataParallel, self).__init__()
+            self.module = module
+
+        else:
+            super(OCPDataParallel, self).__init__(
+                module=module,
+                device_ids=device_ids,
+                output_device=output_device,
+            )
 
         self.src_device = torch.device(output_device)
 
     def forward(self, batch_list):
+        if self.cpu:
+            return self.module(batch_list[0])
+
         if len(self.device_ids) == 1:
             return self.module(batch_list[0].to(f"cuda:{self.device_ids[0]}"))
 
@@ -60,7 +73,7 @@ class ParallelCollater:
         self.otf_graph = otf_graph
 
     def __call__(self, data_list):
-        if self.num_gpus == 1:
+        if self.num_gpus == 0 or self.num_gpus == 1:  # adds cpu-only case
             batch = data_list_collater(data_list, otf_graph=self.otf_graph)
             return [batch]
 

@@ -265,6 +265,7 @@ def build_config(args):
     config["print_every"] = args.print_every
     config["amp"] = args.amp
     config["checkpoint"] = args.checkpoint
+    config["cpu"] = args.cpu
     # Submit
     config["submit"] = args.submit
     # Distributed

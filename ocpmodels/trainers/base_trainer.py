@@ -51,14 +51,18 @@ class BaseTrainer:
         logger="tensorboard",
         local_rank=0,
         amp=False,
+        cpu=False,
         name="base_trainer",
     ):
         self.name = name
-        if torch.cuda.is_available():
+        self.cpu = cpu
+
+        if torch.cuda.is_available() and not self.cpu:
             self.device = local_rank
         else:
             self.device = "cpu"
-
+            self.cpu = True  # handle case when `--cpu` isn't specified
+            # but there are no gpu devices available
         if run_dir is None:
             run_dir = os.getcwd()
         run_dir = Path(run_dir)
@@ -138,7 +142,7 @@ class BaseTrainer:
 
         # device
         self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
+            "cuda" if (torch.cuda.is_available() and not self.cpu) else "cpu"
         )
 
         # Are we just running sanity checks?
@@ -319,7 +323,7 @@ class BaseTrainer:
         self.model = OCPDataParallel(
             self.model,
             output_device=self.device,
-            num_gpus=1,
+            num_gpus=1 if not self.cpu else 0,
         )
         if distutils.initialized():
             self.model = DistributedDataParallel(
