@@ -4,7 +4,7 @@ from math import pi as PI
 import numpy as np
 import torch
 import torch.nn as nn
-from torch_geometric.nn import MessagePassing, global_add_pool, radius_graph
+from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
@@ -42,8 +42,6 @@ class ForceNet(nn.Module):
 
         print(hidden_channels, num_interactions, cutoff, feat, num_freqs)
         super(ForceNet, self).__init__()
-
-        print(hidden_channels, num_interactions, cutoff, feat, num_freqs)
 
         if ablation not in [
             "None",
@@ -193,7 +191,15 @@ class ForceNet(nn.Module):
         self.basis_fun = Basis(
             in_feature, num_freqs, self.basis_type, act, sph=self.pbc_sph
         )
-
+        print(
+            "SSS",
+            in_feature,
+            num_freqs,
+            self.basis_type,
+            act,
+            self.pbc_sph,
+            self.basis_fun.out_dim,
+        )
         self.interactions = torch.nn.ModuleList()
         for _ in range(num_interactions):
             block = InteractionBlock(
@@ -208,6 +214,8 @@ class ForceNet(nn.Module):
             self.interactions.append(block)
 
         self.lin = torch.nn.Linear(hidden_channels, self.output_dim)
+
+        print(f"^^^^^^^^^^^ {act} &&&&&&&&&")
         self.act = Act(act)
 
         # decoder part of ForceNet
@@ -227,9 +235,9 @@ class ForceNet(nn.Module):
             raise ValueError(f"Undefined force decoder: {self.decoder_type}")
 
         # Projection layer for energy prediction
-        self.energy_mlp = nn.Linear(self.output_dim, 1)
+        # self.energy_mlp = nn.Linear(self.output_dim, 1)
 
-        # initializating decoder weights TODO(sid): maybe move to reset_parameters
+        # initializating decoder weights
         for m in self.decoder:
             if isinstance(m, nn.Linear):
                 nn.init.xavier_uniform_(m.weight)
@@ -241,7 +249,6 @@ class ForceNet(nn.Module):
         pos = data.pos
         batch = data.batch
 
-        print(pos.shape)
         if self.feat == "simple":
             h = self.embedding(z)
         elif self.feat == "full":
@@ -321,13 +328,15 @@ class ForceNet(nn.Module):
         for i, interaction in enumerate(self.interactions):
             h = h + interaction(h, edge_index, edge_attr, edge_weight)
 
+        print("################ (post interaction) #######", h)
         h = self.lin(h)
         h = self.act(h)
 
         out = scatter(h, batch, dim=0, reduce="add")
 
         force = self.decoder(h)
-        energy = self.energy_mlp(out)
+        energy = torch.zeros_like(out)[:, 0:1]  # self.energy_mlp(out)
+        print("################ (force) #######", force)
         return energy, force
 
     @property
@@ -348,6 +357,7 @@ class InteractionBlock(MessagePassing):
     ):
         super(InteractionBlock, self).__init__(aggr="add")
 
+        print("**********Its here")
         self.act = Act(act)
         self.ablation = ablation
         self.basis_type = basis_type
@@ -441,6 +451,7 @@ class InteractionBlock(MessagePassing):
             torch.nn.init.xavier_uniform_(self.center_W)
 
     def forward(self, x, edge_index, edge_attr, edge_weight):
+        print("@@@@@@@@", x, edge_index, edge_attr, edge_weight)
         if self.basis_type != "rawcat":
             edge_emb = self.lin_basis(edge_attr)
         else:

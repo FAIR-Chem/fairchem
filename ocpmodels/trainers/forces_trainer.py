@@ -339,14 +339,25 @@ class ForcesTrainer(BaseTrainer):
         self.metrics = {}
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
+            print(self.model)
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
                     loss = self._compute_loss(out, batch)
+                print(
+                    i, distutils.get_rank(), loss, batch, batch[0].force
+                )  # out["forces"])
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
+
+                print()
+                if i > 40:
+                    import sys
+
+                    sys.exit(1)
+                continue
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
@@ -475,12 +486,15 @@ class ForcesTrainer(BaseTrainer):
             tag_specific_weights = self.config["task"].get(
                 "tag_specific_weights", []
             )
-
             if tag_specific_weights != []:
                 assert len(tag_specific_weights) == 3
 
                 batch_tags = torch.cat(
-                    [batch.tags.to(self.device) for batch in batch_list], dim=0
+                    [
+                        batch.tags.float().to(self.device)
+                        for batch in batch_list
+                    ],
+                    dim=0,
                 )
                 weight = torch.zeros_like(batch_tags)
                 weight[batch_tags == 0] = tag_specific_weights[0]
@@ -488,14 +502,20 @@ class ForcesTrainer(BaseTrainer):
                 weight[batch_tags == 2] = tag_specific_weights[2]
 
                 loss_force_list = torch.abs(out["forces"] - force_target)
-                print(loss_force_list.shape, weight.view(-1, 1).shape)
                 train_loss_force_unnormalized = torch.sum(
                     loss_force_list * weight.view(-1, 1)
                 )
-                train_loss_force_normalizer = 3 * weight.sum()
-                loss.append(
-                    train_loss_force_unnormalized / train_loss_force_normalizer
+                train_loss_force_normalizer = 3.0 * weight.sum()
+
+                # add up normalizer to obtain global normalizer
+                distutils.all_reduce(train_loss_force_normalizer)
+
+                # perform loss normalization before backprop
+                train_loss_force_normalized = train_loss_force_unnormalized * (
+                    distutils.get_world_size() / train_loss_force_normalizer
                 )
+                print(distutils.get_rank(), train_loss_force_normalized)
+                loss.append(train_loss_force_normalized)
 
             else:
                 # Force coefficient = 30 has been working well for us.
@@ -516,7 +536,7 @@ class ForcesTrainer(BaseTrainer):
                         force_mult
                         * self.criterion(out["forces"], force_target)
                     )
-
+                print(distutils.get_rank(), loss[-1])
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
             assert hasattr(lc, "grad_fn")
