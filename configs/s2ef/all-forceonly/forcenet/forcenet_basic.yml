@@ -2,11 +2,6 @@ trainer: forces
 
 dataset:
   - src: /checkpoint/electrocatalysis/relaxations/features/struct_to_energy_forces/train/200k/
-    normalize_labels: True
-    target_mean: -0.7554450631141663
-    target_std: 2.887317180633545
-    grad_target_mean: 0.0
-    grad_target_std: 2.887317180633545
   - src: /checkpoint/electrocatalysis/relaxations/features/struct_to_energy_forces/val/is_30000/
 
 model:
@@ -18,10 +13,11 @@ model:
   depth_mlp_edge: 2
   depth_mlp_node: 1
   act: "swish"
+  decoder_act: "swish"
   feat: "full"
   hidden_channels: 128
   decoder_final_channels: 128
-  max_n: 5
+  max_n: 3
 
 optim:
   batch_size: 8
@@ -29,15 +25,10 @@ optim:
   eval_every: -10000
   num_workers: 64
   lr_initial: 0.0005
-  lr_gamma: 0.1
-  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
-    - 3
-    - 5
-    - 7
-  warmup_epochs: 2
-  warmup_factor: 0.2
+  lr_schedule: fixed
   max_epochs: 15
   energy_coefficient: 0
+  num_workers: 0
 
 task:
   dataset: trajectory_lmdb
