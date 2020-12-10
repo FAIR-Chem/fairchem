@@ -347,7 +347,8 @@ class ForcesTrainer(BaseTrainer):
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
-
+                if i > 10:
+                    break
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
                     out,
@@ -525,7 +526,6 @@ class ForcesTrainer(BaseTrainer):
                         force_mult
                         * self.criterion(out["forces"], force_target)
                     )
-                print(distutils.get_rank(), loss[-1])
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
             assert hasattr(lc, "grad_fn")
