@@ -42,6 +42,7 @@ def main(config):
             logger=config.get("logger", "tensorboard"),
             local_rank=config["local_rank"],
             amp=config.get("amp", False),
+            cpu=config.get("cpu", False),
         )
         if config["checkpoint"] is not None:
             trainer.load_pretrained(config["checkpoint"])

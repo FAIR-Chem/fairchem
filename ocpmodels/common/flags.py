@@ -112,7 +112,9 @@ class Flags:
         self.parser.add_argument(
             "--distributed", action="store_true", help="Run with DDP"
         )
-
+        self.parser.add_argument(
+            "--cpu", action="store_true", help="Run CPU only training"
+        )
         self.parser.add_argument(
             "--num-nodes",
             default=1,
