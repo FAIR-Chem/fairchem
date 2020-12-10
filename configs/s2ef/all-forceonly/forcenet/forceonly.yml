@@ -9,14 +9,14 @@ model:
   num_interactions: 5
   cutoff: 6
   basis: "sphallmul"
-  ablation: None
+  ablation: "none"
   depth_mlp_edge: 2
   depth_mlp_node: 1
-  act: "swish"
-  decoder_act: "swish"
+  activation_str: "swish"
+  decoder_activation_str: "swish"
   feat: "full"
   hidden_channels: 128
-  decoder_final_channels: 128
+  decoder_hidden_channels: 128
   max_n: 3
 
 optim:

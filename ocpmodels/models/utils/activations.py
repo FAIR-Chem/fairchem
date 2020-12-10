@@ -1,5 +1,5 @@
-import torch.nn.functional as F
 import torch
+import torch.nn.functional as F
 
 
 class Act(torch.nn.Module):
@@ -7,10 +7,6 @@ class Act(torch.nn.Module):
         super(Act, self).__init__()
         self.act = act
         self.slope = slope
-        print(self.act)
-        if "leaky" in self.act:
-            print(f"slope: {self.slope}")
-
         self.shift = torch.log(torch.tensor(2.0)).item()
 
     def forward(self, input):

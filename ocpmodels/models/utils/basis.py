@@ -139,8 +139,6 @@ class Basis(nn.Module):
         self.num_freqs = num_freqs
         self.basis_type = basis_type
 
-        print(f"num_freqs: {num_freqs}")
-        print(f"basis type: {basis_type}")
         if basis_type == "powersine":
             self.smearing = SINESmearing(in_features, num_freqs)
             self.out_dim = in_features * num_freqs
@@ -149,40 +147,20 @@ class Basis(nn.Module):
                 in_features, num_freqs, use_cosine=True
             )
             self.out_dim = in_features * num_freqs
-        # elif basis_type == 'powersinedouble':
-        #     self.smearing = SINESmearing(in_features, 2*num_freqs)
-        #     self.out_dim = 2 * in_features * num_freqs
-        # elif basis_type == 'powersinecosine':
-        #     # half sine, half sine
-        #     self.smearing1 = SINESmearing(in_features, num_freqs)
-        #     self.smearing2 = SINESmearing(in_features, num_freqs, use_cosine=True)
-        #     self.out_dim = 2 * in_features * num_freqs
         elif basis_type == "fouriersine":
             self.smearing = FourierSmearing(in_features, num_freqs)
             self.out_dim = in_features * num_freqs
-        # elif basis_type == 'fouriersinedouble':
-        #     self.smearing = FourierSmearing(in_features, 2*num_freqs)
-        #     self.out_dim = 2*in_features * num_freqs
-        # elif basis_type == 'fouriersinecosine':
-        #     self.smearing = FourierSmearing(in_features, num_freqs)
-        #     self.smearing1 = FourierSmearing(in_features, num_freqs)
-        #     self.smearing2 = FourierSmearing(in_features, num_freqs, use_cosine=True)
-        #     self.out_dim = 2*in_features * num_freqs
         elif basis_type == "gauss":
             self.smearing = GaussianSmearing(
                 in_features, start=0, end=1, num_freqs=num_freqs
             )
             self.out_dim = in_features * num_freqs
         elif basis_type == "linact":
-            # use raw feature, with linear+act
-            print(basis_type)
-            print(f"Using activation {act}")
             self.smearing = torch.nn.Sequential(
                 torch.nn.Linear(in_features, num_freqs * in_features), Act(act)
             )
             self.out_dim = in_features * num_freqs
         elif basis_type == "raw" or basis_type == "rawcat":
-            # use raw feature, no linear+act
             self.out_dim = in_features
         elif "sph" in basis_type:
             # by default, we use sine function to encode distance
@@ -200,7 +178,6 @@ class Basis(nn.Module):
                     self.smearing_sine.out_dim, in_features - 3
                 )
                 self.out_dim = (in_features - 3) * sph.out_dim
-            ## additional experiments added on Sep 16.
             elif "m40" in basis_type:
                 dim = 40
                 self.smearing_sine = SINESmearing(in_features - 3, num_freqs)
