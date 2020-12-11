@@ -190,7 +190,7 @@ class ForceNet(BaseModel):
         bond_feat_dim (int): Unused argument
         num_targets (int): Unused argumebt
         hidden_channels (int, optional): Number of hidden channels.
-            (default: :obj:`128`)
+            (default: :obj:`512`)
         num_iteractions (int, optional): Number of interaction blocks.
             (default: :obj:`5`)
         cutoff (float, optional): Cutoff distance for interatomic interactions.
@@ -212,7 +212,7 @@ class ForceNet(BaseModel):
         ablation (str, optional): Type of ablation to be performed.
             (default: :obj:`none`)
         decoder_hidden_channels (int, optional): Number of hidden channels in the decoder.
-            (default: :obj:`128`)
+            (default: :obj:`512`)
         decoder_type (str, optional): Type of decoder: linear or MLP.
             (default: :obj:`mlp`)
         decoder_activation_str (str, optional): Activation function used post linear layer in decoder.
@@ -228,7 +228,7 @@ class ForceNet(BaseModel):
         num_atoms,  # not used
         bond_feat_dim,  # not used
         num_targets,  # not used
-        hidden_channels=128,
+        hidden_channels=512,
         num_interactions=5,
         cutoff=6.0,
         feat="full",
@@ -239,7 +239,7 @@ class ForceNet(BaseModel):
         depth_mlp_node=1,
         activation_str="swish",
         ablation="none",
-        decoder_hidden_channels=128,
+        decoder_hidden_channels=512,
         decoder_type="mlp",
         decoder_activation_str="swish",
         training=True,

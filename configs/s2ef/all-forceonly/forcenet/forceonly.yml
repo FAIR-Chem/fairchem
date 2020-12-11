@@ -15,8 +15,8 @@ model:
   activation_str: "swish"
   decoder_activation_str: "swish"
   feat: "full"
-  hidden_channels: 128
-  decoder_hidden_channels: 128
+  hidden_channels: 512
+  decoder_hidden_channels: 512
   max_n: 3
 
 optim:
