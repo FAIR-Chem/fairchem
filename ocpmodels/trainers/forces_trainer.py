@@ -347,8 +347,6 @@ class ForcesTrainer(BaseTrainer):
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
-                if i > 10:
-                    break
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
                     out,
