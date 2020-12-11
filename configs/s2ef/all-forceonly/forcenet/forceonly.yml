@@ -21,14 +21,13 @@ model:
 
 optim:
   batch_size: 8
-  eval_batch_size: 12
+  eval_batch_size: 1
   eval_every: -10000
   num_workers: 64
   lr_initial: 0.0005
   lr_schedule: fixed
-  max_epochs: 15
+  max_epochs: 20
   energy_coefficient: 0
-  num_workers: 0
 
 task:
   dataset: trajectory_lmdb
