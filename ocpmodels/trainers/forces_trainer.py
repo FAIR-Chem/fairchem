@@ -350,7 +350,6 @@ class ForcesTrainer(BaseTrainer):
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
-
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
                     out,
@@ -484,22 +483,59 @@ class ForcesTrainer(BaseTrainer):
                     force_target
                 )
 
-            # Force coefficient = 30 has been working well for us.
-            force_mult = self.config["optim"].get("force_coefficient", 30)
-            if self.config["task"].get("train_on_free_atoms", False):
-                fixed = torch.cat(
-                    [batch.fixed.to(self.device) for batch in batch_list]
-                )
-                mask = fixed == 0
-                loss.append(
-                    force_mult
-                    * self.criterion(out["forces"][mask], force_target[mask])
-                )
-            else:
-                loss.append(
-                    force_mult * self.criterion(out["forces"], force_target)
-                )
+            tag_specific_weights = self.config["task"].get(
+                "tag_specific_weights", []
+            )
+            if tag_specific_weights != []:
+                # handle tag specific weights as introduced in forcenet
+                assert len(tag_specific_weights) == 3
 
+                batch_tags = torch.cat(
+                    [
+                        batch.tags.float().to(self.device)
+                        for batch in batch_list
+                    ],
+                    dim=0,
+                )
+                weight = torch.zeros_like(batch_tags)
+                weight[batch_tags == 0] = tag_specific_weights[0]
+                weight[batch_tags == 1] = tag_specific_weights[1]
+                weight[batch_tags == 2] = tag_specific_weights[2]
+
+                loss_force_list = torch.abs(out["forces"] - force_target)
+                train_loss_force_unnormalized = torch.sum(
+                    loss_force_list * weight.view(-1, 1)
+                )
+                train_loss_force_normalizer = 3.0 * weight.sum()
+
+                # add up normalizer to obtain global normalizer
+                distutils.all_reduce(train_loss_force_normalizer)
+
+                # perform loss normalization before backprop
+                train_loss_force_normalized = train_loss_force_unnormalized * (
+                    distutils.get_world_size() / train_loss_force_normalizer
+                )
+                loss.append(train_loss_force_normalized)
+
+            else:
+                # Force coefficient = 30 has been working well for us.
+                force_mult = self.config["optim"].get("force_coefficient", 30)
+                if self.config["task"].get("train_on_free_atoms", False):
+                    fixed = torch.cat(
+                        [batch.fixed.to(self.device) for batch in batch_list]
+                    )
+                    mask = fixed == 0
+                    loss.append(
+                        force_mult
+                        * self.criterion(
+                            out["forces"][mask], force_target[mask]
+                        )
+                    )
+                else:
+                    loss.append(
+                        force_mult
+                        * self.criterion(out["forces"], force_target)
+                    )
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
             assert hasattr(lc, "grad_fn")
