@@ -74,12 +74,7 @@ def warmup_lr_lambda(current_epoch, optim_config):
     """Returns a learning rate multiplier.
     Till `warmup_epochs`, learning rate linearly increases to `initial_lr`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
-    Specifying `lr_schedule`: "fixed" supports a fixed learning schedule.
     """
-    warmup_option = optim_config.get("lr_schedule", "")
-    if warmup_option == "fixed":
-        return 1.0
-
     if current_epoch <= optim_config["warmup_epochs"]:
         alpha = current_epoch / float(optim_config["warmup_epochs"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
