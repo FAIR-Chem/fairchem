@@ -47,8 +47,7 @@ class SinglePointLmdbDataset(Dataset):
 
     def __getitem__(self, idx):
         # Return features.
-        env = self.env
-        datapoint_pickled = env.begin().get(self._keys[idx])
+        datapoint_pickled = self.env.begin().get(self._keys[idx])
         data_object = pickle.loads(datapoint_pickled)
         data_object = (
             data_object
@@ -69,3 +68,6 @@ class SinglePointLmdbDataset(Dataset):
             max_readers=1,
         )
         return env
+
+    def close_db(self):
+        self.env.close()

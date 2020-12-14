@@ -81,8 +81,7 @@ class TrajectoryLmdbDataset(Dataset):
         assert el_idx >= 0
 
         # Return features.
-        env = self.env
-        datapoint_pickled = env.begin().get(
+        datapoint_pickled = self.env.begin().get(
             f"{self._keys[db_idx][el_idx]}".encode("ascii")
         )
         data_object = pickle.loads(datapoint_pickled)
@@ -104,6 +103,9 @@ class TrajectoryLmdbDataset(Dataset):
             max_readers=1,
         )
         return env
+
+    def close_db(self):
+        self.env.close()
 
 
 def data_list_collater(data_list, otf_graph=False):
