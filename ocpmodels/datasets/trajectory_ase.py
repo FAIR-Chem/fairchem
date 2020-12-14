@@ -70,7 +70,7 @@ class TrajectoryASEDataset(Dataset):
         outputs = set()
         with open(fname, "r") as f:
             for line in f:
-                temp = line.rstrip().split(",")
+                temp = line.rstrip().split(",")[0]
                 outputs.add(temp)
         return list(outputs)
 
