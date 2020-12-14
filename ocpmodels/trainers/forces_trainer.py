@@ -9,11 +9,11 @@ import os
 from collections import defaultdict
 
 import numpy as np
-import torch
-import torch_geometric
-from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
+import torch
+import torch.autograd.profiler as profiler
+import torch_geometric
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
@@ -22,6 +22,7 @@ from ocpmodels.common.utils import plot_histogram
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from torch.utils.data import DataLoader, DistributedSampler
 
 
 @registry.register_trainer("forces")
@@ -342,20 +343,29 @@ class ForcesTrainer(BaseTrainer):
         self.metrics = {}
         for epoch in range(self.config["optim"]["max_epochs"]):
             self.model.train()
+
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out = self._forward(batch)
+                    # PROF
+                    # print("mem prof running")
+                    with profiler.profile(
+                        profile_memory=True, record_shapes=True
+                    ) as prof:
+                        with profiler.record_function("model_forward"):
+                            out = self._forward(batch)
+                    print(
+                        prof.key_averages().table(
+                            sort_by="cuda_memory_usage", row_limit=30
+                        )
+                    )
                     loss = self._compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out,
-                    batch,
-                    self.evaluator,
-                    self.metrics,
+                    out, batch, self.evaluator, self.metrics,
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -384,6 +394,11 @@ class ForcesTrainer(BaseTrainer):
                     )
 
                 iters += 1
+
+                # PROF
+                print(iters)
+                if iters % 10 == 0:
+                    break
 
                 # Evaluate on val set every `eval_every` iterations.
                 if eval_every != -1 and iters % eval_every == 0:
@@ -667,8 +682,7 @@ class ForcesTrainer(BaseTrainer):
             if distutils.is_master():
                 gather_results = defaultdict(list)
                 full_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
-                    "relaxed_positions.npz",
+                    self.config["cmd"]["results_dir"], "relaxed_positions.npz",
                 )
 
                 for i in range(distutils.get_world_size()):

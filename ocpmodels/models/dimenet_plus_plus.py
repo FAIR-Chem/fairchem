@@ -33,6 +33,9 @@ THE SOFTWARE.
 """
 
 import torch
+import torch.autograd.profiler as profiler
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 from torch import nn
 from torch_geometric.nn import radius_graph
 from torch_geometric.nn.acts import swish
@@ -46,9 +49,6 @@ from torch_geometric.nn.models.dimenet import (
 )
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
-
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 
 try:
     import sympy as sym
@@ -145,14 +145,18 @@ class InteractionPPBlock(torch.nn.Module):
 
         # Aggregate interactions and up-project embeddings.
         x_kj = scatter(x_kj, idx_ji, dim=0, dim_size=x.size(0))
-        x_kj = self.act(self.lin_up(x_kj))
+        with profiler.record_function("up_proj_embed_ib"):
+            x_kj = self.act(self.lin_up(x_kj))
 
         h = x_ji + x_kj
-        for layer in self.layers_before_skip:
-            h = layer(h)
-        h = self.act(self.lin(h)) + x
-        for layer in self.layers_after_skip:
-            h = layer(h)
+        with profiler.record_function("residuals_before_skip_ib"):
+            for layer in self.layers_before_skip:
+                h = layer(h)
+        with profiler.record_function("linear_between_residuals_ib"):
+            h = self.act(self.lin(h)) + x
+        with profiler.record_function("residuals_after_skip_ib"):
+            for layer in self.layers_after_skip:
+                h = layer(h)
 
         return h
 
@@ -437,8 +441,10 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
         for interaction_block, output_block in zip(
             self.interaction_blocks, self.output_blocks[1:]
         ):
-            x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
-            P += output_block(x, rbf, i, num_nodes=pos.size(0))
+            with profiler.record_function("interaction_block"):
+                x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
+            with profiler.record_function("output_block"):
+                P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
 
