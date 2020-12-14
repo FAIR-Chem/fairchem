@@ -92,7 +92,7 @@ We provide a Python pickle file containing information about the slab and adsorb
 * `bulk_id` : internal unique identifier one for each of the 11500 bulks used in the dataset
 
 
-Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl
+Downloadable link (148 MB): https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl
 
 An example entry is 
 
