@@ -5,7 +5,15 @@ This page summarizes the dataset download links for S2EF and IS2RE/IS2RS tasks a
 
 The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode). Please cite the following paper in any research manuscript using the OC20 dataset:
 
-**The Open Catalyst 2020 (OC20) Dataset and Community Challenges**, L. Chanussot, A. Das, S. Goyal, T. Lavril, M. Shuaibi, M. Riviere, K. Tran, J. Heras-Domingo, C. Ho, W. Hu, A. Palizhati, A. Sriram, B. Wood, J. Yoon, D. Parikh, C. L. Zitnick, Z. Ulissi, 2020
+```
+@misc{ocp_dataset,
+    title={The Open Catalyst 2020 (OC20) Dataset and Community Challenges},
+    author={Lowik Chanussot* and Abhishek Das* and Siddharth Goyal* and Thibaut Lavril* and Muhammed Shuaibi* and Morgane Riviere and Kevin Tran and Javier Heras-Domingo and Caleb Ho and Weihua Hu and Aini Palizhati and Anuroop Sriram and Brandon Wood and Junwoong Yoon and Devi Parikh and C. Lawrence Zitnick and Zachary Ulissi},
+    year={2020},
+    eprint={2010.09990},
+    archivePrefix={arXiv}
+}
+```
 
 ## Structure to Energy and Forces (S2EF) task
 
@@ -70,6 +78,32 @@ Each tarball has README file containing details about file formats, number of st
 |val_ood_ads (~25K trajectories)	|5.7G	|44G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_ads_trajectories.tar	|
 |val_ood_cat (~25K trajectories)	|6.0G	|46G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_cat_trajectories.tar	|
 |val_ood_both (~25K trajectories)	|4.4G	|35G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_both_trajectories.tar	|
+
+
+
+### Data mapping information
+
+We provide a Python pickle file containing information about the slab and adsorbates for each of the systems in OC20 dataset. Loading the pickle file will load a Python dictionary. The keys of this dictionary are the adsorbate+catalyst system-ids (of the format `random<XYZ>`  where `XYZ` is an integer), and the corresponding value of each key is a dictionary with information about:
+
+* `bulk_mpid` : Materials Project ID of the bulk system used corresponding the the catalyst surface
+* `bulk_symbols`  Chemical composition of the bulk counterpart
+* `ads_symbols`  Chemical composition of the adsorbate counterpart
+* `ads_id` : internal unique identifier, one for each of the 82 adsorbates used in the dataset
+* `bulk_id` : internal unique identifier one for each of the 11500 bulks used in the dataset
+
+
+Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl
+
+An example entry is 
+
+```
+'random0': {'bulk_id': 1762,
+  'ads_id': 67,
+  'bulk_mpid': 'mp-1103139',
+  'bulk_symbols': 'Ca8Hg4',
+  'ads_symbols': '*NO2NO2'}
+  
+```
 
 
 
