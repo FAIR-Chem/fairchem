@@ -349,7 +349,6 @@ class TrajectoryTrainer(BaseTrainer):
                     loss = self._compute_loss(out, batch)
 
                 if epoch >= self.config["optim"]["warmup_epochs"]:
-                    print("is2rs")
                     _, is2rs_loss, is2re_loss = self._run_train_relaxations(
                         batch
                     )
