@@ -1,0 +1,30 @@
+trainer: trajectory
+
+dataset:
+  - src: /checkpoint/electrocatalysis/relaxations/mapping/EF/train_ef.txt
+    normalize_labels: True
+    target_mean: -0.7554450631141663
+    target_std: 2.887317180633545
+    grad_target_mean: 0.0
+    grad_target_std: 2.887317180633545
+  - src: /checkpoint/electrocatalysis/relaxations/mapping/EF/val_is_ef.txt
+
+logger: tensorboard
+
+task:
+  dataset: trajectory_ase
+  description: "Regressing to energies and forces for DFT trajectories from OCP"
+  type: regression
+  metric: mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+  relax_dataset:
+      src: /checkpoint/electrocatalysis/relaxations/features/init_to_relaxed/all/val_is/data.lmdb
+  write_pos: True
+  relaxation_steps: 300
+  relax_opt:
+      maxstep: 0.04
+      memory: 50
