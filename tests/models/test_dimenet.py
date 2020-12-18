@@ -41,7 +41,7 @@ def load_data(request):
 @pytest.fixture(scope="class")
 def load_model(request):
     model = DimeNet(
-        None, 32, 1, cutoff=6.0, regress_forces=True, use_pbc=False
+        None, 32, 1, cutoff=6.0, regress_forces=True, use_pbc=True
     )
     request.cls.model = model
 
