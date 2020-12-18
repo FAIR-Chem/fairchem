@@ -12,7 +12,7 @@ import torch
 from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
 
-from .optimizers.lbfgs_torch import LBFGS, TorchCalc
+from .optimizers.lbfgs_torch import GradientDescent, LBFGS, TorchCalc
 
 
 def ml_relax(
@@ -43,17 +43,34 @@ def ml_relax(
 
     # Run ML-based relaxation
     traj_dir = relax_opt.get("traj_dir", None)
-    optimizer = LBFGS(
-        batch,
-        calc,
-        maxstep=relax_opt.get("maxstep", 0.04),
-        memory=relax_opt["memory"],
-        damping=relax_opt.get("damping", 1.0),
-        alpha=relax_opt.get("alpha", 70.0),
-        device=device,
-        traj_dir=Path(traj_dir),
-        traj_names=ids,
-    )
+    if relax_opt["optimizer"] == "lbfgs":
+        optimizer = LBFGS(
+            batch,
+            calc,
+            maxstep=relax_opt.get("maxstep", 0.04),
+            memory=relax_opt["memory"],
+            damping=relax_opt.get("damping", 1.0),
+            alpha=relax_opt.get("alpha", 70.0),
+            device=device,
+            traj_dir=Path(traj_dir),
+            traj_names=ids,
+        )
+    elif relax_opt["optimizer"] == "sgd":
+        optimizer = GradientDescent(
+            batch,
+            calc,
+            maxstep=relax_opt.get("maxstep", 0.04),
+            damping=relax_opt.get("damping", 1.0),
+            device=device,
+            traj_dir=Path(traj_dir),
+            traj_names=ids,
+            lr=relax_opt.get("lr", 0.001),
+            mu=relax_opt.get("mu", 0.99),
+            nesterov=relax_opt.get("nesterov", False)
+        )
+    else:
+        raise ValueError
+    
     relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
 
     return relaxed_batch
