@@ -75,7 +75,7 @@ def warmup_lr_lambda(current_epoch, optim_config):
     Till `warmup_epochs`, learning rate linearly increases to `initial_lr`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
     """
-    if current_epoch <= optim_config["warmup_epochs"]:
+    if optim_config["warmup_epochs"] > 0 and current_epoch <= optim_config["warmup_epochs"]:
         alpha = current_epoch / float(optim_config["warmup_epochs"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
     else:
