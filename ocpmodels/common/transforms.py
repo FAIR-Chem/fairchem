@@ -57,8 +57,13 @@ class RandomRotate(object):
 
             matrix = torch.mm(torch.mm(m1, m2), m3)
 
+        # LinearTransformation only rotates `.pos`; need to rotate `.cell` too.
+        data_rotated = LinearTransformation(matrix)(data)
+        if hasattr(data_rotated, "cell"):
+            data_rotated.cell = torch.matmul(data_rotated.cell, matrix)
+
         return (
-            LinearTransformation(matrix)(data),
+            data_rotated,
             matrix,
             torch.inverse(matrix),
         )
