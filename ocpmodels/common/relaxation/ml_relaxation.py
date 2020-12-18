@@ -23,6 +23,7 @@ def ml_relax(
     relax_opt,
     device="cuda:0",
     transform=None,
+    verbose=True,
 ):
     """
     Runs ML-based relaxations.
@@ -53,6 +54,7 @@ def ml_relax(
         device=device,
         traj_dir=Path(traj_dir),
         traj_names=ids,
+        verbose=verbose,
     )
     relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
 
