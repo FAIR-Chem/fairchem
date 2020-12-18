@@ -94,10 +94,18 @@ class TrajectoryASEDataset(Dataset):
 
         system_id = self.extract_system_from_traj_path(self.traj_paths[idx])
         reference_energy = self.reference_energy_map[system_id]
+        relaxed_data_object = self.a2g.convert(images[-1])
+
         for img in images:  # each img is an ASE atoms object.
             cur_data_object = self.a2g.convert(
                 img
             )  # convert returns a `torch_geometric.data.Data` object
+
+            cur_data_object.y_relaxed = (
+                relaxed_data_object.y - reference_energy
+            )
+            cur_data_object.pos_relaxed = relaxed_data_object.pos
+
             cur_data_object.y -= reference_energy
             data_object_list.append(cur_data_object)
 
