@@ -605,9 +605,6 @@ class ForcesTrainer(BaseTrainer):
         for i, batch in tqdm(
             enumerate(self.relax_loader), total=len(self.relax_loader)
         ):
-            if i == 20:
-                break
-
             relaxed_batch = ml_relax(
                 batch=batch,
                 model=self,
