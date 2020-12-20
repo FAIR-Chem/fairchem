@@ -7,6 +7,7 @@ dataset:
     target_std: 2.887317180633545
     grad_target_mean: 0.0
     grad_target_std: 2.887317180633545
+    size: 200
   - src: /checkpoint/electrocatalysis/relaxations/mapping/EF/val_is_ef.txt
 
 logger: tensorboard
