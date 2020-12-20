@@ -68,9 +68,12 @@ class TrajectoryASEDataset(Dataset):
 
     def get_unique_traj_paths(self, fname):
         outputs = set()
+        size = self.config.get("size", -1)
         with open(fname, "r") as f:
-            for line in f:
-                temp = line.rstrip().split(",")
+            for idx, line in enumerate(f):
+                if idx == size:
+                    break
+                temp = line.rstrip().split(",")[0]
                 outputs.add(temp)
         return list(outputs)
 
@@ -101,11 +104,11 @@ class TrajectoryASEDataset(Dataset):
                 img
             )  # convert returns a `torch_geometric.data.Data` object
 
+            cur_data_object.sid = system_id
             cur_data_object.y_relaxed = (
                 relaxed_data_object.y - reference_energy
             )
             cur_data_object.pos_relaxed = relaxed_data_object.pos
-
             cur_data_object.y -= reference_energy
             data_object_list.append(cur_data_object)
 
