@@ -51,16 +51,18 @@ class TrajectoryLmdbDataset(Dataset):
 
         self._keys = []
         for db_path in full_db_paths:
-            env = self.connect_db(db_path)
-            length = pickle.loads(env.begin().get("length".encode("ascii")))
+            self.env = self.connect_db(db_path)
+            length = pickle.loads(
+                self.env.begin().get("length".encode("ascii"))
+            )
             self._keys.append(list(range(length)))
-            env.close()
         for db_path in shared_db_paths:
-            env = self.connect_db(db_path)
-            length = pickle.loads(env.begin().get("length".encode("ascii")))
+            self.env = self.connect_db(db_path)
+            length = pickle.loads(
+                self.env.begin().get("length".encode("ascii"))
+            )
             length -= length % world_size
             self._keys.append(list(range(rank, length, world_size)))
-            env.close()
         self._keylens = [len(k) for k in self._keys]
         self._keylen_cumulative = np.cumsum(self._keylens).tolist()
         self.num_samples = sum(self._keylens)
@@ -79,14 +81,12 @@ class TrajectoryLmdbDataset(Dataset):
         assert el_idx >= 0
 
         # Return features.
-        env = self.connect_db(self.db_paths[db_idx])
-        datapoint_pickled = env.begin().get(
+        datapoint_pickled = self.env.begin().get(
             f"{self._keys[db_idx][el_idx]}".encode("ascii")
         )
         data_object = pickle.loads(datapoint_pickled)
         if self.transform is not None:
             data_object = self.transform(data_object)
-        env.close()
 
         data_object.id = f"{db_idx}_{el_idx}"
 
@@ -99,8 +99,13 @@ class TrajectoryLmdbDataset(Dataset):
             readonly=True,
             lock=False,
             readahead=False,
+            meminit=False,
+            max_readers=1,
         )
         return env
+
+    def close_db(self):
+        self.env.close()
 
 
 def data_list_collater(data_list, otf_graph=False):
