@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import copy
 import os
 import time
 from pathlib import Path
@@ -25,9 +26,12 @@ from ocpmodels.trainers import ForcesTrainer
 
 class SubmititRunner(submitit.helpers.Checkpointable):
     def __init__(self):
+        self.config = None
         self.chkpt_path = None
 
     def __call__(self, config):
+        self.config = copy.deepcopy(config)
+
         if args.distributed:
             distutils.setup(config)
 
@@ -95,10 +99,11 @@ class SubmititRunner(submitit.helpers.Checkpointable):
             if args.distributed:
                 distutils.cleanup()
 
-    def checkpoint(self, config):
+    def checkpoint(self, *args, **kwargs):
         new_runner = SubmititRunner()
-        config["checkpoint"] = self.chkpt_path
-        return submitit.helpers.DelayedSubmission(new_runner, config)
+        if os.path.isfile(self.chkpt_path):
+            self.config["checkpoint"] = self.chkpt_path
+        return submitit.helpers.DelayedSubmission(new_runner, self.config)
 
 
 if __name__ == "__main__":
@@ -113,7 +118,9 @@ if __name__ == "__main__":
             configs = [config]
 
         print(f"Submitting {len(configs)} jobs")
-        executor = submitit.AutoExecutor(folder=args.logdir / "%j")
+        executor = submitit.AutoExecutor(
+            folder=args.logdir / "%j", slurm_max_num_timeout=3
+        )
         executor.update_parameters(
             name=args.identifier,
             mem_gb=args.slurm_mem,
