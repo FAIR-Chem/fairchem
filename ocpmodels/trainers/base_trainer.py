@@ -65,7 +65,6 @@ class BaseTrainer:
             # but there are no gpu devices available
         if run_dir is None:
             run_dir = os.getcwd()
-        run_dir = Path(run_dir)
 
         timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(
             self.device
@@ -90,9 +89,9 @@ class BaseTrainer:
                 "print_every": print_every,
                 "seed": seed,
                 "timestamp": timestamp,
-                "checkpoint_dir": str(run_dir / "checkpoints" / timestamp),
-                "results_dir": str(run_dir / "results" / timestamp),
-                "logs_dir": str(run_dir / "logs" / logger / timestamp),
+                "checkpoint_dir": os.path.join(run_dir, "checkpoints", timestamp),
+                "results_dir": os.path.join(run_dir, "results", timestamp),
+                "logs_dir": os.path.join(run_dir, "logs", logger, timestamp),
             },
         }
         # AMP Scaler
