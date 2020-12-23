@@ -89,7 +89,9 @@ class BaseTrainer:
                 "print_every": print_every,
                 "seed": seed,
                 "timestamp": timestamp,
-                "checkpoint_dir": os.path.join(run_dir, "checkpoints", timestamp),
+                "checkpoint_dir": os.path.join(
+                    run_dir, "checkpoints", timestamp
+                ),
                 "results_dir": os.path.join(run_dir, "results", timestamp),
                 "logs_dir": os.path.join(run_dir, "logs", logger, timestamp),
             },
