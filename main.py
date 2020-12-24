@@ -24,7 +24,7 @@ from ocpmodels.common.utils import (
 from ocpmodels.trainers import ForcesTrainer
 
 
-class SubmititRunner(submitit.helpers.Checkpointable):
+class Runner(submitit.helpers.Checkpointable):
     def __init__(self):
         self.config = None
         self.chkpt_path = None
@@ -100,7 +100,7 @@ class SubmititRunner(submitit.helpers.Checkpointable):
                 distutils.cleanup()
 
     def checkpoint(self, *args, **kwargs):
-        new_runner = SubmititRunner()
+        new_runner = Runner()
         if os.path.isfile(self.chkpt_path):
             self.config["checkpoint"] = self.chkpt_path
         return submitit.helpers.DelayedSubmission(new_runner, self.config)
@@ -131,10 +131,10 @@ if __name__ == "__main__":
             tasks_per_node=(args.num_gpus if args.distributed else 1),
             nodes=args.num_nodes,
         )
-        jobs = executor.map_array(SubmititRunner(), configs)
+        jobs = executor.map_array(Runner(), configs)
         print("Submitted jobs:", ", ".join([job.job_id for job in jobs]))
         log_file = save_experiment_log(args, jobs, configs)
         print(f"Experiment log saved to: {log_file}")
 
     else:  # Run locally
-        SubmititRunner()(config)
+        Runner()(config)
