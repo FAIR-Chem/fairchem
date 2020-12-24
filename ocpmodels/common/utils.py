@@ -229,21 +229,7 @@ def create_config_dict(args):
     return overrides
 
 
-# https://stackoverflow.com/questions/38987/how-to-merge-two-dictionaries-in-a-single-expression
 def update_config(original, update):
-    """
-    Recursively update a dict.
-    Subdict's won't be overwritten but also updated.
-    """
-    for key, value in original.items():
-        if key not in update:
-            update[key] = value
-        elif isinstance(value, dict):
-            update_config(value, update[key])
-    return update
-
-
-def cmd_update_config(original, update):
     """
     Recursively update a dict.
     Parameters must be specified in original to be overwritten
@@ -276,11 +262,6 @@ def build_config(args, args_override):
     # Check for overriden parameters.
     if args_override != []:
         overrides = create_config_dict(args_override)
-        config = cmd_update_config(config, overrides)
-
-    # Check for overriden parameters (DEPRECATED).
-    if args.config_override:
-        overrides = demjson.decode(args.config_override)
         config = update_config(config, overrides)
 
     # Some other flags.
