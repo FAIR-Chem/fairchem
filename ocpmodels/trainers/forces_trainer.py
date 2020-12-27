@@ -573,8 +573,11 @@ class ForcesTrainer(BaseTrainer):
                 [batch.fixed.to(self.device) for batch in batch_list]
             )
             mask = fixed == 0
-            out["forces"] = out["forces"][mask]
             target["forces"] = target["forces"][mask]
+            if self.config["model_attributes"].get("regress_forces", True):
+                out["forces"] = out["forces"][mask]
+            else:
+                out["forces"] = target["forces"].clone()
 
             s_idx = 0
             natoms_free = []
@@ -588,9 +591,10 @@ class ForcesTrainer(BaseTrainer):
 
         if self.config["dataset"].get("normalize_labels", False):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
-            out["forces"] = self.normalizers["grad_target"].denorm(
-                out["forces"]
-            )
+            if self.config["model_attributes"].get("regress_forces", True):
+                out["forces"] = self.normalizers["grad_target"].denorm(
+                    out["forces"]
+                )
 
         metrics = evaluator.eval(out, target, prev_metrics=metrics)
         return metrics
