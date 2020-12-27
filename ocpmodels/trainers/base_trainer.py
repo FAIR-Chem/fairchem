@@ -55,6 +55,7 @@ class BaseTrainer:
         name="base_trainer",
     ):
         self.name = name
+        self.start_epoch = 0
         self.cpu = cpu
 
         if torch.cuda.is_available() and not self.cpu:
@@ -338,6 +339,7 @@ class BaseTrainer:
 
         print("### Loading checkpoint from: {}".format(checkpoint_path))
         checkpoint = torch.load(checkpoint_path)
+        self.start_epoch = int(checkpoint["epoch"])
 
         # Load model, optimizer, normalizer state dict.
         # if trained with ddp and want to load in non-ddp, modify keys from
@@ -352,6 +354,8 @@ class BaseTrainer:
             self.model.load_state_dict(checkpoint["state_dict"])
 
         self.optimizer.load_state_dict(checkpoint["optimizer"])
+        if "scheduler" in checkpoint:
+            self.scheduler.load_state_dict(checkpoint["scheduler"])
 
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
@@ -392,6 +396,7 @@ class BaseTrainer:
                     "epoch": epoch,
                     "state_dict": self.model.state_dict(),
                     "optimizer": self.optimizer.state_dict(),
+                    "scheduler": self.scheduler.state_dict(),
                     "normalizers": {
                         key: value.state_dict()
                         for key, value in self.normalizers.items()

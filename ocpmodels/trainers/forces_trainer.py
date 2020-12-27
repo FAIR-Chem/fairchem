@@ -340,7 +340,9 @@ class ForcesTrainer(BaseTrainer):
         self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
         iters = 0
         self.metrics = {}
-        for epoch in range(self.config["optim"]["max_epochs"]):
+        for epoch in range(
+            self.start_epoch, self.config["optim"]["max_epochs"]
+        ):
             self.model.train()
             for i, batch in enumerate(self.train_loader):
                 # Forward, loss, backward.
@@ -414,7 +416,7 @@ class ForcesTrainer(BaseTrainer):
                                     disable_tqdm=False,
                                 )
 
-            self.scheduler.step()
+            self.scheduler.step(epoch + 1)
             torch.cuda.empty_cache()
 
             if eval_every == -1:
