@@ -34,11 +34,6 @@ class Flags:
             help="Path to a config file listing data, model, optim parameters.",
         )
         self.parser.add_argument(
-            "--config-override",
-            default=None,
-            help="Optional override for parameters defined in config yaml",
-        )
-        self.parser.add_argument(
             "--identifier",
             default="",
             type=str,
