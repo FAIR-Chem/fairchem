@@ -1,7 +1,7 @@
 trainer: forces
 
 dataset:
-  - src: data/s2ef/all/train/
+  - src: data/s2ef/200k/train/
   - src: data/s2ef/all/val_id/
 
 model:
