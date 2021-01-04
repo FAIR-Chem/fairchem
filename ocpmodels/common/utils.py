@@ -30,20 +30,6 @@ def save_checkpoint(state, checkpoint_dir="checkpoints/"):
     torch.save(state, filename)
 
 
-# https://stackoverflow.com/questions/38987/how-to-merge-two-dictionaries-in-a-single-expression
-def update_config(original, update):
-    """
-    Recursively update a dict.
-    Subdict's won't be overwritten but also updated.
-    """
-    for key, value in original.items():
-        if key not in update:
-            update[key] = value
-        elif isinstance(value, dict):
-            update_config(value, update[key])
-    return update
-
-
 class Complete(object):
     def __call__(self, data):
         device = data.edge_index.device
@@ -234,7 +220,29 @@ def setup_imports():
     registry.register("imports_setup", True)
 
 
-def build_config(args):
+def create_config_dict(args):
+    overrides = {}
+    for arg in args:
+        arg = arg.strip("--")
+        key, val = arg.split("=")
+        overrides[key] = val
+    return overrides
+
+
+def update_config(original, update):
+    """
+    Recursively update a dict.
+    Parameters must be specified in original to be overwritten
+    """
+    for basekey, baseval in original.items():
+        if isinstance(baseval, dict):
+            for key, val in baseval.items():
+                if key in update:
+                    original[basekey][key] = demjson.decode(update[key])
+    return original
+
+
+def build_config(args, args_override):
     config = yaml.safe_load(open(args.config_yml, "r"))
 
     # Load config from included files.
@@ -252,8 +260,8 @@ def build_config(args):
         config.pop("includes")
 
     # Check for overriden parameters.
-    if args.config_override:
-        overrides = demjson.decode(args.config_override)
+    if args_override != []:
+        overrides = create_config_dict(args_override)
         config = update_config(config, overrides)
 
     # Some other flags.

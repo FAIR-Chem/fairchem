@@ -108,8 +108,8 @@ class Runner(submitit.helpers.Checkpointable):
 
 if __name__ == "__main__":
     parser = flags.get_parser()
-    args = parser.parse_args()
-    config = build_config(args)
+    args, override_args = parser.parse_known_args()
+    config = build_config(args, override_args)
 
     if args.submit:  # Run on cluster
         if args.sweep_yml:  # Run grid search
