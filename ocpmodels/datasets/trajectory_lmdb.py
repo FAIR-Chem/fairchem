@@ -49,17 +49,17 @@ class TrajectoryLmdbDataset(Dataset):
         shared_db_paths = db_paths[num_full_dbs:]
         self.db_paths = full_db_paths + shared_db_paths
 
-        self._keys = []
+        self._keys, self.envs = [], []
         for db_path in full_db_paths:
-            self.env = self.connect_db(db_path)
+            self.envs.append(self.connect_db(db_path))
             length = pickle.loads(
-                self.env.begin().get("length".encode("ascii"))
+                self.envs[-1].begin().get("length".encode("ascii"))
             )
             self._keys.append(list(range(length)))
         for db_path in shared_db_paths:
-            self.env = self.connect_db(db_path)
+            self.envs.append(self.connect_db(db_path))
             length = pickle.loads(
-                self.env.begin().get("length".encode("ascii"))
+                self.envs[-1].begin().get("length".encode("ascii"))
             )
             length -= length % world_size
             self._keys.append(list(range(rank, length, world_size)))
@@ -81,7 +81,7 @@ class TrajectoryLmdbDataset(Dataset):
         assert el_idx >= 0
 
         # Return features.
-        datapoint_pickled = self.env.begin().get(
+        datapoint_pickled = self.envs[db_idx].begin().get(
             f"{self._keys[db_idx][el_idx]}".encode("ascii")
         )
         data_object = pickle.loads(datapoint_pickled)
