@@ -8,6 +8,7 @@ import datetime
 import json
 import os
 import random
+import subprocess
 from collections import OrderedDict, defaultdict
 from pathlib import Path
 
@@ -84,11 +85,17 @@ class BaseTrainer:
             "optim": optimizer,
             "logger": logger,
             "amp": amp,
+            "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
                 "identifier": identifier,
                 "print_every": print_every,
                 "seed": seed,
                 "timestamp": timestamp,
+                "commit": subprocess.check_output(
+                    ["git", "describe", "--always"]
+                )
+                .strip()
+                .decode("ascii"),
                 "checkpoint_dir": os.path.join(
                     run_dir, "checkpoints", timestamp
                 ),
