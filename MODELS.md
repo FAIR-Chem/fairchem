@@ -5,6 +5,7 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 * All configurations for these baseline models are available in the [`configs/`](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs) directory.
 * All of these models are trained on various splits of the OC20 S2EF / IS2RE datasets. For details, see [https://arxiv.org/abs/2010.09990v1](https://arxiv.org/abs/2010.09990) and https://github.com/Open-Catalyst-Project/ocp/blob/master/DATASET.md.
 * All model checkpoints were created using Pytorch 1.6. Please follow steps listed in the [readme](https://github.com/open-catalyst-Project/ocp#installation) to set up your conda environment with correct package versions.
+* All model checkpoints were trained using distributed data parallel (DDP). Please follow the corresponding steps listed [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md) to load a model using DDP.
 
 ## S2EF baselines: optimized for EFwT
 
