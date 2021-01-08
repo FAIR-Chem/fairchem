@@ -27,6 +27,7 @@ class RelaxationOptimizer:
         device="cuda:0",
         traj_dir: Path = None,
         traj_names=None,
+        verbose=True,
     ):
         self.atoms = atoms
         self.model = model
@@ -35,10 +36,12 @@ class RelaxationOptimizer:
         self.device = device
         self.traj_dir = traj_dir
         self.traj_names = traj_names
+        self.verbose = verbose
         assert not self.traj_dir or (
             traj_dir and len(traj_names)
         ), "Trajectory names should be specified to save trajectories"
-        print("Step   Fmax(eV/A)")
+        if self.verbose:
+            print("Step   Fmax(eV/A)")
         self.model.update_graph(self.atoms)
 
     def get_forces(self, apply_constraint=True):
@@ -56,7 +59,10 @@ class RelaxationOptimizer:
     def converged(self, force_threshold, iteration, forces):
         if forces is None:
             return False
-        print(iteration, torch.sqrt((forces ** 2).sum(axis=1).max()).item())
+        if self.verbose:
+            print(
+                iteration, torch.sqrt((forces ** 2).sum(axis=1).max()).item()
+            )
         return (forces ** 2).sum(axis=1).max() < force_threshold ** 2
 
     def determine_step(self, dr):
@@ -112,6 +118,52 @@ class RelaxationOptimizer:
         return self.atoms
 
 
+class Adam(RelaxationOptimizer):
+    def __init__(
+        self,
+        atoms: Atoms,
+        model,
+        maxstep=0.01,
+        damping=0.25,
+        device="cuda:0",
+        traj_dir: Path = None,
+        traj_names=None,
+        lr=0.001,
+        beta1=0.9,
+        beta2=0.999,
+        eps=1e-8,
+        verbose=True
+    ):
+        super().__init__(atoms, model, maxstep, damping, device, traj_dir, traj_names, verbose)
+        self.lr = lr
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.eps = eps
+        self.setup()
+
+    def setup(self):
+        self.m = 0.
+        self.v = 0.
+
+    def step(self, iteration, f0, r0):
+        e, f = self.get_forces()
+        f = f.to(self.device, dtype=torch.float64)
+        r = self.atoms.pos.to(self.device, dtype=torch.float64)
+
+        dr = torch.clone(f)
+
+        self.m = self.beta1 * self.m + (1-self.beta1) * dr
+        mt = self.m / (1-self.beta1**(iteration+1))
+        self.v = self.beta2 * self.v + (1-self.beta2) * (dr**2)
+        vt = self.v / (1-self.beta2**(iteration+1))
+        dr = mt / (torch.sqrt(vt) + self.eps)
+
+        dr.mul_(self.lr)
+        dr = self.determine_step(dr)
+        self.set_positions(dr)
+        return r, f, e
+
+
 class GradientDescent(RelaxationOptimizer):
     def __init__(
         self,
@@ -125,8 +177,9 @@ class GradientDescent(RelaxationOptimizer):
         lr=0.001,
         mu=0.,
         nesterov=False,
+        verbose=True
     ):
-        super().__init__(atoms, model, maxstep, damping, device, traj_dir, traj_names)
+        super().__init__(atoms, model, maxstep, damping, device, traj_dir, traj_names, verbose)
         self.lr = lr
         self.mu = mu
         self.nesterov = nesterov
@@ -170,8 +223,9 @@ class LBFGS(RelaxationOptimizer):
         device="cuda:0",
         traj_dir: Path = None,
         traj_names=None,
+        verbose=True
     ):
-        super().__init__(atoms, model, maxstep, damping, device, traj_dir, traj_names)
+        super().__init__(atoms, model, maxstep, damping, device, traj_dir, traj_names, verbose)
         self.memory = memory
         self.alpha = alpha
         self.force_consistent = force_consistent
