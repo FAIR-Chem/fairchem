@@ -85,12 +85,14 @@ class BaseTrainer:
                         "git",
                         "-C",
                         ocpmodels.__path__[0],
+                        "describe",
                         "--always",
                     ]
                 )
                 .strip()
                 .decode("ascii")
             )
+        # catch instances where code is not being run from a git repo
         except Exception:
             commit_hash = None
 
