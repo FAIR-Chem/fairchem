@@ -85,7 +85,6 @@ class BaseTrainer:
                         "git",
                         "-C",
                         ocpmodels.__path__[0],
-                        "describe",
                         "--always",
                     ]
                 )
@@ -93,7 +92,7 @@ class BaseTrainer:
                 .decode("ascii")
             )
         except Exception:
-            commit_hash = "N/A"
+            commit_hash = None
 
         self.config = {
             "task": task,
