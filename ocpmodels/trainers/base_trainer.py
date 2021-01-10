@@ -78,6 +78,22 @@ class BaseTrainer:
         )
         if identifier:
             timestamp += "-{}".format(identifier)
+        try:
+            commit_hash = (
+                subprocess.check_output(
+                    [
+                        "git",
+                        "-C",
+                        ocpmodels.__path__[0],
+                        "describe",
+                        "--always",
+                    ]
+                )
+                .strip()
+                .decode("ascii")
+            )
+        except Exception:
+            commit_hash = "N/A"
 
         self.config = {
             "task": task,
@@ -92,17 +108,7 @@ class BaseTrainer:
                 "print_every": print_every,
                 "seed": seed,
                 "timestamp": timestamp,
-                "commit": subprocess.check_output(
-                    [
-                        "git",
-                        "-C",
-                        ocpmodels.__path__[0],
-                        "describe",
-                        "--always",
-                    ]
-                )
-                .strip()
-                .decode("ascii"),
+                "commit": commit_hash,
                 "checkpoint_dir": os.path.join(
                     run_dir, "checkpoints", timestamp
                 ),
