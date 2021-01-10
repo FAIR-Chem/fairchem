@@ -20,6 +20,7 @@ import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
 from tqdm import tqdm
 
+import ocpmodels
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
@@ -92,7 +93,13 @@ class BaseTrainer:
                 "seed": seed,
                 "timestamp": timestamp,
                 "commit": subprocess.check_output(
-                    ["git", "describe", "--always"]
+                    [
+                        "git",
+                        "-C",
+                        ocpmodels.__path__[0],
+                        "describe",
+                        "--always",
+                    ]
                 )
                 .strip()
                 .decode("ascii"),
