@@ -9,17 +9,18 @@ import os
 from math import pi as PI
 
 import numpy as np
+
 import torch
 import torch.nn as nn
-from torch_geometric.nn import MessagePassing
-from torch_scatter import scatter
-
+import torch.utils.checkpoint as checkpoint
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 from ocpmodels.datasets.embeddings import ATOMIC_RADII, CONTINUOUS_EMBEDDINGS
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
+from torch_geometric.nn import MessagePassing
+from torch_scatter import scatter
 
 
 class FNDecoder(nn.Module):
@@ -153,6 +154,13 @@ class InteractionBlock(MessagePassing):
         if not self.ablation == "noself":
             torch.nn.init.xavier_uniform_(self.center_W)
 
+    def grad_checkpoint(self, module):
+        def checkpoint_forward(*inputs):
+            out = module(inputs[0])
+            return out
+
+        return checkpoint_forward
+
     def forward(self, x, edge_index, edge_attr, edge_weight):
         if self.basis_type != "rawcat":
             edge_emb = self.lin_basis(edge_attr)
@@ -167,7 +175,11 @@ class InteractionBlock(MessagePassing):
                 [edge_emb, x[edge_index[0]], x[edge_index[1]]], dim=1
             )
 
-        W = self.mlp_edge(emb) * edge_weight.view(-1, 1)
+        # W = self.mlp_edge(emb) * edge_weight.view(-1, 1)
+        # checkpointed version below
+        W = checkpoint.checkpoint(
+            self.grad_checkpoint(self.mlp_edge), emb
+        ) * edge_weight.view(-1, 1)
         if self.ablation == "nofilter":
             x = self.propagate(edge_index, x=x, W=W) + self.center_W
         else:
