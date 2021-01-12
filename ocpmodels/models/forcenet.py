@@ -64,12 +64,14 @@ class InteractionBlock(MessagePassing):
         depth_mlp_trans=1,
         activation_str="ssp",
         ablation="none",
+        grad_checkpointing=True,
     ):
         super(InteractionBlock, self).__init__(aggr="add")
 
         self.activation = Act(activation_str)
         self.ablation = ablation
         self.basis_type = basis_type
+        self.grad_checkpointing = grad_checkpointing
 
         # basis function assumes input is in the range of [-1,1]
         if self.basis_type != "rawcat":
@@ -175,11 +177,14 @@ class InteractionBlock(MessagePassing):
                 [edge_emb, x[edge_index[0]], x[edge_index[1]]], dim=1
             )
 
-        # W = self.mlp_edge(emb) * edge_weight.view(-1, 1)
-        # checkpointed version below
-        W = checkpoint.checkpoint(
-            self.grad_checkpoint(self.mlp_edge), emb
-        ) * edge_weight.view(-1, 1)
+        # gradient checkpointing of mlp_edge to reduce memory useage of forward_pass
+        if self.grad_checkpointing:
+            W = checkpoint.checkpoint(
+                self.grad_checkpoint(self.mlp_edge), emb
+            ) * edge_weight.view(-1, 1)
+        else:
+            W = self.mlp_edge(emb) * edge_weight.view(-1, 1)
+
         if self.ablation == "nofilter":
             x = self.propagate(edge_index, x=x, W=W) + self.center_W
         else:
@@ -263,6 +268,7 @@ class ForceNet(BaseModel):
         decoder_activation_str="swish",
         training=True,
         otf_graph=False,
+        grad_checkpointing=True,
     ):
 
         super(ForceNet, self).__init__()
@@ -419,6 +425,7 @@ class ForceNet(BaseModel):
                 depth_mlp_trans=depth_mlp_node,
                 activation_str=self.activation_str,
                 ablation=ablation,
+                grad_checkpointing=grad_checkpointing,
             )
             self.interactions.append(block)
 
