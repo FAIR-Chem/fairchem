@@ -22,59 +22,6 @@ from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 
 
-class ProjectForceEnergyDecoder(nn.Module):
-    def __init__(
-        self,
-        hidden_channels,
-        activation_str,
-        decoder_type,
-        decoder_activation_str,
-        output_dim,
-    ):
-        super(ProjectForceEnergyDecoder, self).__init__()
-        self.hidden_channels = hidden_channels
-        self.activation_str = activation_str
-        self.decoder_type = decoder_type
-        self.decoder_activation = Act(decoder_activation_str)
-        self.output_dim = output_dim
-
-        # projection layer before actual force decoding
-        self.lin = torch.nn.Linear(hidden_channels, self.output_dim)
-        self.activation = Act(activation_str)
-
-        # layer for force decoding
-        if self.decoder_type == "linear":
-            self.decoder = nn.Sequential(nn.Linear(self.output_dim, 3))
-        elif self.decoder_type == "mlp":
-            self.decoder = nn.Sequential(
-                nn.Linear(self.output_dim, self.output_dim),
-                nn.BatchNorm1d(self.output_dim),
-                self.decoder_activation,
-                nn.Linear(self.output_dim, 3),
-            )
-        else:
-            raise ValueError(f"Undefined force decoder: {self.decoder_type}")
-
-        # Projection layer for energy prediction
-        self.energy_mlp = nn.Linear(self.output_dim, 1)
-
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        for m in self.decoder:
-            if isinstance(m, nn.Linear):
-                nn.init.xavier_uniform_(m.weight)
-                m.bias.data.fill_(0)
-
-    def forward(self, h, edge_index, edge_attr, edge_weight, batch):
-        h = self.lin(h)
-        h = self.activation(h)
-        out = scatter(h, batch, dim=0, reduce="add")
-        force = self.decoder(h)
-        energy = self.energy_mlp(out)
-        return force, energy
-
-
 class EmbeddingLayer(nn.Module):
     def __init__(
         self, feat, hidden_channels, basis_type, num_freqs, activation_str
@@ -134,16 +81,16 @@ class EmbeddingLayer(nn.Module):
         else:
             raise ValueError("Undefined feature type for atom")
 
-    def forward(
-        self,
-        atomic_numbers,
-        pos,
-        batch,
-        edge_index,
-        cell,
-        cell_offsets,
-        neighbors,
-    ):
+    def forward(self, input):
+        (
+            atomic_numbers,
+            pos,
+            batch,
+            edge_index,
+            cell,
+            cell_offsets,
+            neighbors,
+        ) = input
         z = atomic_numbers.long()
         if self.feat == "simple":
             h = self.embedding(z)
@@ -161,6 +108,156 @@ class EmbeddingLayer(nn.Module):
             cell_offsets,
             neighbors,
         )
+
+
+class BasisFunctionLayer(nn.Module):
+    def __init__(
+        self,
+        basis_type,
+        max_n,
+        ablation,
+        num_freqs,
+        activation_str,
+        otf_graph,
+        cutoff,
+    ):
+        super(BasisFunctionLayer, self).__init__()
+        self.basis_type = basis_type
+        self.max_n = max_n
+        self.ablation = ablation
+        self.num_freqs = num_freqs
+        self.activation_str = activation_str
+        self.pbc_apply_sph_harm = "sph" in self.basis_type
+        self.otf_graph = otf_graph
+        self.cutoff = cutoff
+
+        # read atom radii
+        atom_radii = torch.zeros(101)
+        for i in range(101):
+            atom_radii[i] = ATOMIC_RADII[i]
+        atom_radii = atom_radii / 100
+
+        self.atom_radii = nn.Parameter(atom_radii, requires_grad=False)
+
+        # for spherical harmonics for PBC
+        if "sphall" in self.basis_type:
+            self.pbc_sph_option = "all"
+        elif "sphsine" in self.basis_type:
+            self.pbc_sph_option = "sine"
+        elif "sphcosine" in self.basis_type:
+            self.pbc_sph_option = "cosine"
+
+        self.pbc_sph = None
+        if self.pbc_apply_sph_harm:
+            self.pbc_sph = SphericalSmearing(
+                max_n=self.max_n, option=self.pbc_sph_option
+            )
+
+        # process basis function for edge feature
+        if self.ablation == "nodistlist":
+            # do not consider additional distance edge features
+            # normalized (x,y,z) + distance
+            in_feature = 4
+        elif self.ablation == "onlydist":
+            # only consider distance-based edge features
+            # ignore normalized (x,y,z)
+            in_feature = 4
+
+            # if basis_type is spherical harmonics, then reduce to powersine
+            if "sph" in self.basis_type:
+                print(
+                    "Under onlydist ablation, spherical basis is reduced to powersine basis."
+                )
+                self.basis_type = "powersine"
+                self.pbc_sph = None
+
+        else:
+            in_feature = 7
+        self.basis_fun = Basis(
+            in_feature,
+            self.num_freqs,
+            self.basis_type,
+            self.activation_str,
+            sph=self.pbc_sph,
+        )
+
+    def forward(self, input):
+        (
+            embedding_output,
+            atomic_numbers,
+            pos,
+            batch,
+            edge_index,
+            cell,
+            cell_offsets,
+            neighbors,
+        ) = input
+        z = atomic_numbers.long()
+
+        assert not self.otf_graph
+        out = get_pbc_distances(
+            pos,
+            edge_index,
+            cell,
+            cell_offsets,
+            neighbors,
+            return_distance_vec=True,
+        )
+
+        edge_index = out["edge_index"]
+        edge_dist = out["distances"]
+        edge_vec = out["distance_vec"]
+
+        if self.pbc_apply_sph_harm:
+            edge_vec_normalized = edge_vec / edge_dist.view(-1, 1)
+            edge_attr_sph = self.pbc_sph(edge_vec_normalized)
+
+        # calculate the edge weight according to the dist
+        edge_weight = torch.cos(0.5 * edge_dist * PI / self.cutoff)
+
+        # normalized edge vectors
+        edge_vec_normalized = edge_vec / edge_dist.view(-1, 1)
+
+        # edge distance, taking the atom_radii into account
+        # each element lies in [0,1]
+        edge_dist_list = (
+            torch.stack(
+                [
+                    edge_dist,
+                    edge_dist - self.atom_radii[z[edge_index[0]]],
+                    edge_dist - self.atom_radii[z[edge_index[1]]],
+                    edge_dist
+                    - self.atom_radii[z[edge_index[0]]]
+                    - self.atom_radii[z[edge_index[1]]],
+                ]
+            ).transpose(0, 1)
+            / self.cutoff
+        )
+
+        if self.ablation == "nodistlist":
+            edge_dist_list = edge_dist_list[:, 0].view(-1, 1)
+
+        # make sure distance is positive
+        edge_dist_list[edge_dist_list < 1e-3] = 1e-3
+
+        # squash to [0,1] for gaussian basis
+        if self.basis_type == "gauss":
+            edge_vec_normalized = (edge_vec_normalized + 1) / 2.0
+
+        # process raw_edge_attributes to generate edge_attributes
+        if self.ablation == "onlydist":
+            raw_edge_attr = edge_dist_list
+        else:
+            raw_edge_attr = torch.cat(
+                [edge_vec_normalized, edge_dist_list], dim=1
+            )
+
+        if "sph" in self.basis_type:
+            edge_attr = self.basis_fun(raw_edge_attr, edge_attr_sph)
+        else:
+            edge_attr = self.basis_fun(raw_edge_attr)
+
+        return (embedding_output, edge_index, edge_attr, edge_weight, batch)
 
 
 class InteractionBlock(MessagePassing):
@@ -263,7 +360,8 @@ class InteractionBlock(MessagePassing):
         if not self.ablation == "noself":
             torch.nn.init.xavier_uniform_(self.center_W)
 
-    def forward(self, x, edge_index, edge_attr, edge_weight, batch):
+    def forward(self, input):
+        x, edge_index, edge_attr, edge_weight, batch = input
         if self.basis_type != "rawcat":
             edge_emb = self.lin_basis(edge_attr)
         else:
@@ -289,7 +387,7 @@ class InteractionBlock(MessagePassing):
                 x = self.propagate(edge_index, x=x, W=W) + self.center_W * x
         x = self.mlp_trans(x)
 
-        return x + orig_x, edge_index, edge_attr, edge_weight, batch
+        return (x + orig_x, edge_index, edge_attr, edge_weight, batch)
 
     def message(self, x_j, W):
         if self.ablation == "nofilter":
@@ -298,154 +396,58 @@ class InteractionBlock(MessagePassing):
             return x_j * W
 
 
-class BasisFunctionLayer(nn.Module):
+class ProjectForceEnergyDecoder(nn.Module):
     def __init__(
         self,
-        basis_type,
-        max_n,
-        ablation,
-        num_freqs,
+        hidden_channels,
         activation_str,
-        otf_graph,
-        cutoff,
+        decoder_type,
+        decoder_activation_str,
+        output_dim,
     ):
-        super(BasisFunctionLayer, self).__init__()
-        self.basis_type = basis_type
-        self.max_n = max_n
-        self.ablation = ablation
-        self.num_freqs = num_freqs
+        super(ProjectForceEnergyDecoder, self).__init__()
+        self.hidden_channels = hidden_channels
         self.activation_str = activation_str
-        self.pbc_apply_sph_harm = "sph" in self.basis_type
-        self.otf_graph = otf_graph
-        self.cutoff = cutoff
+        self.decoder_type = decoder_type
+        self.decoder_activation = Act(decoder_activation_str)
+        self.output_dim = output_dim
 
-        # read atom radii
-        atom_radii = torch.zeros(101)
-        for i in range(101):
-            atom_radii[i] = ATOMIC_RADII[i]
-        atom_radii = atom_radii / 100
+        # projection layer before actual force decoding
+        self.lin = torch.nn.Linear(hidden_channels, self.output_dim)
+        self.activation = Act(activation_str)
 
-        self.atom_radii = nn.Parameter(atom_radii, requires_grad=False)
-
-        # for spherical harmonics for PBC
-        if "sphall" in self.basis_type:
-            self.pbc_sph_option = "all"
-        elif "sphsine" in self.basis_type:
-            self.pbc_sph_option = "sine"
-        elif "sphcosine" in self.basis_type:
-            self.pbc_sph_option = "cosine"
-
-        self.pbc_sph = None
-        if self.pbc_apply_sph_harm:
-            self.pbc_sph = SphericalSmearing(
-                max_n=self.max_n, option=self.pbc_sph_option
+        # layer for force decoding
+        if self.decoder_type == "linear":
+            self.decoder = nn.Sequential(nn.Linear(self.output_dim, 3))
+        elif self.decoder_type == "mlp":
+            self.decoder = nn.Sequential(
+                nn.Linear(self.output_dim, self.output_dim),
+                nn.BatchNorm1d(self.output_dim),
+                self.decoder_activation,
+                nn.Linear(self.output_dim, 3),
             )
-
-        # process basis function for edge feature
-        if self.ablation == "nodistlist":
-            # do not consider additional distance edge features
-            # normalized (x,y,z) + distance
-            in_feature = 4
-        elif self.ablation == "onlydist":
-            # only consider distance-based edge features
-            # ignore normalized (x,y,z)
-            in_feature = 4
-
-            # if basis_type is spherical harmonics, then reduce to powersine
-            if "sph" in self.basis_type:
-                print(
-                    "Under onlydist ablation, spherical basis is reduced to powersine basis."
-                )
-                self.basis_type = "powersine"
-                self.pbc_sph = None
-
         else:
-            in_feature = 7
-        self.basis_fun = Basis(
-            in_feature,
-            self.num_freqs,
-            self.basis_type,
-            self.activation_str,
-            sph=self.pbc_sph,
-        )
+            raise ValueError(f"Undefined force decoder: {self.decoder_type}")
 
-    def forward(
-        self,
-        embedding_output,
-        atomic_numbers,
-        pos,
-        batch,
-        edge_index,
-        cell,
-        cell_offsets,
-        neighbors,
-    ):
-        z = atomic_numbers.long()
+        # Projection layer for energy prediction
+        self.energy_mlp = nn.Linear(self.output_dim, 1)
 
-        assert not self.otf_graph
-        out = get_pbc_distances(
-            pos,
-            edge_index,
-            cell,
-            cell_offsets,
-            neighbors,
-            return_distance_vec=True,
-        )
+        self.reset_parameters()
 
-        edge_index = out["edge_index"]
-        edge_dist = out["distances"]
-        edge_vec = out["distance_vec"]
+    def reset_parameters(self):
+        for m in self.decoder:
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                m.bias.data.fill_(0)
 
-        if self.pbc_apply_sph_harm:
-            edge_vec_normalized = edge_vec / edge_dist.view(-1, 1)
-            edge_attr_sph = self.pbc_sph(edge_vec_normalized)
-
-        # calculate the edge weight according to the dist
-        edge_weight = torch.cos(0.5 * edge_dist * PI / self.cutoff)
-
-        # normalized edge vectors
-        edge_vec_normalized = edge_vec / edge_dist.view(-1, 1)
-
-        # edge distance, taking the atom_radii into account
-        # each element lies in [0,1]
-        edge_dist_list = (
-            torch.stack(
-                [
-                    edge_dist,
-                    edge_dist - self.atom_radii[z[edge_index[0]]],
-                    edge_dist - self.atom_radii[z[edge_index[1]]],
-                    edge_dist
-                    - self.atom_radii[z[edge_index[0]]]
-                    - self.atom_radii[z[edge_index[1]]],
-                ]
-            ).transpose(0, 1)
-            / self.cutoff
-        )
-
-        if self.ablation == "nodistlist":
-            edge_dist_list = edge_dist_list[:, 0].view(-1, 1)
-
-        # make sure distance is positive
-        edge_dist_list[edge_dist_list < 1e-3] = 1e-3
-
-        # squash to [0,1] for gaussian basis
-        if self.basis_type == "gauss":
-            edge_vec_normalized = (edge_vec_normalized + 1) / 2.0
-
-        # process raw_edge_attributes to generate edge_attributes
-        if self.ablation == "onlydist":
-            raw_edge_attr = edge_dist_list
-        else:
-            raw_edge_attr = torch.cat(
-                [edge_vec_normalized, edge_dist_list], dim=1
-            )
-
-        if "sph" in self.basis_type:
-            edge_attr = self.basis_fun(raw_edge_attr, edge_attr_sph)
-        else:
-            edge_attr = self.basis_fun(raw_edge_attr)
-
-        return embedding_output, edge_index, edge_attr, edge_weight, batch
+    def forward(self, input):
+        h, edge_index, edge_attr, edge_weight, batch = input
+        h = self.lin(h)
+        h = self.activation(h)
+        out = scatter(h, batch, dim=0, reduce="add")
+        force = self.decoder(h)
+        energy = self.energy_mlp(out)
+        return (energy, force)
 
 
 # flake8: noqa: C901
@@ -577,7 +579,7 @@ class ForceNetSequential(BaseModel):
         )
 
         # process interaction blocks
-        self.interactions = torch.nn.ModuleList()
+        self.interactions = []
         for _ in range(num_interactions):
             block = InteractionBlock(
                 hidden_channels,
@@ -590,7 +592,7 @@ class ForceNetSequential(BaseModel):
             )
             self.interactions.append(block)
 
-        # Decoder
+        # Decoder: includes projection + force MLP + energy MLP layers
         self.decoder = ProjectForceEnergyDecoder(
             hidden_channels,
             activation_str,
@@ -598,6 +600,14 @@ class ForceNetSequential(BaseModel):
             decoder_activation_str,
             self.output_dim,
         )
+
+        list_of_modules = (
+            [self.embedding_layer]
+            + [self.basis_function_layer]
+            + self.interactions
+            + [self.decoder]
+        )
+        self.seq_model = nn.Sequential(*list_of_modules)
 
     def forward(self, data):
 
@@ -609,16 +619,7 @@ class ForceNetSequential(BaseModel):
         cell_offsets = data.cell_offsets
         neighbors = data.neighbors
 
-        (
-            embedding_output,
-            atomic_numbers,
-            pos,
-            batch,
-            edge_index,
-            cell,
-            cell_offsets,
-            neighbors,
-        ) = self.embedding_layer(
+        input = (
             atomic_numbers,
             pos,
             batch,
@@ -628,35 +629,7 @@ class ForceNetSequential(BaseModel):
             neighbors,
         )
 
-        print("kya hua")
-        (
-            h,
-            edge_index,
-            edge_attr,
-            edge_weight,
-            batch,
-        ) = self.basis_function_layer(
-            embedding_output,
-            atomic_numbers,
-            pos,
-            batch,
-            edge_index,
-            cell,
-            cell_offsets,
-            neighbors,
-        )
-
-        # pass edge_attributes through interaction blocks
-        for i, interaction in enumerate(self.interactions):
-            h, edge_index, edge_attr, edge_weight, batch = interaction(
-                h, edge_index, edge_attr, edge_weight, batch
-            )
-
-        energy, force = self.decoder(
-            h, edge_index, edge_attr, edge_weight, batch
-        )
-        print(energy.shape, force.shape)
-
+        energy, force = self.seq_model(input)
         return energy, force
 
     @property
