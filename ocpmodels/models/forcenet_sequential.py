@@ -18,6 +18,7 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 from ocpmodels.datasets.embeddings import ATOMIC_RADII, CONTINUOUS_EMBEDDINGS
 from ocpmodels.models.base import BaseModel
+from ocpmodels.models.pipeline_parallel.gpipe import GPipe
 from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 
@@ -609,8 +610,23 @@ class ForceNetSequential(BaseModel):
         )
         self.seq_model = nn.Sequential(*list_of_modules)
 
+        balance = [4, 4]
+        chunks = 1
+        checkpoint = "never"
+        devices = [0, 1]
+        self.pipe_model = GPipe(
+            self.seq_model,
+            balance=balance,
+            devices=devices,
+            chunks=chunks,
+            checkpoint=checkpoint,
+        )
+
     def forward(self, data):
 
+        data = data[0]
+        # remove-me (sidgoyal)
+        # can just pass data[0] without extracting individual atributes
         atomic_numbers = data.atomic_numbers
         pos = data.pos
         batch = data.batch
@@ -629,7 +645,7 @@ class ForceNetSequential(BaseModel):
             neighbors,
         )
 
-        energy, force = self.seq_model(input)
+        energy, force = self.pipe_model(data)
         return energy, force
 
     @property

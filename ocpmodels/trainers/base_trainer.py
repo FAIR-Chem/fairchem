@@ -316,7 +316,7 @@ class BaseTrainer:
             bond_feat_dim,
             self.num_targets,
             **self.config["model_attributes"],
-        ).to(self.device)
+        )  # .to(self.device)
 
         if distutils.is_master():
             print(
@@ -328,11 +328,11 @@ class BaseTrainer:
         if self.logger is not None:
             self.logger.watch(self.model)
 
-        self.model = OCPDataParallel(
-            self.model,
-            output_device=self.device,
-            num_gpus=1 if not self.cpu else 0,
-        )
+        #        self.model = OCPDataParallel(
+        #            self.model,
+        #            output_device=self.device,
+        #            num_gpus=1 if not self.cpu else 0,
+        #        )
         if distutils.initialized():
             self.model = DistributedDataParallel(
                 self.model, device_ids=[self.device]
