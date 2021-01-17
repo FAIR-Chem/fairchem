@@ -64,7 +64,7 @@ class InteractionBlock(MessagePassing):
         depth_mlp_trans=1,
         activation_str="ssp",
         ablation="none",
-        grad_checkpointing=True,
+        grad_checkpointing=False,
     ):
         super(InteractionBlock, self).__init__(aggr="add")
 
@@ -268,7 +268,7 @@ class ForceNet(BaseModel):
         decoder_activation_str="swish",
         training=True,
         otf_graph=False,
-        grad_checkpointing=True,
+        grad_checkpointing=False,
     ):
 
         super(ForceNet, self).__init__()
