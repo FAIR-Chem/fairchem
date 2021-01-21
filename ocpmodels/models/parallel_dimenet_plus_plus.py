@@ -34,13 +34,14 @@ THE SOFTWARE.
 
 import torch
 from torch import nn
+from torch.cuda.amp import autocast
+from torch.nn.parallel.data_parallel import DataParallel
 from torch_geometric.nn import radius_graph
 from torch_geometric.nn.acts import swish
 from torch_geometric.nn.inits import glorot_orthogonal
 from torch_geometric.nn.models.dimenet import (
     BesselBasisLayer,
     EmbeddingBlock,
-    Envelope,
     ResidualLayer,
     SphericalBasisLayer,
 )
@@ -56,28 +57,37 @@ except ImportError:
     sym = None
 
 
-class InteractionPPBlock(torch.nn.Module):
+class AutocastModule(nn.Module):
+    def __init__(self, module):
+        super().__init__()
+        self.module = module
+
+    def hasattr(self, name):
+        return self.module.hasattr(name)
+
+    def getattr(self, name):
+        return self.module.getattr(name)
+
+    def reset_parameters(self):
+        return self.module.reset_parameters()
+
+    def forward(self, enable_cast, *args, **kwargs):
+        with autocast(enabled=enable_cast):
+            return self.module(*args, **kwargs)
+
+
+class EdgeParallelModule1(nn.Module):
     def __init__(
         self,
         hidden_channels,
         int_emb_size,
-        basis_emb_size,
-        num_spherical,
         num_radial,
-        num_before_skip,
-        num_after_skip,
-        act=swish,
+        act,
     ):
-        super(InteractionPPBlock, self).__init__()
+        super().__init__()
         self.act = act
-
         # Transformations of Bessel and spherical basis representations.
-        self.lin_rbf1 = nn.Linear(num_radial, basis_emb_size, bias=False)
-        self.lin_rbf2 = nn.Linear(basis_emb_size, hidden_channels, bias=False)
-        self.lin_sbf1 = nn.Linear(
-            num_spherical * num_radial, basis_emb_size, bias=False
-        )
-        self.lin_sbf2 = nn.Linear(basis_emb_size, int_emb_size, bias=False)
+        self.lin_rbf = nn.Linear(num_radial, hidden_channels, bias=False)
 
         # Dense transformations of input messages.
         self.lin_kj = nn.Linear(hidden_channels, hidden_channels)
@@ -85,8 +95,63 @@ class InteractionPPBlock(torch.nn.Module):
 
         # Embedding projections for interaction triplets.
         self.lin_down = nn.Linear(hidden_channels, int_emb_size, bias=False)
-        self.lin_up = nn.Linear(int_emb_size, hidden_channels, bias=False)
+        self.reset_parameters()
 
+    def reset_parameters(self):
+        glorot_orthogonal(self.lin_rbf.weight, scale=2.0)
+        glorot_orthogonal(self.lin_kj.weight, scale=2.0)
+        self.lin_kj.bias.data.fill_(0)
+        glorot_orthogonal(self.lin_ji.weight, scale=2.0)
+        self.lin_ji.bias.data.fill_(0)
+        glorot_orthogonal(self.lin_down.weight, scale=2.0)
+
+    def forward(self, x, rbf):
+        # Initial transformations.
+        x_ji = self.act(self.lin_ji(x))
+        x_kj = self.act(self.lin_kj(x))
+
+        # Transformation via Bessel basis.
+        rbf = self.lin_rbf(rbf)
+        x_kj = x_kj * rbf
+
+        # Down-project embeddings and generate interaction triplet embeddings.
+        x_kj = self.act(self.lin_down(x_kj))
+        return x_ji, x_kj
+
+
+class TripletParallelModule(nn.Module):
+    def __init__(
+        self,
+        int_emb_size,
+        num_spherical,
+        num_radial,
+    ):
+        super().__init__()
+        self.lin_sbf = nn.Linear(num_spherical * num_radial, int_emb_size, bias=False)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        glorot_orthogonal(self.lin_sbf.weight, scale=2.0)
+
+    def forward(self, sbf, x_kj):
+        # Transform via 2D spherical basis.
+        sbf = self.lin_sbf(sbf)
+        x_kj *= sbf
+        return x_kj
+
+
+class EdgeParallelModule2(nn.Module):
+    def __init__(
+        self,
+        hidden_channels,
+        int_emb_size,
+        num_before_skip,
+        num_after_skip,
+        act,
+    ):
+        super().__init__()
+        self.act = act
+        self.lin_up = nn.Linear(int_emb_size, hidden_channels, bias=False)
         # Residual layers before and after skip connection.
         self.layers_before_skip = torch.nn.ModuleList(
             [
@@ -101,23 +166,10 @@ class InteractionPPBlock(torch.nn.Module):
                 for _ in range(num_after_skip)
             ]
         )
-
         self.reset_parameters()
 
     def reset_parameters(self):
-        glorot_orthogonal(self.lin_rbf1.weight, scale=2.0)
-        glorot_orthogonal(self.lin_rbf2.weight, scale=2.0)
-        glorot_orthogonal(self.lin_sbf1.weight, scale=2.0)
-        glorot_orthogonal(self.lin_sbf2.weight, scale=2.0)
-
-        glorot_orthogonal(self.lin_kj.weight, scale=2.0)
-        self.lin_kj.bias.data.fill_(0)
-        glorot_orthogonal(self.lin_ji.weight, scale=2.0)
-        self.lin_ji.bias.data.fill_(0)
-
-        glorot_orthogonal(self.lin_down.weight, scale=2.0)
         glorot_orthogonal(self.lin_up.weight, scale=2.0)
-
         for res_layer in self.layers_before_skip:
             res_layer.reset_parameters()
         glorot_orthogonal(self.lin.weight, scale=2.0)
@@ -125,36 +177,124 @@ class InteractionPPBlock(torch.nn.Module):
         for res_layer in self.layers_after_skip:
             res_layer.reset_parameters()
 
-    def forward(self, x, rbf, sbf, idx_kj, idx_ji):
-        # Initial transformations.
-        x_ji = self.act(self.lin_ji(x))
-        x_kj = self.act(self.lin_kj(x))
-
-        # Transformation via Bessel basis.
-        rbf = self.lin_rbf1(rbf)
-        rbf = self.lin_rbf2(rbf)
-        x_kj = x_kj * rbf
-
-        # Down-project embeddings and generate interaction triplet embeddings.
-        x_kj = self.act(self.lin_down(x_kj))
-
-        # Transform via 2D spherical basis.
-        sbf = self.lin_sbf1(sbf)
-        sbf = self.lin_sbf2(sbf)
-        x_kj = x_kj[idx_kj] * sbf
-
-        # Aggregate interactions and up-project embeddings.
-        x_kj = scatter(x_kj, idx_ji, dim=0, dim_size=x.size(0))
+    def forward(self, x, x_ji, x_kj):
         x_kj = self.act(self.lin_up(x_kj))
-
         h = x_ji + x_kj
         for layer in self.layers_before_skip:
             h = layer(h)
         h = self.act(self.lin(h)) + x
         for layer in self.layers_after_skip:
             h = layer(h)
-
         return h
+
+
+class InteractionPPBlock(nn.Module):
+    def __init__(
+        self,
+        hidden_channels,
+        int_emb_size,
+        basis_emb_size,
+        num_spherical,
+        num_radial,
+        num_before_skip,
+        num_after_skip,
+        device_ids,
+        act=swish,
+    ):
+        super().__init__()
+
+        self.edge_parallel_module1 = EdgeParallelModule1(
+            hidden_channels,
+            int_emb_size,
+            num_radial,
+            act
+        )
+        self.triplet_parallel_module = TripletParallelModule(
+            int_emb_size,
+            num_spherical,
+            num_radial
+        )
+        self.edge_parallel_module2 = EdgeParallelModule2(
+            hidden_channels,
+            int_emb_size,
+            num_before_skip,
+            num_after_skip,
+            act
+        )
+        self.edge_parallel_module1 = DataParallel(
+            AutocastModule(self.edge_parallel_module1), device_ids=device_ids, output_device=device_ids[0]
+        )
+        self.triplet_parallel_module = DataParallel(
+            AutocastModule(self.triplet_parallel_module), device_ids=device_ids, output_device=device_ids[0]
+        )
+        self.edge_parallel_module2 = DataParallel(
+            AutocastModule(self.edge_parallel_module2), device_ids=device_ids, output_device=device_ids[0]
+        )
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        self.edge_parallel_module1.module.reset_parameters()
+        self.triplet_parallel_module.module.reset_parameters()
+        self.edge_parallel_module2.module.reset_parameters()
+
+    def forward(self, x, rbf, sbf, idx_kj, idx_ji):
+        enable_autocast = torch.is_autocast_enabled()
+        x_ji, x_kj = self.edge_parallel_module1(enable_autocast, x, rbf)
+        x_kj = self.triplet_parallel_module(enable_autocast, sbf, x_kj[idx_kj])
+        # Aggregate interactions and up-project embeddings.
+        x_kj = scatter(x_kj, idx_ji, dim=0, dim_size=x.size(0))
+        return self.edge_parallel_module2(enable_autocast, x, x_ji, x_kj)
+
+
+class EdgeParallelOutputModule(nn.Module):
+    def __init__(
+        self,
+        num_radial,
+        hidden_channels,
+        act=swish,
+    ):
+        super().__init__()
+        self.act = act
+        self.lin_rbf = nn.Linear(num_radial, hidden_channels, bias=False)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        glorot_orthogonal(self.lin_rbf.weight, scale=2.0)
+
+    def forward(self, x, rbf):
+        return self.lin_rbf(rbf) * x
+
+
+class NodeParallelOutputModule(torch.nn.Module):
+    def __init__(
+        self,
+        hidden_channels,
+        out_emb_channels,
+        out_channels,
+        num_layers,
+        act=swish,
+    ):
+        super().__init__()
+        self.act = act
+        self.lin_up = nn.Linear(hidden_channels, out_emb_channels, bias=True)
+        self.lins = torch.nn.ModuleList()
+        for _ in range(num_layers):
+            self.lins.append(nn.Linear(out_emb_channels, out_emb_channels))
+        self.lin = nn.Linear(out_emb_channels, out_channels, bias=False)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        glorot_orthogonal(self.lin_up.weight, scale=2.0)
+        for lin in self.lins:
+            glorot_orthogonal(lin.weight, scale=2.0)
+            lin.bias.data.fill_(0)
+        self.lin.weight.data.fill_(0)
+
+    def forward(self, x):
+        x = self.lin_up(x)
+        for lin in self.lins:
+            x = self.act(lin(x))
+        return self.lin(x)
 
 
 class OutputPPBlock(torch.nn.Module):
@@ -165,39 +305,45 @@ class OutputPPBlock(torch.nn.Module):
         out_emb_channels,
         out_channels,
         num_layers,
+        device_ids,
         act=swish,
     ):
-        super(OutputPPBlock, self).__init__()
+        super().__init__()
         self.act = act
 
-        self.lin_rbf = nn.Linear(num_radial, hidden_channels, bias=False)
-        self.lin_up = nn.Linear(hidden_channels, out_emb_channels, bias=True)
-        self.lins = torch.nn.ModuleList()
-        for _ in range(num_layers):
-            self.lins.append(nn.Linear(out_emb_channels, out_emb_channels))
-        self.lin = nn.Linear(out_emb_channels, out_channels, bias=False)
-
+        self.edge_parallel_module = EdgeParallelOutputModule(
+            num_radial,
+            hidden_channels,
+            act
+        )
+        self.node_parallel_module = NodeParallelOutputModule(
+            hidden_channels,
+            out_emb_channels,
+            out_channels,
+            num_layers,
+            act,
+        )
+        self.edge_parallel_module = DataParallel(
+            AutocastModule(self.edge_parallel_module), device_ids=device_ids, output_device=device_ids[0]
+        )
+        self.node_parallel_module = DataParallel(
+            AutocastModule(self.node_parallel_module), device_ids=device_ids, output_device=device_ids[0]
+        )
         self.reset_parameters()
 
     def reset_parameters(self):
-        glorot_orthogonal(self.lin_rbf.weight, scale=2.0)
-        glorot_orthogonal(self.lin_up.weight, scale=2.0)
-        for lin in self.lins:
-            glorot_orthogonal(lin.weight, scale=2.0)
-            lin.bias.data.fill_(0)
-        self.lin.weight.data.fill_(0)
+        self.edge_parallel_module.module.reset_parameters()
+        self.node_parallel_module.module.reset_parameters()
 
     def forward(self, x, rbf, i, num_nodes=None):
-        x = self.lin_rbf(rbf) * x
+        enable_cast = torch.is_autocast_enabled()
+        x = self.edge_parallel_module(enable_cast, x, rbf)
         x = scatter(x, i, dim=0, dim_size=num_nodes)
-        x = self.lin_up(x)
-        for lin in self.lins:
-            x = self.act(lin(x))
-        return self.lin(x)
+        return self.node_parallel_module(enable_cast, x)
 
 
-class DimeNetPlusPlus(torch.nn.Module):
-    r"""DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
+class ParallelDimeNetPlusPlus(torch.nn.Module):
+    r"""Model Parallel implementation of the DimeNet++ model.
 
     Args:
         hidden_channels (int): Hidden embedding size.
@@ -240,8 +386,9 @@ class DimeNetPlusPlus(torch.nn.Module):
         num_after_skip=2,
         num_output_layers=3,
         act=swish,
+        device_ids=[0],
     ):
-        super(DimeNetPlusPlus, self).__init__()
+        super(ParallelDimeNetPlusPlus, self).__init__()
 
         self.cutoff = cutoff
 
@@ -265,6 +412,7 @@ class DimeNetPlusPlus(torch.nn.Module):
                     out_emb_channels,
                     out_channels,
                     num_output_layers,
+                    device_ids,
                     act,
                 )
                 for _ in range(num_blocks + 1)
@@ -281,6 +429,7 @@ class DimeNetPlusPlus(torch.nn.Module):
                     num_radial,
                     num_before_skip,
                     num_after_skip,
+                    device_ids,
                     act,
                 )
                 for _ in range(num_blocks)
@@ -325,8 +474,8 @@ class DimeNetPlusPlus(torch.nn.Module):
         raise NotImplementedError
 
 
-@registry.register_model("dimenetplusplus")
-class DimeNetPlusPlusWrap(DimeNetPlusPlus):
+@registry.register_model("paralleldimenetplusplus")
+class ParallelDimeNetPlusPlusWrap(ParallelDimeNetPlusPlus):
     def __init__(
         self,
         num_atoms,
@@ -347,7 +496,8 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
         num_before_skip=1,
         num_after_skip=2,
         num_output_layers=3,
-        device=0,  # not used
+        device=0,
+        gpus_per_task=1,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
@@ -355,7 +505,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
         self.cutoff = cutoff
         self.otf_graph = otf_graph
 
-        super(DimeNetPlusPlusWrap, self).__init__(
+        super(ParallelDimeNetPlusPlusWrap, self).__init__(
             hidden_channels=hidden_channels,
             out_channels=num_targets,
             num_blocks=num_blocks,
@@ -369,6 +519,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
             num_before_skip=num_before_skip,
             num_after_skip=num_after_skip,
             num_output_layers=num_output_layers,
+            device_ids=[device + i for i in range(gpus_per_task)]
         )
 
     def forward(self, data):

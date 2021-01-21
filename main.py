@@ -118,18 +118,23 @@ if __name__ == "__main__":
             configs = [config]
 
         print(f"Submitting {len(configs)} jobs")
+        
+        gpus_per_task = config["model"].get("gpus_per_task", 1)
+        logdir = Path(args.run_dir) / "slurm" / args.logdir
         executor = submitit.AutoExecutor(
-            folder=args.logdir / "%j", slurm_max_num_timeout=3
+            folder=logdir / f"{args.identifier}_%j", slurm_max_num_timeout=3
         )
         executor.update_parameters(
             name=args.identifier,
             mem_gb=args.slurm_mem,
             timeout_min=args.slurm_timeout * 60,
             slurm_partition=args.slurm_partition,
-            gpus_per_node=args.num_gpus,
+            gpus_per_node=args.tasks_per_node * gpus_per_task,
             cpus_per_task=(args.num_workers + 1),
-            tasks_per_node=(args.num_gpus if args.distributed else 1),
+            tasks_per_node=(args.tasks_per_node if args.distributed else 1),
             nodes=args.num_nodes,
+            slurm_comment="OCP",
+            slurm_constraint="volta32gb",
         )
         jobs = executor.map_array(Runner(), configs)
         print("Submitted jobs:", ", ".join([job.job_id for job in jobs]))

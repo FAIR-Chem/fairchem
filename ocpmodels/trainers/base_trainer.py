@@ -58,9 +58,9 @@ class BaseTrainer:
     ):
         self.name = name
         self.cpu = cpu
-
+        
         if torch.cuda.is_available() and not self.cpu:
-            self.device = local_rank
+            self.device = local_rank * model.get("gpus_per_task", 1)
         else:
             self.device = "cpu"
             self.cpu = True  # handle case when `--cpu` isn't specified
@@ -329,6 +329,7 @@ class BaseTrainer:
             else None,
             bond_feat_dim,
             self.num_targets,
+            device=self.device,
             **self.config["model_attributes"],
         ).to(self.device)
 

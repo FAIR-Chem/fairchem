@@ -105,7 +105,8 @@ class TrajectoryLmdbDataset(Dataset):
         return env
 
     def close_db(self):
-        self.env.close()
+        for env in self.envs:
+            env.close()
 
 
 def data_list_collater(data_list, otf_graph=False):
