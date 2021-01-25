@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from pathlib import Path
 
+import os
 import torch
 
 from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
@@ -23,6 +24,8 @@ def ml_relax(
     relax_opt,
     device="cuda:0",
     transform=None,
+    run_dir=None,
+    timestamp="",
 ):
     """
     Runs ML-based relaxations.
@@ -42,7 +45,7 @@ def ml_relax(
     calc = TorchCalc(model, transform)
 
     # Run ML-based relaxation
-    traj_dir = relax_opt.get("traj_dir", None)
+    traj_dir = os.path.join(run_dir, relax_opt.get("traj_dir", None), timestamp)
     optimizer = LBFGS(
         batch,
         calc,

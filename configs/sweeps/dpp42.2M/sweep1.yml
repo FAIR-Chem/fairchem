@@ -1,0 +1,4 @@
+
+model:
+  num_blocks: [1, 2, 3]
+

@@ -48,7 +48,7 @@ class Runner(submitit.helpers.Checkpointable):
                 run_dir=config.get("run_dir", "./"),
                 is_debug=config.get("is_debug", False),
                 is_vis=config.get("is_vis", False),
-                print_every=config.get("print_every", 10),
+                print_every=config.get("print_every", 100),
                 seed=config.get("seed", 0),
                 logger=config.get("logger", "tensorboard"),
                 local_rank=config["local_rank"],
@@ -74,11 +74,12 @@ class Runner(submitit.helpers.Checkpointable):
                 ), "Test dataset is required for making predictions"
                 assert config["checkpoint"]
                 results_file = "predictions"
-                trainer.predict(
-                    trainer.test_loader,
-                    results_file=results_file,
-                    disable_tqdm=False,
-                )
+                # trainer.predict(
+                #     trainer.test_loader,
+                #     results_file=results_file,
+                #     disable_tqdm=False,
+                # )
+                trainer.validate(split="test", epoch=1)
 
             elif config["mode"] == "run-relaxations":
                 assert isinstance(
@@ -133,7 +134,7 @@ if __name__ == "__main__":
             cpus_per_task=(args.num_workers + 1),
             tasks_per_node=(args.tasks_per_node if args.distributed else 1),
             nodes=args.num_nodes,
-            slurm_comment="OCP",
+            slurm_comment="ICML Deadline (02/05)",
             slurm_constraint="volta32gb",
         )
         jobs = executor.map_array(Runner(), configs)

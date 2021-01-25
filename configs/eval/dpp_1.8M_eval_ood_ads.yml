@@ -1,0 +1,63 @@
+trainer: forces
+
+dataset:
+  - src: data/s2ef/2M/train/
+    normalize_labels: True
+    target_mean: -0.7554450631141663
+    target_std: 2.887317180633545
+    grad_target_mean: 0.0
+    grad_target_std: 2.887317180633545
+  - src: data/s2ef/all/val_ood_ads/
+  - src: data/s2ef/all/val_ood_ads/
+
+logger: tensorboard
+
+task:
+  dataset: trajectory_lmdb
+  description: "Regressing to energies and forces for DFT trajectories from OCP"
+  type: regression
+  metric: mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+
+  relax_dataset:
+      src: data/is2rs/all/val_ood_ads/data.lmdb
+  write_pos: False
+  relaxation_steps: 300
+  relax_opt:
+      memory: 50
+      traj_dir: "trajectories"
+      write_pos: True
+
+model:
+  name: dimenetplusplus
+  hidden_channels: 192
+  out_emb_channels: 192
+  num_blocks: 3
+  cutoff: 6.0
+  num_radial: 6
+  num_spherical: 7
+  num_before_skip: 1
+  num_after_skip: 2
+  num_output_layers: 3
+  regress_forces: True
+  use_pbc: True
+  int_emb_size: 64
+
+optim:
+  batch_size: 32
+  # eval_batch_size: 16
+  eval_batch_size: 8
+  num_workers: 32
+  lr_initial: 0.0001
+  lr_gamma: 0.1
+  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+    - 10
+    - 20
+  warmup_epochs: 2
+  warmup_factor: 0.2
+  max_epochs: 30
+  force_coefficient: 30

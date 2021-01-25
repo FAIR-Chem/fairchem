@@ -1,0 +1,5 @@
+
+model:
+  hidden_channels: [512, 1024]
+  out_emb_channels: [384, 768]
+

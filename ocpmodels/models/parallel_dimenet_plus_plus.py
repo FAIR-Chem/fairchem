@@ -498,12 +498,14 @@ class ParallelDimeNetPlusPlusWrap(ParallelDimeNetPlusPlus):
         num_output_layers=3,
         device=0,
         gpus_per_task=1,
+        num_neighbors=50,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
+        self.num_neighbors = num_neighbors
 
         super(ParallelDimeNetPlusPlusWrap, self).__init__(
             hidden_channels=hidden_channels,
@@ -530,7 +532,7 @@ class ParallelDimeNetPlusPlusWrap(ParallelDimeNetPlusPlus):
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, 50, data.pos.device
+                data, self.cutoff, self.num_neighbors, data.pos.device
             )
             data.edge_index = edge_index
             data.cell_offsets = cell_offsets

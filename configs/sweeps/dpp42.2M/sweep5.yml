@@ -1,0 +1,4 @@
+
+model:
+  cutoff: [4, 5, 6]
+  num_neighbors: [30, 40, 50]

@@ -1,0 +1,4 @@
+
+model:
+  num_after_skip: [1, 2]
+  num_output_layers: [2, 4, 8]

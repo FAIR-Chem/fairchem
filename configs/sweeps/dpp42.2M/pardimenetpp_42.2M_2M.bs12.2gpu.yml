@@ -1,5 +1,5 @@
 includes:
-- configs/s2ef/12k/base.yml
+- configs/s2ef/2M/base.yml
 
 model:
   name: paralleldimenetplusplus
@@ -15,20 +15,20 @@ model:
   regress_forces: True
   use_pbc: True
   int_emb_size: 64
-  gpus_per_task: 4
+  gpus_per_task: 2
 
 optim:
-  batch_size: 16
-  eval_batch_size: 8
+  batch_size: 12
+  eval_batch_size: 6
   num_workers: 64
   lr_initial: 0.0001
   lr_gamma: 0.1
   lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
     - 5
-    - 10
-    - 15
-  warmup_epochs: 1
+    - 7
+    - 9
+  warmup_epochs: 2
   warmup_factor: 0.2
-  max_epochs: 1
+  max_epochs: 10
   energy_coefficient: 0
   force_coefficient: 100

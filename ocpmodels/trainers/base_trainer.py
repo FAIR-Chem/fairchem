@@ -67,6 +67,7 @@ class BaseTrainer:
             # but there are no gpu devices available
         if run_dir is None:
             run_dir = os.getcwd()
+        self.run_dir = run_dir
 
         timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(
             self.device
@@ -78,6 +79,7 @@ class BaseTrainer:
         )
         if identifier:
             timestamp += "-{}".format(identifier)
+        self.timestamp = timestamp
         try:
             commit_hash = (
                 subprocess.check_output(
@@ -531,6 +533,7 @@ class BaseTrainer:
             # Compute metrics.
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
             metrics = evaluator.update("loss", loss.item(), metrics)
+            out = loss = None
 
         aggregated_metrics = {}
         for k in metrics:

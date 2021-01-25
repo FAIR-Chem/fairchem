@@ -24,6 +24,15 @@ from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
+def stat_cuda():
+    print('[MemStats] allocated: %dG, max allocated: %dG, cached: %dG, max cached: %dG' % (
+        torch.cuda.memory_allocated() / 1024 / 1024 / 1024,
+        torch.cuda.max_memory_allocated() / 1024 / 1024 / 1024,
+        torch.cuda.memory_cached() / 1024 / 1024 / 1024,
+        torch.cuda.max_memory_cached() / 1024 / 1024 / 1024
+    ))
+
+
 @registry.register_trainer("forces")
 class ForcesTrainer(BaseTrainer):
     """
@@ -374,6 +383,7 @@ class ForcesTrainer(BaseTrainer):
                         "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
                     ]
                     print(", ".join(log_str))
+                    stat_cuda()
                     self.metrics = {}
 
                 if self.logger is not None:
@@ -615,10 +625,12 @@ class ForcesTrainer(BaseTrainer):
                 batch=batch,
                 model=self,
                 steps=self.config["task"].get("relaxation_steps", 200),
-                fmax=self.config["task"].get("relaxation_fmax", 0.0),
+                fmax=self.config["task"].get("relaxation_fmax", 0.05),
                 relax_opt=self.config["task"]["relax_opt"],
                 device=self.device,
                 transform=None,
+                run_dir=self.run_dir,
+                timestamp=self.timestamp,
             )
 
             if self.config["task"].get("write_pos", False):

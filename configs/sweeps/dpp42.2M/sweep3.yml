@@ -1,0 +1,3 @@
+
+model:
+  int_emb_size: [32, 64]
