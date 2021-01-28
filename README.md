@@ -87,6 +87,10 @@ A detailed description of how to train, predict, and run ML-based relaxations ca
 
 Pretrained models accompanying https://arxiv.org/abs/2010.09990v1 can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md).
 
+## Discussions/FAQs
+
+For all non-codebase related questions and to keep up-to-date with the latest OCP announcements, please join the [discussion board](https://discuss.opencatalystproject.org/). All codebase related questions and issues should be posted directly on our [issues page](https://github.com/Open-Catalyst-Project/ocp/issues).
+
 ## Acknowledgements
 
 - This codebase was initially forked from [CGCNN](https://github.com/txie-93/cgcnn)
