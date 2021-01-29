@@ -58,7 +58,7 @@ class BaseTrainer:
     ):
         self.name = name
         self.cpu = cpu
-        
+
         if torch.cuda.is_available() and not self.cpu:
             self.device = local_rank * model.get("gpus_per_task", 1)
         else:

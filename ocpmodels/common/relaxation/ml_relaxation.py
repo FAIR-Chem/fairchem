@@ -45,7 +45,9 @@ def ml_relax(
     calc = TorchCalc(model, transform)
 
     # Run ML-based relaxation
-    traj_dir = os.path.join(run_dir, relax_opt.get("traj_dir", None), timestamp)
+    traj_dir = os.path.join(
+        run_dir, relax_opt.get("traj_dir", None), timestamp
+    )
     optimizer = LBFGS(
         batch,
         calc,

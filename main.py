@@ -119,7 +119,7 @@ if __name__ == "__main__":
             configs = [config]
 
         print(f"Submitting {len(configs)} jobs")
-        
+
         gpus_per_task = config["model"].get("gpus_per_task", 1)
         logdir = Path(args.run_dir) / "slurm" / args.logdir
         executor = submitit.AutoExecutor(

@@ -5,7 +5,9 @@ import pandas as pd
 
 
 # COLS = list("params forces_mae forces_cos energy_mae energy_force_within_threshold time".split())
-COLS = list("params forces_mae forces_cos energy_mae energy_force_within_threshold time gpu_mem".split())
+COLS = list(
+    "params forces_mae forces_cos energy_mae energy_force_within_threshold time gpu_mem".split()
+)
 
 
 def main(fls: List[Path], feats: List[str]):
@@ -19,7 +21,9 @@ def main(fls: List[Path], feats: List[str]):
         # }
         config = {}
         for feat in feats:
-            vals = [ln.strip().split()[-1] for ln in text if feat in ln.strip()]
+            vals = [
+                ln.strip().split()[-1] for ln in text if feat in ln.strip()
+            ]
             config[feat] = 1 if not vals else vals[0]
 
         param_line = [ln for ln in text if "parameters" in ln][0]
@@ -44,7 +48,7 @@ def main(fls: List[Path], feats: List[str]):
             config.update(metrics)
 
             try:
-                tm = float(text[-2].strip().split()[-1]) / 3600.
+                tm = float(text[-2].strip().split()[-1]) / 3600.0
                 config["time"] = tm
             except:
                 config["time"] = None
@@ -52,13 +56,13 @@ def main(fls: List[Path], feats: List[str]):
             results.append(config)
         except:
             raise
-    
+
     results = pd.DataFrame(results)
     results = results[feats + COLS]
     # print(results.to_string(index=None).replace("   ", "\t"))
     results.sort_values(by=feats)
     print(results.to_csv(index=False).replace(" ", "").replace(",", "\t"))
-    
+
     # for fl in fls:
     #     text = fl.read_text().splitlines()
     #     feat_lines = [
@@ -106,8 +110,11 @@ if __name__ == "__main__":
     # fls = list(Path("exp/paralleldpp/pardpp.sweeps/sweep4/slurm/logs/").glob("*/*_0_log.out"))
     # feats = ["gpus_per_task", "num_after_skip", "num_output_layers", "batch_size"]
 
-    fls = list(Path("exp/paralleldpp/pardpp.sweeps/sweep5/slurm/logs/").glob("*/*_0_log.out"))
+    fls = list(
+        Path("exp/paralleldpp/pardpp.sweeps/sweep5/slurm/logs/").glob(
+            "*/*_0_log.out"
+        )
+    )
     feats = ["gpus_per_task", "cutoff", "num_neighbors", "batch_size"]
 
     main(fls, feats)
-

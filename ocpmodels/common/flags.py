@@ -102,7 +102,10 @@ class Flags:
             "--slurm-timeout", default=72, type=int, help="Time (in hours)"
         )
         self.parser.add_argument(
-            "--tasks-per-node", default=1, type=int, help="Number of GPUs to request"
+            "--tasks-per-node",
+            default=1,
+            type=int,
+            help="Number of GPUs to request",
         )
         self.parser.add_argument(
             "--distributed", action="store_true", help="Run with DDP"

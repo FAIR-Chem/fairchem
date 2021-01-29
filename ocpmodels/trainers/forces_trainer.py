@@ -25,12 +25,15 @@ from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
 def stat_cuda():
-    print('[MemStats] allocated: %dG, max allocated: %dG, cached: %dG, max cached: %dG' % (
-        torch.cuda.memory_allocated() / 1024 / 1024 / 1024,
-        torch.cuda.max_memory_allocated() / 1024 / 1024 / 1024,
-        torch.cuda.memory_cached() / 1024 / 1024 / 1024,
-        torch.cuda.max_memory_cached() / 1024 / 1024 / 1024
-    ))
+    print(
+        "[MemStats] allocated: %dG, max allocated: %dG, cached: %dG, max cached: %dG"
+        % (
+            torch.cuda.memory_allocated() / 1024 / 1024 / 1024,
+            torch.cuda.max_memory_allocated() / 1024 / 1024 / 1024,
+            torch.cuda.memory_cached() / 1024 / 1024 / 1024,
+            torch.cuda.max_memory_cached() / 1024 / 1024 / 1024,
+        )
+    )
 
 
 @registry.register_trainer("forces")

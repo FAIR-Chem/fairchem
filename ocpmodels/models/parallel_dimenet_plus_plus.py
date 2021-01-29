@@ -127,7 +127,9 @@ class TripletParallelModule(nn.Module):
         num_radial,
     ):
         super().__init__()
-        self.lin_sbf = nn.Linear(num_spherical * num_radial, int_emb_size, bias=False)
+        self.lin_sbf = nn.Linear(
+            num_spherical * num_radial, int_emb_size, bias=False
+        )
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -204,31 +206,28 @@ class InteractionPPBlock(nn.Module):
         super().__init__()
 
         self.edge_parallel_module1 = EdgeParallelModule1(
-            hidden_channels,
-            int_emb_size,
-            num_radial,
-            act
+            hidden_channels, int_emb_size, num_radial, act
         )
         self.triplet_parallel_module = TripletParallelModule(
-            int_emb_size,
-            num_spherical,
-            num_radial
+            int_emb_size, num_spherical, num_radial
         )
         self.edge_parallel_module2 = EdgeParallelModule2(
-            hidden_channels,
-            int_emb_size,
-            num_before_skip,
-            num_after_skip,
-            act
+            hidden_channels, int_emb_size, num_before_skip, num_after_skip, act
         )
         self.edge_parallel_module1 = DataParallel(
-            AutocastModule(self.edge_parallel_module1), device_ids=device_ids, output_device=device_ids[0]
+            AutocastModule(self.edge_parallel_module1),
+            device_ids=device_ids,
+            output_device=device_ids[0],
         )
         self.triplet_parallel_module = DataParallel(
-            AutocastModule(self.triplet_parallel_module), device_ids=device_ids, output_device=device_ids[0]
+            AutocastModule(self.triplet_parallel_module),
+            device_ids=device_ids,
+            output_device=device_ids[0],
         )
         self.edge_parallel_module2 = DataParallel(
-            AutocastModule(self.edge_parallel_module2), device_ids=device_ids, output_device=device_ids[0]
+            AutocastModule(self.edge_parallel_module2),
+            device_ids=device_ids,
+            output_device=device_ids[0],
         )
         self.reset_parameters()
 
@@ -312,9 +311,7 @@ class OutputPPBlock(torch.nn.Module):
         self.act = act
 
         self.edge_parallel_module = EdgeParallelOutputModule(
-            num_radial,
-            hidden_channels,
-            act
+            num_radial, hidden_channels, act
         )
         self.node_parallel_module = NodeParallelOutputModule(
             hidden_channels,
@@ -324,10 +321,14 @@ class OutputPPBlock(torch.nn.Module):
             act,
         )
         self.edge_parallel_module = DataParallel(
-            AutocastModule(self.edge_parallel_module), device_ids=device_ids, output_device=device_ids[0]
+            AutocastModule(self.edge_parallel_module),
+            device_ids=device_ids,
+            output_device=device_ids[0],
         )
         self.node_parallel_module = DataParallel(
-            AutocastModule(self.node_parallel_module), device_ids=device_ids, output_device=device_ids[0]
+            AutocastModule(self.node_parallel_module),
+            device_ids=device_ids,
+            output_device=device_ids[0],
         )
         self.reset_parameters()
 
@@ -521,7 +522,7 @@ class ParallelDimeNetPlusPlusWrap(ParallelDimeNetPlusPlus):
             num_before_skip=num_before_skip,
             num_after_skip=num_after_skip,
             num_output_layers=num_output_layers,
-            device_ids=[device + i for i in range(gpus_per_task)]
+            device_ids=[device + i for i in range(gpus_per_task)],
         )
 
     def forward(self, data):
