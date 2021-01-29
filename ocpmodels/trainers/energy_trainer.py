@@ -232,7 +232,10 @@ class EnergyTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out, batch, self.evaluator, metrics={}
+                    out,
+                    batch,
+                    self.evaluator,
+                    metrics={},
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -302,7 +305,9 @@ class EnergyTrainer(BaseTrainer):
         if output.shape[-1] == 1:
             output = output.view(-1)
 
-        return {"energy": output}
+        return {
+            "energy": output,
+        }
 
     def _compute_loss(self, out, batch_list):
         energy_target = torch.cat(
@@ -326,7 +331,9 @@ class EnergyTrainer(BaseTrainer):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
 
         metrics = evaluator.eval(
-            out, {"energy": energy_target}, prev_metrics=metrics
+            out,
+            {"energy": energy_target},
+            prev_metrics=metrics,
         )
 
         return metrics

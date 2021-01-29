@@ -62,7 +62,11 @@ class RandomRotate(object):
         if hasattr(data_rotated, "cell"):
             data_rotated.cell = torch.matmul(data_rotated.cell, matrix)
 
-        return (data_rotated, matrix, torch.inverse(matrix))
+        return (
+            data_rotated,
+            matrix,
+            torch.inverse(matrix),
+        )
 
     def __repr__(self):
         return "{}({}, axis={})".format(

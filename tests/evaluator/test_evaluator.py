@@ -59,8 +59,12 @@ def load_evaluator_is2rs(request):
 @pytest.fixture(scope="class")
 def load_evaluator_is2re(request):
     request.cls.evaluator = Evaluator(task="is2re")
-    prediction = {"energy": torch.randn(50)}
-    target = {"energy": torch.randn(50)}
+    prediction = {
+        "energy": torch.randn(50),
+    }
+    target = {
+        "energy": torch.randn(50),
+    }
     request.cls.metrics = request.cls.evaluator.eval(prediction, target)
 
 
