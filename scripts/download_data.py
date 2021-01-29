@@ -28,7 +28,7 @@ S2EF_COUNTS = {
         "val_ood_ads": 1000000,
         "val_ood_cat": 1000000,
         "val_ood_both": 1000000,
-    },
+    }
 }
 
 import argparse

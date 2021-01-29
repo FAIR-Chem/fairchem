@@ -16,13 +16,7 @@ from .optimizers.lbfgs_torch import LBFGS, TorchCalc
 
 
 def ml_relax(
-    batch,
-    model,
-    steps,
-    fmax,
-    relax_opt,
-    device="cuda:0",
-    transform=None,
+    batch, model, steps, fmax, relax_opt, device="cuda:0", transform=None
 ):
     """
     Runs ML-based relaxations.

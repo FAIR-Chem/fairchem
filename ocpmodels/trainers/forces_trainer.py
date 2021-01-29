@@ -361,10 +361,7 @@ class ForcesTrainer(BaseTrainer):
                 scale = self.scaler.get_scale() if self.scaler else 1.0
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out,
-                    batch,
-                    self.evaluator,
-                    self.metrics,
+                    out, batch, self.evaluator, self.metrics
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -415,7 +412,9 @@ class ForcesTrainer(BaseTrainer):
                             current_epoch = epoch + (i + 1) / len(
                                 self.train_loader
                             )
-                            current_step = epoch * len(self.train_loader) + (i + 1)
+                            current_step = epoch * len(self.train_loader) + (
+                                i + 1
+                            )
                             self.save(current_epoch, current_step, val_metrics)
                             if self.test_loader is not None:
                                 self.predict(
@@ -475,9 +474,7 @@ class ForcesTrainer(BaseTrainer):
         if out_energy.shape[-1] == 1:
             out_energy = out_energy.view(-1)
 
-        out = {
-            "energy": out_energy,
-        }
+        out = {"energy": out_energy}
 
         if self.config["model_attributes"].get("regress_forces", True):
             out["forces"] = out_forces
@@ -690,8 +687,7 @@ class ForcesTrainer(BaseTrainer):
             if distutils.is_master():
                 gather_results = defaultdict(list)
                 full_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
-                    "relaxed_positions.npz",
+                    self.config["cmd"]["results_dir"], "relaxed_positions.npz"
                 )
 
                 for i in range(distutils.get_world_size()):
