@@ -136,7 +136,8 @@ def main(args):
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--data-path", help="Path to dir containing *.extxyz and *.txt files"
+        "--data-path",
+        help="Path to dir containing *.extxyz and *.txt files",
     )
     parser.add_argument(
         "--out-path",
