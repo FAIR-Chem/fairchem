@@ -406,9 +406,7 @@ class BaseTrainer:
         self.scheduler = optim.lr_scheduler.LambdaLR(
             self.optimizer, lr_lambda=scheduler_lambda_fn
         )
-        self.update_lr_on_step = self.config["optim"].get(
-            "update_lr_on_step", False
-        )
+        self.update_lr_on_step = self.config["optim"].get("update_lr_on_step", False)
 
         # metrics.
         self.meter = Meter(split="train")
@@ -600,16 +598,13 @@ class BaseTrainer:
             and self.config["model_attributes"].get("regress_forces", False)
             is False
         ):
-            force_output = (
-                -1
-                * torch.autograd.grad(
-                    output,
-                    inp_for_grad,
-                    grad_outputs=torch.ones_like(output),
-                    create_graph=True,
-                    retain_graph=True,
-                )[0]
-            )
+            force_output = -1 * torch.autograd.grad(
+                output,
+                inp_for_grad,
+                grad_outputs=torch.ones_like(output),
+                create_graph=True,
+                retain_graph=True,
+            )[0]
             out["force_output"] = force_output
 
         if not compute_metrics:
