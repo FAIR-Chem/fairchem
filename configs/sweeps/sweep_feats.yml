@@ -1,0 +1,3 @@
+model:
+  num_radial: [3, 6]
+  num_spherical: [3, 7]

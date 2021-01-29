@@ -15,3 +15,10 @@ Scaling Dimenet++
 2. Better load balancing since #nodes << #edges << #triplets
     - For very large models, run the triplets in a loop => can support much bigger batches.
         - May need to make use of checkpointing.
+
+
+######### TODOs #########
+# 1. Use DataParallel around scatter
+# 2. Experiment with models with small #channels, but more layers
+#    within a block (larger num_before_skip, num_after_skip, & num_output_layers)
+# 3. Can we use multiple GPUs for graph creation?

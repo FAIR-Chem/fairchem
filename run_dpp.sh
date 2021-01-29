@@ -1,5 +1,4 @@
 
-
 # python -u main.py --mode train --config-yml configs/sweeps/dpp_base_2.4M_2M.yml \
 #     --identifier dpp.2.4M.2M --run-dir exp/dpp_fn/dpp_2M --amp --num-nodes 8 --tasks-per-node 8 --distributed \
 #     --submit --slurm-timeout 72 --slurm-partition priority
@@ -67,12 +66,12 @@
 
 
 
-for configfl in configs/eval/dpp_1.8M*; do 
-    python -u main.py --mode run-relaxations --config-yml $configfl --run-dir exp/dpp_fn/relax --identifier all.`basename $configfl` \
-        --checkpoint FN/dpp_1.8M_all.pt --tasks-per-node 8 --distributed --submit --slurm-partition priority,dev
-done
+# for configfl in configs/eval/dpp_1.8M*; do 
+#     python -u main.py --mode run-relaxations --config-yml $configfl --run-dir exp/dpp_fn/relax --identifier all.`basename $configfl` \
+#         --checkpoint FN/dpp_1.8M_all.pt --tasks-per-node 8 --distributed --submit --slurm-partition priority,dev
+# done
 
-for configfl in configs/eval/dpp_10.8M*; do 
-    python -u main.py --mode run-relaxations --config-yml $configfl --run-dir exp/dpp_fn/relax --identifier all.`basename $configfl` \
-        --checkpoint FN/dpp_10.8M_all.pt --tasks-per-node 8 --distributed --submit --slurm-partition priority,dev
-done
+# for configfl in configs/eval/dpp_10.8M*; do 
+#     python -u main.py --mode run-relaxations --config-yml $configfl --run-dir exp/dpp_fn/relax --identifier all.`basename $configfl` \
+#         --checkpoint FN/dpp_10.8M_all.pt --tasks-per-node 8 --distributed --submit --slurm-partition priority,dev
+# done
