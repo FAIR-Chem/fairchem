@@ -342,10 +342,16 @@ class ForcesTrainer(BaseTrainer):
         self.metrics = {}
 
         start_epoch = self.start_step // len(self.train_loader)
-        self.scheduler.step()
         for epoch in range(start_epoch, self.config["optim"]["max_epochs"]):
             self.model.train()
-            for i, batch in enumerate(self.train_loader):
+
+            skip_steps = 0
+            if epoch == start_epoch and start_epoch > 0:
+                skip_steps = start_epoch % len(self.train_loader)
+            train_loader_iter = iter(self.train_loader)
+
+            for i in range(skip_steps, len(self.train_loader)):
+                batch = next(train_loader_iter)
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
@@ -418,7 +424,12 @@ class ForcesTrainer(BaseTrainer):
                                     disable_tqdm=False,
                                 )
 
+                if self.update_lr_on_step:
+                    self.scheduler.step()
+
+            if not self.update_lr_on_step:
                 self.scheduler.step()
+
             torch.cuda.empty_cache()
 
             if eval_every == -1:

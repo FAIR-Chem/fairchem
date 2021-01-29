@@ -214,7 +214,14 @@ class EnergyTrainer(BaseTrainer):
         for epoch in range(start_epoch, self.config["optim"]["max_epochs"]):
             self.train_sampler.set_epoch(epoch)
             self.model.train()
-            for i, batch in enumerate(self.train_loader):
+
+            skip_steps = 0
+            if epoch == start_epoch and start_epoch > 0:
+                skip_steps = start_epoch % len(self.train_loader)
+            train_loader_iter = iter(self.train_loader)
+
+            for i in range(skip_steps, len(self.train_loader)):
+                batch = next(train_loader_iter)
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
@@ -255,7 +262,12 @@ class EnergyTrainer(BaseTrainer):
                         split="train",
                     )
 
+                if self.update_lr_on_step:
+                    self.scheduler.step()
+
+            if not self.update_lr_on_step:
                 self.scheduler.step()
+
             torch.cuda.empty_cache()
 
             if self.val_loader is not None:
