@@ -1,0 +1,17 @@
+
+Scaling Dimenet++
+-----------------
+
+1. Async SGD / BMUF etc.
+    - Small batch training seems to work well. First verify this.
+    - Implement BMUF or a variant.
+
+2. Split the nodes, edges and triplets once at the beginning
+    - Use `multiprocessing.spawn()` to spawn threads yourself instead of relying on nn.DataParallel
+        - Can this be done within DDP? If not, will need to create process groups.
+    - Implement tensor communication (from master to/from other processes).
+    - Can we implemet the scatters in parallel across all nodes?
+
+2. Better load balancing since #nodes << #edges << #triplets
+    - For very large models, run the triplets in a loop => can support much bigger batches.
+        - May need to make use of checkpointing.
