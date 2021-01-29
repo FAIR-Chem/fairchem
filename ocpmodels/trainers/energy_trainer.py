@@ -209,7 +209,7 @@ class EnergyTrainer(BaseTrainer):
 
     def train(self):
         self.best_val_mae = 1e9
-        
+
         start_epoch = self.start_step // len(self.train_loader)
         for epoch in range(start_epoch, self.config["optim"]["max_epochs"]):
             self.train_sampler.set_epoch(epoch)

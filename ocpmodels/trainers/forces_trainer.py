@@ -415,7 +415,9 @@ class ForcesTrainer(BaseTrainer):
                             current_epoch = epoch + (i + 1) / len(
                                 self.train_loader
                             )
-                            current_step = epoch * len(self.train_loader) + (i + 1)
+                            current_step = epoch * len(self.train_loader) + (
+                                i + 1
+                            )
                             self.save(current_epoch, current_step, val_metrics)
                             if self.test_loader is not None:
                                 self.predict(

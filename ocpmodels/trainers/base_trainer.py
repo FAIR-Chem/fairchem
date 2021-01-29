@@ -406,7 +406,9 @@ class BaseTrainer:
         self.scheduler = optim.lr_scheduler.LambdaLR(
             self.optimizer, lr_lambda=scheduler_lambda_fn
         )
-        self.update_lr_on_step = self.config["optim"].get("update_lr_on_step", False)
+        self.update_lr_on_step = self.config["optim"].get(
+            "update_lr_on_step", False
+        )
 
         # metrics.
         self.meter = Meter(split="train")
