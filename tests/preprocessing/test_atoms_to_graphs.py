@@ -25,11 +25,7 @@ def atoms_to_graphs_internals(request):
         format="json",
     )
     test_object = AtomsToGraphs(
-        max_neigh=200,
-        radius=6,
-        r_energy=True,
-        r_forces=True,
-        r_distances=True,
+        max_neigh=200, radius=6, r_energy=True, r_forces=True, r_distances=True
     )
     request.cls.atg = test_object
     request.cls.atoms = atoms

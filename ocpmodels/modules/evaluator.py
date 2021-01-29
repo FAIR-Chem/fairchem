@@ -77,11 +77,7 @@ class Evaluator:
 
     def update(self, key, stat, metrics):
         if key not in metrics:
-            metrics[key] = {
-                "metric": None,
-                "total": 0,
-                "numel": 0,
-            }
+            metrics[key] = {"metric": None, "total": 0, "numel": 0}
 
         if isinstance(stat, dict):
             # If dictionary, we expect it to have `metric`, `total`, `numel`.
@@ -184,11 +180,7 @@ def energy_force_within_threshold(prediction, target):
             success += 1
         start_idx += n
 
-    return {
-        "metric": success / total,
-        "total": success,
-        "numel": total,
-    }
+    return {"metric": success / total, "total": success, "numel": total}
 
 
 def energy_within_threshold(prediction, target):
@@ -200,11 +192,7 @@ def energy_within_threshold(prediction, target):
     success = (error_energy < e_thresh).sum().item()
     total = target["energy"].size(0)
 
-    return {
-        "metric": success / total,
-        "total": success,
-        "numel": total,
-    }
+    return {"metric": success / total, "total": success, "numel": total}
 
 
 def average_distance_within_threshold(prediction, target):

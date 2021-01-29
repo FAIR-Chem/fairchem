@@ -17,15 +17,7 @@ from .optimizers.lbfgs_torch import LBFGS, TorchCalc
 
 
 def ml_relax(
-    batch,
-    model,
-    steps,
-    fmax,
-    relax_opt,
-    device="cuda:0",
-    transform=None,
-    run_dir=None,
-    timestamp="",
+    batch, model, steps, fmax, relax_opt, device="cuda:0", transform=None
 ):
     """
     Runs ML-based relaxations.
@@ -56,7 +48,7 @@ def ml_relax(
         damping=relax_opt.get("damping", 1.0),
         alpha=relax_opt.get("alpha", 70.0),
         device=device,
-        traj_dir=Path(traj_dir),
+        traj_dir=Path(traj_dir) if traj_dir is not None else None,
         traj_names=ids,
     )
     relaxed_batch = optimizer.run(fmax=fmax, steps=steps)

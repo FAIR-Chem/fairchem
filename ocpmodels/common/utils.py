@@ -146,11 +146,7 @@ def collate(data_list):
 
 
 def add_edge_distance_to_graph(
-    batch,
-    device="cpu",
-    dmin=0.0,
-    dmax=6.0,
-    num_gaussians=50,
+    batch, device="cpu", dmin=0.0, dmax=6.0, num_gaussians=50
 ):
     # Make sure x has positions.
     if not all(batch.pos[0][:] == batch.x[0][-3:]):
@@ -365,10 +361,7 @@ def get_pbc_distances(
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
 
-    out = {
-        "edge_index": edge_index,
-        "distances": distances,
-    }
+    out = {"edge_index": edge_index, "distances": distances}
 
     if return_distance_vec:
         out["distance_vec"] = distance_vectors[nonzero_idx]

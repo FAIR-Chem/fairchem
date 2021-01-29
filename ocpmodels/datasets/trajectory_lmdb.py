@@ -81,8 +81,10 @@ class TrajectoryLmdbDataset(Dataset):
         assert el_idx >= 0
 
         # Return features.
-        datapoint_pickled = self.envs[db_idx].begin().get(
-            f"{self._keys[db_idx][el_idx]}".encode("ascii")
+        datapoint_pickled = (
+            self.envs[db_idx]
+            .begin()
+            .get(f"{self._keys[db_idx][el_idx]}".encode("ascii"))
         )
         data_object = pickle.loads(datapoint_pickled)
         if self.transform is not None:
