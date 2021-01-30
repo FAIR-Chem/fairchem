@@ -29,8 +29,8 @@ def stat_cuda():
         f"[MemStats]",
         f"allocated: {torch.cuda.memory_allocated() / 1024 / 1024 / 1024:0.2f}, "
         f"max allocated: {torch.cuda.max_memory_allocated() / 1024 / 1024 / 1024:0.2f}, "
-        f"cached: {torch.cuda.memory_cached() / 1024 / 1024 / 1024:0.2f}, "
-        f"max cached: {torch.cuda.max_memory_cached() / 1024 / 1024 / 1024:0.2f}, "
+        f"reserved: {torch.cuda.memory_reserved() / 1024 / 1024 / 1024:0.2f}, "
+        f"max reserved: {torch.cuda.max_memory_reserved() / 1024 / 1024 / 1024:0.2f} "
     )
 
 
@@ -389,6 +389,7 @@ class ForcesTrainer(BaseTrainer):
                     log_str = [
                         "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
                     ]
+                    print(f"Epoch: {epoch} Iter: {i} LR: {self.scheduler.get_lr()}")
                     print(", ".join(log_str))
                     stat_cuda()
                     self.metrics = {}

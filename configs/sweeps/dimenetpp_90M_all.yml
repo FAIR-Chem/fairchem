@@ -1,0 +1,41 @@
+includes:
+- configs/s2ef/all/base.yml
+
+model:
+  name: dimenetplusplus
+  hidden_channels: 1280
+  out_emb_channels: 512
+  num_blocks: 5
+  cutoff: 6.0
+  num_radial: 6
+  num_spherical: 7
+  num_before_skip: 1
+  num_after_skip: 2
+  num_output_layers: 3
+  regress_forces: True
+  use_pbc: True
+  int_emb_size: 64
+
+optim:
+  batch_size: 2
+  eval_batch_size: 1
+  num_workers: 64
+
+  lr_initial: 0.0001
+  lr_gamma: 0.1
+  warmup_epochs: 50000
+  warmup_factor: 0.2
+  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+    - 100000
+    - 200000
+    - 300000
+  update_lr_on_step: True
+  max_epochs: 5
+  energy_coefficient: 0
+  force_coefficient: 100
+  eval_every: -10000
+
+
+# 135e6 / (128 * 2) = 527,343.75
+# 135e6 / (128 * 3) = 351,562.5
+# 135e6 / (256 * 5) = 105,468.75

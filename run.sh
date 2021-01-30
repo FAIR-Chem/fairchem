@@ -4,9 +4,34 @@
 #    within a block (larger num_before_skip, num_after_skip, & num_output_layers)
 # 3. Can we use multiple GPUs for graph creation?
 
-python -u main.py --mode train --config-yml configs/sweeps/dimenetpp_10.8M_20M.yml --sweep-yml configs/sweeps/sweep_feats.yml \
-    --identifier dpp.10.8M.20M --run-dir exp/dpp_sweep/dpp_20M --amp --num-nodes 4 --tasks-per-node 8 --distributed \
-    --submit --slurm-timeout 72 --slurm-partition priority
+
+
+
+# python -u -m torch.distributed.launch --nproc_per_node=2 main.py \
+#     --mode train --config-yml configs/sweeps/dimenetpp_70M_all.yml \
+#     --run-dir exp/tmp/dpp --identifier dpp --distributed --amp
+
+
+
+# python -u main.py --mode train --config-yml configs/sweeps/dimenetpp_90M_all.yml \
+#     --run-dir exp/dpp_all --identifier dpp_90M_all_16x8_bs2 --distributed --amp \
+#     --submit --slurm-partition priority,learnfair --num-nodes 16 --tasks-per-node 8
+
+# python -u main.py --mode train --config-yml configs/sweeps/dimenetpp_90M_all.yml \
+#     --run-dir exp/dpp_all --identifier dpp_90M_all_32x8_bs2 --distributed --amp \
+#     --submit --slurm-partition scavenge --num-nodes 32 --tasks-per-node 8
+
+python -u main.py --mode train --config-yml configs/sweeps/dimenetpp_70M_all.yml \
+    --run-dir exp/dpp_all --identifier dpp_70M_all_16x8_bs2 --distributed --amp \
+    --submit --slurm-partition priority,learnfair --num-nodes 16 --tasks-per-node 8
+
+
+
+
+
+# python -u main.py --mode train --config-yml configs/sweeps/dimenetpp_10.8M_20M.yml --sweep-yml configs/sweeps/sweep_feats.yml \
+#     --identifier dpp.10.8M.20M --run-dir exp/dpp_sweep/dpp_20M --amp --num-nodes 4 --tasks-per-node 8 --distributed \
+#     --submit --slurm-timeout 72 --slurm-partition priority
 
 
     #   35183317  priority                          pardpp_42_2M_bs12_2gpu_4tsk_2nd  R   17:55:27      2 learnfair[0696,0884]

@@ -563,7 +563,7 @@ class BaseTrainer:
         log_dict.update({"epoch": epoch + 1})
         if distutils.is_master():
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
-            print(", ".join(log_str))
+            print("Validation:", ", ".join(log_str))
 
         # Make plots.
         if self.logger is not None and epoch is not None:

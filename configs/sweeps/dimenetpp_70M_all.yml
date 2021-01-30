@@ -17,17 +17,26 @@ model:
   int_emb_size: 64
 
 optim:
-  batch_size: 2
-  eval_batch_size: 1
+  batch_size: 4
+  eval_batch_size: 2
   num_workers: 64
+
   lr_initial: 0.0001
   lr_gamma: 0.1
-  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
-    - 5
-    - 10
-    - 15
-  warmup_epochs: 1
+  warmup_epochs: 50000
   warmup_factor: 0.2
-  max_epochs: 10
+  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+    - 100000
+    - 200000
+    - 300000
+  update_lr_on_step: True
+  max_epochs: 5
   energy_coefficient: 0
   force_coefficient: 100
+  eval_every: -10000
+
+
+# 135e6 / (128 * 2) = 527,343.75
+# 135e6 / (128 * 3) = 351,562.5
+# 135e6 / (128 * 4) = 263,671.875
+# 135e6 / (256 * 5) = 105,468.75
