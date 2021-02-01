@@ -2,9 +2,10 @@
 
 Implements the following baselines that take arbitrary chemical structures as
 input to predict material properties:
-- [SchNet](https://arxiv.org/abs/1706.08566)
+- [DimeNet++](https://arxiv.org/abs/2011.14115)
 - [DimeNet](https://arxiv.org/abs/2003.03123)
-- [Crystal Graph Convolutional Neural Networks (CGCNN)](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301).
+- [SchNet](https://arxiv.org/abs/1706.08566)
+- [CGCNN](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301).
 
 ##  Installation
 
