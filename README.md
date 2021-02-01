@@ -79,13 +79,17 @@ S2EF datasets:
     - `--num-workers`: number of workers to parallelize preprocessing across.
 - test splits: `python scripts/download_data.py --task s2ef --split test`
 
+An interactive notebook can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/docs/source/tutorials/data_playground.ipynb) to provide some intution on the data and its contents.
+
 ### Train models for the desired tasks
 
 A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md).
 
+A simplified interactive notebook example can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/docs/source/tutorials/train_s2ef_example.ipynb).
+
 ### Pretrained models
 
-Pretrained models accompanying https://arxiv.org/abs/2010.09990v1 can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md).
+Pretrained models accompanying https://arxiv.org/abs/2010.09990v2 can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md).
 
 ## Discussions/FAQs
 
