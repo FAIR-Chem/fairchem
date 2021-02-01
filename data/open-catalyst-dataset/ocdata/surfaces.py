@@ -7,6 +7,7 @@ import pickle
 from ase import neighborlist
 from ase.constraints import FixAtoms
 from collections import defaultdict
+from pymatgen import Composition
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.analysis.local_env import VoronoiNN
@@ -52,6 +53,12 @@ class Surface():
 
         unit_surface_atoms = AseAtomsAdaptor.get_atoms(surface_struct)
         self.surface_atoms = self.tile_atoms(unit_surface_atoms)
+
+        # verify that the bulk and surface elements and stoichiometry match:
+        assert (Composition(self.surface_atoms.get_chemical_formula()).reduced_formula ==
+            Composition(bulk_object.bulk_atoms.get_chemical_formula()).reduced_formula), \
+            'Mismatched bulk and surface'
+
         self.tag_surface_atoms(self.bulk_object.bulk_atoms, self.surface_atoms)
         self.constrained_surface = constrain_surface(self.surface_atoms)
 
