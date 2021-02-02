@@ -76,7 +76,7 @@ S2EF datasets:
 - train/val splits: `python scripts/download_data.py --task s2ef --split SPLIT_SIZE --get-edges --num-workers WORKERS --ref-energy`; where
     - `--get-edges`: includes edge information in LMDBs (~10x storage requirement, ~3-5x slowdown), otherwise, compute edges on the fly (larger GPU memory requirement).
     - `--ref-energy`: uses referenced energies instead of raw energies.
-    - `--split`: split size to download: `"200k", "2M", "20M", "all", "val_id", "val_ood_ads", "val_ood_cat", or "val_ood"both"`.
+    - `--split`: split size to download: `"200k", "2M", "20M", "all", "val_id", "val_ood_ads", "val_ood_cat", or "val_ood_both"`.
     - `--num-workers`: number of workers to parallelize preprocessing across.
 - test splits: `python scripts/download_data.py --task s2ef --split test`
 
