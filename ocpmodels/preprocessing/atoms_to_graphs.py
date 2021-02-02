@@ -167,7 +167,7 @@ class AtomsToGraphs:
 
                 for constraint in atoms.constraints:
                     if isinstance(constraint, FixAtoms):
-                        fixed_idx[atoms.constraints[0].index] = 1
+                        fixed_idx[constraint.index] = 1
             data.fixed = fixed_idx
 
         return data
