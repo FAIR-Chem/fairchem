@@ -5,10 +5,12 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import time
 from collections import deque
 from pathlib import Path
 
 import ase
+import numpy as np
 import torch
 from ase import Atoms
 from torch_scatter import scatter
@@ -81,6 +83,12 @@ class LBFGS:
                 for name in self.traj_names
             ]
 
+        torch.cuda.empty_cache()
+        torch.cuda.reset_max_memory_allocated()
+        basemem = torch.cuda.memory_allocated()
+        memory_usage = []
+        st = time.time()
+
         iteration = 0
         while iteration < steps and not self.converged(fmax, iteration, f0):
             r0, f0, e0 = self.step(iteration, r0, f0, H0, rho, s, y)
@@ -90,6 +98,25 @@ class LBFGS:
                 atoms_objects = batch_to_atoms(self.atoms)
                 for atm, traj in zip(atoms_objects, trajectories):
                     traj.write(atm)
+
+            memory_usage.append(torch.cuda.memory_allocated())
+
+        # let's log traj id, # atoms, # steps, avg gpu memory, time taken
+        log_str = ""
+        for i in range(len(self.atoms.natoms)):
+            log_str += (
+                "id:%d,atoms:%d,steps:%d,mem:%.2f,peak:%.2f,time:%d\n"
+                % (
+                    self.traj_names[i],
+                    self.atoms.natoms[i],
+                    iteration,
+                    (np.mean(memory_usage) - basemem) / 2 ** 20,
+                    (torch.cuda.max_memory_allocated() - basemem) / 2 ** 20,
+                    time.time() - st,
+                )
+            )
+        with open("relaxations.log", "a") as f:
+            f.write(log_str)
 
         if trajectories is not None:
             for traj in trajectories:
