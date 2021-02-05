@@ -9,19 +9,19 @@ import os
 from collections import defaultdict
 
 import numpy as np
-import torch
-import torch_geometric
-from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
+import torch
+import torch_geometric
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import (plot_histogram, tune_reporter)
+from ocpmodels.common.utils import plot_histogram, tune_reporter
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from torch.utils.data import DataLoader, DistributedSampler
 
 
 @registry.register_trainer("forces")
@@ -354,10 +354,7 @@ class ForcesTrainer(BaseTrainer):
                 scale = self.scaler.get_scale() if self.scaler else 1.0
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out,
-                    batch,
-                    self.evaluator,
-                    self.metrics,
+                    out, batch, self.evaluator, self.metrics,
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -420,11 +417,19 @@ class ForcesTrainer(BaseTrainer):
                                 )
                     if self.is_hpo:
                         progress = {"steps": iters, "epochs": current_epoch}
-                        tune_reporter(iters=progress, 
-                                      train_metrics={k: self.metrics[k]["metric"] for k in self.metrics}, 
-                                      val_metrics={k: val_metrics[k]["metric"] for k in val_metrics}, 
-                                      test_metrics=None)
-                        # add checkpointing here
+                        # add checkpointing before reporter
+                        tune_reporter(
+                            iters=progress,
+                            train_metrics={
+                                k: self.metrics[k]["metric"]
+                                for k in self.metrics
+                            },
+                            val_metrics={
+                                k: val_metrics[k]["metric"]
+                                for k in val_metrics
+                            },
+                            test_metrics=None,
+                        )
 
             self.scheduler.step()
             torch.cuda.empty_cache()
@@ -685,8 +690,7 @@ class ForcesTrainer(BaseTrainer):
             if distutils.is_master():
                 gather_results = defaultdict(list)
                 full_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
-                    "relaxed_positions.npz",
+                    self.config["cmd"]["results_dir"], "relaxed_positions.npz",
                 )
 
                 for i in range(distutils.get_world_size()):

@@ -13,14 +13,13 @@ from collections import OrderedDict, defaultdict
 from pathlib import Path
 
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
 import yaml
-from torch.nn.parallel.distributed import DistributedDataParallel
 from tqdm import tqdm
 
 import ocpmodels
+import torch
+import torch.nn as nn
+import torch.optim as optim
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.logger import TensorboardLogger, WandBLogger
@@ -34,6 +33,7 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
+from torch.nn.parallel.distributed import DistributedDataParallel
 
 
 @registry.register_trainer("base")
@@ -593,13 +593,16 @@ class BaseTrainer:
             and self.config["model_attributes"].get("regress_forces", False)
             is False
         ):
-            force_output = -1 * torch.autograd.grad(
-                output,
-                inp_for_grad,
-                grad_outputs=torch.ones_like(output),
-                create_graph=True,
-                retain_graph=True,
-            )[0]
+            force_output = (
+                -1
+                * torch.autograd.grad(
+                    output,
+                    inp_for_grad,
+                    grad_outputs=torch.ones_like(output),
+                    create_graph=True,
+                    retain_graph=True,
+                )[0]
+            )
             out["force_output"] = force_output
 
         if not compute_metrics:
@@ -767,4 +770,3 @@ class BaseTrainer:
 
             print(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
-    
