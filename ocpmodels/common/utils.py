@@ -16,14 +16,15 @@ import time
 from bisect import bisect
 from itertools import product
 
-import demjson
 import numpy as np
-import torch
 import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
-from torch_geometric.utils import remove_self_loops
+
+import demjson
+import torch
 from ray import tune
+from torch_geometric.utils import remove_self_loops
 
 
 def save_checkpoint(state, checkpoint_dir="checkpoints/"):
@@ -147,11 +148,7 @@ def collate(data_list):
 
 
 def add_edge_distance_to_graph(
-    batch,
-    device="cpu",
-    dmin=0.0,
-    dmax=6.0,
-    num_gaussians=50,
+    batch, device="cpu", dmin=0.0, dmax=6.0, num_gaussians=50,
 ):
     # Make sure x has positions.
     if not all(batch.pos[0][:] == batch.x[0][-3:]):
@@ -579,6 +576,7 @@ def get_pruned_edge_idx(edge_index, num_atoms=None, max_neigh=1e9):
 
     return _nonmax_idx
 
+
 def tune_reporter(iters, train_metrics, val_metrics, test_metrics=None):
     # labels and report metric dicts
     train = label_metric_dict(train_metrics, "train")
@@ -587,8 +585,9 @@ def tune_reporter(iters, train_metrics, val_metrics, test_metrics=None):
         test = label_metric_dict(test_metrics, "test")
     else:
         test = {}
-    
+    # report results to Ray Tune
     tune.report(**iters, **train, **val, **test)
+
 
 def label_metric_dict(metric_dict, split):
     new_dict = {}
