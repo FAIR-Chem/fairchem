@@ -23,6 +23,7 @@ import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from torch_geometric.utils import remove_self_loops
+from ray import tune
 
 
 def save_checkpoint(state, checkpoint_dir="checkpoints/"):
@@ -577,3 +578,21 @@ def get_pruned_edge_idx(edge_index, num_atoms=None, max_neigh=1e9):
     _nonmax_idx = torch.cat(_nonmax_idx)
 
     return _nonmax_idx
+
+def tune_reporter(iters, train_metrics, val_metrics, test_metrics=None):
+    # labels and report metric dicts
+    train = label_metric_dict(train_metrics, "train")
+    val = label_metric_dict(val_metrics, "val")
+    if test_metrics:
+        test = label_metric_dict(test_metrics, "test")
+    else:
+        test = {}
+    
+    tune.report(**iters, **train, **val, **test)
+
+def label_metric_dict(metric_dict, split):
+    new_dict = {}
+    for key in metric_dict:
+        new_dict["{}_{}".format(split, key)] = metric_dict[key]
+    metric_dict = new_dict
+    return metric_dict

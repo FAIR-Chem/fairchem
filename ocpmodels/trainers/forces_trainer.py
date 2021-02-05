@@ -18,7 +18,7 @@ from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import plot_histogram
+from ocpmodels.common.utils import (plot_histogram, tune_reporter)
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -70,6 +70,7 @@ class ForcesTrainer(BaseTrainer):
         run_dir=None,
         is_debug=False,
         is_vis=False,
+        is_hpo=False,
         print_every=100,
         seed=None,
         logger="tensorboard",
@@ -86,6 +87,7 @@ class ForcesTrainer(BaseTrainer):
             run_dir=run_dir,
             is_debug=is_debug,
             is_vis=is_vis,
+            is_hpo=is_hpo,
             print_every=print_every,
             seed=seed,
             logger=logger,
@@ -369,6 +371,7 @@ class ForcesTrainer(BaseTrainer):
                 if (
                     i % self.config["cmd"]["print_every"] == 0
                     and distutils.is_master()
+                    and not self.is_hpo
                 ):
                     log_str = [
                         "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
@@ -406,13 +409,22 @@ class ForcesTrainer(BaseTrainer):
                             current_epoch = epoch + (i + 1) / len(
                                 self.train_loader
                             )
-                            self.save(current_epoch, val_metrics)
+                            # hpo
+                            if not self.is_hpo:
+                                self.save(current_epoch, val_metrics)
                             if self.test_loader is not None:
                                 self.predict(
                                     self.test_loader,
                                     results_file="predictions",
                                     disable_tqdm=False,
                                 )
+                    if self.is_hpo:
+                        progress = {"steps": iters, "epochs": current_epoch}
+                        tune_reporter(iters=progress, 
+                                      train_metrics={k: self.metrics[k]["metric"] for k in self.metrics}, 
+                                      val_metrics={k: val_metrics[k]["metric"] for k in val_metrics}, 
+                                      test_metrics=None)
+                        # add checkpointing here
 
             self.scheduler.step()
             torch.cuda.empty_cache()
