@@ -81,6 +81,10 @@ class LBFGS:
                 for name in self.traj_names
             ]
 
+        # GPU memory usage as per nvidia-smi seems to gradually build up as
+        # batches are processed. This releases unoccupied cached memory.
+        torch.cuda.empty_cache()
+
         iteration = 0
         while iteration < steps and not self.converged(fmax, iteration, f0):
             r0, f0, e0 = self.step(iteration, r0, f0, H0, rho, s, y)
