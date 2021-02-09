@@ -209,10 +209,19 @@ class EnergyTrainer(BaseTrainer):
 
     def train(self):
         self.best_val_mae = 1e9
-        for epoch in range(self.config["optim"]["max_epochs"]):
+
+        start_epoch = self.start_step // len(self.train_loader)
+        for epoch in range(start_epoch, self.config["optim"]["max_epochs"]):
             self.train_sampler.set_epoch(epoch)
             self.model.train()
-            for i, batch in enumerate(self.train_loader):
+
+            skip_steps = 0
+            if epoch == start_epoch and start_epoch > 0:
+                skip_steps = start_epoch % len(self.train_loader)
+            train_loader_iter = iter(self.train_loader)
+
+            for i in range(skip_steps, len(self.train_loader)):
+                batch = next(train_loader_iter)
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
@@ -253,7 +262,12 @@ class EnergyTrainer(BaseTrainer):
                         split="train",
                     )
 
-            self.scheduler.step()
+                if self.update_lr_on_step:
+                    self.scheduler.step()
+
+            if not self.update_lr_on_step:
+                self.scheduler.step()
+
             torch.cuda.empty_cache()
 
             if self.val_loader is not None:
@@ -267,7 +281,8 @@ class EnergyTrainer(BaseTrainer):
                     self.best_val_mae = val_metrics[
                         self.evaluator.task_primary_metric[self.name]
                     ]["metric"]
-                    self.save(epoch + 1, val_metrics)
+                    current_step = (epoch + 1) * len(self.train_loader)
+                    self.save(epoch + 1, current_step, val_metrics)
                     if self.test_loader is not None:
                         self.predict(
                             self.test_loader,
@@ -275,7 +290,8 @@ class EnergyTrainer(BaseTrainer):
                             disable_tqdm=False,
                         )
             else:
-                self.save(epoch + 1, self.metrics)
+                current_step = (epoch + 1) * len(self.train_loader)
+                self.save(epoch + 1, current_step, self.metrics)
 
         self.train_dataset.close_db()
         if "val_dataset" in self.config:

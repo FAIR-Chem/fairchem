@@ -2,9 +2,10 @@
 
 Implements the following baselines that take arbitrary chemical structures as
 input to predict material properties:
-- [SchNet](https://arxiv.org/abs/1706.08566)
+- [DimeNet++](https://arxiv.org/abs/2011.14115)
 - [DimeNet](https://arxiv.org/abs/2003.03123)
-- [Crystal Graph Convolutional Neural Networks (CGCNN)](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301).
+- [SchNet](https://arxiv.org/abs/1706.08566)
+- [CGCNN](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301).
 
 ##  Installation
 
@@ -75,17 +76,21 @@ S2EF datasets:
 - train/val splits: `python scripts/download_data.py --task s2ef --split SPLIT_SIZE --get-edges --num-workers WORKERS --ref-energy`; where
     - `--get-edges`: includes edge information in LMDBs (~10x storage requirement, ~3-5x slowdown), otherwise, compute edges on the fly (larger GPU memory requirement).
     - `--ref-energy`: uses referenced energies instead of raw energies.
-    - `--split`: split size to download: `"200k", "2M", "20M", "all", "val_id", "val_ood_ads", "val_ood_cat", or "val_ood"both"`.
+    - `--split`: split size to download: `"200k", "2M", "20M", "all", "val_id", "val_ood_ads", "val_ood_cat", or "val_ood_both"`.
     - `--num-workers`: number of workers to parallelize preprocessing across.
 - test splits: `python scripts/download_data.py --task s2ef --split test`
+
+An interactive notebook can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/docs/source/tutorials/data_playground.ipynb) to provide some intution on the data and its contents.
 
 ### Train models for the desired tasks
 
 A detailed description of how to train, predict, and run ML-based relaxations can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md).
 
+A simplified interactive notebook example can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/docs/source/tutorials/train_s2ef_example.ipynb).
+
 ### Pretrained models
 
-Pretrained models accompanying https://arxiv.org/abs/2010.09990v1 can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md).
+Pretrained models accompanying https://arxiv.org/abs/2010.09990v2 can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md).
 
 ## Discussions/FAQs
 

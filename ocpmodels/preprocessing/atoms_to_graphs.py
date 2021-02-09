@@ -162,7 +162,12 @@ class AtomsToGraphs:
             data.distances = edge_distances
         if self.r_fixed:
             fixed_idx = torch.zeros(natoms)
-            fixed_idx[atoms.constraints[0].index] = 1
+            if hasattr(atoms, "constraints"):
+                from ase.constraints import FixAtoms
+
+                for constraint in atoms.constraints:
+                    if isinstance(constraint, FixAtoms):
+                        fixed_idx[constraint.index] = 1
             data.fixed = fixed_idx
 
         return data
