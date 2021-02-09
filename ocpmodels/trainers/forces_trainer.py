@@ -704,7 +704,7 @@ class ForcesTrainer(BaseTrainer):
                 pos_filename,
                 ids=ids,
                 pos=np.array(relaxed_positions, dtype=object),
-                chunk_idx=np.array(chunk_idx),
+                chunk_idx=chunk_idx,
             )
 
             distutils.synchronize()
