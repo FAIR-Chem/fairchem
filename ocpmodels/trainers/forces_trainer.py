@@ -270,7 +270,7 @@ class ForcesTrainer(BaseTrainer):
             self.normalizers["target"].to(self.device)
             self.normalizers["grad_target"].to(self.device)
 
-        predictions = {"id": [], "energy": [], "forces": []}
+        predictions = {"id": [], "energy": [], "forces": [], "chunk_idx": []}
 
         for i, batch_list in tqdm(
             enumerate(data_loader),
@@ -290,7 +290,6 @@ class ForcesTrainer(BaseTrainer):
                     out["forces"]
                 )
             if per_image:
-                atoms_sum = 0
                 systemids = [
                     str(i) + "_" + str(j)
                     for i, j in zip(
@@ -305,31 +304,46 @@ class ForcesTrainer(BaseTrainer):
                     [batch.natoms for batch in batch_list]
                 )
                 batch_fixed = torch.cat([batch.fixed for batch in batch_list])
-                for natoms in batch_natoms:
-                    forces = (
-                        out["forces"][atoms_sum : natoms + atoms_sum]
-                        .cpu()
-                        .detach()
-                        .to(torch.float16)
-                        .numpy()
+                forces = out["forces"].cpu().detach().to(torch.float16)
+                per_image_forces = torch.split(forces, batch_natoms.tolist())
+                per_image_forces = [
+                    force.numpy() for force in per_image_forces
+                ]
+                # evalAI only requires forces on free atoms
+                if results_file is not None:
+                    _per_image_fixed = torch.split(
+                        batch_fixed, batch_natoms.tolist()
                     )
-                    # evalAI only requires forces on free atoms
-                    if results_file is not None:
-                        _free_atoms = (
-                            batch_fixed[atoms_sum : natoms + atoms_sum] == 0
-                        ).tolist()
-                        forces = forces[_free_atoms]
-                    atoms_sum += natoms
-                    predictions["forces"].append(forces)
+                    _per_image_free_forces = [
+                        force[(fixed == 0).tolist()]
+                        for force, fixed in zip(
+                            per_image_forces, _per_image_fixed
+                        )
+                    ]
+                    _chunk_idx = np.cumsum(
+                        [
+                            free_force.shape[0]
+                            for free_force in _per_image_free_forces
+                        ]
+                    )
+                    per_image_forces = _per_image_free_forces
+                    predictions["chunk_idx"].extend(_chunk_idx)
+                predictions["forces"].extend(per_image_forces)
             else:
                 predictions["energy"] = out["energy"].detach()
                 predictions["forces"] = out["forces"].detach()
                 return predictions
 
-        predictions["forces"] = np.array(predictions["forces"], dtype=object)
+        if results_file is not None:
+            predictions["forces"] = np.concatenate(predictions["forces"])
+            predictions["chunk_idx"] = np.array(predictions["chunk_idx"])
+        else:
+            predictions["forces"] = np.array(predictions["forces"])
         predictions["energy"] = np.array(predictions["energy"])
         predictions["id"] = np.array(predictions["id"])
-        self.save_results(predictions, results_file, keys=["energy", "forces"])
+        self.save_results(
+            predictions, results_file, keys=["energy", "forces", "chunk_idx"]
+        )
         return predictions
 
     def train(self):
@@ -627,6 +641,7 @@ class ForcesTrainer(BaseTrainer):
 
         ids = []
         relaxed_positions = []
+        chunk_idx = []
         for i, batch in tqdm(
             enumerate(self.relax_loader), total=len(self.relax_loader)
         ):
@@ -647,6 +662,7 @@ class ForcesTrainer(BaseTrainer):
                 batch_relaxed_positions = [pos.tolist() for pos in positions]
 
                 relaxed_positions += batch_relaxed_positions
+                chunk_idx += natoms
                 ids += systemids
 
             if split == "val":
@@ -686,6 +702,7 @@ class ForcesTrainer(BaseTrainer):
                 pos_filename,
                 ids=ids,
                 pos=np.array(relaxed_positions, dtype=object),
+                chunk_idx=np.array(chunk_idx),
             )
 
             distutils.synchronize()
@@ -704,14 +721,20 @@ class ForcesTrainer(BaseTrainer):
                     rank_results = np.load(rank_path, allow_pickle=True)
                     gather_results["ids"].extend(rank_results["ids"])
                     gather_results["pos"].extend(rank_results["pos"])
+                    gather_results["chunk_idx"].extend(
+                        rank_results["chunk_idx"]
+                    )
                     os.remove(rank_path)
 
                 # Because of how distributed sampler works, some system ids
                 # might be repeated to make no. of samples even across GPUs.
                 _, idx = np.unique(gather_results["ids"], return_index=True)
                 gather_results["ids"] = np.array(gather_results["ids"])[idx]
-                gather_results["pos"] = np.array(
-                    gather_results["pos"], dtype=object
+                gather_results["pos"] = np.concatenate(
+                    np.array(gather_results["pos"])[idx]
+                )
+                gather_results["chunk_idx"] = np.array(
+                    gather_results["chunk_idx"]
                 )[idx]
 
                 print(f"Writing results to {full_path}")
