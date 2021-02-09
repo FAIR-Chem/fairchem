@@ -3,29 +3,34 @@ trainer: forces
 dataset:
   - src: data/s2ef/200k/train/
   - src: data/s2ef/all/val_id/
+    normalize_labels: True
+    target_mean: -0.7554450631141663
+    target_std: 2.887317180633545
+    grad_target_mean: 0.0
+    grad_target_std: 2.887317180633545
 
 model:
   name: forcenet
-  num_interactions: 5
+  num_interactions: 3
   cutoff: 6
   basis: "sphallmul"
   ablation: "none"
-  depth_mlp_edge: 2
+  depth_mlp_edge: 1
   depth_mlp_node: 1
   activation_str: "swish"
   decoder_activation_str: "swish"
   feat: "full"
-  hidden_channels: 512
-  decoder_hidden_channels: 512
+  hidden_channels: 704
+  decoder_hidden_channels: 256
   max_n: 3
 
 optim:
   batch_size: 8
   eval_batch_size: 1
-  eval_every: -10000
-  num_workers: 64
+  eval_every: 25000
+  num_workers: 8
   lr_initial: 0.0005
-  max_epochs: 20
+  max_epochs: 4
   energy_coefficient: 0
   lr_gamma: 0.1
   lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
