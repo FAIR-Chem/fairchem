@@ -27,10 +27,10 @@ model:
 optim:
   batch_size: 8
   eval_batch_size: 1
-  eval_every: 25000
+  eval_every: -10000
   num_workers: 8
   lr_initial: 0.0005
-  max_epochs: 4
+  max_epochs: 20
   energy_coefficient: 0
   lr_gamma: 0.1
   lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
