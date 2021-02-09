@@ -320,7 +320,7 @@ class ForcesTrainer(BaseTrainer):
                             per_image_forces, _per_image_fixed
                         )
                     ]
-                    _chunk_idx = np.cumsum(
+                    _chunk_idx = np.array(
                         [
                             free_force.shape[0]
                             for free_force in _per_image_free_forces
@@ -336,7 +336,9 @@ class ForcesTrainer(BaseTrainer):
 
         if results_file is not None:
             predictions["forces"] = np.concatenate(predictions["forces"])
-            predictions["chunk_idx"] = np.array(predictions["chunk_idx"])
+            predictions["chunk_idx"] = np.cumsum(
+                np.array(predictions["chunk_idx"])
+            )
         else:
             predictions["forces"] = np.array(predictions["forces"])
         predictions["energy"] = np.array(predictions["energy"])
@@ -733,9 +735,9 @@ class ForcesTrainer(BaseTrainer):
                 gather_results["pos"] = np.concatenate(
                     np.array(gather_results["pos"])[idx]
                 )
-                gather_results["chunk_idx"] = np.array(
-                    gather_results["chunk_idx"]
-                )[idx]
+                gather_results["chunk_idx"] = np.cumsum(
+                    np.array(gather_results["chunk_idx"])[idx]
+                )
 
                 print(f"Writing results to {full_path}")
                 np.savez_compressed(full_path, **gather_results)
