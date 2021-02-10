@@ -181,6 +181,10 @@ class ForcesTrainer(BaseTrainer):
             )
 
         self.num_targets = 1
+        if self.config["optim"]["regress_relaxed_energy"]:
+            self.num_targets += 1
+
+        # TODO(adityagrover): Add num_targets + normalizer support for S2RS
 
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
@@ -219,6 +223,26 @@ class ForcesTrainer(BaseTrainer):
                     )
                     self.normalizers["grad_target"].mean.fill_(0)
 
+        if self.config["optim"].get("regress_relaxed_energy", True):
+            if self.config["dataset"].get("normalize_labels", False):
+                if "target_relaxed_energy_mean" in self.config["dataset"]:
+                    self.normalizers["target_relaxed_energy"] = Normalizer(
+                        mean=self.config["dataset"][
+                            "target_relaxed_energy_mean"
+                        ],
+                        std=self.config["dataset"][
+                            "target_relaxed_energy_std"
+                        ],
+                        device=self.device,
+                    )
+                else:
+                    self.normalizers["target_relaxed_energy"] = Normalizer(
+                        tensor=self.train_loader.dataset.data.relaxed_y[
+                            self.train_loader.dataset.__indices__
+                        ],
+                        device=self.device,
+                    )
+
         if (
             self.is_vis
             and self.config["task"]["dataset"] != "qm9"
@@ -251,6 +275,7 @@ class ForcesTrainer(BaseTrainer):
     def predict(
         self, data_loader, per_image=True, results_file=None, disable_tqdm=True
     ):
+        # TODO(adityagrover): Add support for S2RS (similar to S2RE)
         if distutils.is_master() and not disable_tqdm:
             print("### Predicting on test.")
         assert isinstance(
@@ -272,6 +297,10 @@ class ForcesTrainer(BaseTrainer):
 
         predictions = {"id": [], "energy": [], "forces": []}
 
+        if "target_relaxed_energy" in self.normalizers:
+            self.normalizers["target_relaxed_energy"].to(self.device)
+            predictions["relaxed_energy"] = []
+
         for i, batch_list in tqdm(
             enumerate(data_loader),
             total=len(data_loader),
@@ -289,6 +318,10 @@ class ForcesTrainer(BaseTrainer):
                 out["forces"] = self.normalizers["grad_target"].denorm(
                     out["forces"]
                 )
+            if "target_relaxed_energy" in self.normalizers:
+                out["target_relaxed_energy"] = self.normalizers[
+                    "target_relaxed_energy"
+                ].denorm(out["target_relaxed_energy"])
             if per_image:
                 atoms_sum = 0
                 systemids = [
@@ -301,6 +334,10 @@ class ForcesTrainer(BaseTrainer):
                 predictions["energy"].extend(
                     out["energy"].to(torch.float16).tolist()
                 )
+                if "target_relaxed_energy" in self.normalizers:
+                    predictions["relaxed_energy"].extend(
+                        out["relaxed_energy"].to(torch.float16).tolist()
+                    )
                 batch_natoms = torch.cat(
                     [batch.natoms for batch in batch_list]
                 )
@@ -324,12 +361,22 @@ class ForcesTrainer(BaseTrainer):
             else:
                 predictions["energy"] = out["energy"].detach()
                 predictions["forces"] = out["forces"].detach()
+                if "target_relaxed_energy" in self.normalizers:
+                    predictions["relaxed_energy"] = out[
+                        "relaxed_energy"
+                    ].detach()
                 return predictions
 
+        predictions["id"] = np.array(predictions["id"])
         predictions["forces"] = np.array(predictions["forces"], dtype=object)
         predictions["energy"] = np.array(predictions["energy"])
-        predictions["id"] = np.array(predictions["id"])
-        self.save_results(predictions, results_file, keys=["energy", "forces"])
+        keys = ["energy", "forces"]
+        if "target_relaxed_energy" in self.normalizers:
+            predictions["relaxed_energy"] = np.array(
+                predictions["relaxed_energy"]
+            )
+            keys.append("target_relaxed_energy")
+        self.save_results(predictions, results_file, keys=keys)
         return predictions
 
     def train(self):
@@ -450,10 +497,29 @@ class ForcesTrainer(BaseTrainer):
 
     def _forward(self, batch_list):
         # forward pass.
-        if self.config["model_attributes"].get("regress_forces", True):
-            out_energy, out_forces = self.model(batch_list)
+        outputs = self.model(batch_list)
+        regress_forces = self.config["model_attributes"].get(
+            "regress_forces", True
+        )
+        regress_relaxed_energy = self.config["model_attributes"].get(
+            "regress_relaxed_energy", True
+        )
+        regress_relaxed_pos = self.config["model_attributes"].get(
+            "regress_relaxed_pos", True
+        )
+
+        if regress_forces:
+            out_energy_pos, out_forces = outputs
         else:
-            out_energy = self.model(batch_list)
+            out_energy_pos = outputs
+
+        out_energy = out_energy_pos[:, 1]
+        if regress_relaxed_energy:
+            out_relaxed_energy = out_energy_pos[:, 1:2]
+            if regress_relaxed_pos:
+                out_relaxed_pos = out_energy_pos[:, 2:]
+        if regress_relaxed_pos:
+            out_relaxed_pos = out_energy_pos[:, 1:]
 
         if out_energy.shape[-1] == 1:
             out_energy = out_energy.view(-1)
@@ -462,8 +528,16 @@ class ForcesTrainer(BaseTrainer):
             "energy": out_energy,
         }
 
-        if self.config["model_attributes"].get("regress_forces", True):
+        if regress_forces:
             out["forces"] = out_forces
+
+        if regress_relaxed_energy:
+            if out_relaxed_energy.shape[-1] == 1:
+                out_relaxed_energy = out_relaxed_energy.view(-1)
+            out["relaxed_energy"] = out_relaxed_energy
+
+        if regress_relaxed_pos:
+            out["relaxed_pos"] = out_relaxed_pos
 
         return out
 
@@ -542,6 +616,37 @@ class ForcesTrainer(BaseTrainer):
                         force_mult
                         * self.criterion(out["forces"], force_target)
                     )
+
+        if self.config["model_attributes"].get("regress_relaxed_energy", True):
+            relaxed_energy_target = torch.cat(
+                [batch.relaxed_y.to(self.device) for batch in batch_list],
+                dim=0,
+            )
+            if self.config["dataset"].get("normalize_labels", False):
+                relaxed_energy_target = self.normalizers[
+                    "target_relaxed_energy"
+                ].norm(relaxed_energy_target)
+            relaxed_energy_mult = self.config["optim"].get(
+                "relaxed_energy_coefficient", 1
+            )
+            loss.append(
+                relaxed_energy_mult
+                * self.criterion(out["relaxed_energy"], relaxed_energy_target)
+            )
+
+        # TODO(adityagrover): uncomment after figuring out dynamic relaxed_targets
+        # if self.config["model_attributes"].get("regress_relaxed_pos", True):
+        #     relaxed_pos_target = torch.cat(
+        #         [batch.relaxed_pos.to(self.device) for batch in batch_list], dim=0
+        #     )
+        #     if self.config["dataset"].get("normalize_labels", False):
+        #         relaxed_pos_target = self.normalizers["grad_target"].norm(
+        #             relaxed_pos_target
+        #         )
+        #     relaxed_pos_mult = self.config["optim"].get("relaxed_pos_coefficient", 1)
+        #     # TODO(adityagrover): might want to use a different criterion for comparing relaxed_pos
+        #     loss.append(relaxed_pos_mult * self.criterion(out["relaxed_pos"], relaxed_pos_target))
+
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
             assert hasattr(lc, "grad_fn")

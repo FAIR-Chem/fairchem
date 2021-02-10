@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import torch
+from torch.nn import Linear
 from torch_geometric.nn import SchNet
 from torch_scatter import scatter
 
@@ -53,7 +54,7 @@ class SchNetWrap(SchNet):
         self,
         num_atoms,  # not used
         bond_feat_dim,  # not used
-        num_targets,
+        num_targets,  # not used
         use_pbc=True,
         regress_forces=True,
         otf_graph=False,
@@ -78,6 +79,8 @@ class SchNetWrap(SchNet):
             cutoff=cutoff,
             readout=readout,
         )
+
+        self.lin2 = Linear(hidden_channels // 2, self.num_targets)
 
     def forward(self, data):
         z = data.atomic_numbers.long()
