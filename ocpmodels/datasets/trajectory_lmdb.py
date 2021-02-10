@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import bisect
+import math
 import pickle
 from pathlib import Path
 
@@ -35,12 +36,23 @@ class TrajectoryLmdbDataset(Dataset):
         super(TrajectoryLmdbDataset, self).__init__()
         self.config = config
 
-        # If running in distributed mode, only read a subset of database files
         world_size = distutils.get_world_size()
         rank = distutils.get_rank()
         srcdir = Path(self.config["src"])
         db_paths = sorted(srcdir.glob("*.lmdb"))
         assert len(db_paths) > 0, f"No LMDBs found in {srcdir}"
+
+        # Read all LMDBs to set the size of each dataloader replica.
+        lengths = []
+        for db_path in db_paths:
+            env = self.connect_db(db_path)
+            lengths.append(
+                pickle.loads(env.begin().get("length".encode("ascii")))
+            )
+            env.close()
+        lengths.sort(reverse=True)
+        replica_size = sum(lengths[: math.ceil(len(lengths) / world_size)])
+
         # Each process only reads a subset of the DB files. However, since the
         # number of DB files may not be divisible by world size, the final
         # (num_dbs % world_size) are shared by all processes.
@@ -63,10 +75,22 @@ class TrajectoryLmdbDataset(Dataset):
             )
             length -= length % world_size
             self._keys.append(list(range(rank, length, world_size)))
-        self._keylens = [len(k) for k in self._keys]
-        self._keylen_cumulative = np.cumsum(self._keylens).tolist()
-        self.num_samples = sum(self._keylens)
+
+        keylens = [len(k) for k in self._keys]
+        # Need to pad dataloaders so all have the same no. of samples.
+        # This means that dataloaders will have some repeated samples
+        # that need to be pruned out in post-processing.
+        if sum(keylens) < replica_size:
+            self._keys[-1].extend(
+                [self._keys[-1][-1]] * (replica_size - sum(keylens))
+            )
+            keylens = [len(k) for k in self._keys]
+
+        self._keylen_cumulative = np.cumsum(keylens).tolist()
         self.transform = transform
+        self.num_samples = sum(keylens)
+
+        assert self.num_samples == replica_size
 
     def __len__(self):
         return self.num_samples
