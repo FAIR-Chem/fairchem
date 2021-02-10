@@ -338,7 +338,9 @@ class ForcesTrainer(BaseTrainer):
             predictions["forces"] = np.concatenate(predictions["forces"])
             predictions["chunk_idx"] = np.cumsum(
                 np.array(predictions["chunk_idx"])
-            )
+            )[
+                :-1
+            ]  # np.split does not need last idx, assumes n-1:end
         else:
             predictions["forces"] = np.array(predictions["forces"])
         predictions["energy"] = np.array(predictions["energy"])
