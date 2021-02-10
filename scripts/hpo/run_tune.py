@@ -1,27 +1,15 @@
-import copy
-import os
-import time
-from pathlib import Path
-
 import ray
-import submitit
-from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    build_config,
-    create_grid,
-    save_experiment_log,
-    setup_imports,
-)
-from ocpmodels.trainers import ForcesTrainer
+from ocpmodels.common.utils import build_config, setup_imports
 from ray import tune
 from ray.tune.schedulers import ASHAScheduler
 
 
-def tune_trainable(config, checkpoint_dir=None):
+# this function is general and should work for any ocp trainer
+def ocp_trainable(config, checkpoint_dir=None):
     setup_imports()
-    # define trainer defaults are changed to run HPO
+    # trainer defaults are changed to run HPO
     trainer = registry.get_trainer_class(config.get("trainer", "simple"))(
         task=config["task"],
         model=config["model"],
@@ -44,13 +32,13 @@ def tune_trainable(config, checkpoint_dir=None):
     trainer.train()
 
 
+# this section defines all the Ray Tune run parameters
 def main():
     # parse config
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     config = build_config(args, override_args)
-    # add parameters to tune using grid/random search
-
+    # add parameters to tune using grid or random search
     config["model"].update(
         hidden_channels=tune.choice([256, 384, 512, 640, 704]),
         decoder_hidden_channels=tune.choice([256, 384, 512, 640, 704]),
@@ -58,7 +46,6 @@ def main():
         depth_mlp_node=tune.choice([1, 2, 3, 4, 5]),
         num_interactions=tune.choice([3, 4, 5, 6]),
     )
-    # print(config)
     # define scheduler
     scheduler = ASHAScheduler(
         time_attr="steps",
@@ -71,11 +58,11 @@ def main():
     )
     # define run parameters
     analysis = tune.run(
-        tune_trainable,
+        ocp_trainable,
         resources_per_trial={"cpu": 8, "gpu": 1},
         config=config,
         fail_fast=True,
-        local_dir="/project/projectdirs/m2755/bwood/ocp_hpo/forcenet_hpo_small",
+        local_dir=config.get("run_dir", "./"),
         num_samples=750,
         scheduler=scheduler,
     )
