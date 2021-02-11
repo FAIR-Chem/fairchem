@@ -1,3 +1,9 @@
+import argparse
+import glob
+import os
+
+import ocpmodels
+
 """
 This script provides users with an automated way to download, preprocess (where
 applicable), and organize data to readily be used by the existing config files.
@@ -23,19 +29,13 @@ S2EF_COUNTS = {
         "200k": 200000,
         "2M": 2000000,
         "20M": 20000000,
-        "all": 133953162,
-        "val_id": 1000000,
-        "val_ood_ads": 1000000,
-        "val_ood_cat": 1000000,
-        "val_ood_both": 1000000,
+        "all": 133934018,
+        "val_id": 999866,
+        "val_ood_ads": 999838,
+        "val_ood_cat": 999809,
+        "val_ood_both": 999944,
     },
 }
-
-import argparse
-import glob
-import os
-
-import ocpmodels
 
 
 def get_data(task, split, del_intmd_files):
