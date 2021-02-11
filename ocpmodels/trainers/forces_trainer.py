@@ -329,20 +329,15 @@ class ForcesTrainer(BaseTrainer):
                     per_image_forces = _per_image_free_forces
                     predictions["chunk_idx"].extend(_chunk_idx)
                 predictions["forces"].extend(per_image_forces)
+                if i == 1:
+                    break
             else:
                 predictions["energy"] = out["energy"].detach()
                 predictions["forces"] = out["forces"].detach()
                 return predictions
 
-        if results_file is not None:
-            predictions["forces"] = np.concatenate(predictions["forces"])
-            predictions["chunk_idx"] = np.cumsum(
-                np.array(predictions["chunk_idx"])
-            )[
-                :-1
-            ]  # np.split does not need last idx, assumes n-1:end
-        else:
-            predictions["forces"] = np.array(predictions["forces"])
+        predictions["forces"] = np.array(predictions["forces"])
+        predictions["chunk_idx"] = np.array(predictions["chunk_idx"])
         predictions["energy"] = np.array(predictions["energy"])
         predictions["id"] = np.array(predictions["id"])
         self.save_results(
