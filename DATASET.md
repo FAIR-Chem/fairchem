@@ -5,6 +5,7 @@ This page summarizes the dataset download links for S2EF and IS2RE/IS2RS tasks a
 
 The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode). Please cite the following paper in any research manuscript using the OC20 dataset:
 
+
 ```
 @misc{ocp_dataset,
     title={The Open Catalyst 2020 (OC20) Dataset and Community Challenges},
@@ -14,6 +15,8 @@ The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attr
     archivePrefix={arXiv}
 }
 ```
+
+
 
 ## Structure to Energy and Forces (S2EF) task
 
@@ -27,21 +30,21 @@ For the test sets, we provide precomputed LMDBs for each of the 4 subplits (In D
 
 Each tarball has a README file containing details about file formats, number of structures / trajectories, etc.
 
-|Splits	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|
-|---	|---	|---	|---	|
-|Train	|	|	|	|
-|all	|225G	|1.1T	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_all.tar	|
-|20M	|34G	|165G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_20M.tar	|
-|2M	|3.4G	|17G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar	|
-|200K	|344M	|1.7G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar	|
-|	|	|	|	|
-|Validation	|	|	|	|
-|val_id	|1.7G	|8.3G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_id.tar	|
-|val_ood_ads	|1.7G	|8.2G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_ads.tar	|
-|val_ood_cat	|1.7G	|8.4G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_cat.tar	|
-|val_ood_both	|1.9G	|9.5G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_both.tar	|
-|	|	|	|	|
-|Test (LMDBs for all splits)	|30G	|415G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_test_lmdbs.tar.gz	|
+|Splits	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|MD5 checksum	|
+|---	|---	|---	|---	|---	|
+|Train	|	|	|	|	|
+|all	|225G	|1.1T	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_all.tar	|12a7087bfd189a06ccbec9bc7add2bcd	|
+|20M	|34G	|165G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_20M.tar	|953474cb93f0b08cdc523399f03f7c36	|
+|2M	|3.4G	|17G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar	|863bc983245ffc0285305a1850e19cf7	|
+|200K	|344M	|1.7G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar	|f8d0909c2623a393148435dede7d3a46	|
+|	|	|	|	|	|
+|Validation	|	|	|	|	|
+|val_id	|1.7G	|8.3G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_id.tar	|f57f7f5c1302637940f2cc858e789410	|
+|val_ood_ads	|1.7G	|8.2G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_ads.tar	|431ab0d7557a4639605ba8b67793f053	|
+|val_ood_cat	|1.7G	|8.3G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_cat.tar	|532d6cd1fe541a0ddb0aa0f99962b7db	|
+|val_ood_both	|1.9G	|9.5G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_both.tar	|5731862978d80502bbf7017d68c2c729	|
+|	|	|	|	|	|
+|Test (LMDBs for all splits)	|30G	|415G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_test_lmdbs.tar.gz	|bcada432482f6e87b24e14b6b744992a	|
 
 
 
@@ -60,26 +63,37 @@ Each tarball has README file containing details about file formats, number of st
 
 ### LMDBs
 
-|Splits	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|
-|---	|---	|---	|---	|
-|Train (all splits) + Validation (all splits) + test (all splits)	|7.9G	|96G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_test_lmdbs.tar.gz	|
-|	|	|	|	|
+|Splits	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|MD5 checksum	|
+|---	|---	|---	|---	|---	|
+|Train (all splits) + Validation (all splits) + test (all splits)	|8.1G	|97G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_test_lmdbs.tar.gz	|cfc04dd2f87b4102ab2f607240d25fb1	|
+|	|	|	|	|	|
 
 
 
-### Trajectories (optional download)
 
-|Split 	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|
-|---	|---	|---	|---	|
-|All training (~466k trajectories)	|109G	|844G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_trajectories.tar	|
-|	|	|	|	|
-|Validation	|	|	|	|
-|val_id (~25K trajectories)	|5.9G	|46G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_id_trajectories.tar	|
-|val_ood_ads (~25K trajectories)	|5.7G	|44G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_ads_trajectories.tar	|
-|val_ood_cat (~25K trajectories)	|6.0G	|46G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_cat_trajectories.tar	|
-|val_ood_both (~25K trajectories)	|4.4G	|35G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_both_trajectories.tar	|
+## Relaxation Trajectories
+
+### Adsorbate+catalyst system trajectories (optional download)
+
+|Split 	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|MD5 checksum	|
+|---	|---	|---	|---	|---	|
+|All IS2RE/S training (~466k trajectories)	|109G	|841G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_trajectories.tar	|9e3ed4d1e497bfdce4472ee70455edef	|
+|	|	|	|	|	|
+|IS2RE/S Validation	|	|	|	|	|
+|val_id (~25K trajectories)	|5.9G	|46G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_id_trajectories.tar	|fcb71363018fb1e7127db2500e39e11a	|
+|val_ood_ads (~25K trajectories)	|5.7G	|44G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_ads_trajectories.tar	|5ced8ea84584aa229d31e693e0fb090f	|
+|val_ood_cat (~25K trajectories)	|6.0G	|46G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_cat_trajectories.tar	|88dcc02fd8c174a72d2c416878fc44ff	|
+|val_ood_both (~25K trajectories)	|4.4G	|35G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_both_trajectories.tar	|bc74b6474a13542cc56eaa97bd51adfc	|
+
+### Catalyst system trajectories (optional download)
+
+|Number	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|MD5 checksum	|
+|---	|---	|---	|---	|---	|
+|294k systems	|20G	|151G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/slab_trajectories.tar	|347f4183465810e9b384e7a033baefc7	|
 
 
+
+## OC20 mappings
 
 ### Data mapping information
 
@@ -92,7 +106,7 @@ We provide a Python pickle file containing information about the slab and adsorb
 * `bulk_id` : internal unique identifier one for each of the 11500 bulks used in the dataset
 
 
-Downloadable link (148 MB): https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl
+Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl
 
 An example entry is 
 
@@ -104,6 +118,22 @@ An example entry is
   'ads_symbols': '*NO2NO2'}
   
 ```
+
+
+
+### Adsorbate-catalyst system to catalyst system mapping information
+
+We provide a Python pickle file containing information about the mapping from adsorbate-catalyst systems to their corresponding catalyst systems. Loading the pickle file will load a Python dictionary. The keys of this dictionary are the adsorbate+catalyst system-ids (of the format `random<XYZ>`  where `XYZ` is an integer), and values will be the catalyst system-ids (of the format `random<PQR>` where `PQR` is an integer).
+
+Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/mapping_adslab_slab.pkl
+
+An example entry is
+
+```
+'random1981709': 'random533137'
+```
+
+
 
 
 
