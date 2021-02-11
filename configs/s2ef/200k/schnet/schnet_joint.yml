@@ -24,6 +24,8 @@ optim:
   warmup_factor: 0.2
   max_epochs: 30
   force_coefficient: 100
+  relaxed_pos_coefficient: 1
+  relaxed_energy_coefficient: 1
   regress_relaxed_energy: True
-  regress_relaxed_pos: False
+  regress_relaxed_position: True
   relaxed_energy_mult: 1

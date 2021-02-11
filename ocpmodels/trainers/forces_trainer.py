@@ -183,6 +183,8 @@ class ForcesTrainer(BaseTrainer):
         self.num_targets = 1
         if self.config["optim"]["regress_relaxed_energy"]:
             self.num_targets += 1
+        if self.config["optim"].get("regress_relaxed_position", False):
+            self.num_targets += 3
 
         # TODO(adityagrover): Add num_targets + normalizer support for S2RS
 
@@ -237,6 +239,21 @@ class ForcesTrainer(BaseTrainer):
                     )
                 else:
                     self.normalizers["target_relaxed_energy"] = Normalizer(
+                        tensor=self.train_loader.dataset.data.relaxed_y[
+                            self.train_loader.dataset.__indices__
+                        ],
+                        device=self.device,
+                    )
+        if self.config["optim"].get("regress_relaxed_position", False):
+            if self.config["dataset"].get("normalize_forces", False):
+                if "target_relaxed_pos_mean" in self.config["dataset"]:
+                    self.normalizers["target_relaxed_position"] = Normalizer(
+                        mean=self.config["dataset"]["target_relaxed_pos_mean"],
+                        std=self.config["dataset"]["target_relaxed_pos_std"],
+                        device=self.device,
+                    )
+                else:
+                    self.normalizers["target_relaxed_position"] = Normalizer(
                         tensor=self.train_loader.dataset.data.relaxed_y[
                             self.train_loader.dataset.__indices__
                         ],
@@ -301,6 +318,10 @@ class ForcesTrainer(BaseTrainer):
             self.normalizers["target_relaxed_energy"].to(self.device)
             predictions["relaxed_energy"] = []
 
+        if "target_relaxed_position" in self.normalizers:
+            self.normalizers["target_relaxed_position"].to(self.device)
+            predictions["relaxed_position"] = []
+
         for i, batch_list in tqdm(
             enumerate(data_loader),
             total=len(data_loader),
@@ -322,6 +343,10 @@ class ForcesTrainer(BaseTrainer):
                 out["target_relaxed_energy"] = self.normalizers[
                     "target_relaxed_energy"
                 ].denorm(out["target_relaxed_energy"])
+            if "target_relaxed_position" in self.normalizers:
+                out["target_relaxed_position"] = self.normalizers[
+                    "target_relaxed_position"
+                ].denorm(out["target_relaxed_position"])
             if per_image:
                 atoms_sum = 0
                 systemids = [
@@ -337,6 +362,10 @@ class ForcesTrainer(BaseTrainer):
                 if "target_relaxed_energy" in self.normalizers:
                     predictions["relaxed_energy"].extend(
                         out["relaxed_energy"].to(torch.float16).tolist()
+                    )
+                if "target_relaxed_pos" in self.normalizers:
+                    predictions["relaxed_position"].extend(
+                        out["relaxed_position"].to(torch.float16).tolist()
                     )
                 batch_natoms = torch.cat(
                     [batch.natoms for batch in batch_list]
@@ -365,6 +394,10 @@ class ForcesTrainer(BaseTrainer):
                     predictions["relaxed_energy"] = out[
                         "relaxed_energy"
                     ].detach()
+                if "target_relaxed_position" in self.normalizers:
+                    predictions["relaxed_position"] = out[
+                        "relaxed_position"
+                    ].detach()
                 return predictions
 
         predictions["id"] = np.array(predictions["id"])
@@ -376,6 +409,11 @@ class ForcesTrainer(BaseTrainer):
                 predictions["relaxed_energy"]
             )
             keys.append("target_relaxed_energy")
+        if "target_relaxed_position" in self.normalizers:
+            predictions["relaxed_position"] = np.array(
+                predictions["relaxed_position"]
+            )
+            keys.append("target_relaxed_position")
         self.save_results(predictions, results_file, keys=keys)
         return predictions
 
@@ -505,27 +543,29 @@ class ForcesTrainer(BaseTrainer):
             "regress_relaxed_energy", True
         )
         regress_relaxed_pos = self.config["model_attributes"].get(
-            "regress_relaxed_pos", True
+            "regress_relaxed_position", True
         )
 
         if regress_forces:
-            out_energy_pos, out_forces = outputs
-        else:
-            out_energy_pos = outputs
-
-        out_energy = out_energy_pos[:, 1]
-        if regress_relaxed_energy:
-            out_relaxed_energy = out_energy_pos[:, 1:2]
             if regress_relaxed_pos:
-                out_relaxed_pos = out_energy_pos[:, 2:]
-        if regress_relaxed_pos:
-            out_relaxed_pos = out_energy_pos[:, 1:]
+                out_energy, out_forces, out_relaxed_pos = outputs
+            else:
+                out_energy, out_forces = outputs
+        else:
+            if regress_relaxed_pos:
+                out_energy, out_relaxed_pos = outputs
+            else:
+                out_energy = outputs
 
-        if out_energy.shape[-1] == 1:
-            out_energy = out_energy.view(-1)
+        out_energy_ = out_energy[:, 1]
+        if regress_relaxed_energy:
+            out_relaxed_energy = out_energy[:, 1:2]
+
+        if out_energy_.shape[-1] == 1:
+            out_energy_ = out_energy_.view(-1)
 
         out = {
-            "energy": out_energy,
+            "energy": out_energy_,
         }
 
         if regress_forces:
@@ -537,7 +577,7 @@ class ForcesTrainer(BaseTrainer):
             out["relaxed_energy"] = out_relaxed_energy
 
         if regress_relaxed_pos:
-            out["relaxed_pos"] = out_relaxed_pos
+            out["relaxed_position"] = out_relaxed_pos
 
         return out
 
@@ -635,17 +675,17 @@ class ForcesTrainer(BaseTrainer):
             )
 
         # TODO(adityagrover): uncomment after figuring out dynamic relaxed_targets
-        # if self.config["model_attributes"].get("regress_relaxed_pos", True):
-        #     relaxed_pos_target = torch.cat(
-        #         [batch.relaxed_pos.to(self.device) for batch in batch_list], dim=0
-        #     )
-        #     if self.config["dataset"].get("normalize_labels", False):
-        #         relaxed_pos_target = self.normalizers["grad_target"].norm(
-        #             relaxed_pos_target
-        #         )
-        #     relaxed_pos_mult = self.config["optim"].get("relaxed_pos_coefficient", 1)
-        #     # TODO(adityagrover): might want to use a different criterion for comparing relaxed_pos
-        #     loss.append(relaxed_pos_mult * self.criterion(out["relaxed_pos"], relaxed_pos_target))
+        if self.config["model_attributes"].get("regress_relaxed_position", True):
+            relaxed_pos_target = torch.cat(
+                [batch.relaxed_pos.to(self.device) for batch in batch_list], dim=0
+            )
+            if self.config["dataset"].get("normalize_labels", False):
+                relaxed_pos_target = self.normalizers["grad_target"].norm(
+                    relaxed_pos_target
+                )
+            relaxed_pos_mult = self.config["optim"].get("relaxed_pos_coefficient", 1)
+            # TODO(adityagrover): might want to use a different criterion for comparing relaxed_pos
+            loss.append(relaxed_pos_mult * self.criterion(out["relaxed_position"], relaxed_pos_target))
 
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:

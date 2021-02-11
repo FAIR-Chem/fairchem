@@ -57,6 +57,7 @@ class SchNetWrap(SchNet):
         num_targets,  # not used
         use_pbc=True,
         regress_forces=True,
+        predict_positions=False,
         otf_graph=False,
         hidden_channels=128,
         num_filters=128,
@@ -65,11 +66,12 @@ class SchNetWrap(SchNet):
         cutoff=10.0,
         readout="add",
     ):
-        self.num_targets = num_targets
         self.regress_forces = regress_forces
+        self.predict_positions = predict_positions
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
+        self.num_targets = num_targets
 
         super(SchNetWrap, self).__init__(
             hidden_channels=hidden_channels,
@@ -122,11 +124,18 @@ class SchNetWrap(SchNet):
             h = self.act(h)
             h = self.lin2(h)
 
+            if self.predict_positions:
+                h_energy = h[..., :-3]
+                positions = h[..., -3:]
+            else:
+                h_energy = h
+
             batch = torch.zeros_like(z) if batch is None else batch
-            energy = scatter(h, batch, dim=0, reduce=self.readout)
+            energy = scatter(h_energy, batch, dim=0, reduce=self.readout)
         else:
             energy = super(SchNetWrap, self).forward(z, pos, batch)
 
+        targets = [energy]
         if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
@@ -136,9 +145,10 @@ class SchNetWrap(SchNet):
                     create_graph=True,
                 )[0]
             )
-            return energy, forces
-        else:
-            return energy
+            targets.append(forces)
+        if self.predict_positions:
+            targets.append(positions)
+        return targets
 
     @property
     def num_params(self):
