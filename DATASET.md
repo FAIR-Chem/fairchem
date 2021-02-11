@@ -106,7 +106,7 @@ We provide a Python pickle file containing information about the slab and adsorb
 * `bulk_id` : internal unique identifier one for each of the 11500 bulks used in the dataset
 
 
-Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl
+Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: `fe9cc1a6e45d8035a6b76c3caa860e8a`)
 
 An example entry is 
 
@@ -125,7 +125,7 @@ An example entry is
 
 We provide a Python pickle file containing information about the mapping from adsorbate-catalyst systems to their corresponding catalyst systems. Loading the pickle file will load a Python dictionary. The keys of this dictionary are the adsorbate+catalyst system-ids (of the format `random<XYZ>`  where `XYZ` is an integer), and values will be the catalyst system-ids (of the format `random<PQR>` where `PQR` is an integer).
 
-Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/mapping_adslab_slab.pkl
+Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/mapping_adslab_slab.pkl (MD5 checksum: `079041076c3f15d18ecb5d17c509cdfe`)
 
 An example entry is
 
