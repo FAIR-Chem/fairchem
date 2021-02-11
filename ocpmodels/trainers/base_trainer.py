@@ -315,7 +315,6 @@ class BaseTrainer:
             else None,
             bond_feat_dim,
             self.num_targets,
-            predict_positions=self.config["optim"]["regress_relaxed_position"],
             **self.config["model_attributes"],
         ).to(self.device)
 

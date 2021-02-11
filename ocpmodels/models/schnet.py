@@ -54,10 +54,11 @@ class SchNetWrap(SchNet):
         self,
         num_atoms,  # not used
         bond_feat_dim,  # not used
-        num_targets,  # not used
+        num_targets,
         use_pbc=True,
         regress_forces=True,
-        predict_positions=False,
+        regress_relaxed_energy=False,  # not used
+        regress_relaxed_position=False,
         otf_graph=False,
         hidden_channels=128,
         num_filters=128,
@@ -67,7 +68,7 @@ class SchNetWrap(SchNet):
         readout="add",
     ):
         self.regress_forces = regress_forces
-        self.predict_positions = predict_positions
+        self.regress_relaxed_position = regress_relaxed_position
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
@@ -124,7 +125,7 @@ class SchNetWrap(SchNet):
             h = self.act(h)
             h = self.lin2(h)
 
-            if self.predict_positions:
+            if self.regress_relaxed_position:
                 h_energy = h[..., :-3]
                 positions = h[..., -3:]
             else:
@@ -146,7 +147,7 @@ class SchNetWrap(SchNet):
                 )[0]
             )
             targets.append(forces)
-        if self.predict_positions:
+        if self.regress_relaxed_position:
             targets.append(positions)
         return targets
 
