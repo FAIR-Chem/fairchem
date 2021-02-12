@@ -16,12 +16,12 @@ import time
 from bisect import bisect
 from itertools import product
 
+import demjson
 import numpy as np
 import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-import demjson
 import torch
 from ray import tune
 from torch_geometric.utils import remove_self_loops
@@ -148,7 +148,11 @@ def collate(data_list):
 
 
 def add_edge_distance_to_graph(
-    batch, device="cpu", dmin=0.0, dmax=6.0, num_gaussians=50,
+    batch,
+    device="cpu",
+    dmin=0.0,
+    dmax=6.0,
+    num_gaussians=50,
 ):
     # Make sure x has positions.
     if not all(batch.pos[0][:] == batch.x[0][-3:]):
