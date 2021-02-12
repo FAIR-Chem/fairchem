@@ -1,5 +1,5 @@
 includes:
-- configs/s2ef/200k/base.yml
+- configs/s2ef/2M/base.yml
 
 model:
   name: schnet
@@ -10,7 +10,7 @@ model:
   cutoff: 6.0
   use_pbc: True
   regress_relaxed_energy: True
-  regress_relaxed_position: False
+  regress_relaxed_position: True
 
 optim:
   batch_size: 32

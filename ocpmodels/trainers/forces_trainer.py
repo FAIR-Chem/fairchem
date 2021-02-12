@@ -181,9 +181,11 @@ class ForcesTrainer(BaseTrainer):
             )
 
         self.num_targets = 1
-        if self.config["optim"]["regress_relaxed_energy"]:
+        if self.config["model_attributes"].get("regress_relaxed_energy", True):
             self.num_targets += 1
-        if self.config["optim"].get("regress_relaxed_position", False):
+        if self.config["model_attributes"].get(
+            "regress_relaxed_position", True
+        ):
             self.num_targets += 3
 
         # TODO(adityagrover): Add num_targets + normalizer support for S2RS
@@ -225,7 +227,7 @@ class ForcesTrainer(BaseTrainer):
                     )
                     self.normalizers["grad_target"].mean.fill_(0)
 
-        if self.config["optim"].get("regress_relaxed_energy", True):
+        if self.config["model_attributes"].get("regress_relaxed_energy", True):
             if self.config["dataset"].get("normalize_labels", False):
                 if "target_relaxed_energy_mean" in self.config["dataset"]:
                     self.normalizers["target_relaxed_energy"] = Normalizer(
@@ -244,7 +246,9 @@ class ForcesTrainer(BaseTrainer):
                         ],
                         device=self.device,
                     )
-        if self.config["optim"].get("regress_relaxed_position", False):
+        if self.config["model_attributes"].get(
+            "regress_relaxed_position", False
+        ):
             if self.config["dataset"].get("normalize_forces", False):
                 if "target_relaxed_pos_mean" in self.config["dataset"]:
                     self.normalizers["target_relaxed_position"] = Normalizer(
@@ -557,7 +561,7 @@ class ForcesTrainer(BaseTrainer):
             else:
                 out_energy = outputs
 
-        out_energy_ = out_energy[:, 1]
+        out_energy_ = out_energy[:, 0]
         if regress_relaxed_energy:
             out_relaxed_energy = out_energy[:, 1:2]
 
@@ -675,17 +679,25 @@ class ForcesTrainer(BaseTrainer):
             )
 
         # TODO(adityagrover): uncomment after figuring out dynamic relaxed_targets
-        if self.config["model_attributes"].get("regress_relaxed_position", True):
+        if self.config["model_attributes"].get(
+            "regress_relaxed_position", True
+        ):
             relaxed_pos_target = torch.cat(
-                [batch.relaxed_pos.to(self.device) for batch in batch_list], dim=0
+                [batch.relaxed_pos.to(self.device) for batch in batch_list],
+                dim=0,
             )
             if self.config["dataset"].get("normalize_labels", False):
                 relaxed_pos_target = self.normalizers["grad_target"].norm(
                     relaxed_pos_target
                 )
-            relaxed_pos_mult = self.config["optim"].get("relaxed_pos_coefficient", 1)
+            relaxed_pos_mult = self.config["optim"].get(
+                "relaxed_pos_coefficient", 1
+            )
             # TODO(adityagrover): might want to use a different criterion for comparing relaxed_pos
-            loss.append(relaxed_pos_mult * self.criterion(out["relaxed_position"], relaxed_pos_target))
+            loss.append(
+                relaxed_pos_mult
+                * self.criterion(out["relaxed_position"], relaxed_pos_target)
+            )
 
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
