@@ -1,21 +1,9 @@
 # Open Catalyst 2020 (OC20) Dataset download
 
 
+*NOTE: Data files for all tasks / splits were updated on Feb 10, 2021 due to minor bugs (affecting < 1% of the data) in earlier versions. If you downloaded data before Feb 10, 2021, please re-download the data.*
+
 This page summarizes the dataset download links for S2EF and IS2RE/IS2RS tasks and various splits. The main project website is https://opencatalystproject.org/ 
-
-The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode). Please cite the following paper in any research manuscript using the OC20 dataset:
-
-
-```
-@misc{ocp_dataset,
-    title={The Open Catalyst 2020 (OC20) Dataset and Community Challenges},
-    author={Lowik Chanussot* and Abhishek Das* and Siddharth Goyal* and Thibaut Lavril* and Muhammed Shuaibi* and Morgane Riviere and Kevin Tran and Javier Heras-Domingo and Caleb Ho and Weihua Hu and Aini Palizhati and Anuroop Sriram and Brandon Wood and Junwoong Yoon and Devi Parikh and C. Lawrence Zitnick and Zachary Ulissi},
-    year={2020},
-    eprint={2010.09990},
-    archivePrefix={arXiv}
-}
-```
-
 
 
 ## Structure to Energy and Forces (S2EF) task
@@ -26,7 +14,7 @@ Four training datasets are provided with different sizes. Each is a subset of th
 
 Four datasets are provided for validation set. Each dataset corresponds to a subsplit used to evaluate different types of extrapolation, in domain (id, same distribution as the training dataset), out of domain adsorbate (ood_ads, unseen adsorbate), out of domain catalyst (ood_cat, unseen catalyst composition), and out of domain both (ood_both, unseen adsorbate and catalyst composition).
 
-For the test sets, we provide precomputed LMDBs for each of the 4 subplits (In Domain, OOD Adsorbate, OOD Catalyst, OOD Both).
+For the test sets, we provide precomputed LMDBs for each of the 4 subsplits (In Domain, OOD Adsorbate, OOD Catalyst, OOD Both).
 
 Each tarball has a README file containing details about file formats, number of structures / trajectories, etc.
 
@@ -132,6 +120,106 @@ An example entry is
 ```
 'random1981709': 'random533137'
 ```
+
+
+
+
+
+The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode). Please cite the following paper in any research manuscript using the OC20 dataset:
+
+
+```
+@misc{ocp_dataset,
+    title={The Open Catalyst 2020 (OC20) Dataset and Community Challenges},
+    author={Lowik Chanussot* and Abhishek Das* and Siddharth Goyal* and Thibaut Lavril* and Muhammed Shuaibi* and Morgane Riviere and Kevin Tran and Javier Heras-Domingo and Caleb Ho and Weihua Hu and Aini Palizhati and Anuroop Sriram and Brandon Wood and Junwoong Yoon and Devi Parikh and C. Lawrence Zitnick and Zachary Ulissi},
+    year={2020},
+    eprint={2010.09990},
+    archivePrefix={arXiv}
+}
+```
+
+
+
+
+## Dataset changelog
+
+
+
+
+### Version 2, Feb 2021
+
+Modifications: 
+
+* Removed slab systems which had single frame checkpoints, this led to modifications of reference frame energies of 350k frames out of 130M.
+* Fixed stitching of checkpoints in adsorbate+catalyst trajectories.
+* Added release of slab trajectories.
+
+
+Below are actual updates numbers, of the form `old` → `new`
+
+Total S2EF frames:
+
+* train: 133953162 → 133934018
+* validation:
+    * val_id : 1000000 → 999866
+    * val_ood_ads: 1000000 → 999838
+    * val_ood_cat: 1000000 → 999809
+    * val_ood_both: 1000000 →  999944
+* test: 
+    * test_id: 1000000 → 999736
+    * test_ood_ads: 1000000 → 999859
+    * test_ood_cat: 1000000 → 999826
+    * test_ood_both: 1000000 → 999973
+
+
+
+Total IS2RE and IS2RS systems:
+
+* train: 461313 → 460328
+* validation:
+    * val_id : 24946 → 24943
+    * val_ood_ads: 24966 → 24961
+    * val_ood_cat: 24988 → 24963
+    * val_ood_both: 24963 → 24987
+* test:
+    * test_id: 24951 → 24948
+    * test_ood_ads: 24931 → 24930
+    * test_ood_cat: 24967 → 24965
+    * test_ood_both: 24986 → 24985
+
+
+
+### Version 1, Oct 2020 
+
+Total S2EF frames:
+
+* train: 133953162
+* validation:
+    * val_id : 1000000
+    * val_ood_ads: 1000000
+    * val_ood_cat: 1000000
+    * val_ood_both: 1000000
+* test: 
+    * test_id: 1000000
+    * test_ood_ads: 1000000
+    * test_ood_cat: 1000000
+    * test_ood_both: 1000000
+
+
+
+Total IS2RE and IS2RS systems:
+
+* train: 461313
+* validation:
+    * val_id : 24936
+    * val_ood_ads: 24966
+    * val_ood_cat: 24988
+    * val_ood_both: 24963
+* test:
+    * test_id: 24951
+    * test_ood_ads: 24931
+    * test_ood_cat: 24967
+    * test_ood_both: 24986
 
 
 
