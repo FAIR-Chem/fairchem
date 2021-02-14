@@ -106,6 +106,7 @@ class ForcesTrainer(BaseTrainer):
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
+            print(len(self.train_dataset))
 
             self.train_loader = DataLoader(
                 self.train_dataset,
@@ -188,8 +189,6 @@ class ForcesTrainer(BaseTrainer):
         ):
             self.num_targets += 3
 
-        # TODO(adityagrover): Add num_targets + normalizer support for S2RS
-
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
@@ -247,9 +246,9 @@ class ForcesTrainer(BaseTrainer):
                         device=self.device,
                     )
         if self.config["model_attributes"].get(
-            "regress_relaxed_position", False
+            "regress_relaxed_position", True
         ):
-            if self.config["dataset"].get("normalize_forces", False):
+            if self.config["dataset"].get("normalize_labels", False):
                 if "target_relaxed_pos_mean" in self.config["dataset"]:
                     self.normalizers["target_relaxed_position"] = Normalizer(
                         mean=self.config["dataset"]["target_relaxed_pos_mean"],
@@ -296,7 +295,6 @@ class ForcesTrainer(BaseTrainer):
     def predict(
         self, data_loader, per_image=True, results_file=None, disable_tqdm=True
     ):
-        # TODO(adityagrover): Add support for S2RS (similar to S2RE)
         if distutils.is_master() and not disable_tqdm:
             print("### Predicting on test.")
         assert isinstance(
@@ -324,7 +322,7 @@ class ForcesTrainer(BaseTrainer):
 
         if "target_relaxed_position" in self.normalizers:
             self.normalizers["target_relaxed_position"].to(self.device)
-            predictions["relaxed_position"] = []
+            predictions["positions"] = []
 
         for i, batch_list in tqdm(
             enumerate(data_loader),
@@ -368,8 +366,8 @@ class ForcesTrainer(BaseTrainer):
                         out["relaxed_energy"].to(torch.float16).tolist()
                     )
                 if "target_relaxed_pos" in self.normalizers:
-                    predictions["relaxed_position"].extend(
-                        out["relaxed_position"].to(torch.float16).tolist()
+                    predictions["positions"].extend(
+                        out["positions"].to(torch.float16).tolist()
                     )
                 batch_natoms = torch.cat(
                     [batch.natoms for batch in batch_list]
@@ -399,9 +397,7 @@ class ForcesTrainer(BaseTrainer):
                         "relaxed_energy"
                     ].detach()
                 if "target_relaxed_position" in self.normalizers:
-                    predictions["relaxed_position"] = out[
-                        "relaxed_position"
-                    ].detach()
+                    predictions["positions"] = out["positions"].detach()
                 return predictions
 
         predictions["id"] = np.array(predictions["id"])
@@ -414,12 +410,20 @@ class ForcesTrainer(BaseTrainer):
             )
             keys.append("target_relaxed_energy")
         if "target_relaxed_position" in self.normalizers:
-            predictions["relaxed_position"] = np.array(
-                predictions["relaxed_position"]
-            )
+            predictions["positions"] = np.array(predictions["positions"])
             keys.append("target_relaxed_position")
         self.save_results(predictions, results_file, keys=keys)
         return predictions
+
+    def get_mean_stddev_relaxed_pos(self):
+
+        all_relaxed_pos = []
+        for data in self.train_dataset:
+            relaxed_force = np.array(data.relaxed_force)
+            if np.amax(np.abs(relaxed_force)) <= 0.05:
+                all_relaxed_pos.extend(data.relaxed_pos.tolist())
+        all_relaxed_pos = np.array(all_relaxed_pos)
+        print(np.mean(all_relaxed_pos), np.std(all_relaxed_pos))
 
     def train(self):
         eval_every = self.config["optim"].get("eval_every", -1)
@@ -581,7 +585,7 @@ class ForcesTrainer(BaseTrainer):
             out["relaxed_energy"] = out_relaxed_energy
 
         if regress_relaxed_pos:
-            out["relaxed_position"] = out_relaxed_pos
+            out["positions"] = out_relaxed_pos
 
         return out
 
@@ -673,12 +677,18 @@ class ForcesTrainer(BaseTrainer):
             relaxed_energy_mult = self.config["optim"].get(
                 "relaxed_energy_coefficient", 1
             )
+            # converged = torch.cat(
+            #         [batch.converged for batch in batch_list]
+            #     )
+            # loss.append(
+            #     relaxed_energy_mult
+            #     * self.criterion(out["relaxed_energy"][converged], relaxed_energy_target[converged])
+            # )
             loss.append(
                 relaxed_energy_mult
                 * self.criterion(out["relaxed_energy"], relaxed_energy_target)
             )
 
-        # TODO(adityagrover): uncomment after figuring out dynamic relaxed_targets
         if self.config["model_attributes"].get(
             "regress_relaxed_position", True
         ):
@@ -687,17 +697,28 @@ class ForcesTrainer(BaseTrainer):
                 dim=0,
             )
             if self.config["dataset"].get("normalize_labels", False):
-                relaxed_pos_target = self.normalizers["grad_target"].norm(
-                    relaxed_pos_target
-                )
+                relaxed_pos_target = self.normalizers[
+                    "target_relaxed_position"
+                ].norm(relaxed_pos_target)
             relaxed_pos_mult = self.config["optim"].get(
                 "relaxed_pos_coefficient", 1
             )
-            # TODO(adityagrover): might want to use a different criterion for comparing relaxed_pos
-            loss.append(
-                relaxed_pos_mult
-                * self.criterion(out["relaxed_position"], relaxed_pos_target)
-            )
+            if self.config["task"].get("train_on_free_atoms", False):
+                fixed = torch.cat(
+                    [batch.fixed.to(self.device) for batch in batch_list]
+                )
+                mask = fixed == 0
+                loss.append(
+                    relaxed_pos_mult
+                    * self.criterion(
+                        out["positions"][mask], relaxed_pos_target[mask]
+                    )
+                )
+            else:
+                loss.append(
+                    relaxed_pos_mult
+                    * self.criterion(out["positions"], relaxed_pos_target)
+                )
 
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
@@ -721,6 +742,20 @@ class ForcesTrainer(BaseTrainer):
             "natoms": natoms,
         }
 
+        if self.config["model_attributes"].get("regress_relaxed_energy", True):
+            target["relaxed_energy"] = torch.cat(
+                [batch.relaxed_y.to(self.device) for batch in batch_list],
+                dim=0,
+            )
+
+        if self.config["model_attributes"].get(
+            "regress_relaxed_position", True
+        ):
+            target["positions"] = torch.cat(
+                [batch.relaxed_pos.to(self.device) for batch in batch_list],
+                dim=0,
+            )
+
         out["natoms"] = natoms
 
         if self.config["task"].get("eval_on_free_atoms", True):
@@ -730,6 +765,12 @@ class ForcesTrainer(BaseTrainer):
             mask = fixed == 0
             out["forces"] = out["forces"][mask]
             target["forces"] = target["forces"][mask]
+
+            if self.config["model_attributes"].get(
+                "regress_relaxed_position", True
+            ):
+                out["positions"] = out["positions"][mask]
+                target["positions"] = target["positions"][mask]
 
             s_idx = 0
             natoms_free = []
@@ -741,11 +782,38 @@ class ForcesTrainer(BaseTrainer):
             target["natoms"] = torch.LongTensor(natoms_free).to(self.device)
             out["natoms"] = torch.LongTensor(natoms_free).to(self.device)
 
+        if self.config["model_attributes"].get(
+            "regress_relaxed_position", True
+        ):
+            cell = torch.cat(
+                [batch.cell.to(self.device) for batch in batch_list]
+            )
+            target["cell"] = cell
+            out["cell"] = cell
+
+            pbc = torch.tensor([True, True, True])
+            target["pbc"] = pbc
+            out["pbc"] = pbc
+
         if self.config["dataset"].get("normalize_labels", False):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
             out["forces"] = self.normalizers["grad_target"].denorm(
                 out["forces"]
             )
+
+            if self.config["model_attributes"].get(
+                "regress_relaxed_energy", True
+            ):
+                out["relaxed_energy"] = self.normalizers[
+                    "target_relaxed_energy"
+                ].denorm(out["relaxed_energy"])
+
+            if self.config["model_attributes"].get(
+                "regress_relaxed_position", True
+            ):
+                out["positions"] = self.normalizers[
+                    "target_relaxed_position"
+                ].denorm(out["positions"])
 
         metrics = evaluator.eval(out, target, prev_metrics=metrics)
         return metrics

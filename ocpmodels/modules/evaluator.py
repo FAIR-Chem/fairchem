@@ -42,22 +42,61 @@ class Evaluator:
         ],
         "is2rs": ["average_distance_within_threshold", "energy_mae"],
         "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
+        "s2efre": [
+            "forcesx_mae",
+            "forcesy_mae",
+            "forcesz_mae",
+            "forces_mae",
+            "forces_cos",
+            "forces_magnitude",
+            "energy_mae",
+            "energy_force_within_threshold",
+            "relaxed_energy_mae",
+            "relaxed_energy_mse",
+            "relaxed_energy_within_threshold",
+        ],
+        "joint": [
+            "forcesx_mae",
+            "forcesy_mae",
+            "forcesz_mae",
+            "forces_mae",
+            "forces_cos",
+            "forces_magnitude",
+            "energy_mae",
+            "energy_force_within_threshold",
+            "average_distance_within_threshold",
+            "positions_mse",
+            "relaxed_energy_mae",
+            "relaxed_energy_mse",
+            "relaxed_energy_within_threshold",
+        ],
     }
 
     task_attributes = {
         "s2ef": ["energy", "forces", "natoms"],
         "is2rs": ["positions", "cell", "pbc", "energy", "natoms"],
         "is2re": ["energy"],
+        "s2efre": ["energy", "forces", "natoms", "relaxed_energy"],
+        "joint": [
+            "energy",
+            "forces",
+            "natoms",
+            "positions",
+            "cell",
+            "pbc",
+            "relaxed_energy",
+        ],
     }
 
     task_primary_metric = {
         "s2ef": "energy_force_within_threshold",
         "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
+        "joint": "relaxed_energy_mae",
     }
 
     def __init__(self, task=None):
-        assert task in ["s2ef", "is2rs", "is2re"]
+        assert task in ["s2ef", "is2rs", "is2re", "s2efre", "joint"]
         self.task = task
         self.metric_fn = self.task_metrics[task]
 
@@ -159,6 +198,18 @@ def positions_mse(prediction, target):
     return squared_error(prediction["positions"], target["positions"])
 
 
+def relaxed_energy_mae(prediction, target):
+    return absolute_error(
+        prediction["relaxed_energy"], target["relaxed_energy"]
+    )
+
+
+def relaxed_energy_mse(prediction, target):
+    return squared_error(
+        prediction["relaxed_energy"], target["relaxed_energy"]
+    )
+
+
 def energy_force_within_threshold(prediction, target):
     # Note that this natoms should be the count of free atoms we evaluate over.
     assert target["natoms"].sum() == prediction["forces"].size(0)
@@ -196,6 +247,24 @@ def energy_within_threshold(prediction, target):
     # then count the no. of systems where max energy error is < 0.02.
     e_thresh = 0.02
     error_energy = torch.abs(target["energy"] - prediction["energy"])
+
+    success = (error_energy < e_thresh).sum().item()
+    total = target["energy"].size(0)
+
+    return {
+        "metric": success / total,
+        "total": success,
+        "numel": total,
+    }
+
+
+def relaxed_energy_within_threshold(prediction, target):
+    # compute absolute error on energy per system.
+    # then count the no. of systems where max energy error is < 0.02.
+    e_thresh = 0.02
+    error_energy = torch.abs(
+        target["relaxed_energy"] - prediction["relaxed_energy"]
+    )
 
     success = (error_energy < e_thresh).sum().item()
     total = target["energy"].size(0)

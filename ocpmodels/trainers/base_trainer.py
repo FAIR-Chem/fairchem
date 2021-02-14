@@ -127,7 +127,15 @@ class BaseTrainer:
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
-        self.evaluator = Evaluator(task=name)
+        eval_name = name
+        if self.config["model_attributes"].get("regress_relaxed_energy", True):
+            if self.config["model_attributes"].get(
+                "regress_relaxed_position", True
+            ):
+                eval_name = "joint"
+            else:
+                eval_name = "s2efre"
+        self.evaluator = Evaluator(task=eval_name)
 
     def load(self):
         self.load_seed_from_config()

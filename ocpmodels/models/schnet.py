@@ -57,8 +57,8 @@ class SchNetWrap(SchNet):
         num_targets,
         use_pbc=True,
         regress_forces=True,
-        regress_relaxed_energy=False,  # not used
-        regress_relaxed_position=False,
+        regress_relaxed_energy=True,  # not used
+        regress_relaxed_position=True,
         otf_graph=False,
         hidden_channels=128,
         num_filters=128,

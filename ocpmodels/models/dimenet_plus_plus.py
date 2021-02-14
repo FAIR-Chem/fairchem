@@ -334,6 +334,8 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
         num_targets,
         use_pbc=True,
         regress_forces=True,
+        regress_relaxed_energy=True,  # not used
+        regress_relaxed_position=True,
         hidden_channels=128,
         num_blocks=4,
         int_emb_size=64,
@@ -350,6 +352,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
+        self.regress_relaxed_position = regress_relaxed_position
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
@@ -440,8 +443,19 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
             P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
-        energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+        if self.regress_relaxed_position:
+            h_energy = P[..., :-3]
+            positions = P[..., -3:]
+        else:
+            h_energy = P
 
+        energy = (
+            h_energy.sum(dim=0)
+            if batch is None
+            else scatter(h_energy, batch, dim=0)
+        )
+
+        targets = [energy]
         if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
@@ -451,9 +465,11 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
                     create_graph=True,
                 )[0]
             )
-            return energy, forces
-        else:
-            return energy
+            targets.append(forces)
+        if self.regress_relaxed_position:
+            targets.append(positions)
+
+        return targets
 
     @property
     def num_params(self):
