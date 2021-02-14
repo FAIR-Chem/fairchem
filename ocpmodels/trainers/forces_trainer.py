@@ -106,7 +106,6 @@ class ForcesTrainer(BaseTrainer):
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
-            print(len(self.train_dataset))
 
             self.train_loader = DataLoader(
                 self.train_dataset,
@@ -742,7 +741,9 @@ class ForcesTrainer(BaseTrainer):
             "natoms": natoms,
         }
 
-        if self.config["model_attributes"].get("regress_relaxed_energy", True):
+        if self.config["model_attributes"].get(
+            "regress_relaxed_energy", True
+        ) and evaluator.task in ["s2efre", "joint"]:
             target["relaxed_energy"] = torch.cat(
                 [batch.relaxed_y.to(self.device) for batch in batch_list],
                 dim=0,
@@ -750,7 +751,7 @@ class ForcesTrainer(BaseTrainer):
 
         if self.config["model_attributes"].get(
             "regress_relaxed_position", True
-        ):
+        ) and evaluator.task in ["s2efre", "joint"]:
             target["positions"] = torch.cat(
                 [batch.relaxed_pos.to(self.device) for batch in batch_list],
                 dim=0,
@@ -768,7 +769,7 @@ class ForcesTrainer(BaseTrainer):
 
             if self.config["model_attributes"].get(
                 "regress_relaxed_position", True
-            ):
+            ) and evaluator.task in ["s2efre", "joint"]:
                 out["positions"] = out["positions"][mask]
                 target["positions"] = target["positions"][mask]
 
@@ -784,7 +785,7 @@ class ForcesTrainer(BaseTrainer):
 
         if self.config["model_attributes"].get(
             "regress_relaxed_position", True
-        ):
+        ) and evaluator.task in ["s2efre", "joint"]:
             cell = torch.cat(
                 [batch.cell.to(self.device) for batch in batch_list]
             )
@@ -803,14 +804,14 @@ class ForcesTrainer(BaseTrainer):
 
             if self.config["model_attributes"].get(
                 "regress_relaxed_energy", True
-            ):
+            ) and evaluator.task in ["s2efre", "joint"]:
                 out["relaxed_energy"] = self.normalizers[
                     "target_relaxed_energy"
                 ].denorm(out["relaxed_energy"])
 
             if self.config["model_attributes"].get(
                 "regress_relaxed_position", True
-            ):
+            ) and evaluator.task in ["s2efre", "joint"]:
                 out["positions"] = self.normalizers[
                     "target_relaxed_position"
                 ].denorm(out["positions"])

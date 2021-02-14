@@ -501,10 +501,12 @@ class BaseTrainer:
             }
 
     def validate(self, split="val", epoch=None):
+        # TODO(adityagrover): Only computes s2ef metrics. Add relaxed structure info to validation data
         if distutils.is_master():
             print("### Evaluating on {}.".format(split))
 
         self.model.eval()
+        # TODO(adityagrover): Use "joint" or "s2efre" name after adding relaxed structure info to validation data
         evaluator, metrics = Evaluator(task=self.name), {}
         rank = distutils.get_rank()
 
@@ -519,11 +521,14 @@ class BaseTrainer:
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
-            loss = self._compute_loss(out, batch)
+            # TODO(adityagrover): Uncomment after adding relaxed structure info to validation data
+            # loss = self._compute_loss(out, batch)
 
             # Compute metrics.
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
-            metrics = evaluator.update("loss", loss.item(), metrics)
+            # TODO(adityagrover): Uncomment after adding relaxed structure info to validation data
+            # metrics = evaluator.update("loss", loss.item(), metrics)
+            metrics = evaluator.update("loss", 0, metrics)
 
         aggregated_metrics = {}
         for k in metrics:
