@@ -127,15 +127,15 @@ class BaseTrainer:
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
-        eval_name = name
+        self.eval_name = name
         if self.config["model_attributes"].get("regress_relaxed_energy", True):
             if self.config["model_attributes"].get(
                 "regress_relaxed_position", True
             ):
-                eval_name = "joint"
+                self.eval_name = "joint"
             else:
-                eval_name = "s2efre"
-        self.evaluator = Evaluator(task=eval_name)
+                self.eval_name = "s2efre"
+        self.evaluator = Evaluator(task=self.eval_name)
 
     def load(self):
         self.load_seed_from_config()
@@ -501,13 +501,11 @@ class BaseTrainer:
             }
 
     def validate(self, split="val", epoch=None):
-        # TODO(adityagrover): Only computes s2ef metrics. Add relaxed structure info to validation data
         if distutils.is_master():
             print("### Evaluating on {}.".format(split))
 
         self.model.eval()
-        # TODO(adityagrover): Use "joint" or "s2efre" name after adding relaxed structure info to validation data
-        evaluator, metrics = Evaluator(task=self.name), {}
+        evaluator, metrics = Evaluator(task=self.eval_name), {}
         rank = distutils.get_rank()
 
         loader = self.val_loader if split == "val" else self.test_loader
@@ -521,14 +519,11 @@ class BaseTrainer:
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
-            # TODO(adityagrover): Uncomment after adding relaxed structure info to validation data
-            # loss = self._compute_loss(out, batch)
+            loss = self._compute_loss(out, batch)
 
             # Compute metrics.
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
-            # TODO(adityagrover): Uncomment after adding relaxed structure info to validation data
-            # metrics = evaluator.update("loss", loss.item(), metrics)
-            metrics = evaluator.update("loss", 0, metrics)
+            metrics = evaluator.update("loss", loss.item(), metrics)
 
         aggregated_metrics = {}
         for k in metrics:
