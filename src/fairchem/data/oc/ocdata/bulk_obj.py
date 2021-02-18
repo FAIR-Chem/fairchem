@@ -183,6 +183,7 @@ class Bulk():
             atoms.cell[2] = -atoms.cell[2]
         if np.cross(atoms.cell[0], atoms.cell[1])[2] < 0.0:
             atoms.cell[1] = -atoms.cell[1]
+        atoms.center()
         atoms.wrap()
 
         flipped_struct = AseAtomsAdaptor.get_structure(atoms)

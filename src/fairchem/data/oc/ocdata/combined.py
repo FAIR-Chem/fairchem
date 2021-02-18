@@ -66,7 +66,7 @@ class Combined():
 
         # set up the adsorbate into graphic atoms object
         # with its connectivity matrix
-        adsorbate_gratoms = self.convert_adsorbate_atoms_to_gratoms(adsorbate)
+        adsorbate_gratoms = self.convert_adsorbate_atoms_to_gratoms(adsorbate, bond_indices)
 
         # generate all possible adsorption configurations on that surface.
         # The "bonds" argument automatically take care of mono vs.
@@ -96,7 +96,7 @@ class Combined():
             self.adsorbed_surface_atoms.append(reasonable_adsorbed_surfaces[reasonable_adsorbed_surface_index])
             self.adsorbed_surface_sampling_strs.append(str(reasonable_adsorbed_surface_index) + '/' + str(len(reasonable_adsorbed_surfaces)))
 
-    def convert_adsorbate_atoms_to_gratoms(self, adsorbate):
+    def convert_adsorbate_atoms_to_gratoms(self, adsorbate, bond_indices):
         """
         Convert adsorbate atoms object into graphic atoms object,
         so the adsorbate can be placed onto the surface with optimal
@@ -105,13 +105,16 @@ class Combined():
 
         Args:
             adsorbate           An `ase.Atoms` object of the adsorbate
+            bond_indices          A list of integers indicating the indices of the
+                                  binding atoms of the adsorbate
 
         Returns:
             adsorbate_gratoms   An graphic atoms object of the adsorbate.
         """
         connectivity = self.get_connectivity(adsorbate)
         adsorbate_gratoms = catkit.Gratoms(adsorbate, edges=connectivity)
-        adsorbate_gratoms.set_tags([2]*len(adsorbate_gratoms))
+        # tag adsorbate atoms: non-binding atoms as 2, the binding atom(s) as 3
+        adsorbate_gratoms.set_tags([3 if idx in bond_indices else 2 for idx in range(len(adsorbate_gratoms))])
         return adsorbate_gratoms
 
     def get_connectivity(self, adsorbate):
@@ -145,19 +148,21 @@ class Combined():
             reasonable.
         """
         vnn = VoronoiNN(allow_pathological=True, tol=0.2, cutoff=10)
-        adsorbate_indices = [atom.index for atom in adslab if atom.tag == 2]
+        adsorbate_indices = [atom.index for atom in adslab if atom.tag >= 2]
+        adsorbate_bond_indices = [atom.index for atom in adslab if atom.tag == 3]
         structure = AseAtomsAdaptor.get_structure(adslab)
         slab_lattice = structure.lattice
 
         # Check to see if adsorpton site is within the unit cell
-        for idx in adsorbate_indices:
+        for idx in adsorbate_bond_indices:
             coord = slab_lattice.get_fractional_coords(structure[idx].coords)
-            if np.any((coord < 0) | (coord > 1)):
+            if np.any((coord < -0.01) | (coord > 1.01)):
                 return False
 
-            # Then, check the covalent radius between each adsorbate atoms
-            # and its nearest neighbors that are slab atoms
-            # to make sure adsorbate is not buried into the surface
+        # Then, check the covalent radius between each adsorbate atoms
+        # and its nearest neighbors that are slab atoms
+        # to make sure adsorbate is not buried into the surface
+        for idx in adsorbate_indices:
             nearneighbors = vnn.get_nn_info(structure, n=idx)
             slab_nn = [nn for nn in nearneighbors if nn['site_index'] not in adsorbate_indices]
             for nn in slab_nn:
