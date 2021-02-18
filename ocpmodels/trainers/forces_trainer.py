@@ -336,6 +336,9 @@ class ForcesTrainer(BaseTrainer):
 
     def train(self):  # noqa: C901
         eval_every = self.config["optim"].get("eval_every", -1)
+        checkpoint_every = self.config["optim"].get(
+            "checkpoint_every", eval_every
+        )
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
@@ -344,6 +347,7 @@ class ForcesTrainer(BaseTrainer):
         self.metrics = {}
 
         start_epoch = self.start_step // len(self.train_loader)
+        print(self.optimizer.state_dict()["param_groups"])
         for epoch in range(start_epoch, self.config["optim"]["max_epochs"]):
             self.model.train()
 
@@ -404,6 +408,10 @@ class ForcesTrainer(BaseTrainer):
                             split="val",
                             epoch=epoch - 1 + (i + 1) / len(self.train_loader),
                         )
+                        current_epoch = epoch + (i + 1) / len(
+                            self.train_loader
+                        )
+                        current_step = epoch * len(self.train_loader) + (i + 1)
                         if (
                             "mae" in primary_metric
                             and val_metrics[primary_metric]["metric"]
@@ -415,37 +423,38 @@ class ForcesTrainer(BaseTrainer):
                             self.best_val_metric = val_metrics[primary_metric][
                                 "metric"
                             ]
-                            current_epoch = epoch + (i + 1) / len(
-                                self.train_loader
-                            )
-                            current_step = epoch * len(self.train_loader) + (
-                                i + 1
-                            )
-                            if not self.is_hpo:
-                                self.save(
-                                    current_epoch, current_step, val_metrics
-                                )
+                            self.save(current_epoch, current_step, val_metrics)
                             if self.test_loader is not None:
                                 self.predict(
                                     self.test_loader,
                                     results_file="predictions",
                                     disable_tqdm=False,
                                 )
-                    if self.is_hpo:
-                        progress = {"steps": iters, "epochs": current_epoch}
-                        # add checkpointing before reporter
-                        tune_reporter(
-                            iters=progress,
-                            train_metrics={
-                                k: self.metrics[k]["metric"]
-                                for k in self.metrics
-                            },
-                            val_metrics={
-                                k: val_metrics[k]["metric"]
-                                for k in val_metrics
-                            },
-                            test_metrics=None,
-                        )
+                        if self.is_hpo:
+                            progress = {
+                                "steps": current_step,
+                                "epochs": current_epoch,
+                            }
+                            # checkpointing must be before reporter
+                            self.save_hpo(
+                                current_epoch,
+                                current_step,
+                                val_metrics,
+                                checkpoint_every,
+                            )
+                            # report metrics to tune
+                            tune_reporter(
+                                iters=progress,
+                                train_metrics={
+                                    k: self.metrics[k]["metric"]
+                                    for k in self.metrics
+                                },
+                                val_metrics={
+                                    k: val_metrics[k]["metric"]
+                                    for k in val_metrics
+                                },
+                                test_metrics=None,
+                            )
 
                 if self.update_lr_on_step:
                     self.scheduler.step()
