@@ -33,6 +33,7 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
+from ray import tune
 from torch.nn.parallel.distributed import DistributedDataParallel
 
 
@@ -415,25 +416,35 @@ class BaseTrainer:
         # metrics.
         self.meter = Meter(split="train")
 
+    def save_state(self, epoch, step, metrics):
+        state = {
+            "epoch": epoch,
+            "step": step,
+            "state_dict": self.model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "scheduler": self.scheduler.state_dict(),
+            "normalizers": {
+                key: value.state_dict()
+                for key, value in self.normalizers.items()
+            },
+            "config": self.config,
+            "val_metrics": metrics,
+            "amp": self.scaler.state_dict() if self.scaler else None,
+        }
+        return state
+
     def save(self, epoch, step, metrics):
-        if not self.is_debug and distutils.is_master():
+        if not self.is_debug and distutils.is_master() and not self.is_hpo:
             save_checkpoint(
-                {
-                    "epoch": epoch,
-                    "step": step,
-                    "state_dict": self.model.state_dict(),
-                    "optimizer": self.optimizer.state_dict(),
-                    "scheduler": self.scheduler.state_dict(),
-                    "normalizers": {
-                        key: value.state_dict()
-                        for key, value in self.normalizers.items()
-                    },
-                    "config": self.config,
-                    "val_metrics": metrics,
-                    "amp": self.scaler.state_dict() if self.scaler else None,
-                },
+                self.save_state(epoch, step, metrics),
                 self.config["cmd"]["checkpoint_dir"],
             )
+
+    def save_hpo(self, epoch, step, metrics, checkpoint_every=-1):
+        if checkpoint_every != -1 and step % checkpoint_every == 0:
+            with tune.checkpoint_dir(step=step) as checkpoint_dir:
+                path = os.path.join(checkpoint_dir, "checkpoint")
+                torch.save(self.save_state(epoch, step, metrics), path)
 
     def train(self, max_epochs=None, return_metrics=False):
         # TODO(abhshkdz): Timers for dataloading and forward pass.
