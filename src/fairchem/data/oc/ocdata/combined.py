@@ -135,10 +135,12 @@ class Combined():
 
     def is_config_reasonable(self, adslab):
         """
-        Function that check weather the adsorbate placement
-        is reasonable. For any atom in the adsorbate, if the distance
-        between the atom and slab atoms are closer than 80% of
-        their expected covalent bond, we reject that placement.
+        Function that check whether the adsorbate placement is reasonable.
+        Two criteria are: 1. The adsorbate should be placed on the slab:
+        the fractional coordinates of the adsorption site is bounded by the unit cell.
+        2. The adsorbate should not be buried into the surface: for any atom
+        in the adsorbate, if the distance between the atom and slab atoms
+        are closer than 80% of their expected covalent bond, we reject that placement.
 
         Args:
             adslab          An `ase.Atoms` object of the adsorbate+slab complex.
@@ -153,7 +155,9 @@ class Combined():
         structure = AseAtomsAdaptor.get_structure(adslab)
         slab_lattice = structure.lattice
 
-        # Check to see if adsorpton site is within the unit cell
+        # Check to see if the fractional coordinates of the adsorption site is bounded
+        # by the slab unit cell. We loosen the threshold to -0.01 and 1.01
+        # to not wrongly exclude reasonable edge adsorption site.
         for idx in adsorbate_bond_indices:
             coord = slab_lattice.get_fractional_coords(structure[idx].coords)
             if np.any((coord < -0.01) | (coord > 1.01)):
