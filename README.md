@@ -7,12 +7,6 @@ input to predict material properties:
 - [SchNet](https://arxiv.org/abs/1706.08566)
 - [CGCNN](https://link.aps.org/doi/10.1103/PhysRevLett.120.145301).
 
-# Colab Notebooks
-
-Install and run training notebooks right in your browser. 
-- S2EF training example: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elliottower/ocp/blob/696DS-Spring21/docs/source/tutorials/train_s2ef_example_colab.ipynb
-)
-
 ##  Installation
 
 [last updated December 09, 2020]
@@ -65,6 +59,12 @@ conda activate ocp-models
 pip install -e .
 pre-commit install
 ```
+
+### Google Colab Notebooks
+
+[Google Colab](https://colab.research.google.com/) provides free access to GPU-accelerated Jupyter notebooks---train a notebook right from your browser!
+- S2EF training example: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elliottower/ocp/blob/696DS-Spring21/docs/source/tutorials/train_s2ef_example_colab.ipynb
+)
 
 ## Usage
 
