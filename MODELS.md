@@ -18,8 +18,6 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 |CGCNN	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/cgcnn_all.pt	|0.0684	|0.01%	|
 |DimeNet	|200k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/dimenet_200k.pt	|0.0693	|0.01%	|
 |DimeNet	|2M	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/dimenet_2M.pt	|0.0576	|0.02%	|
-|DimeNet	|20M	|Coming soon	|	|	|
-|DimeNet	|All	|Coming soon	|	|	|
 |SchNet	|200k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/schnet_200k.pt	|0.0743	|0%	|
 |SchNet	|2M	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/schnet_2M.pt	|0.0737	|0%	|
 |SchNet	|20M	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/schnet_20M.pt	|0.0568	|0.03%	|
@@ -31,7 +29,7 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 
 ## S2EF baselines: optimized for force only
 
-## 
+##
 
 |model	|split	|downloadable link	|val ID force MAE	|
 |---	|---	|---	|---	|
@@ -76,5 +74,3 @@ Please cite the following paper in any research manuscript using the OC20 datase
     archivePrefix={arXiv}
 }
 ```
-
-
