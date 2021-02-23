@@ -63,7 +63,7 @@ pre-commit install
 ### Google Colab Notebooks
 
 [Google Colab](https://colab.research.google.com/) provides free access to GPU-accelerated Jupyter notebooks—train a notebook right from your browser!
-- S2EF training example: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elliottower/ocp/blob/696DS-Spring21/docs/source/tutorials/train_s2ef_example_colab.ipynb
+- S2EF training example: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elliottower/ocp/blob/696DS-Spring21/docs/source/tutorials/colab_train_s2ef_example.ipynb
 )
 
 ## Usage
