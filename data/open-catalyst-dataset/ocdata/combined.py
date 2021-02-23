@@ -113,7 +113,8 @@ class Combined():
         """
         connectivity = self.get_connectivity(adsorbate)
         adsorbate_gratoms = catkit.Gratoms(adsorbate, edges=connectivity)
-        # tag adsorbate atoms: non-binding atoms as 2, the binding atom(s) as 3
+        # tag adsorbate atoms: non-binding atoms as 2, the binding atom(s) as 3 for now to
+        # track adsorption site for analyzing if adslab configuration is reasonable.
         adsorbate_gratoms.set_tags([3 if idx in bond_indices else 2 for idx in range(len(adsorbate_gratoms))])
         return adsorbate_gratoms
 
@@ -176,6 +177,11 @@ class Combined():
                 actual_dist = adslab.get_distance(idx, nn['site_index'], mic=True)
                 if actual_dist < cov_bond_thres:
                     return False
+
+        # If the structure is reasonable, change tags of adsorbate atoms from 2 and 3 to 2 only
+        # for ML model compatibility and data cleanliness of the output adslab configurations
+        old_tags = traj.get_tags(adslab)
+        adslab.set_tags(np.where(old_tags == 3, 2, old_tags))
         return True
 
     def find_sites(self, surface, adsorbed_surface, bond_indices):
