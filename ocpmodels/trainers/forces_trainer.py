@@ -440,6 +440,9 @@ class ForcesTrainer(BaseTrainer):
                 if self.update_lr_on_step:
                     self.scheduler.step()
 
+                if i == 9:
+                    break
+
             if not self.update_lr_on_step:
                 self.scheduler.step()
 

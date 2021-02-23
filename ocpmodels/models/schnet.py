@@ -80,49 +80,50 @@ class SchNetWrap(SchNet):
         )
 
     def forward(self, data):
-        z = data.atomic_numbers.long()
-        pos = data.pos
-        if self.regress_forces:
-            pos = pos.requires_grad_(True)
-        batch = data.batch
+        with torch.enable_grad():
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            if self.regress_forces:
+                pos = pos.requires_grad_(True)
+            batch = data.batch
 
-        if self.otf_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, 50, data.pos.device
-            )
-            data.edge_index = edge_index
-            data.cell_offsets = cell_offsets
-            data.neighbors = neighbors
+            if self.otf_graph:
+                edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                    data, self.cutoff, 50, data.pos.device
+                )
+                data.edge_index = edge_index
+                data.cell_offsets = cell_offsets
+                data.neighbors = neighbors
 
-        # TODO return distance computation in radius_graph_pbc to remove need
-        # for get_pbc_distances call
-        if self.use_pbc:
-            assert z.dim() == 1 and z.dtype == torch.long
+            # TODO return distance computation in radius_graph_pbc to remove need
+            # for get_pbc_distances call
+            if self.use_pbc:
+                assert z.dim() == 1 and z.dtype == torch.long
 
-            out = get_pbc_distances(
-                pos,
-                data.edge_index,
-                data.cell,
-                data.cell_offsets,
-                data.neighbors,
-            )
+                out = get_pbc_distances(
+                    pos,
+                    data.edge_index,
+                    data.cell,
+                    data.cell_offsets,
+                    data.neighbors,
+                )
 
-            edge_index = out["edge_index"]
-            edge_weight = out["distances"]
-            edge_attr = self.distance_expansion(edge_weight)
+                edge_index = out["edge_index"]
+                edge_weight = out["distances"]
+                edge_attr = self.distance_expansion(edge_weight)
 
-            h = self.embedding(z)
-            for interaction in self.interactions:
-                h = h + interaction(h, edge_index, edge_weight, edge_attr)
+                h = self.embedding(z)
+                for interaction in self.interactions:
+                    h = h + interaction(h, edge_index, edge_weight, edge_attr)
 
-            h = self.lin1(h)
-            h = self.act(h)
-            h = self.lin2(h)
+                h = self.lin1(h)
+                h = self.act(h)
+                h = self.lin2(h)
 
-            batch = torch.zeros_like(z) if batch is None else batch
-            energy = scatter(h, batch, dim=0, reduce=self.readout)
-        else:
-            energy = super(SchNetWrap, self).forward(z, pos, batch)
+                batch = torch.zeros_like(z) if batch is None else batch
+                energy = scatter(h, batch, dim=0, reduce=self.readout)
+            else:
+                energy = super(SchNetWrap, self).forward(z, pos, batch)
 
         if self.regress_forces:
             forces = -1 * (
