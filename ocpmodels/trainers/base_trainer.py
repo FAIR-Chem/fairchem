@@ -515,64 +515,60 @@ class BaseTrainer:
                 "test_mae": test_mae,
             }
 
+    @torch.no_grad()
     def validate(self, split="val", epoch=None):
-        with torch.no_grad():
-            if distutils.is_master():
-                print("### Evaluating on {}.".format(split))
+        if distutils.is_master():
+            print("### Evaluating on {}.".format(split))
 
-            self.model.eval()
-            evaluator, metrics = Evaluator(task=self.name), {}
-            rank = distutils.get_rank()
+        self.model.eval()
+        evaluator, metrics = Evaluator(task=self.name), {}
+        rank = distutils.get_rank()
 
-            loader = self.val_loader if split == "val" else self.test_loader
+        loader = self.val_loader if split == "val" else self.test_loader
 
-            for i, batch in tqdm(
-                enumerate(loader),
-                total=len(loader),
-                position=rank,
-                desc="device {}".format(rank),
-                disable=True,
-            ):
-                # Forward.
-                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out = self._forward(batch)
-                loss = self._compute_loss(out, batch)
+        for i, batch in tqdm(
+            enumerate(loader),
+            total=len(loader),
+            position=rank,
+            desc="device {}".format(rank),
+        ):
+            # Forward.
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch)
+            loss = self._compute_loss(out, batch)
 
-                # Compute metrics.
-                metrics = self._compute_metrics(out, batch, evaluator, metrics)
-                metrics = evaluator.update("loss", loss.item(), metrics)
+            # Compute metrics.
+            metrics = self._compute_metrics(out, batch, evaluator, metrics)
+            metrics = evaluator.update("loss", loss.item(), metrics)
 
-            aggregated_metrics = {}
-            for k in metrics:
-                aggregated_metrics[k] = {
-                    "total": distutils.all_reduce(
-                        metrics[k]["total"], average=False, device=self.device
-                    ),
-                    "numel": distutils.all_reduce(
-                        metrics[k]["numel"], average=False, device=self.device
-                    ),
-                }
-                aggregated_metrics[k]["metric"] = (
-                    aggregated_metrics[k]["total"]
-                    / aggregated_metrics[k]["numel"]
-                )
-            metrics = aggregated_metrics
+        aggregated_metrics = {}
+        for k in metrics:
+            aggregated_metrics[k] = {
+                "total": distutils.all_reduce(
+                    metrics[k]["total"], average=False, device=self.device
+                ),
+                "numel": distutils.all_reduce(
+                    metrics[k]["numel"], average=False, device=self.device
+                ),
+            }
+            aggregated_metrics[k]["metric"] = (
+                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
+            )
+        metrics = aggregated_metrics
 
-            log_dict = {k: metrics[k]["metric"] for k in metrics}
-            log_dict.update({"epoch": epoch + 1})
-            if distutils.is_master():
-                log_str = [
-                    "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
-                ]
-                print(", ".join(log_str))
+        log_dict = {k: metrics[k]["metric"] for k in metrics}
+        log_dict.update({"epoch": epoch + 1})
+        if distutils.is_master():
+            log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
+            print(", ".join(log_str))
 
-            # Make plots.
-            if self.logger is not None and epoch is not None:
-                self.logger.log(
-                    log_dict,
-                    step=(epoch + 1) * len(self.train_loader),
-                    split=split,
-                )
+        # Make plots.
+        if self.logger is not None and epoch is not None:
+            self.logger.log(
+                log_dict,
+                step=(epoch + 1) * len(self.train_loader),
+                split=split,
+            )
 
         return metrics
 

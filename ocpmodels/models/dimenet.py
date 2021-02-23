@@ -100,98 +100,100 @@ class DimeNetWrap(DimeNet):
             num_output_layers=num_output_layers,
         )
 
+    @torch.enable_grad()
+    def _forward(self, data):
+        pos = data.pos
+        batch = data.batch
+
+        if self.otf_graph:
+            edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                data, self.cutoff, 50, data.pos.device
+            )
+            data.edge_index = edge_index
+            data.cell_offsets = cell_offsets
+            data.neighbors = neighbors
+
+        if self.use_pbc:
+            out = get_pbc_distances(
+                pos,
+                data.edge_index,
+                data.cell,
+                data.cell_offsets,
+                data.neighbors,
+                return_offsets=True,
+            )
+
+            edge_index = out["edge_index"]
+            dist = out["distances"]
+            offsets = out["offsets"]
+
+            j, i = edge_index
+        else:
+            edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
+            j, i = edge_index
+            dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
+
+        _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
+            edge_index, num_nodes=data.atomic_numbers.size(0)
+        )
+
+        # Cap no. of triplets during training.
+        if self.training:
+            sub_ix = torch.randperm(idx_i.size(0))[
+                : self.max_angles_per_image * data.natoms.size(0)
+            ]
+            idx_i, idx_j, idx_k = (
+                idx_i[sub_ix],
+                idx_j[sub_ix],
+                idx_k[sub_ix],
+            )
+            idx_kj, idx_ji = idx_kj[sub_ix], idx_ji[sub_ix]
+
+        # Calculate angles.
+        pos_i = pos[idx_i].detach()
+        pos_j = pos[idx_j].detach()
+        if self.use_pbc:
+            pos_ji, pos_kj = (
+                pos[idx_j].detach() - pos_i + offsets[idx_ji],
+                pos[idx_k].detach() - pos_j + offsets[idx_kj],
+            )
+        else:
+            pos_ji, pos_kj = (
+                pos[idx_j].detach() - pos_i,
+                pos[idx_k].detach() - pos_j,
+            )
+
+        a = (pos_ji * pos_kj).sum(dim=-1)
+        b = torch.cross(pos_ji, pos_kj).norm(dim=-1)
+        angle = torch.atan2(b, a)
+
+        rbf = self.rbf(dist)
+        sbf = self.sbf(dist, angle, idx_kj)
+
+        # Embedding block.
+        x = self.emb(data.atomic_numbers.long(), rbf, i, j)
+        P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
+
+        # Interaction blocks.
+        for interaction_block, output_block in zip(
+            self.interaction_blocks, self.output_blocks[1:]
+        ):
+            x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
+            P += output_block(x, rbf, i, num_nodes=pos.size(0))
+
+        energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+        return energy
+
     def forward(self, data):
-        with torch.enable_grad():
-            pos = data.pos
-            if self.regress_forces:
-                pos = pos.requires_grad_(True)
-            batch = data.batch
-
-            if self.otf_graph:
-                edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                    data, self.cutoff, 50, data.pos.device
-                )
-                data.edge_index = edge_index
-                data.cell_offsets = cell_offsets
-                data.neighbors = neighbors
-
-            if self.use_pbc:
-                out = get_pbc_distances(
-                    pos,
-                    data.edge_index,
-                    data.cell,
-                    data.cell_offsets,
-                    data.neighbors,
-                    return_offsets=True,
-                )
-
-                edge_index = out["edge_index"]
-                dist = out["distances"]
-                offsets = out["offsets"]
-
-                j, i = edge_index
-            else:
-                edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
-                j, i = edge_index
-                dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
-
-            _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
-                edge_index, num_nodes=data.atomic_numbers.size(0)
-            )
-
-            # Cap no. of triplets during training.
-            if self.training:
-                sub_ix = torch.randperm(idx_i.size(0))[
-                    : self.max_angles_per_image * data.natoms.size(0)
-                ]
-                idx_i, idx_j, idx_k = (
-                    idx_i[sub_ix],
-                    idx_j[sub_ix],
-                    idx_k[sub_ix],
-                )
-                idx_kj, idx_ji = idx_kj[sub_ix], idx_ji[sub_ix]
-
-            # Calculate angles.
-            pos_i = pos[idx_i].detach()
-            pos_j = pos[idx_j].detach()
-            if self.use_pbc:
-                pos_ji, pos_kj = (
-                    pos[idx_j].detach() - pos_i + offsets[idx_ji],
-                    pos[idx_k].detach() - pos_j + offsets[idx_kj],
-                )
-            else:
-                pos_ji, pos_kj = (
-                    pos[idx_j].detach() - pos_i,
-                    pos[idx_k].detach() - pos_j,
-                )
-
-            a = (pos_ji * pos_kj).sum(dim=-1)
-            b = torch.cross(pos_ji, pos_kj).norm(dim=-1)
-            angle = torch.atan2(b, a)
-
-            rbf = self.rbf(dist)
-            sbf = self.sbf(dist, angle, idx_kj)
-
-            # Embedding block.
-            x = self.emb(data.atomic_numbers.long(), rbf, i, j)
-            P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
-
-            # Interaction blocks.
-            for interaction_block, output_block in zip(
-                self.interaction_blocks, self.output_blocks[1:]
-            ):
-                x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
-                P += output_block(x, rbf, i, num_nodes=pos.size(0))
-
-            energy = (
-                P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
-            )
+        if self.regress_forces:
+            data.pos.requires_grad_(True)
+        energy = self._forward(data)
 
         if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,
-                    pos,
+                    data.pos,
                     grad_outputs=torch.ones_like(energy),
                     create_graph=True,
                 )[0]

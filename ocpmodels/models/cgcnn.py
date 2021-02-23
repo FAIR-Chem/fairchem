@@ -101,56 +101,61 @@ class CGCNN(BaseModel):
         self.cutoff = cutoff
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
 
+    @torch.enable_grad()
+    def _forward(self, data):
+        # Get node features
+        if self.embedding.device != data.atomic_numbers.device:
+            self.embedding = self.embedding.to(data.atomic_numbers.device)
+        data.x = self.embedding[data.atomic_numbers.long() - 1]
+
+        pos = data.pos
+
+        if self.otf_graph:
+            edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                data, self.cutoff, 50, data.pos.device
+            )
+            data.edge_index = edge_index
+            data.cell_offsets = cell_offsets
+            data.neighbors = neighbors
+
+        if self.use_pbc:
+            out = get_pbc_distances(
+                pos,
+                data.edge_index,
+                data.cell,
+                data.cell_offsets,
+                data.neighbors,
+            )
+
+            data.edge_index = out["edge_index"]
+            distances = out["distances"]
+        else:
+            data.edge_index = radius_graph(
+                data.pos, r=self.cutoff, batch=data.batch
+            )
+            row, col = data.edge_index
+            distances = (pos[row] - pos[col]).norm(dim=-1)
+
+        data.edge_attr = self.distance_expansion(distances)
+        # Forward pass through the network
+        mol_feats = self._convolve(data)
+        mol_feats = self.conv_to_fc(mol_feats)
+        if hasattr(self, "fcs"):
+            mol_feats = self.fcs(mol_feats)
+
+        energy = self.fc_out(mol_feats)
+        return energy
+
     def forward(self, data):
-        with torch.enable_grad():
-            # Get node features
-            if self.embedding.device != data.atomic_numbers.device:
-                self.embedding = self.embedding.to(data.atomic_numbers.device)
-            data.x = self.embedding[data.atomic_numbers.long() - 1]
+        if self.regress_forces:
+            data.pos.requires_grad_(True)
+        energy = self._forward(data)
 
-            pos = data.pos
-            if self.regress_forces:
-                pos = pos.requires_grad_(True)
-
-            if self.otf_graph:
-                edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                    data, self.cutoff, 50, data.pos.device
-                )
-                data.edge_index = edge_index
-                data.cell_offsets = cell_offsets
-                data.neighbors = neighbors
-
-            if self.use_pbc:
-                out = get_pbc_distances(
-                    pos,
-                    data.edge_index,
-                    data.cell,
-                    data.cell_offsets,
-                    data.neighbors,
-                )
-
-                data.edge_index = out["edge_index"]
-                distances = out["distances"]
-            else:
-                data.edge_index = radius_graph(
-                    data.pos, r=self.cutoff, batch=data.batch
-                )
-                row, col = data.edge_index
-                distances = (pos[row] - pos[col]).norm(dim=-1)
-
-            data.edge_attr = self.distance_expansion(distances)
-            # Forward pass through the network
-            mol_feats = self._convolve(data)
-            mol_feats = self.conv_to_fc(mol_feats)
-            if hasattr(self, "fcs"):
-                mol_feats = self.fcs(mol_feats)
-
-            energy = self.fc_out(mol_feats)
         if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,
-                    pos,
+                    data.pos,
                     grad_outputs=torch.ones_like(energy),
                     create_graph=True,
                 )[0]
