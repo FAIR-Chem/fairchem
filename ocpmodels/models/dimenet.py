@@ -100,10 +100,9 @@ class DimeNetWrap(DimeNet):
             num_output_layers=num_output_layers,
         )
 
-    def forward(self, data):
+    @torch.enable_grad()
+    def _forward(self, data):
         pos = data.pos
-        if self.regress_forces:
-            pos = pos.requires_grad_(True)
         batch = data.batch
 
         if self.otf_graph:
@@ -143,7 +142,11 @@ class DimeNetWrap(DimeNet):
             sub_ix = torch.randperm(idx_i.size(0))[
                 : self.max_angles_per_image * data.natoms.size(0)
             ]
-            idx_i, idx_j, idx_k = idx_i[sub_ix], idx_j[sub_ix], idx_k[sub_ix]
+            idx_i, idx_j, idx_k = (
+                idx_i[sub_ix],
+                idx_j[sub_ix],
+                idx_k[sub_ix],
+            )
             idx_kj, idx_ji = idx_kj[sub_ix], idx_ji[sub_ix]
 
         # Calculate angles.
@@ -179,12 +182,18 @@ class DimeNetWrap(DimeNet):
             P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+        return energy
+
+    def forward(self, data):
+        if self.regress_forces:
+            data.pos.requires_grad_(True)
+        energy = self._forward(data)
 
         if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,
-                    pos,
+                    data.pos,
                     grad_outputs=torch.ones_like(energy),
                     create_graph=True,
                 )[0]
