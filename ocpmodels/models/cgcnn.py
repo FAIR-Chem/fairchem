@@ -101,15 +101,14 @@ class CGCNN(BaseModel):
         self.cutoff = cutoff
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
 
-    def forward(self, data):
+    @torch.enable_grad()
+    def _forward(self, data):
         # Get node features
         if self.embedding.device != data.atomic_numbers.device:
             self.embedding = self.embedding.to(data.atomic_numbers.device)
         data.x = self.embedding[data.atomic_numbers.long() - 1]
 
         pos = data.pos
-        if self.regress_forces:
-            pos = pos.requires_grad_(True)
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
@@ -145,11 +144,18 @@ class CGCNN(BaseModel):
             mol_feats = self.fcs(mol_feats)
 
         energy = self.fc_out(mol_feats)
+        return energy
+
+    def forward(self, data):
+        if self.regress_forces:
+            data.pos.requires_grad_(True)
+        energy = self._forward(data)
+
         if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,
-                    pos,
+                    data.pos,
                     grad_outputs=torch.ones_like(energy),
                     create_graph=True,
                 )[0]

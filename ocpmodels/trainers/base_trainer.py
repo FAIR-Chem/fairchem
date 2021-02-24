@@ -473,14 +473,11 @@ class BaseTrainer:
 
             self.scheduler.step()
 
-            with torch.no_grad():
-                if self.val_loader is not None:
-                    v_loss, v_mae = self.validate(split="val", epoch=epoch)
+            if self.val_loader is not None:
+                v_loss, v_mae = self.validate(split="val", epoch=epoch)
 
-                if self.test_loader is not None:
-                    test_loss, test_mae = self.validate(
-                        split="test", epoch=epoch
-                    )
+            if self.test_loader is not None:
+                test_loss, test_mae = self.validate(split="test", epoch=epoch)
 
             if not self.is_debug:
                 save_checkpoint(
@@ -515,6 +512,7 @@ class BaseTrainer:
                 "test_mae": test_mae,
             }
 
+    @torch.no_grad()
     def validate(self, split="val", epoch=None):
         if distutils.is_master():
             print("### Evaluating on {}.".format(split))
