@@ -110,7 +110,6 @@ if __name__ == "__main__":
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     config = build_config(args, override_args)
-    config["logger"] = "wandb"
 
     if args.submit:  # Run on cluster
         if args.sweep_yml:  # Run grid search
