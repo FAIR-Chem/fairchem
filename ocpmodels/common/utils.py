@@ -288,6 +288,7 @@ def build_config(args, args_override):
     config["is_vis"] = args.vis
     config["print_every"] = args.print_every
     config["amp"] = args.amp
+    config["nonddp"] = args.nonddp
     config["checkpoint"] = args.checkpoint
     config["cpu"] = args.cpu
     # Submit
