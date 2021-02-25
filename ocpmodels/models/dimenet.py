@@ -11,7 +11,11 @@ from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
+from ocpmodels.common.utils import (
+    conditional_grad,
+    get_pbc_distances,
+    radius_graph_pbc,
+)
 
 
 @registry.register_model("dimenet")
@@ -100,7 +104,7 @@ class DimeNetWrap(DimeNet):
             num_output_layers=num_output_layers,
         )
 
-    @torch.enable_grad()
+    @conditional_grad(torch.enable_grad())
     def _forward(self, data):
         pos = data.pos
         batch = data.batch

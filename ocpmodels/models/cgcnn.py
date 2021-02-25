@@ -11,7 +11,11 @@ from torch_geometric.nn import MessagePassing, global_mean_pool, radius_graph
 from torch_geometric.nn.models.schnet import GaussianSmearing
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
+from ocpmodels.common.utils import (
+    conditional_grad,
+    get_pbc_distances,
+    radius_graph_pbc,
+)
 from ocpmodels.datasets.embeddings import KHOT_EMBEDDINGS
 from ocpmodels.models.base import BaseModel
 
@@ -101,7 +105,7 @@ class CGCNN(BaseModel):
         self.cutoff = cutoff
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
 
-    @torch.enable_grad()
+    @conditional_grad(torch.enable_grad())
     def _forward(self, data):
         # Get node features
         if self.embedding.device != data.atomic_numbers.device:
