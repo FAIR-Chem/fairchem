@@ -32,7 +32,7 @@ configparser==5.0.1
 contextvars==2.4
 cryptography==3.4.4
 cycler==0.10.0
-dataclasses==0.7
+dataclasses
 decorator==4.4.2
 defusedxml==0.6.0
 demjson==2.2.4
