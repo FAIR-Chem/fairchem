@@ -47,18 +47,18 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 
 |model	|split	|downloadable link	|val ID energy MAE	|
 |---	|---	|---	|---	|
-|CGCNN	|10k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/cgcnn_10k.pt	|1.0479	|
-|CGCNN	|100k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/cgcnn_100k.pt	|0.7066	|
-|CGCNN	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/cgcnn_all.pt	|0.6048	|
+|CGCNN	|10k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/cgcnn_10k.pt	|0.9881	|
+|CGCNN	|100k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/cgcnn_100k.pt	|0.6820	|
+|CGCNN	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/cgcnn_all.pt	|0.6199	|
 |DimeNet	|10k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/dimenet_10k.pt	|1.0117	|
 |DimeNet	|100k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/dimenet_100k.pt	|0.6658	|
 |DimeNet	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/dimenet_all.pt	|0.5999	|
-|SchNet	|10k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/schnet_10k.pt	|1.0858	|
-|SchNet	|100k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/schnet_100k.pt	|0.7266	|
-|SchNet	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/schnet_all.pt	|0.6691	|
-|DimeNet++	|10k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_10k.pt	|0.8793	|
-|DimeNet++	|100k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_100k.pt	|0.6364	|
-|DimeNet++	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_all.pt	|0.5588	|
+|SchNet	|10k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/schnet_10k.pt	|1.0590	|
+|SchNet	|100k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/schnet_100k.pt	|0.7137	|
+|SchNet	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/schnet_all.pt	|0.6458	|
+|DimeNet++	|10k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_10k.pt	|0.8837	|
+|DimeNet++	|100k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_100k.pt	|0.6388	|
+|DimeNet++	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_all.pt	|0.5639	|
 
 The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
 
