@@ -10,7 +10,11 @@ from torch_geometric.nn import SchNet
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
+from ocpmodels.common.utils import (
+    conditional_grad,
+    get_pbc_distances,
+    radius_graph_pbc,
+)
 
 
 @registry.register_model("schnet")
@@ -79,11 +83,10 @@ class SchNetWrap(SchNet):
             readout=readout,
         )
 
-    def forward(self, data):
+    @conditional_grad(torch.enable_grad())
+    def _forward(self, data):
         z = data.atomic_numbers.long()
         pos = data.pos
-        if self.regress_forces:
-            pos = pos.requires_grad_(True)
         batch = data.batch
 
         if self.otf_graph:
@@ -123,12 +126,18 @@ class SchNetWrap(SchNet):
             energy = scatter(h, batch, dim=0, reduce=self.readout)
         else:
             energy = super(SchNetWrap, self).forward(z, pos, batch)
+        return energy
+
+    def forward(self, data):
+        if self.regress_forces:
+            data.pos.requires_grad_(True)
+        energy = self._forward(data)
 
         if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,
-                    pos,
+                    data.pos,
                     grad_outputs=torch.ones_like(energy),
                     create_graph=True,
                 )[0]

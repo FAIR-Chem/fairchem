@@ -176,6 +176,7 @@ class EnergyTrainer(BaseTrainer):
             else:
                 raise NotImplementedError
 
+    @torch.no_grad()
     def predict(self, loader, results_file=None, disable_tqdm=False):
         if distutils.is_master() and not disable_tqdm:
             print("### Predicting on test.")

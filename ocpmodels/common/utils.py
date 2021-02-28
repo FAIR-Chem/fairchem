@@ -81,6 +81,21 @@ def print_cuda_usage():
     print("Max Memory Cached:", torch.cuda.max_memory_cached() / (1024 * 1024))
 
 
+def conditional_grad(dec):
+    "Decorator to enable/disable grad depending on whether force/energy predictions are being made"
+    # Adapted from https://stackoverflow.com/questions/60907323/accessing-class-property-as-decorator-argument
+    def decorator(func):
+        def cls_method(self, *args, **kwargs):
+            f = func
+            if self.regress_forces:
+                f = dec(func)
+            return f(self, *args, **kwargs)
+
+        return cls_method
+
+    return decorator
+
+
 def plot_histogram(data, xlabel="", ylabel="", title=""):
     assert isinstance(data, list)
 
@@ -275,6 +290,7 @@ def build_config(args, args_override):
     config["is_vis"] = args.vis
     config["print_every"] = args.print_every
     config["amp"] = args.amp
+    config["nonddp"] = args.nonddp
     config["checkpoint"] = args.checkpoint
     config["cpu"] = args.cpu
     # Submit
