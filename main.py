@@ -56,7 +56,7 @@ class Runner(submitit.helpers.Checkpointable):
                 cpu=config.get("cpu", False),
             )
             if config["checkpoint"] is not None:
-                trainer.load_pretrained(config["checkpoint"])
+                trainer.load_pretrained(config["checkpoint"], config["nonddp"])
 
             # save checkpoint path to runner state for slurm resubmissions
             self.chkpt_path = os.path.join(

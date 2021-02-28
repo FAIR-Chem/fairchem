@@ -48,7 +48,11 @@ from torch_scatter import scatter
 from torch_sparse import SparseTensor
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
+from ocpmodels.common.utils import (
+    conditional_grad,
+    get_pbc_distances,
+    radius_graph_pbc,
+)
 
 try:
     import sympy as sym
@@ -370,10 +374,9 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
             num_output_layers=num_output_layers,
         )
 
-    def forward(self, data):
+    @conditional_grad(torch.enable_grad())
+    def _forward(self, data):
         pos = data.pos
-        if self.regress_forces:
-            pos = pos.requires_grad_(True)
         batch = data.batch
 
         if self.otf_graph:
@@ -442,11 +445,18 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
 
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
 
+        return energy
+
+    def forward(self, data):
+        if self.regress_forces:
+            data.pos.requires_grad_(True)
+        energy = self._forward(data)
+
         if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,
-                    pos,
+                    data.pos,
                     grad_outputs=torch.ones_like(energy),
                     create_graph=True,
                 )[0]
