@@ -154,6 +154,11 @@ def scatter(input: Any, chunks: int) -> List[Batch]:
 
     if isinstance(input, PTGBatch):
         ptg_data_list = input.to_data_list()
+
+        chunks = min(
+            chunks, len(ptg_data_list)
+        )  # if train/eval batchsizes are smaller than number of chunks
+
         microbatches = []
         nbd_splits = input.neighbors.chunk(
             chunks

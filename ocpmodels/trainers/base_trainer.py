@@ -511,7 +511,12 @@ class BaseTrainer:
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
-            loss = self._compute_loss(out, batch)
+
+            if self.config["task"].get("pipeline_parallel", False):
+                # loss = self._compute_loss(out, [batch[0].to("cuda:7")])
+                loss = self._compute_loss(out, [self.to_last_device(batch[0])])
+            else:
+                loss = self._compute_loss(out, batch)
 
             # Compute metrics.
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
@@ -751,3 +756,18 @@ class BaseTrainer:
 
             print(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
+
+    def to_last_device(self, batch):
+        """
+        Helper function to move a batch to the last device for pipeline
+        parallel usecase.
+
+        """
+        print(self.config["model_attributes"]["pipeline_parallel_devices"])
+        assert (
+            self.config["model_attributes"]["pipeline_parallel_devices"] != []
+        )
+        batch = batch.to(
+            self.config["model_attributes"]["pipeline_parallel_devices"][-1]
+        )
+        return batch

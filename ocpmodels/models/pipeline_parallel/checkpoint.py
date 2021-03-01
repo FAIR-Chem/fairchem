@@ -293,6 +293,7 @@ class Checkpoint(torch.autograd.Function):
         else:
             tensors = (output,)
         if any(y.requires_grad for y in tensors):
+            tensors = tuple([x for x in tensors if x.requires_grad])
             torch.autograd.backward(tensors, grad_output)
 
         grad_input: List[Optional[Tensor]] = [None, None, None, None, None]

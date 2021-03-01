@@ -92,6 +92,10 @@ class EmbeddingLayer(nn.Module):
             cell_offsets,
             neighbors,
         ) = input
+
+        # print("Inside forward of Embedding layer")
+        #        print(atomic_numbers.requires_grad, pos.requires_grad, batch.requires_grad, edge_index.requires_grad, cell.requires_grad, cell_offsets.requires_grad, neighbors.requires_grad)
+
         z = atomic_numbers.long()
         if self.feat == "simple":
             h = self.embedding(z)
@@ -99,6 +103,10 @@ class EmbeddingLayer(nn.Module):
             h = self.embedding(self.atom_map[z])
         else:
             raise RuntimeError("Undefined feature type for atom")
+
+        #        print("inside embedding forward")
+        #        h.requires_grad = True
+        #       print(h.requires_grad)
         return (
             h,
             atomic_numbers,
@@ -195,6 +203,8 @@ class BasisFunctionLayer(nn.Module):
         ) = input
         z = atomic_numbers.long()
 
+        # print("inside basisfunction layer")
+        #        print(embedding_output.requires_grad, atomic_numbers.requires_grad, pos.requires_grad, batch.requires_grad, edge_index.requires_grad, cell.requires_grad, cell_offsets.requires_grad, neighbors.requires_grad)
         assert not self.otf_graph
         out = get_pbc_distances(
             pos,
@@ -258,7 +268,7 @@ class BasisFunctionLayer(nn.Module):
         else:
             edge_attr = self.basis_fun(raw_edge_attr)
 
-        return (embedding_output, edge_index, edge_attr, edge_weight, batch)
+        return (embedding_output, edge_attr, edge_weight, edge_index, batch)
 
 
 class InteractionBlock(MessagePassing):
@@ -362,7 +372,9 @@ class InteractionBlock(MessagePassing):
             torch.nn.init.xavier_uniform_(self.center_W)
 
     def forward(self, input):
-        x, edge_index, edge_attr, edge_weight, batch = input
+        x, edge_attr, edge_weight, edge_index, batch = input
+        # print("inside forward of InteractionBlock")
+        #        print(x.requires_grad, edge_index.requires_grad, edge_attr.requires_grad, edge_weight.requires_grad, batch.requires_grad)
         if self.basis_type != "rawcat":
             edge_emb = self.lin_basis(edge_attr)
         else:
@@ -388,7 +400,7 @@ class InteractionBlock(MessagePassing):
                 x = self.propagate(edge_index, x=x, W=W) + self.center_W * x
         x = self.mlp_trans(x)
 
-        return (x + orig_x, edge_index, edge_attr, edge_weight, batch)
+        return (x + orig_x, edge_attr, edge_weight, edge_index, batch)
 
     def message(self, x_j, W):
         if self.ablation == "nofilter":
@@ -443,6 +455,8 @@ class ProjectForceEnergyDecoder(nn.Module):
 
     def forward(self, input):
         h, edge_index, edge_attr, edge_weight, batch = input
+        #        print("inside forward of ProjectF")
+        #       print(h.requires_grad, edge_index.requires_grad, edge_attr.requires_grad, edge_weight.requires_grad, batch.requires_grad)
         h = self.lin(h)
         h = self.activation(h)
         out = scatter(h, batch, dim=0, reduce="add")
@@ -513,6 +527,10 @@ class ForceNetSequential(BaseModel):
         decoder_hidden_channels=512,
         decoder_type="mlp",
         decoder_activation_str="swish",
+        pipeline_parallel_balance=[],
+        pipeline_parallel_devices=[],
+        pipeline_parallel_chunks=1,
+        pipeline_parallel_checkpoint="never",
         training=True,
         otf_graph=False,
     ):
@@ -520,6 +538,10 @@ class ForceNetSequential(BaseModel):
         super(ForceNetSequential, self).__init__()
         self.training = training
         self.ablation = ablation
+
+        assert pipeline_parallel_balance != []
+        assert pipeline_parallel_devices != []
+
         if self.ablation not in [
             "none",
             "nofilter",
@@ -610,41 +632,26 @@ class ForceNetSequential(BaseModel):
         )
         self.seq_model = nn.Sequential(*list_of_modules)
 
-        balance = [4, 4]
-        chunks = 1
-        checkpoint = "never"
-        devices = [0, 1]
+        print(
+            pipeline_parallel_balance,
+            pipeline_parallel_devices,
+            pipeline_parallel_chunks,
+            pipeline_parallel_checkpoint,
+        )
+        print(len(self.seq_model), sum(pipeline_parallel_balance))
+        assert len(self.seq_model) == sum(pipeline_parallel_balance)
+
         self.pipe_model = GPipe(
             self.seq_model,
-            balance=balance,
-            devices=devices,
-            chunks=chunks,
-            checkpoint=checkpoint,
+            balance=pipeline_parallel_balance,
+            devices=pipeline_parallel_devices,
+            chunks=pipeline_parallel_chunks,
+            checkpoint=pipeline_parallel_checkpoint,
         )
 
     def forward(self, data):
 
         data = data[0]
-        # remove-me (sidgoyal)
-        # can just pass data[0] without extracting individual atributes
-        atomic_numbers = data.atomic_numbers
-        pos = data.pos
-        batch = data.batch
-        edge_index = data.edge_index
-        cell = data.cell
-        cell_offsets = data.cell_offsets
-        neighbors = data.neighbors
-
-        input = (
-            atomic_numbers,
-            pos,
-            batch,
-            edge_index,
-            cell,
-            cell_offsets,
-            neighbors,
-        )
-
         energy, force = self.pipe_model(data)
         return energy, force
 
