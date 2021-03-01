@@ -76,6 +76,11 @@ class Flags:
         self.parser.add_argument(
             "--checkpoint", type=str, help="Model checkpoint to load"
         )
+        self.parser.add_argument(
+            "--nonddp",
+            action="store_true",
+            help="Load model checkpoint without DDP",
+        )
         # Cluster args
         self.parser.add_argument(
             "--sweep-yml",
