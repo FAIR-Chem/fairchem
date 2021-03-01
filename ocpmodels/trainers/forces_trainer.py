@@ -347,7 +347,7 @@ class ForcesTrainer(BaseTrainer):
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
-                    loss = self._compute_loss(out, [batch[0].to("cuda:1")])
+                    loss = self._compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
@@ -472,7 +472,9 @@ class ForcesTrainer(BaseTrainer):
         loss = []
 
         # Energy loss.
-        energy_target = torch.cat([batch.y for batch in batch_list], dim=0)
+        energy_target = torch.cat(
+            [batch.y.to(self.device) for batch in batch_list], dim=0
+        )
         if self.config["dataset"].get("normalize_labels", False):
             energy_target = self.normalizers["target"].norm(energy_target)
         energy_mult = self.config["optim"].get("energy_coefficient", 1)
@@ -481,7 +483,7 @@ class ForcesTrainer(BaseTrainer):
         # Force loss.
         if self.config["model_attributes"].get("regress_forces", True):
             force_target = torch.cat(
-                [batch.force for batch in batch_list], dim=0
+                [batch.force.to(self.device) for batch in batch_list], dim=0
             )
             if self.config["dataset"].get("normalize_labels", False):
                 force_target = self.normalizers["grad_target"].norm(
@@ -496,7 +498,10 @@ class ForcesTrainer(BaseTrainer):
                 assert len(tag_specific_weights) == 3
 
                 batch_tags = torch.cat(
-                    [batch.tags.float() for batch in batch_list],
+                    [
+                        batch.tags.float().to(self.device)
+                        for batch in batch_list
+                    ],
                     dim=0,
                 )
                 weight = torch.zeros_like(batch_tags)
@@ -511,7 +516,7 @@ class ForcesTrainer(BaseTrainer):
                 train_loss_force_normalizer = 3.0 * weight.sum()
 
                 # add up normalizer to obtain global normalizer
-                #                distutils.all_reduce(train_loss_force_normalizer)
+                distutils.all_reduce(train_loss_force_normalizer)
 
                 # perform loss normalization before backprop
                 train_loss_force_normalized = train_loss_force_unnormalized * (
@@ -546,18 +551,26 @@ class ForcesTrainer(BaseTrainer):
         return loss
 
     def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
-        natoms = torch.cat([batch.natoms for batch in batch_list], dim=0)
+        natoms = torch.cat(
+            [batch.natoms.to(self.device) for batch in batch_list], dim=0
+        )
 
         target = {
-            "energy": torch.cat([batch.y for batch in batch_list], dim=0),
-            "forces": torch.cat([batch.force for batch in batch_list], dim=0),
+            "energy": torch.cat(
+                [batch.y.to(self.device) for batch in batch_list], dim=0
+            ),
+            "forces": torch.cat(
+                [batch.force.to(self.device) for batch in batch_list], dim=0
+            ),
             "natoms": natoms,
         }
 
         out["natoms"] = natoms
 
         if self.config["task"].get("eval_on_free_atoms", True):
-            fixed = torch.cat([batch.fixed for batch in batch_list])
+            fixed = torch.cat(
+                [batch.fixed.to(self.device) for batch in batch_list]
+            )
             mask = fixed == 0
             out["forces"] = out["forces"][mask]
             target["forces"] = target["forces"][mask]
@@ -569,12 +582,8 @@ class ForcesTrainer(BaseTrainer):
                     torch.sum(mask[s_idx : s_idx + natoms]).item()
                 )
                 s_idx += natoms
-            target["natoms"] = torch.LongTensor(natoms_free).to(
-                target["energy"].device
-            )
-            out["natoms"] = torch.LongTensor(natoms_free).to(
-                target["energy"].device
-            )
+            target["natoms"] = torch.LongTensor(natoms_free).to(self.device)
+            out["natoms"] = torch.LongTensor(natoms_free).to(self.device)
 
         if self.config["dataset"].get("normalize_labels", False):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])

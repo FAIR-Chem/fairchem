@@ -763,7 +763,6 @@ class BaseTrainer:
         parallel usecase.
 
         """
-        print(self.config["model_attributes"]["pipeline_parallel_devices"])
         assert (
             self.config["model_attributes"]["pipeline_parallel_devices"] != []
         )
