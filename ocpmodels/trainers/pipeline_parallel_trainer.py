@@ -372,9 +372,6 @@ class PipelineParallelTrainer(BaseTrainer):
                     "loss", loss.item() / scale, self.metrics
                 )
 
-                print("inside train, i = ", i, "eval_every =", eval_every)
-                if i > 5:
-                    break
                 # Print metrics, make plots.
                 log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
                 log_dict.update(
@@ -525,7 +522,7 @@ class PipelineParallelTrainer(BaseTrainer):
                 train_loss_force_normalizer = 3.0 * weight.sum()
 
                 # add up normalizer to obtain global normalizer
-                #                distutils.all_reduce(train_loss_force_normalizer)
+                distutils.all_reduce(train_loss_force_normalizer)
 
                 # perform loss normalization before backprop
                 train_loss_force_normalized = train_loss_force_unnormalized * (

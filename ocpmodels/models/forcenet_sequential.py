@@ -93,9 +93,6 @@ class EmbeddingLayer(nn.Module):
             neighbors,
         ) = input
 
-        # print("Inside forward of Embedding layer")
-        #        print(atomic_numbers.requires_grad, pos.requires_grad, batch.requires_grad, edge_index.requires_grad, cell.requires_grad, cell_offsets.requires_grad, neighbors.requires_grad)
-
         z = atomic_numbers.long()
         if self.feat == "simple":
             h = self.embedding(z)
@@ -104,9 +101,6 @@ class EmbeddingLayer(nn.Module):
         else:
             raise RuntimeError("Undefined feature type for atom")
 
-        #        print("inside embedding forward")
-        #        h.requires_grad = True
-        #       print(h.requires_grad)
         return (
             h,
             atomic_numbers,
@@ -203,8 +197,6 @@ class BasisFunctionLayer(nn.Module):
         ) = input
         z = atomic_numbers.long()
 
-        # print("inside basisfunction layer")
-        #        print(embedding_output.requires_grad, atomic_numbers.requires_grad, pos.requires_grad, batch.requires_grad, edge_index.requires_grad, cell.requires_grad, cell_offsets.requires_grad, neighbors.requires_grad)
         assert not self.otf_graph
         out = get_pbc_distances(
             pos,
@@ -373,8 +365,6 @@ class InteractionBlock(MessagePassing):
 
     def forward(self, input):
         x, edge_attr, edge_weight, edge_index, batch = input
-        # print("inside forward of InteractionBlock")
-        #        print(x.requires_grad, edge_index.requires_grad, edge_attr.requires_grad, edge_weight.requires_grad, batch.requires_grad)
         if self.basis_type != "rawcat":
             edge_emb = self.lin_basis(edge_attr)
         else:
@@ -455,8 +445,6 @@ class ProjectForceEnergyDecoder(nn.Module):
 
     def forward(self, input):
         h, edge_index, edge_attr, edge_weight, batch = input
-        #        print("inside forward of ProjectF")
-        #       print(h.requires_grad, edge_index.requires_grad, edge_attr.requires_grad, edge_weight.requires_grad, batch.requires_grad)
         h = self.lin(h)
         h = self.activation(h)
         out = scatter(h, batch, dim=0, reduce="add")
@@ -632,13 +620,8 @@ class ForceNetSequential(BaseModel):
         )
         self.seq_model = nn.Sequential(*list_of_modules)
 
-        print(
-            pipeline_parallel_balance,
-            pipeline_parallel_devices,
-            pipeline_parallel_chunks,
-            pipeline_parallel_checkpoint,
-        )
-        print(len(self.seq_model), sum(pipeline_parallel_balance))
+        # number of sequential modules and sum of balance params
+        # should be the same!
         assert len(self.seq_model) == sum(pipeline_parallel_balance)
 
         self.pipe_model = GPipe(
