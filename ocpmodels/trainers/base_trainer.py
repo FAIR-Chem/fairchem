@@ -492,6 +492,7 @@ class BaseTrainer:
                 "test_mae": test_mae,
             }
 
+    @torch.no_grad()
     def validate(self, split="val", epoch=None):
         if distutils.is_master():
             print("### Evaluating on {}.".format(split))
