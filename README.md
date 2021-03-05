@@ -92,6 +92,10 @@ A simplified interactive notebook example can be found [here](https://github.com
 
 Pretrained models accompanying https://arxiv.org/abs/2010.09990v2 can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md).
 
+### Tutorials
+
+Interactive tutorial notebooks can be found [here](https://github.com/Open-Catalyst-Project/ocp/tree/master/docs/source/tutorials) to help familirize oneself with various components of the repo.
+
 ## Discussions/FAQs
 
 For all non-codebase related questions and to keep up-to-date with the latest OCP announcements, please join the [discussion board](https://discuss.opencatalystproject.org/). All codebase related questions and issues should be posted directly on our [issues page](https://github.com/Open-Catalyst-Project/ocp/issues).
