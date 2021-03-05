@@ -249,6 +249,7 @@ class PipelineParallelTrainer(BaseTrainer):
             self.logger.log_plots(plots)
 
     # Takes in a new data source and generates predictions on it.
+    @torch.no_grad()
     def predict(
         self, data_loader, per_image=True, results_file=None, disable_tqdm=True
     ):
