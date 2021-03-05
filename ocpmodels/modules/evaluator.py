@@ -5,6 +5,10 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import numpy as np
+import torch
+
+
 """
 An evaluation module for use with the OCP dataset and suite of tasks. It should
 be possible to import this independently of the rest of the codebase, e.g:
@@ -24,9 +28,6 @@ predictions and another for targets to check against. It returns a dictionary
 with the relevant metrics computed.
 """
 
-import numpy as np
-import torch
-
 
 class Evaluator:
     task_metrics = {
@@ -40,13 +41,13 @@ class Evaluator:
             "energy_mae",
             "energy_force_within_threshold",
         ],
-        "is2rs": ["average_distance_within_threshold", "energy_mae"],
+        "is2rs": ["average_distance_within_threshold"],
         "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
     }
 
     task_attributes = {
         "s2ef": ["energy", "forces", "natoms"],
-        "is2rs": ["positions", "cell", "pbc", "energy", "natoms"],
+        "is2rs": ["positions", "cell", "pbc", "natoms"],
         "is2re": ["energy"],
     }
 
