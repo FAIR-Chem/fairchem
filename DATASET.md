@@ -1,9 +1,8 @@
-# Open Catalyst 2020 (OC20) Dataset download
-
+# Open Catalyst 2020 (OC20) Dataset
 
 *NOTE: Data files for all tasks / splits were updated on Feb 10, 2021 due to minor bugs (affecting < 1% of the data) in earlier versions. If you downloaded data before Feb 10, 2021, please re-download the data.*
 
-This page summarizes the dataset download links for S2EF and IS2RE/IS2RS tasks and various splits. The main project website is https://opencatalystproject.org/ 
+This page summarizes the dataset download links for S2EF and IS2RE/IS2RS tasks and various splits. The main project website is https://opencatalystproject.org/
 
 
 ## Structure to Energy and Forces (S2EF) task
@@ -79,8 +78,6 @@ Each tarball has README file containing details about file formats, number of st
 |---	|---	|---	|---	|---	|
 |294k systems	|20G	|151G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/slab_trajectories.tar	|347f4183465810e9b384e7a033baefc7	|
 
-
-
 ## OC20 mappings
 
 ### Data mapping information
@@ -96,7 +93,7 @@ We provide a Python pickle file containing information about the slab and adsorb
 
 Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: `fe9cc1a6e45d8035a6b76c3caa860e8a`)
 
-An example entry is 
+An example entry is
 
 ```
 'random0': {'bulk_id': 1762,
@@ -104,10 +101,8 @@ An example entry is
   'bulk_mpid': 'mp-1103139',
   'bulk_symbols': 'Ca8Hg4',
   'ads_symbols': '*NO2NO2'}
-  
+
 ```
-
-
 
 ### Adsorbate-catalyst system to catalyst system mapping information
 
@@ -121,34 +116,11 @@ An example entry is
 'random1981709': 'random533137'
 ```
 
-
-
-
-
-The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode). Please cite the following paper in any research manuscript using the OC20 dataset:
-
-
-```
-@misc{ocp_dataset,
-    title={The Open Catalyst 2020 (OC20) Dataset and Community Challenges},
-    author={Lowik Chanussot* and Abhishek Das* and Siddharth Goyal* and Thibaut Lavril* and Muhammed Shuaibi* and Morgane Riviere and Kevin Tran and Javier Heras-Domingo and Caleb Ho and Weihua Hu and Aini Palizhati and Anuroop Sriram and Brandon Wood and Junwoong Yoon and Devi Parikh and C. Lawrence Zitnick and Zachary Ulissi},
-    year={2020},
-    eprint={2010.09990},
-    archivePrefix={arXiv}
-}
-```
-
-
-
-
 ## Dataset changelog
-
-
-
 
 ### Version 2, Feb 2021
 
-Modifications: 
+Modifications:
 
 * Removed slab systems which had single frame checkpoints, this led to modifications of reference frame energies of 350k frames out of 130M.
 * Fixed stitching of checkpoints in adsorbate+catalyst trajectories.
@@ -165,7 +137,7 @@ Total S2EF frames:
     * val_ood_ads: 1000000 → 999838
     * val_ood_cat: 1000000 → 999809
     * val_ood_both: 1000000 →  999944
-* test: 
+* test:
     * test_id: 1000000 → 999736
     * test_ood_ads: 1000000 → 999859
     * test_ood_cat: 1000000 → 999826
@@ -187,9 +159,7 @@ Total IS2RE and IS2RS systems:
     * test_ood_cat: 24967 → 24965
     * test_ood_both: 24986 → 24985
 
-
-
-### Version 1, Oct 2020 
+### Version 1, Oct 2020
 
 Total S2EF frames:
 
@@ -199,13 +169,11 @@ Total S2EF frames:
     * val_ood_ads: 1000000
     * val_ood_cat: 1000000
     * val_ood_both: 1000000
-* test: 
+* test:
     * test_id: 1000000
     * test_ood_ads: 1000000
     * test_ood_cat: 1000000
     * test_ood_both: 1000000
-
-
 
 Total IS2RE and IS2RS systems:
 
@@ -221,7 +189,17 @@ Total IS2RE and IS2RS systems:
     * test_ood_cat: 24967
     * test_ood_both: 24986
 
+## Citation
+
+The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode). Please cite the following paper in any research manuscript using the OC20 dataset:
 
 
-
-
+```bibtex
+@misc{ocp_dataset,
+    title         = {The Open Catalyst 2020 (OC20) Dataset and Community Challenges},
+    author        = {Lowik Chanussot* and Abhishek Das* and Siddharth Goyal* and Thibaut Lavril* and Muhammed Shuaibi* and Morgane Riviere and Kevin Tran and Javier Heras-Domingo and Caleb Ho and Weihua Hu and Aini Palizhati and Anuroop Sriram and Brandon Wood and Junwoong Yoon and Devi Parikh and C. Lawrence Zitnick and Zachary Ulissi},
+    year          = {2020},
+    eprint        = {2010.09990},
+    archivePrefix = {arXiv}
+}
+```

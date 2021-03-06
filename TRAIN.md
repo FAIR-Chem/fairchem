@@ -1,6 +1,9 @@
-# OC20 Task Tutorials
-The open compute challenge consists of three distinct tasks. This document is a tutorial
-for training and evaluating models for each of these tasks as well as generating submission files for EvalAI.
+# Training and evaluating models on the OC20 dataset
+
+The [Open Catalyst Project](https://opencatalystproject.org/) consists of three
+distinct tasks. This document is a tutorial for training and evaluating models
+for each of these tasks as well as generating submission files for the
+[evaluation server hosted on EvalAI](https://eval.ai/web/challenges/challenge-page/712/overview).
 
 `main.py` serves as the entry point to run any task. This script requires two command line
 arguments at a minimum:
