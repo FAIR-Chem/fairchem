@@ -4,7 +4,7 @@
 
 ocp-models is the modeling codebase for the [Open Catalyst Project](https://opencatalystproject.org/).
 
-It provides implementations of state-of-the-art algorithms for catalysis that
+It provides implementations of state-of-the-art ML algorithms for catalysis that
 take arbitrary chemical structures as input to predict energy / forces / positions:
 
 - [DimeNet++](https://arxiv.org/abs/2011.14115)
