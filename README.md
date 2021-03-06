@@ -9,7 +9,7 @@ input to predict material properties:
 
 ##  Installation
 
-[last updated December 09, 2020]
+[last updated March 04, 2021]
 
 The easiest way of installing prerequisites is via [conda](https://conda.io/docs/index.html).
 After installing [conda](http://conda.pydata.org/), run the following commands
@@ -27,14 +27,14 @@ Check that you can invoke `conda-merge` by running `conda-merge -h`.
 
 ### GPU machines
 
-Instructions are for PyTorch 1.6, CUDA 10.1 specifically.
+Instructions are for PyTorch 1.7.1, CUDA 11.0 specifically.
 
 First, check that CUDA is in your `PATH` and `LD_LIBRARY_PATH`, e.g.
 ```
 $echo $PATH | tr ':' '\n' | grep cuda
-/public/apps/cuda/10.1/bin
+/public/apps/cuda/11.0/bin
 $echo $LD_LIBRARY_PATH | tr ':' '\n' | grep cuda
-/public/apps/cuda/10.1/lib64
+/public/apps/cuda/11.0/lib64
 ```
 The exact paths may differ on your system. Then install the dependencies:
 ```bash
