@@ -10,7 +10,7 @@ jobs:
 
       - restore_cache:
           keys:
-          - v0.2-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
+          - v0.3-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
 
       - run:
           name: Install conda
@@ -38,7 +38,7 @@ jobs:
       - save_cache:
           paths:
             - /home/circleci/miniconda
-          key: v0.2-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
+          key: v0.3-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
 
       - run:
           name: Run tests
