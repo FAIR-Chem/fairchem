@@ -119,7 +119,7 @@ Numbers (in papers, etc.) should be reported from the evaluation server.
 
 Pretrained model weights accompanying [our paper](https://arxiv.org/abs/2010.09990) are available [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md).
 
-## Discussions/FAQs
+## Discussion
 
 For all non-codebase related questions and to keep up-to-date with the latest OCP announcements, please join the [discussion board](https://discuss.opencatalystproject.org/). All codebase related questions and issues should be posted directly on our [issues page](https://github.com/Open-Catalyst-Project/ocp/issues).
 
