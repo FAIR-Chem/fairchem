@@ -78,8 +78,6 @@ Each tarball has README file containing details about file formats, number of st
 |---	|---	|---	|---	|---	|
 |294k systems	|20G	|151G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/slab_trajectories.tar	|347f4183465810e9b384e7a033baefc7	|
 
-
-
 ## OC20 mappings
 
 ### Data mapping information
@@ -106,8 +104,6 @@ An example entry is
 
 ```
 
-
-
 ### Adsorbate-catalyst system to catalyst system mapping information
 
 We provide a Python pickle file containing information about the mapping from adsorbate-catalyst systems to their corresponding catalyst systems. Loading the pickle file will load a Python dictionary. The keys of this dictionary are the adsorbate+catalyst system-ids (of the format `random<XYZ>`  where `XYZ` is an integer), and values will be the catalyst system-ids (of the format `random<PQR>` where `PQR` is an integer).
@@ -120,30 +116,7 @@ An example entry is
 'random1981709': 'random533137'
 ```
 
-
-
-
-
-The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode). Please cite the following paper in any research manuscript using the OC20 dataset:
-
-
-```bibtex
-@misc{ocp_dataset,
-    title         = {The Open Catalyst 2020 (OC20) Dataset and Community Challenges},
-    author        = {Lowik Chanussot* and Abhishek Das* and Siddharth Goyal* and Thibaut Lavril* and Muhammed Shuaibi* and Morgane Riviere and Kevin Tran and Javier Heras-Domingo and Caleb Ho and Weihua Hu and Aini Palizhati and Anuroop Sriram and Brandon Wood and Junwoong Yoon and Devi Parikh and C. Lawrence Zitnick and Zachary Ulissi},
-    year          = {2020},
-    eprint        = {2010.09990},
-    archivePrefix = {arXiv}
-}
-```
-
-
-
-
 ## Dataset changelog
-
-
-
 
 ### Version 2, Feb 2021
 
@@ -186,8 +159,6 @@ Total IS2RE and IS2RS systems:
     * test_ood_cat: 24967 → 24965
     * test_ood_both: 24986 → 24985
 
-
-
 ### Version 1, Oct 2020
 
 Total S2EF frames:
@@ -204,8 +175,6 @@ Total S2EF frames:
     * test_ood_cat: 1000000
     * test_ood_both: 1000000
 
-
-
 Total IS2RE and IS2RS systems:
 
 * train: 461313
@@ -219,3 +188,18 @@ Total IS2RE and IS2RS systems:
     * test_ood_ads: 24931
     * test_ood_cat: 24967
     * test_ood_both: 24986
+
+## Citation
+
+The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode). Please cite the following paper in any research manuscript using the OC20 dataset:
+
+
+```bibtex
+@misc{ocp_dataset,
+    title         = {The Open Catalyst 2020 (OC20) Dataset and Community Challenges},
+    author        = {Lowik Chanussot* and Abhishek Das* and Siddharth Goyal* and Thibaut Lavril* and Muhammed Shuaibi* and Morgane Riviere and Kevin Tran and Javier Heras-Domingo and Caleb Ho and Weihua Hu and Aini Palizhati and Anuroop Sriram and Brandon Wood and Junwoong Yoon and Devi Parikh and C. Lawrence Zitnick and Zachary Ulissi},
+    year          = {2020},
+    eprint        = {2010.09990},
+    archivePrefix = {arXiv}
+}
+```
