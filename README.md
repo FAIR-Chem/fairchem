@@ -109,8 +109,6 @@ A detailed description of how to train and evaluate models, run ML-based
 relaxations, and generate EvalAI submission files can be found
 [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md).
 
-A simplified interactive notebook example can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/docs/source/tutorials/train_s2ef_example.ipynb).
-
 Our evaluation server is [hosted on EvalAI](https://eval.ai/web/challenges/challenge-page/712/overview).
 Numbers (in papers, etc.) should be reported from the evaluation server.
 
