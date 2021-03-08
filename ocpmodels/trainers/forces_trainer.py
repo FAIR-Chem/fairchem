@@ -248,17 +248,37 @@ class ForcesTrainer(BaseTrainer):
             "regress_relaxed_position", True
         ):
             if self.config["dataset"].get("normalize_labels", False):
-                if "target_relaxed_pos_mean" in self.config["dataset"]:
+
+                if self.config["optim"].get("use_position_diff", True):
+                    target_mean_str = "target_relaxed_pos_diff_mean"
+                    target_std_str = "target_relaxed_pos_diff_std"
+                else:
+                    target_mean_str = "target_relaxed_pos_mean"
+                    target_std_str = "target_relaxed_pos_std"
+                if target_mean_str in self.config["dataset"]:
                     self.normalizers["target_relaxed_position"] = Normalizer(
-                        mean=self.config["dataset"]["target_relaxed_pos_mean"],
-                        std=self.config["dataset"]["target_relaxed_pos_std"],
+                        mean=self.config["dataset"][target_mean_str],
+                        std=self.config["dataset"][target_std_str],
                         device=self.device,
                     )
                 else:
+                    if self.config["optim"].get("use_position_diff", True):
+                        target_tensor = (
+                            self.train_loader.dataset.data.relaxed_pos[
+                                self.train_loader.dataset.__indices__
+                            ]
+                            - self.train_loader.dataset.data.pos[
+                                self.train_loader.dataset.__indices__
+                            ]
+                        )
+                    else:
+                        target_tensor = (
+                            self.train_loader.dataset.data.relaxed_pos[
+                                self.train_loader.dataset.__indices__
+                            ]
+                        )
                     self.normalizers["target_relaxed_position"] = Normalizer(
-                        tensor=self.train_loader.dataset.data.relaxed_y[
-                            self.train_loader.dataset.__indices__
-                        ],
+                        tensor=target_tensor,
                         device=self.device,
                     )
 
@@ -416,13 +436,145 @@ class ForcesTrainer(BaseTrainer):
 
     def get_mean_stddev_relaxed_pos(self):
 
-        all_relaxed_pos = []
+        all_relaxed_pos_sum, all_relaxed_pos_sq_sum, all_relaxed_pos_num = (
+            0,
+            0,
+            0,
+        )
+        (
+            filtered_relaxed_pos_sum,
+            filtered_relaxed_pos_sq_sum,
+            filtered_relaxed_pos_num,
+        ) = (0, 0, 0)
+
+        (
+            all_relaxed_pos_diff_sum,
+            all_relaxed_pos_diff_sq_sum,
+            all_relaxed_pos_diff_num,
+        ) = (0, 0, 0)
+        (
+            filtered_relaxed_pos_diff_sum,
+            filtered_relaxed_pos_diff_sq_sum,
+            filtered_relaxed_pos_diff_num,
+        ) = (0, 0, 0)
+
+        def _update_stats(pos_sum, pos_sq_sum, pos_num, pos, pos_sq, num):
+
+            pos_sum += pos
+            pos_sq_sum += pos_sq
+            pos_num += num
+
+            return pos_sum, pos_sq_sum, pos_num
+
         for data in self.train_dataset:
+
+            relaxed_pos = np.array(data.relaxed_pos.tolist()).flatten()
+            relaxed_pos_sum = np.sum(relaxed_pos)
+            relaxed_pos_sq_sum = np.sum(np.square(relaxed_pos))
+            relaxed_pos_num = np.prod(relaxed_pos.shape)
+
+            relaxed_pos_diff = (
+                relaxed_pos - np.array(data.pos.tolist()).flatten()
+            )
+            relaxed_pos_diff_sum = np.sum(relaxed_pos_diff)
+            relaxed_pos_diff_sq_sum = np.sum(np.square(relaxed_pos_diff))
+            relaxed_pos_diff_num = np.prod(relaxed_pos_diff.shape)
+
+            (
+                all_relaxed_pos_sum,
+                all_relaxed_pos_sq_sum,
+                all_relaxed_pos_num,
+            ) = _update_stats(
+                all_relaxed_pos_sum,
+                all_relaxed_pos_sq_sum,
+                all_relaxed_pos_num,
+                relaxed_pos_sum,
+                relaxed_pos_sq_sum,
+                relaxed_pos_num,
+            )
+
+            (
+                all_relaxed_pos_diff_sum,
+                all_relaxed_pos_diff_sq_sum,
+                all_relaxed_pos_diff_num,
+            ) = _update_stats(
+                all_relaxed_pos_diff_sum,
+                all_relaxed_pos_diff_sq_sum,
+                all_relaxed_pos_diff_num,
+                relaxed_pos_diff_sum,
+                relaxed_pos_diff_sq_sum,
+                relaxed_pos_diff_num,
+            )
+
             relaxed_force = np.array(data.relaxed_force)
             if np.amax(np.abs(relaxed_force)) <= 0.05:
-                all_relaxed_pos.extend(data.relaxed_pos.tolist())
-        all_relaxed_pos = np.array(all_relaxed_pos)
-        print(np.mean(all_relaxed_pos), np.std(all_relaxed_pos))
+
+                (
+                    filtered_relaxed_pos_sum,
+                    filtered_relaxed_pos_sq_sum,
+                    filtered_relaxed_pos_num,
+                ) = _update_stats(
+                    filtered_relaxed_pos_sum,
+                    filtered_relaxed_pos_sq_sum,
+                    filtered_relaxed_pos_num,
+                    relaxed_pos_sum,
+                    relaxed_pos_sq_sum,
+                    relaxed_pos_num,
+                )
+
+                (
+                    filtered_relaxed_pos_diff_sum,
+                    filtered_relaxed_pos_diff_sq_sum,
+                    filtered_relaxed_pos_diff_num,
+                ) = _update_stats(
+                    filtered_relaxed_pos_diff_sum,
+                    filtered_relaxed_pos_diff_sq_sum,
+                    filtered_relaxed_pos_diff_num,
+                    relaxed_pos_diff_sum,
+                    relaxed_pos_diff_sq_sum,
+                    relaxed_pos_diff_num,
+                )
+
+                # print(filtered_relaxed_pos_sum, filtered_relaxed_pos_sq_sum, filtered_relaxed_pos_num)
+                # print(data)
+                # break
+
+        def _get_mean_stddev(pos_sum, pos_sq_sum, pos_num):
+
+            pos_mean = pos_sum / pos_num
+            pos_variance = pos_sq_sum / pos_num - pos_mean * pos_mean
+
+            return pos_mean, np.sqrt(pos_variance)
+
+        all_mean, all_stddev = _get_mean_stddev(
+            all_relaxed_pos_sum, all_relaxed_pos_sq_sum, all_relaxed_pos_num
+        )
+
+        filtered_mean, filtered_stddev = _get_mean_stddev(
+            filtered_relaxed_pos_sum,
+            filtered_relaxed_pos_sq_sum,
+            filtered_relaxed_pos_num,
+        )
+
+        all_diff_mean, all_diff_stddev = _get_mean_stddev(
+            all_relaxed_pos_diff_sum,
+            all_relaxed_pos_diff_sq_sum,
+            all_relaxed_pos_diff_num,
+        )
+
+        filtered_diff_mean, filtered_diff_stddev = _get_mean_stddev(
+            filtered_relaxed_pos_diff_sum,
+            filtered_relaxed_pos_diff_sq_sum,
+            filtered_relaxed_pos_diff_num,
+        )
+
+        print(all_mean, all_stddev, filtered_mean, filtered_stddev)
+        print(
+            all_diff_mean,
+            all_diff_stddev,
+            filtered_diff_mean,
+            filtered_diff_stddev,
+        )
 
     def train(self):
         eval_every = self.config["optim"].get("eval_every", -1)
@@ -691,10 +843,23 @@ class ForcesTrainer(BaseTrainer):
         if self.config["model_attributes"].get(
             "regress_relaxed_position", True
         ):
-            relaxed_pos_target = torch.cat(
-                [batch.relaxed_pos.to(self.device) for batch in batch_list],
-                dim=0,
-            )
+            if self.config["optim"].get("use_position_diff", True):
+                relaxed_pos_target = torch.cat(
+                    [
+                        (batch.relaxed_pos - batch.pos).to(self.device)
+                        for batch in batch_list
+                    ],
+                    dim=0,
+                )
+            else:
+                relaxed_pos_target = torch.cat(
+                    [
+                        batch.relaxed_pos.to(self.device)
+                        for batch in batch_list
+                    ],
+                    dim=0,
+                )
+
             if self.config["dataset"].get("normalize_labels", False):
                 relaxed_pos_target = self.normalizers[
                     "target_relaxed_position"
@@ -752,10 +917,22 @@ class ForcesTrainer(BaseTrainer):
         if self.config["model_attributes"].get(
             "regress_relaxed_position", True
         ) and evaluator.task in ["s2efre", "joint"]:
-            target["positions"] = torch.cat(
-                [batch.relaxed_pos.to(self.device) for batch in batch_list],
-                dim=0,
-            )
+            if self.config["optim"].get("use_position_diff", True):
+                target["positions"] = torch.cat(
+                    [
+                        (batch.relaxed_pos - batch.pos).to(self.device)
+                        for batch in batch_list
+                    ],
+                    dim=0,
+                )
+            else:
+                target["positions"] = torch.cat(
+                    [
+                        batch.relaxed_pos.to(self.device)
+                        for batch in batch_list
+                    ],
+                    dim=0,
+                )
 
         out["natoms"] = natoms
 

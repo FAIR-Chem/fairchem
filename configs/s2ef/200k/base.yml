@@ -11,7 +11,7 @@ dataset:
     target_relaxed_energy_std: 2.279365062713623
     target_relaxed_pos_mean: 1
     target_relaxed_pos_std: 2
-  - src: /checkpoint/electrocatalysis/relaxations/features/struct_to_energy_forces/val/id_30k/
+  - src: /checkpoint/adityagrover/electrocatalysis/relaxations/features/struct_to_energy_forces/val/id_30k/
 
 logger: tensorboard
 

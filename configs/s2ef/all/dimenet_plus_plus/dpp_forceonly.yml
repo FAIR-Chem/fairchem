@@ -1,27 +1,5 @@
-trainer: forces
-
-dataset:
-  - src: data/s2ef/all/train/
-    normalize_labels: True
-    target_mean: -0.7554450631141663
-    target_std: 2.887317180633545
-    grad_target_mean: 0.0
-    grad_target_std: 2.887317180633545
-  - src: data/s2ef/all/val_id/
-
-logger: tensorboard
-
-task:
-  dataset: trajectory_lmdb
-  description: "Regressing to energies and forces for DFT trajectories from OCP"
-  type: regression
-  metric: mae
-  primary_metric: forces_mae
-  labels:
-    - potential energy
-  grad_input: atomic forces
-  train_on_free_atoms: True
-  eval_on_free_atoms: True
+includes:
+- configs/s2ef/all/base.yml
 
 model:
   name: dimenetplusplus
@@ -51,5 +29,5 @@ optim:
   warmup_epochs: 2
   warmup_factor: 0.2
   max_epochs: 7
-  energy_coefficient: 0
+  energy_coefficient: 0 # set primary_metric to forces_mae in base config else it'll wait for efwt to improve
   force_coefficient: 100

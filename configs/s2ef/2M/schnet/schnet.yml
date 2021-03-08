@@ -9,6 +9,8 @@ model:
   num_gaussians: 200
   cutoff: 6.0
   use_pbc: True
+  regress_relaxed_energy: True
+  regress_relaxed_position: True
 
 optim:
   batch_size: 24
@@ -24,3 +26,4 @@ optim:
   warmup_factor: 0.2
   max_epochs: 30
   force_coefficient: 100
+  use_position_diff: True
