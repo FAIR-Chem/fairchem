@@ -45,6 +45,12 @@ class Flags:
             help="Whether this is a debugging run or not",
         )
         self.parser.add_argument(
+            "--logger",
+            default="tensorboard",
+            type=str,
+            help="Define logger to be used - tensorboard or wandb (default: tensorboard)",
+        )
+        self.parser.add_argument(
             "--run-dir",
             default="./",
             type=str,

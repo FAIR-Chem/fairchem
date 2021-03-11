@@ -291,6 +291,7 @@ def build_config(args, args_override):
     config["nonddp"] = args.nonddp
     config["checkpoint"] = args.checkpoint
     config["cpu"] = args.cpu
+    config["logger"] = args.logger
     # Submit
     config["submit"] = args.submit
     # Distributed
