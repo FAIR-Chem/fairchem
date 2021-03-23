@@ -5,11 +5,14 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import Union
+from argparse import Namespace
 import numpy
 import scipy.stats as stats
 import torch
 from torch import nn as nn
 from torch.nn import LayerNorm, functional as F
+from torch_geometric.nn import radius_graph
 from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter
 
@@ -89,10 +92,10 @@ class GraphTransformer(BaseModel):
         #     readout=readout,
         # )
 
-## From SCHNET
+## Combination of SchNet and DimeNet++ (dimenet does not include edge_attr)
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
-        z = data.atomic_numbers.long()
+        atomic_numbers = data.atomic_numbers.long()
         pos = data.pos
         batch = data.batch
 
@@ -104,11 +107,7 @@ class GraphTransformer(BaseModel):
             data.cell_offsets = cell_offsets
             data.neighbors = neighbors
 
-        # TODO return distance computation in radius_graph_pbc to remove need
-        # for get_pbc_distances call
         if self.use_pbc:
-            assert z.dim() == 1 and z.dtype == torch.long
-
             out = get_pbc_distances(
                 pos,
                 data.edge_index,
@@ -118,21 +117,33 @@ class GraphTransformer(BaseModel):
             )
 
             edge_index = out["edge_index"]
-            edge_weight = out["distances"]
-            edge_attr = self.distance_expansion(edge_weight)
-
-            h = self.embedding(z)
-            for interaction in self.interactions:
-                h = h + interaction(h, edge_index, edge_weight, edge_attr)
-
-            h = self.lin1(h)
-            h = self.act(h)
-            h = self.lin2(h)
-
-            batch = torch.zeros_like(z) if batch is None else batch
-            energy = scatter(h, batch, dim=0, reduce=self.readout)
+            dist = out["distances"]
         else:
-            energy = super(SchNetWrap, self).forward(z, pos, batch)
+            edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
+            j, i = edge_index
+            dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
+
+        data.edge_attr = self.distance_expansion(dist)
+
+        # Convert to format for GROVER
+        batch = convert_input(data)
+
+        energy = 0
+
+        # FROM DIMENET (will need to replace with GROVER specific
+        # # Embedding block.
+        # x = self.emb(data.atomic_numbers.long(), rbf, i, j)
+        # P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
+        #
+        # # Interaction blocks.
+        # for interaction_block, output_block in zip(
+        #         self.interaction_blocks, self.output_blocks[1:]
+        # ):
+        #     x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
+        #     P += output_block(x, rbf, i, num_nodes=pos.size(0))
+        #
+        # energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+
         return energy
 
     def forward(self, data):
@@ -156,6 +167,51 @@ class GraphTransformer(BaseModel):
     @property
     def num_params(self):
         return sum(p.numel() for p in self.parameters())
+
+# Helper function to onvert from PyTorch Geometric input to GROVER input:
+def convert_input(data):
+    """
+        :param data: data as PyTorch geometric object
+        :param f_atoms: the atom features, num_atoms * atom_dim
+        :param f_bonds: the bond features, num_bonds * bond_dim
+        :param a2b: mapping from atom index to incoming bond indices.
+        :param a2a: mapping from atom index to its neighbors. num_atoms * max_num_bonds
+        :param b2a: mapping from bond index to the index of the atom the bond is coming from.
+        :param b2revb: mapping from bond index to the index of the reverse bond.
+        :return: batch = (f_atoms, f_bonds, a2b, a2a, b2a, b2revb)
+    """
+    # Per atom features: (atomic_number, pos_x, pos_y, pos_z)
+    f_atoms = torch.stack((data.atomic_numbers.long(), data.pos[:,0], data.pos[:,1], data.pos[:,2]), 1)
+    # Per edge features (calculated by atomic distances in model forward pass)
+    f_bonds = data.edge_attr
+
+    a2a = [[] for j in range(data.natoms)] # List of lists - Dynamically append neighbors for a given atom
+    a2b = [[] for j in range(data.natoms)] # List of lists - Dynamically append edges for a given atom
+    b2a = torch.zeros((data.edge_index.shape[1],))  # (num_edges, ) - One originating atom per edge
+    b2revb = torch.zeros((data.edge_index.shape[1],))  # (num_edges, ) - One reverse bond per bond
+
+    for i in range(data.edge_index.shape[1]):
+        from_atom = data.edge_index[0][i]
+        to_atom = data.edge_index[1][i]
+        a2a[from_atom].append(to_atom) # Mark b as neighbor of a
+        a2b[from_atom].append(i) # Mark bond i as outgoing bond from atom a
+        b2a[i] = from_atom # Mark a as atom where bond i is originating
+        # b2revb # Can
+
+    # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
+    # Option 1: Trims length to max number of edges seen in the data (<= 50)
+    a2a_pad = len(max(a2a, key=len))
+    a2b_pad = len(max(a2b, key=len))
+
+    # Option 2: Sets length to max number of possible edges (should be 50 but in test ipynb it's 55)
+    # a2a_pad = 50
+    # a2b_pad = 50
+
+    a2a = torch.tensor([i + [0] * (a2a_pad - len(i)) for i in a2a])
+    a2b = torch.tensor([i + [0] * (a2b_pad - len(i)) for i in a2b])
+
+    batch = (f_atoms, f_bonds, a2b, a2a, b2a, b2revb)
+    return batch
 
 ## FROM GROVER
 class SelfAttention(nn.Module):
@@ -212,7 +268,7 @@ class Attention(nn.Module):
         :return:
         """
         scores = torch.matmul(query, key.transpose(-2, -1)) \
-                 / math.sqrt(query.size(-1))
+                 / numpy.math.sqrt(query.size(-1))
 
         if mask is not None:
             scores = scores.masked_fill(mask == 0, -1e9)
@@ -789,3 +845,244 @@ class GTransEncoder(nn.Module):
             # Notice: need to be consistent with output format of DualMPNN encoder
             return ((atom_embeddings[0], bond_embeddings[0]),
                     (atom_embeddings[1], bond_embeddings[1]))
+
+# Taken from GROVER nn_utils
+def get_activation_function(activation: str) -> nn.Module:
+    """
+    Gets an activation function module given the name of the activation.
+
+    :param activation: The name of the activation function.
+    :return: The activation function module.
+    """
+    if activation == 'ReLU':
+        return nn.ReLU()
+    elif activation == 'LeakyReLU':
+        return nn.LeakyReLU(0.1)
+    elif activation == 'PReLU':
+        return nn.PReLU()
+    elif activation == 'tanh':
+        return nn.Tanh()
+    elif activation == 'SELU':
+        return nn.SELU()
+    elif activation == 'ELU':
+        return nn.ELU()
+    elif activation == "Linear":
+        return lambda x: x
+    else:
+        raise ValueError(f'Activation "{activation}" not supported.')
+
+def index_select_nd(source: torch.Tensor, index: torch.Tensor) -> torch.Tensor:
+    """
+    Selects the message features from source corresponding to the atom or bond indices in index.
+
+    :param source: A tensor of shape (num_bonds, hidden_size) containing message features.
+    :param index: A tensor of shape (num_atoms/num_bonds, max_num_bonds) containing the atom or bond
+    indices to select from source.
+    :return: A tensor of shape (num_atoms/num_bonds, max_num_bonds, hidden_size) containing the message
+    features corresponding to the atoms/bonds specified in index.
+    """
+    index_size = index.size()  # (num_atoms/num_bonds, max_num_bonds)
+    suffix_dim = source.size()[1:]  # (hidden_size,)
+    final_size = index_size + suffix_dim  # (num_atoms/num_bonds, max_num_bonds, hidden_size)
+
+    target = source.index_select(dim=0, index=index.view(-1))  # (num_atoms/num_bonds * max_num_bonds, hidden_size)
+    target = target.view(final_size)  # (num_atoms/num_bonds, max_num_bonds, hidden_size)
+
+    return target
+
+def select_neighbor_and_aggregate(feature, index):
+    """
+    The basic operation in message passing.
+    Caution: the index_selec_ND would cause the reproducibility issue when performing the training on CUDA.
+    See: https://pytorch.org/docs/stable/notes/randomness.html
+    :param feature: the candidate feature for aggregate. (n_nodes, hidden)
+    :param index: the selected index (neighbor indexes).
+    :return:
+    """
+    neighbor = index_select_nd(feature, index)
+    return neighbor.sum(dim=1)
+
+# From GROVER layers.py
+class PositionwiseFeedForward(nn.Module):
+    """Implements FFN equation."""
+
+    def __init__(self, d_model, d_ff, activation="PReLU", dropout=0.1, d_out=None):
+        """Initialization.
+
+        :param d_model: the input dimension.
+        :param d_ff: the hidden dimension.
+        :param activation: the activation function.
+        :param dropout: the dropout rate.
+        :param d_out: the output dimension, the default value is equal to d_model.
+        """
+        super(PositionwiseFeedForward, self).__init__()
+        if d_out is None:
+            d_out = d_model
+        # By default, bias is on.
+        self.W_1 = nn.Linear(d_model, d_ff)
+        self.W_2 = nn.Linear(d_ff, d_out)
+        self.dropout = nn.Dropout(dropout)
+        self.act_func = get_activation_function(activation)
+
+    def forward(self, x):
+        """
+        The forward function
+        :param x: input tensor.
+        :return:
+        """
+        return self.W_2(self.dropout(self.act_func(self.W_1(x))))
+
+class MPNEncoder(nn.Module):
+    """A message passing neural network for encoding a molecule."""
+
+    def __init__(self, args: Namespace,
+                 atom_messages: bool,
+                 init_message_dim: int,
+                 attached_fea_fdim: int,
+                 hidden_size: int,
+                 bias: bool,
+                 depth: int,
+                 dropout: float,
+                 undirected: bool,
+                 dense: bool,
+                 aggregate_to_atom: bool,
+                 attach_fea: bool,
+                 input_layer="fc",
+                 dynamic_depth='none'
+                 ):
+        """
+        Initializes the MPNEncoder.
+        :param args: the arguments.
+        :param atom_messages: enables atom_messages or not.
+        :param init_message_dim:  the initial input message dimension.
+        :param attached_fea_fdim:  the attached feature dimension.
+        :param hidden_size: the output message dimension during message passing.
+        :param bias: the bias in the message passing.
+        :param depth: the message passing depth.
+        :param dropout: the dropout rate.
+        :param undirected: the message passing is undirected or not.
+        :param dense: enables the dense connections.
+        :param attach_fea: enables the feature attachment during the message passing process.
+        :param dynamic_depth: enables the dynamic depth. Possible choices: "none", "uniform" and "truncnorm"
+        """
+        super(MPNEncoder, self).__init__()
+        self.init_message_dim = init_message_dim
+        self.attached_fea_fdim = attached_fea_fdim
+        self.hidden_size = hidden_size
+        self.bias = bias
+        self.depth = depth
+        self.dropout = dropout
+        self.input_layer = input_layer
+        self.layers_per_message = 1
+        self.undirected = undirected
+        self.atom_messages = atom_messages
+        self.dense = dense
+        self.aggreate_to_atom = aggregate_to_atom
+        self.attached_fea = attach_fea
+        self.dynamic_depth = dynamic_depth
+
+        # Dropout
+        self.dropout_layer = nn.Dropout(p=self.dropout)
+
+        # Activation
+        self.act_func = get_activation_function(args.activation)
+
+        # Input
+        if self.input_layer == "fc":
+            input_dim = self.init_message_dim
+            self.W_i = nn.Linear(input_dim, self.hidden_size, bias=self.bias)
+
+        if self.attached_fea:
+            w_h_input_size = self.hidden_size + self.attached_fea_fdim
+        else:
+            w_h_input_size = self.hidden_size
+
+        # Shared weight matrix across depths (default)
+        self.W_h = nn.Linear(w_h_input_size, self.hidden_size, bias=self.bias)
+
+    def forward(self,
+                init_messages,
+                init_attached_features,
+                a2nei,
+                a2attached,
+                b2a=None,
+                b2revb=None,
+                adjs=None
+                ) -> torch.FloatTensor:
+        """
+        The forward function.
+        :param init_messages:  initial massages, can be atom features or bond features.
+        :param init_attached_features: initial attached_features.
+        :param a2nei: the relation of item to its neighbors. For the atom message passing, a2nei = a2a. For bond
+        messages a2nei = a2b
+        :param a2attached: the relation of item to the attached features during message passing. For the atom message
+        passing, a2attached = a2b. For the bond message passing a2attached = a2a
+        :param b2a: remove the reversed bond in bond message passing
+        :param b2revb: remove the revered atom in bond message passing
+        :return: if aggreate_to_atom or self.atom_messages, return num_atoms x hidden.
+        Otherwise, return num_bonds x hidden
+        """
+
+        # Input
+        if self.input_layer == 'fc':
+            input = self.W_i(init_messages)  # num_bonds x hidden_size # f_bond
+            message = self.act_func(input)  # num_bonds x hidden_size
+        elif self.input_layer == 'none':
+            input = init_messages
+            message = input
+
+        attached_fea = init_attached_features  # f_atom / f_bond
+
+        # dynamic depth
+        # uniform sampling from depth - 1 to depth + 1
+        # only works in training.
+        if self.training and self.dynamic_depth != "none":
+            if self.dynamic_depth == "uniform":
+                # uniform sampling
+                ndepth = numpy.random.randint(self.depth - 3, self.depth + 3)
+            else:
+                # truncnorm
+                mu = self.depth
+                sigma = 1
+                lower = mu - 3 * sigma
+                upper = mu + 3 * sigma
+                X = stats.truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+                ndepth = int(X.rvs(1))
+        else:
+            ndepth = self.depth
+
+        # Message passing
+        for _ in range(ndepth - 1):
+            if self.undirected:
+                # two directions should be the same
+                message = (message + message[b2revb]) / 2
+
+            nei_message = select_neighbor_and_aggregate(message, a2nei)
+            a_message = nei_message
+            if self.attached_fea:
+                attached_nei_fea = select_neighbor_and_aggregate(attached_fea, a2attached)
+                a_message = torch.cat((nei_message, attached_nei_fea), dim=1)
+
+            if not self.atom_messages:
+                rev_message = message[b2revb]
+                if self.attached_fea:
+                    atom_rev_message = attached_fea[b2a[b2revb]]
+                    rev_message = torch.cat((rev_message, atom_rev_message), dim=1)
+                # Except reverse bond its-self(w) ! \sum_{k\in N(u) \ w}
+                message = a_message[b2a] - rev_message  # num_bonds x hidden
+            else:
+                message = a_message
+
+            message = self.W_h(message)
+
+            # BUG here, by default MPNEncoder use the dense connection in the message passing step.
+            # The correct form should if not self.dense
+            if self.dense:
+                message = self.act_func(message)  # num_bonds x hidden_size
+            else:
+                message = self.act_func(input + message)
+            message = self.dropout_layer(message)  # num_bonds x hidden
+
+        output = message
+
+        return output  # num_atoms x hidden
