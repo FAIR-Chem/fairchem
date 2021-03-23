@@ -180,7 +180,7 @@ class Combined():
 
         # If the structure is reasonable, change tags of adsorbate atoms from 2 and 3 to 2 only
         # for ML model compatibility and data cleanliness of the output adslab configurations
-        old_tags = traj.get_tags(adslab)
+        old_tags = adslab.get_tags()
         adslab.set_tags(np.where(old_tags == 3, 2, old_tags))
         return True
 
