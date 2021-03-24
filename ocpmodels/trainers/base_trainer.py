@@ -393,9 +393,13 @@ class BaseTrainer:
         self.criterion = self.config["optim"].get("criterion", nn.L1Loss())
 
     def load_optimizer(self):
-        self.optimizer = optim.AdamW(
+        optimizer = self.config["optim"].get("optimizer", "AdamW")
+        optimizer = getattr(optim, optimizer)
+
+        self.optimizer = optimizer(
             self.model.parameters(),
-            self.config["optim"]["lr_initial"],  # weight_decay=3.0
+            self.config["optim"]["lr_initial"],
+            **self.config["optim"].get("optimizer_params", {}),
         )
 
     def load_extras(self):
