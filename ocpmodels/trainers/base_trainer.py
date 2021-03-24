@@ -397,8 +397,8 @@ class BaseTrainer:
         optimizer = getattr(optim, optimizer)
 
         self.optimizer = optimizer(
-            self.model.parameters(),
-            self.config["optim"]["lr_initial"],
+            params=self.model.parameters(),
+            lr=self.config["optim"]["lr_initial"],
             **self.config["optim"].get("optimizer_params", {}),
         )
 
