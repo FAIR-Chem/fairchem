@@ -90,7 +90,7 @@ We provide a Python pickle file containing information about the slab and adsorb
 * `ads_id` : internal unique identifier, one for each of the 82 adsorbates used in the dataset
 * `bulk_id` : internal unique identifier one for each of the 11500 bulks used in the dataset
 * `miller_index`: 3-tuple of integers indicating the Miller indices of the surface
-* `shift`: y-direction shift used to determine cutoff for the surface
+* `shift`: c-direction shift used to determine cutoff for the surface (c-direction is following the nomenclature from Pymatgen)
 * `top`: boolean indicating whether the chosen surface was at the top or bottom of the originally enumerated surface
 * `adsorption_site`: A tuple of 3-tuples containing the Cartesian coordinates of each binding adsorbate atom
 
@@ -99,11 +99,11 @@ Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_
 An example entry is
 
 ```
-'random0': {'bulk_id': 1762,
-  'ads_id': 67,
-  'bulk_mpid': 'mp-1103139',
-  'bulk_symbols': 'Ca8Hg4',
-  'ads_symbols': '*NO2NO2',
+'random2181546': {'bulk_id': 6510,
+  'ads_id': 69,
+  'bulk_mpid': 'mp-22179',
+  'bulk_symbols': 'Si2Ti2Y2',
+  'ads_symbols': '*N2',
   'miller_index': (2, 0, 1),
   'shift': 0.145,
   'top': True,
