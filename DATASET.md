@@ -89,9 +89,12 @@ We provide a Python pickle file containing information about the slab and adsorb
 * `ads_symbols`  Chemical composition of the adsorbate counterpart
 * `ads_id` : internal unique identifier, one for each of the 82 adsorbates used in the dataset
 * `bulk_id` : internal unique identifier one for each of the 11500 bulks used in the dataset
+* `miller_index`: 3-tuple of integers indicating the Miller indices of the surface
+* `shift`: y-direction shift used to determine cutoff for the surface
+* `top`: boolean indicating whether the chosen surface was at the top or bottom of the originally enumerated surface
+* `adsorption_site`: A tuple of 3-tuples containing the Cartesian coordinates of each binding adsorbate atom
 
-
-Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: `fe9cc1a6e45d8035a6b76c3caa860e8a`)
+Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: `71705204c12f8710ff43e71fbc6ba29b`)
 
 An example entry is
 
@@ -100,7 +103,11 @@ An example entry is
   'ads_id': 67,
   'bulk_mpid': 'mp-1103139',
   'bulk_symbols': 'Ca8Hg4',
-  'ads_symbols': '*NO2NO2'}
+  'ads_symbols': '*NO2NO2',
+  'miller_index': (2, 0, 1),
+  'shift': 0.145,
+  'top': True,
+  'adsorption_site': ((4.5, 12.85, 16.13),)}
 
 ```
 
@@ -117,6 +124,11 @@ An example entry is
 ```
 
 ## Dataset changelog
+
+### March 2021
+
+Modified the pickle corresponding to data mapping information. Now the pickle includes extra information about `miller_index`, `shift`, `top` and `adsorption_site`.
+
 
 ### Version 2, Feb 2021
 
