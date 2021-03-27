@@ -40,6 +40,9 @@ class Flags:
             help="Experiment identifier to append to checkpoint/log/result directory",
         )
         self.parser.add_argument(
+            "--logger-project", default=None, help="wandb logger project"
+        )
+        self.parser.add_argument(
             "--debug",
             action="store_true",
             help="Whether this is a debugging run or not",
