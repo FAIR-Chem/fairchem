@@ -110,10 +110,20 @@ class BaseTrainer:
             self.config["dataset"] = dataset[0]
             if len(dataset) > 1:
                 self.config["val_dataset"] = dataset[1]
+                if self.config["optim"].get("val_is_only", True):
+                    self.config["val_dataset"]["src"] = self.config[
+                        "val_dataset"
+                    ]["src_is"]
             if len(dataset) > 2:
                 self.config["test_dataset"] = dataset[2]
+                if self.config["optim"].get("test_is_only", True):
+                    self.config["test_dataset"]["src"] = self.config[
+                        "test_dataset"
+                    ]["src_is"]
         else:
             self.config["dataset"] = dataset
+        if self.config["optim"].get("train_is_only", True):
+            self.config["dataset"]["src"] = self.config["dataset"]["src_is"]
 
         if not is_debug and distutils.is_master():
             os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)

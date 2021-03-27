@@ -60,10 +60,8 @@ class Runner(submitit.helpers.Checkpointable):
                 amp=config.get("amp", False),
                 cpu=config.get("cpu", False),
             )
-            trainer.get_target_pos_dist(split="val")
-            exit()
+            # trainer.get_target_pos_dist(split="val")
             # trainer.get_mean_stddev_relaxed_pos(split="val")
-            # exit()
 
             if config["checkpoint"] is not None:
                 trainer.load_pretrained(config["checkpoint"])
