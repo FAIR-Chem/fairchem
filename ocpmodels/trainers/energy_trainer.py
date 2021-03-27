@@ -49,6 +49,8 @@ class EnergyTrainer(BaseTrainer):
             (default: :obj:`None`)
         logger (str, optional): Type of logger to be used.
             (default: :obj:`tensorboard`)
+        logger_project (str, optional): Logger project to save results in (wandb only).
+            (default: :obj:`None`)
         local_rank (int, optional): Local rank of the process, only applicable for distributed training.
             (default: :obj:`0`)
         amp (bool, optional): Run using automatic mixed precision.
@@ -68,6 +70,7 @@ class EnergyTrainer(BaseTrainer):
         print_every=100,
         seed=None,
         logger="tensorboard",
+        logger_project=None,
         local_rank=0,
         amp=False,
         cpu=False,
@@ -84,6 +87,7 @@ class EnergyTrainer(BaseTrainer):
             print_every=print_every,
             seed=seed,
             logger=logger,
+            logger_project=logger_project,
             local_rank=local_rank,
             amp=amp,
             cpu=cpu,
