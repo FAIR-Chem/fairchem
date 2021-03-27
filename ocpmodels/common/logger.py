@@ -52,7 +52,6 @@ class WandBLogger(Logger):
             name=self.config["cmd"]["identifier"],
             dir=self.config["cmd"]["logs_dir"],
             project=self.config["logger_project"],
-            reinit=True,
         )
 
     def watch(self, model):
@@ -60,7 +59,7 @@ class WandBLogger(Logger):
 
     def log(self, update_dict, step=None, split=""):
         update_dict = super().log(update_dict, step, split)
-        wandb.log(update_dict, step=step)
+        wandb.log(update_dict, step=int(step))
 
     def log_plots(self, plots, caption=""):
         assert isinstance(plots, list)
