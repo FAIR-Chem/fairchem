@@ -127,14 +127,24 @@ class BaseTrainer:
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
-        self.eval_name = name
+        self.eval_name = "s2e"
+        if self.config["model_attributes"].get("regress_forces", True):
+            self.eval_name += "_f"
         if self.config["model_attributes"].get("regress_relaxed_energy", True):
-            if self.config["model_attributes"].get(
-                "regress_relaxed_position", True
-            ):
-                self.eval_name = "joint"
-            else:
-                self.eval_name = "s2efre"
+            self.eval_name += "_re"
+        if self.config["model_attributes"].get(
+            "regress_relaxed_position", True
+        ):
+            self.eval_name += "_rs"
+
+        # self.eval_name = name
+        # if self.config["model_attributes"].get("regress_relaxed_energy", True):
+        #     if self.config["model_attributes"].get(
+        #         "regress_relaxed_position", True
+        #     ):
+        #         self.eval_name = "joint"
+        #     else:
+        #         self.eval_name = "s2efre"
         self.evaluator = Evaluator(task=self.eval_name)
 
     def load(self):
@@ -380,7 +390,14 @@ class BaseTrainer:
     # TODO(abhshkdz): Rename function to something nicer.
     # TODO(abhshkdz): Support multiple loss functions.
     def load_criterion(self):
-        self.criterion = self.config["optim"].get("criterion", nn.L1Loss())
+        criterion_str = self.config["optim"].get("criterion", "L1Loss")
+        criterion_dict = {
+            "L1Loss": nn.L1Loss(),
+            "MSELoss": nn.MSELoss(),
+            "SmoothL1Loss": nn.SmoothL1Loss(),
+        }
+        self.criterion = criterion_dict[criterion_str]
+        # self.criterion = self.config["optim"].get("criterion", nn.L1Loss())
 
     def load_optimizer(self):
         self.optimizer = optim.AdamW(

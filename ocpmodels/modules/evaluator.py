@@ -95,20 +95,82 @@ class Evaluator:
         "joint": "relaxed_energy_mae",
     }
 
+    # def __init__(self, task=None):
+    #     assert task in ["s2ef", "is2rs", "is2re", "s2efre", "joint"]
+    #     self.task = task
+    #     self.metric_fn = self.task_metrics[task]
+
+    # def eval(self, prediction, target, prev_metrics={}):
+    #     for attr in self.task_attributes[self.task]:
+    #         assert attr in prediction
+    #         assert attr in target
+    #         assert prediction[attr].shape == target[attr].shape
+
+    #     metrics = prev_metrics
+
+    #     for fn in self.task_metrics[self.task]:
+    #         res = eval(fn)(prediction, target)
+    #         metrics = self.update(fn, res, metrics)
+
+    #     return metrics
+
     def __init__(self, task=None):
-        assert task in ["s2ef", "is2rs", "is2re", "s2efre", "joint"]
+
         self.task = task
-        self.metric_fn = self.task_metrics[task]
+        targets = task.split("2")[1].split("_")
+        task_attributes = []
+        task_metrics = []
+
+        if "e" in targets:
+            task_attributes.extend(["energy"])
+            task_metrics.extend(["energy_mae"])
+            task_primary_metric = "energy_mae"
+        if "f" in targets:
+            task_attributes.extend(["forces", "natoms"])
+            task_metrics.extend(
+                [
+                    "forcesx_mae",
+                    "forcesy_mae",
+                    "forcesz_mae",
+                    "forces_mae",
+                    "forces_cos",
+                    "forces_magnitude",
+                ]
+            )
+            task_primary_metric = "forces_mae"
+            if "e" in targets:
+                task_metrics.extend(["energy_force_within_threshold"])
+                task_primary_metric = "energy_force_within_threshold"
+        if "rs" in targets:
+            task_attributes.extend(["positions", "cell", "pbc", "natoms"])
+            task_metrics.extend(
+                ["average_distance_within_threshold", "positions_mse"]
+            )
+            task_primary_metric = "average_distance_within_threshold"
+        if "re" in targets:
+            task_attributes.extend(["relaxed_energy"])
+            task_metrics.extend(
+                [
+                    "relaxed_energy_mae",
+                    "relaxed_energy_mse",
+                    "relaxed_energy_within_threshold",
+                ]
+            )
+            task_primary_metric = "relaxed_energy_within_threshold"
+
+        self.task_attributes = task_attributes
+        self.task_metrics = task_metrics
+        self.task_primary_metric = task_primary_metric
 
     def eval(self, prediction, target, prev_metrics={}):
-        for attr in self.task_attributes[self.task]:
+        for attr in self.task_attributes:
             assert attr in prediction
             assert attr in target
             assert prediction[attr].shape == target[attr].shape
 
         metrics = prev_metrics
 
-        for fn in self.task_metrics[self.task]:
+        for fn in self.task_metrics:
             res = eval(fn)(prediction, target)
             metrics = self.update(fn, res, metrics)
 

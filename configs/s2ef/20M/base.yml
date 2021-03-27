@@ -1,13 +1,22 @@
 trainer: forces
 
 dataset:
-  - src: /checkpoint/electrocatalysis/relaxations/features/struct_to_energy_forces/train/20M/
+  # - src: /checkpoint/adityagrover/electrocatalysis/relaxations/features/struct_to_energy_forces/train/20M/
+  - src: /checkpoint/adityagrover/electrocatalysis/relaxations/features/struct_to_energy_forces/train/is_only/20M/
     normalize_labels: True
     target_mean: -0.7554450631141663
     target_std: 2.887317180633545
     grad_target_mean: 0.0
     grad_target_std: 2.887317180633545
-  - src: /checkpoint/electrocatalysis/relaxations/features/struct_to_energy_forces/val/is_30000/
+    target_relaxed_energy_mean: -1.525913953781128
+    target_relaxed_energy_std: 2.279365062713623
+    target_relaxed_pos_mean: 11.258136047885298
+    target_relaxed_pos_std: 9.7652527263
+    target_relaxed_pos_diff_mean: 0.02874172436906982
+    target_relaxed_pos_diff_std: 0.8463988785106054
+  # - src: /checkpoint/adityagrover/electrocatalysis/relaxations/features/struct_to_energy_forces/val/id_30k/
+  - src: /checkpoint/adityagrover/electrocatalysis/relaxations/features/struct_to_energy_forces/val/is_only/id/
+
 
 logger: tensorboard
 
@@ -16,18 +25,9 @@ task:
   description: "Regressing to energies and forces for DFT trajectories from OCP"
   type: regression
   metric: mae
-  primary_metric: forces_mae
+  # primary_metric: forces_mae
   labels:
     - potential energy
   grad_input: atomic forces
   train_on_free_atoms: True
   eval_on_free_atoms: True
-  relax_dataset:
-      src: /checkpoint/electrocatalysis/relaxations/features/init_to_relaxed/all/val_is/data.lmdb
-  write_pos: False
-  relaxation_steps: 500
-  relax_opt:
-      optimizer: gd
-      lr: 0.001
-      maxstep: 0.04
-      memory: 50

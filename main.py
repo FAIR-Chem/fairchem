@@ -30,6 +30,11 @@ class Runner(submitit.helpers.Checkpointable):
         self.chkpt_path = None
 
     def __call__(self, config):
+        # for dpp 1.8M param model config
+        config["optim"]["force_coefficient"] = 50 * config["optim"].get(
+            "energy_coefficient", 1
+        )
+
         self.config = copy.deepcopy(config)
 
         if args.distributed:
@@ -55,7 +60,9 @@ class Runner(submitit.helpers.Checkpointable):
                 amp=config.get("amp", False),
                 cpu=config.get("cpu", False),
             )
-            # trainer.get_mean_stddev_relaxed_pos()
+            trainer.get_target_pos_dist(split="val")
+            exit()
+            # trainer.get_mean_stddev_relaxed_pos(split="val")
             # exit()
 
             if config["checkpoint"] is not None:

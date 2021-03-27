@@ -25,5 +25,8 @@ optim:
   warmup_epochs: 3
   warmup_factor: 0.2
   max_epochs: 30
+  energy_coefficient: 1
   force_coefficient: 100
+  relaxed_pos_coefficient: 1
+  relaxed_energy_coefficient: 1
   use_position_diff: True

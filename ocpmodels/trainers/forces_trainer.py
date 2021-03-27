@@ -434,7 +434,53 @@ class ForcesTrainer(BaseTrainer):
         self.save_results(predictions, results_file, keys=keys)
         return predictions
 
-    def get_mean_stddev_relaxed_pos(self):
+    def get_target_pos_dist(self, split="train"):
+
+        if split == "train":
+            dataset = self.train_dataset
+        elif split == "val":
+            dataset = self.val_dataset
+        else:
+            raise NotImplementedError
+
+        all_relaxed_pos, all_start_pos, all_delta_pos = [], [], []
+        for _, data in enumerate(dataset):
+            if _ == 10000:
+                break
+
+            relaxed_pos = np.array(data.relaxed_pos.tolist()).flatten()
+            start_pos = np.array(data.pos.tolist()).flatten()
+            delta_pos = relaxed_pos - start_pos
+
+            all_relaxed_pos.extend(relaxed_pos.tolist())
+            all_start_pos.extend(start_pos.tolist())
+            all_delta_pos.extend(delta_pos.tolist())
+
+        import matplotlib.pyplot as plt
+
+        n_bins = 10
+        fig, axs = plt.subplots(1, 3, tight_layout=True)
+        axs[0].hist(relaxed_pos, bins=n_bins, density=True)
+        axs[1].hist(start_pos, bins=n_bins, density=True)
+        axs[2].hist(delta_pos, bins=n_bins, density=True)
+
+        axs[0].set_title("Relaxed Pos")
+        axs[1].set_title("Initial Pos")
+        axs[2].set_title("Delta Pos")
+
+        plt.savefig("scripts/workflow/relaxed_pos_is.png")
+        plt.close()
+
+        return
+
+    def get_mean_stddev_relaxed_pos(self, split="train"):
+
+        if split == "train":
+            dataset = self.train_dataset
+        elif split == "val":
+            dataset = self.val_dataset
+        else:
+            raise NotImplementedError
 
         all_relaxed_pos_sum, all_relaxed_pos_sq_sum, all_relaxed_pos_num = (
             0,
@@ -466,7 +512,7 @@ class ForcesTrainer(BaseTrainer):
 
             return pos_sum, pos_sq_sum, pos_num
 
-        for data in self.train_dataset:
+        for data in dataset:
 
             relaxed_pos = np.array(data.relaxed_pos.tolist()).flatten()
             relaxed_pos_sum = np.sum(relaxed_pos)
@@ -579,7 +625,9 @@ class ForcesTrainer(BaseTrainer):
     def train(self):
         eval_every = self.config["optim"].get("eval_every", -1)
         primary_metric = self.config["task"].get(
-            "primary_metric", self.evaluator.task_primary_metric[self.name]
+            "primary_metric",
+            self.evaluator.task_primary_metric
+            # [self.name]
         )
         self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
         iters = 0
@@ -714,8 +762,7 @@ class ForcesTrainer(BaseTrainer):
             if regress_relaxed_pos:
                 out_energy, out_relaxed_pos = outputs
             else:
-                out_energy = outputs
-
+                out_energy = outputs[0]
         out_energy_ = out_energy[:, 0]
         if regress_relaxed_energy:
             out_relaxed_energy = out_energy[:, 1:2]
@@ -737,7 +784,6 @@ class ForcesTrainer(BaseTrainer):
 
         if regress_relaxed_pos:
             out["positions"] = out_relaxed_pos
-
         return out
 
     def _compute_loss(self, out, batch_list):
@@ -906,9 +952,7 @@ class ForcesTrainer(BaseTrainer):
             "natoms": natoms,
         }
 
-        if self.config["model_attributes"].get(
-            "regress_relaxed_energy", True
-        ) and evaluator.task in ["s2efre", "joint"]:
+        if self.config["model_attributes"].get("regress_relaxed_energy", True):
             target["relaxed_energy"] = torch.cat(
                 [batch.relaxed_y.to(self.device) for batch in batch_list],
                 dim=0,
@@ -916,7 +960,7 @@ class ForcesTrainer(BaseTrainer):
 
         if self.config["model_attributes"].get(
             "regress_relaxed_position", True
-        ) and evaluator.task in ["s2efre", "joint"]:
+        ):
             if self.config["optim"].get("use_position_diff", True):
                 target["positions"] = torch.cat(
                     [
@@ -941,12 +985,14 @@ class ForcesTrainer(BaseTrainer):
                 [batch.fixed.to(self.device) for batch in batch_list]
             )
             mask = fixed == 0
-            out["forces"] = out["forces"][mask]
-            target["forces"] = target["forces"][mask]
+
+            if self.config["model_attributes"].get("regress_forces", True):
+                out["forces"] = out["forces"][mask]
+                target["forces"] = target["forces"][mask]
 
             if self.config["model_attributes"].get(
                 "regress_relaxed_position", True
-            ) and evaluator.task in ["s2efre", "joint"]:
+            ):
                 out["positions"] = out["positions"][mask]
                 target["positions"] = target["positions"][mask]
 
@@ -962,7 +1008,7 @@ class ForcesTrainer(BaseTrainer):
 
         if self.config["model_attributes"].get(
             "regress_relaxed_position", True
-        ) and evaluator.task in ["s2efre", "joint"]:
+        ):
             cell = torch.cat(
                 [batch.cell.to(self.device) for batch in batch_list]
             )
@@ -975,20 +1021,21 @@ class ForcesTrainer(BaseTrainer):
 
         if self.config["dataset"].get("normalize_labels", False):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
-            out["forces"] = self.normalizers["grad_target"].denorm(
-                out["forces"]
-            )
+            if self.config["model_attributes"].get("regress_forces", True):
+                out["forces"] = self.normalizers["grad_target"].denorm(
+                    out["forces"]
+                )
 
             if self.config["model_attributes"].get(
                 "regress_relaxed_energy", True
-            ) and evaluator.task in ["s2efre", "joint"]:
+            ):
                 out["relaxed_energy"] = self.normalizers[
                     "target_relaxed_energy"
                 ].denorm(out["relaxed_energy"])
 
             if self.config["model_attributes"].get(
                 "regress_relaxed_position", True
-            ) and evaluator.task in ["s2efre", "joint"]:
+            ):
                 out["positions"] = self.normalizers[
                     "target_relaxed_position"
                 ].denorm(out["positions"])
