@@ -13,6 +13,8 @@ Four training datasets are provided with different sizes. Each is a subset of th
 
 Four datasets are provided for validation set. Each dataset corresponds to a subsplit used to evaluate different types of extrapolation, in domain (id, same distribution as the training dataset), out of domain adsorbate (ood_ads, unseen adsorbate), out of domain catalyst (ood_cat, unseen catalyst composition), and out of domain both (ood_both, unseen adsorbate and catalyst composition).
 
+For the test sets, we provide precomputed LMDBs for each of the 4 subsplits (In Domain, OOD Adsorbate, OOD Catalyst, OOD Both).
+
 [*Update March 29,2021*]: We provide structures corresponding to molecular dynamics (MD) and rattled data as well.
 
 Each tarball has a README file containing details about file formats, number of structures / trajectories, etc.
