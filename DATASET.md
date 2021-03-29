@@ -13,26 +13,30 @@ Four training datasets are provided with different sizes. Each is a subset of th
 
 Four datasets are provided for validation set. Each dataset corresponds to a subsplit used to evaluate different types of extrapolation, in domain (id, same distribution as the training dataset), out of domain adsorbate (ood_ads, unseen adsorbate), out of domain catalyst (ood_cat, unseen catalyst composition), and out of domain both (ood_both, unseen adsorbate and catalyst composition).
 
-For the test sets, we provide precomputed LMDBs for each of the 4 subsplits (In Domain, OOD Adsorbate, OOD Catalyst, OOD Both).
+[*Update March 29,2021*]: We provide structures corresponding to molecular dynamics (MD) and rattled data as well.
 
 Each tarball has a README file containing details about file formats, number of structures / trajectories, etc.
 
-|Splits	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|MD5 checksum	|
-|---	|---	|---	|---	|---	|
-|Train	|	|	|	|	|
-|all	|225G	|1.1T	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_all.tar	|12a7087bfd189a06ccbec9bc7add2bcd	|
-|20M	|34G	|165G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_20M.tar	|953474cb93f0b08cdc523399f03f7c36	|
-|2M	|3.4G	|17G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar	|863bc983245ffc0285305a1850e19cf7	|
-|200K	|344M	|1.7G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar	|f8d0909c2623a393148435dede7d3a46	|
-|	|	|	|	|	|
-|Validation	|	|	|	|	|
-|val_id	|1.7G	|8.3G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_id.tar	|f57f7f5c1302637940f2cc858e789410	|
-|val_ood_ads	|1.7G	|8.2G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_ads.tar	|431ab0d7557a4639605ba8b67793f053	|
-|val_ood_cat	|1.7G	|8.3G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_cat.tar	|532d6cd1fe541a0ddb0aa0f99962b7db	|
-|val_ood_both	|1.9G	|9.5G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_both.tar	|5731862978d80502bbf7017d68c2c729	|
-|	|	|	|	|	|
-|Test (LMDBs for all splits)	|30G	|415G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_test_lmdbs.tar.gz	|bcada432482f6e87b24e14b6b744992a	|
-
+|Splits |Size of compressed version (in bytes)  |Size of uncompressed version (in bytes)    |Downloadable link  |MD5 checksum   |
+|---    |---    |---    |---    |---    |
+|Train  |   |   |   |   |
+|all    |225G   |1.1T   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_all.tar |12a7087bfd189a06ccbec9bc7add2bcd   |
+|20M    |34G    |165G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_20M.tar |953474cb93f0b08cdc523399f03f7c36   |
+|2M |3.4G   |17G    |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar  |863bc983245ffc0285305a1850e19cf7   |
+|200K   |344M   |1.7G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar    |f8d0909c2623a393148435dede7d3a46   |
+|   |   |   |   |   |
+|Validation |   |   |   |   |
+|val_id |1.7G   |8.3G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_id.tar    |f57f7f5c1302637940f2cc858e789410   |
+|val_ood_ads    |1.7G   |8.2G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_ads.tar   |431ab0d7557a4639605ba8b67793f053   |
+|val_ood_cat    |1.7G   |8.3G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_cat.tar   |532d6cd1fe541a0ddb0aa0f99962b7db   |
+|val_ood_both   |1.9G   |9.5G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_both.tar  |5731862978d80502bbf7017d68c2c729   |
+|   |   |   |   |   |
+|Test (LMDBs for all splits)    |30G    |415G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_test_lmdbs.tar.gz |bcada432482f6e87b24e14b6b744992a   |
+|   |   |   |   |   |
+|Rattled data   |29G    |136G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_rattled.tar   |40431149b27b64ce1fb40cac4e2e064b   |
+|   |   |   |   |   |
+|MD data    |42G    |306G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_md.tar    |9fed845aaab8fb4bf85e3a8db57796e0   |
+|   |   |   |   |   |
 
 
 
@@ -127,8 +131,8 @@ An example entry is
 
 ### March 2021
 
-Modified the pickle corresponding to data mapping information. Now the pickle includes extra information about `miller_index`, `shift`, `top` and `adsorption_site`.
-
+* Modified the pickle corresponding to data mapping information. Now the pickle includes extra information about `miller_index`, `shift`, `top` and `adsorption_site`.
+* Added MD and rattled data for S2EF task.
 
 ### Version 2, Feb 2021
 
