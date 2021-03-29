@@ -18,7 +18,7 @@ from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import plot_histogram
+from ocpmodels.common.utils import plot_histogram, tune_reporter
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -344,7 +344,7 @@ class ForcesTrainer(BaseTrainer):
         )
         return predictions
 
-    def train(self):
+    def train(self):  # noqa: C901
         eval_every = self.config["optim"].get("eval_every", -1)
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
@@ -413,6 +413,10 @@ class ForcesTrainer(BaseTrainer):
                             split="val",
                             epoch=epoch - 1 + (i + 1) / len(self.train_loader),
                         )
+                        current_epoch = epoch + (i + 1) / len(
+                            self.train_loader
+                        )
+                        current_step = epoch * len(self.train_loader) + (i + 1)
                         if (
                             "mae" in primary_metric
                             and val_metrics[primary_metric]["metric"]
@@ -424,12 +428,6 @@ class ForcesTrainer(BaseTrainer):
                             self.best_val_metric = val_metrics[primary_metric][
                                 "metric"
                             ]
-                            current_epoch = epoch + (i + 1) / len(
-                                self.train_loader
-                            )
-                            current_step = epoch * len(self.train_loader) + (
-                                i + 1
-                            )
                             self.save(current_epoch, current_step, val_metrics)
                             if self.test_loader is not None:
                                 self.predict(
@@ -437,6 +435,26 @@ class ForcesTrainer(BaseTrainer):
                                     results_file="predictions",
                                     disable_tqdm=False,
                                 )
+                        if self.is_hpo:
+                            progress = {
+                                "steps": current_step,
+                                "epochs": current_epoch,
+                                "act_lr": self.optimizer.param_groups[0]["lr"],
+                            }
+                            # checkpointing must be before reporter
+                            # report metrics to tune
+                            tune_reporter(
+                                iters=progress,
+                                train_metrics={
+                                    k: self.metrics[k]["metric"]
+                                    for k in self.metrics
+                                },
+                                val_metrics={
+                                    k: val_metrics[k]["metric"]
+                                    for k in val_metrics
+                                },
+                                test_metrics=None,
+                            )
 
                 if self.update_lr_on_step:
                     self.scheduler.step()
