@@ -84,6 +84,10 @@ Each tarball has README file containing details about file formats, number of st
 |---	|---	|---	|---	|---	|
 |294k systems	|20G	|151G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/slab_trajectories.tar	|347f4183465810e9b384e7a033baefc7	|
 
+### Per-adsorbate trajectories (optional download)
+
+For download links per-adsorbate please refer to this [file](./DATASET_PER_ADSORBATE_IS2RES.md)
+
 ## OC20 mappings
 
 ### Data mapping information
