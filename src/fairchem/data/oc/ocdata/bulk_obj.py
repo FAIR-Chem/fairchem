@@ -14,8 +14,41 @@ class Bulk():
     '''
     This class handles all things with the bulk.
     It also provides possible surfaces, later used to create a Surface object.
+
+    Attributes
+    ----------
+    precomputed_structures : str
+        root dir of precomputed structures
+    bulk_atoms : Atoms
+        actual atoms of the bulk
+    mpid : str
+        mpid of the bulk
+    bulk_sampling_str : str
+        string capturing the bulk index and number of possible bulks
+    index_of_bulk_atoms : int
+        index of bulk in the db
+    n_elems : int
+        number of elements of the bulk
+    elem_sampling_str : str
+        string capturing n_elems and the max possible elements
+
+    Public methods
+    --------------
+    get_possible_surfaces()
+        returns a list of possible surfaces for this bulk instance
     '''
+
     def __init__(self, bulk_database, precomputed_structures=None, bulk_index=None, max_elems=3):
+        '''
+        Initializes the object by choosing or sampling from the bulk database
+
+        Args:
+            bulk_database: either a list of dict of bulks
+            precomputed_structures: Root directory of precomputed structures for
+                                    surface enumeration
+            bulk_index: index of bulk to select if not doing a random sample
+            max_elems: max number of elements for any bulk
+        '''
         self.precomputed_structures = precomputed_structures
         self.choose_bulk_pkl(bulk_database, bulk_index, max_elems)
 
@@ -29,7 +62,7 @@ class Bulk():
             bulk_index      Index of which bulk to select. If None, randomly sample one.
             max_elems       Max elems for any bulk structure. Currently it is 3 by default.
 
-        Sets as class variables:
+        Sets as class attributes:
             bulk_atoms                  `ase.Atoms` of the chosen bulk structure.
             mpid                        A string indicating which MPID the bulk is
             bulk_sampling_str           A string to enumerate the sampled structure
@@ -63,7 +96,7 @@ class Bulk():
                              'this number of components.'
                              % self.n_elems)
 
-    def sample_n_elems(self, n_cat_elems_weights={1: 0.05, 2: 0.65, 3: 0.3}): # TODO make these weights an input param?
+    def sample_n_elems(self, n_cat_elems_weights={1: 0.05, 2: 0.65, 3: 0.3}):
         '''
         Chooses the number of species we should look for in this sample.
 
@@ -74,7 +107,7 @@ class Bulk():
                                 number. The probabilities must sum to 1.
         Sets:
             n_elems             An integer showing how many species have been chosen.
-            elem_sampling_str     Enum string of [chosen n_elems]/[total number of choices]
+            elem_sampling_str   Enum string of [chosen n_elems]/[total number of choices]
         '''
 
         possible_n_elems = list(n_cat_elems_weights.keys())
@@ -85,8 +118,11 @@ class Bulk():
         self.elem_sampling_str = str(self.n_elems) + "/" + str(len(possible_n_elems))
 
     def get_possible_surfaces(self):
-        # returns a list of possible surfaces for this bulk instance.
-        # this can be used to iterate through all surfaces, or select one at random, to make a Surface object.
+        '''
+        Returns a list of possible surfaces for this bulk instance.
+        This can be later used to iterate through all surfaces,
+        or select one at random, to make a Surface object.
+        '''
         if self.precomputed_structures:
             surfaces_info = self.read_from_precomputed_enumerations(self.index_of_bulk_atoms)
         else:
@@ -94,6 +130,14 @@ class Bulk():
         return surfaces_info
 
     def read_from_precomputed_enumerations(self, index):
+        '''
+        Loads relevant pickle of precomputed surfaces.
+
+        Args:
+            index: bulk index
+        Returns:
+            surfaces_info: a list of surface_info tuples (atoms, miller, shift, top)
+        '''
         with open(os.path.join(self.precomputed_structures, str(index) + ".pkl"), "rb") as f:
             surfaces_info = pickle.load(f)
         return surfaces_info
@@ -176,10 +220,10 @@ class Bulk():
         unit cell only has one "true" configuration. This function will align a
         unit cell you give it to fit within this standardization.
 
-        Arg:
-            atoms   `ase.Atoms` object of the bulk you want to standardize
+        Args:
+            atoms: `ase.Atoms` object of the bulk you want to standardize
         Returns:
-            standardized_struct     `pymatgen.Structure` of the standardized bulk
+            standardized_struct: `pymatgen.Structure` of the standardized bulk
         '''
         struct = AseAtomsAdaptor.get_structure(atoms)
         sga = SpacegroupAnalyzer(struct, symprec=0.1)
@@ -193,7 +237,7 @@ class Bulk():
         Arg:
             struct   `pymatgen.Structure` object
         Returns:
-            flipped_struct  The same `ase.Atoms` object that was fed as an
+            flipped_struct: The same `ase.Atoms` object that was fed as an
                             argument, but flipped upside down.
         '''
         atoms = AseAtomsAdaptor.get_atoms(struct)
@@ -225,7 +269,7 @@ class Bulk():
         be flipped in the z-direction to create a new structure.
 
         Arg:
-            structure   A `pymatgen.Structure` object.
+            structure: A `pymatgen.Structure` object.
         Returns
             A boolean indicating whether or not your `ase.Atoms` object is
             symmetric in z-direction (i.e. symmetric with respect to x-y plane).

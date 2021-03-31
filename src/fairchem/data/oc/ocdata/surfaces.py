@@ -19,7 +19,9 @@ def constrain_surface(atoms):
     This function fixes sub-surface atoms of a surface. Also works on systems
     that have surface + adsorbate(s), as long as the bulk atoms are tagged with
     `0`, surface atoms are tagged with `1`, and the adsorbate atoms are tagged
-    with `2` or above
+    with `2` or above.
+
+    This function is used for both surface atoms and the combined surface+adsorbate
 
     Inputs:
         atoms           `ase.Atoms` class of the surface system. The tags of
@@ -45,8 +47,40 @@ class Surface():
     '''
     This class handles all things with a surface.
     Create one with a bulk and one of its selected surfaces
+
+    Attributes
+    ----------
+    bulk_object : Bulk
+        bulk object that the surface comes from
+    surface_sampling_str : str
+        string capturing the surface index and total possible surfaces
+    surface_atoms : Atoms
+        actual atoms of the surface
+    constrained_surface : Atoms
+        constrained version of surface_atoms
+    millers : tuple
+        miller indices of the surface
+    shift : float
+        shift applied in the c-direction of bulk unit cell to get a termination
+    top : boolean
+        indicates the top or bottom termination of the pymatgen generated slab
+
+    Public methods
+    --------------
+    get_bulk_dict()
+        returns a dict containing info about the surface
     '''
+
     def __init__(self, bulk_object, surface_info, surface_index, total_surfaces_possible):
+        '''
+        Initialize the surface object, tag atoms, and constrain the surface.
+
+        Args:
+            bulk_object: `Bulk()` object of the corresponding bulk
+            surface_info: tuple containing atoms, millers, shift, top
+            surface_index: index of surface out of all possible ones for the bulk
+            total_surfaces_possible: number of possible surfaces from this bulk
+        '''
         self.bulk_object = bulk_object
         surface_struct, self.millers, self.shift, self.top = surface_info
         self.surface_sampling_str = str(surface_index) + "/" + str(total_surfaces_possible)
@@ -62,7 +96,7 @@ class Surface():
         self.tag_surface_atoms(self.bulk_object.bulk_atoms, self.surface_atoms)
         self.constrained_surface = constrain_surface(self.surface_atoms)
 
-    def tile_atoms(self, atoms): # todo style wise: better to put inside or outside of class?
+    def tile_atoms(self, atoms):
         '''
         This function will repeat an atoms structure in the x and y direction until
         the x and y dimensions are at least as wide as the MIN_XY constant.
@@ -174,9 +208,9 @@ class Surface():
         Arg:
             bulk_atoms  An `ase.Atoms` object of the bulk structure.
         Returns:
-            bulk_cns    A defaultdict whose keys are the elements within
-                        `bulk_atoms` and whose values are a set of integers of the
-                        coordination numbers of that element.
+            bulk_cn_dict    A defaultdict whose keys are the elements within
+                            `bulk_atoms` and whose values are a set of integers of the
+                            coordination numbers of that element.
         '''
         voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
 
@@ -194,7 +228,6 @@ class Surface():
             bulk_cn_dict[site.species_string].add(cn)
         return bulk_cn_dict
 
-
     def _find_surface_atoms_by_height(self, surface_atoms):
         '''
         As discussed in the docstring for `_find_surface_atoms_with_voronoi`,
@@ -211,8 +244,8 @@ class Surface():
             surface_atoms   The surface where you are trying to find surface sites in
                             `ase.Atoms` format
         Returns:
-            indices_list    A list that contains the indices of
-                            the surface atoms TODO
+            tags            A list that contains the indices of
+                            the surface atoms
         '''
         unit_cell_height = np.linalg.norm(surface_atoms.cell[2])
         scaled_positions = surface_atoms.get_scaled_positions()
@@ -224,8 +257,12 @@ class Surface():
         return tags
 
     def get_bulk_dict(self):
-        # returns an organized dict for writing to files. all info should already be processed and stored
-        self.overall_sampling_str = self.bulk_object.elem_sampling_str + "_" + self.bulk_object.bulk_sampling_str + "_" + self.surface_sampling_str
+        '''
+        Returns an organized dict for writing to files.
+        All info is already processed and stored in class variables.
+        '''
+        self.overall_sampling_str = self.bulk_object.elem_sampling_str + "_" + \
+            self.bulk_object.bulk_sampling_str + "_" + self.surface_sampling_str
         return { "bulk_atomsobject" : self.constrained_surface,
                  "bulk_metadata"    : (self.bulk_object.mpid,
                                        self.millers,
