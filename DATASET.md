@@ -79,7 +79,7 @@ Each tarball has README file containing details about file formats, number of st
 |val_ood_both (~25K trajectories)	|4.4G	|35G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_both_trajectories.tar	|bc74b6474a13542cc56eaa97bd51adfc	|
 
 #### Per-adsorbate trajectories (optional download)
-Adsorbate+catalyst trajectories on a per adsorbate basis are provided [here](./DATASET_PER_ADSORBATE.md) to avoid having to download all systems.
+Adsorbate+catalyst trajectories on a per adsorbate basis are provided [here](./DATASET_PER_ADSORBATE.md) to avoid having to download all systems. Note - a few adsorbates are intentionally left out for the test splits.
 
 ### Catalyst system trajectories (optional download)
 
