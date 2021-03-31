@@ -78,15 +78,14 @@ Each tarball has README file containing details about file formats, number of st
 |val_ood_cat (~25K trajectories)	|6.0G	|46G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_cat_trajectories.tar	|88dcc02fd8c174a72d2c416878fc44ff	|
 |val_ood_both (~25K trajectories)	|4.4G	|35G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_both_trajectories.tar	|bc74b6474a13542cc56eaa97bd51adfc	|
 
+#### Per-adsorbate trajectories (optional download)
+Adsorbate+catalyst trajectories for only specific adsorbates are provided [here](./DATASET_PER_ADSORBATE.md) to avoid having to download all systems.
+
 ### Catalyst system trajectories (optional download)
 
 |Number	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|MD5 checksum	|
 |---	|---	|---	|---	|---	|
 |294k systems	|20G	|151G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/slab_trajectories.tar	|347f4183465810e9b384e7a033baefc7	|
-
-### Per-adsorbate trajectories (optional download)
-
-For download links per-adsorbate please refer to this [file](./DATASET_PER_ADSORBATE_IS2RES.md)
 
 ## OC20 mappings
 
