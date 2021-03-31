@@ -1,4 +1,4 @@
-# IS2RES per-adsorbate trajectories
+# Per-adsorbate trajectories
 
 
 Download links are in the table below:
@@ -84,13 +84,13 @@ Download links are in the table below:
 
 
 
-Downloading any of the above and extracting will result in a folder : 
+Downloading any of the above and extracting will result in a folder :
 
 `<index>/`
 
 * `system.txt` Text file containing information about the different adsorbate+catalyst system names. In total there are N systems. More details described below.
-* `<index>/` 
-    * This contains N compressed trajectory files of the format `.extxyz.xz`. 
+* `<index>/`
+    * This contains N compressed trajectory files of the format `.extxyz.xz`.
     * Files are named as  `<system_id>.extxyz.xz` (where `system_id` is defined below).
 
 
@@ -110,4 +110,3 @@ where:
 The `.extxyz.xz` files are LZMA compressed `.extxyz` trajectory files. Each trajectory corresponds to a relaxation trajectory of a different adsorbate+catalyst system. Information about the `.extxyz` trajectory file format may be found at https://wiki.fysik.dtu.dk/ase/dev/_modules/ase/io/extxyz.html .
 
 In order to uncompress the files, `uncompress.py` provides a multi-core implementation which could be used.
-
