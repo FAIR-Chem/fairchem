@@ -34,6 +34,7 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
+from ocpmodels.modules.scheduler import LRScheduler
 
 
 @registry.register_trainer("base")
@@ -403,17 +404,10 @@ class BaseTrainer:
         )
 
     def load_extras(self):
-        # learning rate scheduler.
-        scheduler_lambda_fn = lambda x: warmup_lr_lambda(
-            x, self.config["optim"]
-        )
-        self.scheduler = optim.lr_scheduler.LambdaLR(
-            self.optimizer, lr_lambda=scheduler_lambda_fn
-        )
+        self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
         self.update_lr_on_step = self.config["optim"].get(
             "update_lr_on_step", False
         )
-
         # metrics.
         self.meter = Meter(split="train")
 
