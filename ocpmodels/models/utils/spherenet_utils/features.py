@@ -79,25 +79,44 @@ def xyztodat(pos, out, num_nodes, use_pbc=True, torsional=True):
         # additionally compute torsional information
         idx_batch = torch.arange(len(idx_i), device=j.device)
         idx_k_n = adj_t[idx_j].storage.col()
+        idx_nj_t = adj_t[idx_j].storage.value()
         repeat = num_triplets
         num_triplets_t = num_triplets.repeat_interleave(repeat)[mask]
         idx_i_t = idx_i.repeat_interleave(num_triplets_t)
         idx_j_t = idx_j.repeat_interleave(num_triplets_t)
         idx_k_t = idx_k.repeat_interleave(num_triplets_t)
+        idx_kj_t = idx_kj.repeat_interleave(num_triplets_t)
+        idx_ji_t = idx_ji.repeat_interleave(num_triplets_t)
         idx_batch_t = idx_batch.repeat_interleave(num_triplets_t)
         mask = idx_i_t != idx_k_n
-        idx_i_t, idx_j_t, idx_k_t, idx_k_n, idx_batch_t = (
+        (
+            idx_i_t,
+            idx_j_t,
+            idx_k_t,
+            idx_k_n,
+            idx_batch_t,
+            idx_kj_t,
+            idx_ji_t,
+            idx_nj_t,
+        ) = (
             idx_i_t[mask],
             idx_j_t[mask],
             idx_k_t[mask],
             idx_k_n[mask],
             idx_batch_t[mask],
+            idx_kj_t[mask],
+            idx_ji_t[mask],
+            idx_nj_t[mask],
         )
 
         # Calculate torsions.
         pos_j0 = pos[idx_k_t] - pos[idx_j_t]
         pos_ji = pos[idx_i_t] - pos[idx_j_t]
         pos_jk = pos[idx_k_n] - pos[idx_j_t]
+        if use_pbc:
+            pos_j0 += offsets[idx_nj_t]
+            pos_ji += offsets[idx_ji_t]
+            pos_jk += offsets[idx_kj_t]
         dist_ji = pos_ji.pow(2).sum(dim=-1).sqrt()
         plane1 = torch.cross(pos_ji, pos_j0)
         plane2 = torch.cross(pos_ji, pos_jk)
