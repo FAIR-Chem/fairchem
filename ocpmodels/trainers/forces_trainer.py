@@ -443,7 +443,7 @@ class ForcesTrainer(BaseTrainer):
                                 )
 
                 if self.update_lr_on_step:
-                    self.scheduler.step(self.metrics[primary_metric]["metric"])
+                    self.scheduler.step()
 
             torch.cuda.empty_cache()
 
@@ -475,9 +475,7 @@ class ForcesTrainer(BaseTrainer):
                             )
                 else:
                     if not self.update_lr_on_step:
-                        self.scheduler.step(
-                            self.metrics[primary_metric]["metric"]
-                        )
+                        self.scheduler.step()
                     current_step = (epoch + 1) * len(self.train_loader)
                     self.save(epoch + 1, current_step, self.metrics)
 
