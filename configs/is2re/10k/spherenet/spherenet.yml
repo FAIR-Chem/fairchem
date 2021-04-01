@@ -5,24 +5,24 @@ model:
   name: spherenet
   num_layers: 3
   hidden_channels: 256
-  int_emb_size: 8
+  int_emb_size: 64
   basis_emb_size: 8
-  out_emb_channels: 64
+  out_emb_channels: 192
   cutoff: 6.0
   num_radial: 6
   num_spherical: 7
   num_before_skip: 1
   num_after_skip: 2
   num_output_layers: 3
-  use_torsional: True
   regress_forces: False
+  use_torsional: True
   use_pbc: True
 
 optim:
-  batch_size: 4
-  eval_batch_size: 4
+  batch_size: 8
+  eval_batch_size: 8
   num_workers: 8
-  lr_initial: 0.001
+  lr_initial: 0.0001
   lr_gamma: 0.1
   lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
     - 4
