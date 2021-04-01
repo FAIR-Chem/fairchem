@@ -30,7 +30,7 @@ class LRScheduler:
             self.scheduler.step()
 
     def filter_kwargs(self, config):
-        # adapted from https://stackoverflow.com/questions/26515595/how-does-one-ignore-unexpected-keyword-arguments-passed-to-a-function
+        # adapted from https://stackoverflow.com/questions/26515595/
         sig = inspect.signature(self.scheduler)
         filter_keys = [
             param.name
