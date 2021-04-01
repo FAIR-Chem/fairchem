@@ -19,8 +19,9 @@ class LRScheduler:
         scheduler_args = self.filter_kwargs(config)
         self.scheduler = self.scheduler(optimizer, **scheduler_args)
 
-    def step(self, metrics, epoch=None):
+    def step(self, metrics=None, epoch=None):
         if self.scheduler_type == "ReduceLROnPlateau":
+            raise Exception("Validation set required for ReduceLROnPlateau.")
             self.scheduler.step(metrics)
         else:
             self.scheduler.step()
