@@ -169,6 +169,7 @@ class GraphTransformer(BaseModel):
         return sum(p.numel() for p in self.parameters())
 
 # Helper function to onvert from PyTorch Geometric input to GROVER input:
+# Helper function to convert from PyTorch Geometric input to GROVER input:
 def convert_input(data):
     """
         :param data: data as PyTorch geometric object
@@ -181,22 +182,32 @@ def convert_input(data):
         :return: batch = (f_atoms, f_bonds, a2b, a2a, b2a, b2revb)
     """
     # Per atom features: (atomic_number, pos_x, pos_y, pos_z)
-    f_atoms = torch.stack((data.atomic_numbers.long(), data.pos[:,0], data.pos[:,1], data.pos[:,2]), 1)
+    f_atoms = torch.stack((data.atomic_numbers.long(), data.pos[:, 0], data.pos[:, 1], data.pos[:, 2]), 1)
     # Per edge features (calculated by atomic distances in model forward pass)
     f_bonds = data.edge_attr
 
-    a2a = [[] for j in range(data.natoms)] # List of lists - Dynamically append neighbors for a given atom
-    a2b = [[] for j in range(data.natoms)] # List of lists - Dynamically append edges for a given atom
+    a2a = [[] for j in range(data.natoms)]  # List of lists - Dynamically append neighbors for a given atom
+    a2b = [[] for j in range(data.natoms)]  # List of lists - Dynamically append edges for a given atom
     b2a = torch.zeros((data.edge_index.shape[1],))  # (num_edges, ) - One originating atom per edge
     b2revb = torch.zeros((data.edge_index.shape[1],))  # (num_edges, ) - One reverse bond per bond
+    rev_edges = {}  # Dict of lists for each (from_atom, to_atom) pair, saving edge numbers
 
     for i in range(data.edge_index.shape[1]):
-        from_atom = data.edge_index[0][i]
-        to_atom = data.edge_index[1][i]
-        a2a[from_atom].append(to_atom) # Mark b as neighbor of a
-        a2b[from_atom].append(i) # Mark bond i as outgoing bond from atom a
-        b2a[i] = from_atom # Mark a as atom where bond i is originating
-        # b2revb # Can
+        from_atom = int(data.edge_index[0][i])
+        to_atom = int(data.edge_index[1][i])
+
+        a2a[from_atom].append(to_atom)  # Mark b as neighbor of a
+        a2b[from_atom].append(i)  # Mark bond i as outgoing bond from atom a
+        b2a[i] = from_atom  # Mark a as atom where bond i is originating
+        key = frozenset({to_atom, from_atom})
+        if (key not in rev_edges):  # If the edge from these two atoms has not been seen yet
+            rev_edges[key] = []  # Declare it as a list (so we can keep track of the edge numbers)
+        rev_edges[key].append(i)  # Append the edge number to the list
+
+    # Iterate through and set b2revb
+    for atoms, edges in rev_edges.items():
+        b2revb[edges[0]] = edges[1]
+        b2revb[edges[1]] = edges[0]
 
     # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
     # Option 1: Trims length to max number of edges seen in the data (<= 50)
@@ -207,8 +218,9 @@ def convert_input(data):
     # a2a_pad = 50
     # a2b_pad = 50
 
-    a2a = torch.tensor([i + [0] * (a2a_pad - len(i)) for i in a2a])
-    a2b = torch.tensor([i + [0] * (a2b_pad - len(i)) for i in a2b])
+    # -1 is not a valid atom or edge index so we pad with this
+    a2a = torch.tensor([i + [-1] * (a2a_pad - len(i)) for i in a2a])
+    a2b = torch.tensor([i + [-1] * (a2b_pad - len(i)) for i in a2b])
 
     batch = (f_atoms, f_bonds, a2b, a2a, b2a, b2revb)
     return batch
