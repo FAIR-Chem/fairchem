@@ -413,6 +413,10 @@ class ForcesTrainer(BaseTrainer):
                             split="val",
                             epoch=epoch - 1 + (i + 1) / len(self.train_loader),
                         )
+                        if not self.update_lr_on_step:
+                            self.scheduler.step(
+                                val_metrics[primary_metric]["metric"]
+                            )
                         if (
                             "mae" in primary_metric
                             and val_metrics[primary_metric]["metric"]
@@ -441,15 +445,15 @@ class ForcesTrainer(BaseTrainer):
                 if self.update_lr_on_step:
                     self.scheduler.step()
 
-            if not self.update_lr_on_step:
-                self.scheduler.step()
-
             torch.cuda.empty_cache()
 
             if eval_every == -1:
                 if self.val_loader is not None:
                     val_metrics = self.validate(split="val", epoch=epoch)
-
+                    if not self.update_lr_on_step:
+                        self.scheduler.step(
+                            val_metrics[primary_metric]["metric"]
+                        )
                     if (
                         "mae" in primary_metric
                         and val_metrics[primary_metric]["metric"]
@@ -470,6 +474,8 @@ class ForcesTrainer(BaseTrainer):
                                 disable_tqdm=False,
                             )
                 else:
+                    if not self.update_lr_on_step:
+                        self.scheduler.step()
                     current_step = (epoch + 1) * len(self.train_loader)
                     self.save(epoch + 1, current_step, self.metrics)
 
