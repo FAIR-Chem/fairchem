@@ -259,6 +259,9 @@ class EnergyTrainer(BaseTrainer):
                     ]
                     print(", ".join(log_str))
 
+                log_dict.update(
+                    {"lr": self.scheduler.scheduler.get_last_lr()[0]}
+                )
                 if self.logger is not None:
                     self.logger.log(
                         log_dict,
