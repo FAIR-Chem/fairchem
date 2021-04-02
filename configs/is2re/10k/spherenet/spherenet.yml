@@ -19,15 +19,11 @@ model:
   use_pbc: True
 
 optim:
-  batch_size: 8
-  eval_batch_size: 8
+  batch_size: 3
+  eval_batch_size: 3
   num_workers: 8
-  lr_initial: 0.0001
-  lr_gamma: 0.1
-  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
-    - 4
-    - 8
-    - 12
-  warmup_epochs: 2
-  warmup_factor: 0.2
-  max_epochs: 20
+  lr_initial: 0.001
+  scheduler: CosineAnnealingLR
+  T_max: 50
+  update_lr_on_step: True
+  max_epochs: 50
