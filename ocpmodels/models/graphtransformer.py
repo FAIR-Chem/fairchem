@@ -82,6 +82,19 @@ class GraphTransformer(BaseModel):
         self.cutoff = cutoff
         self.otf_graph = otf_graph
 
+        # Settings taken from default single-GPU GROVER training settings (besides PReLU)
+        self.encoders = GTransEncoder(hidden_size=100,
+                                     edge_fdim=bond_feat_dim,
+                                     node_fdim=4, # node features are of dimension 4: atomic number, pos_x, pos_y, pos_z
+                                     dropout=0.1,
+                                     activation="ReLU",
+                                     num_mt_block=1,
+                                     num_attn_head=4,
+                                     atom_emb_output=False,  # options: True, False, None, "atom", "bond", "both"
+                                     bias=False,
+                                     cuda=True,
+                                     res_connection=False)
+
         # Don't need SchNet specific stuff
         # super(SchNetWrap, self).__init__(
         #     hidden_channels=hidden_channels,
@@ -128,7 +141,21 @@ class GraphTransformer(BaseModel):
         # Convert to format for GROVER
         batch = convert_input(data)
 
-        energy = 0
+        # From GROVER
+        output = self.encoders(batch)
+
+        # How to parse output from GROVER:
+        # if self.embedding_output_type == 'atom':
+        #     return {"atom_from_atom": output[0], "atom_from_bond": output[1],
+        #             "bond_from_atom": None, "bond_from_bond": None}  # atom_from_atom, atom_from_bond
+        # elif self.embedding_output_type == 'bond':
+        #     return {"atom_from_atom": None, "atom_from_bond": None,
+        #             "bond_from_atom": output[0], "bond_from_bond": output[1]}  # bond_from_atom, bond_from_bond
+        # elif self.embedding_output_type == "both":
+        #     return {"atom_from_atom": output[0][0], "bond_from_atom": output[0][1],
+        #             "atom_from_bond": output[1][0], "bond_from_bond": output[1][1]}
+
+        energy = 0 # Need to get energy over the whole system from these 4 embeddings (pooling maybe?)
 
         # FROM DIMENET (will need to replace with GROVER specific
         # # Embedding block.
@@ -146,6 +173,7 @@ class GraphTransformer(BaseModel):
 
         return energy
 
+    # How does this function work? Do we need to change it
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
