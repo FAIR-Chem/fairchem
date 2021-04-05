@@ -38,93 +38,97 @@ def xyztodat(pos, out, num_nodes, use_pbc=True, torsional=True):
     else:
         dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
-    value = torch.arange(j.size(0), device=j.device)
-    adj_t = SparseTensor(
-        row=i, col=j, value=value, sparse_sizes=(num_nodes, num_nodes)
-    )
-    adj_t_row = adj_t[j]
-    num_triplets = adj_t_row.set_value(None).sum(dim=1).to(torch.long)
-
-    # Node indices (k->j->i) for triplets.
-    idx_i = i.repeat_interleave(num_triplets)
-    idx_j = j.repeat_interleave(num_triplets)
-    idx_k = adj_t_row.storage.col()
-    mask = idx_i != idx_k
-    idx_i, idx_j, idx_k = idx_i[mask], idx_j[mask], idx_k[mask]
-
-    # Edge indices (k-j, j->i) for triplets.
-    idx_kj = adj_t_row.storage.value()[mask]
-    idx_ji = adj_t_row.storage.row()[mask]
-
-    # Calculate angles. 0 to pi
-    if use_pbc:
-        pos_ji, pos_jk = (
-            pos[idx_i] - pos[idx_j] + offsets[idx_ji],
-            pos[idx_k] - pos[idx_j] + offsets[idx_kj],
+    # necessary for training stability
+    with torch.no_grad():
+        value = torch.arange(j.size(0), device=j.device)
+        adj_t = SparseTensor(
+            row=i, col=j, value=value, sparse_sizes=(num_nodes, num_nodes)
         )
-    else:
-        pos_ji = pos[idx_i] - pos[idx_j]
-        pos_jk = pos[idx_k] - pos[idx_j]
+        adj_t_row = adj_t[j]
+        num_triplets = adj_t_row.set_value(None).sum(dim=1).to(torch.long)
 
-    a = (pos_ji * pos_jk).sum(dim=-1)  # cos_angle * |pos_ji| * |pos_jk|
-    b = torch.cross(pos_ji, pos_jk).norm(
-        dim=-1
-    )  # sin_angle * |pos_ji| * |pos_jk|
-    angle = torch.atan2(b, a)
+        # Node indices (k->j->i) for triplets.
+        idx_i = i.repeat_interleave(num_triplets)
+        idx_j = j.repeat_interleave(num_triplets)
+        idx_k = adj_t_row.storage.col()
+        mask = idx_i != idx_k
+        idx_i, idx_j, idx_k = idx_i[mask], idx_j[mask], idx_k[mask]
 
-    if not torsional:
-        # return only distance+angle information
-        return dist, angle, None, i, j, idx_kj, idx_ji
-    else:
-        # additionally compute torsional information
-        idx_batch = torch.arange(len(idx_i), device=j.device)
-        idx_k_n = adj_t[idx_j].storage.col()
-        idx_nj_t = adj_t[idx_j].storage.value()
-        repeat = num_triplets
-        num_triplets_t = num_triplets.repeat_interleave(repeat)[mask]
-        idx_i_t = idx_i.repeat_interleave(num_triplets_t)
-        idx_j_t = idx_j.repeat_interleave(num_triplets_t)
-        idx_k_t = idx_k.repeat_interleave(num_triplets_t)
-        idx_kj_t = idx_kj.repeat_interleave(num_triplets_t)
-        idx_ji_t = idx_ji.repeat_interleave(num_triplets_t)
-        idx_batch_t = idx_batch.repeat_interleave(num_triplets_t)
-        mask = idx_i_t != idx_k_n
-        (
-            idx_i_t,
-            idx_j_t,
-            idx_k_t,
-            idx_k_n,
-            idx_batch_t,
-            idx_kj_t,
-            idx_ji_t,
-            idx_nj_t,
-        ) = (
-            idx_i_t[mask],
-            idx_j_t[mask],
-            idx_k_t[mask],
-            idx_k_n[mask],
-            idx_batch_t[mask],
-            idx_kj_t[mask],
-            idx_ji_t[mask],
-            idx_nj_t[mask],
-        )
+        # Edge indices (k-j, j->i) for triplets.
+        idx_kj = adj_t_row.storage.value()[mask]
+        idx_ji = adj_t_row.storage.row()[mask]
 
-        # Calculate torsions.
-        pos_j0 = pos[idx_k_t] - pos[idx_j_t]
-        pos_ji = pos[idx_i_t] - pos[idx_j_t]
-        pos_jk = pos[idx_k_n] - pos[idx_j_t]
+        # Calculate angles. 0 to pi
         if use_pbc:
-            pos_j0 += offsets[idx_nj_t]
-            pos_ji += offsets[idx_ji_t]
-            pos_jk += offsets[idx_kj_t]
-        dist_ji = pos_ji.pow(2).sum(dim=-1).sqrt()
-        plane1 = torch.cross(pos_ji, pos_j0)
-        plane2 = torch.cross(pos_ji, pos_jk)
-        a = (plane1 * plane2).sum(dim=-1)  # cos_angle * |plane1| * |plane2|
-        b = (torch.cross(plane1, plane2) * pos_ji).sum(dim=-1) / dist_ji
-        torsion1 = torch.atan2(b, a)  # -pi to pi
-        torsion1[torsion1 <= 0] += 2 * PI  # 0 to 2pi
-        torsion = scatter(torsion1, idx_batch_t, reduce="min")
+            pos_ji, pos_jk = (
+                pos[idx_i] - pos[idx_j] + offsets[idx_ji],
+                pos[idx_k] - pos[idx_j] + offsets[idx_kj],
+            )
+        else:
+            pos_ji = pos[idx_i] - pos[idx_j]
+            pos_jk = pos[idx_k] - pos[idx_j]
+
+        a = (pos_ji * pos_jk).sum(dim=-1)  # cos_angle * |pos_ji| * |pos_jk|
+        b = torch.cross(pos_ji, pos_jk).norm(
+            dim=-1
+        )  # sin_angle * |pos_ji| * |pos_jk|
+        angle = torch.atan2(b, a)
+
+        if not torsional:
+            # return only distance+angle information
+            return dist, angle, None, i, j, idx_kj, idx_ji
+        else:
+            # additionally compute torsional information
+            idx_batch = torch.arange(len(idx_i), device=j.device)
+            idx_k_n = adj_t[idx_j].storage.col()
+            idx_nj_t = adj_t[idx_j].storage.value()
+            repeat = num_triplets
+            num_triplets_t = num_triplets.repeat_interleave(repeat)[mask]
+            idx_i_t = idx_i.repeat_interleave(num_triplets_t)
+            idx_j_t = idx_j.repeat_interleave(num_triplets_t)
+            idx_k_t = idx_k.repeat_interleave(num_triplets_t)
+            idx_kj_t = idx_kj.repeat_interleave(num_triplets_t)
+            idx_ji_t = idx_ji.repeat_interleave(num_triplets_t)
+            idx_batch_t = idx_batch.repeat_interleave(num_triplets_t)
+            mask = idx_i_t != idx_k_n
+            (
+                idx_i_t,
+                idx_j_t,
+                idx_k_t,
+                idx_k_n,
+                idx_batch_t,
+                idx_kj_t,
+                idx_ji_t,
+                idx_nj_t,
+            ) = (
+                idx_i_t[mask],
+                idx_j_t[mask],
+                idx_k_t[mask],
+                idx_k_n[mask],
+                idx_batch_t[mask],
+                idx_kj_t[mask],
+                idx_ji_t[mask],
+                idx_nj_t[mask],
+            )
+
+            # Calculate torsions.
+            pos_j0 = pos[idx_k_t] - pos[idx_j_t]
+            pos_ji = pos[idx_i_t] - pos[idx_j_t]
+            pos_jk = pos[idx_k_n] - pos[idx_j_t]
+            if use_pbc:
+                pos_j0 += offsets[idx_nj_t]
+                pos_ji += offsets[idx_ji_t]
+                pos_jk += offsets[idx_kj_t]
+            dist_ji = pos_ji.pow(2).sum(dim=-1).sqrt()
+            plane1 = torch.cross(pos_ji, pos_j0)
+            plane2 = torch.cross(pos_ji, pos_jk)
+            a = (plane1 * plane2).sum(
+                dim=-1
+            )  # cos_angle * |plane1| * |plane2|
+            b = (torch.cross(plane1, plane2) * pos_ji).sum(dim=-1) / dist_ji
+            torsion1 = torch.atan2(b, a)  # -pi to pi
+            torsion1[torsion1 <= 0] += 2 * PI  # 0 to 2pi
+            torsion = scatter(torsion1, idx_batch_t, reduce="min")
 
         return dist, angle, torsion, i, j, idx_kj, idx_ji
 
