@@ -63,8 +63,9 @@ class GraphTransformer(BaseModel):
 ## FROM SCHNET
     def __init__(
         self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
+        args, # Can refactor code to only do explicit args instead of namespace in create_ffn
+        num_atoms,  # not used (i dont think)
+        bond_feat_dim,  # not used for schnet, but needed for gtrans
         num_targets,
         use_pbc=True,
         regress_forces=True,
@@ -95,6 +96,9 @@ class GraphTransformer(BaseModel):
                                      cuda=True,
                                      res_connection=False)
 
+        self.mol_atom_from_atom_ffn = self.create_ffn(args)
+        self.mol_atom_from_bond_ffn = self.create_ffn(args)
+
         # Don't need SchNet specific stuff
         # super(SchNetWrap, self).__init__(
         #     hidden_channels=hidden_channels,
@@ -104,6 +108,84 @@ class GraphTransformer(BaseModel):
         #     cutoff=cutoff,
         #     readout=readout,
         # )
+    # From GROVER-finetune (FFNs for GTransformer output embeddings)
+    def create_ffn(self, args: Namespace):
+        """
+        Creates the feed-forward network for the model.
+
+        :param args: Arguments.
+        """
+        # Note: args.features_dim is set according the real loaded features data
+        if args.features_only:
+            first_linear_dim = args.features_size + args.features_dim
+        else:
+            if args.self_attention:
+                first_linear_dim = args.hidden_size * args.attn_out
+                # TODO: Ad-hoc!
+                # if args.use_input_features:
+                first_linear_dim += args.features_dim
+            else:
+                first_linear_dim = args.hidden_size + args.features_dim
+
+        dropout = nn.Dropout(args.dropout)
+        activation = get_activation_function(args.activation)
+        # TODO: ffn_hidden_size
+        # Create FFN layers
+        if args.ffn_num_layers == 1:
+            ffn = [
+                dropout,
+                nn.Linear(first_linear_dim, args.output_size)
+            ]
+        else:
+            ffn = [
+                dropout,
+                nn.Linear(first_linear_dim, args.ffn_hidden_size)
+            ]
+            for _ in range(args.ffn_num_layers - 2):
+                ffn.extend([
+                    activation,
+                    dropout,
+                    nn.Linear(args.ffn_hidden_size, args.ffn_hidden_size),
+                ])
+            ffn.extend([
+                activation,
+                dropout,
+                nn.Linear(args.ffn_hidden_size, args.output_size),
+            ])
+
+        # Create FFN model
+        return nn.Sequential(*ffn)
+
+    # From GROVER-finetune, will have to look into OCP loss function and edit it to incorporate both atom and bond loss
+    def get_loss_func(args):
+        def loss_func(preds, targets,
+                      dt=args.dataset_type,
+                      dist_coff=args.dist_coff):
+
+            if dt == 'classification':
+                pred_loss = nn.BCEWithLogitsLoss(reduction='none')
+            elif dt == 'regression':
+                pred_loss = nn.MSELoss(reduction='none')
+            else:
+                raise ValueError(f'Dataset type "{args.dataset_type}" not supported.')
+
+            # print(type(preds))
+            # TODO: Here, should we need to involve the model status? Using len(preds) is just a hack.
+            if type(preds) is not tuple:
+                # in eval mode.
+                return pred_loss(preds, targets)
+
+            # in train mode.
+            dist_loss = nn.MSELoss(reduction='none')
+            # dist_loss = nn.CosineSimilarity(dim=0)
+            # print(pred_loss)
+
+            dist = dist_loss(preds[0], preds[1])
+            pred_loss1 = pred_loss(preds[0], targets)
+            pred_loss2 = pred_loss(preds[1], targets)
+            return pred_loss1 + pred_loss2 + dist_coff * dist
+
+        return loss_func
 
 ## Combination of SchNet and DimeNet++ (dimenet does not include edge_attr)
     @conditional_grad(torch.enable_grad())
@@ -143,6 +225,24 @@ class GraphTransformer(BaseModel):
 
         # From GROVER
         output = self.encoders(batch)
+
+        mol_atom_from_bond_output = output[1]
+        mol_atom_from_atom_output = output[0]
+
+        # From GROVER-finetune, will have to adapt to tell if OCP is in training or evaluation mode
+        # During training it looks like model should have both atom and bond outputs, do we need to change OCP code?
+        if self.training:
+            atom_ffn_output = self.mol_atom_from_atom_ffn(mol_atom_from_atom_output)
+            bond_ffn_output = self.mol_atom_from_bond_ffn(mol_atom_from_bond_output)
+            return atom_ffn_output, bond_ffn_output
+        else:
+            atom_ffn_output = self.mol_atom_from_atom_ffn(mol_atom_from_atom_output)
+            bond_ffn_output = self.mol_atom_from_bond_ffn(mol_atom_from_bond_output)
+            # Our task is not classification, it's regression on energy/forces, commented this out
+            # if self.classification:
+            #     atom_ffn_output = self.sigmoid(atom_ffn_output)
+            #     bond_ffn_output = self.sigmoid(bond_ffn_output)
+            output = (atom_ffn_output + bond_ffn_output) / 2
 
         # How to parse output from GROVER:
         # if self.embedding_output_type == 'atom':
