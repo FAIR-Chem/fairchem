@@ -40,6 +40,7 @@ def load_data(request):
 
 @pytest.fixture(scope="class")
 def load_model(request):
+    torch.manual_seed(4)
     model = DimeNet(
         None,
         32,
