@@ -97,17 +97,24 @@ class GraphTransformer(BaseModel):
                                      cuda=True,
                                      res_connection=False)
 
-        self.mol_atom_from_atom_ffn = self.create_ffn(args)
-        self.mol_atom_from_bond_ffn = self.create_ffn(args)
+        # Separate feed forward layers from atom embeddings to calculate energy & forces (3D)
+        self.energy_atom_from_atom_ffn = self.create_ffn(args, output_dim=1)
+        self.energy_atom_from_bond_ffn = self.create_ffn(args, output_dim=1)
+
+        self.forces_atom_from_atom_ffn = self.create_ffn(args, output_dim=3)
+        self.forces_atom_from_bond_ffn = self.create_ffn(args, output_dim=3)
 
     # TODO: change inputs to only what's explicitly needed (instead of namespace)
     # From GROVER-finetune (FFNs for GTransformer output embeddings)
-    def create_ffn(self, args: Namespace):
+    def create_ffn(self, args: Namespace, output_dim):
         """
         Creates the feed-forward network for the model.
 
         :param args: Arguments.
         """
+        # Hard code output dimension
+        args.output_size = output_dim
+
         # Note: args.features_dim is set according the real loaded features data
         if args.features_only:
             first_linear_dim = args.features_size + args.features_dim
@@ -149,41 +156,9 @@ class GraphTransformer(BaseModel):
         # Create FFN model
         return nn.Sequential(*ffn)
 
-    # From GROVER, dual loss on both atom and edge embeddings, but we will use OCP loss for simplicity (for now)
-    def get_loss_func(args):
-        def loss_func(preds, targets,
-                      dt=args.dataset_type,
-                      dist_coff=args.dist_coff):
-
-            if dt == 'classification':
-                pred_loss = nn.BCEWithLogitsLoss(reduction='none')
-            elif dt == 'regression':
-                pred_loss = nn.MSELoss(reduction='none')
-            else:
-                raise ValueError(f'Dataset type "{args.dataset_type}" not supported.')
-
-            # print(type(preds))
-            # GROVERTODO: Here, should we need to involve the model status? Using len(preds) is just a hack.
-            if type(preds) is not tuple:
-                # in eval mode.
-                return pred_loss(preds, targets)
-
-            # in train mode.
-            dist_loss = nn.MSELoss(reduction='none')
-            # dist_loss = nn.CosineSimilarity(dim=0)
-            # print(pred_loss)
-
-            dist = dist_loss(preds[0], preds[1])
-            pred_loss1 = pred_loss(preds[0], targets)
-            pred_loss2 = pred_loss(preds[1], targets)
-            return pred_loss1 + pred_loss2 + dist_coff * dist
-
-        return loss_func
-
 ## Combination of SchNet and DimeNet++ (dimenet does not include edge_attr)
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
-        atomic_numbers = data.atomic_numbers.long()
         pos = data.pos
         batch = data.batch
 
@@ -214,77 +189,50 @@ class GraphTransformer(BaseModel):
         data.edge_attr = self.distance_expansion(dist)
 
         # Convert to format for GROVER
-        batch = convert_input(data)
+        converted_input = convert_input(data)
 
         # From GROVER
-        output = self.encoders(batch)
+        output = self.encoders(converted_input)
 
+        # TODO: implement dimenet-like atom-embedding by summing up incoming edge embeddings, combine with these atom embeddings
+        # For now we are throwing away bond embeddings, just using atom embeddings (from atom and from bond)
         mol_atom_from_bond_output = output[1]
         mol_atom_from_atom_output = output[0]
 
-        # TODO: check dimensionality, sum up atom embeddings to compute energy, pass embeddings through FFN
-        # TODO: figure out how OCP checks training vs evaluation modes, adapt code here
-        # From GROVER-finetune, will have to adapt to tell if OCP is in training or evaluation mode
-        # During training it looks like model should have both atom and bond outputs, do we need to change OCP code?
-        if self.training:
-            atom_ffn_output = self.mol_atom_from_atom_ffn(mol_atom_from_atom_output)
-            bond_ffn_output = self.mol_atom_from_bond_ffn(mol_atom_from_bond_output)
-            return atom_ffn_output, bond_ffn_output
-        else:
-            atom_ffn_output = self.mol_atom_from_atom_ffn(mol_atom_from_atom_output)
-            bond_ffn_output = self.mol_atom_from_bond_ffn(mol_atom_from_bond_output)
-            # Our task is not classification, it's regression on energy/forces, commented this out
-            # if self.classification:
-            #     atom_ffn_output = self.sigmoid(atom_ffn_output)
-            #     bond_ffn_output = self.sigmoid(bond_ffn_output)
-            output = (atom_ffn_output + bond_ffn_output) / 2
+        # Use info from data batch to only sum up energy per system
+        batch = data.batch
 
-        # How to parse output from GROVER:
-        # if self.embedding_output_type == 'atom':
-        #     return {"atom_from_atom": output[0], "atom_from_bond": output[1],
-        #             "bond_from_atom": None, "bond_from_bond": None}  # atom_from_atom, atom_from_bond
-        # elif self.embedding_output_type == 'bond':
-        #     return {"atom_from_atom": None, "atom_from_bond": None,
-        #             "bond_from_atom": output[0], "bond_from_bond": output[1]}  # bond_from_atom, bond_from_bond
-        # elif self.embedding_output_type == "both":
-        #     return {"atom_from_atom": output[0][0], "bond_from_atom": output[0][1],
-        #             "atom_from_bond": output[1][0], "bond_from_bond": output[1][1]}
+        # Energy calculated by passing atom embeddings through feed-forward layer, summing over atoms in the system
+        atom_ffn_energy = self.energy_atom_from_atom_ffn(mol_atom_from_atom_output)
+        bond_ffn_energy = self.energy_atom_from_bond_ffn(mol_atom_from_bond_output)
+        atom_energy = atom_ffn_energy.sum(dim=0) if batch is None else scatter(atom_ffn_energy, batch, dim=0)
+        bond_energy = bond_ffn_energy.sum(dim=0) if batch is None else scatter(bond_ffn_energy, batch, dim=0)
 
-        # TODO: check to see if the 'output' above will actually be trained to converge to energy (ocp training/loss)
-        energy = output
-        energy = 0 # Need to get energy over the whole system from these 4 embeddings (pooling maybe?)
+        # Per-atom forces calculated through feed-forward layer from embeddings
+        atom_ffn_forces = self.forces_atom_from_atom_ffn(mol_atom_from_atom_output)
+        bond_ffn_forces = self.forces_atom_from_bond_ffn(mol_atom_from_bond_output)
 
-        # FROM DIMENET (will need to replace with GROVER specific
-        # # Embedding block.
-        # x = self.emb(data.atomic_numbers.long(), rbf, i, j)
-        # P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
-        #
-        # # Interaction blocks.
-        # for interaction_block, output_block in zip(
-        #         self.interaction_blocks, self.output_blocks[1:]
-        # ):
-        #     x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
-        #     P += output_block(x, rbf, i, num_nodes=pos.size(0))
-        #
-        # energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+        # Combine energy and force predictions from the two different atom embeddings (from atom and from bond)
+        energy = ( atom_energy + bond_energy ) / 2
+        forces = ( atom_ffn_forces + bond_ffn_forces ) / 2
 
-        return energy
+        return energy, forces
 
-    # How does this function work? Do we need to change it
+    # From SchNet/dimenet: calculate forces through gradients--we will calculate them explicitly with transformer for now
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy = self._forward(data)
+        energy, forces = self._forward(data)
 
         if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    data.pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
-            )
+            # forces = -1 * (
+            #     torch.autograd.grad(
+            #         energy,
+            #         data.pos,
+            #         grad_outputs=torch.ones_like(energy),
+            #         create_graph=True,
+            #     )[0]
+            # )
             return energy, forces
         else:
             return energy
