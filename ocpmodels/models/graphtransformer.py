@@ -149,8 +149,7 @@ class GraphTransformer(BaseModel):
         # Create FFN model
         return nn.Sequential(*ffn)
 
-    # TODO: look at OCP loss function and incorporate this new GTrans loss
-    # From GROVER-finetune, will have to look into OCP loss function and edit it to incorporate both atom and bond loss
+    # From GROVER, dual loss on both atom and edge embeddings, but we will use OCP loss for simplicity (for now)
     def get_loss_func(args):
         def loss_func(preds, targets,
                       dt=args.dataset_type,
@@ -223,6 +222,7 @@ class GraphTransformer(BaseModel):
         mol_atom_from_bond_output = output[1]
         mol_atom_from_atom_output = output[0]
 
+        # TODO: check dimensionality, sum up atom embeddings to compute energy, pass embeddings through FFN
         # TODO: figure out how OCP checks training vs evaluation modes, adapt code here
         # From GROVER-finetune, will have to adapt to tell if OCP is in training or evaluation mode
         # During training it looks like model should have both atom and bond outputs, do we need to change OCP code?
