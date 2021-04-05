@@ -7,7 +7,8 @@ from ocpmodels.common.utils import warmup_lr_lambda
 
 class LRScheduler:
     def __init__(self, optimizer, config):
-        self.config = config
+        self.optimizer = optimizer
+        self.config = config.copy()
         if "scheduler" in self.config:
             self.scheduler_type = self.config["scheduler"]
         else:
@@ -41,3 +42,7 @@ class LRScheduler:
             arg: self.config[arg] for arg in self.config if arg in filter_keys
         }
         return scheduler_args
+
+    def get_lr(self):
+        for group in self.optimizer.param_groups:
+            return group["lr"]
