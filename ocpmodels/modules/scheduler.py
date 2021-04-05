@@ -8,7 +8,7 @@ from ocpmodels.common.utils import warmup_lr_lambda
 class LRScheduler:
     def __init__(self, optimizer, config):
         self.optimizer = optimizer
-        self.config = config
+        self.config = config.copy()
         if "scheduler" in self.config:
             self.scheduler_type = self.config["scheduler"]
         else:
