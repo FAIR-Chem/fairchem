@@ -61,6 +61,7 @@ class GraphTransformer(BaseModel):
             :obj:`"mean"` global aggregation. (default: :obj:`"add"`)
     """
 ## FROM SCHNET
+    # TODO: remove unnecessary arguments
     def __init__(
         self,
         args, # Can refactor code to only do explicit args instead of namespace in create_ffn
@@ -99,15 +100,7 @@ class GraphTransformer(BaseModel):
         self.mol_atom_from_atom_ffn = self.create_ffn(args)
         self.mol_atom_from_bond_ffn = self.create_ffn(args)
 
-        # Don't need SchNet specific stuff
-        # super(SchNetWrap, self).__init__(
-        #     hidden_channels=hidden_channels,
-        #     num_filters=num_filters,
-        #     num_interactions=num_interactions,
-        #     num_gaussians=num_gaussians,
-        #     cutoff=cutoff,
-        #     readout=readout,
-        # )
+    # TODO: change inputs to only what's explicitly needed (instead of namespace)
     # From GROVER-finetune (FFNs for GTransformer output embeddings)
     def create_ffn(self, args: Namespace):
         """
@@ -121,7 +114,7 @@ class GraphTransformer(BaseModel):
         else:
             if args.self_attention:
                 first_linear_dim = args.hidden_size * args.attn_out
-                # TODO: Ad-hoc!
+                # GROVERTODO: Ad-hoc!
                 # if args.use_input_features:
                 first_linear_dim += args.features_dim
             else:
@@ -129,7 +122,7 @@ class GraphTransformer(BaseModel):
 
         dropout = nn.Dropout(args.dropout)
         activation = get_activation_function(args.activation)
-        # TODO: ffn_hidden_size
+        # GROVERTODO: ffn_hidden_size
         # Create FFN layers
         if args.ffn_num_layers == 1:
             ffn = [
@@ -156,6 +149,7 @@ class GraphTransformer(BaseModel):
         # Create FFN model
         return nn.Sequential(*ffn)
 
+    # TODO: look at OCP loss function and incorporate this new GTrans loss
     # From GROVER-finetune, will have to look into OCP loss function and edit it to incorporate both atom and bond loss
     def get_loss_func(args):
         def loss_func(preds, targets,
@@ -170,7 +164,7 @@ class GraphTransformer(BaseModel):
                 raise ValueError(f'Dataset type "{args.dataset_type}" not supported.')
 
             # print(type(preds))
-            # TODO: Here, should we need to involve the model status? Using len(preds) is just a hack.
+            # GROVERTODO: Here, should we need to involve the model status? Using len(preds) is just a hack.
             if type(preds) is not tuple:
                 # in eval mode.
                 return pred_loss(preds, targets)
@@ -229,6 +223,7 @@ class GraphTransformer(BaseModel):
         mol_atom_from_bond_output = output[1]
         mol_atom_from_atom_output = output[0]
 
+        # TODO: figure out how OCP checks training vs evaluation modes, adapt code here
         # From GROVER-finetune, will have to adapt to tell if OCP is in training or evaluation mode
         # During training it looks like model should have both atom and bond outputs, do we need to change OCP code?
         if self.training:
@@ -255,6 +250,8 @@ class GraphTransformer(BaseModel):
         #     return {"atom_from_atom": output[0][0], "bond_from_atom": output[0][1],
         #             "atom_from_bond": output[1][0], "bond_from_bond": output[1][1]}
 
+        # TODO: check to see if the 'output' above will actually be trained to converge to energy (ocp training/loss)
+        energy = output
         energy = 0 # Need to get energy over the whole system from these 4 embeddings (pooling maybe?)
 
         # FROM DIMENET (will need to replace with GROVER specific
