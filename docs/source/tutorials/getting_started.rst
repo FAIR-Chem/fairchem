@@ -70,7 +70,7 @@ Activate the conda environment with conda activate ocp-models. Install this pack
 Dataset
 *******
 
-Dataset download links can be found at `Open Catalysis Project website <http://www.opencatalstproject.org>`_
+Dataset download links can be found at `Open Catalysis Project website <http://www.opencatalystproject.org>`_
 for the S2EF, IS2RS, and IS2RE tasks. IS2* datasets are stored as LMDB files and are ready
 to be used upon download. S2EF datasets require an additional preprocessing step.
 
