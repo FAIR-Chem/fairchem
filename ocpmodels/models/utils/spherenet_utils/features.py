@@ -20,6 +20,7 @@ import numpy as np
 import torch
 from scipy import special as sp
 from scipy.optimize import brentq
+from torch_geometric.nn.models.dimenet import Envelope
 from torch_geometric.nn.models.dimenet_utils import (
     Jn,
     Jn_zeros,
@@ -199,22 +200,6 @@ def real_sph_harm(lmax, zero_m_only=False, spherical_coordinates=True):
                 )
 
     return Y_func_l_m
-
-
-class Envelope(torch.nn.Module):
-    def __init__(self, exponent):
-        super(Envelope, self).__init__()
-        self.p = exponent + 1
-        self.a = -(self.p + 1) * (self.p + 2) / 2
-        self.b = self.p * (self.p + 2)
-        self.c = -self.p * (self.p + 1) / 2
-
-    def forward(self, x):
-        p, a, b, c = self.p, self.a, self.b, self.c
-        x_pow_p0 = x.pow(p - 1)
-        x_pow_p1 = x_pow_p0 * x
-        x_pow_p2 = x_pow_p1 * x
-        return 1.0 / x + a * x_pow_p0 + b * x_pow_p1 + c * x_pow_p2
 
 
 class dist_emb(torch.nn.Module):
