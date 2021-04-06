@@ -194,27 +194,63 @@ class GraphTransformer(BaseModel):
         # From GROVER
         output = self.encoders(converted_input)
 
-        # TODO: implement dimenet-like atom-embedding by summing up incoming edge embeddings, combine with these atom embeddings
-        # For now we are throwing away bond embeddings, just using atom embeddings (from atom and from bond)
-        mol_atom_from_bond_output = output[1]
-        mol_atom_from_atom_output = output[0]
+        # Debugging
+        print("output type: ", type(output))
+        print("output shape: ", output.shape)
+
+        embeddings = {}
+        if self.embedding_output_type == 'atom':
+            embeddings = {"atom_from_atom": output[0], "atom_from_bond": output[1],
+                          "bond_from_atom": None, "bond_from_bond": None}  # atom_from_atom, atom_from_bond
+        elif self.embedding_output_type == 'bond':
+            embeddings = {"atom_from_atom": None, "atom_from_bond": None,
+                          "bond_from_atom": output[0], "bond_from_bond": output[1]}  # bond_from_atom, bond_from_bond
+        elif self.embedding_output_type == "both":
+            embeddings = {"atom_from_atom": output[0][0], "bond_from_atom": output[0][1],
+                          "atom_from_bond": output[1][0], "bond_from_bond": output[1][1]}
+
+        # Get atom embeddings (handles different embedding_output_type)
+        atom_from_bond_output = embeddings["atom_from_bond"]
+        atom_from_atom_output = embeddings["atom_from_atom"]
 
         # Use info from data batch to only sum up energy per system
         batch = data.batch
 
         # Energy calculated by passing atom embeddings through feed-forward layer, summing over atoms in the system
-        atom_ffn_energy = self.energy_atom_from_atom_ffn(mol_atom_from_atom_output)
-        bond_ffn_energy = self.energy_atom_from_bond_ffn(mol_atom_from_bond_output)
+        atom_ffn_energy = self.energy_atom_from_atom_ffn(atom_from_atom_output)
+        bond_ffn_energy = self.energy_atom_from_bond_ffn(atom_from_bond_output)
         atom_energy = atom_ffn_energy.sum(dim=0) if batch is None else scatter(atom_ffn_energy, batch, dim=0)
         bond_energy = bond_ffn_energy.sum(dim=0) if batch is None else scatter(bond_ffn_energy, batch, dim=0)
 
         # Per-atom forces calculated through feed-forward layer from embeddings
-        atom_ffn_forces = self.forces_atom_from_atom_ffn(mol_atom_from_atom_output)
-        bond_ffn_forces = self.forces_atom_from_bond_ffn(mol_atom_from_bond_output)
+        atom_forces = self.forces_atom_from_atom_ffn(atom_from_atom_output)
+        bond_forces = self.forces_atom_from_bond_ffn(atom_from_bond_output)
 
-        # Combine energy and force predictions from the two different atom embeddings (from atom and from bond)
-        energy = ( atom_energy + bond_energy ) / 2
-        forces = ( atom_ffn_forces + bond_ffn_forces ) / 2
+        # If we have bond embeddings, use these to calculate new node embeddings by summing incoming edge embeddings
+        if self.embedding_output_type == 'bond' or self.embedding_output_type == 'both':
+            bond_embeddings = (embeddings["bond_from_atom"] + embeddings[
+                "bond_from_bond"]) / 2  # avg two bond embeddings
+            new_atom_embeddings = {}
+            for atom in converted_input.a2b:
+                for bond in atom:
+                    if (bond != torch.tensor(-1)):
+                        # Get the embedding of this edge
+                        new_atom_embeddings[atom] += bond_embeddings[int(bond)]  # bond is torch tensor, index is int
+
+            # Calculate energy and forces with these new embeddings
+            new_bond_ffn_energy = self.energy_from_bond_new_ffn(new_atom_embeddings)
+            new_bond_energy = new_bond_ffn_energy.sum(dim=0) if batch is None else scatter(new_bond_ffn_energy, batch,
+                                                                                           dim=0)
+            new_bond_forces = self.forces_atom_from_bond_ffn(new_atom_embeddings)
+
+            # Average with all three energy/force predictions
+            energy = (atom_energy + bond_energy + new_bond_energy) / 2
+            forces = (atom_forces + bond_forces + new_bond_forces) / 2
+
+        else:
+            # Combine energy and force predictions from the two different atom embeddings (from atom and from bond)
+            energy = ( atom_energy + bond_energy ) / 2
+            forces = ( atom_forces + bond_forces ) / 2
 
         return energy, forces
 
