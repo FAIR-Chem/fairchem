@@ -266,7 +266,7 @@ class update_v(torch.nn.Module):
 
     def forward(self, e, i, num_nodes=None):
         _, e2 = e
-        v = scatter(e2, i, dim=0)  # , dim_size=num_nodes
+        v = scatter(e2, i, dim=0, dim_size=num_nodes)
         v = self.lin_up(v)
         for lin in self.lins:
             v = self.act(lin(v))
@@ -415,7 +415,7 @@ class SphereNet(torch.nn.Module):
 
         # Initialize edge, node, graph features
         e = self.init_e(z, emb, i, j)
-        v = self.init_v(e, i, num_nodes=pos.size(0))
+        v = self.init_v(e, i, num_nodes=num_nodes)
         u = self.init_u(
             torch.zeros_like(scatter(v, batch, dim=0)), v, batch
         )  # scatter(v, batch, dim=0)
@@ -424,7 +424,7 @@ class SphereNet(torch.nn.Module):
             self.update_es, self.update_vs, self.update_us
         ):
             e = update_e(e, emb, idx_kj, idx_ji)
-            v = update_v(e, i)
+            v = update_v(e, i, num_nodes=num_nodes)
             u = update_u(u, v, batch)  # u += scatter(v, batch, dim=0)
 
         return u
