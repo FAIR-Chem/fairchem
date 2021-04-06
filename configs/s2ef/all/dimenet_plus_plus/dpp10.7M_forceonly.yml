@@ -1,13 +1,13 @@
 trainer: forces
 
 dataset:
-  - src: data/s2ef/all/train/
+  - src: /checkpoint/janlan/ocp/lmdb_s2ef_valset_feb2021/
     normalize_labels: True
     target_mean: -0.7554450631141663
     target_std: 2.887317180633545
     grad_target_mean: 0.0
     grad_target_std: 2.887317180633545
-  - src: data/s2ef/all/val_id/
+  - src: /checkpoint/janlan/ocp/lmdb_s2ef_valset_feb2021/
 
 logger: tensorboard
 
@@ -22,6 +22,17 @@ task:
   grad_input: atomic forces
   train_on_free_atoms: True
   eval_on_free_atoms: True
+  # Relaxation options
+  relax_dataset:
+    src: /checkpoint/janlan/ocp/lmdb_is2res_valset_feb2021/data.lmdb # path to lmdb of systems to be relaxed (uses same lmdbs as is2re)
+  write_pos: True
+  relaxation_steps: 300
+  relax_opt:
+    maxstep: 0.04
+    memory: 50
+    damping: 1.0
+    alpha: 70.0
+    traj_dir: "trajs_dpplarge"
 
 model:
   name: dimenetplusplus
@@ -39,7 +50,7 @@ model:
 
 optim:
   batch_size: 16
-  eval_batch_size: 8
+  eval_batch_size: 4
   eval_every: -10000
   num_workers: 64
   lr_initial: 0.0001

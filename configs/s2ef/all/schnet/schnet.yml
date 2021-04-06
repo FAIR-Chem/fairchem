@@ -1,5 +1,39 @@
-includes:
-- configs/s2ef/all/base.yml
+trainer: forces
+
+dataset:
+  - src: /checkpoint/janlan/ocp/lmdb_s2ef_valset_feb2021/
+    normalize_labels: True
+    target_mean: -0.7554450631141663
+    target_std: 2.887317180633545
+    grad_target_mean: 0.0
+    grad_target_std: 2.887317180633545
+  - src: /checkpoint/janlan/ocp/lmdb_s2ef_valset_feb2021/
+  - src: /checkpoint/janlan/ocp/lmdb_s2ef_valset_feb2021/
+
+task:
+  dataset: trajectory_lmdb
+  description: "Regressing to energies and forces for DFT trajectories from OCP"
+  type: regression
+  metric: mae
+  primary_metric: forces_mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+  # Relaxation options
+  relax_dataset:
+    src: /checkpoint/janlan/ocp/lmdb_is2res_valset_feb2021/data.lmdb # path to lmdb of systems to be relaxed (uses same lmdbs as is2re)
+  write_pos: True
+  relaxation_steps: 300
+  relax_opt:
+    maxstep: 0.04
+    memory: 50
+    damping: 1.0
+    alpha: 70.0
+    traj_dir: "trajs_schnet_efwt"
+
+logger: tensorboard
 
 model:
   name: schnet
@@ -12,7 +46,7 @@ model:
 
 optim:
   batch_size: 20
-  eval_batch_size: 8
+  eval_batch_size: 4
   eval_every: -10000
   num_workers: 64
   lr_initial: 0.0001

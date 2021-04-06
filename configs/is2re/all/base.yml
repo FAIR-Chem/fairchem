@@ -6,6 +6,7 @@ dataset:
     target_mean: -1.525913953781128
     target_std: 2.279365062713623
   - src: data/is2re/all/val_id/data.lmdb
+  - src: /checkpoint/janlan/ocp/lmdb_is2res_valset_feb2021/data.lmdb
 
 logger: tensorboard
 
