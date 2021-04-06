@@ -209,6 +209,9 @@ class EnergyTrainer(BaseTrainer):
         return predictions
 
     def train(self):
+        primary_metric = self.config["task"].get(
+            "primary_metric", self.evaluator.task_primary_metric[self.name]
+        )
         self.best_val_mae = 1e9
 
         start_epoch = self.start_step // len(self.train_loader)
@@ -256,6 +259,7 @@ class EnergyTrainer(BaseTrainer):
                     ]
                     print(", ".join(log_str))
 
+                log_dict.update({"lr": self.scheduler.get_lr()})
                 if self.logger is not None:
                     self.logger.log(
                         log_dict,
@@ -266,13 +270,12 @@ class EnergyTrainer(BaseTrainer):
                 if self.update_lr_on_step:
                     self.scheduler.step()
 
-            if not self.update_lr_on_step:
-                self.scheduler.step()
-
             torch.cuda.empty_cache()
 
             if self.val_loader is not None:
                 val_metrics = self.validate(split="val", epoch=epoch)
+                if not self.update_lr_on_step:
+                    self.scheduler.step(val_metrics[primary_metric]["metric"])
                 if (
                     val_metrics[self.evaluator.task_primary_metric[self.name]][
                         "metric"
@@ -291,6 +294,8 @@ class EnergyTrainer(BaseTrainer):
                             disable_tqdm=False,
                         )
             else:
+                if not self.update_lr_on_step:
+                    self.scheduler.step()
                 current_step = (epoch + 1) * len(self.train_loader)
                 self.save(epoch + 1, current_step, self.metrics)
 
