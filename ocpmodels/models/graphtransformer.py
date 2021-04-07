@@ -24,21 +24,15 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 
-@registry.register_model("GraphTransformer")
+@registry.register_model("graphtransformer")
 class GraphTransformer(BaseModel):
-    """Using graph transformer architecture from GROVER model from the
-    `"Self-Supervised Graph Transformer on Large-Scale Molecular Data" <https://arxiv.org/abs/2007.02835>`_.
-
-    [replace with gtransformer specific info]
-    Each layer uses interaction block of the form:
-
-    .. math::
-        \mathbf{x}^{\prime}_i = \sum_{j \in \mathcal{N}(i)} \mathbf{x}_j \odot
-        h_{\mathbf{\Theta}} ( \exp(-\gamma(\mathbf{e}_{j,i} - \mathbf{\mu}))),
+    r"""Using graph transformer architecture from GROVER model from the
+    `"Self-Supervised Graph Transformer on Large-Scale Molecular Data" <https://arxiv.org/abs/2007.02835>_ paper.
+    Implementation adapted from: https://github.com/tencent-ailab/grover.
 
     Args:
         num_atoms (int): Unused argument
-        bond_feat_dim (int): Unused argument
+        bond_feat_dim (int): Bond feature dimension
         num_targets (int): Number of targets to predict.
         use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
             (default: :obj:`True`)
@@ -47,110 +41,155 @@ class GraphTransformer(BaseModel):
             (default: :obj:`True`)
         otf_graph (bool, optional): If set to :obj:`True`, compute graph edges on the fly.
             (default: :obj:`False`)
-        hidden_channels (int, optional): Number of hidden channels.
-            (default: :obj:`128`)
-        num_filters (int, optional): Number of filters to use.
-            (default: :obj:`128`)
-        num_interactions (int, optional): Number of interaction blocks
-            (default: :obj:`6`)
-        num_gaussians (int, optional): The number of gaussians :math:`\mu`.
-            (default: :obj:`50`)
         cutoff (float, optional): Cutoff distance for interatomic interactions.
             (default: :obj:`10.0`)
-        readout (string, optional): Whether to apply :obj:`"add"` or
-            :obj:`"mean"` global aggregation. (default: :obj:`"add"`)
+        hidden_size (int, optional): Dimensionality of hidden layers. The actual dimension is hidden_size * 100.
+            (default: :obj:`128`)
+        bias (bool, optional): Whether to add bias to linear layers
+            (default: :obj:`False`)
+        depth (int, optional): Number of message passing steps
+            (default: :obj:`3`)
+        dropout (float, optional): Dropout probability
+            (default: :obj:`0.0`)
+        activation(string, optional): Activation function, choices: ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU'
+            (default: :obj:`ReLU`)
+        weight_decay (float, optional): Weight decay
+            (default: :obj:`0.0`)
+        num_attn_head (int, optional): Number of attention heads per MTBlock
+            (default: :obj:`4`)
+        num_mt_block (int, optional): Number of MTBlocks
+            (default: :obj:`1`)
+        res_connection (bool, optional): Enables the skip-connection in MTBlock
+            (default: :obj:`False`)
+        embedding_output_type (string, optional): Output type for GTransEncoder, choices: 'atom', 'bond', 'both'
+            (default: :obj:`atom`)
+        ffn_hidden_Size (int, optional): Hidden dimension for higher-capacity FFN (defaults to hidden_size)
+            (default: :obj:`None`)
+        ffn_num_layers (int, optional): Number of layers in FFN after MPN encoding
+            (default: :obj:`2`)
+        self_attention (string, optional): Use self attention layer, otherwise use mean aggregation layer
+            (default: :obj:`False`)
+        attn_hidden (int, optional): Self attention layer hidden layer size
+            (default: :obj:`4`)
+        attn_out (int, optional): Self attention layer output feature size
+            (default: :obj:`128`)
     """
 ## FROM SCHNET
-    # TODO: remove unnecessary arguments
+    # Args
     def __init__(
         self,
-        args, # Can refactor code to only do explicit args instead of namespace in create_ffn
-        num_atoms,  # not used (i dont think)
-        bond_feat_dim,  # not used for schnet, but needed for gtrans
-        num_targets,
-        use_pbc=True,
-        regress_forces=True,
-        otf_graph=False,
-        hidden_channels=128,
-        num_filters=128,
-        num_interactions=6,
-        num_gaussians=50,
-        cutoff=10.0,
-        readout="add",
+        num_atoms,              # OCP: Number of atoms (not used)
+        bond_feat_dim,          # OCP: Bond feature dimension
+        num_targets,            # OCP: Number of targets to predict
+        use_pbc=True,           # OCP: use periodic boundary conditions
+        regress_forces=True,    # OCP: Regress forces as well as energy
+        otf_graph=False,        # OCP: Use on-the-fly graph calculation
+        cutoff=10.0,            # OCP: cutoff distance (angstroms)
+        hidden_size=3, # Dimensionality of hidden layers. The actual dimension is hidden_size * 100.
+        bias=False, # Whether to add bias to linear layers
+        depth=3, # Number of message passing steps
+        dropout=0.0, # Dropout probability
+        activation='ReLU', # Choices: ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU' #TODO: import other activation functions/enforce these?
+        weight_decay=0.0, # Weight decay
+        num_attn_head=4, # Number of attention heads per MTBlock
+        num_mt_block=1, # Number of MTBlocks
+        res_connection=False, # enables the skip-connection in MTBlock.
+        embedding_output_type='atom', # Choices: 'atom', 'bond', 'both'
+        ffn_hidden_size=None, # Hidden dim for higher-capacity FFN (defaults to hidden_size)
+        ffn_num_layers=2, # Number of layers in FFN after MPN encoding
+        self_attention=False, # Use self attention layer, otherwise use mean aggregation layer
+        attn_hidden=4, # Self attention layer hidden layer size
+        attn_out=128 # Self attention layer output feature size
     ):
+        # OCP parameters
+        self.num_atoms = num_atoms
+        self.bond_feat_dim = bond_feat_dim
         self.num_targets = num_targets
-        self.regress_forces = regress_forces
         self.use_pbc = use_pbc
-        self.cutoff = cutoff
+        self.regress_forces = regress_forces
         self.otf_graph = otf_graph
+        self.cutoff = cutoff
 
-        # Settings taken from default single-GPU GROVER training settings (besides PReLU)
-        self.encoders = GTransEncoder(hidden_size=100,
-                                     edge_fdim=bond_feat_dim,
-                                     node_fdim=4, # node features are of dimension 4: atomic number, pos_x, pos_y, pos_z
-                                     dropout=0.1,
-                                     activation="ReLU",
-                                     num_mt_block=1,
-                                     num_attn_head=4,
-                                     atom_emb_output=False,  # options: True, False, None, "atom", "bond", "both"
-                                     bias=False,
-                                     cuda=True,
-                                     res_connection=False)
+        # GraphTransformer parameters
+        self.hidden_size = hidden_size
+        self.bias = bias,
+        self.depth = depth,
+        self.dropout = dropout,
+        self.activation = activation,
+        self.weight_decay = weight_decay,
+        self.num_attn_head = num_attn_head,
+        self.num_mt_block = num_mt_block,
+        self.res_connection = res_connection
+        self.embedding_output_type = embedding_output_type,
+        self.ffn_hidden_size = ffn_hidden_size,
+        self.ffn_num_layers = ffn_num_layers,
+        self.self_attention = self_attention,
+        self.attn_hidden = attn_hidden,
+        self.attn_out = attn_out,
+
+        self.encoders = GTransEncoder(
+                                      hidden_size=self.hidden_size,
+                                      edge_fdim=bond_feat_dim,
+                                      node_fdim=4, # node features are of dimension 4: atomic number, pos_x, pos_y, pos_z
+                                      dropout=self.dropout,
+                                      activation=self.activation,
+                                      num_mt_block=self.num_mt_block,
+                                      num_attn_head=self.num_attn_head,
+                                      atom_emb_output=self.embedding_output_type,
+                                      bias=self.bias,
+                                      cuda=self.cuda,
+                                      res_connection=self.res_connection)
 
         # Separate feed forward layers from atom embeddings to calculate energy & forces (3D)
-        self.energy_atom_from_atom_ffn = self.create_ffn(args, output_dim=1)
-        self.energy_atom_from_bond_ffn = self.create_ffn(args, output_dim=1)
+        self.energy_atom_from_atom_ffn = self.create_ffn(output_dim=1)
+        self.energy_atom_from_bond_ffn = self.create_ffn(output_dim=1)
 
-        self.forces_atom_from_atom_ffn = self.create_ffn(args, output_dim=3)
-        self.forces_atom_from_bond_ffn = self.create_ffn(args, output_dim=3)
+        self.forces_atom_from_atom_ffn = self.create_ffn(output_dim=3)
+        self.forces_atom_from_bond_ffn = self.create_ffn(output_dim=3)
 
-    # TODO: change inputs to only what's explicitly needed (instead of namespace)
-    # From GROVER-finetune (FFNs for GTransformer output embeddings)
-    def create_ffn(self, args: Namespace, output_dim):
+    # FFNs for GTransformer output embeddings
+    def create_ffn(self, output_dim):
         """
         Creates the feed-forward network for the model.
-
-        :param args: Arguments.
         """
         # Hard code output dimension
-        args.output_size = output_dim
+        self.output_size = output_dim
 
-        # Note: args.features_dim is set according the real loaded features data
-        if args.features_only:
-            first_linear_dim = args.features_size + args.features_dim
+        # Note: self.features_dim is set according the real loaded features data
+        if self.features_only:
+            first_linear_dim = self.features_size + self.features_dim
         else:
-            if args.self_attention:
-                first_linear_dim = args.hidden_size * args.attn_out
+            if self.self_attention:
+                first_linear_dim = self.hidden_size * self.attn_out
                 # GROVERTODO: Ad-hoc!
-                # if args.use_input_features:
-                first_linear_dim += args.features_dim
+                # if self.use_input_features:
+                first_linear_dim += self.features_dim
             else:
-                first_linear_dim = args.hidden_size + args.features_dim
+                first_linear_dim = self.hidden_size + self.features_dim
 
-        dropout = nn.Dropout(args.dropout)
-        activation = get_activation_function(args.activation)
-        # GROVERTODO: ffn_hidden_size
+        dropout = nn.Dropout(self.dropout)
+        activation = get_activation_function(self.activation)
         # Create FFN layers
-        if args.ffn_num_layers == 1:
+        if self.ffn_num_layers == 1:
             ffn = [
                 dropout,
-                nn.Linear(first_linear_dim, args.output_size)
+                nn.Linear(first_linear_dim, self.output_size)
             ]
         else:
             ffn = [
                 dropout,
-                nn.Linear(first_linear_dim, args.ffn_hidden_size)
+                nn.Linear(first_linear_dim, self.ffn_hidden_size)
             ]
-            for _ in range(args.ffn_num_layers - 2):
+            for _ in range(self.ffn_num_layers - 2):
                 ffn.extend([
                     activation,
                     dropout,
-                    nn.Linear(args.ffn_hidden_size, args.ffn_hidden_size),
+                    nn.Linear(self.ffn_hidden_size, self.ffn_hidden_size),
                 ])
             ffn.extend([
                 activation,
                 dropout,
-                nn.Linear(args.ffn_hidden_size, args.output_size),
+                nn.Linear(self.ffn_hidden_size, self.output_size),
             ])
 
         # Create FFN model
@@ -231,7 +270,8 @@ class GraphTransformer(BaseModel):
             bond_embeddings = (embeddings["bond_from_atom"] + embeddings[
                 "bond_from_bond"]) / 2  # avg two bond embeddings
             new_atom_embeddings = {}
-            for atom in converted_input.a2b:
+            _, _, a2b, _, _, _ = converted_input # Get a2b from converted input
+            for atom in a2b:
                 for bond in atom:
                     if (bond != torch.tensor(-1)):
                         # Get the embedding of this edge
@@ -243,12 +283,16 @@ class GraphTransformer(BaseModel):
                                                                                            dim=0)
             new_bond_forces = self.forces_atom_from_bond_ffn(new_atom_embeddings)
 
-            # Average with all three energy/force predictions
-            energy = (atom_energy + bond_energy + new_bond_energy) / 2
-            forces = (atom_forces + bond_forces + new_bond_forces) / 2
-
+            if self.embedding_output_type == 'both':
+                # Average predictionss from new atom embeddings (from edges), with other preds from atom embeddings
+                energy = (atom_energy + bond_energy + new_bond_energy) / 3
+                forces = (atom_forces + bond_forces + new_bond_forces) / 3
+            else:
+                # Using edge embedding only
+                energy = new_bond_energy
+                forces = new_bond_forces
         else:
-            # Combine energy and force predictions from the two different atom embeddings (from atom and from bond)
+            # Using atom embeddings only, average predictions from two different atom embeddings (from atom and from bond)
             energy = ( atom_energy + bond_energy ) / 2
             forces = ( atom_forces + bond_forces ) / 2
 
@@ -455,10 +499,9 @@ class Head(nn.Module):
     :return: (query, key, value)
     """
 
-    def __init__(self, args, hidden_size, atom_messages=False):
+    def __init__(self, hidden_size, atom_messages=False):
         """
         Initialization.
-        :param args: The argument.
         :param hidden_size: the dimension of hidden layer in Head.
         :param atom_messages: the MPNEncoder type.
         """
@@ -475,44 +518,41 @@ class Head(nn.Module):
             attached_fea_dim = atom_fdim
 
         # Here we use the message passing network as query, key and value.
-        self.mpn_q = MPNEncoder(args=args,
-                                atom_messages=atom_messages,
+        self.mpn_q = MPNEncoder(atom_messages=atom_messages,
                                 init_message_dim=init_message_dim,
                                 attached_fea_fdim=attached_fea_dim,
                                 hidden_size=hidden_size,
-                                bias=args.bias,
-                                depth=args.depth,
-                                dropout=args.dropout,
-                                undirected=args.undirected,
-                                dense=args.dense,
+                                bias=self.bias,
+                                depth=self.depth,
+                                dropout=self.dropout,
+                                undirected=self.undirected,
+                                dense=self.dense,
                                 aggregate_to_atom=False,
                                 attach_fea=False,
                                 input_layer="none",
                                 dynamic_depth="truncnorm")
-        self.mpn_k = MPNEncoder(args=args,
-                                atom_messages=atom_messages,
+        self.mpn_k = MPNEncoder(atom_messages=atom_messages,
                                 init_message_dim=init_message_dim,
                                 attached_fea_fdim=attached_fea_dim,
                                 hidden_size=hidden_size,
-                                bias=args.bias,
-                                depth=args.depth,
-                                dropout=args.dropout,
-                                undirected=args.undirected,
-                                dense=args.dense,
+                                bias=self.bias,
+                                depth=self.depth,
+                                dropout=self.dropout,
+                                undirected=self.undirected,
+                                dense=self.dense,
                                 aggregate_to_atom=False,
                                 attach_fea=False,
                                 input_layer="none",
                                 dynamic_depth="truncnorm")
-        self.mpn_v = MPNEncoder(args=args,
-                                atom_messages=atom_messages,
+        self.mpn_v = MPNEncoder(atom_messages=atom_messages,
                                 init_message_dim=init_message_dim,
                                 attached_fea_fdim=attached_fea_dim,
                                 hidden_size=hidden_size,
-                                bias=args.bias,
-                                depth=args.depth,
-                                dropout=args.dropout,
-                                undirected=args.undirected,
-                                dense=args.dense,
+                                bias=self.bias,
+                                depth=self.depth,
+                                dropout=self.dropout,
+                                undirected=self.undirected,
+                                dense=self.dense,
                                 aggregate_to_atom=False,
                                 attach_fea=False,
                                 input_layer="none",
@@ -570,7 +610,6 @@ class MTBlock(nn.Module):
     """
 
     def __init__(self,
-                 args,
                  num_attn_head,
                  input_dim,
                  hidden_size,
@@ -581,7 +620,6 @@ class MTBlock(nn.Module):
                  cuda=True,
                  res_connection=False):
         """
-        :param args: the arguments.
         :param num_attn_head: the number of attention head.
         :param input_dim: the input dimension.
         :param hidden_size: the hidden size of the model.
@@ -593,7 +631,6 @@ class MTBlock(nn.Module):
         :param res_connection: enables the skip-connection in MTBlock.
         """
         super(MTBlock, self).__init__()
-        # self.args = args
         self.atom_messages = atom_messages
         self.hidden_size = hidden_size
         self.heads = nn.ModuleList()
@@ -613,7 +650,7 @@ class MTBlock(nn.Module):
         self.W_o = nn.Linear(self.hidden_size * num_attn_head, self.hidden_size, bias=bias)
         self.sublayer = SublayerConnection(self.hidden_size, dropout)
         for _ in range(num_attn_head):
-            self.heads.append(Head(args, hidden_size=hidden_size, atom_messages=atom_messages))
+            self.heads.append(Head(hidden_size=hidden_size, atom_messages=atom_messages))
 
     def forward(self, batch, features_batch=None):
         """
@@ -691,7 +728,6 @@ class SublayerConnection(nn.Module):
 
 class GTransEncoder(nn.Module):
     def __init__(self,
-                 args,
                  hidden_size,
                  edge_fdim,
                  node_fdim,
@@ -704,7 +740,6 @@ class GTransEncoder(nn.Module):
                  cuda=True,
                  res_connection=False):
         """
-        :param args: the arguments.
         :param hidden_size: the hidden size of the model.
         :param edge_fdim: the dimension of additional feature for edge/bond.
         :param node_fdim: the dimension of additional feature for node/atom.
@@ -751,8 +786,7 @@ class GTransEncoder(nn.Module):
             if i != 0:
                 edge_input_dim_i = self.hidden_size
                 node_input_dim_i = self.hidden_size
-            self.edge_blocks.append(MTBlock(args=args,
-                                            num_attn_head=num_attn_head,
+            self.edge_blocks.append(MTBlock(num_attn_head=num_attn_head,
                                             input_dim=edge_input_dim_i,
                                             hidden_size=self.hidden_size,
                                             activation=activation,
@@ -760,8 +794,7 @@ class GTransEncoder(nn.Module):
                                             bias=self.bias,
                                             atom_messages=False,
                                             cuda=cuda))
-            self.node_blocks.append(MTBlock(args=args,
-                                            num_attn_head=num_attn_head,
+            self.node_blocks.append(MTBlock(num_attn_head=num_attn_head,
                                             input_dim=node_input_dim_i,
                                             hidden_size=self.hidden_size,
                                             activation=activation,
@@ -804,7 +837,7 @@ class GTransEncoder(nn.Module):
         self.act_func_node = get_activation_function(self.activation)
         self.act_func_edge = get_activation_function(self.activation)
 
-        self.dropout_layer = nn.Dropout(p=args.dropout)
+        self.dropout_layer = nn.Dropout(p=self.dropout)
 
     def pointwise_feed_forward_to_atom_embedding(self, emb_output, atom_fea, index, ffn_layer):
         """
@@ -1056,7 +1089,7 @@ class PositionwiseFeedForward(nn.Module):
 class MPNEncoder(nn.Module):
     """A message passing neural network for encoding a molecule."""
 
-    def __init__(self, args: Namespace,
+    def __init__(self,
                  atom_messages: bool,
                  init_message_dim: int,
                  attached_fea_fdim: int,
@@ -1073,7 +1106,6 @@ class MPNEncoder(nn.Module):
                  ):
         """
         Initializes the MPNEncoder.
-        :param args: the arguments.
         :param atom_messages: enables atom_messages or not.
         :param init_message_dim:  the initial input message dimension.
         :param attached_fea_fdim:  the attached feature dimension.
@@ -1106,7 +1138,7 @@ class MPNEncoder(nn.Module):
         self.dropout_layer = nn.Dropout(p=self.dropout)
 
         # Activation
-        self.act_func = get_activation_function(args.activation)
+        self.act_func = get_activation_function(self.activation)
 
         # Input
         if self.input_layer == "fc":
