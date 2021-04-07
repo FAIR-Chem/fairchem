@@ -16,7 +16,7 @@ from torch_geometric.data import Data
 
 from ocpmodels.common.transforms import RandomRotate
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.models import CGCNN
+from ocpmodels.models import DimeNetPlusPlus
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -41,22 +41,20 @@ def load_data(request):
 @pytest.fixture(scope="class")
 def load_model(request):
     torch.manual_seed(4)
-    num_gaussians = 50
-    model = CGCNN(
+    model = DimeNetPlusPlus(
         None,
-        num_gaussians,
+        32,
         1,
         cutoff=6.0,
-        num_gaussians=num_gaussians,
         regress_forces=True,
-        use_pbc=True,
+        use_pbc=False,
     )
     request.cls.model = model
 
 
 @pytest.mark.usefixtures("load_data")
 @pytest.mark.usefixtures("load_model")
-class TestCGCNN:
+class TestDimeNet:
     def test_rotation_invariance(self):
         random.seed(1)
         data = self.data
@@ -75,6 +73,7 @@ class TestCGCNN:
         np.testing.assert_almost_equal(energies[0], energies[1], decimal=5)
 
         forces = out[1].detach()
+        print(forces)
         np.testing.assert_array_almost_equal(
             forces[: forces.shape[0] // 2],
             torch.matmul(forces[forces.shape[0] // 2 :], inv_rot),
@@ -82,7 +81,6 @@ class TestCGCNN:
         )
 
     def test_energy_force_shape(self):
-        # Recreate the Data object to only keep the necessary features.
         data = self.data
 
         # Pass it through the model.
