@@ -32,9 +32,6 @@ def ocp_trainable(config, checkpoint_dir=None):
         cpu=config.get("cpu", False),
     )
     # add checkpoint here
-    if checkpoint_dir:
-        checkpoint = os.path.join(checkpoint_dir, "checkpoint")
-        trainer.load_pretrained(checkpoint)
     # start training
     trainer.train()
 

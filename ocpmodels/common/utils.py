@@ -608,8 +608,7 @@ def tune_reporter(
     # labels and report metric dicts
     train = label_metric_dict(train_metrics, "train")
     val = label_metric_dict(val_metrics, "val")
-    # TODO make this more general
-    # this allows tolerance for NaNs
+    # this enables tolerance for NaNs assumes val set is used for optimization
     if math.isnan(val[metric_to_opt]):
         if min_max == "min":
             val[metric_to_opt] = 100000.0
