@@ -45,43 +45,49 @@ class GraphTransformer(BaseModel):
             (default: :obj:`10.0`)
         hidden_size (int, optional): Dimensionality of hidden layers. The actual dimension is hidden_size * 100.
             (default: :obj:`128`)
-        bias (bool, optional): Whether to add bias to linear layers
+        bias (bool, optional): If set to :obj:`True` add bias to linear layers.
             (default: :obj:`False`)
-        depth (int, optional): Number of message passing steps
+        depth (int, optional): Number of message passing steps.
             (default: :obj:`3`)
-        dropout (float, optional): Dropout probability
+        dropout (float, optional): Dropout probability.
             (default: :obj:`0.0`)
-        activation(string, optional): Activation function, choices: ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU'
+        activation(string, optional): Activation function, choices: ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU'.
             (default: :obj:`ReLU`)
-        weight_decay (float, optional): Weight decay
+        weight_decay (float, optional): Weight decay.
             (default: :obj:`0.0`)
-        num_attn_head (int, optional): Number of attention heads per MTBlock
+        num_attn_head (int, optional): Number of attention heads per MTBlock.
             (default: :obj:`4`)
-        num_mt_block (int, optional): Number of MTBlocks
+        num_mt_block (int, optional): Number of MTBlocks.
             (default: :obj:`1`)
-        res_connection (bool, optional): Enables the skip-connection in MTBlock
+        res_connection (bool, optional): If set to :obj:`True`, enables the skip-connection in MTBlock.
             (default: :obj:`False`)
-        embedding_output_type (string, optional): Output type for GTransEncoder, choices: 'atom', 'bond', 'both'
+        embedding_output_type (string, optional): Output type for GTransEncoder, choices: 'atom', 'bond', 'both'.
             (default: :obj:`atom`)
-        ffn_hidden_Size (int, optional): Hidden dimension for higher-capacity FFN (defaults to hidden_size)
+        ffn_hidden_Size (int, optional): Hidden dimension for higher-capacity FFN (defaults to hidden_size).
             (default: :obj:`None`)
-        ffn_num_layers (int, optional): Number of layers in FFN after MPN encoding
+        ffn_num_layers (int, optional): Number of layers in FFN after MPN encoding.
             (default: :obj:`2`)
-        self_attention (string, optional): Use self attention layer, otherwise use mean aggregation layer
+        self_attention (bool, optional): If set to :obj:`True`, use self-attention layer, otherwise use mean aggregation layer.
             (default: :obj:`False`)
-        attn_hidden (int, optional): Self attention layer hidden layer size
+        attn_hidden (int, optional): Self attention layer hidden layer size.
             (default: :obj:`4`)
-        attn_out (int, optional): Self attention layer output feature size
+        attn_out (int, optional): Self attention layer output feature size.
             (default: :obj:`128`)
+        undirected (bool, optional): If set to :obj:`True`, specify that the molecular graph is undirected.
+            (default: :obj:`True`)
+        dense (bool, optional): If set to :obj:`True`, use dense connection in MessagePassing layer.
+            (default: :obj:`True`)
+        features_only (bool, optional): If set to :obj:`True`, use only the additional features in an FFN, no graph network
+            (default: :obj:`False`)
+        cuda (bool, optional): If set to :obj:`True`, use CUDA acceleration.
+            (default: :obj:`True`)
     """
-## FROM SCHNET
-    # Args
     def __init__(
         self,
         num_atoms,              # OCP: Number of atoms (not used)
         bond_feat_dim,          # OCP: Bond feature dimension
         num_targets,            # OCP: Number of targets to predict
-        use_pbc=True,           # OCP: use periodic boundary conditions
+        use_pbc=False,           # OCP: use periodic boundary conditions
         regress_forces=True,    # OCP: Regress forces as well as energy
         otf_graph=False,        # OCP: Use on-the-fly graph calculation
         cutoff=10.0,            # OCP: cutoff distance (angstroms)
@@ -99,7 +105,11 @@ class GraphTransformer(BaseModel):
         ffn_num_layers=2, # Number of layers in FFN after MPN encoding
         self_attention=False, # Use self attention layer, otherwise use mean aggregation layer
         attn_hidden=4, # Self attention layer hidden layer size
-        attn_out=128 # Self attention layer output feature size
+        attn_out=128, # Self attention layer output feature size
+        undirected=True, # Specify whether or not molecular graph is undirected (OCP is undirected)
+        dense=True, # Use dense connection in MessagePassing layer
+        features_only=False, # Use only the additional features in an FFN, no graph network
+        cuda=True # Use CUDA acceleration
     ):
         # OCP parameters
         self.num_atoms = num_atoms
@@ -111,93 +121,104 @@ class GraphTransformer(BaseModel):
         self.cutoff = cutoff
 
         # GraphTransformer parameters
-        self.hidden_size = hidden_size
-        self.bias = bias,
-        self.depth = depth,
-        self.dropout = dropout,
-        self.activation = activation,
-        self.weight_decay = weight_decay,
-        self.num_attn_head = num_attn_head,
-        self.num_mt_block = num_mt_block,
-        self.res_connection = res_connection
-        self.embedding_output_type = embedding_output_type,
-        self.ffn_hidden_size = ffn_hidden_size,
-        self.ffn_num_layers = ffn_num_layers,
-        self.self_attention = self_attention,
-        self.attn_hidden = attn_hidden,
-        self.attn_out = attn_out,
+        args = Namespace()
+        args.hidden_size = hidden_size
+        args.bias = bias
+        args.depth = depth
+        args.dropout = dropout
+        args.activation = activation
+        args.weight_decay = weight_decay
+        args.num_attn_head = num_attn_head
+        args.num_mt_block = num_mt_block
+        args.res_connection = res_connection
+        args.embedding_output_type = embedding_output_type
+        args.ffn_hidden_size = ffn_hidden_size
+        args.ffn_num_layers = ffn_num_layers
+        args.self_attention = self_attention
+        args.attn_hidden = attn_hidden
+        args.attn_out = attn_out
+        args.cuda = cuda
+        args.undirected = undirected
+        args.dense = dense
+        args.features_only = features_only
+        args.features_dim = 0 # Temproary for troubleshooting
+        args.features_size = 0 # Temporary for troubleshooting_
+        self.args = args # Hack to call in forward pass
 
-        self.encoders = GTransEncoder(
-                                      hidden_size=self.hidden_size,
+        super(GraphTransformer, self).__init__()
+
+        self.encoders = GTransEncoder(args,
+                                      hidden_size=args.hidden_size,
                                       edge_fdim=bond_feat_dim,
                                       node_fdim=4, # node features are of dimension 4: atomic number, pos_x, pos_y, pos_z
-                                      dropout=self.dropout,
-                                      activation=self.activation,
-                                      num_mt_block=self.num_mt_block,
-                                      num_attn_head=self.num_attn_head,
-                                      atom_emb_output=self.embedding_output_type,
-                                      bias=self.bias,
-                                      cuda=self.cuda,
-                                      res_connection=self.res_connection)
+                                      dropout=args.dropout,
+                                      activation=args.activation,
+                                      num_mt_block=args.num_mt_block,
+                                      num_attn_head=args.num_attn_head,
+                                      atom_emb_output=args.embedding_output_type,
+                                      bias=args.bias,
+                                      cuda=args.cuda,
+                                      res_connection=args.res_connection)
 
         # Separate feed forward layers from atom embeddings to calculate energy & forces (3D)
-        self.energy_atom_from_atom_ffn = self.create_ffn(output_dim=1)
-        self.energy_atom_from_bond_ffn = self.create_ffn(output_dim=1)
+        self.energy_atom_from_atom_ffn = self.create_ffn(args, output_dim=1)
+        self.energy_atom_from_bond_ffn = self.create_ffn(args, output_dim=1)
+        self.energy_atom_from_bond_aggregated_ffn = self.create_ffn(args, output_dim=1)
 
-        self.forces_atom_from_atom_ffn = self.create_ffn(output_dim=3)
-        self.forces_atom_from_bond_ffn = self.create_ffn(output_dim=3)
+        self.forces_atom_from_atom_ffn = self.create_ffn(args, output_dim=3)
+        self.forces_atom_from_bond_ffn = self.create_ffn(args, output_dim=3)
+        self.forces_atom_from_bond__aggregated_ffn = self.create_ffn(args, output_dim=3)
+
 
     # FFNs for GTransformer output embeddings
-    def create_ffn(self, output_dim):
+    def create_ffn(self, args: Namespace, output_dim):
         """
         Creates the feed-forward network for the model.
         """
         # Hard code output dimension
-        self.output_size = output_dim
+        args.output_size = output_dim
 
-        # Note: self.features_dim is set according the real loaded features data
-        if self.features_only:
-            first_linear_dim = self.features_size + self.features_dim
+        # Note: args.features_dim is set according the real loaded features data
+        if args.features_only:
+            first_linear_dim = args.features_size + args.features_dim
         else:
-            if self.self_attention:
-                first_linear_dim = self.hidden_size * self.attn_out
-                # GROVERTODO: Ad-hoc!
-                # if self.use_input_features:
-                first_linear_dim += self.features_dim
+            if args.self_attention:
+                first_linear_dim = args.hidden_size * args.attn_out
+                first_linear_dim += args.features_dim
             else:
-                first_linear_dim = self.hidden_size + self.features_dim
+                first_linear_dim = args.hidden_size + args.features_dim
 
-        dropout = nn.Dropout(self.dropout)
-        activation = get_activation_function(self.activation)
+        dropout = nn.Dropout(args.dropout)
+        activation = get_activation_function(args.activation)
         # Create FFN layers
-        if self.ffn_num_layers == 1:
+        if args.ffn_num_layers == 1:
             ffn = [
                 dropout,
-                nn.Linear(first_linear_dim, self.output_size)
+                nn.Linear(first_linear_dim, args.output_size)
             ]
         else:
             ffn = [
                 dropout,
-                nn.Linear(first_linear_dim, self.ffn_hidden_size)
+                nn.Linear(first_linear_dim, args.ffn_hidden_size)
             ]
-            for _ in range(self.ffn_num_layers - 2):
+            for _ in range(args.ffn_num_layers - 2):
                 ffn.extend([
                     activation,
                     dropout,
-                    nn.Linear(self.ffn_hidden_size, self.ffn_hidden_size),
+                    nn.Linear(args.ffn_hidden_size, args.ffn_hidden_size),
                 ])
             ffn.extend([
                 activation,
                 dropout,
-                nn.Linear(self.ffn_hidden_size, self.output_size),
+                nn.Linear(args.ffn_hidden_size, args.output_size),
             ])
 
         # Create FFN model
         return nn.Sequential(*ffn)
 
-## Combination of SchNet and DimeNet++ (dimenet does not include edge_attr)
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
+        args = self.args
         pos = data.pos
         batch = data.batch
 
@@ -224,13 +245,15 @@ class GraphTransformer(BaseModel):
             edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
             j, i = edge_index
             dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
+        # print("shape of dist: ", dist.shape)
+        # print("data: ", data)
+        # data.edge_attr = self.distance_expansion(dist) # TODO: Figure out distance expansion to get edge attributes
+        data.edge_attr = dist
 
-        data.edge_attr = self.distance_expansion(dist)
-
-        # Convert to format for GROVER
+        # Convert to format from PyTorch Geometric to explicit mappings format used by GROVER
         converted_input = convert_input(data)
 
-        # From GROVER
+        # GTransEncoder
         output = self.encoders(converted_input)
 
         # Debugging
@@ -238,19 +261,22 @@ class GraphTransformer(BaseModel):
         print("output shape: ", output.shape)
 
         embeddings = {}
-        if self.embedding_output_type == 'atom':
+        if args.embedding_output_type == 'atom':
             embeddings = {"atom_from_atom": output[0], "atom_from_bond": output[1],
                           "bond_from_atom": None, "bond_from_bond": None}  # atom_from_atom, atom_from_bond
-        elif self.embedding_output_type == 'bond':
+        elif args.embedding_output_type == 'bond':
             embeddings = {"atom_from_atom": None, "atom_from_bond": None,
                           "bond_from_atom": output[0], "bond_from_bond": output[1]}  # bond_from_atom, bond_from_bond
-        elif self.embedding_output_type == "both":
+        elif args.embedding_output_type == "both":
             embeddings = {"atom_from_atom": output[0][0], "bond_from_atom": output[0][1],
                           "atom_from_bond": output[1][0], "bond_from_bond": output[1][1]}
 
         # Get atom embeddings (handles different embedding_output_type)
         atom_from_bond_output = embeddings["atom_from_bond"]
         atom_from_atom_output = embeddings["atom_from_atom"]
+
+        print("Atom embeddings shape: ", atom_from_atom_output.shape)
+        print("Hidden size shape: ", args.hidden_size)
 
         # Use info from data batch to only sum up energy per system
         batch = data.batch
@@ -266,7 +292,7 @@ class GraphTransformer(BaseModel):
         bond_forces = self.forces_atom_from_bond_ffn(atom_from_bond_output)
 
         # If we have bond embeddings, use these to calculate new node embeddings by summing incoming edge embeddings
-        if self.embedding_output_type == 'bond' or self.embedding_output_type == 'both':
+        if args.embedding_output_type == 'bond' or args.embedding_output_type == 'both':
             bond_embeddings = (embeddings["bond_from_atom"] + embeddings[
                 "bond_from_bond"]) / 2  # avg two bond embeddings
             new_atom_embeddings = {}
@@ -278,12 +304,12 @@ class GraphTransformer(BaseModel):
                         new_atom_embeddings[atom] += bond_embeddings[int(bond)]  # bond is torch tensor, index is int
 
             # Calculate energy and forces with these new embeddings
-            new_bond_ffn_energy = self.energy_from_bond_new_ffn(new_atom_embeddings)
+            new_bond_ffn_energy = self.energy_atom_from_bond_aggregated_ffn(new_atom_embeddings)
             new_bond_energy = new_bond_ffn_energy.sum(dim=0) if batch is None else scatter(new_bond_ffn_energy, batch,
                                                                                            dim=0)
-            new_bond_forces = self.forces_atom_from_bond_ffn(new_atom_embeddings)
+            new_bond_forces = self.forces_atom_from_bond__aggregated_ffn(new_atom_embeddings)
 
-            if self.embedding_output_type == 'both':
+            if args.embedding_output_type == 'both':
                 # Average predictionss from new atom embeddings (from edges), with other preds from atom embeddings
                 energy = (atom_energy + bond_energy + new_bond_energy) / 3
                 forces = (atom_forces + bond_forces + new_bond_forces) / 3
@@ -321,26 +347,49 @@ class GraphTransformer(BaseModel):
     def num_params(self):
         return sum(p.numel() for p in self.parameters())
 
-# Helper function to onvert from PyTorch Geometric input to GROVER input:
-# Helper function to convert from PyTorch Geometric input to GROVER input:
+# Helper function to convert from PyTorch Geometric format to explicit mappings used by GROVER:
 def convert_input(data):
     """
         :param data: data as PyTorch geometric object
         :param f_atoms: the atom features, num_atoms * atom_dim
         :param f_bonds: the bond features, num_bonds * bond_dim
         :param a2b: mapping from atom index to incoming bond indices.
-        :param a2a: mapping from atom index to its neighbors. num_atoms * max_num_bonds
         :param b2a: mapping from bond index to the index of the atom the bond is coming from.
         :param b2revb: mapping from bond index to the index of the reverse bond.
-        :return: batch = (f_atoms, f_bonds, a2b, a2a, b2a, b2revb)
+        :param a_scope: A list of tuples indicating the start and end atom indices for each molecule (system/batch in ocp)
+        :param b_scope: A list of tuples indicating the start and end bond indices for each molecule (system/batch in ocp)
+        :param a2a: mapping from atom index to its neighbors. num_atoms * max_num_bonds
+        :return: batch = (f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a)
     """
     # Per atom features: (atomic_number, pos_x, pos_y, pos_z)
     f_atoms = torch.stack((data.atomic_numbers.long(), data.pos[:, 0], data.pos[:, 1], data.pos[:, 2]), 1)
     # Per edge features (calculated by atomic distances in model forward pass)
     f_bonds = data.edge_attr
 
-    a2a = [[] for j in range(data.natoms)]  # List of lists - Dynamically append neighbors for a given atom
-    a2b = [[] for j in range(data.natoms)]  # List of lists - Dynamically append edges for a given atom
+    print("num_atoms: ", data.natoms)
+    print("type of natoms: ", type(data.natoms))
+    print("len of data batch:", len(data.batch))
+    print("type of data batch:", type(data.batch))
+    print("Data: ", data)
+
+    # Lists of tuples indicating the start and end of each molecule (system/batch in ocp)
+    a_scope = []
+    b_scope = []
+
+    # Set a_scope by looping through the total number of systems in the batch (numbered 0, 1, 2, ... n)
+    for i in range(max(data.batch) + 1):
+        # Returns a tuple of the indices for this given value i
+        indices = ((data.batch == i).nonzero(as_tuple=True)[0])
+        a_scope.append((int(indices[0]), int(indices[-1]))) # Append the start and end index for this value i
+    print("a_scope: ", a_scope)
+
+    # TODO: Calculate b_scope somehow, batch only has data about which atoms are in a given system
+    # Can go from atom to bond and add all the bonds as that system, but there's no guarantee that they will be in order
+
+    # bond_energy = bond_ffn_energy.sum(dim=0) if batch is None else scatter(bond_ffn_energy, batch, dim=0)
+    num_atoms_total = int(torch.sum(data.natoms))
+    a2a = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append neighbors for a given atom
+    a2b = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append edges for a given atom
     b2a = torch.zeros((data.edge_index.shape[1],))  # (num_edges, ) - One originating atom per edge
     b2revb = torch.zeros((data.edge_index.shape[1],))  # (num_edges, ) - One reverse bond per bond
     rev_edges = {}  # Dict of lists for each (from_atom, to_atom) pair, saving edge numbers
@@ -358,27 +407,35 @@ def convert_input(data):
         rev_edges[key].append(i)  # Append the edge number to the list
 
     # Iterate through and set b2revb
+    # print("rev_edges.items(): ", rev_edges.items())
     for atoms, edges in rev_edges.items():
-        b2revb[edges[0]] = edges[1]
-        b2revb[edges[1]] = edges[0]
+        # print("atom: ", atoms)
+        # print("edges: ", edges)
+        # for edge in edges:
+        #     print("atom: "+str(b2a[edge]) + ", edge: " + str(edge))
+        if(len(edges) == 2):
+            b2revb[edges[0]] = edges[1]
+            b2revb[edges[1]] = edges[0]
+        elif(len(edges) == 4): # In the case of duplicate edges, they are grouped together in this order
+            b2revb[edges[0]] = edges[2]
+            b2revb[edges[2]] = edges[0]
+            b2revb[edges[1]] = edges[3]
+            b2revb[edges[3]] = edges[1]
 
     # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
-    # Option 1: Trims length to max number of edges seen in the data (<= 50)
+    # Trim length to max number of edges seen in the data (should be capped by 50 but not always in practice)
     a2a_pad = len(max(a2a, key=len))
     a2b_pad = len(max(a2b, key=len))
-
-    # Option 2: Sets length to max number of possible edges (should be 50 but in test ipynb it's 55)
-    # a2a_pad = 50
-    # a2b_pad = 50
 
     # -1 is not a valid atom or edge index so we pad with this
     a2a = torch.tensor([i + [-1] * (a2a_pad - len(i)) for i in a2a])
     a2b = torch.tensor([i + [-1] * (a2b_pad - len(i)) for i in a2b])
 
-    batch = (f_atoms, f_bonds, a2b, a2a, b2a, b2revb)
+    b2revb = b2revb.type(torch.LongTensor) # Fix for IndexError with undirected=True #TODO: check if this is really necessary
+    batch = (f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a)
     return batch
 
-## FROM GROVER
+# Classes below from GROVER implementation (https://github.com/tencent-ailab/grover)
 class SelfAttention(nn.Module):
     """
        Self SelfAttention Layer
@@ -386,7 +443,6 @@ class SelfAttention(nn.Module):
        $W_1 \in \mathbb{R}^{hidden \times in_feature}$, $W_2 \in \mathbb{R}^{out_feature \times hidden}$.
        The final output is: $out=aX$, which is unrelated with input $n$.
     """
-
     def __init__(self, *, hidden, in_feature, out_feature):
         """
         The init function.
@@ -398,14 +454,12 @@ class SelfAttention(nn.Module):
         self.w1 = torch.nn.Parameter(torch.FloatTensor(hidden, in_feature))
         self.w2 = torch.nn.Parameter(torch.FloatTensor(out_feature, hidden))
         self.reset_parameters()
-
     def reset_parameters(self):
         """
         Use xavier_normal method to initialize parameters.
         """
         nn.init.xavier_normal_(self.w1)
         nn.init.xavier_normal_(self.w2)
-
     def forward(self, X):
         """
         The forward function.
@@ -417,12 +471,10 @@ class SelfAttention(nn.Module):
         attn = torch.nn.functional.softmax(x, dim=-1)
         x = torch.matmul(attn, X)
         return x, attn
-
 class Attention(nn.Module):
     """
     Compute 'Scaled Dot Product SelfAttention
     """
-
     def forward(self, query, key, value, mask=None, dropout=None):
         """
         :param query:
@@ -434,22 +486,16 @@ class Attention(nn.Module):
         """
         scores = torch.matmul(query, key.transpose(-2, -1)) \
                  / numpy.math.sqrt(query.size(-1))
-
         if mask is not None:
             scores = scores.masked_fill(mask == 0, -1e9)
-
         p_attn = F.softmax(scores, dim=-1)
-
         if dropout is not None:
             p_attn = dropout(p_attn)
-
         return torch.matmul(p_attn, value), p_attn
-
 class MultiHeadedAttention(nn.Module):
     """
     The multi-head attention module. Take in model size and number of heads.
     """
-
     def __init__(self, h, d_model, dropout=0.1, bias=False):
         """
         :param h:
@@ -459,18 +505,14 @@ class MultiHeadedAttention(nn.Module):
         """
         super().__init__()
         assert d_model % h == 0
-
         # We assume d_v always equals d_k
         self.d_k = d_model // h
         self.h = h  # number of heads
-
         self.linear_layers = nn.ModuleList(
             [nn.Linear(d_model, d_model) for _ in range(3)])  # why 3: query, key, value
         self.output_linear = nn.Linear(d_model, d_model, bias)
         self.attention = Attention()
-
         self.dropout = nn.Dropout(p=dropout)
-
     def forward(self, query, key, value, mask=None):
         """
         :param query:
@@ -480,28 +522,23 @@ class MultiHeadedAttention(nn.Module):
         :return:
         """
         batch_size = query.size(0)
-
         # 1) Do all the linear projections in batch from d_model => h x d_k
         query, key, value = [l(x).view(batch_size, -1, self.h, self.d_k).transpose(1, 2)
                              for l, x in zip(self.linear_layers, (query, key, value))]
-
         # 2) Apply attention on all the projected vectors in batch.
         x, _ = self.attention(query, key, value, mask=mask, dropout=self.dropout)
-
         # 3) "Concat" using a view and apply a final linear.
         x = x.transpose(1, 2).contiguous().view(batch_size, -1, self.h * self.d_k)
-
         return self.output_linear(x)
-
 class Head(nn.Module):
     """
     One head for multi-headed attention.
     :return: (query, key, value)
     """
-
-    def __init__(self, hidden_size, atom_messages=False):
+    def __init__(self, args, hidden_size, atom_messages=False):
         """
         Initialization.
+        :param args: The argument.
         :param hidden_size: the dimension of hidden layer in Head.
         :param atom_messages: the MPNEncoder type.
         """
@@ -516,48 +553,49 @@ class Head(nn.Module):
         else:
             init_message_dim = bond_fdim
             attached_fea_dim = atom_fdim
-
         # Here we use the message passing network as query, key and value.
-        self.mpn_q = MPNEncoder(atom_messages=atom_messages,
+        self.mpn_q = MPNEncoder(args=args,
+                                atom_messages=atom_messages,
                                 init_message_dim=init_message_dim,
                                 attached_fea_fdim=attached_fea_dim,
                                 hidden_size=hidden_size,
-                                bias=self.bias,
-                                depth=self.depth,
-                                dropout=self.dropout,
-                                undirected=self.undirected,
-                                dense=self.dense,
+                                bias=args.bias,
+                                depth=args.depth,
+                                dropout=args.dropout,
+                                undirected=args.undirected,
+                                dense=args.dense,
                                 aggregate_to_atom=False,
                                 attach_fea=False,
                                 input_layer="none",
                                 dynamic_depth="truncnorm")
-        self.mpn_k = MPNEncoder(atom_messages=atom_messages,
+        self.mpn_k = MPNEncoder(args=args,
+                                atom_messages=atom_messages,
                                 init_message_dim=init_message_dim,
                                 attached_fea_fdim=attached_fea_dim,
                                 hidden_size=hidden_size,
-                                bias=self.bias,
-                                depth=self.depth,
-                                dropout=self.dropout,
-                                undirected=self.undirected,
-                                dense=self.dense,
+                                bias=args.bias,
+                                depth=args.depth,
+                                dropout=args.dropout,
+                                undirected=args.undirected,
+                                dense=args.dense,
                                 aggregate_to_atom=False,
                                 attach_fea=False,
                                 input_layer="none",
                                 dynamic_depth="truncnorm")
-        self.mpn_v = MPNEncoder(atom_messages=atom_messages,
+        self.mpn_v = MPNEncoder(args=args,
+                                atom_messages=atom_messages,
                                 init_message_dim=init_message_dim,
                                 attached_fea_fdim=attached_fea_dim,
                                 hidden_size=hidden_size,
-                                bias=self.bias,
-                                depth=self.depth,
-                                dropout=self.dropout,
-                                undirected=self.undirected,
-                                dense=self.dense,
+                                bias=args.bias,
+                                depth=args.depth,
+                                dropout=args.dropout,
+                                undirected=args.undirected,
+                                dense=args.dense,
                                 aggregate_to_atom=False,
                                 attach_fea=False,
                                 input_layer="none",
                                 dynamic_depth="truncnorm")
-
     def forward(self, f_atoms, f_bonds, a2b, a2a, b2a, b2revb):
         """
         The forward function.
@@ -583,7 +621,6 @@ class Head(nn.Module):
             a2attached = a2a
             b2a = b2a
             b2revb = b2revb
-
         q = self.mpn_q(init_messages=init_messages,
                        init_attached_features=init_attached_features,
                        a2nei=a2nei,
@@ -603,13 +640,12 @@ class Head(nn.Module):
                        b2a=b2a,
                        b2revb=b2revb)
         return q, k, v
-
 class MTBlock(nn.Module):
     """
     The Multi-headed attention block.
     """
-
     def __init__(self,
+                 args,
                  num_attn_head,
                  input_dim,
                  hidden_size,
@@ -620,6 +656,7 @@ class MTBlock(nn.Module):
                  cuda=True,
                  res_connection=False):
         """
+        :param args: the arguments.
         :param num_attn_head: the number of attention head.
         :param input_dim: the input dimension.
         :param hidden_size: the hidden size of the model.
@@ -631,6 +668,7 @@ class MTBlock(nn.Module):
         :param res_connection: enables the skip-connection in MTBlock.
         """
         super(MTBlock, self).__init__()
+        self.args = args
         self.atom_messages = atom_messages
         self.hidden_size = hidden_size
         self.heads = nn.ModuleList()
@@ -641,7 +679,6 @@ class MTBlock(nn.Module):
         self.dropout_layer = nn.Dropout(p=dropout)
         # Note: elementwise_affine has to be consistent with the pre-training phase
         self.layernorm = nn.LayerNorm(self.hidden_size, elementwise_affine=True)
-
         self.W_i = nn.Linear(self.input_dim, self.hidden_size, bias=bias)
         self.attn = MultiHeadedAttention(h=num_attn_head,
                                          d_model=self.hidden_size,
@@ -650,8 +687,7 @@ class MTBlock(nn.Module):
         self.W_o = nn.Linear(self.hidden_size * num_attn_head, self.hidden_size, bias=bias)
         self.sublayer = SublayerConnection(self.hidden_size, dropout)
         for _ in range(num_attn_head):
-            self.heads.append(Head(hidden_size=hidden_size, atom_messages=atom_messages))
-
+            self.heads.append(Head(args, hidden_size=hidden_size, atom_messages=atom_messages))
     def forward(self, batch, features_batch=None):
         """
         :param batch: the graph batch generated by GroverCollator.
@@ -659,18 +695,15 @@ class MTBlock(nn.Module):
         :return:
         """
         f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a = batch
-
         if self.atom_messages:
             # Only add linear transformation in the input feature.
             if f_atoms.shape[1] != self.hidden_size:
                 f_atoms = self.W_i(f_atoms)
                 f_atoms = self.dropout_layer(self.layernorm(self.act_func(f_atoms)))
-
         else:  # bond messages
             if f_bonds.shape[1] != self.hidden_size:
                 f_bonds = self.W_i(f_bonds)
                 f_bonds = self.dropout_layer(self.layernorm(self.act_func(f_bonds)))
-
         queries = []
         keys = []
         values = []
@@ -682,11 +715,9 @@ class MTBlock(nn.Module):
         queries = torch.cat(queries, dim=1)
         keys = torch.cat(keys, dim=1)
         values = torch.cat(values, dim=1)
-
         x_out = self.attn(queries, keys, values)  # multi-headed attention
         x_out = x_out.view(x_out.shape[0], -1)
         x_out = self.W_o(x_out)
-
         x_in = None
         # support no residual connection in MTBlock.
         if self.res_connection:
@@ -694,22 +725,18 @@ class MTBlock(nn.Module):
                 x_in = f_atoms
             else:
                 x_in = f_bonds
-
         if self.atom_messages:
             f_atoms = self.sublayer(x_in, x_out)
         else:
             f_bonds = self.sublayer(x_in, x_out)
-
         batch = f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a
         features_batch = features_batch
         return batch, features_batch
-
 class SublayerConnection(nn.Module):
     """
     A residual connection followed by a layer norm.
     Note for code simplicity the norm is first as opposed to last.
     """
-
     def __init__(self, size, dropout):
         """Initialization.
         :param size: the input dimension.
@@ -718,16 +745,15 @@ class SublayerConnection(nn.Module):
         super(SublayerConnection, self).__init__()
         self.norm = LayerNorm(size, elementwise_affine=True)
         self.dropout = nn.Dropout(dropout)
-
     def forward(self, inputs, outputs):
         """Apply residual connection to any sublayer with the same size."""
         # return x + self.dropout(self.norm(x))
         if inputs is None:
             return self.dropout(self.norm(outputs))
         return inputs + self.dropout(self.norm(outputs))
-
 class GTransEncoder(nn.Module):
     def __init__(self,
+                 args,
                  hidden_size,
                  edge_fdim,
                  node_fdim,
@@ -740,6 +766,7 @@ class GTransEncoder(nn.Module):
                  cuda=True,
                  res_connection=False):
         """
+        :param args: the arguments.
         :param hidden_size: the hidden size of the model.
         :param edge_fdim: the dimension of additional feature for edge/bond.
         :param node_fdim: the dimension of additional feature for node/atom.
@@ -761,13 +788,11 @@ class GTransEncoder(nn.Module):
         :param res_connection: enables the skip-connection in MTBlock.
         """
         super(GTransEncoder, self).__init__()
-
         # For the compatibility issue.
         if atom_emb_output is False:
             atom_emb_output = None
         if atom_emb_output is True:
             atom_emb_output = 'atom'
-
         self.hidden_size = hidden_size
         self.dropout = dropout
         self.activation = activation
@@ -776,17 +801,16 @@ class GTransEncoder(nn.Module):
         self.res_connection = res_connection
         self.edge_blocks = nn.ModuleList()
         self.node_blocks = nn.ModuleList()
-
         edge_input_dim = edge_fdim
         node_input_dim = node_fdim
         edge_input_dim_i = edge_input_dim
         node_input_dim_i = node_input_dim
-
         for i in range(num_mt_block):
             if i != 0:
                 edge_input_dim_i = self.hidden_size
                 node_input_dim_i = self.hidden_size
-            self.edge_blocks.append(MTBlock(num_attn_head=num_attn_head,
+            self.edge_blocks.append(MTBlock(args=args,
+                                            num_attn_head=num_attn_head,
                                             input_dim=edge_input_dim_i,
                                             hidden_size=self.hidden_size,
                                             activation=activation,
@@ -794,7 +818,8 @@ class GTransEncoder(nn.Module):
                                             bias=self.bias,
                                             atom_messages=False,
                                             cuda=cuda))
-            self.node_blocks.append(MTBlock(num_attn_head=num_attn_head,
+            self.node_blocks.append(MTBlock(args=args,
+                                            num_attn_head=num_attn_head,
                                             input_dim=node_input_dim_i,
                                             hidden_size=self.hidden_size,
                                             activation=activation,
@@ -802,43 +827,34 @@ class GTransEncoder(nn.Module):
                                             bias=self.bias,
                                             atom_messages=True,
                                             cuda=cuda))
-
         self.atom_emb_output = atom_emb_output
-
         self.ffn_atom_from_atom = PositionwiseFeedForward(self.hidden_size + node_fdim,
                                                           self.hidden_size * 4,
                                                           activation=self.activation,
                                                           dropout=self.dropout,
                                                           d_out=self.hidden_size)
-
         self.ffn_atom_from_bond = PositionwiseFeedForward(self.hidden_size + node_fdim,
                                                           self.hidden_size * 4,
                                                           activation=self.activation,
                                                           dropout=self.dropout,
                                                           d_out=self.hidden_size)
-
         self.ffn_bond_from_atom = PositionwiseFeedForward(self.hidden_size + edge_fdim,
                                                           self.hidden_size * 4,
                                                           activation=self.activation,
                                                           dropout=self.dropout,
                                                           d_out=self.hidden_size)
-
         self.ffn_bond_from_bond = PositionwiseFeedForward(self.hidden_size + edge_fdim,
                                                           self.hidden_size * 4,
                                                           activation=self.activation,
                                                           dropout=self.dropout,
                                                           d_out=self.hidden_size)
-
         self.atom_from_atom_sublayer = SublayerConnection(size=self.hidden_size, dropout=self.dropout)
         self.atom_from_bond_sublayer = SublayerConnection(size=self.hidden_size, dropout=self.dropout)
         self.bond_from_atom_sublayer = SublayerConnection(size=self.hidden_size, dropout=self.dropout)
         self.bond_from_bond_sublayer = SublayerConnection(size=self.hidden_size, dropout=self.dropout)
-
         self.act_func_node = get_activation_function(self.activation)
         self.act_func_edge = get_activation_function(self.activation)
-
-        self.dropout_layer = nn.Dropout(p=self.dropout)
-
+        self.dropout_layer = nn.Dropout(p=args.dropout)
     def pointwise_feed_forward_to_atom_embedding(self, emb_output, atom_fea, index, ffn_layer):
         """
         The point-wise feed forward and long-range residual connection for atom view.
@@ -852,7 +868,6 @@ class GTransEncoder(nn.Module):
         aggr_output = select_neighbor_and_aggregate(emb_output, index)
         aggr_outputx = torch.cat([atom_fea, aggr_output], dim=1)
         return ffn_layer(aggr_outputx), aggr_output
-
     def pointwise_feed_forward_to_bond_embedding(self, emb_output, bond_fea, a2nei, b2revb, ffn_layer):
         """
         The point-wise feed forward and long-range residual connection for bond view.
@@ -868,7 +883,6 @@ class GTransEncoder(nn.Module):
         aggr_output = self.remove_rev_bond_message(emb_output, aggr_output, b2revb)
         aggr_outputx = torch.cat([bond_fea, aggr_output], dim=1)
         return ffn_layer(aggr_outputx), aggr_output
-
     @staticmethod
     def remove_rev_bond_message(orginal_message, aggr_message, b2revb):
         """
@@ -879,7 +893,6 @@ class GTransEncoder(nn.Module):
         """
         rev_message = orginal_message[b2revb]
         return aggr_message - rev_message
-
     def atom_bond_transform(self,
                             to_atom=True,  # False: to bond
                             atomwise_input=None,
@@ -904,7 +917,6 @@ class GTransEncoder(nn.Module):
         :param b2revb: mapping from bond index to the index of the reverse bond.
         :return:
         """
-
         if to_atom:
             # atom input to atom output
             atomwise_input, _ = self.pointwise_feed_forward_to_atom_embedding(atomwise_input, original_f_atoms, a2a,
@@ -916,7 +928,6 @@ class GTransEncoder(nn.Module):
             bond_in_atom_out = self.atom_from_bond_sublayer(None, bondwise_input)
             return atom_in_atom_out, bond_in_atom_out
         else:  # to bond embeddings
-
             # atom input to bond output
             atom_list_for_bond = torch.cat([b2a.unsqueeze(dim=1), a2a[b2a]], dim=1)
             atomwise_input, _ = self.pointwise_feed_forward_to_bond_embedding(atomwise_input, original_f_bonds,
@@ -930,32 +941,25 @@ class GTransEncoder(nn.Module):
                                                                               b2revb, self.ffn_bond_from_bond)
             bond_in_bond_out = self.bond_from_bond_sublayer(None, bondwise_input)
             return atom_in_bond_out, bond_in_bond_out
-
     def forward(self, batch, features_batch = None):
         f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a = batch
         if self.cuda or next(self.parameters()).is_cuda:
             f_atoms, f_bonds, a2b, b2a, b2revb = f_atoms.cuda(), f_bonds.cuda(), a2b.cuda(), b2a.cuda(), b2revb.cuda()
             a2a = a2a.cuda()
-
         node_batch = f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a
         edge_batch = f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a
-
         # opt pointwise_feed_forward
         original_f_atoms, original_f_bonds = f_atoms, f_bonds
-
         # Note: features_batch is not used here.
         for nb in self.node_blocks:  # atom messages. Multi-headed attention
             node_batch, features_batch = nb(node_batch, features_batch)
         for eb in self.edge_blocks:  # bond messages. Multi-headed attention
             edge_batch, features_batch = eb(edge_batch, features_batch)
-
         atom_output, _, _, _, _, _, _, _ = node_batch  # atom hidden states
         _, bond_output, _, _, _, _, _, _ = edge_batch  # bond hidden states
-
         if self.atom_emb_output is None:
             # output the embedding from multi-head attention directly.
             return atom_output, bond_output
-
         if self.atom_emb_output == 'atom':
             return self.atom_bond_transform(to_atom=True,  # False: to bond
                                             atomwise_input=atom_output,
@@ -986,7 +990,6 @@ class GTransEncoder(nn.Module):
                                                        a2b=a2b,
                                                        b2a=b2a,
                                                        b2revb=b2revb)
-
             bond_embeddings = self.atom_bond_transform(to_atom=False,  # False: to bond
                                                        atomwise_input=atom_output,
                                                        bondwise_input=bond_output,
@@ -999,12 +1002,9 @@ class GTransEncoder(nn.Module):
             # Notice: need to be consistent with output format of DualMPNN encoder
             return ((atom_embeddings[0], bond_embeddings[0]),
                     (atom_embeddings[1], bond_embeddings[1]))
-
-# Taken from GROVER nn_utils
 def get_activation_function(activation: str) -> nn.Module:
     """
     Gets an activation function module given the name of the activation.
-
     :param activation: The name of the activation function.
     :return: The activation function module.
     """
@@ -1024,11 +1024,9 @@ def get_activation_function(activation: str) -> nn.Module:
         return lambda x: x
     else:
         raise ValueError(f'Activation "{activation}" not supported.')
-
 def index_select_nd(source: torch.Tensor, index: torch.Tensor) -> torch.Tensor:
     """
     Selects the message features from source corresponding to the atom or bond indices in index.
-
     :param source: A tensor of shape (num_bonds, hidden_size) containing message features.
     :param index: A tensor of shape (num_atoms/num_bonds, max_num_bonds) containing the atom or bond
     indices to select from source.
@@ -1038,12 +1036,9 @@ def index_select_nd(source: torch.Tensor, index: torch.Tensor) -> torch.Tensor:
     index_size = index.size()  # (num_atoms/num_bonds, max_num_bonds)
     suffix_dim = source.size()[1:]  # (hidden_size,)
     final_size = index_size + suffix_dim  # (num_atoms/num_bonds, max_num_bonds, hidden_size)
-
     target = source.index_select(dim=0, index=index.view(-1))  # (num_atoms/num_bonds * max_num_bonds, hidden_size)
     target = target.view(final_size)  # (num_atoms/num_bonds, max_num_bonds, hidden_size)
-
     return target
-
 def select_neighbor_and_aggregate(feature, index):
     """
     The basic operation in message passing.
@@ -1055,14 +1050,10 @@ def select_neighbor_and_aggregate(feature, index):
     """
     neighbor = index_select_nd(feature, index)
     return neighbor.sum(dim=1)
-
-# From GROVER layers.py
 class PositionwiseFeedForward(nn.Module):
     """Implements FFN equation."""
-
     def __init__(self, d_model, d_ff, activation="PReLU", dropout=0.1, d_out=None):
         """Initialization.
-
         :param d_model: the input dimension.
         :param d_ff: the hidden dimension.
         :param activation: the activation function.
@@ -1077,7 +1068,6 @@ class PositionwiseFeedForward(nn.Module):
         self.W_2 = nn.Linear(d_ff, d_out)
         self.dropout = nn.Dropout(dropout)
         self.act_func = get_activation_function(activation)
-
     def forward(self, x):
         """
         The forward function
@@ -1085,11 +1075,9 @@ class PositionwiseFeedForward(nn.Module):
         :return:
         """
         return self.W_2(self.dropout(self.act_func(self.W_1(x))))
-
 class MPNEncoder(nn.Module):
     """A message passing neural network for encoding a molecule."""
-
-    def __init__(self,
+    def __init__(self, args: Namespace,
                  atom_messages: bool,
                  init_message_dim: int,
                  attached_fea_fdim: int,
@@ -1106,6 +1094,7 @@ class MPNEncoder(nn.Module):
                  ):
         """
         Initializes the MPNEncoder.
+        :param args: the arguments.
         :param atom_messages: enables atom_messages or not.
         :param init_message_dim:  the initial input message dimension.
         :param attached_fea_fdim:  the attached feature dimension.
@@ -1133,26 +1122,20 @@ class MPNEncoder(nn.Module):
         self.aggreate_to_atom = aggregate_to_atom
         self.attached_fea = attach_fea
         self.dynamic_depth = dynamic_depth
-
         # Dropout
         self.dropout_layer = nn.Dropout(p=self.dropout)
-
         # Activation
-        self.act_func = get_activation_function(self.activation)
-
+        self.act_func = get_activation_function(args.activation)
         # Input
         if self.input_layer == "fc":
             input_dim = self.init_message_dim
             self.W_i = nn.Linear(input_dim, self.hidden_size, bias=self.bias)
-
         if self.attached_fea:
             w_h_input_size = self.hidden_size + self.attached_fea_fdim
         else:
             w_h_input_size = self.hidden_size
-
         # Shared weight matrix across depths (default)
         self.W_h = nn.Linear(w_h_input_size, self.hidden_size, bias=self.bias)
-
     def forward(self,
                 init_messages,
                 init_attached_features,
@@ -1175,7 +1158,6 @@ class MPNEncoder(nn.Module):
         :return: if aggreate_to_atom or self.atom_messages, return num_atoms x hidden.
         Otherwise, return num_bonds x hidden
         """
-
         # Input
         if self.input_layer == 'fc':
             input = self.W_i(init_messages)  # num_bonds x hidden_size # f_bond
@@ -1183,9 +1165,7 @@ class MPNEncoder(nn.Module):
         elif self.input_layer == 'none':
             input = init_messages
             message = input
-
         attached_fea = init_attached_features  # f_atom / f_bond
-
         # dynamic depth
         # uniform sampling from depth - 1 to depth + 1
         # only works in training.
@@ -1203,19 +1183,18 @@ class MPNEncoder(nn.Module):
                 ndepth = int(X.rvs(1))
         else:
             ndepth = self.depth
-
         # Message passing
         for _ in range(ndepth - 1):
             if self.undirected:
                 # two directions should be the same
-                message = (message + message[b2revb]) / 2
-
+                message = (message + message[b2revb]) / 2 # TODO: figure out error with message being out of bounds (using undirected)
+            print("a2nei: ", a2nei.shape)
+            print("message: ", message.shape)
             nei_message = select_neighbor_and_aggregate(message, a2nei)
             a_message = nei_message
             if self.attached_fea:
                 attached_nei_fea = select_neighbor_and_aggregate(attached_fea, a2attached)
                 a_message = torch.cat((nei_message, attached_nei_fea), dim=1)
-
             if not self.atom_messages:
                 rev_message = message[b2revb]
                 if self.attached_fea:
@@ -1225,9 +1204,7 @@ class MPNEncoder(nn.Module):
                 message = a_message[b2a] - rev_message  # num_bonds x hidden
             else:
                 message = a_message
-
             message = self.W_h(message)
-
             # BUG here, by default MPNEncoder use the dense connection in the message passing step.
             # The correct form should if not self.dense
             if self.dense:
@@ -1235,7 +1212,5 @@ class MPNEncoder(nn.Module):
             else:
                 message = self.act_func(input + message)
             message = self.dropout_layer(message)  # num_bonds x hidden
-
         output = message
-
         return output  # num_atoms x hidden

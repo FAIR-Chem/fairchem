@@ -11,11 +11,12 @@ model:
   activation: "PReLU"
   num_mt_block:  1
   num_attn_head: 4
-  atom_emb_output: False
+  embedding_output_type: False
   bias: False
-  cuda: True
+  cuda: False # Temp for training on my laptop
   res_connection: False
   ffn_hidden_size: 200 # From GROVER finetune settings
+  undirected: True
 
 # Taken from DimeNet++
 optim:
