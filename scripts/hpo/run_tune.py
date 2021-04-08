@@ -61,6 +61,9 @@ def main():
         brackets=1,
     )
     # ray init
+    # for debug
+    # ray.init(local_mode=True)
+    # for slurm cluster
     ray.init(
         address="auto",
         _node_ip_address=os.environ["ip_head"].split(":")[0],
