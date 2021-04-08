@@ -24,7 +24,7 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.core.surface import SlabGenerator, get_symmetrically_distinct_miller_indices
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.analysis.local_env import VoronoiNN
-from base_atoms.pkls import BULK_PKL, ADSORBATE_PKL
+from .base_atoms.pkls import BULK_PKL, ADSORBATE_PKL
 from .constants import MAX_MILLER
 import sys
 import time
