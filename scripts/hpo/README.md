@@ -18,3 +18,8 @@ Slurm scripts taken from https://github.com/NERSC/slurm-ray-cluster
 
 For usage with other cluster managers or cloud resources please refer to the
 [Distributed Ray Docs](https://docs.ray.io/en/master/cluster/index.html#)
+
+## Testing/Debugging Ray Tune
+
+- In `run_tune.py` set `ray.init(local_mode=True)`
+- run `python path_to/run_tune.py --mode train --config-yml path_to/config --run_dir path_to_run_dir`

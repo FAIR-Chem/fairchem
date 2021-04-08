@@ -36,7 +36,8 @@ def ocp_trainable(config, checkpoint_dir=None):
     trainer.train()
 
 
-# this section defines all the Ray Tune run parameters
+# this section defines the hyperparameters to tune and all the Ray Tune settings
+# current params/settings are an example for ForceNet
 def main():
     # parse config
     parser = flags.get_parser()
