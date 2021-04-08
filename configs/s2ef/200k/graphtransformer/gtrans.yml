@@ -5,7 +5,7 @@ model:
   name: graphtransformer
   cutoff: 6.0
   regress_forces: True
-  use_pbc: True
+  use_pbc: False
   hidden_size: 100
   dropout: 0.1
   activation: "PReLU"
@@ -16,7 +16,7 @@ model:
   cuda: False # Temp for training on my laptop
   res_connection: False
   ffn_hidden_size: 200 # From GROVER finetune settings
-  undirected: True
+  undirected: False # Don't want the model to behave differently depending on if it's undirected or not
 
 # Taken from DimeNet++
 optim:

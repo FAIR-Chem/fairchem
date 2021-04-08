@@ -14,6 +14,7 @@ from torch import nn as nn
 from torch.nn import LayerNorm, functional as F
 from torch_geometric.nn import radius_graph
 from torch_geometric.nn import MessagePassing
+from torch_geometric.nn.models.schnet import GaussianSmearing
 from torch_scatter import scatter
 
 from ocpmodels.models.base import BaseModel
@@ -32,7 +33,7 @@ class GraphTransformer(BaseModel):
 
     Args:
         num_atoms (int): Unused argument
-        bond_feat_dim (int): Bond feature dimension
+        bond_feat_dim (int): Unused argument
         num_targets (int): Number of targets to predict.
         use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
             (default: :obj:`True`)
@@ -43,6 +44,8 @@ class GraphTransformer(BaseModel):
             (default: :obj:`False`)
         cutoff (float, optional): Cutoff distance for interatomic interactions.
             (default: :obj:`10.0`)
+        num_gaussians(int, optional): Number of gaussian distributions for distance expansion (from SchNet)
+            (Default: :obj:`50`)
         hidden_size (int, optional): Dimensionality of hidden layers. The actual dimension is hidden_size * 100.
             (default: :obj:`128`)
         bias (bool, optional): If set to :obj:`True` add bias to linear layers.
@@ -85,12 +88,13 @@ class GraphTransformer(BaseModel):
     def __init__(
         self,
         num_atoms,              # OCP: Number of atoms (not used)
-        bond_feat_dim,          # OCP: Bond feature dimension
+        bond_feat_dim,          # OCP: Bond feature dimension (not used)
         num_targets,            # OCP: Number of targets to predict
-        use_pbc=False,           # OCP: use periodic boundary conditions
+        use_pbc=True,           # OCP: use periodic boundary conditions
         regress_forces=True,    # OCP: Regress forces as well as energy
         otf_graph=False,        # OCP: Use on-the-fly graph calculation
         cutoff=10.0,            # OCP: cutoff distance (angstroms)
+        num_gaussians=50,       # OCP: number of gaussian distributions to expand distances
         hidden_size=3, # Dimensionality of hidden layers. The actual dimension is hidden_size * 100.
         bias=False, # Whether to add bias to linear layers
         depth=3, # Number of message passing steps
@@ -113,12 +117,12 @@ class GraphTransformer(BaseModel):
     ):
         # OCP parameters
         self.num_atoms = num_atoms
-        self.bond_feat_dim = bond_feat_dim
         self.num_targets = num_targets
         self.use_pbc = use_pbc
         self.regress_forces = regress_forces
         self.otf_graph = otf_graph
         self.cutoff = cutoff
+        self.num_gaussians = num_gaussians
 
         # GraphTransformer parameters
         args = Namespace()
@@ -146,10 +150,11 @@ class GraphTransformer(BaseModel):
         self.args = args # Hack to call in forward pass
 
         super(GraphTransformer, self).__init__()
+        self.distance_expansion = GaussianSmearing(0.0, cutoff, self.num_gaussians)
 
         self.encoders = GTransEncoder(args,
                                       hidden_size=args.hidden_size,
-                                      edge_fdim=bond_feat_dim,
+                                      edge_fdim=self.num_gaussians,
                                       node_fdim=4, # node features are of dimension 4: atomic number, pos_x, pos_y, pos_z
                                       dropout=args.dropout,
                                       activation=args.activation,
@@ -245,13 +250,14 @@ class GraphTransformer(BaseModel):
             edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
             j, i = edge_index
             dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
-        # print("shape of dist: ", dist.shape)
-        # print("data: ", data)
-        # data.edge_attr = self.distance_expansion(dist) # TODO: Figure out distance expansion to get edge attributes
-        data.edge_attr = dist
 
+        data.edge_attr = self.distance_expansion(dist) # Features will be of dimensions [num_edges, num_gaussians]
+
+        print("Undirected?: ", args.undirected)
         # Convert to format from PyTorch Geometric to explicit mappings format used by GROVER
-        converted_input = convert_input(data)
+        converted_input = convert_input(args, data)
+
+        print("Undirected?: ", args.undirected)
 
         # GTransEncoder
         output = self.encoders(converted_input)
@@ -348,7 +354,7 @@ class GraphTransformer(BaseModel):
         return sum(p.numel() for p in self.parameters())
 
 # Helper function to convert from PyTorch Geometric format to explicit mappings used by GROVER:
-def convert_input(data):
+def convert_input(args, data):
     """
         :param data: data as PyTorch geometric object
         :param f_atoms: the atom features, num_atoms * atom_dim
@@ -366,12 +372,6 @@ def convert_input(data):
     # Per edge features (calculated by atomic distances in model forward pass)
     f_bonds = data.edge_attr
 
-    print("num_atoms: ", data.natoms)
-    print("type of natoms: ", type(data.natoms))
-    print("len of data batch:", len(data.batch))
-    print("type of data batch:", type(data.batch))
-    print("Data: ", data)
-
     # Lists of tuples indicating the start and end of each molecule (system/batch in ocp)
     a_scope = []
     b_scope = []
@@ -381,12 +381,16 @@ def convert_input(data):
         # Returns a tuple of the indices for this given value i
         indices = ((data.batch == i).nonzero(as_tuple=True)[0])
         a_scope.append((int(indices[0]), int(indices[-1]))) # Append the start and end index for this value i
-    print("a_scope: ", a_scope)
 
-    # TODO: Calculate b_scope somehow, batch only has data about which atoms are in a given system
-    # Can go from atom to bond and add all the bonds as that system, but there's no guarantee that they will be in order
+    # Data.neighbors shows which edges are in which system (data.neighbors[0] is an int, first n edges are in system zero)
+    for i in range(len(data.neighbors)):
+        if(i == 0):
+            start_index = 0
+        system_size = int(data.neighbors[i]) # Number of edges in this system
+        end_index = start_index + system_size - 1 # End index is 1 before the start of the next system
+        b_scope.append((start_index, end_index))
+        start_index = start_index + system_size # Update start index to move to the next system
 
-    # bond_energy = bond_ffn_energy.sum(dim=0) if batch is None else scatter(bond_ffn_energy, batch, dim=0)
     num_atoms_total = int(torch.sum(data.natoms))
     a2a = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append neighbors for a given atom
     a2b = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append edges for a given atom
@@ -406,13 +410,8 @@ def convert_input(data):
             rev_edges[key] = []  # Declare it as a list (so we can keep track of the edge numbers)
         rev_edges[key].append(i)  # Append the edge number to the list
 
-    # Iterate through and set b2revb
-    # print("rev_edges.items(): ", rev_edges.items())
+    # Iterate through and set b2revb with reverse bonds
     for atoms, edges in rev_edges.items():
-        # print("atom: ", atoms)
-        # print("edges: ", edges)
-        # for edge in edges:
-        #     print("atom: "+str(b2a[edge]) + ", edge: " + str(edge))
         if(len(edges) == 2):
             b2revb[edges[0]] = edges[1]
             b2revb[edges[1]] = edges[0]
@@ -421,6 +420,8 @@ def convert_input(data):
             b2revb[edges[2]] = edges[0]
             b2revb[edges[1]] = edges[3]
             b2revb[edges[3]] = edges[1]
+        elif(len(edges) == 1):
+            args.undirected = False
 
     # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
     # Trim length to max number of edges seen in the data (should be capped by 50 but not always in practice)
@@ -431,7 +432,7 @@ def convert_input(data):
     a2a = torch.tensor([i + [-1] * (a2a_pad - len(i)) for i in a2a])
     a2b = torch.tensor([i + [-1] * (a2b_pad - len(i)) for i in a2b])
 
-    b2revb = b2revb.type(torch.LongTensor) # Fix for IndexError with undirected=True #TODO: check if this is really necessary
+    b2revb = b2revb.type(torch.LongTensor) # Fix for IndexError with undirected=True, can't index with tensor otherwise
     batch = (f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a)
     return batch
 
@@ -454,12 +455,14 @@ class SelfAttention(nn.Module):
         self.w1 = torch.nn.Parameter(torch.FloatTensor(hidden, in_feature))
         self.w2 = torch.nn.Parameter(torch.FloatTensor(out_feature, hidden))
         self.reset_parameters()
+
     def reset_parameters(self):
         """
         Use xavier_normal method to initialize parameters.
         """
         nn.init.xavier_normal_(self.w1)
         nn.init.xavier_normal_(self.w2)
+
     def forward(self, X):
         """
         The forward function.
@@ -471,6 +474,7 @@ class SelfAttention(nn.Module):
         attn = torch.nn.functional.softmax(x, dim=-1)
         x = torch.matmul(attn, X)
         return x, attn
+
 class Attention(nn.Module):
     """
     Compute 'Scaled Dot Product SelfAttention
@@ -492,6 +496,7 @@ class Attention(nn.Module):
         if dropout is not None:
             p_attn = dropout(p_attn)
         return torch.matmul(p_attn, value), p_attn
+
 class MultiHeadedAttention(nn.Module):
     """
     The multi-head attention module. Take in model size and number of heads.
@@ -513,6 +518,7 @@ class MultiHeadedAttention(nn.Module):
         self.output_linear = nn.Linear(d_model, d_model, bias)
         self.attention = Attention()
         self.dropout = nn.Dropout(p=dropout)
+
     def forward(self, query, key, value, mask=None):
         """
         :param query:
@@ -530,6 +536,7 @@ class MultiHeadedAttention(nn.Module):
         # 3) "Concat" using a view and apply a final linear.
         x = x.transpose(1, 2).contiguous().view(batch_size, -1, self.h * self.d_k)
         return self.output_linear(x)
+
 class Head(nn.Module):
     """
     One head for multi-headed attention.
@@ -596,6 +603,7 @@ class Head(nn.Module):
                                 attach_fea=False,
                                 input_layer="none",
                                 dynamic_depth="truncnorm")
+
     def forward(self, f_atoms, f_bonds, a2b, a2a, b2a, b2revb):
         """
         The forward function.
@@ -640,6 +648,7 @@ class Head(nn.Module):
                        b2a=b2a,
                        b2revb=b2revb)
         return q, k, v
+
 class MTBlock(nn.Module):
     """
     The Multi-headed attention block.
@@ -688,6 +697,7 @@ class MTBlock(nn.Module):
         self.sublayer = SublayerConnection(self.hidden_size, dropout)
         for _ in range(num_attn_head):
             self.heads.append(Head(args, hidden_size=hidden_size, atom_messages=atom_messages))
+
     def forward(self, batch, features_batch=None):
         """
         :param batch: the graph batch generated by GroverCollator.
@@ -732,6 +742,7 @@ class MTBlock(nn.Module):
         batch = f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a
         features_batch = features_batch
         return batch, features_batch
+
 class SublayerConnection(nn.Module):
     """
     A residual connection followed by a layer norm.
@@ -751,6 +762,7 @@ class SublayerConnection(nn.Module):
         if inputs is None:
             return self.dropout(self.norm(outputs))
         return inputs + self.dropout(self.norm(outputs))
+
 class GTransEncoder(nn.Module):
     def __init__(self,
                  args,
@@ -855,6 +867,7 @@ class GTransEncoder(nn.Module):
         self.act_func_node = get_activation_function(self.activation)
         self.act_func_edge = get_activation_function(self.activation)
         self.dropout_layer = nn.Dropout(p=args.dropout)
+
     def pointwise_feed_forward_to_atom_embedding(self, emb_output, atom_fea, index, ffn_layer):
         """
         The point-wise feed forward and long-range residual connection for atom view.
@@ -868,6 +881,7 @@ class GTransEncoder(nn.Module):
         aggr_output = select_neighbor_and_aggregate(emb_output, index)
         aggr_outputx = torch.cat([atom_fea, aggr_output], dim=1)
         return ffn_layer(aggr_outputx), aggr_output
+
     def pointwise_feed_forward_to_bond_embedding(self, emb_output, bond_fea, a2nei, b2revb, ffn_layer):
         """
         The point-wise feed forward and long-range residual connection for bond view.
@@ -883,6 +897,7 @@ class GTransEncoder(nn.Module):
         aggr_output = self.remove_rev_bond_message(emb_output, aggr_output, b2revb)
         aggr_outputx = torch.cat([bond_fea, aggr_output], dim=1)
         return ffn_layer(aggr_outputx), aggr_output
+
     @staticmethod
     def remove_rev_bond_message(orginal_message, aggr_message, b2revb):
         """
@@ -893,6 +908,7 @@ class GTransEncoder(nn.Module):
         """
         rev_message = orginal_message[b2revb]
         return aggr_message - rev_message
+
     def atom_bond_transform(self,
                             to_atom=True,  # False: to bond
                             atomwise_input=None,
@@ -941,6 +957,7 @@ class GTransEncoder(nn.Module):
                                                                               b2revb, self.ffn_bond_from_bond)
             bond_in_bond_out = self.bond_from_bond_sublayer(None, bondwise_input)
             return atom_in_bond_out, bond_in_bond_out
+
     def forward(self, batch, features_batch = None):
         f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a = batch
         if self.cuda or next(self.parameters()).is_cuda:
@@ -1002,6 +1019,7 @@ class GTransEncoder(nn.Module):
             # Notice: need to be consistent with output format of DualMPNN encoder
             return ((atom_embeddings[0], bond_embeddings[0]),
                     (atom_embeddings[1], bond_embeddings[1]))
+
 def get_activation_function(activation: str) -> nn.Module:
     """
     Gets an activation function module given the name of the activation.
@@ -1024,6 +1042,7 @@ def get_activation_function(activation: str) -> nn.Module:
         return lambda x: x
     else:
         raise ValueError(f'Activation "{activation}" not supported.')
+
 def index_select_nd(source: torch.Tensor, index: torch.Tensor) -> torch.Tensor:
     """
     Selects the message features from source corresponding to the atom or bond indices in index.
@@ -1039,6 +1058,7 @@ def index_select_nd(source: torch.Tensor, index: torch.Tensor) -> torch.Tensor:
     target = source.index_select(dim=0, index=index.view(-1))  # (num_atoms/num_bonds * max_num_bonds, hidden_size)
     target = target.view(final_size)  # (num_atoms/num_bonds, max_num_bonds, hidden_size)
     return target
+
 def select_neighbor_and_aggregate(feature, index):
     """
     The basic operation in message passing.
@@ -1050,6 +1070,7 @@ def select_neighbor_and_aggregate(feature, index):
     """
     neighbor = index_select_nd(feature, index)
     return neighbor.sum(dim=1)
+
 class PositionwiseFeedForward(nn.Module):
     """Implements FFN equation."""
     def __init__(self, d_model, d_ff, activation="PReLU", dropout=0.1, d_out=None):
@@ -1075,6 +1096,7 @@ class PositionwiseFeedForward(nn.Module):
         :return:
         """
         return self.W_2(self.dropout(self.act_func(self.W_1(x))))
+
 class MPNEncoder(nn.Module):
     """A message passing neural network for encoding a molecule."""
     def __init__(self, args: Namespace,
@@ -1136,6 +1158,7 @@ class MPNEncoder(nn.Module):
             w_h_input_size = self.hidden_size
         # Shared weight matrix across depths (default)
         self.W_h = nn.Linear(w_h_input_size, self.hidden_size, bias=self.bias)
+
     def forward(self,
                 init_messages,
                 init_attached_features,
@@ -1185,12 +1208,12 @@ class MPNEncoder(nn.Module):
             ndepth = self.depth
         # Message passing
         for _ in range(ndepth - 1):
+            print("a2nei: ", a2nei.shape)
+            print("message: ", message.shape)
             if self.undirected:
                 # two directions should be the same
                 message = (message + message[b2revb]) / 2 # TODO: figure out error with message being out of bounds (using undirected)
-            print("a2nei: ", a2nei.shape)
-            print("message: ", message.shape)
-            nei_message = select_neighbor_and_aggregate(message, a2nei)
+            nei_message = select_neighbor_and_aggregate(message, a2nei) # TODO: figure out index out of range in self error (index_select_nd line 1071 -> 1058)
             a_message = nei_message
             if self.attached_fea:
                 attached_nei_fea = select_neighbor_and_aggregate(attached_fea, a2attached)
