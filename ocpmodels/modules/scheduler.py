@@ -16,11 +16,14 @@ class LRScheduler:
             scheduler_lambda_fn = lambda x: warmup_lr_lambda(x, self.config)
             self.config["lr_lambda"] = scheduler_lambda_fn
 
-        self.scheduler = getattr(lr_scheduler, self.scheduler_type)
-        scheduler_args = self.filter_kwargs(config)
-        self.scheduler = self.scheduler(optimizer, **scheduler_args)
+        if self.scheduler_type != "Null":
+            self.scheduler = getattr(lr_scheduler, self.scheduler_type)
+            scheduler_args = self.filter_kwargs(config)
+            self.scheduler = self.scheduler(optimizer, **scheduler_args)
 
     def step(self, metrics=None, epoch=None):
+        if self.scheduler_type == "Null":
+            return
         if self.scheduler_type == "ReduceLROnPlateau":
             if not metrics:
                 raise Exception(

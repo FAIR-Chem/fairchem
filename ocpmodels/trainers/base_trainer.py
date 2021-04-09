@@ -376,7 +376,7 @@ class BaseTrainer:
             self.model.load_state_dict(checkpoint["state_dict"])
 
         self.optimizer.load_state_dict(checkpoint["optimizer"])
-        if "scheduler" in checkpoint:
+        if checkpoint["scheduler"]:
             self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
 
         for key in checkpoint["normalizers"]:
@@ -419,7 +419,9 @@ class BaseTrainer:
                     "step": step,
                     "state_dict": self.model.state_dict(),
                     "optimizer": self.optimizer.state_dict(),
-                    "scheduler": self.scheduler.scheduler.state_dict(),
+                    "scheduler": self.scheduler.scheduler.state_dict()
+                    if self.scheduler.scheduler_type != "Null"
+                    else None,
                     "normalizers": {
                         key: value.state_dict()
                         for key, value in self.normalizers.items()
