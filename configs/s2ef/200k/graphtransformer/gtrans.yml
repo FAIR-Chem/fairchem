@@ -13,7 +13,7 @@ model:
   num_attn_head: 4
   embedding_output_type: "atom"
   bias: False
-  cuda: False # Temp for training on my laptop
+  cuda: True
   res_connection: False
   ffn_hidden_size: 200 # From GROVER finetune settings
   undirected: False # Don't want the model to behave differently depending on if it's undirected or not
