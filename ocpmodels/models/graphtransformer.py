@@ -65,7 +65,7 @@ class GraphTransformer(BaseModel):
         res_connection (bool, optional): If set to :obj:`True`, enables the skip-connection in MTBlock.
             (default: :obj:`False`)
         embedding_output_type (string, optional): Output type for GTransEncoder, choices: 'atom', 'bond', 'both'.
-            (default: :obj:`both`)
+            (default: :obj:`atom`)
         ffn_hidden_Size (int, optional): Hidden dimension for higher-capacity FFN (defaults to hidden_size).
             (default: :obj:`None`)
         ffn_num_layers (int, optional): Number of layers in FFN after MPN encoding.
@@ -104,7 +104,7 @@ class GraphTransformer(BaseModel):
         num_attn_head=4, # Number of attention heads per MTBlock
         num_mt_block=1, # Number of MTBlocks
         res_connection=False, # enables the skip-connection in MTBlock.
-        embedding_output_type='both', # Choices: 'atom', 'bond', 'both'
+        embedding_output_type='atom', # Choices: 'atom', 'bond', 'both'
         ffn_hidden_size=None, # Hidden dim for higher-capacity FFN (defaults to hidden_size)
         ffn_num_layers=2, # Number of layers in FFN after MPN encoding
         self_attention=False, # Use self attention layer, otherwise use mean aggregation layer
@@ -247,25 +247,24 @@ class GraphTransformer(BaseModel):
             edge_index = out["edge_index"]
             dist = out["distances"]
         else:
-            # From DimeNet (causes issues)
-            # edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
-            # j, i = edge_index
-            # distances = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
+            edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
+            j, i = edge_index
+            dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
-            # From CGCNN (works)
-            data.edge_index = radius_graph(
-                data.pos, r=self.cutoff, batch=data.batch
-            )
-            row, col = data.edge_index
-            distances = (pos[row] - pos[col]).norm(dim=-1)
+        data.edge_attr = self.distance_expansion(dist) # Features will be of dimensions [num_edges, num_gaussians]
 
-        data.edge_attr = self.distance_expansion(distances) # Features will be of dimensions [num_edges, num_gaussians]
-
+        print("Undirected?: ", args.undirected)
         # Convert to format from PyTorch Geometric to explicit mappings format used by GROVER
         converted_input = convert_input(args, data)
 
+        print("Undirected?: ", args.undirected)
+
         # GTransEncoder
         output = self.encoders(converted_input)
+
+        # Debugging
+        print("output type: ", type(output))
+        print("output shape: ", output.shape)
 
         embeddings = {}
         if args.embedding_output_type == 'atom':
@@ -282,35 +281,33 @@ class GraphTransformer(BaseModel):
         atom_from_bond_output = embeddings["atom_from_bond"]
         atom_from_atom_output = embeddings["atom_from_atom"]
 
+        print("Atom embeddings shape: ", atom_from_atom_output.shape)
+        print("Hidden size shape: ", args.hidden_size)
+
         # Use info from data batch to only sum up energy per system
         batch = data.batch
 
         # Energy calculated by passing atom embeddings through feed-forward layer, summing over atoms in the system
-        atom_ffn_energy = self.energy_atom_from_atom_ffn(atom_from_atom_output) # output is 1 dimensional per atom
-        bond_ffn_energy = self.energy_atom_from_bond_ffn(atom_from_bond_output) # output is 1 dimensional per atom
+        atom_ffn_energy = self.energy_atom_from_atom_ffn(atom_from_atom_output)
+        bond_ffn_energy = self.energy_atom_from_bond_ffn(atom_from_bond_output)
         atom_energy = atom_ffn_energy.sum(dim=0) if batch is None else scatter(atom_ffn_energy, batch, dim=0)
         bond_energy = bond_ffn_energy.sum(dim=0) if batch is None else scatter(bond_ffn_energy, batch, dim=0)
 
         # Per-atom forces calculated through feed-forward layer from embeddings
-        atom_forces = self.forces_atom_from_atom_ffn(atom_from_atom_output) # output is 3 dimensional force prediction
-        bond_forces = self.forces_atom_from_bond_ffn(atom_from_bond_output) # output is 3 dimensional force prediction
+        atom_forces = self.forces_atom_from_atom_ffn(atom_from_atom_output)
+        bond_forces = self.forces_atom_from_bond_ffn(atom_from_bond_output)
 
         # If we have bond embeddings, use these to calculate new node embeddings by summing incoming edge embeddings
         if args.embedding_output_type == 'bond' or args.embedding_output_type == 'both':
             bond_embeddings = (embeddings["bond_from_atom"] + embeddings[
                 "bond_from_bond"]) / 2  # avg two bond embeddings
-            _, _, a2b, _, _, _, _, _ = converted_input # Get a2b from converted input
-            new_atom_embeddings = torch.zeros_like(atom_from_atom_output)
-            atom_index = 0
+            new_atom_embeddings = {}
+            _, _, a2b, _, _, _ = converted_input # Get a2b from converted input
             for atom in a2b:
                 for bond in atom:
-                    if (bond != torch.tensor(0)):
+                    if (bond != torch.tensor(-1)):
                         # Get the embedding of this edge
-                        if atom_index not in new_atom_embeddings:
-                            new_atom_embeddings[atom_index] = bond_embeddings[int(bond)]
-                        else:
-                            new_atom_embeddings[atom_index] += bond_embeddings[int(bond)]  # bond is torch tensor, index is int
-                atom_index += 1
+                        new_atom_embeddings[atom] += bond_embeddings[int(bond)]  # bond is torch tensor, index is int
 
             # Calculate energy and forces with these new embeddings
             new_bond_ffn_energy = self.energy_atom_from_bond_aggregated_ffn(new_atom_embeddings)
@@ -385,7 +382,7 @@ def convert_input(args, data):
         indices = ((data.batch == i).nonzero(as_tuple=True)[0])
         a_scope.append((int(indices[0]), int(indices[-1]))) # Append the start and end index for this value i
 
-    # Set b_scope using data.neighbors, which categorizes eddges by system (neighbors[i] is number of edges in system i)
+    # Data.neighbors shows which edges are in which system (data.neighbors[0] is an int, first n edges are in system zero)
     for i in range(len(data.neighbors)):
         if(i == 0):
             start_index = 0
@@ -397,11 +394,10 @@ def convert_input(args, data):
     num_atoms_total = int(torch.sum(data.natoms))
     a2a = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append neighbors for a given atom
     a2b = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append edges for a given atom
-    b2a = torch.zeros((data.edge_index.shape[1],)).long() # (num_edges, ) - One originating atom per edge
-    b2revb = torch.zeros((data.edge_index.shape[1],)).long()  # (num_edges, ) - One reverse bond per bond
+    b2a = torch.zeros((data.edge_index.shape[1],))  # (num_edges, ) - One originating atom per edge
+    b2revb = torch.zeros((data.edge_index.shape[1],))  # (num_edges, ) - One reverse bond per bond
     rev_edges = {}  # Dict of lists for each (from_atom, to_atom) pair, saving edge numbers
 
-    # Loop through every edge in the graph
     for i in range(data.edge_index.shape[1]):
         from_atom = int(data.edge_index[0][i])
         to_atom = int(data.edge_index[1][i])
@@ -433,9 +429,10 @@ def convert_input(args, data):
     a2b_pad = len(max(a2b, key=len))
 
     # -1 is not a valid atom or edge index so we pad with this
-    a2a = torch.tensor([i + [0] * (a2a_pad - len(i)) for i in a2a])
-    a2b = torch.tensor([i + [0] * (a2b_pad - len(i)) for i in a2b])
+    a2a = torch.tensor([i + [-1] * (a2a_pad - len(i)) for i in a2a])
+    a2b = torch.tensor([i + [-1] * (a2b_pad - len(i)) for i in a2b])
 
+    b2revb = b2revb.type(torch.LongTensor) # Fix for IndexError with undirected=True, can't index with tensor otherwise
     batch = (f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a)
     return batch
 
@@ -1211,6 +1208,8 @@ class MPNEncoder(nn.Module):
             ndepth = self.depth
         # Message passing
         for _ in range(ndepth - 1):
+            print("a2nei: ", a2nei.shape)
+            print("message: ", message.shape)
             if self.undirected:
                 # two directions should be the same
                 message = (message + message[b2revb]) / 2 # TODO: figure out error with message being out of bounds (using undirected)

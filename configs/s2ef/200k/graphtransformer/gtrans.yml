@@ -11,7 +11,7 @@ model:
   activation: "PReLU"
   num_mt_block:  1
   num_attn_head: 4
-  embedding_output_type: "both"
+  embedding_output_type: False
   bias: False
   cuda: False # Temp for training on my laptop
   res_connection: False
