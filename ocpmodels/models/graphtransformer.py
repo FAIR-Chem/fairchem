@@ -1214,7 +1214,7 @@ class MPNEncoder(nn.Module):
             if self.undirected:
                 # two directions should be the same
                 message = (message + message[b2revb]) / 2 # TODO: figure out error with message being out of bounds (using undirected)
-            nei_message = select_neighbor_and_aggregate(message, a2nei) # TODO: figure out index out of range in self error (index_select_nd line 1071 -> 1058)
+            nei_message = select_neighbor_and_aggregate(message, a2nei)
             a_message = nei_message
             if self.attached_fea:
                 attached_nei_fea = select_neighbor_and_aggregate(attached_fea, a2attached)
