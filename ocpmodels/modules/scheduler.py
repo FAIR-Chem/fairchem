@@ -6,6 +6,20 @@ from ocpmodels.common.utils import warmup_lr_lambda
 
 
 class LRScheduler:
+    """
+    Learning rate scheduler class for torch.optim learning rate schedulers
+
+    .. note::
+        If no learning rate scheduler is specified in the config the default
+        scheduler is warmup_lr_lambda (ocpmodels.common.utils) not no scheduler,
+        this is for backward-compatibility reasons. To run without a lr scheduler
+        specify scheduler: Null in the optim section of the config.
+
+    Args:
+        config (dict): Optim dict from the input config
+        optimizer (obj): torch optim object
+    """
+
     def __init__(self, optimizer, config):
         self.optimizer = optimizer
         self.config = config.copy()
