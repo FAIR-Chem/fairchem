@@ -405,9 +405,6 @@ class BaseTrainer:
 
     def load_extras(self):
         self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
-        self.update_lr_on_step = self.config["optim"].get(
-            "update_lr_on_step", False
-        )
         # metrics.
         self.meter = Meter(split="train")
 
