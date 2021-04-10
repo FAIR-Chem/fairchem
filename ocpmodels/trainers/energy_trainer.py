@@ -267,14 +267,17 @@ class EnergyTrainer(BaseTrainer):
                         split="train",
                     )
 
-                if self.update_lr_on_step:
+                if self.scheduler.update_lr_on_step:
                     self.scheduler.step()
+
+            if self.scheduler.update_lr_on_epoch:
+                self.scheduler.step()
 
             torch.cuda.empty_cache()
 
             if self.val_loader is not None:
                 val_metrics = self.validate(split="val", epoch=epoch)
-                if not self.update_lr_on_step:
+                if self.scheduler.update_lr_on_val:
                     self.scheduler.step(val_metrics[primary_metric]["metric"])
                 if (
                     val_metrics[self.evaluator.task_primary_metric[self.name]][
@@ -294,8 +297,6 @@ class EnergyTrainer(BaseTrainer):
                             disable_tqdm=False,
                         )
             else:
-                if not self.update_lr_on_step:
-                    self.scheduler.step()
                 current_step = (epoch + 1) * len(self.train_loader)
                 self.save(epoch + 1, current_step, self.metrics)
 

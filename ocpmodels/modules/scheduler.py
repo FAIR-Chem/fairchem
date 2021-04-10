@@ -19,6 +19,12 @@ class LRScheduler:
         self.scheduler = getattr(lr_scheduler, self.scheduler_type)
         scheduler_args = self.filter_kwargs(config)
         self.scheduler = self.scheduler(optimizer, **scheduler_args)
+        # sets the learning rate update type i.e. update on step, epoch, or val
+        (
+            self.update_lr_on_step,
+            self.update_lr_on_epoch,
+            self.update_lr_on_val,
+        ) = self.set_lr_update_type(self.config)
 
     def step(self, metrics=None, epoch=None):
         if self.scheduler_type == "ReduceLROnPlateau":
@@ -42,6 +48,32 @@ class LRScheduler:
             arg: self.config[arg] for arg in self.config if arg in filter_keys
         }
         return scheduler_args
+
+    @staticmethod
+    def set_lr_update_type(config):
+
+        update_lr_on_step = False
+        update_lr_on_epoch = False
+        update_lr_on_val = False
+
+        if "update_lr_on" in config:
+            # checks for allowed strings
+            if config["update_lr_on"] in ["step", "epoch", "val"]:
+                if config["update_lr_on"] == "step":
+                    update_lr_on_step = True
+                if config["update_lr_on"] == "epoch":
+                    update_lr_on_epoch = True
+                if config["update_lr_on"] == "val":
+                    update_lr_on_val = True
+            else:
+                raise Exception(
+                    "update_lr_on in the config expects one of following strings: step, epoch, or val"
+                )
+        # If update_lr_on is not defined in the config default is update_lr_on_epoch
+        else:
+            update_lr_on_epoch = True
+
+        return update_lr_on_step, update_lr_on_epoch, update_lr_on_val
 
     def get_lr(self):
         for group in self.optimizer.param_groups:
