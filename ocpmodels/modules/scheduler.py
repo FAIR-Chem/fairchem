@@ -1,11 +1,24 @@
 import inspect
 
 import torch.optim.lr_scheduler as lr_scheduler
-
 from ocpmodels.common.utils import warmup_lr_lambda
 
 
 class LRScheduler:
+    """
+    Learning rate scheduler class for torch.optim learning rate schedulers
+
+    Notes:
+        If no learning rate scheduler is specified in the config the default
+        scheduler is warmup_lr_lambda (ocpmodels.common.utils) not no scheduler,
+        this is for backward-compatibility reasons. To run without a lr scheduler
+        specify scheduler: "Null" in the optim section of the config.
+
+    Args:
+        config (dict): Optim dict from the input config
+        optimizer (obj): torch optim object
+    """
+
     def __init__(self, optimizer, config):
         self.optimizer = optimizer
         self.config = config.copy()
@@ -16,11 +29,14 @@ class LRScheduler:
             scheduler_lambda_fn = lambda x: warmup_lr_lambda(x, self.config)
             self.config["lr_lambda"] = scheduler_lambda_fn
 
-        self.scheduler = getattr(lr_scheduler, self.scheduler_type)
-        scheduler_args = self.filter_kwargs(config)
-        self.scheduler = self.scheduler(optimizer, **scheduler_args)
+        if self.scheduler_type != "Null":
+            self.scheduler = getattr(lr_scheduler, self.scheduler_type)
+            scheduler_args = self.filter_kwargs(config)
+            self.scheduler = self.scheduler(optimizer, **scheduler_args)
 
     def step(self, metrics=None, epoch=None):
+        if self.scheduler_type == "Null":
+            return
         if self.scheduler_type == "ReduceLROnPlateau":
             if not metrics:
                 raise Exception(
