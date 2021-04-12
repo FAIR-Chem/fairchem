@@ -549,7 +549,7 @@ def convert_input(args, data):
 
     # Calculate a2b more efficiently
     _, idx = torch.unique(data.edge_index[1], return_counts=True)
-    max_bonds = int(torch.max(degree(data.edge_index[0])))
+    max_bonds = int(torch.max(degree(data.edge_index[1])))
     a2b1 = torch.zeros(num_atoms_total, max_bonds)
     for i in range(len(idx)):
         if i == 0:
