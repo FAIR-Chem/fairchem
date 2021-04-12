@@ -20,14 +20,12 @@ DOWNLOAD_LINKS = {
         "val_ood_cat": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_cat.tar",
         "val_ood_both": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_both.tar",
         "test": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_test_lmdbs.tar.gz",
-        "5k": "https://dl.fbaipublicfiles.com/opencatalystproject/debug/s2ef_train_5k.tar"
     },
     "is2re": "https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_test_lmdbs.tar.gz",
 }
 
 S2EF_COUNTS = {
     "s2ef": {
-        "5k": 5000,
         "200k": 200000,
         "2M": 2000000,
         "20M": 20000000,
@@ -63,7 +61,7 @@ def get_data(task, split, del_intmd_files):
     dirname = filename.split(".")[0]
     if task == "s2ef" and split != "test":
         compressed_dir = os.path.join(dirname, dirname)
-        if split in ["5k", "200k", "2M", "20M", "all"]:
+        if split in ["200k", "2M", "20M", "all"]:
             output_path = os.path.join(datadir, task, split, "train")
         else:
             output_path = os.path.join(datadir, task, "all", split)
