@@ -16,6 +16,7 @@ from torch_geometric.nn import radius_graph
 from torch_geometric.nn import MessagePassing
 from torch_geometric.nn.models.schnet import GaussianSmearing
 from torch_scatter import scatter
+from torch_geometric.utils import degree
 
 from ocpmodels.models.base import BaseModel
 from ocpmodels.common.registry import registry
@@ -467,7 +468,7 @@ def convert_input(args, data):
         to_atom = int(data.edge_index[1][i])
 
         a2a[from_atom].append(to_atom)  # Mark b as neighbor of a
-        a2b[from_atom].append(i)  # Mark bond i as outgoing bond from atom a
+        a2b[to_atom].append(i)  # Mark bond i as incoming bond to atom a
         b2a[i] = from_atom  # Mark a as atom where bond i is originating
         key = frozenset({to_atom, from_atom})
         if (key not in rev_edges):  # If the edge from these two atoms has not been seen yet
@@ -503,29 +504,6 @@ def convert_input(args, data):
         torch.cuda.synchronize()  # Waits for everything to finish running
         print("convert_input fourth loop time: ", start4.elapsed_time(end4))
 
-    if args.debug:
-        # DEBUG: Record time of fifth experimental b2a loop
-        start5 = torch.cuda.Event(enable_timing=True)
-        end5 = torch.cuda.Event(enable_timing=True)
-        start5.record()
-
-    # Calculate b2a more efficiently
-    _, idx = torch.unique(data.edge_index[1], return_counts=True)
-    b2a = torch.zeros((data.edge_index.shape[1],))  # (num_edges, ) - One originating atom per edge
-    for i in range(len(idx)):
-        if i == 0:
-            start_index = 0
-            b2a[:idx[i]] = i
-        end_index = start_index + idx[i]
-        b2a[start_index:end_index] = i
-        start_index = start_index + idx[i]
-
-    if args.debug:
-        # DEBUG: Print time of experimental b2a loop
-        end5.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("convert_input b2a loop loop time: ", start5.elapsed_time(end5))
-
     # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
     # Trim length to max number of edges seen in the data (should be capped by 50 but not always in practice)
     a2a_pad = len(max(a2a, key=len))
@@ -534,6 +512,67 @@ def convert_input(args, data):
     # -1 is not a valid atom or edge index so we pad with this
     a2a = torch.tensor([i + [0] * (a2a_pad - len(i)) for i in a2a])
     a2b = torch.tensor([i + [0] * (a2b_pad - len(i)) for i in a2b])
+
+    # if args.debug:
+    #     # DEBUG: Record time of fifth experimental a2b loop
+    #     start5 = torch.cuda.Event(enable_timing=True)
+    #     end5 = torch.cuda.Event(enable_timing=True)
+    #     start5.record()
+    #
+    # # Calculate a2b more efficiently #TODO: figure out how to get this to actually work, this is actually b2a not a2b
+    # _, idx = torch.unique(data.edge_index[1], return_counts=True)
+    # a2a1 = torch.zeros_like(a2a)
+    # for i in range(len(idx)):
+    #     if i == 0:
+    #         start_index = 0
+    #         indices = torch.arange(0, idx[i])
+    #         a2a1[i] = torch.cat((indices, torch.zeros(len(a2a1[0]) - len(indices))), 0)
+    #     else:
+    #         end_index = start_index + idx[i]
+    #         indices = torch.arange(start_index, end_index)
+    #         a2a1[i] = torch.cat((indices, torch.zeros(len(a2a1[0]) - len(indices))), 0)
+    #     start_index = start_index + idx[i]
+    # print(a2a)
+    # print(a2a1)
+    #
+    # if args.debug:
+    #     # DEBUG: Print time of experimental b2a loop
+    #     end5.record()
+    #     torch.cuda.synchronize()  # Waits for everything to finish running
+    #     print("convert_input b2a loop loop time: ", start5.elapsed_time(end5))
+
+    if args.debug:
+        # DEBUG: Record time of fifth experimental a2b loop
+        start6 = torch.cuda.Event(enable_timing=True)
+        end6 = torch.cuda.Event(enable_timing=True)
+        start6.record()
+
+    # Calculate a2b more efficiently
+    _, idx = torch.unique(data.edge_index[1], return_counts=True)
+    max_bonds = torch.max(degree(data.edge_index[0]))
+    a2b1 = torch.zeros(data.natoms, max_bonds)
+    for i in range(len(idx)):
+        if i == 0:
+            start_index = 0
+            indices = torch.arange(0, idx[i])
+            a2b1[i] = torch.cat((indices, torch.zeros(len(a2b1[0]) - len(indices))), 0)
+        else:
+            end_index = start_index + idx[i]
+            indices = torch.arange(start_index, end_index)
+            a2b1[i] = torch.cat((indices, torch.zeros(len(a2b1[0]) - len(indices))), 0)
+        start_index = start_index + idx[i]
+
+    if args.debug:
+        # DEBUG: Print time of experimental b2a loop
+        end6.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("convert_input a2b loop loop time: ", start6.elapsed_time(end6))
+
+    print("a2b and a2b1 equal? ", a2b == a2b1) # Check that two methods are equal, and print first/last elements
+    print("a2b: ", a2b[0])
+    print("a2b1: ", a2b1[0])
+    print("a2b: ", a2b[-1])
+    print("a2b1: ", a2b1[-1])
 
     batch = (f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a)
     return batch
