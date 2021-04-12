@@ -406,11 +406,28 @@ def convert_input(args, data):
     a_scope = []
     b_scope = []
 
+
+    # DEBUG: Record time of first loop
+    start1 = torch.cuda.Event(enable_timing=True)
+    end1 = torch.cuda.Event(enable_timing=True)
+    start1.record()
+
+    # TODO: use data.natoms and avoid the loop
     # Set a_scope by looping through the total number of systems in the batch (numbered 0, 1, 2, ... n)
     for i in range(max(data.batch) + 1):
         # Returns a tuple of the indices for this given value i
         indices = ((data.batch == i).nonzero(as_tuple=True)[0])
         a_scope.append((int(indices[0]), int(indices[-1]))) # Append the start and end index for this value i
+
+    # DEBUG: Print time of first loop
+    end1.record()
+    torch.cuda.synchronize()  # Waits for everything to finish running
+    print("convert_input first loop time: ", start1.elapsed_time(end1))
+
+    # DEBUG: Record time of second loop
+    start2 = torch.cuda.Event(enable_timing=True)
+    end2 = torch.cuda.Event(enable_timing=True)
+    start2.record()
 
     # Set b_scope using data.neighbors, which categorizes eddges by system (neighbors[i] is number of edges in system i)
     for i in range(len(data.neighbors)):
@@ -421,12 +438,22 @@ def convert_input(args, data):
         b_scope.append((start_index, end_index))
         start_index = start_index + system_size # Update start index to move to the next system
 
+    # DEBUG: Print time of second loop
+    end2.record()
+    torch.cuda.synchronize()  # Waits for everything to finish running
+    print("convert_input second loop time: ", start2.elapsed_time(end2))
+
     num_atoms_total = int(torch.sum(data.natoms))
     a2a = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append neighbors for a given atom
     a2b = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append edges for a given atom
     b2a = torch.zeros((data.edge_index.shape[1],)).long() # (num_edges, ) - One originating atom per edge
     b2revb = torch.zeros((data.edge_index.shape[1],)).long()  # (num_edges, ) - One reverse bond per bond
     rev_edges = {}  # Dict of lists for each (from_atom, to_atom) pair, saving edge numbers
+
+    # DEBUG: Record time of third (edges) loop
+    start3 = torch.cuda.Event(enable_timing=True)
+    end3 = torch.cuda.Event(enable_timing=True)
+    start3.record()
 
     # Loop through every edge in the graph
     for i in range(data.edge_index.shape[1]):
@@ -441,6 +468,16 @@ def convert_input(args, data):
             rev_edges[key] = []  # Declare it as a list (so we can keep track of the edge numbers)
         rev_edges[key].append(i)  # Append the edge number to the list
 
+    # DEBUG: Print time of third (edges) loop
+    end3.record()
+    torch.cuda.synchronize()  # Waits for everything to finish running
+    print("convert_input third loop time: ", start3.elapsed_time(end3))
+
+    # DEBUG: Record time of fourth (reverse edges) loop
+    start4 = torch.cuda.Event(enable_timing=True)
+    end4 = torch.cuda.Event(enable_timing=True)
+    start4.record()
+
     # Iterate through and set b2revb with reverse bonds
     for atoms, edges in rev_edges.items():
         if(len(edges) == 2):
@@ -453,6 +490,11 @@ def convert_input(args, data):
             b2revb[edges[3]] = edges[1]
         elif(len(edges) == 1):
             args.undirected = False
+
+    # DEBUG: Print time of third (edges) loop
+    end4.record()
+    torch.cuda.synchronize()  # Waits for everything to finish running
+    print("convert_input third loop time: ", start4.elapsed_time(end4))
 
     # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
     # Trim length to max number of edges seen in the data (should be capped by 50 but not always in practice)
