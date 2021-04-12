@@ -11,7 +11,7 @@ applicable), and organize data to readily be used by the existing config files.
 
 DOWNLOAD_LINKS = {
     "s2ef": {
-        "5k": "https://drive.google.com/file/d/1w2MfVNxwrjIjQHyeWoGMCsKSllflXXUf/view?usp=sharing",
+        "5k": "https://drive.google.com/u/1/uc?id=1w2MfVNxwrjIjQHyeWoGMCsKSllflXXUf&export=download",
         "200k": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar",
         "2M": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar",
         "20M": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_20M.tar",
