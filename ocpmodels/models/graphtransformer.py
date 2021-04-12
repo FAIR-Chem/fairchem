@@ -410,7 +410,6 @@ def convert_input(args, data):
     a_scope = []
     b_scope = []
 
-
     if args.debug: # DEBUG: Record time of first loop
         start1 = torch.cuda.Event(enable_timing=True)
         end1 = torch.cuda.Event(enable_timing=True)
@@ -475,15 +474,16 @@ def convert_input(args, data):
             rev_edges[key] = []  # Declare it as a list (so we can keep track of the edge numbers)
         rev_edges[key].append(i)  # Append the edge number to the list
 
-    if args.debug:# DEBUG: Print time of third (edges) loop
+    if args.debug:
+        # DEBUG: Print time of third (edges) loop
         end3.record()
         torch.cuda.synchronize()  # Waits for everything to finish running
         print("convert_input third loop time: ", start3.elapsed_time(end3))
 
-    # DEBUG: Record time of fourth (reverse edges) loop
-    start4 = torch.cuda.Event(enable_timing=True)
-    end4 = torch.cuda.Event(enable_timing=True)
-    start4.record()
+        # DEBUG: Record time of fourth (reverse edges) loop
+        start4 = torch.cuda.Event(enable_timing=True)
+        end4 = torch.cuda.Event(enable_timing=True)
+        start4.record()
 
     # Iterate through and set b2revb with reverse bonds
     for atoms, edges in rev_edges.items():
@@ -502,6 +502,30 @@ def convert_input(args, data):
         end4.record()
         torch.cuda.synchronize()  # Waits for everything to finish running
         print("convert_input fourth loop time: ", start4.elapsed_time(end4))
+
+    if args.debug:
+        # DEBUG: Record time of fifth experimental b2a loop
+        start5 = torch.cuda.Event(enable_timing=True)
+        end5 = torch.cuda.Event(enable_timing=True)
+        start5.record()
+
+    # Calculate b2a more efficiently
+    _, idx = torch.unique(data.edge_index[1], return_counts=True)
+    b2a = torch.zeros((data.edge_index.shape[1],))  # (num_edges, ) - One originating atom per edge
+    for i in range(len(idx)):
+        print(i)
+        if i == 0:
+            start_index = 0
+            b2a[:idx[i]] = i
+        end_index = start_index + idx[i]
+        b2a[start_index:end_index] = i
+        start_index = start_index + idx[i]
+
+    if args.debug:
+        # DEBUG: Print time of experimental b2a loop
+        end5.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("convert_input b2a loop loop time: ", start5.elapsed_time(end3))
 
     # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
     # Trim length to max number of edges seen in the data (should be capped by 50 but not always in practice)
