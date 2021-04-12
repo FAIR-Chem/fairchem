@@ -867,6 +867,8 @@ class GTransEncoder(nn.Module):
         self.atom_from_bond_sublayer = SublayerConnection(size=self.hidden_size, dropout=self.dropout)
         self.bond_from_atom_sublayer = SublayerConnection(size=self.hidden_size, dropout=self.dropout)
         self.bond_from_bond_sublayer = SublayerConnection(size=self.hidden_size, dropout=self.dropout)
+
+        # TODO: check if this is actually necessary
         self.act_func_node = get_activation_function(self.activation)
         self.act_func_edge = get_activation_function(self.activation)
         self.dropout_layer = nn.Dropout(p=args.dropout)
@@ -1213,7 +1215,7 @@ class MPNEncoder(nn.Module):
         for _ in range(ndepth - 1):
             if self.undirected:
                 # two directions should be the same
-                message = (message + message[b2revb]) / 2 # TODO: figure out error with message being out of bounds (using undirected)
+                message = (message + message[b2revb]) / 2
             nei_message = select_neighbor_and_aggregate(message, a2nei)
             a_message = nei_message
             if self.attached_fea:
