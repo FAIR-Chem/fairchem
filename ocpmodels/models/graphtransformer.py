@@ -116,7 +116,6 @@ class GraphTransformer(BaseModel):
         cuda=True # Use CUDA acceleration
     ):
         # OCP parameters
-        self.num_atoms = num_atoms
         self.num_targets = num_targets
         self.use_pbc = use_pbc
         self.regress_forces = regress_forces
@@ -867,8 +866,6 @@ class GTransEncoder(nn.Module):
         self.atom_from_bond_sublayer = SublayerConnection(size=self.hidden_size, dropout=self.dropout)
         self.bond_from_atom_sublayer = SublayerConnection(size=self.hidden_size, dropout=self.dropout)
         self.bond_from_bond_sublayer = SublayerConnection(size=self.hidden_size, dropout=self.dropout)
-        self.act_func_node = get_activation_function(self.activation)
-        self.act_func_edge = get_activation_function(self.activation)
         self.dropout_layer = nn.Dropout(p=args.dropout)
 
     def pointwise_feed_forward_to_atom_embedding(self, emb_output, atom_fea, index, ffn_layer):
