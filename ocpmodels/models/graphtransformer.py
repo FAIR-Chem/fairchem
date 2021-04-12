@@ -113,7 +113,8 @@ class GraphTransformer(BaseModel):
         undirected=True, # Specify whether or not molecular graph is undirected (OCP is undirected)
         dense=True, # Use dense connection in MessagePassing layer
         features_only=False, # Use only the additional features in an FFN, no graph network
-        cuda=True # Use CUDA acceleration
+        cuda=True, # Use CUDA acceleration
+        debug=False # Print debugging info
     ):
         # OCP parameters
         self.num_targets = num_targets
@@ -145,7 +146,8 @@ class GraphTransformer(BaseModel):
         args.dense = dense
         args.features_only = features_only
         args.features_dim = 0 # Temproary for troubleshooting
-        args.features_size = 0 # Temporary for troubleshooting_
+        args.features_size = 0 # Temporary for troubleshooting
+        args.debug = debug
         self.args = args # Hack to call in forward pass
 
         super(GraphTransformer, self).__init__()
@@ -243,8 +245,8 @@ class GraphTransformer(BaseModel):
                 data.neighbors,
             )
 
-            edge_index = out["edge_index"]
-            dist = out["distances"]
+            data.edge_index = out["edge_index"]
+            distances = out["distances"]
         else:
             # From DimeNet (causes issues)
             # edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
@@ -260,31 +262,32 @@ class GraphTransformer(BaseModel):
 
         data.edge_attr = self.distance_expansion(distances) # Features will be of dimensions [num_edges, num_gaussians]
 
-        # DEBUG: Record time of convert_input
-        start_convert = torch.cuda.Event(enable_timing=True)
-        end_convert = torch.cuda.Event(enable_timing=True)
-        start_convert.record()
+        if args.debug: # DEBUG: Record time of convert_input
+            start_convert = torch.cuda.Event(enable_timing=True)
+            end_convert = torch.cuda.Event(enable_timing=True)
+            start_convert.record()
 
         # Convert to format from PyTorch Geometric to explicit mappings format used by GROVER
         converted_input = convert_input(args, data)
 
-        # DEBUG: Print time of convert_input
-        end_convert.record()
-        torch.cuda.synchronize() # Waits for everything to finish running
-        print("convert_input time: ", start_convert.elapsed_time(end_convert))
+        if args.debug: 
+            # DEBUG: Print time of convert_input
+            end_convert.record()
+            torch.cuda.synchronize() # Waits for everything to finish running
+            print("convert_input time: ", start_convert.elapsed_time(end_convert))
 
-        # DEBUG: Record time of GTransEncoder
-        start_encoder = torch.cuda.Event(enable_timing=True)
-        end_encoder = torch.cuda.Event(enable_timing=True)
-        start_encoder.record()
+            # DEBUG: Record time of GTransEncoder
+            start_encoder = torch.cuda.Event(enable_timing=True)
+            end_encoder = torch.cuda.Event(enable_timing=True)
+            start_encoder.record()
 
         # GTransEncoder
         output = self.encoders(converted_input)
 
-        # DEBUG: Print time of GTransEncoder
-        end_encoder.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("GTransEncoder time: ", start_encoder.elapsed_time(end_encoder))
+        if args.debug: # DEBUG: Print time of GTransEncoder
+            end_encoder.record()
+            torch.cuda.synchronize()  # Waits for everything to finish running
+            print("GTransEncoder time: ", start_encoder.elapsed_time(end_encoder))
 
         embeddings = {}
         if args.embedding_output_type == 'atom':
@@ -304,10 +307,10 @@ class GraphTransformer(BaseModel):
         # Use info from data batch to only sum up energy per system
         batch = data.batch
 
-        # DEBUG: Record time of force/energy calculation
-        start_output = torch.cuda.Event(enable_timing=True)
-        end_output = torch.cuda.Event(enable_timing=True)
-        start_output.record()
+        if args.debug: # DEBUG: Record time of force/energy calculation
+            start_output = torch.cuda.Event(enable_timing=True)
+            end_output = torch.cuda.Event(enable_timing=True)
+            start_output.record()
 
         # Energy calculated by passing atom embeddings through feed-forward layer, summing over atoms in the system
         atom_ffn_energy = self.energy_atom_from_atom_ffn(atom_from_atom_output) # output is 1 dimensional per atom
@@ -355,9 +358,10 @@ class GraphTransformer(BaseModel):
             energy = ( atom_energy + bond_energy ) / 2
             forces = ( atom_forces + bond_forces ) / 2
 
-        end_output.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("energy/force calculation time: ", start_output.elapsed_time(end_output))
+        if args.debug:
+            end_output.record()
+            torch.cuda.synchronize()  # Waits for everything to finish running
+            print("energy/force calculation time: ", start_output.elapsed_time(end_output))
         return energy, forces
 
     # From SchNet/dimenet: calculate forces through gradients--we will calculate them explicitly with transformer for now
@@ -407,10 +411,10 @@ def convert_input(args, data):
     b_scope = []
 
 
-    # DEBUG: Record time of first loop
-    start1 = torch.cuda.Event(enable_timing=True)
-    end1 = torch.cuda.Event(enable_timing=True)
-    start1.record()
+    if args.debug: # DEBUG: Record time of first loop
+        start1 = torch.cuda.Event(enable_timing=True)
+        end1 = torch.cuda.Event(enable_timing=True)
+        start1.record()
 
     # TODO: use data.natoms and avoid the loop
     # Set a_scope by looping through the total number of systems in the batch (numbered 0, 1, 2, ... n)
@@ -419,15 +423,16 @@ def convert_input(args, data):
         indices = ((data.batch == i).nonzero(as_tuple=True)[0])
         a_scope.append((int(indices[0]), int(indices[-1]))) # Append the start and end index for this value i
 
-    # DEBUG: Print time of first loop
-    end1.record()
-    torch.cuda.synchronize()  # Waits for everything to finish running
-    print("convert_input first loop time: ", start1.elapsed_time(end1))
+    if args.debug:
+        # DEBUG: Print time of first loop
+        end1.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("convert_input first loop time: ", start1.elapsed_time(end1))
 
-    # DEBUG: Record time of second loop
-    start2 = torch.cuda.Event(enable_timing=True)
-    end2 = torch.cuda.Event(enable_timing=True)
-    start2.record()
+         # DEBUG: Record time of second loop
+        start2 = torch.cuda.Event(enable_timing=True)
+        end2 = torch.cuda.Event(enable_timing=True)
+        start2.record()
 
     # Set b_scope using data.neighbors, which categorizes eddges by system (neighbors[i] is number of edges in system i)
     for i in range(len(data.neighbors)):
@@ -438,10 +443,10 @@ def convert_input(args, data):
         b_scope.append((start_index, end_index))
         start_index = start_index + system_size # Update start index to move to the next system
 
-    # DEBUG: Print time of second loop
-    end2.record()
-    torch.cuda.synchronize()  # Waits for everything to finish running
-    print("convert_input second loop time: ", start2.elapsed_time(end2))
+    if args.debug: # DEBUG: Print time of second loop
+        end2.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("convert_input second loop time: ", start2.elapsed_time(end2))
 
     num_atoms_total = int(torch.sum(data.natoms))
     a2a = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append neighbors for a given atom
@@ -450,10 +455,10 @@ def convert_input(args, data):
     b2revb = torch.zeros((data.edge_index.shape[1],)).long()  # (num_edges, ) - One reverse bond per bond
     rev_edges = {}  # Dict of lists for each (from_atom, to_atom) pair, saving edge numbers
 
-    # DEBUG: Record time of third (edges) loop
-    start3 = torch.cuda.Event(enable_timing=True)
-    end3 = torch.cuda.Event(enable_timing=True)
-    start3.record()
+    if args.debug: # DEBUG: Record time of third (edges) loop
+        start3 = torch.cuda.Event(enable_timing=True)
+        end3 = torch.cuda.Event(enable_timing=True)
+        start3.record()
 
     # Loop through every edge in the graph
     for i in range(data.edge_index.shape[1]):
@@ -468,10 +473,10 @@ def convert_input(args, data):
             rev_edges[key] = []  # Declare it as a list (so we can keep track of the edge numbers)
         rev_edges[key].append(i)  # Append the edge number to the list
 
-    # DEBUG: Print time of third (edges) loop
-    end3.record()
-    torch.cuda.synchronize()  # Waits for everything to finish running
-    print("convert_input third loop time: ", start3.elapsed_time(end3))
+    if args.debug:# DEBUG: Print time of third (edges) loop
+        end3.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("convert_input third loop time: ", start3.elapsed_time(end3))
 
     # DEBUG: Record time of fourth (reverse edges) loop
     start4 = torch.cuda.Event(enable_timing=True)
@@ -491,10 +496,10 @@ def convert_input(args, data):
         elif(len(edges) == 1):
             args.undirected = False
 
-    # DEBUG: Print time of third (edges) loop
-    end4.record()
-    torch.cuda.synchronize()  # Waits for everything to finish running
-    print("convert_input third loop time: ", start4.elapsed_time(end4))
+    if args.debug: # DEBUG: Print time of third (edges) loop
+        end4.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("convert_input fourth loop time: ", start4.elapsed_time(end4))
 
     # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
     # Trim length to max number of edges seen in the data (should be capped by 50 but not always in practice)
