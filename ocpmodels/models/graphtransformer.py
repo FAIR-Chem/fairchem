@@ -547,20 +547,21 @@ def convert_input(args, data):
         end6 = torch.cuda.Event(enable_timing=True)
         start6.record()
 
-    # Calculate a2b more efficiently
-    _, idx = torch.unique(data.edge_index[1], return_counts=True)
-    max_bonds = int(torch.max(degree(data.edge_index[1])))
-    a2b1 = torch.zeros(num_atoms_total, max_bonds)
-    for i in range(len(idx)):
-        if i == 0:
-            start_index = 0
-            indices = torch.arange(0, idx[i])
-            a2b1[i] = torch.cat((indices, torch.zeros(len(a2b1[0]) - len(indices))), 0)
-        else:
-            end_index = start_index + idx[i]
-            indices = torch.arange(start_index, end_index)
-            a2b1[i] = torch.cat((indices, torch.zeros(len(a2b1[0]) - len(indices))), 0)
-        start_index = start_index + idx[i]
+        # Calculate a2b more efficiently
+        _, idx = torch.unique(data.edge_index[1], return_counts=True)
+        max_bonds = int(torch.max(degree(data.edge_index[1])))
+        a2b1 = torch.zeros(num_atoms_total, max_bonds)
+        for i in range(len(idx)):
+            if i == 0:
+                start_index = 0
+                indices = torch.arange(0, idx[i])
+                a2b1[i] = torch.cat((indices, torch.zeros(len(a2b1[0]) - len(indices))), 0)
+            else:
+                end_index = start_index + idx[i]
+                indices = torch.arange(start_index, end_index)
+                a2b1[i] = torch.cat((indices, torch.zeros(len(a2b1[0]) - len(indices))), 0)
+            start_index = start_index + idx[i]
+        a2b1.type(torch.LongTensor)
 
     if args.debug:
         # DEBUG: Print time of experimental b2a loop
@@ -568,11 +569,11 @@ def convert_input(args, data):
         torch.cuda.synchronize()  # Waits for everything to finish running
         print("convert_input a2b loop loop time: ", start6.elapsed_time(end6))
 
-    print("a2b and a2b1 equal? ", a2b == a2b1) # Check that two methods are equal, and print first/last elements
-    print("a2b: ", a2b[0])
-    print("a2b1: ", a2b1[0])
-    print("a2b: ", a2b[-1])
-    print("a2b1: ", a2b1[-1])
+        print("a2b and a2b1 equal? ", a2b == a2b1) # Check that two methods are equal, and print first/last elements
+        print("a2b: ", a2b[0])
+        print("a2b1: ", a2b1[0])
+        print("a2b: ", a2b[-1])
+        print("a2b1: ", a2b1[-1])
 
     batch = (f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a)
     return batch
