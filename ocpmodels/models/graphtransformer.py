@@ -260,11 +260,31 @@ class GraphTransformer(BaseModel):
 
         data.edge_attr = self.distance_expansion(distances) # Features will be of dimensions [num_edges, num_gaussians]
 
+        # DEBUG: Record time of convert_input
+        start_convert = torch.cuda.Event(enable_timing=True)
+        end_convert = torch.cuda.Event(enable_timing=True)
+        start_convert.record()
+
         # Convert to format from PyTorch Geometric to explicit mappings format used by GROVER
         converted_input = convert_input(args, data)
 
+        # DEBUG: Print time of convert_input
+        end_convert.record()
+        torch.cuda.synchronize() # Waits for everything to finish running
+        print("convert_input time: ", start_convert.elapsed_time(end_convert))
+
+        # DEBUG: Record time of GTransEncoder
+        start_encoder = torch.cuda.Event(enable_timing=True)
+        end_encoder = torch.cuda.Event(enable_timing=True)
+        start_encoder.record()
+
         # GTransEncoder
         output = self.encoders(converted_input)
+
+        # DEBUG: Print time of GTransEncoder
+        end_encoder.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("GTransEncoder time: ", start_encoder.elapsed_time(end_encoder))
 
         embeddings = {}
         if args.embedding_output_type == 'atom':
@@ -284,6 +304,11 @@ class GraphTransformer(BaseModel):
         # Use info from data batch to only sum up energy per system
         batch = data.batch
 
+        # DEBUG: Record time of force/energy calculation
+        start_output = torch.cuda.Event(enable_timing=True)
+        end_output = torch.cuda.Event(enable_timing=True)
+        start_output.record()
+
         # Energy calculated by passing atom embeddings through feed-forward layer, summing over atoms in the system
         atom_ffn_energy = self.energy_atom_from_atom_ffn(atom_from_atom_output) # output is 1 dimensional per atom
         bond_ffn_energy = self.energy_atom_from_bond_ffn(atom_from_bond_output) # output is 1 dimensional per atom
@@ -301,7 +326,7 @@ class GraphTransformer(BaseModel):
             _, _, a2b, _, _, _, _, _ = converted_input # Get a2b from converted input
             new_atom_embeddings = torch.zeros_like(atom_from_atom_output)
             atom_index = 0
-            for atom in a2b:
+            for atom in a2b: #TODO: replace with torch scatter (for reference see line 196, 446 in DimeNet++)
                 for bond in atom:
                     if (bond != torch.tensor(0)):
                         # Get the embedding of this edge
@@ -330,6 +355,9 @@ class GraphTransformer(BaseModel):
             energy = ( atom_energy + bond_energy ) / 2
             forces = ( atom_forces + bond_forces ) / 2
 
+        end_output.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("energy/force calculation time: ", start_output.elapsed_time(end_output))
         return energy, forces
 
     # From SchNet/dimenet: calculate forces through gradients--we will calculate them explicitly with transformer for now
