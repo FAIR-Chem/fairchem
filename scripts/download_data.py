@@ -11,7 +11,7 @@ applicable), and organize data to readily be used by the existing config files.
 
 DOWNLOAD_LINKS = {
     "s2ef": {
-        "5k": "https://drive.google.com/file/d/1eErUhw9IMfta9C4niP_tclrXQ1s0QZfJ/view?usp=sharing",
+        "5k": "5k",
         "200k": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar",
         "2M": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar",
         "20M": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_20M.tar",
@@ -56,10 +56,10 @@ def get_data(task, split, del_intmd_files):
     elif task == "is2re":
         download_link = DOWNLOAD_LINKS[task]
 
-    os.system(f"wget {download_link}")
+    # os.system(f"wget {download_link}")
     filename = os.path.basename(download_link)
     print("Extracting contents...")
-    os.system(f"tar -xf {filename}")
+    # os.system(f"tar -xf {filename}")
     dirname = filename.split(".")[0]
     if task == "s2ef" and split != "test":
         compressed_dir = os.path.join(dirname, dirname)
