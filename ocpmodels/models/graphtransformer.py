@@ -513,7 +513,6 @@ def convert_input(args, data):
     _, idx = torch.unique(data.edge_index[1], return_counts=True)
     b2a = torch.zeros((data.edge_index.shape[1],))  # (num_edges, ) - One originating atom per edge
     for i in range(len(idx)):
-        print(i)
         if i == 0:
             start_index = 0
             b2a[:idx[i]] = i
@@ -525,7 +524,7 @@ def convert_input(args, data):
         # DEBUG: Print time of experimental b2a loop
         end5.record()
         torch.cuda.synchronize()  # Waits for everything to finish running
-        print("convert_input b2a loop loop time: ", start5.elapsed_time(end3))
+        print("convert_input b2a loop loop time: ", start5.elapsed_time(end5))
 
     # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
     # Trim length to max number of edges seen in the data (should be capped by 50 but not always in practice)
