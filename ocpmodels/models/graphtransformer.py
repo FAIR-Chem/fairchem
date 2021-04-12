@@ -416,12 +416,14 @@ def convert_input(args, data):
         end1 = torch.cuda.Event(enable_timing=True)
         start1.record()
 
-    # TODO: use data.natoms and avoid the loop
     # Set a_scope by looping through the total number of systems in the batch (numbered 0, 1, 2, ... n)
-    for i in range(max(data.batch) + 1):
-        # Returns a tuple of the indices for this given value i
-        indices = ((data.batch == i).nonzero(as_tuple=True)[0])
-        a_scope.append((int(indices[0]), int(indices[-1]))) # Append the start and end index for this value i
+    for i in range(len(data.natoms)):
+        if (i == 0):
+            start_index = 0
+        system_size = int(data.natoms[i])  # Number of atoms in this system
+        end_index = start_index + system_size - 1  # End index is 1 before the start of the next system
+        a_scope.append((int(start_index), int(end_index)))
+        start_index = start_index + system_size  # Update start index to move to the next system
 
     if args.debug:
         # DEBUG: Print time of first loop
