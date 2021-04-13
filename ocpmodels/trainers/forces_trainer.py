@@ -348,7 +348,7 @@ class ForcesTrainer(BaseTrainer):
         )
         return predictions
 
-    def train(self):  # noqa: C901
+    def train(self):
         eval_every = self.config["optim"].get("eval_every", -1)
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]

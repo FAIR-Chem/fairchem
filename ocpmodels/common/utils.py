@@ -605,7 +605,19 @@ def tune_reporter(
     metric_to_opt="val_loss",
     min_max="min",
 ):
-    # labels and report metric dicts
+    """
+    Wrapper function for tune.report()
+
+    Args:
+        iters(dict): dict with training iteration info (e.g. steps, epochs)
+        train_metrics(dict): train metrics dict
+        val_metrics(dict): val metrics dict
+        test_metrics(dict, optional): test metrics dict, default is None
+        metric_to_opt(str, optional): str for val metric to optimize, default is val_loss
+        min_max(str, optional): either "min" or "max", determines whether metric_to_opt is to be minimized or maximized, default is min
+
+    """
+    # labels metric dicts
     train = label_metric_dict(train_metrics, "train")
     val = label_metric_dict(val_metrics, "val")
     # this enables tolerance for NaNs assumes val set is used for optimization

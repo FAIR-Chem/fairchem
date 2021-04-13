@@ -1,5 +1,23 @@
 # Running Hyperparameter Optimization with Ray Tune
 
+## Model config considerations
+
+The current Ray Tune implementation uses the standard OCP config. However, there are a number of config settings that require additional consideration.
+
+```
+logger: None
+is_hpo: True
+
+optim:
+  …
+  eval_every: TDB
+```
+The first two are easily set. The logger is set to None because Ray Tune internally handles the logging.
+
+The `eval_every` setting is case specific and will likely require some experimentation. The `eval_every` flag sets how often the validation set is run in number of steps. Depending on the OCP model and dataset of interest, training for a single epoch can take a substantial amount of time. However, to take full advantage of HPO methods that minimize compute by terminating trials that are not promising, such as successive halving, communication of train and val metrics need to happen on shorter timescales. Paraphrasing the Ray Tune docs, `eval_every` should be set large enough to avoid overheads but short enough to report progress periodically — minutes timescale recommended.
+
+The `eval_every` setting is only available for the force trainer so when using the energy trainer validation will be run and reporting to Ray Tune will occur on a per epoch basis.
+
 ## Usage with Slurm
 
 1. Make necessary changes to `run_tune.py` and `slurm/submit-ray-cluster.sbatch`
