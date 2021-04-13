@@ -1,6 +1,7 @@
 import inspect
 
 import torch.optim.lr_scheduler as lr_scheduler
+
 from ocpmodels.common.utils import warmup_lr_lambda
 
 
@@ -54,6 +55,7 @@ class LRScheduler:
             for param in sig.parameters.values()
             if param.kind == param.POSITIONAL_OR_KEYWORD
         ]
+        filter_keys.remove("optimizer")
         scheduler_args = {
             arg: self.config[arg] for arg in self.config if arg in filter_keys
         }
