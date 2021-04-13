@@ -513,33 +513,28 @@ def convert_input(args, data):
     a2a = torch.tensor([i + [0] * (a2a_pad - len(i)) for i in a2a])
     a2b = torch.tensor([i + [0] * (a2b_pad - len(i)) for i in a2b])
 
-    # if args.debug:
-    #     # DEBUG: Record time of fifth experimental a2b loop
-    #     start5 = torch.cuda.Event(enable_timing=True)
-    #     end5 = torch.cuda.Event(enable_timing=True)
-    #     start5.record()
-    #
-    # # Calculate a2b more efficiently #TODO: figure out how to get this to actually work, this is actually b2a not a2b
-    # _, idx = torch.unique(data.edge_index[1], return_counts=True)
-    # a2a1 = torch.zeros_like(a2a)
-    # for i in range(len(idx)):
-    #     if i == 0:
-    #         start_index = 0
-    #         indices = torch.arange(0, idx[i])
-    #         a2a1[i] = torch.cat((indices, torch.zeros(len(a2a1[0]) - len(indices))), 0)
-    #     else:
-    #         end_index = start_index + idx[i]
-    #         indices = torch.arange(start_index, end_index)
-    #         a2a1[i] = torch.cat((indices, torch.zeros(len(a2a1[0]) - len(indices))), 0)
-    #     start_index = start_index + idx[i]
-    # print(a2a)
-    # print(a2a1)
-    #
-    # if args.debug:
-    #     # DEBUG: Print time of experimental b2a loop
-    #     end5.record()
-    #     torch.cuda.synchronize()  # Waits for everything to finish running
-    #     print("convert_input b2a loop loop time: ", start5.elapsed_time(end5))
+    if args.debug:
+        # DEBUG: Record time of fifth experimental a2b loop
+        start5 = torch.cuda.Event(enable_timing=True)
+        end5 = torch.cuda.Event(enable_timing=True)
+        start5.record()
+
+        # Efficient a2a calculation
+        trans = data.edge_index.T
+        sorted_index = trans[trans[:, 0].sort()[1]]  # Sort by column zero (from_node), index based off
+        sorted_index = sorted_index.T
+
+        _, idx = torch.unique(sorted_index[0], return_counts=True)  # idx is tensor([2, 1, 1])
+        a2a1 = sorted_index[1].split(idx.tolist())  # from_to_atoms is (tensor([1, 2]), tensor([0]), tensor([0]))
+        a2a_pad = len(max(a2a1, key=len))
+        a2a2 = torch.tensor([i.tolist() + [0] * (a2a_pad - len(i)) for i in a2a1])
+
+        # DEBUG: Print time of experimental b2a loop
+        end5.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("\nefficient a2a loop loop time: ", start5.elapsed_time(end5))
+        print("a2a and a2a2 equal counts: ",
+        torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]))
 
     if args.debug:
         # DEBUG: Record time of fifth experimental a2b loop
@@ -547,9 +542,26 @@ def convert_input(args, data):
         end6 = torch.cuda.Event(enable_timing=True)
         start6.record()
 
-        # Calculate a2b more efficiently
-        _, idx = torch.unique(data.edge_index[1], return_counts=True)
+        # Efficient b2a calculation
+        b2a2 = data.edge_index[0].type(torch.FloatTensor)
+
+        # DEBUG: Print time of experimental b2a loop
+        end6.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("\nefficient b2a loop time: ", start6.elapsed_time(end6))
+        print("b2a and b2a2 equal? ", torch.equal(b2a, b2a2)) # Check that two methods are equal, and print first/last elements
+
+    if args.debug:
+        # DEBUG: Record time of fifth experimental a2b loop
+        start7 = torch.cuda.Event(enable_timing=True)
+        end7 = torch.cuda.Event(enable_timing=True)
+        start7.record()
+
+        # Efficient a2b calculation
+        num_atoms_total = data.natoms
+        count, idx = torch.unique(data.edge_index[1], return_counts=True)
         max_bonds = int(torch.max(degree(data.edge_index[1])))
+
         a2b1 = torch.zeros(num_atoms_total, max_bonds)
         for i in range(len(idx)):
             if i == 0:
@@ -561,15 +573,14 @@ def convert_input(args, data):
                 indices = torch.arange(start_index, end_index)
                 a2b1[i] = torch.cat((indices, torch.zeros(len(a2b1[0]) - len(indices))), 0)
             start_index = start_index + idx[i]
-        a2b1.type(torch.LongTensor)
+        a2b1 = a2b1.type(torch.LongTensor)
 
-    if args.debug:
         # DEBUG: Print time of experimental b2a loop
-        end6.record()
+        end7.record()
         torch.cuda.synchronize()  # Waits for everything to finish running
-        print("convert_input a2b loop loop time: ", start6.elapsed_time(end6))
+        print("\nefficient a2b loop time: ", start7.elapsed_time(end7))
+        print("a2b and a2b1 equal? ", torch.equal(a2b, a2b1))
 
-        print("a2b and a2b1 equal? ", a2b == a2b1) # Check that two methods are equal, and print first/last elements
         print("a2b: ", a2b[0])
         print("a2b1: ", a2b1[0])
         print("a2b: ", a2b[-1])
