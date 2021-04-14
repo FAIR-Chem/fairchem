@@ -271,7 +271,7 @@ class GraphTransformer(BaseModel):
         # Convert to format from PyTorch Geometric to explicit mappings format used by GROVER
         converted_input = convert_input(args, data)
 
-        if args.debug: 
+        if args.debug:
             # DEBUG: Print time of convert_input
             end_convert.record()
             torch.cuda.synchronize() # Waits for everything to finish running
@@ -411,11 +411,6 @@ def convert_input(args, data):
     a_scope = []
     b_scope = []
 
-    if args.debug: # DEBUG: Record time of first loop
-        start1 = torch.cuda.Event(enable_timing=True)
-        end1 = torch.cuda.Event(enable_timing=True)
-        start1.record()
-
     # Set a_scope by looping through the total number of systems in the batch (numbered 0, 1, 2, ... n)
     for i in range(len(data.natoms)):
         if (i == 0):
@@ -424,17 +419,6 @@ def convert_input(args, data):
         end_index = start_index + system_size - 1  # End index is 1 before the start of the next system
         a_scope.append((int(start_index), int(end_index)))
         start_index = start_index + system_size  # Update start index to move to the next system
-
-    if args.debug:
-        # DEBUG: Print time of first loop
-        end1.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("convert_input first loop time: ", start1.elapsed_time(end1))
-
-         # DEBUG: Record time of second loop
-        start2 = torch.cuda.Event(enable_timing=True)
-        end2 = torch.cuda.Event(enable_timing=True)
-        start2.record()
 
     # Set b_scope using data.neighbors, which categorizes eddges by system (neighbors[i] is number of edges in system i)
     for i in range(len(data.neighbors)):
@@ -445,290 +429,37 @@ def convert_input(args, data):
         b_scope.append((start_index, end_index))
         start_index = start_index + system_size # Update start index to move to the next system
 
-    if args.debug: # DEBUG: Print time of second loop
-        end2.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("convert_input second loop time: ", start2.elapsed_time(end2))
+    # Calculate atom to neighboring atom mappings (a2a)
+    trans = data.edge_index.T
+    sorted_index = trans[trans[:, 0].sort()[1]]  # Sort by column zero (from_node), index based off
+    sorted_index = sorted_index.T
 
-    num_atoms_total = int(torch.sum(data.natoms))
-    a2a = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append neighbors for a given atom
-    a2b = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append edges for a given atom
-    b2a = torch.zeros((data.edge_index.shape[1],)).long() # (num_edges, ) - One originating atom per edge
-    b2revb = torch.zeros((data.edge_index.shape[1],)).long()  # (num_edges, ) - One reverse bond per bond
-    rev_edges = {}  # Dict of lists for each (from_atom, to_atom) pair, saving edge numbers
-    a2bcounts = torch.zeros((max(data.edge_index[1]) + 1 ))
-    if args.debug: # DEBUG: Record time of third (edges) loop
-        start3 = torch.cuda.Event(enable_timing=True)
-        end3 = torch.cuda.Event(enable_timing=True)
-        start3.record()
+    _, idx = torch.unique(sorted_index[0], return_counts=True)  # counts for each atom
+    a2a = sorted_index[1].split(idx.tolist())  # Index into to_bonds with these indices
+    a2a = torch.nn.utils.rnn.pad_sequence(list(a2a), batch_first=True, padding_value=0)
 
-    # Loop through every edge in the graph
-    for i in range(data.edge_index.shape[1]):
-        from_atom = int(data.edge_index[0][i])
-        to_atom = int(data.edge_index[1][i])
-        a2bcounts[to_atom] += 1
-       # if to_atom not in a2bcounts:
-        #    a2bcounts[to_atom] = 1
-        #else:
-        #    a2bcounts[to_atom] += 1
-        a2a[from_atom].append(to_atom)  # Mark b as neighbor of a
-        a2b[to_atom].append(i)  # Mark bond i as incoming bond to atom a
-        b2a[i] = from_atom  # Mark a as atom where bond i is originating
-        key = frozenset({to_atom, from_atom})
-        if (key not in rev_edges):  # If the edge from these two atoms has not been seen yet
-            rev_edges[key] = []  # Declare it as a list (so we can keep track of the edge numbers)
-        rev_edges[key].append(i)  # Append the edge number to the list
+    a2a = a2a.cuda() # TODO: Check if this is necessary
 
-    if args.debug:
-        # DEBUG: Print time of third (edges) loop
-        end3.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("convert_input third loop time: ", start3.elapsed_time(end3))
+    # Calculate outgoing bond to atom mappings (b2a)
+    b2a = data.edge_index[0].type(torch.FloatTensor)
 
-        # DEBUG: Record time of fourth (reverse edges) loop
-        start4 = torch.cuda.Event(enable_timing=True)
-        end4 = torch.cuda.Event(enable_timing=True)
-        start4.record()
+    # Calculate atom to incoming bond mappings (a2b)
+    out, counts = torch.unique(data.edge_index[1], return_counts=True)
+    if len(out) - 1 != out[-1]: # If they are the correct length then we don't need to add 0's
+        ascending = torch.arange(out[-1] + 1).cuda() # Ascending order list [0, 1, ... n] where n is last elem in out
+        missing = [ elem not in out for elem in ascending ] # Missing elements in out
+        for elem in numpy.nonzero(missing)[0]:
+            i = int(elem)
+            out = torch.cat((out[:i], torch.tensor((i,)).cuda(), out[i:])) # Add missing index
+            counts = torch.cat((counts[:i], torch.tensor((0,)).cuda(), counts[i:])) # Add zero to count
+    a2b = torch.split(torch.arange(len(data.edge_index[1])), tuple(counts))
+    a2b = torch.nn.utils.rnn.pad_sequence(a2b, batch_first=True, padding_value=0)
 
-    # Iterate through and set b2revb with reverse bonds
-    for atoms, edges in rev_edges.items():
-        if(len(edges) == 2):
-            b2revb[edges[0]] = edges[1]
-            b2revb[edges[1]] = edges[0]
-        elif(len(edges) == 4): # In the case of duplicate edges, they are grouped together in this order
-            b2revb[edges[0]] = edges[2]
-            b2revb[edges[2]] = edges[0]
-            b2revb[edges[1]] = edges[3]
-            b2revb[edges[3]] = edges[1]
-        elif(len(edges) == 1):
-            args.undirected = False
+    # TODO: Check if return types are correct and potentially convert to cpu/cuda devices
 
-    if args.debug: # DEBUG: Print time of third (edges) loop
-        end4.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("convert_input fourth loop time: ", start4.elapsed_time(end4))
-
-    # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
-    # Trim length to max number of edges seen in the data (should be capped by 50 but not always in practice)
-    a2a_pad = len(max(a2a, key=len))
-    a2b_pad = len(max(a2b, key=len))
-
-    # -1 is not a valid atom or edge index so we pad with this
-    a2a = torch.tensor([i + [0] * (a2a_pad - len(i)) for i in a2a])
-    a2b = torch.tensor([i + [0] * (a2b_pad - len(i)) for i in a2b])
-
-    if args.debug:
-        # DEBUG: Record time of efficient loop
-        start5 = torch.cuda.Event(enable_timing=True)
-        end5 = torch.cuda.Event(enable_timing=True)
-        start5.record()
-
-        # Efficient a2a calculation
-        trans = data.edge_index.T
-        sorted_index = trans[trans[:, 0].sort()[1]]  # Sort by column zero (from_node), index based off
-        sorted_index = sorted_index.T
-
-        _, idx = torch.unique(sorted_index[0], return_counts=True)  # counts for each atom
-        a2a1 = sorted_index[1].split(idx.tolist())  # Index into to_bonds with these indices
-        a2a_pad = len(max(a2a1, key=len))
-	
-	# DEBUG: Print time of efficient loop
-        end5.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("\nefficient a2a loop loop time: ", start5.elapsed_time(end5))
-        
-	# DEBUG: Record time of efficient loop
-        start5 = torch.cuda.Event(enable_timing=True)
-        end5 = torch.cuda.Event(enable_timing=True)
-        start5.record()
-	
-        a2a2 = torch.nn.utils.rnn.pad_sequence(list(a2a1), batch_first=True, padding_value=0)
-        
-        # DEBUG: Print time of efficient loop
-        end5.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("\nefficient a2a loop loop time: ", start5.elapsed_time(end5))
-        a2a = a2a.cuda()
-        print("a2a and a2a2 equal counts: ", torch.equal(torch.unique(a2a, return_counts=True)[1][1:], torch.unique(a2a2, return_counts=True)[1][1:]))
-        print("a2a count: ", torch.unique(a2a, return_counts=True)[1][1:])
-        print("a2a2 count: ", torch.unique(a2a2, return_counts=True)[1][1:])     
-        print("a2a[0]: ", a2a[0])
-        print("a2a2[0]: ", a2a2[0])
-
-    if args.debug:
-        # DEBUG: Record time of efficient loop
-        start6 = torch.cuda.Event(enable_timing=True)
-        end6 = torch.cuda.Event(enable_timing=True)
-        start6.record()
-
-        # Efficient b2a calculation
-        b2a2 = data.edge_index[0].type(torch.FloatTensor)
-
-        # DEBUG: Print time of efficient loop
-        end6.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("\nefficient b2a loop time: ", start6.elapsed_time(end6))
-        #print("b2a and b2a2 equal? ", torch.equal(b2a, b2a2)) # Check that two methods are equal, and print first/last elements
-
-    if args.debug:
-        # DEBUG: Record time of efficient loop
-        start7 = torch.cuda.Event(enable_timing=True)
-        end7 = torch.cuda.Event(enable_timing=True)
-        start7.record()
-
-        # Efficient a2b calculation
-        count, idx = torch.unique(data.edge_index[1], return_counts=True)
-        max_bonds = int(torch.max(degree(data.edge_index[1])))
-
-        a2b1 = torch.zeros(num_atoms_total, max_bonds)
-        for i in range(len(idx)):
-            if i == 0:
-                start_index = 0
-                indices = torch.arange(0, idx[i])
-                a2b1[i] = torch.cat((indices, torch.zeros(len(a2b1[0]) - len(indices))), 0)
-            else:
-                end_index = start_index + idx[i]
-                indices = torch.arange(start_index, end_index)
-                a2b1[i] = torch.cat((indices, torch.zeros(len(a2b1[0]) - len(indices))), 0)
-            start_index = start_index + idx[i]
-        a2b1 = a2b1.type(torch.LongTensor)
-
-        # DEBUG: Print time of efficient loop
-        end7.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("\nefficient a2b loop time: ", start7.elapsed_time(end7))
-        #print("a2b and a2b1 equal? ", torch.equal(a2b, a2b1))
-
-        # DEBUG: Record time of fifth experimental a2b loop
-        start7 = torch.cuda.Event(enable_timing=True)
-        end7 = torch.cuda.Event(enable_timing=True)
-        start7.record()
-
-        idx = torch.nn.functional.pad(idx, (1,0)) # pad with zero on the left
-        a2b2 = [ torch.arange(torch.sum(idx[:i]), torch.sum(idx[:i+1]))  for i in range(1, len(idx)) ]
-        a2b2 = torch.nn.utils.rnn.pad_sequence(a2b2, batch_first=True, padding_value=0)
-
-        # DEBUG: Print time of efficient loop
-        end7.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("\nmore efficient a2b loop time: ", start7.elapsed_time(end7))
-        print("a2b and a2b1 equal? ", torch.equal(a2b, a2b1))
-        
-	# DEBUG: Record time of fifth experimental a2b loop
-        start7 = torch.cuda.Event(enable_timing=True)
-        end7 = torch.cuda.Event(enable_timing=True)
-        start7.record()
-        
-        out, inverse_indices, counts = torch.unique(data.edge_index[1], return_counts=True, return_inverse=True)
-        if len(out) - 1 != out[-1]: # If they are the correct length then we don't need to add 0's
-            ascending = torch.arange(out[-1] + 1).cuda() # Ascending order list [0, 1, ... n] where n is last elem in out
-            missing = [ elem not in out for elem in ascending ] # Missing elements in out
-            for elem in numpy.nonzero(missing)[0]:
-                i = int(elem) 
-                out = torch.cat((out[:i], torch.tensor((i,)).cuda(), out[i:])) # Add missing index
-                counts = torch.cat((counts[:i], torch.tensor((0,)).cuda(), counts[i:])) # Add zero to count
-        a2b3 = torch.split(torch.arange(len(data.edge_index[1])), tuple(counts))
-        a2b3 = torch.nn.utils.rnn.pad_sequence(a2b3, batch_first=True, padding_value=0)
-        a2bcounts = a2bcounts.type(torch.LongTensor).cuda()
-
-        print("inverse indices: ", inverse_indices.tolist()[1200:1210])
-        #print("out (unique values): ", out.tolist())
-        print("counts and a2bcounts equal? ", torch.equal(counts, a2bcounts))
-        #print("counts and a2bcounts equal? ", counts == a2bcounts) 
-        print("counts check elem: ", counts[1206])
-        print("a2bcounts check elem: ", a2bcounts[1206])        
-        print("counts check elem: ", counts[1207])
-        print("a2bcounts check elem: ", a2bcounts[1207])
-        #print("counts check elem: ", counts[2045])
-        #print("a2bcounts check elem: ", a2bcounts[2045])
-        unmatching = 0
-        unmatching_indices = []
-        for i in range(len(counts)):
-            if not torch.equal(counts[i], a2bcounts[i]):
-                #print("counts: " + str(counts[i]) + ", a2bcounts: " + str(a2bcounts[i]))
-                unmatching += 1
-                unmatching_indices.append(i)
-        print("last elemm counts: ", counts[-1])
-        print("2nd last elem a2bcounts: ", a2bcounts[-2])
-        print("last elem a2bcounts: ", a2bcounts[-1])
-        print("unmatching: ", unmatching) 
-        print("unmatching indices: ", unmatching_indices)
-
-        # DEBUG: Print time of efficient loop
-        end7.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("\nmore efficient a2b loop time: ", start7.elapsed_time(end7))
-        print("a2b and a2b3 equal? ", torch.equal(a2b, a2b3))
-        #print("a2b and a2b3 elems equal: ", a2b == a2b3)
-        print("a2b length" + str(len(a2b)) + ", a2b3 length: " + str(len(a2b3)))
-        print("a2b2 length: ", len(a2b2))
-        print("a2b1 length: ", len(a2b1))
-
-        last = 0
-        skipbacks = 0
-        for i in range(len(data.edge_index[1])):
-            if data.edge_index[1][i] > last:
-                last = data.edge_index[1][i]
-            if data.edge_index[1][i] < last:
-                last = data.edge_index[1][i]
-                skipbacks += 1
-        print("total skipbacks: ", skipbacks)
-
-
-        total = 0
-        for i in range(len(a2b3)):
-            if not torch.equal(a2b[i], a2b3[i]):
-                total+= 1
-               # print("a2b[i]: ", a2b[i])
-               # print("a2b3[i]: ", a2b3[i])
-        print("total unmatching rows: ", total)
-        print("a2b3 last row: ", a2b3[-1])
-        print("a2b row equivalent: ", a2b[-2])
-        print("a2b last row: ", a2b[-1]) 
-        print("a2b: ", a2b[0])
-        print("a2b1: ", a2b1[0])
-        print("a2b2: ", a2b2[0])
-        print("a2b3: ", a2b3[0])
-        print("a2b: ", a2b[-1])
-        print("a2b1: ", a2b1[-1])
-        print("a2b2: ", a2b2[-1])
-        print("a2b3: ", a2b3[-1])
-        
-        unmatching = 0
-        for i in range(len(a2b3)):
-            for j in range(len(a2b3[i])):
-                if(a2b3[i][j] != 0):
-                    if(int(data.edge_index[1][int(a2b3[i][j])]) != i):
-                        unmatching += 1 
-        print("unmatching a2b3: ", unmatching)    
-
-        unmatching = 0
-        for i in range(len(a2b2)):
-            for j in range(len(a2b2[i])):
-                if(a2b2[i][j] != 0):
-                    if(int(data.edge_index[1][int(a2b2[i][j])]) != i):
-                        unmatching += 1
-        print("unmatching a2b2: ", unmatching)
-
-        unmatching = 0
-        for i in range(len(a2b1)):
-            for j in range(len(a2b1[i])):
-                if(a2b1[i][j] != 0):
-                    if(int(data.edge_index[1][int(a2b1[i][j])]) != i):
-                        unmatching += 1
-        print("unmatching a2b1: ", unmatching)
-
-        unmatching = 0
-        for i in range(len(a2b)):
-            for j in range(len(a2b[i])):
-                if(a2b[i][j] != 0):
-                    if(int(data.edge_index[1][int(a2b[i][j])]) != i):
-                        unmatching += 1
-                        #print("ex: ", int(data.edge_index[1][int(a2b[i][j])]))
-        print("unmatching a2b: ", unmatching)
-    
-    # Temporarily set b2revb to all zeros and test if it can train
+    # Set reverse bond mapping to all zeros, as our graph is mostly undirected TODO: check if this limits training capcity
     b2revb = torch.zeros((data.edge_index.shape[1],)).long()
+
     batch = (f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a)
     return batch
 
