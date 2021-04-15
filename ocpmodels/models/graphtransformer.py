@@ -264,32 +264,11 @@ class GraphTransformer(BaseModel):
 
         data.edge_attr = self.distance_expansion(distances) # Features will be of dimensions [num_edges, num_gaussians]
 
-        if args.debug: # DEBUG: Record time of convert_input
-            start_convert = torch.cuda.Event(enable_timing=True)
-            end_convert = torch.cuda.Event(enable_timing=True)
-            start_convert.record()
-
         # Convert to format from PyTorch Geometric to explicit mappings format used by GROVER
         converted_input = convert_input(args, data)
 
-        if args.debug:
-            # DEBUG: Print time of convert_input
-            end_convert.record()
-            torch.cuda.synchronize() # Waits for everything to finish running
-            print("convert_input time: ", start_convert.elapsed_time(end_convert))
-
-            # DEBUG: Record time of GTransEncoder
-            start_encoder = torch.cuda.Event(enable_timing=True)
-            end_encoder = torch.cuda.Event(enable_timing=True)
-            start_encoder.record()
-
         # GTransEncoder
         output = self.encoders(converted_input)
-
-        if args.debug: # DEBUG: Print time of GTransEncoder
-            end_encoder.record()
-            torch.cuda.synchronize()  # Waits for everything to finish running
-            print("GTransEncoder time: ", start_encoder.elapsed_time(end_encoder))
 
         embeddings = {}
         if args.embedding_output_type == 'atom':
@@ -308,11 +287,6 @@ class GraphTransformer(BaseModel):
 
         # Use info from data batch to only sum up energy per system
         batch = data.batch
-
-        if args.debug: # DEBUG: Record time of force/energy calculation
-            start_output = torch.cuda.Event(enable_timing=True)
-            end_output = torch.cuda.Event(enable_timing=True)
-            start_output.record()
 
         # Energy calculated by passing atom embeddings through feed-forward layer, summing over atoms in the system
         atom_ffn_energy = self.energy_atom_from_atom_ffn(atom_from_atom_output) # output is 1 dimensional per atom
@@ -360,10 +334,6 @@ class GraphTransformer(BaseModel):
             energy = ( atom_energy + bond_energy ) / 2
             forces = ( atom_forces + bond_forces ) / 2
 
-        if args.debug:
-            end_output.record()
-            torch.cuda.synchronize()  # Waits for everything to finish running
-            print("energy/force calculation time: ", start_output.elapsed_time(end_output))
         return energy, forces
 
     # From SchNet/dimenet: calculate forces through gradients--we will calculate them explicitly with transformer for now
@@ -474,11 +444,6 @@ def convert_input(args, data):
         b2revb = torch.zeros((data.edge_index.shape[1],)).long()  # (num_edges, ) - One reverse bond per bond
         rev_edges = {}  # Dict of lists for each (from_atom, to_atom) pair, saving edge numbers
 
-        # DEBUG: Record time of third (edges) loop
-        start3 = torch.cuda.Event(enable_timing=True)
-        end3 = torch.cuda.Event(enable_timing=True)
-        start3.record()
-
         # Loop through every edge in the graph
         for i in range(data.edge_index.shape[1]):
             from_atom = int(data.edge_index[0][i])
@@ -490,16 +455,6 @@ def convert_input(args, data):
             if (key not in rev_edges):  # If the edge from these two atoms has not been seen yet
                 rev_edges[key] = []  # Declare it as a list (so we can keep track of the edge numbers)
             rev_edges[key].append(i)  # Append the edge number to the list
-
-        # DEBUG: Print time of third (edges) loop
-        end3.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("convert_input third loop time: ", start3.elapsed_time(end3))
-
-        # DEBUG: Record time of fourth (reverse edges) loop
-        start4 = torch.cuda.Event(enable_timing=True)
-        end4 = torch.cuda.Event(enable_timing=True)
-        start4.record()
 
         # Iterate through and set b2revb with reverse bonds
         for atoms, edges in rev_edges.items():
@@ -513,10 +468,6 @@ def convert_input(args, data):
                 b2revb[edges[3]] = edges[1]
             elif(len(edges) == 1):
                 args.undirected = False
-        # DEBUG: Record time of fifth loop
-        end4.record()
-        torch.cuda.synchronize()  # Waits for everything to finish running
-        print("convert_input fourth loop time: ", start4.elapsed_time(end4))
 
         # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
         # Trim length to max number of edges seen in the data (should be capped by 50 but not always in practice)
@@ -531,11 +482,13 @@ def convert_input(args, data):
         b2a = b2a.cpu()
 
         # COMPARE IMPLEMENTATIONS
-        print("b2a and b2a2 equal? ", torch.equal(b2a, b2a2))
         if not torch.equal(b2a, b2a2):
-            print("b2a: ", b2a.tolist())
-            print("b2a2: ", b2a2.tolist())
-            print("b2a shape: ", b2a.shape)
+            print("a2b and a2b2 equal? ", torch.equal(a2b, a2b2))
+            print("b2a and b2a2 equal? ", torch.equal(b2a, b2a2))
+            print("a2a and a2a2 equal? ", torch.equal(a2a, a2a2))
+            print("a2a and a2a2 equal counts: ",
+                  torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]))
+            print("\nb2a shape: ", b2a.shape)
             print("b2a2 shape: ", b2a2.shape)
             path = "logs/error_dumps/b2a" + str(list(b2a.shape)).strip("[]")
             os.makedirs(path)
@@ -544,11 +497,13 @@ def convert_input(args, data):
             torch.save(data.edge_index, path + "/edge_index.pt")
             raise Exception("Incorrect b2a calculation")
 
-        print("a2b and a2b2 equal? ", torch.equal(a2b, a2b2))
         if not torch.equal(a2b, a2b2):
-            print("a2b: ", a2b.tolist())
-            print("a2b2: ", a2b2.tolist())
-            print("a2b shape: ", a2b.shape)
+            print("a2b and a2b2 equal? ", torch.equal(a2b, a2b2))
+            print("b2a and b2a2 equal? ", torch.equal(b2a, b2a2))
+            print("a2a and a2a2 equal? ", torch.equal(a2a, a2a2))
+            print("a2a and a2a2 equal counts: ",
+                  torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]))
+            print("\na2b shape: ", a2b.shape)
             print("a2b2 shape: ", a2b2.shape)
             path = "logs/error_dumps/a2b" + str(list(b2a.shape)).strip("[]").replace(",", "-").replace(" ", "")
             os.makedirs(path)
@@ -556,15 +511,18 @@ def convert_input(args, data):
             torch.save(a2b2, path + "/a2b2.pt")
             torch.save(data.edge_index, path + "/edge_index.pt")
             raise Exception("Incorrect a2b calculation")
-        print("a2a and a2a2 equal? ", torch.equal(a2a, a2a2))
-        print("a2a and a2a2 equal counts: ",
-              torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]))
+
         if not torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]):
-            print("a2a count: ", torch.unique(a2a, return_counts=True)[1])
+
+
+        if not torch.equal(a2a, a2a2) or not torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]):
+            print("a2b and a2b2 equal? ", torch.equal(a2b, a2b2))
+            print("b2a and b2a2 equal? ", torch.equal(b2a, b2a2))
+            print("a2a and a2a2 equal? ", torch.equal(a2a, a2a2))
+            print("a2a and a2a2 equal counts: ",
+                  torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]))
+            print("\na2a count: ", torch.unique(a2a, return_counts=True)[1])
             print("a2a2 count: ", torch.unique(a2a2, return_counts=True)[1])
-        if not torch.equal(a2a, a2a2):
-            print("a2a: ", a2a.tolist())
-            print("a2a2: ", a2a2.tolist())
             print("a2a shape: ", a2a.shape)
             print("a2a2 shape: ", a2a2.shape)
             path = "logs/error_dumps/a2a" + str(list(b2a.shape)).strip("[]").replace(",", "-").replace(" ", "")
@@ -573,7 +531,6 @@ def convert_input(args, data):
             torch.save(a2a2, path + "/a2a2.pt")
             torch.save(data.edge_index, path + "/edge_index.pt")
             raise Exception("Incorrect a2a calculation")
-
 
     # Set them equal temporarily
     a2b = a2b2
