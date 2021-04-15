@@ -116,7 +116,8 @@ class GraphTransformer(BaseModel):
         dense=True, # Use dense connection in MessagePassing layer
         features_only=False, # Use only the additional features in an FFN, no graph network
         cuda=True, # Use CUDA acceleration
-        debug=False # Print debugging info
+        debug=False, # Print debugging info
+        debug_name='Null'
     ):
         # OCP parameters
         self.num_targets = num_targets
@@ -150,6 +151,7 @@ class GraphTransformer(BaseModel):
         args.features_dim = 0 # Temproary for troubleshooting
         args.features_size = 0 # Temporary for troubleshooting
         args.debug = debug
+        args.debug_name = debug_name
         self.args = args # Hack to call in forward pass
 
         super(GraphTransformer, self).__init__()
@@ -528,6 +530,14 @@ def convert_input(args, data):
             torch.save(a2a2, path + "/a2a2.pt")
             torch.save(data.edge_index, path + "/edge_index.pt")
             raise Exception("Incorrect a2a calculation")
+
+    # In order to more easily detect errors, save the current edge index and a2a/a2b/b2a to file (overwriting every iteration)
+    path = "logs/data_dump/" + str(args.debug_name)
+    os.makedirs(path)
+    torch.save(a2a2, path + "/a2a2.pt")
+    torch.save(a2b2, path + "/a2b2.pt")
+    torch.save(b2a2, path + "/b2a2.pt")
+    torch.save(data.edge_index, path + "/edge_index.pt")
 
     # Set them equal temporarily
     a2b = a2b2
