@@ -441,11 +441,11 @@ def convert_input(args, data):
         for elem in numpy.nonzero(missing)[0]:
             i = int(elem)
             counts = torch.cat((counts[:i], torch.tensor((0,)).cuda(), counts[i:])) # Add zero to count
-    a2a = sorted_index[1].split(counts.tolist())  # Index into to_bonds with these indices
-    a2a = torch.nn.utils.rnn.pad_sequence(list(a2a), batch_first=True, padding_value=0)
-   
+    a2a2 = sorted_index[1].split(counts.tolist())  # Index into to_bonds with these indices
+    a2a2 = torch.nn.utils.rnn.pad_sequence(list(a2a2), batch_first=True, padding_value=0)  
+ 
     # Calculate outgoing bond to atom mappings (b2a)
-    b2a = data.edge_index[0].type(torch.LongTensor)
+    b2a2 = data.edge_index[0].type(torch.LongTensor)
 
     # Calculate atom to incoming bond mappings (a2b)
     out, counts = torch.unique(data.edge_index[1], return_counts=True)
@@ -455,14 +455,87 @@ def convert_input(args, data):
         for elem in numpy.nonzero(missing)[0]:
             i = int(elem)
             counts = torch.cat((counts[:i], torch.tensor((0,)).cuda(), counts[i:])) # Add zero to count
-    a2b = torch.split(torch.arange(len(data.edge_index[1])), tuple(counts))
-    a2b = torch.nn.utils.rnn.pad_sequence(a2b, batch_first=True, padding_value=0)
 
+    a2b2 = torch.split(torch.arange(len(data.edge_index[1])), tuple(counts))
+    a2b2 = torch.nn.utils.rnn.pad_sequence(a2b2, batch_first=True, padding_value=0)
+
+    a2a2 = a2a2.cpu()
+    a2b2 = a2b2.cpu()
+    b2a2 = b2a2.cpu()
+
+    # OLD CODE FOR CALCULATING MAPPINGS
+    num_atoms_total = int(torch.sum(data.natoms))
+    a2a = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append neighbors for a given atom
+    a2b = [[] for j in range(num_atoms_total)]  # List of lists - Dynamically append edges for a given atom
+    b2a = torch.zeros((data.edge_index.shape[1],)).long() # (num_edges, ) - One originating atom per edge
+    b2revb = torch.zeros((data.edge_index.shape[1],)).long()  # (num_edges, ) - One reverse bond per bond
+    rev_edges = {}  # Dict of lists for each (from_atom, to_atom) pair, saving edge numbers
+    if args.debug: # DEBUG: Record time of third (edges) loop
+        start3 = torch.cuda.Event(enable_timing=True)
+        end3 = torch.cuda.Event(enable_timing=True)
+        start3.record()
+    # Loop through every edge in the graph
+    for i in range(data.edge_index.shape[1]):
+        from_atom = int(data.edge_index[0][i])
+        to_atom = int(data.edge_index[1][i])
+        a2a[from_atom].append(to_atom)  # Mark b as neighbor of a
+        a2b[to_atom].append(i)  # Mark bond i as incoming bond to atom a
+        b2a[i] = from_atom  # Mark a as atom where bond i is originating
+        key = frozenset({to_atom, from_atom})
+        if (key not in rev_edges):  # If the edge from these two atoms has not been seen yet
+            rev_edges[key] = []  # Declare it as a list (so we can keep track of the edge numbers)
+        rev_edges[key].append(i)  # Append the edge number to the list
+    if args.debug:
+        # DEBUG: Print time of third (edges) loop
+        end3.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("convert_input third loop time: ", start3.elapsed_time(end3))
+        # DEBUG: Record time of fourth (reverse edges) loop
+        start4 = torch.cuda.Event(enable_timing=True)
+        end4 = torch.cuda.Event(enable_timing=True)
+        start4.record()
+    # Iterate through and set b2revb with reverse bonds
+    for atoms, edges in rev_edges.items():
+        if(len(edges) == 2):
+            b2revb[edges[0]] = edges[1]
+            b2revb[edges[1]] = edges[0]
+        elif(len(edges) == 4): # In the case of duplicate edges, they are grouped together in this order
+            b2revb[edges[0]] = edges[2]
+            b2revb[edges[2]] = edges[0]
+            b2revb[edges[1]] = edges[3]
+            b2revb[edges[3]] = edges[1]
+        elif(len(edges) == 1):
+            args.undirected = False
+    if args.debug: # DEBUG: Print time of third (edges) loop
+        end4.record()
+        torch.cuda.synchronize()  # Waits for everything to finish running
+        print("convert_input fourth loop time: ", start4.elapsed_time(end4))
+    # Convert list of lists for a2a and a2b into tensor: (num_nodes, max_edges)
+    # Trim length to max number of edges seen in the data (should be capped by 50 but not always in practice)
+    a2a_pad = len(max(a2a, key=len))
+    a2b_pad = len(max(a2b, key=len))
+    # -1 is not a valid atom or edge index so we pad with this
+    a2a = torch.tensor([i + [0] * (a2a_pad - len(i)) for i in a2a])
+    a2b = torch.tensor([i + [0] * (a2b_pad - len(i)) for i in a2b])
+    
     # TODO: Check if return types are correct and potentially convert to cpu/cuda devices
     a2a = a2a.cpu()
     a2b = a2b.cpu()
     b2a = b2a.cpu()
-    
+ 
+    # COMPARE IMPLEMENTATIONS
+    print("b2a and b2a2 equal? ", torch.equal(b2a, b2a2)) # Check that two methods are equal, and print first/last elements
+    print("a2b and a2b2 equal? ", torch.equal(a2b, a2b2))
+    print("a2a and a2a2 equal? ", torch.equal(a2a, a2a2))
+    print("types: ", [b2a.type(), a2b.type(), a2a.type(), b2a2.type(), a2b2.type(), a2a2.type()])
+    print("a2a and a2a2 equal counts: ",
+        torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]))
+
+    # Set them equal temporarily
+    a2b = a2b2
+    a2a = a2a2
+    b2a = b2a2
+
     # Set reverse bond mapping to all zeros, as our graph is mostly undirected TODO: check if this limits training capcity
     b2revb = torch.zeros((data.edge_index.shape[1],)).long()
 
