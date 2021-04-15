@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 from typing import Union
 from argparse import Namespace
 import numpy
+import os
 import scipy.stats as stats
 import torch
 from torch import nn as nn
@@ -528,7 +529,7 @@ def convert_input(args, data):
         a2a = a2a.cpu()
         a2b = a2b.cpu()
         b2a = b2a.cpu()
- 
+
         # COMPARE IMPLEMENTATIONS
         print("b2a and b2a2 equal? ", torch.equal(b2a, b2a2))
         if not torch.equal(b2a, b2a2):
@@ -536,12 +537,23 @@ def convert_input(args, data):
             print("b2a2: ", b2a2.tolist())
             print("b2a shape: ", b2a.shape)
             print("b2a2 shape: ", b2a2.shape)
+            path = "logs/error_dumps/b2a" + str(list(b2a.shape)).strip("[]")
+            os.makedirs(path)
+            torch.save(b2a, path + "/b2a.pt")
+            torch.save(b2a2, path + "/b2a2.pt")
+            torch.save(data.edge_index, path + "/edge_index.pt")
+
         print("a2b and a2b2 equal? ", torch.equal(a2b, a2b2))
         if not torch.equal(a2b, a2b2):
             print("a2b: ", a2b.tolist())
             print("a2b2: ", a2b2.tolist())
             print("a2b shape: ", a2b.shape)
             print("a2b2 shape: ", a2b2.shape)
+            path = "logs/error_dumps/a2b" + str(list(b2a.shape)).strip("[]").replace(",", "-").replace(" ", "")
+            os.makedirs(path)
+            torch.save(a2b, path + "/a2b.pt")
+            torch.save(a2b2, path + "/a2b2.pt")
+            torch.save(data.edge_index, path + "/edge_index.pt")
         print("a2a and a2a2 equal? ", torch.equal(a2a, a2a2))
         print("a2a and a2a2 equal counts: ",
               torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]))
@@ -553,6 +565,11 @@ def convert_input(args, data):
             print("a2a2: ", a2a2.tolist())
             print("a2a shape: ", a2a.shape)
             print("a2a2 shape: ", a2a2.shape)
+            os.makedirs(path)
+            path = "logs/error_dumps/a2a" + str(list(b2a.shape)).strip("[]").replace(",", "-").replace(" ", "")
+            torch.save(a2a, path + "/a2a.pt")
+            torch.save(a2a2, path + "/a2a2.pt")
+            torch.save(data.edge_index, path + "/edge_index.pt")
 
 
     # Set them equal temporarily
