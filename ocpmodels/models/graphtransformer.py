@@ -512,9 +512,6 @@ def convert_input(args, data):
             torch.save(data.edge_index, path + "/edge_index.pt")
             raise Exception("Incorrect a2b calculation")
 
-        if not torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]):
-
-
         if not torch.equal(a2a, a2a2) or not torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]):
             print("a2b and a2b2 equal? ", torch.equal(a2b, a2b2))
             print("b2a and b2a2 equal? ", torch.equal(b2a, b2a2))
