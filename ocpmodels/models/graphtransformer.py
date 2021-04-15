@@ -542,6 +542,7 @@ def convert_input(args, data):
             torch.save(b2a, path + "/b2a.pt")
             torch.save(b2a2, path + "/b2a2.pt")
             torch.save(data.edge_index, path + "/edge_index.pt")
+            raise Exception("Incorrect b2a calculation")
 
         print("a2b and a2b2 equal? ", torch.equal(a2b, a2b2))
         if not torch.equal(a2b, a2b2):
@@ -554,6 +555,7 @@ def convert_input(args, data):
             torch.save(a2b, path + "/a2b.pt")
             torch.save(a2b2, path + "/a2b2.pt")
             torch.save(data.edge_index, path + "/edge_index.pt")
+            raise Exception("Incorrect a2b calculation")
         print("a2a and a2a2 equal? ", torch.equal(a2a, a2a2))
         print("a2a and a2a2 equal counts: ",
               torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]))
@@ -565,11 +567,12 @@ def convert_input(args, data):
             print("a2a2: ", a2a2.tolist())
             print("a2a shape: ", a2a.shape)
             print("a2a2 shape: ", a2a2.shape)
-            os.makedirs(path)
             path = "logs/error_dumps/a2a" + str(list(b2a.shape)).strip("[]").replace(",", "-").replace(" ", "")
+            os.makedirs(path)
             torch.save(a2a, path + "/a2a.pt")
             torch.save(a2a2, path + "/a2a2.pt")
             torch.save(data.edge_index, path + "/edge_index.pt")
+            raise Exception("Incorrect a2a calculation")
 
 
     # Set them equal temporarily
