@@ -493,7 +493,8 @@ def convert_input(args, data):
             print("\nb2a shape: ", b2a.shape)
             print("b2a2 shape: ", b2a2.shape)
             path = "logs/error_dumps/b2a" + str(list(b2a.shape)).strip("[]")
-            os.makedirs(path)
+            if not os.path.isdir(path):
+                os.makedirs(path)
             torch.save(b2a, path + "/b2a.pt")
             torch.save(b2a2, path + "/b2a2.pt")
             torch.save(data.edge_index, path + "/edge_index.pt")
@@ -508,7 +509,8 @@ def convert_input(args, data):
             print("\na2b shape: ", a2b.shape)
             print("a2b2 shape: ", a2b2.shape)
             path = "logs/error_dumps/a2b" + str(list(b2a.shape)).strip("[]").replace(",", "-").replace(" ", "")
-            os.makedirs(path)
+            if not os.path.isdir(path):
+                os.makedirs(path)
             torch.save(a2b, path + "/a2b.pt")
             torch.save(a2b2, path + "/a2b2.pt")
             torch.save(data.edge_index, path + "/edge_index.pt")
@@ -525,7 +527,8 @@ def convert_input(args, data):
             print("a2a shape: ", a2a.shape)
             print("a2a2 shape: ", a2a2.shape)
             path = "logs/error_dumps/a2a" + str(list(b2a.shape)).strip("[]").replace(",", "-").replace(" ", "")
-            os.makedirs(path)
+            if not os.path.isdir(path):
+                os.makedirs(path)
             torch.save(a2a, path + "/a2a.pt")
             torch.save(a2a2, path + "/a2a2.pt")
             torch.save(data.edge_index, path + "/edge_index.pt")
@@ -533,7 +536,8 @@ def convert_input(args, data):
 
     # In order to more easily detect errors, save the current edge index and a2a/a2b/b2a to file (overwriting every iteration)
     path = "logs/data_dump/" + str(args.debug_name)
-    os.makedirs(path)
+    if not os.path.isdir(path):
+        os.makedirs(path)
     torch.save(a2a2, path + "/a2a2.pt")
     torch.save(a2b2, path + "/a2b2.pt")
     torch.save(b2a2, path + "/b2a2.pt")
