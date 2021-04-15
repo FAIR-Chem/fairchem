@@ -530,12 +530,30 @@ def convert_input(args, data):
         b2a = b2a.cpu()
  
         # COMPARE IMPLEMENTATIONS
-        print("b2a and b2a2 equal? ", torch.equal(b2a, b2a2)) # Check that two methods are equal, and print first/last elements
+        print("b2a and b2a2 equal? ", torch.equal(b2a, b2a2))
+        if not torch.equal(b2a, b2a2):
+            print("b2a: ", b2a.tolist())
+            print("b2a2: ", b2a2.tolist())
+            print("b2a shape: ", b2a.shape)
+            print("b2a2 shape: ", b2a2.shape)
         print("a2b and a2b2 equal? ", torch.equal(a2b, a2b2))
+        if not torch.equal(a2b, a2b2):
+            print("a2b: ", a2b.tolist())
+            print("a2b2: ", a2b2.tolist())
+            print("a2b shape: ", a2b.shape)
+            print("a2b2 shape: ", a2b2.shape)
         print("a2a and a2a2 equal? ", torch.equal(a2a, a2a2))
-        print("types: ", [b2a.type(), a2b.type(), a2a.type(), b2a2.type(), a2b2.type(), a2a2.type()])
         print("a2a and a2a2 equal counts: ",
-            torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]))
+              torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]))
+        if not torch.equal(torch.unique(a2a, return_counts=True)[1], torch.unique(a2a2, return_counts=True)[1]):
+            print("a2a count: ", torch.unique(a2a, return_counts=True)[1])
+            print("a2a2 count: ", torch.unique(a2a2, return_counts=True)[1])
+        if not torch.equal(a2a, a2a2):
+            print("a2a: ", a2a.tolist())
+            print("a2a2: ", a2a2.tolist())
+            print("a2a shape: ", a2a.shape)
+            print("a2a2 shape: ", a2a2.shape)
+
 
     # Set them equal temporarily
     a2b = a2b2
