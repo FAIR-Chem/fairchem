@@ -419,11 +419,13 @@ def convert_input(args, data):
     a2a2 = sorted_index[1].split(counts.tolist())  # Index into to_bonds with these indices
     a2a2 = torch.nn.utils.rnn.pad_sequence(list(a2a2), batch_first=True,
                                            padding_value=0) # Pad with zeros into a tensor
+    a2a2 = a2a2.cpu()
+
     if len(a2a2 < num_atoms_total):
         a2a2 = torch.cat((a2a2, torch.zeros((1, a2a2.shape[1]))))  # Add extra entry of zeros to match dimensions
 
     # Calculate outgoing bond to atom mappings (b2a)
-    b2a2 = data.edge_index[0].type(torch.LongTensor)
+    b2a2 = data.edge_index[0].type(torch.LongTensor).cpu()
 
     # Calculate atom to incoming bond mappings (a2b)
     out, counts = torch.unique(data.edge_index[1], return_counts=True)
@@ -436,12 +438,9 @@ def convert_input(args, data):
 
     a2b2 = torch.split(torch.arange(len(data.edge_index[1])), tuple(counts))
     a2b2 = torch.nn.utils.rnn.pad_sequence(a2b2, batch_first=True, padding_value=0)  # Pad with zeros into a tensor
+    a2b2 = a2b2.cpu()
     if len(a2b2 < num_atoms_total):
         a2b2 = torch.cat((a2b2, torch.zeros((1, a2b2.shape[1]))))  # Add extra entry of zeros to match dimensions
-
-    a2a2 = a2a2.cpu()
-    a2b2 = a2b2.cpu()
-    b2a2 = b2a2.cpu()
 
     # If we need to debug, test against guaranteed (but inefficient) way to do it
     if args.debug:
