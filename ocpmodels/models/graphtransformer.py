@@ -541,7 +541,7 @@ def convert_input(args, data):
     torch.save(a2a2, path + "/a2a2.pt")
     torch.save(a2b2, path + "/a2b2.pt")
     torch.save(b2a2, path + "/b2a2.pt")
-    torch.save(data.edge_index, path + "/edge_index.pt")
+    torch.save(data, path + "/data.pt")
 
     # Set them equal temporarily
     a2b = a2b2
