@@ -545,16 +545,16 @@ def convert_input(args, data):
             torch.save(data.edge_index, path + "/edge_index.pt")
             raise Exception("Incorrect a2a calculation")
 
-    # In order to more easily detect errors, save the current edge index and a2a/a2b/b2a to file (overwriting every iteration)
-    path = "logs/data_dump/" + str(args.debug_name)
-    if not os.path.isdir(path):
-        os.makedirs(path)
-    torch.save(a2a2, path + "/a2a2.pt")
-    torch.save(a2b2, path + "/a2b2.pt")
-    torch.save(b2a2, path + "/b2a2.pt")
-    torch.save(data, path + "/data.pt")
+    # # In order to more easily detect errors, save the current edge index and a2a/a2b/b2a to file (overwriting every iteration)
+    # path = "logs/data_dump/" + str(args.debug_name)
+    # if not os.path.isdir(path):
+    #     os.makedirs(path)
+    # torch.save(a2a2, path + "/a2a2.pt")
+    # torch.save(a2b2, path + "/a2b2.pt")
+    # torch.save(b2a2, path + "/b2a2.pt")
+    # torch.save(data, path + "/data.pt")
 
-    # Set them equal temporarily
+    # Use more efficient calculations of a2a/a2b/b2a
     a2b = a2b2
     a2a = a2a2
     b2a = b2a2
