@@ -442,6 +442,9 @@ def convert_input(args, data):
     if len(a2b2 < num_atoms_total):
         a2b2 = torch.cat((a2b2, torch.zeros((1, a2b2.shape[1]))))  # Add extra entry of zeros to match dimensions
 
+    a2a2 = a2a2.type(torch.LongTensor)
+    a2b2 = a2b2.type(torch.LongTensor)
+
     # If we need to debug, test against guaranteed (but inefficient) way to do it
     if args.debug:
         # OLD CODE FOR CALCULATING MAPPINGS
