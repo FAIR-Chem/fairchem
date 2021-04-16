@@ -117,7 +117,9 @@ class GraphTransformer(BaseModel):
         features_only=False, # Use only the additional features in an FFN, no graph network
         cuda=True, # Use CUDA acceleration
         debug=False, # Print debugging info
-        debug_name='Null'
+        debug_name='Null', # Name for saving debugging data object to disk #TODO: remove in the future if not needed
+        training=False, # Training flag true enables dynamic depth in message passing
+        dynamic_depth="none" # Method of calculating dynamic depth value. Possible choices: "none", "uniform" and "truncnorm"
     ):
         # OCP parameters
         self.num_targets = num_targets
@@ -152,6 +154,8 @@ class GraphTransformer(BaseModel):
         args.features_size = 0 # Temporary for troubleshooting
         args.debug = debug
         args.debug_name = debug_name
+        args.training = training
+        args.dynamic_depth = dynamic_depth
         self.args = args # Hack to call in forward pass
 
         super(GraphTransformer, self).__init__()
@@ -1283,6 +1287,8 @@ class MPNEncoder(nn.Module):
             w_h_input_size = self.hidden_size
         # Shared weight matrix across depths (default)
         self.W_h = nn.Linear(w_h_input_size, self.hidden_size, bias=self.bias)
+        self.training = args.training
+        self.dynamic_depth = args.dynamic_depth
 
     def forward(self,
                 init_messages,
