@@ -402,6 +402,8 @@ def convert_input(args, data):
         b_scope.append((start_index, end_index))
         start_index = start_index + system_size # Update start index to move to the next system
 
+    num_atoms_total = int(torch.sum(data.natoms))
+
     # Calculate atom to neighboring atom mappings (a2a)
     trans = data.edge_index.T
     sorted_index = trans[trans[:, 0].sort()[1]]  # Sort by column zero (from_node), index based off
@@ -415,8 +417,11 @@ def convert_input(args, data):
             i = int(elem)
             counts = torch.cat((counts[:i], torch.tensor((0,)).cuda(), counts[i:])) # Add zero to count
     a2a2 = sorted_index[1].split(counts.tolist())  # Index into to_bonds with these indices
-    a2a2 = torch.nn.utils.rnn.pad_sequence(list(a2a2), batch_first=True, padding_value=0)  
- 
+    a2a2 = torch.nn.utils.rnn.pad_sequence(list(a2a2), batch_first=True,
+                                           padding_value=0) # Pad with zeros into a tensor
+    if len(a2a2 < num_atoms_total):
+        a2a2 = torch.cat((a2a2, torch.zeros((1, a2a2.shape[1]))))  # Add extra entry of zeros to match dimensions
+
     # Calculate outgoing bond to atom mappings (b2a)
     b2a2 = data.edge_index[0].type(torch.LongTensor)
 
@@ -430,7 +435,9 @@ def convert_input(args, data):
             counts = torch.cat((counts[:i], torch.tensor((0,)).cuda(), counts[i:])) # Add zero to count
 
     a2b2 = torch.split(torch.arange(len(data.edge_index[1])), tuple(counts))
-    a2b2 = torch.nn.utils.rnn.pad_sequence(a2b2, batch_first=True, padding_value=0)
+    a2b2 = torch.nn.utils.rnn.pad_sequence(a2b2, batch_first=True, padding_value=0)  # Pad with zeros into a tensor
+    if len(a2b2 < num_atoms_total):
+        a2b2 = torch.cat((a2b2, torch.zeros((1, a2b2.shape[1]))))  # Add extra entry of zeros to match dimensions
 
     a2a2 = a2a2.cpu()
     a2b2 = a2b2.cpu()
