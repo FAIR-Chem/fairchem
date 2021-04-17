@@ -11,8 +11,8 @@ model:
   use_pbc: True
 
 optim:
-  batch_size: 32
-  eval_batch_size: 16
+  batch_size: 50
+  eval_batch_size: 25
   num_workers: 64
   lr_initial: 0.0005
   lr_gamma: 0.1

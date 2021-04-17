@@ -20,10 +20,11 @@ model:
   undirected: False # Don't want the model to behave differently depending on if it's undirected or not
   debug: False
   debug_name: "4head"
+  depth: 5
 
 optim:
-  batch_size: 100
-  eval_batch_size: 50
+  batch_size: 64
+  eval_batch_size: 32
   num_workers: 64
   lr_initial: 0.001
   lr_gamma: 0.1

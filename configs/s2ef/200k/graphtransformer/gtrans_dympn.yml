@@ -10,7 +10,7 @@ model:
   dropout: 0.1
   activation: "PReLU"
   num_mt_block:  1
-  num_attn_head: 2
+  num_attn_head: 4
   embedding_output_type: "atom"
   bias: True
   cuda: True
@@ -20,11 +20,11 @@ model:
   undirected: False # Don't want the model to behave differently depending on if it's undirected or not
   debug: False
   debug_name: "dympn"
-  training: True
   dynamic_depth: "truncnorm"
+  depth: 5
 
 optim:
-  batch_size: 100
+  batch_size: 75
   eval_batch_size: 50
   num_workers: 64
   lr_initial: 0.001
