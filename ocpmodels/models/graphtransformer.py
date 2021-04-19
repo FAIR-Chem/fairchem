@@ -142,7 +142,7 @@ class GraphTransformer(BaseModel):
         args.num_mt_block = num_mt_block
         args.res_connection = res_connection
         args.embedding_output_type = embedding_output_type
-        args.ffn_hidden_size = ffn_hidden_size
+        args.ffn_hidden_size = ffn_hidden_size if ffn_hidden_size is not None else hidden_size # Defaults to hidden size if None
         args.ffn_num_layers = ffn_num_layers
         args.self_attention = self_attention
         args.attn_hidden = attn_hidden
