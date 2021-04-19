@@ -118,7 +118,9 @@ class GraphTransformer(BaseModel):
         cuda=True, # Use CUDA acceleration
         debug=False, # Print debugging info
         debug_name='Null', # Name for saving debugging data object to disk #TODO: remove in the future if not needed
-        dynamic_depth="none" # Enables dynamic depth message passing. Possible choices: "none", "uniform" and "truncnorm"
+        dynamic_depth="none", # Enables dynamic depth message passing. Possible choices: "none", "uniform" and "truncnorm"
+        pred_ffn_intermediate_dim=50, # Intermediate dimension for the ffn used to predict forces & energies
+        pred_ffn_num_layers=3 # Number of layers for the ffn used to predict forces & energies
     ):
         # OCP parameters
         self.num_targets = num_targets
@@ -154,6 +156,9 @@ class GraphTransformer(BaseModel):
         args.debug = debug
         args.debug_name = debug_name
         args.dynamic_depth = dynamic_depth
+        args.pred_ffn_intermediate_dim = pred_ffn_intermediate_dim
+        args.pred_ffn_num_layers = pred_ffn_num_layers
+
         self.args = args # Hack to call in forward pass
 
         super(GraphTransformer, self).__init__()
@@ -173,17 +178,17 @@ class GraphTransformer(BaseModel):
                                       res_connection=args.res_connection)
 
         # Separate feed forward layers from atom embeddings to calculate energy & forces (3D)
-        self.energy_atom_from_atom_ffn = self.create_ffn(args, output_dim=1)
-        self.energy_atom_from_bond_ffn = self.create_ffn(args, output_dim=1)
-        self.energy_atom_from_bond_aggregated_ffn = self.create_ffn(args, output_dim=1)
+        self.energy_atom_from_atom_ffn = self.create_ffn(args, output_dim=1, intermediate_dim=args.pred_ffn_intermediate_dim, num_layers=args.pred_ffn_num_layers)
+        self.energy_atom_from_bond_ffn = self.create_ffn(args, output_dim=1, intermediate_dim=args.pred_ffn_intermediate_dim, num_layers=args.pred_ffn_num_layers)
+        self.energy_atom_from_bond_aggregated_ffn = self.create_ffn(args, output_dim=1, intermediate_dim=args.pred_ffn_intermediate_dim, num_layers=args.pred_ffn_num_layers)
 
-        self.forces_atom_from_atom_ffn = self.create_ffn(args, output_dim=3)
-        self.forces_atom_from_bond_ffn = self.create_ffn(args, output_dim=3)
-        self.forces_atom_from_bond__aggregated_ffn = self.create_ffn(args, output_dim=3)
+        self.forces_atom_from_atom_ffn = self.create_ffn(args, output_dim=3, intermediate_dim=args.pred_ffn_intermediate_dim, num_layers=args.pred_ffn_num_layers)
+        self.forces_atom_from_bond_ffn = self.create_ffn(args, output_dim=3, intermediate_dim=args.pred_ffn_intermediate_dim, num_layers=args.pred_ffn_num_layers)
+        self.forces_atom_from_bond__aggregated_ffn = self.create_ffn(args, output_dim=3, intermediate_dim=args.pred_ffn_intermediate_dim, num_layers=args.pred_ffn_num_layers)
 
 
     # FFNs for GTransformer output embeddings
-    def create_ffn(self, args: Namespace, output_dim):
+    def create_ffn(self, args: Namespace, output_dim, intermediate_dim, num_layers):
         """
         Creates the feed-forward network for the model.
         """
@@ -213,17 +218,29 @@ class GraphTransformer(BaseModel):
                 dropout,
                 nn.Linear(first_linear_dim, args.ffn_hidden_size)
             ]
-            for _ in range(args.ffn_num_layers - 2):
+            if intermediate_dim:
                 ffn.extend([
                     activation,
                     dropout,
-                    nn.Linear(args.ffn_hidden_size, args.ffn_hidden_size),
+                    nn.Linear(args.ffn_hidden_size, intermediate_dim)
                 ])
-            ffn.extend([
-                activation,
-                dropout,
-                nn.Linear(args.ffn_hidden_size, args.output_size),
-            ])
+                ffn.extend([
+                    activation,
+                    dropout,
+                    nn.Linear(intermediate_dim, args.output_size),
+                ])
+            else: 
+                for _ in range(args.ffn_num_layers - 2):
+                    ffn.extend([
+                        activation,
+                        dropout,
+                        nn.Linear(args.ffn_hidden_size, args.ffn_hidden_size),
+                    ])
+                ffn.extend([
+                    activation,
+                    dropout,
+                    nn.Linear(args.ffn_hidden_size, args.output_size),
+                ])
 
         # Create FFN model
         return nn.Sequential(*ffn)
