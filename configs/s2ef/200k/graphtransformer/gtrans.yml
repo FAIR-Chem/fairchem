@@ -35,4 +35,3 @@ optim:
   warmup_factor: 0.2
   max_epochs: 30
   force_coefficient: 10
-
