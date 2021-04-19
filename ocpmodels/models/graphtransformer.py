@@ -86,6 +86,15 @@ class GraphTransformer(BaseModel):
             (default: :obj:`False`)
         cuda (bool, optional): If set to :obj:`True`, use CUDA acceleration.
             (default: :obj:`True`)
+        debug (bool, optional): If set to :obj:`True`, show debugging info and test convert_input against slower iterative approach
+            (default: :obj:`False`)
+        dynamic_depth (string, optional): Enables dynamic depth message passing. Possible choices: "none", "uniform" and "truncnorm"
+            (default: :obj:`none`)
+        pred_ffn_intermediate_dim (int, optional): Experimental intermediate layer for energy/force prediction ffn: hidden size -> ffn_hidden_size -> intermediate_dim -> output_size
+            (default: :obj:`None`)
+        pred_ffn_num_layers (int, optional): Number of layers for the ffn used to predict forces & energies
+            (default: :obj:`2`)
+
     """
     def __init__(
         self,
@@ -117,10 +126,9 @@ class GraphTransformer(BaseModel):
         features_only=False, # Use only the additional features in an FFN, no graph network
         cuda=True, # Use CUDA acceleration
         debug=False, # Print debugging info
-        debug_name='Null', # Name for saving debugging data object to disk #TODO: remove in the future if not needed
         dynamic_depth="none", # Enables dynamic depth message passing. Possible choices: "none", "uniform" and "truncnorm"
-        pred_ffn_intermediate_dim=50, # Intermediate dimension for the ffn used to predict forces & energies
-        pred_ffn_num_layers=3 # Number of layers for the ffn used to predict forces & energies
+        pred_ffn_intermediate_dim=None, # Intermediate dimension for the ffn used to predict forces & energies
+        pred_ffn_num_layers=2 # Number of layers for the ffn used to predict forces & energies
     ):
         # OCP parameters
         self.num_targets = num_targets
@@ -154,7 +162,6 @@ class GraphTransformer(BaseModel):
         args.features_dim = 0 # Temproary for troubleshooting
         args.features_size = 0 # Temporary for troubleshooting
         args.debug = debug
-        args.debug_name = debug_name
         args.dynamic_depth = dynamic_depth
         args.pred_ffn_intermediate_dim = pred_ffn_intermediate_dim
         args.pred_ffn_num_layers = pred_ffn_num_layers
@@ -219,17 +226,24 @@ class GraphTransformer(BaseModel):
                 nn.Linear(first_linear_dim, args.ffn_hidden_size)
             ]
             if intermediate_dim:
-                ffn.extend([
-                    activation,
-                    dropout,
-                    nn.Linear(args.ffn_hidden_size, intermediate_dim)
-                ])
-                ffn.extend([
-                    activation,
-                    dropout,
-                    nn.Linear(intermediate_dim, args.output_size),
-                ])
-            else: 
+                if(num_layers == 3):
+                    ffn.extend([
+                        activation,
+                        dropout,
+                        nn.Linear(args.ffn_hidden_size, intermediate_dim)
+                    ])
+                    ffn.extend([
+                        activation,
+                        dropout,
+                        nn.Linear(intermediate_dim, args.output_size),
+                    ])
+                else: # Only allows 2 or 3 layers, otherwise too much learning is done by ffn and not GTransEncoder
+                    ffn.extend([
+                        activation,
+                        dropout,
+                        nn.Linear(args.ffn_hidden_size, args.output_size)
+                    ])
+            else:
                 for _ in range(args.ffn_num_layers - 2):
                     ffn.extend([
                         activation,
@@ -561,15 +575,6 @@ def convert_input(args, data):
             torch.save(a2a2, path + "/a2a2.pt")
             torch.save(data.edge_index, path + "/edge_index.pt")
             raise Exception("Incorrect a2a calculation")
-
-    # # In order to more easily detect errors, save the current edge index and a2a/a2b/b2a to file (overwriting every iteration)
-    # path = "logs/data_dump/" + str(args.debug_name)
-    # if not os.path.isdir(path):
-    #     os.makedirs(path)
-    # torch.save(a2a2, path + "/a2a2.pt")
-    # torch.save(a2b2, path + "/a2b2.pt")
-    # torch.save(b2a2, path + "/b2a2.pt")
-    # torch.save(data, path + "/data.pt")
 
     # Use more efficient calculations of a2a/a2b/b2a
     a2b = a2b2
