@@ -19,8 +19,7 @@ model:
   num_gaussians: 50
   undirected: False # Don't want the model to behave differently depending on if it's undirected or not
   debug: False
-  debug_name: "1head"
-  depth: 5
+  depth: 3
 
 optim:
   batch_size: 100
@@ -36,53 +35,3 @@ optim:
   warmup_factor: 0.2
   max_epochs: 30
   force_coefficient: 10
-
-# SchNet optim settings (most efficient)
-#optim:
-#  batch_size: 32
-#  eval_batch_size: 16
-#  num_workers: 64
-#  lr_initial: 0.0005
-#  lr_gamma: 0.1
-#  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
-#    - 5
-#    - 8
-#    - 10
-#  warmup_epochs: 3
-#  warmup_factor: 0.2
-#  max_epochs: 30
-#  force_coefficient: 100
-
-# DimeNet++ optim settings (less efficient)
-#optim:
-#  batch_size: 12
-#  eval_batch_size: 6
-#  num_workers: 64
-#  lr_initial: 0.00001
-#  lr_gamma: 0.1
-#  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
-#    - 5
-#    - 8
-#    - 10
-#  warmup_epochs: 3
-#  warmup_factor: 0.2
-#  max_epochs: 30
-#  force_coefficient: 50
-
-# DimeNet optim settings (least efficient)
-#optim:
-#  batch_size: 8
-#  eval_batch_size: 1
-#  num_workers: 64
-#  lr_initial: 0.001
-#  lr_gamma: 0.1
-#  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
-#    - 5
-#    - 8
-#    - 11
-#  warmup_epochs: 3
-#  warmup_factor: 0.2
-#  max_epochs: 30
-#  force_coefficient: 10
-
-
