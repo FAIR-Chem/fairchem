@@ -16,7 +16,7 @@ from torch.nn import LayerNorm, functional as F
 from torch_geometric.nn import radius_graph
 from torch_geometric.nn import MessagePassing
 from torch_geometric.nn.models.schnet import GaussianSmearing
-from torch_scatter import scatter
+from torch_scatter import scatter, scatter_mean
 from torch_geometric.utils import degree
 
 from ocpmodels.models.base import BaseModel
@@ -316,39 +316,36 @@ class GraphTransformer(BaseModel):
             embeddings = {"atom_from_atom": output[0][0], "bond_from_atom": output[0][1],
                           "atom_from_bond": output[1][0], "bond_from_bond": output[1][1]}
 
-        # Get atom embeddings (handles different embedding_output_type)
-        atom_from_bond_output = embeddings["atom_from_bond"]
-        atom_from_atom_output = embeddings["atom_from_atom"]
+        if args.embedding_output_type == 'atom' or args.embedding_output_type == 'both':
+            # Get atom embeddings (handles different embedding_output_type)
+            atom_from_bond_output = embeddings["atom_from_bond"]
+            atom_from_atom_output = embeddings["atom_from_atom"]
 
-        # Use info from data batch to only sum up energy per system
-        batch = data.batch
+            # Use info from data batch to only sum up energy per system
+            batch = data.batch
 
-        # Energy calculated by passing atom embeddings through feed-forward layer, summing over atoms in the system
-        atom_ffn_energy = self.energy_atom_from_atom_ffn(atom_from_atom_output) # output is 1 dimensional per atom
-        bond_ffn_energy = self.energy_atom_from_bond_ffn(atom_from_bond_output) # output is 1 dimensional per atom
-        atom_energy = atom_ffn_energy.sum(dim=0) if batch is None else scatter(atom_ffn_energy, batch, dim=0)
-        bond_energy = bond_ffn_energy.sum(dim=0) if batch is None else scatter(bond_ffn_energy, batch, dim=0)
+            # Energy calculated by passing atom embeddings through feed-forward layer, summing over atoms in the system
+            atom_ffn_energy = self.energy_atom_from_atom_ffn(atom_from_atom_output) # output is 1 dimensional per atom
+            bond_ffn_energy = self.energy_atom_from_bond_ffn(atom_from_bond_output) # output is 1 dimensional per atom
+            atom_energy = atom_ffn_energy.sum(dim=0) if batch is None else scatter(atom_ffn_energy, batch, dim=0)
+            bond_energy = bond_ffn_energy.sum(dim=0) if batch is None else scatter(bond_ffn_energy, batch, dim=0)
 
-        # Per-atom forces calculated through feed-forward layer from embeddings
-        atom_forces = self.forces_atom_from_atom_ffn(atom_from_atom_output) # output is 3 dimensional force prediction
-        bond_forces = self.forces_atom_from_bond_ffn(atom_from_bond_output) # output is 3 dimensional force prediction
+            # Per-atom forces calculated through feed-forward layer from embeddings
+            atom_forces = self.forces_atom_from_atom_ffn(atom_from_atom_output) # output is 3 dimensional force prediction
+            bond_forces = self.forces_atom_from_bond_ffn(atom_from_bond_output) # output is 3 dimensional force prediction
+
+            if args.embedding_output_type == 'atom':
+                # Using atom embeddings only, average predictions from two different atom embeddings (from atom and from bond)
+                energy = (atom_energy + bond_energy) / 2
+                forces = (atom_forces + bond_forces) / 2
 
         # If we have bond embeddings, use these to calculate new node embeddings by summing incoming edge embeddings
         if args.embedding_output_type == 'bond' or args.embedding_output_type == 'both':
             bond_embeddings = (embeddings["bond_from_atom"] + embeddings[
                 "bond_from_bond"]) / 2  # avg two bond embeddings
             _, _, a2b, _, _, _, _, _ = converted_input # Get a2b from converted input
-            new_atom_embeddings = torch.zeros_like(atom_from_atom_output)
-            atom_index = 0
-            for atom in a2b: #TODO: replace with torch scatter (for reference see line 196, 446 in DimeNet++)
-                for bond in atom:
-                    if (bond != torch.tensor(0)):
-                        # Get the embedding of this edge
-                        if atom_index not in new_atom_embeddings:
-                            new_atom_embeddings[atom_index] = bond_embeddings[int(bond)]
-                        else:
-                            new_atom_embeddings[atom_index] += bond_embeddings[int(bond)]  # bond is torch tensor, index is int
-                atom_index += 1
+
+            new_atom_embeddings = scatter_mean(bond_embeddings, data.edge_index[1], dim=0)  # Sum up incoming bond embeddings for every atom
 
             # Calculate energy and forces with these new embeddings
             new_bond_ffn_energy = self.energy_atom_from_bond_aggregated_ffn(new_atom_embeddings)
@@ -364,10 +361,6 @@ class GraphTransformer(BaseModel):
                 # Using edge embedding only
                 energy = new_bond_energy
                 forces = new_bond_forces
-        else:
-            # Using atom embeddings only, average predictions from two different atom embeddings (from atom and from bond)
-            energy = ( atom_energy + bond_energy ) / 2
-            forces = ( atom_forces + bond_forces ) / 2
 
         return energy, forces
 
