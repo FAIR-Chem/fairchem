@@ -451,7 +451,14 @@ class ForcesTrainer(BaseTrainer):
                                 "epochs": current_epoch,
                                 "act_lr": self.optimizer.param_groups[0]["lr"],
                             }
-                            # checkpointing must be before reporter
+                            # checkpointing must occur before reporter
+                            # default is no checkpointing
+                            self.save_hpo(
+                                current_epoch,
+                                current_step,
+                                val_metrics,
+                                self.hpo_checkpoint_every,
+                            )
                             # report metrics to tune
                             tune_reporter(
                                 iters=progress,

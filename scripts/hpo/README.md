@@ -10,13 +10,16 @@ is_hpo: True
 
 optim:
   …
-  eval_every: TDB
+  eval_every: (int) number of steps
+  checkpoint_every: (int: optional) number of steps
 ```
 The first two are easily set. The logger is set to None because Ray Tune internally handles the logging.
 
 The `eval_every` setting is case specific and will likely require some experimentation. The `eval_every` flag sets how often the validation set is run in number of steps. Depending on the OCP model and dataset of interest, training for a single epoch can take a substantial amount of time. However, to take full advantage of HPO methods that minimize compute by terminating trials that are not promising, such as successive halving, communication of train and val metrics need to happen on shorter timescales. Paraphrasing the Ray Tune docs, `eval_every` should be set large enough to avoid overheads but short enough to report progress periodically — minutes timescale recommended.
 
 The `eval_every` setting is only available for the force trainer so when using the energy trainer validation will be run and reporting to Ray Tune will occur on a per epoch basis.
+
+The `checkpoint_every` setting determines how frequently, in steps, Ray Tune will write a checkpoint. Checkpointing can create a lot of overhead for certain HPO methods so do not do it too frequently. The default behavior is no checkpointing.
 
 ## Usage with Slurm
 
@@ -36,6 +39,11 @@ Slurm scripts taken from https://github.com/NERSC/slurm-ray-cluster
 
 For usage with other cluster managers or cloud resources please refer to the
 [Distributed Ray Docs](https://docs.ray.io/en/master/cluster/index.html#)
+
+## Examples
+
+1. Asynchronous Successive Halving — `ocp/scripts/hpo/run_tune.py`
+2. Population Based Training — `ocp/scripts/hpo/run_tune_pbt.py`
 
 ## Testing/Debugging Ray Tune
 

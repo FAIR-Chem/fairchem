@@ -17,6 +17,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
+from ray import tune
 from torch.nn.parallel.distributed import DistributedDataParallel
 from tqdm import tqdm
 
@@ -140,6 +141,13 @@ class BaseTrainer:
         self.is_debug = is_debug
         self.is_vis = is_vis
         self.is_hpo = is_hpo
+
+        if self.is_hpo:
+            # sets the hpo checkpoint frequency
+            # default is no checkpointing
+            self.hpo_checkpoint_every = self.config["optim"].get(
+                "checkpoint_every", -1
+            )
 
         if distutils.is_master():
             print(yaml.dump(self.config, default_flow_style=False))
@@ -413,27 +421,40 @@ class BaseTrainer:
         # metrics.
         self.meter = Meter(split="train")
 
+    def save_state(self, epoch, step, metrics):
+        state = {
+            "epoch": epoch,
+            "step": step,
+            "state_dict": self.model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "scheduler": self.scheduler.scheduler.state_dict()
+            if self.scheduler.scheduler_type != "Null"
+            else None,
+            "normalizers": {
+                key: value.state_dict()
+                for key, value in self.normalizers.items()
+            },
+            "config": self.config,
+            "val_metrics": metrics,
+            "amp": self.scaler.state_dict() if self.scaler else None,
+        }
+        return state
+
     def save(self, epoch, step, metrics):
         if not self.is_debug and distutils.is_master() and not self.is_hpo:
             save_checkpoint(
-                {
-                    "epoch": epoch,
-                    "step": step,
-                    "state_dict": self.model.state_dict(),
-                    "optimizer": self.optimizer.state_dict(),
-                    "scheduler": self.scheduler.scheduler.state_dict()
-                    if self.scheduler.scheduler_type != "Null"
-                    else None,
-                    "normalizers": {
-                        key: value.state_dict()
-                        for key, value in self.normalizers.items()
-                    },
-                    "config": self.config,
-                    "val_metrics": metrics,
-                    "amp": self.scaler.state_dict() if self.scaler else None,
-                },
+                self.save_state(epoch, step, metrics),
                 self.config["cmd"]["checkpoint_dir"],
             )
+
+    def save_hpo(self, epoch, step, metrics, checkpoint_every):
+        # default is no checkpointing
+        # checkpointing frequency can be adjusted by setting checkpoint_every in steps
+        # to checkpoint every time results are communicated to Ray Tune set checkpoint_every=1
+        if checkpoint_every != -1 and step % checkpoint_every == 0:
+            with tune.checkpoint_dir(step=step) as checkpoint_dir:
+                path = os.path.join(checkpoint_dir, "checkpoint")
+                torch.save(self.save_state(epoch, step, metrics), path)
 
     def train(self, max_epochs=None, return_metrics=False):
         # TODO(abhshkdz): Timers for dataloading and forward pass.
