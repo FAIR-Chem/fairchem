@@ -446,11 +446,14 @@ class ForcesTrainer(BaseTrainer):
                     else:
                         self.save(current_epoch, current_step, self.metrics)
 
-                try:
+                if (
+                    self.scheduler.scheduler_type == "ReduceLROnPlateau"
+                    and iters % eval_every == 0
+                ):
                     self.scheduler.step(
                         metrics=val_metrics[primary_metric]["metric"],
                     )
-                except NameError:
+                else:
                     self.scheduler.step()
 
             torch.cuda.empty_cache()
