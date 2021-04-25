@@ -41,7 +41,7 @@ class TrajectoryLmdbDataset(Dataset):
         rank = distutils.get_rank()
 
         # Set seed.
-        seed = torch.initial_seed() % 2 ** 31 + rank
+        seed = (torch.initial_seed() + rank) % 2 ** 32
         np.random.seed(seed)
         torch.manual_seed(seed)
         random.seed(seed)
