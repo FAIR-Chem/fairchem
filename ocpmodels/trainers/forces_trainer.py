@@ -446,13 +446,11 @@ class ForcesTrainer(BaseTrainer):
                     else:
                         self.save(current_epoch, current_step, self.metrics)
 
-                if (
-                    self.scheduler.scheduler_type == "ReduceLROnPlateau"
-                    and iters % eval_every == 0
-                ):
-                    self.scheduler.step(
-                        metrics=val_metrics[primary_metric]["metric"],
-                    )
+                if self.scheduler.scheduler_type == "ReduceLROnPlateau":
+                    if iters % eval_every == 0:
+                        self.scheduler.step(
+                            metrics=val_metrics[primary_metric]["metric"],
+                        )
                 else:
                     self.scheduler.step()
 
