@@ -225,7 +225,6 @@ class EnergyTrainer(BaseTrainer):
         start_epoch = self.start_step // len(self.train_loader)
         for epoch in range(start_epoch, self.config["optim"]["max_epochs"]):
             self.train_sampler.set_epoch(epoch)
-            self.model.train()
 
             skip_steps = 0
             if epoch == start_epoch and start_epoch > 0:
@@ -233,6 +232,7 @@ class EnergyTrainer(BaseTrainer):
             train_loader_iter = iter(self.train_loader)
 
             for i in range(skip_steps, len(self.train_loader)):
+                self.model.train()
                 current_epoch = epoch + (i + 1) / len(self.train_loader)
                 current_step = epoch * len(self.train_loader) + (i + 1)
 
