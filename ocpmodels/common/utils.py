@@ -63,6 +63,15 @@ def warmup_lr_lambda(current_step, optim_config):
     Till `warmup_steps`, learning rate linearly increases to `initial_lr`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
     """
+
+    # keep this block for backward compatibility to older checkpoints that
+    # have warmup_epochs instead of warmup_steps.
+    if "warmup_steps" not in optim_config:
+        print(
+            "WARNING: warmup_steps not specified in config. Setting it equal to warmup_epochs."
+        )
+        optim_config["warmup_steps"] = optim_config["warmup_epochs"]
+
     if current_step <= optim_config["warmup_steps"]:
         alpha = current_step / float(optim_config["warmup_steps"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
