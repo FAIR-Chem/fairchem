@@ -49,6 +49,7 @@ class BaseTrainer:
         run_dir=None,
         is_debug=False,
         is_vis=False,
+        is_hpo=False,
         print_every=100,
         seed=None,
         logger="tensorboard",
@@ -131,13 +132,14 @@ class BaseTrainer:
         else:
             self.config["dataset"] = dataset
 
-        if not is_debug and distutils.is_master():
+        if not is_debug and distutils.is_master() and not is_hpo:
             os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
         self.is_debug = is_debug
         self.is_vis = is_vis
+        self.is_hpo = is_hpo
 
         if distutils.is_master():
             print(yaml.dump(self.config, default_flow_style=False))
@@ -223,7 +225,7 @@ class BaseTrainer:
 
     def load_logger(self):
         self.logger = None
-        if not self.is_debug and distutils.is_master():
+        if not self.is_debug and distutils.is_master() and not self.is_hpo:
             assert (
                 self.config["logger"] is not None
             ), "Specify logger in config"
@@ -376,7 +378,7 @@ class BaseTrainer:
             self.model.load_state_dict(checkpoint["state_dict"])
 
         self.optimizer.load_state_dict(checkpoint["optimizer"])
-        if "scheduler" in checkpoint:
+        if checkpoint["scheduler"]:
             self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
 
         for key in checkpoint["normalizers"]:
@@ -409,14 +411,16 @@ class BaseTrainer:
         self.meter = Meter(split="train")
 
     def save(self, epoch, step, metrics):
-        if not self.is_debug and distutils.is_master():
+        if not self.is_debug and distutils.is_master() and not self.is_hpo:
             save_checkpoint(
                 {
                     "epoch": epoch,
                     "step": step,
                     "state_dict": self.model.state_dict(),
                     "optimizer": self.optimizer.state_dict(),
-                    "scheduler": self.scheduler.scheduler.state_dict(),
+                    "scheduler": self.scheduler.scheduler.state_dict()
+                    if self.scheduler.scheduler_type != "Null"
+                    else None,
                     "normalizers": {
                         key: value.state_dict()
                         for key, value in self.normalizers.items()
@@ -508,9 +512,11 @@ class BaseTrainer:
             }
 
     @torch.no_grad()
-    def validate(self, split="val", epoch=None):
+    def validate(self, split="val", epoch=None, disable_tqdm=False):
         if distutils.is_master():
             print("### Evaluating on {}.".format(split))
+        if self.is_hpo:
+            disable_tqdm = True
 
         self.model.eval()
         evaluator, metrics = Evaluator(task=self.name), {}
@@ -523,6 +529,7 @@ class BaseTrainer:
             total=len(loader),
             position=rank,
             desc="device {}".format(rank),
+            disable=disable_tqdm,
         ):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):

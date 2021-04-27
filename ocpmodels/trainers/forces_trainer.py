@@ -18,7 +18,7 @@ from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import plot_histogram
+from ocpmodels.common.utils import plot_histogram, tune_reporter
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -48,6 +48,8 @@ class ForcesTrainer(BaseTrainer):
             (default: :obj:`False`)
         is_vis (bool, optional): Run in debug mode.
             (default: :obj:`False`)
+        is_hpo (bool, optional): Run hyperparameter optimization with Ray Tune.
+            (default: :obj:`False`)
         print_every (int, optional): Frequency of printing logs.
             (default: :obj:`100`)
         seed (int, optional): Random number seed.
@@ -70,6 +72,7 @@ class ForcesTrainer(BaseTrainer):
         run_dir=None,
         is_debug=False,
         is_vis=False,
+        is_hpo=False,
         print_every=100,
         seed=None,
         logger="tensorboard",
@@ -86,6 +89,7 @@ class ForcesTrainer(BaseTrainer):
             run_dir=run_dir,
             is_debug=is_debug,
             is_vis=is_vis,
+            is_hpo=is_hpo,
             print_every=print_every,
             seed=seed,
             logger=logger,
@@ -402,6 +406,7 @@ class ForcesTrainer(BaseTrainer):
                 if (
                     current_step % self.config["cmd"]["print_every"] == 0
                     and distutils.is_master()
+                    and not self.is_hpo
                 ):
                     log_str = [
                         "{}: {:.2e}".format(k, v) for k, v in log_dict.items()
@@ -443,6 +448,27 @@ class ForcesTrainer(BaseTrainer):
                                     results_file="predictions",
                                     disable_tqdm=False,
                                 )
+
+                        if self.is_hpo:
+                            progress = {
+                                "steps": current_step,
+                                "epochs": current_epoch,
+                                "act_lr": self.optimizer.param_groups[0]["lr"],
+                            }
+                            # checkpointing must be before reporter
+                            # report metrics to tune
+                            tune_reporter(
+                                iters=progress,
+                                train_metrics={
+                                    k: self.metrics[k]["metric"]
+                                    for k in self.metrics
+                                },
+                                val_metrics={
+                                    k: val_metrics[k]["metric"]
+                                    for k in val_metrics
+                                },
+                                test_metrics=None,
+                            )
                     else:
                         self.save(current_epoch, current_step, self.metrics)
 
