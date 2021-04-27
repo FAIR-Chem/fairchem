@@ -58,16 +58,16 @@ class Complete(object):
         return data
 
 
-def warmup_lr_lambda(current_epoch, optim_config):
+def warmup_lr_lambda(current_step, optim_config):
     """Returns a learning rate multiplier.
-    Till `warmup_epochs`, learning rate linearly increases to `initial_lr`,
+    Till `warmup_steps`, learning rate linearly increases to `initial_lr`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
     """
-    if current_epoch <= optim_config["warmup_epochs"]:
-        alpha = current_epoch / float(optim_config["warmup_epochs"])
+    if current_step <= optim_config["warmup_steps"]:
+        alpha = current_step / float(optim_config["warmup_steps"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
     else:
-        idx = bisect(optim_config["lr_milestones"], current_epoch)
+        idx = bisect(optim_config["lr_milestones"], current_step)
         return pow(optim_config["lr_gamma"], idx)
 
 
