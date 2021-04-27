@@ -349,7 +349,9 @@ class ForcesTrainer(BaseTrainer):
         return predictions
 
     def train(self):
-        eval_every = self.config["optim"].get("eval_every", -1)
+        eval_every = self.config["optim"].get(
+            "eval_every", len(self.train_loader)
+        )
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
@@ -359,15 +361,19 @@ class ForcesTrainer(BaseTrainer):
 
         start_epoch = self.start_step // len(self.train_loader)
         for epoch in range(start_epoch, self.config["optim"]["max_epochs"]):
-            self.model.train()
-
             skip_steps = 0
             if epoch == start_epoch and start_epoch > 0:
                 skip_steps = start_epoch % len(self.train_loader)
             train_loader_iter = iter(self.train_loader)
 
             for i in range(skip_steps, len(self.train_loader)):
+                self.model.train()
+                current_epoch = epoch + (i + 1) / len(self.train_loader)
+                current_step = epoch * len(self.train_loader) + (i + 1)
+
+                # Get a batch.
                 batch = next(train_loader_iter)
+
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
@@ -375,6 +381,7 @@ class ForcesTrainer(BaseTrainer):
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
+
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
                     out,
@@ -386,47 +393,42 @@ class ForcesTrainer(BaseTrainer):
                     "loss", loss.item() / scale, self.metrics
                 )
 
-                # Print metrics, make plots.
+                # Log metrics.
                 log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
                 log_dict.update(
-                    {"epoch": epoch + (i + 1) / len(self.train_loader)}
+                    {
+                        "lr": self.scheduler.get_lr(),
+                        "epoch": current_epoch,
+                        "step": current_step,
+                    }
                 )
                 if (
-                    i % self.config["cmd"]["print_every"] == 0
+                    current_step % self.config["cmd"]["print_every"] == 0
                     and distutils.is_master()
                     and not self.is_hpo
                 ):
                     log_str = [
-                        "{}: {:.4f}".format(k, v) for k, v in log_dict.items()
+                        "{}: {:.2e}".format(k, v) for k, v in log_dict.items()
                     ]
                     print(", ".join(log_str))
                     self.metrics = {}
 
-                log_dict.update({"lr": self.scheduler.get_lr()})
                 if self.logger is not None:
                     self.logger.log(
                         log_dict,
-                        step=epoch * len(self.train_loader) + i + 1,
+                        step=current_step,
                         split="train",
                     )
 
                 iters += 1
 
                 # Evaluate on val set every `eval_every` iterations.
-                if eval_every != -1 and iters % eval_every == 0:
+                if iters % eval_every == 0:
                     if self.val_loader is not None:
                         val_metrics = self.validate(
                             split="val",
                             epoch=epoch - 1 + (i + 1) / len(self.train_loader),
                         )
-                        current_epoch = epoch + (i + 1) / len(
-                            self.train_loader
-                        )
-                        current_step = epoch * len(self.train_loader) + (i + 1)
-                        if not self.update_lr_on_step:
-                            self.scheduler.step(
-                                val_metrics[primary_metric]["metric"]
-                            )
                         if (
                             "mae" in primary_metric
                             and val_metrics[primary_metric]["metric"]
@@ -445,6 +447,7 @@ class ForcesTrainer(BaseTrainer):
                                     results_file="predictions",
                                     disable_tqdm=False,
                                 )
+
                         if self.is_hpo:
                             progress = {
                                 "steps": current_step,
@@ -465,43 +468,18 @@ class ForcesTrainer(BaseTrainer):
                                 },
                                 test_metrics=None,
                             )
+                    else:
+                        self.save(current_epoch, current_step, self.metrics)
 
-                if self.update_lr_on_step:
+                if self.scheduler.scheduler_type == "ReduceLROnPlateau":
+                    if iters % eval_every == 0:
+                        self.scheduler.step(
+                            metrics=val_metrics[primary_metric]["metric"],
+                        )
+                else:
                     self.scheduler.step()
 
             torch.cuda.empty_cache()
-
-            if eval_every == -1:
-                if self.val_loader is not None:
-                    val_metrics = self.validate(split="val", epoch=epoch)
-                    if not self.update_lr_on_step:
-                        self.scheduler.step(
-                            val_metrics[primary_metric]["metric"]
-                        )
-                    if (
-                        "mae" in primary_metric
-                        and val_metrics[primary_metric]["metric"]
-                        < self.best_val_metric
-                    ) or (
-                        val_metrics[primary_metric]["metric"]
-                        > self.best_val_metric
-                    ):
-                        self.best_val_metric = val_metrics[primary_metric][
-                            "metric"
-                        ]
-                        current_step = (epoch + 1) * len(self.train_loader)
-                        self.save(epoch + 1, current_step, val_metrics)
-                        if self.test_loader is not None:
-                            self.predict(
-                                self.test_loader,
-                                results_file="predictions",
-                                disable_tqdm=False,
-                            )
-                else:
-                    if not self.update_lr_on_step:
-                        self.scheduler.step()
-                    current_step = (epoch + 1) * len(self.train_loader)
-                    self.save(epoch + 1, current_step, self.metrics)
 
         self.train_dataset.close_db()
         if "val_dataset" in self.config:
