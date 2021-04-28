@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 import bisect
 import math
 import pickle
+import random
 from pathlib import Path
 
 import lmdb
@@ -38,6 +39,13 @@ class TrajectoryLmdbDataset(Dataset):
 
         world_size = distutils.get_world_size()
         rank = distutils.get_rank()
+
+        # Set seed.
+        seed = (torch.initial_seed() + rank) % 2 ** 32
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        random.seed(seed)
+
         srcdir = Path(self.config["src"])
         db_paths = sorted(srcdir.glob("*.lmdb"))
         assert len(db_paths) > 0, f"No LMDBs found in {srcdir}"
