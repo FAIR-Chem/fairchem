@@ -171,10 +171,13 @@ class GraphTransformer(BaseModel):
         super(GraphTransformer, self).__init__()
         self.distance_expansion = GaussianSmearing(0.0, cutoff, self.num_gaussians)
 
+        self.edge_fdim = self.num_gaussians if not use_pbc else self.num_gaussians + 3 # Extra 3 dimensions for dist vectors
+        self.node_fdim = 4 # Node features are of dimension 4: atomic number, pos_x, pos_y, pos_z
+
         self.encoders = GTransEncoder(args,
                                       hidden_size=args.hidden_size,
-                                      edge_fdim=self.num_gaussians,
-                                      node_fdim=4, # node features are of dimension 4: atomic number, pos_x, pos_y, pos_z
+                                      edge_fdim=self.edge_fdim,
+                                      node_fdim=self.node_fdim,
                                       dropout=args.dropout,
                                       activation=args.activation,
                                       num_mt_block=args.num_mt_block,
@@ -280,17 +283,13 @@ class GraphTransformer(BaseModel):
                 data.cell,
                 data.cell_offsets,
                 data.neighbors,
+                return_distance_vec=True
             )
 
             data.edge_index = out["edge_index"]
             distances = out["distances"]
+            edge_vec = out["distance_vec"]
         else:
-            # From DimeNet (causes issues)
-            # edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
-            # j, i = edge_index
-            # distances = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
-
-            # From CGCNN (works)
             data.edge_index = radius_graph(
                 data.pos, r=self.cutoff, batch=data.batch
             )
@@ -298,6 +297,8 @@ class GraphTransformer(BaseModel):
             distances = (pos[row] - pos[col]).norm(dim=-1)
 
         data.edge_attr = self.distance_expansion(distances) # Features will be of dimensions [num_edges, num_gaussians]
+        if self.use_pbc:
+            data.edge_attr = torch.cat((data.edge_attr, edge_vec)) # Append difference in position (x, y, z) to edge attr
 
         # Convert to format from PyTorch Geometric to explicit mappings format used by GROVER
         converted_input = convert_input(args, data)
