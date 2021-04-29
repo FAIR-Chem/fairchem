@@ -298,7 +298,7 @@ class GraphTransformer(BaseModel):
 
         data.edge_attr = self.distance_expansion(distances) # Features will be of dimensions [num_edges, num_gaussians]
         if self.use_pbc:
-            data.edge_attr = torch.cat((data.edge_attr, edge_vec)) # Append difference in position (x, y, z) to edge attr
+            data.edge_attr = torch.cat((data.edge_attr, edge_vec), dim=1) # Append difference in position (x, y, z) to edge attr
 
         # Convert to format from PyTorch Geometric to explicit mappings format used by GROVER
         converted_input = convert_input(args, data)
