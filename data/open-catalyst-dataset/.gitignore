@@ -1,2 +1,3 @@
 *.swp
 *__pycache__*
+*.egg*
