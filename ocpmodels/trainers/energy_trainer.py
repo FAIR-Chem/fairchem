@@ -16,7 +16,6 @@ from tqdm import tqdm
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import tune_reporter
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
@@ -309,33 +308,13 @@ class EnergyTrainer(BaseTrainer):
                                     disable_tqdm=False,
                                 )
 
-                        if self.is_hpo:
-                            progress = {
-                                "steps": current_step,
-                                "epochs": current_epoch,
-                                "act_lr": self.optimizer.param_groups[0]["lr"],
-                            }
-                            # checkpointing must occur before reporter
-                            # default is no checkpointing
-                            self.save_hpo(
-                                epoch + 1,
-                                current_step,
-                                val_metrics,
-                                self.hpo_checkpoint_every,
-                            )
-                            # report metrics to tune
-                            tune_reporter(
-                                iters=progress,
-                                train_metrics={
-                                    k: self.metrics[k]["metric"]
-                                    for k in self.metrics
-                                },
-                                val_metrics={
-                                    k: val_metrics[k]["metric"]
-                                    for k in val_metrics
-                                },
-                                test_metrics=None,
-                            )
+                        self.hpo_update(
+                            current_epoch,
+                            current_step,
+                            self.metrics,
+                            val_metrics,
+                        )
+
                     else:
                         self.save(current_epoch, current_step, self.metrics)
 

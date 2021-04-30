@@ -32,6 +32,7 @@ from ocpmodels.common.utils import (
     build_config,
     plot_histogram,
     save_checkpoint,
+    tune_reporter,
     warmup_lr_lambda,
 )
 from ocpmodels.modules.evaluator import Evaluator
@@ -382,6 +383,33 @@ class BaseTrainer(ABC):
             with tune.checkpoint_dir(step=step) as checkpoint_dir:
                 path = os.path.join(checkpoint_dir, "checkpoint")
                 torch.save(self.save_state(epoch, step, metrics), path)
+
+    def hpo_update(
+        self, epoch, step, train_metrics, val_metrics, test_metrics=None
+    ):
+        if self.is_hpo:
+            progress = {
+                "steps": step,
+                "epochs": epoch,
+                "act_lr": self.optimizer.param_groups[0]["lr"],
+            }
+            # checkpointing must occur before reporter
+            # default is no checkpointing
+            self.save_hpo(
+                epoch,
+                step,
+                val_metrics,
+                self.hpo_checkpoint_every,
+            )
+            # report metrics to tune
+            tune_reporter(
+                iters=progress,
+                train_metrics={
+                    k: train_metrics[k]["metric"] for k in self.metrics
+                },
+                val_metrics={k: val_metrics[k]["metric"] for k in val_metrics},
+                test_metrics=test_metrics,
+            )
 
     @abstractmethod
     def train(self):

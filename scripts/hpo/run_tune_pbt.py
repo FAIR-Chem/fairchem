@@ -1,3 +1,4 @@
+import logging
 import os
 
 import ray
@@ -87,7 +88,7 @@ def main():
         ocp_trainable,
         resources_per_trial={"cpu": 8, "gpu": 1},
         config=config,
-        stop={"epochs": 2},
+        stop={"epochs": 12},
         # time_budget_s=28200,
         fail_fast=False,
         local_dir=config.get("run_dir", "./"),
