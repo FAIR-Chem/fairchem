@@ -15,24 +15,30 @@ Four datasets are provided for validation set. Each dataset corresponds to a sub
 
 For the test sets, we provide precomputed LMDBs for each of the 4 subsplits (In Domain, OOD Adsorbate, OOD Catalyst, OOD Both).
 
+[*Update March 29,2021*]: We provide structures corresponding to molecular dynamics (MD) and rattled data as well.
+
 Each tarball has a README file containing details about file formats, number of structures / trajectories, etc.
 
-|Splits	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|MD5 checksum	|
-|---	|---	|---	|---	|---	|
-|Train	|	|	|	|	|
-|all	|225G	|1.1T	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_all.tar	|12a7087bfd189a06ccbec9bc7add2bcd	|
-|20M	|34G	|165G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_20M.tar	|953474cb93f0b08cdc523399f03f7c36	|
-|2M	|3.4G	|17G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar	|863bc983245ffc0285305a1850e19cf7	|
-|200K	|344M	|1.7G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar	|f8d0909c2623a393148435dede7d3a46	|
-|	|	|	|	|	|
-|Validation	|	|	|	|	|
-|val_id	|1.7G	|8.3G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_id.tar	|f57f7f5c1302637940f2cc858e789410	|
-|val_ood_ads	|1.7G	|8.2G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_ads.tar	|431ab0d7557a4639605ba8b67793f053	|
-|val_ood_cat	|1.7G	|8.3G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_cat.tar	|532d6cd1fe541a0ddb0aa0f99962b7db	|
-|val_ood_both	|1.9G	|9.5G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_both.tar	|5731862978d80502bbf7017d68c2c729	|
-|	|	|	|	|	|
-|Test (LMDBs for all splits)	|30G	|415G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_test_lmdbs.tar.gz	|bcada432482f6e87b24e14b6b744992a	|
-
+|Splits |Size of compressed version (in bytes)  |Size of uncompressed version (in bytes)    |Downloadable link  |MD5 checksum   |
+|---    |---    |---    |---    |---    |
+|Train  |   |   |   |   |
+|all    |225G   |1.1T   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_all.tar |12a7087bfd189a06ccbec9bc7add2bcd   |
+|20M    |34G    |165G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_20M.tar |953474cb93f0b08cdc523399f03f7c36   |
+|2M |3.4G   |17G    |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar  |863bc983245ffc0285305a1850e19cf7   |
+|200K   |344M   |1.7G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar    |f8d0909c2623a393148435dede7d3a46   |
+|   |   |   |   |   |
+|Validation |   |   |   |   |
+|val_id |1.7G   |8.3G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_id.tar    |f57f7f5c1302637940f2cc858e789410   |
+|val_ood_ads    |1.7G   |8.2G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_ads.tar   |431ab0d7557a4639605ba8b67793f053   |
+|val_ood_cat    |1.7G   |8.3G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_cat.tar   |532d6cd1fe541a0ddb0aa0f99962b7db   |
+|val_ood_both   |1.9G   |9.5G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_both.tar  |5731862978d80502bbf7017d68c2c729   |
+|   |   |   |   |   |
+|Test (LMDBs for all splits)    |30G    |415G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_test_lmdbs.tar.gz |bcada432482f6e87b24e14b6b744992a   |
+|   |   |   |   |   |
+|Rattled data   |29G    |136G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_rattled.tar   |40431149b27b64ce1fb40cac4e2e064b   |
+|   |   |   |   |   |
+|MD data    |42G    |306G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_md.tar    |9fed845aaab8fb4bf85e3a8db57796e0   |
+|   |   |   |   |   |
 
 
 
@@ -72,6 +78,9 @@ Each tarball has README file containing details about file formats, number of st
 |val_ood_cat (~25K trajectories)	|6.0G	|46G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_cat_trajectories.tar	|88dcc02fd8c174a72d2c416878fc44ff	|
 |val_ood_both (~25K trajectories)	|4.4G	|35G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_both_trajectories.tar	|bc74b6474a13542cc56eaa97bd51adfc	|
 
+#### Per-adsorbate trajectories (optional download)
+Adsorbate+catalyst trajectories on a per adsorbate basis are provided [here](./DATASET_PER_ADSORBATE.md) to avoid having to download all systems. Note - a few adsorbates are intentionally left out for the test splits.
+
 ### Catalyst system trajectories (optional download)
 
 |Number	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|MD5 checksum	|
@@ -89,18 +98,25 @@ We provide a Python pickle file containing information about the slab and adsorb
 * `ads_symbols`  Chemical composition of the adsorbate counterpart
 * `ads_id` : internal unique identifier, one for each of the 82 adsorbates used in the dataset
 * `bulk_id` : internal unique identifier one for each of the 11500 bulks used in the dataset
+* `miller_index`: 3-tuple of integers indicating the Miller indices of the surface
+* `shift`: c-direction shift used to determine cutoff for the surface (c-direction is following the nomenclature from Pymatgen)
+* `top`: boolean indicating whether the chosen surface was at the top or bottom of the originally enumerated surface
+* `adsorption_site`: A tuple of 3-tuples containing the Cartesian coordinates of each binding adsorbate atom
 
-
-Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: `fe9cc1a6e45d8035a6b76c3caa860e8a`)
+Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: `71705204c12f8710ff43e71fbc6ba29b`)
 
 An example entry is
 
 ```
-'random0': {'bulk_id': 1762,
-  'ads_id': 67,
-  'bulk_mpid': 'mp-1103139',
-  'bulk_symbols': 'Ca8Hg4',
-  'ads_symbols': '*NO2NO2'}
+'random2181546': {'bulk_id': 6510,
+  'ads_id': 69,
+  'bulk_mpid': 'mp-22179',
+  'bulk_symbols': 'Si2Ti2Y2',
+  'ads_symbols': '*N2',
+  'miller_index': (2, 0, 1),
+  'shift': 0.145,
+  'top': True,
+  'adsorption_site': ((4.5, 12.85, 16.13),)}
 
 ```
 
@@ -117,6 +133,11 @@ An example entry is
 ```
 
 ## Dataset changelog
+
+### March 2021
+
+* Modified the pickle corresponding to data mapping information. Now the pickle includes extra information about `miller_index`, `shift`, `top` and `adsorption_site`.
+* Added MD and rattled data for S2EF task.
 
 ### Version 2, Feb 2021
 

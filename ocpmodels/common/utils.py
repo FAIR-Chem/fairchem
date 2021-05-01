@@ -11,6 +11,7 @@ import glob
 import importlib
 import itertools
 import json
+import math
 import os
 import time
 from bisect import bisect
@@ -22,6 +23,7 @@ import torch
 import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+from ray import tune
 from torch_geometric.utils import remove_self_loops
 
 
@@ -56,16 +58,25 @@ class Complete(object):
         return data
 
 
-def warmup_lr_lambda(current_epoch, optim_config):
+def warmup_lr_lambda(current_step, optim_config):
     """Returns a learning rate multiplier.
-    Till `warmup_epochs`, learning rate linearly increases to `initial_lr`,
+    Till `warmup_steps`, learning rate linearly increases to `initial_lr`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
     """
-    if current_epoch <= optim_config["warmup_epochs"]:
-        alpha = current_epoch / float(optim_config["warmup_epochs"])
+
+    # keep this block for backward compatibility to older checkpoints that
+    # have warmup_epochs instead of warmup_steps.
+    if "warmup_steps" not in optim_config:
+        print(
+            "WARNING: warmup_steps not specified in config. Setting it equal to warmup_epochs."
+        )
+        optim_config["warmup_steps"] = optim_config["warmup_epochs"]
+
+    if current_step <= optim_config["warmup_steps"]:
+        alpha = current_step / float(optim_config["warmup_steps"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
     else:
-        idx = bisect(optim_config["lr_milestones"], current_epoch)
+        idx = bisect(optim_config["lr_milestones"], current_step)
         return pow(optim_config["lr_gamma"], idx)
 
 
@@ -593,3 +604,48 @@ def get_pruned_edge_idx(edge_index, num_atoms=None, max_neigh=1e9):
     _nonmax_idx = torch.cat(_nonmax_idx)
 
     return _nonmax_idx
+
+
+def tune_reporter(
+    iters,
+    train_metrics,
+    val_metrics,
+    test_metrics=None,
+    metric_to_opt="val_loss",
+    min_max="min",
+):
+    """
+    Wrapper function for tune.report()
+
+    Args:
+        iters(dict): dict with training iteration info (e.g. steps, epochs)
+        train_metrics(dict): train metrics dict
+        val_metrics(dict): val metrics dict
+        test_metrics(dict, optional): test metrics dict, default is None
+        metric_to_opt(str, optional): str for val metric to optimize, default is val_loss
+        min_max(str, optional): either "min" or "max", determines whether metric_to_opt is to be minimized or maximized, default is min
+
+    """
+    # labels metric dicts
+    train = label_metric_dict(train_metrics, "train")
+    val = label_metric_dict(val_metrics, "val")
+    # this enables tolerance for NaNs assumes val set is used for optimization
+    if math.isnan(val[metric_to_opt]):
+        if min_max == "min":
+            val[metric_to_opt] = 100000.0
+        if min_max == "max":
+            val[metric_to_opt] = 0.0
+    if test_metrics:
+        test = label_metric_dict(test_metrics, "test")
+    else:
+        test = {}
+    # report results to Ray Tune
+    tune.report(**iters, **train, **val, **test)
+
+
+def label_metric_dict(metric_dict, split):
+    new_dict = {}
+    for key in metric_dict:
+        new_dict["{}_{}".format(split, key)] = metric_dict[key]
+    metric_dict = new_dict
+    return metric_dict

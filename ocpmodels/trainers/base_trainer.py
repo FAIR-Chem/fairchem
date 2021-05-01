@@ -9,6 +9,7 @@ import json
 import os
 import random
 import subprocess
+from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
 from pathlib import Path
 
@@ -34,10 +35,11 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
+from ocpmodels.modules.scheduler import LRScheduler
 
 
 @registry.register_trainer("base")
-class BaseTrainer:
+class BaseTrainer(ABC):
     def __init__(
         self,
         task,
@@ -48,6 +50,7 @@ class BaseTrainer:
         run_dir=None,
         is_debug=False,
         is_vis=False,
+        is_hpo=False,
         print_every=100,
         seed=None,
         logger="tensorboard",
@@ -130,13 +133,14 @@ class BaseTrainer:
         else:
             self.config["dataset"] = dataset
 
-        if not is_debug and distutils.is_master():
+        if not is_debug and distutils.is_master() and not is_hpo:
             os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
         self.is_debug = is_debug
         self.is_vis = is_vis
+        self.is_hpo = is_hpo
 
         if distutils.is_master():
             print(yaml.dump(self.config, default_flow_style=False))
@@ -222,7 +226,7 @@ class BaseTrainer:
 
     def load_logger(self):
         self.logger = None
-        if not self.is_debug and distutils.is_master():
+        if not self.is_debug and distutils.is_master() and not self.is_hpo:
             assert (
                 self.config["logger"] is not None
             ), "Specify logger in config"
@@ -230,80 +234,9 @@ class BaseTrainer:
                 self.config
             )
 
+    @abstractmethod
     def load_task(self):
-        print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
-        dataset = registry.get_dataset_class(self.config["task"]["dataset"])(
-            self.config["dataset"]
-        )
-
-        if self.config["task"]["dataset"] in ["qm9", "dogss"]:
-            num_targets = dataset.data.y.shape[-1]
-            if (
-                "label_index" in self.config["task"]
-                and self.config["task"]["label_index"] is not False
-            ):
-                dataset.data.y = dataset.data.y[
-                    :, int(self.config["task"]["label_index"])
-                ]
-                num_targets = 1
-        else:
-            num_targets = 1
-
-        self.num_targets = num_targets
-        (
-            self.train_loader,
-            self.val_loader,
-            self.test_loader,
-        ) = dataset.get_dataloaders(
-            batch_size=int(self.config["optim"]["batch_size"])
-        )
-
-        # Normalizer for the dataset.
-        # Compute mean, std of training set labels.
-        self.normalizers = {}
-        if self.config["dataset"].get("normalize_labels", True):
-            self.normalizers["target"] = Normalizer(
-                self.train_loader.dataset.data.y[
-                    self.train_loader.dataset.__indices__
-                ],
-                self.device,
-            )
-
-        # If we're computing gradients wrt input, set mean of normalizer to 0 --
-        # since it is lost when compute dy / dx -- and std to forward target std
-        if "grad_input" in self.config["task"]:
-            if self.config["dataset"].get("normalize_labels", True):
-                self.normalizers["grad_target"] = Normalizer(
-                    self.train_loader.dataset.data.y[
-                        self.train_loader.dataset.__indices__
-                    ],
-                    self.device,
-                )
-                self.normalizers["grad_target"].mean.fill_(0)
-
-        if self.is_vis and self.config["task"]["dataset"] != "qm9":
-            # Plot label distribution.
-            plots = [
-                plot_histogram(
-                    self.train_loader.dataset.data.y.tolist(),
-                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
-                    ylabel="# Examples",
-                    title="Split: train",
-                ),
-                plot_histogram(
-                    self.val_loader.dataset.data.y.tolist(),
-                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
-                    ylabel="# Examples",
-                    title="Split: val",
-                ),
-                plot_histogram(
-                    self.test_loader.dataset.data.y.tolist(),
-                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
-                    ylabel="# Examples",
-                    title="Split: test",
-                ),
-            ]
-            self.logger.log_plots(plots)
+        """ Derived classes should implement this function."""
 
     def load_model(self):
         # Build model
@@ -375,8 +308,8 @@ class BaseTrainer:
             self.model.load_state_dict(checkpoint["state_dict"])
 
         self.optimizer.load_state_dict(checkpoint["optimizer"])
-        if "scheduler" in checkpoint:
-            self.scheduler.load_state_dict(checkpoint["scheduler"])
+        if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
+            self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
 
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
@@ -393,35 +326,31 @@ class BaseTrainer:
         self.criterion = self.config["optim"].get("criterion", nn.L1Loss())
 
     def load_optimizer(self):
-        self.optimizer = optim.AdamW(
-            self.model.parameters(),
-            self.config["optim"]["lr_initial"],  # weight_decay=3.0
+        optimizer = self.config["optim"].get("optimizer", "AdamW")
+        optimizer = getattr(optim, optimizer)
+
+        self.optimizer = optimizer(
+            params=self.model.parameters(),
+            lr=self.config["optim"]["lr_initial"],
+            **self.config["optim"].get("optimizer_params", {}),
         )
 
     def load_extras(self):
-        # learning rate scheduler.
-        scheduler_lambda_fn = lambda x: warmup_lr_lambda(
-            x, self.config["optim"]
-        )
-        self.scheduler = optim.lr_scheduler.LambdaLR(
-            self.optimizer, lr_lambda=scheduler_lambda_fn
-        )
-        self.update_lr_on_step = self.config["optim"].get(
-            "update_lr_on_step", False
-        )
-
+        self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
         # metrics.
         self.meter = Meter(split="train")
 
     def save(self, epoch, step, metrics):
-        if not self.is_debug and distutils.is_master():
+        if not self.is_debug and distutils.is_master() and not self.is_hpo:
             save_checkpoint(
                 {
                     "epoch": epoch,
                     "step": step,
                     "state_dict": self.model.state_dict(),
                     "optimizer": self.optimizer.state_dict(),
-                    "scheduler": self.scheduler.state_dict(),
+                    "scheduler": self.scheduler.scheduler.state_dict()
+                    if self.scheduler.scheduler_type != "Null"
+                    else None,
                     "normalizers": {
                         key: value.state_dict()
                         for key, value in self.normalizers.items()
@@ -433,89 +362,16 @@ class BaseTrainer:
                 self.config["cmd"]["checkpoint_dir"],
             )
 
-    def train(self, max_epochs=None, return_metrics=False):
-        # TODO(abhshkdz): Timers for dataloading and forward pass.
-        num_epochs = (
-            max_epochs
-            if max_epochs is not None
-            else self.config["optim"]["max_epochs"]
-        )
-        for epoch in range(num_epochs):
-            self.model.train()
-
-            for i, batch in enumerate(self.train_loader):
-                batch = batch.to(self.device)
-
-                # Forward, loss, backward.
-                out, metrics = self._forward(batch)
-                loss = self._compute_loss(out, batch)
-                self._backward(loss)
-
-                # Update meter.
-                meter_update_dict = {
-                    "epoch": epoch + (i + 1) / len(self.train_loader),
-                    "loss": loss.item(),
-                }
-                meter_update_dict.update(metrics)
-                self.meter.update(meter_update_dict)
-
-                # Make plots.
-                if self.logger is not None:
-                    self.logger.log(
-                        meter_update_dict,
-                        step=epoch * len(self.train_loader) + i + 1,
-                        split="train",
-                    )
-
-                # Print metrics.
-                if i % self.config["cmd"]["print_every"] == 0:
-                    print(self.meter)
-
-            self.scheduler.step()
-
-            if self.val_loader is not None:
-                v_loss, v_mae = self.validate(split="val", epoch=epoch)
-
-            if self.test_loader is not None:
-                test_loss, test_mae = self.validate(split="test", epoch=epoch)
-
-            if not self.is_debug:
-                save_checkpoint(
-                    {
-                        "epoch": epoch + 1,
-                        "state_dict": self.model.state_dict(),
-                        "optimizer": self.optimizer.state_dict(),
-                        "normalizers": {
-                            key: value.state_dict()
-                            for key, value in self.normalizers.items()
-                        },
-                        "config": self.config,
-                        "amp": self.scaler.state_dict()
-                        if self.scaler
-                        else None,
-                    },
-                    self.config["cmd"]["checkpoint_dir"],
-                )
-        if return_metrics:
-            return {
-                "training_loss": float(self.meter.loss.global_avg),
-                "training_mae": float(
-                    self.meter.meters[
-                        self.config["task"]["labels"][0]
-                        + "/"
-                        + self.config["task"]["metric"]
-                    ].global_avg
-                ),
-                "validation_loss": v_loss,
-                "validation_mae": v_mae,
-                "test_loss": test_loss,
-                "test_mae": test_mae,
-            }
+    @abstractmethod
+    def train(self):
+        """ Derived classes should implement this function."""
 
     @torch.no_grad()
-    def validate(self, split="val", epoch=None):
+    def validate(self, split="val", epoch=None, disable_tqdm=False):
         if distutils.is_master():
             print("### Evaluating on {}.".format(split))
+        if self.is_hpo:
+            disable_tqdm = True
 
         self.model.eval()
         evaluator, metrics = Evaluator(task=self.name), {}
@@ -528,6 +384,7 @@ class BaseTrainer:
             total=len(loader),
             position=rank,
             desc="device {}".format(rank),
+            disable=disable_tqdm,
         ):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
@@ -569,151 +426,13 @@ class BaseTrainer:
 
         return metrics
 
-    def _forward(self, batch, compute_metrics=True):
-        out = {}
+    @abstractmethod
+    def _forward(self, batch_list):
+        """ Derived classes should implement this function."""
 
-        # enable gradient wrt input.
-        if "grad_input" in self.config["task"]:
-            inp_for_grad = batch.pos
-            batch.pos = batch.pos.requires_grad_(True)
-
-        # forward pass.
-        if self.config["model_attributes"].get("regress_forces", False):
-            output, output_forces = self.model(batch)
-        else:
-            output = self.model(batch)
-
-        if output.shape[-1] == 1:
-            output = output.view(-1)
-
-        out["output"] = output
-
-        force_output = None
-        if self.config["model_attributes"].get("regress_forces", False):
-            out["force_output"] = output_forces
-            force_output = output_forces
-
-        if (
-            "grad_input" in self.config["task"]
-            and self.config["model_attributes"].get("regress_forces", False)
-            is False
-        ):
-            force_output = -1 * torch.autograd.grad(
-                output,
-                inp_for_grad,
-                grad_outputs=torch.ones_like(output),
-                create_graph=True,
-                retain_graph=True,
-            )[0]
-            out["force_output"] = force_output
-
-        if not compute_metrics:
-            return out, None
-
-        metrics = {}
-
-        if self.config["dataset"].get("normalize_labels", True):
-            errors = eval(self.config["task"]["metric"])(
-                self.normalizers["target"].denorm(output).cpu(), batch.y.cpu()
-            ).view(-1)
-        else:
-            errors = eval(self.config["task"]["metric"])(
-                output.cpu(), batch.y.cpu()
-            ).view(-1)
-
-        if (
-            "label_index" in self.config["task"]
-            and self.config["task"]["label_index"] is not False
-        ):
-            # TODO(abhshkdz): Get rid of this edge case for QM9.
-            # This is only because QM9 has multiple targets and we can either
-            # jointly predict all of them or one particular target.
-            metrics[
-                "{}/{}".format(
-                    self.config["task"]["labels"][
-                        self.config["task"]["label_index"]
-                    ],
-                    self.config["task"]["metric"],
-                )
-            ] = errors[0]
-        else:
-            for i, label in enumerate(self.config["task"]["labels"]):
-                metrics[
-                    "{}/{}".format(label, self.config["task"]["metric"])
-                ] = errors[i]
-
-        if "grad_input" in self.config["task"]:
-            force_pred = force_output
-            force_target = batch.force
-
-            if self.config["task"].get("eval_on_free_atoms", True):
-                mask = batch.fixed == 0
-                force_pred = force_pred[mask]
-                force_target = force_target[mask]
-
-            if self.config["dataset"].get("normalize_labels", True):
-                grad_input_errors = eval(self.config["task"]["metric"])(
-                    self.normalizers["grad_target"].denorm(force_pred).cpu(),
-                    force_target.cpu(),
-                )
-            else:
-                grad_input_errors = eval(self.config["task"]["metric"])(
-                    force_pred.cpu(), force_target.cpu()
-                )
-            metrics[
-                "force_x/{}".format(self.config["task"]["metric"])
-            ] = grad_input_errors[0]
-            metrics[
-                "force_y/{}".format(self.config["task"]["metric"])
-            ] = grad_input_errors[1]
-            metrics[
-                "force_z/{}".format(self.config["task"]["metric"])
-            ] = grad_input_errors[2]
-
-        return out, metrics
-
-    def _compute_loss(self, out, batch):
-        loss = []
-
-        if self.config["dataset"].get("normalize_labels", True):
-            target_normed = self.normalizers["target"].norm(batch.y)
-        else:
-            target_normed = batch.y
-
-        loss.append(self.criterion(out["output"], target_normed))
-
-        # TODO(abhshkdz): Test support for gradients wrt input.
-        # TODO(abhshkdz): Make this general; remove dependence on `.forces`.
-        if "grad_input" in self.config["task"]:
-            if self.config["dataset"].get("normalize_labels", True):
-                grad_target_normed = self.normalizers["grad_target"].norm(
-                    batch.force
-                )
-            else:
-                grad_target_normed = batch.force
-
-            # Force coefficient = 30 has been working well for us.
-            force_mult = self.config["optim"].get("force_coefficient", 30)
-            if self.config["task"].get("train_on_free_atoms", False):
-                mask = batch.fixed == 0
-                loss.append(
-                    force_mult
-                    * self.criterion(
-                        out["force_output"][mask], grad_target_normed[mask]
-                    )
-                )
-            else:
-                loss.append(
-                    force_mult
-                    * self.criterion(out["force_output"], grad_target_normed)
-                )
-
-        # Sanity check to make sure the compute graph is correct.
-        for lc in loss:
-            assert hasattr(lc, "grad_fn")
-
-        loss = sum(loss)
-        return loss
+    @abstractmethod
+    def _compute_loss(self, out, batch_list):
+        """ Derived classes should implement this function."""
 
     def _backward(self, loss):
         self.optimizer.zero_grad()
