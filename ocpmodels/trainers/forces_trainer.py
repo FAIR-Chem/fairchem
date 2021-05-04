@@ -18,7 +18,7 @@ from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import plot_histogram, tune_reporter
+from ocpmodels.common.utils import plot_histogram
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -449,25 +449,13 @@ class ForcesTrainer(BaseTrainer):
                                 )
 
                         if self.is_hpo:
-                            progress = {
-                                "steps": current_step,
-                                "epochs": current_epoch,
-                                "act_lr": self.optimizer.param_groups[0]["lr"],
-                            }
-                            # checkpointing must be before reporter
-                            # report metrics to tune
-                            tune_reporter(
-                                iters=progress,
-                                train_metrics={
-                                    k: self.metrics[k]["metric"]
-                                    for k in self.metrics
-                                },
-                                val_metrics={
-                                    k: val_metrics[k]["metric"]
-                                    for k in val_metrics
-                                },
-                                test_metrics=None,
+                            self.hpo_update(
+                                current_epoch,
+                                current_step,
+                                self.metrics,
+                                val_metrics,
                             )
+
                     else:
                         self.save(current_epoch, current_step, self.metrics)
 
