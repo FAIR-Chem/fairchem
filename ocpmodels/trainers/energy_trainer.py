@@ -308,12 +308,13 @@ class EnergyTrainer(BaseTrainer):
                                     disable_tqdm=False,
                                 )
 
-                        self.hpo_update(
-                            current_epoch,
-                            current_step,
-                            self.metrics,
-                            val_metrics,
-                        )
+                        if self.is_hpo:
+                            self.hpo_update(
+                                current_epoch,
+                                current_step,
+                                self.metrics,
+                                val_metrics,
+                            )
 
                     else:
                         self.save(current_epoch, current_step, self.metrics)
