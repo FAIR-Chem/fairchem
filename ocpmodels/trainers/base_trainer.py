@@ -19,6 +19,7 @@ import torch.nn as nn
 import torch.optim as optim
 import yaml
 from ray import tune
+from ray.tune.integration.torch import distributed_checkpoint_dir
 from torch.nn.parallel.distributed import DistributedDataParallel
 from tqdm import tqdm
 
@@ -380,9 +381,14 @@ class BaseTrainer(ABC):
         # checkpointing frequency can be adjusted by setting checkpoint_every in steps
         # to checkpoint every time results are communicated to Ray Tune set checkpoint_every=1
         if checkpoint_every != -1 and step % checkpoint_every == 0:
-            with tune.checkpoint_dir(step=step) as checkpoint_dir:
-                path = os.path.join(checkpoint_dir, "checkpoint")
-                torch.save(self.save_state(epoch, step, metrics), path)
+            if distutils.initialized():
+                with distributed_checkpoint_dir(step=step) as checkpoint_dir:
+                    path = os.path.join(checkpoint_dir, "checkpoint")
+                    torch.save(self.save_state(epoch, step, metrics), path)
+            else:
+                with tune.checkpoint_dir(step=step) as checkpoint_dir:
+                    path = os.path.join(checkpoint_dir, "checkpoint")
+                    torch.save(self.save_state(epoch, step, metrics), path)
 
     def hpo_update(
         self, epoch, step, train_metrics, val_metrics, test_metrics=None
