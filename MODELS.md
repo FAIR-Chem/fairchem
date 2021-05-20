@@ -65,12 +65,16 @@ The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attr
 Please cite the following paper in any research manuscript using the OC20 dataset or pretrained models:
 
 
-```
-@misc{ocp_dataset,
-    title={The Open Catalyst 2020 (OC20) Dataset and Community Challenges},
-    author={Lowik Chanussot* and Abhishek Das* and Siddharth Goyal* and Thibaut Lavril* and Muhammed Shuaibi* and Morgane Riviere and Kevin Tran and Javier Heras-Domingo and Caleb Ho and Weihua Hu and Aini Palizhati and Anuroop Sriram and Brandon Wood and Junwoong Yoon and Devi Parikh and C. Lawrence Zitnick and Zachary Ulissi},
-    year={2020},
-    eprint={2010.09990},
-    archivePrefix={arXiv}
+```bibtex
+@article{ocp_dataset,
+author = {Chanussot*, Lowik and Das*, Abhishek and Goyal*, Siddharth and Lavril*, Thibaut and Shuaibi*, Muhammed and Riviere, Morgane and Tran, Kevin and Heras-Domingo, Javier and Ho, Caleb and Hu, Weihua and Palizhati, Aini and Sriram, Anuroop and Wood, Brandon and Yoon, Junwoong and Parikh, Devi and Zitnick, C. Lawrence and Ulissi, Zachary},
+title = {Open Catalyst 2020 (OC20) Dataset and Community Challenges},
+journal = {ACS Catalysis},
+volume = {0},
+number = {0},
+pages = {6059-6072},
+year = {0},
+doi = {10.1021/acscatal.0c04525},
+URL = {https://doi.org/10.1021/acscatal.0c04525},
 }
 ```
