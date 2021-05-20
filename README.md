@@ -142,7 +142,7 @@ If you use this codebase in your work, consider citing:
 
 ```bibtex
 @article{ocp_dataset,
-author = {Chanussot, Lowik* and Das, Abhishek* and Goyal, Siddharth* and Lavril, Thibaut* and Shuaibi, Muhammed* and Riviere, Morgane and Tran, Kevin and Heras-Domingo, Javier and Ho, Caleb and Hu, Weihua and Palizhati, Aini and Sriram, Anuroop and Wood, Brandon and Yoon, Junwoong and Parikh, Devi and Zitnick, C. Lawrence and Ulissi, Zachary},
+author = {Chanussot*, Lowik and Das*, Abhishek and Goyal*, Siddharth and Lavril*, Thibaut and Shuaibi*, Muhammed and Riviere, Morgane and Tran, Kevin and Heras-Domingo, Javier and Ho, Caleb and Hu, Weihua and Palizhati, Aini and Sriram, Anuroop and Wood, Brandon and Yoon, Junwoong and Parikh, Devi and Zitnick, C. Lawrence and Ulissi, Zachary},
 title = {Open Catalyst 2020 (OC20) Dataset and Community Challenges},
 journal = {ACS Catalysis},
 volume = {0},
