@@ -107,6 +107,6 @@ where:
 * `reference_energy` - Energy used to reference system energies to bare catalyst+gas reference energies. Used for adsorption energy calculations.
 
 
-The `.extxyz.xz` files are LZMA compressed `.extxyz` trajectory files. Each trajectory corresponds to a relaxation trajectory of a different adsorbate+catalyst system. Information about the `.extxyz` trajectory file format may be found at https://wiki.fysik.dtu.dk/ase/dev/_modules/ase/io/extxyz.html .
+The `.extxyz.xz` files are LZMA compressed `.extxyz` trajectory files. Each trajectory corresponds to a relaxation trajectory of a different adsorbate+catalyst system. Information about the `.extxyz` trajectory file format may be found at https://wiki.fysik.dtu.dk/ase/dev/ase/io/formatoptions.html#extxyz .
 
 In order to uncompress the files, `uncompress.py` provides a multi-core implementation which could be used.
