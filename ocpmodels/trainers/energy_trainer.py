@@ -182,7 +182,9 @@ class EnergyTrainer(BaseTrainer):
                 raise NotImplementedError
 
     @torch.no_grad()
-    def predict(self, loader, results_file=None, disable_tqdm=False):
+    def predict(
+        self, loader, per_image=True, results_file=None, disable_tqdm=False
+    ):
         if distutils.is_master() and not disable_tqdm:
             print("### Predicting on test.")
         assert isinstance(
@@ -216,14 +218,15 @@ class EnergyTrainer(BaseTrainer):
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
                 )
-            try:
-                predictions["id"].extend([str(i) for i in batch[0].sid.tolist()])
-            except:
-                #Not sure what we would want here or if something would work better in general
-                predictions["id"] == 'Unassigned'
-            predictions["energy"].extend(out["energy"].tolist())
 
-        self.save_results(predictions, results_file, keys=["energy"])
+            predictions["energy"].extend(out["energy"].tolist())
+            if per_image:
+                predictions["id"].extend(
+                    [str(i) for i in batch[0].sid.tolist()]
+                )
+                predictions["energy"].extend(out["energy"].tolist())
+                self.save_results(predictions, results_file, keys=["energy"])
+
         return predictions
 
     def train(self):
