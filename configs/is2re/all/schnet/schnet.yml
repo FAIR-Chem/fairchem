@@ -11,16 +11,21 @@ model:
   use_pbc: True
   regress_forces: False
 
+# *** Important note ***
+#   The total number of gpus used for this run was 4.
+#   If the global batch size (num_gpus * batch_size) is modified
+#   the lr_milestones and warmup_steps need to be adjusted accordingly.
+
 optim:
   batch_size: 64
-  eval_batch_size: 32
-  num_workers: 32
+  eval_batch_size: 64
+  num_workers: 16
   lr_initial: 0.001
   lr_gamma: 0.1
-  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
-    - 10
-    - 15
-    - 20
-  warmup_epochs: 3
+  lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+    - 17981
+    - 26972
+    - 35963
+  warmup_steps: 5394
   warmup_factor: 0.2
   max_epochs: 30
