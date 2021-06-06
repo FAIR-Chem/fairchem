@@ -1,9 +1,10 @@
+import logging
 import os
 
 import ray
 from ray import tune
 from ray.tune import CLIReporter
-from ray.tune.schedulers import ASHAScheduler
+from ray.tune.schedulers import PopulationBasedTraining
 
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
@@ -13,6 +14,8 @@ from ocpmodels.common.utils import build_config, setup_imports
 # this function is general and should work for any ocp trainer
 def ocp_trainable(config, checkpoint_dir=None):
     setup_imports()
+    # update config for PBT learning rate
+    config["optim"].update(lr_initial=config["lr"])
     # trainer defaults are changed to run HPO
     trainer = registry.get_trainer_class(config.get("trainer", "simple"))(
         task=config["task"],
@@ -35,39 +38,32 @@ def ocp_trainable(config, checkpoint_dir=None):
     if checkpoint_dir:
         checkpoint = os.path.join(checkpoint_dir, "checkpoint")
         trainer.load_pretrained(checkpoint)
+    # set learning rate
+    for g in trainer.optimizer.param_groups:
+        g["lr"] = config["lr"]
     # start training
     trainer.train()
 
 
-# this section defines the hyperparameters to tune and all the Ray Tune settings
-# current params/settings are an example for ForceNet
+# this section defines all the Ray Tune run parameters
 def main():
     # parse config
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     config = build_config(args, override_args)
     # add parameters to tune using grid or random search
-    config["model"].update(
-        hidden_channels=tune.choice([256, 384, 512, 640, 704]),
-        decoder_hidden_channels=tune.choice([256, 384, 512, 640, 704]),
-        depth_mlp_edge=tune.choice([1, 2, 3, 4, 5]),
-        depth_mlp_node=tune.choice([1, 2, 3, 4, 5]),
-        num_interactions=tune.choice([3, 4, 5, 6]),
-    )
+    config["lr"] = tune.loguniform(0.0001, 0.01)
     # define scheduler
-    scheduler = ASHAScheduler(
-        time_attr="steps",
+    scheduler = PopulationBasedTraining(
+        time_attr="training_iteration",
         metric="val_loss",
         mode="min",
-        max_t=100000,
-        grace_period=2000,
-        reduction_factor=4,
-        brackets=1,
+        perturbation_interval=1,
+        hyperparam_mutations={
+            "lr": tune.loguniform(0.000001, 0.01),
+        },
     )
     # ray init
-    # for debug
-    # ray.init(local_mode=True)
-    # for slurm cluster
     ray.init(
         address="auto",
         _node_ip_address=os.environ["ip_head"].split(":")[0],
@@ -79,6 +75,7 @@ def main():
         metric="val_loss",
         mode="min",
         metric_columns={
+            "act_lr": "act_lr",
             "steps": "steps",
             "epochs": "epochs",
             "training_iteration": "training_iteration",
@@ -86,15 +83,16 @@ def main():
             "val_forces_mae": "val_forces_mae",
         },
     )
-
     # define run parameters
     analysis = tune.run(
         ocp_trainable,
         resources_per_trial={"cpu": 8, "gpu": 1},
         config=config,
+        stop={"epochs": 12},
+        # time_budget_s=28200,
         fail_fast=False,
         local_dir=config.get("run_dir", "./"),
-        num_samples=500,
+        num_samples=8,
         progress_reporter=reporter,
         scheduler=scheduler,
     )

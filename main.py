@@ -112,6 +112,9 @@ if __name__ == "__main__":
     config = build_config(args, override_args)
 
     if args.submit:  # Run on cluster
+        slurm_add_params = config.get(
+            "slurm", None
+        )  # additional slurm arguments
         if args.sweep_yml:  # Run grid search
             configs = create_grid(config, args.sweep_yml)
         else:
@@ -130,6 +133,7 @@ if __name__ == "__main__":
             cpus_per_task=(args.num_workers + 1),
             tasks_per_node=(args.num_gpus if args.distributed else 1),
             nodes=args.num_nodes,
+            slurm_additional_parameters=slurm_add_params,
         )
         jobs = executor.map_array(Runner(), configs)
         print("Submitted jobs:", ", ".join([job.job_id for job in jobs]))
