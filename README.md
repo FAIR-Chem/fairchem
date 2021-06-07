@@ -147,6 +147,7 @@ title = {Open Catalyst 2020 (OC20) Dataset and Community Challenges},
 journal = {ACS Catalysis},
 year = {2021},
 doi = {10.1021/acscatal.0c04525},
+}
 ```
 
 ## License
