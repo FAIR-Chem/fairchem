@@ -97,14 +97,21 @@ def main(args):
     # Create output directory if it doesn't exist.
     os.makedirs(os.path.join(args.out_path), exist_ok=True)
 
+    # Main chunks to be split across N nodes
+    slurm_chunks = np.array_split(xyz_logs, args.nodes)
+    lmdb_start_idx = args.chunk * args.num_workers
+    lmdb_end_idx = lmdb_start_idx + args.num_workers
+
     # Initialize lmdb paths
     db_paths = [
         os.path.join(args.out_path, "data.%04d.lmdb" % i)
-        for i in range(args.num_workers)
+        for i in range(lmdb_start_idx, lmdb_end_idx)
     ]
 
+    chunk_to_preprocess = slurm_chunks[args.chunk]
+
     # Chunk the trajectories into args.num_workers splits
-    chunked_txt_files = np.array_split(xyz_logs, args.num_workers)
+    chunked_txt_files = np.array_split(chunk_to_preprocess, args.num_workers)
 
     # Extract features
     sampled_ids, idx = [[]] * args.num_workers, [0] * args.num_workers
@@ -126,7 +133,7 @@ def main(args):
     sampled_ids, idx = list(op[0]), list(op[1])
 
     # Log sampled image, trajectory trace
-    for j, i in enumerate(range(args.num_workers)):
+    for j, i in enumerate(range(lmdb_start_idx, lmdb_end_idx)):
         ids_log = open(
             os.path.join(args.out_path, "data_log.%04d.txt" % i), "w"
         )
@@ -161,6 +168,18 @@ def get_parser():
         "--test-data",
         action="store_true",
         help="Is data being processed test data?",
+    )
+    parser.add_argument(
+        "--chunk",
+        type=int,
+        default=0,
+        help="Chunk idx of inputs to preprocess (for multinode use)",
+    )
+    parser.add_argument(
+        "--nodes",
+        type=int,
+        default=1,
+        help="No. of nodes to preprocess across",
     )
     return parser
 
