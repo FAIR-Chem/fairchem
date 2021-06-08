@@ -58,29 +58,19 @@ class TrajectoryLmdbDataset(Dataset):
                 pickle.loads(env.begin().get("length".encode("ascii")))
             )
             env.close()
-        lengths.sort(reverse=True)
-        replica_size = sum(lengths[: math.ceil(len(lengths) / world_size)])
+        replica_size = math.ceil(sum(lengths) / world_size)
 
-        # Each process only reads a subset of the DB files. However, since the
-        # number of DB files may not be divisible by world size, the final
-        # (num_dbs % world_size) are shared by all processes.
-        num_full_dbs = len(db_paths) - (len(db_paths) % world_size)
-        full_db_paths = db_paths[rank:num_full_dbs:world_size]
-        shared_db_paths = db_paths[num_full_dbs:]
-        self.db_paths = full_db_paths + shared_db_paths
-
+        # Each process only reads a subset of each DB file.
         self._keys, self.envs = [], []
-        for db_path in full_db_paths:
+        for db_path in db_paths:
             self.envs.append(self.connect_db(db_path))
             length = pickle.loads(
                 self.envs[-1].begin().get("length".encode("ascii"))
             )
-            self._keys.append(list(range(length)))
-        for db_path in shared_db_paths:
-            self.envs.append(self.connect_db(db_path))
-            length = pickle.loads(
-                self.envs[-1].begin().get("length".encode("ascii"))
-            )
+            # Each LMDB must contain at least world_size data points
+            assert (
+                length / world_size >= 1
+            ), f"Each LMDB must be at least length {world_size}"
             length -= length % world_size
             self._keys.append(list(range(rank, length, world_size)))
 
