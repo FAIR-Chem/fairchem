@@ -14,6 +14,7 @@ import sys
 import ase.io
 import lmdb
 import numpy as np
+import ray.util.multiprocessing as ray_mp
 import torch
 from tqdm import tqdm
 
@@ -109,7 +110,11 @@ def main(args):
     # Extract features
     sampled_ids, idx = [[]] * args.num_workers, [0] * args.num_workers
 
-    pool = mp.Pool(args.num_workers)
+    if args.multi_node:
+        pool = ray_mp.Pool(processes=args.num_workers, ray_address="auto")
+    else:
+        pool = mp.Pool(args.num_workers)
+        print("using python multiprocess")
     mp_args = [
         (
             a2g,
@@ -161,6 +166,11 @@ def get_parser():
         "--test-data",
         action="store_true",
         help="Is data being processed test data?",
+    )
+    parser.add_argument(
+        "--multi-node",
+        action="store_true",
+        help="If multiple nodes are being used",
     )
     return parser
 
