@@ -366,6 +366,7 @@ class ForcesTrainer(BaseTrainer):
 
         start_epoch = self.start_step // len(self.train_loader)
         for epoch in range(start_epoch, self.config["optim"]["max_epochs"]):
+            self.train_sampler.set_epoch(epoch)
             skip_steps = 0
             if epoch == start_epoch and start_epoch > 0:
                 skip_steps = start_epoch % len(self.train_loader)
