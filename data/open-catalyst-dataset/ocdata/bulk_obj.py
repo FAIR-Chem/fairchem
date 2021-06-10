@@ -181,7 +181,7 @@ class Bulk():
 
             # Additional filtering for the 2D materials' slabs
             if self.mpid in COVALENT_MATERIALS_MPIDS:
-                slabs = [slab for slab in slabs if is_2D_slab_reasonsable(slab) is True]
+                slabs = [slab for slab in slabs if self.is_2D_slab_reasonsable(slab) is True]
 
             # If the bottoms of the slabs are different than the tops, then we want
             # to consider them, too
