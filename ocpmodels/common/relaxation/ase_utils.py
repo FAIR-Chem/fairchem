@@ -108,4 +108,4 @@ class OCPCalculator(Calculator):
             self.results["forces"] = predictions["forces"].cpu().numpy()
 
         elif self.trainer.name == "is2re":
-            self.results["energy"] = predictions["energy"]
+            self.results["energy"] = predictions["energy"].item()
