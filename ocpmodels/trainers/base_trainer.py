@@ -302,12 +302,10 @@ class BaseTrainer(ABC):
 
         print("### Loading checkpoint from: {}".format(checkpoint_path))
 
-        if self.cpu:
-            checkpoint = torch.load(
-                checkpoint_path, map_location=torch.device("cpu")
-            )
-        else:
-            checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(
+            checkpoint_path,
+            map_location=(torch.device("cpu") if self.cpu else None),
+        )
 
         self.start_step = checkpoint.get("step", 0)
 
