@@ -219,13 +219,16 @@ class EnergyTrainer(BaseTrainer):
                     out["energy"]
                 )
 
-            predictions["energy"].extend(out["energy"].tolist())
             if per_image:
                 predictions["id"].extend(
                     [str(i) for i in batch[0].sid.tolist()]
                 )
                 predictions["energy"].extend(out["energy"].tolist())
-                self.save_results(predictions, results_file, keys=["energy"])
+            else:
+                predictions["energy"] = out["energy"].detach()
+                return predictions
+
+        self.save_results(predictions, results_file, keys=["energy"])
 
         return predictions
 
