@@ -101,7 +101,11 @@ class OCPCalculator(Calculator):
             batch.edge_index = edge_index
             batch.cell_offsets = cell_offsets
             batch.neighbors = neighbors
-        predictions = self.trainer.predict(batch, per_image=False)
 
-        self.results["energy"] = predictions["energy"].item()
-        self.results["forces"] = predictions["forces"].cpu().numpy()
+        predictions = self.trainer.predict(batch, per_image=False)
+        if self.trainer.name == "s2ef":
+            self.results["energy"] = predictions["energy"].item()
+            self.results["forces"] = predictions["forces"].cpu().numpy()
+
+        elif self.trainer.name == "is2re":
+            self.results["energy"] = predictions["energy"].item()
