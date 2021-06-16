@@ -11,6 +11,7 @@ from collections import defaultdict
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, DistributedSampler
+import torch_geometric
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
@@ -181,11 +182,22 @@ class EnergyTrainer(BaseTrainer):
                 raise NotImplementedError
 
     @torch.no_grad()
-    def predict(self, loader, results_file=None, disable_tqdm=False):
+    def predict(
+        self, loader, per_image=True, results_file=None, disable_tqdm=False
+    ):
         if distutils.is_master() and not disable_tqdm:
             print("### Predicting on test.")
-        assert isinstance(loader, torch.utils.data.dataloader.DataLoader)
+        assert isinstance(
+            loader,
+            (
+                torch.utils.data.dataloader.DataLoader,
+                torch_geometric.data.Batch,
+            ),
+        )
         rank = distutils.get_rank()
+
+        if isinstance(loader, torch_geometric.data.Batch):
+            loader = [[loader]]
 
         self.model.eval()
         if self.normalizers is not None and "target" in self.normalizers:
@@ -206,10 +218,18 @@ class EnergyTrainer(BaseTrainer):
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
                 )
-            predictions["id"].extend([str(i) for i in batch[0].sid.tolist()])
-            predictions["energy"].extend(out["energy"].tolist())
+
+            if per_image:
+                predictions["id"].extend(
+                    [str(i) for i in batch[0].sid.tolist()]
+                )
+                predictions["energy"].extend(out["energy"].tolist())
+            else:
+                predictions["energy"] = out["energy"].detach()
+                return predictions
 
         self.save_results(predictions, results_file, keys=["energy"])
+
         return predictions
 
     def train(self):
