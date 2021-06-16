@@ -245,7 +245,7 @@ class BaseTrainer(ABC):
 
     @abstractmethod
     def load_task(self):
-        """ Derived classes should implement this function."""
+        """Derived classes should implement this function."""
 
     def load_model(self):
         # Build model
@@ -301,7 +301,12 @@ class BaseTrainer(ABC):
             return False
 
         print("### Loading checkpoint from: {}".format(checkpoint_path))
-        checkpoint = torch.load(checkpoint_path)
+
+        checkpoint = torch.load(
+            checkpoint_path,
+            map_location=(torch.device("cpu") if self.cpu else None),
+        )
+
         self.start_step = checkpoint.get("step", 0)
 
         # Load model, optimizer, normalizer state dict.
@@ -412,7 +417,7 @@ class BaseTrainer(ABC):
 
     @abstractmethod
     def train(self):
-        """ Derived classes should implement this function."""
+        """Derived classes should implement this function."""
 
     @torch.no_grad()
     def validate(self, split="val", epoch=None, disable_tqdm=False):
@@ -476,11 +481,11 @@ class BaseTrainer(ABC):
 
     @abstractmethod
     def _forward(self, batch_list):
-        """ Derived classes should implement this function."""
+        """Derived classes should implement this function."""
 
     @abstractmethod
     def _compute_loss(self, out, batch_list):
-        """ Derived classes should implement this function."""
+        """Derived classes should implement this function."""
 
     def _backward(self, loss):
         self.optimizer.zero_grad()
