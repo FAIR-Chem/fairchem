@@ -79,7 +79,7 @@ class BaseTrainer(ABC):
         )
         # create directories from master rank only
         distutils.broadcast(timestamp, 0)
-        timestamp = datetime.datetime.fromtimestamp(timestamp).strftime(
+        timestamp = datetime.datetime.fromtimestamp(timestamp.int()).strftime(
             "%Y-%m-%d-%H-%M-%S"
         )
         if identifier:
