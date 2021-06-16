@@ -37,68 +37,22 @@ class TrajectoryLmdbDataset(Dataset):
         super(TrajectoryLmdbDataset, self).__init__()
         self.config = config
 
-        world_size = distutils.get_world_size()
-        rank = distutils.get_rank()
-
-        # Set seed.
-        seed = (torch.initial_seed() + rank) % 2 ** 32
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        random.seed(seed)
-
         srcdir = Path(self.config["src"])
         db_paths = sorted(srcdir.glob("*.lmdb"))
         assert len(db_paths) > 0, f"No LMDBs found in {srcdir}"
 
-        # Read all LMDBs to set the size of each dataloader replica.
-        lengths = []
-        for db_path in db_paths:
-            env = self.connect_db(db_path)
-            lengths.append(
-                pickle.loads(env.begin().get("length".encode("ascii")))
-            )
-            env.close()
-        lengths.sort(reverse=True)
-        replica_size = sum(lengths[: math.ceil(len(lengths) / world_size)])
-
-        # Each process only reads a subset of the DB files. However, since the
-        # number of DB files may not be divisible by world size, the final
-        # (num_dbs % world_size) are shared by all processes.
-        num_full_dbs = len(db_paths) - (len(db_paths) % world_size)
-        full_db_paths = db_paths[rank:num_full_dbs:world_size]
-        shared_db_paths = db_paths[num_full_dbs:]
-        self.db_paths = full_db_paths + shared_db_paths
-
         self._keys, self.envs = [], []
-        for db_path in full_db_paths:
+        for db_path in db_paths:
             self.envs.append(self.connect_db(db_path))
             length = pickle.loads(
                 self.envs[-1].begin().get("length".encode("ascii"))
             )
             self._keys.append(list(range(length)))
-        for db_path in shared_db_paths:
-            self.envs.append(self.connect_db(db_path))
-            length = pickle.loads(
-                self.envs[-1].begin().get("length".encode("ascii"))
-            )
-            length -= length % world_size
-            self._keys.append(list(range(rank, length, world_size)))
 
         keylens = [len(k) for k in self._keys]
-        # Need to pad dataloaders so all have the same no. of samples.
-        # This means that dataloaders will have some repeated samples
-        # that need to be pruned out in post-processing.
-        if sum(keylens) < replica_size:
-            self._keys[-1].extend(
-                [self._keys[-1][-1]] * (replica_size - sum(keylens))
-            )
-            keylens = [len(k) for k in self._keys]
-
         self._keylen_cumulative = np.cumsum(keylens).tolist()
         self.transform = transform
         self.num_samples = sum(keylens)
-
-        assert self.num_samples == replica_size
 
     def __len__(self):
         return self.num_samples

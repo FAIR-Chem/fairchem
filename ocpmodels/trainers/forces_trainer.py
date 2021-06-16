@@ -111,77 +111,82 @@ class ForcesTrainer(BaseTrainer):
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
 
+            self.train_sampler = DistributedSampler(
+                self.train_dataset,
+                num_replicas=distutils.get_world_size(),
+                rank=distutils.get_rank(),
+                shuffle=True,
+            )
+
             self.train_loader = DataLoader(
                 self.train_dataset,
                 batch_size=self.config["optim"]["batch_size"],
-                shuffle=True,
                 collate_fn=self.parallel_collater,
                 num_workers=self.config["optim"]["num_workers"],
                 pin_memory=True,
+                sampler=self.train_sampler,
             )
 
             self.val_loader = self.test_loader = None
+            self.val_sampler = self.test_sampler = None
 
             if "val_dataset" in self.config:
                 self.val_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(self.config["val_dataset"])
+                self.val_sampler = DistributedSampler(
+                    self.val_dataset,
+                    num_replicas=distutils.get_world_size(),
+                    rank=distutils.get_rank(),
+                    shuffle=False,
+                )
                 self.val_loader = DataLoader(
                     self.val_dataset,
                     self.config["optim"].get("eval_batch_size", 64),
-                    shuffle=False,
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
                     pin_memory=True,
+                    sampler=self.val_sampler,
                 )
             if "test_dataset" in self.config:
                 self.test_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(self.config["test_dataset"])
-                self.test_loader = DataLoader(
+                self.test_sampler = DistributedSampler(
                     self.test_dataset,
-                    self.config["optim"].get("eval_batch_size", 64),
-                    shuffle=False,
-                    collate_fn=self.parallel_collater,
-                    num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=True,
-                )
-
-            if "relax_dataset" in self.config["task"]:
-                assert os.path.isfile(
-                    self.config["task"]["relax_dataset"]["src"]
-                )
-
-                self.relax_dataset = registry.get_dataset_class(
-                    "single_point_lmdb"
-                )(self.config["task"]["relax_dataset"])
-
-                self.relax_sampler = DistributedSampler(
-                    self.relax_dataset,
                     num_replicas=distutils.get_world_size(),
                     rank=distutils.get_rank(),
                     shuffle=False,
                 )
-                self.relax_loader = DataLoader(
-                    self.relax_dataset,
-                    batch_size=self.config["optim"].get("eval_batch_size", 64),
+                self.test_loader = DataLoader(
+                    self.test_dataset,
+                    self.config["optim"].get("eval_batch_size", 64),
                     collate_fn=self.parallel_collater,
                     num_workers=self.config["optim"]["num_workers"],
                     pin_memory=True,
-                    sampler=self.relax_sampler,
+                    sampler=self.test_sampler,
                 )
 
-        else:
-            self.dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
-            )(self.config["dataset"])
-            (
-                self.train_loader,
-                self.val_loader,
-                self.test_loader,
-            ) = self.dataset.get_dataloaders(
-                batch_size=self.config["optim"]["batch_size"],
+        if "relax_dataset" in self.config["task"]:
+            assert os.path.isfile(self.config["task"]["relax_dataset"]["src"])
+
+            self.relax_dataset = registry.get_dataset_class(
+                "single_point_lmdb"
+            )(self.config["task"]["relax_dataset"])
+
+            self.relax_sampler = DistributedSampler(
+                self.relax_dataset,
+                num_replicas=distutils.get_world_size(),
+                rank=distutils.get_rank(),
+                shuffle=False,
+            )
+            self.relax_loader = DataLoader(
+                self.relax_dataset,
+                batch_size=self.config["optim"].get("eval_batch_size", 64),
                 collate_fn=self.parallel_collater,
+                num_workers=self.config["optim"]["num_workers"],
+                pin_memory=True,
+                sampler=self.relax_sampler,
             )
 
         self.num_targets = 1
@@ -361,6 +366,7 @@ class ForcesTrainer(BaseTrainer):
 
         start_epoch = self.start_step // len(self.train_loader)
         for epoch in range(start_epoch, self.config["optim"]["max_epochs"]):
+            self.train_sampler.set_epoch(epoch)
             skip_steps = 0
             if epoch == start_epoch and start_epoch > 0:
                 skip_steps = start_epoch % len(self.train_loader)
