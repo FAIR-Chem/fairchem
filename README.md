@@ -32,15 +32,15 @@ Check that you can invoke `conda-merge` by running `conda-merge -h`.
 
 ### GPU machines
 
-Instructions are for PyTorch 1.7.1, CUDA 11.0 specifically.
+Instructions are for PyTorch 1.8.1, CUDA 10.2 specifically.
 
 First, check that CUDA is in your `PATH` and `LD_LIBRARY_PATH`, e.g.
 ```bash
 $ echo $PATH | tr ':' '\n' | grep cuda
-/public/apps/cuda/11.0/bin
+/public/apps/cuda/10.2/bin
 
 $ echo $LD_LIBRARY_PATH | tr ':' '\n' | grep cuda
-/public/apps/cuda/11.0/lib64
+/public/apps/cuda/10.2/lib64
 ```
 
 The exact paths may differ on your system.
@@ -142,15 +142,11 @@ If you use this codebase in your work, consider citing:
 
 ```bibtex
 @article{ocp_dataset,
-author = {Chanussot*, Lowik and Das*, Abhishek and Goyal*, Siddharth and Lavril*, Thibaut and Shuaibi*, Muhammed and Riviere, Morgane and Tran, Kevin and Heras-Domingo, Javier and Ho, Caleb and Hu, Weihua and Palizhati, Aini and Sriram, Anuroop and Wood, Brandon and Yoon, Junwoong and Parikh, Devi and Zitnick, C. Lawrence and Ulissi, Zachary},
-title = {Open Catalyst 2020 (OC20) Dataset and Community Challenges},
-journal = {ACS Catalysis},
-volume = {0},
-number = {0},
-pages = {6059-6072},
-year = {0},
-doi = {10.1021/acscatal.0c04525},
-URL = {https://doi.org/10.1021/acscatal.0c04525},
+    author = {Chanussot*, Lowik and Das*, Abhishek and Goyal*, Siddharth and Lavril*, Thibaut and Shuaibi*, Muhammed and Riviere, Morgane and Tran, Kevin and Heras-Domingo, Javier and Ho, Caleb and Hu, Weihua and Palizhati, Aini and Sriram, Anuroop and Wood, Brandon and Yoon, Junwoong and Parikh, Devi and Zitnick, C. Lawrence and Ulissi, Zachary},
+    title = {Open Catalyst 2020 (OC20) Dataset and Community Challenges},
+    journal = {ACS Catalysis},
+    year = {2021},
+    doi = {10.1021/acscatal.0c04525},
 }
 ```
 
