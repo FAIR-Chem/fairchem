@@ -64,13 +64,15 @@ def warmup_lr_lambda(current_step, optim_config):
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
     """
 
-    # keep this block for backward compatibility to older checkpoints that
-    # have warmup_epochs instead of warmup_steps.
-    if "warmup_steps" not in optim_config:
-        print(
-            "WARNING: warmup_steps not specified in config. Setting it equal to warmup_epochs."
+    # keep this block for older configs that have warmup_epochs instead of warmup_steps
+    # and lr_milestones are defined in epochs
+    if (
+        any(x < 100 for x in optim_config["lr_milestones"])
+        or "warmup_epochs" in optim_config
+    ):
+        raise Exception(
+            "ConfigError: please define lr_milestones in steps not epochs and define warmup_steps instead of warmup_epochs"
         )
-        optim_config["warmup_steps"] = optim_config["warmup_epochs"]
 
     if current_step <= optim_config["warmup_steps"]:
         alpha = current_step / float(optim_config["warmup_steps"])
