@@ -78,7 +78,7 @@ Alternatively, the IS2RE task may be approached by 2 methods as described in our
 - Single Model: Relaxed energy predictions are extracted from relaxed structures generated via ML relaxations from a single model.
 
     1. Train a S2EF model on both energy and forces as described [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md#structure-to-energy-and-forces-s2ef)
-    2. Using the trained S2EF model, run ML relaxations as described [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md#initial-structure-to-relaxed-structure-is2rs). Ensure `traj_dir` is uniquely specified in the config as to save out the full trajectory. **Note** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.
+    2. Using the trained S2EF model, run ML relaxations as described [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md#initial-structure-to-relaxed-structure-is2rs). Ensure `traj_dir` is uniquely specified in the config as to save out the full trajectory. A sample config can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/configs/s2ef/2M/dimenet_plus_plus/dpp_relax.yml). ** Note ** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.
     3. Prepare a submission file by running the following command:
         ```
         python scripts/make_sibmission_file.py --id path/to/id/traj_dir \ 
