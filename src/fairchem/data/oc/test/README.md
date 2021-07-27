@@ -7,8 +7,10 @@ The data here refers to the slab and adslab configurations generated.
 **check_inputs**
 This script checks for duplicated adslabs and if bulks and adsorbates in training data leaked to val/test out of distribution data. It should be used before running DFT calculations, but can also be used after DFT calculations to double-check. To use, first convert any metadata that describes the slab/adslab into a dataframe. Using the dataframe, check if there are any duplicated adslabs, and make sure bulks and adsorbates in the train split do not show up in the val/test ood splits.
 ```
-# provide a list of metadata
+# provide a list of metadata, can be parallelzing if needed
+metadata = [obtain_metadata(input_dir, split_tag) for (input_dir, split_tag) in inputs]
 df = create_df(metadata, df_name=None)
+
 # check if all adslabs generated is unique
 print(adslabs_are_unique(df, unique_by=["mpid", "miller", "shift", "top",
                                       "adsorbate", "adsorption_site"]))

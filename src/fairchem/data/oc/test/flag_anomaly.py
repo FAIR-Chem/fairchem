@@ -92,7 +92,7 @@ class DetectAnomaly:
             return False
         return True
 
-    def _is_surface_reconstructed(self, slab_movement_thres):
+    def _is_surface_reconstructed(self, slab_movement_thres=3):
         """
         if any slab atoms moved more than X Angstrom, consider possible reconstruction.
         A larger X means user is more conversative of what's considered reconstructed.
