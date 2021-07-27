@@ -1,0 +1,68 @@
+trainer: forces
+
+dataset:
+  - src: data/s2ef/2M/train/
+    normalize_labels: True
+    target_mean: -0.7554450631141663
+    target_std: 2.887317180633545
+    grad_target_mean: 0.0
+    grad_target_std: 2.887317180633545
+  - src: data/s2ef/all/val_id/
+
+logger: tensorboard
+
+task:
+  dataset: trajectory_lmdb
+  description: "Regressing to energies and forces for DFT trajectories from OCP"
+  type: regression
+  metric: mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+  relax_dataset:
+    src: data/is2re/all/test_id/data.lmdb
+  write_pos: True
+  relaxation_steps: 200
+  relax_opt:
+    maxstep: 0.04
+    memory: 50
+    damping: 1.0
+    alpha: 70.0
+    traj_dir: "ml-relaxations/dpp-2M-test-id"
+
+model:
+  name: dimenetplusplus
+  hidden_channels: 192
+  out_emb_channels: 192
+  num_blocks: 3
+  cutoff: 6.0
+  num_radial: 6
+  num_spherical: 7
+  num_before_skip: 1
+  num_after_skip: 2
+  num_output_layers: 3
+  regress_forces: True
+  use_pbc: True
+
+# *** Important note ***
+#   The total number of gpus used for this run was 32.
+#   If the global batch size (num_gpus * batch_size) is modified
+#   the lr_milestones and warmup_steps need to be adjusted accordingly.
+
+optim:
+  batch_size: 12
+  eval_batch_size: 12
+  eval_every: 10000
+  num_workers: 8
+  lr_initial: 0.0001
+  lr_gamma: 0.1
+  lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+    - 20833
+    - 31250
+    - 41666
+  warmup_steps: 10416
+  warmup_factor: 0.2
+  max_epochs: 15
+  force_coefficient: 50
