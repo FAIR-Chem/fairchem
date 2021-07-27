@@ -5,13 +5,50 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import json
+import argparse
+import glob
 import os
 
 import numpy as np
 
 
-def main(paths, filename):
+def write_is2re_relaxations(paths, filename, hybrid):
+    import ase.io
+    from tqdm import tqdm
+
+    submission_file = {}
+
+    if not hybrid:
+        for idx, split in enumerate(["id", "ood_ads", "ood_cat", "ood_both"]):
+            ids = []
+            energies = []
+            systems = glob.glob(os.path.join(paths[idx], "*.traj"))
+            for system in tqdm(systems):
+                sid, _ = os.path.splitext(os.path.basename(system))
+                ids.append(str(sid))
+                traj = ase.io.read(system, "-1")
+                energies.append(traj.get_potential_energy())
+
+            submission_file[f"{split}_ids"] = np.array(ids)
+            submission_file[f"{split}_energy"] = np.array(energies)
+
+    else:
+        for idx, split in enumerate(["id", "ood_ads", "ood_cat", "ood_both"]):
+            preds = np.load(paths[idx])
+            ids = []
+            energies = []
+            for sid, energy in zip(preds["ids"], preds["energy"]):
+                sid = sid.split("_")[0]
+                ids.append(sid)
+                energies.append(energy)
+
+            submission_file[f"{split}_ids"] = np.array(ids)
+            submission_file[f"{split}_energy"] = np.array(energies)
+
+    np.savez_compressed(filename, **submission_file)
+
+
+def write_predictions(paths, filename):
     submission_file = {}
 
     for idx, split in enumerate(["id", "ood_ads", "ood_cat", "ood_both"]):
@@ -22,6 +59,25 @@ def main(paths, filename):
             submission_file[key] = res[i]
 
     np.savez_compressed(filename, **submission_file)
+
+
+def main(args):
+    id_path = args.id
+    ood_ads_path = args.ood_ads
+    ood_cat_path = args.ood_cat
+    ood_both_path = args.ood_both
+
+    paths = [id_path, ood_ads_path, ood_cat_path, ood_both_path]
+    if not args.out_path.endswith(".npz"):
+        args.out_path = args.out_path + ".npz"
+
+    if not args.is2re_relaxations:
+        write_predictions(paths, filename=args.out_path)
+    else:
+        write_is2re_relaxations(
+            paths, filename=args.out_path, hybrid=args.hybrid
+        )
+    print(f"Results saved to {args.out_path} successfully.")
 
 
 if __name__ == "__main__":
@@ -38,13 +94,33 @@ if __name__ == "__main__":
 
     Use this script to join the 4 results files in the format evalAI expects
     submissions.
+
+    If writing IS2RE predictions from relaxations, paths must be directories
+    containg trajectory files. Additionally, --is2re-relaxations must be
+    provided as a command line argument.
+
+    If writing IS2RE predictions from hybrid relaxations (force only model +
+    energy only model), paths must be the .npz S2EF prediction files.
+    Additionally, --is2re-relaxations and --hybrid must be provided as a
+    command line argument.
     """
 
-    id_path = "/path/to/id/results_file"
-    ood_ads_path = "/path/to/ood_ads/results_file"
-    ood_cat_path = "/path/to/ood_cat/results_file"
-    ood_both_path = "/path/to/ood_both/results_file"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--id", help="Path to ID results")
+    parser.add_argument("--ood-ads", help="Path to OOD-Ads results")
+    parser.add_argument("--ood-cat", help="Path to OOD-Cat results")
+    parser.add_argument("--ood-both", help="Path to OOD-Both results")
+    parser.add_argument("--out-path", help="Path to write predictions to.")
+    parser.add_argument(
+        "--is2re-relaxations",
+        action="store_true",
+        help="Write IS2RE results from trajectories. Paths specified correspond to directories containing .traj files.",
+    )
+    parser.add_argument(
+        "--hybrid",
+        action="store_true",
+        help="Write IS2RE results from S2EF prediction files. Paths specified correspond to S2EF NPZ files.",
+    )
 
-    paths = [id_path, ood_ads_path, ood_cat_path, ood_both_path]
-
-    main(paths, filename="TASKNAME_evalai_submission.npz")
+    args = parser.parse_args()
+    main(args)
