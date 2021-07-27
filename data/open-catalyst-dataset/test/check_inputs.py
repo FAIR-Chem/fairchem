@@ -1,24 +1,42 @@
 import numpy as np
 import pandas as pd
+import pickle
 
-def create_df(metadata, df_name=None):
+def obtain_metadata(input_dir, split):
+    """
+    Get the metadata provided input directory and split of data.
+    Args:
+                input_dir (str)   The path to the directory that has all the input files, including 'metadata.pkl'
+                split (str)       Should be one of the 9 split tags, i.e. 'train', 'val_id', 'test_id',
+                                  'val_ood_cat/ads/both', and 'test_ood_cat/ads/both'.
+
+    Returns:
+                metadata (tuple)  adslab properties.
+                                  Ex: ('mp-126', (1,1,1), 0.025, True, '*OH', (0,0,0), 'val_ood_ads')
+    """
+    m = pickle.load(open(input_dir+'metadata.pkl', 'rb'))
+    m = m['adsorbed_bulk_metadata']
+    metadata = (*m, split)
+    return metadata
+
+def create_df(metadata_lst, df_name=None):
     """
     Create a df from metadata to used check_dataset.py file
     Args:
-                metadata      A list of adslab/slab properties in tupple form, each tuple should
+                metadata_lst  A list of adslab properties in tuple form, each tuple should
                               contain (mpid, miller index, shift, top, adsorbate smile string,
-                              adsorption cartesion coordinate tuple, and which split data belongs to).
-                              Ex: ('mp-126', (1,1,1), '0.025', True, '*OH', (0,0,0), 'val_ood_ads')
+                              adsorption cartesion coordinates tuple, and which split the data belongs to).
+                              Ex: ('mp-126', (1,1,1), 0.025, True, '*OH', (0,0,0), 'val_ood_ads')
     Returns:
                 df            A pandas DataFrame
     """
     if df_name is None:
         print("You did not provide a dataframe name, we will store it as df.csv")
         df_name = 'df'
-    if np.shape(metadata)[1] != 7:
+    if np.shape(metadata_lst)[1] != 7:
         raise ValueError("The metadata is missing a value, check to make sure you have mpid, miller index, \
                           shift, top, adsorbate smile string, adsorption site coordinates, and which split data belongs to")
-    df = pd.DataFrame(metadata, columns=["mpid", "miller", "shift", "top",
+    df = pd.DataFrame(metadata_lst, columns=["mpid", "miller", "shift", "top",
                                          "adsorbate", "adsorption_site", "tag"])
     df.to_csv('{}.csv'.format(df_name))
     return df
@@ -42,11 +60,11 @@ def check_commonelems(df, split1, split2, check='adsorbate'):
     """
     Given a df containing all the metadata of the calculations, check to see if there are
     any bulk or adsorbate duplicates between train and val/test_ood. The dataframe should
-    have a "split_tag" column indicate which split (i.e. train, val_odd_ads, etc) a data belongs to.
+    have a "split_tag" column indicate which split (i.e. train, val_ood_ads, etc) a data belongs to.
     Args:
         df               A pd.DataFrame containing metadata of the adslabs being checked.
-        split1, split2   two of the splits from (train, test/val_id, test/val_ood_ads,
-                         test/val_ood_cat, test_val/ood_both)
+        split1, split2   two of the splits from 'train', 'val_id', 'test_id',
+                         'val_ood_cat/ads/both', or 'test_ood_cat/ads/both'.
     """
     split1_df = df.loc[df.tag==split1]
     split2_df = df.loc[df.tag==split2]

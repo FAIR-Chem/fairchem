@@ -30,12 +30,14 @@ def check_DFT_energy(sid, path):
     traj = Trajectory(path)
     if traj[-1].get_potential_energy() > traj[0].get_potential_energy():
         raise ValueError(f"{sid} has final DFT energy that's higher than the initial energy")
+    flagged = False
     for idx, frame in enumerate(traj[:-1]):
         next_frame = traj[idx+1]
-        diffE = next_frame.get_potential_energy() - frame.get_potential_energy()
-        if diffE >0.05:
-            print('There is a spike in energy during the relaxation of {}, double check the trajectory'.format(sid))
-            break
+        diff_e = next_frame.get_potential_energy() - frame.get_potential_energy()
+        if diff_e > 0.05:
+            flagged = True
+    if flagged:
+        print('There is a spike in energy during the relaxation of {}, double check the trajectory'.format(sid))
 
 def read_pkl(fname):
     return pickle.load(open(fname, 'rb'))
