@@ -36,7 +36,8 @@ def min_diff(atoms_init, atoms_final):
     fractional[fractional>0.5]-=1
     return np.matmul(fractional,atoms_init.get_cell(complete=True))
 
-def compare(sysids):
+def compare(args):
+    sysids, traj_path_by_sysid, input_dir_by_sysid = args
     for sysid in sysids:
         traj_path = traj_path_by_sysid[sysid]
         input_dir = input_dir_by_sysid[sysid]
@@ -69,5 +70,6 @@ if __name__ == "__main__":
     input_dir_by_sysid = read_pkl(args.input_dir_by_sysid)
 
     sysids_splits = np.array_split(sysids, args.num_workers)
+    pool_args = [(split, traj_path_by_sysid, input_dir_by_sysid) for split in sysids_splits]
     pool = mp.Pool(args.num_workers)
-    tqdm(pool.imap(compare, sysids_splits), total=len(sysids_splits))
+    tqdm(pool.imap(compare, pool_args), total=len(pool_args))
