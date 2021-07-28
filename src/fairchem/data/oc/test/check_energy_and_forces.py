@@ -42,11 +42,12 @@ def check_DFT_energy(sid, path):
 def read_pkl(fname):
     return pickle.load(open(fname, 'rb'))
 
-def run_checks(sysid_list):
+def run_checks(args):
+    sysid_list, force_thres, traj_path_by_sysid, input_dir_by_sysid, ref_energies, ads_energies = args
     for sysid in sysid_list:
         check_relaxed_forces(sysid, traj_path_by_sysid[sysid], force_thres)
         check_adsorption_energy(sysid, traj_path_by_sysid[sysid],
-                                ref_energy_by_sysid[sysid], adsorption_energy_by_sysid[sysid])
+                                ref_energies[sysid], ads_energies[sysid])
         check_DFT_energy(sysid, traj_path_by_sysid[sysid])
 
 def create_parser():
@@ -69,5 +70,13 @@ if __name__ == "__main__":
     ref_energy_by_sysid = read_pkl(args.ref_energies)
     force_thres = args.force_tol
     mp_splits = np.array_split(sysids, args.num_workers)
+    pool_args = [(
+                  split,
+                  force_thres,
+                  traj_path_by_sysid,
+                  input_dir_by_sysid,
+                  ref_energy_by_sysid,
+                  adsorption_energy_by_sysid
+    ) for split in mp_splits]
     pool = mp.Pool(args.num_workers)
-    tqdm(pool.imap(run_checks, mp_splits), total=len(mp_splits))
+    tqdm(pool.imap(run_checks, pool_args), total=len(pool_args))
