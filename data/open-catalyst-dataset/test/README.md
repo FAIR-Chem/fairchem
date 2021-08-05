@@ -22,6 +22,11 @@ print(check_commonelems(df, split1, split2, check='adsorbate'))
 print(check_commonelems(df, split1, split2, check='bulks'))
 ```
 
+You can also double check your adsorbate placement is correct (i.e. there are no isolated adsorbate atoms post placement).
+```
+is_adsorbate_placed_correct(atoms_input, atoms_tag)
+```
+
 ## Tests on relaxation trajectories
 **compare_inputs_and_trajectory**
 This script compares the input atoms object with the first frame of a trajectory given a system id, and check if they are identical. To use:
@@ -30,7 +35,7 @@ python compare_input_and_trajectory --sysid_file (name).txt --traj_path_by_sysid
 ```
 
 **check_energy_and_forces**
-This script checks for three things given a system id.  1) Forces on the final frame of the trajectory are converged (below a threshold defined by users). 2) The final potential energy is lower than the initial potential energy. 3) The adsorption energy is equal to the final energy minus the reference energy. To run this script:
+This script checks for three things given a system id.  1) Forces on the final frame of the trajectory are converged (below a threshold defined by users). 2) The final potential energy is lower than the initial potential energy, and potential energies are decreasing in a trajectory (a small spike is acceptable). 3) The adsorption energy is equal to the final energy minus the reference energy. To run this script:
 ```
 python check_energy_and_forces --sysid_file (name).txt --traj_path_by_sysid (name).pkl --ref_energies (name).pkl --adsorption_energies (name).pkl --num_workers X
 ```
@@ -43,10 +48,10 @@ This script flags any anomalies that happened during relaxations (i.e. adsorbate
 
 Here is an example:
 ```
-detector = DetectAnomaly(init_atoms, final_atoms, atoms_tags)
-print(detector._is_adsorbate_dissociated())
-print(detector._is_adsorbate_desorbed(neighbor_thres=3))
-print(detector._is_surface_reconstructed(slab_movement_thres=3))
+detector = DetectTrajAnomaly(init_atoms, final_atoms, atoms_tags)
+print(detector.is_adsorbate_dissociated())
+print(detector.is_adsorbate_desorbed(neighbor_thres=3))
+print(detector.is_surface_reconstructed(slab_movement_thres=3))
 ```
 Here we define adsorbate desorption if the adsorbate is not connected to any surface atoms. Connection is defined as neighbor atoms within 3 angstroms (which is a reasonable number). But you can modify that value based on the systems tested. We also consider possible surface reconstruction if any slab surface atoms move more than 3 Angstrom, but this value can also be updated based on the systems tested.
 

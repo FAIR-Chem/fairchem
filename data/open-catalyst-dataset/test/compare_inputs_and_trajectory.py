@@ -24,13 +24,15 @@ def get_starting_structure_from_input_dir(input_dir):
     return input_atoms
 
 def min_diff(atoms_init, atoms_final):
+    """
+    Calculate atom wise distances of two atoms object,
+    taking into account periodic boundary conditions.
+    """
     positions = (atoms_final.positions-atoms_init.positions)
     fractional = np.linalg.solve(atoms_init.get_cell(complete=True).T,
                                      positions.T).T
     for i, periodic in enumerate(atoms_init.pbc):
         if periodic:
-            # Yes, we need to do it twice.
-            # See the scaled_positions.py test.
             fractional[:, i] %= 1.0
             fractional[:, i] %= 1.0
     fractional[fractional>0.5]-=1

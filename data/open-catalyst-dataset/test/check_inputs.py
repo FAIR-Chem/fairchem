@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import pickle
+from ase import neighborlist
+from ase.neighborlist import natural_cutoffs
 
 def obtain_metadata(input_dir, split):
     """
@@ -77,3 +79,35 @@ def check_commonelems(df, split1, split2, check='adsorbate'):
         common_elems = set(split1_df.mpid.values)&set(split2_df.mpid.values)
         if len(common_elems) != 0:
             raise ValueError("{} are in both dataset!".format(split))
+
+def is_adsorbate_placed_correct(adslab_input, atoms_tag):
+    """
+    Make sure all adsorbate atoms are connected after placement.
+    False means there is at least one isolated adsorbate atom.
+    It should be used after input generation but before DFT to avoid
+    unneccessarily computations.
+    Args:
+            adslab_input        `ase.Atoms` of the structure in its initial state
+            atoms_tag (list)    0=bulk, 1=surface, 2=adsorbate
+    Returns:
+            boolean    If there is any stand alone adsorbate atoms after placement,
+                       return False.
+
+    """
+    adsorbate_idx = [idx for idx, tag in enumerate(atoms_tag) if tag==2]
+    connectivity = _get_connectivity(adslab_input[adsorbate_idx])
+    return np.all(np.sum(connectivity, axis=0)!=0)
+
+def _get_connectivity(atoms):
+    """
+    Generate the connectivity of an atoms obj.
+    Args:
+                atoms      An `ase.Atoms` object
+    Returns:
+                matrix     The connectivity matrix of the atoms object.
+    """
+    cutoff = natural_cutoffs(atoms)
+    neighborList = neighborlist.NeighborList(cutoff, self_interaction=False, bothways=True)
+    neighborList.update(atoms)
+    matrix = neighborlist.get_connectivity_matrix(neighborList.nl).toarray()
+    return matrix
