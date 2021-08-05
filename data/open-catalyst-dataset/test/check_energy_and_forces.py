@@ -21,11 +21,11 @@ def check_adsorption_energy(sid, path, ref_energy, adsorption_energy):
     if not abs((final_energy.get_potential_energy() - ref_energy) - adsorption_energy) < 1e-6:
         print(f"{sid} doesn't satify energy equation")
 
-def check_DFT_energy(sid, path):
+def check_DFT_energy(sid, path, e_tol=0.05):
     """
     Given a relaxation trajectory, check to see if 1. final energy is less than the initial
-    energy, raise error if not. 2) If energies monotonically decrease in a trajectory.
-    If any frame(i+1) energy is slightly higher than frame(i) energy, flag it and plot the trajectory.
+    energy, raise error if not. 2) If the energy decreases throuhghout a trajectory (small spikes are okay).
+    If any frame(i+1) energy is higher than frame(i) energy, flag it and plot the trajectory.
     """
     traj = Trajectory(path)
     if traj[-1].get_potential_energy() > traj[0].get_potential_energy():
@@ -34,10 +34,10 @@ def check_DFT_energy(sid, path):
     for idx, frame in enumerate(traj[:-1]):
         next_frame = traj[idx+1]
         diff_e = next_frame.get_potential_energy() - frame.get_potential_energy()
-        if diff_e > 0.05:
+        if diff_e > e_tol:
             flagged = True
     if flagged:
-        print('There is a spike in energy during the relaxation of {}, double check the trajectory'.format(sid))
+        print('There is a spike in energy during the relaxation of {}, double check its trajectory'.format(sid))
 
 def read_pkl(fname):
     return pickle.load(open(fname, 'rb'))
@@ -57,6 +57,7 @@ def create_parser():
     parser.add_argument("--adsorption_energies", type=str, help="A pickle file that contains a dictionary that maps adsorption energy to system ids")
     parser.add_argument("--ref_energies", type=str, help="A pickle file that contains a dictionary that maps reference energy (E_slab + E_gas) to system ids")
     parser.add_argument("--force_tol", type=float, default=0.03, help="Force threshold at which a relaxation is considered converged")
+    parser.add_argument("--e_tol", type=float, default=0.05, help="Energy threshold to flag a trajectory if potential energy of step i+1 is higher than step i by this amount")
     parser.add_argument("--num_workers",  type=int, help="Number of processes or no. of dataset chunk")
     return parser
 
