@@ -71,6 +71,18 @@ pip install -e .
 pre-commit install
 ```
 
+### Mac CPU-only machines
+
+Only run the following if installing on a CPU only machine running Mac OS X.
+
+```
+conda env create -f env.common.yml
+conda activate ocp-models
+MACOSX_DEPLOYMENT_TARGET=10.9 CC=clang CXX=clang++ pip install torch-cluster torch-scatter torch-sparse torch-spline-conv -f https://pytorch-geometric.com/whl/torch-1.8.0+cpu.html
+pip install -e .
+pre-commit install
+```
+
 ## Download data
 
 Dataset download links for all tasks can be found at [DATASET.md](https://github.com/Open-Catalyst-Project/ocp/blob/master/DATASET.md).
