@@ -43,7 +43,7 @@ def read_pkl(fname):
     return pickle.load(open(fname, 'rb'))
 
 def run_checks(args):
-    sysid_list, force_thres, traj_path_by_sysid, input_dir_by_sysid, ref_energies, ads_energies = args
+    sysid_list, force_thres, traj_path_by_sysid, ref_energies, ads_energies = args
     for sysid in sysid_list:
         check_relaxed_forces(sysid, traj_path_by_sysid[sysid], force_thres)
         check_adsorption_energy(sysid, traj_path_by_sysid[sysid],
@@ -75,7 +75,6 @@ if __name__ == "__main__":
                   split,
                   force_thres,
                   traj_path_by_sysid,
-                  input_dir_by_sysid,
                   ref_energy_by_sysid,
                   adsorption_energy_by_sysid
     ) for split in mp_splits]
