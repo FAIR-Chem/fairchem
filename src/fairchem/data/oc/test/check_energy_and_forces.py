@@ -14,7 +14,7 @@ def check_relaxed_forces(sid, path, thres):
     final_atoms = read(path)
     forces = final_atoms.get_forces()
     if not (np.max(np.abs(forces)) <= thres):
-        print(f"{sid} doesn't satisfy the force threshold")
+        print(f"{sid} doesn't satisfy the force threshold, check trajectory {path}")
 
 def check_adsorption_energy(sid, path, ref_energy, adsorption_energy):
     final_energy = read(path)
@@ -25,19 +25,33 @@ def check_DFT_energy(sid, path, e_tol=0.05):
     """
     Given a relaxation trajectory, check to see if 1. final energy is less than the initial
     energy, raise error if not. 2) If the energy decreases throuhghout a trajectory (small spikes are okay).
+    And 3) if 2 fails, check if it's just a matter of tolerance being too strict by
+    considering only the first quarter of the trajectory and sampling every 10th frame
+    to check for _almost_ monotonic decrease in energies.
     If any frame(i+1) energy is higher than frame(i) energy, flag it and plot the trajectory.
     """
     traj = Trajectory(path)
     if traj[-1].get_potential_energy() > traj[0].get_potential_energy():
-        raise ValueError(f"{sid} has final DFT energy that's higher than the initial energy")
+        print("{} has final DFT energy that's higher than the initial energy, check traj {}".format(sid, path))
     flagged = False
-    for idx, frame in enumerate(traj[:-1]):
-        next_frame = traj[idx+1]
-        diff_e = next_frame.get_potential_energy() - frame.get_potential_energy()
-        if diff_e > e_tol:
-            flagged = True
-    if flagged:
-        print('There is a spike in energy during the relaxation of {}, double check its trajectory'.format(sid))
+    energies = [traj[i].get_potential_energy() for i in range(len(traj))]
+    is_monotonic = all(energies[i+1] - energies[i] < e_tol for i in range(len(energies)-1))
+    if is_monotonic is False:
+        print('There is a spike in energy during the relaxation of {}, double check its trajectory {}'.format(sid, path))
+        is_almost_monotonic = all(energies[i] >= energies[i+10] for i in range(0, int(0.25 * len(energies)) - 10, 10))
+        if is_almost_monotonic is False:
+            print('almost_monotonic energy check fails, double check trajectory {}'.format(path))
+
+def check_positions_across_frames_are_different(sid, path):
+    """
+    Given a relaxation trajectory, make sure positions for two consecutive
+    frames are not identical.
+    """
+    traj = Trajectory(path)
+    positions = [traj[i].get_positions() for i in range(len(traj))]
+    is_different = all((positions[i]!=positions[i+1]).any() for i in range(len(positions)-1))
+    if is_different is False:
+        print(f"{sid} has identical positions for some frames, check {path}")
 
 def read_pkl(fname):
     return pickle.load(open(fname, 'rb'))
@@ -49,6 +63,7 @@ def run_checks(args):
         check_adsorption_energy(sysid, traj_path_by_sysid[sysid],
                                 ref_energies[sysid], ads_energies[sysid])
         check_DFT_energy(sysid, traj_path_by_sysid[sysid])
+        check_positions_across_frames_are_different(sysid, traj_path_by_sysid[sysid])
 
 def create_parser():
     parser = argparse.ArgumentParser()
