@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import bisect
+import logging
 import math
 import pickle
 import random
@@ -108,7 +109,11 @@ def data_list_collater(data_list, otf_graph=False):
                 n_neighbors.append(n_index.shape[0])
             batch.neighbors = torch.tensor(n_neighbors)
         except NotImplementedError:
-            print(
+            logging.warning(
                 "LMDB does not contain edge index information, set otf_graph=True"
             )
+
+    if len(data_list) > 0 and hasattr(data_list[0], "tags"):
+        batch.tags = torch.cat([data.tags for data in data_list])
+
     return batch

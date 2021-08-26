@@ -7,6 +7,8 @@ ocp-models is the modeling codebase for the [Open Catalyst Project](https://open
 It provides implementations of state-of-the-art ML algorithms for catalysis that
 take arbitrary chemical structures as input to predict energy / forces / positions:
 
+- [GemNet](https://arxiv.org/abs/2106.08903)
+- [SpinConv](https://arxiv.org/abs/2106.09575)
 - [DimeNet++](https://arxiv.org/abs/2011.14115)
 - [ForceNet](https://arxiv.org/abs/2103.01436)
 - [DimeNet](https://arxiv.org/abs/2003.03123)
@@ -32,7 +34,7 @@ Check that you can invoke `conda-merge` by running `conda-merge -h`.
 
 ### GPU machines
 
-Instructions are for PyTorch 1.8.1, CUDA 10.2 specifically.
+Instructions are for PyTorch 1.9.0, CUDA 10.2 specifically.
 
 First, check that CUDA is in your `PATH` and `LD_LIBRARY_PATH`, e.g.
 ```bash

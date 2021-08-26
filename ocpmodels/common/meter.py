@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import logging
+
 # THIS IS NOW DEPRECATED. Consider using ocpmodels.modules.evaluator instead.
 from collections import defaultdict, deque
 
@@ -53,7 +55,7 @@ class SmoothedValue:
         return self.deque[-1]
 
     def all_reduce(self, device):
-        print("Total", self.total)
+        logging.info(f"Total: {self.total}")
         self.total = distutils.all_reduce(self.total, device=device)
         self.count = distutils.all_reduce(self.count, device=device)
         series_list = distutils.all_gather(self.series, device=device)

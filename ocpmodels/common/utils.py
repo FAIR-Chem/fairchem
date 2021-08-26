@@ -5,17 +5,21 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import ast
 import collections
 import copy
 import glob
 import importlib
 import itertools
 import json
+import logging
 import math
 import os
+import sys
 import time
 from bisect import bisect
 from itertools import product
+from pathlib import Path
 
 import demjson
 import numpy as np
@@ -27,8 +31,10 @@ from ray import tune
 from torch_geometric.utils import remove_self_loops
 
 
-def save_checkpoint(state, checkpoint_dir="checkpoints/"):
-    filename = os.path.join(checkpoint_dir, "checkpoint.pt")
+def save_checkpoint(
+    state, checkpoint_dir="checkpoints/", checkpoint_file="checkpoint.pt"
+):
+    filename = os.path.join(checkpoint_dir, checkpoint_file)
     torch.save(state, filename)
 
 
@@ -226,6 +232,8 @@ def setup_imports():
     datasets_pattern = os.path.join(datasets_folder, "*.py")
     model_folder = os.path.join(root_folder, "models")
     model_pattern = os.path.join(model_folder, "*.py")
+    task_folder = os.path.join(root_folder, "tasks")
+    task_pattern = os.path.join(task_folder, "*.py")
 
     importlib.import_module("ocpmodels.common.meter")
 
@@ -233,10 +241,11 @@ def setup_imports():
         glob.glob(datasets_pattern, recursive=True)
         + glob.glob(model_pattern, recursive=True)
         + glob.glob(trainer_pattern, recursive=True)
+        + glob.glob(task_pattern, recursive=True)
     )
 
     for f in files:
-        for key in ["/trainers", "/datasets", "/models"]:
+        for key in ["/trainers", "/datasets", "/models", "/tasks"]:
             if f.find(key) != -1:
                 splits = f.split(os.sep)
                 file_name = splits[-1]
@@ -245,67 +254,132 @@ def setup_imports():
                     "ocpmodels.%s.%s" % (key[1:], module_name)
                 )
 
+    experimental_folder = os.path.join(root_folder, "../experimental/")
+    if os.path.exists(experimental_folder):
+        experimental_files = glob.glob(
+            experimental_folder + "**/*py",
+            recursive=True,
+        )
+        for f in experimental_files:
+            splits = f.split(os.sep)
+            file_name = ".".join(splits[-splits[::-1].index("..") :])
+            module_name = file_name[: file_name.find(".py")]
+            importlib.import_module(module_name)
+
     registry.register("imports_setup", True)
 
 
-def create_config_dict(args):
-    overrides = {}
+def dict_set_recursively(dictionary, key_sequence, val):
+    top_key = key_sequence.pop(0)
+    if len(key_sequence) == 0:
+        dictionary[top_key] = val
+    else:
+        if top_key not in dictionary:
+            dictionary[top_key] = {}
+        dict_set_recursively(dictionary[top_key], key_sequence, val)
+
+
+def parse_value(value):
+    """
+    Parse string as Python literal if possible and fallback to string.
+    """
+    try:
+        return ast.literal_eval(value)
+    except (ValueError, SyntaxError):
+        # Use as string if nothing else worked
+        return value
+
+
+def create_dict_from_args(args: list, sep: str = "."):
+    """
+    Create a (nested) dictionary from console arguments.
+    Keys in different dictionary levels are separated by sep.
+    """
+    return_dict = {}
     for arg in args:
         arg = arg.strip("--")
-        key, val = arg.split("=")
-        overrides[key] = val
-    return overrides
+        keys_concat, val = arg.split("=")
+        val = parse_value(val)
+        key_sequence = keys_concat.split(sep)
+        dict_set_recursively(return_dict, key_sequence, val)
+    return return_dict
 
 
-def update_config(original, update):
-    """
-    Recursively update a dict.
-    Parameters must be specified in original to be overwritten
-    """
-    for basekey, baseval in original.items():
-        if isinstance(baseval, dict):
-            for key, val in baseval.items():
-                if key in update:
-                    original[basekey][key] = demjson.decode(update[key])
-    return original
+def load_config(path: str, previous_includes: list = []):
+    path = Path(path)
+    if path in previous_includes:
+        raise ValueError(
+            f"Cyclic config include detected. {path} included in sequence {previous_includes}."
+        )
+    previous_includes = previous_includes + [path]
+
+    direct_config = yaml.safe_load(open(path, "r"))
+
+    # Load config from included files.
+    if "includes" in direct_config:
+        includes = direct_config.pop("includes")
+    else:
+        includes = []
+    if not isinstance(includes, list):
+        raise AttributeError(
+            "Includes must be a list, '{}' provided".format(type(includes))
+        )
+
+    config = {}
+    duplicates_warning = []
+    duplicates_error = []
+
+    for include in includes:
+        include_config, inc_dup_warning, inc_dup_error = load_config(
+            include, previous_includes
+        )
+        duplicates_warning += inc_dup_warning
+        duplicates_error += inc_dup_error
+
+        # Duplicates between includes causes an error
+        config, merge_dup_error = merge_dicts(config, include_config)
+        duplicates_error += merge_dup_error
+
+    # Duplicates between included and main file causes warnings
+    config, merge_dup_warning = merge_dicts(config, direct_config)
+    duplicates_warning += merge_dup_warning
+
+    return config, duplicates_warning, duplicates_error
 
 
 def build_config(args, args_override):
-    config = yaml.safe_load(open(args.config_yml, "r"))
-
-    # Load config from included files.
-    includes = config.get("includes", [])
-    if not isinstance(includes, list):
-        raise AttributeError(
-            "Includes must be a list, {} provided".format(type(includes))
+    config, duplicates_warning, duplicates_error = load_config(args.config_yml)
+    if len(duplicates_warning) > 0:
+        logging.warning(
+            f"Overwritten config parameters from included configs "
+            f"(non-included parameters take precedence): {duplicates_warning}"
+        )
+    if len(duplicates_error) > 0:
+        raise ValueError(
+            f"Conflicting (duplicate) parameters in simultaneously "
+            f"included configs: {duplicates_error}"
         )
 
-    for include in includes:
-        include_config = yaml.safe_load(open(include, "r"))
-        config.update(include_config)
-
-    if includes != []:
-        config.pop("includes")
-
-    # Check for overriden parameters.
+    # Check for overridden parameters.
     if args_override != []:
-        overrides = create_config_dict(args_override)
-        config = update_config(config, overrides)
+        overrides = create_dict_from_args(args_override)
+        config, _ = merge_dicts(config, overrides)
 
     # Some other flags.
     config["mode"] = args.mode
     config["identifier"] = args.identifier
+    config["timestamp_id"] = args.timestamp_id
     config["seed"] = args.seed
     config["is_debug"] = args.debug
     config["run_dir"] = args.run_dir
     config["is_vis"] = args.vis
     config["print_every"] = args.print_every
     config["amp"] = args.amp
-    config["nonddp"] = args.nonddp
     config["checkpoint"] = args.checkpoint
     config["cpu"] = args.cpu
     # Submit
     config["submit"] = args.submit
+    config["summit"] = args.summit
     # Distributed
     config["local_rank"] = args.local_rank
     config["distributed_port"] = args.distributed_port
@@ -606,6 +680,85 @@ def get_pruned_edge_idx(edge_index, num_atoms=None, max_neigh=1e9):
     _nonmax_idx = torch.cat(_nonmax_idx)
 
     return _nonmax_idx
+
+
+def merge_dicts(dict1: dict, dict2: dict):
+    """Recursively merge two dictionaries.
+    Values in dict2 override values in dict1. If dict1 and dict2 contain a dictionary as a
+    value, this will call itself recursively to merge these dictionaries.
+    This does not modify the input dictionaries (creates an internal copy).
+    Additionally returns a list of detected duplicates.
+    Adapted from https://github.com/TUM-DAML/seml/blob/master/seml/utils.py
+
+    Parameters
+    ----------
+    dict1: dict
+        First dict.
+    dict2: dict
+        Second dict. Values in dict2 will override values from dict1 in case they share the same key.
+
+    Returns
+    -------
+    return_dict: dict
+        Merged dictionaries.
+    """
+    if not isinstance(dict1, dict):
+        raise ValueError(f"Expecting dict1 to be dict, found {type(dict1)}.")
+    if not isinstance(dict2, dict):
+        raise ValueError(f"Expecting dict2 to be dict, found {type(dict2)}.")
+
+    return_dict = copy.deepcopy(dict1)
+    duplicates = []
+
+    for k, v in dict2.items():
+        if k not in dict1:
+            return_dict[k] = v
+        else:
+            if isinstance(v, dict) and isinstance(dict1[k], dict):
+                return_dict[k], duplicates_k = merge_dicts(dict1[k], dict2[k])
+                duplicates += [f"{k}.{dup}" for dup in duplicates_k]
+            else:
+                return_dict[k] = dict2[k]
+                duplicates.append(k)
+
+    return return_dict, duplicates
+
+
+class SeverityLevelBetween(logging.Filter):
+    def __init__(self, min_level, max_level):
+        super().__init__()
+        self.min_level = min_level
+        self.max_level = max_level
+
+    def filter(self, record):
+        return self.min_level <= record.levelno < self.max_level
+
+
+def setup_logging():
+    root = logging.getLogger()
+
+    # Perform setup only if logging has not been configured
+    if not root.hasHandlers():
+        root.setLevel(logging.INFO)
+
+        log_formatter = logging.Formatter(
+            "%(asctime)s (%(levelname)s): %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+
+        # Send INFO to stdout
+        handler_out = logging.StreamHandler(sys.stdout)
+        handler_out.addFilter(
+            SeverityLevelBetween(logging.INFO, logging.WARNING)
+        )
+        handler_out.setFormatter(log_formatter)
+        root.addHandler(handler_out)
+
+        # Send WARNING (and higher) to stderr
+        handler_err = logging.StreamHandler(sys.stderr)
+        handler_err.setLevel(logging.WARNING)
+        handler_err.setFormatter(log_formatter)
+        root.addHandler(handler_err)
 
 
 def tune_reporter(

@@ -380,7 +380,7 @@ class ForceNet(BaseModel):
 
             # if basis_type is spherical harmonics, then reduce to powersine
             if "sph" in self.basis_type:
-                print(
+                logging.info(
                     "Under onlydist ablation, spherical basis is reduced to powersine basis."
                 )
                 self.basis_type = "powersine"

@@ -1,5 +1,6 @@
 import argparse
 import glob
+import logging
 import os
 
 import ocpmodels
@@ -60,7 +61,7 @@ def get_data(task, split, del_intmd_files):
 
     os.system(f"wget {download_link}")
     filename = os.path.basename(download_link)
-    print("Extracting contents...")
+    logging.info("Extracting contents...")
     os.system(f"tar -xf {filename}")
     dirname = filename.split(".")[0]
     if task == "s2ef" and split != "test":

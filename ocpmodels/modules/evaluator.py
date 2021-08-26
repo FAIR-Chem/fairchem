@@ -41,7 +41,11 @@ class Evaluator:
             "energy_mae",
             "energy_force_within_threshold",
         ],
-        "is2rs": ["average_distance_within_threshold"],
+        "is2rs": [
+            "average_distance_within_threshold",
+            "positions_mae",
+            "positions_mse",
+        ],
         "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
     }
 

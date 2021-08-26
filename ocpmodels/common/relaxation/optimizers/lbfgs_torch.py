@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import logging
 from collections import deque
 from pathlib import Path
 
@@ -30,6 +31,7 @@ class LBFGS:
         device="cuda:0",
         traj_dir: Path = None,
         traj_names=None,
+        early_stop_batch: bool = False,
     ):
         self.atoms = atoms
         self.model = model
@@ -41,10 +43,11 @@ class LBFGS:
         self.device = device
         self.traj_dir = traj_dir
         self.traj_names = traj_names
+        self.early_stop_batch = early_stop_batch
         assert not self.traj_dir or (
             traj_dir and len(traj_names)
         ), "Trajectory names should be specified to save trajectories"
-        print("Step   Fmax(eV/A)")
+        logging.info("Step   Fmax(eV/A)")
 
         self.model.update_graph(self.atoms)
 
@@ -55,16 +58,30 @@ class LBFGS:
     def get_positions(self):
         return self.atoms.pos
 
-    def set_positions(self, update):
+    def set_positions(self, update, update_mask):
         r = self.get_positions()
+        if not self.early_stop_batch:
+            update = torch.where(update_mask.unsqueeze(1), update, 0.0)
         self.atoms.pos = r + update.to(dtype=torch.float32)
         self.model.update_graph(self.atoms)
 
-    def converged(self, force_threshold, iteration, forces):
+    def check_convergence(
+        self, iteration, update_mask, forces, force_threshold
+    ):
         if forces is None:
             return False
-        print(iteration, torch.sqrt((forces ** 2).sum(axis=1).max()).item())
-        return (forces ** 2).sum(axis=1).max() < force_threshold ** 2
+        max_forces_ = scatter(
+            (forces ** 2).sum(axis=1).sqrt(), self.atoms.batch, reduce="max"
+        )
+        max_forces = max_forces_[self.atoms.batch]
+        update_mask = torch.logical_and(
+            update_mask, max_forces.ge(force_threshold)
+        )
+        logging.info(
+            f"{iteration} "
+            + " ".join(f"{x:0.3f}" for x in max_forces_.tolist())
+        )
+        return update_mask
 
     def run(self, fmax, steps):
         s = deque(maxlen=self.memory)
@@ -72,6 +89,7 @@ class LBFGS:
         rho = deque(maxlen=self.memory)
         r0 = f0 = e0 = None
         H0 = 1.0 / self.alpha
+        update_mask = torch.ones_like(self.atoms.batch).bool().to(self.device)
 
         trajectories = None
         if self.traj_dir:
@@ -81,19 +99,31 @@ class LBFGS:
                 for name in self.traj_names
             ]
 
-        # GPU memory usage as per nvidia-smi seems to gradually build up as
-        # batches are processed. This releases unoccupied cached memory.
-        torch.cuda.empty_cache()
-
         iteration = 0
-        while iteration < steps and not self.converged(fmax, iteration, f0):
-            r0, f0, e0 = self.step(iteration, r0, f0, H0, rho, s, y)
+        converged = False
+        while iteration < steps and not converged:
+            r0, f0, e0 = self.step(
+                iteration, r0, f0, H0, rho, s, y, update_mask
+            )
             iteration += 1
             if trajectories is not None:
                 self.atoms.y, self.atoms.force = e0, f0
                 atoms_objects = batch_to_atoms(self.atoms)
-                for atm, traj in zip(atoms_objects, trajectories):
-                    traj.write(atm)
+                update_mask_ = torch.split(
+                    update_mask, self.atoms.natoms.tolist()
+                )
+                for atm, traj, mask in zip(
+                    atoms_objects, trajectories, update_mask_
+                ):
+                    if mask[0]:
+                        traj.write(atm)
+            update_mask = self.check_convergence(
+                iteration, update_mask, f0, fmax
+            )
+            converged = torch.all(torch.logical_not(update_mask))
+            # GPU memory usage as per nvidia-smi seems to gradually build up as
+            # batches are processed. This releases unoccupied cached memory.
+            torch.cuda.empty_cache()
 
         if trajectories is not None:
             for traj in trajectories:
@@ -104,15 +134,13 @@ class LBFGS:
         )
         return self.atoms
 
-    def step(self, iteration, r0, f0, H0, rho, s, y):
+    def step(self, iteration, r0, f0, H0, rho, s, y, update_mask):
         def determine_step(dr):
             steplengths = torch.norm(dr, dim=1)
             longest_steps = scatter(
                 steplengths, self.atoms.batch, reduce="max"
             )
-            longest_steps = torch.repeat_interleave(
-                longest_steps, self.atoms.natoms
-            )
+            longest_steps = longest_steps[self.atoms.batch]
             maxstep = longest_steps.new_tensor(self.maxstep)
             scale = (longest_steps + 1e-7).reciprocal() * torch.min(
                 longest_steps, maxstep
@@ -148,7 +176,7 @@ class LBFGS:
         if torch.abs(dr).max() < 1e-7:
             # Same configuration again (maybe a restart):
             return
-        self.set_positions(dr)
+        self.set_positions(dr, update_mask)
         return r, f, e
 
 
@@ -158,7 +186,9 @@ class TorchCalc:
         self.transform = transform
 
     def get_forces(self, atoms, apply_constraint=True):
-        predictions = self.model.predict(atoms, per_image=False)
+        predictions = self.model.predict(
+            atoms, per_image=False, disable_tqdm=True
+        )
         energy = predictions["energy"]
         forces = predictions["forces"]
         if apply_constraint:

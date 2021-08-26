@@ -23,7 +23,7 @@ class Flags:
         self.parser.add_argument_group("Core Arguments")
         self.parser.add_argument(
             "--mode",
-            choices=["train", "predict", "run-relaxations"],
+            choices=["train", "predict", "run-relaxations", "validate"],
             required=True,
             help="Whether to train the model, make predictions, or to run relaxations",
         )
@@ -77,9 +77,11 @@ class Flags:
             "--checkpoint", type=str, help="Model checkpoint to load"
         )
         self.parser.add_argument(
-            "--nonddp",
-            action="store_true",
-            help="Load model checkpoint without DDP",
+            "--timestamp-id",
+            default=None,
+            type=str,
+            help="Override time stamp ID. "
+            "Useful for seamlessly continuing model training in logger.",
         )
         # Cluster args
         self.parser.add_argument(
@@ -92,11 +94,14 @@ class Flags:
             "--submit", action="store_true", help="Submit job to cluster"
         )
         self.parser.add_argument(
+            "--summit", action="store_true", help="Running on Summit cluster"
+        )
+        self.parser.add_argument(
             "--logdir", default="logs", type=Path, help="Where to store logs"
         )
         self.parser.add_argument(
             "--slurm-partition",
-            default="dev",
+            default="ocp",
             type=str,
             help="Name of partition",
         )
