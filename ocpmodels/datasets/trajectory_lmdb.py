@@ -113,7 +113,4 @@ def data_list_collater(data_list, otf_graph=False):
                 "LMDB does not contain edge index information, set otf_graph=True"
             )
 
-    if len(data_list) > 0 and hasattr(data_list[0], "tags"):
-        batch.tags = torch.cat([data.tags for data in data_list])
-
     return batch
