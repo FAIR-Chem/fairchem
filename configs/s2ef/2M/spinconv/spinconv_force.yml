@@ -1,0 +1,37 @@
+includes:
+- configs/s2ef/2M/base.yml
+
+model:
+  name: spinconv
+  model_ref_number: 0
+  hidden_channels: 32
+  mid_hidden_channels: 256
+  num_interactions: 3
+  num_basis_functions: 512
+  sphere_size_lat: 16
+  sphere_size_long: 12
+  max_num_neighbors: 40
+  cutoff: 6.0
+  sphere_message: fullconv
+  output_message: fullconv
+  force_estimator: random
+  regress_forces: True
+  use_pbc: True
+  scale_distances: True
+  basis_width_scalar: 3.0
+
+optim:
+  batch_size: 3
+  eval_batch_size: 3
+  num_workers: 8
+  lr_initial: 0.0004
+  optimizer: Adam
+  optimizer_params: {"amsgrad": True}
+  eval_every: 5000
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.8
+  patience: 3
+  max_epochs: 80
+  force_coefficient: 100
+  energy_coefficient: 1

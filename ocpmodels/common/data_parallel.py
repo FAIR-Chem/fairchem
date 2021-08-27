@@ -19,13 +19,18 @@ class OCPDataParallel(torch.nn.DataParallel):
         if num_gpus > torch.cuda.device_count():
             raise ValueError("# GPUs specified larger than available")
 
+        self.src_device = torch.device(output_device)
+
         self.cpu = False
         if num_gpus == 0:
             self.cpu = True
         elif num_gpus == 1:
-            device_ids = [output_device]
+            device_ids = [self.src_device]
         else:
-            if output_device >= num_gpus:
+            if (
+                self.src_device.type == "cuda"
+                and self.src_device.index >= num_gpus
+            ):
                 raise ValueError("Main device must be less than # of GPUs")
             device_ids = list(range(num_gpus))
 
@@ -37,10 +42,8 @@ class OCPDataParallel(torch.nn.DataParallel):
             super(OCPDataParallel, self).__init__(
                 module=module,
                 device_ids=device_ids,
-                output_device=output_device,
+                output_device=self.src_device,
             )
-
-        self.src_device = torch.device(output_device)
 
     def forward(self, batch_list):
         if self.cpu:

@@ -9,10 +9,15 @@ import ase.db.sqlite
 import ase.io.trajectory
 import numpy as np
 import torch
-from pymatgen.io.ase import AseAtomsAdaptor
 from torch_geometric.data import Data
 
 from ocpmodels.common.utils import collate
+
+try:
+    from pymatgen.io.ase import AseAtomsAdaptor
+except Exception:
+    pass
+
 
 try:
     shell = get_ipython().__class__.__name__

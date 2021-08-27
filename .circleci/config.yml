@@ -47,7 +47,7 @@ jobs:
             conda activate ocp-models
             pip install -e .
             pre-commit install
-            pytest
+            pytest /home/circleci/project/tests
 
       - run:
           name: Run black

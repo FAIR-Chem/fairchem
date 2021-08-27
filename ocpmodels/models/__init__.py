@@ -18,6 +18,7 @@ from .dimenet import DimeNetWrap as DimeNet
 from .dimenet_plus_plus import DimeNetPlusPlusWrap as DimeNetPlusPlus
 from .forcenet import ForceNet
 from .schnet import SchNetWrap as SchNet
+from .gemnet.gemnet import GemNetT
 
 DimeNet.__module__ = __name__
 DimeNet.__name__ = "DimeNet"

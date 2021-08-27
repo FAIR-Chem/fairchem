@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import logging
 import os
 import random
 
@@ -73,7 +74,7 @@ class TestDimeNet:
         np.testing.assert_almost_equal(energies[0], energies[1], decimal=5)
 
         forces = out[1].detach()
-        print(forces)
+        logging.info(forces)
         np.testing.assert_array_almost_equal(
             forces[: forces.shape[0] // 2],
             torch.matmul(forces[forces.shape[0] // 2 :], inv_rot),

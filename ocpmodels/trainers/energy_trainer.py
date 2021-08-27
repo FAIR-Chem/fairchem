@@ -5,13 +5,14 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import logging
 import os
 from collections import defaultdict
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, DistributedSampler
 import torch_geometric
+from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
@@ -56,6 +57,8 @@ class EnergyTrainer(BaseTrainer):
             (default: :obj:`0`)
         amp (bool, optional): Run using automatic mixed precision.
             (default: :obj:`False`)
+        slurm (dict): Slurm configuration. Currently just for keeping track.
+            (default: :obj:`{}`)
     """
 
     def __init__(
@@ -65,6 +68,8 @@ class EnergyTrainer(BaseTrainer):
         dataset,
         optimizer,
         identifier,
+        normalizer=None,
+        timestamp_id=None,
         run_dir=None,
         is_debug=False,
         is_vis=False,
@@ -75,6 +80,7 @@ class EnergyTrainer(BaseTrainer):
         local_rank=0,
         amp=False,
         cpu=False,
+        slurm={},
     ):
         super().__init__(
             task=task,
@@ -82,6 +88,8 @@ class EnergyTrainer(BaseTrainer):
             dataset=dataset,
             optimizer=optimizer,
             identifier=identifier,
+            normalizer=normalizer,
+            timestamp_id=timestamp_id,
             run_dir=run_dir,
             is_debug=is_debug,
             is_vis=is_vis,
@@ -93,6 +101,7 @@ class EnergyTrainer(BaseTrainer):
             amp=amp,
             cpu=cpu,
             name="is2re",
+            slurm=slurm,
         )
 
     def load_task(self):
@@ -100,36 +109,36 @@ class EnergyTrainer(BaseTrainer):
             self.config["task"]["dataset"] == "single_point_lmdb"
         ), "EnergyTrainer requires single_point_lmdb dataset"
 
-        print("### Loading dataset: {}".format(self.config["task"]["dataset"]))
+        logging.info(f"Loading dataset: {self.config['task']['dataset']}")
 
         self.parallel_collater = ParallelCollater(
             1 if not self.cpu else 0,
             self.config["model_attributes"].get("otf_graph", False),
         )
 
-        self.train_dataset = registry.get_dataset_class(
-            self.config["task"]["dataset"]
-        )(self.config["dataset"])
-
-        self.train_sampler = DistributedSampler(
-            self.train_dataset,
-            num_replicas=distutils.get_world_size(),
-            rank=distutils.get_rank(),
-            shuffle=True,
-        )
-        self.train_loader = DataLoader(
-            self.train_dataset,
-            batch_size=self.config["optim"]["batch_size"],
-            collate_fn=self.parallel_collater,
-            num_workers=self.config["optim"]["num_workers"],
-            pin_memory=True,
-            sampler=self.train_sampler,
-        )
-
-        self.val_loader = self.test_loader = None
+        self.val_loader = self.test_loader = self.train_loader = None
         self.val_sampler = None
 
-        if "val_dataset" in self.config:
+        if self.config.get("dataset", None):
+            self.train_dataset = registry.get_dataset_class(
+                self.config["task"]["dataset"]
+            )(self.config["dataset"])
+            self.train_sampler = DistributedSampler(
+                self.train_dataset,
+                num_replicas=distutils.get_world_size(),
+                rank=distutils.get_rank(),
+                shuffle=True,
+            )
+            self.train_loader = DataLoader(
+                self.train_dataset,
+                batch_size=self.config["optim"]["batch_size"],
+                collate_fn=self.parallel_collater,
+                num_workers=self.config["optim"]["num_workers"],
+                pin_memory=True,
+                sampler=self.train_sampler,
+            )
+
+        if self.config.get("val_dataset", None):
             self.val_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["val_dataset"])
@@ -147,7 +156,7 @@ class EnergyTrainer(BaseTrainer):
                 pin_memory=True,
                 sampler=self.val_sampler,
             )
-        if "test_dataset" in self.config:
+        if self.config.get("test_dataset", None):
             self.test_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["test_dataset"])
@@ -171,11 +180,11 @@ class EnergyTrainer(BaseTrainer):
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
-        if self.config["dataset"].get("normalize_labels", False):
-            if "target_mean" in self.config["dataset"]:
+        if self.normalizer.get("normalize_labels", False):
+            if "target_mean" in self.normalizer:
                 self.normalizers["target"] = Normalizer(
-                    mean=self.config["dataset"]["target_mean"],
-                    std=self.config["dataset"]["target_std"],
+                    mean=self.normalizer["target_mean"],
+                    std=self.normalizer["target_std"],
                     device=self.device,
                 )
             else:
@@ -186,7 +195,7 @@ class EnergyTrainer(BaseTrainer):
         self, loader, per_image=True, results_file=None, disable_tqdm=False
     ):
         if distutils.is_master() and not disable_tqdm:
-            print("### Predicting on test.")
+            logging.info("Predicting on test.")
         assert isinstance(
             loader,
             (
@@ -200,6 +209,10 @@ class EnergyTrainer(BaseTrainer):
             loader = [[loader]]
 
         self.model.eval()
+        if self.ema:
+            self.ema.store()
+            self.ema.copy_to()
+
         if self.normalizers is not None and "target" in self.normalizers:
             self.normalizers["target"].to(self.device)
         predictions = {"id": [], "energy": []}
@@ -230,9 +243,12 @@ class EnergyTrainer(BaseTrainer):
 
         self.save_results(predictions, results_file, keys=["energy"])
 
+        if self.ema:
+            self.ema.restore()
+
         return predictions
 
-    def train(self):
+    def train(self, disable_eval_tqdm=False):
         eval_every = self.config["optim"].get(
             "eval_every", len(self.train_loader)
         )
@@ -241,19 +257,21 @@ class EnergyTrainer(BaseTrainer):
         )
         self.best_val_mae = 1e9
 
-        start_epoch = self.start_step // len(self.train_loader)
-        for epoch in range(start_epoch, self.config["optim"]["max_epochs"]):
-            self.train_sampler.set_epoch(epoch)
+        # Calculate start_epoch from step instead of loading the epoch number
+        # to prevent inconsistencies due to different batch size in checkpoint.
+        start_epoch = self.step // len(self.train_loader)
 
-            skip_steps = 0
-            if epoch == start_epoch and start_epoch > 0:
-                skip_steps = start_epoch % len(self.train_loader)
+        for epoch_int in range(
+            start_epoch, self.config["optim"]["max_epochs"]
+        ):
+            self.train_sampler.set_epoch(epoch_int)
+            skip_steps = self.step % len(self.train_loader)
             train_loader_iter = iter(self.train_loader)
 
             for i in range(skip_steps, len(self.train_loader)):
+                self.epoch = epoch_int + (i + 1) / len(self.train_loader)
+                self.step = epoch_int * len(self.train_loader) + i + 1
                 self.model.train()
-                current_epoch = epoch + (i + 1) / len(self.train_loader)
-                current_step = epoch * len(self.train_loader) + (i + 1)
 
                 # Get a batch.
                 batch = next(train_loader_iter)
@@ -282,12 +300,12 @@ class EnergyTrainer(BaseTrainer):
                 log_dict.update(
                     {
                         "lr": self.scheduler.get_lr(),
-                        "epoch": current_epoch,
-                        "step": current_step,
+                        "epoch": self.epoch,
+                        "step": self.step,
                     }
                 )
                 if (
-                    current_step % self.config["cmd"]["print_every"] == 0
+                    self.step % self.config["cmd"]["print_every"] == 0
                     and distutils.is_master()
                     and not self.is_hpo
                 ):
@@ -300,16 +318,23 @@ class EnergyTrainer(BaseTrainer):
                 if self.logger is not None:
                     self.logger.log(
                         log_dict,
-                        step=current_step,
+                        step=self.step,
                         split="train",
                     )
 
                 # Evaluate on val set after every `eval_every` iterations.
-                if current_step % eval_every == 0:
+                if self.step % eval_every == 0:
+                    self.save(
+                        checkpoint_file="checkpoint.pt", training_state=True
+                    )
+
                     if self.val_loader is not None:
                         val_metrics = self.validate(
                             split="val",
-                            epoch=epoch - 1 + (i + 1) / len(self.train_loader),
+                            epoch=self.epoch
+                            - 1
+                            + (i + 1) / len(self.train_loader),
+                            disable_tqdm=disable_eval_tqdm,
                         )
                         if (
                             val_metrics[
@@ -320,7 +345,11 @@ class EnergyTrainer(BaseTrainer):
                             self.best_val_mae = val_metrics[
                                 self.evaluator.task_primary_metric[self.name]
                             ]["metric"]
-                            self.save(current_epoch, current_step, val_metrics)
+                            self.save(
+                                metrics=val_metrics,
+                                checkpoint_file="best_checkpoint.pt",
+                                training_state=False,
+                            )
                             if self.test_loader is not None:
                                 self.predict(
                                     self.test_loader,
@@ -330,17 +359,17 @@ class EnergyTrainer(BaseTrainer):
 
                         if self.is_hpo:
                             self.hpo_update(
-                                current_epoch,
-                                current_step,
+                                self.epoch,
+                                self.step,
                                 self.metrics,
                                 val_metrics,
                             )
 
                     else:
-                        self.save(current_epoch, current_step, self.metrics)
+                        self.save(self.epoch, self.step, self.metrics)
 
                 if self.scheduler.scheduler_type == "ReduceLROnPlateau":
-                    if current_step % eval_every == 0:
+                    if self.step % eval_every == 0:
                         self.scheduler.step(
                             metrics=val_metrics[primary_metric]["metric"],
                         )
@@ -370,12 +399,12 @@ class EnergyTrainer(BaseTrainer):
             [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
         )
 
-        if self.config["dataset"].get("normalize_labels", False):
+        if self.normalizer.get("normalize_labels", False):
             target_normed = self.normalizers["target"].norm(energy_target)
         else:
             target_normed = energy_target
 
-        loss = self.criterion(out["energy"], target_normed)
+        loss = self.loss_fn["energy"](out["energy"], target_normed)
         return loss
 
     def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
@@ -383,7 +412,7 @@ class EnergyTrainer(BaseTrainer):
             [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
         )
 
-        if self.config["dataset"].get("normalize_labels", False):
+        if self.normalizer.get("normalize_labels", False):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
 
         metrics = evaluator.eval(

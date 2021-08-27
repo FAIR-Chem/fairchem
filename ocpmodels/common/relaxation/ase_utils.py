@@ -3,19 +3,28 @@ Copyright (c) Facebook, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
-"""
 
-"""
+
+
 Utilities to interface OCP models/trainers with the Atomic Simulation
 Environment (ASE)
 """
+import copy
+import logging
+
 import torch
+import yaml
 from ase import Atoms
 from ase.calculators.calculator import Calculator
 from ase.calculators.singlepoint import SinglePointCalculator as sp
 from ase.constraints import FixAtoms
 
-from ocpmodels.common.utils import radius_graph_pbc
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import (
+    radius_graph_pbc,
+    setup_imports,
+    setup_logging,
+)
 from ocpmodels.datasets.trajectory_lmdb import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
@@ -55,20 +64,55 @@ def batch_to_atoms(batch):
 class OCPCalculator(Calculator):
     implemented_properties = ["energy", "forces"]
 
-    def __init__(self, trainer, pbc_graph=False):
+    def __init__(
+        self, config_yml, checkpoint=None, cutoff=6, max_neighbors=50
+    ):
         """
         OCP-ASE Calculator
 
         Args:
-            trainer: Object
-                ML trainer for energy and force predictions.
+            config_yml (str):
+                Path to yaml config.
+            checkpoint (str):
+                Path to trained checkpoint.
+            cutoff (int):
+                Cutoff radius to be used for data preprocessing.
+            max_neighbors (int):
+                Maximum amount of neighbors to store for a given atom.
         """
+        setup_imports()
+        setup_logging()
         Calculator.__init__(self)
-        self.trainer = trainer
-        self.pbc_graph = pbc_graph
+
+        config = yaml.safe_load(open(config_yml, "r"))
+        if "includes" in config:
+            for include in config["includes"]:
+                include_config = yaml.safe_load(open(include, "r"))
+                config.update(include_config)
+
+        # Save config so obj can be transported over network (pkl)
+        self.config = copy.deepcopy(config)
+        self.config["checkpoint"] = checkpoint
+
+        self.trainer = registry.get_trainer_class(
+            config.get("trainer", "simple")
+        )(
+            task=config["task"],
+            model=config["model"],
+            dataset=config["dataset"],
+            optimizer=config["optim"],
+            identifier="",
+            slurm=config.get("slurm", {}),
+            local_rank=config.get("local_rank", 0),
+            is_debug=config.get("is_debug", True),
+        )
+
+        if checkpoint is not None:
+            self.load_checkpoint(checkpoint)
+
         self.a2g = AtomsToGraphs(
-            max_neigh=50,
-            radius=6,
+            max_neigh=max_neighbors,
+            radius=cutoff,
             r_energy=False,
             r_forces=False,
             r_distances=False,
@@ -77,7 +121,7 @@ class OCPCalculator(Calculator):
     def train(self):
         self.trainer.train()
 
-    def load_pretrained(self, checkpoint_path):
+    def load_checkpoint(self, checkpoint_path):
         """
         Load existing trained model
 
@@ -86,23 +130,18 @@ class OCPCalculator(Calculator):
                 Path to trained model
         """
         try:
-            self.trainer.load_pretrained(checkpoint_path)
+            self.trainer.load_checkpoint(checkpoint_path)
         except NotImplementedError:
-            print("Unable to load checkpoint!")
+            logging.warning("Unable to load checkpoint!")
 
     def calculate(self, atoms, properties, system_changes):
         Calculator.calculate(self, atoms, properties, system_changes)
         data_object = self.a2g.convert(atoms)
         batch = data_list_collater([data_object])
-        if self.pbc_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                batch, 6, 50, batch.pos.device
-            )
-            batch.edge_index = edge_index
-            batch.cell_offsets = cell_offsets
-            batch.neighbors = neighbors
 
-        predictions = self.trainer.predict(batch, per_image=False)
+        predictions = self.trainer.predict(
+            batch, per_image=False, disable_tqdm=True
+        )
         if self.trainer.name == "s2ef":
             self.results["energy"] = predictions["energy"].item()
             self.results["forces"] = predictions["forces"].cpu().numpy()

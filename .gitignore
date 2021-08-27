@@ -1,10 +1,10 @@
-wandb/
-*data*
+wandb
+data
 checkpoints
 results
 logs
 *.traj
-*.json
+experimental
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -70,6 +70,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/source/_build/
 
 # PyBuilder
 target/
@@ -107,3 +108,6 @@ Local
 
 # PyCharm
 .idea/
+
+# VS Code
+.vscode/

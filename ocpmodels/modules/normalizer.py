@@ -9,7 +9,7 @@ import torch
 
 
 class Normalizer(object):
-    """Normalize a Tensor and restore it later. """
+    """Normalize a Tensor and restore it later."""
 
     def __init__(self, tensor=None, mean=None, std=None, device=None):
         """tensor is taken as a sample to calculate the mean and std"""
