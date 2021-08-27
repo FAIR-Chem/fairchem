@@ -6,7 +6,9 @@ LICENSE file in the root directory of this source tree.
 """
 
 import copy
+import logging
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -20,6 +22,7 @@ from ocpmodels.common.utils import (
     create_grid,
     save_experiment_log,
     setup_imports,
+    setup_logging,
 )
 from ocpmodels.trainers import ForcesTrainer
 
@@ -27,9 +30,9 @@ from ocpmodels.trainers import ForcesTrainer
 class Runner(submitit.helpers.Checkpointable):
     def __init__(self):
         self.config = None
-        self.chkpt_path = None
 
     def __call__(self, config):
+        setup_logging()
         self.config = copy.deepcopy(config)
 
         if args.distributed:
@@ -37,7 +40,7 @@ class Runner(submitit.helpers.Checkpointable):
 
         try:
             setup_imports()
-            trainer = registry.get_trainer_class(
+            self.trainer = registry.get_trainer_class(
                 config.get("trainer", "simple")
             )(
                 task=config["task"],
@@ -45,6 +48,7 @@ class Runner(submitit.helpers.Checkpointable):
                 dataset=config["dataset"],
                 optimizer=config["optim"],
                 identifier=config["identifier"],
+                timestamp_id=config.get("timestamp_id", None),
                 run_dir=config.get("run_dir", "./"),
                 is_debug=config.get("is_debug", False),
                 is_vis=config.get("is_vis", False),
@@ -54,59 +58,32 @@ class Runner(submitit.helpers.Checkpointable):
                 local_rank=config["local_rank"],
                 amp=config.get("amp", False),
                 cpu=config.get("cpu", False),
+                slurm=config.get("slurm", {}),
             )
-            if config["checkpoint"] is not None:
-                trainer.load_pretrained(config["checkpoint"], config["nonddp"])
-
-            # save checkpoint path to runner state for slurm resubmissions
-            self.chkpt_path = os.path.join(
-                trainer.config["cmd"]["checkpoint_dir"], "checkpoint.pt"
-            )
-
+            self.task = registry.get_task_class(config["mode"])(self.config)
+            self.task.setup(self.trainer)
             start_time = time.time()
-
-            if config["mode"] == "train":
-                trainer.train()
-
-            elif config["mode"] == "predict":
-                assert (
-                    trainer.test_loader is not None
-                ), "Test dataset is required for making predictions"
-                assert config["checkpoint"]
-                results_file = "predictions"
-                trainer.predict(
-                    trainer.test_loader,
-                    results_file=results_file,
-                    disable_tqdm=False,
-                )
-
-            elif config["mode"] == "run-relaxations":
-                assert isinstance(
-                    trainer, ForcesTrainer
-                ), "Relaxations are only possible for ForcesTrainer"
-                assert (
-                    trainer.relax_dataset is not None
-                ), "Relax dataset is required for making predictions"
-                assert config["checkpoint"]
-                trainer.run_relaxations()
-
+            self.task.run()
             distutils.synchronize()
-
             if distutils.is_master():
-                print("Total time taken = ", time.time() - start_time)
-
+                logging.info(f"Total time taken: {time.time() - start_time}")
         finally:
             if args.distributed:
                 distutils.cleanup()
 
     def checkpoint(self, *args, **kwargs):
         new_runner = Runner()
-        if os.path.isfile(self.chkpt_path):
-            self.config["checkpoint"] = self.chkpt_path
+        self.trainer.save(checkpoint_file="checkpoint.pt", training_state=True)
+        self.config["checkpoint"] = self.task.chkpt_path
+        self.config["timestamp_id"] = self.trainer.timestamp_id
+        if self.trainer.logger is not None:
+            self.trainer.logger.mark_preempting()
         return submitit.helpers.DelayedSubmission(new_runner, self.config)
 
 
 if __name__ == "__main__":
+    setup_logging()
+
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     config = build_config(args, override_args)
@@ -120,7 +97,7 @@ if __name__ == "__main__":
         else:
             configs = [config]
 
-        print(f"Submitting {len(configs)} jobs")
+        logging.info(f"Submitting {len(configs)} jobs")
         executor = submitit.AutoExecutor(
             folder=args.logdir / "%j", slurm_max_num_timeout=3
         )
@@ -135,10 +112,15 @@ if __name__ == "__main__":
             nodes=args.num_nodes,
             slurm_additional_parameters=slurm_add_params,
         )
+        for config in configs:
+            config["slurm"] = copy.deepcopy(executor.parameters)
+            config["slurm"]["folder"] = str(executor.folder)
         jobs = executor.map_array(Runner(), configs)
-        print("Submitted jobs:", ", ".join([job.job_id for job in jobs]))
+        logging.info(
+            f"Submitted jobs: {', '.join([job.job_id for job in jobs])}"
+        )
         log_file = save_experiment_log(args, jobs, configs)
-        print(f"Experiment log saved to: {log_file}")
+        logging.info(f"Experiment log saved to: {log_file}")
 
     else:  # Run locally
         Runner()(config)

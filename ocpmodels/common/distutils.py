@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import logging
 import os
 import subprocess
 
@@ -46,11 +47,8 @@ def setup(config):
                     config["rank"] = int(os.environ.get("SLURM_PROCID"))
                     config["local_rank"] = int(os.environ.get("SLURM_LOCALID"))
 
-                print(
-                    "Init: ",
-                    config["init_method"],
-                    config["world_size"],
-                    config["rank"],
+                logging.info(
+                    f"Init: {config['init_method']}, {config['world_size']}, {config['rank']}"
                 )
                 dist.init_process_group(
                     backend=config["distributed_backend"],
@@ -62,6 +60,25 @@ def setup(config):
                 raise e
             except FileNotFoundError:  # Slurm is not installed
                 pass
+    elif config["summit"]:
+        world_size = int(os.environ["OMPI_COMM_WORLD_SIZE"])
+        world_rank = int(os.environ["OMPI_COMM_WORLD_RANK"])
+        get_master = (
+            "echo $(cat {} | sort | uniq | grep -v batch | grep -v login | head -1)"
+        ).format(os.environ["LSB_DJOB_HOSTFILE"])
+        os.environ["MASTER_ADDR"] = str(
+            subprocess.check_output(get_master, shell=True)
+        )[2:-3]
+        os.environ["MASTER_PORT"] = "23456"
+        os.environ["WORLD_SIZE"] = os.environ["OMPI_COMM_WORLD_SIZE"]
+        os.environ["RANK"] = os.environ["OMPI_COMM_WORLD_RANK"]
+        # NCCL and MPI initialization
+        dist.init_process_group(
+            backend="nccl",
+            rank=world_rank,
+            world_size=world_size,
+            init_method="env://",
+        )
     else:
         dist.init_process_group(
             backend=config["distributed_backend"], init_method="env://"

@@ -325,7 +325,7 @@ class DimeNetPlusPlus(torch.nn.Module):
         return col, row, idx_i, idx_j, idx_k, idx_kj, idx_ji
 
     def forward(self, z, pos, batch=None):
-        """"""
+        """ """
         raise NotImplementedError
 
 

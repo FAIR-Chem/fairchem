@@ -7,6 +7,8 @@ ocp-models is the modeling codebase for the [Open Catalyst Project](https://open
 It provides implementations of state-of-the-art ML algorithms for catalysis that
 take arbitrary chemical structures as input to predict energy / forces / positions:
 
+- [GemNet](https://arxiv.org/abs/2106.08903)
+- [SpinConv](https://arxiv.org/abs/2106.09575)
 - [DimeNet++](https://arxiv.org/abs/2011.14115)
 - [ForceNet](https://arxiv.org/abs/2103.01436)
 - [DimeNet](https://arxiv.org/abs/2003.03123)

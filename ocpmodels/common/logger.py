@@ -4,15 +4,17 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+import logging
+from abc import ABC, abstractmethod
 
 import torch
+import wandb
 from torch.utils.tensorboard import SummaryWriter
 
-import wandb
 from ocpmodels.common.registry import registry
 
 
-class Logger:
+class Logger(ABC):
     """Generic class to interface with various logging modules, e.g. wandb,
     tensorboard, etc.
     """
@@ -20,11 +22,12 @@ class Logger:
     def __init__(self, config):
         self.config = config
 
+    @abstractmethod
     def watch(self, model):
         """
         Monitor parameters and gradients.
         """
-        raise NotImplementedError
+        pass
 
     def log(self, update_dict, step=None, split=""):
         """
@@ -38,8 +41,13 @@ class Logger:
             update_dict = new_dict
         return update_dict
 
+    @abstractmethod
     def log_plots(self, plots):
-        raise NotImplementedError
+        pass
+
+    @abstractmethod
+    def mark_preempting(self):
+        pass
 
 
 @registry.register_logger("wandb")
@@ -48,10 +56,11 @@ class WandBLogger(Logger):
         super().__init__(config)
         wandb.init(
             config=self.config,
-            id=self.config["cmd"]["timestamp"],
+            id=self.config["cmd"]["timestamp_id"],
             name=self.config["cmd"]["identifier"],
             dir=self.config["cmd"]["logs_dir"],
             project=self.config.get("logger_project", None),
+            resume="allow",
         )
 
     def watch(self, model):
@@ -66,6 +75,9 @@ class WandBLogger(Logger):
         plots = [wandb.Image(x, caption=caption) for x in plots]
         wandb.log({"data": plots})
 
+    def mark_preempting(self):
+        wandb.mark_preempting()
+
 
 @registry.register_logger("tensorboard")
 class TensorboardLogger(Logger):
@@ -75,7 +87,9 @@ class TensorboardLogger(Logger):
 
     # TODO: add a model hook for watching gradients.
     def watch(self, model):
-        print("NOTE: model gradient logging to tensorboard not yet supported.")
+        logging.warning(
+            "Model gradient logging to tensorboard not yet supported."
+        )
         return False
 
     def log(self, update_dict, step=None, split=""):
@@ -88,3 +102,9 @@ class TensorboardLogger(Logger):
                     update_dict[key], float
                 )
                 self.writer.add_scalar(key, update_dict[key], step)
+
+    def mark_preempting(self):
+        pass
+
+    def log_plots(self, plots):
+        pass
