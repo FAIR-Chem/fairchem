@@ -34,7 +34,7 @@ Check that you can invoke `conda-merge` by running `conda-merge -h`.
 
 ### GPU machines
 
-Instructions are for PyTorch 1.9.0, CUDA 10.2 specifically.
+Instructions are for PyTorch 1.8.1, CUDA 10.2 specifically.
 
 First, check that CUDA is in your `PATH` and `LD_LIBRARY_PATH`, e.g.
 ```bash
