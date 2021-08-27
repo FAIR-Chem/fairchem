@@ -1,10 +1,10 @@
-wandb/
-*data*
+wandb
+data
 checkpoints
 results
 logs
 *.traj
-*.json
+experimental
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
