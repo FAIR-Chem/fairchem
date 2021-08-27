@@ -260,6 +260,14 @@ def setup_imports():
             experimental_folder + "**/*py",
             recursive=True,
         )
+        # Ignore certain directories within experimental
+        ignore_file, ignored = os.path.join(experimental_folder, ".ignore"), []
+        if os.path.exists(ignore_file):
+            with open(ignore_file) as f:
+                for line in f.read().splitlines():
+                    ignored += glob.glob(experimental_folder + line + "/**/*py", recursive=True)
+            for f in ignored:
+                experimental_files.remove(f)
         for f in experimental_files:
             splits = f.split(os.sep)
             file_name = ".".join(splits[-splits[::-1].index("..") :])
