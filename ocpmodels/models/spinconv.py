@@ -12,15 +12,17 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from scipy.special import sph_harm
 from torch.nn import Embedding, Linear, ModuleList, Sequential
 from torch_geometric.nn import MessagePassing, SchNet, radius_graph
 from torch_scatter import scatter
 
-from experimental.mshuaibi.models.utils import conditional_grad
 from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomRotate
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
+from ocpmodels.common.utils import (
+    conditional_grad,
+    get_pbc_distances,
+    radius_graph_pbc,
+)
 from ocpmodels.models.base import BaseModel
 
 try:
@@ -385,7 +387,6 @@ class spinconv(BaseModel):
         atom_rot_mat = random_rot_mat
 
         forces = torch.zeros(self.num_atoms, 3, device=device)
-        energy = torch.zeros(self.batch_size, device=device)
 
         for rot_index in range(num_random_rotations):
 
@@ -739,8 +740,6 @@ class spinconv(BaseModel):
     def _project2D_init(
         self, source_edge, target_edge, rot_mat, edge_distance_vec
     ):
-        device = source_edge.device
-
         edge_distance_norm = F.normalize(edge_distance_vec)
         source_edge_offset = edge_distance_norm[source_edge]
 
@@ -1191,7 +1190,7 @@ class DistanceBlock(torch.nn.Module):
         self.scalar_max = scalar_max
         self.scale_distances = scale_distances
 
-        if self.scale_distances == True:
+        if self.scale_distances:
             self.dist_scalar = nn.Embedding(
                 self.max_num_elements * self.max_num_elements, 1
             )
@@ -1204,7 +1203,7 @@ class DistanceBlock(torch.nn.Module):
         self.fc1 = nn.Linear(self.in_channels, self.out_channels)
 
     def forward(self, edge_distance, source_element, target_element):
-        if self.scale_distances == True:
+        if self.scale_distances:
             embedding_index = (
                 source_element * self.max_num_elements + target_element
             )
