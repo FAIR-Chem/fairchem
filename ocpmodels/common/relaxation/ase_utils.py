@@ -71,8 +71,14 @@ class OCPCalculator(Calculator):
         OCP-ASE Calculator
 
         Args:
-            config: File Path
-                Path specifying trainer for ML predictions. See config/ directory.
+            config_yml (str):
+                Path to yaml config.
+            checkpoint (str):
+                Path to trained checkpoint.
+            cutoff (int):
+                Cutoff radius to be used for data preprocessing.
+            max_neighbors (int):
+                Maximum amount of neighbors to store for a given atom.
         """
         setup_imports()
         setup_logging()
