@@ -261,8 +261,9 @@ def setup_imports():
             recursive=True,
         )
         # Ignore certain directories within experimental
-        ignore_file, ignored = os.path.join(experimental_folder, ".ignore"), []
+        ignore_file = os.path.join(experimental_folder, ".ignore")
         if os.path.exists(ignore_file):
+            ignored = []
             with open(ignore_file) as f:
                 for line in f.read().splitlines():
                     ignored += glob.glob(
