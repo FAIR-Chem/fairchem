@@ -265,7 +265,9 @@ def setup_imports():
         if os.path.exists(ignore_file):
             with open(ignore_file) as f:
                 for line in f.read().splitlines():
-                    ignored += glob.glob(experimental_folder + line + "/**/*py", recursive=True)
+                    ignored += glob.glob(
+                        experimental_folder + line + "/**/*py", recursive=True
+                    )
             for f in ignored:
                 experimental_files.remove(f)
         for f in experimental_files:
