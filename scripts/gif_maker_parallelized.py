@@ -9,6 +9,7 @@ sudo apt install ffmpeg
 pip install ase==3.20
 
 """
+import argparse
 import copy
 import multiprocessing as mp
 import os
@@ -67,7 +68,7 @@ def pov_from_atoms(mp_args):
     print(f"image {idx} completed!")
 
 
-def parallelize_generation(traj_path, out_path=".", n_procs=8):
+def parallelize_generation(traj_path, out_path, n_procs):
 
     # make the covalent radii for O/C/N a little smaller to make bonds visible
     covalent_radii[6] = covalent_radii[6] * 0.7
@@ -94,7 +95,26 @@ def parallelize_generation(traj_path, out_path=".", n_procs=8):
     )
 
 
+def get_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--traj-path", required=True, help="Path to traj file")
+    parser.add_argument(
+        "--out-path",
+        required=True,
+        help="Directory to save generated images and gif",
+    )
+    parser.add_argument(
+        "--num-workers",
+        type=int,
+        default=1,
+        help="Number of processes to be used",
+    )
+    return parser
+
+
 if __name__ == "__main__":
 
-    traj_path = "random2574092.traj"
-    parallelize_generation(traj_path)
+    parser = get_parser()
+    args = parser.parse_args()
+
+    parallelize_generation(args.traj_path, args.out_path, args.num_workers)
