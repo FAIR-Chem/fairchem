@@ -54,10 +54,10 @@ def pov_from_atoms(mp_args):
     ]
     # write the image with povray
     bbox = (-6.4, -4, 6.4, 4)  # clip to a small region around the adsorbate
+    os.chdir(f"{out_path}")
     renderer = ase.io.write(
-        f"{out_path}/snapshot_%04i.pov" % idx,
+        "snapshot_%04i.pov" % idx,
         atoms_surface,
-        run_povray=True,
         povray_settings={
             "celllinewidth": 0,
             "canvas_height": 300,
@@ -82,6 +82,7 @@ def parallelize_generation(traj_path, out_path, n_procs):
     # name of the folder containing images and gif
     file_name = os.path.basename(traj_path).split(".")[0]
     out_path = os.path.join(out_path, file_name)
+    out_path = os.path.abspath(out_path)
     os.makedirs(out_path, exist_ok=True)
 
     atoms_list = ase.io.read(traj_path, ":")
