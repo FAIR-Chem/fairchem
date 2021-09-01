@@ -235,7 +235,7 @@ def setup_imports():
     task_folder = os.path.join(root_folder, "tasks")
     task_pattern = os.path.join(task_folder, "*.py")
 
-    importlib.import_module("ocpmodels.common.meter")
+    importlib.import_module("ocpmodels.common.logger")
 
     files = (
         glob.glob(datasets_pattern, recursive=True)
