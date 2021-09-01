@@ -9,7 +9,6 @@ from pathlib import Path
 
 import torch
 
-from ocpmodels.common.meter import mae, mae_ratio, mean_l2_distance
 from ocpmodels.common.registry import registry
 
 from .optimizers.lbfgs_torch import LBFGS, TorchCalc
