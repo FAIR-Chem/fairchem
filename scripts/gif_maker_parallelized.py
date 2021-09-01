@@ -54,17 +54,21 @@ def pov_from_atoms(mp_args):
     ]
     # write the image with povray
     bbox = (-6.4, -4, 6.4, 4)  # clip to a small region around the adsorbate
-    atoms_surface.write(
+    renderer = ase.io.write(
         f"{out_path}/snapshot_%04i.pov" % idx,
+        atoms_surface,
         run_povray=True,
+        povray_settings={
+            "celllinewidth": 0,
+            "canvas_height": 300,
+            "textures": ["intermediate"] * len(atoms_surface),
+            "bondatoms": bondpairs,
+        },
         bbox=bbox,
-        celllinewidth=0,
         rotation="-40x",
-        canvas_height=300,
-        textures=["intermediate"] * len(atoms_surface),
-        bondatoms=bondpairs,
         radii=covalent_radii[atoms_surface.numbers],
     )
+    renderer.render()
     print(f"image {idx} completed!")
 
 
