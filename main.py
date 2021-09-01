@@ -24,7 +24,6 @@ from ocpmodels.common.utils import (
     setup_imports,
     setup_logging,
 )
-from ocpmodels.trainers import ForcesTrainer
 
 
 class Runner(submitit.helpers.Checkpointable):
