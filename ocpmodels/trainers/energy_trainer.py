@@ -331,9 +331,6 @@ class EnergyTrainer(BaseTrainer):
                     if self.val_loader is not None:
                         val_metrics = self.validate(
                             split="val",
-                            epoch=self.epoch
-                            - 1
-                            + (i + 1) / len(self.train_loader),
                             disable_tqdm=disable_eval_tqdm,
                         )
                         if (
