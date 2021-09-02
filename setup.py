@@ -9,7 +9,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="ocp-models",
-    version="0.0.2",
+    version="0.0.3",
     description="Machine learning models for use in catalysis as part of the Open Catalyst Project",
     url="https://github.com/Open-Catalyst-Project/ocp",
     packages=find_packages(),
