@@ -1,12 +1,14 @@
 """
 Script to generate gifs from traj
 
+Note:
+This is just a quick way to generate gifs and visalizations from traj, there are many parameters and settings in the code that people can vary to make visualizations better. We have chosen these settings as this seem to work fine for most of our systems.
+
 Requirements:
 
-sudo apt update
-sudo apt install povray
-sudo apt install ffmpeg
-pip install ase==3.20
+povray
+ffmpeg
+ase==3.21
 
 """
 import argparse
