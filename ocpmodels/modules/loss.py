@@ -16,6 +16,20 @@ class L2MAELoss(nn.Module):
             return torch.sum(dists)
 
 
+class CosineLoss(nn.Module):
+    def __init__(self, reduction="mean"):
+        super().__init__()
+        self.reduction = reduction
+        assert reduction in ["mean", "sum"]
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor):
+        neg_cos = -torch.cosine_similarity(input, target)
+        if self.reduction == "mean":
+            return torch.mean(neg_cos)
+        elif self.reduction == "sum":
+            return torch.sum(neg_cos)
+
+
 class CombinedLoss(nn.Module):
     def __init__(self, loss_fns, weights=None):
         super().__init__()
@@ -48,5 +62,7 @@ def get_loss(loss_name):
         return nn.MSELoss()
     elif loss_name == "l2mae":
         return L2MAELoss()
+    elif loss_name == "cos":
+        return CosineLoss()
     else:
         raise NotImplementedError(f"Unknown loss function name: {loss_name}")
