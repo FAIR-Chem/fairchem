@@ -39,7 +39,7 @@ from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
 )
-from ocpmodels.modules.loss import L2MAELoss
+from ocpmodels.modules.loss import CombinedLoss, get_loss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
 
@@ -316,20 +316,17 @@ class BaseTrainer(ABC):
                 self.scaler.load_state_dict(checkpoint["amp"])
 
     def load_loss(self):
+        losses = {}
+        losses["energy"] = self.config["optim"].get("loss_energy", "mae")
+        losses["force"] = self.config["optim"].get("loss_force", "mae")
         self.loss_fn = {}
-        self.loss_fn["energy"] = self.config["optim"].get("loss_energy", "mae")
-        self.loss_fn["force"] = self.config["optim"].get("loss_force", "mae")
-        for loss, loss_name in self.loss_fn.items():
-            if loss_name in ["l1", "mae"]:
-                self.loss_fn[loss] = nn.L1Loss()
-            elif loss_name == "mse":
-                self.loss_fn[loss] = nn.MSELoss()
-            elif loss_name == "l2mae":
-                self.loss_fn[loss] = L2MAELoss()
+        for target, loss_description in losses.items():
+            if isinstance(loss_description, dict):
+                loss_names, weights = zip(*loss_description.items())
+                losses = [get_loss(name) for name in loss_names]
+                self.loss_fn[target] = CombinedLoss(losses, weights)
             else:
-                raise NotImplementedError(
-                    f"Unknown loss function name: {loss_name}"
-                )
+                self.loss_fn[target] = get_loss(loss_description)
 
     def load_optimizer(self):
         optimizer = self.config["optim"].get("optimizer", "AdamW")

@@ -14,3 +14,39 @@ class L2MAELoss(nn.Module):
             return torch.mean(dists)
         elif self.reduction == "sum":
             return torch.sum(dists)
+
+
+class CombinedLoss(nn.Module):
+    def __init__(self, loss_fns, weights=None):
+        super().__init__()
+        self.loss_fns = loss_fns
+        if weights is None:
+            self.weights = [1.0 for _ in range(len(loss_fns))]
+        else:
+            self.weights = weights
+
+    @property
+    def reduction(self):
+        return self.loss_fns[0].reduction
+
+    @reduction.setter
+    def reduction(self, reduction):
+        for loss_fn in self.loss_fns:
+            loss_fn.reduction = reduction
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor):
+        loss = self.weights[0] * self.loss_fns[0](input, target)
+        for i in range(1, len(self.loss_fns)):
+            loss += self.weights[i] * self.loss_fns[i](input, target)
+        return loss
+
+
+def get_loss(loss_name):
+    if loss_name in ["l1", "mae"]:
+        return nn.L1Loss()
+    elif loss_name == "mse":
+        return nn.MSELoss()
+    elif loss_name == "l2mae":
+        return L2MAELoss()
+    else:
+        raise NotImplementedError(f"Unknown loss function name: {loss_name}")
