@@ -493,7 +493,8 @@ def get_pbc_distances(
     return out
 
 
-def radius_graph_pbc(data, radius, max_num_neighbors_threshold, device):
+def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
+    device = data.pos.device
     batch_size = len(data.natoms)
 
     # position of the atoms
