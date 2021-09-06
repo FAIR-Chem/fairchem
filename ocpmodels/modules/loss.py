@@ -16,6 +16,29 @@ class L2MAELoss(nn.Module):
             return torch.sum(dists)
 
 
+class NormL2MAELoss(nn.Module):
+    def __init__(self, reduction="mean", min_norm=1e-3):
+        super().__init__()
+        self.reduction = reduction
+        assert reduction in ["mean", "sum"]
+        self.min_norm = min_norm
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor):
+        input_norm = torch.norm(input, p=2, dim=-1, keepdim=True).clamp(
+            min=self.min_norm
+        )
+        input = input / input_norm
+        target_norm = torch.norm(target, p=2, dim=-1, keepdim=True).clamp(
+            min=self.min_norm
+        )
+        target = target / target_norm
+        dists = torch.norm(input - target, p=2, dim=-1)
+        if self.reduction == "mean":
+            return torch.mean(dists)
+        elif self.reduction == "sum":
+            return torch.sum(dists)
+
+
 class CosineLoss(nn.Module):
     def __init__(self, reduction="mean"):
         super().__init__()
@@ -62,6 +85,8 @@ def get_loss(loss_name):
         return nn.MSELoss()
     elif loss_name == "l2mae":
         return L2MAELoss()
+    elif loss_name == "norml2mae":
+        return NormL2MAELoss()
     elif loss_name == "cos":
         return CosineLoss()
     else:
