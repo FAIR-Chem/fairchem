@@ -40,13 +40,14 @@ class NormL2MAELoss(nn.Module):
 
 
 class CosineLoss(nn.Module):
-    def __init__(self, reduction="mean"):
+    def __init__(self, reduction="mean", eps=1e-6):
         super().__init__()
         self.reduction = reduction
         assert reduction in ["mean", "sum"]
+        self.eps = eps
 
     def forward(self, input: torch.Tensor, target: torch.Tensor):
-        neg_cos = -torch.cosine_similarity(input, target)
+        neg_cos = -torch.cosine_similarity(input, target, eps=self.eps)
         if self.reduction == "mean":
             return torch.mean(neg_cos)
         elif self.reduction == "sum":
