@@ -316,17 +316,25 @@ class BaseTrainer(ABC):
                 self.scaler.load_state_dict(checkpoint["amp"])
 
     def load_loss(self):
-        losses = {}
-        losses["energy"] = self.config["optim"].get("loss_energy", "mae")
-        losses["force"] = self.config["optim"].get("loss_force", "mae")
+        loss_config = {}
+        loss_config["energy"] = self.config["optim"].get("loss_energy", "mae")
+        loss_config["force"] = self.config["optim"].get("loss_force", "mae")
         self.loss_fn = {}
-        for target, loss_description in losses.items():
-            if isinstance(loss_description, dict):
-                loss_names, weights = zip(*loss_description.items())
-                losses = [get_loss(name) for name in loss_names]
+        for target, loss_description in loss_config.items():
+            if isinstance(loss_description, list):
+                losses, weights = [], []
+                for loss_dict in loss_description:
+                    loss_name = loss_dict["name"]
+                    loss_kwargs = {
+                        k: v
+                        for k, v in loss_dict.items()
+                        if k not in ["name", "weight"]
+                    }
+                    losses.append(get_loss(loss_name, loss_kwargs))
+                    weights.append(loss_dict.get("weight", 1.0))
                 self.loss_fn[target] = CombinedLoss(losses, weights)
             else:
-                self.loss_fn[target] = get_loss(loss_description)
+                self.loss_fn[target] = get_loss(loss_description, {})
 
     def load_optimizer(self):
         optimizer = self.config["optim"].get("optimizer", "AdamW")

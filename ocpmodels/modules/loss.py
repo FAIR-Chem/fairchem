@@ -72,22 +72,24 @@ class CombinedLoss(nn.Module):
             loss_fn.reduction = reduction
 
     def forward(self, input: torch.Tensor, target: torch.Tensor):
-        loss = self.weights[0] * self.loss_fns[0](input, target)
-        for i in range(1, len(self.loss_fns)):
-            loss += self.weights[i] * self.loss_fns[i](input, target)
-        return loss
+        return sum(
+            [
+                w * loss(input, target)
+                for w, loss in zip(self.weights, self.loss_fns)
+            ]
+        )
 
 
-def get_loss(loss_name):
+def get_loss(loss_name, loss_kwargs):
     if loss_name in ["l1", "mae"]:
-        return nn.L1Loss()
+        return nn.L1Loss(**loss_kwargs)
     elif loss_name == "mse":
-        return nn.MSELoss()
+        return nn.MSELoss(**loss_kwargs)
     elif loss_name == "l2mae":
-        return L2MAELoss()
+        return L2MAELoss(**loss_kwargs)
     elif loss_name == "norml2mae":
-        return NormL2MAELoss()
+        return NormL2MAELoss(**loss_kwargs)
     elif loss_name == "cos":
-        return CosineLoss()
+        return CosineLoss(**loss_kwargs)
     else:
         raise NotImplementedError(f"Unknown loss function name: {loss_name}")
