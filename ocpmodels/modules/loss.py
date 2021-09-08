@@ -74,8 +74,8 @@ class CombinedLoss(nn.Module):
     def forward(self, input: torch.Tensor, target: torch.Tensor):
         return sum(
             [
-                w * loss(input, target)
-                for w, loss in zip(self.weights, self.loss_fns)
+                weight * loss_fn(input, target)
+                for weight, loss_fn in zip(self.weights, self.loss_fns)
             ]
         )
 
