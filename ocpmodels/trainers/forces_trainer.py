@@ -177,9 +177,6 @@ class ForcesTrainer(BaseTrainer):
             self.relax_loader = self.get_dataloader(
                 self.relax_dataset,
                 self.relax_sampler,
-                self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
-                ),
             )
 
         self.num_targets = 1

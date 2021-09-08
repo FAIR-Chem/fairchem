@@ -30,6 +30,8 @@ class SinglePointLmdbDataset(Dataset):
     def __init__(self, config, transform=None):
         super(SinglePointLmdbDataset, self).__init__()
 
+        self.config = config
+
         self.db_path = Path(self.config["src"])
         if not self.db_path.is_file():
             raise FileNotFoundError(
