@@ -29,7 +29,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from ray import tune
 from torch_geometric.utils import remove_self_loops
-from torch_scatter import segment_csr
+from torch_scatter import segment_coo, segment_csr
 
 
 def save_checkpoint(
@@ -654,7 +654,9 @@ def get_max_neighbors_mask(
     num_atoms = natoms.sum()
 
     # Get number of neighbors
-    num_neighbors = torch.bincount(index, minlength=num_atoms)
+    # segment_coo assumes sorted index
+    ones = index.new_ones(1).expand_as(index)
+    num_neighbors = segment_coo(ones, index, dim_size=num_atoms)
     max_num_neighbors = num_neighbors.max()
     num_neighbors_thresholded = num_neighbors.clamp(
         max=max_num_neighbors_threshold
