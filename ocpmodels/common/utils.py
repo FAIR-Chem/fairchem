@@ -628,7 +628,7 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
         max_num_neighbors_threshold=max_num_neighbors_threshold,
     )
 
-    if mask_num_neighbors is not None:
+    if not torch.all(mask_num_neighbors):
         # Mask out the atoms to ensure each atom has at most max_num_neighbors_threshold neighbors
         index1 = torch.masked_select(index1, mask_num_neighbors)
         index2 = torch.masked_select(index2, mask_num_neighbors)
@@ -674,13 +674,16 @@ def get_max_neighbors_mask(
         max_num_neighbors <= max_num_neighbors_threshold
         or max_num_neighbors_threshold <= 0
     ):
-        return None, num_neighbors_image
+        mask_num_neighbors = torch.tensor(
+            [True], dtype=bool, device=device
+        ).expand_as(index)
+        return mask_num_neighbors, num_neighbors_image
 
     # Create a tensor of size [num_atoms, max_num_neighbors] to sort the distances of the neighbors.
     # Fill with infinity so we can easily remove unused distances later.
-    distance_sort = torch.zeros(
-        num_atoms * max_num_neighbors, device=device
-    ).fill_(np.inf)
+    distance_sort = torch.full(
+        [num_atoms * max_num_neighbors], np.inf, device=device
+    )
 
     # Create an index map to map distances from atom_distance to distance_sort
     # index_sort_map assumes index to be sorted
