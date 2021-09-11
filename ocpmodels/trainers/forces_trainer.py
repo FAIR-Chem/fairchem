@@ -630,6 +630,10 @@ class ForcesTrainer(BaseTrainer):
         natoms = torch.cat(
             [batch.natoms.to(self.device) for batch in batch_list], dim=0
         )
+        atomic_numbers = torch.cat(
+            [batch.atomic_numbers.to(self.device).long() for batch in batch_list],
+            dim=0,
+        )
 
         target = {
             "energy": torch.cat(
@@ -667,7 +671,7 @@ class ForcesTrainer(BaseTrainer):
                 out["forces"]
             )
 
-        metrics = evaluator.eval(out, target, prev_metrics=metrics)
+        metrics = evaluator.eval(out, target, atomic_numbers=atomic_numbers, prev_metrics=metrics)
         return metrics
 
     def run_relaxations(self, split="val"):

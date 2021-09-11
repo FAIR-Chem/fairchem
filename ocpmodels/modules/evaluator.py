@@ -30,6 +30,12 @@ with the relevant metrics computed.
 
 
 class Evaluator:
+    atomic_number_map = {1: "H", 6: "C", 7: "N", 8: "O"}
+    atomic_number_tasks = {
+        "s2ef": {"forces_mae", "forces_cos"},
+        "is2rs": set(),
+        "is2re": set(),
+    }
     task_metrics = {
         "s2ef": [
             "forcesx_mae",
@@ -61,12 +67,80 @@ class Evaluator:
         "is2re": "energy_mae",
     }
 
-    def __init__(self, task=None):
+    def __init__(
+        self, task=None, atomic_number_map=None, atomic_number_metrics=None
+    ):
+        """
+        Creates a new Evaluator.
+
+        Args:
+            task: the current task, must be either s2ef, is2rs, or is2re.
+            atomic_number_map: a dictionary mapping atomic numbers to atomic symbols. if an atomic number is not in the map, we do not track atom-wise metrics for that atom.
+            atomic_number_metrics: a set of metrics that should be tracked atom-wise.
+        """
         assert task in ["s2ef", "is2rs", "is2re"]
         self.task = task
         self.metric_fn = self.task_metrics[task]
 
-    def eval(self, prediction, target, prev_metrics={}):
+        if atomic_number_map is not None:
+            self.atomic_number_map = atomic_number_map
+        if atomic_number_metrics is not None:
+            self.atomic_number_metrics = atomic_number_metrics
+        else:
+            self.atomic_number_metrics = self.atomic_number_tasks[self.task]
+
+    def _eval_metric_fn(self, fn, prediction, target, metrics, fn_prefix=None):
+        res = eval(fn)(prediction, target)
+        # for atomwise metrics, we add a prefix to the metric name (e.g., "atomwise_19_forces_mae")
+        fn_metric_name = f"{fn_prefix}{fn}" if fn_prefix else fn
+        return self.update(fn_metric_name, res, metrics)
+
+    def _create_mask(self, atomic_numbers, value, atomic_number: int):
+        assert atomic_numbers is not None
+
+        # we only care about metrics that are computed for each atom
+        if value.shape != atomic_numbers.shape:
+            return torch.ones_like(value, dtype=torch.bool)
+
+        return value == atomic_number
+
+    def _eval_atomwise_metrics(
+        self, fn, atomic_numbers, prediction, target, metrics
+    ):
+        assert atomic_numbers is not None
+        unique_atomic_numbers = atomic_numbers.unique().tolist()
+
+        # create a copy of prediction and target where the results are set to 0 for atoms that are not in atomic_numbers
+        for atomic_number in unique_atomic_numbers:
+            # to prevent spamming, only look at metrics in the map
+            if atomic_number not in self.atomic_number_map:
+                # self.atomic_number_map[atomic_number] = str(atomic_number)
+                continue
+
+            # we make copies of the dicts so we don't modify the original used for non-atomwise metrics.
+            # this is because we're modifying the values of these dicts to ignore irrelevant atoms (for each iteration).
+            prediction_copy = {
+                key: value
+                * self._create_mask(atomic_numbers, value, atomic_number)
+                for key, value in prediction.items()
+            }
+            target_copy = {
+                key: value
+                * self._create_mask(atomic_numbers, value, atomic_number)
+                for key, value in target.items()
+            }
+
+            metrics = self._eval_metric_fn(
+                fn,
+                prediction_copy,
+                target_copy,
+                metrics,
+                fn_prefix=f"atomwise_{self.atomic_number_map[atomic_number]}_",
+            )
+
+        return metrics
+
+    def eval(self, prediction, target, prev_metrics={}, atomic_numbers=None):
         for attr in self.task_attributes[self.task]:
             assert attr in prediction
             assert attr in target
@@ -75,8 +149,13 @@ class Evaluator:
         metrics = prev_metrics
 
         for fn in self.task_metrics[self.task]:
-            res = eval(fn)(prediction, target)
-            metrics = self.update(fn, res, metrics)
+            metrics = self._eval_metric_fn(fn, prediction, target, metrics)
+
+            # should we track atom-wise stats for this metric?
+            if atomic_numbers is not None and fn in self.atomic_number_metrics:
+                metrics = self._eval_atomwise_metrics(
+                    fn, atomic_numbers, prediction, target, metrics
+                )
 
         return metrics
 
