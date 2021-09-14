@@ -12,27 +12,28 @@ import os
 import random
 import subprocess
 from abc import ABC, abstractmethod
-from collections import OrderedDict, defaultdict
-from pathlib import Path
+from collections import defaultdict
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
-from ray import tune
 from torch.nn.parallel.distributed import DistributedDataParallel
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 import ocpmodels
 from ocpmodels.common import distutils
-from ocpmodels.common.data_parallel import OCPDataParallel
+from ocpmodels.common.data_parallel import (
+    BalancedBatchSampler,
+    OCPDataParallel,
+)
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     build_config,
     plot_histogram,
     save_checkpoint,
-    tune_reporter,
     warmup_lr_lambda,
 )
 from ocpmodels.modules.evaluator import Evaluator
@@ -179,6 +180,11 @@ class BaseTrainer(ABC):
         self.is_hpo = is_hpo
 
         if self.is_hpo:
+            # conditional import is necessary for checkpointing
+            from ray import tune
+
+            from ocpmodels.common.hpo_utils import tune_reporter
+
             # sets the hpo checkpoint frequency
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get(
@@ -222,6 +228,36 @@ class BaseTrainer(ABC):
             self.logger = registry.get_logger_class(self.config["logger"])(
                 self.config
             )
+
+    def get_sampler(self, dataset, batch_size, shuffle):
+        if "load_balancing" in self.config["optim"]:
+            balancing_mode = self.config["optim"]["load_balancing"]
+            force_balancing = True
+        else:
+            balancing_mode = "atoms"
+            force_balancing = False
+
+        sampler = BalancedBatchSampler(
+            dataset,
+            batch_size=batch_size,
+            num_replicas=distutils.get_world_size(),
+            rank=distutils.get_rank(),
+            device=self.device,
+            mode=balancing_mode,
+            shuffle=shuffle,
+            force_balancing=force_balancing,
+        )
+        return sampler
+
+    def get_dataloader(self, dataset, sampler):
+        loader = DataLoader(
+            dataset,
+            collate_fn=self.parallel_collater,
+            num_workers=self.config["optim"]["num_workers"],
+            pin_memory=True,
+            batch_sampler=sampler,
+        )
+        return loader
 
     @abstractmethod
     def load_task(self):
@@ -440,7 +476,9 @@ class BaseTrainer(ABC):
         # checkpointing frequency can be adjusted by setting checkpoint_every in steps
         # to checkpoint every time results are communicated to Ray Tune set checkpoint_every=1
         if checkpoint_every != -1 and step % checkpoint_every == 0:
-            with tune.checkpoint_dir(step=step) as checkpoint_dir:
+            with tune.checkpoint_dir(  # noqa: F821
+                step=step
+            ) as checkpoint_dir:
                 path = os.path.join(checkpoint_dir, "checkpoint")
                 torch.save(self.save_state(epoch, step, metrics), path)
 
@@ -461,7 +499,7 @@ class BaseTrainer(ABC):
             self.hpo_checkpoint_every,
         )
         # report metrics to tune
-        tune_reporter(
+        tune_reporter(  # noqa: F821
             iters=progress,
             train_metrics={
                 k: train_metrics[k]["metric"] for k in self.metrics

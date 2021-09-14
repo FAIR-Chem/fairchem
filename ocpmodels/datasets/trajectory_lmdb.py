@@ -40,7 +40,9 @@ class TrajectoryLmdbDataset(Dataset):
 
         srcdir = Path(self.config["src"])
         db_paths = sorted(srcdir.glob("*.lmdb"))
-        assert len(db_paths) > 0, f"No LMDBs found in {srcdir}"
+        assert len(db_paths) > 0, f"No LMDBs found in '{srcdir}'"
+
+        self.metadata_path = srcdir / "metadata.npz"
 
         self._keys, self.envs = [], []
         for db_path in db_paths:

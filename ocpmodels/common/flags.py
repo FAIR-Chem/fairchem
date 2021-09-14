@@ -56,12 +56,6 @@ class Flags:
             help="Whether to visualize a few extra things",
         )
         self.parser.add_argument(
-            "--num-workers",
-            default=0,
-            type=int,
-            help="Number of dataloader workers (default: 0 i.e. use main proc)",
-        )
-        self.parser.add_argument(
             "--print-every",
             default=10,
             type=int,

@@ -1,5 +1,8 @@
 # Running Hyperparameter Optimization with Ray Tune
 
+# Installation
+`pip install ray ray[tune]`
+
 ## Model config considerations
 
 The current Ray Tune implementation uses the standard OCP config. However, there are a number of config settings that require additional consideration.
