@@ -3,13 +3,16 @@ This script provides the functionality to generate metadata.npz files necessary
 for load_balancing the DataLoader.
 
 """
-from ocpmodels.datasets import TrajectoryLmdbDataset, SinglePointLmdbDataset
-from tqdm import tqdm
-import os
-import numpy as np
 import argparse
-import warnings
 import multiprocessing as mp
+import os
+import warnings
+
+import numpy as np
+from tqdm import tqdm
+
+from ocpmodels.datasets import SinglePointLmdbDataset, TrajectoryLmdbDataset
+
 
 def get_data(index):
     data = dataset[index]
@@ -20,6 +23,7 @@ def get_data(index):
 
     return index, natoms, neighbors
 
+
 def main(args):
     path = args.data_path
     global dataset
@@ -28,10 +32,7 @@ def main(args):
         outpath = os.path.join(path, "metadata.npz")
     elif os.path.isfile(path):
         dataset = SinglePointLmdbDataset({"src": path})
-        outpath = os.path.join(
-            os.path.dirname(path),
-            "metadata.npz"
-        )
+        outpath = os.path.join(os.path.dirname(path), "metadata.npz")
 
     indices = range(len(dataset))
 
@@ -56,6 +57,7 @@ def main(args):
     else:
         sorted_neighbors = np.array(neighbors, dtype=np.int32)[_sort]
         np.savez(outpath, natoms=sorted_natoms, neighbors=sorted_neighbors)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
