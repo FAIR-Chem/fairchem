@@ -12,7 +12,6 @@ from collections import defaultdict
 import numpy as np
 import torch
 import torch_geometric
-from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
@@ -112,67 +111,56 @@ class EnergyTrainer(BaseTrainer):
         logging.info(f"Loading dataset: {self.config['task']['dataset']}")
 
         self.parallel_collater = ParallelCollater(
-            1 if not self.cpu else 0,
+            0 if self.cpu else 1,
             self.config["model_attributes"].get("otf_graph", False),
         )
 
         self.val_loader = self.test_loader = self.train_loader = None
-        self.val_sampler = None
+        self.val_sampler = self.test_sampler = self.train_sampler = None
 
         if self.config.get("dataset", None):
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
-            self.train_sampler = DistributedSampler(
+            self.train_sampler = self.get_sampler(
                 self.train_dataset,
-                num_replicas=distutils.get_world_size(),
-                rank=distutils.get_rank(),
+                self.config["optim"]["batch_size"],
                 shuffle=True,
             )
-            self.train_loader = DataLoader(
+            self.train_loader = self.get_dataloader(
                 self.train_dataset,
-                batch_size=self.config["optim"]["batch_size"],
-                collate_fn=self.parallel_collater,
-                num_workers=self.config["optim"]["num_workers"],
-                pin_memory=True,
-                sampler=self.train_sampler,
+                self.train_sampler,
             )
 
         if self.config.get("val_dataset", None):
             self.val_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["val_dataset"])
-            self.val_sampler = DistributedSampler(
+            self.val_sampler = self.get_sampler(
                 self.val_dataset,
-                num_replicas=distutils.get_world_size(),
-                rank=distutils.get_rank(),
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
                 shuffle=False,
             )
-            self.val_loader = DataLoader(
+            self.val_loader = self.get_dataloader(
                 self.val_dataset,
-                self.config["optim"].get("eval_batch_size", 64),
-                collate_fn=self.parallel_collater,
-                num_workers=self.config["optim"]["num_workers"],
-                pin_memory=True,
-                sampler=self.val_sampler,
+                self.val_sampler,
             )
         if self.config.get("test_dataset", None):
             self.test_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["test_dataset"])
-            self.test_sampler = DistributedSampler(
+            self.test_sampler = self.get_sampler(
                 self.test_dataset,
-                num_replicas=distutils.get_world_size(),
-                rank=distutils.get_rank(),
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
                 shuffle=False,
             )
-            self.test_loader = DataLoader(
+            self.test_loader = self.get_dataloader(
                 self.test_dataset,
-                self.config["optim"].get("eval_batch_size", 64),
-                collate_fn=self.parallel_collater,
-                num_workers=self.config["optim"]["num_workers"],
-                pin_memory=True,
-                sampler=self.test_sampler,
+                self.test_sampler,
             )
 
         self.num_targets = 1

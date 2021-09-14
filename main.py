@@ -106,7 +106,7 @@ if __name__ == "__main__":
             timeout_min=args.slurm_timeout * 60,
             slurm_partition=args.slurm_partition,
             gpus_per_node=args.num_gpus,
-            cpus_per_task=(args.num_workers + 1),
+            cpus_per_task=(config["optim"]["num_workers"] + 1),
             tasks_per_node=(args.num_gpus if args.distributed else 1),
             nodes=args.num_nodes,
             slurm_additional_parameters=slurm_add_params,

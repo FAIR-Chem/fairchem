@@ -12,8 +12,7 @@ import os
 import random
 import subprocess
 from abc import ABC, abstractmethod
-from collections import OrderedDict, defaultdict
-from pathlib import Path
+from collections import defaultdict
 
 import numpy as np
 import torch
@@ -21,11 +20,15 @@ import torch.nn as nn
 import torch.optim as optim
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 import ocpmodels
 from ocpmodels.common import distutils
-from ocpmodels.common.data_parallel import OCPDataParallel
+from ocpmodels.common.data_parallel import (
+    BalancedBatchSampler,
+    OCPDataParallel,
+)
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     build_config,
@@ -225,6 +228,36 @@ class BaseTrainer(ABC):
             self.logger = registry.get_logger_class(self.config["logger"])(
                 self.config
             )
+
+    def get_sampler(self, dataset, batch_size, shuffle):
+        if "load_balancing" in self.config["optim"]:
+            balancing_mode = self.config["optim"]["load_balancing"]
+            force_balancing = True
+        else:
+            balancing_mode = "atoms"
+            force_balancing = False
+
+        sampler = BalancedBatchSampler(
+            dataset,
+            batch_size=batch_size,
+            num_replicas=distutils.get_world_size(),
+            rank=distutils.get_rank(),
+            device=self.device,
+            mode=balancing_mode,
+            shuffle=shuffle,
+            force_balancing=force_balancing,
+        )
+        return sampler
+
+    def get_dataloader(self, dataset, sampler):
+        loader = DataLoader(
+            dataset,
+            collate_fn=self.parallel_collater,
+            num_workers=self.config["optim"]["num_workers"],
+            pin_memory=True,
+            batch_sampler=sampler,
+        )
+        return loader
 
     @abstractmethod
     def load_task(self):
