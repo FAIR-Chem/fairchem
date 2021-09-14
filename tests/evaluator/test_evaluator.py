@@ -70,7 +70,7 @@ class TestMetrics:
     def test_cosine_similarity(self):
         v1, v2 = torch.randn(1000000, 3), torch.randn(1000000, 3)
         res = cosine_similarity(v1, v2)
-        np.testing.assert_almost_equal(res["metric"], 0, decimal=3)
+        np.testing.assert_almost_equal(res["metric"], 0, decimal=2)
         np.testing.assert_almost_equal(
             res["total"] / res["numel"], res["metric"]
         )

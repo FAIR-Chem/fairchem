@@ -9,6 +9,7 @@ import torch
 from torch import nn
 from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
+from torch_sparse import SparseTensor
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
@@ -104,6 +105,35 @@ class DimeNetWrap(DimeNet):
             num_output_layers=num_output_layers,
         )
 
+    def triplets(self, edge_index, cell_offsets, num_nodes):
+        row, col = edge_index  # j->i
+
+        value = torch.arange(row.size(0), device=row.device)
+        adj_t = SparseTensor(
+            row=col, col=row, value=value, sparse_sizes=(num_nodes, num_nodes)
+        )
+        adj_t_row = adj_t[row]
+        num_triplets = adj_t_row.set_value(None).sum(dim=1).to(torch.long)
+
+        # Node indices (k->j->i) for triplets.
+        idx_i = col.repeat_interleave(num_triplets)
+        idx_j = row.repeat_interleave(num_triplets)
+        idx_k = adj_t_row.storage.col()
+
+        # Edge indices (k->j, j->i) for triplets.
+        idx_kj = adj_t_row.storage.value()
+        idx_ji = adj_t_row.storage.row()
+
+        # Remove self-loop triplets d->b->d
+        # Check atom as well as cell offset
+        cell_offset_kji = cell_offsets[idx_kj] + cell_offsets[idx_ji]
+        mask = (idx_i != idx_k) | torch.any(cell_offset_kji != 0, dim=-1)
+
+        idx_i, idx_j, idx_k = idx_i[mask], idx_j[mask], idx_k[mask]
+        idx_kj, idx_ji = idx_kj[mask], idx_ji[mask]
+
+        return col, row, idx_i, idx_j, idx_k, idx_kj, idx_ji
+
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
         pos = data.pos
@@ -138,7 +168,9 @@ class DimeNetWrap(DimeNet):
             dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
         _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
-            edge_index, num_nodes=data.atomic_numbers.size(0)
+            edge_index,
+            data.cell_offsets,
+            num_nodes=data.atomic_numbers.size(0),
         )
 
         # Cap no. of triplets during training.

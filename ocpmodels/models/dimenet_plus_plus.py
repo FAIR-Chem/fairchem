@@ -301,7 +301,7 @@ class DimeNetPlusPlus(torch.nn.Module):
         for interaction in self.interaction_blocks:
             interaction.reset_parameters()
 
-    def triplets(self, edge_index, num_nodes):
+    def triplets(self, edge_index, cell_offsets, num_nodes):
         row, col = edge_index  # j->i
 
         value = torch.arange(row.size(0), device=row.device)
@@ -315,12 +315,18 @@ class DimeNetPlusPlus(torch.nn.Module):
         idx_i = col.repeat_interleave(num_triplets)
         idx_j = row.repeat_interleave(num_triplets)
         idx_k = adj_t_row.storage.col()
-        mask = idx_i != idx_k  # Remove i == k triplets.
-        idx_i, idx_j, idx_k = idx_i[mask], idx_j[mask], idx_k[mask]
 
-        # Edge indices (k-j, j->i) for triplets.
-        idx_kj = adj_t_row.storage.value()[mask]
-        idx_ji = adj_t_row.storage.row()[mask]
+        # Edge indices (k->j, j->i) for triplets.
+        idx_kj = adj_t_row.storage.value()
+        idx_ji = adj_t_row.storage.row()
+
+        # Remove self-loop triplets d->b->d
+        # Check atom as well as cell offset
+        cell_offset_kji = cell_offsets[idx_kj] + cell_offsets[idx_ji]
+        mask = (idx_i != idx_k) | torch.any(cell_offset_kji != 0, dim=-1)
+
+        idx_i, idx_j, idx_k = idx_i[mask], idx_j[mask], idx_k[mask]
+        idx_kj, idx_ji = idx_kj[mask], idx_ji[mask]
 
         return col, row, idx_i, idx_j, idx_k, idx_kj, idx_ji
 
@@ -408,7 +414,9 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
             dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
         _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
-            edge_index, num_nodes=data.atomic_numbers.size(0)
+            edge_index,
+            data.cell_offsets,
+            num_nodes=data.atomic_numbers.size(0),
         )
 
         # Calculate angles.

@@ -12,7 +12,6 @@ from collections import defaultdict
 import numpy as np
 import torch
 import torch_geometric
-from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
@@ -112,7 +111,7 @@ class ForcesTrainer(BaseTrainer):
         logging.info(f"Loading dataset: {self.config['task']['dataset']}")
 
         self.parallel_collater = ParallelCollater(
-            1 if not self.cpu else 0,
+            0 if self.cpu else 1,
             self.config["model_attributes"].get("otf_graph", False),
         )
         if self.config["task"]["dataset"] == "trajectory_lmdb":
@@ -121,58 +120,45 @@ class ForcesTrainer(BaseTrainer):
                 self.train_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(self.config["dataset"])
-
-                self.train_sampler = DistributedSampler(
+                self.train_sampler = self.get_sampler(
                     self.train_dataset,
-                    num_replicas=distutils.get_world_size(),
-                    rank=distutils.get_rank(),
+                    self.config["optim"]["batch_size"],
                     shuffle=True,
                 )
-
-                self.train_loader = DataLoader(
+                self.train_loader = self.get_dataloader(
                     self.train_dataset,
-                    batch_size=self.config["optim"]["batch_size"],
-                    collate_fn=self.parallel_collater,
-                    num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=True,
-                    sampler=self.train_sampler,
+                    self.train_sampler,
                 )
 
             if self.config.get("val_dataset", None):
                 self.val_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(self.config["val_dataset"])
-                self.val_sampler = DistributedSampler(
+                self.val_sampler = self.get_sampler(
                     self.val_dataset,
-                    num_replicas=distutils.get_world_size(),
-                    rank=distutils.get_rank(),
+                    self.config["optim"].get(
+                        "eval_batch_size", self.config["optim"]["batch_size"]
+                    ),
                     shuffle=False,
                 )
-                self.val_loader = DataLoader(
+                self.val_loader = self.get_dataloader(
                     self.val_dataset,
-                    self.config["optim"].get("eval_batch_size", 64),
-                    collate_fn=self.parallel_collater,
-                    num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=True,
-                    sampler=self.val_sampler,
+                    self.val_sampler,
                 )
             if self.config.get("test_dataset", None):
                 self.test_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(self.config["test_dataset"])
-                self.test_sampler = DistributedSampler(
+                self.test_sampler = self.get_sampler(
                     self.test_dataset,
-                    num_replicas=distutils.get_world_size(),
-                    rank=distutils.get_rank(),
+                    self.config["optim"].get(
+                        "eval_batch_size", self.config["optim"]["batch_size"]
+                    ),
                     shuffle=False,
                 )
-                self.test_loader = DataLoader(
+                self.test_loader = self.get_dataloader(
                     self.test_dataset,
-                    self.config["optim"].get("eval_batch_size", 64),
-                    collate_fn=self.parallel_collater,
-                    num_workers=self.config["optim"]["num_workers"],
-                    pin_memory=True,
-                    sampler=self.test_sampler,
+                    self.test_sampler,
                 )
 
         if "relax_dataset" in self.config["task"]:
@@ -181,20 +167,16 @@ class ForcesTrainer(BaseTrainer):
             self.relax_dataset = registry.get_dataset_class(
                 "single_point_lmdb"
             )(self.config["task"]["relax_dataset"])
-
-            self.relax_sampler = DistributedSampler(
+            self.relax_sampler = self.get_sampler(
                 self.relax_dataset,
-                num_replicas=distutils.get_world_size(),
-                rank=distutils.get_rank(),
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
                 shuffle=False,
             )
-            self.relax_loader = DataLoader(
+            self.relax_loader = self.get_dataloader(
                 self.relax_dataset,
-                batch_size=self.config["optim"].get("eval_batch_size", 64),
-                collate_fn=self.parallel_collater,
-                num_workers=self.config["optim"]["num_workers"],
-                pin_memory=True,
-                sampler=self.relax_sampler,
+                self.relax_sampler,
             )
 
         self.num_targets = 1
@@ -407,7 +389,6 @@ class ForcesTrainer(BaseTrainer):
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
         self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
-        iters = 0
         self.metrics = {}
 
         # Calculate start_epoch from step instead of loading the epoch number
@@ -475,14 +456,16 @@ class ForcesTrainer(BaseTrainer):
                         split="train",
                     )
 
-                iters += 1
-                if checkpoint_every != -1 and iters % checkpoint_every == 0:
+                if (
+                    checkpoint_every != -1
+                    and self.step % checkpoint_every == 0
+                ):
                     self.save(
                         checkpoint_file="checkpoint.pt", training_state=True
                     )
 
                 # Evaluate on val set every `eval_every` iterations.
-                if iters % eval_every == 0:
+                if self.step % eval_every == 0:
                     if self.val_loader is not None:
                         val_metrics = self.validate(
                             split="val",
@@ -505,7 +488,7 @@ class ForcesTrainer(BaseTrainer):
                         self.save(self.epoch, self.step, self.metrics)
 
                 if self.scheduler.scheduler_type == "ReduceLROnPlateau":
-                    if iters % eval_every == 0:
+                    if self.step % eval_every == 0:
                         self.scheduler.step(
                             metrics=val_metrics[primary_metric]["metric"],
                         )
