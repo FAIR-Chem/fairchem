@@ -443,7 +443,9 @@ class BaseTrainer(ABC):
         # checkpointing frequency can be adjusted by setting checkpoint_every in steps
         # to checkpoint every time results are communicated to Ray Tune set checkpoint_every=1
         if checkpoint_every != -1 and step % checkpoint_every == 0:
-            with tune.checkpoint_dir(step=step) as checkpoint_dir:
+            with tune.checkpoint_dir(  # noqa: F821
+                step=step
+            ) as checkpoint_dir:
                 path = os.path.join(checkpoint_dir, "checkpoint")
                 torch.save(self.save_state(epoch, step, metrics), path)
 
@@ -464,7 +466,7 @@ class BaseTrainer(ABC):
             self.hpo_checkpoint_every,
         )
         # report metrics to tune
-        tune_reporter(
+        tune_reporter(  # noqa: F821
             iters=progress,
             train_metrics={
                 k: train_metrics[k]["metric"] for k in self.metrics
