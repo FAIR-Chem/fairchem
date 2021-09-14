@@ -34,7 +34,7 @@ if __name__ == "__main__":
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     config = build_config(args, override_args)
-    assert config["model"]["name"] == "gemnet"
+    assert config["model"]["name"].startswith("gemnet")
     config["logger"] = "tensorboard"
 
     if args.distributed:
