@@ -20,7 +20,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
-from ray import tune
 from torch.nn.parallel.distributed import DistributedDataParallel
 from tqdm import tqdm
 
@@ -32,7 +31,6 @@ from ocpmodels.common.utils import (
     build_config,
     plot_histogram,
     save_checkpoint,
-    tune_reporter,
     warmup_lr_lambda,
 )
 from ocpmodels.modules.evaluator import Evaluator
@@ -179,6 +177,11 @@ class BaseTrainer(ABC):
         self.is_hpo = is_hpo
 
         if self.is_hpo:
+            # conditional import is necessary for checkpointing
+            from ray import tune
+
+            from ocpmodels.common.hpo_utils import tune_reporter
+
             # sets the hpo checkpoint frequency
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get(
@@ -440,7 +443,9 @@ class BaseTrainer(ABC):
         # checkpointing frequency can be adjusted by setting checkpoint_every in steps
         # to checkpoint every time results are communicated to Ray Tune set checkpoint_every=1
         if checkpoint_every != -1 and step % checkpoint_every == 0:
-            with tune.checkpoint_dir(step=step) as checkpoint_dir:
+            with tune.checkpoint_dir(  # noqa: F821
+                step=step
+            ) as checkpoint_dir:
                 path = os.path.join(checkpoint_dir, "checkpoint")
                 torch.save(self.save_state(epoch, step, metrics), path)
 
@@ -461,7 +466,7 @@ class BaseTrainer(ABC):
             self.hpo_checkpoint_every,
         )
         # report metrics to tune
-        tune_reporter(
+        tune_reporter(  # noqa: F821
             iters=progress,
             train_metrics={
                 k: train_metrics[k]["metric"] for k in self.metrics
