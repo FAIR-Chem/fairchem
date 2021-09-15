@@ -24,6 +24,17 @@ python -u -m torch.distributed.launch --nproc_per_node=8 main.py --distributed -
 `torch.distributed.launch` launches multiple processes for distributed training. For more details, refer to
 https://pytorch.org/docs/stable/distributed.html#launch-utility
 
+If training with multiple GPUs, GPU load balancing may be used to evenly distribute a batch of variable system sizes across GPUs. Load balancing may either balance by number of atoms or number of neighbors. A `metadata.npz` file must be available in the dataset directory to take advantage of this feature. The following command will generate a  `metadata.npz` file and place it in the corresponding directory. 
+```
+python scripts/make_lmdb_sizes.py --data-path data/s2ef/train/2M --num-workers 8
+```
+Load balancing is activated by default (in atoms mode). To change modes you can specify the following in your config:
+```
+optim:
+  load_balancing: neighbors
+```
+For more details, refer to https://github.com/Open-Catalyst-Project/ocp/pull/267.
+
 If you have access to a slurm cluster, we use the [submitit](https://github.com/facebookincubator/submitit) package to simplify multi-node distributed training:
 ```
 python main.py --distributed --num-gpus 8 --num-nodes 6 --submit [...]
