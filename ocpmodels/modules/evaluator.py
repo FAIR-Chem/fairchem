@@ -96,40 +96,34 @@ class Evaluator:
         fn_metric_name = f"{fn_prefix}{fn}" if fn_prefix else fn
         return self.update(fn_metric_name, res, metrics)
 
-    def _create_mask(self, atomic_numbers, value, atomic_number: int):
-        assert atomic_numbers is not None
-
-        # we only care about metrics that are computed for each atom
-        if value.shape != atomic_numbers.shape:
-            return torch.ones_like(value, dtype=torch.bool)
-
-        return value == atomic_number
-
     def _eval_atomwise_metrics(
         self, fn, atomic_numbers, prediction, target, metrics
     ):
         assert atomic_numbers is not None
-        unique_atomic_numbers = atomic_numbers.unique().tolist()
+
+        metric_key = fn.split("_")[0]
+        if metric_key.startswith("forces"):
+            metric_key = "forces"
+        assert metric_key == "forces" or metric_key == "energy"
+        assert metric_key in prediction and metric_key in target
 
         # create a copy of prediction and target where the results are set to 0 for atoms that are not in atomic_numbers
-        for atomic_number in unique_atomic_numbers:
-            # to prevent spamming, only look at metrics in the map
-            if atomic_number not in self.atomic_number_map:
-                # self.atomic_number_map[atomic_number] = str(atomic_number)
-                continue
+        for atomic_number in self.atomic_number_map.keys():
+            mask = atomic_numbers == atomic_number
 
             # we make copies of the dicts so we don't modify the original used for non-atomwise metrics.
             # this is because we're modifying the values of these dicts to ignore irrelevant atoms (for each iteration).
-            prediction_copy = {
-                key: value
-                * self._create_mask(atomic_numbers, value, atomic_number)
-                for key, value in prediction.items()
-            }
-            target_copy = {
-                key: value
-                * self._create_mask(atomic_numbers, value, atomic_number)
-                for key, value in target.items()
-            }
+            prediction_copy = {**prediction}
+            prediction_copy[metric_key] = prediction_copy[metric_key][mask]
+
+            target_copy = {**target}
+            target_copy[metric_key] = target_copy[metric_key][mask]
+
+            if (
+                prediction_copy[metric_key].numel() == 0
+                or target_copy[metric_key].numel() == 0
+            ):
+                continue
 
             metrics = self._eval_metric_fn(
                 fn,

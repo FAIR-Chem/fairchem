@@ -640,6 +640,7 @@ class ForcesTrainer(BaseTrainer):
             mask = fixed == 0
             out["forces"] = out["forces"][mask]
             target["forces"] = target["forces"][mask]
+            atomic_numbers = atomic_numbers[mask]
 
             s_idx = 0
             natoms_free = []
