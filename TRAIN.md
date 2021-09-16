@@ -24,7 +24,7 @@ python -u -m torch.distributed.launch --nproc_per_node=8 main.py --distributed -
 `torch.distributed.launch` launches multiple processes for distributed training. For more details, refer to
 https://pytorch.org/docs/stable/distributed.html#launch-utility
 
-If training with multiple GPUs, GPU load balancing may be used to evenly distribute a batch of variable system sizes across GPUs. Load balancing may either balance by number of atoms or number of neighbors. A `metadata.npz` file must be available in the dataset directory to take advantage of this feature. The following command will generate a  `metadata.npz` file and place it in the corresponding directory. 
+If training with multiple GPUs, GPU load balancing may be used to evenly distribute a batch of variable system sizes across GPUs. Load balancing may either balance by number of atoms or number of neighbors. A `metadata.npz` file must be available in the dataset directory to take advantage of this feature. The following command will generate a  `metadata.npz` file and place it in the corresponding directory.
 ```
 python scripts/make_lmdb_sizes.py --data-path data/s2ef/train/2M --num-workers 8
 ```
@@ -92,24 +92,24 @@ Alternatively, the IS2RE task may be approached by 2 methods as described in our
     2. Using the trained S2EF model, run ML relaxations as described [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md#initial-structure-to-relaxed-structure-is2rs). Ensure `traj_dir` is uniquely specified in the config as to save out the full trajectory. A sample config can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/configs/s2ef/2M/dimenet_plus_plus/dpp_relax.yml). ** Note ** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.
     3. Prepare a submission file by running the following command:
         ```
-        python scripts/make_sibmission_file.py --id path/to/id/traj_dir \ 
+        python scripts/make_submission_file.py --id path/to/id/traj_dir \
                 --ood-ads path/to/ood_ads/traj_dir --ood-cat path/to/ood_cat/traj_dir \
                 --ood-both path/to/ood_both/traj_dir --out-path submission_file.npz --is2re-relaxations
         ```
 - Dual Model: Relaxed energy predictions are extracted from relaxed structures generated via ML relaxations from two models - one for running relaxations and one for making energy predictions.
     1. Train two S2EF models, energy-only and force-only.
-    2. Using the trained force-only S2EF model, run ML relaxations as described previously. Ensure `traj_dir` is uniquely specified in the config as to save out the full trajectory. **Note** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware. 
+    2. Using the trained force-only S2EF model, run ML relaxations as described previously. Ensure `traj_dir` is uniquely specified in the config as to save out the full trajectory. **Note** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.
     3. In order to make predictions via the energy-only model on the generated trajectories, LMDBs must be constructed via the following command:
         ```
         python scripts/preprocess_relaxed.py --id path/to/id/traj_dir \
               --ood-ads path/to/ood_ads/traj_dir --ood-cat path/to/ood_cat/traj_dir \
               --ood-both path/to/ood_both/traj_dir --out-path $DIR --num-workers $NUM_WORKERS
-        ``` 
+        ```
         Where `$DIR` specifies the directory to save generated LMDBs. A sub-directory will be created for each of the 4 splits in `$DIR`. `$NUM_WORKERS` is the number of data preprocessing cpu workers to be used.
     4. Update your energy-only config to point the test set to the newly generated LMDBs. Using the trained energy-only S2EF model, generate predictions via `--mode predict` (as you would do for the general IS2RE/S2EF case).
-    5. Prepare a submission file by running the following command: 
+    5. Prepare a submission file by running the following command:
         ```
-        python scripts/make_sibmission_file.py --id path/to/id/s2ef_predictions.npz \ 
+        python scripts/make_submission_file.py --id path/to/id/s2ef_predictions.npz \
                 --ood-ads path/to/ood_ads/s2ef_predictions.npz --ood-cat path/to/ood_cat/s2ef_predictions.npz \
                 --ood-both path/to/ood_both/s2ef_predictions.npz --out-path submission_file.npz \
                 --is2re-relaxations --hybrid
