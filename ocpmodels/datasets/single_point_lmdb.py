@@ -5,8 +5,10 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import errno
 import os
 import pickle
+from pathlib import Path
 
 import lmdb
 from torch.utils.data import Dataset
@@ -30,10 +32,13 @@ class SinglePointLmdbDataset(Dataset):
 
         self.config = config
 
-        self.db_path = self.config["src"]
-        assert os.path.isfile(self.db_path), "{} not found".format(
-            self.db_path
-        )
+        self.db_path = Path(self.config["src"])
+        if not self.db_path.is_file():
+            raise FileNotFoundError(
+                errno.ENOENT, "LMDB file not found", str(self.db_path)
+            )
+
+        self.metadata_path = self.db_path.parent / "metadata.npz"
 
         self.env = self.connect_db(self.db_path)
 
@@ -59,7 +64,7 @@ class SinglePointLmdbDataset(Dataset):
 
     def connect_db(self, lmdb_path=None):
         env = lmdb.open(
-            lmdb_path,
+            str(lmdb_path),
             subdir=False,
             readonly=True,
             lock=False,
