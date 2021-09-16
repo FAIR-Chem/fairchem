@@ -195,7 +195,15 @@ class BaseTrainer(ABC):
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
-        self.evaluator = Evaluator(task=name)
+        self.evaluator = Evaluator(
+            task=name,
+            atomic_number_map=self.config["task"].get(
+                "atomwise_metric_atoms", None
+            ),
+            atomic_number_metrics=self.config["task"].get(
+                "atomwise_metrics", None
+            ),
+        )
 
     def load(self):
         self.load_seed_from_config()
@@ -524,7 +532,18 @@ class BaseTrainer(ABC):
             self.ema.store()
             self.ema.copy_to()
 
-        evaluator, metrics = Evaluator(task=self.name), {}
+        evaluator, metrics = (
+            Evaluator(
+                task=self.name,
+                atomic_number_map=self.config["task"].get(
+                    "atomwise_metric_atoms", None
+                ),
+                atomic_number_metrics=self.config["task"].get(
+                    "atomwise_metrics", None
+                ),
+            ),
+            {},
+        )
         rank = distutils.get_rank()
 
         loader = self.val_loader if split == "val" else self.test_loader

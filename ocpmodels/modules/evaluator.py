@@ -30,7 +30,6 @@ with the relevant metrics computed.
 
 
 class Evaluator:
-    atomic_number_map = {1: "H", 6: "C", 7: "N", 8: "O"}
     atomic_number_tasks = {
         "s2ef": {"forces_mae", "forces_cos"},
         "is2rs": set(),
@@ -82,12 +81,14 @@ class Evaluator:
         self.task = task
         self.metric_fn = self.task_metrics[task]
 
-        if atomic_number_map is not None:
-            self.atomic_number_map = atomic_number_map
-        if atomic_number_metrics is not None:
-            self.atomic_number_metrics = atomic_number_metrics
-        else:
-            self.atomic_number_metrics = self.atomic_number_tasks[self.task]
+        self.atomic_number_map = (
+            atomic_number_map if atomic_number_map is not None else {}
+        )
+        self.atomic_number_metrics = (
+            atomic_number_metrics
+            if atomic_number_metrics is not None
+            else self.atomic_number_tasks[self.task]
+        )
 
     def _eval_metric_fn(self, fn, prediction, target, metrics, fn_prefix=None):
         res = eval(fn)(prediction, target)
