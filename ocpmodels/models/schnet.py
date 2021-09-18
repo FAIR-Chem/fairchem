@@ -91,7 +91,7 @@ class SchNetWrap(SchNet):
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, 50, data.pos.device
+                data, self.cutoff, 50
             )
             data.edge_index = edge_index
             data.cell_offsets = cell_offsets
