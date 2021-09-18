@@ -40,7 +40,7 @@ from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
 )
-from ocpmodels.modules.loss import L2MAELoss
+from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
 
@@ -366,6 +366,8 @@ class BaseTrainer(ABC):
                 raise NotImplementedError(
                     f"Unknown loss function name: {loss_name}"
                 )
+            if distutils.initialized():
+                self.loss_fn[loss] = DDPLoss(self.loss_fn[loss])
 
     def load_optimizer(self):
         optimizer = self.config["optim"].get("optimizer", "AdamW")
