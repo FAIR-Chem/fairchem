@@ -196,7 +196,7 @@ class spinconv(BaseModel):
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, 100, data.pos.device
+                data, self.cutoff, 100
             )
             data.edge_index = edge_index
             data.cell_offsets = cell_offsets
@@ -1048,8 +1048,8 @@ class SpinConvBlock(torch.nn.Module):
             self.wigner = []
             for xrot, yrot, zrot in zip(rotx, roty, rotz):
                 _blocks = []
-                for l in range(self.lmax + 1):
-                    _blocks.append(o3.wigner_D(l, xrot, yrot, zrot))
+                for l_degree in range(self.lmax + 1):
+                    _blocks.append(o3.wigner_D(l_degree, xrot, yrot, zrot))
                 self.wigner.append(torch.block_diag(*_blocks))
 
         if self.sphere_message == "fullconv":
