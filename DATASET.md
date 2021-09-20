@@ -4,7 +4,6 @@
 
 This page summarizes the dataset download links for S2EF and IS2RE/IS2RS tasks and various splits. The main project website is https://opencatalystproject.org/
 
-
 ## Structure to Energy and Forces (S2EF) task
 
 For this task’s train and validation sets, we provide compressed trajectory files with the input structures and output energies and forces.  We provide precomputed LMDBs for the test sets. To use the train and validation datasets, first download the files and uncompress them. The uncompressed files are used to generate LMDBs, which are in turn used by the dataloaders to train the ML models. Code for the dataloaders and generating the LMDBs may be found in the Github repository.
@@ -14,8 +13,6 @@ Four training datasets are provided with different sizes. Each is a subset of th
 Four datasets are provided for validation set. Each dataset corresponds to a subsplit used to evaluate different types of extrapolation, in domain (id, same distribution as the training dataset), out of domain adsorbate (ood_ads, unseen adsorbate), out of domain catalyst (ood_cat, unseen catalyst composition), and out of domain both (ood_both, unseen adsorbate and catalyst composition).
 
 For the test sets, we provide precomputed LMDBs for each of the 4 subsplits (In Domain, OOD Adsorbate, OOD Catalyst, OOD Both).
-
-[*Update March 29,2021*]: We provide structures corresponding to molecular dynamics (MD) and rattled data as well.
 
 Each tarball has a README file containing details about file formats, number of structures / trajectories, etc.
 
@@ -59,6 +56,7 @@ Each tarball has README file containing details about file formats, number of st
 |Splits	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|MD5 checksum	|
 |---	|---	|---	|---	|---	|
 |Train (all splits) + Validation (all splits) + test (all splits)	|8.1G	|97G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_test_lmdbs.tar.gz	|cfc04dd2f87b4102ab2f607240d25fb1	|
+|Test-challenge ([challenge details](https://opencatalystproject.org/challenge.html)) |1.3G   |17G    |https://dl.fbaipublicfiles.com/opencatalystproject/data/is2re_test_challenge_2021.tar.gz   |aed414cdd240fbb5670b5de6887a138b   |
 |	|	|	|	|	|
 
 
@@ -134,10 +132,14 @@ An example entry is
 
 ## Dataset changelog
 
+### September 2021
+
+* Released IS2RE `test-challenge` data for the [Open Catalyst Challenge](https://opencatalystproject.org/challenge.html)
+
 ### March 2021
 
 * Modified the pickle corresponding to data mapping information. Now the pickle includes extra information about `miller_index`, `shift`, `top` and `adsorption_site`.
-* Added MD and rattled data for S2EF task.
+* Added Molecular Dynamics (MD) and rattled data for S2EF task.
 
 ### Version 2, Feb 2021
 
