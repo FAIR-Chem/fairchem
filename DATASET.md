@@ -56,7 +56,7 @@ Each tarball has README file containing details about file formats, number of st
 |Splits	|Size of compressed version (in bytes)	|Size of uncompressed version (in bytes)	|Downloadable link	|MD5 checksum	|
 |---	|---	|---	|---	|---	|
 |Train (all splits) + Validation (all splits) + test (all splits)	|8.1G	|97G	|https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_test_lmdbs.tar.gz	|cfc04dd2f87b4102ab2f607240d25fb1	|
-|Test-challenge |1.3G   |17G    |https://dl.fbaipublicfiles.com/opencatalystproject/data/is2re_test_challenge_2021.tar.gz   |aed414cdd240fbb5670b5de6887a138b   |
+|Test-challenge ([challenge details](https://opencatalystproject.org/challenge.html)) |1.3G   |17G    |https://dl.fbaipublicfiles.com/opencatalystproject/data/is2re_test_challenge_2021.tar.gz   |aed414cdd240fbb5670b5de6887a138b   |
 |	|	|	|	|	|
 
 
