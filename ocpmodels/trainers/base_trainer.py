@@ -593,9 +593,9 @@ class BaseTrainer(ABC):
         self.optimizer.zero_grad()
         loss.backward()
         # Scale down the gradients of shared parameters
-        if hasattr(self.model, "shared_parameters"):
-            for p, factor in self.model.shared_parameters:
-                if p.grad is not None:
+        if hasattr(self.model.module, "shared_parameters"):
+            for p, factor in self.model.module.shared_parameters:
+                if hasattr(p, "grad") and p.grad is not None:
                     p.grad.detach().div_(factor)
         if self.clip_grad_norm:
             if self.scaler:
