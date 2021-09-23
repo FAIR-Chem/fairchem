@@ -566,9 +566,9 @@ class spinconv(BaseModel):
         return edge_index, edge_distance, edge_distance_vec
 
     def _random_rot_mat(self, num_matrices, device):
-        ang_a = 2.0 * math.pi * torch.rand(num_matrices)
-        ang_b = 2.0 * math.pi * torch.rand(num_matrices)
-        ang_c = 2.0 * math.pi * torch.rand(num_matrices)
+        ang_a = 2.0 * math.pi * torch.rand(num_matrices, device=device)
+        ang_b = 2.0 * math.pi * torch.rand(num_matrices, device=device)
+        ang_c = 2.0 * math.pi * torch.rand(num_matrices, device=device)
 
         cos_a = torch.cos(ang_a)
         cos_b = torch.cos(ang_b)
