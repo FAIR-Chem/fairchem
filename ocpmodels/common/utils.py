@@ -493,12 +493,26 @@ def get_pbc_distances(
     return out
 
 
-def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
+def radius_graph_pbc(
+    data, radius, max_num_neighbors_threshold, centering_iterations=3
+):
     device = data.pos.device
     batch_size = len(data.natoms)
 
-    # position of the atoms
+    # Move all atoms into central unit cell
+    # Move by one unit vector after another to prevent interactions.
+    # The matrix inverse used by pymatgen does not guarantee that all atoms
+    #  are in the central unit cells when the unit vectors are not orthogonal.
     atom_pos = data.pos
+    atom_cell = data.cell[data.batch]
+    cell_norm = torch.sum(atom_cell * atom_cell, dim=-1)
+    atom_offset = data.cell_offsets.new_zeros(atom_pos.shape)
+    for _ in range(centering_iterations):
+        for i in range(3):
+            dot_prod = torch.sum(atom_pos * atom_cell[:, i], dim=-1)
+            offset_step = (dot_prod / cell_norm[:, i]).floor()
+            atom_offset[:, i] += offset_step.long()
+            atom_pos = atom_pos - offset_step[:, None] * atom_cell[:, i]
 
     # Before computing the pairwise distances between atoms, first create a list of atom indices to compare for the entire batch
     num_atoms_per_image = data.natoms
@@ -637,6 +651,9 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
         unit_cell = unit_cell.view(-1, 3)
 
     edge_index = torch.stack((index2, index1))
+
+    # Correct by the atom offset to ensure consistency with data.pos
+    unit_cell += atom_offset[edge_index[1]] - atom_offset[edge_index[0]]
 
     return edge_index, unit_cell, num_neighbors_image
 
