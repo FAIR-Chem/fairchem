@@ -198,7 +198,7 @@ class TorchCalc:
 
     def update_graph(self, atoms):
         edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
-            atoms, 6, 50, atoms.pos.device
+            atoms, 6, 50
         )
         atoms.edge_index = edge_index
         atoms.cell_offsets = cell_offsets

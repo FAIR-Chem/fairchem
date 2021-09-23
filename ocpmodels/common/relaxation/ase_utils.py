@@ -105,6 +105,7 @@ class OCPCalculator(Calculator):
             slurm=config.get("slurm", {}),
             local_rank=config.get("local_rank", 0),
             is_debug=config.get("is_debug", True),
+            cpu=True,
         )
 
         if checkpoint is not None:
