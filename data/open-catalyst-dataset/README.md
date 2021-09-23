@@ -69,11 +69,11 @@ We generated around 2.5M adsorbate+catalyst inputs which were then deduplicated 
 
 Bulk database that is a dict where keys are the number of elements (1-3), and values are lists of bulks, for use case #1 above where we randomly sample a bulk given the number of elements:
 
-* The latest version is https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/bulk_db_nelems_2021june21.pkl (MD5 checksum: `88c619ab7b8414487ff0c36b2bf0c646`)
+* The latest version is https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/bulk_db_nelems_2021sep20.pkl (MD5 checksum: `4bb119062019c4624987fa1ac92bd837`)
 
-Flat bulk database (all ~11k bulks in one list), for use cases #2 and #3 above, where we want to retrieve bulks by their index: https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/bulk_db_flat_2021june21.pkl (MD5 checksum: `047801318a2ffefee742e8da048b5175`).
+Flat bulk database (all ~11k bulks in one list), for use cases #2 and #3 above, where we want to retrieve bulks by their index: https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/bulk_db_flat_2021sep20.pkl (MD5 checksum: `43df744a8366c25392e3072d445016b2`).
 
-* Corresponding mapping between indices and bulks (MPID and composition): https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/mapping_bulks_2021june21.txt
+* Corresponding mapping between indices and bulks (MPID and composition): https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/mapping_bulks_2021sep20.txt
 
 **Adsorbates**
 
@@ -83,7 +83,7 @@ The latest version is https://dl.fbaipublicfiles.com/opencatalystproject/data/in
 
 **Precomputed surfaces**
 
-To speed up surface sampling from a chosen bulk material we precomputed surface enumerations. These can be found here: https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/precomputed_surfaces_2021june21.tar.gz (5.5GB, MD5 checksum: `055d2e502cf7a78c64e078aeb021bf3b`)
+To speed up surface sampling from a chosen bulk material we precomputed surface enumerations. These can be found here: https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/precomputed_surfaces_2021sep20.tar.gz (5.5GB, MD5 checksum: `f56fe10f380d945d46a1bfab136a4834`)
 
 Note that uncompressing this file will result in the folder `precomputed_surfaces_2021june11/`
 (uncompressed size 18GB). It has 11k pickle files, with filename format `<zero-based-index>.pkl`, one for each of the bulk materials based on the bulk indices.
