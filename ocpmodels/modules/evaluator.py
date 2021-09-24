@@ -5,9 +5,12 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import List, Optional, Set
+
 import numpy as np
 import torch
 
+from ocpmodels.datasets.embeddings import ATOMIC_NUMBER_LABELS
 
 """
 An evaluation module for use with the OCP dataset and suite of tasks. It should
@@ -67,14 +70,17 @@ class Evaluator:
     }
 
     def __init__(
-        self, task=None, atomic_number_map=None, atomic_number_metrics=None
+        self,
+        task=None,
+        atomwise_metric_atoms: Optional[List[int]] = None,
+        atomic_number_metrics: Optional[Set[str]] = None,
     ):
         """
         Creates a new Evaluator.
 
         Args:
             task: the current task, must be either s2ef, is2rs, or is2re.
-            atomic_number_map: a dictionary mapping atomic numbers to atomic symbols. if an atomic number is not in the map, we do not track atom-wise metrics for that atom.
+            atomwise_metric_atoms: a list of atomic numbers that should be considered for atom-wise metrics.
             atomic_number_metrics: a set of metrics that should be tracked atom-wise.
         """
         assert task in ["s2ef", "is2rs", "is2re"]
@@ -82,7 +88,12 @@ class Evaluator:
         self.metric_fn = self.task_metrics[task]
 
         self.atomic_number_map = (
-            atomic_number_map if atomic_number_map is not None else {}
+            {
+                atomic_number: ATOMIC_NUMBER_LABELS[atomic_number]
+                for atomic_number in atomwise_metric_atoms
+            }
+            if atomwise_metric_atoms is not None
+            else {}
         )
         self.atomic_number_metrics = (
             atomic_number_metrics

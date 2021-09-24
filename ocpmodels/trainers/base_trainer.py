@@ -197,7 +197,7 @@ class BaseTrainer(ABC):
 
         self.evaluator = Evaluator(
             task=name,
-            atomic_number_map=self.config["task"].get(
+            atomwise_metric_atoms=self.config["task"].get(
                 "atomwise_metric_atoms", None
             ),
             atomic_number_metrics=self.config["task"].get(

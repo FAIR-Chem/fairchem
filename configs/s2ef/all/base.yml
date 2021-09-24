@@ -21,8 +21,4 @@ task:
   grad_input: atomic forces
   train_on_free_atoms: True
   eval_on_free_atoms: True
-  atomwise_metric_atoms:
-    1: H
-    6: C
-    7: N
-    8: O
+  atomwise_metric_atoms: [1, 6, 7, 8]
