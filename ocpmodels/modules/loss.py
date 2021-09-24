@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 
+from ocpmodels.common import distutils
+
 
 class L2MAELoss(nn.Module):
     def __init__(self, reduction="mean"):
@@ -94,3 +96,25 @@ def get_loss(loss_name, loss_kwargs):
         return CosineLoss(**loss_kwargs)
     else:
         raise NotImplementedError(f"Unknown loss function name: {loss_name}")
+
+
+class DDPLoss(nn.Module):
+    def __init__(self, loss_fn, reduction="mean"):
+        super().__init__()
+        self.loss_fn = loss_fn
+        self.loss_fn.reduction = "sum"
+        self.reduction = reduction
+        assert reduction in ["mean", "sum"]
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor):
+        loss = self.loss_fn(input, target)
+        if self.reduction == "mean":
+            num_samples = input.shape[0]
+            num_samples = distutils.all_reduce(
+                num_samples, device=input.device
+            )
+            # Multiply by world size since gradients are averaged
+            # across DDP replicas
+            return loss * distutils.get_world_size() / num_samples
+        else:
+            return loss
