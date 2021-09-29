@@ -100,8 +100,19 @@ We provide a Python pickle file containing information about the slab and adsorb
 * `shift`: c-direction shift used to determine cutoff for the surface (c-direction is following the nomenclature from Pymatgen)
 * `top`: boolean indicating whether the chosen surface was at the top or bottom of the originally enumerated surface
 * `adsorption_site`: A tuple of 3-tuples containing the Cartesian coordinates of each binding adsorbate atom
+* `class`: integer indicating the class of materials the system's slab is part of, where:
+  * 0 - intermetallics
+  * 1 - metalloids
+  * 2 - non-metals
+  * 3 - halides
+* `anomaly`: integer indicating possible anomalies (based off general heuristics, not to be taken as perfect classifications), where:
+  * 0 - no anomaly
+  * 1 - adsorbate dissociation
+  * 2 - adsorbate desorption
+  * 3 - surface reconstruction
+  * 4 - incorrect CHCOH placement, appears to be CHCO with a lone, uninteracting, H far off in the unit cell   
 
-Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: `71705204c12f8710ff43e71fbc6ba29b`)
+Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: `01c879067a05b4288055a1fdf821e068`)
 
 An example entry is
 
@@ -114,8 +125,9 @@ An example entry is
   'miller_index': (2, 0, 1),
   'shift': 0.145,
   'top': True,
-  'adsorption_site': ((4.5, 12.85, 16.13),)}
-
+  'adsorption_site': ((4.5, 12.85, 16.13),),
+  'class': 1,
+  'anomaly': 0}
 ```
 
 ### Adsorbate-catalyst system to catalyst system mapping information
