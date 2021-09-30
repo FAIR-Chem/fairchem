@@ -342,6 +342,8 @@ class BaseTrainer(ABC):
             self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
         if "ema" in checkpoint and checkpoint["ema"] is not None:
             self.ema.load_state_dict(checkpoint["ema"])
+        else:
+            self.ema = None
 
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
