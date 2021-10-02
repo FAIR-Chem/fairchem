@@ -83,6 +83,7 @@ class ForcesTrainer(BaseTrainer):
         local_rank=0,
         amp=False,
         cpu=False,
+        ocp_calc=False,
         slurm={},
     ):
         super().__init__(
@@ -104,6 +105,7 @@ class ForcesTrainer(BaseTrainer):
             amp=amp,
             cpu=cpu,
             name="s2ef",
+            ocp_calc=ocp_calc,
             slurm=slurm,
         )
 
@@ -116,7 +118,7 @@ class ForcesTrainer(BaseTrainer):
         )
         if self.config["task"]["dataset"] == "trajectory_lmdb":
             self.train_loader = self.val_loader = self.test_loader = None
-            if self.config.get("dataset", None):
+            if self.config.get("dataset", None) and not self.ocp_calc:
                 self.train_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(self.config["dataset"])
@@ -130,7 +132,7 @@ class ForcesTrainer(BaseTrainer):
                     self.train_sampler,
                 )
 
-            if self.config.get("val_dataset", None):
+            if self.config.get("val_dataset", None) and not self.ocp_calc:
                 self.val_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(self.config["val_dataset"])
@@ -145,7 +147,7 @@ class ForcesTrainer(BaseTrainer):
                     self.val_dataset,
                     self.val_sampler,
                 )
-            if self.config.get("test_dataset", None):
+            if self.config.get("test_dataset", None) and not self.ocp_calc:
                 self.test_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(self.config["test_dataset"])
@@ -161,7 +163,7 @@ class ForcesTrainer(BaseTrainer):
                     self.test_sampler,
                 )
 
-        if "relax_dataset" in self.config["task"]:
+        if "relax_dataset" in self.config["task"] and not self.ocp_calc:
             assert os.path.isfile(self.config["task"]["relax_dataset"]["src"])
 
             self.relax_dataset = registry.get_dataset_class(
