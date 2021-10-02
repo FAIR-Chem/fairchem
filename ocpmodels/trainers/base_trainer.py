@@ -68,12 +68,13 @@ class BaseTrainer(ABC):
         cpu=False,
         name="base_trainer",
         slurm={},
+        ocp_calc=False,
     ):
         self.name = name
         self.cpu = cpu
         self.epoch = 0
         self.step = 0
-
+        self.ocp_calc = ocp_calc
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
         else:

@@ -79,6 +79,7 @@ class EnergyTrainer(BaseTrainer):
         local_rank=0,
         amp=False,
         cpu=False,
+        ocp_calc=False,
         slurm={},
     ):
         super().__init__(
@@ -100,6 +101,7 @@ class EnergyTrainer(BaseTrainer):
             amp=amp,
             cpu=cpu,
             name="is2re",
+            ocp_calc=False,
             slurm=slurm,
         )
 
@@ -118,7 +120,7 @@ class EnergyTrainer(BaseTrainer):
         self.val_loader = self.test_loader = self.train_loader = None
         self.val_sampler = self.test_sampler = self.train_sampler = None
 
-        if self.config.get("dataset", None):
+        if self.config.get("dataset", None) and not self.ocp_calc:
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["dataset"])
@@ -132,7 +134,7 @@ class EnergyTrainer(BaseTrainer):
                 self.train_sampler,
             )
 
-        if self.config.get("val_dataset", None):
+        if self.config.get("val_dataset", None) and not self.ocp_calc:
             self.val_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["val_dataset"])
@@ -147,7 +149,7 @@ class EnergyTrainer(BaseTrainer):
                 self.val_dataset,
                 self.val_sampler,
             )
-        if self.config.get("test_dataset", None):
+        if self.config.get("test_dataset", None) and not self.ocp_calc:
             self.test_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(self.config["test_dataset"])
