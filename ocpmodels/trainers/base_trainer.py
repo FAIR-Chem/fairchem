@@ -337,6 +337,7 @@ class BaseTrainer(ABC):
             new_dict = {
                 f"module.{k}": v for k, v in checkpoint["state_dict"].items()
             }
+            self.model.load_state_dict(new_dict)
         else:
             self.model.load_state_dict(checkpoint["state_dict"])
 
