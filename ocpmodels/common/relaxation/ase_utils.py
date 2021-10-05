@@ -94,7 +94,9 @@ class OCPCalculator(Calculator):
             config["dataset"] = config["dataset"][0]
         else:
             # Loads the config from the checkpoint directly
-            config = torch.load(checkpoint)["config"]
+            config = torch.load(checkpoint, map_location=torch.device("cpu"))[
+                "config"
+            ]
 
             # Load the trainer based on the dataset used
             if config["task"]["dataset"] == "trajectory_lmdb":
