@@ -65,7 +65,7 @@ class OCPCalculator(Calculator):
     implemented_properties = ["energy", "forces"]
 
     def __init__(
-        self, config_yml, checkpoint=None, cutoff=6, max_neighbors=50
+        self, config_yml=None, checkpoint=None, cutoff=6, max_neighbors=50
     ):
         """
         OCP-ASE Calculator
@@ -84,22 +84,44 @@ class OCPCalculator(Calculator):
         setup_logging()
         Calculator.__init__(self)
 
-        config = yaml.safe_load(open(config_yml, "r"))
+        # Either the config path or the checkpoint path needs to be provided
+        assert config_yml or checkpoint is not None
+
+        if config_yml is not None:
+            config = yaml.safe_load(open(config_yml, "r"))
+        else:
+            # Loads the config from the checkpoint directly
+            config = torch.load(checkpoint)["config"]
+
+            # Load the trainer based on the dataset used
+            if config["task"]["dataset"] == "trajectory_lmdb":
+                config["trainer"] = "forces"
+            else:
+                config["trainer"] = "energy"
+
+            config["model_attributes"]["name"] = config.pop("model")
+            config["model"] = config["model_attributes"]
+
         if "includes" in config:
             for include in config["includes"]:
                 include_config = yaml.safe_load(open(include, "r"))
                 config.update(include_config)
-
         # Save config so obj can be transported over network (pkl)
         self.config = copy.deepcopy(config)
         self.config["checkpoint"] = checkpoint
+
+        if "normalizer" not in config:
+            del config["dataset"]["src"]
+            del config["val_dataset"]
+            config["normalizer"] = config["dataset"]
 
         self.trainer = registry.get_trainer_class(
             config.get("trainer", "simple")
         )(
             task=config["task"],
             model=config["model"],
-            dataset=config["dataset"],
+            dataset=None,
+            normalizer=config["normalizer"],
             optimizer=config["optim"],
             identifier="",
             slurm=config.get("slurm", {}),
@@ -118,9 +140,6 @@ class OCPCalculator(Calculator):
             r_forces=False,
             r_distances=False,
         )
-
-    def train(self):
-        self.trainer.train()
 
     def load_checkpoint(self, checkpoint_path):
         """
