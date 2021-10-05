@@ -89,6 +89,9 @@ class OCPCalculator(Calculator):
 
         if config_yml is not None:
             config = yaml.safe_load(open(config_yml, "r"))
+
+            # Only keeps the train data that might have normalizer values
+            config["dataset"] = config["dataset"][0]
         else:
             # Loads the config from the checkpoint directly
             config = torch.load(checkpoint)["config"]
@@ -112,7 +115,6 @@ class OCPCalculator(Calculator):
 
         if "normalizer" not in config:
             del config["dataset"]["src"]
-            del config["val_dataset"]
             config["normalizer"] = config["dataset"]
 
         self.trainer = registry.get_trainer_class(
