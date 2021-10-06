@@ -43,8 +43,7 @@ S2EF_COUNTS = {
 }
 
 
-def get_data(task, split, del_intmd_files):
-    datadir = os.path.join(os.path.dirname(ocpmodels.__path__[0]), "data")
+def get_data(datadir, task, split, del_intmd_files):
     os.makedirs(datadir, exist_ok=True)
 
     if task == "s2ef" and split is None:
@@ -59,13 +58,16 @@ def get_data(task, split, del_intmd_files):
     elif task == "is2re":
         download_link = DOWNLOAD_LINKS[task]
 
-    os.system(f"wget {download_link}")
-    filename = os.path.basename(download_link)
+    os.system(f"wget {download_link} -P {datadir}")
+    filename = os.path.join(datadir, os.path.basename(download_link))
     logging.info("Extracting contents...")
-    os.system(f"tar -xf {filename}")
-    dirname = filename.split(".")[0]
+    os.system(f"tar -xvf {filename} -C {datadir}")
+    dirname = os.path.join(
+        datadir,
+        os.path.basename(filename).split(".")[0],
+    )
     if task == "s2ef" and split != "test":
-        compressed_dir = os.path.join(dirname, dirname)
+        compressed_dir = os.path.join(dirname, os.path.basename(dirname))
         if split in ["200k", "2M", "20M", "all", "rattled", "md"]:
             output_path = os.path.join(datadir, task, split, "train")
         else:
@@ -152,6 +154,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ref-energy", action="store_true", help="Subtract reference energies"
     )
+    parser.add_argument(
+        "--data-path",
+        type=str,
+        default=os.path.join(os.path.dirname(ocpmodels.__path__[0]), "data"),
+        help="Specify path to save dataset. Defaults to 'ocpmodels/data'",
+    )
 
     args, _ = parser.parse_known_args()
-    get_data(task=args.task, split=args.split, del_intmd_files=not args.keep)
+    get_data(
+        datadir=args.data_path,
+        task=args.task,
+        split=args.split,
+        del_intmd_files=not args.keep,
+    )
