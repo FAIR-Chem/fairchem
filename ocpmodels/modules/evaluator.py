@@ -89,7 +89,9 @@ class Evaluator:
 
         self.atomic_number_map = (
             {
-                atomic_number: ATOMIC_NUMBER_LABELS[atomic_number]
+                atomic_number: ATOMIC_NUMBER_LABELS.get(
+                    atomic_number, str(atomic_number)
+                )
                 for atomic_number in atomwise_metric_atoms
             }
             if atomwise_metric_atoms is not None
@@ -101,8 +103,19 @@ class Evaluator:
             else self.atomic_number_tasks[self.task]
         )
 
-    def _eval_metric_fn(self, fn, prediction, target, metrics, fn_prefix=None):
+    def _eval_metric_fn(
+        self,
+        fn,
+        prediction,
+        target,
+        metrics,
+        fn_prefix=None,
+        numel: Optional[torch.Tensor] = None,
+    ):
         res = eval(fn)(prediction, target)
+        if numel is not None:
+            res["numel"] = numel
+
         # for atomwise metrics, we add a prefix to the metric name (e.g., "atomwise_19_forces_mae")
         fn_metric_name = f"{fn_prefix}{fn}" if fn_prefix else fn
         return self.update(fn_metric_name, res, metrics)
@@ -125,16 +138,12 @@ class Evaluator:
             # we make copies of the dicts so we don't modify the original used for non-atomwise metrics.
             # this is because we're modifying the values of these dicts to ignore irrelevant atoms (for each iteration).
             prediction_copy = {**prediction}
-            prediction_copy[metric_key] = prediction_copy[metric_key][mask]
+            prediction_copy[metric_key] = prediction_copy[metric_key].clone()
+            prediction_copy[metric_key][~mask] = 0
 
             target_copy = {**target}
-            target_copy[metric_key] = target_copy[metric_key][mask]
-
-            if (
-                prediction_copy[metric_key].numel() == 0
-                or target_copy[metric_key].numel() == 0
-            ):
-                continue
+            target_copy[metric_key] = target_copy[metric_key].clone()
+            target_copy[metric_key][~mask] = 0
 
             metrics = self._eval_metric_fn(
                 fn,
@@ -142,6 +151,7 @@ class Evaluator:
                 target_copy,
                 metrics,
                 fn_prefix=f"atomwise_{self.atomic_number_map[atomic_number]}_",
+                numel=mask.sum(),
             )
 
         return metrics
