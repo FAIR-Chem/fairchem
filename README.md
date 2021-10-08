@@ -116,6 +116,8 @@ For S2EF test, run the script as:
 python scripts/download_data.py --task s2ef --split test
 ```
 
+To download and process the dataset in a directory other than your local `ocp/data` folder, add the following command line argument `--data-path`. NOTE - the baseline [configs](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs) expects the data to be found in `ocp/data`, make sure you symlink your directory or modify the paths in the configs accordingly.
+
 
 ## Train and evaluate models
 
