@@ -115,6 +115,7 @@ class Evaluator:
         res = eval(fn)(prediction, target)
         if numel is not None:
             res["numel"] = numel
+            res["metric"] = res["total"] / res["numel"]
 
         # for atomwise metrics, we add a prefix to the metric name (e.g., "atomwise_19_forces_mae")
         fn_metric_name = f"{fn_prefix}{fn}" if fn_prefix else fn
@@ -151,7 +152,7 @@ class Evaluator:
                 target_copy,
                 metrics,
                 fn_prefix=f"atomwise_{self.atomic_number_map[atomic_number]}_",
-                numel=mask.sum(),
+                numel=mask.sum().item() * 3,
             )
 
         return metrics
