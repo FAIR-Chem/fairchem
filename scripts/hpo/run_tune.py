@@ -14,7 +14,7 @@ from ocpmodels.common.utils import build_config, setup_imports
 def ocp_trainable(config, checkpoint_dir=None):
     setup_imports()
     # trainer defaults are changed to run HPO
-    trainer = registry.get_trainer_class(config.get("trainer", "simple"))(
+    trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
         task=config["task"],
         model=config["model"],
         dataset=config["dataset"],

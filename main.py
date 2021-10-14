@@ -40,7 +40,7 @@ class Runner(submitit.helpers.Checkpointable):
         try:
             setup_imports()
             self.trainer = registry.get_trainer_class(
-                config.get("trainer", "simple")
+                config.get("trainer", "energy")
             )(
                 task=config["task"],
                 model=config["model"],
