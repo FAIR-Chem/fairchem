@@ -95,7 +95,7 @@ class OCPCalculator(Calculator):
         self.config["checkpoint"] = checkpoint
 
         self.trainer = registry.get_trainer_class(
-            config.get("trainer", "simple")
+            config.get("trainer", "energy")
         )(
             task=config["task"],
             model=config["model"],
