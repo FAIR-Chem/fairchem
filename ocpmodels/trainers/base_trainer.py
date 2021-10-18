@@ -333,6 +333,11 @@ class BaseTrainer(ABC):
             # since Python 3.6 and officially ordered since Python 3.7
             new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
             self.model.load_state_dict(new_dict)
+        elif distutils.initialized() and first_key.split(".")[1] != "module":
+            new_dict = {
+                f"module.{k}": v for k, v in checkpoint["state_dict"].items()
+            }
+            self.model.load_state_dict(new_dict)
         else:
             self.model.load_state_dict(checkpoint["state_dict"])
 
