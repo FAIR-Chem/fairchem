@@ -17,7 +17,7 @@ def ocp_trainable(config, checkpoint_dir=None):
     # update config for PBT learning rate
     config["optim"].update(lr_initial=config["lr"])
     # trainer defaults are changed to run HPO
-    trainer = registry.get_trainer_class(config.get("trainer", "simple"))(
+    trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
         task=config["task"],
         model=config["model"],
         dataset=config["dataset"],
