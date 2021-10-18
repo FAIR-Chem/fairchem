@@ -20,11 +20,11 @@ import sys
 import torch
 from tqdm import trange
 
-from ocpmodels.models.gemnet.layers.scaling import AutomaticFit
-from ocpmodels.models.gemnet.utils import write_json
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import build_config, setup_imports, setup_logging
+from ocpmodels.models.gemnet.layers.scaling import AutomaticFit
+from ocpmodels.models.gemnet.utils import write_json
 
 if __name__ == "__main__":
     setup_logging()
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     AutomaticFit.set2fitmode()
 
-    trainer = registry.get_trainer_class(config.get("trainer", "simple"))(
+    trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
         task=config["task"],
         model=config["model"],
         dataset=config["dataset"],
