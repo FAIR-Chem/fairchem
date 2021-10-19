@@ -16,7 +16,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
-from ocpmodels.datasets.embeddings import KHOT_EMBEDDINGS
+from ocpmodels.datasets.embeddings import KHOT_EMBEDDINGS, QMOF_KHOT_EMBEDDINGS
 from ocpmodels.models.base import BaseModel
 
 
@@ -66,6 +66,7 @@ class CGCNN(BaseModel):
         otf_graph=False,
         cutoff=6.0,
         num_gaussians=50,
+        embeddings="khot",
     ):
         super(CGCNN, self).__init__(num_atoms, bond_feat_dim, num_targets)
         self.regress_forces = regress_forces
@@ -74,10 +75,18 @@ class CGCNN(BaseModel):
         self.otf_graph = otf_graph
 
         # Get CGCNN atom embeddings
-        self.embedding = torch.zeros(100, 92)
+        if embeddings == "khot":
+            embeddings = KHOT_EMBEDDINGS
+        elif embeddings == "qmof":
+            embeddings = QMOF_KHOT_EMBEDDINGS
+        else:
+            raise ValueError(
+                'embedding mnust be either "khot" for original CGCNN K-hot elemental embeddings or "qmof" for QMOF K-hot elemental embeddings'
+            )
+        self.embedding = torch.zeros(100, len(embeddings[1]))
         for i in range(100):
-            self.embedding[i] = torch.tensor(KHOT_EMBEDDINGS[i + 1])
-        self.embedding_fc = nn.Linear(92, atom_embedding_size)
+            self.embedding[i] = torch.tensor(embeddings[i + 1])
+        self.embedding_fc = nn.Linear(len(embeddings[1]), atom_embedding_size)
 
         self.convs = nn.ModuleList(
             [
