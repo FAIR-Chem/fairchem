@@ -484,6 +484,14 @@ class ForcesTrainer(BaseTrainer):
                                 val_metrics,
                             )
 
+                    if self.config["task"].get("eval_relaxations", False):
+                        if "relax_dataset" not in self.config["task"]:
+                            logging.warning(
+                                "Cannot evaluate relaxations, relax_dataset not specified"
+                            )
+                        else:
+                            self.run_relaxations()
+
                 if self.scheduler.scheduler_type == "ReduceLROnPlateau":
                     if self.step % eval_every == 0:
                         self.scheduler.step(
@@ -657,7 +665,8 @@ class ForcesTrainer(BaseTrainer):
             self.ema.store()
             self.ema.copy_to()
 
-        evaluator, metrics = Evaluator(task="is2rs"), {}
+        evaluator_is2rs, metrics_is2rs = Evaluator(task="is2rs"), {}
+        evaluator_is2re, metrics_is2re = Evaluator(task="is2re"), {}
 
         if hasattr(self.relax_dataset[0], "pos_relaxed") and hasattr(
             self.relax_dataset[0], "y_relaxed"
@@ -672,7 +681,7 @@ class ForcesTrainer(BaseTrainer):
         for i, batch in tqdm(
             enumerate(self.relax_loader), total=len(self.relax_loader)
         ):
-            if i >= self.config["task"].get("num_relaxations", 1e9):
+            if i >= self.config["task"].get("num_relaxation_batches", 1e9):
                 break
 
             relaxed_batch = ml_relax(
@@ -721,7 +730,16 @@ class ForcesTrainer(BaseTrainer):
                     "natoms": torch.LongTensor(natoms_free),
                 }
 
-                metrics = evaluator.eval(prediction, target, metrics)
+                metrics_is2rs = evaluator_is2rs.eval(
+                    prediction,
+                    target,
+                    metrics_is2rs,
+                )
+                metrics_is2re = evaluator_is2re.eval(
+                    {"energy": prediction["energy"]},
+                    {"energy": target["energy"]},
+                    metrics_is2re,
+                )
 
         if self.config["task"].get("write_pos", False):
             rank = distutils.get_rank()
@@ -773,33 +791,41 @@ class ForcesTrainer(BaseTrainer):
                 np.savez_compressed(full_path, **gather_results)
 
         if split == "val":
-            aggregated_metrics = {}
-            for k in metrics:
-                aggregated_metrics[k] = {
-                    "total": distutils.all_reduce(
-                        metrics[k]["total"], average=False, device=self.device
-                    ),
-                    "numel": distutils.all_reduce(
-                        metrics[k]["numel"], average=False, device=self.device
-                    ),
+            for task in ["is2rs", "is2re"]:
+                metrics = eval(f"metrics_{task}")
+                aggregated_metrics = {}
+                for k in metrics:
+                    aggregated_metrics[k] = {
+                        "total": distutils.all_reduce(
+                            metrics[k]["total"],
+                            average=False,
+                            device=self.device,
+                        ),
+                        "numel": distutils.all_reduce(
+                            metrics[k]["numel"],
+                            average=False,
+                            device=self.device,
+                        ),
+                    }
+                    aggregated_metrics[k]["metric"] = (
+                        aggregated_metrics[k]["total"]
+                        / aggregated_metrics[k]["numel"]
+                    )
+                metrics = aggregated_metrics
+
+                # Make plots.
+                log_dict = {
+                    f"{task}_{k}": metrics[k]["metric"] for k in metrics
                 }
-                aggregated_metrics[k]["metric"] = (
-                    aggregated_metrics[k]["total"]
-                    / aggregated_metrics[k]["numel"]
-                )
-            metrics = aggregated_metrics
+                if self.logger is not None:
+                    self.logger.log(
+                        log_dict,
+                        step=self.step,
+                        split=split,
+                    )
 
-            # Make plots.
-            log_dict = {k: metrics[k]["metric"] for k in metrics}
-            if self.logger is not None:
-                self.logger.log(
-                    log_dict,
-                    step=self.step,
-                    split=split,
-                )
-
-            if distutils.is_master():
-                logging.info(metrics)
+                if distutils.is_master():
+                    logging.info(metrics)
 
         if self.ema:
             self.ema.restore()
