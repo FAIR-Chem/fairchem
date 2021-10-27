@@ -15,7 +15,7 @@ from ase.io.trajectory import TrajectoryWriter
 from ase.calculators.vasp import Vasp2
 from ase.calculators.singlepoint import SinglePointCalculator as SPC
 
-
+# NOTE: this is the setting for slab and adslab
 VASP_FLAGS = {'ibrion': 2,
               'nsw': 200,
               'isif': 0,
@@ -31,6 +31,20 @@ VASP_FLAGS = {'ibrion': 2,
               'pp': 'PBE',
               'xc': 'PBE'}
 
+# This is the setting for bulk optmization.
+# Only use when expanding the bulk_db with other crystal structures.
+BULK_VASP_FLAGS = {'ibrion': 1,
+                   'nsw': 100,
+                   'isif': 7,
+                   'isym':0,
+                   'ediffg': 1e-08,
+                   'encut': 500.,
+                   'kpts': (10, 10, 10),
+                   'prec':'Accurate',
+                   'gga': 'RP',
+                   'pp': 'PBE',
+                   'lwave':False,
+                   'lcharg':False}
 
 def run_vasp(atoms, vasp_flags=None):
     '''
@@ -73,8 +87,9 @@ def _clean_up_inputs(atoms, vasp_flags):
         atoms.set_cell(atoms.cell[[1, 0, 2], :])
 
     # Calculate and set the k points
-    k_pts = calculate_surface_k_points(atoms)
-    vasp_flags['kpts'] = k_pts
+    if 'kpts' not in vasp_flags.keys():
+        k_pts = calculate_surface_k_points(atoms)
+        vasp_flags['kpts'] = k_pts
 
     return atoms, vasp_flags
 
