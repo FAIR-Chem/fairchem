@@ -17,7 +17,7 @@ from ase.calculators.singlepoint import SinglePointCalculator as SPC
 
 # NOTE: this is the setting for slab and adslab
 VASP_FLAGS = {'ibrion': 2,
-              'nsw': 200,
+              'nsw': 2000,
               'isif': 0,
               'isym': 0,
               'lreal': 'Auto',
