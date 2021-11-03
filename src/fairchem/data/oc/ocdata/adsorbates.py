@@ -1,7 +1,7 @@
 
 import numpy as np
 import pickle
-
+import os
 
 class Adsorbate():
     '''
@@ -36,7 +36,8 @@ class Adsorbate():
             smiles                   SMILES-formatted representation of the adsorbate
             bond_indices             list of integers indicating the indices of the atoms in
                                      the adsorbate that are meant to be bonded to the surface
-            adsorbate_sampling_str   Enum string specifying the sample, [index]/[total]
+            adsorbate_sampling_str   Enum string specifying the sample, [index]
+            adsorbate_db_fname       filename denoting which version was used to sample
         '''
         with open(adsorbate_database, 'rb') as f:
             inv_index = pickle.load(f)
@@ -46,5 +47,6 @@ class Adsorbate():
         else:
             element = np.random.choice(len(inv_index))
 
-        self.adsorbate_sampling_str = str(element) + "/" + str(len(inv_index))
+        self.adsorbate_sampling_str = str(element) 
         self.atoms, self.smiles, self.bond_indices = inv_index[element]
+        self.adsorbate_db_fname = os.path.basename(adsorbate_database)
