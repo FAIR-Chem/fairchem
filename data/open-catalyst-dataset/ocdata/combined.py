@@ -252,4 +252,5 @@ class Combined():
                                                self.surface.top,
                                                self.adsorbate.smiles,
                                                self.all_sites[ind]),
-                "adsorbed_bulk_samplingstr" : self.surface.overall_sampling_str + "_" + ads_sampling_str}
+                "adsorbed_bulk_samplingstr" : self.surface.overall_sampling_str + "_" + ads_sampling_str,
+                "adsorbed_db_version": self.adsorbate.adsorbate_db_fname}

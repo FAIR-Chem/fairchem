@@ -76,8 +76,9 @@ class Bulk():
                 assert isinstance(bulk_db[bulk_index], tuple)
 
                 self.bulk_atoms, self.mpid, self.bulk_sampling_str, self.index_of_bulk_atoms = bulk_db[bulk_index]
+                self.bulk_sampling_str = f'{self.index_of_bulk_atoms}'
                 self.n_elems = len(set(self.bulk_atoms.symbols)) # 1, 2, or 3
-                self.elem_sampling_str = f'{self.n_elems}/{max_elems}'
+                self.elem_sampling_str = f'{self.n_elems}' 
 
             else:
                 self.sample_n_elems()
