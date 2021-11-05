@@ -54,6 +54,7 @@ class Runner(submitit.helpers.Checkpointable):
                 print_every=config.get("print_every", 10),
                 seed=config.get("seed", 0),
                 logger=config.get("logger", "tensorboard"),
+                logger_project=config.get("logger_project", None),
                 local_rank=config["local_rank"],
                 amp=config.get("amp", False),
                 cpu=config.get("cpu", False),
