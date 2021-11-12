@@ -63,7 +63,6 @@ class BaseTrainer(ABC):
         print_every=100,
         seed=None,
         logger="tensorboard",
-        logger_project=None,
         local_rank=0,
         amp=False,
         cpu=False,
@@ -124,7 +123,6 @@ class BaseTrainer(ABC):
             "model_attributes": model,
             "optim": optimizer,
             "logger": logger,
-            "logger_project": logger_project,
             "amp": amp,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {

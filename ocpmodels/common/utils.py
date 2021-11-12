@@ -18,8 +18,10 @@ import os
 import sys
 import time
 from bisect import bisect
+from contextlib import contextmanager
 from itertools import product
 from pathlib import Path
+from typing import Optional
 
 import demjson
 import numpy as np
@@ -814,3 +816,27 @@ def setup_logging():
         handler_err.setLevel(logging.WARNING)
         handler_err.setFormatter(log_formatter)
         root.addHandler(handler_err)
+
+
+@contextmanager
+def patch_wandb_env(
+    logger: Optional[str],
+    logger_project: Optional[str],
+):
+    """
+    Context manager to set the environment variables for the logger
+    """
+    if logger != "wandb" or not logger_project:
+        yield
+        return
+
+    logging.info(f"Setting WANDB_PROJECT={logger_project}")
+    project = os.environ.get("WANDB_PROJECT")
+    if not project:
+        os.environ["WANDB_PROJECT"] = logger_project
+    yield
+
+    if not project:
+        del os.environ["WANDB_PROJECT"]
+    else:
+        os.environ["WANDB_PROJECT"] = project
