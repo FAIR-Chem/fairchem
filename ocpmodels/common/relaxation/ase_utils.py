@@ -154,6 +154,7 @@ class OCPCalculator(Calculator):
             r_energy=False,
             r_forces=False,
             r_distances=False,
+            r_edges=False,
         )
 
     def load_checkpoint(self, checkpoint_path):
