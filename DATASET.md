@@ -20,8 +20,8 @@ Each tarball has a README file containing details about file formats, number of 
 |---    |---    |---    |---    |---    |
 |Train  |   |   |   |   |
 |all    |225G   |1.1T   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_all.tar |12a7087bfd189a06ccbec9bc7add2bcd   |
-|20M    |34G    |165G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_20M.tar |953474cb93f0b08cdc523399f03f7c36   |
-|2M |3.4G   |17G    |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar  |863bc983245ffc0285305a1850e19cf7   |
+|20M    |34G    |165G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_20M.tar |863bc983245ffc0285305a1850e19cf7   |
+|2M |3.4G   |17G    |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar  |953474cb93f0b08cdc523399f03f7c36   |
 |200K   |344M   |1.7G   |https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar    |f8d0909c2623a393148435dede7d3a46   |
 |   |   |   |   |   |
 |Validation |   |   |   |   |
@@ -110,7 +110,7 @@ We provide a Python pickle file containing information about the slab and adsorb
   * 1 - adsorbate dissociation
   * 2 - adsorbate desorption
   * 3 - surface reconstruction
-  * 4 - incorrect CHCOH placement, appears to be CHCO with a lone, uninteracting, H far off in the unit cell   
+  * 4 - incorrect CHCOH placement, appears to be CHCO with a lone, uninteracting, H far off in the unit cell
 
 Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: `01c879067a05b4288055a1fdf821e068`)
 
