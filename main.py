@@ -20,7 +20,6 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     build_config,
     create_grid,
-    patch_wandb_env,
     save_experiment_log,
     setup_imports,
     setup_logging,
@@ -40,31 +39,27 @@ class Runner(submitit.helpers.Checkpointable):
 
         try:
             setup_imports()
-
-            logger = config.get("logger", "tensorboard")
-            logger_project = config.get("logger_project", None)
-            with patch_wandb_env(logger=logger, logger_project=logger_project):
-                self.trainer = registry.get_trainer_class(
-                    config.get("trainer", "energy")
-                )(
-                    task=config["task"],
-                    model=config["model"],
-                    dataset=config["dataset"],
-                    optimizer=config["optim"],
-                    identifier=config["identifier"],
-                    timestamp_id=config.get("timestamp_id", None),
-                    run_dir=config.get("run_dir", "./"),
-                    is_debug=config.get("is_debug", False),
-                    is_vis=config.get("is_vis", False),
-                    print_every=config.get("print_every", 10),
-                    seed=config.get("seed", 0),
-                    logger=logger,
-                    local_rank=config["local_rank"],
-                    amp=config.get("amp", False),
-                    cpu=config.get("cpu", False),
-                    slurm=config.get("slurm", {}),
-                )
-
+            self.trainer = registry.get_trainer_class(
+                config.get("trainer", "energy")
+            )(
+                task=config["task"],
+                model=config["model"],
+                dataset=config["dataset"],
+                optimizer=config["optim"],
+                identifier=config["identifier"],
+                timestamp_id=config.get("timestamp_id", None),
+                run_dir=config.get("run_dir", "./"),
+                is_debug=config.get("is_debug", False),
+                is_vis=config.get("is_vis", False),
+                print_every=config.get("print_every", 10),
+                seed=config.get("seed", 0),
+                logger=config.get("logger", "tensorboard"),
+                logger_project=config.get("logger_project", None),
+                local_rank=config["local_rank"],
+                amp=config.get("amp", False),
+                cpu=config.get("cpu", False),
+                slurm=config.get("slurm", {}),
+            )
             self.task = registry.get_task_class(config["mode"])(self.config)
             self.task.setup(self.trainer)
             start_time = time.time()

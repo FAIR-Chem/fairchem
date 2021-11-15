@@ -59,7 +59,7 @@ class WandBLogger(Logger):
             id=self.config["cmd"]["timestamp_id"],
             name=self.config["cmd"]["identifier"],
             dir=self.config["cmd"]["logs_dir"],
-            project=self.config.get("logger_project", None),
+            project=self.config["logger"].get("project", None),
             resume="allow",
         )
 

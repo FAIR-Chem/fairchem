@@ -225,9 +225,12 @@ class BaseTrainer(ABC):
             assert (
                 self.config["logger"] is not None
             ), "Specify logger in config"
-            self.logger = registry.get_logger_class(self.config["logger"])(
-                self.config
-            )
+
+            logger = self.config["logger"]
+            logger_name = logger if isinstance(logger, str) else logger["name"]
+            assert logger_name, "Specify logger name"
+
+            self.logger = registry.get_logger_class(logger_name)(self.config)
 
     def get_sampler(self, dataset, batch_size, shuffle):
         if "load_balancing" in self.config["optim"]:
