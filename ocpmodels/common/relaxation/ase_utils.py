@@ -73,7 +73,7 @@ class OCPCalculator(Calculator):
 
         Args:
             config_yml (str):
-                Path to yaml config.
+                Path to yaml config or could be a dictionary.
             checkpoint (str):
                 Path to trained checkpoint.
             cutoff (int):
@@ -89,16 +89,19 @@ class OCPCalculator(Calculator):
         assert config_yml or checkpoint is not None
 
         if config_yml is not None:
-            config = yaml.safe_load(open(config_yml, "r"))
+            if isinstance(config_yml, str):
+                config = yaml.safe_load(open(config_yml, "r"))
 
-            if "includes" in config:
-                for include in config["includes"]:
-                    # Change the path based on absolute path of config_yml
-                    path = os.path.join(
-                        config_yml.split("configs")[0], include
-                    )
-                    include_config = yaml.safe_load(open(path, "r"))
-                    config.update(include_config)
+                if "includes" in config:
+                    for include in config["includes"]:
+                        # Change the path based on absolute path of config_yml
+                        path = os.path.join(
+                            config_yml.split("configs")[0], include
+                        )
+                        include_config = yaml.safe_load(open(path, "r"))
+                        config.update(include_config)
+            else:
+                config = config_yml
             # Only keeps the train data that might have normalizer values
             config["dataset"] = config["dataset"][0]
         else:
@@ -115,6 +118,9 @@ class OCPCalculator(Calculator):
 
             config["model_attributes"]["name"] = config.pop("model")
             config["model"] = config["model_attributes"]
+
+        # Calculate the edge indices on the fly
+        config["model"]["otf_graph"] = True
 
         # Save config so obj can be transported over network (pkl)
         self.config = copy.deepcopy(config)
@@ -148,6 +154,7 @@ class OCPCalculator(Calculator):
             r_energy=False,
             r_forces=False,
             r_distances=False,
+            r_edges=False,
         )
 
     def load_checkpoint(self, checkpoint_path):
