@@ -173,7 +173,7 @@ class OCPCalculator(Calculator):
     def calculate(self, atoms, properties, system_changes):
         Calculator.calculate(self, atoms, properties, system_changes)
         data_object = self.a2g.convert(atoms)
-        batch = data_list_collater([data_object])
+        batch = data_list_collater([data_object], otf_graph=True)
 
         predictions = self.trainer.predict(
             batch, per_image=False, disable_tqdm=True
