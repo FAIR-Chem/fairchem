@@ -117,6 +117,7 @@ class BaseTrainer(ABC):
         except Exception:
             commit_hash = None
 
+        logger_name = logger if isinstance(logger, str) else logger["name"]
         self.config = {
             "task": task,
             "model": model.pop("name"),
@@ -138,7 +139,7 @@ class BaseTrainer(ABC):
                     run_dir, "results", self.timestamp_id
                 ),
                 "logs_dir": os.path.join(
-                    run_dir, "logs", logger, self.timestamp_id
+                    run_dir, "logs", logger_name, self.timestamp_id
                 ),
             },
             "slurm": slurm,
