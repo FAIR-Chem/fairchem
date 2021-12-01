@@ -117,6 +117,7 @@ class BaseTrainer(ABC):
         except Exception:
             commit_hash = None
 
+        logger_name = logger if isinstance(logger, str) else logger["name"]
         self.config = {
             "task": task,
             "model": model.pop("name"),
@@ -138,7 +139,7 @@ class BaseTrainer(ABC):
                     run_dir, "results", self.timestamp_id
                 ),
                 "logs_dir": os.path.join(
-                    run_dir, "logs", logger, self.timestamp_id
+                    run_dir, "logs", logger_name, self.timestamp_id
                 ),
             },
             "slurm": slurm,
@@ -225,9 +226,12 @@ class BaseTrainer(ABC):
             assert (
                 self.config["logger"] is not None
             ), "Specify logger in config"
-            self.logger = registry.get_logger_class(self.config["logger"])(
-                self.config
-            )
+
+            logger = self.config["logger"]
+            logger_name = logger if isinstance(logger, str) else logger["name"]
+            assert logger_name, "Specify logger name"
+
+            self.logger = registry.get_logger_class(logger_name)(self.config)
 
     def get_sampler(self, dataset, batch_size, shuffle):
         if "load_balancing" in self.config["optim"]:
