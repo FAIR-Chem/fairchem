@@ -23,7 +23,9 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 |DimeNet++	|2M     |https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_2M.pt	|0.0595	|0.01%	|
 |DimeNet++	|20M    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_20M.pt	|0.0511	|0.06%	|
 |DimeNet++	|All    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_all.pt	|0.0444	|0.12%	|
+|SpinConv	|2M    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_12/s2ef/spinconv_force_centric_2M.pt	|0.0329	|0.18%	|
 |SpinConv	|All    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/spinconv_force_centric_all.pt	|0.0267	|1.02%	|
+|GemNet-dT	|2M    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_12/s2ef/gemnet_t_direct_h512_2M.pt	|0.0257	|1.10%	|
 |GemNet-dT	|All    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/gemnet_t_direct_h512_all.pt	|0.0211	|2.21%	|
 
 ## S2EF models: optimized for force only
