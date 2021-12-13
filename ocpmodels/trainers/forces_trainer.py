@@ -7,7 +7,9 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
+import pathlib
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -658,6 +660,14 @@ class ForcesTrainer(BaseTrainer):
         metrics = evaluator.eval(out, target, prev_metrics=metrics)
         return metrics
 
+    def _check_traj_files(self, batch):
+        if "traj_dir" not in self.config["task"]["relax_opt"]:
+            return False
+
+        traj_dir = Path(self.config["task"]["relax_opt"]["traj_dir"])
+        traj_files = [traj_dir / f"{id}.traj" for id in batch[0].sid.tolist()]
+        return all(fl.exists() for fl in traj_files)
+
     def run_relaxations(self, split="val"):
         logging.info("Running ML-relaxations")
         self.model.eval()
@@ -683,6 +693,11 @@ class ForcesTrainer(BaseTrainer):
         ):
             if i >= self.config["task"].get("num_relaxation_batches", 1e9):
                 break
+
+            # If all traj files already exist, then skip this batch
+            if self._check_traj_files(batch):
+                logging.info(f"Skipping batch: {batch[0].sid.tolist()}")
+                continue
 
             relaxed_batch = ml_relax(
                 batch=batch,
