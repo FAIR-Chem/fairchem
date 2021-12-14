@@ -7,7 +7,9 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
+import pathlib
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -18,7 +20,7 @@ from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import plot_histogram
+from ocpmodels.common.utils import check_traj_files, plot_histogram
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -683,6 +685,13 @@ class ForcesTrainer(BaseTrainer):
         ):
             if i >= self.config["task"].get("num_relaxation_batches", 1e9):
                 break
+
+            # If all traj files already exist, then skip this batch
+            if check_traj_files(
+                batch, self.config["task"]["relax_opt"].get("traj_dir", None)
+            ):
+                logging.info(f"Skipping batch: {batch[0].sid.tolist()}")
+                continue
 
             relaxed_batch = ml_relax(
                 batch=batch,
