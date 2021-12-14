@@ -814,3 +814,11 @@ def setup_logging():
         handler_err.setLevel(logging.WARNING)
         handler_err.setFormatter(log_formatter)
         root.addHandler(handler_err)
+
+
+def check_traj_files(batch, traj_dir):
+    if traj_dir is None:
+        return False
+    traj_dir = Path(traj_dir)
+    traj_files = [traj_dir / f"{id}.traj" for id in batch[0].sid.tolist()]
+    return all(fl.exists() for fl in traj_files)
