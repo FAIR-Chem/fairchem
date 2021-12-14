@@ -121,8 +121,8 @@ class LBFGS:
                 iteration, update_mask, f0, fmax
             )
             converged = torch.all(torch.logical_not(update_mask))
-            # GPU memory usage as per nvidia-smi seems to gradually build up as
-            # batches are processed. This releases unoccupied cached memory.
+        # GPU memory usage as per nvidia-smi seems to gradually build up as
+        # batches are processed. This releases unoccupied cached memory.
         torch.cuda.empty_cache()
 
         if trajectories is not None:

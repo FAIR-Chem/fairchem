@@ -20,7 +20,7 @@ from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import plot_histogram
+from ocpmodels.common.utils import check_traj_files, plot_histogram
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -660,14 +660,6 @@ class ForcesTrainer(BaseTrainer):
         metrics = evaluator.eval(out, target, prev_metrics=metrics)
         return metrics
 
-    def _check_traj_files(self, batch):
-        if "traj_dir" not in self.config["task"]["relax_opt"]:
-            return False
-
-        traj_dir = Path(self.config["task"]["relax_opt"]["traj_dir"])
-        traj_files = [traj_dir / f"{id}.traj" for id in batch[0].sid.tolist()]
-        return all(fl.exists() for fl in traj_files)
-
     def run_relaxations(self, split="val"):
         logging.info("Running ML-relaxations")
         self.model.eval()
@@ -695,7 +687,9 @@ class ForcesTrainer(BaseTrainer):
                 break
 
             # If all traj files already exist, then skip this batch
-            if self._check_traj_files(batch):
+            if check_traj_files(
+                batch, self.config["task"]["relax_opt"].get("traj_dir", None)
+            ):
                 logging.info(f"Skipping batch: {batch[0].sid.tolist()}")
                 continue
 
