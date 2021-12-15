@@ -278,6 +278,7 @@ class BaseTrainer(ABC):
         if self.config["task"]["dataset"] in [
             "trajectory_lmdb",
             "single_point_lmdb",
+            "universal_lmdb",
         ]:
             bond_feat_dim = self.config["model_attributes"].get(
                 "num_gaussians", 50

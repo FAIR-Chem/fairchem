@@ -104,9 +104,10 @@ class EnergyTrainer(BaseTrainer):
         )
 
     def load_task(self):
-        assert (
-            self.config["task"]["dataset"] == "single_point_lmdb"
-        ), "EnergyTrainer requires single_point_lmdb dataset"
+        assert self.config["task"]["dataset"] in [
+            "single_point_lmdb",
+            "universal_lmdb",
+        ], "EnergyTrainer requires single_point_lmdb or universal_lmdb dataset"
 
         logging.info(f"Loading dataset: {self.config['task']['dataset']}")
 
