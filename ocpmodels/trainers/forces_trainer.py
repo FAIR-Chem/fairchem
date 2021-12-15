@@ -116,7 +116,10 @@ class ForcesTrainer(BaseTrainer):
             0 if self.cpu else 1,
             self.config["model_attributes"].get("otf_graph", False),
         )
-        if self.config["task"]["dataset"] == "trajectory_lmdb":
+        if self.config["task"]["dataset"] in [
+            "trajectory_lmdb",
+            "universal_lmdb",
+        ]:
             self.train_loader = self.val_loader = self.test_loader = None
             if self.config.get("dataset", None):
                 self.train_dataset = registry.get_dataset_class(
