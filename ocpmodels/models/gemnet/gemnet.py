@@ -426,16 +426,16 @@ class GemNetT(torch.nn.Module):
     def generate_interaction_graph(self, data):
         num_atoms = data.atomic_numbers.size(0)
 
-        if self.otf_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, self.max_neighbors
-            )
-        else:
-            edge_index = data.edge_index
-            cell_offsets = data.cell_offsets
-            neighbors = data.neighbors
-
         if self.use_pbc:
+            if self.otf_graph:
+                edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                    data, self.cutoff, self.max_neighbors
+                )
+            else:
+                edge_index = data.edge_index
+                cell_offsets = data.cell_offsets
+                neighbors = data.neighbors
+
             # Switch the indices, so the second one becomes the target index,
             # over which we can efficiently aggregate.
             out = get_pbc_distances(
@@ -455,8 +455,12 @@ class GemNetT(torch.nn.Module):
             V_st = -out["distance_vec"] / D_st[:, None]
             # offsets_ca = -out["offsets"]  # a - c + offset
         else:
+            self.otf_graph = True
             edge_index = radius_graph(
-                data.pos, r=self.cutoff, batch=data.batch
+                data.pos,
+                r=self.cutoff,
+                batch=data.batch,
+                max_num_neighbors=self.max_neighbors,
             )
             j, i = edge_index
             distance_vec = data.pos[j] - data.pos[i]
