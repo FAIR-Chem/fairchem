@@ -816,6 +816,23 @@ def setup_logging():
         root.addHandler(handler_err)
 
 
+def compute_neighbors(data, edge_index):
+    # Get number of neighbors
+    # segment_coo assumes sorted index
+    ones = edge_index[1].new_ones(1).expand_as(edge_index[1])
+    num_neighbors = segment_coo(
+        ones, edge_index[1], dim_size=data.natoms.sum()
+    )
+
+    # Get number of neighbors per image
+    image_indptr = torch.zeros(
+        data.natoms.shape[0] + 1, device=data.pos.device, dtype=torch.long
+    )
+    image_indptr[1:] = torch.cumsum(data.natoms, dim=0)
+    neighbors = segment_csr(num_neighbors, image_indptr)
+    return neighbors
+
+
 def check_traj_files(batch, traj_dir):
     if traj_dir is None:
         return False

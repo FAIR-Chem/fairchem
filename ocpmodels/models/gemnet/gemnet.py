@@ -9,11 +9,13 @@ from typing import Optional
 
 import numpy as np
 import torch
+from torch_geometric.nn import radius_graph
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
+    compute_neighbors,
     conditional_grad,
     get_pbc_distances,
     radius_graph_pbc,
@@ -127,6 +129,7 @@ class GemNetT(torch.nn.Module):
         cbf: dict = {"name": "spherical_harmonics"},
         extensive: bool = True,
         otf_graph: bool = False,
+        use_pbc: bool = True,
         output_init: str = "HeOrthogonal",
         activation: str = "swish",
         scale_file: Optional[str] = None,
@@ -145,6 +148,7 @@ class GemNetT(torch.nn.Module):
 
         self.regress_forces = regress_forces
         self.otf_graph = otf_graph
+        self.use_pbc = use_pbc
 
         AutomaticFit.reset()  # make sure that queue is empty (avoid potential error)
 
@@ -422,33 +426,51 @@ class GemNetT(torch.nn.Module):
     def generate_interaction_graph(self, data):
         num_atoms = data.atomic_numbers.size(0)
 
-        if self.otf_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, self.max_neighbors
+        if self.use_pbc:
+            if self.otf_graph:
+                edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                    data, self.cutoff, self.max_neighbors
+                )
+            else:
+                edge_index = data.edge_index
+                cell_offsets = data.cell_offsets
+                neighbors = data.neighbors
+
+            # Switch the indices, so the second one becomes the target index,
+            # over which we can efficiently aggregate.
+            out = get_pbc_distances(
+                data.pos,
+                edge_index,
+                data.cell,
+                cell_offsets,
+                neighbors,
+                return_offsets=True,
+                return_distance_vec=True,
             )
+
+            edge_index = out["edge_index"]
+            D_st = out["distances"]
+            # These vectors actually point in the opposite direction.
+            # But we want to use col as idx_t for efficient aggregation.
+            V_st = -out["distance_vec"] / D_st[:, None]
+            # offsets_ca = -out["offsets"]  # a - c + offset
         else:
-            edge_index = data.edge_index
-            cell_offsets = data.cell_offsets
-            neighbors = data.neighbors
+            self.otf_graph = True
+            edge_index = radius_graph(
+                data.pos,
+                r=self.cutoff,
+                batch=data.batch,
+                max_num_neighbors=self.max_neighbors,
+            )
+            j, i = edge_index
+            distance_vec = data.pos[j] - data.pos[i]
 
-        # Switch the indices, so the second one becomes the target index,
-        # over which we can efficiently aggregate.
-        out = get_pbc_distances(
-            data.pos,
-            edge_index,
-            data.cell,
-            cell_offsets,
-            neighbors,
-            return_offsets=True,
-            return_distance_vec=True,
-        )
-
-        edge_index = out["edge_index"]
-        D_st = out["distances"]
-        # These vectors actually point in the opposite direction.
-        # But we want to use col as idx_t for efficient aggregation.
-        V_st = -out["distance_vec"] / D_st[:, None]
-        # offsets_ca = -out["offsets"]  # a - c + offset
+            D_st = distance_vec.norm(dim=-1)
+            V_st = -distance_vec / D_st[:, None]
+            cell_offsets = torch.zeros(
+                edge_index.shape[1], 3, device=data.pos.device
+            )
+            neighbors = compute_neighbors(data, edge_index)
 
         # Mask interaction edges if required
         if self.otf_graph or np.isclose(self.cutoff, 6):
