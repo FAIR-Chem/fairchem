@@ -86,6 +86,7 @@ class ForcesTrainer(BaseTrainer):
         amp=False,
         cpu=False,
         slurm={},
+        noddp=False,
     ):
         super().__init__(
             task=task,
@@ -107,6 +108,7 @@ class ForcesTrainer(BaseTrainer):
             cpu=cpu,
             name="s2ef",
             slurm=slurm,
+            noddp=noddp,
         )
 
     def load_task(self):
