@@ -1,6 +1,6 @@
 ### Tutorials
 
-As part of the [NeurIPS 2021 Climate Change AI Workshop](https://www.climatechange.ai/papers/neurips2021/79), a comprehensive, interactive Google-Colab tutorial notebook can be found [here](https://colab.research.google.com/drive/1oGZcrakB4Pbj8Xq74lSvcRDUHw9L-Dh5#scrollTo=E_qIKf8erkfC). This notebook is designed for those new to OC20 and interested in how to get started. Topics include:
+As part of the [NeurIPS 2021 Climate Change AI Workshop](https://www.climatechange.ai/papers/neurips2021/79), a comprehensive, interactive Google-Colab tutorial notebook can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/tutorials_01_11/tutorials/CCAI_OCP_Tutorial.ipynb). This notebook is designed for those new to OC20 and interested in how to get started. Topics include:
   * Background
   * Software Requirements
   * Dataset overview & Visualization
