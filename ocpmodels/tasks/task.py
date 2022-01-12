@@ -78,7 +78,7 @@ class ValidateTask(BaseTask):
         assert (
             self.trainer.val_loader is not None
         ), "Val dataset is required for making predictions"
-        # assert self.config["checkpoint"]
+        assert self.config["checkpoint"]
         self.trainer.validate(
             split="val",
             disable_tqdm=self.config.get("hide_eval_progressbar", False),
