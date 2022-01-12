@@ -38,7 +38,11 @@ class Runner(submitit.helpers.Checkpointable):
             distutils.setup(config)
 
         try:
-            setup_imports()
+            setup_imports(
+                skip_experimental_imports=config.get(
+                    "skip_experimental_imports", None
+                )
+            )
             self.trainer = registry.get_trainer_class(
                 config.get("trainer", "energy")
             )(
