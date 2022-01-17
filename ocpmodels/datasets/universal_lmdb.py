@@ -23,6 +23,8 @@ from ocpmodels.common.registry import registry
 
 
 @registry.register_dataset("universal_lmdb")
+@registry.register_dataset("single_point_lmdb")
+@registry.register_dataset("trajectory_lmdb")
 class UniversalLmdbDataset(Dataset):
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
