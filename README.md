@@ -132,14 +132,9 @@ Numbers (in papers, etc.) should be reported from the evaluation server.
 
 Pretrained model weights accompanying [our paper](https://arxiv.org/abs/2010.09990) are available [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md).
 
-### Tutorials
+## Tutorials
 
-Interactive tutorial notebooks can be found [here](https://github.com/Open-Catalyst-Project/ocp/tree/master/docs/source/tutorials) to help familirize oneself with various components of the repo:
-
-- [Data visualization](https://github.com/Open-Catalyst-Project/ocp/blob/tutorials/docs/source/tutorials/data_visualization.ipynb) - understanding the raw data and its contents.
-- [Data preprocessing](https://github.com/Open-Catalyst-Project/ocp/blob/tutorials/docs/source/tutorials/data_preprocessing.ipynb) - preprocessing raw ASE atoms objects to OCP graph Data objects.
-- [LMDB dataset creation](https://github.com/Open-Catalyst-Project/ocp/blob/tutorials/docs/source/tutorials/lmdb_dataset_creation.ipynb) - creating your own OCP-compatible LMDB datasets from ASE-compatible Atoms objects.
-- [S2EF training example](https://github.com/Open-Catalyst-Project/ocp/blob/tutorials/docs/source/tutorials/train_s2ef_example.ipynb) - training a SchNet S2EF model, loading a trained model, and making predictions.
+Interactive tutorial notebooks can be found [here](https://github.com/Open-Catalyst-Project/ocp/tree/master/tutorials) to help familirize oneself with various components of the repo.
 
 ## Discussion
 
