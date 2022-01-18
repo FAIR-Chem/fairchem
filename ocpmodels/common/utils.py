@@ -396,6 +396,7 @@ def build_config(args, args_override):
     config["distributed_port"] = args.distributed_port
     config["world_size"] = args.num_nodes * args.num_gpus
     config["distributed_backend"] = args.distributed_backend
+    config["mp_gpus"] = args.mp_gpus
 
     return config
 

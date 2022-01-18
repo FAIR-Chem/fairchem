@@ -55,7 +55,7 @@ class WandBLogger(Logger):
     def __init__(self, config):
         super().__init__(config)
         project = (
-            self.config["logger"].get("project", None)
+            self.config["logger"].get("project", "big")
             if isinstance(self.config["logger"], dict)
             else None
         )

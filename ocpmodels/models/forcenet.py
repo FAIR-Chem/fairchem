@@ -88,6 +88,7 @@ class InteractionBlock(MessagePassing):
                 if self.basis_type == "rawcat"
                 else 3 * hidden_channels
             )
+        print(in_features, mlp_basis_dim, hidden_channels)
 
         if depth_mlp_edge > 0:
             mlp_edge = [torch.nn.Linear(in_features, hidden_channels)]
@@ -399,6 +400,7 @@ class ForceNet(BaseModel):
         # process interaction blocks
         self.interactions = torch.nn.ModuleList()
         for _ in range(num_interactions):
+            print(hidden_channels, self.basis_fun.out_dim, depth_mlp_edge, depth_mlp_node, self.activation_str)
             block = InteractionBlock(
                 hidden_channels,
                 self.basis_fun.out_dim,

@@ -14,7 +14,7 @@ import numpy as np
 import torch
 from torch.utils.data import BatchSampler, DistributedSampler, Sampler
 
-from ocpmodels.common import distutils
+from ocpmodels.common import distutils, mputils
 from ocpmodels.datasets import data_list_collater
 
 
@@ -230,6 +230,7 @@ class BalancedBatchSampler(Sampler):
                     idx_sizes, device=self.device
                 )
                 idx_sizes_all = torch.cat(idx_sizes_all, dim=-1).cpu()
+                idx_sizes_all = torch.unique(input=idx_sizes_all, dim=1)
                 idx_all = idx_sizes_all[0]
                 sizes_all = idx_sizes_all[1]
 

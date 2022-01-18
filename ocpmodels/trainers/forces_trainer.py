@@ -10,6 +10,7 @@ import os
 import pathlib
 from collections import defaultdict
 from pathlib import Path
+import time
 
 import numpy as np
 import torch
@@ -404,7 +405,14 @@ class ForcesTrainer(BaseTrainer):
             skip_steps = self.step % len(self.train_loader)
             train_loader_iter = iter(self.train_loader)
 
+            start = time.time()
+
             for i in range(skip_steps, len(self.train_loader)):
+                if i >= 2000:
+                    end = time.time()
+                    print("Time = ", end - start)
+                    exit()
+
                 self.epoch = epoch_int + (i + 1) / len(self.train_loader)
                 self.step = epoch_int * len(self.train_loader) + i + 1
                 self.model.train()

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import submitit
 
-from ocpmodels.common import distutils
+from ocpmodels.common import distutils, mputils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
@@ -36,6 +36,8 @@ class Runner(submitit.helpers.Checkpointable):
 
         if args.distributed:
             distutils.setup(config)
+            if config["mp_gpus"] > 1:
+                mputils.setup_mp(config["mp_gpus"], config["distributed_backend"])
 
         try:
             setup_imports()

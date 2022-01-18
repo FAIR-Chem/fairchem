@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 import ocpmodels
-from ocpmodels.common import distutils
+from ocpmodels.common import distutils, mputils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
     OCPDataParallel,
@@ -141,6 +141,7 @@ class BaseTrainer(ABC):
                 "logs_dir": os.path.join(
                     run_dir, "logs", logger_name, self.timestamp_id
                 ),
+                "mp_gpus": mputils.get_mp_world_size(),
             },
             "slurm": slurm,
         }
@@ -241,11 +242,18 @@ class BaseTrainer(ABC):
             balancing_mode = "atoms"
             force_balancing = False
 
+        if mputils.initialized():
+            num_replicas = mputils.get_dp_world_size()
+            rank = mputils.get_dp_rank()
+        else:
+            num_replicas = distutils.get_world_size()
+            rank = distutils.get_rank()
+
         sampler = BalancedBatchSampler(
             dataset,
             batch_size=batch_size,
-            num_replicas=distutils.get_world_size(),
-            rank=distutils.get_rank(),
+            num_replicas=num_replicas,
+            rank=rank,
             device=self.device,
             mode=balancing_mode,
             shuffle=shuffle,
@@ -313,7 +321,7 @@ class BaseTrainer(ABC):
         )
         if distutils.initialized():
             self.model = DistributedDataParallel(
-                self.model, device_ids=[self.device]
+                self.model, device_ids=[self.device]  #, find_unused_parameters=True
             )
 
     def load_checkpoint(self, checkpoint_path):

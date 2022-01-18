@@ -95,12 +95,12 @@ class Flags:
         )
         self.parser.add_argument(
             "--slurm-partition",
-            default="ocp",
+            default="ocp,learnfair,learnaccel",
             type=str,
             help="Name of partition",
         )
         self.parser.add_argument(
-            "--slurm-mem", default=80, type=int, help="Memory (in gigabytes)"
+            "--slurm-mem", default=400, type=int, help="Memory (in gigabytes)"
         )
         self.parser.add_argument(
             "--slurm-timeout", default=72, type=int, help="Time (in hours)"
@@ -110,6 +110,9 @@ class Flags:
         )
         self.parser.add_argument(
             "--distributed", action="store_true", help="Run with DDP"
+        )
+        self.parser.add_argument(
+            "--mp-gpus", type=int, default=1, help="Number of GPUs for Model Parallel"
         )
         self.parser.add_argument(
             "--cpu", action="store_true", help="Run CPU only training"

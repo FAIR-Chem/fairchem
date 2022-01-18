@@ -355,6 +355,7 @@ class GemNetT(torch.nn.Module):
         )
 
         # Count remaining edges per image
+        neighbors = neighbors.to(edge_index.device)
         batch_edge = torch.repeat_interleave(
             torch.arange(neighbors.size(0), device=edge_index.device),
             neighbors,
