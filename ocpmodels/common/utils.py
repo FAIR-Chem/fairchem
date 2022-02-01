@@ -13,7 +13,6 @@ import importlib
 import itertools
 import json
 import logging
-import math
 import os
 import sys
 import time
@@ -23,11 +22,23 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import torch_geometric
 import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import segment_coo, segment_csr
+
+
+def pyg2_data_transform(data: Data):
+    # if we're on the new pyg (2.0 or later), we need to convert the data to the new format
+    if torch_geometric.__version__ >= "2.0":
+        return Data(
+            **{k: v for k, v in data.__dict__.items() if v is not None}
+        )
+
+    return data
 
 
 def save_checkpoint(
