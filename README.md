@@ -34,7 +34,7 @@ Check that you can invoke `conda-merge` by running `conda-merge -h`.
 
 ### GPU machines
 
-Instructions are for PyTorch 1.8.1, CUDA 10.2 specifically.
+Instructions are for PyTorch 1.9.0, CUDA 10.2 specifically.
 
 First, check that CUDA is in your `PATH` and `LD_LIBRARY_PATH`, e.g.
 ```bash
@@ -61,6 +61,14 @@ Finally, install the pre-commit hooks:
 pre-commit install
 ```
 
+#### Ampere GPUs
+
+NVIDIA Ampere cards require a CUDA version >= 11.1 to function properly, modify the lines [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/env.gpu.yml#L6-L8) to
+```
+- cudatoolkit=11.1
+- -f https://pytorch-geometric.com/whl/torch-1.9.0+cu111.html
+```
+
 ### CPU-only machines
 
 Please skip the following if you completed the with-GPU installation from above.
@@ -80,7 +88,7 @@ Only run the following if installing on a CPU only machine running Mac OS X.
 ```
 conda env create -f env.common.yml
 conda activate ocp-models
-MACOSX_DEPLOYMENT_TARGET=10.9 CC=clang CXX=clang++ pip install torch-cluster torch-scatter torch-sparse torch-spline-conv -f https://pytorch-geometric.com/whl/torch-1.8.0+cpu.html
+MACOSX_DEPLOYMENT_TARGET=10.9 CC=clang CXX=clang++ pip install torch-cluster torch-scatter torch-sparse torch-spline-conv -f https://pytorch-geometric.com/whl/torch-1.9.0+cpu.html
 pip install -e .
 pre-commit install
 ```

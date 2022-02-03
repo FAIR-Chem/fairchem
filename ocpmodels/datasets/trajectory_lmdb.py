@@ -7,9 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 import bisect
 import logging
-import math
 import pickle
-import random
 from pathlib import Path
 
 import lmdb
@@ -18,8 +16,8 @@ import torch
 from torch.utils.data import Dataset
 from torch_geometric.data import Batch
 
-from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import pyg2_data_transform
 
 
 @registry.register_dataset("trajectory_lmdb")
@@ -75,7 +73,7 @@ class TrajectoryLmdbDataset(Dataset):
             .begin()
             .get(f"{self._keys[db_idx][el_idx]}".encode("ascii"))
         )
-        data_object = pickle.loads(datapoint_pickled)
+        data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
         if self.transform is not None:
             data_object = self.transform(data_object)
 

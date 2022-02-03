@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 """
 
 import errno
-import os
 import pickle
 from pathlib import Path
 
@@ -14,6 +13,7 @@ import lmdb
 from torch.utils.data import Dataset
 
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import pyg2_data_transform
 
 
 @registry.register_dataset("single_point_lmdb")
@@ -53,7 +53,7 @@ class SinglePointLmdbDataset(Dataset):
     def __getitem__(self, idx):
         # Return features.
         datapoint_pickled = self.env.begin().get(self._keys[idx])
-        data_object = pickle.loads(datapoint_pickled)
+        data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
         data_object = (
             data_object
             if self.transform is None
