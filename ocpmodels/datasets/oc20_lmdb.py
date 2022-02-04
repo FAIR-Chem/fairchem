@@ -22,10 +22,10 @@ from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 
 
-@registry.register_dataset("universal_lmdb")
+@registry.register_dataset("oc20_lmdb")
 @registry.register_dataset("single_point_lmdb")
 @registry.register_dataset("trajectory_lmdb")
-class UniversalLmdbDataset(Dataset):
+class OC20Dataset(Dataset):
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
 
@@ -39,7 +39,7 @@ class UniversalLmdbDataset(Dataset):
     """
 
     def __init__(self, config, transform=None):
-        super(UniversalLmdbDataset, self).__init__()
+        super(OC20Dataset, self).__init__()
         self.config = config
 
         self.path = Path(self.config["src"])

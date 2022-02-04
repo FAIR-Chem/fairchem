@@ -272,19 +272,11 @@ class BaseTrainer(ABC):
         if distutils.is_master():
             logging.info(f"Loading model: {self.config['model']}")
 
-        # TODO(abhshkdz): Eventually move towards computing features on-the-fly
-        # and remove dependence from `.edge_attr`.
+        # TODO: depreicated, remove.
         bond_feat_dim = None
-        if self.config["task"]["dataset"] in [
-            "trajectory_lmdb",
-            "single_point_lmdb",
-            "universal_lmdb",
-        ]:
-            bond_feat_dim = self.config["model_attributes"].get(
-                "num_gaussians", 50
-            )
-        else:
-            raise NotImplementedError
+        bond_feat_dim = self.config["model_attributes"].get(
+            "num_gaussians", 50
+        )
 
         loader = self.train_loader or self.val_loader or self.test_loader
         self.model = registry.get_model_class(self.config["model"])(

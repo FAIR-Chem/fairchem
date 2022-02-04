@@ -116,24 +116,20 @@ class ForcesTrainer(BaseTrainer):
             0 if self.cpu else 1,
             self.config["model_attributes"].get("otf_graph", False),
         )
-        if self.config["task"]["dataset"] in [
-            "trajectory_lmdb",
-            "universal_lmdb",
-        ]:
-            self.train_loader = self.val_loader = self.test_loader = None
-            if self.config.get("dataset", None):
-                self.train_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["dataset"])
-                self.train_sampler = self.get_sampler(
-                    self.train_dataset,
-                    self.config["optim"]["batch_size"],
-                    shuffle=True,
-                )
-                self.train_loader = self.get_dataloader(
-                    self.train_dataset,
-                    self.train_sampler,
-                )
+        self.train_loader = self.val_loader = self.test_loader = None
+        if self.config.get("dataset", None):
+            self.train_dataset = registry.get_dataset_class(
+                self.config["task"]["dataset"]
+            )(self.config["dataset"])
+            self.train_sampler = self.get_sampler(
+                self.train_dataset,
+                self.config["optim"]["batch_size"],
+                shuffle=True,
+            )
+            self.train_loader = self.get_dataloader(
+                self.train_dataset,
+                self.train_sampler,
+            )
 
             if self.config.get("val_dataset", None):
                 self.val_dataset = registry.get_dataset_class(
@@ -169,9 +165,9 @@ class ForcesTrainer(BaseTrainer):
         if "relax_dataset" in self.config["task"]:
             assert os.path.isfile(self.config["task"]["relax_dataset"]["src"])
 
-            self.relax_dataset = registry.get_dataset_class(
-                "single_point_lmdb"
-            )(self.config["task"]["relax_dataset"])
+            self.relax_dataset = registry.get_dataset_class("oc20_lmdb")(
+                self.config["task"]["relax_dataset"]
+            )
             self.relax_sampler = self.get_sampler(
                 self.relax_dataset,
                 self.config["optim"].get(
