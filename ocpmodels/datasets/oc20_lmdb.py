@@ -25,7 +25,7 @@ from ocpmodels.common.registry import registry
 @registry.register_dataset("oc20_lmdb")
 @registry.register_dataset("single_point_lmdb")
 @registry.register_dataset("trajectory_lmdb")
-class OC20Dataset(Dataset):
+class OC20LmdbDataset(Dataset):
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
 
@@ -39,7 +39,7 @@ class OC20Dataset(Dataset):
     """
 
     def __init__(self, config, transform=None):
-        super(OC20Dataset, self).__init__()
+        super(OC20LmdbDataset, self).__init__()
         self.config = config
 
         self.path = Path(self.config["src"])
@@ -123,3 +123,21 @@ class OC20Dataset(Dataset):
                 env.close()
         else:
             self.env.close()
+
+
+def data_list_collater(data_list, otf_graph=False):
+    batch = Batch.from_data_list(data_list)
+
+    if not otf_graph:
+        try:
+            n_neighbors = []
+            for i, data in enumerate(data_list):
+                n_index = data.edge_index[1, :]
+                n_neighbors.append(n_index.shape[0])
+            batch.neighbors = torch.tensor(n_neighbors)
+        except NotImplementedError:
+            logging.warning(
+                "LMDB does not contain edge index information, set otf_graph=True"
+            )
+
+    return batch
