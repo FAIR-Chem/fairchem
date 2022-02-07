@@ -25,7 +25,7 @@ from ocpmodels.common.registry import registry
 @registry.register_dataset("oc20_lmdb")
 @registry.register_dataset("single_point_lmdb")
 @registry.register_dataset("trajectory_lmdb")
-class OC20LmdbDataset(Dataset):
+class LmdbDataset(Dataset):
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
 
@@ -39,7 +39,7 @@ class OC20LmdbDataset(Dataset):
     """
 
     def __init__(self, config, transform=None):
-        super(OC20LmdbDataset, self).__init__()
+        super(LmdbDataset, self).__init__()
         self.config = config
 
         self.path = Path(self.config["src"])
