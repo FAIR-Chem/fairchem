@@ -126,7 +126,6 @@ class LmdbDataset(Dataset):
             self.env.close()
 
 
-# backwards
 class SinglePointLmdbDataset(LmdbDataset):
     def __init__(self, config, transform=None):
         super(SinglePointLmdbDataset, self).__init__(config, transform)
