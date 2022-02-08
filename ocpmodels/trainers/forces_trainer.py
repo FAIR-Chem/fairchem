@@ -163,8 +163,6 @@ class ForcesTrainer(BaseTrainer):
                 )
 
         if "relax_dataset" in self.config["task"]:
-            assert os.path.isfile(self.config["task"]["relax_dataset"]["src"])
-
             self.relax_dataset = registry.get_dataset_class("oc20_lmdb")(
                 self.config["task"]["relax_dataset"]
             )
