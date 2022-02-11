@@ -108,7 +108,7 @@ class ForcesTrainer(BaseTrainer):
         logging.info(f"Loading dataset: {self.config['task']['dataset']}")
 
         if "relax_dataset" in self.config["task"]:
-            self.relax_dataset = registry.get_dataset_class("oc20_lmdb")(
+            self.relax_dataset = registry.get_dataset_class("lmdb")(
                 self.config["task"]["relax_dataset"]
             )
             self.relax_sampler = self.get_sampler(
