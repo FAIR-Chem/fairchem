@@ -24,7 +24,7 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import pyg2_data_transform
 
 
-@registry.register_dataset("oc20_lmdb")
+@registry.register_dataset("lmdb")
 @registry.register_dataset("single_point_lmdb")
 @registry.register_dataset("trajectory_lmdb")
 class LmdbDataset(Dataset):
