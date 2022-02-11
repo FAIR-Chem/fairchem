@@ -59,7 +59,6 @@ class BaseTrainer(ABC):
         timestamp_id=None,
         run_dir=None,
         is_debug=False,
-        is_vis=False,
         is_hpo=False,
         print_every=100,
         seed=None,
@@ -178,7 +177,6 @@ class BaseTrainer(ABC):
             os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
         self.is_debug = is_debug
-        self.is_vis = is_vis
         self.is_hpo = is_hpo
 
         if self.is_hpo:

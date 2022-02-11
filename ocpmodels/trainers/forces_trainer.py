@@ -47,8 +47,6 @@ class ForcesTrainer(BaseTrainer):
             (default: :obj:`None`)
         is_debug (bool, optional): Run in debug mode.
             (default: :obj:`False`)
-        is_vis (bool, optional): Run in debug mode.
-            (default: :obj:`False`)
         is_hpo (bool, optional): Run hyperparameter optimization with Ray Tune.
             (default: :obj:`False`)
         print_every (int, optional): Frequency of printing logs.
@@ -76,7 +74,6 @@ class ForcesTrainer(BaseTrainer):
         timestamp_id=None,
         run_dir=None,
         is_debug=False,
-        is_vis=False,
         is_hpo=False,
         print_every=100,
         seed=None,
@@ -96,7 +93,6 @@ class ForcesTrainer(BaseTrainer):
             timestamp_id=timestamp_id,
             run_dir=run_dir,
             is_debug=is_debug,
-            is_vis=is_vis,
             is_hpo=is_hpo,
             print_every=print_every,
             seed=seed,
