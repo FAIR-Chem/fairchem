@@ -13,6 +13,7 @@ import numbers
 import random
 
 import torch
+import torch_geometric
 from torch_geometric.transforms import LinearTransformation
 
 
@@ -60,13 +61,23 @@ class RandomRotate(object):
         # LinearTransformation only rotates `.pos`; need to rotate `.cell` too.
         data_rotated = LinearTransformation(matrix)(data)
         if hasattr(data_rotated, "cell"):
-            data_rotated.cell = torch.matmul(data_rotated.cell, matrix)
+            if torch_geometric.__version__.startswith("2.0"):
+                data_rotated.cell = torch.matmul(data_rotated.cell, matrix.T)
+            else:
+                data_rotated.cell = torch.matmul(data_rotated.cell, matrix)
 
-        return (
-            data_rotated,
-            matrix,
-            torch.inverse(matrix),
-        )
+        if torch_geometric.__version__.startswith("2.0"):
+            return (
+                data_rotated,
+                matrix.T,
+                torch.inverse(matrix.T),
+            )
+        else:
+            return (
+                data_rotated,
+                matrix,
+                torch.inverse(matrix),
+            )
 
     def __repr__(self):
         return "{}({}, axis={})".format(
