@@ -13,6 +13,7 @@ import numbers
 import random
 
 import torch
+import torch_geometric
 from torch_geometric.transforms import LinearTransformation
 
 
@@ -57,8 +58,11 @@ class RandomRotate(object):
 
             matrix = torch.mm(torch.mm(m1, m2), m3)
 
-        # LinearTransformation only rotates `.pos`; need to rotate `.cell` too.
         data_rotated = LinearTransformation(matrix)(data)
+        if torch_geometric.__version__.startswith("2."):
+            matrix = matrix.T
+
+        # LinearTransformation only rotates `.pos`; need to rotate `.cell` too.
         if hasattr(data_rotated, "cell"):
             data_rotated.cell = torch.matmul(data_rotated.cell, matrix)
 
