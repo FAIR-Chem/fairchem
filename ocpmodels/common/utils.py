@@ -393,7 +393,6 @@ def build_config(args, args_override):
     config["seed"] = args.seed
     config["is_debug"] = args.debug
     config["run_dir"] = args.run_dir
-    config["is_vis"] = args.vis
     config["print_every"] = args.print_every
     config["amp"] = args.amp
     config["checkpoint"] = args.checkpoint
