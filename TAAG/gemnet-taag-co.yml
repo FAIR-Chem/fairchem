@@ -1,0 +1,77 @@
+trainer: energy
+
+dataset:
+  - src: /home/jovyan/shared-scratch/adeesh/data/CO/train/10k_is/
+    normalize_labels: True
+    target_mean: -0.7734066513250002
+    target_std: 0.6976271064683505
+    grad_target_mean: 0.0
+    grad_target_std: 0.6976271064683505
+  - src: /home/jovyan/shared-scratch/adeesh/data/CO/val/500_is/
+
+logger: wandb
+
+task:
+  dataset: lmdb
+  type: regression
+  train_on_position_vectors: True
+  train_on_free_atoms: True
+  strict_load: False
+
+model:
+  name: gemnet_t_taag
+  num_spherical: 7
+  num_radial: 128
+  num_blocks: 3
+  after_freeze_numblocks: 0
+  emb_size_atom: 512
+  emb_size_edge: 512
+  emb_size_trip: 64
+  emb_size_rbf: 16
+  emb_size_cbf: 16
+  emb_size_bil_trip: 64
+  num_before_skip: 1
+  num_after_skip: 2
+  num_concat: 1
+  num_atom: 3
+  cutoff: 6.0
+  max_neighbors: 50
+  rbf:
+    name: gaussian
+  envelope:
+    name: polynomial
+    exponent: 5
+  cbf:
+    name: spherical_harmonics
+  extensive: True
+  otf_graph: True
+  output_init: HeOrthogonal
+  activation: silu
+  scale_file: configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
+
+  regress_forces: False
+  direct_forces: False
+  freeze: True
+  after_freeze_numblocks: 0
+  attn_type: base
+  num_heads: 1
+  add_positional_embedding: False
+
+optim:
+  batch_size: 1
+  eval_batch_size: 4
+  num_workers: 2
+  lr_initial: 1.e-5
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True}
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.8
+  patience: 3
+  max_epochs: 10000
+  force_coefficient: 100
+  energy_coefficient: 1
+  ema_decay: 0.999
+  clip_grad_norm: 10
+  loss_energy: mae
+  loss_force: l2mae

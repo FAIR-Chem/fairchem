@@ -47,7 +47,7 @@ from ocpmodels.models.gemnet.utils import (
 
 
 @registry.register_model("gemnet_t_taag")
-class GemNetT(torch.nn.Module):
+class GemNetT_TAAG(torch.nn.Module):
     """
     GemNet-T, triplets-only variant of GemNet
 
@@ -141,7 +141,6 @@ class GemNetT(torch.nn.Module):
         num_atom: int,
         use_pbc: bool = True,
         regress_forces: bool = True,
-        regress_energy: bool = False,
         direct_forces: bool = False,
         cutoff: float = 6.0,
         max_neighbors: int = 50,
@@ -272,7 +271,7 @@ class GemNetT(torch.nn.Module):
                     output_init=output_init,
                     direct_forces=direct_forces,
                     scale_file=scale_file,
-                    final_out=self.final_out,
+                    attn_type=attn_type,
                     name=f"OutBlock_{i}",
                 )
             )
@@ -692,7 +691,7 @@ class GemNetT(torch.nn.Module):
             alpha = self.softmax(alpha)
 
             E_t = torch.bmm(alpha, E_all)
-            E_t = torch.sum(E_t, dim=1)
+            E_t = torch.sum(E_t, dim=0)
 
         elif self.attn_type == "multi":
 
@@ -853,7 +852,7 @@ class OutputBlock(AtomUpdateBlock):
 
     def reset_parameters(self):
         if self.output_init == "heorthogonal":
-            if self.final_out:
+            if self.attn_type == "base":
                 self.out_energy.reset_parameters(he_orthogonal_init)
             if self.direct_forces:
                 self.out_forces.reset_parameters(he_orthogonal_init)

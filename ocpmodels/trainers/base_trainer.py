@@ -397,24 +397,31 @@ class BaseTrainer(ABC):
         # if trained with ddp and want to load in non-ddp, modify keys from
         # module.module.. -> module..
         first_key = next(iter(checkpoint["state_dict"]))
+        strict = self.config["task"].get("strict_load", True)
         if not distutils.initialized() and first_key.split(".")[1] == "module":
             # No need for OrderedDict since dictionaries are technically ordered
             # since Python 3.6 and officially ordered since Python 3.7
             new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
-            self.model.load_state_dict(new_dict)
+            self.model.load_state_dict(new_dict, strict=strict)
         elif distutils.initialized() and first_key.split(".")[1] != "module":
             new_dict = {
                 f"module.{k}": v for k, v in checkpoint["state_dict"].items()
             }
-            self.model.load_state_dict(new_dict)
+            self.model.load_state_dict(new_dict, strict=strict)
         else:
-            self.model.load_state_dict(checkpoint["state_dict"])
-
-        if "optimizer" in checkpoint:
+            self.model.load_state_dict(checkpoint["state_dict"], strict=strict)
+        if (
+            "optimizer" in checkpoint
+            and not self.config["model_attributes"]["freeze"]
+        ):
             self.optimizer.load_state_dict(checkpoint["optimizer"])
         if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
             self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
-        if "ema" in checkpoint and checkpoint["ema"] is not None:
+        if (
+            "ema" in checkpoint
+            and checkpoint["ema"] is not None
+            and not self.config["model_attributes"]["freeze"]
+        ):
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
