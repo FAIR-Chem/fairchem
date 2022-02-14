@@ -51,11 +51,6 @@ class Flags:
             help="Directory to store checkpoint/log/result directory",
         )
         self.parser.add_argument(
-            "--vis",
-            action="store_true",
-            help="Whether to visualize a few extra things",
-        )
-        self.parser.add_argument(
             "--print-every",
             default=10,
             type=int,

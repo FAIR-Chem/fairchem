@@ -17,10 +17,9 @@ import torch_geometric
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
-from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import check_traj_files, plot_histogram
+from ocpmodels.common.utils import check_traj_files
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -47,8 +46,6 @@ class ForcesTrainer(BaseTrainer):
         run_dir (str, optional): Path to the run directory where logs are to be saved.
             (default: :obj:`None`)
         is_debug (bool, optional): Run in debug mode.
-            (default: :obj:`False`)
-        is_vis (bool, optional): Run in debug mode.
             (default: :obj:`False`)
         is_hpo (bool, optional): Run hyperparameter optimization with Ray Tune.
             (default: :obj:`False`)
@@ -77,7 +74,6 @@ class ForcesTrainer(BaseTrainer):
         timestamp_id=None,
         run_dir=None,
         is_debug=False,
-        is_vis=False,
         is_hpo=False,
         print_every=100,
         seed=None,
@@ -97,7 +93,6 @@ class ForcesTrainer(BaseTrainer):
             timestamp_id=timestamp_id,
             run_dir=run_dir,
             is_debug=is_debug,
-            is_vis=is_vis,
             is_hpo=is_hpo,
             print_every=print_every,
             seed=seed,
@@ -112,63 +107,10 @@ class ForcesTrainer(BaseTrainer):
     def load_task(self):
         logging.info(f"Loading dataset: {self.config['task']['dataset']}")
 
-        self.parallel_collater = ParallelCollater(
-            0 if self.cpu else 1,
-            self.config["model_attributes"].get("otf_graph", False),
-        )
-        if self.config["task"]["dataset"] == "trajectory_lmdb":
-            self.train_loader = self.val_loader = self.test_loader = None
-            if self.config.get("dataset", None):
-                self.train_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["dataset"])
-                self.train_sampler = self.get_sampler(
-                    self.train_dataset,
-                    self.config["optim"]["batch_size"],
-                    shuffle=True,
-                )
-                self.train_loader = self.get_dataloader(
-                    self.train_dataset,
-                    self.train_sampler,
-                )
-
-            if self.config.get("val_dataset", None):
-                self.val_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["val_dataset"])
-                self.val_sampler = self.get_sampler(
-                    self.val_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.val_loader = self.get_dataloader(
-                    self.val_dataset,
-                    self.val_sampler,
-                )
-            if self.config.get("test_dataset", None):
-                self.test_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["test_dataset"])
-                self.test_sampler = self.get_sampler(
-                    self.test_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.test_loader = self.get_dataloader(
-                    self.test_dataset,
-                    self.test_sampler,
-                )
-
         if "relax_dataset" in self.config["task"]:
-            assert os.path.isfile(self.config["task"]["relax_dataset"]["src"])
-
-            self.relax_dataset = registry.get_dataset_class(
-                "single_point_lmdb"
-            )(self.config["task"]["relax_dataset"])
+            self.relax_dataset = registry.get_dataset_class("lmdb")(
+                self.config["task"]["relax_dataset"]
+            )
             self.relax_sampler = self.get_sampler(
                 self.relax_dataset,
                 self.config["optim"].get(
@@ -182,24 +124,6 @@ class ForcesTrainer(BaseTrainer):
             )
 
         self.num_targets = 1
-
-        # Normalizer for the dataset.
-        # Compute mean, std of training set labels.
-        self.normalizers = {}
-        if self.normalizer.get("normalize_labels", False):
-            if "target_mean" in self.normalizer:
-                self.normalizers["target"] = Normalizer(
-                    mean=self.normalizer["target_mean"],
-                    std=self.normalizer["target_std"],
-                    device=self.device,
-                )
-            else:
-                self.normalizers["target"] = Normalizer(
-                    tensor=self.train_loader.dataset.data.y[
-                        self.train_loader.dataset.__indices__
-                    ],
-                    device=self.device,
-                )
 
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
@@ -219,34 +143,6 @@ class ForcesTrainer(BaseTrainer):
                         device=self.device,
                     )
                     self.normalizers["grad_target"].mean.fill_(0)
-
-        if (
-            self.is_vis
-            and self.config["task"]["dataset"] != "qm9"
-            and distutils.is_master()
-        ):
-            # Plot label distribution.
-            plots = [
-                plot_histogram(
-                    self.train_loader.dataset.data.y.tolist(),
-                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
-                    ylabel="# Examples",
-                    title="Split: train",
-                ),
-                plot_histogram(
-                    self.val_loader.dataset.data.y.tolist(),
-                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
-                    ylabel="# Examples",
-                    title="Split: val",
-                ),
-                plot_histogram(
-                    self.test_loader.dataset.data.y.tolist(),
-                    xlabel="{}/raw".format(self.config["task"]["labels"][0]),
-                    ylabel="# Examples",
-                    title="Split: test",
-                ),
-            ]
-            self.logger.log_plots(plots)
 
     # Takes in a new data source and generates predictions on it.
     @torch.no_grad()
