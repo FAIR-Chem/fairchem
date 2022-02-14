@@ -26,7 +26,7 @@ from ocpmodels.common.utils import (
     setup_imports,
     setup_logging,
 )
-from ocpmodels.datasets.trajectory_lmdb import data_list_collater
+from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
 

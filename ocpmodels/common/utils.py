@@ -114,7 +114,7 @@ def conditional_grad(dec):
     def decorator(func):
         def cls_method(self, *args, **kwargs):
             f = func
-            if self.regress_forces:
+            if self.regress_forces and not getattr(self, "direct_forces", 0):
                 f = dec(func)
             return f(self, *args, **kwargs)
 
@@ -393,7 +393,6 @@ def build_config(args, args_override):
     config["seed"] = args.seed
     config["is_debug"] = args.debug
     config["run_dir"] = args.run_dir
-    config["is_vis"] = args.vis
     config["print_every"] = args.print_every
     config["amp"] = args.amp
     config["checkpoint"] = args.checkpoint

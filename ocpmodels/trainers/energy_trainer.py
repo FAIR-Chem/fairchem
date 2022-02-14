@@ -15,7 +15,6 @@ import torch_geometric
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
-from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -41,8 +40,6 @@ class EnergyTrainer(BaseTrainer):
         run_dir (str, optional): Path to the run directory where logs are to be saved.
             (default: :obj:`None`)
         is_debug (bool, optional): Run in debug mode.
-            (default: :obj:`False`)
-        is_vis (bool, optional): Run in debug mode.
             (default: :obj:`False`)
         is_hpo (bool, optional): Run hyperparameter optimization with Ray Tune.
             (default: :obj:`False`)
@@ -71,7 +68,6 @@ class EnergyTrainer(BaseTrainer):
         timestamp_id=None,
         run_dir=None,
         is_debug=False,
-        is_vis=False,
         is_hpo=False,
         print_every=100,
         seed=None,
@@ -91,7 +87,6 @@ class EnergyTrainer(BaseTrainer):
             timestamp_id=timestamp_id,
             run_dir=run_dir,
             is_debug=is_debug,
-            is_vis=is_vis,
             is_hpo=is_hpo,
             print_every=print_every,
             seed=seed,
@@ -104,79 +99,8 @@ class EnergyTrainer(BaseTrainer):
         )
 
     def load_task(self):
-        assert (
-            self.config["task"]["dataset"] == "single_point_lmdb"
-        ), "EnergyTrainer requires single_point_lmdb dataset"
-
         logging.info(f"Loading dataset: {self.config['task']['dataset']}")
-
-        self.parallel_collater = ParallelCollater(
-            0 if self.cpu else 1,
-            self.config["model_attributes"].get("otf_graph", False),
-        )
-
-        self.val_loader = self.test_loader = self.train_loader = None
-        self.val_sampler = self.test_sampler = self.train_sampler = None
-
-        if self.config.get("dataset", None):
-            self.train_dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
-            )(self.config["dataset"])
-            self.train_sampler = self.get_sampler(
-                self.train_dataset,
-                self.config["optim"]["batch_size"],
-                shuffle=True,
-            )
-            self.train_loader = self.get_dataloader(
-                self.train_dataset,
-                self.train_sampler,
-            )
-
-        if self.config.get("val_dataset", None):
-            self.val_dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
-            )(self.config["val_dataset"])
-            self.val_sampler = self.get_sampler(
-                self.val_dataset,
-                self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
-                ),
-                shuffle=False,
-            )
-            self.val_loader = self.get_dataloader(
-                self.val_dataset,
-                self.val_sampler,
-            )
-        if self.config.get("test_dataset", None):
-            self.test_dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
-            )(self.config["test_dataset"])
-            self.test_sampler = self.get_sampler(
-                self.test_dataset,
-                self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
-                ),
-                shuffle=False,
-            )
-            self.test_loader = self.get_dataloader(
-                self.test_dataset,
-                self.test_sampler,
-            )
-
         self.num_targets = 1
-
-        # Normalizer for the dataset.
-        # Compute mean, std of training set labels.
-        self.normalizers = {}
-        if self.normalizer.get("normalize_labels", False):
-            if "target_mean" in self.normalizer:
-                self.normalizers["target"] = Normalizer(
-                    mean=self.normalizer["target_mean"],
-                    std=self.normalizer["target_std"],
-                    device=self.device,
-                )
-            else:
-                raise NotImplementedError
 
     @torch.no_grad()
     def predict(
