@@ -98,11 +98,11 @@ class LmdbDataset(Dataset):
             datapoint_pickled = self.env.begin().get(self._keys[idx])
             data_object = pickle.loads(datapoint_pickled)
 
-        if self.transform is not None:
-            data_object = self.transform(data_object)
-
         # make Data object compatible with PyG>=2.0
         data_object = pyg2_data_transform(data_object)
+
+        if self.transform is not None:
+            data_object = self.transform(data_object)
 
         return data_object
 
