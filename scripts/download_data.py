@@ -140,7 +140,7 @@ if __name__ == "__main__":
         "--split", type=str, help="Corresponding data split to download"
     )
     parser.add_argument(
-        "--keep",
+        "--delete",
         action="store_true",
         help="Keep intermediate directories and files upon data retrieval/processing",
     )
@@ -176,6 +176,6 @@ if __name__ == "__main__":
         datadir=args.data_path,
         task=args.task,
         split=args.split,
-        del_intmd_files=not args.keep,
+        del_intmd_files=args.delete,
         inputdir=args.input_path,
     )
