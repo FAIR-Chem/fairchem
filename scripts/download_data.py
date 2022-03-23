@@ -177,5 +177,5 @@ if __name__ == "__main__":
         task=args.task,
         split=args.split,
         del_intmd_files=not args.keep,
-        input_path=args.input_path,
+        inputdir=args.input_path,
     )
