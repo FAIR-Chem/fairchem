@@ -43,7 +43,7 @@ S2EF_COUNTS = {
 }
 
 
-def get_data(datadir, task, split, del_intmd_files):
+def get_data(datadir, task, split, del_intmd_files, inputdir):
     os.makedirs(datadir, exist_ok=True)
 
     if task == "s2ef" and split is None:
@@ -58,8 +58,13 @@ def get_data(datadir, task, split, del_intmd_files):
     elif task == "is2re":
         download_link = DOWNLOAD_LINKS[task]
 
-    os.system(f"wget {download_link} -P {datadir}")
-    filename = os.path.join(datadir, os.path.basename(download_link))
+    if inputdir is None:
+        os.system(f"wget {download_link} -P {datadir}")
+        filename = os.path.join(datadir, os.path.basename(download_link))
+    else:
+        assert os.path.exists(inputdir), f"{inputdir} input directory does not exist"
+        filename = os.path.join(inputdir, os.path.basename(download_link))
+
     logging.info("Extracting contents...")
     os.system(f"tar -xvf {filename} -C {datadir}")
     dirname = os.path.join(
@@ -160,6 +165,11 @@ if __name__ == "__main__":
         default=os.path.join(os.path.dirname(ocpmodels.__path__[0]), "data"),
         help="Specify path to save dataset. Defaults to 'ocpmodels/data'",
     )
+    parser.add_argument(
+        "--input-path",
+        type=str,
+        help="Specify path to pre-downloaded dataset. Defaults to None.",
+    )
 
     args, _ = parser.parse_known_args()
     get_data(
@@ -167,4 +177,5 @@ if __name__ == "__main__":
         task=args.task,
         split=args.split,
         del_intmd_files=not args.keep,
+        input_path=args.input_path,
     )
