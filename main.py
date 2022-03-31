@@ -39,9 +39,7 @@ class Runner(submitit.helpers.Checkpointable):
 
         try:
             setup_imports()
-            self.trainer = registry.get_trainer_class(
-                config.get("trainer", "energy")
-            )(
+            self.trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
                 task=config["task"],
                 model=config["model"],
                 dataset=config["dataset"],
@@ -87,9 +85,7 @@ if __name__ == "__main__":
     config = build_config(args, override_args)
 
     if args.submit:  # Run on cluster
-        slurm_add_params = config.get(
-            "slurm", None
-        )  # additional slurm arguments
+        slurm_add_params = config.get("slurm", None)  # additional slurm arguments
         if args.sweep_yml:  # Run grid search
             configs = create_grid(config, args.sweep_yml)
         else:
@@ -114,9 +110,7 @@ if __name__ == "__main__":
             config["slurm"] = copy.deepcopy(executor.parameters)
             config["slurm"]["folder"] = str(executor.folder)
         jobs = executor.map_array(Runner(), configs)
-        logging.info(
-            f"Submitted jobs: {', '.join([job.job_id for job in jobs])}"
-        )
+        logging.info(f"Submitted jobs: {', '.join([job.job_id for job in jobs])}")
         log_file = save_experiment_log(args, jobs, configs)
         logging.info(f"Experiment log saved to: {log_file}")
 
