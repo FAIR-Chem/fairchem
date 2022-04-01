@@ -50,7 +50,6 @@ class Runner(submitit.helpers.Checkpointable):
                 timestamp_id=config.get("timestamp_id", None),
                 run_dir=config.get("run_dir", "./"),
                 is_debug=config.get("is_debug", False),
-                is_vis=config.get("is_vis", False),
                 print_every=config.get("print_every", 10),
                 seed=config.get("seed", 0),
                 logger=config.get("logger", "tensorboard"),

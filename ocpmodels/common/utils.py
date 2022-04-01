@@ -13,22 +13,33 @@ import importlib
 import itertools
 import json
 import logging
-import math
 import os
 import sys
 import time
 from bisect import bisect
+from functools import wraps
 from itertools import product
 from pathlib import Path
 
-import demjson
 import numpy as np
 import torch
+import torch_geometric
 import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import segment_coo, segment_csr
+
+
+def pyg2_data_transform(data: Data):
+    # if we're on the new pyg (2.0 or later), we need to convert the data to the new format
+    if torch_geometric.__version__ >= "2.0":
+        return Data(
+            **{k: v for k, v in data.__dict__.items() if v is not None}
+        )
+
+    return data
 
 
 def save_checkpoint(
@@ -102,9 +113,10 @@ def conditional_grad(dec):
     "Decorator to enable/disable grad depending on whether force/energy predictions are being made"
     # Adapted from https://stackoverflow.com/questions/60907323/accessing-class-property-as-decorator-argument
     def decorator(func):
+        @wraps(func)
         def cls_method(self, *args, **kwargs):
             f = func
-            if self.regress_forces:
+            if self.regress_forces and not getattr(self, "direct_forces", 0):
                 f = dec(func)
             return f(self, *args, **kwargs)
 
@@ -383,7 +395,6 @@ def build_config(args, args_override):
     config["seed"] = args.seed
     config["is_debug"] = args.debug
     config["run_dir"] = args.run_dir
-    config["is_vis"] = args.vis
     config["print_every"] = args.print_every
     config["amp"] = args.amp
     config["checkpoint"] = args.checkpoint
