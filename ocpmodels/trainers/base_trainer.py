@@ -68,6 +68,7 @@ class BaseTrainer(ABC):
         cpu=False,
         name="base_trainer",
         slurm={},
+        noddp=False,
     ):
         self.name = name
         self.cpu = cpu
@@ -143,6 +144,7 @@ class BaseTrainer(ABC):
                 ),
             },
             "slurm": slurm,
+            "noddp": noddp,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp else None
@@ -376,7 +378,7 @@ class BaseTrainer(ABC):
             output_device=self.device,
             num_gpus=1 if not self.cpu else 0,
         )
-        if distutils.initialized():
+        if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(
                 self.model, device_ids=[self.device]
             )
@@ -397,7 +399,9 @@ class BaseTrainer(ABC):
         # if trained with ddp and want to load in non-ddp, modify keys from
         # module.module.. -> module..
         first_key = next(iter(checkpoint["state_dict"]))
-        if not distutils.initialized() and first_key.split(".")[1] == "module":
+        if (
+            not distutils.initialized() or self.config["noddp"]
+        ) and first_key.split(".")[1] == "module":
             # No need for OrderedDict since dictionaries are technically ordered
             # since Python 3.6 and officially ordered since Python 3.7
             new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
