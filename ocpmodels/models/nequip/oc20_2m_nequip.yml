@@ -1,0 +1,71 @@
+trainer: forces
+
+dataset:
+  - src: /checkpoint/ocp/train/2m/
+    normalize_labels: True
+    target_mean: -0.7554450631141663
+    target_std: 2.887317180633545
+    grad_target_mean: 0.0
+    grad_target_std: 2.887317180633545
+  - src: /checkpoint/ocp/val/id_30k/
+
+logger: wandb
+
+task:
+  dataset: trajectory_lmdb
+  description: "Regressing to energies and forces for DFT trajectories from OCP"
+  type: regression
+  metric: mae
+  primary_metric: forces_mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+
+model:
+  name: nequip
+  compile_model: False
+  num_basis: 8
+  cutoff: 6.0
+  irreps_edge_sh: 0e + 1o + 2e
+  conv_to_output_hidden_irreps_out: 16x0e
+  chemical_embedding_irreps_out: 512x0e
+  feature_irreps_hidden: 128x0o + 128x0e + 43x1o + 43x1e + 26x2o + 26x2e
+  BesselBasis_trainable: true
+  nonlinearity_type: gate
+  num_layers: 5
+  resnet: true
+  PolynomialCutoff_p: 6
+  invariant_layers: 3
+  invariant_neurons: 64
+  use_sc: true
+  regress_forces: True
+  use_pbc: True
+  nonlinearity_scalars:
+    e: silu
+    o: tanh
+  nonlinearity_gates:
+    e: silu
+    o: tanh
+
+optim:
+  batch_size: 4
+  eval_batch_size: 4
+  num_workers: 4
+  lr_initial: 5.e-3
+  max_epochs: 80
+  eval_every: 1000
+  load_balancing: atoms
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True, "weight_decay": 0.0}
+  ema_decay: 0.999
+  force_coefficient: 100
+  energy_coefficient: 1
+  scheduler: ReduceLROnPlateau
+  loss_energy: mae
+  loss_force: l2mae
+
+  patience: 3
+  factor: 0.8
+  mode: min
