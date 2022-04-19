@@ -1,3 +1,5 @@
+import logging
+
 import torch
 from torch.utils.data import DataLoader
 
@@ -54,6 +56,7 @@ class GraphromerEnergyTrainer(EnergyTrainer):
         super().__init__(*args, **kwargs)
 
         if self._pos_enabled:
+            logging.info("Relaxed position auxiliary task training enabled")
             self._pos_evaluator = Evaluator(task="is2rs")
             self._pos_evaluator.task_attributes["is2rs"] = ["positions"]
             self._pos_evaluator.task_metrics["is2rs"] = [
@@ -108,7 +111,7 @@ class GraphromerEnergyTrainer(EnergyTrainer):
         pos = torch.cat(
             [batch.deltapos.to(self.device) for batch in batch_list], dim=0
         )
-        if norm and self.normalizers.get("normalize_positions", False):
+        if norm and self.normalizer.get("normalize_positions", False):
             pos = self.normalizers["positions"].norm(pos)
         return pos
 
@@ -137,15 +140,12 @@ class GraphromerEnergyTrainer(EnergyTrainer):
 
         return loss
 
-    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
-        natoms = torch.cat(
-            [batch.natoms.to(self.device) for batch in batch_list], dim=0
-        )
+    def _compute_pos_metrics(self, out, batch_list, metrics={}):
+        if not self._pos_enabled:
+            return metrics
 
         target = {
-            "energy": self._get_energy_target(batch_list, norm=False),
             "positions": self._get_positions_target(batch_list, norm=False),
-            "natoms": natoms,
         }
 
         out["positions"] = _mask(out["positions"], mask=out["positions_mask"])
@@ -153,23 +153,33 @@ class GraphromerEnergyTrainer(EnergyTrainer):
             target["positions"], mask=out["positions_mask"]
         )
 
+        if self.normalizer.get("normalize_positions", False):
+            out["positions"] = self.normalizers["positions"].denorm(
+                out["positions"]
+            )
+
+        metrics = self._pos_evaluator.eval(
+            out,
+            target,
+            prev_metrics=metrics,
+        )
+        return metrics
+
+    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+        natoms = torch.cat(
+            [batch.natoms.to(self.device) for batch in batch_list], dim=0
+        )
+        target = {
+            "energy": self._get_energy_target(batch_list, norm=False),
+            "natoms": natoms,
+        }
         out["natoms"] = natoms
 
         if self.normalizer.get("normalize_labels", False):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
 
-        if self.normalizers.get("normalize_positions", False):
-            out["positions"] = self.normalizers["positions"].denorm(
-                out["positions"]
-            )
-
         metrics = evaluator.eval(out, target, prev_metrics=metrics)
-        if self._pos_enabled:
-            metrics = self._pos_evaluator.eval(
-                out,
-                target,
-                prev_metrics=metrics,
-            )
+        metrics = self._compute_pos_metrics(out, batch_list, metrics)
         metrics.update(
             {
                 "energy_coefficient": dict(
