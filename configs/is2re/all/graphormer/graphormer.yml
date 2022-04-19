@@ -1,0 +1,68 @@
+trainer: graphormer_energy
+
+dataset:
+    - src: data/is2re/all/train/data.lmdb
+      normalize_labels: True
+      target_mean: -1.525913953781128
+      target_std: 2.279365062713623
+
+      normalize_positions: True
+      positions_mean:
+          [0.1353900283575058, 0.06877671927213669, 0.08111362904310226]
+      positions_std: [1.7862379550933838, 1.78688645362854, 0.8023099899291992]
+
+    - src: data/is2re/all/val_id/data.lmdb
+
+logger: tensorboard
+
+task:
+    dataset: single_point_lmdb
+    description: "Relaxed state energy prediction from initial structure."
+    type: regression
+    metric: mae
+    labels:
+        - relaxed energy
+
+model:
+    name: graphormer
+    blocks: 4
+    layers: 12
+    embed_dim: 768
+    ffn_embed_dim: 768
+    attention_heads: 48
+    input_dropout: 0.0
+    dropout: 0.1
+    attention_dropout: 0.1
+    activation_dropout: 0.0
+    num_kernel: 128
+    enable_edge_types: True
+
+optim:
+    batch_size: 2
+    eval_batch_size: 2
+
+    eval_every: 5000
+    max_epochs: 9999
+    num_workers: 4
+    clip_grad_norm: 5
+
+    optimizer: Adam
+    lr_initial: 0.0003
+    optimizer_params:
+        eps: 1.0e-06
+        betas: [0.9, 0.98]
+
+    scheduler: PolynomialLRDecay
+    power: 1
+    end_lr: 0
+    max_steps: 1000000
+
+    force_coefficient: 10.0
+    force_coefficient_decay:
+        enabled: True
+        total_steps: 250_000
+        min_weight: 1.0
+    energy_coefficient: 1.0
+
+    loss_force: mae
+    loss_energy: mae

@@ -2,6 +2,7 @@ import inspect
 
 import torch.optim.lr_scheduler as lr_scheduler
 
+from ocpmodels.modules import schedulers as custom_lr_schedulers
 from ocpmodels.common.utils import warmup_lr_lambda
 
 
@@ -31,7 +32,14 @@ class LRScheduler:
             self.config["lr_lambda"] = scheduler_lambda_fn
 
         if self.scheduler_type != "Null":
-            self.scheduler = getattr(lr_scheduler, self.scheduler_type)
+            self.scheduler = getattr(
+                custom_lr_schedulers,
+                self.scheduler_type,
+                getattr(lr_scheduler, self.scheduler_type, None),
+            )
+            assert (
+                self.scheduler is not None
+            ), f"{self.scheduler_type} not found"
             scheduler_args = self.filter_kwargs(config)
             self.scheduler = self.scheduler(optimizer, **scheduler_args)
 
