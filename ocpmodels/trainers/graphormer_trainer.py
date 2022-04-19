@@ -15,9 +15,19 @@ def _mask(input: torch.Tensor, mask: torch.Tensor):
 
 @registry.register_trainer("graphormer_energy")
 class GraphromerEnergyTrainer(EnergyTrainer):
+    def load_loss(self):
+        loss_positions = self.config["optim"].get("loss_positions", None)
+        if loss_positions is not None:
+            self.config["optim"]["loss_force"] = loss_positions
+        return_value = super().load_loss()
+        self.loss_fn["positions"] = self.loss_fn.pop("force")
+        return return_value
+
     def load_datasets(self):
         super().load_datasets()
 
+        # sets dataset transforms to convert from
+        # PyG data objects to dense tensors
         for attr_name in ["train_dataset", "val_dataset", "test_dataset"]:
             dataset = getattr(self, attr_name, None)
             if dataset is None:
@@ -26,6 +36,7 @@ class GraphromerEnergyTrainer(EnergyTrainer):
             dataset.transform = Data.from_torch_geometric_data
 
     def get_dataloader(self, dataset, sampler):
+        # sets dataloader collate fn for dense tensors
         loader = DataLoader(
             dataset,
             collate_fn=Batch.from_data_list,
@@ -37,24 +48,21 @@ class GraphromerEnergyTrainer(EnergyTrainer):
 
     @property
     def _pos_enabled(self):
-        return self.config["model_attributes"].get(
-            "regress_positions",
-            self.config["model_attributes"].get("regress_forces", False),
-        )
+        return self.config["task"].get("regress_positions", True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if self._pos_enabled:
             self._pos_evaluator = Evaluator(task="is2rs")
-            self._pos_evaluator.task_attributes["is2rs"] = ["position"]
+            self._pos_evaluator.task_attributes["is2rs"] = ["positions"]
             self._pos_evaluator.task_metrics["is2rs"] = [
                 "positions_mae",
                 "positions_mse",
             ]
 
             if self.normalizer.get("normalize_positions", False):
-                self.normalizers["position"] = Normalizer(
+                self.normalizers["positions"] = Normalizer(
                     mean=self.normalizer["positions_mean"],
                     std=self.normalizer["positions_std"],
                     device=self.device,
@@ -65,9 +73,9 @@ class GraphromerEnergyTrainer(EnergyTrainer):
         return self.config["optim"].get("energy_coefficient", 1.0)
 
     @property
-    def _force_multiplier(self) -> float:
-        weight = self.config["optim"].get("force_coefficient", 12.5)
-        config = self.config["optim"].get("force_coefficient_decay", None)
+    def _positions_multiplier(self) -> float:
+        weight = self.config["optim"].get("positions_coefficient", 12.5)
+        config = self.config["optim"].get("positions_coefficient_decay", None)
         if config and config.get("enabled", False):
             weight_range = max(0.0, weight - config["min_weight"])
             weight -= weight_range * min(
@@ -77,7 +85,7 @@ class GraphromerEnergyTrainer(EnergyTrainer):
 
     def _forward(self, batch_list):
         out = {}
-        out["energy"], out["position"], out["position_mask"] = self.model(
+        out["energy"], out["positions"], out["positions_mask"] = self.model(
             batch_list
         )
 
@@ -96,36 +104,38 @@ class GraphromerEnergyTrainer(EnergyTrainer):
             relaxed_energy = self.normalizers["target"].norm(relaxed_energy)
         return relaxed_energy
 
-    def _get_position_target(self, batch_list, *, norm: bool):
+    def _get_positions_target(self, batch_list, *, norm: bool):
         pos = torch.cat(
             [batch.deltapos.to(self.device) for batch in batch_list], dim=0
         )
         if norm and self.normalizers.get("normalize_positions", False):
-            pos = self.normalizers["position"].norm(pos)
+            pos = self.normalizers["positions"].norm(pos)
         return pos
 
     def _compute_loss(self, out, batch_list):
         output, node_output, node_target_mask = (
             out["energy"],
-            out["position"],
-            out["position_mask"],
+            out["positions"],
+            out["positions_mask"],
         )
 
         relaxed_energy = self._get_energy_target(batch_list, norm=True)
-        eng_loss = self.loss_fn["energy"](
-            output.float().view(-1), relaxed_energy
+        loss = (
+            self.loss_fn["energy"](output.float().view(-1), relaxed_energy)
+            * self._energy_multiplier
         )
 
-        deltapos = self._get_position_target(batch_list, norm=True)
-        node_loss = self.loss_fn["force"](
-            _mask(node_output, mask=node_target_mask).float(),
-            _mask(deltapos, mask=node_target_mask),
-        )
+        if self._pos_enabled:
+            deltapos = self._get_positions_target(batch_list, norm=True)
+            loss += (
+                self.loss_fn["positions"](
+                    _mask(node_output, mask=node_target_mask).float(),
+                    _mask(deltapos, mask=node_target_mask),
+                )
+                * self._positions_multiplier
+            )
 
-        return (
-            self._energy_multiplier * eng_loss
-            + self._force_multiplier * node_loss
-        )
+        return loss
 
     def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
         natoms = torch.cat(
@@ -134,13 +144,13 @@ class GraphromerEnergyTrainer(EnergyTrainer):
 
         target = {
             "energy": self._get_energy_target(batch_list, norm=False),
-            "position": self._get_position_target(batch_list, norm=False),
+            "positions": self._get_positions_target(batch_list, norm=False),
             "natoms": natoms,
         }
 
-        out["position"] = _mask(out["position"], mask=out["position_mask"])
-        target["position"] = _mask(
-            target["position"], mask=out["position_mask"]
+        out["positions"] = _mask(out["positions"], mask=out["positions_mask"])
+        target["positions"] = _mask(
+            target["positions"], mask=out["positions_mask"]
         )
 
         out["natoms"] = natoms
@@ -149,8 +159,8 @@ class GraphromerEnergyTrainer(EnergyTrainer):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
 
         if self.normalizers.get("normalize_positions", False):
-            out["position"] = self.normalizers["position"].denorm(
-                out["position"]
+            out["positions"] = self.normalizers["positions"].denorm(
+                out["positions"]
             )
 
         metrics = evaluator.eval(out, target, prev_metrics=metrics)
@@ -167,9 +177,9 @@ class GraphromerEnergyTrainer(EnergyTrainer):
                     total=self._energy_multiplier,
                     numel=1,
                 ),
-                "position_coefficient": dict(
-                    metric=self._force_multiplier,
-                    total=self._force_multiplier,
+                "positions_coefficient": dict(
+                    metric=self._positions_multiplier,
+                    total=self._positions_multiplier,
                     numel=1,
                 ),
             }

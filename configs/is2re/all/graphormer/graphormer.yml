@@ -23,6 +23,8 @@ task:
     labels:
         - relaxed energy
 
+    regress_positions: True
+
 model:
     name: graphormer
     blocks: 4
@@ -57,12 +59,12 @@ optim:
     end_lr: 0
     max_steps: 1000000
 
-    force_coefficient: 10.0
-    force_coefficient_decay:
+    positions_coefficient: 10.0
+    positions_coefficient_decay:
         enabled: True
         total_steps: 250_000
         min_weight: 1.0
     energy_coefficient: 1.0
 
-    loss_force: mae
+    loss_positions: mae
     loss_energy: mae
