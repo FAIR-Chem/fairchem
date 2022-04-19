@@ -15,6 +15,8 @@ from ocpmodels.models.base import BaseModel
 if TYPE_CHECKING:
     from ocpmodels.models.utils.dense_types import Batch
 
+# Credits: https://github.com/microsoft/Graphormer/tree/main/graphormer
+
 
 @torch.jit.script
 def _softmax_dropout_fused(input, dropout_prob: float, is_training: bool):
