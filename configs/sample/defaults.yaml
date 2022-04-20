@@ -1,0 +1,38 @@
+# --------------------------------------------------------------
+# -----  minydra default args values for sample_adslab.py  -----
+# --------------------------------------------------------------
+
+# ------------------
+# -----  Data  -----
+# ------------------
+paths:
+  # path to the bulk_db_flat pickle file
+  bulk_db_flat: /network/projects/_groups/ocp/oc20/dataset-creation/bulk_db_flat_2021sep20.pkl
+
+  # path to the adsorbate_db pickle file
+  adsorbate_db: /network/projects/_groups/ocp/oc20/dataset-creation/adsorbate_db_2021apr28.pkl
+
+  # path to the precomputed_structures pickle file with all surfaces
+  precomputed_structures: /network/projects/_groups/ocp/oc20/dataset-creation/precomputed_surfaces_2021Sep20
+# ------------------------------------
+# -----  Adslab parametrization  -----
+# ------------------------------------
+
+# random seed
+seed: 123
+
+# index of the bulk in bulk_db_flat.
+# null -> sample uniformly
+bulk_id: null
+
+# index of the surface to select for a given bulk
+# null -> sample uniformly
+surface_id: null
+
+# index of the adsorbate to select in adsorbate_db
+# null -> sample uniformly
+adsorbate_id: null
+
+# whether or not to use pre-computed surfaces.
+# if not they will be computed on the fly but it takes
+use_precomputed_surfaces: true

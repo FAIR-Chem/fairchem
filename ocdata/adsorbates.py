@@ -46,6 +46,7 @@ class Adsorbate():
             element = specified_index
         else:
             element = np.random.choice(len(inv_index))
+            print(f"args.adsorbate_id is None, choosing {element}")
 
         self.adsorbate_sampling_str = str(element) 
         self.atoms, self.smiles, self.bond_indices = inv_index[element]
