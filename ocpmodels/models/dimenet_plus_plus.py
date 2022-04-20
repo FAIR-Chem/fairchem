@@ -32,13 +32,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from math import pi as PI
+
 import torch
 from torch import nn
 from torch_geometric.nn import radius_graph
 from torch_geometric.nn.acts import swish
 from torch_geometric.nn.inits import glorot_orthogonal
 from torch_geometric.nn.models.dimenet import (
-    BesselBasisLayer,
     EmbeddingBlock,
     Envelope,
     ResidualLayer,
@@ -58,6 +59,25 @@ try:
     import sympy as sym
 except ImportError:
     sym = None
+
+
+class BesselBasisLayer(torch.nn.Module):
+    def __init__(self, num_radial, cutoff=5.0, envelope_exponent=5):
+        super().__init__()
+        self.cutoff = cutoff
+        self.envelope = Envelope(envelope_exponent)
+
+        self.freq = torch.nn.Parameter(torch.Tensor(num_radial))
+
+        self.reset_parameters()
+
+    @torch.no_grad()
+    def reset_parameters(self):
+        torch.arange(1, self.freq.numel() + 1, out=self.freq).mul_(PI)
+
+    def forward(self, dist):
+        dist = dist.unsqueeze(-1) / self.cutoff
+        return self.envelope(dist) * (self.freq * dist).sin()
 
 
 class InteractionPPBlock(torch.nn.Module):
@@ -93,17 +113,11 @@ class InteractionPPBlock(torch.nn.Module):
 
         # Residual layers before and after skip connection.
         self.layers_before_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_before_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_before_skip)]
         )
         self.lin = nn.Linear(hidden_channels, hidden_channels)
         self.layers_after_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_after_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_after_skip)]
         )
 
         self.reset_parameters()
