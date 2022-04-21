@@ -16,7 +16,7 @@ python -c "import torch; x=torch.eye(5).cuda(); x=x@x; print(x.sum()); import to
 python -m pip install Cython
 python -m pip install pymatgen
 # Other
-python -m pip install ase==3.21.* lmdb==1.1.1 six
+python -m pip install ase==3.21.* lmdb==1.1.1 six submitit wandb tensorboard numba
 # ocpmodels: run from the repository root
 python -m pip install .
 
