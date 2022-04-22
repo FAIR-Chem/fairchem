@@ -1,5 +1,6 @@
-from typing import List, NamedTuple
+from typing import List
 
+from dataclasses import dataclass
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch_geometric.data import Data as TorchGeoData
@@ -85,12 +86,13 @@ cutoff = 8.0
 filter_by_tag = True
 
 
-class Data(NamedTuple):
+@dataclass
+class Data:
     pos: torch.Tensor
     atoms: torch.Tensor
     tags: torch.Tensor
     real_mask: torch.Tensor
-    deltapos: torch.Tensor
+    pos_relaxed: torch.Tensor
     y_relaxed: torch.Tensor
     fixed: torch.Tensor
     natoms: torch.Tensor
@@ -101,10 +103,22 @@ class Data(NamedTuple):
             atoms=self.atoms.to(device),
             tags=self.tags.to(device),
             real_mask=self.real_mask.to(device),
-            deltapos=self.deltapos.to(device),
+            pos_relaxed=self.pos_relaxed.to(device),
             y_relaxed=self.y_relaxed.to(device),
             fixed=self.fixed.to(device),
             natoms=self.natoms.to(device),
+        )
+
+    def clone(self):
+        return Data(
+            pos=self.pos.clone(),
+            atoms=self.atoms.clone(),
+            tags=self.tags.clone(),
+            real_mask=self.real_mask.clone(),
+            pos_relaxed=self.pos_relaxed.clone(),
+            y_relaxed=self.y_relaxed.clone(),
+            fixed=self.fixed.clone(),
+            natoms=self.natoms.clone(),
         )
 
     @classmethod
@@ -148,9 +162,8 @@ class Data(NamedTuple):
                     torch.zeros_like(used_expand_tags, dtype=torch.bool),
                 ]
             ),
-            deltapos=torch.cat(
-                [pos_relaxed - pos, used_expand_pos_relaxed - used_expand_pos],
-                dim=0,
+            pos_relaxed=torch.cat(
+                [pos_relaxed, used_expand_pos_relaxed], dim=0
             ),
             y_relaxed=torch.tensor([data.y_relaxed], dtype=torch.float),
             natoms=torch.tensor([data.num_nodes], dtype=torch.long),
@@ -171,12 +184,13 @@ def _pad(
     )
 
 
-class Batch(NamedTuple):
+@dataclass
+class Batch:
     pos: torch.Tensor
     atoms: torch.Tensor
     tags: torch.Tensor
     real_mask: torch.Tensor
-    deltapos: torch.Tensor
+    pos_relaxed: torch.Tensor
     y_relaxed: torch.Tensor
     fixed: torch.Tensor
     natoms: torch.Tensor
@@ -187,7 +201,7 @@ class Batch(NamedTuple):
             atoms=self.atoms.to(device),
             tags=self.tags.to(device),
             real_mask=self.real_mask.to(device),
-            deltapos=self.deltapos.to(device),
+            pos_relaxed=self.pos_relaxed.to(device),
             y_relaxed=self.y_relaxed.to(device),
             fixed=self.fixed.to(device),
             natoms=self.natoms.to(device),
@@ -200,9 +214,21 @@ class Batch(NamedTuple):
             atoms=_pad(data_list, "atoms"),
             tags=_pad(data_list, "tags"),
             real_mask=_pad(data_list, "real_mask"),
-            deltapos=_pad(data_list, "deltapos"),
-            y_relaxed=_pad(data_list, "y_relaxed"),
+            pos_relaxed=_pad(data_list, "pos_relaxed"),
+            y_relaxed=torch.cat([d.y_relaxed for d in data_list], dim=0),
             fixed=_pad(data_list, "fixed"),
             natoms=_pad(data_list, "natoms"),
         )
         return [batch]
+
+    def clone(self):
+        return Batch(
+            pos=self.pos.clone(),
+            atoms=self.atoms.clone(),
+            tags=self.tags.clone(),
+            real_mask=self.real_mask.clone(),
+            pos_relaxed=self.pos_relaxed.clone(),
+            y_relaxed=self.y_relaxed.clone(),
+            fixed=self.fixed.clone(),
+            natoms=self.natoms.clone(),
+        )

@@ -107,13 +107,18 @@ class GraphromerEnergyTrainer(EnergyTrainer):
             relaxed_energy = self.normalizers["target"].norm(relaxed_energy)
         return relaxed_energy
 
-    def _get_positions_target(self, batch_list, *, norm: bool):
-        pos = torch.cat(
-            [batch.deltapos.to(self.device) for batch in batch_list], dim=0
+    def _get_positions_target(self, batch_list, norm: bool = True):
+        position = torch.cat(
+            [
+                batch.pos_relaxed.to(self.device) - batch.pos.to(self.device)
+                for batch in batch_list
+            ],
+            dim=0,
         )
+
         if norm and self.normalizer.get("normalize_positions", False):
-            pos = self.normalizers["positions"].norm(pos)
-        return pos
+            position = self.normalizers["positions"].norm(position)
+        return position
 
     def _compute_loss(self, out, batch_list):
         output, node_output, node_target_mask = (
