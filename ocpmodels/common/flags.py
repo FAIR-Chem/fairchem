@@ -24,12 +24,10 @@ class Flags:
         self.parser.add_argument(
             "--mode",
             choices=["train", "predict", "run-relaxations", "validate"],
-            required=True,
             help="Whether to train the model, make predictions, or to run relaxations",
         )
         self.parser.add_argument(
             "--config-yml",
-            required=True,
             type=Path,
             help="Path to a config file listing data, model, optim parameters.",
         )
@@ -127,7 +125,9 @@ class Flags:
             default="nccl",
             help="Backend for DDP",
         )
-        self.parser.add_argument("--local_rank", default=0, type=int, help="Local rank")
+        self.parser.add_argument(
+            "--local_rank", default=0, type=int, help="Local rank"
+        )
 
 
 flags = Flags()
