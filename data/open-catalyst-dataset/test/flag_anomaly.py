@@ -39,7 +39,7 @@ class DetectTrajAnomaly:
         final_connectivity = self._get_connectivity(self.final_atoms[adsorbate_idx])
         return np.array_equal(initial_connectivity, final_connectivity) is False
 
-    def is_surface_reconstructed(self, slab_movement_thres=3):
+    def is_surface_reconstructed(self, slab_movement_thres=1):
         """
         if any slab atoms moved more than X Angstrom, consider possible reconstruction.
         A larger X means the user is more conversative of what's considered reconstructed.
