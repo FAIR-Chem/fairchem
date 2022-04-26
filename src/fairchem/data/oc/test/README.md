@@ -51,7 +51,7 @@ Here is an example:
 detector = DetectTrajAnomaly(init_atoms, final_atoms, atoms_tags)
 print(detector.is_adsorbate_dissociated())
 print(detector.is_adsorbate_desorbed(neighbor_thres=3))
-print(detector.is_surface_reconstructed(slab_movement_thres=3))
+print(detector.is_surface_reconstructed(slab_movement_thres=1))
 ```
-Here we define adsorbate desorption if the adsorbate is not connected to any surface atoms. Connection is defined as neighbor atoms within 3 angstroms (which is a reasonable number). But you can modify that value based on the systems tested. We also consider possible surface reconstruction if any slab surface atoms move more than 3 Angstrom, but this value can also be updated based on the systems tested.
+Here we define adsorbate desorption if the adsorbate is not connected to any surface atoms. Connection is defined as neighbor atoms within 3 angstroms (which is a reasonable number). But you can modify that value based on the systems tested. We also consider possible surface reconstruction if any slab surface atoms move more than 1 Angstrom, but this value can also be updated based on the systems tested.
 
