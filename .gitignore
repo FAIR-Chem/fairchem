@@ -111,3 +111,13 @@ Local
 
 # VS Code
 .vscode/
+
+# slurm
+script2.sh
+script3.sh
+output-job.txt
+output-job-2.txt
+output-job-3.txt
+error-job.txt
+error-job-2.txt
+error-job-3.txt

@@ -59,7 +59,7 @@ class Runner(submitit.helpers.Checkpointable):
                 cpu=config.get("cpu", False),
                 slurm=config.get("slurm", {}),
             )
-            self.task = registry.get_tasPk_class(config["mode"])(self.config)
+            self.task = registry.get_task_class(config["mode"])(self.config)
             self.task.setup(self.trainer)
             start_time = time.time()
             self.task.run()
@@ -88,6 +88,7 @@ if __name__ == "__main__":
     if not args.mode or not args.config_yml:
         args.mode = "train"
         args.config_yml = "configs/is2re/10k/schnet/schnet.yml"
+        # args.checkpoint = "checkpoints/2022-04-24-21-08-16/checkpoint.pt"
         warnings.warn("No model / mode is given; chosen as default")
     config = build_config(args, override_args)
 
