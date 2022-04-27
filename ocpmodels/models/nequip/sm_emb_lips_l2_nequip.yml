@@ -1,0 +1,67 @@
+trainer: forces
+
+dataset:
+  - src: /lips_data/s2ef/train/
+    normalize_labels: True
+    target_mean: -357.59730269017894
+    target_std: 1.0
+    grad_target_mean: 0.0
+    grad_target_std: 1.0
+  - src: /lips_data/s2ef/val/
+
+logger: wandb
+
+task:
+  dataset: trajectory_lmdb
+  description: "Regressing to energies and forces for DFT trajectories from OCP"
+  type: regression
+  metric: mae
+  primary_metric: forces_mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+
+model:
+  name: nequip
+  num_basis: 8
+  cutoff: 5.0
+  irreps_edge_sh: 0e + 1o + 2e
+  conv_to_output_hidden_irreps_out: 16x0e
+  chemical_embedding_irreps_out: 32x0e
+  feature_irreps_hidden: 64x0o + 64x0e + 64x1o + 64x1e + 64x2o + 64x2e
+  BesselBasis_trainable: true
+  nonlinearity_type: gate
+  num_layers: 6
+  resnet: true
+  PolynomialCutoff_p: 6
+  invariant_layers: 3
+  invariant_neurons: 64
+  use_sc: true
+  regress_forces: True
+  use_pbc: True
+  nonlinearity_scalars:
+    e: silu
+    o: tanh
+  nonlinearity_gates:
+    e: silu
+    o: tanh
+
+optim:
+  batch_size: 1
+  eval_batch_size: 1
+  num_workers: 1
+  lr_initial: 0.005
+  max_epochs: 2000
+  optimizer: Adam
+  optimizer_params: {"amsgrad": True}
+  ema_decay: 0.999
+  force_coefficient: 6889
+  energy_coefficient: 1
+  scheduler: ReduceLROnPlateau
+  mode: min
+  patience: 50
+  factor: 0.8
+  loss_force: l2mae
+  loss_energy: l2mae
