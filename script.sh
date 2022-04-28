@@ -5,7 +5,6 @@
 #SBATCH --mem=32GB
 #SBATCH --gres=gpu:1
 #SBATCH --output=output-job.txt
-#SBATCH --error=error-job.txt
 
 module load anaconda/3
 conda activate ocp

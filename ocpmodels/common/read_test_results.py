@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-TIMESTAMP = "2022-04-26-12-34-08-schnet"
+TIMESTAMP = "2022-04-27-16-58-40-schnet"
 # TIMESTAMP = os.listdir(os.path.dirname(__file__) + '/results')[-1]
 RES_FILE = "/is2re_predictions.npz"
 name = os.path.dirname(__file__) + "/results/" + TIMESTAMP + RES_FILE
