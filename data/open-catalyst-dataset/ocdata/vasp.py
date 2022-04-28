@@ -12,7 +12,7 @@ import os
 import numpy as np
 import ase.io
 from ase.io.trajectory import TrajectoryWriter
-from ase.calculators.vasp import Vasp2
+from ase.calculators.vasp import Vasp
 from ase.calculators.singlepoint import SinglePointCalculator as SPC
 
 # NOTE: this is the setting for slab and adslab
@@ -52,7 +52,7 @@ def run_vasp(atoms, vasp_flags=None):
 
     Args:
         atoms       `ase.Atoms` object that we want to relax.
-        vasp_flags  A dictionary of settings we want to pass to the `Vasp2`
+        vasp_flags  A dictionary of settings we want to pass to the `Vasp`
                     calculator. Defaults to a standerd set of values if `None`
     Returns:
         trajectory  A list of `ase.Atoms` objects where each element represents
@@ -73,7 +73,7 @@ def _clean_up_inputs(atoms, vasp_flags):
 
     Arg:
         atoms       `ase.Atoms` object of the structure we want to relax
-        vasp_flags  A dictionary of settings we want to pass to the `Vasp2`
+        vasp_flags  A dictionary of settings we want to pass to the `Vasp`
                     calculator
     Returns:
         atoms       `ase.Atoms` object of the structure we want to relax, but
@@ -136,14 +136,14 @@ def relax_atoms(atoms, vasp_flags):
 
     Args:
         atoms       `ase.Atoms` object of the structure we want to relax
-        vasp_flags  A dictionary of settings we want to pass to the `Vasp2`
+        vasp_flags  A dictionary of settings we want to pass to the `Vasp`
                     calculator
     Returns:
         images      A list of `ase.Atoms` that comprise the relaxation
                     trajectory
     '''
     # Run the calculation
-    calc = Vasp2(**vasp_flags)
+    calc = Vasp(**vasp_flags)
     atoms.set_calculator(calc)
     atoms.get_potential_energy()
 
@@ -173,14 +173,14 @@ def write_vasp_input_files(atoms, outdir='.', vasp_flags=None):
         atoms       `ase.Atoms` object that we want to relax.
         outdir      A string indicating where you want to save the input files.
                     Defaults to '.'
-        vasp_flags  A dictionary of settings we want to pass to the `Vasp2`
+        vasp_flags  A dictionary of settings we want to pass to the `Vasp`
                     calculator. Defaults to a standerd set of values if `None`
     '''
     if vasp_flags is None:  # Immutable default
         vasp_flags = VASP_FLAGS.copy()
 
     atoms, vasp_flags = _clean_up_inputs(atoms, vasp_flags)
-    calc = Vasp2(directory=outdir, **vasp_flags)
+    calc = Vasp(directory=outdir, **vasp_flags)
     calc.write_input(atoms)
 
 

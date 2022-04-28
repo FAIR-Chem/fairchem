@@ -8,7 +8,7 @@ The easiest way to install prerequisites is via [conda](https://conda.io/docs/in
 
 * Create a new environment, `vaspenv`, `conda create -n vaspenv python=3.7`
 * Activate the newly created environment to install the required dependencies: `conda activate vaspenv`
-* Install specific versions of Pymatgen and ASE: `pip install pymatgen==2020.4.2 ase==3.19.1`
+* Install specific versions of Pymatgen and ASE: `pip install pymatgen==2022.01.09 ase==3.22.1`
 * Install Catkit from Github: `pip install git+https://github.com/ulissigroup/CatKit.git catkit`
 * Clone this repo and install with: `pip install -e .`
 
