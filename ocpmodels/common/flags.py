@@ -50,7 +50,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--print-every",
-            default=10,
+            default=1000,
             type=int,
             help="Log every N iterations (default: 10)",
         )
