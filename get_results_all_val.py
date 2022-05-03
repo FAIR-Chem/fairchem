@@ -1,5 +1,6 @@
 import os
 import sys
+from asyncore import write
 
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
@@ -8,10 +9,14 @@ from ocpmodels.common.utils import build_config, setup_imports, setup_logging
 # Setup logging and add key arguments
 setup_logging()
 sys.argv.append("--mode=train")
-sys.argv.append("--config=configs/is2re/all/schnet/schnet.yml")
+sys.argv.append("--config=configs/is2re/all/dimenet_plus_plus/dpp.yml")
 sys.argv.append(
-    "--checkpoint=checkpoints/2022-04-26-14-10-08-schnet/checkpoint.pt"
+    "--checkpoint=checkpoints/2022-04-28-11-42-56-dimenetplusplus/best_checkpoint.pt"
 )
+# sys.argv.append("--config=configs/is2re/all/schnet/schnet.yml")
+# sys.argv.append(
+#     "--checkpoint=checkpoints/2022-04-26-14-10-08-schnet/best_checkpoint.pt"
+# )
 
 # if not args.config_yml:
 #     args.config_yml = "configs/is2re/all/schnet/schnet.yml"
@@ -21,6 +26,7 @@ sys.argv.append(
 # Load datasets
 metrics = {}
 for s in ["val_id", "val_ood_ads", "val_ood_cat", "val_ood_both"]:
+    print("Validation set: ", s)
 
     # Load config
     parser = flags.get_parser()
@@ -44,7 +50,7 @@ for s in ["val_id", "val_ood_ads", "val_ood_cat", "val_ood_both"]:
         timestamp_id=config.get("timestamp_id", None),
         run_dir=config.get("run_dir", "./"),
         is_debug=config.get("is_debug", False),
-        print_every=config.get("print_every", 10),
+        print_every=config.get("print_every", 100),
         seed=config.get("seed", 0),
         logger=config.get("logger", "tensorboard"),
         local_rank=config["local_rank"],
@@ -70,3 +76,24 @@ for k, v in metrics.items():
     for key, val in v.items():
         store.append(round(val["metric"], 4))
     print(k, store)
+
+# Save results
+file = open("val_results.txt", "a+")
+file.write("\n")
+file.write("-----------------")
+file.write("\n")
+file.write("\n")
+file.writelines([str(args.config_yml) + "\n", args.checkpoint + "\n"])
+file.write(str(metric.keys()))
+file.write("\n")
+file.writelines(
+    ["val_id ", " val_ood_ads ", " val_ood_cat ", " val_ood_both "]
+)
+file.write("\n")
+for k, v in metrics.items():
+    store = []
+    for key, val in v.items():
+        store.append(round(val["metric"], 4))
+    file.write(str(store))
+    file.write("\n")
+file.close()

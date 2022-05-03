@@ -51,7 +51,7 @@ class Runner(submitit.helpers.Checkpointable):
                 timestamp_id=config.get("timestamp_id", None),
                 run_dir=config.get("run_dir", "./"),
                 is_debug=config.get("is_debug", False),
-                print_every=config.get("print_every", 10),
+                print_every=config.get("print_every", 100),
                 seed=config.get("seed", 0),
                 logger=config.get("logger", "tensorboard"),
                 local_rank=config["local_rank"],
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     if not args.mode or not args.config_yml:
         args.mode = "train"
         args.config_yml = "configs/is2re/10k/schnet/schnet.yml"
-        # args.checkpoint = "checkpoints/2022-04-24-21-08-16/checkpoint.pt"
+        # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
         warnings.warn("No model / mode is given; chosen as default")
     config = build_config(args, override_args)
 

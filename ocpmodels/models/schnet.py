@@ -19,7 +19,7 @@ from ocpmodels.models.schnet_base import NewSchNet
 
 
 @registry.register_model("schnet")
-class SchNetWrap(SchNet, NewSchNet):
+class SchNetWrap(NewSchNet, SchNet):
     r"""Wrapper around the continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
     Quantum Interactions" <https://arxiv.org/abs/1706.08566>`_. Each layer uses interaction
@@ -88,7 +88,7 @@ class SchNetWrap(SchNet, NewSchNet):
             )
 
         else:
-            SchNetWrap.__init__(
+            SchNet.__init__(
                 self,
                 hidden_channels=hidden_channels,
                 num_filters=num_filters,
@@ -142,8 +142,7 @@ class SchNetWrap(SchNet, NewSchNet):
             batch = torch.zeros_like(z) if batch is None else batch
             energy = scatter(h, batch, dim=0, reduce=self.readout)
         else:
-            # energy = super(SchNetWrap, self).forward(z, pos, batch)
-            energy = SchNetWrap.forward(z, pos, batch)
+            energy = SchNet.forward(self, z, pos, batch, data.tags)
         return energy
 
     def forward(self, data):

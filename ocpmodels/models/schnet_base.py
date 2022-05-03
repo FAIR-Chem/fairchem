@@ -104,36 +104,17 @@ class NewSchNet(torch.nn.Module):
             self.embedding = Embedding(
                 100, hidden_channels - tag_hidden_channels
             )
-            self.distance_expansion = GaussianSmearing(
-                0.0, cutoff, num_gaussians
-            )
-            self.interactions = ModuleList()
-            for _ in range(num_interactions):
-                block = InteractionBlock(
-                    hidden_channels, num_gaussians, num_filters, cutoff
-                )
-                self.interactions.append(block)
-
         else:
-            # TODO: try this way (tag_hidden indep of hidden). Change way1 to do so.
-            self.embedding = Embedding(100, tag_hidden_channels)
-            self.distance_expansion = GaussianSmearing(
-                0.0, cutoff, num_gaussians
+            self.embedding = Embedding(100, hidden_channels)
+            hidden_channels += tag_hidden_channels
+
+        self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
+        self.interactions = ModuleList()
+        for _ in range(num_interactions):
+            block = InteractionBlock(
+                hidden_channels, num_gaussians, num_filters, cutoff
             )
-            self.interactions = ModuleList()
-            for i in range(num_interactions):
-                if i == 0:
-                    block = InteractionBlock(
-                        hidden_channels + tag_hidden_channels,
-                        num_gaussians,
-                        num_filters,
-                        cutoff,
-                    )
-                else:
-                    block = InteractionBlock(
-                        hidden_channels, num_gaussians, num_filters, cutoff
-                    )
-                self.interactions.append(block)
+            self.interactions.append(block)
 
         self.lin1 = Linear(hidden_channels, hidden_channels // 2)
         self.act = ShiftedSoftplus()
@@ -169,7 +150,7 @@ class NewSchNet(torch.nn.Module):
             assert tag is not None
             h_tag = self.tag_embedding(tag)
             h = torch.cat((h, h_tag), dim=1)
-            # TODO: uncomment below to add covalent radii info.
+            # TODO: uncomment below to add covalent radii info
             # torch.add(h,self.covalent_radii[z].unsqueeze(dim=1))
 
         edge_index = radius_graph(

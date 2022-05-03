@@ -4,7 +4,8 @@
 #SBATCH --time=20:00:00
 #SBATCH --mem=32GB
 #SBATCH --gres=gpu:1
-#SBATCH --output=output-job.txt
+#SBATCH --output=slurm_res/output-job.txt
+#SBATCH --error=slurm_res/error-job.txt
 
 module load anaconda/3
 conda activate ocp
