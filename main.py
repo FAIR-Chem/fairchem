@@ -58,14 +58,14 @@ class Runner(submitit.helpers.Checkpointable):
                 amp=config.get("amp", False),
                 cpu=config.get("cpu", False),
                 slurm=config.get("slurm", {}),
+                new_gnn=config.get("new_gnn", True),
             )
             self.task = registry.get_task_class(config["mode"])(self.config)
             self.task.setup(self.trainer)
             start_time = time.time()
             self.task.run()
             distutils.synchronize()
-            if distutils.is_master():
-                logging.info(f"Total time taken: {time.time() - start_time}")
+            logging.info(f"Total time taken: {time.time() - start_time}")
         finally:
             if args.distributed:
                 distutils.cleanup()

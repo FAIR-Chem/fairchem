@@ -59,6 +59,7 @@ class SchNetWrap(NewSchNet, SchNet):
         num_atoms,  # not used
         bond_feat_dim,  # not used
         num_targets,
+        new_gnn=True,
         use_pbc=True,
         regress_forces=True,
         otf_graph=False,
@@ -74,9 +75,9 @@ class SchNetWrap(NewSchNet, SchNet):
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
-        self.new_schnet = True  # TODO: new hyperparam of all models -- my version or original
+        self.new_gnn = new_gnn
 
-        if self.new_schnet:
+        if self.new_gnn:
             NewSchNet.__init__(
                 self,
                 hidden_channels=hidden_channels,
@@ -114,7 +115,7 @@ class SchNetWrap(NewSchNet, SchNet):
 
         # TODO return distance computation in radius_graph_pbc to remove need
         # for get_pbc_distances call
-        if self.new_schnet:
+        if self.new_gnn:
             energy = NewSchNet.forward(self, z, pos, batch, data.tags)
         elif self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long

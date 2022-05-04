@@ -1,27 +1,23 @@
 import os
 import sys
-from asyncore import write
+import time
 
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import build_config, setup_imports, setup_logging
+from ocpmodels.common.utils import build_config, setup_imports
 
 # Setup logging and add key arguments
-setup_logging()
 sys.argv.append("--mode=train")
-sys.argv.append("--config=configs/is2re/all/dimenet_plus_plus/dpp.yml")
+sys.argv.append("--config=configs/is2re/all/schnet/schnet.yml")
 sys.argv.append(
-    "--checkpoint=checkpoints/2022-04-28-11-42-56-dimenetplusplus/best_checkpoint.pt"
+    "--checkpoint=checkpoints/2022-05-03-16-09-36-schnet/best_checkpoint.pt"
 )
 # sys.argv.append("--config=configs/is2re/all/schnet/schnet.yml")
 # sys.argv.append(
 #     "--checkpoint=checkpoints/2022-04-26-14-10-08-schnet/best_checkpoint.pt"
 # )
 
-# if not args.config_yml:
-#     args.config_yml = "configs/is2re/all/schnet/schnet.yml"
-# if not args.checkpoint:
-#     args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
+start_time = time.time()
 
 # Load datasets
 metrics = {}
@@ -49,7 +45,7 @@ for s in ["val_id", "val_ood_ads", "val_ood_cat", "val_ood_both"]:
         identifier=config["identifier"],
         timestamp_id=config.get("timestamp_id", None),
         run_dir=config.get("run_dir", "./"),
-        is_debug=config.get("is_debug", False),
+        is_debug=True,
         print_every=config.get("print_every", 100),
         seed=config.get("seed", 0),
         logger=config.get("logger", "tensorboard"),
@@ -57,6 +53,7 @@ for s in ["val_id", "val_ood_ads", "val_ood_cat", "val_ood_both"]:
         amp=config.get("amp", False),
         cpu=config.get("cpu", False),
         slurm=config.get("slurm", {}),
+        new_gnn=config.get("new_gnn", True),
     )
 
     # Load checkpoint
@@ -70,6 +67,7 @@ for s in ["val_id", "val_ood_ads", "val_ood_cat", "val_ood_both"]:
     metrics[s] = metric
 
 # Print results
+print("Total time taken: ", time.time() - start_time)
 print(metric.keys())
 for k, v in metrics.items():
     store = []

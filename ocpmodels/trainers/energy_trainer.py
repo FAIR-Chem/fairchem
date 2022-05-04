@@ -76,6 +76,7 @@ class EnergyTrainer(BaseTrainer):
         amp=False,
         cpu=False,
         slurm={},
+        new_gnn=True,
     ):
         super().__init__(
             task=task,
@@ -96,6 +97,7 @@ class EnergyTrainer(BaseTrainer):
             cpu=cpu,
             name="is2re",
             slurm=slurm,
+            new_gnn=new_gnn,
         )
 
     def load_task(self):
@@ -103,7 +105,9 @@ class EnergyTrainer(BaseTrainer):
         self.num_targets = 1
 
     @torch.no_grad()
-    def predict(self, loader, per_image=True, results_file=None, disable_tqdm=False):
+    def predict(
+        self, loader, per_image=True, results_file=None, disable_tqdm=False
+    ):
         if distutils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
         assert isinstance(
@@ -138,10 +142,14 @@ class EnergyTrainer(BaseTrainer):
                 out = self._forward(batch)
 
             if self.normalizers is not None and "target" in self.normalizers:
-                out["energy"] = self.normalizers["target"].denorm(out["energy"])
+                out["energy"] = self.normalizers["target"].denorm(
+                    out["energy"]
+                )
 
             if per_image:
-                predictions["id"].extend([str(i) for i in batch[0].sid.tolist()])
+                predictions["id"].extend(
+                    [str(i) for i in batch[0].sid.tolist()]
+                )
                 predictions["energy"].extend(out["energy"].tolist())
             else:
                 predictions["energy"] = out["energy"].detach()
@@ -155,7 +163,9 @@ class EnergyTrainer(BaseTrainer):
         return predictions
 
     def train(self, disable_eval_tqdm=False):
-        eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
+        eval_every = self.config["optim"].get(
+            "eval_every", len(self.train_loader)
+        )
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
@@ -165,7 +175,9 @@ class EnergyTrainer(BaseTrainer):
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // len(self.train_loader)
 
-        for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
+        for epoch_int in range(
+            start_epoch, self.config["optim"]["max_epochs"]
+        ):
             self.train_sampler.set_epoch(epoch_int)
             skip_steps = self.step % len(self.train_loader)
             train_loader_iter = iter(self.train_loader)
@@ -211,7 +223,9 @@ class EnergyTrainer(BaseTrainer):
                     and distutils.is_master()
                     and not self.is_hpo
                 ):
-                    log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
+                    log_str = [
+                        "{}: {:.2e}".format(k, v) for k, v in log_dict.items()
+                    ]
                     print(", ".join(log_str))
                     self.metrics = {}
 
@@ -224,7 +238,9 @@ class EnergyTrainer(BaseTrainer):
 
                 # Evaluate on val set after every `eval_every` iterations.
                 if self.step % eval_every == 0:
-                    self.save(checkpoint_file="checkpoint.pt", training_state=True)
+                    self.save(
+                        checkpoint_file="checkpoint.pt", training_state=True
+                    )
 
                     if self.val_loader is not None:
                         val_metrics = self.validate(
@@ -232,9 +248,9 @@ class EnergyTrainer(BaseTrainer):
                             disable_tqdm=disable_eval_tqdm,
                         )
                         if (
-                            val_metrics[self.evaluator.task_primary_metric[self.name]][
-                                "metric"
-                            ]
+                            val_metrics[
+                                self.evaluator.task_primary_metric[self.name]
+                            ]["metric"]
                             < self.best_val_mae
                         ):
                             self.best_val_mae = val_metrics[
@@ -269,6 +285,9 @@ class EnergyTrainer(BaseTrainer):
                     self.scheduler.step()
 
             torch.cuda.empty_cache()
+
+        # Evaluate best model checkpoint on all 4 validation splits
+        self.eval_all_val_splits()
 
         self.train_dataset.close_db()
         if "val_dataset" in self.config:

@@ -11,6 +11,7 @@ import logging
 import os
 import random
 import subprocess
+import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
@@ -68,11 +69,13 @@ class BaseTrainer(ABC):
         cpu=False,
         name="base_trainer",
         slurm={},
+        new_gnn=True,
     ):
         self.name = name
         self.cpu = cpu
         self.epoch = 0
         self.step = 0
+        self.new_gnn = new_gnn
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
@@ -362,6 +365,7 @@ class BaseTrainer(ABC):
             else None,
             bond_feat_dim,
             self.num_targets,
+            self.new_gnn,
             **self.config["model_attributes"],
         ).to(self.device)
 
@@ -756,3 +760,60 @@ class BaseTrainer(ABC):
 
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
+
+    def eval_all_val_splits(self):
+        start_time = time.time()
+        metrics = {}
+        for s in ["val_id", "val_ood_ads", "val_ood_cat", "val_ood_both"]:
+            print("Validation set: ", s)
+
+            # Update dataset we look at
+            self.config["val_dataset"] = {
+                "src": "/network/projects/_groups/ocp/oc20/is2re/all/"
+                + s
+                + "/data.lmdb"
+            }
+            self.load_datasets()
+
+            # Load current best checkpoint
+            checkpoint_path = os.path.join(
+                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
+            )
+            self.load_checkpoint(checkpoint_path=checkpoint_path)
+
+            # Call validate function
+            metric = self.validate(split="val", disable_tqdm=False)
+            metrics[s] = metric
+
+            # Log results
+            print("Total time taken: ", time.time() - start_time)
+            print(metric.keys())
+            for k, v in metrics.items():
+                store = []
+                for _, val in v.items():
+                    store.append(round(val["metric"], 4))
+                print(k, store)
+
+            # Save results
+            file = open("val_results.txt", "a+")
+            file.write("\n")
+            file.write("-----------------")
+            file.write("\n")
+            file.write("\n")
+            file.write(checkpoint_path)
+            file.write("\n")
+            file.write(str(metric.keys()))
+            file.write("\n")
+            file.writelines(
+                ["val_id ", " val_ood_ads ", " val_ood_cat ", " val_ood_both "]
+            )
+            file.write("\n")
+            file.write("Total time taken: " + str(time.time() - start_time))
+            file.write("\n")
+            for k, v in metrics.items():
+                store = []
+                for _, val in v.items():
+                    store.append(round(val["metric"], 4))
+                file.write(str(store))
+                file.write("\n")
+            file.close()

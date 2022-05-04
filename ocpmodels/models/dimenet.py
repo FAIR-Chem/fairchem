@@ -69,6 +69,7 @@ class DimeNetWrap(DimeNet):
         num_atoms,
         bond_feat_dim,  # not used
         num_targets,
+        new_gnn=True,
         use_pbc=True,
         regress_forces=True,
         hidden_channels=128,
