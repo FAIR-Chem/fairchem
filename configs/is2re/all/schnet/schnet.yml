@@ -4,6 +4,7 @@ includes:
 model:
   name: schnet
   hidden_channels: 384
+  tag_hidden_channels: 64
   num_filters: 128
   num_interactions: 4
   num_gaussians: 100

@@ -64,6 +64,7 @@ class SchNetWrap(NewSchNet, SchNet):
         regress_forces=True,
         otf_graph=False,
         hidden_channels=128,
+        tag_hidden_channels=32,
         num_filters=128,
         num_interactions=6,
         num_gaussians=50,
@@ -81,6 +82,7 @@ class SchNetWrap(NewSchNet, SchNet):
             NewSchNet.__init__(
                 self,
                 hidden_channels=hidden_channels,
+                tag_hidden_channels=tag_hidden_channels,
                 num_filters=num_filters,
                 num_interactions=num_interactions,
                 num_gaussians=num_gaussians,

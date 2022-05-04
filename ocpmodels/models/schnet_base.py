@@ -89,7 +89,6 @@ class NewSchNet(torch.nn.Module):
         self.readout = readout
         self.scale = None
         self.use_tag = tag_hidden_channels > 0
-        way1 = True  # hidden is dependent on tag_hidden
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
@@ -100,13 +99,9 @@ class NewSchNet(torch.nn.Module):
         if self.use_tag:
             self.tag_embedding = Embedding(3, tag_hidden_channels)
 
-        if way1:
-            self.embedding = Embedding(
-                100, hidden_channels - tag_hidden_channels
-            )
-        else:
-            self.embedding = Embedding(100, hidden_channels)
-            hidden_channels += tag_hidden_channels
+        self.embedding = Embedding(100, hidden_channels - tag_hidden_channels)
+        # self.embedding = Embedding(100, hidden_channels)
+        # hidden_channels += tag_hidden_channels
 
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
         self.interactions = ModuleList()
