@@ -121,10 +121,10 @@ class BaseTrainer(ABC):
             commit_hash = None
 
         logger_name = logger if isinstance(logger, str) else logger["name"]
-        n = model.pop("name")
+        model_name = model.pop("name")
         self.config = {
             "task": task,
-            "model": n,
+            "model": model_name,
             "model_attributes": model,
             "optim": optimizer,
             "logger": logger,
@@ -137,13 +137,18 @@ class BaseTrainer(ABC):
                 "timestamp_id": self.timestamp_id,
                 "commit": commit_hash,
                 "checkpoint_dir": os.path.join(
-                    run_dir, "checkpoints", self.timestamp_id + "-" + n
+                    run_dir,
+                    "checkpoints",
+                    self.timestamp_id + "-" + model_name,
                 ),
                 "results_dir": os.path.join(
-                    run_dir, "results", self.timestamp_id + "-" + n
+                    run_dir, "results", self.timestamp_id + "-" + model_name
                 ),
                 "logs_dir": os.path.join(
-                    run_dir, "logs", logger_name, self.timestamp_id + "-" + n
+                    run_dir,
+                    "logs",
+                    logger_name,
+                    self.timestamp_id + "-" + model_name,
                 ),
             },
             "slurm": slurm,

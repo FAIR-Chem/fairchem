@@ -125,6 +125,7 @@ class NewSchNet(torch.nn.Module):
 
     def reset_parameters(self):
         self.embedding.reset_parameters()
+        self.tag_embedding.reset_parameters()
         for interaction in self.interactions:
             interaction.reset_parameters()
         torch.nn.init.xavier_uniform_(self.lin1.weight)
