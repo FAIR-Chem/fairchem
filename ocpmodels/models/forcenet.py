@@ -289,6 +289,7 @@ class ForceNet(BaseModel):
         self.num_layers = num_interactions
         self.max_n = max_n
         self.activation_str = activation_str
+        self.new_gnn = new_gnn
 
         if self.ablation == "edgelinear":
             depth_mlp_edge = 0
@@ -335,7 +336,7 @@ class ForceNet(BaseModel):
             self.atom_map = nn.Parameter(atom_map, requires_grad=False)
 
         elif self.feat == "full":
-            # Normalize along each dimaension
+            # Normalize along each dimension
             atom_map[0] = np.nan
             atom_map_notnan = atom_map[atom_map[:, 0] == atom_map[:, 0]]
             atom_map_min = torch.min(atom_map_notnan, dim=0)[0]
@@ -514,9 +515,9 @@ class ForceNet(BaseModel):
 
         out = scatter(h, batch, dim=0, reduce="add")
 
-        force = self.decoder(h)
+        # force = self.decoder(h)
         energy = self.energy_mlp(out)
-        return energy, force
+        return energy  # , force
 
     @property
     def num_params(self):
