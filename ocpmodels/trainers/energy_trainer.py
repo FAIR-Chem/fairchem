@@ -166,6 +166,7 @@ class EnergyTrainer(BaseTrainer):
         eval_every = self.config["optim"].get(
             "eval_every", len(self.train_loader)
         )
+        self.config["cmd"]["print_every"] = eval_every  # Temporary
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )

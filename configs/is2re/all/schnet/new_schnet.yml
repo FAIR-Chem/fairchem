@@ -2,8 +2,9 @@ includes:
 - configs/is2re/all/base.yml
 
 model:
-  name: schnet
+  name: new_schnet
   hidden_channels: 384
+  tag_hidden_channels: 64
   num_filters: 128
   num_interactions: 4
   num_gaussians: 100

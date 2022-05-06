@@ -188,8 +188,8 @@ class InteractionBlock(MessagePassing):
 
 
 # flake8: noqa: C901
-@registry.register_model("forcenet")
-class ForceNet(BaseModel):
+@registry.register_model("new_forcenet")
+class NewForceNet(BaseModel):
     r"""Implementation of ForceNet architecture.
 
     Args:
@@ -235,7 +235,7 @@ class ForceNet(BaseModel):
         num_atoms,  # not used
         bond_feat_dim,  # not used
         num_targets,  # not used
-        new_gnn,  # not used
+        new_gnn=True,
         hidden_channels=512,
         num_interactions=5,
         cutoff=6.0,
@@ -254,9 +254,10 @@ class ForceNet(BaseModel):
         otf_graph=False,
     ):
 
-        super(ForceNet, self).__init__()
+        super(NewForceNet, self).__init__()
         self.training = training
         self.ablation = ablation
+        self.new_gnn = new_gnn
         if self.ablation not in [
             "none",
             "nofilter",

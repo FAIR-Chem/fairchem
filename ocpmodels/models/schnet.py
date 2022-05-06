@@ -15,11 +15,10 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
-from ocpmodels.models.schnet_base import NewSchNet
 
 
 @registry.register_model("schnet")
-class SchNetWrap(NewSchNet, SchNet):
+class SchNetWrap(SchNet):
     r"""Wrapper around the continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
     Quantum Interactions" <https://arxiv.org/abs/1706.08566>`_. Each layer uses interaction
@@ -59,12 +58,11 @@ class SchNetWrap(NewSchNet, SchNet):
         num_atoms,  # not used
         bond_feat_dim,  # not used
         num_targets,
-        new_gnn=True,
+        new_gnn,  # not used
         use_pbc=True,
         regress_forces=True,
         otf_graph=False,
         hidden_channels=128,
-        tag_hidden_channels=32,
         num_filters=128,
         num_interactions=6,
         num_gaussians=50,
@@ -76,30 +74,15 @@ class SchNetWrap(NewSchNet, SchNet):
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
-        self.new_gnn = new_gnn
 
-        if self.new_gnn:
-            NewSchNet.__init__(
-                self,
-                hidden_channels=hidden_channels,
-                tag_hidden_channels=tag_hidden_channels,
-                num_filters=num_filters,
-                num_interactions=num_interactions,
-                num_gaussians=num_gaussians,
-                cutoff=cutoff,
-                readout=readout,
-            )
-
-        else:
-            SchNet.__init__(
-                self,
-                hidden_channels=hidden_channels,
-                num_filters=num_filters,
-                num_interactions=num_interactions,
-                num_gaussians=num_gaussians,
-                cutoff=cutoff,
-                readout=readout,
-            )
+        super(SchNetWrap, self).__init__(
+            hidden_channels=hidden_channels,
+            num_filters=num_filters,
+            num_interactions=num_interactions,
+            num_gaussians=num_gaussians,
+            cutoff=cutoff,
+            readout=readout,
+        )
 
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
@@ -117,9 +100,7 @@ class SchNetWrap(NewSchNet, SchNet):
 
         # TODO return distance computation in radius_graph_pbc to remove need
         # for get_pbc_distances call
-        if self.new_gnn:
-            energy = NewSchNet.forward(self, z, pos, batch, data.tags)
-        elif self.use_pbc:
+        if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
 
             out = get_pbc_distances(
@@ -145,7 +126,7 @@ class SchNetWrap(NewSchNet, SchNet):
             batch = torch.zeros_like(z) if batch is None else batch
             energy = scatter(h, batch, dim=0, reduce=self.readout)
         else:
-            energy = SchNet.forward(self, z, pos, batch, data.tags)
+            energy = super(SchNetWrap, self).forward(z, pos, batch)
         return energy
 
     def forward(self, data):

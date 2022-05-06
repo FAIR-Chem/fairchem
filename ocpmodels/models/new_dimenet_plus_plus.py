@@ -220,7 +220,7 @@ class OutputPPBlock(torch.nn.Module):
         return self.lin(x)
 
 
-class DimeNetPlusPlus(torch.nn.Module):
+class NewDimeNetPlusPlus(torch.nn.Module):
     r"""DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
 
     Args:
@@ -265,7 +265,7 @@ class DimeNetPlusPlus(torch.nn.Module):
         num_output_layers=3,
         act=swish,
     ):
-        super(DimeNetPlusPlus, self).__init__()
+        super(NewDimeNetPlusPlus, self).__init__()
 
         self.cutoff = cutoff
 
@@ -355,14 +355,14 @@ class DimeNetPlusPlus(torch.nn.Module):
         raise NotImplementedError
 
 
-@registry.register_model("dimenetplusplus")
-class DimeNetPlusPlusWrap(DimeNetPlusPlus):
+@registry.register_model("new_dimenetplusplus")
+class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
     def __init__(
         self,
         num_atoms,
         bond_feat_dim,  # not used
         num_targets,
-        new_gnn,  # not used
+        new_gnn=True,
         use_pbc=True,
         regress_forces=True,
         hidden_channels=128,
@@ -384,8 +384,9 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
+        self.new_gnn = new_gnn
 
-        super(DimeNetPlusPlusWrap, self).__init__(
+        super(NewDimeNetPlusPlusWrap, self).__init__(
             hidden_channels=hidden_channels,
             out_channels=num_targets,
             num_blocks=num_blocks,

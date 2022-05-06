@@ -363,14 +363,14 @@ class BaseTrainer(ABC):
 
         loader = self.train_loader or self.val_loader or self.test_loader
         self.model = registry.get_model_class(self.config["model"])(
-            loader.dataset[0].x.shape[-1]
+            num_atoms=loader.dataset[0].x.shape[-1]
             if loader
             and hasattr(loader.dataset[0], "x")
             and loader.dataset[0].x is not None
             else None,
-            bond_feat_dim,
-            self.num_targets,
-            self.new_gnn,
+            bond_feat_dim=bond_feat_dim,
+            num_targets=self.num_targets,
+            new_gnn=self.new_gnn,
             **self.config["model_attributes"],
         ).to(self.device)
 
@@ -769,8 +769,8 @@ class BaseTrainer(ABC):
     def eval_all_val_splits(self):
         start_time = time.time()
         metrics = {}
+        print("----- FINAL RESULTS -----")
         for s in ["val_id", "val_ood_ads", "val_ood_cat", "val_ood_both"]:
-            print("Validation set: ", s)
 
             # Update dataset we look at
             self.config["val_dataset"] = {
@@ -787,38 +787,38 @@ class BaseTrainer(ABC):
             self.load_checkpoint(checkpoint_path=checkpoint_path)
 
             # Call validate function
-            metric = self.validate(split="val", disable_tqdm=False)
+            metric = self.validate(split="val", disable_tqdm=True)
             metrics[s] = metric
 
-            # Log results
-            print("Total time taken: ", time.time() - start_time)
-            print(metric.keys())
-            for k, v in metrics.items():
-                store = []
-                for _, val in v.items():
-                    store.append(round(val["metric"], 4))
-                print(k, store)
+        # Log results
+        print("Total time taken: ", time.time() - start_time)
+        print(metric.keys())
+        for k, v in metrics.items():
+            store = []
+            for _, val in v.items():
+                store.append(round(val["metric"], 4))
+            print(k, store)
 
-            # Save results
-            file = open("val_results.txt", "a+")
+        # Save results
+        file = open("val_results.txt", "a+")
+        file.write("\n")
+        file.write("-----------------")
+        file.write("\n")
+        file.write("\n")
+        file.write(checkpoint_path)
+        file.write("\n")
+        file.write(str(metric.keys()))
+        file.write("\n")
+        file.writelines(
+            ["val_id ", " val_ood_ads ", " val_ood_cat ", " val_ood_both "]
+        )
+        file.write("\n")
+        file.write("Total time taken: " + str(time.time() - start_time))
+        file.write("\n")
+        for k, v in metrics.items():
+            store = []
+            for _, val in v.items():
+                store.append(round(val["metric"], 4))
+            file.write(str(store))
             file.write("\n")
-            file.write("-----------------")
-            file.write("\n")
-            file.write("\n")
-            file.write(checkpoint_path)
-            file.write("\n")
-            file.write(str(metric.keys()))
-            file.write("\n")
-            file.writelines(
-                ["val_id ", " val_ood_ads ", " val_ood_cat ", " val_ood_both "]
-            )
-            file.write("\n")
-            file.write("Total time taken: " + str(time.time() - start_time))
-            file.write("\n")
-            for k, v in metrics.items():
-                store = []
-                for _, val in v.items():
-                    store.append(round(val["metric"], 4))
-                file.write(str(store))
-                file.write("\n")
-            file.close()
+        file.close()
