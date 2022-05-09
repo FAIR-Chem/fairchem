@@ -33,9 +33,11 @@ THE SOFTWARE.
 """
 
 from math import pi as PI
+from math import sqrt
 
 import torch
 from torch import nn
+from torch.nn import Embedding, Linear
 from torch_geometric.nn import radius_graph
 from torch_geometric.nn.acts import swish
 from torch_geometric.nn.inits import glorot_orthogonal
@@ -78,6 +80,44 @@ class BesselBasisLayer(torch.nn.Module):
     def forward(self, dist):
         dist = dist.unsqueeze(-1) / self.cutoff
         return self.envelope(dist) * (self.freq * dist).sin()
+
+
+class TagEmbeddingBlock(torch.nn.Module):
+    def __init__(
+        self, num_radial, hidden_channels, tag_hidden_channels, act=swish
+    ):
+        super().__init__()
+        self.act = act
+
+        self.emb = Embedding(95, hidden_channels - tag_hidden_channels)
+        self.tag = Embedding(3, tag_hidden_channels)
+
+        self.lin_rbf = Linear(num_radial, hidden_channels)
+        self.lin = Linear(3 * hidden_channels, hidden_channels)
+
+        # # TODO: test this setting
+        # self.emb = Embedding(95, hidden_channels)
+        # self.tag = Embedding(3, tag_hidden_channels)
+
+        # self.lin_rbf = Linear(num_radial, hidden_channels)
+        # self.lin = Linear(3 * hidden_channels + 2 * tag_hidden_channels, hidden_channels)
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        self.emb.weight.data.uniform_(-sqrt(3), sqrt(3))
+        self.tag.weight.data.uniform_(-sqrt(3), sqrt(3))
+        self.lin_rbf.reset_parameters()
+        self.lin.reset_parameters()
+
+    def forward(self, x, rbf, i, j, tag):
+        x = self.emb(x)
+        x_tag = self.tag(tag)
+        rbf = self.act(self.lin_rbf(rbf))
+
+        return self.act(
+            self.lin(torch.cat([x[i], x[j], rbf, x_tag[i], x_tag[j]], dim=-1))
+        )
 
 
 class InteractionPPBlock(torch.nn.Module):
@@ -251,6 +291,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
     def __init__(
         self,
         hidden_channels,
+        tag_hidden_channels,
         out_channels,
         num_blocks,
         int_emb_size,
@@ -269,17 +310,24 @@ class NewDimeNetPlusPlus(torch.nn.Module):
 
         self.cutoff = cutoff
 
+        assert tag_hidden_channels < hidden_channels
         if sym is None:
             raise ImportError("Package `sympy` could not be found.")
 
         self.num_blocks = num_blocks
+        self.use_tag = tag_hidden_channels > 0 and self.new_gnn
 
         self.rbf = BesselBasisLayer(num_radial, cutoff, envelope_exponent)
         self.sbf = SphericalBasisLayer(
             num_spherical, num_radial, cutoff, envelope_exponent
         )
 
-        self.emb = EmbeddingBlock(num_radial, hidden_channels, act)
+        if self.use_tag:
+            self.emb = TagEmbeddingBlock(
+                num_radial, hidden_channels, tag_hidden_channels, act
+            )
+        else:
+            self.emb = EmbeddingBlock(num_radial, hidden_channels, act)
 
         self.output_blocks = torch.nn.ModuleList(
             [
@@ -366,6 +414,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         use_pbc=True,
         regress_forces=True,
         hidden_channels=128,
+        tag_hidden_channels=32,
         num_blocks=4,
         int_emb_size=64,
         basis_emb_size=8,
@@ -388,6 +437,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
 
         super(NewDimeNetPlusPlusWrap, self).__init__(
             hidden_channels=hidden_channels,
+            tag_hidden_channels=tag_hidden_channels,
             out_channels=num_targets,
             num_blocks=num_blocks,
             int_emb_size=int_emb_size,
@@ -463,7 +513,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         sbf = self.sbf(dist, angle, idx_kj)
 
         # Embedding block.
-        x = self.emb(data.atomic_numbers.long(), rbf, i, j)
+        x = self.emb(data.atomic_numbers.long(), rbf, i, j, data.tags)
         P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
 
         # Interaction blocks.

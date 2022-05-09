@@ -181,6 +181,8 @@ class EnergyTrainer(BaseTrainer):
         ):
             self.train_sampler.set_epoch(epoch_int)
             skip_steps = self.step % len(self.train_loader)
+            if skip_steps == 0:
+                print("Beginning of training")
             train_loader_iter = iter(self.train_loader)
 
             for i in range(skip_steps, len(self.train_loader)):

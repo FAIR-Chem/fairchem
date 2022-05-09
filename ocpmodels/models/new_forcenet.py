@@ -198,6 +198,8 @@ class NewForceNet(BaseModel):
         num_targets (int): Unused argumebt
         hidden_channels (int, optional): Number of hidden channels.
             (default: :obj:`512`)
+        tag_hidden_channels (int, optional): Number of hidden channels.
+            (default: :obj:`512`)
         num_iteractions (int, optional): Number of interaction blocks.
             (default: :obj:`5`)
         cutoff (float, optional): Cutoff distance for interatomic interactions.
@@ -237,6 +239,7 @@ class NewForceNet(BaseModel):
         num_targets,  # not used
         new_gnn=True,
         hidden_channels=512,
+        tag_hidden_channels=64,
         num_interactions=5,
         cutoff=6.0,
         feat="full",
@@ -290,6 +293,7 @@ class NewForceNet(BaseModel):
         self.num_layers = num_interactions
         self.max_n = max_n
         self.activation_str = activation_str
+        self.use_tag = tag_hidden_channels > 0
 
         if self.ablation == "edgelinear":
             depth_mlp_edge = 0
@@ -328,8 +332,13 @@ class NewForceNet(BaseModel):
             )
 
         # self.feat can be "simple" or "full"
+        self.tag_embedding = nn.Embedding(3, tag_hidden_channels)
+
         if self.feat == "simple":
-            self.embedding = nn.Embedding(100, hidden_channels)
+            self.embedding = nn.Embedding(
+                100, hidden_channels - tag_hidden_channels
+            )
+            # self.embedding = nn.Embedding(100, hidden_channels)
 
             # set up dummy atom_map that only contains atomic_number information
             atom_map = torch.linspace(0, 1, 101).view(-1, 1).repeat(1, 9)
@@ -364,8 +373,12 @@ class NewForceNet(BaseModel):
                 act=self.activation_str,
             )
             self.embedding = torch.nn.Sequential(
-                basis, torch.nn.Linear(basis.out_dim, hidden_channels)
+                basis,
+                torch.nn.Linear(
+                    basis.out_dim, hidden_channels - tag_hidden_channels
+                ),
             )
+            self.tag_embedding = nn.Embedding(3, tag_hidden_channels)
 
         else:
             raise ValueError("Undefined feature type for atom")
@@ -431,10 +444,16 @@ class NewForceNet(BaseModel):
 
         if self.feat == "simple":
             h = self.embedding(z)
+
         elif self.feat == "full":
             h = self.embedding(self.atom_map[z])
         else:
             raise RuntimeError("Undefined feature type for atom")
+
+        if self.use_tag:
+            assert data.tags is not None
+            h_tag = self.tag_embedding(data.tags)
+            h = torch.cat((h, h_tag), dim=1)
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
