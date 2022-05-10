@@ -7,7 +7,7 @@ dataset:
     target_std: 2.279365062713623
   - src: /network/projects/_groups/ocp/oc20/is2re/all/val_id/data.lmdb # val_id val_ood_both  val_ood_cat  val_ood_ads
 
-logger: tensorboard
+logger: wandb
 
 task:
   dataset: single_point_lmdb

@@ -619,7 +619,11 @@ class BaseTrainer(ABC):
         evaluator, metrics = Evaluator(task=self.name), {}
         rank = distutils.get_rank()
 
-        loader = self.val_loader if split == "val" else self.test_loader
+        loader = (
+            self.val_loader
+            if split in {"val", "final_val"}
+            else self.test_loader
+        )
 
         for i, batch in tqdm(
             enumerate(loader),
@@ -660,12 +664,17 @@ class BaseTrainer(ABC):
 
         # Make plots.
         if self.logger is not None:
-            self.logger.log(
-                log_dict,
-                step=self.step,
-                split=split,
-            )
-
+            if split == "final_val":
+                self.logger.log(
+                    log_dict,
+                    split=split,
+                )
+            else:
+                self.logger.log(
+                    log_dict,
+                    step=self.step,
+                    split=split,
+                )
         if self.ema:
             self.ema.restore()
 
@@ -767,12 +776,22 @@ class BaseTrainer(ABC):
             np.savez_compressed(full_path, **gather_results)
 
     def eval_all_val_splits(self):
-        start_time = time.time()
-        metrics = {}
-        print("----- FINAL RESULTS -----")
-        for s in ["val_id", "val_ood_ads", "val_ood_cat", "val_ood_both"]:
+        """Evaluate model on all four validation splits"""
+        # Load current best checkpoint
+        checkpoint_path = os.path.join(
+            self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
+        )
+        self.load_checkpoint(checkpoint_path=checkpoint_path)
 
-            # Update dataset we look at
+        # Compute performance metrics on all four validation splits
+        print("----- FINAL RESULTS -----")
+        start_time = time.time()
+        metrics_dict = {}
+        for i, s in enumerate(
+            ["val_id", "val_ood_ads", "val_ood_cat", "val_ood_both"]
+        ):
+
+            # Update the val. dataset we look at
             self.config["val_dataset"] = {
                 "src": "/network/projects/_groups/ocp/oc20/is2re/all/"
                 + s
@@ -780,45 +799,27 @@ class BaseTrainer(ABC):
             }
             self.load_datasets()
 
-            # Load current best checkpoint
-            checkpoint_path = os.path.join(
-                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
-            )
-            self.load_checkpoint(checkpoint_path=checkpoint_path)
-
             # Call validate function
-            metric = self.validate(split="val", disable_tqdm=True)
-            metrics[s] = metric
+            self.step = i
+            self.metrics = self.validate(split="final_val", disable_tqdm=True)
+            metrics_dict[s] = self.metrics
 
         # Log results
+        if self.config["logger"] == "wandb":
+            for k, v in metrics_dict.items():
+                store = []
+                for key, val in v.items():
+                    store.append(round(val["metric"], 4))
+                    self.logger.log(
+                        {k + "/" + key: val["metric"]}, split="final_val"
+                    )
+            self.logger.log({"Val. time": time.time() - start_time})
+
+        # Print results
         print("Total time taken: ", time.time() - start_time)
-        print(metric.keys())
-        for k, v in metrics.items():
+        print(self.metrics.keys())
+        for k, v in metrics_dict.items():
             store = []
             for _, val in v.items():
                 store.append(round(val["metric"], 4))
             print(k, store)
-
-        # Save results
-        file = open("val_results.txt", "a+")
-        file.write("\n")
-        file.write("-----------------")
-        file.write("\n")
-        file.write("\n")
-        file.write(checkpoint_path)
-        file.write("\n")
-        file.write(str(metric.keys()))
-        file.write("\n")
-        file.writelines(
-            ["val_id ", " val_ood_ads ", " val_ood_cat ", " val_ood_both "]
-        )
-        file.write("\n")
-        file.write("Total time taken: " + str(time.time() - start_time))
-        file.write("\n")
-        for k, v in metrics.items():
-            store = []
-            for _, val in v.items():
-                store.append(round(val["metric"], 4))
-            file.write(str(store))
-            file.write("\n")
-        file.close()

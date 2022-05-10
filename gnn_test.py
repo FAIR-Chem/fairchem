@@ -36,7 +36,7 @@ if __name__ == "__main__":
         is_debug=True,
         print_every=100,
         seed=config.get("seed", 0),
-        logger=config.get("logger", "tensorboard"),
+        logger=config.get("logger", "wandb"),
         local_rank=config["local_rank"],
         amp=config.get("amp", False),
         cpu=config.get("cpu", False),
