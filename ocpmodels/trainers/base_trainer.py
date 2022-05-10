@@ -137,15 +137,22 @@ class BaseTrainer(ABC):
                 "timestamp_id": self.timestamp_id,
                 "commit": commit_hash,
                 "checkpoint_dir": os.path.join(
-                    run_dir,
+                    "/network/scratch",
+                    "/".join(
+                        os.getcwd().split("/")[3:5]
+                    ),  # os.path.dirname(os.path.dirname(os.getcwd()))[10:]
                     "checkpoints",
                     self.timestamp_id + "-" + model_name,
                 ),
                 "results_dir": os.path.join(
-                    run_dir, "results", self.timestamp_id + "-" + model_name
+                    "/network/scratch",
+                    "/".join(os.getcwd().split("/")[3:5]),
+                    "results",
+                    self.timestamp_id + "-" + model_name,
                 ),
                 "logs_dir": os.path.join(
-                    run_dir,
+                    "/network/scratch",
+                    "/".join(os.getcwd().split("/")[3:5]),
                     "logs",
                     logger_name,
                     self.timestamp_id + "-" + model_name,
