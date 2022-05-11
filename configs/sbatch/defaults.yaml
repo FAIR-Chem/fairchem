@@ -9,12 +9,13 @@
 cpus: 4
 dev: false
 env: "ocp"
-error: "slurm_res/error-job.txt"
+error: "$SCRATCH/ocp/runs/%j/logs/%j-error.txt"
 gres: "gpu:4"
 job_name: "ocp-script"
 mem: "32GB"
 ntasks: 1
-output: "slurm_res/output-job.txt"
+output: "$SCRATCH/ocp/runs/%j/logs/%j-output.txt"
 partition: "long"
 py_args: ""
 time: ""
+logdir: "$SCRATCH/ocp/runs/$SLURM_JOBID"
