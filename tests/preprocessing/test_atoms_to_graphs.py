@@ -58,9 +58,7 @@ class TestAtomsToGraphs:
             primitive=NewPrimitiveNeighborList,
         )
         n.update(self.atoms)
-        ase_neighbors = [
-            n.get_neighbors(index) for index in range(len(self.atoms))
-        ]
+        ase_neighbors = [n.get_neighbors(index) for index in range(len(self.atoms))]
         ase_s_index = []
         ase_n_index = []
         ase_offsets = []

@@ -44,9 +44,7 @@ def now():
     Returns:
         str: now!
     """
-    return (
-        str(datetime.now()).split(".")[0].replace(":", "-").replace(" ", "_")
-    )
+    return str(datetime.now()).split(".")[0].replace(":", "-").replace(" ", "_")
 
 
 if __name__ == "__main__":
@@ -57,9 +55,7 @@ if __name__ == "__main__":
     root = Path(__file__).resolve().parent
     # parse and resolve args.
     # defaults are loaded and overwritten from the command-line as `arg=value`
-    args = resolved_args(
-        defaults=root / "configs" / "sbatch" / "defaults.yaml"
-    )
+    args = resolved_args(defaults=root / "configs" / "sbatch" / "defaults.yaml")
     args.pretty_print()
 
     # add logdir to main.py's command-line arguments
@@ -114,9 +110,7 @@ if __name__ == "__main__":
         print("\nDev mode: not actually executing the command 🤓\n")
     else:
         # not dev mode: run the command, make directories
-        out = (
-            subprocess.check_output(command.split(" ")).decode("utf-8").strip()
-        )
+        out = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
         jobid = out.split(" job ")[-1].strip()
         success = out.startswith("Submitted batch job")
 

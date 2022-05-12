@@ -125,9 +125,7 @@ class Flags:
             default="nccl",
             help="Backend for DDP",
         )
-        self.parser.add_argument(
-            "--local_rank", default=0, type=int, help="Local rank"
-        )
+        self.parser.add_argument("--local_rank", default=0, type=int, help="Local rank")
         # Additional arguments
         self.parser.add_argument(
             "--new_gnn",

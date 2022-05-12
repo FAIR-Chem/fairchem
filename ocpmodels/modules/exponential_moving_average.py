@@ -37,18 +37,14 @@ class ExponentialMovingAverage:
         self.decay = decay
         self.num_updates = 0 if use_num_updates else None
         parameters = list(parameters)
-        self.shadow_params = [
-            p.clone().detach() for p in parameters if p.requires_grad
-        ]
+        self.shadow_params = [p.clone().detach() for p in parameters if p.requires_grad]
         self.collected_params = []
         # By maintaining only a weakref to each parameter,
         # we maintain the old GC behaviour of ExponentialMovingAverage:
         # if the model goes out of scope but the ExponentialMovingAverage
         # is kept, no references to the model or its parameters will be
         # maintained, and the model will be cleaned up.
-        self._params_refs = [
-            weakref.ref(p) for p in parameters if p.requires_grad
-        ]
+        self._params_refs = [weakref.ref(p) for p in parameters if p.requires_grad]
 
     def _get_parameters(
         self, parameters: Optional[Iterable[torch.nn.Parameter]]
@@ -68,9 +64,7 @@ class ExponentialMovingAverage:
         else:
             return [p for p in parameters if p.requires_grad]
 
-    def update(
-        self, parameters: Optional[Iterable[torch.nn.Parameter]] = None
-    ) -> None:
+    def update(self, parameters: Optional[Iterable[torch.nn.Parameter]] = None) -> None:
         """
         Update currently maintained parameters.
 
@@ -87,9 +81,7 @@ class ExponentialMovingAverage:
         decay = self.decay
         if self.num_updates is not None:
             self.num_updates += 1
-            decay = min(
-                decay, (1 + self.num_updates) / (10 + self.num_updates)
-            )
+            decay = min(decay, (1 + self.num_updates) / (10 + self.num_updates))
         one_minus_decay = 1.0 - decay
         with torch.no_grad():
             for s_param, param in zip(self.shadow_params, parameters):
@@ -112,9 +104,7 @@ class ExponentialMovingAverage:
         for s_param, param in zip(self.shadow_params, parameters):
             param.data.copy_(s_param.data)
 
-    def store(
-        self, parameters: Optional[Iterable[torch.nn.Parameter]] = None
-    ) -> None:
+    def store(self, parameters: Optional[Iterable[torch.nn.Parameter]] = None) -> None:
         """
         Save the current parameters for restoring later.
 

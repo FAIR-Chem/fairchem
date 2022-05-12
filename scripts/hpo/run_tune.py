@@ -101,9 +101,7 @@ def main():
 
     print(
         "Best config is:",
-        analysis.get_best_config(
-            metric="val_forces_mae", mode="min", scope="last"
-        ),
+        analysis.get_best_config(metric="val_forces_mae", mode="min", scope="last"),
     )
 
 

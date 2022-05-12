@@ -65,21 +65,16 @@ class LBFGS:
         self.atoms.pos = r + update.to(dtype=torch.float32)
         self.model.update_graph(self.atoms)
 
-    def check_convergence(
-        self, iteration, update_mask, forces, force_threshold
-    ):
+    def check_convergence(self, iteration, update_mask, forces, force_threshold):
         if forces is None:
             return False
         max_forces_ = scatter(
             (forces**2).sum(axis=1).sqrt(), self.atoms.batch, reduce="max"
         )
         max_forces = max_forces_[self.atoms.batch]
-        update_mask = torch.logical_and(
-            update_mask, max_forces.ge(force_threshold)
-        )
+        update_mask = torch.logical_and(update_mask, max_forces.ge(force_threshold))
         logging.info(
-            f"{iteration} "
-            + " ".join(f"{x:0.3f}" for x in max_forces_.tolist())
+            f"{iteration} " + " ".join(f"{x:0.3f}" for x in max_forces_.tolist())
         )
         return update_mask
 
@@ -102,24 +97,16 @@ class LBFGS:
         iteration = 0
         converged = False
         while iteration < steps and not converged:
-            r0, f0, e0 = self.step(
-                iteration, r0, f0, H0, rho, s, y, update_mask
-            )
+            r0, f0, e0 = self.step(iteration, r0, f0, H0, rho, s, y, update_mask)
             iteration += 1
             if trajectories is not None:
                 self.atoms.y, self.atoms.force = e0, f0
                 atoms_objects = batch_to_atoms(self.atoms)
-                update_mask_ = torch.split(
-                    update_mask, self.atoms.natoms.tolist()
-                )
-                for atm, traj, mask in zip(
-                    atoms_objects, trajectories, update_mask_
-                ):
+                update_mask_ = torch.split(update_mask, self.atoms.natoms.tolist())
+                for atm, traj, mask in zip(atoms_objects, trajectories, update_mask_):
                     if mask[0]:
                         traj.write(atm)
-            update_mask = self.check_convergence(
-                iteration, update_mask, f0, fmax
-            )
+            update_mask = self.check_convergence(iteration, update_mask, f0, fmax)
             converged = torch.all(torch.logical_not(update_mask))
         # GPU memory usage as per nvidia-smi seems to gradually build up as
         # batches are processed. This releases unoccupied cached memory.
@@ -132,17 +119,13 @@ class LBFGS:
                 traj_fl = Path(self.traj_dir / f"{name}.traj_tmp", mode="w")
                 traj_fl.rename(traj_fl.with_suffix(".traj"))
 
-        self.atoms.y, self.atoms.force = self.get_forces(
-            apply_constraint=False
-        )
+        self.atoms.y, self.atoms.force = self.get_forces(apply_constraint=False)
         return self.atoms
 
     def step(self, iteration, r0, f0, H0, rho, s, y, update_mask):
         def determine_step(dr):
             steplengths = torch.norm(dr, dim=1)
-            longest_steps = scatter(
-                steplengths, self.atoms.batch, reduce="max"
-            )
+            longest_steps = scatter(steplengths, self.atoms.batch, reduce="max")
             longest_steps = longest_steps[self.atoms.batch]
             maxstep = longest_steps.new_tensor(self.maxstep)
             scale = (longest_steps + 1e-7).reciprocal() * torch.min(
@@ -189,9 +172,7 @@ class TorchCalc:
         self.transform = transform
 
     def get_forces(self, atoms, apply_constraint=True):
-        predictions = self.model.predict(
-            atoms, per_image=False, disable_tqdm=True
-        )
+        predictions = self.model.predict(atoms, per_image=False, disable_tqdm=True)
         energy = predictions["energy"]
         forces = predictions["forces"]
         if apply_constraint:
@@ -200,9 +181,7 @@ class TorchCalc:
         return energy, forces
 
     def update_graph(self, atoms):
-        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
-            atoms, 6, 50
-        )
+        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(atoms, 6, 50)
         atoms.edge_index = edge_index
         atoms.cell_offsets = cell_offsets
         atoms.neighbors = num_neighbors

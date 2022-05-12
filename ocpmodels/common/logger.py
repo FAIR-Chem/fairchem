@@ -102,9 +102,7 @@ class TensorboardLogger(Logger):
 
     # TODO: add a model hook for watching gradients.
     def watch(self, model):
-        logging.warning(
-            "Model gradient logging to tensorboard not yet supported."
-        )
+        logging.warning("Model gradient logging to tensorboard not yet supported.")
         return False
 
     def log(self, update_dict, step=None, split=""):
