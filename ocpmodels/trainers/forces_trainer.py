@@ -489,15 +489,17 @@ class ForcesTrainer(BaseTrainer):
                 loss.append(train_loss_force_normalized)
 
             else:
+                # Force coefficient = 30 has been working well for us.
+                force_mult = self.config["optim"].get("force_coefficient", 30)
                 if self.config["task"].get("train_on_free_atoms", False):
-                    force_mult = self.config["optim"].get(
-                        "force_coefficient", 1
-                    )
                     fixed = torch.cat(
                         [batch.fixed.to(self.device) for batch in batch_list]
                     )
                     mask = fixed == 0
                     if self.config["optim"]["loss_force"] == "atomwisemse":
+                        force_mult = self.config["optim"].get(
+                            "force_coefficient", 1
+                        )
                         natoms = torch.cat(
                             [
                                 batch.natoms.to(self.device)
@@ -520,10 +522,6 @@ class ForcesTrainer(BaseTrainer):
                             )
                         )
                 else:
-                    # Force coefficient = 30 has been working well for us.
-                    force_mult = self.config["optim"].get(
-                        "force_coefficient", 30
-                    )
                     loss.append(
                         force_mult
                         * self.loss_fn["force"](out["forces"], force_target)
