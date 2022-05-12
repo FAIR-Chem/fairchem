@@ -263,10 +263,16 @@ class EnergyTrainer(BaseTrainer):
                 else:
                     self.scheduler.step()
 
+                # Evaluate current model on all 4 validation splits
+                if epoch_int % 5 == 0 and epoch_int != (
+                    self.config["optim"]["max_epochs"] - 1
+                ):
+                    self.eval_all_val_splits(final=False)
+
             torch.cuda.empty_cache()
 
-        # Evaluate best model checkpoint on all 4 validation splits
-        self.eval_all_val_splits()
+        # Evaluate best model checkpoint
+        self.eval_all_val_splits(final=True)
 
         self.train_dataset.close_db()
         if "val_dataset" in self.config:

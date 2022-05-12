@@ -627,7 +627,9 @@ class BaseTrainer(ABC):
         rank = distutils.get_rank()
 
         loader = (
-            self.val_loader if split in {"val", "eval"} else self.test_loader
+            self.val_loader
+            if split[:3] in {"val", "eva"}
+            else self.test_loader
         )
 
         for i, batch in tqdm(
@@ -669,7 +671,7 @@ class BaseTrainer(ABC):
 
         # Make plots.
         if self.logger is not None:
-            if split == "final_val":
+            if split == "eval":
                 self.logger.log(
                     log_dict,
                     split=split,
@@ -780,20 +782,21 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(self):
+    def eval_all_val_splits(self, final=False):
         """Evaluate model on all four validation splits"""
-        # Load current best checkpoint
-        checkpoint_path = os.path.join(
-            self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
-        )
-        self.load_checkpoint(checkpoint_path=checkpoint_path)
+
+        if final:
+            # Load current best checkpoint
+            checkpoint_path = os.path.join(
+                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
+            )
+            self.load_checkpoint(checkpoint_path=checkpoint_path)
 
         # Compute performance metrics on all four validation splits
-        print("----- FINAL RESULTS -----")
         start_time = time.time()
         metrics_dict = {}
         for i, s in enumerate(
-            ["val_id", "val_ood_ads", "val_ood_cat", "val_ood_both"]
+            ["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]
         ):
 
             # Update the val. dataset we look at
@@ -805,26 +808,27 @@ class BaseTrainer(ABC):
             self.load_datasets()
 
             # Call validate function
-            self.step = i
-            self.metrics = self.validate(split="eval", disable_tqdm=True)
+            self.metrics = self.validate(split="eval/" + s, disable_tqdm=True)
             metrics_dict[s] = self.metrics
 
         # Log results
-        if self.config["logger"] == "wandb":
+        if final:
+            if self.config["logger"] == "wandb":
+                for k, v in metrics_dict.items():
+                    store = []
+                    for key, val in v.items():
+                        store.append(round(val["metric"], 4))
+                        self.logger.log(
+                            {k + "/" + key: val["metric"]}, split="final_eval"
+                        )
+                self.logger.log({"Val. time": time.time() - start_time})
+
+            # Print results
+            print("----- FINAL RESULTS -----")
+            print("Total time taken: ", time.time() - start_time)
+            print(self.metrics.keys())
             for k, v in metrics_dict.items():
                 store = []
-                for key, val in v.items():
+                for _, val in v.items():
                     store.append(round(val["metric"], 4))
-                    self.logger.log(
-                        {k + "/" + key: val["metric"]}, split="eval_unique"
-                    )
-            self.logger.log({"Val. time": time.time() - start_time})
-
-        # Print results
-        print("Total time taken: ", time.time() - start_time)
-        print(self.metrics.keys())
-        for k, v in metrics_dict.items():
-            store = []
-            for _, val in v.items():
-                store.append(round(val["metric"], 4))
-            print(k, store)
+                print(k, store)
