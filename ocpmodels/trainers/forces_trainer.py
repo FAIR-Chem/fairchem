@@ -509,7 +509,7 @@ class ForcesTrainer(BaseTrainer):
                             out["forces"][mask],
                             force_target[mask],
                             natoms=natoms[mask],
-                            batch_size=self.config["optim"]["batch_size"],
+                            batch_size=batch_list[0].natoms.shape[0],
                         )
                         loss.append(force_loss)
                     else:
