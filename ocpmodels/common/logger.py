@@ -12,6 +12,7 @@ import wandb
 from torch.utils.tensorboard import SummaryWriter
 
 from ocpmodels.common.registry import registry
+import os
 
 
 class Logger(ABC):
@@ -33,7 +34,6 @@ class Logger(ABC):
         """
         Log some values.
         """
-        assert step is not None
         if split != "":
             new_dict = {}
             for key in update_dict:
@@ -60,9 +60,15 @@ class WandBLogger(Logger):
             else None
         )
 
+        wandb_id = ""
+        slurm_jobid = os.environ.get("SLURM_JOBID")
+        if slurm_jobid:
+            wandb_id += f"{slurm_jobid}-"
+        wandb_id += self.config["cmd"]["timestamp_id"] + "-" + config["model"]
+
         wandb.init(
             config=self.config,
-            id=self.config["cmd"]["timestamp_id"],
+            id=wandb_id,
             name=self.config["cmd"]["identifier"],
             dir=self.config["cmd"]["logs_dir"],
             project=project,
@@ -73,8 +79,11 @@ class WandBLogger(Logger):
         wandb.watch(model)
 
     def log(self, update_dict, step=None, split=""):
-        update_dict = super().log(update_dict, step, split)
-        wandb.log(update_dict, step=int(step))
+        if step is not None:
+            update_dict = super().log(update_dict, step, split)
+            wandb.log(update_dict, step=int(step))
+        else:
+            wandb.log(update_dict)
 
     def log_plots(self, plots, caption=""):
         assert isinstance(plots, list)

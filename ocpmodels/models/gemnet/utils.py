@@ -259,7 +259,7 @@ def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
         V_st = Rt - Rs  # s -> t
     else:
         V_st = Rt - Rs + offsets_st  # s -> t
-    D_st = torch.sqrt(torch.sum(V_st ** 2, dim=1))
+    D_st = torch.sqrt(torch.sum(V_st**2, dim=1))
     V_st = V_st / D_st[..., None]
     return D_st, V_st
 

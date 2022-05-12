@@ -12,11 +12,11 @@ import numpy as np
 import pytest
 import torch
 from ase.io import read
-from torch_geometric.data import Batch, Data
+from torch_geometric.data import Data
 
 from ocpmodels.common.transforms import RandomRotate
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.models import SchNet
+from ocpmodels.models import NewForceNet
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -40,46 +40,19 @@ def load_data(request):
 
 @pytest.fixture(scope="class")
 def load_model(request):
-    torch.manual_seed(4)
-    model = SchNet(
+    model = NewForceNet(
         None,
         32,
         1,
         new_gnn=None,
         cutoff=6.0,
-        regress_forces=True,
-        use_pbc=True,
     )
     request.cls.model = model
 
 
 @pytest.mark.usefixtures("load_data")
 @pytest.mark.usefixtures("load_model")
-class TestSchNet:
-    def test_rotation_invariance(self):
-        random.seed(1)
-        data = self.data
-
-        # Sampling a random rotation within [-180, 180] for all axes.
-        transform = RandomRotate([-180, 180], [0, 1, 2])
-        data_rotated, rot, inv_rot = transform(data.clone())
-        assert not np.array_equal(data.pos, data_rotated.pos)
-
-        # Pass it through the model.
-        batch = data_list_collater([data, data_rotated])
-        out = self.model(batch)
-
-        # Compare predicted energies and forces (after inv-rotation).
-        energies = out[0].detach()
-        np.testing.assert_almost_equal(energies[0], energies[1], decimal=5)
-
-        forces = out[1].detach()
-        np.testing.assert_array_almost_equal(
-            forces[: forces.shape[0] // 2],
-            torch.matmul(forces[forces.shape[0] // 2 :], inv_rot),
-            decimal=5,
-        )
-
+class TestForceNet:
     def test_energy_force_shape(self):
         data = self.data
 
@@ -87,8 +60,8 @@ class TestSchNet:
         out = self.model(data_list_collater([data]))
 
         # Compare shape of predicted energies, forces.
-        energy = out[0].detach()
+        energy = out.detach()
         np.testing.assert_equal(energy.shape, (1, 1))
 
-        forces = out[1].detach()
-        np.testing.assert_equal(forces.shape, (data.pos.shape[0], 3))
+        # forces = out[1].detach()
+        # np.testing.assert_equal(forces.shape, (data.pos.shape[0], 3))

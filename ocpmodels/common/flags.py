@@ -24,12 +24,10 @@ class Flags:
         self.parser.add_argument(
             "--mode",
             choices=["train", "predict", "run-relaxations", "validate"],
-            required=True,
             help="Whether to train the model, make predictions, or to run relaxations",
         )
         self.parser.add_argument(
             "--config-yml",
-            required=True,
             type=Path,
             help="Path to a config file listing data, model, optim parameters.",
         )
@@ -52,7 +50,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--print-every",
-            default=10,
+            default=1000,
             type=int,
             help="Log every N iterations (default: 10)",
         )
@@ -127,7 +125,15 @@ class Flags:
             default="nccl",
             help="Backend for DDP",
         )
-        self.parser.add_argument("--local_rank", default=0, type=int, help="Local rank")
+        self.parser.add_argument(
+            "--local_rank", default=0, type=int, help="Local rank"
+        )
+        # Additional arguments
+        self.parser.add_argument(
+            "--new_gnn",
+            action="store_false",
+            help="Whether to use original GNN models or modified ones",
+        )
 
 
 flags = Flags()

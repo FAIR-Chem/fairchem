@@ -1,0 +1,21 @@
+# defaults arguments for ~/sbatch.py
+# overwerite with python sbatch.py arg=value
+# py_args should be a string, it will be passed down to main.py as: 
+#   $ python main.py py_args
+#
+# for instance:
+#   $ python sbatch.py cpus=6 env=ocp-env partition=main time="24:00:00" py_args="--mode train"
+
+cpus: 4
+dev: false
+env: "ocp"
+error: "$SCRATCH/ocp/runs/%j/logs/%j-error.txt"
+gres: "gpu:4"
+job_name: "ocp-script"
+mem: "32GB"
+ntasks: 1
+output: "$SCRATCH/ocp/runs/%j/logs/%j-output.txt"
+partition: "long"
+py_args: ""
+time: ""
+logdir: "$SCRATCH/ocp/runs/$SLURM_JOBID"

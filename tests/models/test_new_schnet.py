@@ -16,7 +16,7 @@ from torch_geometric.data import Batch, Data
 
 from ocpmodels.common.transforms import RandomRotate
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.models import SchNet
+from ocpmodels.models import NewSchNet
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -41,7 +41,7 @@ def load_data(request):
 @pytest.fixture(scope="class")
 def load_model(request):
     torch.manual_seed(4)
-    model = SchNet(
+    model = NewSchNet(
         None,
         32,
         1,
@@ -86,9 +86,9 @@ class TestSchNet:
         # Pass it through the model.
         out = self.model(data_list_collater([data]))
 
-        # Compare shape of predicted energies, forces.
-        energy = out[0].detach()
+        # Compare shape of predicted energies.
+        energy = out.detach()
         np.testing.assert_equal(energy.shape, (1, 1))
 
-        forces = out[1].detach()
-        np.testing.assert_equal(forces.shape, (data.pos.shape[0], 3))
+        # forces = out[1].detach()
+        # np.testing.assert_equal(forces.shape, (data.pos.shape[0], 3))

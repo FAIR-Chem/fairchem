@@ -10,6 +10,7 @@ import logging
 import os
 import sys
 import time
+import warnings
 from pathlib import Path
 
 import submitit
@@ -39,7 +40,9 @@ class Runner(submitit.helpers.Checkpointable):
 
         try:
             setup_imports()
-            self.trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
+            self.trainer = registry.get_trainer_class(
+                config.get("trainer", "energy")
+            )(
                 task=config["task"],
                 model=config["model"],
                 dataset=config["dataset"],
@@ -48,21 +51,21 @@ class Runner(submitit.helpers.Checkpointable):
                 timestamp_id=config.get("timestamp_id", None),
                 run_dir=config.get("run_dir", "./"),
                 is_debug=config.get("is_debug", False),
-                print_every=config.get("print_every", 10),
+                print_every=config.get("print_every", 100),
                 seed=config.get("seed", 0),
-                logger=config.get("logger", "tensorboard"),
+                logger=config.get("logger", "wandb"),
                 local_rank=config["local_rank"],
                 amp=config.get("amp", False),
                 cpu=config.get("cpu", False),
                 slurm=config.get("slurm", {}),
+                new_gnn=config.get("new_gnn", True),
             )
             self.task = registry.get_task_class(config["mode"])(self.config)
             self.task.setup(self.trainer)
             start_time = time.time()
             self.task.run()
             distutils.synchronize()
-            if distutils.is_master():
-                logging.info(f"Total time taken: {time.time() - start_time}")
+            logging.info(f"Total time taken: {time.time() - start_time}")
         finally:
             if args.distributed:
                 distutils.cleanup()
@@ -82,10 +85,17 @@ if __name__ == "__main__":
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
+    # if not args.mode or not args.config_yml:
+    #     args.mode = "train"
+    #     args.config_yml = "configs/is2re/10k/schnet/schnet.yml"
+    #     # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
+    #     warnings.warn("No model / mode is given; chosen as default")
     config = build_config(args, override_args)
 
     if args.submit:  # Run on cluster
-        slurm_add_params = config.get("slurm", None)  # additional slurm arguments
+        slurm_add_params = config.get(
+            "slurm", None
+        )  # additional slurm arguments
         if args.sweep_yml:  # Run grid search
             configs = create_grid(config, args.sweep_yml)
         else:
@@ -110,7 +120,9 @@ if __name__ == "__main__":
             config["slurm"] = copy.deepcopy(executor.parameters)
             config["slurm"]["folder"] = str(executor.folder)
         jobs = executor.map_array(Runner(), configs)
-        logging.info(f"Submitted jobs: {', '.join([job.job_id for job in jobs])}")
+        logging.info(
+            f"Submitted jobs: {', '.join([job.job_id for job in jobs])}"
+        )
         log_file = save_experiment_log(args, jobs, configs)
         logging.info(f"Experiment log saved to: {log_file}")
 
