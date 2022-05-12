@@ -98,6 +98,8 @@ class Runner(submitit.helpers.Checkpointable):
         Returns:
             dict: The updated config if a checkpoint has been found
         """
+        if config["checkpoint"]:
+            return config
 
         job_id = os.environ.get("SLURM_JOBID")
         if job_id is None:
