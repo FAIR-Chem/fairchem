@@ -18,6 +18,24 @@ class L2MAELoss(nn.Module):
             return torch.sum(dists)
 
 
+class AtomwiseMSELoss(nn.Module):
+    def __init__(self, reduction="mean"):
+        super().__init__()
+        self.reduction = reduction
+        assert reduction in ["mean", "sum"]
+
+    def forward(
+        self, input: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor
+    ):
+        assert natoms.shape[0] == input.shape[0] == target.shape[0]
+        assert len(natoms.shape) == 1  # (nAtoms, )
+        loss = natoms * ((input - target) ** 2).mean(-1)  # Avg across x,y,z
+        if self.reduction == "mean":
+            return loss.mean()
+        elif self.reduction == "sum":
+            return loss.sum()
+
+
 class DDPLoss(nn.Module):
     def __init__(self, loss_fn, reduction="mean"):
         super().__init__()
@@ -26,10 +44,21 @@ class DDPLoss(nn.Module):
         self.reduction = reduction
         assert reduction in ["mean", "sum"]
 
-    def forward(self, input: torch.Tensor, target: torch.Tensor):
-        loss = self.loss_fn(input, target)
+    def forward(
+        self,
+        input: torch.Tensor,
+        target: torch.Tensor,
+        natoms: torch.Tensor = None,
+        batch_size: int = None,
+    ):
+        if natoms is None:
+            loss = self.loss_fn(input, target)
+        else:  # atom-wise loss
+            loss = self.loss_fn(input, target, natoms)
         if self.reduction == "mean":
-            num_samples = input.shape[0]
+            num_samples = (
+                batch_size if batch_size is not None else input.shape[0]
+            )
             num_samples = distutils.all_reduce(
                 num_samples, device=input.device
             )

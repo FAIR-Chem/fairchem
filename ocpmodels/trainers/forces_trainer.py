@@ -489,24 +489,46 @@ class ForcesTrainer(BaseTrainer):
                 loss.append(train_loss_force_normalized)
 
             else:
-                # Force coefficient = 30 has been working well for us.
-                force_mult = self.config["optim"].get("force_coefficient", 30)
                 if self.config["task"].get("train_on_free_atoms", False):
+                    force_mult = self.config["optim"].get(
+                        "force_coefficient", 1
+                    )
                     fixed = torch.cat(
                         [batch.fixed.to(self.device) for batch in batch_list]
                     )
                     mask = fixed == 0
-                    loss.append(
-                        force_mult
-                        * self.loss_fn["force"](
-                            out["forces"][mask], force_target[mask]
+                    if self.config["optim"]["loss_force"] == "atomwisemse":
+                        natoms = torch.cat(
+                            [
+                                batch.natoms.to(self.device)
+                                for batch in batch_list
+                            ]
                         )
-                    )
+                        natoms = torch.repeat_interleave(natoms, natoms)
+                        force_loss = force_mult * self.loss_fn["force"](
+                            out["forces"][mask],
+                            force_target[mask],
+                            natoms=natoms[mask],
+                            batch_size=self.config["optim"]["batch_size"],
+                        )
+                        loss.append(force_loss)
+                    else:
+                        loss.append(
+                            force_mult
+                            * self.loss_fn["force"](
+                                out["forces"][mask], force_target[mask]
+                            )
+                        )
                 else:
+                    # Force coefficient = 30 has been working well for us.
+                    force_mult = self.config["optim"].get(
+                        "force_coefficient", 30
+                    )
                     loss.append(
                         force_mult
                         * self.loss_fn["force"](out["forces"], force_target)
                     )
+
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
             assert hasattr(lc, "grad_fn")
