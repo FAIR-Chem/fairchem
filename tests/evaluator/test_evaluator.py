@@ -22,16 +22,12 @@ def load_evaluator_s2ef(request):
     prediction = {
         "energy": torch.randn(6),
         "forces": torch.randn(1000000, 3),
-        "natoms": torch.tensor(
-            (100000, 200000, 300000, 200000, 100000, 100000)
-        ),
+        "natoms": torch.tensor((100000, 200000, 300000, 200000, 100000, 100000)),
     }
     target = {
         "energy": torch.randn(6),
         "forces": torch.randn(1000000, 3),
-        "natoms": torch.tensor(
-            (100000, 200000, 300000, 200000, 100000, 100000)
-        ),
+        "natoms": torch.tensor((100000, 200000, 300000, 200000, 100000, 100000)),
     }
     request.cls.metrics = request.cls.evaluator.eval(prediction, target)
 
@@ -71,9 +67,7 @@ class TestMetrics:
         v1, v2 = torch.randn(1000000, 3), torch.randn(1000000, 3)
         res = cosine_similarity(v1, v2)
         np.testing.assert_almost_equal(res["metric"], 0, decimal=2)
-        np.testing.assert_almost_equal(
-            res["total"] / res["numel"], res["metric"]
-        )
+        np.testing.assert_almost_equal(res["total"] / res["numel"], res["metric"])
 
     def test_magnitude_error(self):
         v1, v2 = (

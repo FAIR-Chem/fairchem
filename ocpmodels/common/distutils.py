@@ -144,9 +144,7 @@ def all_gather(data, group=dist.group.WORLD, device=None):
         tensor = torch.tensor(data)
     if device is not None:
         tensor = tensor.cuda(device)
-    tensor_list = [
-        tensor.new_zeros(tensor.shape) for _ in range(get_world_size())
-    ]
+    tensor_list = [tensor.new_zeros(tensor.shape) for _ in range(get_world_size())]
     dist.all_gather(tensor_list, tensor, group=group)
     if not isinstance(data, torch.Tensor):
         result = [tensor.cpu().numpy() for tensor in tensor_list]

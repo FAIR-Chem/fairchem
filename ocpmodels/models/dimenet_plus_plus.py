@@ -113,17 +113,11 @@ class InteractionPPBlock(torch.nn.Module):
 
         # Residual layers before and after skip connection.
         self.layers_before_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_before_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_before_skip)]
         )
         self.lin = nn.Linear(hidden_channels, hidden_channels)
         self.layers_after_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_after_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_after_skip)]
         )
 
         self.reset_parameters()

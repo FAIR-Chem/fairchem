@@ -150,9 +150,7 @@ def repeat_blocks(
         insert_dummy = False
 
     # Get repeats for each group using group lengths/sizes
-    r1 = torch.repeat_interleave(
-        torch.arange(len(sizes), device=sizes.device), repeats
-    )
+    r1 = torch.repeat_interleave(torch.arange(len(sizes), device=sizes.device), repeats)
 
     # Get total size of output array, as needed to initialize output indexing array
     N = (sizes * repeats).sum()
@@ -176,9 +174,7 @@ def repeat_blocks(
 
         # Add block increments
         if isinstance(block_inc, torch.Tensor):
-            insert_val += segment_csr(
-                block_inc[: r1[-1]], indptr, reduce="sum"
-            )
+            insert_val += segment_csr(block_inc[: r1[-1]], indptr, reduce="sum")
         else:
             insert_val += block_inc * (indptr[1:] - indptr[:-1])
             if insert_dummy:

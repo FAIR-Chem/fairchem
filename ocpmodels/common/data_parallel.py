@@ -33,10 +33,7 @@ class OCPDataParallel(torch.nn.DataParallel):
         elif num_gpus == 1:
             device_ids = [self.src_device]
         else:
-            if (
-                self.src_device.type == "cuda"
-                and self.src_device.index >= num_gpus
-            ):
+            if self.src_device.type == "cuda" and self.src_device.index >= num_gpus:
                 raise ValueError("Main device must be less than # of GPUs")
             device_ids = list(range(num_gpus))
 
@@ -68,8 +65,7 @@ class OCPDataParallel(torch.nn.DataParallel):
                 )
 
         inputs = [
-            batch.to(f"cuda:{self.device_ids[i]}")
-            for i, batch in enumerate(batch_list)
+            batch.to(f"cuda:{self.device_ids[i]}") for i, batch in enumerate(batch_list)
         ]
         replicas = self.replicate(self.module, self.device_ids[: len(inputs)])
         outputs = self.parallel_apply(replicas, inputs, None)
@@ -92,9 +88,7 @@ class ParallelCollater:
             count = torch.tensor([data.num_nodes for data in data_list])
             cumsum = count.cumsum(0)
             cumsum = torch.cat([cumsum.new_zeros(1), cumsum], dim=0)
-            device_id = (
-                num_devices * cumsum.to(torch.float) / cumsum[-1].item()
-            )
+            device_id = num_devices * cumsum.to(torch.float) / cumsum[-1].item()
             device_id = (device_id[:-1] + device_id[1:]) / 2.0
             device_id = device_id.to(torch.long)
             split = device_id.bincount().cumsum(0)
@@ -213,9 +207,7 @@ class BalancedBatchSampler(Sampler):
                     if self.mode == "atoms":
                         sizes = [data.num_nodes for data in data_list]
                     elif self.mode == "neighbors":
-                        sizes = [
-                            data.edge_index.shape[1] for data in data_list
-                        ]
+                        sizes = [data.edge_index.shape[1] for data in data_list]
                     else:
                         raise NotImplementedError(
                             f"Unknown load balancing mode: {self.mode}"
@@ -223,12 +215,8 @@ class BalancedBatchSampler(Sampler):
                 else:
                     sizes = [self.sizes[idx] for idx in batch_idx]
 
-                idx_sizes = torch.stack(
-                    [torch.tensor(batch_idx), torch.tensor(sizes)]
-                )
-                idx_sizes_all = distutils.all_gather(
-                    idx_sizes, device=self.device
-                )
+                idx_sizes = torch.stack([torch.tensor(batch_idx), torch.tensor(sizes)])
+                idx_sizes_all = distutils.all_gather(idx_sizes, device=self.device)
                 idx_sizes_all = torch.cat(idx_sizes_all, dim=-1).cpu()
                 idx_all = idx_sizes_all[0]
                 sizes_all = idx_sizes_all[1]

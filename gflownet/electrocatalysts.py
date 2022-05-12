@@ -129,9 +129,7 @@ class AptamerSeq:
     def reward_batch(self, seq, done):
         seq = [s for s, d in zip(seq, done) if d]
         reward = np.zeros(len(done))
-        reward[list(done)] = self.proxy2reward(
-            self.proxy(self.seq2oracle(seq))
-        )
+        reward[list(done)] = self.proxy2reward(self.proxy(self.seq2oracle(seq)))
         return reward
 
     def proxy2reward(self, proxy_vals):
@@ -158,9 +156,7 @@ class AptamerSeq:
         rewards = (rewards / self.reward_norm) ** self.reward_beta
         # Clip
         rewards = np.max(
-            np.stack(
-                [self.min_reward * np.ones(rewards.shape[0]), rewards], axis=0
-            ),
+            np.stack([self.min_reward * np.ones(rewards.shape[0]), rewards], axis=0),
             axis=0,
         )
         return rewards
@@ -306,9 +302,7 @@ class AptamerSeq:
         """
         current_traj = traj_list[-1].copy()
         current_traj_actions = actions[-1].copy()
-        parents, parents_actions = self.parent_transitions(
-            list(current_traj[-1]), -1
-        )
+        parents, parents_actions = self.parent_transitions(list(current_traj[-1]), -1)
         parents = [self.obs2seq(el).tolist() for el in parents]
         if parents == []:
             return traj_list, actions
@@ -396,9 +390,7 @@ class AptamerSeq:
             return (None, None, None)
         seq_all = np.int32(
             list(
-                itertools.product(
-                    *[list(range(self.nalphabet))] * self.max_seq_length
-                )
+                itertools.product(*[list(range(self.nalphabet))] * self.max_seq_length)
             )
         )
         traj_rewards, seq_end = zip(

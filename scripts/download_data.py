@@ -62,9 +62,7 @@ def get_data(datadir, task, split, del_intmd_files, inputdir):
         os.system(f"wget {download_link} -P {datadir}")
         filename = os.path.join(datadir, os.path.basename(download_link))
     else:
-        assert os.path.exists(
-            inputdir
-        ), f"{inputdir} input directory does not exist"
+        assert os.path.exists(inputdir), f"{inputdir} input directory does not exist"
         filename = os.path.join(inputdir, os.path.basename(download_link))
 
     logging.info("Extracting contents...")
