@@ -627,9 +627,7 @@ class BaseTrainer(ABC):
         rank = distutils.get_rank()
 
         loader = (
-            self.val_loader
-            if split in {"val", "final_val"}
-            else self.test_loader
+            self.val_loader if split in {"val", "eval"} else self.test_loader
         )
 
         for i, batch in tqdm(
@@ -808,7 +806,7 @@ class BaseTrainer(ABC):
 
             # Call validate function
             self.step = i
-            self.metrics = self.validate(split="final_val", disable_tqdm=True)
+            self.metrics = self.validate(split="eval", disable_tqdm=True)
             metrics_dict[s] = self.metrics
 
         # Log results
@@ -818,7 +816,7 @@ class BaseTrainer(ABC):
                 for key, val in v.items():
                     store.append(round(val["metric"], 4))
                     self.logger.log(
-                        {k + "/" + key: val["metric"]}, split="final_val"
+                        {k + "/" + key: val["metric"]}, split="eval_unique"
                     )
             self.logger.log({"Val. time": time.time() - start_time})
 
