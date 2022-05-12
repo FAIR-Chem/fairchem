@@ -50,6 +50,10 @@ def setup(config):
                 logging.info(
                     f"Init: {config['init_method']}, {config['world_size']}, {config['rank']}"
                 )
+
+                # ensures GPU0 does not have extra context/higher peak memory
+                torch.cuda.set_device(config["local_rank"])
+
                 dist.init_process_group(
                     backend=config["distributed_backend"],
                     init_method=config["init_method"],
