@@ -61,7 +61,7 @@ class WandBLogger(Logger):
         )
 
         wandb_id = ""
-        slurm_jobid = os.environ.get("SLURM_JOBID")
+        slurm_jobid = os.environ.get("SLURM_JOB_ID")
         if slurm_jobid:
             wandb_id += f"{slurm_jobid}-"
         wandb_id += self.config["cmd"]["timestamp_id"] + "-" + config["model"]
