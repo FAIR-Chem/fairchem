@@ -12,7 +12,8 @@ import sys
 import time
 import warnings
 from pathlib import Path
-
+import subprocess
+import re
 import submitit
 
 from ocpmodels.common import distutils
@@ -41,6 +42,7 @@ class Runner(submitit.helpers.Checkpointable):
         try:
             setup_imports()
             config = self.should_continue(config)
+            config = self.read_slurm_env(config)
             self.trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
                 task=config["task"],
                 model=config["model"],
@@ -77,6 +79,35 @@ class Runner(submitit.helpers.Checkpointable):
         if self.trainer.logger is not None:
             self.trainer.logger.mark_preempting()
         return submitit.helpers.DelayedSubmission(new_runner, self.config)
+
+    def read_slurm_env(self, config):
+        """
+        Parses the output of `scontrol show` in order to store the slurm
+        config (mem, cpu, node, gres) as a `"slurm"` key in the `config` object.
+
+        Args:
+            config (dict): Run configuration
+
+        Returns:
+            dict: Updated run config if no "slurm" key exists or it's empty
+        """        
+        if not config.get("slurm"):
+            return config
+        
+        command = f"scontrol show job {os.environ.get('SLURM_JOB_ID')}"
+        scontrol = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
+        params = re.findall(r"TRES=(.+)\n", scontrol)
+        try:
+            if params:
+                params = params[0]
+                config["slurm"] = {}
+                for kv in params.split(","):
+                    k, v = kv.split("=")
+                    config["slurm"][k] = v
+        except Exception as e:
+            print("Slurm config creation exception", e)
+        finally:
+            return config
 
     def should_continue(self, config):
         """
