@@ -14,6 +14,7 @@ import subprocess
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -120,7 +121,7 @@ class BaseTrainer(ABC):
         except Exception:
             commit_hash = None
 
-        logger_name = logger if isinstance(logger, str) else logger["name"]
+        # logger_name = logger if isinstance(logger, str) else logger["name"]
         model_name = model.pop("name")
         self.config = {
             "task": task,
@@ -136,27 +137,9 @@ class BaseTrainer(ABC):
                 "seed": seed,
                 "timestamp_id": self.timestamp_id,
                 "commit": commit_hash,
-                "checkpoint_dir": os.path.join(
-                    "/network/scratch",
-                    "/".join(
-                        os.getcwd().split("/")[3:5]
-                    ),  # os.path.dirname(os.path.dirname(os.getcwd()))[10:]
-                    "checkpoints",
-                    self.timestamp_id + "-" + model_name,
-                ),
-                "results_dir": os.path.join(
-                    "/network/scratch",
-                    "/".join(os.getcwd().split("/")[3:5]),
-                    "results",
-                    self.timestamp_id + "-" + model_name,
-                ),
-                "logs_dir": os.path.join(
-                    "/network/scratch",
-                    "/".join(os.getcwd().split("/")[3:5]),
-                    "logs",
-                    logger_name,
-                    self.timestamp_id + "-" + model_name,
-                ),
+                "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
+                "results_dir": str(Path(run_dir) / "results"),
+                "logs_dir": str(Path(run_dir) / "logs"),
             },
             "slurm": slurm,
         }

@@ -207,7 +207,10 @@ class EnergyTrainer(BaseTrainer):
 
                 # Evaluate on val set after every `eval_every` iterations.
                 if self.step % eval_every == 0:
-                    self.save(checkpoint_file="checkpoint.pt", training_state=True)
+                    self.save(
+                        checkpoint_file=f"checkpoint-{str(self.step).zfill(6)}.pt",
+                        training_state=True,
+                    )
 
                     if self.val_loader is not None:
                         val_metrics = self.validate(

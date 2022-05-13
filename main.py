@@ -40,6 +40,7 @@ class Runner(submitit.helpers.Checkpointable):
 
         try:
             setup_imports()
+            config = self.should_continue(config)
             self.trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
                 task=config["task"],
                 model=config["model"],
@@ -77,6 +78,51 @@ class Runner(submitit.helpers.Checkpointable):
             self.trainer.logger.mark_preempting()
         return submitit.helpers.DelayedSubmission(new_runner, self.config)
 
+    def should_continue(self, config):
+        """
+        Assuming runs are consistently executed in a `run_dir` with the
+        `run_dir/$SLURM_JOBID` pattern, this functions looks for an existing
+        directory with the same $SLURM_JOBID as the current job that contains
+        a checkpoint.
+
+        If there is one, it tries to find `best_checkpoint.ckpt`.
+        If the latter does not exist, it looks for the latest checkpoint,
+        assuming a naming convention like `checkpoint-{step}.pt`.
+
+        If a checkpoint is found, its path is set in `config["checkpoint"]`.
+        Otherwise, returns the original config.
+
+        Args:
+            config (dict): The original config to overwrite
+
+        Returns:
+            dict: The updated config if a checkpoint has been found
+        """
+        if config["checkpoint"]:
+            return config
+
+        job_id = os.environ.get("SLURM_JOBID")
+        if job_id is None:
+            return config
+
+        base_dir = Path(config["run_dir"]).resolve().parent
+        ckpt_dir = base_dir / job_id / "checkpoints"
+        if not ckpt_dir.exists() or not ckpt_dir.is_dir():
+            return config
+
+        best_ckp = ckpt_dir / "best_checkpoint.pt"
+        if best_ckp.exists():
+            config["checkpoint"] = str(best_ckp)
+        else:
+            ckpts = list(ckpt_dir.glob("checkpoint-*.pt"))
+            if not ckpts:
+                return config
+            latest_ckpt = sorted(ckpts, key=lambda f: f.stem)[-1]
+            if latest_ckpt.exists() and latest_ckpt.is_file():
+                config["checkpoint"] = str(latest_ckpt)
+
+        return config
+
 
 if __name__ == "__main__":
     setup_logging()
@@ -89,6 +135,8 @@ if __name__ == "__main__":
     #     # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
     #     warnings.warn("No model / mode is given; chosen as default")
     config = build_config(args, override_args)
+    if args.logdir and not args.run_dir:
+        config["run_dir"] = args.logdir
 
     if args.submit:  # Run on cluster
         slurm_add_params = config.get("slurm", None)  # additional slurm arguments
