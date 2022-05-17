@@ -61,6 +61,9 @@ if __name__ == "__main__":
     # add logdir to main.py's command-line arguments
     if "--logdir" not in args.py_args and args.logdir:
         args.py_args += f" --logdir {args.logdir}"
+    # add run-dir to main.py's command-line arguments
+    if "--run-dir" not in args.py_args and args.logdir:
+        args.py_args += f" --run-dir {args.logdir}"
 
     # format string template with defaults + command-line args
     script = template.format(

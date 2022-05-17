@@ -385,7 +385,7 @@ def build_config(args, args_override):
     config["timestamp_id"] = args.timestamp_id
     config["seed"] = args.seed
     config["is_debug"] = args.debug
-    config["run_dir"] = args.run_dir
+    config["run_dir"] = resolve(args.run_dir)
     config["print_every"] = args.print_every
     config["amp"] = args.amp
     config["checkpoint"] = args.checkpoint
@@ -813,3 +813,16 @@ def check_traj_files(batch, traj_dir):
     traj_dir = Path(traj_dir)
     traj_files = [traj_dir / f"{id}.traj" for id in batch[0].sid.tolist()]
     return all(fl.exists() for fl in traj_files)
+
+def resolve(path):
+    """
+    Resolves a path: expand user (~) and env vars ($SCRATCH) and resovles to
+    an absolute path.
+
+    Args:
+        path (Union[str, pathlib.Path]): the path to resolve
+
+    Returns:
+        pathlib.Path: the resolved Path
+    """
+    return Path(os.path.expandvars(os.path.expanduser(str(path)))).resolve()

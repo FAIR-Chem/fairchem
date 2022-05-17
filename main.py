@@ -25,6 +25,7 @@ from ocpmodels.common.utils import (
     save_experiment_log,
     setup_imports,
     setup_logging,
+    resolve,
 )
 
 
@@ -90,10 +91,10 @@ class Runner(submitit.helpers.Checkpointable):
 
         Returns:
             dict: Updated run config if no "slurm" key exists or it's empty
-        """        
+        """
         if not config.get("slurm"):
             return config
-        
+
         command = f"scontrol show job {os.environ.get('SLURM_JOB_ID')}"
         scontrol = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
         params = re.findall(r"TRES=(.+)\n", scontrol)
@@ -160,14 +161,14 @@ if __name__ == "__main__":
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
+    if args.logdir:
+        args.logdir = resolve(args.logdir)
     # if not args.mode or not args.config_yml:
     #     args.mode = "train"
     #     args.config_yml = "configs/is2re/10k/schnet/schnet.yml"
     #     # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
     #     warnings.warn("No model / mode is given; chosen as default")
     config = build_config(args, override_args)
-    if args.logdir and not args.run_dir:
-        config["run_dir"] = args.logdir
 
     if args.submit:  # Run on cluster
         slurm_add_params = config.get("slurm", None)  # additional slurm arguments
