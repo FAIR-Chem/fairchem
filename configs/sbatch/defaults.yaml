@@ -9,12 +9,12 @@
 cpus: 4
 dev: false
 env: "ocp"
-error: "$SCRATCH/ocp/runs/%j/logs/%j-error.txt"
+error: "$SCRATCH/ocp/runs/%j/error.txt"
 gres: "gpu:4"
 job_name: "ocp-script"
 mem: "32GB"
 ntasks: 1
-output: "$SCRATCH/ocp/runs/%j/logs/%j-output.txt"
+output: "$SCRATCH/ocp/runs/%j/output.txt"
 partition: "long"
 py_args: ""
 time: ""
