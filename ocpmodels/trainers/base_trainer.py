@@ -70,6 +70,7 @@ class BaseTrainer(ABC):
         name="base_trainer",
         slurm={},
         new_gnn=True,
+        data_split=None,
     ):
         self.name = name
         self.cpu = cpu
@@ -124,6 +125,7 @@ class BaseTrainer(ABC):
         model_name = model.pop("name")
         self.config = {
             "task": task,
+            "data_split": data_split,
             "model": model_name,
             "model_attributes": model,
             "optim": optimizer,
@@ -612,9 +614,10 @@ class BaseTrainer(ABC):
         """Derived classes should implement this function."""
 
     @torch.no_grad()
-    def validate(self, split="val", disable_tqdm=False):
+    def validate(self, split="val", disable_tqdm=False, name_split=None):
         if distutils.is_master():
-            logging.info(f"Evaluating on {split}.")
+            if not name_split:
+                logging.info(f"Evaluating on {split}.")
         if self.is_hpo:
             disable_tqdm = True
 
@@ -672,6 +675,9 @@ class BaseTrainer(ABC):
         # Make plots.
         if self.logger is not None:
             if split == "eval":
+                log_dict = {
+                    f"{name_split}-{k}": v for k, v in log_dict.items()
+                }
                 self.logger.log(
                     log_dict,
                     split=split,
@@ -795,6 +801,7 @@ class BaseTrainer(ABC):
         # Compute performance metrics on all four validation splits
         start_time = time.time()
         metrics_dict = {}
+        logging.info("Evaluating on 4 val splits.")
         for i, s in enumerate(
             ["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]
         ):
@@ -808,7 +815,9 @@ class BaseTrainer(ABC):
             self.load_datasets()
 
             # Call validate function
-            self.metrics = self.validate(split="eval/" + s, disable_tqdm=True)
+            self.metrics = self.validate(
+                split="eval", disable_tqdm=True, name_split=s
+            )
             metrics_dict[s] = self.metrics
 
         # Log results

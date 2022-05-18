@@ -83,7 +83,7 @@ class WandBLogger(Logger):
             update_dict = super().log(update_dict, step, split)
             wandb.log(update_dict, step=int(step))
         else:
-            update_dict = super().log(update_dict, split)
+            update_dict = super().log(update_dict, split=split)
             wandb.log(update_dict)
 
     def log_plots(self, plots, caption=""):

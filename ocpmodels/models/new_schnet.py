@@ -314,7 +314,7 @@ class NewSchNetWrap(NewSchNet):
             h_tag = self.tag_embedding(data.tags)
             h = torch.cat((h, h_tag), dim=1)
             # TODO: uncomment below to add covalent radii info
-            # torch.add(h,self.covalent_radii[z].unsqueeze(dim=1))
+            # h = torch.add(h, self.covalent_radii[z].unsqueeze(dim=1))
 
         edge_index = radius_graph(
             pos,

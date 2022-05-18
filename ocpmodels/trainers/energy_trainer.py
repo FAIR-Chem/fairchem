@@ -77,6 +77,7 @@ class EnergyTrainer(BaseTrainer):
         cpu=False,
         slurm={},
         new_gnn=True,
+        data_split=None,
     ):
         super().__init__(
             task=task,
@@ -98,6 +99,7 @@ class EnergyTrainer(BaseTrainer):
             name="is2re",
             slurm=slurm,
             new_gnn=new_gnn,
+            data_split=data_split,
         )
 
     def load_task(self):
@@ -247,6 +249,13 @@ class EnergyTrainer(BaseTrainer):
                                     disable_tqdm=False,
                                 )
 
+                        # Evaluate current model on all 4 validation splits
+                        if epoch_int % 5 == 0 and (
+                            epoch_int
+                            not in {0, self.config["optim"]["max_epochs"] - 1}
+                        ):
+                            self.eval_all_val_splits(final=False)
+
                         if self.is_hpo:
                             self.hpo_update(
                                 self.epoch,
@@ -262,12 +271,6 @@ class EnergyTrainer(BaseTrainer):
                         )
                 else:
                     self.scheduler.step()
-
-                # Evaluate current model on all 4 validation splits
-                if epoch_int % 5 == 0 and epoch_int != (
-                    self.config["optim"]["max_epochs"] - 1
-                ):
-                    self.eval_all_val_splits(final=False)
 
             torch.cuda.empty_cache()
 
