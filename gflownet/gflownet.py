@@ -50,7 +50,9 @@ def add_args(parser):
     # General
     parser.add_argument("--workdir", default=None, type=str)
     args2config.update({"workdir": ["workdir"]})
-    parser.add_argument("--overwrite_workdir", action="store_true", default=False)
+    parser.add_argument(
+        "--overwrite_workdir", action="store_true", default=False
+    )
     args2config.update({"overwrite_workdir": ["overwrite_workdir"]})
     parser.add_argument("--device", default="cpu", type=str)
     args2config.update({"device": ["gflownet", "device"]})
@@ -89,10 +91,15 @@ def add_args(parser):
         default=".....(((((.......))))).....",
         help="if using 'nupack motif' oracle, return value is the binary distance to this fold, must be <= max sequence length",
     )
-    args2config.update({"nupack_target_motif": ["oracle", "nupack_target_motif"]})
+    args2config.update(
+        {"nupack_target_motif": ["oracle", "nupack_target_motif"]}
+    )
     # Training hyperparameters
     parser.add_argument(
-        "--loss", default="flowmatch", type=str, help="flowmatch | trajectorybalance/tb"
+        "--loss",
+        default="flowmatch",
+        type=str,
+        help="flowmatch | trajectorybalance/tb",
     )
     args2config.update({"loss": ["gflownet", "loss"]})
     parser.add_argument(
@@ -121,11 +128,17 @@ def add_args(parser):
     )
     args2config.update({"learning_rate": ["gflownet", "learning_rate"]})
     parser.add_argument(
-        "--lr_decay_period", default=1e6, help="Learning rate decay period", type=int
+        "--lr_decay_period",
+        default=1e6,
+        help="Learning rate decay period",
+        type=int,
     )
     args2config.update({"lr_decay_period": ["gflownet", "lr", "decay_period"]})
     parser.add_argument(
-        "--lr_decay_gamma", default=0.5, help="Learning rate decay gamma", type=float
+        "--lr_decay_gamma",
+        default=0.5,
+        help="Learning rate decay gamma",
+        type=float,
     )
     args2config.update({"lr_decay_gamma": ["gflownet", "lr", "decay_gamma"]})
     parser.add_argument("--opt", default="adam", type=str)
@@ -154,13 +167,19 @@ def add_args(parser):
         type=float,
         help="Multiplier of the standard deviation for the reward normalization",
     )
-    args2config.update({"reward_norm_std_mult": ["gflownet", "reward_norm_std_mult"]})
+    args2config.update(
+        {"reward_norm_std_mult": ["gflownet", "reward_norm_std_mult"]}
+    )
     parser.add_argument("--momentum", default=0.9, type=float)
     args2config.update({"momentum": ["gflownet", "momentum"]})
-    parser.add_argument("--mbsize", default=16, help="Minibatch size", type=int)
+    parser.add_argument(
+        "--mbsize", default=16, help="Minibatch size", type=int
+    )
     args2config.update({"mbsize": ["gflownet", "mbsize"]})
     parser.add_argument("--train_to_sample_ratio", default=1, type=float)
-    args2config.update({"train_to_sample_ratio": ["gflownet", "train_to_sample_ratio"]})
+    args2config.update(
+        {"train_to_sample_ratio": ["gflownet", "train_to_sample_ratio"]}
+    )
     parser.add_argument("--n_hid", default=256, type=int)
     args2config.update({"n_hid": ["gflownet", "n_hid"]})
     parser.add_argument("--n_layers", default=2, type=int)
@@ -173,13 +192,19 @@ def add_args(parser):
         type=int,
         help="Number of samples used to compute the empirical distribution loss",
     )
-    args2config.update({"num_empirical_loss": ["gflownet", "num_empirical_loss"]})
+    args2config.update(
+        {"num_empirical_loss": ["gflownet", "num_empirical_loss"]}
+    )
     parser.add_argument("--clip_grad_norm", default=0.0, type=float)
     args2config.update({"clip_grad_norm": ["gflownet", "clip_grad_norm"]})
     parser.add_argument("--random_action_prob", default=0.0, type=float)
-    args2config.update({"random_action_prob": ["gflownet", "random_action_prob"]})
+    args2config.update(
+        {"random_action_prob": ["gflownet", "random_action_prob"]}
+    )
     parser.add_argument("--pct_batch_empirical", default=0.0, type=float)
-    args2config.update({"pct_batch_empirical": ["gflownet", "pct_batch_empirical"]})
+    args2config.update(
+        {"pct_batch_empirical": ["gflownet", "pct_batch_empirical"]}
+    )
     # Environment
     parser.add_argument("--env_id", default="aptamers")
     args2config.update({"env_id": ["gflownet", "env_id"]})
@@ -271,8 +296,13 @@ def add_args(parser):
 
 
 def process_config(config):
-    if "score" not in config.gflownet.test or "nupack" in config.gflownet.test.score:
-        config.gflownet.test.score = config.gflownet.func.replace("nupack ", "")
+    if (
+        "score" not in config.gflownet.test
+        or "nupack" in config.gflownet.test.score
+    ):
+        config.gflownet.test.score = config.gflownet.func.replace(
+            "nupack ", ""
+        )
     return config
 
 
@@ -281,7 +311,9 @@ def set_device(dev):
 
 
 class GFlowNetAgent:
-    def __init__(self, args, comet=None, proxy=None, al_iter=-1, data_path=None):
+    def __init__(
+        self, args, comet=None, proxy=None, al_iter=-1, data_path=None
+    ):
         # Misc
         self.rng = np.random.default_rng(args.seeds.gflownet)
         self.debug = args.debug
@@ -350,7 +382,8 @@ class GFlowNetAgent:
         # Comet
         if args.gflownet.comet.project and not args.gflownet.comet.skip:
             self.comet = Experiment(
-                project_name=args.gflownet.comet.project, display_summary_level=0
+                project_name=args.gflownet.comet.project,
+                display_summary_level=0,
             )
             if args.gflownet.comet.tags:
                 if isinstance(args.gflownet.comet.tags, list):
@@ -417,8 +450,13 @@ class GFlowNetAgent:
             self.env.set_energies_stats(self.energies_stats_tr)
         else:
             self.energies_stats_tr = None
-        if self.reward_norm_std_mult > 0 and self.energies_stats_tr is not None:
-            self.reward_norm = self.reward_norm_std_mult * self.energies_stats_tr[3]
+        if (
+            self.reward_norm_std_mult > 0
+            and self.energies_stats_tr is not None
+        ):
+            self.reward_norm = (
+                self.reward_norm_std_mult * self.energies_stats_tr[3]
+            )
             self.env.set_reward_norm(self.reward_norm)
         # Test set
         self.test_period = args.gflownet.test.period
@@ -430,7 +468,9 @@ class GFlowNetAgent:
             if self.df_data is not None:
                 self.df_test = self.df_data.loc[self.df_data.test]
             elif args.gflownet.test.path:
-                self.df_test = pd.read_csv(args.gflownet.test.path, index_col=0)
+                self.df_test = pd.read_csv(
+                    args.gflownet.test.path, index_col=0
+                )
             else:
                 self.df_test, test_set_times = self.env.make_test_set(
                     path_base_dataset=args.gflownet.test.base,
@@ -461,7 +501,9 @@ class GFlowNetAgent:
                         Path(args.workdir) / "ckpts" / args.gflownet.model_ckpt
                     )
                 else:
-                    self.model_path = Path(args.workdir) / args.gflownet.model_ckpt
+                    self.model_path = (
+                        Path(args.workdir) / args.gflownet.model_ckpt
+                    )
             else:
                 self.model_path = args.gflownet.model_ckpt
             if self.model_path.exists() and self.reload_ckpt:
@@ -535,7 +577,9 @@ class GFlowNetAgent:
             n_empirical = int(self.pct_batch_empirical * len(envs))
             for env in envs[:n_empirical]:
                 env.done = True
-                seq_readable = self.rng.permutation(self.df_train.samples.values)[0]
+                seq_readable = self.rng.permutation(
+                    self.df_train.samples.values
+                )[0]
                 seq = env.letters2seq(seq_readable)
                 done = True
                 action = env.eos
@@ -576,7 +620,9 @@ class GFlowNetAgent:
                         if self.debug:
                             print("Action could not be sampled from model!")
             if train and random_action < self.random_action_prob:
-                high = (len(self.env.action_space) + 1) * np.ones(len(envs), dtype=int)
+                high = (len(self.env.action_space) + 1) * np.ones(
+                    len(envs), dtype=int
+                )
                 if self.mask_eos:
                     high[mask] -= 1
                 actions = self.rng.integers(low=0, high=high, size=len(envs))
@@ -612,7 +658,9 @@ class GFlowNetAgent:
             times["rewards"] += t1_rewards - t0_rewards
             rewards = [tf([r]) for r in rewards]
             done = [tl([d]) for d in done]
-            batch = list(zip(parents, parents_a, rewards, obs, done, path_id, seq_id))
+            batch = list(
+                zip(parents, parents_a, rewards, obs, done, path_id, seq_id)
+            )
         t1_all = time.time()
         times["all"] += t1_all - t0_all
         return batch, times
@@ -668,7 +716,9 @@ class GFlowNetAgent:
                 ipdb.set_trace()
 
         # Q(s,a)
-        parents_Qsa = self.model(parents)[torch.arange(parents.shape[0]), actions]
+        parents_Qsa = self.model(parents)[
+            torch.arange(parents.shape[0]), actions
+        ]
 
         # log(eps + exp(log(Q(s,a)))) : qsa
         in_flow = torch.log(
@@ -743,7 +793,9 @@ class GFlowNetAgent:
         # Sort rewards of done sequences by ascending path id
         rewards = rewards[done.eq(1)][torch.argsort(path_id[done.eq(1)])]
         # Trajectory balance loss
-        loss = (self.Z.sum() + sumlogprobs - torch.log((rewards))).pow(2).mean()
+        loss = (
+            (self.Z.sum() + sumlogprobs - torch.log((rewards))).pow(2).mean()
+        )
         return loss, loss, loss
 
     def unpack_terminal_states(self, batch):
@@ -773,7 +825,9 @@ class GFlowNetAgent:
         # Generate list of environments
         envs = [copy.deepcopy(self.env).reset() for _ in range(self.mbsize)]
         # Train loop
-        for i in tqdm(range(self.n_train_steps + 1)):  # , disable=not self.progress):
+        for i in tqdm(
+            range(self.n_train_steps + 1)
+        ):  # , disable=not self.progress):
             t0_iter = time.time()
             data = []
             for j in range(self.sttr):
@@ -819,7 +873,8 @@ class GFlowNetAgent:
                 all_visited.extend(seqs_term)
             if self.comet:
                 self.comet.log_text(
-                    seq_best + " / proxy: {}".format(proxy_vals[idx_best]), step=i
+                    seq_best + " / proxy: {}".format(proxy_vals[idx_best]),
+                    step=i,
                 )
                 self.comet.log_metrics(
                     dict(
@@ -867,7 +922,9 @@ class GFlowNetAgent:
                     t1_test_path = time.time()
                     times["test_paths"] += t1_test_path - t0_test_path
                     t0_test_logq = time.time()
-                    data_logq.append(logq(path_list, actions, self.model, self.env))
+                    data_logq.append(
+                        logq(path_list, actions, self.model, self.env)
+                    )
                     t1_test_logq = time.time()
                     times["test_logq"] += t1_test_logq - t0_test_logq
                 corr = np.corrcoef(data_logq, self.df_test[self.test_score])
@@ -876,7 +933,9 @@ class GFlowNetAgent:
                         dict(
                             zip(
                                 [
-                                    "test_corr_logq_score{}".format(self.al_iter),
+                                    "test_corr_logq_score{}".format(
+                                        self.al_iter
+                                    ),
                                     "test_mean_logq{}".format(self.al_iter),
                                 ],
                                 [
@@ -901,7 +960,11 @@ class GFlowNetAgent:
                 for k in self.oracle_k:
                     mean_topk = np.mean(energies_sorted[:k])
                     dict_topk.update(
-                        {"oracle_mean_top{}{}".format(k, self.al_iter): mean_topk}
+                        {
+                            "oracle_mean_top{}{}".format(
+                                k, self.al_iter
+                            ): mean_topk
+                        }
                     )
                     if self.comet:
                         self.comet.log_metrics(dict_topk)
@@ -956,10 +1019,12 @@ class GFlowNetAgent:
             # Moving average of the loss for early stopping
             if loss_term_ema and loss_flow_ema:
                 loss_term_ema = (
-                    self.ema_alpha * losses[1] + (1.0 - self.ema_alpha) * loss_term_ema
+                    self.ema_alpha * losses[1]
+                    + (1.0 - self.ema_alpha) * loss_term_ema
                 )
                 loss_flow_ema = (
-                    self.ema_alpha * losses[2] + (1.0 - self.ema_alpha) * loss_flow_ema
+                    self.ema_alpha * losses[2]
+                    + (1.0 - self.ema_alpha) * loss_flow_ema
                 )
                 if (
                     loss_term_ema < self.early_stopping
@@ -973,7 +1038,10 @@ class GFlowNetAgent:
             # Log times
             t1_iter = time.time()
             times.update({"iter": t1_iter - t0_iter})
-            times = {"time_{}{}".format(k, self.al_iter): v for k, v in times.items()}
+            times = {
+                "time_{}{}".format(k, self.al_iter): v
+                for k, v in times.items()
+            }
             if self.comet and not self.no_log_times:
                 self.comet.log_metrics(times, step=i)
         # Save final model
@@ -988,12 +1056,15 @@ class GFlowNetAgent:
         if self.comet and self.al_iter == -1:
             self.comet.end()
 
+
 def batch2dict(batch, env, get_uncertainties=False, query_function="Both"):
     batch = np.asarray(env.seq2oracle(batch))
     t0_proxy = time.time()
     if get_uncertainties:
         if query_function == "fancy_acquisition":
-            scores, proxy_vals, uncertainties = env.proxy(batch, query_function)
+            scores, proxy_vals, uncertainties = env.proxy(
+                batch, query_function
+            )
         else:
             proxy_vals, uncertainties = env.proxy(batch, query_function)
             scores = proxy_vals
@@ -1034,7 +1105,9 @@ class RandomTrajAgent:
             #     - i.step(a)
             step = [
                 i.step(a)
-                for i, a in zip([e for d, e in zip(done, self.envs) if not d], acts)
+                for i, a in zip(
+                    [e for d, e in zip(done, self.envs) if not d], acts
+                )
             ]
             c = count(0)
             m = {j: next(c) for j in range(mbsize) if not done[j]}
@@ -1064,8 +1137,11 @@ def make_mlp(layers_dim, act=nn.LeakyReLU(), tail=[]):
         *(
             sum(
                 [
-                    [nn.Linear(idim, odim)] + ([act] if n < len(layers_dim) - 2 else [])
-                    for n, (idim, odim) in enumerate(zip(layers_dim, layers_dim[1:]))
+                    [nn.Linear(idim, odim)]
+                    + ([act] if n < len(layers_dim) - 2 else [])
+                    for n, (idim, odim) in enumerate(
+                        zip(layers_dim, layers_dim[1:])
+                    )
                 ],
                 [],
             )
@@ -1091,12 +1167,15 @@ def make_opt(params, Z, args):
             opt.add_param_group(
                 {
                     "params": Z,
-                    "lr": args.gflownet.learning_rate * args.gflownet.lr_z_mult,
+                    "lr": args.gflownet.learning_rate
+                    * args.gflownet.lr_z_mult,
                 }
             )
     elif args.gflownet.opt == "msgd":
         opt = torch.optim.SGD(
-            params, args.gflownet.learning_rate, momentum=args.gflownet.momentum
+            params,
+            args.gflownet.learning_rate,
+            momentum=args.gflownet.momentum,
         )
     # Learning rate scheduling
     lr_scheduler = torch.optim.lr_scheduler.StepLR(
@@ -1126,7 +1205,11 @@ def compute_empirical_distribution_error(env, visited):
     estimated_density = tf([hist[i] / Z for i in end_states])
     k1 = abs(estimated_density - true_density).mean().item()
     # KL divergence
-    kl = (true_density * torch.log(estimated_density / true_density)).sum().item()
+    kl = (
+        (true_density * torch.log(estimated_density / true_density))
+        .sum()
+        .item()
+    )
     return k1, kl
 
 
@@ -1161,7 +1244,9 @@ def main(args):
     batch, times = gflownet_agent.sample_batch(
         gflownet_agent.env, args.gflownet.n_samples, train=False
     )
-    samples, times = batch2dict(batch, gflownet_agent.env, get_uncertainties=False)
+    samples, times = batch2dict(
+        batch, gflownet_agent.env, get_uncertainties=False
+    )
 
 
 if __name__ == "__main__":
@@ -1175,14 +1260,18 @@ if __name__ == "__main__":
     print("Working dir: " + config.workdir)
     print(
         "Config:\n"
-        + "\n".join([f"    {k:20}: {v}" for k, v in vars(config.gflownet).items()])
+        + "\n".join(
+            [f"    {k:20}: {v}" for k, v in vars(config.gflownet).items()]
+        )
     )
     if "workdir" in config:
         if not Path(config.workdir).exists() or config.overwrite_workdir:
             Path(config.workdir).mkdir(parents=True, exist_ok=True)
             with open(config.workdir + "/config.yml", "w") as f:
                 yaml.dump(
-                    numpy2python(namespace2dict(config)), f, default_flow_style=False
+                    numpy2python(namespace2dict(config)),
+                    f,
+                    default_flow_style=False,
                 )
             torch.set_num_threads(1)
             main(config)
