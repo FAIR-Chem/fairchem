@@ -36,6 +36,27 @@ class AtomwiseMSELoss(nn.Module):
             return loss.sum()
 
 
+class AtomwiseL2MAELoss(nn.Module):
+    def __init__(self, reduction="mean"):
+        super().__init__()
+        self.reduction = reduction
+        assert reduction in ["mean", "sum"]
+
+    def forward(
+        self, input: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor
+    ):
+        assert natoms.shape[0] == input.shape[0] == target.shape[0]
+        assert len(natoms.shape) == 1  # (nAtoms, )
+
+        dists = torch.norm(input - target, p=2, dim=-1)
+        loss = natoms * dists
+
+        if self.reduction == "mean":
+            return torch.mean(loss)
+        elif self.reduction == "sum":
+            return torch.sum(loss)
+
+
 class DDPLoss(nn.Module):
     def __init__(self, loss_fn, reduction="mean"):
         super().__init__()
