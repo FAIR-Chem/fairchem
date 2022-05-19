@@ -21,7 +21,7 @@ python -m pip install pymatgen=="2020.4.2"
 # Check pymatgen installation
 python -c "import pymatgen"
 # Other packages
-python -m pip install git+https://github.com/SUNCAT-Center/CatKit.git ase==3.19.* lmdb six submitit wandb tensorboard numba tqdm wandb PyYAML ipdb jupyter flake8 black
+python -m pip install git+https://github.com/SUNCAT-Center/CatKit.git ase==3.19.* lmdb six submitit wandb tensorboard numba tqdm wandb PyYAML ipdb jupyter flake8 black minydra
 # ocpmodels: run from the repository root
 python -m pip install .
 
