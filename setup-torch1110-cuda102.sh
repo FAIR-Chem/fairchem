@@ -10,8 +10,7 @@ python -m pip install --upgrade pip
 # Install PyTorch family
 python -m pip --no-cache-dir install torch==1.11.0
 # Check PyTorch installation
-python -c "import torch; print(torch.__version__)"
-python -c "import torch; print(torch.version.cuda)"
+python -c "import torch; print(torch.__version__, torch.version.cuda)"
 # Install rest of PyTorch family
 python -m pip --no-cache-dir install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu102.html
 # Check installation
