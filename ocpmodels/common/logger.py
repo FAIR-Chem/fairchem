@@ -74,6 +74,7 @@ class WandBLogger(Logger):
             dir=self.config["cmd"]["logs_dir"],
             project=project,
             resume="allow",
+            notes=self.config["note"],
         )
 
         sbatch_files = list(Path(self.config["run_dir"]).glob("sbatch_script*.sh"))

@@ -83,6 +83,10 @@ if __name__ == "__main__":
     if "--run-dir" not in args.py_args and args.logdir:
         args.py_args += f" --run-dir {args.logdir}"
 
+    if "--note" not in args.py_args and args.note:
+        note = args.note.replace('"', '\\"')
+        args.py_args += f' --note "{note}"'
+
     # format string template with defaults + command-line args
     script = template.format(
         cpus=args.cpus,

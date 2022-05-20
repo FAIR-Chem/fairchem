@@ -132,6 +132,12 @@ class Flags:
             action="store_false",
             help="Whether to use original GNN models or modified ones",
         )
+        self.parser.add_argument(
+            "--note",
+            type=str,
+            default="",
+            help="Note describing this run to be added to the logger",
+        )
 
 
 flags = Flags()
