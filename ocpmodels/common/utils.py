@@ -389,7 +389,7 @@ def build_config(args, args_override):
 
     # Some other flags.
     config["mode"] = args.mode
-    config["data_split"] = args.config_yml.split("/")[2]
+    config["data_split"] = str(args.config_yml).split("/")[2]
     config["identifier"] = args.identifier
     config["timestamp_id"] = args.timestamp_id
     config["seed"] = args.seed
