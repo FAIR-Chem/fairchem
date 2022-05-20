@@ -124,6 +124,7 @@ if __name__ == "__main__":
             if not output_parent.exists():
                 print("Creating directory", str(output_parent))
                 output_parent.mkdir(parents=True, exist_ok=True)
+            copyfile(script_path, output_parent / script_path.name)
 
         if "/%j/" in args.error and success:
             args.error = args.error.replace("/%j/", f"/{jobid.strip()}/")
