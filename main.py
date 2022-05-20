@@ -61,6 +61,7 @@ class Runner(submitit.helpers.Checkpointable):
                 cpu=config.get("cpu", False),
                 slurm=config.get("slurm", {}),
                 new_gnn=config.get("new_gnn", True),
+                note=config.get("note", ""),
             )
             self.task = registry.get_task_class(config["mode"])(self.config)
             self.task.setup(self.trainer)
