@@ -13,6 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from ocpmodels.common.registry import registry
 import os
+from pathlib import Path
 
 
 class Logger(ABC):
@@ -74,6 +75,10 @@ class WandBLogger(Logger):
             project=project,
             resume="allow",
         )
+
+        sbatch_files = list(Path(self.config["run_dir"]).glob("sbatch_script*.sh"))
+        if len(sbatch_files) == 1:
+            wandb.save(str(sbatch_files[0]))
 
     def watch(self, model):
         wandb.watch(model)
