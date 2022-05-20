@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     # add default name if a fodler path (not a file path) was provided
     if script_path.is_dir():
-        script_path /= f"script_{now()}.sh"
+        script_path /= f"sbatch_script_{now()}.sh"
 
     # make parent directory if file path has been provided and its parent does not exist
     if script_path.is_file() and not script_path.parent.exists():
