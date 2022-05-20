@@ -81,6 +81,9 @@ class WandBLogger(Logger):
         if len(sbatch_files) == 1:
             wandb.save(str(sbatch_files[0]))
 
+        with open(Path(self.config["run_dir"] / "wandb_url.txt"), "w") as f:
+            f.write(wandb.run.get_url())
+
     def watch(self, model):
         wandb.watch(model)
 
