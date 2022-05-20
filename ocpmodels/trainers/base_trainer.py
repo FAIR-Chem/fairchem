@@ -820,18 +820,11 @@ class BaseTrainer(ABC):
             )
             metrics_dict[s] = self.metrics
 
-        # Log results
-        if final:
+            # Log results
             if self.config["logger"] == "wandb":
-                for k, v in metrics_dict.items():
-                    store = []
-                    for key, val in v.items():
-                        store.append(round(val["metric"], 4))
-                        self.logger.log(
-                            {k + "/" + key: val["metric"]}, split="final_eval"
-                        )
                 self.logger.log({"Val. time": time.time() - start_time})
 
+        if final:
             # Print results
             print("----- FINAL RESULTS -----")
             print("Total time taken: ", time.time() - start_time)
