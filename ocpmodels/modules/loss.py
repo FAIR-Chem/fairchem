@@ -18,25 +18,7 @@ class L2MAELoss(nn.Module):
             return torch.sum(dists)
 
 
-class AtomwiseMSELoss(nn.Module):
-    def __init__(self, reduction="mean"):
-        super().__init__()
-        self.reduction = reduction
-        assert reduction in ["mean", "sum"]
-
-    def forward(
-        self, input: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor
-    ):
-        assert natoms.shape[0] == input.shape[0] == target.shape[0]
-        assert len(natoms.shape) == 1  # (nAtoms, )
-        loss = natoms * ((input - target) ** 2).mean(-1)  # Avg across x,y,z
-        if self.reduction == "mean":
-            return loss.mean()
-        elif self.reduction == "sum":
-            return loss.sum()
-
-
-class AtomwiseL2MAELoss(nn.Module):
+class AtomwiseL2Loss(nn.Module):
     def __init__(self, reduction="mean"):
         super().__init__()
         self.reduction = reduction
