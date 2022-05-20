@@ -84,7 +84,10 @@ class Flags:
             "--summit", action="store_true", help="Running on Summit cluster"
         )
         self.parser.add_argument(
-            "--logdir", default="$SCRATCH/ocp/runs/$SLURM_JOB_ID", type=Path, help="Where to store logs"
+            "--logdir",
+            default="$SCRATCH/ocp/runs/$SLURM_JOB_ID",
+            type=Path,
+            help="Where to store logs",
         )
         self.parser.add_argument(
             "--slurm-partition",
@@ -131,6 +134,12 @@ class Flags:
             "--new_gnn",
             action="store_false",
             help="Whether to use original GNN models or modified ones",
+        )
+        self.parser.add_argument(
+            "--note",
+            type=str,
+            default="",
+            help="Note describing this run to be added to the logger",
         )
 
 

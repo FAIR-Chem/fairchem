@@ -72,6 +72,7 @@ class BaseTrainer(ABC):
         slurm={},
         new_gnn=True,
         data_split=None,
+        note="",
     ):
         self.name = name
         self.cpu = cpu
@@ -132,6 +133,7 @@ class BaseTrainer(ABC):
             "optim": optimizer,
             "logger": logger,
             "amp": amp,
+            "run_dir": run_dir,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
                 "identifier": identifier,
@@ -144,6 +146,7 @@ class BaseTrainer(ABC):
                 "logs_dir": str(Path(run_dir) / "logs"),
             },
             "slurm": slurm,
+            "note": note,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp else None

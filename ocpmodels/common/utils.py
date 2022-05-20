@@ -400,6 +400,7 @@ def build_config(args, args_override):
     config["checkpoint"] = args.checkpoint
     config["cpu"] = args.cpu
     config["new_gnn"] = args.new_gnn
+    config["note"] = args.note
     # Submit
     config["submit"] = args.submit
     config["summit"] = args.summit

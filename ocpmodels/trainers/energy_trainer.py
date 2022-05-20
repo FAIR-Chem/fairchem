@@ -78,6 +78,7 @@ class EnergyTrainer(BaseTrainer):
         slurm={},
         new_gnn=True,
         data_split=None,
+        note="",
     ):
         super().__init__(
             task=task,
@@ -100,6 +101,7 @@ class EnergyTrainer(BaseTrainer):
             slurm=slurm,
             new_gnn=new_gnn,
             data_split=data_split,
+            note=note,
         )
 
     def load_task(self):

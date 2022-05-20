@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 import logging
 import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 import torch
 import wandb
@@ -73,7 +74,17 @@ class WandBLogger(Logger):
             dir=self.config["cmd"]["logs_dir"],
             project=project,
             resume="allow",
+            notes=self.config["note"],
         )
+
+        sbatch_files = list(
+            Path(self.config["run_dir"]).glob("sbatch_script*.sh")
+        )
+        if len(sbatch_files) == 1:
+            wandb.save(str(sbatch_files[0]))
+
+        with open(Path(self.config["run_dir"] / "wandb_url.txt"), "w") as f:
+            f.write(wandb.run.get_url())
 
     def watch(self, model):
         wandb.watch(model)
