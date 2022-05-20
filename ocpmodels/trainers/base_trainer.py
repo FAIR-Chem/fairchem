@@ -131,6 +131,7 @@ class BaseTrainer(ABC):
             "optim": optimizer,
             "logger": logger,
             "amp": amp,
+            "run_dir": run_dir,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
                 "identifier": identifier,
