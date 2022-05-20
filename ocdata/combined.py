@@ -9,6 +9,7 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.analysis.local_env import VoronoiNN
 from .constants import COVALENT_RADIUS
 from .surfaces import constrain_surface
+from .loader import Loader
 
 
 class Combined():
@@ -39,7 +40,7 @@ class Combined():
         returns a dict of info for the adsorbate+surface of the specified config index
     '''
 
-    def __init__(self, adsorbate, surface, enumerate_all_configs):
+    def __init__(self, adsorbate, surface, enumerate_all_configs, animate=False, no_loader=False):
         '''
         Adds adsorbate to surface, does the constraining, and aggregates all data necessary to write out.
         Can either pick a random configuration or store all possible ones.
@@ -51,13 +52,19 @@ class Combined():
         '''
         self.adsorbate = adsorbate
         self.surface = surface
+        self.animate = animate
+        self.no_loader = no_loader
         self.enumerate_all_configs = enumerate_all_configs
 
-        self.add_adsorbate_onto_surface(self.adsorbate.atoms, self.surface.surface_atoms, self.adsorbate.bond_indices)
+        self.add_adsorbate_onto_surface(
+            self.adsorbate.atoms,
+            self.surface.surface_atoms,
+            self.adsorbate.bond_indices
+        )
 
         self.constrained_adsorbed_surfaces = []
         self.all_sites = []
-        for atoms in self.adsorbed_surface_atoms:
+        for a, atoms in enumerate(self.adsorbed_surface_atoms):
             # Add appropriate constraints
             self.constrained_adsorbed_surfaces.append(constrain_surface(atoms))
 
@@ -84,31 +91,38 @@ class Combined():
             adsorbed_surface_sampling_strs: String specifying the sample, [index]/[total]
                                             of reasonable adsorbed surfaces
         '''
-        # convert surface atoms into graphic atoms object
-        surface_gratoms = catkit.Gratoms(surface)
-        surface_atom_indices = [i for i, atom in enumerate(surface)
-                                if atom.tag == 1]
-        surface_gratoms.set_surface_atoms(surface_atom_indices)
-        surface_gratoms.pbc = np.array([True, True, False])
+        with Loader("  [AAOS] make adsorbate_gratoms", animate=self.animate, ignore=self.no_loader):
+            # convert surface atoms into graphic atoms object
+            surface_gratoms = catkit.Gratoms(surface)
+            surface_atom_indices = [i for i, atom in enumerate(surface)
+                                    if atom.tag == 1]
+            surface_gratoms.set_surface_atoms(surface_atom_indices)
+            surface_gratoms.pbc = np.array([True, True, False])
 
-        # set up the adsorbate into graphic atoms object
-        # with its connectivity matrix
-        adsorbate_gratoms = self.convert_adsorbate_atoms_to_gratoms(adsorbate, bond_indices)
+            # set up the adsorbate into graphic atoms object
+            # with its connectivity matrix
+            adsorbate_gratoms = self.convert_adsorbate_atoms_to_gratoms(adsorbate, bond_indices)
 
         # generate all possible adsorption configurations on that surface.
         # The "bonds" argument automatically take care of mono vs.
         # bidentate adsorption configuration.
-        builder = catkit.gen.adsorption.Builder(surface_gratoms)
-        with warnings.catch_warnings(): # suppress potential square root warnings
-            warnings.simplefilter('ignore')
-            adsorbed_surfaces = builder.add_adsorbate(adsorbate_gratoms,
-                                                      bonds=bond_indices,
-                                                      index=-1)
+        with Loader("  [AAOS] make all adsorbed_surfaces", animate=self.animate, ignore=self.no_loader):
+            builder = catkit.gen.adsorption.Builder(surface_gratoms)
+            with warnings.catch_warnings(): # suppress potential square root warnings
+                warnings.simplefilter('ignore')
+                print("bond_indices:", bond_indices)
+                adsorbed_surfaces = builder.add_adsorbate(adsorbate_gratoms,
+                                                        bonds=bond_indices,
+                                                        index=-1)
 
-        # Filter out unreasonable structures.
-        # Then pick one from the reasonable configurations list as an output.
-        reasonable_adsorbed_surfaces = [surface for surface in adsorbed_surfaces
-                                        if self.is_config_reasonable(surface)]
+        print(">>> Total adsorbed_surfaces:", len(adsorbed_surfaces))
+
+        with Loader("  [AAOS] filter reasonable_adsorbed_surfaces", animate=self.animate, ignore=self.no_loader):
+            # Filter out unreasonable structures.
+            # Then pick one from the reasonable configurations list as an output.
+            reasonable_adsorbed_surfaces = [surface for surface in adsorbed_surfaces
+                                            if self.is_config_reasonable(surface)]
+            print(f">>> Non reasonable configs: {len(reasonable_adsorbed_surfaces)}/{len(adsorbed_surfaces)}")
 
         self.adsorbed_surface_atoms = []
         self.adsorbed_surface_sampling_strs = []
@@ -177,43 +191,49 @@ class Combined():
             A boolean indicating whether or not the adsorbate placement is
             reasonable.
         """
-        vnn = VoronoiNN(allow_pathological=True, tol=0.2, cutoff=10)
-        adsorbate_indices = [atom.index for atom in adslab if atom.tag >= 2]
-        adsorbate_bond_indices = [atom.index for atom in adslab if atom.tag == 3]
-        structure = AseAtomsAdaptor.get_structure(adslab)
-        slab_lattice = structure.lattice
+        IGNORE_ICR_LOADERS = True
+        with Loader("        [ICR] is_config_reasonable total", animate=False, ignore=self.no_loader or IGNORE_ICR_LOADERS):
+            with Loader("        [ICR] VoronoiNN", animate=self.animate, ignore=self.no_loader or IGNORE_ICR_LOADERS):
+                vnn = VoronoiNN(allow_pathological=True, tol=0.2, cutoff=10)
+            with Loader("        [ICR] objects inits", animate=self.animate, ignore=self.no_loader or IGNORE_ICR_LOADERS):
+                adsorbate_indices = [atom.index for atom in adslab if atom.tag >= 2]
+                adsorbate_bond_indices = [atom.index for atom in adslab if atom.tag == 3]
+                structure = AseAtomsAdaptor.get_structure(adslab)
+                slab_lattice = structure.lattice
 
-        # Check to see if the fractional coordinates of the adsorption site is bounded
-        # by the slab unit cell. We loosen the threshold to -0.01 and 1.01
-        # to not wrongly exclude reasonable edge adsorption site.
-        for idx in adsorbate_bond_indices:
-            coord = slab_lattice.get_fractional_coords(structure[idx].coords)
-            if np.any((coord < -0.01) | (coord > 1.01)):
-                return False
+            # Check to see if the fractional coordinates of the adsorption site is bounded
+            # by the slab unit cell. We loosen the threshold to -0.01 and 1.01
+            # to not wrongly exclude reasonable edge adsorption site.
+            with Loader("        [ICR] adsorbate_bond_indices for loop", animate=self.animate, ignore=self.no_loader or IGNORE_ICR_LOADERS):
+                for idx in adsorbate_bond_indices:
+                    coord = slab_lattice.get_fractional_coords(structure[idx].coords)
+                    if np.any((coord < -0.01) | (coord > 1.01)):
+                        return False
 
-        # Then, check the covalent radius between each adsorbate atoms
-        # and its nearest neighbors that are slab atoms
-        # to make sure adsorbate is not buried into the surface
-        for idx in adsorbate_indices:
-            try:
-                nearneighbors = vnn.get_nn_info(structure, n=idx)
-            except ValueError:
-                return False
+            # Then, check the covalent radius between each adsorbate atoms
+            # and its nearest neighbors that are slab atoms
+            # to make sure adsorbate is not buried into the surface
+            with Loader("        [ICR] adsorbate_indices for loop", animate=self.animate, ignore=self.no_loader or IGNORE_ICR_LOADERS):
+                for idx in adsorbate_indices:
+                    try:
+                        nearneighbors = vnn.get_nn_info(structure, n=idx)
+                    except ValueError:
+                        return False
 
-            slab_nn = [nn for nn in nearneighbors if nn['site_index'] not in adsorbate_indices]
-            for nn in slab_nn:
-                ads_elem = structure[idx].species_string
-                nn_elem = structure[nn['site_index']].species_string
-                cov_bond_thres = 0.8 * (COVALENT_RADIUS[ads_elem] + COVALENT_RADIUS[nn_elem])/100
-                actual_dist = adslab.get_distance(idx, nn['site_index'], mic=True)
-                if actual_dist < cov_bond_thres:
-                    return False
+                    slab_nn = [nn for nn in nearneighbors if nn['site_index'] not in adsorbate_indices]
+                    for nn in slab_nn:
+                        ads_elem = structure[idx].species_string
+                        nn_elem = structure[nn['site_index']].species_string
+                        cov_bond_thres = 0.8 * (COVALENT_RADIUS[ads_elem] + COVALENT_RADIUS[nn_elem])/100
+                        actual_dist = adslab.get_distance(idx, nn['site_index'], mic=True)
+                        if actual_dist < cov_bond_thres:
+                            return False
 
-        # If the structure is reasonable, change tags of adsorbate atoms from 2 and 3 to 2 only
-        # for ML model compatibility and data cleanliness of the output adslab configurations
-        old_tags = adslab.get_tags()
-        adslab.set_tags(np.where(old_tags == 3, 2, old_tags))
-        return True
+            # If the structure is reasonable, change tags of adsorbate atoms from 2 and 3 to 2 only
+            # for ML model compatibility and data cleanliness of the output adslab configurations
+            old_tags = adslab.get_tags()
+            adslab.set_tags(np.where(old_tags == 3, 2, old_tags))
+            return True
 
     def find_sites(self, surface, adsorbed_surface, bond_indices):
         '''

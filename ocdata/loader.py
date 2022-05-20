@@ -13,6 +13,7 @@ class Loader:
         timer=True,
         erase=False,
         animate=True,
+        ignore=False,
     ):
         """
         A loader-like context manager
@@ -30,7 +31,8 @@ class Loader:
 
         self._thread = Thread(target=self._animate, daemon=True)
         self.steps = ["⢿", "⣻", "⣽", "⣾", "⣷", "⣯", "⣟", "⡿"]
-        self.done = not animate
+        self.done = (not animate) or ignore
+        self.ignore = ignore
 
     def start(self):
         self._start_time = time()
@@ -48,6 +50,8 @@ class Loader:
         self.start()
 
     def stop(self):
+        if self.ignore:
+            return
         self.done = True
         cols = get_terminal_size((80, 20)).columns
 

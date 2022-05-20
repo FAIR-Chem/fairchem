@@ -21,18 +21,30 @@ paths:
 # random seed
 seed: 123
 
-# index of the bulk in bulk_db_flat.
-# null -> sample uniformly
-bulk_id: null
+# number of runs
+nruns: 1
 
-# index of the surface to select for a given bulk
-# null -> sample uniformly
-surface_id: null
+actions:
+  # index of the bulk in bulk_db_flat.
+  # null -> sample uniformly
+  bulk_id: null
 
-# index of the adsorbate to select in adsorbate_db
-# null -> sample uniformly
-adsorbate_id: null
+  # index of the surface to select for a given bulk
+  # null -> sample uniformly
+  surface_id: null
+
+  # index of the adsorbate to select in adsorbate_db
+  # null -> sample uniformly
+  adsorbate_id: null
 
 # whether or not to use pre-computed surfaces.
 # if not they will be computed on the fly but it takes
 use_precomputed_surfaces: true
+
+# Loader animation
+animate: true
+# Ignore loader prints
+no_loader: false
+
+# prints
+verbose: 0
