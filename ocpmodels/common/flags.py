@@ -84,7 +84,10 @@ class Flags:
             "--summit", action="store_true", help="Running on Summit cluster"
         )
         self.parser.add_argument(
-            "--logdir", default="$SCRATCH/ocp/runs/$SLURM_JOB_ID", type=Path, help="Where to store logs"
+            "--logdir",
+            default="$SCRATCH/ocp/runs/$SLURM_JOB_ID",
+            type=Path,
+            help="Where to store logs",
         )
         self.parser.add_argument(
             "--slurm-partition",
