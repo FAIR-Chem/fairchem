@@ -3,6 +3,8 @@ from pathlib import Path
 from datetime import datetime
 import os
 import subprocess
+from shutil import copyfile
+import sys
 
 template = """\
 #!/bin/bash
@@ -15,6 +17,10 @@ template = """\
 #SBATCH --output={output}
 #SBATCH --error={error}
 {time}
+
+# {sbatch_command_line}
+# git commit: {git_commit}
+# cwd: {cwd}
 
 module load anaconda/3
 conda activate {env}
@@ -45,6 +51,18 @@ def now():
         str: now!
     """
     return str(datetime.now()).split(".")[0].replace(":", "-").replace(" ", "_")
+
+
+def get_commit():
+    try:
+        commit = (
+            subprocess.check_output("git rev-parse --verify HEAD".split())
+            .decode("utf-8")
+            .strip()
+        )
+    except Exception:
+        commit = "unknown"
+    return commit
 
 
 if __name__ == "__main__":
@@ -78,6 +96,9 @@ if __name__ == "__main__":
         partition=args.partition,
         py_args=args.py_args,
         time="" if not args.time else f"#SBATCH --time={args.time}",
+        sbatch_command_line=" ".join(["python"] + sys.argv),
+        git_commit=get_commit(),
+        cwd=str(Path.cwd()),
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
