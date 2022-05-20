@@ -496,17 +496,39 @@ class ForcesTrainer(BaseTrainer):
                         [batch.fixed.to(self.device) for batch in batch_list]
                     )
                     mask = fixed == 0
-                    loss.append(
-                        force_mult
-                        * self.loss_fn["force"](
-                            out["forces"][mask], force_target[mask]
+                    if self.config["optim"]["loss_force"].startswith(
+                        "atomwise"
+                    ):
+                        force_mult = self.config["optim"].get(
+                            "force_coefficient", 1
                         )
-                    )
+                        natoms = torch.cat(
+                            [
+                                batch.natoms.to(self.device)
+                                for batch in batch_list
+                            ]
+                        )
+                        natoms = torch.repeat_interleave(natoms, natoms)
+                        force_loss = force_mult * self.loss_fn["force"](
+                            out["forces"][mask],
+                            force_target[mask],
+                            natoms=natoms[mask],
+                            batch_size=batch_list[0].natoms.shape[0],
+                        )
+                        loss.append(force_loss)
+                    else:
+                        loss.append(
+                            force_mult
+                            * self.loss_fn["force"](
+                                out["forces"][mask], force_target[mask]
+                            )
+                        )
                 else:
                     loss.append(
                         force_mult
                         * self.loss_fn["force"](out["forces"], force_target)
                     )
+
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
             assert hasattr(lc, "grad_fn")
