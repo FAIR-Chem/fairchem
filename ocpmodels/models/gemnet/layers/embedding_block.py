@@ -28,9 +28,7 @@ class AtomEmbedding(torch.nn.Module):
         # Atom embeddings: We go up to Bi (83).
         self.embeddings = torch.nn.Embedding(83, emb_size)
         # init by uniform distribution
-        torch.nn.init.uniform_(
-            self.embeddings.weight, a=-np.sqrt(3), b=np.sqrt(3)
-        )
+        torch.nn.init.uniform_(self.embeddings.weight, a=-np.sqrt(3), b=np.sqrt(3))
 
     def forward(self, Z):
         """
@@ -64,9 +62,7 @@ class EdgeEmbedding(torch.nn.Module):
     ):
         super().__init__()
         in_features = 2 * atom_features + edge_features
-        self.dense = Dense(
-            in_features, out_features, activation=activation, bias=False
-        )
+        self.dense = Dense(in_features, out_features, activation=activation, bias=False)
 
     def forward(
         self,
@@ -93,8 +89,6 @@ class EdgeEmbedding(torch.nn.Module):
         h_s = h[idx_s]  # shape=(nEdges, emb_size)
         h_t = h[idx_t]  # shape=(nEdges, emb_size)
 
-        m_st = torch.cat(
-            [h_s, h_t, m_rbf], dim=-1
-        )  # (nEdges, 2*emb_size+nFeatures)
+        m_st = torch.cat([h_s, h_t, m_rbf], dim=-1)  # (nEdges, 2*emb_size+nFeatures)
         m_st = self.dense(m_st)  # (nEdges, emb_size)
         return m_st

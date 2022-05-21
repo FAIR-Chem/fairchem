@@ -13,6 +13,7 @@ import wandb
 from torch.utils.tensorboard import SummaryWriter
 
 from ocpmodels.common.registry import registry
+from pathlib import Path
 
 
 class Logger(ABC):
@@ -61,7 +62,7 @@ class WandBLogger(Logger):
         )
 
         wandb_id = ""
-        slurm_jobid = os.environ.get("SLURM_JOBID")
+        slurm_jobid = os.environ.get("SLURM_JOB_ID")
         if slurm_jobid:
             wandb_id += f"{slurm_jobid}-"
         wandb_id += self.config["cmd"]["timestamp_id"] + "-" + config["model"]
@@ -73,7 +74,15 @@ class WandBLogger(Logger):
             dir=self.config["cmd"]["logs_dir"],
             project=project,
             resume="allow",
+            notes=self.config["note"],
         )
+
+        sbatch_files = list(Path(self.config["run_dir"]).glob("sbatch_script*.sh"))
+        if len(sbatch_files) == 1:
+            wandb.save(str(sbatch_files[0]))
+
+        with open(Path(self.config["run_dir"] / "wandb_url.txt"), "w") as f:
+            f.write(wandb.run.get_url())
 
     def watch(self, model):
         wandb.watch(model)
@@ -103,9 +112,7 @@ class TensorboardLogger(Logger):
 
     # TODO: add a model hook for watching gradients.
     def watch(self, model):
-        logging.warning(
-            "Model gradient logging to tensorboard not yet supported."
-        )
+        logging.warning("Model gradient logging to tensorboard not yet supported.")
         return False
 
     def log(self, update_dict, step=None, split=""):

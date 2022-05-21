@@ -35,14 +35,10 @@ def pov_from_atoms(mp_args):
     # get the bare surface (note: this will not behave correctly for nitrides/hydrides/carbides/etc)
     atoms_surface = atoms[~atoms_organic].copy()
     # replicate the bare surface
-    atoms_surface = atoms_surface.repeat(
-        (extra_cells * 2 + 1, extra_cells * 2 + 1, 1)
-    )
+    atoms_surface = atoms_surface.repeat((extra_cells * 2 + 1, extra_cells * 2 + 1, 1))
     # make an image of the adsorbate in the center of the slab
     atoms_adsorbate = atoms[atoms_organic]
-    atoms_adsorbate.positions += extra_cells * (
-        atoms.cell[0, :] + atoms.cell[1, :]
-    )
+    atoms_adsorbate.positions += extra_cells * (atoms.cell[0, :] + atoms.cell[1, :])
     # add the adsorbate to the replicated surface, then center the positions on the adsorbate
     num_surface_atoms = len(atoms_surface)
     atoms_surface += atoms_adsorbate
@@ -90,9 +86,7 @@ def parallelize_generation(traj_path, out_path, n_procs):
     atoms_list = ase.io.read(traj_path, ":")
 
     # parallelizing image generation
-    mp_args_list = [
-        (atoms, idx, out_path) for idx, atoms in enumerate(atoms_list)
-    ]
+    mp_args_list = [(atoms, idx, out_path) for idx, atoms in enumerate(atoms_list)]
     pool = mp.Pool(processes=n_procs)
     pool.map(pov_from_atoms, mp_args_list)
 

@@ -44,7 +44,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--run-dir",
-            default="./",
+            default="$SCRATCH/ocp/runs/$SLURM_JOB_ID",
             type=str,
             help="Directory to store checkpoint/log/result directory",
         )
@@ -84,7 +84,10 @@ class Flags:
             "--summit", action="store_true", help="Running on Summit cluster"
         )
         self.parser.add_argument(
-            "--logdir", default="logs", type=Path, help="Where to store logs"
+            "--logdir",
+            default="$SCRATCH/ocp/runs/$SLURM_JOB_ID",
+            type=Path,
+            help="Where to store logs",
         )
         self.parser.add_argument(
             "--slurm-partition",
@@ -125,14 +128,18 @@ class Flags:
             default="nccl",
             help="Backend for DDP",
         )
-        self.parser.add_argument(
-            "--local_rank", default=0, type=int, help="Local rank"
-        )
+        self.parser.add_argument("--local_rank", default=0, type=int, help="Local rank")
         # Additional arguments
         self.parser.add_argument(
             "--new_gnn",
             action="store_false",
             help="Whether to use original GNN models or modified ones",
+        )
+        self.parser.add_argument(
+            "--note",
+            type=str,
+            default="",
+            help="Note describing this run to be added to the logger",
         )
 
 

@@ -276,9 +276,7 @@ class GemNetT(torch.nn.Module):
         """
         idx_s, idx_t = edge_index  # c->a (source=c, target=a)
 
-        value = torch.arange(
-            idx_s.size(0), device=idx_s.device, dtype=idx_s.dtype
-        )
+        value = torch.arange(idx_s.size(0), device=idx_s.device, dtype=idx_s.dtype)
         # Possibly contains multiple copies of the same edge (for periodic interactions)
         adj = SparseTensor(
             row=idx_t,
@@ -364,9 +362,7 @@ class GemNetT(torch.nn.Module):
             neighbors,
         )
         batch_edge = batch_edge[mask]
-        neighbors_new = 2 * torch.bincount(
-            batch_edge, minlength=neighbors.size(0)
-        )
+        neighbors_new = 2 * torch.bincount(batch_edge, minlength=neighbors.size(0))
 
         # Create indexing array
         edge_reorder_idx = repeat_blocks(
@@ -467,9 +463,7 @@ class GemNetT(torch.nn.Module):
 
             D_st = distance_vec.norm(dim=-1)
             V_st = -distance_vec / D_st[:, None]
-            cell_offsets = torch.zeros(
-                edge_index.shape[1], 3, device=data.pos.device
-            )
+            cell_offsets = torch.zeros(edge_index.shape[1], 3, device=data.pos.device)
             neighbors = compute_neighbors(data, edge_index)
 
         # Mask interaction edges if required
@@ -621,9 +615,7 @@ class GemNetT(torch.nn.Module):
                     F_t = torch.stack(forces, dim=1)
                     # (nAtoms, num_targets, 3)
                 else:
-                    F_t = -torch.autograd.grad(
-                        E_t.sum(), pos, create_graph=True
-                    )[0]
+                    F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
                     # (nAtoms, 3)
 
             return E_t, F_t  # (nMolecules, num_targets), (nAtoms, 3)

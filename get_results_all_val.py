@@ -31,9 +31,7 @@ if __name__ == "__main__":
         config = build_config(args, override_args)
 
         config["dataset"][-1] = {
-            "src": "/network/projects/_groups/ocp/oc20/is2re/all/"
-            + s
-            + "/data.lmdb"
+            "src": "/network/projects/_groups/ocp/oc20/is2re/all/" + s + "/data.lmdb"
         }
 
         # Define trainer
@@ -85,9 +83,7 @@ if __name__ == "__main__":
     file.writelines([str(args.config_yml) + "\n", args.checkpoint + "\n"])
     file.write(str(metric.keys()))
     file.write("\n")
-    file.writelines(
-        ["val_id ", " val_ood_ads ", " val_ood_cat ", " val_ood_both "]
-    )
+    file.writelines(["val_id ", " val_ood_ads ", " val_ood_cat ", " val_ood_both "])
     file.write("\n")
     for k, v in metrics.items():
         store = []

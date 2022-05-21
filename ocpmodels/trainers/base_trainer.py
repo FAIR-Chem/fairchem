@@ -14,6 +14,7 @@ import subprocess
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -71,6 +72,7 @@ class BaseTrainer(ABC):
         slurm={},
         new_gnn=True,
         data_split=None,
+        note="",
     ):
         self.name = name
         self.cpu = cpu
@@ -93,9 +95,9 @@ class BaseTrainer(ABC):
             )
             # create directories from master rank only
             distutils.broadcast(timestamp, 0)
-            timestamp = datetime.datetime.fromtimestamp(
-                timestamp.int()
-            ).strftime("%Y-%m-%d-%H-%M-%S")
+            timestamp = datetime.datetime.fromtimestamp(timestamp.int()).strftime(
+                "%Y-%m-%d-%H-%M-%S"
+            )
             if identifier:
                 self.timestamp_id = f"{timestamp}-{identifier}"
             else:
@@ -121,7 +123,7 @@ class BaseTrainer(ABC):
         except Exception:
             commit_hash = None
 
-        logger_name = logger if isinstance(logger, str) else logger["name"]
+        # logger_name = logger if isinstance(logger, str) else logger["name"]
         model_name = model.pop("name")
         self.config = {
             "task": task,
@@ -131,6 +133,7 @@ class BaseTrainer(ABC):
             "optim": optimizer,
             "logger": logger,
             "amp": amp,
+            "run_dir": run_dir,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
                 "identifier": identifier,
@@ -138,38 +141,21 @@ class BaseTrainer(ABC):
                 "seed": seed,
                 "timestamp_id": self.timestamp_id,
                 "commit": commit_hash,
-                "checkpoint_dir": os.path.join(
-                    "/network/scratch",
-                    "/".join(
-                        os.getcwd().split("/")[3:5]
-                    ),  # os.path.dirname(os.path.dirname(os.getcwd()))[10:]
-                    "checkpoints",
-                    self.timestamp_id + "-" + model_name,
-                ),
-                "results_dir": os.path.join(
-                    "/network/scratch",
-                    "/".join(os.getcwd().split("/")[3:5]),
-                    "results",
-                    self.timestamp_id + "-" + model_name,
-                ),
-                "logs_dir": os.path.join(
-                    "/network/scratch",
-                    "/".join(os.getcwd().split("/")[3:5]),
-                    "logs",
-                    logger_name,
-                    self.timestamp_id + "-" + model_name,
-                ),
+                "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
+                "results_dir": str(Path(run_dir) / "results"),
+                "logs_dir": str(Path(run_dir) / "logs"),
             },
             "slurm": slurm,
+            "note": note,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp else None
 
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
             self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
-            self.config["slurm"]["folder"] = self.config["slurm"][
-                "folder"
-            ].replace("%j", self.config["slurm"]["job_id"])
+            self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
+                "%j", self.config["slurm"]["job_id"]
+            )
         if isinstance(dataset, list):
             if len(dataset) > 0:
                 self.config["dataset"] = dataset[0]
@@ -207,9 +193,7 @@ class BaseTrainer(ABC):
 
             # sets the hpo checkpoint frequency
             # default is no checkpointing
-            self.hpo_checkpoint_every = self.config["optim"].get(
-                "checkpoint_every", -1
-            )
+            self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
         if distutils.is_master():
             print(yaml.dump(self.config, default_flow_style=False))
@@ -243,9 +227,7 @@ class BaseTrainer(ABC):
     def load_logger(self):
         self.logger = None
         if not self.is_debug and distutils.is_master() and not self.is_hpo:
-            assert (
-                self.config["logger"] is not None
-            ), "Specify logger in config"
+            assert self.config["logger"] is not None, "Specify logger in config"
 
             logger = self.config["logger"]
             logger_name = logger if isinstance(logger, str) else logger["name"]
@@ -366,9 +348,7 @@ class BaseTrainer(ABC):
 
         # TODO: depreicated, remove.
         bond_feat_dim = None
-        bond_feat_dim = self.config["model_attributes"].get(
-            "num_gaussians", 50
-        )
+        bond_feat_dim = self.config["model_attributes"].get("num_gaussians", 50)
 
         loader = self.train_loader or self.val_loader or self.test_loader
         self.model = registry.get_model_class(self.config["model"])(
@@ -398,9 +378,7 @@ class BaseTrainer(ABC):
             num_gpus=1 if not self.cpu else 0,
         )
         if distutils.initialized():
-            self.model = DistributedDataParallel(
-                self.model, device_ids=[self.device]
-            )
+            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
 
     def load_checkpoint(self, checkpoint_path):
         if not os.path.isfile(checkpoint_path):
@@ -424,9 +402,7 @@ class BaseTrainer(ABC):
             new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
             self.model.load_state_dict(new_dict)
         elif distutils.initialized() and first_key.split(".")[1] != "module":
-            new_dict = {
-                f"module.{k}": v for k, v in checkpoint["state_dict"].items()
-            }
+            new_dict = {f"module.{k}": v for k, v in checkpoint["state_dict"].items()}
             self.model.load_state_dict(new_dict)
         else:
             self.model.load_state_dict(checkpoint["state_dict"])
@@ -442,9 +418,7 @@ class BaseTrainer(ABC):
 
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
-                self.normalizers[key].load_state_dict(
-                    checkpoint["normalizers"][key]
-                )
+                self.normalizers[key].load_state_dict(checkpoint["normalizers"][key])
             if self.scaler and checkpoint["amp"]:
                 self.scaler.load_state_dict(checkpoint["amp"])
 
@@ -460,9 +434,7 @@ class BaseTrainer(ABC):
             elif loss_name == "l2mae":
                 self.loss_fn[loss] = L2MAELoss()
             else:
-                raise NotImplementedError(
-                    f"Unknown loss function name: {loss_name}"
-                )
+                raise NotImplementedError(f"Unknown loss function name: {loss_name}")
             if distutils.initialized():
                 self.loss_fn[loss] = DDPLoss(self.loss_fn[loss])
 
@@ -540,9 +512,7 @@ class BaseTrainer(ABC):
                         "config": self.config,
                         "val_metrics": metrics,
                         "ema": self.ema.state_dict() if self.ema else None,
-                        "amp": self.scaler.state_dict()
-                        if self.scaler
-                        else None,
+                        "amp": self.scaler.state_dict() if self.scaler else None,
                     },
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
@@ -560,9 +530,7 @@ class BaseTrainer(ABC):
                         },
                         "config": self.config,
                         "val_metrics": metrics,
-                        "amp": self.scaler.state_dict()
-                        if self.scaler
-                        else None,
+                        "amp": self.scaler.state_dict() if self.scaler else None,
                     },
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
@@ -577,15 +545,11 @@ class BaseTrainer(ABC):
         from ray import tune
 
         if checkpoint_every != -1 and step % checkpoint_every == 0:
-            with tune.checkpoint_dir(
-                step=step
-            ) as checkpoint_dir:  # noqa: F821
+            with tune.checkpoint_dir(step=step) as checkpoint_dir:  # noqa: F821
                 path = os.path.join(checkpoint_dir, "checkpoint")
                 torch.save(self.save_state(epoch, step, metrics), path)
 
-    def hpo_update(
-        self, epoch, step, train_metrics, val_metrics, test_metrics=None
-    ):
+    def hpo_update(self, epoch, step, train_metrics, val_metrics, test_metrics=None):
         progress = {
             "steps": step,
             "epochs": epoch,
@@ -602,9 +566,7 @@ class BaseTrainer(ABC):
         # report metrics to tune
         tune_reporter(  # noqa: F821
             iters=progress,
-            train_metrics={
-                k: train_metrics[k]["metric"] for k in self.metrics
-            },
+            train_metrics={k: train_metrics[k]["metric"] for k in self.metrics},
             val_metrics={k: val_metrics[k]["metric"] for k in val_metrics},
             test_metrics=test_metrics,
         )
@@ -725,9 +687,7 @@ class BaseTrainer(ABC):
                 max_norm=self.clip_grad_norm,
             )
             if self.logger is not None:
-                self.logger.log(
-                    {"grad_norm": grad_norm}, step=self.step, split="train"
-                )
+                self.logger.log({"grad_norm": grad_norm}, step=self.step, split="train")
         if self.scaler:
             self.scaler.step(self.optimizer)
             self.scaler.update()
@@ -775,13 +735,9 @@ class BaseTrainer(ABC):
             gather_results["ids"] = np.array(gather_results["ids"])[idx]
             for k in keys:
                 if k == "forces":
-                    gather_results[k] = np.concatenate(
-                        np.array(gather_results[k])[idx]
-                    )
+                    gather_results[k] = np.concatenate(np.array(gather_results[k])[idx])
                 elif k == "chunk_idx":
-                    gather_results[k] = np.cumsum(
-                        np.array(gather_results[k])[idx]
-                    )[:-1]
+                    gather_results[k] = np.cumsum(np.array(gather_results[k])[idx])[:-1]
                 else:
                     gather_results[k] = np.array(gather_results[k])[idx]
 
@@ -802,9 +758,7 @@ class BaseTrainer(ABC):
         start_time = time.time()
         metrics_dict = {}
         logging.info("Evaluating on 4 val splits.")
-        for i, s in enumerate(
-            ["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]
-        ):
+        for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
 
             # Update the val. dataset we look at
             self.config["val_dataset"] = {

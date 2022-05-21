@@ -87,8 +87,7 @@ def main(args, split):
 
     # Initialize lmdb paths
     db_paths = [
-        os.path.join(out_path, "data.%04d.lmdb" % i)
-        for i in range(args.num_workers)
+        os.path.join(out_path, "data.%04d.lmdb" % i) for i in range(args.num_workers)
     ]
 
     pool = mp.Pool(args.num_workers)

@@ -3,6 +3,8 @@ from pathlib import Path
 from datetime import datetime
 import os
 import subprocess
+from shutil import copyfile
+import sys
 
 template = """\
 #!/bin/bash
@@ -15,6 +17,10 @@ template = """\
 #SBATCH --output={output}
 #SBATCH --error={error}
 {time}
+
+# {sbatch_command_line}
+# git commit: {git_commit}
+# cwd: {cwd}
 
 module load anaconda/3
 conda activate {env}
@@ -44,9 +50,19 @@ def now():
     Returns:
         str: now!
     """
-    return (
-        str(datetime.now()).split(".")[0].replace(":", "-").replace(" ", "_")
-    )
+    return str(datetime.now()).split(".")[0].replace(":", "-").replace(" ", "_")
+
+
+def get_commit():
+    try:
+        commit = (
+            subprocess.check_output("git rev-parse --verify HEAD".split())
+            .decode("utf-8")
+            .strip()
+        )
+    except Exception:
+        commit = "unknown"
+    return commit
 
 
 if __name__ == "__main__":
@@ -57,14 +73,19 @@ if __name__ == "__main__":
     root = Path(__file__).resolve().parent
     # parse and resolve args.
     # defaults are loaded and overwritten from the command-line as `arg=value`
-    args = resolved_args(
-        defaults=root / "configs" / "sbatch" / "defaults.yaml"
-    )
+    args = resolved_args(defaults=root / "configs" / "sbatch" / "defaults.yaml")
     args.pretty_print()
 
     # add logdir to main.py's command-line arguments
     if "--logdir" not in args.py_args and args.logdir:
         args.py_args += f" --logdir {args.logdir}"
+    # add run-dir to main.py's command-line arguments
+    if "--run-dir" not in args.py_args and args.logdir:
+        args.py_args += f" --run-dir {args.logdir}"
+
+    if "--note" not in args.py_args and args.note:
+        note = args.note.replace('"', '\\"')
+        args.py_args += f' --note "{note}"'
 
     # format string template with defaults + command-line args
     script = template.format(
@@ -79,6 +100,9 @@ if __name__ == "__main__":
         partition=args.partition,
         py_args=args.py_args,
         time="" if not args.time else f"#SBATCH --time={args.time}",
+        sbatch_command_line=" ".join(["python"] + sys.argv),
+        git_commit=get_commit(),
+        cwd=str(Path.cwd()),
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
@@ -94,7 +118,7 @@ if __name__ == "__main__":
 
     # add default name if a fodler path (not a file path) was provided
     if script_path.is_dir():
-        script_path /= f"script_{now()}.sh"
+        script_path /= f"sbatch_script_{now()}.sh"
 
     # make parent directory if file path has been provided and its parent does not exist
     if script_path.is_file() and not script_path.parent.exists():
@@ -114,9 +138,7 @@ if __name__ == "__main__":
         print("\nDev mode: not actually executing the command 🤓\n")
     else:
         # not dev mode: run the command, make directories
-        out = (
-            subprocess.check_output(command.split(" ")).decode("utf-8").strip()
-        )
+        out = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
         jobid = out.split(" job ")[-1].strip()
         success = out.startswith("Submitted batch job")
 
@@ -127,6 +149,7 @@ if __name__ == "__main__":
             if not output_parent.exists():
                 print("Creating directory", str(output_parent))
                 output_parent.mkdir(parents=True, exist_ok=True)
+            copyfile(script_path, output_parent / script_path.name)
 
         if "/%j/" in args.error and success:
             args.error = args.error.replace("/%j/", f"/{jobid.strip()}/")
