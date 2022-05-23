@@ -9,6 +9,7 @@ take arbitrary chemical structures as input to predict energy / forces / positio
 
 - [GemNet](https://arxiv.org/abs/2106.08903)
 - [SpinConv](https://arxiv.org/abs/2106.09575)
+- [PaiNN](https://arxiv.org/abs/2102.03150)
 - [DimeNet++](https://arxiv.org/abs/2011.14115)
 - [ForceNet](https://arxiv.org/abs/2103.01436)
 - [DimeNet](https://arxiv.org/abs/2003.03123)
