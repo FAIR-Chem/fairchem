@@ -71,6 +71,7 @@ class BaseTrainer(ABC):
         name="base_trainer",
         slurm={},
         new_gnn=True,
+        data_split=None,
         note="",
     ):
         self.name = name
@@ -126,6 +127,7 @@ class BaseTrainer(ABC):
         model_name = model.pop("name")
         self.config = {
             "task": task,
+            "data_split": data_split,
             "model": model_name,
             "model_attributes": model,
             "optim": optimizer,
@@ -574,9 +576,10 @@ class BaseTrainer(ABC):
         """Derived classes should implement this function."""
 
     @torch.no_grad()
-    def validate(self, split="val", disable_tqdm=False):
+    def validate(self, split="val", disable_tqdm=False, name_split=None):
         if distutils.is_master():
-            logging.info(f"Evaluating on {split}.")
+            if not name_split:
+                logging.info(f"Evaluating on {split}.")
         if self.is_hpo:
             disable_tqdm = True
 
@@ -588,7 +591,11 @@ class BaseTrainer(ABC):
         evaluator, metrics = Evaluator(task=self.name), {}
         rank = distutils.get_rank()
 
-        loader = self.val_loader if split in {"val", "final_val"} else self.test_loader
+        loader = (
+            self.val_loader
+            if split[:3] in {"val", "eva"}
+            else self.test_loader
+        )
 
         for i, batch in tqdm(
             enumerate(loader),
@@ -629,7 +636,10 @@ class BaseTrainer(ABC):
 
         # Make plots.
         if self.logger is not None:
-            if split == "final_val":
+            if split == "eval":
+                log_dict = {
+                    f"{name_split}-{k}": v for k, v in log_dict.items()
+                }
                 self.logger.log(
                     log_dict,
                     split=split,
@@ -734,19 +744,21 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(self):
+    def eval_all_val_splits(self, final=False):
         """Evaluate model on all four validation splits"""
-        # Load current best checkpoint
-        checkpoint_path = os.path.join(
-            self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
-        )
-        self.load_checkpoint(checkpoint_path=checkpoint_path)
+
+        if final:
+            # Load current best checkpoint
+            checkpoint_path = os.path.join(
+                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
+            )
+            self.load_checkpoint(checkpoint_path=checkpoint_path)
 
         # Compute performance metrics on all four validation splits
-        print("----- FINAL RESULTS -----")
         start_time = time.time()
         metrics_dict = {}
-        for i, s in enumerate(["val_id", "val_ood_ads", "val_ood_cat", "val_ood_both"]):
+        logging.info("Evaluating on 4 val splits.")
+        for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
 
             # Update the val. dataset we look at
             self.config["val_dataset"] = {
@@ -757,24 +769,22 @@ class BaseTrainer(ABC):
             self.load_datasets()
 
             # Call validate function
-            self.step = i
-            self.metrics = self.validate(split="final_val", disable_tqdm=True)
+            self.metrics = self.validate(
+                split="eval", disable_tqdm=True, name_split=s
+            )
             metrics_dict[s] = self.metrics
 
-        # Log results
-        if self.config["logger"] == "wandb":
+            # Log results
+            if self.config["logger"] == "wandb":
+                self.logger.log({"Val. time": time.time() - start_time})
+
+        if final:
+            # Print results
+            print("----- FINAL RESULTS -----")
+            print("Total time taken: ", time.time() - start_time)
+            print(self.metrics.keys())
             for k, v in metrics_dict.items():
                 store = []
-                for key, val in v.items():
+                for _, val in v.items():
                     store.append(round(val["metric"], 4))
-                    self.logger.log({k + "/" + key: val["metric"]}, split="final_val")
-            self.logger.log({"Val. time": time.time() - start_time})
-
-        # Print results
-        print("Total time taken: ", time.time() - start_time)
-        print(self.metrics.keys())
-        for k, v in metrics_dict.items():
-            store = []
-            for _, val in v.items():
-                store.append(round(val["metric"], 4))
-            print(k, store)
+                print(k, store)

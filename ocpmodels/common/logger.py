@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 import logging
+import os
 from abc import ABC, abstractmethod
 
 import torch
@@ -12,7 +13,6 @@ import wandb
 from torch.utils.tensorboard import SummaryWriter
 
 from ocpmodels.common.registry import registry
-import os
 from pathlib import Path
 
 
@@ -92,6 +92,7 @@ class WandBLogger(Logger):
             update_dict = super().log(update_dict, step, split)
             wandb.log(update_dict, step=int(step))
         else:
+            update_dict = super().log(update_dict, split=split)
             wandb.log(update_dict)
 
     def log_plots(self, plots, caption=""):
