@@ -168,13 +168,14 @@ if __name__ == "__main__":
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
-    if args.logdir:
-        args.logdir = resolve(args.logdir)
     if not args.mode or not args.config_yml:
         args.mode = "train"
         args.config_yml = "configs/is2re/10k/schnet/schnet.yml"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
         warnings.warn("No model / mode is given; chosen as default")
+    if args.logdir:
+        args.logdir = resolve(args.logdir)
+
     config = build_config(args, override_args)
 
     if args.submit:  # Run on cluster
