@@ -798,7 +798,23 @@ class BaseTrainer(ABC):
                 + s
                 + "/data.lmdb"
             }
-            self.load_datasets()
+
+            # Load val dataset
+            if self.config.get("val_dataset", None):
+                self.val_dataset = registry.get_dataset_class(
+                    self.config["task"]["dataset"]
+                )(self.config["val_dataset"])
+                self.val_sampler = self.get_sampler(
+                    self.val_dataset,
+                    self.config["optim"].get(
+                        "eval_batch_size", self.config["optim"]["batch_size"]
+                    ),
+                    shuffle=False,
+                )
+                self.val_loader = self.get_dataloader(
+                    self.val_dataset,
+                    self.val_sampler,
+                )
 
             # Call validate function
             self.metrics = self.validate(

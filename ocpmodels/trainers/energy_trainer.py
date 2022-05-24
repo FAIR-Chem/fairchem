@@ -253,7 +253,7 @@ class EnergyTrainer(BaseTrainer):
                                 )
 
                         # Evaluate current model on all 4 validation splits
-                        if ((epoch_int % 5 == 0) and (epoch_int != 0)) or (
+                        if ((epoch_int % 100 == 0) and (epoch_int != 0)) or (
                             epoch_int == self.config["optim"]["max_epochs"] - 1
                         ):
                             self.eval_all_val_splits(
