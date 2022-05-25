@@ -2,7 +2,44 @@
 
 *NOTE: Data files for all tasks / splits were updated on Feb 10, 2021 due to minor bugs (affecting < 1% of the data) in earlier versions. If you downloaded data before Feb 10, 2021, please re-download the data.*
 
-This page summarizes the dataset download links for S2EF and IS2RE/IS2RS tasks and various splits. The main project website is https://opencatalystproject.org/
+## Download and preprocess the dataset
+
+IS2* datasets are stored as LMDB files and are ready to be used upon download.
+S2EF train+val datasets require an additional preprocessing step.
+
+For convenience, a self-contained script can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/scripts/download_data.py) to download, preprocess, and organize the data directories to be readily usable by the existing [configs](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs).
+
+For IS2*, run the script as:
+
+```bash
+python scripts/download_data.py --task is2re
+```
+
+For S2EF train/val, run the script as:
+
+```bash
+python scripts/download_data.py --task s2ef --split SPLIT_SIZE --get-edges --num-workers WORKERS --ref-energy
+```
+
+- `--split`: split size to download: `"200k", "2M", "20M", "all", "val_id", "val_ood_ads", "val_ood_cat", or "val_ood_both"`.
+- `--get-edges`: includes edge information in LMDBs (~10x storage requirement, ~3-5x slowdown), otherwise, compute edges on the fly (larger GPU memory requirement).
+- `--num-workers`: number of workers to parallelize preprocessing across.
+- `--ref-energy`: uses referenced energies instead of raw energies.
+
+For S2EF test, run the script as:
+```bash
+python scripts/download_data.py --task s2ef --split test
+```
+
+To download and process the dataset in a directory other than your local `ocp/data` folder, add the following command line argument `--data-path`.
+
+Note that the baseline [configs](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs)
+expect the data to be found in `ocp/data`, make sure you symlink your directory or
+modify the paths in the configs accordingly.
+
+The following sections list dataset download links and sizes for various S2EF
+and IS2RE/IS2RS task splits. If you used the above `download_data.py` script to
+download and preprocess the data, you are good to go and can stop reading here!
 
 ## Structure to Energy and Forces (S2EF) task
 
@@ -224,9 +261,11 @@ Total IS2RE and IS2RS systems:
     * test_ood_cat: 24967
     * test_ood_both: 24986
 
-## Citation
+## Citing OC20
 
-The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode). Please cite the following paper in any research manuscript using the OC20 dataset:
+The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
+
+Please cite the following paper in any research manuscript using the OC20 dataset:
 
 
 ```bibtex
