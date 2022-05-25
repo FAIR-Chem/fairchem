@@ -19,6 +19,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.modules.fixed_embeddings import FixedEmbedding
 
 
 class InteractionBlock(torch.nn.Module):
@@ -176,6 +177,7 @@ class NewSchNet(torch.nn.Module):
         self.readout = readout
         self.scale = None
         self.use_tag = tag_hidden_channels > 0
+        self.fixed_embed = True
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
@@ -186,7 +188,13 @@ class NewSchNet(torch.nn.Module):
         if self.use_tag:
             self.tag_embedding = Embedding(3, tag_hidden_channels)
 
-        self.embedding = Embedding(100, hidden_channels - tag_hidden_channels)
+        # Fixed embedding
+        Femb = FixedEmbedding(short=False)
+        self.fixed_embeddings = Femb.fixed_embeddings
+
+        self.embedding = Embedding(
+            100, hidden_channels - tag_hidden_channels - Femb.dim
+        )
         # self.embedding = Embedding(100, hidden_channels)
         # hidden_channels += tag_hidden_channels
 
@@ -308,6 +316,7 @@ class NewSchNetWrap(NewSchNet):
         batch = torch.zeros_like(z) if batch is None else batch
 
         h = self.embedding(z)
+        h_fixed = self.fixed_embeddings[z]
 
         if self.use_tag:
             assert data.tags is not None
@@ -315,6 +324,8 @@ class NewSchNetWrap(NewSchNet):
             h = torch.cat((h, h_tag), dim=1)
             # TODO: uncomment below to add covalent radii info
             # h = torch.add(h, self.covalent_radii[z].unsqueeze(dim=1))
+
+        h = torch.cat((h, h_fixed), dim=1)
 
         edge_index = radius_graph(
             pos,
