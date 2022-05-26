@@ -25,7 +25,10 @@ class AtomwiseL2Loss(nn.Module):
         assert reduction in ["mean", "sum"]
 
     def forward(
-        self, input: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor
+        self,
+        input: torch.Tensor,
+        target: torch.Tensor,
+        natoms: torch.Tensor,
     ):
         assert natoms.shape[0] == input.shape[0] == target.shape[0]
         assert len(natoms.shape) == 1  # (nAtoms, )
