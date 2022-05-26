@@ -56,6 +56,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.modules.fixed_embeddings import FixedEmbedding
 
 try:
     import sympy as sym
@@ -82,13 +83,32 @@ class BesselBasisLayer(torch.nn.Module):
         return self.envelope(dist) * (self.freq * dist).sin()
 
 
-class TagEmbeddingBlock(torch.nn.Module):
-    def __init__(self, num_radial, hidden_channels, tag_hidden_channels, act=swish):
+class AdvancedEmbeddingBlock(torch.nn.Module):
+    def __init__(
+        self,
+        num_radial,
+        hidden_channels,
+        tag_hidden_channels,
+        fixed_embeds,
+        act=swish,
+    ):
         super().__init__()
         self.act = act
+        self.fixed_embeddings = fixed_embeds
+        self.fixed_embeds_size = 0
+        self.use_tag = tag_hidden_channels > 0
 
-        self.emb = Embedding(95, hidden_channels - tag_hidden_channels)
-        self.tag = Embedding(3, tag_hidden_channels)
+        if self.fixed_embeddings:
+            Femb = FixedEmbedding(short=False)
+            self.fixed_embeddings = Femb.fixed_embeddings
+            self.fixed_embeds_size = Femb.dim
+
+        if tag_hidden_channels:
+            self.tag = Embedding(3, tag_hidden_channels)
+
+        self.emb = Embedding(
+            95, hidden_channels - tag_hidden_channels - self.fixed_embeds_size
+        )
 
         self.lin_rbf = Linear(num_radial, hidden_channels)
         self.lin = Linear(3 * hidden_channels, hidden_channels)
@@ -109,12 +129,30 @@ class TagEmbeddingBlock(torch.nn.Module):
         self.lin.reset_parameters()
 
     def forward(self, x, rbf, i, j, tag):
+
+        if self.use_tag:
+            x_tag = self.tag(tag)
+        if self.fixed_embeds_size > 0:
+            x_fixed = self.fixed_embeddings[x]
+
         x = self.emb(x)
-        x_tag = self.tag(tag)
         rbf = self.act(self.lin_rbf(rbf))
 
         return self.act(
-            self.lin(torch.cat([x[i], x[j], rbf, x_tag[i], x_tag[j]], dim=-1))
+            self.lin(
+                torch.cat(
+                    [
+                        x[i],
+                        x[j],
+                        rbf,
+                        x_tag[i],
+                        x_tag[j],
+                        x_fixed[i],
+                        x_fixed[j],
+                    ],
+                    dim=-1,
+                )
+            )
         )
 
 
@@ -151,11 +189,17 @@ class InteractionPPBlock(torch.nn.Module):
 
         # Residual layers before and after skip connection.
         self.layers_before_skip = torch.nn.ModuleList(
-            [ResidualLayer(hidden_channels, act) for _ in range(num_before_skip)]
+            [
+                ResidualLayer(hidden_channels, act)
+                for _ in range(num_before_skip)
+            ]
         )
         self.lin = nn.Linear(hidden_channels, hidden_channels)
         self.layers_after_skip = torch.nn.ModuleList(
-            [ResidualLayer(hidden_channels, act) for _ in range(num_after_skip)]
+            [
+                ResidualLayer(hidden_channels, act)
+                for _ in range(num_after_skip)
+            ]
         )
 
         self.reset_parameters()
@@ -284,6 +328,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
         self,
         hidden_channels,
         tag_hidden_channels,
+        fixed_embeds,
         out_channels,
         num_blocks,
         int_emb_size,
@@ -314,9 +359,13 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             num_spherical, num_radial, cutoff, envelope_exponent
         )
 
-        if self.use_tag:
-            self.emb = TagEmbeddingBlock(
-                num_radial, hidden_channels, tag_hidden_channels, act
+        if self.use_tag or fixed_embeds:
+            self.emb = AdvancedEmbeddingBlock(
+                num_radial,
+                hidden_channels,
+                tag_hidden_channels,
+                fixed_embeds,
+                act,
             )
         else:
             self.emb = EmbeddingBlock(num_radial, hidden_channels, act)
@@ -419,6 +468,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         num_before_skip=1,
         num_after_skip=2,
         num_output_layers=3,
+        fixed_embeds=False,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
@@ -430,6 +480,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         super(NewDimeNetPlusPlusWrap, self).__init__(
             hidden_channels=hidden_channels,
             tag_hidden_channels=tag_hidden_channels,
+            fixed_embeds=fixed_embeds,
             out_channels=num_targets,
             num_blocks=num_blocks,
             int_emb_size=int_emb_size,

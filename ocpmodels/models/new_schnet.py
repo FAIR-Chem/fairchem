@@ -153,6 +153,7 @@ class NewSchNet(torch.nn.Module):
         self,
         hidden_channels: int = 128,
         tag_hidden_channels: int = 128,
+        fixed_embeds: bool = False,
         num_filters: int = 128,
         num_interactions: int = 6,
         num_gaussians: int = 50,
@@ -177,7 +178,8 @@ class NewSchNet(torch.nn.Module):
         self.readout = readout
         self.scale = None
         self.use_tag = tag_hidden_channels > 0
-        self.fixed_embed = True
+        self.fixed_embeddings = fixed_embeds
+        self.fixed_embeds_size = 0
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
@@ -188,12 +190,14 @@ class NewSchNet(torch.nn.Module):
         if self.use_tag:
             self.tag_embedding = Embedding(3, tag_hidden_channels)
 
-        # Fixed embedding
-        Femb = FixedEmbedding(short=False)
-        self.fixed_embeddings = Femb.fixed_embeddings
+        # Fixed embeddings
+        if self.fixed_embeddings:
+            Femb = FixedEmbedding(short=False)
+            self.fixed_embeddings = Femb.fixed_embeddings
+            self.fixed_embeds_size = Femb.dim
 
         self.embedding = Embedding(
-            100, hidden_channels - tag_hidden_channels - Femb.dim
+            100, hidden_channels - tag_hidden_channels - self.fixed_embeds_size
         )
         # self.embedding = Embedding(100, hidden_channels)
         # hidden_channels += tag_hidden_channels
@@ -240,6 +244,7 @@ class NewSchNet(torch.nn.Module):
             f"{self.__class__.__name__}("
             f"hidden_channels={self.hidden_channels}, "
             f"tag_hidden_channels={self.tag_hidden_channels}, "
+            f"fixed_embeddings={self.fixed_embeds_size}, "
             f"num_filters={self.num_filters}, "
             f"num_interactions={self.num_interactions}, "
             f"num_gaussians={self.num_gaussians}, "
@@ -260,6 +265,7 @@ class NewSchNetWrap(NewSchNet):
         otf_graph=False,
         hidden_channels=128,
         tag_hidden_channels=32,
+        fixed_embeds=False,
         num_filters=128,
         num_interactions=6,
         num_gaussians=50,
@@ -275,6 +281,7 @@ class NewSchNetWrap(NewSchNet):
         super(NewSchNetWrap, self).__init__(
             hidden_channels=hidden_channels,
             tag_hidden_channels=tag_hidden_channels,
+            fixed_embeds=fixed_embeds,
             num_filters=num_filters,
             num_interactions=num_interactions,
             num_gaussians=num_gaussians,
@@ -316,7 +323,10 @@ class NewSchNetWrap(NewSchNet):
         batch = torch.zeros_like(z) if batch is None else batch
 
         h = self.embedding(z)
-        h_fixed = self.fixed_embeddings[z]
+
+        if self.fixed_embeds_size > 0:
+            h_fixed = self.fixed_embeddings[z]
+            h = torch.cat((h, h_fixed), dim=1)
 
         if self.use_tag:
             assert data.tags is not None
@@ -324,8 +334,6 @@ class NewSchNetWrap(NewSchNet):
             h = torch.cat((h, h_tag), dim=1)
             # TODO: uncomment below to add covalent radii info
             # h = torch.add(h, self.covalent_radii[z].unsqueeze(dim=1))
-
-        h = torch.cat((h, h_fixed), dim=1)
 
         edge_index = radius_graph(
             pos,

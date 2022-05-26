@@ -11,6 +11,7 @@ model:
   cutoff: 6.0
   use_pbc: True
   regress_forces: False
+  fixed_embeds: False
 
 # *** Important note ***
 #   The total number of gpus used for this run was 1.

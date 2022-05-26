@@ -15,6 +15,7 @@ model:
   num_output_layers: 3
   regress_forces: False
   use_pbc: True
+  fixed_embeds: False
 
 # *** Important note ***
 #   The total number of gpus used for this run was 1.
