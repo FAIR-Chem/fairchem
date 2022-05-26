@@ -27,6 +27,7 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 |SpinConv	|All    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/spinconv_force_centric_all.pt	|0.0267	|1.02%	|
 |GemNet-dT	|2M    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_12/s2ef/gemnet_t_direct_h512_2M.pt	|0.0257	|1.10%	|
 |GemNet-dT	|All    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/gemnet_t_direct_h512_all.pt	|0.0211	|2.21%	|
+|PaiNN      |All    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_05/s2ef/painn_h512_s2ef_all.pt      |0.0294 |0.91%   |
 
 ## S2EF models: optimized for force only
 
@@ -54,10 +55,12 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 |DimeNet++	|10k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_10k.pt	|0.8837	|
 |DimeNet++	|100k	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_100k.pt	|0.6388	|
 |DimeNet++	|All	|https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_all.pt	|0.5639	|
+|PaiNN      |All    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_05/is2re/painn_h1024_bs4x8_is2re_all.pt     |0.5728 |
 
 The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
 
-Please cite the following paper in any research manuscript using the OC20 dataset or pretrained models:
+Please consider citing the following paper in any research manuscript using the
+OC20 dataset or pretrained models, as well as the original paper for each model:
 
 ```
 @article{ocp_dataset,
