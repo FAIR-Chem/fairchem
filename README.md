@@ -2,12 +2,11 @@
 
 [![CircleCI](https://circleci.com/gh/Open-Catalyst-Project/ocp.svg?style=shield)](https://circleci.com/gh/Open-Catalyst-Project/ocp)
 
-`ocp` is the [Open Catalyst Project](https://opencatalystproject.org/)'s code
-library that provides implementations of state-of-the-art ML algorithms for
-catalysis.
+`ocp` is the [Open Catalyst Project](https://opencatalystproject.org/)'s
+library of state-of-the-art machine learning algorithms for catalysis.
 
 <div align="left">
-    <video autoplay="" loop="" src="https://user-images.githubusercontent.com/1156489/170387152-c524a743-7236-4d8d-b3c9-5145f275be46.mp4"></video>
+    <img src="https://user-images.githubusercontent.com/1156489/170388229-642c6619-dece-4c88-85ef-b46f4d5f1031.gif">
 </div>
 
 It provides training and evaluation code for tasks and models that take arbitrary
