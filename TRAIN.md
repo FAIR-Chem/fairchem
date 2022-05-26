@@ -1,7 +1,7 @@
 # Training and evaluating models on the OC20 dataset
 
 - [Getting Started](#getting-started)
-- [Initial Structure to Relaxed Energy prediction (IS2RE)](#initial-structure-to-relaxed-energy-prediction-is2re)
+- [Initial Structure to Relaxed Energy (IS2RE)](#initial-structure-to-relaxed-energy-prediction-is2re)
   - [IS2RE Relaxations](#is2re-relaxations)
 - [Structure to Energy and Forces (S2EF)](#structure-to-energy-and-forces-s2ef)
 - [Initial Structure to Relaxed Structure (IS2RS)](#initial-structure-to-relaxed-structure-is2rs)
