@@ -264,7 +264,10 @@ class ForcesTrainer(BaseTrainer):
         if (
             "mae" in primary_metric
             and val_metrics[primary_metric]["metric"] < self.best_val_metric
-        ) or (val_metrics[primary_metric]["metric"] > self.best_val_metric):
+        ) or (
+            "mae" not in primary_metric
+            and val_metrics[primary_metric]["metric"] > self.best_val_metric
+        ):
             self.best_val_metric = val_metrics[primary_metric]["metric"]
             self.save(
                 metrics=val_metrics,
