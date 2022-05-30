@@ -4,7 +4,7 @@ from mendeleev.fetch import fetch_table
 
 
 class FixedEmbedding:
-    def __init__(self, short=False) -> None:
+    def __init__(self, short=False, normalize=True) -> None:
 
         self.properties_list = [
             "atomic_radius",
@@ -49,6 +49,7 @@ class FixedEmbedding:
             "covalent_radius_pyykko_triple",
         ]
         self.short = short
+        self.normalize = normalize
         self.dim = None
         self.fixed_embeddings = self.create()
 
@@ -70,19 +71,9 @@ class FixedEmbedding:
         df = df[self.properties_list]
         df = df.iloc[:100, :]
 
-        # One hot encode 'period' variable
-        y = pd.get_dummies(df.period, prefix="Period_")
-        df = pd.merge(
-            left=df,
-            right=y,
-            left_index=True,
-            right_index=True,
-        )
-        df = df.drop("period", axis=1)
-
         # Process 'NaN' values and remove further non-essential columns
         if self.short:
-            self.properties_list = df.columns[df.isna().any()].tolist()
+            self.properties_list = df.columns[~df.isnull().any()].tolist()
             df = df[self.properties_list]
         else:
             self.properties_list = df.columns[
@@ -94,7 +85,24 @@ class FixedEmbedding:
                 value=df[col_missing_val].mean()
             )
 
-        self.dim = len(self.properties_list)
+        # Normalize
+        if self.normalize:
+            period_col = df["period"]
+            df = (df - df.mean()) / df.std()
+            df["period"] = period_col
+            # normalized_df=(df-df.min())/(df.max()-df.min())
+
+        # One hot encode 'period' variable
+        y = pd.get_dummies(df.period, prefix="Period_")
+        df = pd.merge(
+            left=df,
+            right=y,
+            left_index=True,
+            right_index=True,
+        )
+        df = df.drop("period", axis=1)
+
+        self.dim = len(df.columns)
 
         # Convert to torch tensor and cuda
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

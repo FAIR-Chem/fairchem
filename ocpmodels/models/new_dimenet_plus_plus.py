@@ -124,7 +124,8 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
 
     def reset_parameters(self):
         self.emb.weight.data.uniform_(-sqrt(3), sqrt(3))
-        self.tag.weight.data.uniform_(-sqrt(3), sqrt(3))
+        if self.use_tag:
+            self.tag.weight.data.uniform_(-sqrt(3), sqrt(3))
         self.lin_rbf.reset_parameters()
         self.lin.reset_parameters()
 
@@ -138,22 +139,66 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         x = self.emb(x)
         rbf = self.act(self.lin_rbf(rbf))
 
-        return self.act(
-            self.lin(
-                torch.cat(
-                    [
-                        x[i],
-                        x[j],
-                        rbf,
-                        x_tag[i],
-                        x_tag[j],
-                        x_fixed[i],
-                        x_fixed[j],
-                    ],
-                    dim=-1,
+        if self.use_tag and self.fixed_embeds_size > 0:
+            return self.act(
+                self.lin(
+                    torch.cat(
+                        [
+                            x[i],
+                            x[j],
+                            rbf,
+                            x_tag[i],
+                            x_tag[j],
+                            x_fixed[i],
+                            x_fixed[j],
+                        ],
+                        dim=-1,
+                    )
                 )
             )
-        )
+        elif self.use_tag and not self.fixed_embeds_size > 0:
+            return self.act(
+                self.lin(
+                    torch.cat(
+                        [
+                            x[i],
+                            x[j],
+                            rbf,
+                            x_tag[i],
+                            x_tag[j],
+                        ],
+                        dim=-1,
+                    )
+                )
+            )
+        elif not self.use_tag and self.fixed_embeds_size > 0:
+            return self.act(
+                self.lin(
+                    torch.cat(
+                        [
+                            x[i],
+                            x[j],
+                            rbf,
+                            x_fixed[i],
+                            x_fixed[j],
+                        ],
+                        dim=-1,
+                    )
+                )
+            )
+        else:
+            return self.act(
+                self.lin(
+                    torch.cat(
+                        [
+                            x[i],
+                            x[j],
+                            rbf,
+                        ],
+                        dim=-1,
+                    )
+                )
+            )
 
 
 class InteractionPPBlock(torch.nn.Module):
