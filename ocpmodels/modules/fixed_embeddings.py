@@ -6,6 +6,65 @@ from mendeleev.fetch import fetch_table
 class FixedEmbedding:
     def __init__(self, short=False, normalize=True) -> None:
 
+        self.atoms = [
+            1,
+            5,
+            6,
+            7,
+            8,
+            11,
+            13,
+            14,
+            15,
+            16,
+            17,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            55,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+        ]
+
         self.properties_list = [
             "atomic_radius",
             "atomic_volume",
@@ -69,7 +128,7 @@ class FixedEmbedding:
 
         # Select only potentially relevant elements
         df = df[self.properties_list]
-        df = df.iloc[:100, :]
+        df = df.iloc[list(map(lambda x: x - 1, self.atoms)), :]
 
         # Process 'NaN' values and remove further non-essential columns
         if self.short:
@@ -77,7 +136,7 @@ class FixedEmbedding:
             df = df[self.properties_list]
         else:
             self.properties_list = df.columns[
-                pd.isnull(df).sum() < 25
+                pd.isnull(df).sum() < int(1 / 4 * df.shape[0])
             ].tolist()
             df = df[self.properties_list]
             col_missing_val = df.columns[df.isna().any()].tolist()
