@@ -505,8 +505,10 @@ class ForcesTrainer(BaseTrainer):
                         [batch.fixed.to(self.device) for batch in batch_list]
                     )
                     mask = fixed == 0
-                    if self.config["optim"]["loss_force"].startswith(
-                        "atomwise"
+                    if (
+                        self.config["optim"]
+                        .get("loss_force", "mae")
+                        .startswith("atomwise")
                     ):
                         force_mult = self.config["optim"].get(
                             "force_coefficient", 1
