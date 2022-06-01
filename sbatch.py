@@ -25,6 +25,7 @@ template = """\
 
 module load anaconda/3
 conda activate {env}
+
 srun python main.py {py_args}
 """
 
@@ -77,6 +78,22 @@ if __name__ == "__main__":
     args = resolved_args(defaults=root / "configs" / "sbatch" / "defaults.yaml")
     args.pretty_print()
 
+    # set n_tasks_per node from gres if none is provided
+    if args.ntasks_per_node is None:
+        if ":" not in args.gres:
+            args.ntasks_per_node = 1
+        else:
+            try:
+                args.ntasks_per_node = int(args.gres.split(":")[-1])
+            except Exception as e:
+                print("Could not parse ntasks_per_node from gres:", e)
+                print("Setting to 1")
+                args.ntasks_per_node = 1
+
+    # distribute training
+    if args.ntasks_per_node > 1 and "--distributed" not in args.py_args:
+        args.py_args += " --distributed"
+
     # add logdir to main.py's command-line arguments
     if "--logdir" not in args.py_args and args.logdir:
         args.py_args += f" --logdir {args.logdir}"
@@ -104,6 +121,8 @@ if __name__ == "__main__":
         sbatch_command_line=" ".join(["python"] + sys.argv),
         git_commit=get_commit(),
         cwd=str(Path.cwd()),
+        ntasks_per_node=args.ntasks_per_node,
+        nodes=args.nodes or 1,
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
