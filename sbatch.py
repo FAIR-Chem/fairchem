@@ -23,6 +23,9 @@ template = """\
 # git commit: {git_commit}
 # cwd: {cwd}
 
+export MASTER_PORT=$(expr 10000 + $(echo -n $SLURM_JOBID | tail -c 4))
+echo "Master port $MASTER_PORT"
+
 module load anaconda/3
 conda activate {env}
 
