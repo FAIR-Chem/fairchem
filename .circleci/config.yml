@@ -55,5 +55,5 @@ jobs:
           command: |
             source /home/circleci/miniconda/etc/profile.d/conda.sh
             conda activate ocp-models
-            pip install black==20.8b1
+            pip install black==22.3.0
             black . --check
