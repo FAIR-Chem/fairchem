@@ -9,7 +9,8 @@ import sys
 template = """\
 #!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --ntasks={ntasks}
+#SBATCH --nodes={nodes}
+#SBATCH --ntasks-per-node={ntasks_per_node}
 #SBATCH --partition={partition}
 #SBATCH --cpus-per-task={cpus}
 #SBATCH --mem={mem}
@@ -24,7 +25,7 @@ template = """\
 
 module load anaconda/3
 conda activate {env}
-python main.py {py_args}
+srun python main.py {py_args}
 """
 
 
