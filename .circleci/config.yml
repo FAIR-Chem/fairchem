@@ -3,15 +3,15 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: circleci/python:3.8
-    resource_class: medium+
+      - image: cimg/python:3.8
+    resource_class: large
 
     steps:
       - checkout
 
       - restore_cache:
           keys:
-          - v0.3-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
+          - v0.4-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
 
       - run:
           name: Install conda
@@ -39,7 +39,7 @@ jobs:
       - save_cache:
           paths:
             - /home/circleci/miniconda
-          key: v0.3-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
+          key: v0.4-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
 
       - run:
           name: Run tests
