@@ -95,7 +95,9 @@ if __name__ == "__main__":
 
     # distribute training
     if args.ntasks_per_node > 1 and "--distributed" not in args.py_args:
-        args.py_args += " --distributed"
+        args.py_args += (
+            f" --distributed --num-nodes {args.nodes} --num-gpus {args.ntasks_per_node}"
+        )
 
     # add logdir to main.py's command-line arguments
     if "--logdir" not in args.py_args and args.logdir:
