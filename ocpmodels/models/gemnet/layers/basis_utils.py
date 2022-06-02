@@ -156,7 +156,7 @@ def associated_legendre_polynomials(
             for l_degree in range(1, L_maxdegree):
                 P_l_m[l_degree][l_degree] = sym.simplify(
                     (1 - 2 * l_degree)
-                    * (1 - z ** 2) ** 0.5
+                    * (1 - z**2) ** 0.5
                     * P_l_m[l_degree - 1][l_degree - 1]
                 )  # P_00, P_11, P_22, P_33
 
@@ -259,7 +259,7 @@ def real_sph_harm(L_maxdegree, use_theta, use_phi=True, zero_m_only=True):
             # m > 0
             for m_order in range(1, l_degree + 1):
                 Y_l_m[l_degree][m_order] = sym.simplify(
-                    2 ** 0.5
+                    2**0.5
                     * (-1) ** m_order
                     * sph_harm_prefactor(l_degree, m_order)
                     * P_l_m[l_degree][m_order]
@@ -268,7 +268,7 @@ def real_sph_harm(L_maxdegree, use_theta, use_phi=True, zero_m_only=True):
             # m < 0
             for m_order in range(1, l_degree + 1):
                 Y_l_m[l_degree][-m_order] = sym.simplify(
-                    2 ** 0.5
+                    2**0.5
                     * (-1) ** m_order
                     * sph_harm_prefactor(l_degree, -m_order)
                     * P_l_m[l_degree][m_order]

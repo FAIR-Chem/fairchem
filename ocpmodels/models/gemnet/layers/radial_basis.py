@@ -34,7 +34,7 @@ class PolynomialEnvelope(torch.nn.Module):
     def forward(self, d_scaled):
         env_val = (
             1
-            + self.a * d_scaled ** self.p
+            + self.a * d_scaled**self.p
             + self.b * d_scaled ** (self.p + 1)
             + self.c * d_scaled ** (self.p + 2)
         )
@@ -54,7 +54,7 @@ class ExponentialEnvelope(torch.nn.Module):
 
     def forward(self, d_scaled):
         env_val = torch.exp(
-            -(d_scaled ** 2) / ((1 - d_scaled) * (1 + d_scaled))
+            -(d_scaled**2) / ((1 - d_scaled) * (1 + d_scaled))
         )
         return torch.where(d_scaled < 1, env_val, torch.zeros_like(d_scaled))
 
@@ -77,7 +77,7 @@ class SphericalBesselBasis(torch.nn.Module):
         cutoff: float,
     ):
         super().__init__()
-        self.norm_const = math.sqrt(2 / (cutoff ** 3))
+        self.norm_const = math.sqrt(2 / (cutoff**3))
         # cutoff ** 3 to counteract dividing by d_scaled = d / cutoff
 
         # Initialize frequencies at canonical positions
@@ -141,7 +141,7 @@ class BernsteinBasis(torch.nn.Module):
         gamma = self.softplus(self.pregamma)  # constrain to positive
         exp_d = torch.exp(-gamma * d_scaled)[:, None]
         return (
-            self.prefactor * (exp_d ** self.exp1) * ((1 - exp_d) ** self.exp2)
+            self.prefactor * (exp_d**self.exp1) * ((1 - exp_d) ** self.exp2)
         )
 
 
