@@ -439,12 +439,15 @@ class PaiNN(ScaledModule):
                 forces = self.out_forces(x, vec)
                 return energy, forces
             else:
-                forces = -1 * torch.autograd.grad(
-                    x,
-                    pos,
-                    grad_outputs=torch.ones_like(x),
-                    create_graph=True,
-                )[0]
+                forces = (
+                    -1
+                    * torch.autograd.grad(
+                        x,
+                        pos,
+                        grad_outputs=torch.ones_like(x),
+                        create_graph=True,
+                    )[0]
+                )
                 return energy, forces
         else:
             return energy
@@ -577,7 +580,7 @@ class PaiNNUpdate(ScaledModule):
         # Add an epsilon offset to make sure sqrt is always positive.
         x_vec_h = self.xvec_proj(
             torch.cat(
-                [x, torch.sqrt(torch.sum(vec2 ** 2, dim=-2) + 1e-8)], dim=-1
+                [x, torch.sqrt(torch.sum(vec2**2, dim=-2) + 1e-8)], dim=-1
             )
         )
         xvec1, xvec2, xvec3 = torch.split(
