@@ -412,6 +412,9 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
             edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
             j, i = edge_index
             dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
+            data.cell_offsets = torch.zeros(
+                edge_index.shape[1], 3, device=data.pos.device
+            )
 
         _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
             edge_index,
