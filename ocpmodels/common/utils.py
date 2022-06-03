@@ -214,7 +214,7 @@ def add_edge_distance_to_graph(
     var = gdf_filter[1] - gdf_filter[0]
     gdf_filter, var = gdf_filter.to(device), var.to(device)
     gdf_distances = torch.exp(
-        -((distances.view(-1, 1) - gdf_filter) ** 2) / var ** 2
+        -((distances.view(-1, 1) - gdf_filter) ** 2) / var**2
     )
     # Reassign edge attributes.
     batch.edge_weight = distances
@@ -514,7 +514,7 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
 
     # Before computing the pairwise distances between atoms, first create a list of atom indices to compare for the entire batch
     num_atoms_per_image = data.natoms
-    num_atoms_per_image_sqr = (num_atoms_per_image ** 2).long()
+    num_atoms_per_image_sqr = (num_atoms_per_image**2).long()
 
     # index offset between images
     index_offset = (
