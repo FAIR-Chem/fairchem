@@ -71,7 +71,7 @@ class LBFGS:
         if forces is None:
             return False
         max_forces_ = scatter(
-            (forces ** 2).sum(axis=1).sqrt(), self.atoms.batch, reduce="max"
+            (forces**2).sum(axis=1).sqrt(), self.atoms.batch, reduce="max"
         )
         max_forces = max_forces_[self.atoms.batch]
         update_mask = torch.logical_and(

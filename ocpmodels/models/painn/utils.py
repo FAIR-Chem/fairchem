@@ -159,10 +159,10 @@ def get_edge_id(edge_idx, cell_offsets, num_atoms):
     cell_id = (
         (
             cell_offsets
-            * cell_offsets.new_tensor([[1, cell_basis, cell_basis ** 2]])
+            * cell_offsets.new_tensor([[1, cell_basis, cell_basis**2]])
         )
         .sum(-1)
         .long()
     )
-    edge_id = edge_idx[0] + edge_idx[1] * num_atoms + cell_id * num_atoms ** 2
+    edge_id = edge_idx[0] + edge_idx[1] * num_atoms + cell_id * num_atoms**2
     return edge_id
