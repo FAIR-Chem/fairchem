@@ -11,6 +11,8 @@ import torch
 
 from ..utils import read_value_json, update_json
 
+import os
+
 
 class AutomaticFit:
     """
@@ -77,7 +79,15 @@ class AutomaticFit:
         """
         Load variable from file or set to initial value of the variable.
         """
-        value = read_value_json(self.scale_file, self._name)
+        value = None
+        if self.scale_file is not None and os.path.isfile(self.scale_file):
+            value = read_value_json(self.scale_file, self._name)
+        else:
+            logging.warning(
+                f"Scale file '{self.scale_file}' does not exist. "
+                f"The model will use unit scaling factors "
+                f"unless it was loaded from a checkpoint."
+            )
         if value is None:
             logging.debug(
                 f"Initialize variable {self._name}' to {self.variable.numpy():.3f}"
