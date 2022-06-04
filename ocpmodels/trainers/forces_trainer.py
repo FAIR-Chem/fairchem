@@ -292,7 +292,7 @@ class ForcesTrainer(BaseTrainer):
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
         if (
-            self.primary_metric is None
+            not hasattr(self, "primary_metric")
             or self.primary_metric != primary_metric
         ):
             self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
