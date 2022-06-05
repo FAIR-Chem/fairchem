@@ -169,7 +169,7 @@ class EnergyTrainer(BaseTrainer):
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
-        self.best_val_mae = 1e9
+        self.best_val_metric = 1e9
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
@@ -251,9 +251,9 @@ class EnergyTrainer(BaseTrainer):
                             val_metrics[
                                 self.evaluator.task_primary_metric[self.name]
                             ]["metric"]
-                            < self.best_val_mae
+                            < self.best_val_metric
                         ):
-                            self.best_val_mae = val_metrics[
+                            self.best_val_metric = val_metrics[
                                 self.evaluator.task_primary_metric[self.name]
                             ]["metric"]
                             self.save(
