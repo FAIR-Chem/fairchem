@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 """
 import datetime
 import errno
-import json
 import logging
 import os
 import random
@@ -33,16 +32,9 @@ from ocpmodels.common.data_parallel import (
     ParallelCollater,
 )
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    build_config,
-    plot_histogram,
-    save_checkpoint,
-    warmup_lr_lambda,
-)
+from ocpmodels.common.utils import save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
-from ocpmodels.modules.exponential_moving_average import (
-    ExponentialMovingAverage,
-)
+from ocpmodels.modules.exponential_moving_average import ExponentialMovingAverage
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
@@ -95,9 +87,9 @@ class BaseTrainer(ABC):
             )
             # create directories from master rank only
             distutils.broadcast(timestamp, 0)
-            timestamp = datetime.datetime.fromtimestamp(
-                timestamp.int()
-            ).strftime("%Y-%m-%d-%H-%M-%S")
+            timestamp = datetime.datetime.fromtimestamp(timestamp.int()).strftime(
+                "%Y-%m-%d-%H-%M-%S"
+            )
             if identifier:
                 self.timestamp_id = f"{timestamp}-{identifier}"
             else:
@@ -153,9 +145,9 @@ class BaseTrainer(ABC):
 
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
             self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
-            self.config["slurm"]["folder"] = self.config["slurm"][
-                "folder"
-            ].replace("%j", self.config["slurm"]["job_id"])
+            self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
+                "%j", self.config["slurm"]["job_id"]
+            )
         if isinstance(dataset, list):
             if len(dataset) > 0:
                 self.config["dataset"] = dataset[0]
@@ -187,15 +179,13 @@ class BaseTrainer(ABC):
 
         if self.is_hpo:
             # conditional import is necessary for checkpointing
-            from ray import tune
+            # from ray import tune
 
-            from ocpmodels.common.hpo_utils import tune_reporter
+            from ocpmodels.common.hpo_utils import tune_reporter  # noqa: F401
 
             # sets the hpo checkpoint frequency
             # default is no checkpointing
-            self.hpo_checkpoint_every = self.config["optim"].get(
-                "checkpoint_every", -1
-            )
+            self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
         if distutils.is_master():
             print(yaml.dump(self.config, default_flow_style=False))
@@ -229,9 +219,7 @@ class BaseTrainer(ABC):
     def load_logger(self):
         self.logger = None
         if not self.is_debug and distutils.is_master() and not self.is_hpo:
-            assert (
-                self.config["logger"] is not None
-            ), "Specify logger in config"
+            assert self.config["logger"] is not None, "Specify logger in config"
 
             logger = self.config["logger"]
             logger_name = logger if isinstance(logger, str) else logger["name"]
@@ -343,7 +331,11 @@ class BaseTrainer(ABC):
 
     @abstractmethod
     def load_task(self):
-        """Initialize task-specific information. Derived classes should implement this function."""
+        """
+        Initialize task-specific information.
+        Derived classes should implement this function.
+        """
+        pass
 
     def load_model(self):
         # Build model
@@ -352,9 +344,7 @@ class BaseTrainer(ABC):
 
         # TODO: depreicated, remove.
         bond_feat_dim = None
-        bond_feat_dim = self.config["model_attributes"].get(
-            "num_gaussians", 50
-        )
+        bond_feat_dim = self.config["model_attributes"].get("num_gaussians", 50)
 
         loader = self.train_loader or self.val_loader or self.test_loader
         self.model = registry.get_model_class(self.config["model"])(
@@ -384,9 +374,7 @@ class BaseTrainer(ABC):
             num_gpus=1 if not self.cpu else 0,
         )
         if distutils.initialized():
-            self.model = DistributedDataParallel(
-                self.model, device_ids=[self.device]
-            )
+            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
 
     def load_checkpoint(self, checkpoint_path):
         if not os.path.isfile(checkpoint_path):
@@ -410,9 +398,7 @@ class BaseTrainer(ABC):
             new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
             self.model.load_state_dict(new_dict)
         elif distutils.initialized() and first_key.split(".")[1] != "module":
-            new_dict = {
-                f"module.{k}": v for k, v in checkpoint["state_dict"].items()
-            }
+            new_dict = {f"module.{k}": v for k, v in checkpoint["state_dict"].items()}
             self.model.load_state_dict(new_dict)
         else:
             self.model.load_state_dict(checkpoint["state_dict"])
@@ -428,9 +414,7 @@ class BaseTrainer(ABC):
 
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
-                self.normalizers[key].load_state_dict(
-                    checkpoint["normalizers"][key]
-                )
+                self.normalizers[key].load_state_dict(checkpoint["normalizers"][key])
             if self.scaler and checkpoint["amp"]:
                 self.scaler.load_state_dict(checkpoint["amp"])
 
@@ -446,9 +430,7 @@ class BaseTrainer(ABC):
             elif loss_name == "l2mae":
                 self.loss_fn[loss] = L2MAELoss()
             else:
-                raise NotImplementedError(
-                    f"Unknown loss function name: {loss_name}"
-                )
+                raise NotImplementedError(f"Unknown loss function name: {loss_name}")
             if distutils.initialized():
                 self.loss_fn[loss] = DDPLoss(self.loss_fn[loss])
 
@@ -526,9 +508,7 @@ class BaseTrainer(ABC):
                         "config": self.config,
                         "val_metrics": metrics,
                         "ema": self.ema.state_dict() if self.ema else None,
-                        "amp": self.scaler.state_dict()
-                        if self.scaler
-                        else None,
+                        "amp": self.scaler.state_dict() if self.scaler else None,
                     },
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
@@ -546,9 +526,7 @@ class BaseTrainer(ABC):
                         },
                         "config": self.config,
                         "val_metrics": metrics,
-                        "amp": self.scaler.state_dict()
-                        if self.scaler
-                        else None,
+                        "amp": self.scaler.state_dict() if self.scaler else None,
                     },
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
@@ -559,19 +537,16 @@ class BaseTrainer(ABC):
     def save_hpo(self, epoch, step, metrics, checkpoint_every):
         # default is no checkpointing
         # checkpointing frequency can be adjusted by setting checkpoint_every in steps
-        # to checkpoint every time results are communicated to Ray Tune set checkpoint_every=1
-        from ray import tune
+        # to checkpoint every time results are communicated
+        # to Ray Tune set checkpoint_every=1
+        # from ray import tune
 
         if checkpoint_every != -1 and step % checkpoint_every == 0:
-            with tune.checkpoint_dir(
-                step=step
-            ) as checkpoint_dir:  # noqa: F821
+            with tune.checkpoint_dir(step=step) as checkpoint_dir:  # noqa: F821
                 path = os.path.join(checkpoint_dir, "checkpoint")
                 torch.save(self.save_state(epoch, step, metrics), path)
 
-    def hpo_update(
-        self, epoch, step, train_metrics, val_metrics, test_metrics=None
-    ):
+    def hpo_update(self, epoch, step, train_metrics, val_metrics, test_metrics=None):
         progress = {
             "steps": step,
             "epochs": epoch,
@@ -588,9 +563,7 @@ class BaseTrainer(ABC):
         # report metrics to tune
         tune_reporter(  # noqa: F821
             iters=progress,
-            train_metrics={
-                k: train_metrics[k]["metric"] for k in self.metrics
-            },
+            train_metrics={k: train_metrics[k]["metric"] for k in self.metrics},
             val_metrics={k: val_metrics[k]["metric"] for k in val_metrics},
             test_metrics=test_metrics,
         )
@@ -598,6 +571,7 @@ class BaseTrainer(ABC):
     @abstractmethod
     def train(self):
         """Derived classes should implement this function."""
+        pass
 
     @torch.no_grad()
     def validate(self, split="val", disable_tqdm=False, name_split=None):
@@ -615,11 +589,7 @@ class BaseTrainer(ABC):
         evaluator, metrics = Evaluator(task=self.name), {}
         rank = distutils.get_rank()
 
-        loader = (
-            self.val_loader
-            if split[:3] in {"val", "eva"}
-            else self.test_loader
-        )
+        loader = self.val_loader if split[:3] in {"val", "eva"} else self.test_loader
 
         for i, batch in tqdm(
             enumerate(loader),
@@ -661,9 +631,7 @@ class BaseTrainer(ABC):
         # Make plots.
         if self.logger is not None:
             if split == "eval":
-                log_dict = {
-                    f"{name_split}-{k}": v for k, v in log_dict.items()
-                }
+                log_dict = {f"{name_split}-{k}": v for k, v in log_dict.items()}
                 self.logger.log(
                     log_dict,
                     split=split,
@@ -711,9 +679,7 @@ class BaseTrainer(ABC):
                 max_norm=self.clip_grad_norm,
             )
             if self.logger is not None:
-                self.logger.log(
-                    {"grad_norm": grad_norm}, step=self.step, split="train"
-                )
+                self.logger.log({"grad_norm": grad_norm}, step=self.step, split="train")
         if self.scaler:
             self.scaler.step(self.optimizer)
             self.scaler.update()
@@ -761,13 +727,9 @@ class BaseTrainer(ABC):
             gather_results["ids"] = np.array(gather_results["ids"])[idx]
             for k in keys:
                 if k == "forces":
-                    gather_results[k] = np.concatenate(
-                        np.array(gather_results[k])[idx]
-                    )
+                    gather_results[k] = np.concatenate(np.array(gather_results[k])[idx])
                 elif k == "chunk_idx":
-                    gather_results[k] = np.cumsum(
-                        np.array(gather_results[k])[idx]
-                    )[:-1]
+                    gather_results[k] = np.cumsum(np.array(gather_results[k])[idx])[:-1]
                 else:
                     gather_results[k] = np.array(gather_results[k])[idx]
 
@@ -788,9 +750,7 @@ class BaseTrainer(ABC):
         start_time = time.time()
         metrics_dict = {}
         logging.info("Evaluating on 4 val splits.")
-        for i, s in enumerate(
-            ["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]
-        ):
+        for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
 
             # Update the val. dataset we look at
             self.config["val_dataset"] = {
@@ -817,9 +777,7 @@ class BaseTrainer(ABC):
                 )
 
             # Call validate function
-            self.metrics = self.validate(
-                split="eval", disable_tqdm=True, name_split=s
-            )
+            self.metrics = self.validate(split="eval", disable_tqdm=True, name_split=s)
             metrics_dict[s] = self.metrics
 
             # Log results
