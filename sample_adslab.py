@@ -48,7 +48,7 @@ if __name__ == "__main__":
                 ):
                     # make Adsorbate object
                     # (adsorbate selection is done in the class if adsorbate_id is None)
-                    adsorbate_obj = Adsorbate(
+                    adsorbate_obj = Adsorbate(  # <<<< IMPORTANT
                         args.paths.adsorbate_db,
                         specified_index=args.actions.adsorbate_id,
                     )
@@ -69,7 +69,7 @@ if __name__ == "__main__":
                         bulk_id = args.actions.bulk_id
 
                     # make Bulk object
-                    bulk = Bulk(
+                    bulk = Bulk(  # <<<< IMPORTANT
                         bulk_db_list,
                         bulk_index=bulk_id,
                         precomputed_structures=args.paths.precomputed_structures
@@ -101,7 +101,7 @@ if __name__ == "__main__":
                         surface_id = args.actions.surface_id
 
                     # make Surface object
-                    surface_obj = Surface(
+                    surface_obj = Surface(  # <<<< IMPORTANT
                         bulk,
                         possible_surfaces[surface_id],
                         surface_id,
@@ -118,7 +118,7 @@ if __name__ == "__main__":
                 ):
                     # combine adsorbate + bulk
                     try:
-                        adslab = Combined(
+                        adslab = Combined(  # <<<< IMPORTANT
                             adsorbate_obj,
                             surface_obj,
                             enumerate_all_configs=False,
