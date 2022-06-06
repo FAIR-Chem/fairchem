@@ -16,6 +16,7 @@ model:
   tag_hidden_channels: 64
   decoder_hidden_channels: 512
   max_n: 3
+  predict_forces: false
 
 # *** Important note ***
 #   The total number of gpus used for this run was 8.
