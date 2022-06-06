@@ -29,7 +29,7 @@ echo "Master port $MASTER_PORT"
 module load anaconda/3
 conda activate {env}
 
-srun {python_exec} main.py {py_args}
+srun python main.py {py_args}
 """
 
 
@@ -43,7 +43,7 @@ def discover_minydra_defaults():
     Returns:
         list[pathlib.Path]: Path to the shared defaults and optionnally
             to a user-specific one if it exists
-    """
+    """    
     root = Path(__file__).resolve().parent
     defaults = [root / "configs" / "sbatch" / "defaults.yaml"]
     user_config = root / "configs" / "sbatch" / f"{os.environ['USER']}.yaml"
@@ -92,7 +92,6 @@ def get_commit():
 if __name__ == "__main__":
     # has the submission been successful?
     success = False
-    python_exec = "python"
 
     # repository root
     root = Path(__file__).resolve().parent
@@ -114,14 +113,10 @@ if __name__ == "__main__":
                 args.ntasks_per_node = 1
 
     # distribute training
-    if args.ntasks_per_node > 1:
-        # `torchrun`` replaces `python -m torch.distributed.launch`
-        python_exec = f"torchrun --nproc_per_node={args.ntasks_per_node}"
-        if "--distributed" not in args.py_args:
-            args.py_args += (
-                " --distributed "
-                + f"--num-nodes {args.nodes} --num-gpus {args.ntasks_per_node}"
-            )
+    if args.ntasks_per_node > 1 and "--distributed" not in args.py_args:
+        args.py_args += (
+            f" --distributed --num-nodes {args.nodes} --num-gpus {args.ntasks_per_node}"
+        )
 
     # add logdir to main.py's command-line arguments
     if "--logdir" not in args.py_args and args.logdir:
@@ -152,7 +147,6 @@ if __name__ == "__main__":
         cwd=str(Path.cwd()),
         ntasks_per_node=args.ntasks_per_node,
         nodes=args.nodes or 1,
-        python_exec=python_exec,
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
