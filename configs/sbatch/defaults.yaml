@@ -8,7 +8,7 @@
 
 ntasks_per_node: null # if null, will be set to num GPUs
 nodes: 1
-gres: "gpu:4"
+gres: "gpu:rtx8000:4"
 cpus: 4
 mem: "32GB"
 partition: "long"
