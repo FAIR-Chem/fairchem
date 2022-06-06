@@ -374,7 +374,9 @@ class BaseTrainer(ABC):
             num_gpus=1 if not self.cpu else 0,
         )
         if distutils.initialized():
-            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
+            self.model = DistributedDataParallel(
+                self.model, device_ids=[self.device], output_device=self.device
+            )
 
     def load_checkpoint(self, checkpoint_path):
         if not os.path.isfile(checkpoint_path):
