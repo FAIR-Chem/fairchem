@@ -60,7 +60,7 @@ class EnergyTrainer(BaseTrainer):
     def __init__(
         self,
         task,
-        model,
+        model_attributes,
         dataset,
         optimizer,
         identifier,
@@ -82,7 +82,7 @@ class EnergyTrainer(BaseTrainer):
     ):
         super().__init__(
             task=task,
-            model=model,
+            model_attributes=model_attributes,
             dataset=dataset,
             optimizer=optimizer,
             identifier=identifier,

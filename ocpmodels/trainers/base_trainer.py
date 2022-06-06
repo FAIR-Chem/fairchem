@@ -53,7 +53,7 @@ class BaseTrainer(ABC):
     def __init__(
         self,
         task,
-        model,
+        model_attributes,
         dataset,
         optimizer,
         identifier,
@@ -124,12 +124,12 @@ class BaseTrainer(ABC):
             commit_hash = None
 
         # logger_name = logger if isinstance(logger, str) else logger["name"]
-        model_name = model.pop("name")
+        model_name = model_attributes.pop("name")
         self.config = {
             "task": task,
             "data_split": data_split,
             "model": model_name,
-            "model_attributes": model,
+            "model_attributes": model_attributes,
             "optim": optimizer,
             "logger": logger,
             "amp": amp,
