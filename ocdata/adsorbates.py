@@ -1,10 +1,10 @@
-
 import numpy as np
 import pickle
 import os
 
-class Adsorbate():
-    '''
+
+class Adsorbate:
+    """
     This class handles all things with the adsorbate.
     Selects one (either specified or random), and stores info as an object
 
@@ -18,13 +18,24 @@ class Adsorbate():
         indices of the atoms meant to be bonded to the surface
     adsorbate_sampling_str : str
         string capturing the adsorbate index and total possible adsorbates
-    '''
+    """
 
-    def __init__(self, adsorbate_database, specified_index=None):
-        self.choose_adsorbate_pkl(adsorbate_database, specified_index)
+    def __init__(
+        self, adsorbate_database=None, specified_index=None, adsorbate_atoms=None
+    ):
+        if adsorbate_atoms is None:
+            assert adsorbate_database is not None
+            self.choose_adsorbate_pkl(adsorbate_database, specified_index)
+        else:
+            (
+                self.adsorbate_sampling_str,
+                self.atoms,
+                self.smiles,
+                self.bond_indices,
+            ) = adsorbate_atoms
 
     def choose_adsorbate_pkl(self, adsorbate_database, specified_index=None):
-        '''
+        """
         Chooses an adsorbate from our pkl based inverted index at random.
 
         Args:
@@ -38,8 +49,8 @@ class Adsorbate():
                                      the adsorbate that are meant to be bonded to the surface
             adsorbate_sampling_str   Enum string specifying the sample, [index]
             adsorbate_db_fname       filename denoting which version was used to sample
-        '''
-        with open(adsorbate_database, 'rb') as f:
+        """
+        with open(adsorbate_database, "rb") as f:
             inv_index = pickle.load(f)
 
         if specified_index is not None:
@@ -48,6 +59,6 @@ class Adsorbate():
             element = np.random.choice(len(inv_index))
             print(f"args.actions.adsorbate_id is None, choosing {element}")
 
-        self.adsorbate_sampling_str = str(element) 
+        self.adsorbate_sampling_str = str(element)
         self.atoms, self.smiles, self.bond_indices = inv_index[element]
         self.adsorbate_db_fname = os.path.basename(adsorbate_database)

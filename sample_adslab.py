@@ -14,6 +14,78 @@ with Loader("Imports"):
     from ocpmodels.preprocessing.atoms_to_graphs import AtomsToGraphs
 
 
+def print_header(i, nruns):
+    """
+    Prints
+    -------------------
+    ----   Run i   ----
+    -------------------
+    """
+    box_char = "#"
+    border_width = 4
+    border = box_char * border_width
+    box_width = 40
+
+    runs_len = len(str(nruns))
+    title_str = f"Run {str(i + 1).zfill(runs_len)}/{nruns}"
+
+    n_space = box_width - 2 * len(border) - len(title_str)
+    n_left = n_space // 2
+    n_right = n_space // 2 + (n_space % 2)
+
+    print("\n" + box_char * box_width)
+    print(border + " " * n_left + title_str + " " * n_right + border)
+    print(box_char * box_width)
+
+
+def get_ads_db(args):
+    """
+    Util to load the adsorbates pre-computed dict from the args
+
+    Args:
+        args (Union[dict, minydra.MinyDict]): Command-line args
+
+    Returns:
+        dict: adsorbates dictionnary
+    """
+    with open(args.paths.adsorbate_db, "rb") as f:
+        return pickle.load(f)
+
+
+def select_adsorbate(ads_dict, smiles):
+    """
+    Function to parameterize the choice of an adsorbate.
+    Curent parameterization relies on its chemical formula.
+
+    Args:
+        db_path (Union[str, pathlib.Path]): path to the pickle file holding adsorbates
+        smiles (str): The smiles string description for the adsorbate
+
+    Returns:
+        Optional[ase.Atom]: The selected adsorbate. None if the formula does not exist
+    """
+
+    if smiles is None:
+        smiles = np.random.choice([a[1] for a in ads_dict.values()])
+        print(
+            "No adsorbate smiles has been provided. Selecting {} at random.".format(
+                smiles
+            )
+        )
+
+    adsorbates = [(str(k), *a) for k, a in ads_dict.items() if a[1] == smiles]
+
+    if len(adsorbates) == 0:
+        raise ValueError(f"No adsorbate exists with smiles {smiles}")
+    if len(adsorbates) > 1:
+        raise ValueError(
+            f"More than 1 adsorbate exists with smiles {smiles}:\n"
+            + ", ".join([a[2] for a in adsorbates])
+        )
+
+    return adsorbates[0]
+
+
 if __name__ == "__main__":
     with Loader("Full procedure", animate=False):
         # path to directory's root
@@ -26,6 +98,7 @@ if __name__ == "__main__":
 
         # set seed
         np.random.seed(args.seed)
+
         with Loader(
             "Reading bulk_db_flat", animate=args.animate, ignore=args.no_loader
         ):
@@ -33,29 +106,41 @@ if __name__ == "__main__":
             with open(args.paths.bulk_db_flat, "rb") as f:
                 bulk_db_list = pickle.load(f)
 
+        with Loader(
+            "Reading adsorbates dict", animate=args.animate, ignore=args.no_loader
+        ):
+            ads_dict = get_ads_db(args)
+
         print(
             "Surface sampling string:",
             "surface_idx / total_possible_surfaces_for_bulk",
         )
 
         for i in range(args.nruns):
-            print("\n" + "-" * 30)
-            print("-" * 30)
+
+            print_header(i, args.nruns)
+
             with Loader(f"Actions to Data {i+1}/{args.nruns}", animate=False):
+
+                print("\n1. Adsorbate\n")
 
                 with Loader(
                     "Make Adsorbate object", animate=args.animate, ignore=args.no_loader
                 ):
+                    adsorbate_atoms = select_adsorbate(
+                        ads_dict, args.actions.adsorbate_formula
+                    )
                     # make Adsorbate object
                     # (adsorbate selection is done in the class if adsorbate_id is None)
                     adsorbate_obj = Adsorbate(  # <<<< IMPORTANT
-                        args.paths.adsorbate_db,
-                        specified_index=args.actions.adsorbate_id,
+                        adsorbate_atoms=adsorbate_atoms
                     )
                     print(
                         "# Selected adsorbate:",
                         adsorbate_obj.atoms.get_chemical_formula(),
                     )
+
+                print("\n2. Bulk\n")
 
                 with Loader(
                     "Make Bulk object", animate=args.animate, ignore=args.no_loader
@@ -81,6 +166,8 @@ if __name__ == "__main__":
                         bulk.bulk_atoms.get_chemical_formula(),
                         f"({bulk.mpid})",
                     )
+
+                print("\n3. Surface\n")
 
                 with Loader(
                     "bulk.get_possible_surfaces()",
@@ -113,6 +200,8 @@ if __name__ == "__main__":
                         f"({surface_obj.surface_sampling_str})",
                     )
 
+                print("\n4. Combined\n")
+
                 with Loader(
                     "Make Combined object", animate=args.animate, ignore=args.no_loader
                 ):
@@ -129,6 +218,8 @@ if __name__ == "__main__":
                         print("ABORTING")
                         continue
                     atoms_object = adslab.constrained_adsorbed_surfaces[0]
+
+                print("\n5. Data\n")
 
                 with Loader(
                     "Make torch_geometric data",
