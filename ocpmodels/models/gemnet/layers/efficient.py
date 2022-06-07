@@ -38,9 +38,7 @@ class EfficientInteractionDownProjection(torch.nn.Module):
 
     def reset_parameters(self):
         self.weight = torch.nn.Parameter(
-            torch.empty(
-                (self.num_spherical, self.num_radial, self.emb_size_interm)
-            ),
+            torch.empty((self.num_spherical, self.num_radial, self.emb_size_interm)),
             requires_grad=True,
         )
         he_orthogonal_init(self.weight)

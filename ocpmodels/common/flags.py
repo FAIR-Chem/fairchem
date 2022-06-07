@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 import argparse
 from pathlib import Path
+import os
 
 
 class Flags:
@@ -24,12 +25,10 @@ class Flags:
         self.parser.add_argument(
             "--mode",
             choices=["train", "predict", "run-relaxations", "validate"],
-            required=True,
             help="Whether to train the model, make predictions, or to run relaxations",
         )
         self.parser.add_argument(
             "--config-yml",
-            required=True,
             type=Path,
             help="Path to a config file listing data, model, optim parameters.",
         )
@@ -46,13 +45,13 @@ class Flags:
         )
         self.parser.add_argument(
             "--run-dir",
-            default="./",
+            default="$SCRATCH/ocp/runs/$SLURM_JOB_ID",
             type=str,
             help="Directory to store checkpoint/log/result directory",
         )
         self.parser.add_argument(
             "--print-every",
-            default=10,
+            default=1000,
             type=int,
             help="Log every N iterations (default: 10)",
         )
@@ -86,7 +85,10 @@ class Flags:
             "--summit", action="store_true", help="Running on Summit cluster"
         )
         self.parser.add_argument(
-            "--logdir", default="logs", type=Path, help="Where to store logs"
+            "--logdir",
+            default="$SCRATCH/ocp/runs/$SLURM_JOB_ID",
+            type=Path,
+            help="Where to store logs",
         )
         self.parser.add_argument(
             "--slurm-partition",
@@ -118,7 +120,7 @@ class Flags:
         self.parser.add_argument(
             "--distributed-port",
             type=int,
-            default=13356,
+            default=os.environ.get("MASTER_PORT", 13356),
             help="Port on master for DDP",
         )
         self.parser.add_argument(
@@ -128,6 +130,18 @@ class Flags:
             help="Backend for DDP",
         )
         self.parser.add_argument("--local_rank", default=0, type=int, help="Local rank")
+        # Additional arguments
+        self.parser.add_argument(
+            "--new_gnn",
+            action="store_false",
+            help="Whether to use original GNN models or modified ones",
+        )
+        self.parser.add_argument(
+            "--note",
+            type=str,
+            default="",
+            help="Note describing this run to be added to the logger",
+        )
 
 
 flags = Flags()

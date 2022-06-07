@@ -143,9 +143,7 @@ class CGCNN(BaseModel):
             data.edge_index = out["edge_index"]
             distances = out["distances"]
         else:
-            data.edge_index = radius_graph(
-                data.pos, r=self.cutoff, batch=data.batch
-            )
+            data.edge_index = radius_graph(data.pos, r=self.cutoff, batch=data.batch)
             row, col = data.edge_index
             distances = (pos[row] - pos[col]).norm(dim=-1)
 

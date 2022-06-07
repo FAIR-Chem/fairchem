@@ -41,15 +41,14 @@ class TrainTask(BaseTask):
             for name, parameter in self.trainer.model.named_parameters():
                 if parameter.requires_grad and parameter.grad is None:
                     logging.warning(
-                        f"Parameter {name} has no gradient. Consider removing it from the model."
+                        f"Parameter {name} has no gradient. "
+                        + "Consider removing it from the model."
                     )
 
     def run(self):
         try:
             self.trainer.train(
-                disable_eval_tqdm=self.config.get(
-                    "hide_eval_progressbar", False
-                )
+                disable_eval_tqdm=self.config.get("hide_eval_progressbar", False)
             )
         except RuntimeError as e:
             self._process_error(e)
@@ -74,7 +73,8 @@ class PredictTask(BaseTask):
 @registry.register_task("validate")
 class ValidateTask(BaseTask):
     def run(self):
-        # Note that the results won't be precise on multi GPUs due to padding of extra images (although the difference should be minor)
+        # Note that the results won't be precise on multi GPUs due to
+        # padding of extra images (although the difference should be minor)
         assert (
             self.trainer.val_loader is not None
         ), "Val dataset is required for making predictions"

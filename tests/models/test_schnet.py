@@ -41,7 +41,15 @@ def load_data(request):
 @pytest.fixture(scope="class")
 def load_model(request):
     torch.manual_seed(4)
-    model = SchNet(None, 32, 1, cutoff=6.0, regress_forces=True, use_pbc=True)
+    model = SchNet(
+        None,
+        32,
+        1,
+        new_gnn=None,
+        cutoff=6.0,
+        regress_forces=True,
+        use_pbc=True,
+    )
     request.cls.model = model
 
 

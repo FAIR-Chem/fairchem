@@ -91,7 +91,10 @@ def add_args(parser):
     args2config.update({"nupack_target_motif": ["oracle", "nupack_target_motif"]})
     # Training hyperparameters
     parser.add_argument(
-        "--loss", default="flowmatch", type=str, help="flowmatch | trajectorybalance/tb"
+        "--loss",
+        default="flowmatch",
+        type=str,
+        help="flowmatch | trajectorybalance/tb",
     )
     args2config.update({"loss": ["gflownet", "loss"]})
     parser.add_argument(
@@ -320,19 +323,20 @@ class GFlowNetAgent:
         self.logsoftmax = torch.nn.LogSoftmax(dim=1)
         # Oracle
         self.oracle = Oracle(
-            seed = args.oracle.seed,
-            seq_len = args.gflownet.max_seq_length,
-            dict_size = args.gflownet.nalphabet,
-            min_len = args.gflownet.min_seq_length,
-            max_len = args.gflownet.max_seq_length,
-            oracle = args.gflownet.func,
-            energy_weight = args.oracle.nupack_energy_reweighting,
-            nupack_target_motif = args.oracle.nupack_target_motif,
+            seed=args.oracle.seed,
+            seq_len=args.gflownet.max_seq_length,
+            dict_size=args.gflownet.nalphabet,
+            min_len=args.gflownet.min_seq_length,
+            max_len=args.gflownet.max_seq_length,
+            oracle=args.gflownet.func,
+            energy_weight=args.oracle.nupack_energy_reweighting,
+            nupack_target_motif=args.oracle.nupack_target_motif,
         )
         # Comet
         if args.gflownet.comet.project and not args.gflownet.comet.skip:
             self.comet = Experiment(
-                project_name=args.gflownet.comet.project, display_summary_level=0
+                project_name=args.gflownet.comet.project,
+                display_summary_level=0,
             )
             if args.gflownet.comet.tags:
                 if isinstance(args.gflownet.comet.tags, list):
@@ -374,17 +378,28 @@ class GFlowNetAgent:
             self.df_train = pd.read_csv(args.gflownet.train.path, index_col=0)
         else:
             self.df_data = None
-            self.df_train = make_train_set(self.oracle, args.gflownet.train.n,
-                    args.gflownet.train.seed, args.gflownet.train.output)
+            self.df_train = make_train_set(
+                self.oracle,
+                args.gflownet.train.n,
+                args.gflownet.train.seed,
+                args.gflownet.train.output,
+            )
         if self.df_train is not None:
             min_scores_tr = self.df_train["scores"].min()
             max_scores_tr = self.df_train["scores"].max()
             mean_scores_tr = self.df_train["scores"].mean()
             std_scores_tr = self.df_train["scores"].std()
-            scores_tr_norm = (self.df_train["scores"].values - mean_scores_tr) / std_scores_tr
+            scores_tr_norm = (
+                self.df_train["scores"].values - mean_scores_tr
+            ) / std_scores_tr
             max_norm_scores_tr = np.max(scores_tr_norm)
-            self.stats_scores_tr = [min_scores_tr, max_scores_tr, mean_scores_tr,
-                    std_scores_tr, max_norm_scores_tr]
+            self.stats_scores_tr = [
+                min_scores_tr,
+                max_scores_tr,
+                mean_scores_tr,
+                std_scores_tr,
+                max_norm_scores_tr,
+            ]
         else:
             self.stats_scores_tr = None
         # Test set
@@ -791,7 +806,8 @@ class GFlowNetAgent:
                     print(
                         "\tDecreasing reward temperature from "
                         "-{:.4f} to -{:.4f}".format(
-                            self.reward_beta, self.reward_beta * self.reward_beta_mult
+                            self.reward_beta,
+                            self.reward_beta * self.reward_beta_mult,
                         )
                     )
                 self.reward_beta *= self.reward_beta_mult
@@ -813,7 +829,8 @@ class GFlowNetAgent:
                 all_visited.extend(seqs_batch)
             if self.comet:
                 self.comet.log_text(
-                    seq_best + " / proxy: {}".format(proxy_vals[idx_best]), step=i
+                    seq_best + " / proxy: {}".format(proxy_vals[idx_best]),
+                    step=i,
                 )
                 self.comet.log_metrics(
                     dict(
@@ -1037,7 +1054,9 @@ class GFlowNetAgent:
                     actions = Categorical(logits=action_probs).sample()
                 else:
                     actions = np.random.randint(
-                        low=0, high=action_probs.shape[1], size=action_probs.shape[0]
+                        low=0,
+                        high=action_probs.shape[1],
+                        size=action_probs.shape[0],
                     )
                     if self.debug:
                         print("Action could not be sampled from model!")
@@ -1139,7 +1158,9 @@ def sample(
                 actions = Categorical(logits=action_probs).sample()
             else:
                 actions = np.random.randint(
-                    low=0, high=action_probs.shape[1], size=action_probs.shape[0]
+                    low=0,
+                    high=action_probs.shape[1],
+                    size=action_probs.shape[0],
                 )
         t0_a_envs = time.time()
         assert len(envs) == actions.shape[0]
@@ -1260,7 +1281,9 @@ def make_opt(params, Z, args):
             )
     elif args.gflownet.opt == "msgd":
         opt = torch.optim.SGD(
-            params, args.gflownet.learning_rate, momentum=args.gflownet.momentum
+            params,
+            args.gflownet.learning_rate,
+            momentum=args.gflownet.momentum,
         )
     return opt
 
@@ -1385,8 +1408,9 @@ def make_train_set(
     output_csv: str
         Optional path to store the test set as CSV.
     """
-    samples_dict = oracle.initializeDataset(save=False, returnData=True,
-            customSize=ntrain, custom_seed=seed)
+    samples_dict = oracle.initializeDataset(
+        save=False, returnData=True, customSize=ntrain, custom_seed=seed
+    )
     energies = samples_dict["energies"]
     samples_mat = samples_dict["samples"]
     seq_letters = oracle.numbers2letters(samples_mat)
@@ -1395,7 +1419,9 @@ def make_train_set(
         energies.update({"letters": seq_letters, "indices": seq_ints})
         df_train = pd.DataFrame(energies)
     else:
-        df_train = pd.DataFrame({"letters": seq_letters, "indices": seq_ints, "scores": energies})
+        df_train = pd.DataFrame(
+            {"letters": seq_letters, "indices": seq_ints, "scores": energies}
+        )
     if output_csv:
         df_train.to_csv(output_csv)
     return df_train
@@ -1493,7 +1519,9 @@ if __name__ == "__main__":
             Path(config.workdir).mkdir(parents=True, exist_ok=True)
             with open(config.workdir + "/config.yml", "w") as f:
                 yaml.dump(
-                    numpy2python(namespace2dict(config)), f, default_flow_style=False
+                    numpy2python(namespace2dict(config)),
+                    f,
+                    default_flow_style=False,
                 )
             torch.set_num_threads(1)
             main(config)

@@ -71,9 +71,7 @@ def main(args):
     if not args.is2re_relaxations:
         write_predictions(path, filename=args.out_path)
     else:
-        write_is2re_relaxations(
-            path, filename=args.out_path, hybrid=args.hybrid
-        )
+        write_is2re_relaxations(path, filename=args.out_path, hybrid=args.hybrid)
     print(f"Results saved to {args.out_path} successfully.")
 
 

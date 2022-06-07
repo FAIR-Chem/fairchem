@@ -269,9 +269,7 @@ class TripletInteraction(torch.nn.Module):
             activation=None,
             bias=False,
         )
-        self.scale_rbf = ScalingFactor(
-            scale_file=scale_file, name=name + "_had_rbf"
-        )
+        self.scale_rbf = ScalingFactor(scale_file=scale_file, name=name + "_had_rbf")
 
         self.mlp_cbf = EfficientInteractionBilinear(
             emb_size_trip, emb_size_cbf, emb_size_bilinear
