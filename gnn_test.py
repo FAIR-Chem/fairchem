@@ -27,7 +27,7 @@ if __name__ == "__main__":
     setup_imports()
     trainer = EnergyTrainer(
         task=config["task"],
-        model=config["model"],
+        model_attributes=config["model"],
         dataset=config["dataset"],
         optimizer=config["optim"],
         identifier=config["identifier"],
