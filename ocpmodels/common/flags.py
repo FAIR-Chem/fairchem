@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 import argparse
 from pathlib import Path
+import os
 
 
 class Flags:
@@ -119,7 +120,7 @@ class Flags:
         self.parser.add_argument(
             "--distributed-port",
             type=int,
-            default=13356,
+            default=os.environ.get("MASTER_PORT", 13356),
             help="Port on master for DDP",
         )
         self.parser.add_argument(
