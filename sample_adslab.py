@@ -88,6 +88,11 @@ def select_adsorbate(ads_dict, smiles):
 
 if __name__ == "__main__":
     with Loader("Full procedure", animate=False):
+
+        # -------------------
+        # -----  Setup  -----
+        # -------------------
+
         # path to directory's root
         root = Path(__file__).resolve().parent
         # load default args then overwrite from command-line
@@ -116,11 +121,22 @@ if __name__ == "__main__":
             "surface_idx / total_possible_surfaces_for_bulk",
         )
 
+        # for sampling purposes and debugging we can run multiple sampling procedure
+        # by specifying nruns=N in the command-line
+
+        # ------------------
+        # -----  Runs  -----
+        # ------------------
+
         for i in range(args.nruns):
 
             print_header(i, args.nruns)
 
             with Loader(f"Actions to Data {i+1}/{args.nruns}", animate=False):
+
+                # -----------------------
+                # -----  Adsorbate  -----
+                # -----------------------
 
                 print("\n1. Adsorbate\n")
 
@@ -139,6 +155,10 @@ if __name__ == "__main__":
                         "# Selected adsorbate:",
                         adsorbate_obj.atoms.get_chemical_formula(),
                     )
+
+                # ------------------
+                # -----  Bulk  -----
+                # ------------------
 
                 print("\n2. Bulk\n")
 
@@ -166,6 +186,10 @@ if __name__ == "__main__":
                         bulk.bulk_atoms.get_chemical_formula(),
                         f"({bulk.mpid})",
                     )
+
+                # ---------------------
+                # -----  Surface  -----
+                # ---------------------
 
                 print("\n3. Surface\n")
 
@@ -200,6 +224,10 @@ if __name__ == "__main__":
                         f"({surface_obj.surface_sampling_str})",
                     )
 
+                # ----------------------
+                # -----  Combined  -----
+                # ----------------------
+
                 print("\n4. Combined\n")
 
                 with Loader(
@@ -218,6 +246,10 @@ if __name__ == "__main__":
                         print("ABORTING")
                         continue
                     atoms_object = adslab.constrained_adsorbed_surfaces[0]
+
+                # ------------------
+                # -----  Data  -----
+                # ------------------
 
                 print("\n5. Data\n")
 
