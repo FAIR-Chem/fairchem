@@ -14,6 +14,7 @@ class Loader:
         erase=False,
         animate=True,
         ignore=False,
+        out=None,
     ):
         """
         A loader-like context manager
@@ -28,6 +29,7 @@ class Loader:
         self.timeout = timeout
         self.timer = timer
         self.erase = erase
+        self.out = out
 
         self._thread = Thread(target=self._animate, daemon=True)
         self.steps = ["⢿", "⣻", "⣽", "⣾", "⣷", "⣯", "⣟", "⡿"]
@@ -61,7 +63,13 @@ class Loader:
             end = self.desc + " | " + self.end
 
         if self.timer:
-            end += f" ({time() - self._start_time:.2f}s)"
+            end_time = time()
+            duration = end_time - self._start_time
+            if isinstance(self.out, list):
+                self.out.append(duration)
+            elif isinstance(self.out, dict):
+                self.out[self.desc].append(duration)
+            end += f" ({duration:.2f}s)"
 
         print("\r" + " " * cols, end="\r", flush=True)
         print(end, flush=True)

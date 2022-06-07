@@ -43,7 +43,7 @@ actions:
 use_precomputed_surfaces: true
 
 # Loader animation
-animate: true
+animate: false
 # Ignore loader prints
 no_loader: false
 

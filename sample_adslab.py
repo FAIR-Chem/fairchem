@@ -3,6 +3,7 @@ from ocdata.loader import Loader
 with Loader("Imports"):
     import pickle
     from pathlib import Path
+    from collections import defaultdict
 
     import numpy as np
     from minydra import resolved_args
@@ -12,6 +13,10 @@ with Loader("Imports"):
     from ocdata.surfaces import Surface
     from ocdata.combined import Combined
     from ocpmodels.preprocessing.atoms_to_graphs import AtomsToGraphs
+
+# ----------------------------
+# -----  UTILS (ignore)  -----
+# ----------------------------
 
 
 def print_header(i, nruns):
@@ -38,6 +43,68 @@ def print_header(i, nruns):
     print(box_char * box_width)
 
 
+def print_out_times(out_times, fpath=None, prec=3):
+    """
+    Prints a summary of the out_time dictionnary
+
+    Args:
+        out_times (dict[list]): dictionnary of times
+        fpath (Union[str, pathlib.Path], optional): path to write the
+            string summary to. Defaults to None (= no writing)
+        prec (int, optional): print decimals. Defaults to 3.
+
+    Returns:
+        str: stringsummary
+    """
+    max_k_len = max([len(k) for k in out_times])
+    strs = [f"{'Operation':{max_k_len}} -> Time (s)"]
+
+    all_keys = sorted(out_times.keys())
+    single_keys = []
+    if not all([len(k) == 1 for k in out_times]):
+        single_keys = [k for k, v in out_times.items() if len(v) == 1]
+        all_keys = single_keys + [k for k in out_times if k not in set(single_keys)]
+
+    single_key_sep = None
+
+    for i, k in enumerate(all_keys):
+        if single_keys and k not in single_keys and single_key_sep is None:
+            single_key_sep = i + 1
+        times = out_times[k]
+        s = f"{k:{max_k_len}} -> "
+        if len(times) > 1:
+            q1, med, q3 = np.percentile(times, [25, 50, 75])
+            mean, std = np.mean(times), np.std(times)
+            s += f"[{q1:.{prec}f} | {med:.{prec}f} | {q3:.{prec}f}]"
+            s += f" ~ {mean:.{prec}f} +/- {std:.{prec}f}"
+        else:
+            s += f"{times[0]:.{prec}f}"
+        strs.append(s)
+
+    max_s_len = max(len(s) for s in strs)
+    border = "-" * max_s_len
+    strs.append(border)
+
+    if single_key_sep is not None:
+        strs = (
+            strs[:single_key_sep]
+            + [
+                border,
+                f"{'Operation':{max_k_len}} -> [q1 | med | q3] ~ mean +/- std",
+                border,
+            ]
+            + strs[single_key_sep:]
+        )
+
+    out_str = "\n".join([border] + strs[:1] + [border] + strs[1:])
+
+    if fpath is not None:
+        with open(fpath, "w") as f:
+            f.write(out_str)
+
+    print(out_str)
+
+
 def get_ads_db(args):
     """
     Util to load the adsorbates pre-computed dict from the args
@@ -51,6 +118,9 @@ def get_ads_db(args):
     with open(args.paths.adsorbate_db, "rb") as f:
         return pickle.load(f)
 
+# ------------------------------------
+# -----  Action Space Functions  -----
+# ------------------------------------
 
 def select_adsorbate(ads_dict, smiles):
     """
@@ -101,18 +171,26 @@ if __name__ == "__main__":
         if args.verbose > 0:
             args.pretty_print()
 
+        out_times = defaultdict(list)
+
         # set seed
         np.random.seed(args.seed)
 
         with Loader(
-            "Reading bulk_db_flat", animate=args.animate, ignore=args.no_loader
+            "Reading bulk_db_flat",
+            animate=args.animate,
+            ignore=args.no_loader,
+            out=out_times,
         ):
             # load flat bulk db
             with open(args.paths.bulk_db_flat, "rb") as f:
                 bulk_db_list = pickle.load(f)
 
         with Loader(
-            "Reading adsorbates dict", animate=args.animate, ignore=args.no_loader
+            "Reading adsorbates dict",
+            animate=args.animate,
+            ignore=args.no_loader,
+            out=out_times,
         ):
             ads_dict = get_ads_db(args)
 
@@ -132,7 +210,9 @@ if __name__ == "__main__":
 
             print_header(i, args.nruns)
 
-            with Loader(f"Actions to Data {i+1}/{args.nruns}", animate=False):
+            with Loader(
+                f"Actions to Data {i+1}/{args.nruns}", animate=False, out=out_times
+            ):
 
                 # -----------------------
                 # -----  Adsorbate  -----
@@ -141,7 +221,10 @@ if __name__ == "__main__":
                 print("\n1. Adsorbate\n")
 
                 with Loader(
-                    "Make Adsorbate object", animate=args.animate, ignore=args.no_loader
+                    "Make Adsorbate object",
+                    animate=args.animate,
+                    ignore=args.no_loader,
+                    out=out_times,
                 ):
                     adsorbate_atoms = select_adsorbate(
                         ads_dict, args.actions.adsorbate_formula
@@ -163,7 +246,10 @@ if __name__ == "__main__":
                 print("\n2. Bulk\n")
 
                 with Loader(
-                    "Make Bulk object", animate=args.animate, ignore=args.no_loader
+                    "Make Bulk object",
+                    animate=args.animate,
+                    ignore=args.no_loader,
+                    out=out_times,
                 ):
 
                     # select bulk_id if None
@@ -197,11 +283,15 @@ if __name__ == "__main__":
                     "bulk.get_possible_surfaces()",
                     animate=args.animate,
                     ignore=args.no_loader,
+                    out=out_times,
                 ):
                     possible_surfaces = bulk.get_possible_surfaces()
 
                 with Loader(
-                    "Make Surface object", animate=args.animate, ignore=args.no_loader
+                    "Make Surface object",
+                    animate=args.animate,
+                    ignore=args.no_loader,
+                    out=out_times,
                 ):
                     # select surface_id if it is None
                     if args.actions.surface_id is None:
@@ -231,7 +321,10 @@ if __name__ == "__main__":
                 print("\n4. Combined\n")
 
                 with Loader(
-                    "Make Combined object", animate=args.animate, ignore=args.no_loader
+                    "Make Combined object",
+                    animate=args.animate,
+                    ignore=args.no_loader,
+                    out=out_times,
                 ):
                     # combine adsorbate + bulk
                     try:
@@ -257,6 +350,7 @@ if __name__ == "__main__":
                     "Make torch_geometric data",
                     animate=args.animate,
                     ignore=args.no_loader,
+                    out=out_times,
                 ):
                     converter = AtomsToGraphs(
                         r_energy=False,
@@ -267,3 +361,5 @@ if __name__ == "__main__":
                     )
                     # Convert ase.Atoms into torch_geometric.Data
                     data = converter.convert(atoms_object)
+
+        print_out_times(out_times)
