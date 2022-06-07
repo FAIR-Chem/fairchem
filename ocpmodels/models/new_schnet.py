@@ -192,12 +192,12 @@ class NewSchNet(torch.nn.Module):
 
         # Fixed embeddings
         if self.fixed_embeddings:
-            Femb = FixedEmbedding(short=False)
+            Femb = FixedEmbedding()
             self.fixed_embeddings = Femb.fixed_embeddings
             self.fixed_embeds_size = Femb.dim
 
         self.embedding = Embedding(
-            100, hidden_channels - tag_hidden_channels - self.fixed_embeds_size
+            85, hidden_channels - tag_hidden_channels - self.fixed_embeds_size
         )
         # self.embedding = Embedding(100, hidden_channels)
         # hidden_channels += tag_hidden_channels
@@ -293,6 +293,7 @@ class NewSchNetWrap(NewSchNet):
     def _forward(self, data):
         """"""
         z = data.atomic_numbers.long()
+        # Convert z to index mapping
         pos = data.pos
         batch = data.batch
 

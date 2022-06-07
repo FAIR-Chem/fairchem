@@ -107,7 +107,7 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
             self.tag = Embedding(3, tag_hidden_channels)
 
         self.emb = Embedding(
-            95, hidden_channels - tag_hidden_channels - self.fixed_embeds_size
+            85, hidden_channels - tag_hidden_channels - self.fixed_embeds_size
         )
 
         self.lin_rbf = Linear(num_radial, hidden_channels)
