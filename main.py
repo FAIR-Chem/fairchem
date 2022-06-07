@@ -49,7 +49,7 @@ class Runner(submitit.helpers.Checkpointable):
                 config.get("trainer", "energy")
             )(
                 task=config["task"],
-                model=config["model"],
+                model_attributes=config["model"],
                 dataset=config["dataset"],
                 optimizer=config["optim"],
                 identifier=config["identifier"],

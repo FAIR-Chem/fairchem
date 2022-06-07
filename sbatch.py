@@ -9,7 +9,8 @@ import sys
 template = """\
 #!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --ntasks={ntasks}
+#SBATCH --nodes={nodes}
+#SBATCH --ntasks-per-node={ntasks_per_node}
 #SBATCH --partition={partition}
 #SBATCH --cpus-per-task={cpus}
 #SBATCH --mem={mem}
@@ -22,10 +23,33 @@ template = """\
 # git commit: {git_commit}
 # cwd: {cwd}
 
+export MASTER_PORT=$(expr 10000 + $(echo -n $SLURM_JOBID | tail -c 4))
+echo "Master port $MASTER_PORT"
+
 module load anaconda/3
 conda activate {env}
-python main.py {py_args}
+
+srun python main.py {py_args}
 """
+
+
+def discover_minydra_defaults():
+    """
+    Returns a list containing:
+    * the path to the shared configs/sbatch/defaults.yaml file
+    * the path to configs/sbatch/$USER.yaml file if it exists
+
+
+    Returns:
+        list[pathlib.Path]: Path to the shared defaults and optionnally
+            to a user-specific one if it exists
+    """    
+    root = Path(__file__).resolve().parent
+    defaults = [root / "configs" / "sbatch" / "defaults.yaml"]
+    user_config = root / "configs" / "sbatch" / f"{os.environ['USER']}.yaml"
+    if user_config.exists() and user_config.is_file():
+        defaults.append(user_config)
+    return defaults
 
 
 def resolve(path):
@@ -73,8 +97,26 @@ if __name__ == "__main__":
     root = Path(__file__).resolve().parent
     # parse and resolve args.
     # defaults are loaded and overwritten from the command-line as `arg=value`
-    args = resolved_args(defaults=root / "configs" / "sbatch" / "defaults.yaml")
+    args = resolved_args(defaults=discover_minydra_defaults())
     args.pretty_print()
+
+    # set n_tasks_per node from gres if none is provided
+    if args.ntasks_per_node is None:
+        if ":" not in args.gres:
+            args.ntasks_per_node = 1
+        else:
+            try:
+                args.ntasks_per_node = int(args.gres.split(":")[-1])
+            except Exception as e:
+                print("Could not parse ntasks_per_node from gres:", e)
+                print("Setting to 1")
+                args.ntasks_per_node = 1
+
+    # distribute training
+    if args.ntasks_per_node > 1 and "--distributed" not in args.py_args:
+        args.py_args += (
+            f" --distributed --num-nodes {args.nodes} --num-gpus {args.ntasks_per_node}"
+        )
 
     # add logdir to main.py's command-line arguments
     if "--logdir" not in args.py_args and args.logdir:
@@ -103,6 +145,8 @@ if __name__ == "__main__":
         sbatch_command_line=" ".join(["python"] + sys.argv),
         git_commit=get_commit(),
         cwd=str(Path.cwd()),
+        ntasks_per_node=args.ntasks_per_node,
+        nodes=args.nodes or 1,
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`

@@ -5,7 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import os
+import os, logging
 from math import pi as PI
 
 import numpy as np
@@ -257,6 +257,7 @@ class NewForceNet(BaseModel):
         training=True,
         otf_graph=False,
         fixed_embeds=False,
+        predict_forces=False,
     ):
 
         super(NewForceNet, self).__init__()
@@ -298,6 +299,7 @@ class NewForceNet(BaseModel):
         self.use_tag = tag_hidden_channels > 0
         self.fixed_embeddings = fixed_embeds
         self.fixed_embeds_size = 0
+        self.predict_forces = predict_forces
 
         if self.ablation == "edgelinear":
             depth_mlp_edge = 0
@@ -440,10 +442,9 @@ class NewForceNet(BaseModel):
         self.lin = torch.nn.Linear(hidden_channels, self.output_dim)
         self.activation = Act(activation_str)
 
-        # ForceNet decoder
-        self.decoder = FNDecoder(
-            decoder_type, decoder_activation_str, self.output_dim
-        )
+        if self.predict_forces:
+            # ForceNet decoder
+            self.decoder = FNDecoder(decoder_type, decoder_activation_str, self.output_dim)
 
         # Projection layer for energy prediction
         self.energy_mlp = nn.Linear(self.output_dim, 1)
@@ -550,9 +551,13 @@ class NewForceNet(BaseModel):
 
         out = scatter(h, batch, dim=0, reduce="add")
 
-        # force = self.decoder(h)
         energy = self.energy_mlp(out)
-        return energy  # , force
+
+        if self.predict_forces:
+            force = self.decoder(h)
+            return energy, force
+
+        return energy
 
     @property
     def num_params(self):
