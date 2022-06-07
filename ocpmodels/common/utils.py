@@ -405,6 +405,7 @@ def build_config(args, args_override):
     config["submit"] = args.submit
     config["summit"] = args.summit
     # Distributed
+    config["distributed"] = args.distributed
     config["local_rank"] = args.local_rank
     config["distributed_port"] = args.distributed_port
     config["world_size"] = args.num_nodes * args.num_gpus

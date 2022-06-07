@@ -60,7 +60,7 @@ class EnergyTrainer(BaseTrainer):
     def __init__(
         self,
         task,
-        model,
+        model_attributes,
         dataset,
         optimizer,
         identifier,
@@ -82,7 +82,7 @@ class EnergyTrainer(BaseTrainer):
     ):
         super().__init__(
             task=task,
-            model=model,
+            model_attributes=model_attributes,
             dataset=dataset,
             optimizer=optimizer,
             identifier=identifier,
@@ -109,9 +109,7 @@ class EnergyTrainer(BaseTrainer):
         self.num_targets = 1
 
     @torch.no_grad()
-    def predict(
-        self, loader, per_image=True, results_file=None, disable_tqdm=False
-    ):
+    def predict(self, loader, per_image=True, results_file=None, disable_tqdm=False):
         if distutils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
         assert isinstance(
@@ -146,14 +144,10 @@ class EnergyTrainer(BaseTrainer):
                 out = self._forward(batch)
 
             if self.normalizers is not None and "target" in self.normalizers:
-                out["energy"] = self.normalizers["target"].denorm(
-                    out["energy"]
-                )
+                out["energy"] = self.normalizers["target"].denorm(out["energy"])
 
             if per_image:
-                predictions["id"].extend(
-                    [str(i) for i in batch[0].sid.tolist()]
-                )
+                predictions["id"].extend([str(i) for i in batch[0].sid.tolist()])
                 predictions["energy"].extend(out["energy"].tolist())
             else:
                 predictions["energy"] = out["energy"].detach()
@@ -167,9 +161,7 @@ class EnergyTrainer(BaseTrainer):
         return predictions
 
     def train(self, disable_eval_tqdm=False):
-        eval_every = self.config["optim"].get(
-            "eval_every", len(self.train_loader)
-        )
+        eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
         self.config["cmd"]["print_every"] = eval_every  # Temporary
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
@@ -181,9 +173,7 @@ class EnergyTrainer(BaseTrainer):
         start_epoch = self.step // len(self.train_loader)
         print("---Beginning of Training---")
 
-        for epoch_int in range(
-            start_epoch, self.config["optim"]["max_epochs"]
-        ):
+        for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
             self.train_sampler.set_epoch(epoch_int)
             skip_steps = self.step % len(self.train_loader)
             train_loader_iter = iter(self.train_loader)
@@ -232,9 +222,9 @@ class EnergyTrainer(BaseTrainer):
                             disable_tqdm=disable_eval_tqdm,
                         )
                         if (
-                            val_metrics[
-                                self.evaluator.task_primary_metric[self.name]
-                            ]["metric"]
+                            val_metrics[self.evaluator.task_primary_metric[self.name]][
+                                "metric"
+                            ]
                             < self.best_val_mae
                         ):
                             self.best_val_mae = val_metrics[
@@ -257,8 +247,7 @@ class EnergyTrainer(BaseTrainer):
                             epoch_int == self.config["optim"]["max_epochs"] - 1
                         ):
                             self.eval_all_val_splits(
-                                epoch_int
-                                == self.config["optim"]["max_epochs"] - 1
+                                epoch_int == self.config["optim"]["max_epochs"] - 1
                             )
 
                         if self.is_hpo:
