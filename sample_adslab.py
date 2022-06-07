@@ -118,9 +118,11 @@ def get_ads_db(args):
     with open(args.paths.adsorbate_db, "rb") as f:
         return pickle.load(f)
 
+
 # ------------------------------------
 # -----  Action Space Functions  -----
 # ------------------------------------
+
 
 def select_adsorbate(ads_dict, smiles):
     """
