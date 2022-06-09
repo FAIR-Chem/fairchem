@@ -44,16 +44,10 @@ class AtomUpdateBlock(torch.nn.Module):
         super().__init__()
         self.name = name
 
-        self.dense_rbf = Dense(
-            emb_size_rbf, emb_size_edge, activation=None, bias=False
-        )
-        self.scale_sum = ScalingFactor(
-            scale_file=scale_file, name=name + "_sum"
-        )
+        self.dense_rbf = Dense(emb_size_rbf, emb_size_edge, activation=None, bias=False)
+        self.scale_sum = ScalingFactor(scale_file=scale_file, name=name + "_sum")
 
-        self.layers = self.get_mlp(
-            emb_size_edge, emb_size_atom, nHidden, activation
-        )
+        self.layers = self.get_mlp(emb_size_edge, emb_size_atom, nHidden, activation)
 
     def get_mlp(self, units_in, units, nHidden, activation):
         dense1 = Dense(units_in, units, activation=activation, bias=False)
@@ -142,14 +136,10 @@ class OutputBlock(AtomUpdateBlock):
         self.direct_forces = direct_forces
 
         self.seq_energy = self.layers  # inherited from parent class
-        self.out_energy = Dense(
-            emb_size_atom, num_targets, bias=False, activation=None
-        )
+        self.out_energy = Dense(emb_size_atom, num_targets, bias=False, activation=None)
 
         if self.direct_forces:
-            self.scale_rbf_F = ScalingFactor(
-                scale_file=scale_file, name=name + "_had"
-            )
+            self.scale_rbf_F = ScalingFactor(scale_file=scale_file, name=name + "_had")
             self.seq_forces = self.get_mlp(
                 emb_size_edge, emb_size_edge, nHidden, activation
             )

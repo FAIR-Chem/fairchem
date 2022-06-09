@@ -40,9 +40,7 @@ class LRScheduler:
             return
         if self.scheduler_type == "ReduceLROnPlateau":
             if metrics is None:
-                raise Exception(
-                    "Validation set required for ReduceLROnPlateau."
-                )
+                raise Exception("Validation set required for ReduceLROnPlateau.")
             self.scheduler.step(metrics)
         else:
             self.scheduler.step()

@@ -38,9 +38,7 @@ if __name__ == "__main__":
     config["logger"] = "tensorboard"
 
     if args.distributed:
-        raise ValueError(
-            "I don't think this works with DDP (race conditions)."
-        )
+        raise ValueError("I don't think this works with DDP (race conditions).")
 
     setup_imports()
 
@@ -104,9 +102,7 @@ if __name__ == "__main__":
                 ), "Val dataset is required for making predictions"
 
                 for i, batch in enumerate(trainer.val_loader):
-                    with torch.cuda.amp.autocast(
-                        enabled=trainer.scaler is not None
-                    ):
+                    with torch.cuda.amp.autocast(enabled=trainer.scaler is not None):
                         out = trainer._forward(batch)
                     loss = trainer._compute_loss(out, batch)
                     del out, loss

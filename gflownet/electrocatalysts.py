@@ -145,7 +145,8 @@ class AptamerSeq:
         # Normalize
         rewards = (
             np.min(
-                np.stack([np.zeros(proxy_vals.shape[0]), proxy_vals], axis=0), axis=0
+                np.stack([np.zeros(proxy_vals.shape[0]), proxy_vals], axis=0),
+                axis=0,
             )
             - self.stats_scores[2]
         ) / self.stats_scores[3]
@@ -155,9 +156,7 @@ class AptamerSeq:
         rewards = (rewards / self.reward_norm) ** self.reward_beta
         # Clip
         rewards = np.max(
-            np.stack(
-                [self.min_reward * np.ones(rewards.shape[0]), rewards], axis=0
-            ),
+            np.stack([self.min_reward * np.ones(rewards.shape[0]), rewards], axis=0),
             axis=0,
         )
         return rewards
@@ -167,7 +166,10 @@ class AptamerSeq:
         Converts a "GFlowNet reward" into energy or values as returned by an oracle.
         """
         # TODO: rewrite
-        proxy_vals = np.exp((np.log(reward) + self.reward_beta * np.log(self.reward_norm)) / self.reward_beta)
+        proxy_vals = np.exp(
+            (np.log(reward) + self.reward_beta * np.log(self.reward_norm))
+            / self.reward_beta
+        )
         proxy_vals = self.stats_scores[4] - proxy_vals
         proxy_vals = proxy_vals * self.stats_scores[3] + self.stats_scores[2]
         return proxy_vals
@@ -384,7 +386,7 @@ class AptamerSeq:
         """
         if self._true_density is not None:
             return self._true_density
-        if self.nalphabet ** self.max_seq_length > max_states:
+        if self.nalphabet**self.max_seq_length > max_states:
             return (None, None, None)
         seq_all = np.int32(
             list(

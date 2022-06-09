@@ -127,12 +127,8 @@ class spinconv(BaseModel):
             self.max_num_elements,
             self.act,
         )
-        self.distfc1 = nn.Linear(
-            self.mid_hidden_channels, self.mid_hidden_channels
-        )
-        self.distfc2 = nn.Linear(
-            self.mid_hidden_channels, self.mid_hidden_channels
-        )
+        self.distfc1 = nn.Linear(self.mid_hidden_channels, self.mid_hidden_channels)
+        self.distfc2 = nn.Linear(self.mid_hidden_channels, self.mid_hidden_channels)
 
         self.dist_block = DistanceBlock(
             self.num_basis_functions,
@@ -203,10 +199,7 @@ class spinconv(BaseModel):
             data.neighbors = neighbors
 
         if self.use_pbc:
-            assert (
-                atomic_numbers.dim() == 1
-                and atomic_numbers.dtype == torch.long
-            )
+            assert atomic_numbers.dim() == 1 and atomic_numbers.dtype == torch.long
 
             out = get_pbc_distances(
                 pos,
@@ -242,8 +235,7 @@ class spinconv(BaseModel):
             print(
                 "Memory: {}\t{}\t{}".format(
                     len(edge_index[0]),
-                    torch.cuda.memory_allocated()
-                    / (1000 * len(edge_index[0])),
+                    torch.cuda.memory_allocated() / (1000 * len(edge_index[0])),
                     torch.cuda.max_memory_allocated() / 1000000,
                 )
             )
@@ -251,9 +243,7 @@ class spinconv(BaseModel):
         return outputs
 
     # restructure forward helper for conditional grad
-    def _forward_helper(
-        self, data, edge_index, edge_distance, edge_distance_vec
-    ):
+    def _forward_helper(self, data, edge_index, edge_distance, edge_distance_vec):
         ###############################################################
         # Initialize messages
         ###############################################################
@@ -274,16 +264,12 @@ class spinconv(BaseModel):
         # Update messages using block interactions
         ###############################################################
 
-        edge_rot_mat = self._init_edge_rot_mat(
-            data, edge_index, edge_distance_vec
-        )
+        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
         (
             proj_edges_index,
             proj_edges_delta,
             proj_edges_src_index,
-        ) = self._project2D_edges_init(
-            edge_rot_mat, edge_index, edge_distance_vec
-        )
+        ) = self._project2D_edges_init(edge_rot_mat, edge_index, edge_distance_vec)
 
         for block_index, interaction in enumerate(self.message_blocks):
             x_out = interaction(
@@ -311,9 +297,7 @@ class spinconv(BaseModel):
             self.max_num_neighbors / 2.0 + 1.0
         )
         atomic_numbers = data.atomic_numbers.long()
-        energy = self.energyembeddingblock(
-            energy, atomic_numbers, atomic_numbers
-        )
+        energy = self.energyembeddingblock(energy, atomic_numbers, atomic_numbers)
         energy = scatter(energy, data.batch, dim=0)
 
         if self.regress_forces:
@@ -377,9 +361,7 @@ class spinconv(BaseModel):
         random_rot_mat = self._random_rot_mat(
             self.num_atoms * num_random_rotations, device
         )
-        random_rot_mat = random_rot_mat.view(
-            num_random_rotations, self.num_atoms, 3, 3
-        )
+        random_rot_mat = random_rot_mat.view(num_random_rotations, self.num_atoms, 3, 3)
 
         # the first matrix is the identity with the rest being random
         # atom_rot_mat = torch.cat([torch.eye(3, device=device).view(1, 1, 3, 3).repeat(1, self.num_atoms, 1, 1), random_rot_mat], dim=0)
@@ -448,9 +430,9 @@ class spinconv(BaseModel):
 
             # rotate the predicted forces back into the global reference frame
             rot_mat_inv = torch.transpose(rot_mat_x_perturb, 1, 2)
-            forces_perturb = torch.bmm(
-                rot_mat_inv, forces_perturb.view(-1, 3, 1)
-            ).view(-1, 3)
+            forces_perturb = torch.bmm(rot_mat_inv, forces_perturb.view(-1, 3, 1)).view(
+                -1, 3
+            )
 
             forces = forces + forces_perturb
 
@@ -476,14 +458,10 @@ class spinconv(BaseModel):
 
         # handle special case where an atom doesn't have any neighbors
         target_neigh_count = torch.zeros(self.num_atoms, device=device).long()
-        target_neigh_count.index_copy_(
-            0, target_node_index.long(), neigh_count
-        )
+        target_neigh_count.index_copy_(0, target_node_index.long(), neigh_count)
 
         # Create a list of edges for each atom
-        index_offset = (
-            torch.cumsum(target_neigh_count, dim=0) - target_neigh_count
-        )
+        index_offset = torch.cumsum(target_neigh_count, dim=0) - target_neigh_count
         neigh_index = torch.arange(length, device=device)
         neigh_index = neigh_index - index_offset[edge_index[1]]
 
@@ -497,8 +475,7 @@ class spinconv(BaseModel):
 
         # Get the length of each edge
         distance_lookup = (
-            torch.zeros(self.num_atoms * max_neighbors, device=device)
-            + 1000000.0
+            torch.zeros(self.num_atoms * max_neighbors, device=device) + 1000000.0
         )
         distance_lookup.index_copy_(0, edge_map_index, edge_distance)
         distance_lookup = distance_lookup.view(self.num_atoms, max_neighbors)
@@ -510,9 +487,7 @@ class spinconv(BaseModel):
         edge_index_min, no_op = torch.min(edge_index, dim=0)
         edge_index_max, no_op = torch.max(edge_index, dim=0)
         edge_index_hash = edge_index_min * self.num_atoms + edge_index_max
-        edge_count_start = torch.zeros(
-            self.num_atoms * self.num_atoms, device=device
-        )
+        edge_count_start = torch.zeros(self.num_atoms * self.num_atoms, device=device)
         edge_count_start.index_add_(
             0, edge_index_hash, torch.ones(len(edge_index_hash), device=device)
         )
@@ -526,9 +501,7 @@ class spinconv(BaseModel):
             torch.zeros(self.num_atoms * max_neighbors, device=device) - 1
         ).long()
         target_lookup_sorted = target_lookup[indices]
-        target_lookup_sorted = target_lookup_sorted.view(
-            self.num_atoms, max_neighbors
-        )
+        target_lookup_sorted = target_lookup_sorted.view(self.num_atoms, max_neighbors)
 
         # Select the closest max_num_neighbors for each edge and remove the unused entries
         target_lookup_below_thres = (
@@ -541,9 +514,7 @@ class spinconv(BaseModel):
         )
 
         # Find edges that are used at least once and create a mask to keep
-        edge_count = torch.zeros(
-            self.num_atoms * self.num_atoms, device=device
-        )
+        edge_count = torch.zeros(self.num_atoms * self.num_atoms, device=device)
         edge_count.index_add_(
             0,
             edge_index_hash[target_lookup_below_thres],
@@ -554,9 +525,7 @@ class spinconv(BaseModel):
 
         # Finally remove all edges that are too long in distance as indicated by the mask
         edge_index_mask = edge_keep.view(1, -1).repeat(2, 1)
-        edge_index = torch.masked_select(edge_index, edge_index_mask).view(
-            2, -1
-        )
+        edge_index = torch.masked_select(edge_index, edge_index_mask).view(2, -1)
         edge_distance = torch.masked_select(edge_distance, edge_keep)
         edge_distance_vec_mask = edge_keep.view(-1, 1).repeat(1, 3)
         edge_distance_vec = torch.masked_select(
@@ -577,21 +546,9 @@ class spinconv(BaseModel):
         sin_b = torch.sin(ang_b)
         sin_c = torch.sin(ang_c)
 
-        rot_a = (
-            torch.eye(3, device=device)
-            .view(1, 3, 3)
-            .repeat(num_matrices, 1, 1)
-        )
-        rot_b = (
-            torch.eye(3, device=device)
-            .view(1, 3, 3)
-            .repeat(num_matrices, 1, 1)
-        )
-        rot_c = (
-            torch.eye(3, device=device)
-            .view(1, 3, 3)
-            .repeat(num_matrices, 1, 1)
-        )
+        rot_a = torch.eye(3, device=device).view(1, 3, 3).repeat(num_matrices, 1, 1)
+        rot_b = torch.eye(3, device=device).view(1, 3, 3).repeat(num_matrices, 1, 1)
+        rot_c = torch.eye(3, device=device).view(1, 3, 3).repeat(num_matrices, 1, 1)
 
         rot_a[:, 1, 1] = cos_a
         rot_a[:, 1, 2] = sin_a
@@ -615,13 +572,11 @@ class spinconv(BaseModel):
         num_atoms = len(data.batch)
 
         edge_vec_0 = edge_distance_vec
-        edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0 ** 2, dim=1))
+        edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 
         if torch.min(edge_vec_0_distance) < 0.0001:
             print(
-                "Error edge_vec_0_distance: {}".format(
-                    torch.min(edge_vec_0_distance)
-                )
+                "Error edge_vec_0_distance: {}".format(torch.min(edge_vec_0_distance))
             )
             (minval, minidx) = torch.min(edge_vec_0_distance, 0)
             print(
@@ -635,32 +590,28 @@ class spinconv(BaseModel):
             )
 
         avg_vector = torch.zeros(num_atoms, 3, device=device)
-        weight = 0.5 * (
-            torch.cos(edge_vec_0_distance * PI / self.cutoff) + 1.0
-        )
+        weight = 0.5 * (torch.cos(edge_vec_0_distance * PI / self.cutoff) + 1.0)
         avg_vector.index_add_(
             0, edge_index[1, :], edge_vec_0 * weight.view(-1, 1).expand(-1, 3)
         )
 
         edge_vec_2 = avg_vector[edge_index[1, :]] + 0.0001
-        edge_vec_2_distance = torch.sqrt(torch.sum(edge_vec_2 ** 2, dim=1))
+        edge_vec_2_distance = torch.sqrt(torch.sum(edge_vec_2**2, dim=1))
 
         if torch.min(edge_vec_2_distance) < 0.000001:
             print(
-                "Error edge_vec_2_distance: {}".format(
-                    torch.min(edge_vec_2_distance)
-                )
+                "Error edge_vec_2_distance: {}".format(torch.min(edge_vec_2_distance))
             )
 
         norm_x = edge_vec_0 / (edge_vec_0_distance.view(-1, 1))
         norm_0_2 = edge_vec_2 / (edge_vec_2_distance.view(-1, 1))
         norm_z = torch.cross(norm_x, norm_0_2, dim=1)
         norm_z = norm_z / (
-            torch.sqrt(torch.sum(norm_z ** 2, dim=1, keepdim=True)) + 0.0000001
+            torch.sqrt(torch.sum(norm_z**2, dim=1, keepdim=True)) + 0.0000001
         )
         norm_y = torch.cross(norm_x, norm_z, dim=1)
         norm_y = norm_y / (
-            torch.sqrt(torch.sum(norm_y ** 2, dim=1, keepdim=True)) + 0.0000001
+            torch.sqrt(torch.sum(norm_y**2, dim=1, keepdim=True)) + 0.0000001
         )
 
         norm_x = norm_x.view(-1, 3, 1)
@@ -683,13 +634,9 @@ class spinconv(BaseModel):
         )
         max_neighbors = torch.max(neigh_count)
         target_neigh_count = torch.zeros(self.num_atoms, device=device).long()
-        target_neigh_count.index_copy_(
-            0, target_node_index.long(), neigh_count
-        )
+        target_neigh_count.index_copy_(0, target_node_index.long(), neigh_count)
 
-        index_offset = (
-            torch.cumsum(target_neigh_count, dim=0) - target_neigh_count
-        )
+        index_offset = torch.cumsum(target_neigh_count, dim=0) - target_neigh_count
         neigh_index = torch.arange(length, device=device)
         neigh_index = neigh_index - index_offset[edge_index[1]]
 
@@ -737,9 +684,7 @@ class spinconv(BaseModel):
             source_edge, target_node, rot_mat, edge_distance_vec
         )
 
-    def _project2D_init(
-        self, source_edge, target_edge, rot_mat, edge_distance_vec
-    ):
+    def _project2D_init(self, source_edge, target_edge, rot_mat, edge_distance_vec):
         edge_distance_norm = F.normalize(edge_distance_vec)
         source_edge_offset = edge_distance_norm[source_edge]
 
@@ -890,12 +835,8 @@ class MessageBlock(torch.nn.Module):
             self.act,
         )
 
-        self.distfc1 = nn.Linear(
-            self.mid_hidden_channels, self.mid_hidden_channels
-        )
-        self.distfc2 = nn.Linear(
-            self.mid_hidden_channels, self.mid_hidden_channels
-        )
+        self.distfc1 = nn.Linear(self.mid_hidden_channels, self.mid_hidden_channels)
+        self.distfc2 = nn.Linear(self.mid_hidden_channels, self.mid_hidden_channels)
 
     def forward(
         self,
@@ -909,9 +850,7 @@ class MessageBlock(torch.nn.Module):
     ):
         out_size = len(x)
 
-        x = self.spinconvblock(
-            x, out_size, proj_index, proj_delta, proj_src_index
-        )
+        x = self.spinconvblock(x, out_size, proj_index, proj_delta, proj_src_index)
 
         x = self.embeddingblock1(x, source_element, target_element)
 
@@ -991,9 +930,7 @@ class ForceOutputBlock(torch.nn.Module):
         proj_delta,
         proj_src_index,
     ):
-        x = self.spinconvblock(
-            x, out_size, proj_index, proj_delta, proj_src_index
-        )
+        x = self.spinconvblock(x, out_size, proj_index, proj_delta, proj_src_index)
 
         x = self.block1(x, target_element, target_element)
         x = self.act(x)
@@ -1064,9 +1001,7 @@ class SpinConvBlock(torch.nn.Module):
             )
             self.pool = nn.AvgPool1d(sphere_size_long)
 
-        self.GroupNorm = nn.GroupNorm(
-            self.num_groups, self.mid_hidden_channels
-        )
+        self.GroupNorm = nn.GroupNorm(self.num_groups, self.mid_hidden_channels)
 
     def forward(self, x, out_size, proj_index, proj_delta, proj_src_index):
         x = self.ProjectLatLongSphere(
@@ -1082,9 +1017,7 @@ class SpinConvBlock(torch.nn.Module):
             sph_harm = sph_harm.view(-1, self.sphlength, 1)
             for wD_diag in self.wigner:
                 wD_diag = wD_diag.to(x.device)
-                sph_harm_calc += self.act(
-                    self.mlp(sph_harm.reshape(x.shape[0], -1))
-                )
+                sph_harm_calc += self.act(self.mlp(sph_harm.reshape(x.shape[0], -1)))
                 wd = wD_diag.view(1, self.sphlength, self.sphlength).expand(
                     len(x) * self.in_hidden_channels, -1, -1
                 )
@@ -1133,22 +1066,14 @@ class EmbeddingBlock(torch.nn.Module):
             self.mid_hidden_channels,
             self.num_embedding_basis * self.mid_hidden_channels,
         )
-        self.fc3 = nn.Linear(
-            self.mid_hidden_channels, self.out_hidden_channels
-        )
+        self.fc3 = nn.Linear(self.mid_hidden_channels, self.out_hidden_channels)
 
-        self.source_embedding = nn.Embedding(
-            max_num_elements, self.embedding_size
-        )
-        self.target_embedding = nn.Embedding(
-            max_num_elements, self.embedding_size
-        )
+        self.source_embedding = nn.Embedding(max_num_elements, self.embedding_size)
+        self.target_embedding = nn.Embedding(max_num_elements, self.embedding_size)
         nn.init.uniform_(self.source_embedding.weight.data, -0.0001, 0.0001)
         nn.init.uniform_(self.target_embedding.weight.data, -0.0001, 0.0001)
 
-        self.embed_fc1 = nn.Linear(
-            2 * self.embedding_size, self.num_embedding_basis
-        )
+        self.embed_fc1 = nn.Linear(2 * self.embedding_size, self.num_embedding_basis)
 
         self.softmax = nn.Softmax(dim=1)
 
@@ -1163,9 +1088,9 @@ class EmbeddingBlock(torch.nn.Module):
         x = self.act(x)
         x = self.fc2(x)
         x = self.act(x)
-        x = (
-            x.view(-1, self.num_embedding_basis, self.mid_hidden_channels)
-        ) * (embedding.view(-1, self.num_embedding_basis, 1))
+        x = (x.view(-1, self.num_embedding_basis, self.mid_hidden_channels)) * (
+            embedding.view(-1, self.num_embedding_basis, 1)
+        )
         x = torch.sum(x, dim=1)
         x = self.fc3(x)
 
@@ -1204,15 +1129,12 @@ class DistanceBlock(torch.nn.Module):
 
     def forward(self, edge_distance, source_element, target_element):
         if self.scale_distances:
-            embedding_index = (
-                source_element * self.max_num_elements + target_element
-            )
+            embedding_index = source_element * self.max_num_elements + target_element
 
             # Restrict the scalar to range from 1 / self.scalar_max to self.scalar_max
             scalar_max = math.log(self.scalar_max)
             scalar = (
-                2.0 * torch.sigmoid(self.dist_scalar(embedding_index).view(-1))
-                - 1.0
+                2.0 * torch.sigmoid(self.dist_scalar(embedding_index).view(-1)) - 1.0
             )
             scalar = torch.exp(scalar_max * scalar)
             offset = self.dist_offset(embedding_index).view(-1)
@@ -1273,14 +1195,10 @@ class Swish(torch.nn.Module):
 
 
 class GaussianSmearing(torch.nn.Module):
-    def __init__(
-        self, start=-5.0, stop=5.0, num_gaussians=50, basis_width_scalar=1.0
-    ):
+    def __init__(self, start=-5.0, stop=5.0, num_gaussians=50, basis_width_scalar=1.0):
         super(GaussianSmearing, self).__init__()
         offset = torch.linspace(start, stop, num_gaussians)
-        self.coeff = (
-            -0.5 / (basis_width_scalar * (offset[1] - offset[0])).item() ** 2
-        )
+        self.coeff = -0.5 / (basis_width_scalar * (offset[1] - offset[0])).item() ** 2
         self.register_buffer("offset", offset)
 
     def forward(self, dist):

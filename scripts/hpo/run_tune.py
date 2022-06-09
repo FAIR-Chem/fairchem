@@ -24,7 +24,7 @@ def ocp_trainable(config, checkpoint_dir=None):
         is_debug=config.get("is_debug", False),
         is_vis=config.get("is_vis", False),
         is_hpo=config.get("is_hpo", True),  # hpo
-        print_every=config.get("print_every", 10),
+        print_every=config.get("print_every", 100),
         seed=config.get("seed", 0),
         logger=config.get("logger", None),  # hpo
         local_rank=config["local_rank"],
@@ -101,9 +101,7 @@ def main():
 
     print(
         "Best config is:",
-        analysis.get_best_config(
-            metric="val_forces_mae", mode="min", scope="last"
-        ),
+        analysis.get_best_config(metric="val_forces_mae", mode="min", scope="last"),
     )
 
 
