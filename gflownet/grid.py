@@ -286,9 +286,7 @@ class Grid(GFlowNetEnv):
     def func_cos_N(x_list):
         def _func_cos_N(x_list):
             ax = abs(x)
-            return -1.0 * (
-                ((np.cos(x * 50) + 1) * norm.pdf(x * 5)).prod(-1) + 0.01
-            )
+            return -1.0 * (((np.cos(x * 50) + 1) * norm.pdf(x * 5)).prod(-1) + 0.01)
 
         return np.asarray([_func_cos_N(x) for x in x_list])
 
@@ -300,16 +298,12 @@ class Grid(GFlowNetEnv):
         ----
         """
         rng = np.random.default_rng(seed)
-        samples = rng.integers(
-            low=0, high=self.length, size=(ntrain,) + (self.n_dim,)
-        )
+        samples = rng.integers(low=0, high=self.length, size=(ntrain,) + (self.n_dim,))
         if oracle:
             energies = oracle(self.state2oracle(samples))
         else:
             energies = self.oracle(self.state2oracle(samples))
-        df_train = pd.DataFrame(
-            {"samples": list(samples), "energies": energies}
-        )
+        df_train = pd.DataFrame({"samples": list(samples), "energies": energies})
         if output_csv:
             df_train.to_csv(output_csv)
         return df_train

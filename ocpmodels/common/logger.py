@@ -77,9 +77,7 @@ class WandBLogger(Logger):
             notes=self.config["note"],
         )
 
-        sbatch_files = list(
-            Path(self.config["run_dir"]).glob("sbatch_script*.sh")
-        )
+        sbatch_files = list(Path(self.config["run_dir"]).glob("sbatch_script*.sh"))
         if len(sbatch_files) == 1:
             wandb.save(str(sbatch_files[0]))
 
@@ -114,9 +112,7 @@ class TensorboardLogger(Logger):
 
     # TODO: add a model hook for watching gradients.
     def watch(self, model):
-        logging.warning(
-            "Model gradient logging to tensorboard not yet supported."
-        )
+        logging.warning("Model gradient logging to tensorboard not yet supported.")
         return False
 
     def log(self, update_dict, step=None, split=""):
