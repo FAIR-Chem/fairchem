@@ -6,6 +6,7 @@ model:
   hidden_channels: 256
   tag_hidden_channels: 32
   pg_hidden_channels: 32
+  fixed_hidden_channels: 0
   num_filters: 128
   num_interactions: 3
   num_gaussians: 100
