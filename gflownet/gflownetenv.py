@@ -84,9 +84,7 @@ class GFlowNetEnv:
         """
         states = [s for s, d in zip(states, done) if d]
         reward = np.zeros(len(done))
-        reward[list(done)] = self.proxy2reward(
-            self.proxy(self.state2oracle(states))
-        )
+        reward[list(done)] = self.proxy2reward(self.proxy(self.state2oracle(states)))
         return reward
 
     def proxy2reward(self, proxy_vals):
@@ -99,9 +97,7 @@ class GFlowNetEnv:
         positive - and larger than self.min_reward.
         """
         if self.denorm_proxy:
-            proxy_vals = (
-                proxy_vals * self.energies_stats[3] + self.energies_stats[2]
-            )
+            proxy_vals = proxy_vals * self.energies_stats[3] + self.energies_stats[2]
         return np.clip(
             (-1.0 * proxy_vals / self.reward_norm) ** self.reward_beta,
             self.min_reward,
@@ -207,9 +203,7 @@ class GFlowNetEnv:
         """
         current_path = path_list[-1].copy()
         current_path_actions = actions[-1].copy()
-        parents, parents_actions = self.parent_transitions(
-            list(current_path[-1]), -1
-        )
+        parents, parents_actions = self.parent_transitions(list(current_path[-1]), -1)
         parents = [self.obs2state(el).tolist() for el in parents]
         if parents == []:
             return path_list, actions
@@ -308,9 +302,7 @@ class ReplayBuffer:
         self.capacity = capacity
         self.env = env
         self.action_space = self.env.get_actions_space()
-        self.buffer = pd.DataFrame(
-            columns=["readable", "reward", "energy", "iter"]
-        )
+        self.buffer = pd.DataFrame(columns=["readable", "reward", "energy", "iter"])
 
     def add(
         self,

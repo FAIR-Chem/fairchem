@@ -416,7 +416,9 @@ class NewForceNet(BaseModel):
 
         if self.predict_forces:
             # ForceNet decoder
-            self.decoder = FNDecoder(decoder_type, decoder_activation_str, self.output_dim)
+            self.decoder = FNDecoder(
+                decoder_type, decoder_activation_str, self.output_dim
+            )
 
         # Projection layer for energy prediction
         self.energy_mlp = nn.Linear(self.output_dim, 1)

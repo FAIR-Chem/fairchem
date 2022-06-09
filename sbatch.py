@@ -43,7 +43,7 @@ def discover_minydra_defaults():
     Returns:
         list[pathlib.Path]: Path to the shared defaults and optionnally
             to a user-specific one if it exists
-    """    
+    """
     root = Path(__file__).resolve().parent
     defaults = [root / "configs" / "sbatch" / "defaults.yaml"]
     user_config = root / "configs" / "sbatch" / f"{os.environ['USER']}.yaml"
