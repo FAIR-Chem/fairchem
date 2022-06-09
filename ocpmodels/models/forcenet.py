@@ -77,9 +77,7 @@ class InteractionBlock(MessagePassing):
         if self.ablation == "nocond":
             # the edge filter only depends on edge_attr
             in_features = (
-                mlp_basis_dim
-                if self.basis_type == "rawcat"
-                else hidden_channels
+                mlp_basis_dim if self.basis_type == "rawcat" else hidden_channels
             )
         else:
             # edge filter depends on edge_attr and current node embedding
@@ -93,9 +91,7 @@ class InteractionBlock(MessagePassing):
             mlp_edge = [torch.nn.Linear(in_features, hidden_channels)]
             for i in range(depth_mlp_edge):
                 mlp_edge.append(self.activation)
-                mlp_edge.append(
-                    torch.nn.Linear(hidden_channels, hidden_channels)
-                )
+                mlp_edge.append(torch.nn.Linear(hidden_channels, hidden_channels))
         else:
             ## need batch normalization afterwards. Otherwise training is unstable.
             mlp_edge = [
@@ -112,9 +108,7 @@ class InteractionBlock(MessagePassing):
             for i in range(depth_mlp_trans):
                 mlp_trans.append(torch.nn.BatchNorm1d(hidden_channels))
                 mlp_trans.append(self.activation)
-                mlp_trans.append(
-                    torch.nn.Linear(hidden_channels, hidden_channels)
-                )
+                mlp_trans.append(torch.nn.Linear(hidden_channels, hidden_channels))
         else:
             # need batch normalization afterwards. Otherwise, becomes NaN
             mlp_trans = [
@@ -125,9 +119,7 @@ class InteractionBlock(MessagePassing):
         self.mlp_trans = torch.nn.Sequential(*mlp_trans)
 
         if not self.ablation == "noself":
-            self.center_W = torch.nn.Parameter(
-                torch.Tensor(1, hidden_channels)
-            )
+            self.center_W = torch.nn.Parameter(torch.Tensor(1, hidden_channels))
 
         self.reset_parameters()
 
@@ -163,9 +155,7 @@ class InteractionBlock(MessagePassing):
         if self.ablation == "nocond":
             emb = edge_emb
         else:
-            emb = torch.cat(
-                [edge_emb, x[edge_index[0]], x[edge_index[1]]], dim=1
-            )
+            emb = torch.cat([edge_emb, x[edge_index[0]], x[edge_index[1]]], dim=1)
 
         W = self.mlp_edge(emb) * edge_weight.view(-1, 1)
         if self.ablation == "nofilter":
@@ -235,6 +225,7 @@ class ForceNet(BaseModel):
         num_atoms,  # not used
         bond_feat_dim,  # not used
         num_targets,  # not used
+        new_gnn,  # not used
         hidden_channels=512,
         num_interactions=5,
         cutoff=6.0,
@@ -334,7 +325,7 @@ class ForceNet(BaseModel):
             self.atom_map = nn.Parameter(atom_map, requires_grad=False)
 
         elif self.feat == "full":
-            # Normalize along each dimaension
+            # Normalize along each dimension
             atom_map[0] = np.nan
             atom_map_notnan = atom_map[atom_map[:, 0] == atom_map[:, 0]]
             atom_map_min = torch.min(atom_map_notnan, dim=0)[0]
@@ -342,9 +333,7 @@ class ForceNet(BaseModel):
             atom_map_gap = atom_map_max - atom_map_min
 
             ## squash to [0,1]
-            atom_map = (
-                atom_map - atom_map_min.view(1, -1)
-            ) / atom_map_gap.view(1, -1)
+            atom_map = (atom_map - atom_map_min.view(1, -1)) / atom_map_gap.view(1, -1)
 
             self.atom_map = torch.nn.Parameter(atom_map, requires_grad=False)
 
@@ -414,9 +403,7 @@ class ForceNet(BaseModel):
         self.activation = Act(activation_str)
 
         # ForceNet decoder
-        self.decoder = FNDecoder(
-            decoder_type, decoder_activation_str, self.output_dim
-        )
+        self.decoder = FNDecoder(decoder_type, decoder_activation_str, self.output_dim)
 
         # Projection layer for energy prediction
         self.energy_mlp = nn.Linear(self.output_dim, 1)
@@ -495,9 +482,7 @@ class ForceNet(BaseModel):
         if self.ablation == "onlydist":
             raw_edge_attr = edge_dist_list
         else:
-            raw_edge_attr = torch.cat(
-                [edge_vec_normalized, edge_dist_list], dim=1
-            )
+            raw_edge_attr = torch.cat([edge_vec_normalized, edge_dist_list], dim=1)
 
         if "sph" in self.basis_type:
             edge_attr = self.basis_fun(raw_edge_attr, edge_attr_sph)
@@ -513,9 +498,9 @@ class ForceNet(BaseModel):
 
         out = scatter(h, batch, dim=0, reduce="add")
 
-        force = self.decoder(h)
+        # force = self.decoder(h)
         energy = self.energy_mlp(out)
-        return energy, force
+        return energy  # , force
 
     @property
     def num_params(self):

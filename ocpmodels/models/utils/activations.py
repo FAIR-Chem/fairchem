@@ -32,11 +32,7 @@ class Act(torch.nn.Module):
         elif self.act == "ssp":
             return F.softplus(input, beta=1) - self.shift
         elif self.act == "leaky_ssp":
-            return (
-                F.softplus(input, beta=1)
-                - self.slope * F.relu(-input)
-                - self.shift
-            )
+            return F.softplus(input, beta=1) - self.slope * F.relu(-input) - self.shift
         elif self.act == "tanh":
             return torch.tanh(input)
         elif self.act == "leaky_tanh":

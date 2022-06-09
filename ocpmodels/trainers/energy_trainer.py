@@ -60,7 +60,7 @@ class EnergyTrainer(BaseTrainer):
     def __init__(
         self,
         task,
-        model,
+        model_attributes,
         dataset,
         optimizer,
         identifier,
@@ -76,10 +76,13 @@ class EnergyTrainer(BaseTrainer):
         amp=False,
         cpu=False,
         slurm={},
+        new_gnn=True,
+        data_split=None,
+        note="",
     ):
         super().__init__(
             task=task,
-            model=model,
+            model_attributes=model_attributes,
             dataset=dataset,
             optimizer=optimizer,
             identifier=identifier,
@@ -96,6 +99,9 @@ class EnergyTrainer(BaseTrainer):
             cpu=cpu,
             name="is2re",
             slurm=slurm,
+            new_gnn=new_gnn,
+            data_split=data_split,
+            note=note,
         )
 
     def load_task(self):
@@ -156,6 +162,7 @@ class EnergyTrainer(BaseTrainer):
 
     def train(self, disable_eval_tqdm=False):
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
+        self.config["cmd"]["print_every"] = eval_every  # Temporary
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
@@ -164,11 +171,13 @@ class EnergyTrainer(BaseTrainer):
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // len(self.train_loader)
+        print("---Beginning of Training---")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
             self.train_sampler.set_epoch(epoch_int)
             skip_steps = self.step % len(self.train_loader)
             train_loader_iter = iter(self.train_loader)
+            print("Epoch: ", epoch_int)
 
             for i in range(skip_steps, len(self.train_loader)):
                 self.epoch = epoch_int + (i + 1) / len(self.train_loader)
@@ -198,33 +207,14 @@ class EnergyTrainer(BaseTrainer):
                 )
 
                 # Log metrics.
-                log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
-                log_dict.update(
-                    {
-                        "lr": self.scheduler.get_lr(),
-                        "epoch": self.epoch,
-                        "step": self.step,
-                    }
-                )
-                if (
-                    self.step % self.config["cmd"]["print_every"] == 0
-                    and distutils.is_master()
-                    and not self.is_hpo
-                ):
-                    log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
-                    print(", ".join(log_str))
-                    self.metrics = {}
-
-                if self.logger is not None:
-                    self.logger.log(
-                        log_dict,
-                        step=self.step,
-                        split="train",
-                    )
+                self._log_metrics()
 
                 # Evaluate on val set after every `eval_every` iterations.
                 if self.step % eval_every == 0:
-                    self.save(checkpoint_file="checkpoint.pt", training_state=True)
+                    self.save(
+                        checkpoint_file=f"checkpoint-{str(self.step).zfill(6)}.pt",
+                        training_state=True,
+                    )
 
                     if self.val_loader is not None:
                         val_metrics = self.validate(
@@ -251,6 +241,14 @@ class EnergyTrainer(BaseTrainer):
                                     results_file="predictions",
                                     disable_tqdm=False,
                                 )
+
+                        # Evaluate current model on all 4 validation splits
+                        if ((epoch_int % 100 == 0) and (epoch_int != 0)) or (
+                            epoch_int == self.config["optim"]["max_epochs"] - 1
+                        ):
+                            self.eval_all_val_splits(
+                                epoch_int == self.config["optim"]["max_epochs"] - 1
+                            )
 
                         if self.is_hpo:
                             self.hpo_update(
@@ -314,3 +312,28 @@ class EnergyTrainer(BaseTrainer):
         )
 
         return metrics
+
+    def _log_metrics(self):
+        log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
+        log_dict.update(
+            {
+                "lr": self.scheduler.get_lr(),
+                "epoch": self.epoch,
+                "step": self.step,
+            }
+        )
+        if (
+            self.step % self.config["cmd"]["print_every"] == 0
+            and distutils.is_master()
+            and not self.is_hpo
+        ):
+            log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
+            print(", ".join(log_str))
+            self.metrics = {}
+
+        if self.logger is not None:
+            self.logger.log(
+                log_dict,
+                step=self.step,
+                split="train",
+            )

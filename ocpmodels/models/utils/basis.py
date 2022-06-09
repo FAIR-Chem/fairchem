@@ -150,9 +150,7 @@ class Basis(nn.Module):
             self.smearing = SINESmearing(in_features, num_freqs)
             self.out_dim = in_features * num_freqs
         elif basis_type == "powercosine":
-            self.smearing = SINESmearing(
-                in_features, num_freqs, use_cosine=True
-            )
+            self.smearing = SINESmearing(in_features, num_freqs, use_cosine=True)
             self.out_dim = in_features * num_freqs
         elif basis_type == "fouriersine":
             self.smearing = FourierSmearing(in_features, num_freqs)
@@ -181,9 +179,7 @@ class Basis(nn.Module):
                 self.out_dim = sph.out_dim + (in_features - 3) * num_freqs
             elif "mul" in basis_type:
                 self.smearing_sine = SINESmearing(in_features - 3, num_freqs)
-                self.lin = torch.nn.Linear(
-                    self.smearing_sine.out_dim, in_features - 3
-                )
+                self.lin = torch.nn.Linear(self.smearing_sine.out_dim, in_features - 3)
                 self.out_dim = (in_features - 3) * sph.out_dim
             elif "m40" in basis_type:
                 dim = 40
@@ -196,9 +192,7 @@ class Basis(nn.Module):
                 # does not use sine smearing for encoding distance
                 self.out_dim = (in_features - 3) * sph.out_dim
             else:
-                raise ValueError(
-                    "cat or mul not specified for spherical harnomics."
-                )
+                raise ValueError("cat or mul not specified for spherical harnomics.")
         else:
             raise RuntimeError("Undefined basis type.")
 
@@ -217,9 +211,7 @@ class Basis(nn.Module):
                     outer = torch.einsum("ik,ij->ikj", edge_attr_sph, r)
                     return torch.flatten(outer, start_dim=1)
                 else:
-                    raise RuntimeError(
-                        f"Unknown basis type called {self.basis_type}"
-                    )
+                    raise RuntimeError(f"Unknown basis type called {self.basis_type}")
             else:
                 outer = torch.einsum("ik,ij->ikj", edge_attr_sph, x[:, 3:])
                 return torch.flatten(outer, start_dim=1)

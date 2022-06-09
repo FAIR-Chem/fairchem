@@ -5,7 +5,9 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 import logging
+import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 import torch
 import wandb
@@ -33,7 +35,6 @@ class Logger(ABC):
         """
         Log some values.
         """
-        assert step is not None
         if split != "":
             new_dict = {}
             for key in update_dict:
@@ -60,21 +61,41 @@ class WandBLogger(Logger):
             else None
         )
 
+        wandb_id = ""
+        slurm_jobid = os.environ.get("SLURM_JOB_ID")
+        if slurm_jobid:
+            wandb_id += f"{slurm_jobid}-"
+        wandb_id += self.config["cmd"]["timestamp_id"] + "-" + config["model"]
+
         wandb.init(
             config=self.config,
-            id=self.config["cmd"]["timestamp_id"],
+            id=wandb_id,
             name=self.config["cmd"]["identifier"],
             dir=self.config["cmd"]["logs_dir"],
             project=project,
             resume="allow",
+            notes=self.config["note"],
         )
+
+        sbatch_files = list(
+            Path(self.config["run_dir"]).glob("sbatch_script*.sh")
+        )
+        if len(sbatch_files) == 1:
+            wandb.save(str(sbatch_files[0]))
+
+        with open(Path(self.config["run_dir"] / "wandb_url.txt"), "w") as f:
+            f.write(wandb.run.get_url())
 
     def watch(self, model):
         wandb.watch(model)
 
     def log(self, update_dict, step=None, split=""):
-        update_dict = super().log(update_dict, step, split)
-        wandb.log(update_dict, step=int(step))
+        if step is not None:
+            update_dict = super().log(update_dict, step, split)
+            wandb.log(update_dict, step=int(step))
+        else:
+            update_dict = super().log(update_dict, split=split)
+            wandb.log(update_dict)
 
     def log_plots(self, plots, caption=""):
         assert isinstance(plots, list)

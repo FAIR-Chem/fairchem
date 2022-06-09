@@ -127,9 +127,7 @@ def main(args):
 
     # Log sampled image, trajectory trace
     for j, i in enumerate(range(args.num_workers)):
-        ids_log = open(
-            os.path.join(args.out_path, "data_log.%04d.txt" % i), "w"
-        )
+        ids_log = open(os.path.join(args.out_path, "data_log.%04d.txt" % i), "w")
         ids_log.writelines(sampled_ids[j])
 
 

@@ -6,13 +6,14 @@ LICENSE file in the root directory of this source tree.
 """
 import datetime
 import errno
-import json
 import logging
 import os
 import random
 import subprocess
+import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -31,16 +32,9 @@ from ocpmodels.common.data_parallel import (
     ParallelCollater,
 )
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    build_config,
-    plot_histogram,
-    save_checkpoint,
-    warmup_lr_lambda,
-)
+from ocpmodels.common.utils import save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
-from ocpmodels.modules.exponential_moving_average import (
-    ExponentialMovingAverage,
-)
+from ocpmodels.modules.exponential_moving_average import ExponentialMovingAverage
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
@@ -51,7 +45,7 @@ class BaseTrainer(ABC):
     def __init__(
         self,
         task,
-        model,
+        model_attributes,
         dataset,
         optimizer,
         identifier,
@@ -68,11 +62,15 @@ class BaseTrainer(ABC):
         cpu=False,
         name="base_trainer",
         slurm={},
+        new_gnn=True,
+        data_split=None,
+        note="",
     ):
         self.name = name
         self.cpu = cpu
         self.epoch = 0
         self.step = 0
+        self.new_gnn = new_gnn
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
@@ -117,14 +115,17 @@ class BaseTrainer(ABC):
         except Exception:
             commit_hash = None
 
-        logger_name = logger if isinstance(logger, str) else logger["name"]
+        # logger_name = logger if isinstance(logger, str) else logger["name"]
+        model_name = model_attributes.pop("name")
         self.config = {
             "task": task,
-            "model": model.pop("name"),
-            "model_attributes": model,
+            "data_split": data_split,
+            "model": model_name,
+            "model_attributes": model_attributes,
             "optim": optimizer,
             "logger": logger,
             "amp": amp,
+            "run_dir": run_dir,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
                 "identifier": identifier,
@@ -132,15 +133,12 @@ class BaseTrainer(ABC):
                 "seed": seed,
                 "timestamp_id": self.timestamp_id,
                 "commit": commit_hash,
-                "checkpoint_dir": os.path.join(
-                    run_dir, "checkpoints", self.timestamp_id
-                ),
-                "results_dir": os.path.join(run_dir, "results", self.timestamp_id),
-                "logs_dir": os.path.join(
-                    run_dir, "logs", logger_name, self.timestamp_id
-                ),
+                "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
+                "results_dir": str(Path(run_dir) / "results"),
+                "logs_dir": str(Path(run_dir) / "logs"),
             },
             "slurm": slurm,
+            "note": note,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp else None
@@ -173,15 +171,17 @@ class BaseTrainer(ABC):
             os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
+            # TODO: do not create all three directory depending on mode
+            # "Predict" -> result, "Train" -> checkpoint and logs.
 
         self.is_debug = is_debug
         self.is_hpo = is_hpo
 
         if self.is_hpo:
             # conditional import is necessary for checkpointing
-            from ray import tune
+            # from ray import tune
 
-            from ocpmodels.common.hpo_utils import tune_reporter
+            from ocpmodels.common.hpo_utils import tune_reporter  # noqa: F401
 
             # sets the hpo checkpoint frequency
             # default is no checkpointing
@@ -331,7 +331,11 @@ class BaseTrainer(ABC):
 
     @abstractmethod
     def load_task(self):
-        """Initialize task-specific information. Derived classes should implement this function."""
+        """
+        Initialize task-specific information.
+        Derived classes should implement this function.
+        """
+        pass
 
     def load_model(self):
         # Build model
@@ -344,13 +348,14 @@ class BaseTrainer(ABC):
 
         loader = self.train_loader or self.val_loader or self.test_loader
         self.model = registry.get_model_class(self.config["model"])(
-            loader.dataset[0].x.shape[-1]
+            num_atoms=loader.dataset[0].x.shape[-1]
             if loader
             and hasattr(loader.dataset[0], "x")
             and loader.dataset[0].x is not None
             else None,
-            bond_feat_dim,
-            self.num_targets,
+            bond_feat_dim=bond_feat_dim,
+            num_targets=self.num_targets,
+            new_gnn=self.new_gnn,
             **self.config["model_attributes"],
         ).to(self.device)
 
@@ -369,7 +374,9 @@ class BaseTrainer(ABC):
             num_gpus=1 if not self.cpu else 0,
         )
         if distutils.initialized():
-            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
+            self.model = DistributedDataParallel(
+                self.model, device_ids=[self.device], output_device=self.device
+            )
 
     def load_checkpoint(self, checkpoint_path):
         if not os.path.isfile(checkpoint_path):
@@ -532,7 +539,10 @@ class BaseTrainer(ABC):
     def save_hpo(self, epoch, step, metrics, checkpoint_every):
         # default is no checkpointing
         # checkpointing frequency can be adjusted by setting checkpoint_every in steps
-        # to checkpoint every time results are communicated to Ray Tune set checkpoint_every=1
+        # to checkpoint every time results are communicated
+        # to Ray Tune set checkpoint_every=1
+        # from ray import tune
+
         if checkpoint_every != -1 and step % checkpoint_every == 0:
             with tune.checkpoint_dir(step=step) as checkpoint_dir:  # noqa: F821
                 path = os.path.join(checkpoint_dir, "checkpoint")
@@ -563,11 +573,13 @@ class BaseTrainer(ABC):
     @abstractmethod
     def train(self):
         """Derived classes should implement this function."""
+        pass
 
     @torch.no_grad()
-    def validate(self, split="val", disable_tqdm=False):
+    def validate(self, split="val", disable_tqdm=False, name_split=None):
         if distutils.is_master():
-            logging.info(f"Evaluating on {split}.")
+            if not name_split:
+                logging.info(f"Evaluating on {split}.")
         if self.is_hpo:
             disable_tqdm = True
 
@@ -579,7 +591,7 @@ class BaseTrainer(ABC):
         evaluator, metrics = Evaluator(task=self.name), {}
         rank = distutils.get_rank()
 
-        loader = self.val_loader if split == "val" else self.test_loader
+        loader = self.val_loader if split[:3] in {"val", "eva"} else self.test_loader
 
         for i, batch in tqdm(
             enumerate(loader),
@@ -620,12 +632,18 @@ class BaseTrainer(ABC):
 
         # Make plots.
         if self.logger is not None:
-            self.logger.log(
-                log_dict,
-                step=self.step,
-                split=split,
-            )
-
+            if split == "eval":
+                log_dict = {f"{name_split}-{k}": v for k, v in log_dict.items()}
+                self.logger.log(
+                    log_dict,
+                    split=split,
+                )
+            else:
+                self.logger.log(
+                    log_dict,
+                    step=self.step,
+                    split=split,
+                )
         if self.ema:
             self.ema.restore()
 
@@ -719,3 +737,62 @@ class BaseTrainer(ABC):
 
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
+
+    def eval_all_val_splits(self, final=False):
+        """Evaluate model on all four validation splits"""
+
+        if final:
+            # Load current best checkpoint
+            checkpoint_path = os.path.join(
+                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
+            )
+            self.load_checkpoint(checkpoint_path=checkpoint_path)
+
+        # Compute performance metrics on all four validation splits
+        start_time = time.time()
+        metrics_dict = {}
+        logging.info("Evaluating on 4 val splits.")
+        for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
+
+            # Update the val. dataset we look at
+            self.config["val_dataset"] = {
+                "src": "/network/projects/_groups/ocp/oc20/is2re/all/"
+                + s
+                + "/data.lmdb"
+            }
+
+            # Load val dataset
+            if self.config.get("val_dataset", None):
+                self.val_dataset = registry.get_dataset_class(
+                    self.config["task"]["dataset"]
+                )(self.config["val_dataset"])
+                self.val_sampler = self.get_sampler(
+                    self.val_dataset,
+                    self.config["optim"].get(
+                        "eval_batch_size", self.config["optim"]["batch_size"]
+                    ),
+                    shuffle=False,
+                )
+                self.val_loader = self.get_dataloader(
+                    self.val_dataset,
+                    self.val_sampler,
+                )
+
+            # Call validate function
+            self.metrics = self.validate(split="eval", disable_tqdm=True, name_split=s)
+            metrics_dict[s] = self.metrics
+
+            # Log results
+            if self.config["logger"] == "wandb":
+                self.logger.log({"Val. time": time.time() - start_time})
+
+        if final:
+            # Print results
+            print("----- FINAL RESULTS -----")
+            print("Total time taken: ", time.time() - start_time)
+            print(self.metrics.keys())
+            for k, v in metrics_dict.items():
+                store = []
+                for _, val in v.items():
+                    store.append(round(val["metric"], 4))
+                print(k, store)
