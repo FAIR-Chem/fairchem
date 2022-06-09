@@ -14,9 +14,10 @@ model:
   feat: "full"
   hidden_channels: 512
   tag_hidden_channels: 64
+  pg_hidden_channels: 32
   decoder_hidden_channels: 512
   max_n: 3
-  fixed_embeds: False
+  fixed_embeds: True
   predict_forces: false
 
 # *** Important note ***

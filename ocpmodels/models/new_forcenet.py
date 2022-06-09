@@ -5,7 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import os, logging
+import logging
+import os
 from math import pi as PI
 
 import numpy as np
@@ -241,6 +242,7 @@ class NewForceNet(BaseModel):
         new_gnn=True,
         hidden_channels=512,
         tag_hidden_channels=64,
+        pg_hidden_channels=32,
         num_interactions=5,
         cutoff=6.0,
         feat="full",
@@ -297,9 +299,14 @@ class NewForceNet(BaseModel):
         self.max_n = max_n
         self.activation_str = activation_str
         self.use_tag = tag_hidden_channels > 0
+        self.use_pg = pg_hidden_channels > 0
         self.fixed_embeddings = fixed_embeds
         self.fixed_embeds_size = 0
         self.predict_forces = predict_forces
+
+        assert (
+            tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
+        )
 
         if self.ablation == "edgelinear":
             depth_mlp_edge = 0
@@ -337,20 +344,31 @@ class NewForceNet(BaseModel):
                 max_n=self.max_n, option=self.pbc_sph_option
             )
 
-        # self.feat can be "simple" or "full"
+        # Tag embedding
         if self.use_tag:
             self.tag_embedding = nn.Embedding(3, tag_hidden_channels)
 
         # Fixed embeddings
+        self.Femb = FixedEmbedding()
         if self.fixed_embeddings:
-            Femb = FixedEmbedding(short=False)
-            self.fixed_embeddings = Femb.fixed_embeddings
-            self.fixed_embeds_size = Femb.dim
+            self.Femb.create(fixed=self.fixed_embeddings, short=False)
+
+        # Period + group embeddings
+        if self.use_pg:
+            self.period_embedding = nn.Embedding(
+                self.Femb.period_size, pg_hidden_channels
+            )
+            self.group_embedding = nn.Embedding(
+                self.Femb.group_size, pg_hidden_channels
+            )
 
         if self.feat == "simple":
             self.embedding = nn.Embedding(
                 100,
-                hidden_channels - tag_hidden_channels - self.fixed_embeds_size,
+                hidden_channels
+                - tag_hidden_channels
+                - self.Femb.fixed_embeds_size
+                - 2 * pg_hidden_channels,
             )
             # self.embedding = nn.Embedding(100, hidden_channels)
 
@@ -389,10 +407,13 @@ class NewForceNet(BaseModel):
             self.embedding = torch.nn.Sequential(
                 basis,
                 torch.nn.Linear(
-                    basis.out_dim, hidden_channels - tag_hidden_channels
+                    basis.out_dim,
+                    hidden_channels
+                    - tag_hidden_channels
+                    - self.Femb.fixed_embeds_size
+                    - 2 * pg_hidden_channels,
                 ),
             )
-            self.tag_embedding = nn.Embedding(3, tag_hidden_channels)
 
         else:
             raise ValueError("Undefined feature type for atom")
@@ -444,7 +465,9 @@ class NewForceNet(BaseModel):
 
         if self.predict_forces:
             # ForceNet decoder
-            self.decoder = FNDecoder(decoder_type, decoder_activation_str, self.output_dim)
+            self.decoder = FNDecoder(
+                decoder_type, decoder_activation_str, self.output_dim
+            )
 
         # Projection layer for energy prediction
         self.energy_mlp = nn.Linear(self.output_dim, 1)
@@ -469,8 +492,14 @@ class NewForceNet(BaseModel):
             h = torch.cat((h, h_tag), dim=1)
 
         if self.fixed_embeds_size > 0:
-            h_fixed = self.fixed_embeddings[z]
+            h_fixed = self.Femb.fixed_embeddings[z]
             h = torch.cat((h, h_fixed), dim=1)
+
+        if self.use_pg:
+            assert self.Femb.period is not None
+            h_period = self.period_embedding(self.Femb.period[z])
+            h_group = self.group_embedding(self.Femb.group[z])
+            h = torch.cat((h, h_period, h_group), dim=1)
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(

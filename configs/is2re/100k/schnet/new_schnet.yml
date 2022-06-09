@@ -5,13 +5,14 @@ model:
   name: new_schnet
   hidden_channels: 384
   tag_hidden_channels: 64
+  pg_hidden_channels: 32
   num_filters: 128
   num_interactions: 4
   num_gaussians: 100
   cutoff: 6.0
   use_pbc: True
   regress_forces: False
-  fixed_embeds: False
+  fixed_embeds: True
 
 # *** Important note ***
 #   The total number of gpus used for this run was 1.

@@ -89,25 +89,37 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         num_radial,
         hidden_channels,
         tag_hidden_channels,
+        pg_hidden_channels,
         fixed_embeds,
         act=swish,
     ):
         super().__init__()
         self.act = act
         self.fixed_embeddings = fixed_embeds
-        self.fixed_embeds_size = 0
         self.use_tag = tag_hidden_channels > 0
+        self.use_pg = pg_hidden_channels > 0
 
-        if self.fixed_embeddings:
-            Femb = FixedEmbedding(short=False)
-            self.fixed_embeddings = Femb.fixed_embeddings
-            self.fixed_embeds_size = Femb.dim
+        # Fixed embeddings
+        self.Femb = FixedEmbedding()
+        self.Femb.create(fixed=self.fixed_embeddings)
+        # Period + group embeddings
+        if self.use_pg:
+            self.period_embedding = Embedding(
+                self.Femb.period_size, pg_hidden_channels
+            )
+            self.group_embedding = Embedding(
+                self.Femb.group_size, pg_hidden_channels
+            )
 
         if tag_hidden_channels:
             self.tag = Embedding(3, tag_hidden_channels)
 
         self.emb = Embedding(
-            85, hidden_channels - tag_hidden_channels - self.fixed_embeds_size
+            85,
+            hidden_channels
+            - tag_hidden_channels
+            - self.Femb.fixed_embeds_size
+            - 2 * pg_hidden_channels,
         )
 
         self.lin_rbf = Linear(num_radial, hidden_channels)
@@ -126,79 +138,40 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         self.emb.weight.data.uniform_(-sqrt(3), sqrt(3))
         if self.use_tag:
             self.tag.weight.data.uniform_(-sqrt(3), sqrt(3))
+        if self.use_pg:
+            self.period_embedding.weight.data.uniform_(-sqrt(3), sqrt(3))
+            self.group_embedding.weight.data.uniform_(-sqrt(3), sqrt(3))
         self.lin_rbf.reset_parameters()
         self.lin.reset_parameters()
 
     def forward(self, x, rbf, i, j, tag):
 
-        if self.use_tag:
-            x_tag = self.tag(tag)
-        if self.fixed_embeds_size > 0:
-            x_fixed = self.fixed_embeddings[x]
-
-        x = self.emb(x)
+        x_ = self.emb(x)
         rbf = self.act(self.lin_rbf(rbf))
 
-        if self.use_tag and self.fixed_embeds_size > 0:
-            return self.act(
-                self.lin(
-                    torch.cat(
-                        [
-                            x[i],
-                            x[j],
-                            rbf,
-                            x_tag[i],
-                            x_tag[j],
-                            x_fixed[i],
-                            x_fixed[j],
-                        ],
-                        dim=-1,
-                    )
+        if self.use_tag:
+            x_tag = self.tag(tag)
+            x_ = torch.cat((x_, x_tag), dim=1)
+        if self.Femb.fixed_embeds_size > 0:
+            x_fixed = self.Femb.fixed_embeddings[x]
+            x_ = torch.cat((x_, x_fixed), dim=1)
+        if self.use_pg:
+            x_period = self.period_embedding(self.Femb.period[x])
+            x_group = self.group_embedding(self.Femb.group[x])
+            x_ = torch.cat((x_, x_period, x_group), dim=1)
+
+        return self.act(
+            self.lin(
+                torch.cat(
+                    [
+                        x_[i],
+                        x_[j],
+                        rbf,
+                    ],
+                    dim=-1,
                 )
             )
-        elif self.use_tag and not self.fixed_embeds_size > 0:
-            return self.act(
-                self.lin(
-                    torch.cat(
-                        [
-                            x[i],
-                            x[j],
-                            rbf,
-                            x_tag[i],
-                            x_tag[j],
-                        ],
-                        dim=-1,
-                    )
-                )
-            )
-        elif not self.use_tag and self.fixed_embeds_size > 0:
-            return self.act(
-                self.lin(
-                    torch.cat(
-                        [
-                            x[i],
-                            x[j],
-                            rbf,
-                            x_fixed[i],
-                            x_fixed[j],
-                        ],
-                        dim=-1,
-                    )
-                )
-            )
-        else:
-            return self.act(
-                self.lin(
-                    torch.cat(
-                        [
-                            x[i],
-                            x[j],
-                            rbf,
-                        ],
-                        dim=-1,
-                    )
-                )
-            )
+        )
 
 
 class InteractionPPBlock(torch.nn.Module):
@@ -373,6 +346,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
         self,
         hidden_channels,
         tag_hidden_channels,
+        pg_hidden_channels,
         fixed_embeds,
         out_channels,
         num_blocks,
@@ -392,23 +366,27 @@ class NewDimeNetPlusPlus(torch.nn.Module):
 
         self.cutoff = cutoff
 
-        assert tag_hidden_channels < hidden_channels
+        assert (
+            tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
+        )
         if sym is None:
             raise ImportError("Package `sympy` could not be found.")
 
         self.num_blocks = num_blocks
-        self.use_tag = tag_hidden_channels > 0 and self.new_gnn
+        self.use_tag = tag_hidden_channels > 0  # and self.new_gnn
+        self.use_pg = pg_hidden_channels > 0
 
         self.rbf = BesselBasisLayer(num_radial, cutoff, envelope_exponent)
         self.sbf = SphericalBasisLayer(
             num_spherical, num_radial, cutoff, envelope_exponent
         )
 
-        if self.use_tag or fixed_embeds:
+        if self.use_tag or fixed_embeds or self.use_pg:
             self.emb = AdvancedEmbeddingBlock(
                 num_radial,
                 hidden_channels,
                 tag_hidden_channels,
+                pg_hidden_channels,
                 fixed_embeds,
                 act,
             )
@@ -501,6 +479,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         regress_forces=True,
         hidden_channels=128,
         tag_hidden_channels=32,
+        pg_hidden_channels=32,
         num_blocks=4,
         int_emb_size=64,
         basis_emb_size=8,
@@ -525,6 +504,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         super(NewDimeNetPlusPlusWrap, self).__init__(
             hidden_channels=hidden_channels,
             tag_hidden_channels=tag_hidden_channels,
+            pg_hidden_channels=pg_hidden_channels,
             fixed_embeds=fixed_embeds,
             out_channels=num_targets,
             num_blocks=num_blocks,

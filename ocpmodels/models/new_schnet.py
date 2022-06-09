@@ -120,7 +120,9 @@ class NewSchNet(torch.nn.Module):
         hidden_channels (int, optional): Hidden embedding size.
             (default: :obj:`128`)
         tag_hidden_channels (int, optional): Hidden tag embedding size.
-            (default: :obj:`128`)
+            (default: :obj:`32`)
+        pg_hidden_channels (int, optional): Hidden period and group embed size.
+            (default: obj:`32`)
         num_filters (int, optional): The number of filters to use.
             (default: :obj:`128`)
         num_interactions (int, optional): The number of interaction blocks.
@@ -152,7 +154,8 @@ class NewSchNet(torch.nn.Module):
     def __init__(
         self,
         hidden_channels: int = 128,
-        tag_hidden_channels: int = 128,
+        tag_hidden_channels: int = 32,
+        pg_hidden_channels: int = 32,
         fixed_embeds: bool = False,
         num_filters: int = 128,
         num_interactions: int = 6,
@@ -166,10 +169,13 @@ class NewSchNet(torch.nn.Module):
 
         import ase
 
-        assert tag_hidden_channels < hidden_channels
+        assert (
+            tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
+        )
 
         self.hidden_channels = hidden_channels
         self.tag_hidden_channels = tag_hidden_channels
+        self.pg_hidden_channels = pg_hidden_channels
         self.num_filters = num_filters
         self.num_interactions = num_interactions
         self.num_gaussians = num_gaussians
@@ -178,13 +184,12 @@ class NewSchNet(torch.nn.Module):
         self.readout = readout
         self.scale = None
         self.use_tag = tag_hidden_channels > 0
+        self.use_pg = pg_hidden_channels > 0
         self.fixed_embeddings = fixed_embeds
-        self.pg_hidden_channels = 32  # TODO: pass as argument
-        self.pg = self.pg_hidden_channels > 0
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
-        self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
-        # vdw_radii = torch.from_numpy(ase.data.vdw_radii)
+        # self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
+        # self.vdw_radii = torch.from_numpy(ase.data.vdw_radii)
         # Fixed feature vector, using atomic properties
         self.register_buffer("atomic_mass", atomic_mass)
 
@@ -193,8 +198,9 @@ class NewSchNet(torch.nn.Module):
 
         # Fixed embeddings
         self.Femb = FixedEmbedding()
-        if self.fixed_embeddings or self.pg:
-            self.Femb.create(fixed=self.fixed_embeddings)
+        self.Femb.create(fixed=self.fixed_embeddings)
+        # Period + group embeddings
+        if self.use_pg:
             self.period_embedding = Embedding(
                 self.Femb.period_size, self.pg_hidden_channels
             )
@@ -236,7 +242,7 @@ class NewSchNet(torch.nn.Module):
         self.embedding.reset_parameters()
         if self.use_tag:
             self.tag_embedding.reset_parameters()
-        if self.pg:
+        if self.use_pg:
             self.period_embedding.reset_parameters()
             self.group_embedding.reset_parameters()
         for interaction in self.interactions:
@@ -258,8 +264,8 @@ class NewSchNet(torch.nn.Module):
             f"hidden_channels={self.hidden_channels}, "
             f"tag_hidden_channels={self.tag_hidden_channels}, "
             f"fixed_embeddings={self.fixed_embeds_size}, "
-            f"period_embeddings={self.pg_hidden_channels}, "
-            f"group_embeddings={self.pg_hidden_channels}, "
+            f"period_hidden_channels={self.pg_hidden_channels}, "
+            f"group_hidden_channels={self.pg_hidden_channels}, "
             f"num_filters={self.num_filters}, "
             f"num_interactions={self.num_interactions}, "
             f"num_gaussians={self.num_gaussians}, "
@@ -280,6 +286,7 @@ class NewSchNetWrap(NewSchNet):
         otf_graph=False,
         hidden_channels=128,
         tag_hidden_channels=32,
+        pg_hidden_channels=32,
         fixed_embeds=False,
         num_filters=128,
         num_interactions=6,
@@ -296,6 +303,7 @@ class NewSchNetWrap(NewSchNet):
         super(NewSchNetWrap, self).__init__(
             hidden_channels=hidden_channels,
             tag_hidden_channels=tag_hidden_channels,
+            pg_hidden_channels=pg_hidden_channels,
             fixed_embeds=fixed_embeds,
             num_filters=num_filters,
             num_interactions=num_interactions,
@@ -340,20 +348,20 @@ class NewSchNetWrap(NewSchNet):
 
         h = self.embedding(z)
 
-        if self.Femb.fixed_embeds_size > 0:
-            h_fixed = self.fixed_embeddings[z]
-            h = torch.cat((h, h_fixed), dim=1)
-
-        if self.pg:
-            # assert self.Femb.period is not None
-            h_period = self.period_embedding(self.Femb.period[z])
-            h_group = self.group_embedding(self.Femb.group[z])
-            h = torch.cat((h, h_period, h_group), dim=1)
-
         if self.use_tag:
             assert data.tags is not None
             h_tag = self.tag_embedding(data.tags)
             h = torch.cat((h, h_tag), dim=1)
+
+        if self.Femb.fixed_embeds_size > 0:
+            h_fixed = self.Femb.fixed_embeddings[z]
+            h = torch.cat((h, h_fixed), dim=1)
+
+        if self.use_pg:
+            # assert self.Femb.period is not None
+            h_period = self.period_embedding(self.Femb.period[z])
+            h_group = self.group_embedding(self.Femb.group[z])
+            h = torch.cat((h, h_period, h_group), dim=1)
 
         edge_index = radius_graph(
             pos,
