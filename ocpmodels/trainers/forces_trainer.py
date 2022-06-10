@@ -601,8 +601,14 @@ class ForcesTrainer(BaseTrainer):
         evaluator_is2rs, metrics_is2rs = Evaluator(task="is2rs"), {}
         evaluator_is2re, metrics_is2re = Evaluator(task="is2re"), {}
 
-        if hasattr(self.relax_dataset[0], "pos_relaxed") and hasattr(
-            self.relax_dataset[0], "y_relaxed"
+        # Need both `pos_relaxed` and `y_relaxed` to compute val IS2R* metrics.
+        # Else just generate predictions.
+        if (
+            hasattr(self.relax_dataset[0], "pos_relaxed")
+            and self.relax_dataset[0].pos_relaxed is not None
+        ) and (
+            hasattr(self.relax_dataset[0], "y_relaxed")
+            and self.relax_dataset[0].y_relaxed is not None
         ):
             split = "val"
         else:
