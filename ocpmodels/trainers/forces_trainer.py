@@ -604,8 +604,11 @@ class ForcesTrainer(BaseTrainer):
         # Need both `pos_relaxed` and `y_relaxed` to compute val IS2R* metrics.
         # Else just generate predictions.
         if (
-            self.relax_dataset[0].get("pos_relaxed", None) is not None
-            and self.relax_dataset[0].get("y_relaxed", None) is not None
+            hasattr(self.relax_dataset[0], "pos_relaxed")
+            and self.relax_dataset[0].pos_relaxed is not None
+        ) and (
+            hasattr(self.relax_dataset[0], "y_relaxed")
+            and self.relax_dataset[0].y_relaxed is not None
         ):
             split = "val"
         else:
