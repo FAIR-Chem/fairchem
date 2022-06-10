@@ -109,7 +109,7 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
                 self.Femb.fixed_embeds_size, fixed_hidden_channels
             )
         else:
-            self.fixed_hidden_channels = self.Femb.fixed_embeds_size
+            fixed_hidden_channels = self.Femb.fixed_embeds_size
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = Embedding(
