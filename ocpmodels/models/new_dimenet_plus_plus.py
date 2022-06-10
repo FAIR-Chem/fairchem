@@ -106,7 +106,7 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         # With MLP
         if self.use_mlp_fixed:
             self.fixed_lin = Linear(
-                self.Femb.fixed_embeds_size, self.fixed_hidden_channels
+                self.Femb.fixed_embeds_size, fixed_hidden_channels
             )
         else:
             self.fixed_hidden_channels = self.Femb.fixed_embeds_size
@@ -126,7 +126,7 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
             85,
             hidden_channels
             - tag_hidden_channels
-            - self.fixed_hidden_channels
+            - fixed_hidden_channels
             - 2 * pg_hidden_channels,
         )
 
@@ -145,7 +145,7 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
     def reset_parameters(self):
         self.emb.weight.data.uniform_(-sqrt(3), sqrt(3))
         if self.use_mlp_fixed:
-            torch.nn.init.reset_parameters()
+            self.fixed_lin.reset_parameters()
         if self.use_tag:
             self.tag.weight.data.uniform_(-sqrt(3), sqrt(3))
         if self.use_pg:
@@ -400,6 +400,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
                 hidden_channels,
                 tag_hidden_channels,
                 pg_hidden_channels,
+                fixed_hidden_channels,
                 fixed_embeds,
                 act,
             )
