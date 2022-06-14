@@ -749,8 +749,8 @@ class BaseTrainer(ABC):
             )
             self.load_checkpoint(checkpoint_path=checkpoint_path)
             logging.info(
-                "Checking models are identical:",
-                list(self.model.parameters())[0].data.view(-1)[:20],
+                "Checking models are identical:"
+                + str(list(self.model.parameters())[0].data.view(-1)[:20]),
             )
 
         # Compute performance metrics on all four validation splits
