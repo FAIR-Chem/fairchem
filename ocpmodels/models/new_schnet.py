@@ -20,6 +20,7 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.preprocessing import remove_tag0_nodes
 
 
 class InteractionBlock(torch.nn.Module):
@@ -329,10 +330,12 @@ class NewSchNetWrap(NewSchNet):
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
         """"""
-        z = data.atomic_numbers.long()
-        # Convert z to index mapping
-        pos = data.pos
-        batch = data.batch
+        graph_rewiring = True
+
+        if not graph_rewiring: 
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
@@ -341,6 +344,12 @@ class NewSchNetWrap(NewSchNet):
             data.edge_index = edge_index
             data.cell_offsets = cell_offsets
             data.neighbors = neighbors
+        
+        if graph_rewiring:
+            data = remove_tag0_nodes(data)
+            z = data.atomic_numbers
+            pos = data.pos
+            batch = data.batch 
 
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
