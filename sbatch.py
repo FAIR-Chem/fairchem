@@ -16,7 +16,6 @@ template = """\
 #SBATCH --mem={mem}
 #SBATCH --gres={gres}
 #SBATCH --output={output}
-#SBATCH --error={error}
 {time}
 
 # {sbatch_command_line}
@@ -29,7 +28,7 @@ echo "Master port $MASTER_PORT"
 module load anaconda/3
 conda activate {env}
 
-srun python main.py {py_args}
+srun --output={output} python main.py {py_args}
 """
 
 
@@ -43,7 +42,7 @@ def discover_minydra_defaults():
     Returns:
         list[pathlib.Path]: Path to the shared defaults and optionnally
             to a user-specific one if it exists
-    """    
+    """
     root = Path(__file__).resolve().parent
     defaults = [root / "configs" / "sbatch" / "defaults.yaml"]
     user_config = root / "configs" / "sbatch" / f"{os.environ['USER']}.yaml"
