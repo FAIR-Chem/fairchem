@@ -1,26 +1,35 @@
-# defaults arguments for ~/sbatch.py
-# overwerite with python sbatch.py arg=value
-# py_args should be a string, it will be passed down to main.py as:
+# Default arguments for /sbatch.py
+#
+# Overwerite them from the command-line with `$ python sbatch.py arg=value`
+#
+# `py_args` should be a string, it will be passed down to main.py as:
 #   $ python main.py py_args
 #
-# for instance:
-#   $ python sbatch.py cpus=6 env=ocp-env partition=main time="24:00:00" py_args="--mode train"
+# Example:
+#   $ python sbatch.py cpus=6 env=ocp-env partition=main time="24:00:00" py_args="--mode train" git_checkout=some-branch
+#
+# You can use a sibling $USER.yaml file to systematically overwrite the args in this `defaults.yaml`.
+# For instance if you have a different env name, instead of always passing `env=my-name` to the command-line
+# just create a $USER.yaml file (replace `$USER` with your cluster user name) containing:
+#
+# env: my-name
+#
+#
+ntasks_per_node: null # if null, will be set to num GPUs as per `gres`
+nodes: 1 # number of execution nodes. Has to be 1 on Mila's cluster
+gres: "gpu:rtx8000:4" # slurm generic resources request. If requeting >1 resource, they will be transformed into slurm tasks (see `ntasks_per_node`)
+cpus: 4 # slurm PER-TASK memory
+mem: "32GB" # slurm TOTAL memory
+partition: "long" # slurm partition
+time: "" # slurm job exec time as HH:MM:SS
+job_name: "ocp-script" # slurm job name
 
-ntasks_per_node: null # if null, will be set to num GPUs
-nodes: 1
-gres: "gpu:rtx8000:4"
-cpus: 4
-mem: "32GB"
-partition: "long"
-time: ""
+output: "$SCRATCH/ocp/runs/%j/output-%t.txt" # slurm output file per task (%t)
+logdir: "$SCRATCH/ocp/runs/$SLURM_JOB_ID" # --logdir value for main.py, appended to py_args if not already present
 
-job_name: "ocp-script"
-output: "$SCRATCH/ocp/runs/%j/output-%t.txt"
-logdir: "$SCRATCH/ocp/runs/$SLURM_JOB_ID"
-
-env: "ocp"[]
-py_args: ""
-note: ""
-git_checkout: null
+env: "ocp" # env name for `conda activate {env}`
+py_args: "" # arguments for main.py
+note: "" # wandb run note
+git_checkout: null # if null, no checkout. Use as `git_checkout=some-branch` or `git_checkout=somecommithash`
 
 dev: false
