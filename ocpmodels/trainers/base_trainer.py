@@ -384,8 +384,8 @@ class BaseTrainer(ABC):
                 errno.ENOENT, "Checkpoint file not found", checkpoint_path
             )
 
-        logging.info(f"Loading checkpoint from: {checkpoint_path}")
         map_location = torch.device("cpu") if self.cpu else self.device
+        logging.info(f"Loading checkpoint from: {checkpoint_path} onto {map_location}")
         checkpoint = torch.load(checkpoint_path, map_location=map_location)
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
@@ -535,6 +535,7 @@ class BaseTrainer(ABC):
                 )
                 if self.ema:
                     self.ema.restore()
+        distutils.synchronize()
 
     def save_hpo(self, epoch, step, metrics, checkpoint_every):
         # default is no checkpointing
@@ -747,6 +748,10 @@ class BaseTrainer(ABC):
                 self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
             )
             self.load_checkpoint(checkpoint_path=checkpoint_path)
+            logging.info(
+                "Checking models are identical:",
+                list(self.model.parameters())[0].data.view(-1)[:20],
+            )
 
         # Compute performance metrics on all four validation splits
         start_time = time.time()
@@ -783,7 +788,7 @@ class BaseTrainer(ABC):
             metrics_dict[s] = self.metrics
 
             # Log results
-            if self.config["logger"] == "wandb":
+            if self.config["logger"] == "wandb" and distutils.is_master():
                 self.logger.log({"Val. time": time.time() - start_time})
 
         if final:
