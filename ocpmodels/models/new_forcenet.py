@@ -301,7 +301,6 @@ class NewForceNet(BaseModel):
         self.use_tag = tag_hidden_channels > 0
         self.use_pg = pg_hidden_channels > 0
         self.phys_embeddings = phys_embeds
-        self.phys_embeds_size = 0
         self.predict_forces = predict_forces
 
         assert (
@@ -491,7 +490,7 @@ class NewForceNet(BaseModel):
             h_tag = self.tag_embedding(data.tags)
             h = torch.cat((h, h_tag), dim=1)
 
-        if self.phys_embeds_size > 0:
+        if self.Femb.phys_embeds_size > 0:
             h_phys = self.Femb.phys_embeddings[z]
             h = torch.cat((h, h_phys), dim=1)
 
