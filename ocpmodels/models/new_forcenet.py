@@ -351,7 +351,7 @@ class NewForceNet(BaseModel):
         # Phys embeddings
         self.Femb = PhysEmbedding()
         if self.phys_embeddings:
-            self.Femb.create(phys=self.phys_embeddings, short=False)
+            self.Femb.create(phys=self.phys_embeddings)
 
         # Period + group embeddings
         if self.use_pg:
