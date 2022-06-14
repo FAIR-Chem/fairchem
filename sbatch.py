@@ -18,6 +18,8 @@ template = """\
 #SBATCH --output={output}
 {time}
 
+{git_checkout}
+
 # {sbatch_command_line}
 # git commit: {git_commit}
 # cwd: {cwd}
@@ -128,23 +130,26 @@ if __name__ == "__main__":
         note = args.note.replace('"', '\\"')
         args.py_args += f' --note "{note}"'
 
+    git_checkout = f"git checkout {args.git_checkout}" if args.git_checkout else ""
+
     # format string template with defaults + command-line args
     script = template.format(
         cpus=args.cpus,
+        cwd=str(Path.cwd()),
         env=args.env,
+        git_commit=get_commit(),
+        git_checkout=git_checkout,
         gres=args.gres,
         job_name=args.job_name,
         mem=args.mem,
+        nodes=args.nodes or 1,
+        ntasks_per_node=args.ntasks_per_node,
         ntasks=args.ntasks,
         output=str(resolve(args.output)),
         partition=args.partition,
         py_args=args.py_args,
-        time="" if not args.time else f"#SBATCH --time={args.time}",
         sbatch_command_line=" ".join(["python"] + sys.argv),
-        git_commit=get_commit(),
-        cwd=str(Path.cwd()),
-        ntasks_per_node=args.ntasks_per_node,
-        nodes=args.nodes or 1,
+        time="" if not args.time else f"#SBATCH --time={args.time}",
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`

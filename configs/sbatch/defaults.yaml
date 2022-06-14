@@ -18,8 +18,9 @@ job_name: "ocp-script"
 output: "$SCRATCH/ocp/runs/%j/output-%t.txt"
 logdir: "$SCRATCH/ocp/runs/$SLURM_JOB_ID"
 
-env: "ocp"
+env: "ocp"[]
 py_args: ""
 note: ""
+git_checkout: null
 
 dev: false
