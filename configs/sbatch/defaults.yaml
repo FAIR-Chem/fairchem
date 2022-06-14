@@ -15,8 +15,7 @@ partition: "long"
 time: ""
 
 job_name: "ocp-script"
-output: "$SCRATCH/ocp/runs/%j/output.txt"
-error: "$SCRATCH/ocp/runs/%j/error.txt"
+output: "$SCRATCH/ocp/runs/%j/output-%t.txt"
 logdir: "$SCRATCH/ocp/runs/$SLURM_JOB_ID"
 
 env: "ocp"
