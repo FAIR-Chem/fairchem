@@ -16,8 +16,9 @@ template = """\
 #SBATCH --mem={mem}
 #SBATCH --gres={gres}
 #SBATCH --output={output}
-#SBATCH --error={error}
 {time}
+
+{git_checkout}
 
 # {sbatch_command_line}
 # git commit: {git_commit}
@@ -29,7 +30,7 @@ echo "Master port $MASTER_PORT"
 module load anaconda/3
 conda activate {env}
 
-srun python main.py {py_args}
+srun --output={output} python main.py {py_args}
 """
 
 
@@ -129,24 +130,26 @@ if __name__ == "__main__":
         note = args.note.replace('"', '\\"')
         args.py_args += f' --note "{note}"'
 
+    git_checkout = f"git checkout {args.git_checkout}" if args.git_checkout else ""
+
     # format string template with defaults + command-line args
     script = template.format(
         cpus=args.cpus,
+        cwd=str(Path.cwd()),
         env=args.env,
-        error=str(resolve(args.error)),
+        git_commit=get_commit(),
+        git_checkout=git_checkout,
         gres=args.gres,
         job_name=args.job_name,
         mem=args.mem,
+        nodes=args.nodes or 1,
+        ntasks_per_node=args.ntasks_per_node,
         ntasks=args.ntasks,
         output=str(resolve(args.output)),
         partition=args.partition,
         py_args=args.py_args,
-        time="" if not args.time else f"#SBATCH --time={args.time}",
         sbatch_command_line=" ".join(["python"] + sys.argv),
-        git_commit=get_commit(),
-        cwd=str(Path.cwd()),
-        ntasks_per_node=args.ntasks_per_node,
-        nodes=args.nodes or 1,
+        time="" if not args.time else f"#SBATCH --time={args.time}",
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
@@ -186,7 +189,7 @@ if __name__ == "__main__":
         jobid = out.split(" job ")[-1].strip()
         success = out.startswith("Submitted batch job")
 
-        # make slurm output and error directories based on job id
+        # make slurm output directory based on job id
         if "/%j/" in args.output and success:
             args.output = args.output.replace("/%j/", f"/{jobid.strip()}/")
             output_parent = resolve(args.output).parent
@@ -194,13 +197,6 @@ if __name__ == "__main__":
                 print("Creating directory", str(output_parent))
                 output_parent.mkdir(parents=True, exist_ok=True)
             copyfile(script_path, output_parent / script_path.name)
-
-        if "/%j/" in args.error and success:
-            args.error = args.error.replace("/%j/", f"/{jobid.strip()}/")
-            error_parent = resolve(args.error).parent
-            if not error_parent.exists():
-                print("Creating directory", str(error_parent))
-                error_parent.mkdir(parents=True, exist_ok=True)
 
     if args.dev:
         pass
