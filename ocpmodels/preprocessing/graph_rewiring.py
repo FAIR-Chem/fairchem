@@ -1,4 +1,4 @@
-""" Rewire each 3D molecular graph 
+""" Rewire each 3D molecular graph
 """
 
 import torch
@@ -49,6 +49,8 @@ def remove_tag0_nodes(data):
         dtype=data.natoms.dtype,
         device=data.natoms.device,
     )
-    _, data.neighbors = torch.unique(data.batch[data.edge_index], return_counts=True)
+    _, data.neighbors = torch.unique(
+        data.batch[data.edge_index[0, :]], return_counts=True
+    )
 
     return data

@@ -332,7 +332,7 @@ class NewSchNetWrap(NewSchNet):
         """"""
         graph_rewiring = True
 
-        if not graph_rewiring: 
+        if not graph_rewiring:
             z = data.atomic_numbers.long()
             pos = data.pos
             batch = data.batch
@@ -344,12 +344,12 @@ class NewSchNetWrap(NewSchNet):
             data.edge_index = edge_index
             data.cell_offsets = cell_offsets
             data.neighbors = neighbors
-        
+
         if graph_rewiring:
             data = remove_tag0_nodes(data)
-            z = data.atomic_numbers
+            z = data.atomic_numbers.long()
             pos = data.pos
-            batch = data.batch 
+            batch = data.batch
 
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
