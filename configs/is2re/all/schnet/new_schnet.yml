@@ -4,13 +4,17 @@ includes:
 model:
   name: new_schnet
   hidden_channels: 384
-  tag_hidden_channels: 64
   num_filters: 128
   num_interactions: 4
   num_gaussians: 100
   cutoff: 6.0
   use_pbc: True
   regress_forces: False
+  # drlab attributes:
+  tag_hidden_channels: 0 # 64
+  pg_hidden_channels: 0 # 32
+  phys_embeds: False # True
+  phys_hidden_channels: 0
 
 # *** Important note ***
 #   The total number of gpus used for this run was 4.

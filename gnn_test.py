@@ -18,7 +18,8 @@ if __name__ == "__main__":
 
     if not args.mode or not args.config_yml:
         args.mode = "train"
-        args.config_yml = "configs/is2re/10k/schnet/schnet.yml"
+        # args.config_yml = "configs/is2re/10k/dimenet_plus_plus/new_dpp.yml"
+        args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/best_checkpoint.pt"
         warnings.warn("No model / mode is given; chosen as default")
 
@@ -27,7 +28,7 @@ if __name__ == "__main__":
     setup_imports()
     trainer = EnergyTrainer(
         task=config["task"],
-        model=config["model"],
+        model_attributes=config["model"],
         dataset=config["dataset"],
         optimizer=config["optim"],
         identifier=config["identifier"],
