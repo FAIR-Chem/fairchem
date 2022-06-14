@@ -6,17 +6,13 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
-import os
-from collections import defaultdict
 
-import numpy as np
 import torch
 import torch_geometric
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
-from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
@@ -28,13 +24,14 @@ class EnergyTrainer(BaseTrainer):
     .. note::
 
         Examples of configurations for task, model, dataset and optimizer
-        can be found in `configs/ocp_is2re <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_.
+        can be found in `configs/ocp_is2re <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_. # noqa: E501
 
 
     Args:
         task (dict): Task configuration.
         model (dict): Model configuration.
-        dataset (dict): Dataset configuration. The dataset needs to be a SinglePointLMDB dataset.
+        dataset (dict): Dataset configuration. The dataset needs to be a
+            SinglePointLMDB dataset.
         optimizer (dict): Optimizer configuration.
         identifier (str): Experiment identifier that is appended to log directory.
         run_dir (str, optional): Path to the run directory where logs are to be saved.
@@ -49,8 +46,8 @@ class EnergyTrainer(BaseTrainer):
             (default: :obj:`None`)
         logger (str, optional): Type of logger to be used.
             (default: :obj:`tensorboard`)
-        local_rank (int, optional): Local rank of the process, only applicable for distributed training.
-            (default: :obj:`0`)
+        local_rank (int, optional): Local rank of the process, only applicable
+            for distributed training. (default: :obj:`0`)
         amp (bool, optional): Run using automatic mixed precision.
             (default: :obj:`False`)
         slurm (dict): Slurm configuration. Currently just for keeping track.
