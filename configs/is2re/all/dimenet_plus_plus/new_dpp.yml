@@ -4,9 +4,6 @@ includes:
 model:
   name: new_dimenetplusplus
   hidden_channels: 256
-  tag_hidden_channels: 64
-  pg_hidden_channels: 32
-  fixed_hidden_channels: 0
   out_emb_channels: 192
   num_blocks: 3
   cutoff: 6.0
@@ -17,7 +14,11 @@ model:
   num_output_layers: 3
   regress_forces: False
   use_pbc: True
-  fixed_embeds: True
+  # drlab attributes:
+  tag_hidden_channels: 0 # 64
+  pg_hidden_channels: 0 # 32
+  fixed_embeds: False # True
+  fixed_hidden_channels: 0
 
 # *** Important note ***
 #   The total number of gpus used for this run was 4.
