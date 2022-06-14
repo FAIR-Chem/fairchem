@@ -18,7 +18,7 @@ model:
   # drlab attributes:
   tag_hidden_channels: 0 # 64
   pg_hidden_channels: 0 # 32
-  fixed_embeds: False # True
+  phys_embeds: False # True
 
 # *** Important note ***
 #   The total number of gpus used for this run was 8.

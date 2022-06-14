@@ -19,7 +19,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
-from ocpmodels.modules.fixed_embeddings import FixedEmbedding
+from ocpmodels.modules.phys_embeddings import PhysEmbedding
 
 
 class InteractionBlock(torch.nn.Module):
@@ -156,8 +156,8 @@ class NewSchNet(torch.nn.Module):
         hidden_channels: int = 128,
         tag_hidden_channels: int = 32,
         pg_hidden_channels: int = 32,
-        fixed_embeds: bool = False,
-        fixed_hidden_channels: int = 32,
+        phys_embeds: bool = False,
+        phys_hidden_channels: int = 32,
         num_filters: int = 128,
         num_interactions: int = 6,
         num_gaussians: int = 50,
@@ -173,7 +173,7 @@ class NewSchNet(torch.nn.Module):
         self.hidden_channels = hidden_channels
         self.tag_hidden_channels = tag_hidden_channels
         self.pg_hidden_channels = pg_hidden_channels
-        self.fixed_hidden_channels = fixed_hidden_channels
+        self.phys_hidden_channels = phys_hidden_channels
         self.num_filters = num_filters
         self.num_interactions = num_interactions
         self.num_gaussians = num_gaussians
@@ -183,28 +183,27 @@ class NewSchNet(torch.nn.Module):
         self.scale = None
         self.use_tag = tag_hidden_channels > 0
         self.use_pg = pg_hidden_channels > 0
-        self.use_mlp_fixed = fixed_hidden_channels > 0 and fixed_embeds
-        self.use_fixed_embeddings = fixed_embeds
+        self.use_mlp_phys = phys_hidden_channels > 0 and phys_embeds
+        self.use_phys_embeddings = phys_embeds
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         # self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
         # self.vdw_radii = torch.from_numpy(ase.data.vdw_radii)
-        # Fixed feature vector, using atomic properties
         self.register_buffer("atomic_mass", atomic_mass)
 
         if self.use_tag:
             self.tag_embedding = Embedding(3, tag_hidden_channels)
 
-        # Fixed embeddings
-        self.Femb = FixedEmbedding()
-        self.Femb.create(fixed=fixed_embeds)
-        if fixed_embeds:
-            if self.use_mlp_fixed:
-                self.fixed_lin = Linear(
-                    self.Femb.fixed_embeds_size, self.fixed_hidden_channels
+        # Phys embeddings
+        self.Femb = PhysEmbedding()
+        self.Femb.create(phys=phys_embeds)
+        if phys_embeds:
+            if self.use_mlp_phys:
+                self.phys_lin = Linear(
+                    self.Femb.phys_embeds_size, self.phys_hidden_channels
                 )
             else:
-                self.fixed_hidden_channels = self.Femb.fixed_embeds_size
+                self.phys_hidden_channels = self.Femb.phys_embeds_size
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = Embedding(
@@ -215,9 +214,7 @@ class NewSchNet(torch.nn.Module):
             )
 
         assert (
-            tag_hidden_channels
-            + 2 * pg_hidden_channels
-            + fixed_hidden_channels
+            tag_hidden_channels + 2 * pg_hidden_channels + phys_hidden_channels
             < hidden_channels
         )
 
@@ -225,7 +222,7 @@ class NewSchNet(torch.nn.Module):
             85,
             hidden_channels
             - tag_hidden_channels
-            - self.fixed_hidden_channels
+            - self.phys_hidden_channels
             - 2 * self.pg_hidden_channels,
         )
         # self.embedding = Embedding(100, hidden_channels)
@@ -253,8 +250,8 @@ class NewSchNet(torch.nn.Module):
 
     def reset_parameters(self):
         self.embedding.reset_parameters()
-        if self.use_mlp_fixed:
-            torch.nn.init.xavier_uniform_(self.fixed_lin.weight)
+        if self.use_mlp_phys:
+            torch.nn.init.xavier_uniform_(self.phys_lin.weight)
         if self.use_tag:
             self.tag_embedding.reset_parameters()
         if self.use_pg:
@@ -278,7 +275,7 @@ class NewSchNet(torch.nn.Module):
             f"{self.__class__.__name__}("
             f"hidden_channels={self.hidden_channels}, "
             f"tag_hidden_channels={self.tag_hidden_channels}, "
-            f"fixed_embeddings={self.fixed_hidden_channels}, "
+            f"phys_embeddings={self.phys_hidden_channels}, "
             f"period_hidden_channels={self.pg_hidden_channels}, "
             f"group_hidden_channels={self.pg_hidden_channels}, "
             f"num_filters={self.num_filters}, "
@@ -302,8 +299,8 @@ class NewSchNetWrap(NewSchNet):
         hidden_channels=128,
         tag_hidden_channels=32,
         pg_hidden_channels=32,
-        fixed_hidden_channels=32,
-        fixed_embeds=False,
+        phys_hidden_channels=32,
+        phys_embeds=False,
         num_filters=128,
         num_interactions=6,
         num_gaussians=50,
@@ -320,8 +317,8 @@ class NewSchNetWrap(NewSchNet):
             hidden_channels=hidden_channels,
             tag_hidden_channels=tag_hidden_channels,
             pg_hidden_channels=pg_hidden_channels,
-            fixed_hidden_channels=fixed_hidden_channels,
-            fixed_embeds=fixed_embeds,
+            phys_hidden_channels=phys_hidden_channels,
+            phys_embeds=phys_embeds,
             num_filters=num_filters,
             num_interactions=num_interactions,
             num_gaussians=num_gaussians,
@@ -370,11 +367,11 @@ class NewSchNetWrap(NewSchNet):
             h_tag = self.tag_embedding(data.tags)
             h = torch.cat((h, h_tag), dim=1)
 
-        if self.use_fixed_embeddings:
-            h_fixed = self.Femb.fixed_embeddings[z]
-            if self.use_mlp_fixed:
-                h_fixed = self.fixed_lin(h_fixed)
-            h = torch.cat((h, h_fixed), dim=1)
+        if self.use_phys_embeddings:
+            h_phys = self.Femb.phys_embeddings[z]
+            if self.use_mlp_phys:
+                h_phys = self.phys_lin(h_phys)
+            h = torch.cat((h, h_phys), dim=1)
 
         if self.use_pg:
             # assert self.Femb.period is not None

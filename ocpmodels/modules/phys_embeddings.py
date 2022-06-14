@@ -3,8 +3,8 @@ import torch
 from mendeleev.fetch import fetch_table
 
 
-class FixedEmbedding:
-    def __init__(self, fixed=True, short=False) -> None:
+class PhysEmbedding:
+    def __init__(self, phys=True, short=False) -> None:
 
         self.properties_list = [
             "atomic_radius",
@@ -30,16 +30,16 @@ class FixedEmbedding:
             "covalent_radius_pyykko",
         ]
         self.short = short
-        self.fixed_embeddings = None
-        self.fixed_embeds_size = 0
+        self.phys_embeddings = None
+        self.phys_embeds_size = 0
         self.group = None
         self.group_size = 0
         self.period = None
         self.period_size = 0
 
-    def create(self, fixed=True):
-        """Create a fixed embedding vector for each atom
-        containing key properties
+    def create(self, phys=True):
+        """Create an embedding vector for each atom
+        containing key physics properties
 
         Args:
             short (bool, optional): whether to exclude 'NaN' values columns
@@ -69,7 +69,7 @@ class FixedEmbedding:
             ]
         ).to(device)
 
-        if fixed:
+        if phys:
             # Select only potentially relevant elements
             df = df[self.properties_list]
             df = df.loc[:85, :]
@@ -92,11 +92,11 @@ class FixedEmbedding:
                     value=df[col_missing_val].mean()
                 )
 
-            self.fixed_embeds_size = len(df.columns)
+            self.phys_embeds_size = len(df.columns)
 
-            self.fixed_embeddings = torch.cat(
+            self.phys_embeddings = torch.cat(
                 [
-                    torch.zeros(1, self.fixed_embeds_size),
+                    torch.zeros(1, self.phys_embeds_size),
                     torch.from_numpy(df.values).float(),
                 ]
             ).to(device)

@@ -55,7 +55,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
-from ocpmodels.modules.fixed_embeddings import FixedEmbedding
+from ocpmodels.modules.phys_embeddings import PhysEmbedding
 
 try:
     import sympy as sym
@@ -111,26 +111,26 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         hidden_channels,
         tag_hidden_channels,
         pg_hidden_channels,
-        fixed_hidden_channels,
-        fixed_embeds,
+        phys_hidden_channels,
+        phys_embeds,
         act=swish,
     ):
         super().__init__()
         self.act = act
         self.use_tag = tag_hidden_channels > 0
         self.use_pg = pg_hidden_channels > 0
-        self.use_mlp_fixed = fixed_hidden_channels > 0
+        self.use_mlp_phys = phys_hidden_channels > 0
 
-        # Fixed embeddings
-        self.Femb = FixedEmbedding()
-        self.Femb.create(fixed=fixed_embeds)
+        # Phys embeddings
+        self.Femb = PhysEmbedding()
+        self.Femb.create(phys=phys_embeds)
         # With MLP
-        if self.use_mlp_fixed:
-            self.fixed_lin = Linear(
-                self.Femb.fixed_embeds_size, fixed_hidden_channels
+        if self.use_mlp_phys:
+            self.phys_lin = Linear(
+                self.Femb.phys_embeds_size, phys_hidden_channels
             )
         else:
-            fixed_hidden_channels = self.Femb.fixed_embeds_size
+            phys_hidden_channels = self.Femb.phys_embeds_size
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = Embedding(
@@ -147,7 +147,7 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
             85,
             hidden_channels
             - tag_hidden_channels
-            - fixed_hidden_channels
+            - phys_hidden_channels
             - 2 * pg_hidden_channels,
         )
 
@@ -165,8 +165,8 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
 
     def reset_parameters(self):
         self.emb.weight.data.uniform_(-sqrt(3), sqrt(3))
-        if self.use_mlp_fixed:
-            self.fixed_lin.reset_parameters()
+        if self.use_mlp_phys:
+            self.phys_lin.reset_parameters()
         if self.use_tag:
             self.tag.weight.data.uniform_(-sqrt(3), sqrt(3))
         if self.use_pg:
@@ -183,28 +183,17 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         if self.use_tag:
             x_tag = self.tag(tag)
             x_ = torch.cat((x_, x_tag), dim=1)
-        if self.Femb.fixed_embeds_size > 0:
-            x_fixed = self.Femb.fixed_embeddings[x]
-            if self.use_mlp_fixed:
-                x_fixed = self.fixed_lin(x_fixed)
-            x_ = torch.cat((x_, x_fixed), dim=1)
+        if self.Femb.phys_embeds_size > 0:
+            x_phys = self.Femb.phys_embeddings[x]
+            if self.use_mlp_phys:
+                x_phys = self.phys_lin(x_phys)
+            x_ = torch.cat((x_, x_phys), dim=1)
         if self.use_pg:
             x_period = self.period_embedding(self.Femb.period[x])
             x_group = self.group_embedding(self.Femb.group[x])
             x_ = torch.cat((x_, x_period, x_group), dim=1)
 
-        return self.act(
-            self.lin(
-                torch.cat(
-                    [
-                        x_[i],
-                        x_[j],
-                        rbf,
-                    ],
-                    dim=-1,
-                )
-            )
-        )
+        return self.act(self.lin(torch.cat([x_[i], x_[j], rbf,], dim=-1,)))
 
 
 class InteractionPPBlock(torch.nn.Module):
@@ -380,8 +369,8 @@ class NewDimeNetPlusPlus(torch.nn.Module):
         hidden_channels,
         tag_hidden_channels,
         pg_hidden_channels,
-        fixed_hidden_channels,
-        fixed_embeds,
+        phys_hidden_channels,
+        phys_embeds,
         out_channels,
         num_blocks,
         int_emb_size,
@@ -415,14 +404,14 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             num_spherical, num_radial, cutoff, envelope_exponent
         )
 
-        if self.use_tag or fixed_embeds or self.use_pg:
+        if self.use_tag or phys_embeds or self.use_pg:
             self.emb = AdvancedEmbeddingBlock(
                 num_radial,
                 hidden_channels,
                 tag_hidden_channels,
                 pg_hidden_channels,
-                fixed_hidden_channels,
-                fixed_embeds,
+                phys_hidden_channels,
+                phys_embeds,
                 act,
             )
         else:
@@ -515,7 +504,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         hidden_channels=128,
         tag_hidden_channels=32,
         pg_hidden_channels=32,
-        fixed_hidden_channels=32,
+        phys_hidden_channels=32,
         num_blocks=4,
         int_emb_size=64,
         basis_emb_size=8,
@@ -528,7 +517,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         num_before_skip=1,
         num_after_skip=2,
         num_output_layers=3,
-        fixed_embeds=False,
+        phys_embeds=False,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
@@ -541,8 +530,8 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             hidden_channels=hidden_channels,
             tag_hidden_channels=tag_hidden_channels,
             pg_hidden_channels=pg_hidden_channels,
-            fixed_hidden_channels=fixed_hidden_channels,
-            fixed_embeds=fixed_embeds,
+            phys_hidden_channels=phys_hidden_channels,
+            phys_embeds=phys_embeds,
             out_channels=num_targets,
             num_blocks=num_blocks,
             int_emb_size=int_emb_size,

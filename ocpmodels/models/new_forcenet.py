@@ -21,7 +21,7 @@ from ocpmodels.datasets.embeddings import ATOMIC_RADII, CONTINUOUS_EMBEDDINGS
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
-from ocpmodels.modules.fixed_embeddings import FixedEmbedding
+from ocpmodels.modules.phys_embeddings import PhysEmbedding
 
 
 class FNDecoder(nn.Module):
@@ -258,7 +258,7 @@ class NewForceNet(BaseModel):
         decoder_activation_str="swish",
         training=True,
         otf_graph=False,
-        fixed_embeds=False,
+        phys_embeds=False,
         predict_forces=False,
     ):
 
@@ -300,8 +300,8 @@ class NewForceNet(BaseModel):
         self.activation_str = activation_str
         self.use_tag = tag_hidden_channels > 0
         self.use_pg = pg_hidden_channels > 0
-        self.fixed_embeddings = fixed_embeds
-        self.fixed_embeds_size = 0
+        self.phys_embeddings = phys_embeds
+        self.phys_embeds_size = 0
         self.predict_forces = predict_forces
 
         assert (
@@ -348,10 +348,10 @@ class NewForceNet(BaseModel):
         if self.use_tag:
             self.tag_embedding = nn.Embedding(3, tag_hidden_channels)
 
-        # Fixed embeddings
-        self.Femb = FixedEmbedding()
-        if self.fixed_embeddings:
-            self.Femb.create(fixed=self.fixed_embeddings, short=False)
+        # Phys embeddings
+        self.Femb = PhysEmbedding()
+        if self.phys_embeddings:
+            self.Femb.create(phys=self.phys_embeddings, short=False)
 
         # Period + group embeddings
         if self.use_pg:
@@ -367,7 +367,7 @@ class NewForceNet(BaseModel):
                 100,
                 hidden_channels
                 - tag_hidden_channels
-                - self.Femb.fixed_embeds_size
+                - self.Femb.phys_embeds_size
                 - 2 * pg_hidden_channels,
             )
             # self.embedding = nn.Embedding(100, hidden_channels)
@@ -410,7 +410,7 @@ class NewForceNet(BaseModel):
                     basis.out_dim,
                     hidden_channels
                     - tag_hidden_channels
-                    - self.Femb.fixed_embeds_size
+                    - self.Femb.phys_embeds_size
                     - 2 * pg_hidden_channels,
                 ),
             )
@@ -491,9 +491,9 @@ class NewForceNet(BaseModel):
             h_tag = self.tag_embedding(data.tags)
             h = torch.cat((h, h_tag), dim=1)
 
-        if self.fixed_embeds_size > 0:
-            h_fixed = self.Femb.fixed_embeddings[z]
-            h = torch.cat((h, h_fixed), dim=1)
+        if self.phys_embeds_size > 0:
+            h_phys = self.Femb.phys_embeddings[z]
+            h = torch.cat((h, h_phys), dim=1)
 
         if self.use_pg:
             assert self.Femb.period is not None
