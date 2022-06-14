@@ -132,7 +132,6 @@ if __name__ == "__main__":
     script = template.format(
         cpus=args.cpus,
         env=args.env,
-        error=str(resolve(args.error)),
         gres=args.gres,
         job_name=args.job_name,
         mem=args.mem,
@@ -185,7 +184,7 @@ if __name__ == "__main__":
         jobid = out.split(" job ")[-1].strip()
         success = out.startswith("Submitted batch job")
 
-        # make slurm output and error directories based on job id
+        # make slurm output directory based on job id
         if "/%j/" in args.output and success:
             args.output = args.output.replace("/%j/", f"/{jobid.strip()}/")
             output_parent = resolve(args.output).parent
@@ -193,13 +192,6 @@ if __name__ == "__main__":
                 print("Creating directory", str(output_parent))
                 output_parent.mkdir(parents=True, exist_ok=True)
             copyfile(script_path, output_parent / script_path.name)
-
-        if "/%j/" in args.error and success:
-            args.error = args.error.replace("/%j/", f"/{jobid.strip()}/")
-            error_parent = resolve(args.error).parent
-            if not error_parent.exists():
-                print("Creating directory", str(error_parent))
-                error_parent.mkdir(parents=True, exist_ok=True)
 
     if args.dev:
         pass
