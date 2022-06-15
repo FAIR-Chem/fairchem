@@ -56,6 +56,7 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.preprocessing import remove_tag0_nodes
 
 try:
     import sympy as sym
@@ -126,19 +127,13 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         self.Femb.create(phys=phys_embeds)
         # With MLP
         if self.use_mlp_phys:
-            self.phys_lin = Linear(
-                self.Femb.phys_embeds_size, phys_hidden_channels
-            )
+            self.phys_lin = Linear(self.Femb.phys_embeds_size, phys_hidden_channels)
         else:
             phys_hidden_channels = self.Femb.phys_embeds_size
         # Period + group embeddings
         if self.use_pg:
-            self.period_embedding = Embedding(
-                self.Femb.period_size, pg_hidden_channels
-            )
-            self.group_embedding = Embedding(
-                self.Femb.group_size, pg_hidden_channels
-            )
+            self.period_embedding = Embedding(self.Femb.period_size, pg_hidden_channels)
+            self.group_embedding = Embedding(self.Femb.group_size, pg_hidden_channels)
 
         if tag_hidden_channels:
             self.tag = Embedding(3, tag_hidden_channels)
@@ -193,7 +188,18 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
             x_group = self.group_embedding(self.Femb.group[x])
             x_ = torch.cat((x_, x_period, x_group), dim=1)
 
-        return self.act(self.lin(torch.cat([x_[i], x_[j], rbf,], dim=-1,)))
+        return self.act(
+            self.lin(
+                torch.cat(
+                    [
+                        x_[i],
+                        x_[j],
+                        rbf,
+                    ],
+                    dim=-1,
+                )
+            )
+        )
 
 
 class InteractionPPBlock(torch.nn.Module):
@@ -229,17 +235,11 @@ class InteractionPPBlock(torch.nn.Module):
 
         # Residual layers before and after skip connection.
         self.layers_before_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_before_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_before_skip)]
         )
         self.lin = nn.Linear(hidden_channels, hidden_channels)
         self.layers_after_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_after_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_after_skip)]
         )
 
         self.reset_parameters()
@@ -389,9 +389,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
 
         self.cutoff = cutoff
 
-        assert (
-            tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
-        )
+        assert tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
         if sym is None:
             raise ImportError("Package `sympy` could not be found.")
 
@@ -548,8 +546,12 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
 
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
-        pos = data.pos
-        batch = data.batch
+
+        graph_rewiring = True
+
+        if not graph_rewiring:
+            pos = data.pos
+            batch = data.batch
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
@@ -558,6 +560,11 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             data.edge_index = edge_index
             data.cell_offsets = cell_offsets
             data.neighbors = neighbors
+
+        if graph_rewiring:
+            data = remove_tag0_nodes(data)
+            pos = data.pos
+            batch = data.batch
 
         if self.use_pbc:
             out = get_pbc_distances(
