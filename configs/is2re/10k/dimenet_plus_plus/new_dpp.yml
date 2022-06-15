@@ -19,6 +19,7 @@ model:
   pg_hidden_channels: 0 # 32
   phys_embeds: False # True
   phys_hidden_channels: 0
+  graph_rewiring: False # can be in {false, remove-tag-0}
 
 # *** Important note ***
 #   The total number of gpus used for this run was 1.

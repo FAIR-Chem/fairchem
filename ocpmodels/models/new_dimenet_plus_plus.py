@@ -123,17 +123,21 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         self.use_mlp_phys = phys_hidden_channels > 0
 
         # Phys embeddings
-        self.Femb = PhysEmbedding()
-        self.Femb.create(phys=phys_embeds)
+        self.PhysEmb = PhysEmbedding()
+        self.PhysEmb.create(phys=phys_embeds)
         # With MLP
         if self.use_mlp_phys:
-            self.phys_lin = Linear(self.Femb.phys_embeds_size, phys_hidden_channels)
+            self.phys_lin = Linear(self.PhysEmb.phys_embeds_size, phys_hidden_channels)
         else:
-            phys_hidden_channels = self.Femb.phys_embeds_size
+            phys_hidden_channels = self.PhysEmb.phys_embeds_size
         # Period + group embeddings
         if self.use_pg:
-            self.period_embedding = Embedding(self.Femb.period_size, pg_hidden_channels)
-            self.group_embedding = Embedding(self.Femb.group_size, pg_hidden_channels)
+            self.period_embedding = Embedding(
+                self.PhysEmb.period_size, pg_hidden_channels
+            )
+            self.group_embedding = Embedding(
+                self.PhysEmb.group_size, pg_hidden_channels
+            )
 
         if tag_hidden_channels:
             self.tag = Embedding(3, tag_hidden_channels)
@@ -178,14 +182,14 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         if self.use_tag:
             x_tag = self.tag(tag)
             x_ = torch.cat((x_, x_tag), dim=1)
-        if self.Femb.phys_embeds_size > 0:
-            x_phys = self.Femb.phys_embeddings[x]
+        if self.PhysEmb.phys_embeds_size > 0:
+            x_phys = self.PhysEmb.phys_embeddings[x]
             if self.use_mlp_phys:
                 x_phys = self.phys_lin(x_phys)
             x_ = torch.cat((x_, x_phys), dim=1)
         if self.use_pg:
-            x_period = self.period_embedding(self.Femb.period[x])
-            x_group = self.group_embedding(self.Femb.group[x])
+            x_period = self.period_embedding(self.PhysEmb.period[x])
+            x_group = self.group_embedding(self.PhysEmb.group[x])
             x_ = torch.cat((x_, x_period, x_group), dim=1)
 
         return self.act(
@@ -516,6 +520,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         num_after_skip=2,
         num_output_layers=3,
         phys_embeds=False,
+        graph_rewiring=False,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
@@ -523,6 +528,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         self.cutoff = cutoff
         self.otf_graph = otf_graph
         self.new_gnn = new_gnn
+        self.graph_rewiring = graph_rewiring
 
         super(NewDimeNetPlusPlusWrap, self).__init__(
             hidden_channels=hidden_channels,
@@ -547,12 +553,6 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
 
-        graph_rewiring = True
-
-        if not graph_rewiring:
-            pos = data.pos
-            batch = data.batch
-
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
                 data, self.cutoff, 50
@@ -561,10 +561,15 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             data.cell_offsets = cell_offsets
             data.neighbors = neighbors
 
-        if graph_rewiring:
+        if not self.graph_rewiring:
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "remove-tag-0":
             data = remove_tag0_nodes(data)
             pos = data.pos
             batch = data.batch
+        else:
+            raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
 
         if self.use_pbc:
             out = get_pbc_distances(

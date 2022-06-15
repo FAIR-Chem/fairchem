@@ -196,22 +196,22 @@ class NewSchNet(torch.nn.Module):
             self.tag_embedding = Embedding(3, tag_hidden_channels)
 
         # Phys embeddings
-        self.Femb = PhysEmbedding()
-        self.Femb.create(phys=phys_embeds)
+        self.PhysEmb = PhysEmbedding()
+        self.PhysEmb.create(phys=phys_embeds)
         if phys_embeds:
             if self.use_mlp_phys:
                 self.phys_lin = Linear(
-                    self.Femb.phys_embeds_size, self.phys_hidden_channels
+                    self.PhysEmb.phys_embeds_size, self.phys_hidden_channels
                 )
             else:
-                self.phys_hidden_channels = self.Femb.phys_embeds_size
+                self.phys_hidden_channels = self.PhysEmb.phys_embeds_size
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = Embedding(
-                self.Femb.period_size, self.pg_hidden_channels
+                self.PhysEmb.period_size, self.pg_hidden_channels
             )
             self.group_embedding = Embedding(
-                self.Femb.group_size, self.pg_hidden_channels
+                self.PhysEmb.group_size, self.pg_hidden_channels
             )
 
         assert (
@@ -378,15 +378,15 @@ class NewSchNetWrap(NewSchNet):
             h = torch.cat((h, h_tag), dim=1)
 
         if self.use_phys_embeddings:
-            h_phys = self.Femb.phys_embeddings[z]
+            h_phys = self.PhysEmb.phys_embeddings[z]
             if self.use_mlp_phys:
                 h_phys = self.phys_lin(h_phys)
             h = torch.cat((h, h_phys), dim=1)
 
         if self.use_pg:
-            # assert self.Femb.period is not None
-            h_period = self.period_embedding(self.Femb.period[z])
-            h_group = self.group_embedding(self.Femb.group[z])
+            # assert self.PhysEmb.period is not None
+            h_period = self.period_embedding(self.PhysEmb.period[z])
+            h_group = self.group_embedding(self.PhysEmb.group[z])
             h = torch.cat((h, h_period, h_group), dim=1)
 
         edge_index = radius_graph(

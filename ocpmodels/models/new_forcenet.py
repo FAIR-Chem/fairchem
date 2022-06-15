@@ -22,6 +22,7 @@ from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.preprocessing import remove_tag0_nodes
 
 
 class FNDecoder(nn.Module):
@@ -79,9 +80,7 @@ class InteractionBlock(MessagePassing):
         if self.ablation == "nocond":
             # the edge filter only depends on edge_attr
             in_features = (
-                mlp_basis_dim
-                if self.basis_type == "rawcat"
-                else hidden_channels
+                mlp_basis_dim if self.basis_type == "rawcat" else hidden_channels
             )
         else:
             # edge filter depends on edge_attr and current node embedding
@@ -95,9 +94,7 @@ class InteractionBlock(MessagePassing):
             mlp_edge = [torch.nn.Linear(in_features, hidden_channels)]
             for i in range(depth_mlp_edge):
                 mlp_edge.append(self.activation)
-                mlp_edge.append(
-                    torch.nn.Linear(hidden_channels, hidden_channels)
-                )
+                mlp_edge.append(torch.nn.Linear(hidden_channels, hidden_channels))
         else:
             ## need batch normalization afterwards. Otherwise training is unstable.
             mlp_edge = [
@@ -114,9 +111,7 @@ class InteractionBlock(MessagePassing):
             for i in range(depth_mlp_trans):
                 mlp_trans.append(torch.nn.BatchNorm1d(hidden_channels))
                 mlp_trans.append(self.activation)
-                mlp_trans.append(
-                    torch.nn.Linear(hidden_channels, hidden_channels)
-                )
+                mlp_trans.append(torch.nn.Linear(hidden_channels, hidden_channels))
         else:
             # need batch normalization afterwards. Otherwise, becomes NaN
             mlp_trans = [
@@ -127,9 +122,7 @@ class InteractionBlock(MessagePassing):
         self.mlp_trans = torch.nn.Sequential(*mlp_trans)
 
         if not self.ablation == "noself":
-            self.center_W = torch.nn.Parameter(
-                torch.Tensor(1, hidden_channels)
-            )
+            self.center_W = torch.nn.Parameter(torch.Tensor(1, hidden_channels))
 
         self.reset_parameters()
 
@@ -165,9 +158,7 @@ class InteractionBlock(MessagePassing):
         if self.ablation == "nocond":
             emb = edge_emb
         else:
-            emb = torch.cat(
-                [edge_emb, x[edge_index[0]], x[edge_index[1]]], dim=1
-            )
+            emb = torch.cat([edge_emb, x[edge_index[0]], x[edge_index[1]]], dim=1)
 
         W = self.mlp_edge(emb) * edge_weight.view(-1, 1)
         if self.ablation == "nofilter":
@@ -260,6 +251,8 @@ class NewForceNet(BaseModel):
         otf_graph=False,
         phys_embeds=False,
         predict_forces=False,
+        use_pbc=True,
+        graph_rewiring=False,
     ):
 
         super(NewForceNet, self).__init__()
@@ -298,14 +291,14 @@ class NewForceNet(BaseModel):
         self.num_layers = num_interactions
         self.max_n = max_n
         self.activation_str = activation_str
+        self.use_pbc = use_pbc
         self.use_tag = tag_hidden_channels > 0
         self.use_pg = pg_hidden_channels > 0
         self.phys_embeddings = phys_embeds
         self.predict_forces = predict_forces
+        self.graph_rewiring = graph_rewiring
 
-        assert (
-            tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
-        )
+        assert tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
 
         if self.ablation == "edgelinear":
             depth_mlp_edge = 0
@@ -348,17 +341,17 @@ class NewForceNet(BaseModel):
             self.tag_embedding = nn.Embedding(3, tag_hidden_channels)
 
         # Phys embeddings
-        self.Femb = PhysEmbedding()
+        self.PhysEmb = PhysEmbedding()
         if self.phys_embeddings:
-            self.Femb.create(phys=self.phys_embeddings)
+            self.PhysEmb.create(phys=self.phys_embeddings)
 
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = nn.Embedding(
-                self.Femb.period_size, pg_hidden_channels
+                self.PhysEmb.period_size, pg_hidden_channels
             )
             self.group_embedding = nn.Embedding(
-                self.Femb.group_size, pg_hidden_channels
+                self.PhysEmb.group_size, pg_hidden_channels
             )
 
         if self.feat == "simple":
@@ -366,7 +359,7 @@ class NewForceNet(BaseModel):
                 100,
                 hidden_channels
                 - tag_hidden_channels
-                - self.Femb.phys_embeds_size
+                - self.PhysEmb.phys_embeds_size
                 - 2 * pg_hidden_channels,
             )
             # self.embedding = nn.Embedding(100, hidden_channels)
@@ -384,9 +377,7 @@ class NewForceNet(BaseModel):
             atom_map_gap = atom_map_max - atom_map_min
 
             ## squash to [0,1]
-            atom_map = (
-                atom_map - atom_map_min.view(1, -1)
-            ) / atom_map_gap.view(1, -1)
+            atom_map = (atom_map - atom_map_min.view(1, -1)) / atom_map_gap.view(1, -1)
 
             self.atom_map = torch.nn.Parameter(atom_map, requires_grad=False)
 
@@ -409,7 +400,7 @@ class NewForceNet(BaseModel):
                     basis.out_dim,
                     hidden_channels
                     - tag_hidden_channels
-                    - self.Femb.phys_embeds_size
+                    - self.PhysEmb.phys_embeds_size
                     - 2 * pg_hidden_channels,
                 ),
             )
@@ -472,10 +463,43 @@ class NewForceNet(BaseModel):
         self.energy_mlp = nn.Linear(self.output_dim, 1)
 
     def forward(self, data):
-        z = data.atomic_numbers.long()
 
-        pos = data.pos
-        batch = data.batch
+        if not self.graph_rewiring:
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "remove-tag-0":
+            data = remove_tag0_nodes(data)
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        else:
+            raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
+
+        if self.otf_graph:
+            edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                data, self.cutoff, 50
+            )
+            data.edge_index = edge_index
+            data.cell_offsets = cell_offsets
+            data.neighbors = neighbors
+
+        if self.use_pbc:
+            out = get_pbc_distances(
+                pos,
+                data.edge_index,
+                data.cell,
+                data.cell_offsets,
+                data.neighbors,
+                return_distance_vec=True,
+            )
+            edge_index = out["edge_index"]
+            edge_dist = out["distances"]
+            edge_vec = out["distance_vec"]
+        else:
+            edge_index = data.edge_index
+            edge_dist = data.distances
+            edge_vec = pos[edge_index[0, :]] - pos[edge_index[1, :]]
 
         if self.feat == "simple":
             h = self.embedding(z)
@@ -490,36 +514,15 @@ class NewForceNet(BaseModel):
             h_tag = self.tag_embedding(data.tags)
             h = torch.cat((h, h_tag), dim=1)
 
-        if self.Femb.phys_embeds_size > 0:
-            h_phys = self.Femb.phys_embeddings[z]
+        if self.PhysEmb.phys_embeds_size > 0:
+            h_phys = self.PhysEmb.phys_embeddings[z]
             h = torch.cat((h, h_phys), dim=1)
 
         if self.use_pg:
-            assert self.Femb.period is not None
-            h_period = self.period_embedding(self.Femb.period[z])
-            h_group = self.group_embedding(self.Femb.group[z])
+            assert self.PhysEmb.period is not None
+            h_period = self.period_embedding(self.PhysEmb.period[z])
+            h_group = self.group_embedding(self.PhysEmb.group[z])
             h = torch.cat((h, h_period, h_group), dim=1)
-
-        if self.otf_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, 50
-            )
-            data.edge_index = edge_index
-            data.cell_offsets = cell_offsets
-            data.neighbors = neighbors
-
-        out = get_pbc_distances(
-            pos,
-            data.edge_index,
-            data.cell,
-            data.cell_offsets,
-            data.neighbors,
-            return_distance_vec=True,
-        )
-
-        edge_index = out["edge_index"]
-        edge_dist = out["distances"]
-        edge_vec = out["distance_vec"]
 
         if self.pbc_apply_sph_harm:
             edge_vec_normalized = edge_vec / edge_dist.view(-1, 1)
@@ -561,9 +564,7 @@ class NewForceNet(BaseModel):
         if self.ablation == "onlydist":
             raw_edge_attr = edge_dist_list
         else:
-            raw_edge_attr = torch.cat(
-                [edge_vec_normalized, edge_dist_list], dim=1
-            )
+            raw_edge_attr = torch.cat([edge_vec_normalized, edge_dist_list], dim=1)
 
         if "sph" in self.basis_type:
             edge_attr = self.basis_fun(raw_edge_attr, edge_attr_sph)
