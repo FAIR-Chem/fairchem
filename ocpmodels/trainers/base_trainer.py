@@ -34,7 +34,9 @@ from ocpmodels.common.data_parallel import (
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
-from ocpmodels.modules.exponential_moving_average import ExponentialMovingAverage
+from ocpmodels.modules.exponential_moving_average import (
+    ExponentialMovingAverage,
+)
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
@@ -787,9 +789,9 @@ class BaseTrainer(ABC):
             self.metrics = self.validate(split="eval", disable_tqdm=True, name_split=s)
             metrics_dict[s] = self.metrics
 
-            # Log results
-            if self.config["logger"] == "wandb" and distutils.is_master():
-                self.logger.log({"Val. time": time.time() - start_time})
+        # Log time
+        if self.config["logger"] == "wandb" and distutils.is_master():
+            self.logger.log({"Val. time": time.time() - start_time})
 
         if final:
             # Print results
