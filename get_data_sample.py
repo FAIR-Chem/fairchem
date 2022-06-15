@@ -21,6 +21,7 @@ from tqdm import tqdm
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import build_config, setup_imports, setup_logging
+from ocpmodels.preprocessing import remove_tag0_nodes
 
 if __name__ == "__main__":
 
@@ -62,54 +63,13 @@ if __name__ == "__main__":
     task = registry.get_task_class(config["mode"])(config)
     task.setup(trainer)
 
-    if not opts.get("no_tag_0", False):
+    if opts.no_tag_0 is None:
         for batch in trainer.train_loader:
             b = batch[0]
-            batch_size = len(b.natoms)
-
-            # non sub-surface atoms
-            non_sub = torch.where(b.tags != 0)[0]
-            src_is_not_sub = torch.isin(b.edge_index[0], non_sub)
-            target_is_not_sub = torch.isin(b.edge_index[1], non_sub)
-            neither_is_sub = src_is_not_sub * target_is_not_sub
-
-            # per-atom tensors
-            new_pos = b.pos[non_sub, :]
-            new_an = b.atomic_numbers[non_sub]
-            new_batch = b.batch[non_sub]
-            new_force = b.force[non_sub, :]
-            new_fixed = b.fixed[non_sub]
-            new_tags = b.tags[non_sub]
-            new_pos_relaxed = b.pos_relaxed[non_sub, :]
-
-            # per-edge tensors
-            new_ei = b.edge_index[:, neither_is_sub]
-            new_cell_offsets = b.cell_offsets[neither_is_sub, :]
-            new_distances = b.distances[neither_is_sub]
-            # re-index adj matrix, given some nodes were deleted
-            num_nodes = b.natoms.sum().item()
-            mask = torch.zeros(num_nodes, dtype=torch.bool, device=new_ei.device)
-            mask[non_sub] = 1
-            assoc = torch.full((num_nodes,), -1, dtype=torch.long, device=mask.device)
-            assoc[mask] = torch.arange(mask.sum(), device=assoc.device)
-            new_ei = assoc[new_ei]
-
-            # per-graph tensors
-            new_ptr = torch.tensor(
-                [0] + [b.natoms[:i].sum() for i in range(1, batch_size + 1)],
-                dtype=b.ptr.dtype,
-                device=b.ptr.device,
-            )
-            new_natoms = torch.tensor(
-                [(new_batch == i).sum() for i in range(batch_size)],
-                dtype=b.natoms.dtype,
-                device=b.natoms.device,
-            )
-            _, new_nei = torch.unique(new_batch[new_ei], return_counts=True)
-
+            rewired = remove_tag0_nodes(b)
             break
 
-    if opts.get("plot_tags"):
+    if opts.plot_tags is not None:
         tags = {
             0: [],
             1: [],
