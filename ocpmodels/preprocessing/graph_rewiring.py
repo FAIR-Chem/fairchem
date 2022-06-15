@@ -5,10 +5,13 @@ import torch
 
 
 def remove_tag0_nodes(data):
-    """_summary_
+    """Delete sub-surface (tag == 0) nodes and rewire accordingly the graph
 
     Args:
-        data (_type_): _description_
+        data (torch_geometric.Data): the data batch to re-wire
+
+    Returns:
+        torch_geometric.Data: the data rewired data batch
     """
     # non sub-surface atoms
     non_sub = torch.where(data.tags != 0)[0]

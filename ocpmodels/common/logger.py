@@ -131,3 +131,18 @@ class TensorboardLogger(Logger):
 
     def log_plots(self, plots):
         pass
+
+
+@registry.register_logger("dummy")
+class DummyLogger(Logger):
+    def __init__(self, config):
+        super().__init__(config)
+
+    def log_plots(self, plots):
+        pass
+
+    def mark_preempting(self):
+        pass
+
+    def watch(self, model):
+        pass

@@ -307,12 +307,14 @@ class NewSchNetWrap(NewSchNet):
         num_gaussians=50,
         cutoff=10.0,
         readout="add",
+        graph_rewiring=False,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
+        self.graph_rewiring = graph_rewiring
 
         super(NewSchNetWrap, self).__init__(
             hidden_channels=hidden_channels,
@@ -330,13 +332,6 @@ class NewSchNetWrap(NewSchNet):
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
         """"""
-        graph_rewiring = True
-
-        if not graph_rewiring:
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
                 data, self.cutoff, 50
@@ -345,11 +340,17 @@ class NewSchNetWrap(NewSchNet):
             data.cell_offsets = cell_offsets
             data.neighbors = neighbors
 
-        if graph_rewiring:
+        if not self.graph_rewiring:
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "remove-tag-0":
             data = remove_tag0_nodes(data)
             z = data.atomic_numbers.long()
             pos = data.pos
             batch = data.batch
+        else:
+            raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
 
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
