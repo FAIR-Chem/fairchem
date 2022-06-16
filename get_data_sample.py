@@ -38,6 +38,9 @@ if __name__ == "__main__":
     config["optim"]["batch_size"] = 2
     config["logger"] = "dummy"
 
+    if opts.victor_local:
+        config["dataset"][0]["src"] = "data/is2re/10k/train/data.lmdb"
+
     setup_imports()
     trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
         task=config["task"],
