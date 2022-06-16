@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
+import time
 
 import torch
 import torch_geometric
@@ -168,6 +169,7 @@ class EnergyTrainer(BaseTrainer):
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // len(self.train_loader)
+        start_time = time.time()
         print("---Beginning of Training---")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
@@ -175,6 +177,8 @@ class EnergyTrainer(BaseTrainer):
             skip_steps = self.step % len(self.train_loader)
             train_loader_iter = iter(self.train_loader)
             print("Epoch: ", epoch_int)
+            if epoch_int == 1:
+                self.logger.log({"Epoch time": time.time() - start_time})
 
             for i in range(skip_steps, len(self.train_loader)):
                 self.epoch = epoch_int + (i + 1) / len(self.train_loader)
