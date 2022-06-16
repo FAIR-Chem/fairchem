@@ -41,7 +41,7 @@ def remove_tag0_nodes(data):
     data.edge_index = assoc[data.edge_index]
 
     # per-graph tensors
-    batch_size = max(data.batch).item()
+    batch_size = max(data.batch).item() + 1
     data.ptr = torch.tensor(
         [0] + [data.natoms[:i].sum() for i in range(1, batch_size + 1)],
         dtype=data.ptr.dtype,
