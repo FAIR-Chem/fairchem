@@ -83,8 +83,12 @@ if __name__ == "__main__":
         for batch in trainer.train_loader:
             break
         b = batch[0]
+
+        # final object that would be returned in a proper function
         data = deepcopy(b)
+        # start time
         t0 = time()
+
         batch_size = max(b.batch).item() + 1
         device = b.edge_index.device
 
@@ -109,6 +113,7 @@ if __name__ == "__main__":
         data.ptr = tensor(
             [0] + [nsi + 1 for nsi in new_sn_ids], dtype=b.ptr.dtype, device=device
         )
+        data.natoms = data.ptr[1:] - data.ptr[:-1]
 
         # number of aggregated nodes into the super node, per batch
         data.sn_nodes_aggregates = tensor([len(s) for s in sub_nodes], device=device)
@@ -156,6 +161,28 @@ if __name__ == "__main__":
                 for i in range(batch_size)
             ]
         )
+        data.fixed = cat(
+            [
+                cat(
+                    [
+                        b.fixed[non_sub_nodes[i]],
+                        tensor([1.0], dtype=b.fixed.dtype, device=device),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
+        data.tags = cat(
+            [
+                cat(
+                    [
+                        b.tags[non_sub_nodes[i]],
+                        tensor([0], dtype=b.tags.dtype, device=device),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
 
         # edge indices per batch
         # 53ms (128)
@@ -166,6 +193,7 @@ if __name__ == "__main__":
         # edges per batch
         # 78ms (128)
         ei_batch = [b.edge_index[:, ei_batch_ids[i]] for i in range(batch_size)]
+        co_batch = [b.cell_offsets[ei_batch_ids[i], :] for i in range(batch_size)]
         # boolean src node is not sub per batch
         # 58ms (128)
         src_is_not_sub = [
@@ -178,9 +206,9 @@ if __name__ == "__main__":
             isin(b.edge_index[1][ei_batch_ids[i]], ns)
             for i, ns in enumerate(non_sub_nodes)
         ]
-        # edges for which both nodes are below the surface (dev only)
+        # edges for which both nodes are below the surface
         both_are_sub = [~s & ~t for s, t in zip(src_is_not_sub, target_is_not_sub)]
-        # edges for which NOT both nodes are below the surface (dev only)
+        # edges for which NOT both nodes are below the surface
         not_both_are_sub = [~bas for bas in both_are_sub]
         # ^ turn into [(s|t) for s, t in zip(src_is_not_sub, target_is_not_sub)]
         # when both_are_sub is deleted
@@ -189,14 +217,26 @@ if __name__ == "__main__":
         data.sn_edges_aggregates = tensor(
             [len(n) - n.sum() for n in not_both_are_sub], device=device
         )
+        data.cell_offsets = cat(
+            [
+                cat([co_batch[i][not_both_are_sub[i]], tensor([[0, 0, 0]])])
+                for i in range(batch_size)
+            ]
+        )
 
         ei_to_sn = []
         times = []
         assocs = []
+        distances = []
         for e, ei in enumerate(ei_batch):
             t = time()
+
+            # -----------------------------
+            # -----  Graph re-wiring  -----
+            # -----------------------------
+
             # future, super-node-adjusted edge index
-            ei = ei.clone()[:, not_both_are_sub[e]]
+            ei_not_both = ei.clone()[:, not_both_are_sub[e]]
             # number of nodes in this batch: all existing + 1 super node
             num_nodes = b.natoms[e].item() + 1
             # 0-based indices of non-sub-surface nodes in this batch
@@ -221,15 +261,23 @@ if __name__ == "__main__":
 
             # re-index edges ; select only the edges for which not
             # both nodes are sub-surface atoms
-            ei_sn = assoc[ei - b.ptr[e]]
+            ei_sn = assoc[ei_not_both - b.ptr[e]]
             # locations for which the original edge links to a sub-surface
             # node are re-wired to the batch's super node
             # assert (ei_sn != new_sn_ids[e]).all()
-            ei_sn[isin(ei, sub_nodes[e])] = new_sn_ids[e]
+            ei_sn[isin(ei_not_both, sub_nodes[e])] = new_sn_ids[e]
             ei_to_sn.append(ei_sn)
+            dist = ((data.pos[ei_sn[0, :]] - data.pos[ei_sn[1, :]]) ** 2).sum(-1)
+            distances.append(dist)
+
             times.append(time() - t)
 
         data.edge_index = cat(ei_to_sn, -1).to(dtype=b.edge_index.dtype)
+        data.distances = cat(distances).to(dtype=b.distances.dtype)
+        data.neighbors = torch.tensor(
+            [e.shape[-1] for e in ei_to_sn], dtype=b.neighbors.dtype, device=device
+        )
+
         data.batch = torch.zeros(data.ptr[-1], dtype=b.batch.dtype, device=device)
         for i, p in enumerate(data.ptr[:-1]):
             data.batch[torch.arange(p, data.ptr[i + 1], dtype=torch.long)] = tensor(
@@ -254,8 +302,8 @@ if __name__ == "__main__":
             "Total ei rewiring processing time (batch size",
             f"{batch_size}) {np.sum(times):.3f}",
         )
-        print(f"Total processing time: {tf-t0:.3f}")
-        print(f"Total processing time per batch: {(tf-t0) / batch_size:.3f}")
+        print(f"Total processing time: {tf-t0:.5f}")
+        print(f"Total processing time per batch: {(tf-t0) / batch_size:.5f}")
 
     if opts.plot_tags is not None:
         tags = {
