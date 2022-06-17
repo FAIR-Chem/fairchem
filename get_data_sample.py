@@ -267,7 +267,9 @@ if __name__ == "__main__":
             # assert (ei_sn != new_sn_ids[e]).all()
             ei_sn[isin(ei_not_both, sub_nodes[e])] = new_sn_ids[e]
             ei_to_sn.append(ei_sn)
-            dist = ((data.pos[ei_sn[0, :]] - data.pos[ei_sn[1, :]]) ** 2).sum(-1)
+            dist = torch.sqrt(
+                ((data.pos[ei_sn[0, :]] - data.pos[ei_sn[1, :]]) ** 2).sum(-1)
+            )
             distances.append(dist)
 
             times.append(time() - t)
