@@ -184,32 +184,52 @@ if __name__ == "__main__":
             ]
         )
 
+        expensive_ops_time = [time()]
         # edge indices per batch
         # 53ms (128)
         ei_batch_ids = [
             (b.ptr[i] <= b.edge_index[0]) * (b.edge_index[0] < b.ptr[i + 1])
             for i in range(batch_size)
         ]
+        expensive_ops_time.append(time())
+        print(f"ei_batch_ids: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
         # edges per batch
         # 78ms (128)
         ei_batch = [b.edge_index[:, ei_batch_ids[i]] for i in range(batch_size)]
+        expensive_ops_time.append(time())
+        print(f"ei_batch: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
         co_batch = [b.cell_offsets[ei_batch_ids[i], :] for i in range(batch_size)]
+        expensive_ops_time.append(time())
+        print(f"co_batch: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
+
         # boolean src node is not sub per batch
         # 58ms (128)
         src_is_not_sub = [
             isin(b.edge_index[0][ei_batch_ids[i]], ns)
             for i, ns in enumerate(non_sub_nodes)
         ]
+        expensive_ops_time.append(time())
+        print(f"src_is_not_sub: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
         # boolean target node is not sub per batch
         # 60ms (128)
         target_is_not_sub = [
             isin(b.edge_index[1][ei_batch_ids[i]], ns)
             for i, ns in enumerate(non_sub_nodes)
         ]
+        expensive_ops_time.append(time())
+        print(
+            f"target_is_not_sub: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s"
+        )
         # edges for which both nodes are below the surface
         both_are_sub = [~s & ~t for s, t in zip(src_is_not_sub, target_is_not_sub)]
+        expensive_ops_time.append(time())
+        print(f"both_are_sub: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
         # edges for which NOT both nodes are below the surface
         not_both_are_sub = [~bas for bas in both_are_sub]
+        expensive_ops_time.append(time())
+        print(
+            f"not_both_are_sub: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s"
+        )
         # ^ turn into [(s|t) for s, t in zip(src_is_not_sub, target_is_not_sub)]
         # when both_are_sub is deleted
 
@@ -217,67 +237,62 @@ if __name__ == "__main__":
         data.sn_edges_aggregates = tensor(
             [len(n) - n.sum() for n in not_both_are_sub], device=device
         )
+        expensive_ops_time.append(time())
+        print(
+            f"edges_aggregates: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s"
+        )
         data.cell_offsets = cat(
             [
                 cat([co_batch[i][not_both_are_sub[i]], tensor([[0, 0, 0]])])
                 for i in range(batch_size)
             ]
         )
+        expensive_ops_time.append(time())
+        print(f"cell_offsets: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
 
-        ei_to_sn = []
-        times = []
-        assocs = []
-        distances = []
-        for e, ei in enumerate(ei_batch):
-            t = time()
+        # -----------------------------
+        # -----  Graph re-wiring  -----
+        # -----------------------------
+        vt = time()
+        all_not_both_are_sub = cat(not_both_are_sub)
+        all_non_sub_nodes = cat(non_sub_nodes)
+        all_sub_nodes = cat(sub_nodes)
+        # future, super-node-adjusted edge index
+        ei_not_both = b.edge_index.clone()[:, all_not_both_are_sub]
+        # number of nodes in this batch: all existing + 1 super node
+        num_nodes = b.ptr[-1].item() + batch_size
+        # mask to reindex the edges
+        mask = torch.zeros(num_nodes, dtype=torch.bool, device=b.edge_index.device)
+        # mask is 1 for non-sub nodes
+        mask[all_non_sub_nodes] = 1
+        # lookup table
+        assoc = torch.full((num_nodes,), -1, dtype=torch.long, device=mask.device)
+        assoc[mask] = cat(
+            [
+                torch.arange(data.ptr[e], data.ptr[e + 1] - 1, device=assoc.device)
+                for e in range(batch_size)
+            ]
+        )
+        for e in range(batch_size):
+            assoc[sub_nodes[e]] = new_sn_ids[e]
+        # new values for non-sub-indices
+        # assert (assoc[batch_sub_nodes] == -1).all()
+        # assert (assoc[mask] != -1).all()
 
-            # -----------------------------
-            # -----  Graph re-wiring  -----
-            # -----------------------------
+        # re-index edges ; select only the edges for which not
+        # both nodes are sub-surface atoms
+        ei_sn = assoc[ei_not_both]
 
-            # future, super-node-adjusted edge index
-            ei_not_both = ei.clone()[:, not_both_are_sub[e]]
-            # number of nodes in this batch: all existing + 1 super node
-            num_nodes = b.natoms[e].item() + 1
-            # 0-based indices of non-sub-surface nodes in this batch
-            batch_non_sub_nodes = non_sub_nodes[e] - b.ptr[e]
-            # assert (b.tags[(b.batch == e)][batch_non_sub_nodes] > 0).all()
+        distance = torch.sqrt(
+            ((data.pos[ei_sn[0, :]] - data.pos[ei_sn[1, :]]) ** 2).sum(-1)
+        )
 
-            # 0-based indices of sub-surface nodes in this batch
-            batch_sub_nodes = sub_nodes[e] - b.ptr[e]
-            # mask to reindex the edges
-            mask = torch.zeros(num_nodes, dtype=torch.bool, device=b.edge_index.device)
-            # mask is 1 for non-sub nodes
-            mask[batch_non_sub_nodes] = 1
-            # lookup table
-            assoc = torch.full((num_nodes,), -1, dtype=torch.long, device=mask.device)
-            # new values for non-sub-indices
-            assoc[mask] = torch.arange(
-                data.ptr[e], data.ptr[e] + mask.sum(), device=assoc.device
-            )
-            assocs.append(assocs)
-            # assert (assoc[batch_sub_nodes] == -1).all()
-            # assert (assoc[mask] != -1).all()
+        vt = time() - vt
 
-            # re-index edges ; select only the edges for which not
-            # both nodes are sub-surface atoms
-            ei_sn = assoc[ei_not_both - b.ptr[e]]
-            # locations for which the original edge links to a sub-surface
-            # node are re-wired to the batch's super node
-            # assert (ei_sn != new_sn_ids[e]).all()
-            ei_sn[isin(ei_not_both, sub_nodes[e])] = new_sn_ids[e]
-            ei_to_sn.append(ei_sn)
-            dist = torch.sqrt(
-                ((data.pos[ei_sn[0, :]] - data.pos[ei_sn[1, :]]) ** 2).sum(-1)
-            )
-            distances.append(dist)
-
-            times.append(time() - t)
-
-        data.edge_index = cat(ei_to_sn, -1).to(dtype=b.edge_index.dtype)
-        data.distances = cat(distances).to(dtype=b.distances.dtype)
-        data.neighbors = torch.tensor(
-            [e.shape[-1] for e in ei_to_sn], dtype=b.neighbors.dtype, device=device
+        data.edge_index = ei_sn.to(dtype=b.edge_index.dtype)
+        data.distances = distance.to(dtype=b.distances.dtype)
+        _, data.neighbors = torch.unique(
+            data.batch[data.edge_index[0, :]], return_counts=True
         )
 
         data.batch = torch.zeros(data.ptr[-1], dtype=b.batch.dtype, device=device)
@@ -287,22 +302,15 @@ if __name__ == "__main__":
             )
         tf = time()
 
-        n_total = [e.sum().item() for e in ei_batch_ids]
-        n_kept = [e.shape[-1] for e in ei_to_sn]
-        n_removed = [t - k for t, k in zip(n_total, n_kept)]
+        n_e_total = b.neighbors.sum()
+        n_e_kept = data.neighbors.sum()
+        n_e_removed = n_e_total - n_e_kept
         n_both = [b.sum().item() for b in both_are_sub]
-        ratios = [f"{k / t:.2f}" for k, t in zip(n_kept, n_total)]
-        assert all([r == b for r, b in zip(n_removed, n_both)])
-        print(f"Total edges {n_total} | kept {n_kept} | removed {n_removed}")
-        print(f"Ratios kept {ratios}")
-        print(f"Average keep ratio {np.mean([float(r) for r in ratios]):.2f}")
-        print(
-            "Average ei rewiring processing time",
-            f"{np.mean(times):.5f} +/- {np.std(times):.5f}",
-        )
+        print(f"Total edges {n_e_total} | kept {n_e_kept} | removed {n_e_removed}")
+        print(f"Average ratio kept {n_e_kept/n_e_total}")
         print(
             "Total ei rewiring processing time (batch size",
-            f"{batch_size}) {np.sum(times):.3f}",
+            f"{batch_size}) {vt:.3f}",
         )
         print(f"Total processing time: {tf-t0:.5f}")
         print(f"Total processing time per batch: {(tf-t0) / batch_size:.5f}")
