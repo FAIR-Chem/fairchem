@@ -1,0 +1,19 @@
+trainer: energy
+
+dataset:
+  train:
+    src: data/oc22/is2re/train
+    normalize_labels: False
+  val:
+    src: data/oc22/is2re/val_id
+
+logger: wandb
+
+task:
+  dataset: oc22_lmdb
+  description: "Relaxed state energy prediction from initial structure."
+  type: regression
+  metric: mae
+  primary_metric: energy_mae
+  labels:
+    - relaxed energy
