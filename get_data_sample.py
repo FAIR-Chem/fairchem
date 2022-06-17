@@ -132,8 +132,10 @@ if __name__ == "__main__":
                 for i in range(batch_size)
             ]
         )
+
         # all super nodes have atomic number -1
-        assert all([data.atomic_numbers[s].cpu().item() == -1 for s in new_sn_ids])
+        # assert all([data.atomic_numbers[s].cpu().item() == -1 for s in new_sn_ids])
+
         # position exclude the sub-surface atoms but include an extra super-node
         data.pos = cat(
             [
@@ -156,18 +158,22 @@ if __name__ == "__main__":
         )
 
         # edge indices per batch
+        # 53ms (128)
         ei_batch_ids = [
             (b.ptr[i] <= b.edge_index[0]) * (b.edge_index[0] < b.ptr[i + 1])
             for i in range(batch_size)
         ]
         # edges per batch
+        # 78ms (128)
         ei_batch = [b.edge_index[:, ei_batch_ids[i]] for i in range(batch_size)]
         # boolean src node is not sub per batch
+        # 58ms (128)
         src_is_not_sub = [
             isin(b.edge_index[0][ei_batch_ids[i]], ns)
             for i, ns in enumerate(non_sub_nodes)
         ]
         # boolean target node is not sub per batch
+        # 60ms (128)
         target_is_not_sub = [
             isin(b.edge_index[1][ei_batch_ids[i]], ns)
             for i, ns in enumerate(non_sub_nodes)
@@ -195,7 +201,8 @@ if __name__ == "__main__":
             num_nodes = b.natoms[e].item() + 1
             # 0-based indices of non-sub-surface nodes in this batch
             batch_non_sub_nodes = non_sub_nodes[e] - b.ptr[e]
-            assert (b.tags[(b.batch == e)][batch_non_sub_nodes] > 0).all()
+            # assert (b.tags[(b.batch == e)][batch_non_sub_nodes] > 0).all()
+
             # 0-based indices of sub-surface nodes in this batch
             batch_sub_nodes = sub_nodes[e] - b.ptr[e]
             # mask to reindex the edges
@@ -209,14 +216,15 @@ if __name__ == "__main__":
                 data.ptr[e], data.ptr[e] + mask.sum(), device=assoc.device
             )
             assocs.append(assocs)
-            assert (assoc[batch_sub_nodes] == -1).all()
-            assert (assoc[mask] != -1).all()
+            # assert (assoc[batch_sub_nodes] == -1).all()
+            # assert (assoc[mask] != -1).all()
+
             # re-index edges ; select only the edges for which not
             # both nodes are sub-surface atoms
             ei_sn = assoc[ei - b.ptr[e]]
             # locations for which the original edge links to a sub-surface
             # node are re-wired to the batch's super node
-            assert (ei_sn != new_sn_ids[e]).all()
+            # assert (ei_sn != new_sn_ids[e]).all()
             ei_sn[isin(ei, sub_nodes[e])] = new_sn_ids[e]
             ei_to_sn.append(ei_sn)
             times.append(time() - t)
@@ -227,6 +235,7 @@ if __name__ == "__main__":
             data.batch[torch.arange(p, data.ptr[i + 1], dtype=torch.long)] = tensor(
                 i, dtype=b.batch.dtype
             )
+        tf = time()
 
         n_total = [e.sum().item() for e in ei_batch_ids]
         n_kept = [e.shape[-1] for e in ei_to_sn]
@@ -245,7 +254,6 @@ if __name__ == "__main__":
             "Total ei rewiring processing time (batch size",
             f"{batch_size}) {np.sum(times):.3f}",
         )
-        tf = time()
         print(f"Total processing time: {tf-t0:.3f}")
         print(f"Total processing time per batch: {(tf-t0) / batch_size:.3f}")
 
