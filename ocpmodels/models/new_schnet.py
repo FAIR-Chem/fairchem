@@ -332,6 +332,7 @@ class NewSchNetWrap(NewSchNet):
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
         """"""
+        # Re-compute on the fly the graph
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
                 data, self.cutoff, 50
@@ -340,6 +341,7 @@ class NewSchNetWrap(NewSchNet):
             data.cell_offsets = cell_offsets
             data.neighbors = neighbors
 
+        # Rewire the graph
         if not self.graph_rewiring:
             z = data.atomic_numbers.long()
             pos = data.pos
@@ -352,6 +354,7 @@ class NewSchNetWrap(NewSchNet):
         else:
             raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
 
+        # Use periodic boundary conditions
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
 
@@ -366,9 +369,17 @@ class NewSchNetWrap(NewSchNet):
             edge_index = out["edge_index"]
             edge_weight = out["distances"]
             edge_attr = self.distance_expansion(edge_weight)
-
-        assert z.dim() == 1 and z.dtype == torch.long
-        batch = torch.zeros_like(z) if batch is None else batch
+        else:
+            edge_index = radius_graph(
+                pos,
+                r=self.cutoff,
+                batch=batch,
+                max_num_neighbors=self.max_num_neighbors,
+            )
+            # edge_index = data.edge_index
+            row, col = edge_index
+            edge_weight = (pos[row] - pos[col]).norm(dim=-1)
+            edge_attr = self.distance_expansion(edge_weight)
 
         h = self.embedding(z)
 
@@ -388,16 +399,6 @@ class NewSchNetWrap(NewSchNet):
             h_period = self.period_embedding(self.PhysEmb.period[z])
             h_group = self.group_embedding(self.PhysEmb.group[z])
             h = torch.cat((h, h_period, h_group), dim=1)
-
-        edge_index = radius_graph(
-            pos,
-            r=self.cutoff,
-            batch=batch,
-            max_num_neighbors=self.max_num_neighbors,
-        )
-        row, col = edge_index
-        edge_weight = (pos[row] - pos[col]).norm(dim=-1)
-        edge_attr = self.distance_expansion(edge_weight)
 
         for interaction in self.interactions:
             h = h + interaction(h, edge_index, edge_weight, edge_attr)
