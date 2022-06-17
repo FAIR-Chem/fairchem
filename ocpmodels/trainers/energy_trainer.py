@@ -177,7 +177,7 @@ class EnergyTrainer(BaseTrainer):
             skip_steps = self.step % len(self.train_loader)
             train_loader_iter = iter(self.train_loader)
             print("Epoch: ", epoch_int)
-            if epoch_int == 1:
+            if epoch_int == 1 and self.logger is not None:
                 self.logger.log({"Epoch time": time.time() - start_time})
 
             for i in range(skip_steps, len(self.train_loader)):
@@ -268,6 +268,13 @@ class EnergyTrainer(BaseTrainer):
                     self.scheduler.step()
 
             torch.cuda.empty_cache()
+
+        # Time model
+        if self.logger is not None:
+            start_time = time.time()
+            # batch = next(iter(self.train_loader))
+            self._forward(batch)
+            self.logger.log({"Batch time": time.time() - start_time})
 
         self.train_dataset.close_db()
         if "val_dataset" in self.config:
