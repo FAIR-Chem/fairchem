@@ -11,10 +11,13 @@ In [2]: print(batch)
 
 """
 import sys
+from copy import deepcopy
+from time import time
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch  # noqa: F401
+from torch import cat, tensor, where, isin
 from minydra import resolved_args
 from tqdm import tqdm
 
@@ -42,6 +45,7 @@ if __name__ == "__main__":
         config["dataset"][0]["src"] = "data/is2re/10k/train/data.lmdb"
         config["dataset"] = config["dataset"][:1]
         config["optim"]["num_workers"] = 0
+        config["optim"]["batch_size"] = opts.bs or config["optim"]["batch_size"]
 
     setup_imports()
     trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
@@ -75,151 +79,241 @@ if __name__ == "__main__":
             break
 
     if opts.no_single_super_node is None:
+
         for batch in trainer.train_loader:
-            b = batch[0]
-            batch_size = max(b.batch).item() + 1
-
-            # ids of sub-surface nodes, per batch
-            sub_nodes = [
-                torch.where((b.tags == 0) * (b.batch == i))[0]
-                for i in range(batch_size)
-            ]
-            # single tensor of all the sub-surface nodes
-            all_sub_nodes = torch.cat(sub_nodes)
-
-            # idem for non-sub-surface nodes
-            non_sub_nodes = [
-                torch.where((b.tags != 0) * (b.batch == i))[0]
-                for i in range(batch_size)
-            ]
-            all_non_sub_nodes = torch.cat(non_sub_nodes)
-
-            # super node index per batch: they are last in their batch
-            new_sn_ids = [
-                sum([len(nsn) for nsn in non_sub_nodes[: i + 1]]) + i
-                for i in range(batch_size)
-            ]
-
-            # number of aggregated nodes into the super node, per batch
-            sn_aggregates = torch.tensor([len(s) for s in sub_nodes])
-            # super node position for a batch is the mean of its aggregates
-            sn_pos = [b.pos[sub_nodes[i]].mean(0) for i in range(batch_size)]
-            # target relaxed position is the mean of the super node's aggregates
-            # (per batch)
-            sn_pos_relaxed = [
-                b.pos_relaxed[sub_nodes[i]].mean(0) for i in range(batch_size)
-            ]
-            # the force applied on the super node is the mean of the force applied
-            # to its aggregates (per batch)
-            sn_force = [b.force[sub_nodes[i]].mean(0) for i in range(batch_size)]
-
-            # per-atom tensors
-
-            # SNs are last in their batch
-            new_atomic_numbers = torch.cat(
-                [
-                    torch.cat([b.atomic_numbers[non_sub_nodes[i]], torch.tensor([-1])])
-                    for i in range(batch_size)
-                ]
-            )
-            # all super nodes have atomic number -1
-            assert all([new_atomic_numbers[s].item() == -1 for s in new_sn_ids])
-            # position exclude the sub-surface atoms but include an extra super-node
-            new_pos = torch.cat(
-                [
-                    torch.cat([b.pos[non_sub_nodes[i]], sn_pos[i][None, :]])
-                    for i in range(batch_size)
-                ]
-            )
-            # idem
-            new_force = torch.cat(
-                [
-                    torch.cat([b.force[non_sub_nodes[i]], sn_force[i][None, :]])
-                    for i in range(batch_size)
-                ]
-            )
-
-            # edge indices per batch
-            ei_batch_ids = [
-                (b.ptr[i] <= b.edge_index[0]) * (b.edge_index[0] < b.ptr[i + 1])
-                for i in range(batch_size)
-            ]
-            # boolean src node is not sub per batch
-            src_is_not_sub = [
-                torch.isin(b.edge_index[0][ei_batch_ids[i]], ns)
-                for i, ns in enumerate(non_sub_nodes)
-            ]
-            # boolean target node is not sub per batch
-            target_is_not_sub = [
-                torch.isin(b.edge_index[1][ei_batch_ids[i]], ns)
-                for i, ns in enumerate(non_sub_nodes)
-            ]
-            # neither the source nor target node is below the surface
-            neither_is_sub = [s * t for s, t in zip(src_is_not_sub, target_is_not_sub)]
-            # exactly 1 atom (src XOR target) is below the surface
-            one_is_sub = [
-                (s.to(torch.int) + t.to(torch.int)) == 1
-                for s, t in zip(src_is_not_sub, target_is_not_sub)
-            ]
-            # edges for which neither src nor target are below the surface
-            # and shift to account for super nodes
-            ei_neither = [
-                b.edge_index[:, ei_batch_ids[e]][:, nis] + e
-                for e, nis in enumerate(neither_is_sub)
-            ]
-            # edges for which neither src XOR target is below the surface
-            ei_one = [
-                b.edge_index[:, ei_batch_ids[i]][:, ois]
-                for i, ois in enumerate(one_is_sub)
-            ]
-            ei_one_to_sn = []
-            for e, eio in enumerate(ei_one):
-                # shift because of super nodes
-                eio_sn = eio.clone()
-                num_nodes = b.natoms[e].item() + 1
-                mask = torch.zeros(
-                    num_nodes, dtype=torch.bool, device=b.edge_index.device
-                )
-                mask[non_sub_nodes[e] - non_sub_nodes[e].min()] = 1
-                assoc = torch.full(
-                    (num_nodes,), -1, dtype=torch.long, device=mask.device
-                )
-                assoc[mask] = torch.arange(mask.sum(), device=assoc.device)
-                eio_sn = assoc[eio]
-                # locations for which the original edge links to a sub-surface
-                # node are re-wired to the batch's super node
-                eio_sn[0][torch.isin(eio[0], sub_nodes[e])] = new_sn_ids[e]
-                eio_sn[1][torch.isin(eio[1], sub_nodes[e])] = new_sn_ids[e]
-                ei_one_to_sn.append(eio_sn)
-            # edges for which both nodes are below the surface (dev only)
-            ei_both = [
-                ((s + t) == 0) for s, t in zip(src_is_not_sub, target_is_not_sub)
-            ]
-
-            # per batch: [edges neither | edges one] and shifted by number of
-            # preceding super nodes
-            ei_shifted_to_sn = torch.cat(
-                [
-                    torch.cat([ein, eio], -1)
-                    for ein, eio in zip(ei_neither, ei_one_to_sn)
-                ],
-                -1,
-            )
-
-            n_total = [e.sum().item() for e in ei_batch_ids]
-            n_kept = [e[0].shape[1] + e[1].shape[1] for e in zip(ei_neither, ei_one)]
-            n_removed = [t - k for t, k in zip(n_total, n_kept)]
-            n_both = [b.sum().item() for b in ei_both]
-            ratios = [f"{k / t:.2f}" for k, t in zip(n_kept, n_total)]
-            assert all([r == b for r, b in zip(n_removed, n_both)])
-            print(f"total edges {n_total} | kept {n_kept} | removed {n_removed}")
-            print(f"Ratio kept {ratios}")
-            print(
-                "Average keep ratio",
-                torch.mean(torch.tensor([float(r) for r in ratios])).item(),
-            )
-
             break
+        b = batch[0]
+
+        # final object that would be returned in a proper function
+        data = deepcopy(b)
+        # start time
+        t0 = time()
+
+        batch_size = max(b.batch).item() + 1
+        device = b.edge_index.device
+
+        # ids of sub-surface nodes, per batch
+        sub_nodes = [
+            where((b.tags == 0) * (b.batch == i))[0] for i in range(batch_size)
+        ]
+        # single tensor of all the sub-surface nodes
+        # all_sub_nodes = torch.cat(sub_nodes)
+
+        # idem for non-sub-surface nodes
+        non_sub_nodes = [
+            where((b.tags != 0) * (b.batch == i))[0] for i in range(batch_size)
+        ]
+        # all_non_sub_nodes = torch.cat(non_sub_nodes)
+
+        # super node index per batch: they are last in their batch
+        new_sn_ids = [
+            sum([len(nsn) for nsn in non_sub_nodes[: i + 1]]) + i
+            for i in range(batch_size)
+        ]
+        data.ptr = tensor(
+            [0] + [nsi + 1 for nsi in new_sn_ids], dtype=b.ptr.dtype, device=device
+        )
+        data.natoms = data.ptr[1:] - data.ptr[:-1]
+
+        # number of aggregated nodes into the super node, per batch
+        data.sn_nodes_aggregates = tensor([len(s) for s in sub_nodes], device=device)
+        # super node position for a batch is the mean of its aggregates
+        sn_pos = [b.pos[sub_nodes[i]].mean(0) for i in range(batch_size)]
+        # target relaxed position is the mean of the super node's aggregates
+        # (per batch)
+        sn_pos_relaxed = [
+            b.pos_relaxed[sub_nodes[i]].mean(0) for i in range(batch_size)
+        ]
+        # the force applied on the super node is the mean of the force applied
+        # to its aggregates (per batch)
+        sn_force = [b.force[sub_nodes[i]].mean(0) for i in range(batch_size)]
+
+        # per-atom tensors
+
+        # SNs are last in their batch
+        data.atomic_numbers = cat(
+            [
+                cat([b.atomic_numbers[non_sub_nodes[i]], tensor([-1], device=device)])
+                for i in range(batch_size)
+            ]
+        )
+
+        # all super nodes have atomic number -1
+        # assert all([data.atomic_numbers[s].cpu().item() == -1 for s in new_sn_ids])
+
+        # position exclude the sub-surface atoms but include an extra super-node
+        data.pos = cat(
+            [
+                cat([b.pos[non_sub_nodes[i]], sn_pos[i][None, :]])
+                for i in range(batch_size)
+            ]
+        )
+        data.pos_relaxed = cat(
+            [
+                cat([b.pos_relaxed[non_sub_nodes[i]], sn_pos_relaxed[i][None, :]])
+                for i in range(batch_size)
+            ]
+        )
+        # idem
+        data.force = cat(
+            [
+                cat([b.force[non_sub_nodes[i]], sn_force[i][None, :]])
+                for i in range(batch_size)
+            ]
+        )
+        data.fixed = cat(
+            [
+                cat(
+                    [
+                        b.fixed[non_sub_nodes[i]],
+                        tensor([1.0], dtype=b.fixed.dtype, device=device),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
+        data.tags = cat(
+            [
+                cat(
+                    [
+                        b.tags[non_sub_nodes[i]],
+                        tensor([0], dtype=b.tags.dtype, device=device),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
+
+        expensive_ops_time = [time()]
+        # edge indices per batch
+        # 53ms (128)
+        ei_batch_ids = [
+            (b.ptr[i] <= b.edge_index[0]) * (b.edge_index[0] < b.ptr[i + 1])
+            for i in range(batch_size)
+        ]
+        expensive_ops_time.append(time())
+        print(f"ei_batch_ids: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
+        # edges per batch
+        # 78ms (128)
+        ei_batch = [b.edge_index[:, ei_batch_ids[i]] for i in range(batch_size)]
+        expensive_ops_time.append(time())
+        print(f"ei_batch: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
+        co_batch = [b.cell_offsets[ei_batch_ids[i], :] for i in range(batch_size)]
+        expensive_ops_time.append(time())
+        print(f"co_batch: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
+
+        # boolean src node is not sub per batch
+        # 58ms (128)
+        src_is_not_sub = [
+            isin(b.edge_index[0][ei_batch_ids[i]], ns)
+            for i, ns in enumerate(non_sub_nodes)
+        ]
+        expensive_ops_time.append(time())
+        print(f"src_is_not_sub: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
+        # boolean target node is not sub per batch
+        # 60ms (128)
+        target_is_not_sub = [
+            isin(b.edge_index[1][ei_batch_ids[i]], ns)
+            for i, ns in enumerate(non_sub_nodes)
+        ]
+        expensive_ops_time.append(time())
+        print(
+            f"target_is_not_sub: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s"
+        )
+        # edges for which both nodes are below the surface
+        both_are_sub = [~s & ~t for s, t in zip(src_is_not_sub, target_is_not_sub)]
+        expensive_ops_time.append(time())
+        print(f"both_are_sub: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
+        # edges for which NOT both nodes are below the surface
+        not_both_are_sub = [~bas for bas in both_are_sub]
+        expensive_ops_time.append(time())
+        print(
+            f"not_both_are_sub: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s"
+        )
+        # ^ turn into [(s|t) for s, t in zip(src_is_not_sub, target_is_not_sub)]
+        # when both_are_sub is deleted
+
+        # number of edges that end-up being removed
+        data.sn_edges_aggregates = tensor(
+            [len(n) - n.sum() for n in not_both_are_sub], device=device
+        )
+        expensive_ops_time.append(time())
+        print(
+            f"edges_aggregates: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s"
+        )
+        data.cell_offsets = cat(
+            [
+                cat([co_batch[i][not_both_are_sub[i]], tensor([[0, 0, 0]])])
+                for i in range(batch_size)
+            ]
+        )
+        expensive_ops_time.append(time())
+        print(f"cell_offsets: {expensive_ops_time[-1] - expensive_ops_time[-2]:.3f}s")
+
+        # -----------------------------
+        # -----  Graph re-wiring  -----
+        # -----------------------------
+        vt = time()
+        all_not_both_are_sub = cat(not_both_are_sub)
+        all_non_sub_nodes = cat(non_sub_nodes)
+        all_sub_nodes = cat(sub_nodes)
+        # future, super-node-adjusted edge index
+        ei_not_both = b.edge_index.clone()[:, all_not_both_are_sub]
+        # number of nodes in this batch: all existing + 1 super node
+        num_nodes = b.ptr[-1].item() + batch_size
+        # mask to reindex the edges
+        mask = torch.zeros(num_nodes, dtype=torch.bool, device=b.edge_index.device)
+        # mask is 1 for non-sub nodes
+        mask[all_non_sub_nodes] = 1
+        # lookup table
+        assoc = torch.full((num_nodes,), -1, dtype=torch.long, device=mask.device)
+        assoc[mask] = cat(
+            [
+                torch.arange(data.ptr[e], data.ptr[e + 1] - 1, device=assoc.device)
+                for e in range(batch_size)
+            ]
+        )
+        for e in range(batch_size):
+            assoc[sub_nodes[e]] = new_sn_ids[e]
+        # new values for non-sub-indices
+        # assert (assoc[batch_sub_nodes] == -1).all()
+        # assert (assoc[mask] != -1).all()
+
+        # re-index edges ; select only the edges for which not
+        # both nodes are sub-surface atoms
+        ei_sn = assoc[ei_not_both]
+
+        distance = torch.sqrt(
+            ((data.pos[ei_sn[0, :]] - data.pos[ei_sn[1, :]]) ** 2).sum(-1)
+        )
+
+        vt = time() - vt
+
+        data.edge_index = ei_sn.to(dtype=b.edge_index.dtype)
+        data.distances = distance.to(dtype=b.distances.dtype)
+        _, data.neighbors = torch.unique(
+            data.batch[data.edge_index[0, :]], return_counts=True
+        )
+
+        data.batch = torch.zeros(data.ptr[-1], dtype=b.batch.dtype, device=device)
+        for i, p in enumerate(data.ptr[:-1]):
+            data.batch[torch.arange(p, data.ptr[i + 1], dtype=torch.long)] = tensor(
+                i, dtype=b.batch.dtype
+            )
+        tf = time()
+
+        n_e_total = b.neighbors.sum()
+        n_e_kept = data.neighbors.sum()
+        n_e_removed = n_e_total - n_e_kept
+        n_both = [b.sum().item() for b in both_are_sub]
+        print(f"Total edges {n_e_total} | kept {n_e_kept} | removed {n_e_removed}")
+        print(f"Average ratio kept {n_e_kept/n_e_total}")
+        print(
+            "Total ei rewiring processing time (batch size",
+            f"{batch_size}) {vt:.3f}",
+        )
+        print(f"Total processing time: {tf-t0:.5f}")
+        print(f"Total processing time per batch: {(tf-t0) / batch_size:.5f}")
 
     if opts.plot_tags is not None:
         tags = {
