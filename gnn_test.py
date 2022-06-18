@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     config = build_config(args, override_args)
     # Customise args
-    # config['model']['use_pbc'] = False
+    # config['model']['use_pbc'] = True
     # config['model']['graph_rewiring'] = 'remove-tag-0'
 
     setup_imports()

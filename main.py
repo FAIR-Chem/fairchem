@@ -71,7 +71,8 @@ class Runner(submitit.helpers.Checkpointable):
             self.task.run()
             distutils.synchronize()
             logging.info(f"Total time taken: {time.time() - start_time}")
-            self.trainer.logger.log({"Total time": time.time() - start_time})
+            if self.trainer.logger is not None:
+                self.trainer.logger.log({"Total time": time.time() - start_time})
         finally:
             if args.distributed:
                 distutils.cleanup()
