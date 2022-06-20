@@ -2,10 +2,10 @@ trainer: forces
 
 dataset:
   train:
-    src: data/oc22/train
+    src: data/oc22/s2ef/train
     normalize_labels: False
   val:
-    src: data/oc22/val_id
+    src: data/oc22/s2ef/val_id
 
 logger: wandb
 

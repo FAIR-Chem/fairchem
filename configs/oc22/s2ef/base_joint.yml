@@ -2,12 +2,13 @@ trainer: forces
 
 dataset:
   train:
-    src: data/oc20+oc22/train
+    src: data/oc20+oc22/s2ef/train
     normalize_labels: False
     total_energy: True
-    oc20_ref: path/to/oc22_ref.pkl #download at
+    #download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
+    oc20_ref: path/to/oc22_ref.pkl
   val:
-    src: data/oc22/val_id
+    src: data/oc22/s2ef/val_id
     total_energy: True
     oc20_ref: path/to/oc22_ref.pkl
 
