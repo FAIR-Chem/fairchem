@@ -353,7 +353,7 @@ For this task’s train, validation and test sets, we provide precomputed LMDBs 
 
 |Splits    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
 |---    |---    |---    |---    |
-|Train (all splits) + Validation (all splits) + test (all splits)    |   20G |  71G  | [ebea523c6f8d61248a37b4dd660b11e6](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/s2ef_total_train_val_test_lmdbs.tar.gz%7C)   
+|Train (all splits) + Validation (all splits) + test (all splits)    |   20G |  71G  | [ebea523c6f8d61248a37b4dd660b11e6](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/s2ef_total_train_val_test_lmdbs.tar.gz%7C)
 |    |    |    |    |
 
 
@@ -366,7 +366,7 @@ For IS2RE-Total / IS2RS training, validation and test sets, we provide precomput
 
 |Splits    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
 |---    |---    |---    |---    |
-|Train (all splits) + Validation (all splits) + test (all splits)    |  109M |  424M  |  [b35dc24e99ef3aeaee6c5c949903de94](http://%20https//dl.fbaipublicfiles.com/opencatalystproject/data/oc22/is2res_total_train_val_test_lmdbs.tar.gz)  |
+|Train (all splits) + Validation (all splits) + test (all splits)    |  109M |  424M  |  [b35dc24e99ef3aeaee6c5c949903de94](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/is2res_total_train_val_test_lmdbs.tar.gz)  |
 |    |    |    |    |
 
 
@@ -386,7 +386,7 @@ We provide relaxation trajectories for all systems used in train and validation 
 
 |Number    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
 |---    |---    |---    |---    |
-| S2EF and IS2RE (both train and validation)   | 34G   |   80G  |  [977b6be1cbac6864e63c4c7fbf8a3fce](http://%20https//dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc22_trajectories.tar.gz)  |
+| S2EF and IS2RE (both train and validation)   | 34G   |   80G  |  [977b6be1cbac6864e63c4c7fbf8a3fce](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc22_trajectories.tar.gz)  |
 |    |    |    |    |
 
 
@@ -437,7 +437,7 @@ An example slab entry:
   'bulk_symbols': 'Li2Cr2O4'},
 ```
 
-#### 
+####
 
 #### OC20 reference information
 
@@ -462,4 +462,3 @@ Please consider citing the following paper in any research manuscript using the 
     journal={arXiv preprint arXiv:2206.08917},
 }
 ```
-
