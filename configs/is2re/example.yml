@@ -28,6 +28,14 @@ dataset:
     # These stats are for OC20 IS2RE.
     target_mean: -1.525913953781128
     target_std: 2.279365062713623
+    # If we want to train OC20 on total energy, a path to OC20 reference energies `oc20_ref`
+    # must be specificed to unreference existing OC20 data.
+    # OC22 by default trains on total energy, so this flag is not necessary.
+    total_energy: False
+    oc20_ref: False
+    # If we want to train on total energies and use a linear reference normalization scheme
+    # we must specify the path to the per-element coefficients in a `.npz` format.
+    lin_ref: False
   val:
     # Path to val set LMDB
     src: data/is2re/all/val_id/data.lmdb
