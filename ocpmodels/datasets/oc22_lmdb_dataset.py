@@ -25,7 +25,7 @@ from ocpmodels.common.utils import pyg2_data_transform
 
 
 @registry.register_dataset("oc22_lmdb")
-class LmdbDataset(Dataset):
+class OC22LmdbDataset(Dataset):
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
 
@@ -39,7 +39,7 @@ class LmdbDataset(Dataset):
     """
 
     def __init__(self, config, transform=None):
-        super(LmdbDataset, self).__init__()
+        super(OC22LmdbDataset, self).__init__()
         self.config = config
 
         self.path = Path(self.config["src"])
@@ -204,41 +204,3 @@ class LmdbDataset(Dataset):
                 env.close()
         else:
             self.env.close()
-
-
-class SinglePointLmdbDataset(LmdbDataset):
-    def __init__(self, config, transform=None):
-        super(SinglePointLmdbDataset, self).__init__(config, transform)
-        warnings.warn(
-            "SinglePointLmdbDataset is deprecated and will be removed in the future."
-            "Please use 'LmdbDataset' instead.",
-            stacklevel=3,
-        )
-
-
-class TrajectoryLmdbDataset(LmdbDataset):
-    def __init__(self, config, transform=None):
-        super(TrajectoryLmdbDataset, self).__init__(config, transform)
-        warnings.warn(
-            "TrajectoryLmdbDataset is deprecated and will be removed in the future."
-            "Please use 'LmdbDataset' instead.",
-            stacklevel=3,
-        )
-
-
-def data_list_collater(data_list, otf_graph=False):
-    batch = Batch.from_data_list(data_list)
-
-    if not otf_graph:
-        try:
-            n_neighbors = []
-            for i, data in enumerate(data_list):
-                n_index = data.edge_index[1, :]
-                n_neighbors.append(n_index.shape[0])
-            batch.neighbors = torch.tensor(n_neighbors)
-        except NotImplementedError:
-            logging.warning(
-                "LMDB does not contain edge index information, set otf_graph=True"
-            )
-
-    return batch

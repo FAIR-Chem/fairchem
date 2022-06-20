@@ -5,6 +5,7 @@
 
 from .lmdb_dataset import (
     LmdbDataset,
+    OC22LmdbDataset,
     SinglePointLmdbDataset,
     TrajectoryLmdbDataset,
     data_list_collater,
