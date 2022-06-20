@@ -34,7 +34,6 @@ optim:
   lr_gamma: 0.8
   # Following calculation is for an effective batch size of 3 x 64 GPUs = 192
   # and a dataset size of 8225293 (1 epoch = 32130 steps).
-  # The older dataset had 6140155 points (1 epoch = 23984 steps).
   lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
     - 86000 # ~2 epochs
     - 129000 # ~3 epochs
