@@ -1,0 +1,43 @@
+includes:
+  - configs/oc22/s2ef/base.yml
+
+model:
+  name: spinconv
+  model_ref_number: 0
+  hidden_channels: 32
+  mid_hidden_channels: 256
+  num_interactions: 3
+  num_basis_functions: 512
+  sphere_size_lat: 16
+  sphere_size_long: 12
+  max_num_neighbors: 40
+  cutoff: 6.0
+  sphere_message: fullconv
+  output_message: fullconv
+  force_estimator: random
+  regress_forces: True
+  use_pbc: True
+  scale_distances: True
+  basis_width_scalar: 3.0
+  otf_graph: True
+
+optim:
+  batch_size: 3
+  eval_batch_size: 3
+  num_workers: 8
+  lr_initial: 0.0004
+  optimizer: Adam
+  optimizer_params: {"amsgrad": True}
+  eval_every: 5000
+  warmup_steps: -1 # don't warm-up the learning rate
+  # warmup_factor: 0.2
+  lr_gamma: 0.8
+  # Following calculation is for an effective batch size of 3 x 64 GPUs = 192
+  # and a dataset size of 8225293 (1 epoch = 32130 steps).
+  lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+    - 86000 # ~2 epochs
+    - 129000 # ~3 epochs
+    - 171000 # ~4 epochs
+    - 214000 # ~5 epochs
+    - 257000 # ~6 epochs
+  max_epochs: 80

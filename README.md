@@ -11,8 +11,9 @@ library of state-of-the-art machine learning algorithms for catalysis.
 
 It provides training and evaluation code for tasks and models that take arbitrary
 chemical structures as input to predict energies / forces / positions, and can
-be used as a base scaffold for research projects. Please read the
-[OC20 paper](https://arxiv.org/abs/2010.09990) for an overview of tasks, data and metrics.
+be used as a base scaffold for research projects. For an overview of tasks, data, and metrics, please read our papers:
+ - [OC20](https://arxiv.org/abs/2010.09990)
+ - [OC22](https://arxiv.org/abs/2206.08917)
 
 Projects developed on `ocp`:
 
