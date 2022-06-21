@@ -123,19 +123,19 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         self.use_mlp_phys = phys_hidden_channels > 0
 
         # Phys embeddings
-        self.PhysEmb = PhysEmbedding(phys=phys_embeds, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(phys=phys_embeds, pg=self.use_pg)
         # With MLP
         if self.use_mlp_phys:
-            self.phys_lin = Linear(self.PhysEmb.phys_embeds_size, phys_hidden_channels)
+            self.phys_lin = Linear(self.phys_emb.n_properties, phys_hidden_channels)
         else:
-            phys_hidden_channels = self.PhysEmb.phys_embeds_size
+            phys_hidden_channels = self.phys_emb.n_properties
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = Embedding(
-                self.PhysEmb.period_size, pg_hidden_channels
+                self.phys_emb.period_size, pg_hidden_channels
             )
             self.group_embedding = Embedding(
-                self.PhysEmb.group_size, pg_hidden_channels
+                self.phys_emb.group_size, pg_hidden_channels
             )
 
         if tag_hidden_channels:
@@ -184,14 +184,14 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         if self.use_tag:
             x_tag = self.tag(tag)
             x_ = torch.cat((x_, x_tag), dim=1)
-        if self.PhysEmb.phys_embeds_size > 0:
-            x_phys = self.PhysEmb.phys_embeddings[x]
+        if self.phys_emb.n_properties > 0:
+            x_phys = self.phys_emb.properties[x]
             if self.use_mlp_phys:
                 x_phys = self.phys_lin(x_phys)
             x_ = torch.cat((x_, x_phys), dim=1)
         if self.use_pg:
-            x_period = self.period_embedding(self.PhysEmb.period[x])
-            x_group = self.group_embedding(self.PhysEmb.group[x])
+            x_period = self.period_embedding(self.phys_emb.period[x])
+            x_group = self.group_embedding(self.phys_emb.group[x])
             x_ = torch.cat((x_, x_period, x_group), dim=1)
 
         return self.act(

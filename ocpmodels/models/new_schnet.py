@@ -196,21 +196,21 @@ class NewSchNet(torch.nn.Module):
             self.tag_embedding = Embedding(3, tag_hidden_channels)
 
         # Phys embeddings
-        self.PhysEmb = PhysEmbedding(phys=phys_embeds, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(phys=phys_embeds, pg=self.use_pg)
         if phys_embeds:
             if self.use_mlp_phys:
                 self.phys_lin = Linear(
-                    self.PhysEmb.phys_embeds_size, self.phys_hidden_channels
+                    self.phys_emb.n_properties, self.phys_hidden_channels
                 )
             else:
-                self.phys_hidden_channels = self.PhysEmb.phys_embeds_size
+                self.phys_hidden_channels = self.phys_emb.n_properties
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = Embedding(
-                self.PhysEmb.period_size, self.pg_hidden_channels
+                self.phys_emb.period_size, self.pg_hidden_channels
             )
             self.group_embedding = Embedding(
-                self.PhysEmb.group_size, self.pg_hidden_channels
+                self.phys_emb.group_size, self.pg_hidden_channels
             )
 
         assert (
@@ -275,7 +275,7 @@ class NewSchNet(torch.nn.Module):
             f"{self.__class__.__name__}("
             f"hidden_channels={self.hidden_channels}, "
             f"tag_hidden_channels={self.tag_hidden_channels}, "
-            f"phys_embeddings={self.phys_hidden_channels}, "
+            f"properties={self.phys_hidden_channels}, "
             f"period_hidden_channels={self.pg_hidden_channels}, "
             f"group_hidden_channels={self.pg_hidden_channels}, "
             f"num_filters={self.num_filters}, "
@@ -391,15 +391,15 @@ class NewSchNetWrap(NewSchNet):
             h = torch.cat((h, h_tag), dim=1)
 
         if self.use_phys_embeddings:
-            h_phys = self.PhysEmb.phys_embeddings[z]
+            h_phys = self.phys_emb.properties[z]
             if self.use_mlp_phys:
                 h_phys = self.phys_lin(h_phys)
             h = torch.cat((h, h_phys), dim=1)
 
         if self.use_pg:
-            # assert self.PhysEmb.period is not None
-            h_period = self.period_embedding(self.PhysEmb.period[z])
-            h_group = self.group_embedding(self.PhysEmb.group[z])
+            # assert self.phys_emb.period is not None
+            h_period = self.period_embedding(self.phys_emb.period[z])
+            h_group = self.group_embedding(self.phys_emb.group[z])
             h = torch.cat((h, h_period, h_group), dim=1)
 
         for interaction in self.interactions:

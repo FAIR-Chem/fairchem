@@ -341,15 +341,15 @@ class NewForceNet(BaseModel):
             self.tag_embedding = nn.Embedding(3, tag_hidden_channels)
 
         # Phys embeddings
-        self.PhysEmb = PhysEmbedding(phys=self.phys_embeds, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(phys=self.phys_embeds, pg=self.use_pg)
 
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = nn.Embedding(
-                self.PhysEmb.period_size, pg_hidden_channels
+                self.phys_emb.period_size, pg_hidden_channels
             )
             self.group_embedding = nn.Embedding(
-                self.PhysEmb.group_size, pg_hidden_channels
+                self.phys_emb.group_size, pg_hidden_channels
             )
 
         if self.feat == "simple":
@@ -357,7 +357,7 @@ class NewForceNet(BaseModel):
                 100,
                 hidden_channels
                 - tag_hidden_channels
-                - self.PhysEmb.phys_embeds_size
+                - self.phys_emb.n_properties
                 - 2 * pg_hidden_channels,
             )
             # self.embedding = nn.Embedding(100, hidden_channels)
@@ -398,7 +398,7 @@ class NewForceNet(BaseModel):
                     basis.out_dim,
                     hidden_channels
                     - tag_hidden_channels
-                    - self.PhysEmb.phys_embeds_size
+                    - self.phys_emb.n_properties
                     - 2 * pg_hidden_channels,
                 ),
             )
@@ -515,14 +515,14 @@ class NewForceNet(BaseModel):
             h_tag = self.tag_embedding(data.tags)
             h = torch.cat((h, h_tag), dim=1)
 
-        if self.PhysEmb.phys_embeds_size > 0:
-            h_phys = self.PhysEmb.phys_embeddings[z]
+        if self.phys_emb.n_properties > 0:
+            h_phys = self.phys_emb.properties[z]
             h = torch.cat((h, h_phys), dim=1)
 
         if self.use_pg:
-            assert self.PhysEmb.period is not None
-            h_period = self.period_embedding(self.PhysEmb.period[z])
-            h_group = self.group_embedding(self.PhysEmb.group[z])
+            assert self.phys_emb.period is not None
+            h_period = self.period_embedding(self.phys_emb.period[z])
+            h_group = self.group_embedding(self.phys_emb.group[z])
             h = torch.cat((h, h_period, h_group), dim=1)
 
         if self.pbc_apply_sph_harm:

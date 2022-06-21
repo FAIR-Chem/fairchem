@@ -1,18 +1,20 @@
 import pandas as pd
 import torch
 from mendeleev.fetch import fetch_table
+import torch.nn as nn
 
 
-class PhysEmbedding(torch.nn.ModuleDict):
-    def __init__(self, phys=True, pg=False, short=False) -> None:
+class PhysEmbedding(nn.Module):
+    def __init__(self, phys=True, phys_grad=False, pg=False, short=False) -> None:
         """
-        Create physicall embeddings meta class with sub-emeddings for each atom
+        Create physical embeddings meta class with sub-emeddings for each atom
 
         Args:
             phys (bool, optional): _description_. Defaults to True.
             pg (bool, optional): _description_. Defaults to False.
             short (bool, optional): _description_. Defaults to False.
         """
+        super().__init__()
 
         self.properties_list = [
             "atomic_radius",
@@ -38,32 +40,12 @@ class PhysEmbedding(torch.nn.ModuleDict):
             "covalent_radius_pyykko",
         ]
         self.short = short
-        self.phys_embeddings = None
-        self.phys_embeds_size = 0
-        self.group = None
         self.group_size = 0
-        self.period = None
         self.period_size = 0
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.make_from_mendeleev(phys, pg)
 
-    def to(self, device):
-        if self.phys_embeddings is not None:
-            self.phys_embeddings = self.phys_embeddings.to(device)
-        if self.group is not None:
-            self.group = self.group.to(device)
-        if self.period is not None:
-            self.period = self.period.to(device)
-        return self
+        group = None
+        period = None
 
-    def make_from_mendeleev(self, phys=True, pg=True):
-        """Create an embedding vector for each atom
-        containing key physics properties
-
-        Args:
-            phys (bool, optional): whether we include fixed physical embeddings
-            Defaults to True.
-        """
         # Load table with all properties of all periodic table elements
         df = fetch_table("elements")
         df = df.set_index("atomic_number")
@@ -72,19 +54,23 @@ class PhysEmbedding(torch.nn.ModuleDict):
         if pg:
             df.group_id = df.group_id.fillna(value=19.0)
             self.group_size = df.group_id.unique().shape[0]
-            self["group"] = torch.cat(
+            group = torch.cat(
                 [
                     torch.ones(1, dtype=torch.long),
                     torch.tensor(df.group_id.loc[:100].values, dtype=torch.long),
                 ]
             )
+
             self.period_size = df.period.loc[:100].unique().shape[0]
-            self["period"] = torch.cat(
+            period = torch.cat(
                 [
                     torch.ones(1, dtype=torch.long),
                     torch.tensor(df.period.loc[:100].values, dtype=torch.long),
                 ]
             )
+
+        self.register_buffer("group", group)
+        self.register_buffer("period", period)
 
         if phys:
             # Select only potentially relevant elements
@@ -109,11 +95,14 @@ class PhysEmbedding(torch.nn.ModuleDict):
                     value=df[col_missing_val].mean()
                 )
 
-            self.phys_embeds_size = len(df.columns)
-
-            self["properties"] = torch.cat(
+            self.n_properties = len(df.columns)
+            properties = torch.cat(
                 [
-                    torch.zeros(1, self.phys_embeds_size),
+                    torch.zeros(1, self.n_properties),
                     torch.from_numpy(df.values).float(),
                 ]
             )
+            if phys_grad:
+                self.register_parameter("properties", nn.Parameter(properties))
+            else:
+                self.register_buffer("properties", properties)
