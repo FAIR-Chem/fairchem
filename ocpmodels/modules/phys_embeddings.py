@@ -3,8 +3,16 @@ import torch
 from mendeleev.fetch import fetch_table
 
 
-class PhysEmbedding:
-    def __init__(self, phys=True, short=False) -> None:
+class PhysEmbedding(torch.nn.ModuleDict):
+    def __init__(self, phys=True, pg=False, short=False) -> None:
+        """
+        Create physicall embeddings meta class with sub-emeddings for each atom
+
+        Args:
+            phys (bool, optional): _description_. Defaults to True.
+            pg (bool, optional): _description_. Defaults to False.
+            short (bool, optional): _description_. Defaults to False.
+        """
 
         self.properties_list = [
             "atomic_radius",
@@ -37,7 +45,7 @@ class PhysEmbedding:
         self.period = None
         self.period_size = 0
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.make_from_mendeleev(phys)
+        self.make_from_mendeleev(phys, pg)
 
     def to(self, device):
         if self.phys_embeddings is not None:
@@ -64,14 +72,14 @@ class PhysEmbedding:
         if pg:
             df.group_id = df.group_id.fillna(value=19.0)
             self.group_size = df.group_id.unique().shape[0]
-            self.group = torch.cat(
+            self["group"] = torch.cat(
                 [
                     torch.ones(1, dtype=torch.long),
                     torch.tensor(df.group_id.loc[:100].values, dtype=torch.long),
                 ]
             )
             self.period_size = df.period.loc[:100].unique().shape[0]
-            self.period = torch.cat(
+            self["period"] = torch.cat(
                 [
                     torch.ones(1, dtype=torch.long),
                     torch.tensor(df.period.loc[:100].values, dtype=torch.long),
@@ -103,7 +111,7 @@ class PhysEmbedding:
 
             self.phys_embeds_size = len(df.columns)
 
-            self.phys_embeddings = torch.cat(
+            self["properties"] = torch.cat(
                 [
                     torch.zeros(1, self.phys_embeds_size),
                     torch.from_numpy(df.values).float(),
