@@ -42,6 +42,7 @@ class PhysEmbedding(nn.Module):
         self.short = short
         self.group_size = 0
         self.period_size = 0
+        self.n_properties = 0
 
         group = None
         period = None

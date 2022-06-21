@@ -507,8 +507,8 @@ class NewForceNet(BaseModel):
         else:
             raise RuntimeError("Undefined feature type for atom")
 
-        if self.PhysEmbed.device != batch.device:
-            self.PhysEmbed = self.PhysEmbed.to(batch.device)
+        if self.phys_emb.device != batch.device:
+            self.phys_emb = self.phys_emb.to(batch.device)
 
         if self.use_tag:
             assert data.tags is not None

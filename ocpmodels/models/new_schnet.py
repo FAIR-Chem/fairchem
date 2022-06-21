@@ -197,13 +197,13 @@ class NewSchNet(torch.nn.Module):
 
         # Phys embeddings
         self.phys_emb = PhysEmbedding(phys=phys_embeds, pg=self.use_pg)
-        if phys_embeds:
-            if self.use_mlp_phys:
-                self.phys_lin = Linear(
-                    self.phys_emb.n_properties, self.phys_hidden_channels
-                )
-            else:
-                self.phys_hidden_channels = self.phys_emb.n_properties
+        if self.use_mlp_phys:
+            self.phys_lin = Linear(
+                self.phys_emb.n_properties, self.phys_hidden_channels
+            )
+        else:
+            self.phys_hidden_channels = self.phys_emb.n_properties
+
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = Embedding(
@@ -382,8 +382,8 @@ class NewSchNetWrap(NewSchNet):
 
         h = self.embedding(z)
 
-        if self.PhysEmbed.device != batch.device:
-            self.PhysEmbed = self.PhysEmbed.to(batch.device)
+        if self.phys_emb.device != batch.device:
+            self.phys_emb = self.phys_emb.to(batch.device)
 
         if self.use_tag:
             assert data.tags is not None
