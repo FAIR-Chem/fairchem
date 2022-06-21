@@ -358,7 +358,7 @@ For this task’s train, validation and test sets, we provide precomputed LMDBs 
 
 |Splits    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
 |---    |---    |---    |---    |
-|Train (all splits) + Validation (all splits) + test (all splits)    |   20G |  71G  | [ebea523c6f8d61248a37b4dd660b11e6](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/s2ef_total_train_val_test_lmdbs.tar.gz%7C)
+|Train (all splits) + Validation (all splits) + test (all splits)    |   20G |  71G  | [ebea523c6f8d61248a37b4dd660b11e6](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/s2ef_total_train_val_test_lmdbs.tar.gz)
 |    |    |    |    |
 
 
