@@ -196,8 +196,7 @@ class NewSchNet(torch.nn.Module):
             self.tag_embedding = Embedding(3, tag_hidden_channels)
 
         # Phys embeddings
-        self.PhysEmb = PhysEmbedding()
-        self.PhysEmb.create(phys=phys_embeds)
+        self.PhysEmb = PhysEmbedding(phys=phys_embeds, pg=self.use_pg)
         if phys_embeds:
             if self.use_mlp_phys:
                 self.phys_lin = Linear(
@@ -382,6 +381,9 @@ class NewSchNetWrap(NewSchNet):
             edge_attr = self.distance_expansion(edge_weight)
 
         h = self.embedding(z)
+
+        if self.PhysEmbed.device != batch.device:
+            self.PhysEmbed = self.PhysEmbed.to(batch.device)
 
         if self.use_tag:
             assert data.tags is not None

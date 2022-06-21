@@ -294,7 +294,7 @@ class NewForceNet(BaseModel):
         self.use_pbc = use_pbc
         self.use_tag = tag_hidden_channels > 0
         self.use_pg = pg_hidden_channels > 0
-        self.phys_embeddings = phys_embeds
+        self.phys_embeds = phys_embeds
         self.predict_forces = predict_forces
         self.graph_rewiring = graph_rewiring
 
@@ -341,9 +341,7 @@ class NewForceNet(BaseModel):
             self.tag_embedding = nn.Embedding(3, tag_hidden_channels)
 
         # Phys embeddings
-        self.PhysEmb = PhysEmbedding()
-        if self.phys_embeddings:
-            self.PhysEmb.create(phys=self.phys_embeddings)
+        self.PhysEmb = PhysEmbedding(phys=self.phys_embeds, pg=self.use_pg)
 
         # Period + group embeddings
         if self.use_pg:
@@ -508,6 +506,9 @@ class NewForceNet(BaseModel):
             h = self.embedding(self.atom_map[z])
         else:
             raise RuntimeError("Undefined feature type for atom")
+
+        if self.PhysEmbed.device != batch.device:
+            self.PhysEmbed = self.PhysEmbed.to(batch.device)
 
         if self.use_tag:
             assert data.tags is not None

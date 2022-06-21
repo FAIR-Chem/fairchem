@@ -1,5 +1,5 @@
 includes:
-- configs/is2re/all/base.yml
+  - configs/is2re/all/base.yml
 
 model:
   name: new_schnet
@@ -12,7 +12,7 @@ model:
   regress_forces: False
   # drlab attributes:
   tag_hidden_channels: 0 # 64
-  pg_hidden_channels: 0 # 32
+  pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
   phys_embeds: False # True
   phys_hidden_channels: 0
   graph_rewiring: False # can be in {false, remove-tag-0}

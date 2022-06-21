@@ -123,8 +123,7 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         self.use_mlp_phys = phys_hidden_channels > 0
 
         # Phys embeddings
-        self.PhysEmb = PhysEmbedding()
-        self.PhysEmb.create(phys=phys_embeds)
+        self.PhysEmb = PhysEmbedding(phys=phys_embeds, pg=self.use_pg)
         # With MLP
         if self.use_mlp_phys:
             self.phys_lin = Linear(self.PhysEmb.phys_embeds_size, phys_hidden_channels)
@@ -178,6 +177,9 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
 
         x_ = self.emb(x)
         rbf = self.act(self.lin_rbf(rbf))
+
+        if self.PhysEmbed.device != x.device:
+            self.PhysEmbed = self.PhysEmbed.to(x.device)
 
         if self.use_tag:
             x_tag = self.tag(tag)

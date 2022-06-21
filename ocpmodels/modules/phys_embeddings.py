@@ -36,38 +36,47 @@ class PhysEmbedding:
         self.group_size = 0
         self.period = None
         self.period_size = 0
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.make_from_mendeleev(phys)
 
-    def create(self, phys=True):
+    def to(self, device):
+        if self.phys_embeddings is not None:
+            self.phys_embeddings = self.phys_embeddings.to(device)
+        if self.group is not None:
+            self.group = self.group.to(device)
+        if self.period is not None:
+            self.period = self.period.to(device)
+        return self
+
+    def make_from_mendeleev(self, phys=True, pg=True):
         """Create an embedding vector for each atom
         containing key physics properties
 
         Args:
-            short (bool, optional): whether to exclude 'NaN' values columns
-            Defaults to False.
+            phys (bool, optional): whether we include fixed physical embeddings
+            Defaults to True.
         """
-        # Convert to torch tensor and cuda
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
         # Load table with all properties of all periodic table elements
         df = fetch_table("elements")
         df = df.set_index("atomic_number")
 
         # Fetch group and period data
-        df.group_id = df.group_id.fillna(value=19.0)
-        self.group_size = df.group_id.unique().shape[0]
-        self.group = torch.cat(
-            [
-                torch.ones(1, dtype=torch.long),
-                torch.tensor(df.group_id.loc[:100].values, dtype=torch.long),
-            ]
-        ).to(device)
-        self.period_size = df.period.loc[:100].unique().shape[0]
-        self.period = torch.cat(
-            [
-                torch.ones(1, dtype=torch.long),
-                torch.tensor(df.period.loc[:100].values, dtype=torch.long),
-            ]
-        ).to(device)
+        if pg:
+            df.group_id = df.group_id.fillna(value=19.0)
+            self.group_size = df.group_id.unique().shape[0]
+            self.group = torch.cat(
+                [
+                    torch.ones(1, dtype=torch.long),
+                    torch.tensor(df.group_id.loc[:100].values, dtype=torch.long),
+                ]
+            )
+            self.period_size = df.period.loc[:100].unique().shape[0]
+            self.period = torch.cat(
+                [
+                    torch.ones(1, dtype=torch.long),
+                    torch.tensor(df.period.loc[:100].values, dtype=torch.long),
+                ]
+            )
 
         if phys:
             # Select only potentially relevant elements
@@ -99,4 +108,4 @@ class PhysEmbedding:
                     torch.zeros(1, self.phys_embeds_size),
                     torch.from_numpy(df.values).float(),
                 ]
-            ).to(device)
+            )
