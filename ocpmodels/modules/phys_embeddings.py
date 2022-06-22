@@ -114,3 +114,11 @@ class PhysEmbedding(nn.Module):
                 self.register_parameter("properties", nn.Parameter(properties))
             else:
                 self.register_buffer("properties", properties)
+
+    @property
+    def device(self):
+        if self.props:
+            return self.properties.device
+        if self.pg:
+            return self.group.device
+        raise ValueError("PhysEmb has no device because it has no tensor!")
