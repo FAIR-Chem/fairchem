@@ -123,7 +123,7 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         self.use_mlp_phys = phys_hidden_channels > 0
 
         # Phys embeddings
-        self.phys_emb = PhysEmbedding(phys=phys_embeds, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(props=phys_embeds, pg=self.use_pg)
         # With MLP
         if self.use_mlp_phys:
             self.phys_lin = Linear(self.phys_emb.n_properties, phys_hidden_channels)

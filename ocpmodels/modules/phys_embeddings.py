@@ -43,9 +43,13 @@ class PhysEmbedding(nn.Module):
             "covalent_radius_pyykko_triple",
             "covalent_radius_pyykko",
         ]
-        self.short = short
         self.group_size = 0
         self.period_size = 0
+
+        self.props = props
+        self.props_grad = props_grad
+        self.pg = pg
+        self.short = short
 
         group = None
         period = None
@@ -76,7 +80,7 @@ class PhysEmbedding(nn.Module):
         self.register_buffer("group", group)
         self.register_buffer("period", period)
 
-        if phys:
+        if props:
             # Select only potentially relevant elements
             df = df[self.properties_list]
             df = df.loc[:85, :]
@@ -106,7 +110,7 @@ class PhysEmbedding(nn.Module):
                     torch.from_numpy(df.values).float(),
                 ]
             )
-            if phys_grad:
+            if props_grad:
                 self.register_parameter("properties", nn.Parameter(properties))
             else:
                 self.register_buffer("properties", properties)
