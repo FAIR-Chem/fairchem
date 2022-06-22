@@ -133,7 +133,7 @@ if __name__ == "__main__":
         # SNs are last in their batch
         data.atomic_numbers = cat(
             [
-                cat([b.atomic_numbers[non_sub_nodes[i]], tensor([-1], device=device)])
+                cat([b.atomic_numbers[non_sub_nodes[i]], tensor([84], device=device)])
                 for i in range(batch_size)
             ]
         )
