@@ -5,14 +5,18 @@ import torch.nn as nn
 
 
 class PhysEmbedding(nn.Module):
-    def __init__(self, phys=True, phys_grad=False, pg=False, short=False) -> None:
+    def __init__(self, props=True, props_grad=False, pg=False, short=False) -> None:
         """
         Create physical embeddings meta class with sub-emeddings for each atom
 
         Args:
-            phys (bool, optional): _description_. Defaults to True.
-            pg (bool, optional): _description_. Defaults to False.
-            short (bool, optional): _description_. Defaults to False.
+            props (bool, optional): Whether to create a properties embedding.
+                Defaults to True.
+            props_grad (bool, optional): Whether the properties embedding should be
+                learned or kept fixed. Defaults to False.
+            pg (bool, optional): Whether to use period and group embeddings.
+                Defaults to False.
+            short (bool, optional)
         """
         super().__init__()
 
