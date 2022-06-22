@@ -196,7 +196,7 @@ class NewSchNet(torch.nn.Module):
             self.tag_embedding = Embedding(3, tag_hidden_channels)
 
         # Phys embeddings
-        self.phys_emb = PhysEmbedding(phys=phys_embeds, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(props=phys_embeds, pg=self.use_pg)
         if self.use_mlp_phys:
             self.phys_lin = Linear(
                 self.phys_emb.n_properties, self.phys_hidden_channels

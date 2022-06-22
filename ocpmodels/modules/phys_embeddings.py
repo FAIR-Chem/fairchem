@@ -5,14 +5,18 @@ import torch.nn as nn
 
 
 class PhysEmbedding(nn.Module):
-    def __init__(self, phys=True, phys_grad=False, pg=False, short=False) -> None:
+    def __init__(self, props=True, props_grad=False, pg=False, short=False) -> None:
         """
         Create physical embeddings meta class with sub-emeddings for each atom
 
         Args:
-            phys (bool, optional): _description_. Defaults to True.
-            pg (bool, optional): _description_. Defaults to False.
-            short (bool, optional): _description_. Defaults to False.
+            props (bool, optional): Whether to create a properties embedding.
+                Defaults to True.
+            props_grad (bool, optional): Whether the properties embedding should be
+                learned or kept fixed. Defaults to False.
+            pg (bool, optional): Whether to use period and group embeddings.
+                Defaults to False.
+            short (bool, optional)
         """
         super().__init__()
 
@@ -39,10 +43,14 @@ class PhysEmbedding(nn.Module):
             "covalent_radius_pyykko_triple",
             "covalent_radius_pyykko",
         ]
-        self.short = short
         self.group_size = 0
         self.period_size = 0
         self.n_properties = 0
+
+        self.props = props
+        self.props_grad = props_grad
+        self.pg = pg
+        self.short = short
 
         group = None
         period = None
@@ -73,7 +81,7 @@ class PhysEmbedding(nn.Module):
         self.register_buffer("group", group)
         self.register_buffer("period", period)
 
-        if phys:
+        if props:
             # Select only potentially relevant elements
             df = df[self.properties_list]
             df = df.loc[:85, :]
@@ -103,7 +111,15 @@ class PhysEmbedding(nn.Module):
                     torch.from_numpy(df.values).float(),
                 ]
             )
-            if phys_grad:
+            if props_grad:
                 self.register_parameter("properties", nn.Parameter(properties))
             else:
                 self.register_buffer("properties", properties)
+
+    @property
+    def device(self):
+        if self.props:
+            return self.properties.device
+        if self.pg:
+            return self.group.device
+        raise ValueError("PhysEmb has no device because it has no tensor!")

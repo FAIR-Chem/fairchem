@@ -341,7 +341,7 @@ class NewForceNet(BaseModel):
             self.tag_embedding = nn.Embedding(3, tag_hidden_channels)
 
         # Phys embeddings
-        self.phys_emb = PhysEmbedding(phys=self.phys_embeds, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(props=self.phys_embeds, pg=self.use_pg)
 
         # Period + group embeddings
         if self.use_pg:
