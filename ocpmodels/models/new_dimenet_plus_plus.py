@@ -178,12 +178,13 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         x_ = self.emb(x)
         rbf = self.act(self.lin_rbf(rbf))
 
-        if self.PhysEmbed.device != x.device:
-            self.PhysEmbed = self.PhysEmbed.to(x.device)
+        if self.phys_emb.device != x.device:
+            self.phys_emb = self.phys_emb.to(x.device)
 
         if self.use_tag:
             x_tag = self.tag(tag)
             x_ = torch.cat((x_, x_tag), dim=1)
+
         if self.phys_emb.n_properties > 0:
             x_phys = self.phys_emb.properties[x]
             if self.use_mlp_phys:
