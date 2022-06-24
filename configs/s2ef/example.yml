@@ -3,13 +3,15 @@
 trainer: forces                                                                 # 'energy' or 'forces'
 
 task:
-  # The code currently only supports 'lmdb' for both IS2RE and S2EF.
+  # The code currently supports 'lmdb' and 'oc22_lmdb' for both IS2RE and S2EF.
+  #
+  # To train models on adsorption energy (as in OC20), use `lmdb`.
+  # To train models on total DFT energy, use `oc22_lmdb`.
   #
   # Can use 'single_point_lmdb' or 'trajectory_lmdb' for backward compatibility.
-  # 'single_point_lmdb' was for training IS2RE models, and 'trajectory_lmdb' for
-  # training S2EF models.
-  # To train models on total energy use `oc22_lmdb`.
-  dataset: lmdb
+  # 'single_point_lmdb' was for training IS2RE models, and 'trajectory_lmdb' was
+  # for training S2EF models.
+  dataset: lmdb                                                                 # 'lmdb' or 'oc22_lmdb'
   # This is an optional parameter specifying the val metric to watch for
   # improvement to decide when to save checkpoints.
   # By default, this is:
@@ -63,14 +65,15 @@ dataset:
     grad_target_mean: 0.0
     grad_target_std: 2.887317180633545
 
-    # If we want to train OC20 on total energy, a path to OC20 reference energies `oc20_ref`
-    # must be specificed to unreference existing OC20 data.
+    # If we want to train OC20 on total energy, a path to OC20 reference
+    # energies `oc20_ref` must be specificed to unreference existing OC20 data.
     # OC22 by default trains on total energy, so this flag is not necessary.
-    total_energy: False
-    oc20_ref: False
-    # If we want to train on total energies and use a linear reference normalization scheme
-    # we must specify the path to the per-element coefficients in a `.npz` format.
-    lin_ref: False
+    total_energy: False                                                         # True or False
+    oc20_ref: False                                                             # True or False
+    # If we want to train on total energies and use a linear reference
+    # normalization scheme, we must specify the path to the per-element
+    # coefficients in a `.npz` format.
+    lin_ref: False                                                              # True or False
   val:
     # Directory containing val set LMDBs
     src: data/s2ef/all/val_id/
