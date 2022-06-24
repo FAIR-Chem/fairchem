@@ -5,6 +5,7 @@
     * [Structure to Energy and Forces (S2EF)](#structure-to-energy-and-forces-s2ef-task)
     * [Initial Structure to Relaxed Structure (IS2RS) / Relaxed Energy (IS2RE)](#initial-structure-to-relaxed-structure-is2rs-and-initial-structure-to-relaxed-energy-is2re-tasks)
     * [Relaxation Trajectories](#relaxation-trajectories)
+    * [Bader charge data](#bader-charge-data)
     * [OC20 metadata](#oc20-mappings)
     * [Changelog](#dataset-changelog)
     * [License and bibtex](#citing-oc20)
@@ -163,6 +164,10 @@ Adsorbate+catalyst trajectories on a per adsorbate basis are provided [here](./D
 |294k systems    |20G    |151G    | [347f4183465810e9b384e7a033baefc7](https://dl.fbaipublicfiles.com/opencatalystproject/data/slab_trajectories.tar)    |
 
 
+### Bader charge data
+We provide Bader charge data for all final frames of our train + validation systems in OC20 (for both S2EF and IS2RE/RS tasks). A `.tar.gz` file, when downloaded and uncompressed will contain several directories with unique system-ids (of the format `random<XYZ>` where `XYZ` is an integer). Each directory will contain raw Bader charge analysis outputs. For more details on the Bader charge analysis, see https://theory.cm.utexas.edu/henkelman/research/bader/. 
+
+Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_bader_data.tar (MD5 checksum: `aecc5e23542de49beceb4b7e44c153b9`)
 
 ### OC20 mappings
 
@@ -353,7 +358,7 @@ For this task’s train, validation and test sets, we provide precomputed LMDBs 
 
 |Splits    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
 |---    |---    |---    |---    |
-|Train (all splits) + Validation (all splits) + test (all splits)    |   20G |  71G  | [ebea523c6f8d61248a37b4dd660b11e6](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/s2ef_total_train_val_test_lmdbs.tar.gz%7C)
+|Train (all splits) + Validation (all splits) + test (all splits)    |   20G |  71G  | [ebea523c6f8d61248a37b4dd660b11e6](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/s2ef_total_train_val_test_lmdbs.tar.gz)
 |    |    |    |    |
 
 
