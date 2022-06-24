@@ -3,7 +3,7 @@ includes:
   - configs/oc22/is2re/base.yml
 
 model:
-  name: painn_dev
+  name: painn
   hidden_channels: 1024
   num_layers: 6
   num_rbf: 128
