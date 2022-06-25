@@ -1,0 +1,42 @@
+# Make sure to run without AMP.
+includes:
+  - configs/oc22/s2ef/base.yml
+
+model:
+  name: painn
+  hidden_channels: 512
+  num_layers: 6
+  num_rbf: 128
+  cutoff: 12.0
+  max_neighbors: 50
+  scale_file: configs/oc22/s2ef/painn/nb6_h512_n50_c12_oc22.pt
+  regress_forces: True
+  direct_forces: True
+  use_pbc: True
+  otf_graph: True
+
+optim:
+  batch_size: 32
+  eval_batch_size: 32
+  load_balancing: atoms
+  eval_every: 5000
+  num_workers: 2
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True}
+  lr_initial: 1.e-4
+  warmup_steps: -1 # don't warm-up the learning rate
+  # warmup_factor: 0.2
+  lr_gamma: 0.8
+  # Following calculation is for an effective batch size of 32 x 8 GPUs = 256
+  # and a dataset size of 8225293 (1 epoch = 32130 steps).
+  # The older dataset had 6140155 points (1 epoch = 23984 steps).
+  lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+    - 64000 # ~2 epochs
+    - 96000 # ~3 epochs
+    - 128000 # ~4 epochs
+    - 160000 # ~5 epochs
+    - 192000 # ~6 epochs
+  max_epochs: 80
+  ema_decay: 0.999
+  clip_grad_norm: 10
+  weight_decay: 0  # 2e-6 (TF weight decay) / 1e-4 (lr) = 2e-2
