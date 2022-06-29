@@ -17,8 +17,9 @@ from time import time
 import matplotlib.pyplot as plt
 import numpy as np
 import torch  # noqa: F401
-from torch import cat, tensor, where, isin
 from minydra import resolved_args
+from torch import cat, isin, tensor, where
+from torch_geometric.utils import remove_self_loops, sort_edge_index
 from tqdm import tqdm
 
 from ocpmodels.common.flags import flags
@@ -88,6 +89,8 @@ if __name__ == "__main__":
         data = deepcopy(b)
         # start time
         t0 = time()
+
+        # Call function from graph_rewiring
 
         batch_size = max(b.batch).item() + 1
         device = b.edge_index.device
@@ -273,8 +276,7 @@ if __name__ == "__main__":
                 for e in range(batch_size)
             ]
         )
-        for e in range(batch_size):
-            assoc[sub_nodes[e]] = new_sn_ids[e]
+
         # new values for non-sub-indices
         # assert (assoc[batch_sub_nodes] == -1).all()
         # assert (assoc[mask] != -1).all()
@@ -314,6 +316,108 @@ if __name__ == "__main__":
         )
         print(f"Total processing time: {tf-t0:.5f}")
         print(f"Total processing time per batch: {(tf-t0) / batch_size:.5f}")
+
+    # check conditionno_several_super_node
+    if opts.no_several_super_node is None:
+
+        for batch in trainer.train_loader:
+            break
+        b = batch[0]
+        data = deepcopy(b)
+        t0 = time()
+
+        batch_size = max(b.batch).item() + 1
+        device = b.edge_index.device
+
+        # ids of sub-surface nodes, per batch
+        sub_nodes = [
+            torch.where((b.tags == 0) * (b.batch == i))[0] for i in range(batch_size)
+        ]
+        # idem for non-sub-surface nodes
+        non_sub_nodes = [
+            torch.where((b.tags != 0) * (b.batch == i))[0] for i in range(batch_size)
+        ]
+        # atom types per supernode
+        atom_types = [
+            torch.unique(b.atomic_numbers[(b.tags == 0) * (b.batch == i)])
+            for i in range(batch_size)
+        ]
+        # number of supernodes per batch
+        num_supernodes = [atom_types[i].shape[0] for i in range(batch_size)]
+        total_num_supernodes = sum(num_supernodes)
+        # indexes of nodes belonging to each supernode
+        supernodes_composition = [
+            [
+                torch.where((b.atomic_numbers == an) * (b.tags == 0) * (b.batch == i))[
+                    0
+                ]
+                for an in atom_types[i]
+            ]
+            for i in range(batch_size)
+        ]
+        # supernode indexes
+        sn_idxes = [
+            [b.ptr[1:][i] + sn for sn in range(num_supernodes[i])]
+            for i in range(len(num_supernodes))
+        ]
+
+        # supernode positions
+        supernodes_pos = [
+            b.pos[sn, :][0] for sublist in supernodes_composition for sn in sublist
+        ]
+
+        ### Compute supernode edge-index
+        ei_batch_ids = [
+            (b.ptr[i] <= b.edge_index[0]) * (b.edge_index[0] < b.ptr[i + 1])
+            for i in range(batch_size)
+        ]
+        # list of graph level adj.
+        ei_batch = [b.edge_index[:, ei_batch_ids[i]] for i in range(batch_size)]
+
+        # Define new edge_index matrix per batch
+        for i in range(batch_size):
+            for j, sc in enumerate(supernodes_composition[i]):
+                ei_batch[i] = torch.where(
+                    torch.isin(ei_batch[i], sc), sn_idxes[i][j], ei_batch[i]
+                )
+
+        # Remove self loops and duplicates
+        clean_new_edge_index = [
+            torch.unique(remove_self_loops(adj)[0], dim=1) for adj in ei_batch
+        ]
+
+        # re-index batch adj matrix one by one
+        max_num_nodes = 0
+        reindexed_clean_edge_index = clean_new_edge_index.copy()
+        for i in range(batch_size):
+            num_nodes = data.ptr[i + 1] + num_supernodes[i]
+            mask = torch.ones(num_nodes, dtype=torch.bool, device=device)
+            mask[sub_nodes[i]] = 0
+            mask[: data.ptr[i]] = torch.zeros(
+                data.ptr[i], dtype=torch.bool, device=device
+            )
+            assoc = torch.full(
+                (mask.shape[0],), -1, dtype=torch.long, device=mask.device
+            )
+            assoc[mask] = torch.arange(
+                start=max_num_nodes, end=max_num_nodes + mask.sum(), device=assoc.device
+            )
+            max_num_nodes = max(assoc) + 1
+            reindexed_clean_edge_index[i] = assoc[clean_new_edge_index[i]]
+
+        # Concat into one
+        concat_reindexed_clean_edge_index = torch.cat(reindexed_clean_edge_index, dim=1)
+
+        # Distances
+        distance = torch.sqrt(
+            (
+                (
+                    data.pos[concat_reindexed_clean_edge_index[0, :]]
+                    - data.pos[concat_reindexed_clean_edge_index[1, :]]
+                )
+                ** 2
+            ).sum(-1)
+        )
 
     if opts.plot_tags is not None:
         tags = {
