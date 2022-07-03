@@ -1,7 +1,7 @@
 import pandas as pd
 import torch
-from mendeleev.fetch import fetch_table
 import torch.nn as nn
+from mendeleev.fetch import fetch_ionization_energies, fetch_table
 
 
 class PhysEmbedding(nn.Module):
@@ -23,25 +23,21 @@ class PhysEmbedding(nn.Module):
         self.properties_list = [
             "atomic_radius",
             "atomic_volume",
-            "atomic_weight",
-            "atomic_weight_uncertainty",
             "density",
             "dipole_polarizability",
             "electron_affinity",
             "en_allen",
-            "boiling_point",
             "specific_heat",
-            "evaporation_heat",
-            "fusion_heat",
             "melting_point",
             "thermal_conductivity",
-            "heat_of_formation",
             "vdw_radius",
             "metallic_radius",
             "metallic_radius_c12",
             "covalent_radius_pyykko_double",
             "covalent_radius_pyykko_triple",
             "covalent_radius_pyykko",
+            "IE1",
+            "IE2",
         ]
         self.group_size = 0
         self.period_size = 0
@@ -58,6 +54,10 @@ class PhysEmbedding(nn.Module):
         # Load table with all properties of all periodic table elements
         df = fetch_table("elements")
         df = df.set_index("atomic_number")
+
+        # Add ionization energy
+        ies = fetch_ionization_energies(degree=[1, 2])
+        df = pd.concat([df, ies], axis=1)
 
         # Fetch group and period data
         if pg:
