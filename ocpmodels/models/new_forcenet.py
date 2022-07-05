@@ -22,7 +22,12 @@ from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
-from ocpmodels.preprocessing import remove_tag0_nodes
+from ocpmodels.preprocessing import (
+    one_supernode_per_atom_type,
+    one_supernode_per_atom_type_dist,
+    one_supernode_per_graph,
+    remove_tag0_nodes,
+)
 
 
 class FNDecoder(nn.Module):
@@ -462,12 +467,28 @@ class NewForceNet(BaseModel):
 
     def forward(self, data):
 
+        # Rewire the graph
         if not self.graph_rewiring:
             z = data.atomic_numbers.long()
             pos = data.pos
             batch = data.batch
         elif self.graph_rewiring == "remove-tag-0":
             data = remove_tag0_nodes(data)
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-graph":
+            data = one_supernode_per_graph(data)
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-atom-type":
+            data = one_supernode_per_atom_type(data)
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-atom-type-min-dist":
+            data = one_supernode_per_atom_type(data)
             z = data.atomic_numbers.long()
             pos = data.pos
             batch = data.batch

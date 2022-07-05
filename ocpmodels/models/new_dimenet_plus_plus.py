@@ -56,7 +56,12 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
-from ocpmodels.preprocessing import remove_tag0_nodes
+from ocpmodels.preprocessing import (
+    one_supernode_per_atom_type,
+    one_supernode_per_atom_type_dist,
+    one_supernode_per_graph,
+    remove_tag0_nodes,
+)
 
 try:
     import sympy as sym
@@ -564,11 +569,24 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             data.cell_offsets = cell_offsets
             data.neighbors = neighbors
 
+        # Rewire the graph
         if not self.graph_rewiring:
             pos = data.pos
             batch = data.batch
         elif self.graph_rewiring == "remove-tag-0":
             data = remove_tag0_nodes(data)
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-graph":
+            data = one_supernode_per_graph(data)
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-atom-type":
+            data = one_supernode_per_atom_type(data)
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-atom-type-min-dist":
+            data = one_supernode_per_atom_type(data)
             pos = data.pos
             batch = data.batch
         else:

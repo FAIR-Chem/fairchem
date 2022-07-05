@@ -122,4 +122,4 @@ class PhysEmbedding(nn.Module):
             return self.properties.device
         if self.pg:
             return self.group.device
-        raise ValueError("PhysEmb has no device because it has no tensor!")
+        # raise ValueError("PhysEmb has no device because it has no tensor!")

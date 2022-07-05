@@ -25,6 +25,9 @@ if __name__ == "__main__":
         warnings.warn("No model / mode is given; chosen as default")
 
     config = build_config(args, override_args)
+    config["model"][
+        "graph_rewiring"
+    ] = "one-supernode-per-graph"  #'one-supernode-per-atom-type'  # 'one-supernode-per-graph'
     # Customise args
     # config['model']['use_pbc'] = True
     # config['model']['graph_rewiring'] = 'remove-tag-0'

@@ -20,7 +20,12 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
-from ocpmodels.preprocessing import remove_tag0_nodes
+from ocpmodels.preprocessing import (
+    one_supernode_per_atom_type,
+    one_supernode_per_atom_type_dist,
+    one_supernode_per_graph,
+    remove_tag0_nodes,
+)
 
 
 class InteractionBlock(torch.nn.Module):
@@ -350,6 +355,21 @@ class NewSchNetWrap(NewSchNet):
             z = data.atomic_numbers.long()
             pos = data.pos
             batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-graph":
+            data = one_supernode_per_graph(data)
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-atom-type":
+            data = one_supernode_per_atom_type(data)
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-atom-type-min-dist":
+            data = one_supernode_per_atom_type(data)
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
         else:
             raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
 
@@ -382,13 +402,13 @@ class NewSchNetWrap(NewSchNet):
 
         h = self.embedding(z)
 
-        if self.phys_emb.device != batch.device:
-            self.phys_emb = self.phys_emb.to(batch.device)
-
         if self.use_tag:
             assert data.tags is not None
             h_tag = self.tag_embedding(data.tags)
             h = torch.cat((h, h_tag), dim=1)
+
+        if self.phys_emb.device != batch.device:
+            self.phys_emb = self.phys_emb.to(batch.device)
 
         if self.use_phys_embeddings:
             h_phys = self.phys_emb.properties[z]
