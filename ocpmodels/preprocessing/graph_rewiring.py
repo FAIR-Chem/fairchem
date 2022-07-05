@@ -465,6 +465,7 @@ def one_supernode_per_atom_type_dist(data):
     """
     batch_size = max(data.batch).item() + 1
     device = data.edge_index.device
+    original_ptr = deepcopy(data.ptr)
 
     # ids of sub-surface nodes, per batch
     sub_nodes = [
@@ -492,10 +493,17 @@ def one_supernode_per_atom_type_dist(data):
         ]
         for i in range(batch_size)
     ]
-    # supernode indexes
-    sn_idxes = [
-        [data.ptr[1:][i] + sn for sn in range(num_supernodes[i])]
-        for i in range(len(num_supernodes))
+
+    # super node index per batch: they are last in their batch (after removal of tag0 nodes)
+    # new_sn_ids = []
+    # count = 0
+    # for i in range(batch_size):
+    #     new_sn_ids.append([(count + len(non_sub_nodes[i]) + j) for j in range((num_supernodes[i]))])
+    #     count += len(non_sub_nodes[i]) + num_supernodes[i]
+    new_sn_ids = [
+        [sum([len(nsn) for nsn in non_sub_nodes[: i + 1]]) + j
+            for j in range(sum(num_supernodes[:i]), sum(num_supernodes[:i+1]))]
+        for i in range(batch_size) 
     ]
 
     # supernode positions
@@ -505,9 +513,17 @@ def one_supernode_per_atom_type_dist(data):
         for sn in sublist
     ]
 
+    # number of atoms per graph in the batch
+    data.ptr = torch.tensor(
+        [0] + [max(nsi) + 1 for nsi in new_sn_ids],
+        dtype=data.ptr.dtype,
+        device=device,
+    )
+    data.natoms = data.ptr[1:] - data.ptr[:-1]
+
     # Compute supernode edge-index
     ei_batch_ids = [
-        (data.ptr[i] <= data.edge_index[0]) * (data.edge_index[0] < data.ptr[i + 1])
+        (original_ptr[i] <= data.edge_index[0]) * (data.edge_index[0] < original_ptr[i + 1])
         for i in range(batch_size)
     ]
     # list of graph level adj.
@@ -518,49 +534,62 @@ def one_supernode_per_atom_type_dist(data):
     for i in range(batch_size):
         for j, sc in enumerate(supernodes_composition[i]):
             ei_batch[i] = torch.where(
-                torch.isin(ei_batch[i], sc), sn_idxes[i][j], ei_batch[i]
+                torch.isin(ei_batch[i], sc), new_sn_ids[i][j], ei_batch[i]
             )
 
-    # Remove self loops and duplicates
-    for i in range(batch_size):
-        ei_batch[i], ei_cell_offsets[i] = remove_self_loops(
-            ei_batch[i], ei_cell_offsets[i]
-        )
-        ei_batch[i], ei_cell_offsets[i] = coalesce(
-            ei_batch[i], edge_attr=ei_cell_offsets[i], reduce="min"
-        )
+    # boolean: src node is not sub-surface node
+    src_is_not_sub = [
+        isin(data.edge_index[0][ei_batch_ids[i]], ns)
+        for i, ns in enumerate(non_sub_nodes)
+    ]
+    # boolean: target node is not sub-surface node
+    target_is_not_sub = [
+        isin(data.edge_index[1][ei_batch_ids[i]], ns)
+        for i, ns in enumerate(non_sub_nodes)
+    ]
+    # boolean: edges for which NOT both nodes are sub-surface atoms
+    # so tag0--tag1/2 + tag1/2--tag1/2 edges
+    not_both_are_sub = [
+        torch.logical_or(s, t) for s, t in zip(src_is_not_sub, target_is_not_sub)
+    ]
+    # Adapt cell offsets
+    all_not_both_are_sub = cat(not_both_are_sub)
+    new_cell_offsets = data.cell_offsets[all_not_both_are_sub]
 
-    # Concat cell offsets
-    data.cell_offsets = torch.cat(ei_cell_offsets, dim=0)
+    # edge-index without tag0-tag0 edges
+    ei_not_both = data.edge_index.clone()[:, all_not_both_are_sub]
 
-    # re-index batch adj matrix one by one
-    max_num_nodes = 0
-    for i in range(batch_size):
-        num_nodes = data.ptr[i + 1] + num_supernodes[i]
-        mask = torch.ones(num_nodes, dtype=torch.bool, device=device)
-        mask[sub_nodes[i]] = 0
-        # mask = mask[data.ptr[i]:]
-        mask[: data.ptr[i]] = torch.zeros(data.ptr[i], dtype=torch.bool, device=device)
-        assoc = torch.full((mask.shape[0],), -1, dtype=torch.long, device=mask.device)
-        assoc[mask] = torch.arange(
-            start=max_num_nodes, end=max_num_nodes + mask.sum(), device=assoc.device
-        )
-        max_num_nodes = max(assoc) + 1
-        ei_batch[i] = assoc[ei_batch[i]]
-
-    # number of atoms per graph in the batch
-    data.ptr = torch.tensor(
-        [0] + [nsi.max() + 1 for nsi in ei_batch],
-        dtype=data.ptr.dtype,
-        device=device,
+    # Smooth supernode composition
+    sc_cat = [s for sn in supernodes_composition for s in sn]
+    new_sn_ids_cat = [s for sn in new_sn_ids for s in sn]
+    
+    # re-index edges
+    num_nodes = original_ptr[-1] # + sum(num_supernodes)
+    mask = torch.zeros(num_nodes, dtype=torch.bool, device=data.edge_index.device)
+    mask[cat(non_sub_nodes)] = 1  # mask is 0 for sub-surface atoms
+    assoc = torch.full((num_nodes,), -1, dtype=torch.long, device=mask.device)
+    assoc[mask] = cat(
+        [
+            torch.arange(data.ptr[e], data.ptr[e + 1] - num_supernodes[e], device=assoc.device)
+            for e in range(batch_size)
+        ]
     )
-    data.natoms = data.ptr[1:] - data.ptr[:-1]
+    # Adapt cell_offsets: add [0,0,0] for supernode related edges
+    is_minus_one = isin(ei_not_both, torch.tensor(-1, device=device))
+    new_cell_offsets[is_minus_one.any(dim=0)] = torch.tensor([0, 0, 0], device=device)
+    # Set corresponding supernode index to subatoms
+    for i, sn in enumerate(sc_cat): 
+        assoc[sn] = new_sn_ids_cat[i]
+    # Re-index
+    ei_batch = assoc[ei_not_both]
 
-    # neighbors
-    data.neighbors = tensor([adj.shape[1] for adj in ei_batch], device=device)
-
-    # Concat edge_index into one
-    data.edge_index = torch.cat(ei_batch, dim=1)
+    # Remove self loops and duplicates
+    ei_batch, new_cell_offsets = remove_self_loops(
+            ei_batch, new_cell_offsets
+    )
+    data.edge_index, data.cell_offsets = coalesce(
+            ei_batch, edge_attr=new_cell_offsets, reduce="min"
+    )
 
     # batch
     data.batch = torch.cat(
@@ -573,6 +602,11 @@ def one_supernode_per_atom_type_dist(data):
     )
     # data.batch = torch.cat([torch.tensor(i).expand(data.natoms[i])
     #     for  i in range(batch_size) ])
+
+    # neighbors
+    _, data.neighbors = torch.unique(
+            data.batch[data.edge_index[0, :]], return_counts=True
+        )
 
     # tags
     data.tags = torch.cat(
