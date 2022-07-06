@@ -487,7 +487,7 @@ class NewForceNet(BaseModel):
             z = data.atomic_numbers.long()
             pos = data.pos
             batch = data.batch
-        elif self.graph_rewiring == "one-supernode-per-atom-type-min-dist":
+        elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
             data = one_supernode_per_atom_type(data)
             z = data.atomic_numbers.long()
             pos = data.pos

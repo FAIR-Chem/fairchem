@@ -334,7 +334,7 @@ def one_supernode_per_atom_type(data):
     # O out cell offsets of supernodes
     cat_sn_indxes = [sn for sublist in sn_idxes for sn in sublist]
     data.cell_offsets[
-        isin(cat(ei_batch, dim=1), torch.tensor(cat_sn_indxes)).any(dim=0)
+        isin(cat(ei_batch, dim=1), torch.tensor(cat_sn_indxes, device=device)).any(dim=0)
     ] = torch.tensor([0, 0, 0], device=device)
 
     # re-index batch adj matrix one by one

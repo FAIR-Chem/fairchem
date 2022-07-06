@@ -585,7 +585,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             data = one_supernode_per_atom_type(data)
             pos = data.pos
             batch = data.batch
-        elif self.graph_rewiring == "one-supernode-per-atom-type-min-dist":
+        elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
             data = one_supernode_per_atom_type(data)
             pos = data.pos
             batch = data.batch
