@@ -250,7 +250,7 @@ def one_supernode_per_graph(data, verbose=False):
     return data
 
 
-def one_supernode_per_atom_type(data):
+def one_supernode_per_atom_type_bis(data):
     """Create one supernode for each sub-surface atom type
     and remove all such tag-0 atoms.
 
@@ -334,7 +334,9 @@ def one_supernode_per_atom_type(data):
     # O out cell offsets of supernodes
     cat_sn_indxes = [sn for sublist in sn_idxes for sn in sublist]
     data.cell_offsets[
-        isin(cat(ei_batch, dim=1), torch.tensor(cat_sn_indxes, device=device)).any(dim=0)
+        isin(cat(ei_batch, dim=1), torch.tensor(cat_sn_indxes, device=device)).any(
+            dim=0
+        )
     ] = torch.tensor([0, 0, 0], device=device)
 
     # re-index batch adj matrix one by one
@@ -464,11 +466,9 @@ def one_supernode_per_atom_type(data):
     return data
 
 
-def one_supernode_per_atom_type_dist(data):
+def one_supernode_per_atom_type(data):
     """Create one supernode for each sub-surface atom type
     and remove all such tag-0 atoms.
-    Distance to supernode is defined as min. dist of subnodes
-    instead of dist. to new positions
 
     Args:
         data (torch_geometric.Data): the data batch to re-wire
@@ -661,6 +661,207 @@ def one_supernode_per_atom_type_dist(data):
         ((data.pos[data.edge_index[0, :]] - data.pos[data.edge_index[1, :]]) ** 2).sum(
             -1
         )
+    )
+
+    return data
+
+
+def one_supernode_per_atom_type_dist(data):
+    """Create one supernode for each sub-surface atom type
+    and remove all such tag-0 atoms.
+    Distance to supernode is defined as min. dist of subnodes
+    instead of dist. to new positions
+
+    Args:
+        data (torch_geometric.Data): the data batch to re-wire
+
+    Returns:
+        torch_geometric.Data: the data rewired data batch
+    """
+    batch_size = max(data.batch).item() + 1
+    device = data.edge_index.device
+    original_ptr = deepcopy(data.ptr)
+
+    # idem for non-sub-surface nodes
+    non_sub_nodes = [
+        torch.where((data.tags != 0) * (data.batch == i))[0] for i in range(batch_size)
+    ]
+    # atom types per supernode
+    atom_types = [
+        torch.unique(data.atomic_numbers[(data.tags == 0) * (data.batch == i)])
+        for i in range(batch_size)
+    ]
+    # number of supernodes per batch
+    num_supernodes = [atom_types[i].shape[0] for i in range(batch_size)]
+    total_num_supernodes = sum(num_supernodes)
+    # indexes of nodes belonging to each supernode
+    supernodes_composition = [
+        torch.where((data.atomic_numbers == an) * (data.tags == 0) * (data.batch == i))[
+            0
+        ]
+        for i in range(batch_size)
+        for an in atom_types[i]
+    ]
+
+    # super node index per batch: they are last in their batch (after removal of tag0 nodes)
+    # new_sn_ids = []
+    # count = 0
+    # for i in range(batch_size):
+    #     new_sn_ids.append([(count + len(non_sub_nodes[i]) + j) for j in range((num_supernodes[i]))])
+    #     count += len(non_sub_nodes[i]) + num_supernodes[i]
+    new_sn_ids = [
+        [
+            sum([len(nsn) for nsn in non_sub_nodes[: i + 1]]) + j
+            for j in range(sum(num_supernodes[:i]), sum(num_supernodes[: i + 1]))
+        ]
+        for i in range(batch_size)
+    ]
+    # Concat version
+    new_sn_ids_cat = [s for sn in new_sn_ids for s in sn]
+
+    # supernode positions
+    supernodes_pos = [data.pos[sn, :].mean(0)[None, :] for sn in supernodes_composition]
+
+    # number of atoms per graph in the batch
+    data.ptr = torch.tensor(
+        [0] + [max(nsi) + 1 for nsi in new_sn_ids],
+        dtype=data.ptr.dtype,
+        device=device,
+    )
+    data.natoms = data.ptr[1:] - data.ptr[:-1]
+
+    # re-index edges
+    num_nodes = original_ptr[-1]  # + sum(num_supernodes)
+    mask = torch.zeros(num_nodes, dtype=torch.bool, device=device)
+    mask[cat(non_sub_nodes)] = 1  # mask is 0 for sub-surface atoms
+    assoc = torch.full((num_nodes,), -1, dtype=torch.long, device=device)
+    assoc[mask] = cat(
+        [
+            torch.arange(
+                data.ptr[e], data.ptr[e + 1] - num_supernodes[e], device=device
+            )
+            for e in range(batch_size)
+        ]
+    )
+    # Set corresponding supernode index to subatoms
+    for i, sn in enumerate(supernodes_composition):
+        assoc[sn] = new_sn_ids_cat[i]
+    # Re-index
+    data.edge_index = assoc[data.edge_index]
+
+    # Adapt cell_offsets: add [0,0,0] for supernode related edges
+    # TODO: maybe want to keep cell offsets.
+    data.cell_offsets[
+        isin(data.edge_index, torch.tensor(new_sn_ids_cat)).any(dim=0)
+    ] = torch.tensor([0, 0, 0], device=device)
+
+    # Define dist(sn-node) as min(dist(subnode_i, node))
+    data.edge_index, offsets_and_distances = remove_self_loops(
+        data.edge_index, cat([data.distances.unsqueeze(1), data.cell_offsets], dim=1)
+    )
+    # De-cat offsets and distances
+    data.cell_offsets = offsets_and_distances[:, 1:]
+    data.distances = offsets_and_distances[:, 0]
+    #
+    _, data.distances = coalesce(
+        data.edge_index, edge_attr=data.distances, reduce="min"
+    )
+    data.edge_index, data.cell_offsets = coalesce(
+        data.edge_index, edge_attr=data.cell_offsets, reduce="min"
+    )
+
+    # batch
+    data.batch = torch.cat(
+        [
+            torch.tensor(i, device=device).expand(
+                non_sub_nodes[i].shape[0] + num_supernodes[i]
+            )
+            for i in range(batch_size)
+        ]
+    )
+    # data.batch = torch.cat([torch.tensor(i).expand(data.natoms[i])
+    #     for  i in range(batch_size) ])
+
+    # neighbors
+    _, data.neighbors = torch.unique(
+        data.batch[data.edge_index[0, :]], return_counts=True
+    )
+
+    # tags
+    data.tags = torch.cat(
+        [
+            torch.cat(
+                [
+                    data.tags[non_sub_nodes[i]],
+                    torch.tensor([0], dtype=data.tags.dtype, device=device).expand(
+                        num_supernodes[i]
+                    ),
+                ]
+            )
+            for i in range(batch_size)
+        ]
+    )
+
+    # SNs are last in their batch
+    data.atomic_numbers = cat(
+        [
+            cat([data.atomic_numbers[non_sub_nodes[i]], atom_types[i]])
+            for i in range(batch_size)
+        ]
+    )
+
+    # position exclude the sub-surface atoms but include extra super-nodes
+    acc_num_supernodes = [0] + [sum(num_supernodes[: i + 1]) for i in range(batch_size)]
+    data.pos = cat(
+        [
+            cat(
+                [
+                    data.pos[non_sub_nodes[i]],
+                    cat(
+                        supernodes_pos[
+                            acc_num_supernodes[i] : acc_num_supernodes[i + 1]
+                        ]
+                    ),
+                ]
+            )
+            for i in range(batch_size)
+        ]
+    )
+
+    # pos relaxed
+    data.pos_relaxed = data.pos
+
+    # the force applied on the super node is the mean of the force applied
+    # to its aggregates (per batch)
+    sn_force = [
+        data.force[supernodes_composition[i]].mean(0)[None, :]
+        for i in range(total_num_supernodes)
+    ]
+    data.force = cat(
+        [
+            cat(
+                [
+                    data.force[non_sub_nodes[i]],
+                    cat(sn_force[acc_num_supernodes[i] : acc_num_supernodes[i + 1]]),
+                ]
+            )
+            for i in range(batch_size)
+        ]
+    )
+
+    # fixed atoms
+    data.fixed = cat(
+        [
+            cat(
+                [
+                    data.fixed[non_sub_nodes[i]],
+                    tensor([1.0], dtype=data.fixed.dtype, device=device).expand(
+                        num_supernodes[i]
+                    ),
+                ]
+            )
+            for i in range(batch_size)
+        ]
     )
 
     return data
