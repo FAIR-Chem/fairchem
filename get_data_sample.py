@@ -90,7 +90,8 @@ if __name__ == "__main__":
             break
         b = batch[0]
         b_bis = deepcopy(b)
-        # one_supernode_per_graph(b)
+        b_bisbis = deepcopy(b)
+        data_bis_bis = one_supernode_per_graph(b_bisbis)
         data_bis = one_supernode_per_atom_type(b_bis)
         data = one_supernode_per_atom_type_dist(b)
         assert data == data_bis
