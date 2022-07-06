@@ -467,10 +467,6 @@ def one_supernode_per_atom_type_dist(data):
     device = data.edge_index.device
     original_ptr = deepcopy(data.ptr)
 
-    # ids of sub-surface nodes, per batch
-    sub_nodes = [
-        torch.where((data.tags == 0) * (data.batch == i))[0] for i in range(batch_size)
-    ]
     # idem for non-sub-surface nodes
     non_sub_nodes = [
         torch.where((data.tags != 0) * (data.batch == i))[0] for i in range(batch_size)
@@ -482,16 +478,14 @@ def one_supernode_per_atom_type_dist(data):
     ]
     # number of supernodes per batch
     num_supernodes = [atom_types[i].shape[0] for i in range(batch_size)]
-    # total_num_supernodes = sum(num_supernodes)
+    total_num_supernodes = sum(num_supernodes)
     # indexes of nodes belonging to each supernode
     supernodes_composition = [
-        [
-            torch.where(
-                (data.atomic_numbers == an) * (data.tags == 0) * (data.batch == i)
-            )[0]
-            for an in atom_types[i]
+        torch.where((data.atomic_numbers == an) * (data.tags == 0) * (data.batch == i))[
+            0
         ]
         for i in range(batch_size)
+        for an in atom_types[i]
     ]
 
     # super node index per batch: they are last in their batch (after removal of tag0 nodes)
@@ -501,17 +495,17 @@ def one_supernode_per_atom_type_dist(data):
     #     new_sn_ids.append([(count + len(non_sub_nodes[i]) + j) for j in range((num_supernodes[i]))])
     #     count += len(non_sub_nodes[i]) + num_supernodes[i]
     new_sn_ids = [
-        [sum([len(nsn) for nsn in non_sub_nodes[: i + 1]]) + j
-            for j in range(sum(num_supernodes[:i]), sum(num_supernodes[:i+1]))]
-        for i in range(batch_size) 
+        [
+            sum([len(nsn) for nsn in non_sub_nodes[: i + 1]]) + j
+            for j in range(sum(num_supernodes[:i]), sum(num_supernodes[: i + 1]))
+        ]
+        for i in range(batch_size)
     ]
+    # Concat version
+    new_sn_ids_cat = [s for sn in new_sn_ids for s in sn]
 
     # supernode positions
-    supernodes_pos = [
-        data.pos[sn, :].mean(0)[None, :]
-        for sublist in supernodes_composition
-        for sn in sublist
-    ]
+    supernodes_pos = [data.pos[sn, :].mean(0)[None, :] for sn in supernodes_composition]
 
     # number of atoms per graph in the batch
     data.ptr = torch.tensor(
@@ -523,19 +517,10 @@ def one_supernode_per_atom_type_dist(data):
 
     # Compute supernode edge-index
     ei_batch_ids = [
-        (original_ptr[i] <= data.edge_index[0]) * (data.edge_index[0] < original_ptr[i + 1])
+        (original_ptr[i] <= data.edge_index[0])
+        * (data.edge_index[0] < original_ptr[i + 1])
         for i in range(batch_size)
     ]
-    # list of graph level adj.
-    ei_batch = [data.edge_index[:, ei_batch_ids[i]] for i in range(batch_size)]
-    ei_cell_offsets = [data.cell_offsets[ei_batch_ids[i], :] for i in range(batch_size)]
-
-    # Define new edge_index matrix per batch
-    for i in range(batch_size):
-        for j, sc in enumerate(supernodes_composition[i]):
-            ei_batch[i] = torch.where(
-                torch.isin(ei_batch[i], sc), new_sn_ids[i][j], ei_batch[i]
-            )
 
     # boolean: src node is not sub-surface node
     src_is_not_sub = [
@@ -552,43 +537,40 @@ def one_supernode_per_atom_type_dist(data):
     not_both_are_sub = [
         torch.logical_or(s, t) for s, t in zip(src_is_not_sub, target_is_not_sub)
     ]
-    # Adapt cell offsets
+    # New cell_offsets and edge_index without tag0-tag0 edges
     all_not_both_are_sub = cat(not_both_are_sub)
     new_cell_offsets = data.cell_offsets[all_not_both_are_sub]
-
-    # edge-index without tag0-tag0 edges
     ei_not_both = data.edge_index.clone()[:, all_not_both_are_sub]
 
-    # Smooth supernode composition
-    sc_cat = [s for sn in supernodes_composition for s in sn]
-    new_sn_ids_cat = [s for sn in new_sn_ids for s in sn]
-    
     # re-index edges
-    num_nodes = original_ptr[-1] # + sum(num_supernodes)
+    num_nodes = original_ptr[-1]  # + sum(num_supernodes)
     mask = torch.zeros(num_nodes, dtype=torch.bool, device=data.edge_index.device)
     mask[cat(non_sub_nodes)] = 1  # mask is 0 for sub-surface atoms
     assoc = torch.full((num_nodes,), -1, dtype=torch.long, device=mask.device)
     assoc[mask] = cat(
         [
-            torch.arange(data.ptr[e], data.ptr[e + 1] - num_supernodes[e], device=assoc.device)
+            torch.arange(
+                data.ptr[e], data.ptr[e + 1] - num_supernodes[e], device=assoc.device
+            )
             for e in range(batch_size)
         ]
     )
-    # Adapt cell_offsets: add [0,0,0] for supernode related edges
-    is_minus_one = isin(ei_not_both, torch.tensor(-1, device=device))
-    new_cell_offsets[is_minus_one.any(dim=0)] = torch.tensor([0, 0, 0], device=device)
     # Set corresponding supernode index to subatoms
-    for i, sn in enumerate(sc_cat): 
+    for i, sn in enumerate(supernodes_composition):
         assoc[sn] = new_sn_ids_cat[i]
     # Re-index
-    ei_batch = assoc[ei_not_both]
+    ei_not_both = assoc[ei_not_both]
+
+    # Adapt cell_offsets: add [0,0,0] for supernode related edges
+    # TODO: maybe want to keep cell offsets.
+    new_cell_offsets[
+        isin(ei_not_both, torch.tensor(new_sn_ids_cat)).any(dim=0)
+    ] = torch.tensor([0, 0, 0], device=device)
 
     # Remove self loops and duplicates
-    ei_batch, new_cell_offsets = remove_self_loops(
-            ei_batch, new_cell_offsets
-    )
+    ei_not_both, new_cell_offsets = remove_self_loops(ei_not_both, new_cell_offsets)
     data.edge_index, data.cell_offsets = coalesce(
-            ei_batch, edge_attr=new_cell_offsets, reduce="min"
+        ei_not_both, edge_attr=new_cell_offsets, reduce="min"
     )
 
     # batch
@@ -605,8 +587,8 @@ def one_supernode_per_atom_type_dist(data):
 
     # neighbors
     _, data.neighbors = torch.unique(
-            data.batch[data.edge_index[0, :]], return_counts=True
-        )
+        data.batch[data.edge_index[0, :]], return_counts=True
+    )
 
     # tags
     data.tags = torch.cat(
@@ -651,9 +633,8 @@ def one_supernode_per_atom_type_dist(data):
     # the force applied on the super node is the mean of the force applied
     # to its aggregates (per batch)
     sn_force = [
-        data.force[supernodes_composition[i][j]].mean(0)[None, :]
-        for i in range(batch_size)
-        for j in range(num_supernodes[i])
+        data.force[supernodes_composition[i]].mean(0)[None, :]
+        for i in range(total_num_supernodes)
     ]
     data.force = cat(
         [

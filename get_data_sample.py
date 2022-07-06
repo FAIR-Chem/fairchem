@@ -27,6 +27,7 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import build_config, setup_imports, setup_logging
 from ocpmodels.preprocessing import (
     one_supernode_per_atom_type,
+    one_supernode_per_atom_type_dist,
     one_supernode_per_graph,
     remove_tag0_nodes,
 )
@@ -88,8 +89,11 @@ if __name__ == "__main__":
         for batch in trainer.train_loader:
             break
         b = batch[0]
+        b_bis = deepcopy(b)
         # one_supernode_per_graph(b)
-        one_supernode_per_atom_type(b)
+        data_bis = one_supernode_per_atom_type(b_bis)
+        data = one_supernode_per_atom_type_dist(b)
+        assert data == data_bis
 
         # final object that would be returned in a proper function
         data = deepcopy(b)
