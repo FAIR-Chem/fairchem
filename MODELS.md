@@ -30,7 +30,7 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 |PaiNN      |All    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_05/s2ef/painn_h512_s2ef_all.pt      |0.0294 |0.91%   |
 |GemNet-OC  |2M     |https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_base_s2ef_2M.pt   |0.0225 |2.12%  |
 |GemNet-OC  |All    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_base_s2ef_all.pt  |0.0179 |4.56%  |
-|GemNet-OC  |All    |https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_large_s2ef_all_md.pt  |0.0164 |5.34%  |
+|GemNet-OC  |All+MD |https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_large_s2ef_all_md.pt  |0.0164 |5.34%  |
 
 ## S2EF models: optimized for force only
 
