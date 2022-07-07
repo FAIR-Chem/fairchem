@@ -1,0 +1,38 @@
+name: unittest
+
+on: [push, pull_request]
+
+jobs:
+  ocp:
+    name: ocp_tests
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install conda
+      run: |
+        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+        bash miniconda.sh -b -p "$HOME"/miniconda
+        conda activate base
+        # Conda configuration
+        conda config --set always_yes yes --set auto_update_conda false
+        # Update conda
+        conda update conda
+    - name: Create environment
+      run: |
+        conda activate base
+        conda install -c conda-forge conda-merge
+        conda-merge env.common.yml env.cpu.yml > env.yml
+        conda env create -f env.yml
+    - name: Run tests
+      run: |
+        conda activate ocp-models
+        pip install -e .
+        pre-commit install
+        pytest
+    - name: Run black
+      run: |
+        conda activate ocp-models
+        pip install black==22.3.0
+        black . --check
