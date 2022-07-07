@@ -550,7 +550,7 @@ def one_supernode_per_atom_type(data):
     # Adapt cell_offsets: add [0,0,0] for supernode related edges
     # TODO: maybe want to keep cell offsets.
     data.cell_offsets[
-        isin(data.edge_index, torch.tensor(new_sn_ids_cat)).any(dim=0)
+        isin(data.edge_index, torch.tensor(new_sn_ids_cat, device=device)).any(dim=0)
     ] = torch.tensor([0, 0, 0], device=device)
 
     # Remove self loops and duplicates
@@ -752,7 +752,7 @@ def one_supernode_per_atom_type_dist(data):
     # Adapt cell_offsets: add [0,0,0] for supernode related edges
     # TODO: maybe want to keep cell offsets.
     data.cell_offsets[
-        isin(data.edge_index, torch.tensor(new_sn_ids_cat)).any(dim=0)
+        isin(data.edge_index, torch.tensor(new_sn_ids_cat, device=device)).any(dim=0)
     ] = torch.tensor([0, 0, 0], device=device)
 
     # Define dist(sn-node) as min(dist(subnode_i, node))
