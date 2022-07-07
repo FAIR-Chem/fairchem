@@ -31,7 +31,7 @@ jobs:
       - run:
           name: Create environment
           command: |
-            if [ ! -d "/home/circleci/miniconda/envs/ocp-models" ]; then
+            if [ ! -d "/home/circleci/miniconda/envs/ocp-models/lib/python3.8/site-packages/torch" ]; then
               source /home/circleci/miniconda/etc/profile.d/conda.sh
               conda activate ocp-models
               conda install -c conda-forge conda-merge
