@@ -4,7 +4,7 @@ jobs:
   build:
     docker:
       - image: cimg/python:3.8
-    resource_class: large
+    resource_class: xlarge
 
     steps:
       - checkout
