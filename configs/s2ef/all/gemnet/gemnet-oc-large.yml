@@ -1,5 +1,5 @@
 includes:
-  - configs/s2ef/all/base.yml
+  - configs/s2ef/2M/base.yml
 
 model:
   name: gemnet_oc
@@ -56,7 +56,6 @@ model:
   num_atom_emb_layers: 2
   num_global_out_layers: 2
   qint_tags: [1, 2]
-  symmetric_edge_symmetrization: False
 
 optim:
   batch_size: 4
