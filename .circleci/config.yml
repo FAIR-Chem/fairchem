@@ -36,7 +36,6 @@ jobs:
               conda activate ocp-models
               conda install -c conda-forge conda-merge
               conda-merge env.common.yml env.cpu.yml > env.yml
-              conda env create -f env.yml
               mamba env update -n ocp-models --file env.yml
             fi
       - save_cache:
