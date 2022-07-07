@@ -9,16 +9,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Install conda
-      run: |
-        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-        bash miniconda.sh -b -p "$HOME"/miniconda
-        conda activate base
-        # Conda configuration
-        conda config --set always_yes yes --set auto_update_conda false
-        # Update conda
-        conda update conda
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+	auto-update-conda: true
+	python-version: ${{ matrix.python-version }}
     - name: Create environment
       run: |
         conda activate base
