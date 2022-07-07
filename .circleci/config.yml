@@ -26,12 +26,12 @@ jobs:
               # Update conda
               conda update conda
               conda install mamba -n base -c conda-forge
-              conda create --name ocp-models --clone base
             fi
       - run:
           name: Create environment
           command: |
-            if [ ! -d "/home/circleci/miniconda/envs/ocp-models/lib/python3.8/site-packages/torch" ]; then
+            if [ ! -d "/home/circleci/miniconda/envs/ocp-models" ]; then
+              conda create --name ocp-models --clone base
               source /home/circleci/miniconda/etc/profile.d/conda.sh
               conda activate ocp-models
               conda install -c conda-forge conda-merge
