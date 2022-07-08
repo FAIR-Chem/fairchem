@@ -19,6 +19,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.preprocessing import (
     one_supernode_per_atom_type,
@@ -164,6 +165,7 @@ class NewSchNet(torch.nn.Module):
         pg_hidden_channels: int = 32,
         phys_embeds: bool = False,
         phys_hidden_channels: int = 32,
+        graph_rewiring=False,
         num_filters: int = 128,
         num_interactions: int = 6,
         num_gaussians: int = 50,
@@ -191,6 +193,11 @@ class NewSchNet(torch.nn.Module):
         self.use_pg = pg_hidden_channels > 0
         self.use_mlp_phys = phys_hidden_channels > 0 and phys_embeds
         self.use_phys_embeddings = phys_embeds
+        self.use_positional_embeds = graph_rewiring in {
+            "one-supernode-per-graph",
+            "one-supernode-per-atom-type",
+            "one-supernode-per-atom-type-dist",
+        }
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         # self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
@@ -223,6 +230,7 @@ class NewSchNet(torch.nn.Module):
             < hidden_channels
         )
 
+        # Main embedding
         self.embedding = Embedding(
             85,
             hidden_channels
@@ -230,8 +238,10 @@ class NewSchNet(torch.nn.Module):
             - self.phys_hidden_channels
             - 2 * self.pg_hidden_channels,
         )
-        # self.embedding = Embedding(100, hidden_channels)
-        # hidden_channels += tag_hidden_channels
+
+        # Position encoding
+        if self.use_positional_embeds:
+            self.pe = PositionalEncoding(hidden_channels, 200)
 
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
         self.interactions = ModuleList()
@@ -326,6 +336,7 @@ class NewSchNetWrap(NewSchNet):
             pg_hidden_channels=pg_hidden_channels,
             phys_hidden_channels=phys_hidden_channels,
             phys_embeds=phys_embeds,
+            graph_rewiring=graph_rewiring,
             num_filters=num_filters,
             num_interactions=num_interactions,
             num_gaussians=num_gaussians,
@@ -421,6 +432,14 @@ class NewSchNetWrap(NewSchNet):
             h_period = self.period_embedding(self.phys_emb.period[z])
             h_group = self.group_embedding(self.phys_emb.group[z])
             h = torch.cat((h, h_period, h_group), dim=1)
+
+        if self.use_positional_embeds:
+            idx_of_non_zero_val = (data.tags == 0).nonzero().T.squeeze(0)
+            h_pos = torch.zeros_like(h, device=h.device)
+            h_pos[idx_of_non_zero_val, :] = self.pe(data.subnodes).to(
+                device=h_pos.device
+            )
+            h += h_pos
 
         for interaction in self.interactions:
             h = h + interaction(h, edge_index, edge_weight, edge_attr)
