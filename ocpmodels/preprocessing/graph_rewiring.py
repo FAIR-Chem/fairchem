@@ -373,7 +373,21 @@ def one_supernode_per_atom_type(data):
     )
 
     # pos relaxed
-    data.pos_relaxed = data.pos
+    data.pos_relaxed = cat(
+        [
+            cat(
+                [
+                    data.pos_relaxed[non_sub_nodes[i]],
+                    cat(
+                        supernodes_pos[
+                            acc_num_supernodes[i] : acc_num_supernodes[i + 1]
+                        ]
+                    ),
+                ]
+            )
+            for i in range(batch_size)
+        ]
+    )
 
     # the force applied on the super node is the mean of the force applied
     # to its aggregates (per batch)
@@ -578,7 +592,21 @@ def one_supernode_per_atom_type_dist(data):
     )
 
     # pos relaxed
-    data.pos_relaxed = data.pos
+    data.pos_relaxed = cat(
+        [
+            cat(
+                [
+                    data.pos_relaxed[non_sub_nodes[i]],
+                    cat(
+                        supernodes_pos[
+                            acc_num_supernodes[i] : acc_num_supernodes[i + 1]
+                        ]
+                    ),
+                ]
+            )
+            for i in range(batch_size)
+        ]
+    )
 
     # the force applied on the super node is the mean of the force applied
     # to its aggregates (per batch)
