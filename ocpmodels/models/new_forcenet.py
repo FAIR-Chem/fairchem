@@ -21,6 +21,7 @@ from ocpmodels.datasets.embeddings import ATOMIC_RADII, CONTINUOUS_EMBEDDINGS
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
+from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.preprocessing import (
     one_supernode_per_atom_type,
@@ -302,6 +303,11 @@ class NewForceNet(BaseModel):
         self.phys_embeds = phys_embeds
         self.predict_forces = predict_forces
         self.graph_rewiring = graph_rewiring
+        self.use_positional_embeds = graph_rewiring in {
+            "one-supernode-per-graph",
+            "one-supernode-per-atom-type",
+            "one-supernode-per-atom-type-dist",
+        }
 
         assert tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
 
@@ -357,6 +363,11 @@ class NewForceNet(BaseModel):
                 self.phys_emb.group_size, pg_hidden_channels
             )
 
+        # Position encoding
+        if self.use_positional_embeds:
+            self.pe = PositionalEncoding(hidden_channels, 200)
+
+        # Main embedding
         if self.feat == "simple":
             self.embedding = nn.Embedding(
                 100,
@@ -488,7 +499,7 @@ class NewForceNet(BaseModel):
             pos = data.pos
             batch = data.batch
         elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
-            data = one_supernode_per_atom_type(data)
+            data = one_supernode_per_atom_type_dist(data)
             z = data.atomic_numbers.long()
             pos = data.pos
             batch = data.batch
@@ -545,6 +556,14 @@ class NewForceNet(BaseModel):
             h_period = self.period_embedding(self.phys_emb.period[z])
             h_group = self.group_embedding(self.phys_emb.group[z])
             h = torch.cat((h, h_period, h_group), dim=1)
+
+        if self.use_positional_embeds:
+            idx_of_non_zero_val = (data.tags == 0).nonzero().T.squeeze(0)
+            h_pos = torch.zeros_like(h, device=h.device)
+            h_pos[idx_of_non_zero_val, :] = self.pe(data.subnodes).to(
+                device=h_pos.device
+            )
+            h += h_pos
 
         if self.pbc_apply_sph_harm:
             edge_vec_normalized = edge_vec / edge_dist.view(-1, 1)
