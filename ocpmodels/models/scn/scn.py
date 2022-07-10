@@ -20,14 +20,14 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.models.base import BaseModel
-from ocpmodels.models.scn.spherical_harmonics import SphericalHarmonicsHelper
-from ocpmodels.models.utils.sampling import CalcSpherePoints
-from ocpmodels.models.utils.smearing import (
+from ocpmodels.models.scn.sampling import CalcSpherePoints
+from ocpmodels.models.scn.smearing import (
     GaussianSmearing,
     LinearSigmoidSmearing,
     SigmoidSmearing,
     SiLUSmearing,
 )
+from ocpmodels.models.scn.spherical_harmonics import SphericalHarmonicsHelper
 
 try:
     from e3nn import o3
