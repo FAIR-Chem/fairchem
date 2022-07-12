@@ -1,6 +1,5 @@
 """
 Copyright (c) Facebook, Inc. and its affiliates.
-
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
@@ -20,6 +19,7 @@ from bisect import bisect
 from functools import wraps
 from itertools import product
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import torch
@@ -33,8 +33,9 @@ from torch_scatter import segment_coo, segment_csr
 
 
 def pyg2_data_transform(data: Data):
-    # if we're on the new pyg (2.0 or later), we need to convert the data to the new format
-    if torch_geometric.__version__ >= "2.0":
+    # if we're on the new pyg (2.0 or later) and if the Data stored is in older formet
+    #, we need to convert the data to the new format
+    if torch_geometric.__version__ >= "2.0" and "_store" not in data.__dict__:
         return Data(
             **{k: v for k, v in data.__dict__.items() if v is not None}
         )
@@ -222,8 +223,33 @@ def add_edge_distance_to_graph(
     return batch
 
 
+def setup_experimental_imports(root_folder: str):
+    experimental_folder = os.path.join(root_folder, "../experimental/")
+    if os.path.exists(experimental_folder):
+        experimental_files = glob.glob(
+            experimental_folder + "**/*py",
+            recursive=True,
+        )
+        # Ignore certain directories within experimental
+        ignore_file = os.path.join(experimental_folder, ".ignore")
+        if os.path.exists(ignore_file):
+            ignored = []
+            with open(ignore_file) as f:
+                for line in f.read().splitlines():
+                    ignored += glob.glob(
+                        experimental_folder + line + "/**/*py", recursive=True
+                    )
+            for f in ignored:
+                experimental_files.remove(f)
+        for f in experimental_files:
+            splits = f.split(os.sep)
+            file_name = ".".join(splits[-splits[::-1].index("..") :])
+            module_name = file_name[: file_name.find(".py")]
+            importlib.import_module(module_name)
+
+
 # Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
-def setup_imports():
+def setup_imports(absolute_imports: Optional[bool] = None):
     from ocpmodels.common.registry import registry
 
     # First, check if imports are already setup
@@ -266,28 +292,8 @@ def setup_imports():
                     "ocpmodels.%s.%s" % (key[1:], module_name)
                 )
 
-    experimental_folder = os.path.join(root_folder, "../experimental/")
-    if os.path.exists(experimental_folder):
-        experimental_files = glob.glob(
-            experimental_folder + "**/*py",
-            recursive=True,
-        )
-        # Ignore certain directories within experimental
-        ignore_file = os.path.join(experimental_folder, ".ignore")
-        if os.path.exists(ignore_file):
-            ignored = []
-            with open(ignore_file) as f:
-                for line in f.read().splitlines():
-                    ignored += glob.glob(
-                        experimental_folder + line + "/**/*py", recursive=True
-                    )
-            for f in ignored:
-                experimental_files.remove(f)
-        for f in experimental_files:
-            splits = f.split(os.sep)
-            file_name = ".".join(splits[-splits[::-1].index("..") :])
-            module_name = file_name[: file_name.find(".py")]
-            importlib.import_module(module_name)
+    if not absolute_imports:
+        setup_experimental_imports(root_folder)
 
     registry.register("imports_setup", True)
 
@@ -403,11 +409,11 @@ def build_config(args, args_override):
     config["submit"] = args.submit
     config["summit"] = args.summit
     # Distributed
+    config["distributed"] = args.distributed
     config["local_rank"] = args.local_rank
     config["distributed_port"] = args.distributed_port
     config["world_size"] = args.num_nodes * args.num_gpus
     config["distributed_backend"] = args.distributed_backend
-    config["noddp"] = args.no_ddp
 
     return config
 
@@ -756,14 +762,12 @@ def merge_dicts(dict1: dict, dict2: dict):
     This does not modify the input dictionaries (creates an internal copy).
     Additionally returns a list of detected duplicates.
     Adapted from https://github.com/TUM-DAML/seml/blob/master/seml/utils.py
-
     Parameters
     ----------
     dict1: dict
         First dict.
     dict2: dict
         Second dict. Values in dict2 will override values from dict1 in case they share the same key.
-
     Returns
     -------
     return_dict: dict
