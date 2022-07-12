@@ -159,39 +159,45 @@ def one_supernode_per_graph(data, verbose=False):
         ]
     )
 
+    # Edge-index and cell_offsets
     batch_idx_adj = data.batch[data.edge_index][0]
+    ei_sn = data.edge_index.clone()
+    new_cell_offsets = data.cell_offsets.clone()
     # number of nodes in this batch: all existing + batch_size supernodes
     num_nodes = original_ptr[-1].item()
     # Re-index
-    mask = torch.zeros(num_nodes, dtype=torch.bool, device=data.edge_index.device)
+    mask = torch.zeros(num_nodes, dtype=torch.bool, device=device)
     mask[cat(non_sub_nodes)] = 1  # mask is 0 for sub-surface atoms
-    assoc = torch.full((num_nodes,), -1, dtype=torch.long, device=mask.device)
+    assoc = torch.full((num_nodes,), -1, dtype=torch.long, device=device)
     assoc[mask] = cat(
         [
-            torch.arange(data.ptr[e], data.ptr[e + 1] - 1, device=assoc.device)
+            torch.arange(data.ptr[e], data.ptr[e + 1] - 1, device=device)
             for e in range(batch_size)
         ]
     )
     # re-index only edges for which not both nodes are sub-surface atoms
-    data.edge_index = assoc[data.edge_index]
+    ei_sn = assoc[ei_sn]
 
     # Adapt cell_offsets: add [0,0,0] for supernode related edges
-    is_minus_one = isin(data.edge_index, torch.tensor(-1, device=device))
-    data.cell_offsets[is_minus_one.any(dim=0)] = torch.tensor([0, 0, 0], device=device)
+    is_minus_one = isin(ei_sn, torch.tensor(-1, device=device))
+    new_cell_offsets[is_minus_one.any(dim=0)] = torch.tensor([0, 0, 0], device=device)
     # Replace index -1 by supernode index
-    data.edge_index = where(
+    ei_sn = where(
         is_minus_one,
         torch.tensor(new_sn_ids, device=device)[batch_idx_adj],
-        data.edge_index,
+        ei_sn,
     )
     # Remove self loops
-    data.edge_index, data.cell_offsets = remove_self_loops(
-        data.edge_index, data.cell_offsets
+    ei_sn, new_cell_offsets = remove_self_loops(
+        ei_sn, new_cell_offsets
     )
     # Remove duplicate entries
-    data.edge_index, data.cell_offsets = coalesce(
-        data.edge_index, edge_attr=data.cell_offsets, reduce="min"
+    ei_sn, new_cell_offsets = coalesce(
+        ei_sn, edge_attr=new_cell_offsets, reduce="min"
     )
+    # ensure correct type
+    data.edge_index = ei_sn.to(dtype=data.edge_index.dtype)
+    data.cell_offsets = new_cell_offsets.to(dtype=data.cell_offsets.dtype)
 
     # distances
     data.distances = torch.sqrt(
@@ -203,9 +209,10 @@ def one_supernode_per_graph(data, verbose=False):
     # batch
     data.batch = torch.zeros(data.ptr[-1], dtype=data.batch.dtype, device=device)
     for i, p in enumerate(data.ptr[:-1]):
-        data.batch[torch.arange(p, data.ptr[i + 1], dtype=torch.long)] = tensor(
+        data.batch[torch.arange(p, data.ptr[i + 1], dtype=torch.long, device=device)] = tensor(
             i,
             dtype=data.batch.dtype,
+            device=device
         )
 
     # neighbors

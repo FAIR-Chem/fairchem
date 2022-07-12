@@ -106,7 +106,7 @@ class EmbeddingBlock(torch.nn.Module):
         self.lin_rbf.reset_parameters()
         self.lin.reset_parameters()
 
-    def forward(self, x, rbf, i, j, tags=None):
+    def forward(self, x, rbf, i, j, tags=None, subnodes=None):
         x = self.emb(x)
         rbf = self.act(self.lin_rbf(rbf))
         return self.act(self.lin(torch.cat([x[i], x[j], rbf], dim=-1)))
@@ -169,13 +169,6 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
 
         self.lin_rbf = Linear(num_radial, hidden_channels)
         self.lin = Linear(3 * hidden_channels, hidden_channels)
-
-        # # TODO: test this setting
-        # self.emb = Embedding(95, hidden_channels)
-        # self.tag = Embedding(3, tag_hidden_channels)
-
-        # self.lin_rbf = Linear(num_radial, hidden_channels)
-        # self.lin = Linear(3 * hidden_channels + 2 * tag_hidden_channels, hidden_channels)
 
         self.reset_parameters()
 
