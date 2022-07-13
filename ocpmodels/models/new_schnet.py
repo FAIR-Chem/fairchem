@@ -10,7 +10,8 @@ from typing import Optional
 import torch
 import torch.nn.functional as F
 from torch.nn import Embedding, Linear, ModuleList, Sequential
-from torch_geometric.nn import MessagePassing, radius_graph
+from torch_geometric.nn import DenseGraphConv, MessagePassing, radius_graph
+from torch_geometric.utils import to_dense_adj, to_dense_batch
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
@@ -21,12 +22,15 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.modules.pooling import dense_hoscpool
 from ocpmodels.preprocessing import (
     one_supernode_per_atom_type,
     one_supernode_per_atom_type_dist,
     one_supernode_per_graph,
     remove_tag0_nodes,
 )
+
+NUM_CLUSTERS = 20
 
 
 class InteractionBlock(torch.nn.Module):
@@ -166,6 +170,7 @@ class NewSchNet(torch.nn.Module):
         phys_embeds: bool = False,
         phys_hidden_channels: int = 32,
         graph_rewiring=False,
+        energy_head=False,
         num_filters: int = 128,
         num_interactions: int = 6,
         num_gaussians: int = 50,
@@ -199,6 +204,7 @@ class NewSchNet(torch.nn.Module):
             "one-supernode-per-atom-type-dist",
         }
         # self.use_positional_embeds = False
+        self.energy_head = energy_head
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         # self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
@@ -244,6 +250,7 @@ class NewSchNet(torch.nn.Module):
         if self.use_positional_embeds:
             self.pe = PositionalEncoding(hidden_channels, 210)
 
+        # Interaction block
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
         self.interactions = ModuleList()
         for _ in range(num_interactions):
@@ -252,9 +259,16 @@ class NewSchNet(torch.nn.Module):
             )
             self.interactions.append(block)
 
+        # Output block
         self.lin1 = Linear(hidden_channels, hidden_channels // 2)
         self.act = ShiftedSoftplus()
         self.lin2 = Linear(hidden_channels // 2, 1)
+        # weigthed average
+        if self.energy_head:
+            self.w_lin = Linear(hidden_channels, 1)
+            self.cluster_mlp = Linear(hidden_channels, NUM_CLUSTERS)
+            self.dense_gnn = DenseGraphConv(hidden_channels, hidden_channels)
+            # TODO: pooling op as a class with init (above), forward (below)
 
         self.register_buffer("initial_atomref", atomref)
         self.atomref = None
@@ -273,6 +287,9 @@ class NewSchNet(torch.nn.Module):
         if self.use_pg:
             self.period_embedding.reset_parameters()
             self.group_embedding.reset_parameters()
+        if self.energy_head:
+            self.w_lin.bias.data.fill_(0)
+            torch.nn.init.xavier_uniform_(self.w_lin.weight)
         for interaction in self.interactions:
             interaction.reset_parameters()
         torch.nn.init.xavier_uniform_(self.lin1.weight)
@@ -323,6 +340,7 @@ class NewSchNetWrap(NewSchNet):
         cutoff=10.0,
         readout="add",
         graph_rewiring=False,
+        energy_head=False,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
@@ -338,6 +356,7 @@ class NewSchNetWrap(NewSchNet):
             phys_hidden_channels=phys_hidden_channels,
             phys_embeds=phys_embeds,
             graph_rewiring=graph_rewiring,
+            energy_head=energy_head,
             num_filters=num_filters,
             num_interactions=num_interactions,
             num_gaussians=num_gaussians,
@@ -442,12 +461,42 @@ class NewSchNetWrap(NewSchNet):
             )
             h += h_pos
 
+        if self.energy_head == "weigthed-av-initial-embeds":
+            alpha = self.w_lin(h)
+
         for interaction in self.interactions:
             h = h + interaction(h, edge_index, edge_weight, edge_attr)
 
+        if self.energy_head == "weigthed-av-final-embeds":
+            alpha = self.w_lin(h)
+
+        if self.energy_head == "pooling":
+            # convert batch sparse to batch dense
+            h, mask = to_dense_batch(h, data.batch)
+            # convert sparse adj to dense adj
+            adj = to_dense_adj(data.edge_index, data.batch, data.distances)
+            # Cluster ass matrix
+            s = self.cluster_mlp(h)  # num_nodes // 2
+            # Pooling
+            h, adj, mc, o, _ = dense_hoscpool(
+                h, adj, s, mu=0.1, alpha=0, new_ortho=False, mask=mask
+            )
+            # TODO: add losses to final loss -- tricky probably
+            # GNN
+            h = self.dense_gnn(h, adj)
+            # TODO: convert h back to sparse batch
+            # 2nd layer
+            # s = mlp(h)
+            # h, adj = diffpool(h, adj)
+            # h = gnn_dense(h, adj)
+
+        # MLP
         h = self.lin1(h)
         h = self.act(h)
         h = self.lin2(h)
+
+        if self.energy_head in {"weigthed-av-final-embeds", "weigthed-av-final-embeds"}:
+            h = h * alpha
 
         if self.atomref is not None:
             h = h + self.atomref(z)
