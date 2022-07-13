@@ -156,7 +156,7 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
 
         # Position encoding
         if self.use_positional_embeds:
-            self.pe = PositionalEncoding(hidden_channels, 200)
+            self.pe = PositionalEncoding(hidden_channels, 210)
 
         # Main embedding
         self.emb = Embedding(

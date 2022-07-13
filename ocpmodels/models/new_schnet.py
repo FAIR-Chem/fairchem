@@ -198,6 +198,7 @@ class NewSchNet(torch.nn.Module):
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
+        # self.use_positional_embeds = False
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         # self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
@@ -241,7 +242,7 @@ class NewSchNet(torch.nn.Module):
 
         # Position encoding
         if self.use_positional_embeds:
-            self.pe = PositionalEncoding(hidden_channels, 200)
+            self.pe = PositionalEncoding(hidden_channels, 210)
 
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
         self.interactions = ModuleList()

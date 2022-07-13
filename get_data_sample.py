@@ -48,7 +48,7 @@ if __name__ == "__main__":
     config["logger"] = "dummy"
 
     if opts.victor_local:
-        config["dataset"][0]["src"] = "data/is2re/10k/train/data.lmdb"
+        config["dataset"][0]["src"] = "data/is2re/All/train/data.lmdb"
         config["dataset"] = config["dataset"][:1]
         config["optim"]["num_workers"] = 0
         config["optim"]["batch_size"] = opts.bs or config["optim"]["batch_size"]
@@ -77,12 +77,6 @@ if __name__ == "__main__":
 
     task = registry.get_task_class(config["mode"])(config)
     task.setup(trainer)
-
-    if opts.no_tag_0 is None:
-        for batch in trainer.train_loader:
-            b = batch[0]
-            rewired = remove_tag0_nodes(b)
-            break
 
     if opts.no_single_super_node is None:
 

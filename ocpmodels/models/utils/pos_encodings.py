@@ -5,7 +5,7 @@ from torch import Tensor, nn
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model: int, max_count: int = 150):
+    def __init__(self, d_model: int, max_count: int = 210):
         super().__init__()
         position = torch.arange(max_count).unsqueeze(1)
         div_term = torch.exp(

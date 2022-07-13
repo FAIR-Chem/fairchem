@@ -19,16 +19,18 @@ if __name__ == "__main__":
     if not args.mode or not args.config_yml:
         args.mode = "train"
         # args.config_yml = "configs/is2re/10k/dimenet_plus_plus/new_dpp.yml"
-        args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
+        args.config_yml = "configs/is2re/100k/schnet/new_schnet.yml"
         # args.config_yml = "configs/is2re/10k/forcenet/new_forcenet.yml"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/best_checkpoint.pt"
         warnings.warn("No model / mode is given; chosen as default")
 
     config = build_config(args, override_args)
+
+    # Customise args
     config["model"][
         "graph_rewiring"
-    ] = "one-supernode-per-graph"  #'one-supernode-per-atom-type'  # 'one-supernode-per-graph'
-    # Customise args
+    ] = "one-supernode-per-graph"  #'one-supernode-per-atom-type'  # 'one-supernode-per-graph' # "remove-tag-0"
+    # config["model"]["phys_embeds"] = True
     # config['model']['use_pbc'] = True
     # config['model']['graph_rewiring'] = 'remove-tag-0'
 

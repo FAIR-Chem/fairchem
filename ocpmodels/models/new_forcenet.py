@@ -365,7 +365,7 @@ class NewForceNet(BaseModel):
 
         # Position encoding
         if self.use_positional_embeds:
-            self.pe = PositionalEncoding(hidden_channels, 200)
+            self.pe = PositionalEncoding(hidden_channels, 210)
 
         # Main embedding
         if self.feat == "simple":

@@ -188,13 +188,9 @@ def one_supernode_per_graph(data, verbose=False):
         ei_sn,
     )
     # Remove self loops
-    ei_sn, new_cell_offsets = remove_self_loops(
-        ei_sn, new_cell_offsets
-    )
+    ei_sn, new_cell_offsets = remove_self_loops(ei_sn, new_cell_offsets)
     # Remove duplicate entries
-    ei_sn, new_cell_offsets = coalesce(
-        ei_sn, edge_attr=new_cell_offsets, reduce="min"
-    )
+    ei_sn, new_cell_offsets = coalesce(ei_sn, edge_attr=new_cell_offsets, reduce="min")
     # ensure correct type
     data.edge_index = ei_sn.to(dtype=data.edge_index.dtype)
     data.cell_offsets = new_cell_offsets.to(dtype=data.cell_offsets.dtype)
@@ -209,11 +205,9 @@ def one_supernode_per_graph(data, verbose=False):
     # batch
     data.batch = torch.zeros(data.ptr[-1], dtype=data.batch.dtype, device=device)
     for i, p in enumerate(data.ptr[:-1]):
-        data.batch[torch.arange(p, data.ptr[i + 1], dtype=torch.long, device=device)] = tensor(
-            i,
-            dtype=data.batch.dtype,
-            device=device
-        )
+        data.batch[
+            torch.arange(p, data.ptr[i + 1], dtype=torch.long, device=device)
+        ] = tensor(i, dtype=data.batch.dtype, device=device)
 
     # neighbors
     _, data.neighbors = torch.unique(
