@@ -308,6 +308,7 @@ class NewForceNet(BaseModel):
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
+        # self.use_positional_embeds = False
 
         assert tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
 

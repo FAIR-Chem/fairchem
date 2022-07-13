@@ -134,6 +134,7 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
+        # self.use_positional_embeds = False
 
         # Phys embeddings
         self.phys_emb = PhysEmbedding(props=phys_embeds, pg=self.use_pg)
