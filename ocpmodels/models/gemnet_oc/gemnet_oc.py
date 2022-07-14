@@ -797,7 +797,7 @@ class GemNetOC(ScaledModule):
 
         # Create indexing array
         edge_reorder_idx = repeat_blocks(
-            new_graph["num_neighbors"] // 2,
+            torch.div(new_graph["num_neighbors"], 2, rounding_mode="floor"),
             repeats=2,
             continuous_indexing=True,
             repeat_inc=edge_index_directed.size(1),

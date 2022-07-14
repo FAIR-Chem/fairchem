@@ -33,8 +33,11 @@ from torch_scatter import segment_coo, segment_csr
 
 
 def pyg2_data_transform(data: Data):
-    # if we're on the new pyg (2.0 or later), we need to convert the data to the new format
-    if torch_geometric.__version__ >= "2.0":
+    """
+    if we're on the new pyg (2.0 or later) and if the Data stored is in older format
+    we need to convert the data to the new format
+    """
+    if torch_geometric.__version__ >= "2.0" and "_store" not in data.__dict__:
         return Data(
             **{k: v for k, v in data.__dict__.items() if v is not None}
         )
@@ -548,7 +551,9 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     # Compute the indices for the pairs of atoms (using division and mod)
     # If the systems get too large this apporach could run into numerical precision issues
     index1 = (
-        atom_count_sqr // num_atoms_per_image_expand
+        torch.div(
+            atom_count_sqr, num_atoms_per_image_expand, rounding_mode="floor"
+        )
     ) + index_offset_expand
     index2 = (
         atom_count_sqr % num_atoms_per_image_expand
