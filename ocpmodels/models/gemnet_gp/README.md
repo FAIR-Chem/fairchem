@@ -4,7 +4,7 @@ Anuroop Sriram, Abhishek Das, Brandon M. Wood, Siddharth Goyal, C. Lawrence Zitn
 
 [[`arXiv:2203.09697`](https://arxiv.org/abs/2203.09697)]
 
-## Bibtex
+## Citing
 
 If you use Graph Parallelism in your work, please consider citing:
 
