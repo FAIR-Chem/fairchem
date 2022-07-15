@@ -133,6 +133,12 @@ class Flags:
         self.parser.add_argument(
             "--no-ddp", action="store_true", help="Do not use DDP"
         )
+        self.parser.add_argument(
+            "--gp-gpus",
+            type=int,
+            default=None,
+            help="Number of GPUs to split the graph over (only for Graph Parallel training)",
+        )
 
 
 flags = Flags()
