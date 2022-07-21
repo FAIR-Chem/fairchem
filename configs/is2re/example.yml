@@ -19,6 +19,10 @@ task:
   #   'energy_mae' for IS2RE,
   #   'average_distance_within_threshold' for IS2RS.
   primary_metric: energy_mae
+  # This is an argument used for checkpoint loading. By default it is True and loads
+  # checkpoint as it is. If False, it could partially load the checkpoint without giving
+  # any errors
+  strict_load: True                                                             # True or False
 
 dataset:
   train:
