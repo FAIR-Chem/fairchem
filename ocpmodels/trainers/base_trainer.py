@@ -400,38 +400,25 @@ class BaseTrainer(ABC):
         ckpt_key_count = next(iter(checkpoint["state_dict"])).count("module")
         mod_key_count = next(iter(self.model.state_dict())).count("module")
 
-        if ckpt_key_count == mod_key_count:
+        if (mod_key_count == 0 and ckpt_key_count == 1) or (
+            mod_key_count == 1 and ckpt_key_count == 2
+        ):
+            new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
+        elif (mod_key_count == 1 and ckpt_key_count == 0) or (
+            mod_key_count == 2 and ckpt_key_count == 1
+        ):
+            new_dict = {
+                f"module.{k}": v for k, v in checkpoint["state_dict"].items()
+            }
+        elif mod_key_count == 2 and ckpt_key_count == 0:
+            new_dict = {
+                f"module.module{k}": v
+                for k, v in checkpoint["state_dict"].items()
+            }
+        elif mod_key_count == 0 and ckpt_key_count == 2:
+            new_dict = {k[14:]: v for k, v in checkpoint["state_dict"].items()}
+        else:
             new_dict = checkpoint["state_dict"]
-        elif mod_key_count == 0:
-            if ckpt_key_count == 1:
-                new_dict = {
-                    k[7:]: v for k, v in checkpoint["state_dict"].items()
-                }
-            elif ckpt_key_count == 2:
-                new_dict = {
-                    k[14:]: v for k, v in checkpoint["state_dict"].items()
-                }
-        elif mod_key_count == 1:
-            if ckpt_key_count == 0:
-                new_dict = {
-                    f"module.{k}": v
-                    for k, v in checkpoint["state_dict"].items()
-                }
-            elif ckpt_key_count == 2:
-                new_dict = {
-                    k[7:]: v for k, v in checkpoint["state_dict"].items()
-                }
-        elif mod_key_count == 2:
-            if ckpt_key_count == 0:
-                new_dict = {
-                    f"module.module{k}": v
-                    for k, v in checkpoint["state_dict"].items()
-                }
-            elif ckpt_key_count == 1:
-                new_dict = {
-                    f"module.{k}": v
-                    for k, v in checkpoint["state_dict"].items()
-                }
 
         strict = self.config["task"].get("strict_load", True)
         self.model.load_state_dict(new_dict, strict=strict)
