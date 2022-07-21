@@ -418,7 +418,7 @@ class BaseTrainer(ABC):
             }
         elif key_count_diff < 0:
             new_dict = {
-                k[7 * abs(key_count_diff) :]: v
+                k[len("module.") * abs(key_count_diff) :]: v
                 for k, v in checkpoint["state_dict"].items()
             }
         else:
