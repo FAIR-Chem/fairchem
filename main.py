@@ -14,7 +14,7 @@ from pathlib import Path
 
 import submitit
 
-from ocpmodels.common import distutils
+from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
@@ -36,7 +36,8 @@ class Runner(submitit.helpers.Checkpointable):
 
         if args.distributed:
             distutils.setup(config)
-
+            if config["gp_gpus"] is not None:
+                gp_utils.setup_gp(config)
         try:
             setup_imports()
             self.trainer = registry.get_trainer_class(

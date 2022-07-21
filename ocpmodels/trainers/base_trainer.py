@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 import ocpmodels
-from ocpmodels.common import distutils
+from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
     OCPDataParallel,
@@ -243,11 +243,17 @@ class BaseTrainer(ABC):
             balancing_mode = "atoms"
             force_balancing = False
 
+        if gp_utils.initialized():
+            num_replicas = gp_utils.get_dp_world_size()
+            rank = gp_utils.get_dp_rank()
+        else:
+            num_replicas = distutils.get_world_size()
+            rank = distutils.get_rank()
         sampler = BalancedBatchSampler(
             dataset,
             batch_size=batch_size,
-            num_replicas=distutils.get_world_size(),
-            rank=distutils.get_rank(),
+            num_replicas=num_replicas,
+            rank=rank,
             device=self.device,
             mode=balancing_mode,
             shuffle=shuffle,

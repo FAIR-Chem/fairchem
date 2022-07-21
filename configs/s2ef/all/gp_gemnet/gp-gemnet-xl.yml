@@ -1,0 +1,59 @@
+# Run with `--gp-gpus N` where N = number of GPUs to split the model over.
+# Do not use `--amp`, as that makes training unstable
+
+includes:
+- configs/s2ef/all/base.yml
+
+model:
+  name: gp_gemnet_t
+  num_spherical: 7
+  num_radial: 128
+  num_blocks: 6
+  emb_size_atom: 128
+  emb_size_edge: 1536
+  emb_size_trip: 384
+  emb_size_rbf: 16
+  emb_size_cbf: 16
+  emb_size_bil_trip: 192
+  num_before_skip: 1
+  num_after_skip: 2
+  num_concat: 1
+  num_atom: 3
+  cutoff: 6.0
+  rbf:
+    name: gaussian
+  envelope:
+    name: polynomial
+    exponent: 5
+  cbf:
+    name: spherical_harmonics
+  extensive: True
+  otf_graph: False
+  output_init: HeOrthogonal
+  activation: silu
+  scale_file: configs/s2ef/all/gp_gemnet/scaling_factors/gemnet-xl.json
+  max_neighbors: 50
+  regress_forces: True
+  direct_forces: True
+
+optim:
+  batch_size: 2
+  eval_batch_size: 2
+  eval_every: 5000
+  num_workers: 8
+  lr_initial: 2.e-4
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True}
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.8
+  patience: 3
+  max_epochs: 80
+  force_coefficient: 100
+  energy_coefficient: 1
+  ema_decay: 0.999
+  clip_grad_norm: 10
+  loss_energy: mae
+  loss_force: l2mae
+  weight_decay: 0
+  load_balancing: neighbors
