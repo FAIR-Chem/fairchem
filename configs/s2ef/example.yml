@@ -25,6 +25,10 @@ task:
   # These args specify whether to train/eval forces on only free atoms or all.
   train_on_free_atoms: True                                                     # True or False
   eval_on_free_atoms: True                                                      # True or False
+  # This is an argument used for checkpoint loading. By default it is True and loads
+  # checkpoint as it is. If False, it could partially load the checkpoint without giving
+  # any errors
+  strict_load: True                                                             # True or False
   # The following args in the 'task' tree are for running relaxations with an
   # S2EF model during training (as additional validation) or testing.
   # Totally optional if you're only looking to train an S2EF model.
