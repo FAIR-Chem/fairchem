@@ -405,24 +405,18 @@ class BaseTrainer(ABC):
 
         ckpt_key_count = next(iter(checkpoint["state_dict"])).count("module")
         mod_key_count = next(iter(self.model.state_dict())).count("module")
+        key_count_diff = mod_key_count - ckpt_key_count
 
-        if (mod_key_count == 0 and ckpt_key_count == 1) or (
-            mod_key_count == 1 and ckpt_key_count == 2
-        ):
-            new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
-        elif (mod_key_count == 1 and ckpt_key_count == 0) or (
-            mod_key_count == 2 and ckpt_key_count == 1
-        ):
+        if key_count_diff > 0:
             new_dict = {
-                f"module.{k}": v for k, v in checkpoint["state_dict"].items()
-            }
-        elif mod_key_count == 2 and ckpt_key_count == 0:
-            new_dict = {
-                f"module.module{k}": v
+                key_count_diff * "module." + k: v
                 for k, v in checkpoint["state_dict"].items()
             }
-        elif mod_key_count == 0 and ckpt_key_count == 2:
-            new_dict = {k[14:]: v for k, v in checkpoint["state_dict"].items()}
+        elif key_count_diff < 0:
+            new_dict = {
+                k[7 * abs(key_count_diff) :]: v
+                for k, v in checkpoint["state_dict"].items()
+            }
         else:
             new_dict = checkpoint["state_dict"]
 
