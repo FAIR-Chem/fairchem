@@ -403,6 +403,10 @@ class BaseTrainer(ABC):
         self.best_val_metric = checkpoint.get("best_val_metric", None)
         self.primary_metric = checkpoint.get("primary_metric", None)
 
+        # Match the "module." count in the keys of model and checkpoint state_dict
+        # DataParallel model has 1 "module.",  DistributedDataParallel has 2 "module."
+        # Not using either of the above two would have no "module."
+
         ckpt_key_count = next(iter(checkpoint["state_dict"])).count("module")
         mod_key_count = next(iter(self.model.state_dict())).count("module")
         key_count_diff = mod_key_count - ckpt_key_count
