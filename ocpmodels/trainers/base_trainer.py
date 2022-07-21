@@ -397,24 +397,44 @@ class BaseTrainer(ABC):
         self.best_val_metric = checkpoint.get("best_val_metric", None)
         self.primary_metric = checkpoint.get("primary_metric", None)
 
-        # Load model, optimizer, normalizer state dict.
-        # if trained with ddp and want to load in non-ddp, modify keys from
-        # module.module.. -> module..
-        first_key = next(iter(checkpoint["state_dict"]))
-        if (
-            not distutils.initialized() or self.config["noddp"]
-        ) and first_key.split(".")[1] == "module":
-            # No need for OrderedDict since dictionaries are technically ordered
-            # since Python 3.6 and officially ordered since Python 3.7
-            new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
-            self.model.load_state_dict(new_dict)
-        elif distutils.initialized() and first_key.split(".")[1] != "module":
-            new_dict = {
-                f"module.{k}": v for k, v in checkpoint["state_dict"].items()
-            }
-            self.model.load_state_dict(new_dict)
-        else:
-            self.model.load_state_dict(checkpoint["state_dict"])
+        ckpt_key_count = next(iter(checkpoint["state_dict"])).count("module")
+        mod_key_count = next(iter(self.model.state_dict())).count("module")
+
+        if ckpt_key_count == mod_key_count:
+            new_dict = checkpoint["state_dict"]
+        elif mod_key_count == 0:
+            if ckpt_key_count == 1:
+                new_dict = {
+                    k[7:]: v for k, v in checkpoint["state_dict"].items()
+                }
+            elif ckpt_key_count == 2:
+                new_dict = {
+                    k[14:]: v for k, v in checkpoint["state_dict"].items()
+                }
+        elif mod_key_count == 1:
+            if ckpt_key_count == 0:
+                new_dict = {
+                    f"module.{k}": v
+                    for k, v in checkpoint["state_dict"].items()
+                }
+            elif ckpt_key_count == 2:
+                new_dict = {
+                    k[7:]: v for k, v in checkpoint["state_dict"].items()
+                }
+        elif mod_key_count == 2:
+            if ckpt_key_count == 0:
+                new_dict = {
+                    f"module.module{k}": v
+                    for k, v in checkpoint["state_dict"].items()
+                }
+            elif ckpt_key_count == 1:
+                new_dict = {
+                    f"module.{k}": v
+                    for k, v in checkpoint["state_dict"].items()
+                }
+
+        strict = self.config["task"].get("strict_load", True)
+        self.model.load_state_dict(new_dict, strict=strict)
 
         if "optimizer" in checkpoint:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
