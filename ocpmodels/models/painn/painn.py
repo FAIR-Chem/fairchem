@@ -352,6 +352,10 @@ class PaiNN(ScaledModule):
             edge_dist = out["distances"]
             # Unit vectors pointing from edge_index[1] to edge_index[0],
             # i.e., edge_index[0] - edge_index[1] divided by the norm.
+            # make sure that the distances are not close to zero before dividing
+            mask_zero = torch.isclose(edge_dist, torch.tensor(0.0), atol=1e-6)
+            edge_dist[mask_zero] = 1.0e-6
+
             edge_vector = out["distance_vec"] / edge_dist[:, None]
         else:
             raise NotImplementedError
