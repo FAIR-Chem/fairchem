@@ -26,12 +26,6 @@ jobs:
               # Update conda
               conda update conda
               conda install mamba -n base -c conda-forge
-              which conda
-            fi
-      - run:
-          name: Create environment
-          command: |
-            if [ ! -d "/home/circleci/miniconda/envs/ocp-models" ]; then
               conda create --name ocp-models --clone base
               source /home/circleci/miniconda/etc/profile.d/conda.sh
               conda activate ocp-models
@@ -39,6 +33,17 @@ jobs:
               conda-merge env.common.yml env.cpu.yml > env.yml
               mamba env update -n ocp-models --file env.yml
             fi
+#      - run:
+#          name: Create environment
+#          command: |
+#            if [ ! -d "/home/circleci/miniconda/envs/ocp-models" ]; then
+#              conda create --name ocp-models --clone base
+#              source /home/circleci/miniconda/etc/profile.d/conda.sh
+#              conda activate ocp-models
+#              conda install -c conda-forge conda-merge
+#              conda-merge env.common.yml env.cpu.yml > env.yml
+#              mamba env update -n ocp-models --file env.yml
+#            fi
       - save_cache:
           paths:
             - /home/circleci/miniconda
