@@ -14,7 +14,7 @@ jobs:
           - v0.5-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
 
       - run:
-          name: Install conda
+          name: Install conda and create env
           command: |
             if [ ! -d "/home/circleci/miniconda" ]; then
               wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -26,11 +26,7 @@ jobs:
               # Update conda
               conda update conda
               conda install mamba -n base -c conda-forge
-            fi
-      - run:
-          name: Create environment
-          command: |
-            if [ ! -d "/home/circleci/miniconda/envs/ocp-models" ]; then
+              # Install ocp conda env
               conda create --name ocp-models --clone base
               source /home/circleci/miniconda/etc/profile.d/conda.sh
               conda activate ocp-models
@@ -38,6 +34,7 @@ jobs:
               conda-merge env.common.yml env.cpu.yml > env.yml
               mamba env update -n ocp-models --file env.yml
             fi
+
       - save_cache:
           paths:
             - /home/circleci/miniconda
