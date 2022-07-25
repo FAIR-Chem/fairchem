@@ -150,7 +150,13 @@ class BaseTrainer(ABC):
         self.scaler = torch.cuda.amp.GradScaler() if amp else None
 
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
-            self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
+            if "SLURM_ARRAY_JOB_ID" in os.environ:
+                self.config["slurm"]["job_id"] = "%s_%s" % (
+                    os.environ["SLURM_ARRAY_JOB_ID"],
+                    os.environ["SLURM_ARRAY_TASK_ID"],
+                )
+            else:
+                self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
             self.config["slurm"]["folder"] = self.config["slurm"][
                 "folder"
             ].replace("%j", self.config["slurm"]["job_id"])
