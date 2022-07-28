@@ -27,7 +27,9 @@ if __name__ == "__main__":
     config = build_config(args, override_args)
 
     # Customise args
-    config["model"]["energy_head"] = "pooling"
+    config["model"][
+        "energy_head"
+    ] = "weighted-av-init-embeds"  # diff_pooling, pooling, weighted-av-init-embeds
     # config["model"]["graph_rewiring"] = "one-supernode-per-graph"
     # config["model"]["phys_embeds"] = True
     # config['model']['use_pbc'] = True

@@ -10,7 +10,16 @@ from typing import Optional
 import torch
 import torch.nn.functional as F
 from torch.nn import Embedding, Linear, ModuleList, Sequential
-from torch_geometric.nn import DenseGraphConv, MessagePassing, radius_graph
+from torch_geometric.data import Batch
+from torch_geometric.nn import (
+    DenseGraphConv,
+    GraphConv,
+    MessagePassing,
+    global_mean_pool,
+    graclus,
+    max_pool,
+    radius_graph,
+)
 from torch_geometric.utils import to_dense_adj, to_dense_batch
 from torch_scatter import scatter
 
@@ -268,6 +277,7 @@ class NewSchNet(torch.nn.Module):
             self.w_lin = Linear(hidden_channels, 1)
             self.cluster_mlp = Linear(hidden_channels, NUM_CLUSTERS)
             self.dense_gnn = DenseGraphConv(hidden_channels, hidden_channels)
+            self.sparse_gnn = GraphConv(hidden_channels, hidden_channels)
             # TODO: pooling op as a class with init (above), forward (below)
 
         self.register_buffer("initial_atomref", atomref)
@@ -461,34 +471,47 @@ class NewSchNetWrap(NewSchNet):
             )
             h += h_pos
 
-        if self.energy_head == "weigthed-av-initial-embeds":
+        if self.energy_head == "weighted-av-initial-embeds":
             alpha = self.w_lin(h)
 
         for interaction in self.interactions:
             h = h + interaction(h, edge_index, edge_weight, edge_attr)
 
-        if self.energy_head == "weigthed-av-final-embeds":
+        if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
 
         if self.energy_head == "pooling":
+            # Pooling
+            cluster = graclus(
+                edge_index, edge_weight, num_nodes=h.size(0)
+            )  # regroup nodes by 2 only
+            b_data = Batch(x=h, edge_index=edge_index, batch=data.batch)
+            b_data = max_pool(cluster, b_data)
+            h, edge_index, batch = b_data.x, b_data.edge_index, b_data.batch
+            h = self.sparse_gnn(h, edge_index)
+            h = F.relu(h)
+
+        if self.energy_head == "diff_pooling":
             # convert batch sparse to batch dense
             h, mask = to_dense_batch(h, data.batch)
             # convert sparse adj to dense adj
             adj = to_dense_adj(data.edge_index, data.batch, data.distances)
             # Cluster ass matrix
-            s = self.cluster_mlp(h)  # num_nodes // 2
+            # s = self.cluster_mlp(h)
+            # If on, add losses to final loss !
+            # Random cluster ass.-- for now
+            s = torch.rand(h.size(0), h.size(1), NUM_CLUSTERS, device=h.device)
             # Pooling
             h, adj, mc, o, _ = dense_hoscpool(
                 h, adj, s, mu=0.1, alpha=0, new_ortho=False, mask=mask
             )
-            # TODO: add losses to final loss -- tricky probably
             # GNN
             h = self.dense_gnn(h, adj)
-            # TODO: convert h back to sparse batch
-            # 2nd layer
-            # s = mlp(h)
-            # h, adj = diffpool(h, adj)
-            # h = gnn_dense(h, adj)
+            # Convert back to proper shape
+            batch = torch.repeat_interleave(
+                torch.arange(max(batch) + 1), NUM_CLUSTERS
+            ).to(device=h.device)
+            h = h.reshape(-1, h.shape[-1])
 
         # MLP
         h = self.lin1(h)
