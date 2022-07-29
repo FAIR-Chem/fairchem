@@ -168,7 +168,7 @@ if __name__ == "__main__":
     args, override_args = parser.parse_known_args()
     if not args.mode or not args.config_yml:
         args.mode = "train"
-        args.config_yml = "configs/is2re/10k/schnet/schnet.yml"
+        args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
         warnings.warn("No model / mode is given; chosen as default")
     if args.logdir:

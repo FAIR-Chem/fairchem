@@ -385,7 +385,7 @@ class EHOutputPPBlock(torch.nn.Module):
         elif self.energy_head == "graclus":
             x, batch = self.graclus(x, edge_index, edge_weight, batch)
         elif self.energy_head:
-            x, batch, loss = self.hierarchical_pooling(
+            x, batch, pooling_loss = self.hierarchical_pooling(
                 x, edge_index, edge_weight, batch
             )
 
@@ -397,7 +397,7 @@ class EHOutputPPBlock(torch.nn.Module):
         if self.energy_head in {"weigthed-av-final-embeds", "weigthed-av-final-embeds"}:
             x = x * alpha
 
-        return x, loss, batch
+        return x, pooling_loss, batch
 
 
 class OutputPPBlock(torch.nn.Module):
@@ -753,12 +753,12 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         rbf = self.rbf(dist)
         sbf = self.sbf(dist, angle, idx_kj)
 
-        loss = None  # deal with pooling loss
+        pooling_loss = None  # deal with pooling loss
 
         # Embedding block.
         x = self.emb(data.atomic_numbers.long(), rbf, i, j, data.tags, data.subnodes)
         if self.energy_head:
-            P, loss, batch = self.output_blocks[0](
+            P, pooling_loss, batch = self.output_blocks[0](
                 x, rbf, i, edge_index, dist, data.batch, num_nodes=pos.size(0)
             )
         else:
@@ -770,18 +770,18 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         ):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
             if self.energy_head:
-                P_bis, loss_bis, batch = output_block(
+                P_bis, pooling_loss_bis, batch = output_block(
                     x, rbf, i, edge_index, dist, data.batch, num_nodes=pos.size(0)
                 )
                 P += P_bis
-                loss += loss_bis
+                pooling_loss += pooling_loss_bis
             else:
                 P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
         # Output
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
 
-        return energy, loss
+        return energy, pooling_loss
 
     def forward(self, data):
         if self.regress_forces:

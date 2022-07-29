@@ -22,7 +22,7 @@ model:
   phys_embeds: False # True
   graph_rewiring: False # can be in {false, remove-tag-0, one-supernode-per-graph,
                                     # one-supernode-per-atom-type, one-supernode-per-atom-type-dist}
-  energy_head: weighted-av-initial-embeds # can be {False, weighted-av-initial-embeds,
+  energy_head: False # can be {False, weighted-av-initial-embeds,
                                               # weighted-av-final-embeds, pooling, graclus, random}
 
 # *** Important note ***

@@ -23,12 +23,16 @@ from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
 from ocpmodels.preprocessing import (
     one_supernode_per_atom_type,
     one_supernode_per_atom_type_dist,
     one_supernode_per_graph,
     remove_tag0_nodes,
 )
+
+NUM_CLUSTERS = 20
+NUM_POOLING_LAYERS = 1
 
 
 class FNDecoder(nn.Module):
@@ -259,6 +263,7 @@ class NewForceNet(BaseModel):
         predict_forces=False,
         use_pbc=True,
         graph_rewiring=False,
+        energy_head=False,
     ):
 
         super(NewForceNet, self).__init__()
@@ -303,6 +308,7 @@ class NewForceNet(BaseModel):
         self.phys_embeds = phys_embeds
         self.predict_forces = predict_forces
         self.graph_rewiring = graph_rewiring
+        self.energy_head = energy_head
         self.use_positional_embeds = graph_rewiring in {
             "one-supernode-per-graph",
             "one-supernode-per-atom-type",
@@ -474,6 +480,20 @@ class NewForceNet(BaseModel):
                 decoder_type, decoder_activation_str, self.output_dim
             )
 
+        # Pooling & weighted average blocks
+        if self.energy_head in {"pooling", "random"}:
+            self.hierarchical_pooling = Hierarchical_Pooling(
+                hidden_channels,
+                self.activation,
+                NUM_POOLING_LAYERS,
+                NUM_CLUSTERS,
+                self.energy_head,
+            )
+        elif self.energy_head == "graclus":
+            self.graclus = Graclus(hidden_channels, self.act)
+        elif self.energy_head:
+            self.w_lin = nn.Linear(hidden_channels, 1)
+
         # Projection layer for energy prediction
         self.energy_mlp = nn.Linear(self.output_dim, 1)
 
@@ -613,10 +633,27 @@ class NewForceNet(BaseModel):
         else:
             edge_attr = self.basis_fun(raw_edge_attr)
 
+        if self.energy_head == "weighted-av-initial-embeds":
+            alpha = self.w_lin(h)
+
         # pass edge_attributes through interaction blocks
         for i, interaction in enumerate(self.interactions):
             h = h + interaction(h, edge_index, edge_attr, edge_weight)
 
+        pooling_loss = None  # deal with pooling loss
+
+        if self.energy_head == "weighted-av-final-embeds":
+            alpha = self.w_lin(h)
+
+        elif self.energy_head == "graclus":
+            h, batch = self.graclus(h, edge_index, edge_weight, batch)
+
+        elif self.energy_head:
+            h, batch, pooling_loss = self.hierarchical_pooling(
+                h, edge_index, edge_weight, batch
+            )
+
+        # MLPs
         h = self.lin(h)
         h = self.activation(h)
 
@@ -628,7 +665,7 @@ class NewForceNet(BaseModel):
             force = self.decoder(h)
             return energy, force
 
-        return energy
+        return energy, pooling_loss
 
     @property
     def num_params(self):

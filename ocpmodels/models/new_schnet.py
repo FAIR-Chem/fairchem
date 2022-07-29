@@ -296,7 +296,7 @@ class NewSchNet(torch.nn.Module):
         if self.use_pg:
             self.period_embedding.reset_parameters()
             self.group_embedding.reset_parameters()
-        if self.energy_head in ["weighted-av-init-embeds", "weighted-av-final-embeds"]:
+        if self.energy_head in {"weighted-av-init-embeds", "weighted-av-final-embeds"}:
             self.w_lin.bias.data.fill_(0)
             torch.nn.init.xavier_uniform_(self.w_lin.weight)
         for interaction in self.interactions:
@@ -477,7 +477,7 @@ class NewSchNetWrap(NewSchNet):
         for interaction in self.interactions:
             h = h + interaction(h, edge_index, edge_weight, edge_attr)
 
-        loss = None  # deal with pooling loss
+        pooling_loss = None  # deal with pooling loss
 
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
@@ -486,7 +486,7 @@ class NewSchNetWrap(NewSchNet):
             h, batch = self.graclus(h, edge_index, edge_weight, batch)
 
         elif self.energy_head:
-            h, batch, loss = self.hierarchical_pooling(
+            h, batch, pooling_loss = self.hierarchical_pooling(
                 h, edge_index, edge_weight, batch
             )
 
@@ -507,7 +507,7 @@ class NewSchNetWrap(NewSchNet):
         if self.scale is not None:
             out = self.scale * out
 
-        return out, loss
+        return out, pooling_loss
 
     def forward(self, data):
         if self.regress_forces:
