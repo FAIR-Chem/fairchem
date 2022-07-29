@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from torch.nn import Linear
 from torch_geometric.data import Batch
 from torch_geometric.nn import (
+    DenseGraphConv,
     GCNConv,
     GraphConv,
     JumpingKnowledge,
@@ -10,11 +11,9 @@ from torch_geometric.nn import (
     graclus,
     max_pool,
 )
+from torch_geometric.utils import to_dense_adj, to_dense_batch
 
 EPS = 1e-15
-
-# TODO: build a class -- use it directly inside core model function. This way we can tweak it as much as desired
-# dense_hoscpool will be a fct of this class
 
 
 def dense_hoscpool(
@@ -174,71 +173,115 @@ def _rank3_diag(x):
     out = eye * x.unsqueeze(2).expand(*x.size(), x.size(1))
     return out
 
-"""
-class Graclus(torch.nn.Module):
+
+class Hierarchical_Pooling(torch.nn.Module):
     def __init__(
         self,
-        num_features,
-        num_classes,
-        num_layers,
-        hidden,
-        pooling_type,
-        no_cat=False,
-        encode_edge=False,
+        hidden_channels,
+        activation,
+        num_layers=1,
+        num_clusters=20,
+        pooling_type="hoscpool",
     ):
-        super(Graclus, self).__init__()
-        self.encode_edge = encode_edge
-        if encode_edge:
-            self.conv1 = GCNConv(hidden, aggr="add")
-        else:
-            self.conv1 = GraphConv(num_features, hidden, aggr="add")
+        """_summary_
 
-        self.convs = torch.nn.ModuleList()
-        for i in range(num_layers - 1):
-            self.convs.append(GraphConv(hidden, hidden, aggr="add"))
-
-        self.jump = JumpingKnowledge(mode="cat")
-        self.lin1 = Linear(num_layers * hidden, hidden)
-        if no_cat:
-            self.lin1 = Linear(hidden, hidden)
-        self.lin2 = Linear(hidden, num_classes)
+        Args:
+            num_clusters (int): number of clusters K we try to find
+            num_layers (int): number of pooling layers
+            activation: activation function
+            pooling_type (str): pooling method utilised. choices = hoscpool, random
+            hidden_channels (int): size of hidden layer
+        """
+        super(Hierarchical_Pooling, self).__init__()
+        self.num_clusters = num_clusters
+        self.num_clusters_2 = num_clusters // 4
+        self.act = activation
+        self.num_layers = num_layers
         self.pooling_type = pooling_type
-        self.no_cat = no_cat
 
-        # self.atom_encoder = AtomEncoder(emb_dim=hidden)
+        self.w_lin = Linear(hidden_channels, 1)
+        self.cluster_mlp = Linear(hidden_channels, num_clusters)
+        if num_layers > 1:
+            self.cluster_mlp_2 = Linear(hidden_channels, self.num_clusters_2)
+        self.dense_gnn = DenseGraphConv(hidden_channels, hidden_channels)
+
+        self.reset_parameters()
 
     def reset_parameters(self):
-        self.conv1.reset_parameters()
-        for conv in self.convs:
-            conv.reset_parameters()
-        self.jump.reset_parameters()
-        self.lin1.reset_parameters()
-        self.lin2.reset_parameters()
+        self.w_lin.bias.data.fill_(0)
+        torch.nn.init.xavier_uniform_(self.w_lin.weight)
+        self.cluster_mlp.bias.data.fill_(0)
+        torch.nn.init.xavier_uniform_(self.cluster_mlp.weight)
+        self.dense_gnn.reset_parameters()
+        if self.num_layers > 1:
+            self.cluster_mlp_2.bias.data.fill_(0)
+            torch.nn.init.xavier_uniform_(self.cluster_mlp_2.weight)
 
-    def forward(self, data):
-        x, edge_index, batch = data.x, data.edge_index, data.batch
-
-        if self.encode_edge:
-            # x = self.atom_encoder(x)
-            x = self.conv1(x, edge_index, data.edge_attr)
+    def forward(self, h, adj, distances, batch):
+        # convert batch sparse to batch dense
+        h, mask = to_dense_batch(h, batch)
+        # convert sparse adj to dense adj
+        adj = to_dense_adj(adj, batch, distances)
+        # Cluster ass matrix
+        if self.pooling_type == "random":
+            s = torch.rand(h.size(0), h.size(1), self.num_clusters, device=h.device)
         else:
-            x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        xs = [global_mean_pool(x, batch)]
-        for i, conv in enumerate(self.convs):
-            x = F.relu(conv(x, edge_index))
-            xs += [global_mean_pool(x, batch)]
-            if self.pooling_type == "graclus":
-                cluster = graclus(edge_index, num_nodes=x.size(0))
-                data = Batch(x=x, edge_index=edge_index, batch=batch)
-                data = max_pool(cluster, data)
-                x, edge_index, batch = data.x, data.edge_index, data.batch
+            s = self.cluster_mlp(h)
+        # Pooling
+        h, adj, mc, o, _ = dense_hoscpool(
+            h, adj, s, mu=0.1, alpha=0, new_ortho=False, mask=mask
+        )
+        # GNN
+        h = self.dense_gnn(h, adj)
+        h = self.act(h)
 
-        if not self.no_cat:
-            x = self.jump(xs)
+        # Second pooling layer
+        if self.num_layers == 2:
+            if self.pooling_type == "random":
+                s = torch.rand(
+                    h.size(0), h.size(1), self.num_clusters_2, device=h.device
+                )
+            else:
+                s = self.cluster_mlp(h)
+            h, adj, mc_2, o_2, _ = dense_hoscpool(
+                h, adj, s, mu=0.1, alpha=0, new_ortho=False, mask=mask
+            )
+            mc += mc_2
+            o += o_2
+            h = self.dense_gnn(h, adj)
+            h = self.act(h)
+            # Convert back to correct format
+            batch = torch.repeat_interleave(
+                torch.arange(max(batch) + 1), self.num_clusters_2
+            ).to(device=h.device)
+            h = h.reshape(-1, h.shape[-1])
+
         else:
-            x = global_mean_pool(x, batch)
-        x = F.relu(self.lin1(x))
-        x = self.lin2(x)
-        return x
-"""
+            # Convert back to proper shape
+            batch = torch.repeat_interleave(
+                torch.arange(max(batch) + 1), self.num_clusters
+            ).to(device=h.device)
+
+            h = h.reshape(-1, h.shape[-1])
+
+        return h, batch, mc + o
+
+
+class Graclus(torch.nn.Module):
+    def __init__(self, hidden_channels, activation):
+        super(Graclus, self).__init__()
+        self.sparse_gnn = GraphConv(hidden_channels, hidden_channels)
+        self.act = activation
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        self.sparse_gnn.reset_parameters()
+
+    def forward(self, h, edge_index, edge_weight, batch):
+        cluster = graclus(edge_index, edge_weight, num_nodes=h.size(0))
+        b_data = Batch(x=h, edge_index=edge_index, batch=batch)
+        b_data = max_pool(cluster, b_data)
+        h = self.sparse_gnn(b_data.x, b_data.edge_index)
+        h = self.act(h)
+
+        return h, b_data.batch
