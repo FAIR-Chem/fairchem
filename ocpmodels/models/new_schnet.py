@@ -300,6 +300,10 @@ class NewSchNet(torch.nn.Module):
         if self.energy_head:
             self.w_lin.bias.data.fill_(0)
             torch.nn.init.xavier_uniform_(self.w_lin.weight)
+            self.cluster_mlp.bias.data.fill_(0)
+            torch.nn.init.xavier_uniform_(self.cluster_mlp.weight)
+            self.dense_gnn.reset_parameters()
+            self.sparse_gnn.reset_parameters()
         for interaction in self.interactions:
             interaction.reset_parameters()
         torch.nn.init.xavier_uniform_(self.lin1.weight)
@@ -321,6 +325,7 @@ class NewSchNet(torch.nn.Module):
             f"properties={self.phys_hidden_channels}, "
             f"period_hidden_channels={self.pg_hidden_channels}, "
             f"group_hidden_channels={self.pg_hidden_channels}, "
+            f"energy_head={self.energy_head}",
             f"num_filters={self.num_filters}, "
             f"num_interactions={self.num_interactions}, "
             f"num_gaussians={self.num_gaussians}, "
@@ -480,7 +485,7 @@ class NewSchNetWrap(NewSchNet):
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
 
-        if self.energy_head == "pooling":
+        elif self.energy_head == "pooling":
             # Pooling
             cluster = graclus(
                 edge_index, edge_weight, num_nodes=h.size(0)
@@ -491,7 +496,7 @@ class NewSchNetWrap(NewSchNet):
             h = self.sparse_gnn(h, edge_index)
             h = F.relu(h)
 
-        if self.energy_head == "diff_pooling":
+        elif self.energy_head == "diff_pooling":
             # convert batch sparse to batch dense
             h, mask = to_dense_batch(h, data.batch)
             # convert sparse adj to dense adj
@@ -524,6 +529,7 @@ class NewSchNetWrap(NewSchNet):
         if self.atomref is not None:
             h = h + self.atomref(z)
 
+        # Global pooling
         out = scatter(h, batch, dim=0, reduce=self.readout)
 
         if self.scale is not None:

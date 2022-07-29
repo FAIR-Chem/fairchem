@@ -1,10 +1,10 @@
-python sbatch.py gres="gpu:1" partition=long time=24:00:00 cpus=4 mem=32GB py_args="--mode train --config-yml configs/is2re/10k/schnet/new_schnet.yml --energy_head='diff_pooling' --note='diffpooling'" env=ocp
-
-python sbatch.py gres="gpu:1" partition=long time=24:00:00 cpus=4 mem=32GB py_args="--mode train --config-yml configs/is2re/10k/schnet/new_schnet.yml --energy_head='pooling' --note='pooling'" env=ocp
-
 python sbatch.py gres="gpu:4" partition=long time=24:00:00 cpus=4 mem=32GB py_args="--mode train --config-yml configs/is2re/all/schnet/new_schnet.yml --energy_head='weighted-av-initial-embeds' --note='w. av. initi embeds'" env=ocp
 
-python sbatch.py gres="gpu:4" partition=long time=24:00:00 cpus=4 mem=32GB py_args="--mode train --config-yml configs/is2re/all/schnet/new_schnet.yml --energy_head='weighted-av-final-embeds' --note='w. av. initi embeds'" env=ocp
+python sbatch.py gres="gpu:4" partition=long time=24:00:00 cpus=4 mem=32GB py_args="--mode train --config-yml configs/is2re/all/schnet/new_schnet.yml --energy_head='weighted-av-final-embeds' --note='w. av. final embeds'" env=ocp
+
+#python sbatch.py gres="gpu:1" partition=long time=24:00:00 cpus=4 mem=32GB py_args="--mode train --config-yml configs/is2re/10k/schnet/new_schnet.yml --energy_head='diff_pooling' --note='diffpooling'" env=ocp
+
+#python sbatch.py gres="gpu:1" partition=long time=24:00:00 cpus=4 mem=32GB py_args="--mode train --config-yml configs/is2re/10k/schnet/new_schnet.yml --energy_head='pooling' --note='pooling'" env=ocp
 
 
 # python sbatch.py gres="gpu:1" partition=long time=24:00:00 cpus=4 mem=32GB py_args="--mode train --config-yml configs/is2re/100k/dimenet_plus_plus/new_dpp.yml --model.graph_rewiring='one-supernode-per-graph' --note='pe + one-supernode-per-graph type'" env=ocp
