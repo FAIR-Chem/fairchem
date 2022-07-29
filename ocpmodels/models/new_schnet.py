@@ -471,13 +471,13 @@ class NewSchNetWrap(NewSchNet):
             )
             h += h_pos
 
-        loss = None  # deal with pooling loss
-
         if self.energy_head == "weighted-av-initial-embeds":
             alpha = self.w_lin(h)
 
         for interaction in self.interactions:
             h = h + interaction(h, edge_index, edge_weight, edge_attr)
+
+        loss = None  # deal with pooling loss
 
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)

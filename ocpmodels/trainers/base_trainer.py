@@ -605,8 +605,10 @@ class BaseTrainer(ABC):
         ):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch)
+                out, pooling_loss = self._forward(batch)
             loss = self._compute_loss(out, batch)
+            if pooling_loss is not None:
+                loss += pooling_loss
 
             # Compute metrics.
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
