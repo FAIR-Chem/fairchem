@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # Customise args
     config["model"][
         "energy_head"
-    ] = "weighted-av-init-embeds"  # diff_pooling, pooling, weighted-av-init-embeds
+    ] = 'pooling'  # pooling, weighted-av-init-embeds, graclus, random
     # config["model"]["graph_rewiring"] = "one-supernode-per-graph"
     # config["model"]["phys_embeds"] = True
     # config['model']['use_pbc'] = True

@@ -139,7 +139,7 @@ class EnergyTrainer(BaseTrainer):
             disable=disable_tqdm,
         ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch)
+                out, _ = self._forward(batch)
 
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(out["energy"])
@@ -190,8 +190,10 @@ class EnergyTrainer(BaseTrainer):
 
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out = self._forward(batch)
-                    loss = self._compute_loss(out, batch)
+                    out, pooling_loss = self._forward(batch)
+                    loss = self._compute_loss(out, batch) 
+                    if pooling_loss is not None:
+                        loss += pooling_loss
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
@@ -283,14 +285,14 @@ class EnergyTrainer(BaseTrainer):
             self.test_dataset.close_db()
 
     def _forward(self, batch_list):
-        output = self.model(batch_list)
+        output, pooling_loss = self.model(batch_list)
 
         if output.shape[-1] == 1:
             output = output.view(-1)
 
         return {
             "energy": output,
-        }
+        }, pooling_loss
 
     def _compute_loss(self, out, batch_list):
         energy_target = torch.cat(

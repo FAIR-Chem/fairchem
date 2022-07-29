@@ -266,13 +266,13 @@ class NewSchNet(torch.nn.Module):
         self.lin2 = Linear(hidden_channels // 2, 1)
 
         # weigthed average & pooling
-        if self.energy_head == "pooling":
+        if self.energy_head in {"pooling", "random"}:
             self.hierarchical_pooling = Hierarchical_Pooling(
                 hidden_channels,
                 self.act,
                 NUM_POOLING_LAYERS,
                 NUM_CLUSTERS,
-                "hoscpool",
+                self.energy_head,
             )
         elif self.energy_head == "graclus":
             self.graclus = Graclus(hidden_channels, self.act)
@@ -471,6 +471,8 @@ class NewSchNetWrap(NewSchNet):
             )
             h += h_pos
 
+        loss = None  # deal with pooling loss
+
         if self.energy_head == "weighted-av-initial-embeds":
             alpha = self.w_lin(h)
 
@@ -505,12 +507,12 @@ class NewSchNetWrap(NewSchNet):
         if self.scale is not None:
             out = self.scale * out
 
-        return out
+        return out, loss
 
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy = self._forward(data)
+        energy, pooling_loss = self._forward(data)
 
         if self.regress_forces:
             forces = -1 * (
@@ -523,7 +525,7 @@ class NewSchNetWrap(NewSchNet):
             )
             return energy, forces
         else:
-            return energy
+            return energy, pooling_loss
 
     @property
     def num_params(self):
