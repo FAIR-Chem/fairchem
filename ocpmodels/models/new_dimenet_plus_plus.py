@@ -444,6 +444,11 @@ class NewDimeNetPlusPlus(torch.nn.Module):
 
     Args:
         hidden_channels (int): Hidden embedding size.
+        tag_hidden_channels (int): tag embedding size
+        pg_hidden_channels (int): period & group embedding size
+        phys_hidden_channels (int): MLP hidden size for physics embedding
+        phys_embeds (bool): whether we use physics embeddings or not
+        graph_rewiring (str): name of rewiring method. Default=False.
         out_channels (int): Size of each output sample.
         num_blocks (int): Number of building blocks.
         int_emb_size (int): Embedding size used for interaction triplets

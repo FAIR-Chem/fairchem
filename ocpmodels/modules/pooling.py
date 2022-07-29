@@ -94,7 +94,7 @@ def dense_hoscpool(
 
     # Combine ho and fo mincut loss.
     # We do not learn these coefficients yet
-    hosc_loss = alpha * mincut_loss + (1 - alpha) * ho_mincut_loss
+    hosc_loss = (1-alpha) * mincut_loss + alpha * ho_mincut_loss
 
     # Orthogonality loss
     if mu != 0:
