@@ -78,6 +78,33 @@ if __name__ == "__main__":
     task = registry.get_task_class(config["mode"])(config)
     task.setup(trainer)
 
+    if opts.no_frame_averaging is None:
+        for batch in trainer.train_loader:
+            break
+        # Set up 
+        b = batch[0]
+        device = b.pos.device 
+        batch_size = b.sid.shape[0]
+        for g in b: 
+            num_atoms = g.pos.shape[0]
+            # Compute centroid and covariance
+            t_ones = torch.ones(num_atoms).unsqueeze(1)
+            t = 1/num_atoms * g.pos.T @ t_ones  # , device=device
+            C = (g.pos - t_ones @ t.T).T @ (g.pos - t_ones @ t.T)
+            # Eigendecomposition
+            eigenval, eigenvec = torch.linalg.eig(C)
+            # Sort, if necessary 
+            idx = eigenval.real.argsort(descending=True)
+            eigenval = eigenval[idx]
+            eigenvec = eigenvec[:,idx]
+            # Compute new positions
+            g.updated_pos = (g.pos - t.squeeze()) @ eigenvec.real
+        # Extensions to 2/3 possible U
+        # Look at positive U only
+
+
+
+
     if opts.no_single_super_node is None:
 
         for batch in trainer.train_loader:
