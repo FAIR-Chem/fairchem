@@ -235,6 +235,7 @@ class GemNetOC(ScaledModule):
         atom_interaction: bool = False,
         scale_basis: bool = False,
         qint_tags: list = [0, 1, 2],
+        otf_graph: bool = False,
         **kwargs,  # backwards compatibility with deprecated arguments
     ):
         super().__init__()
@@ -250,6 +251,7 @@ class GemNetOC(ScaledModule):
         self.atom_interaction = atom_interaction
         self.quad_interaction = quad_interaction
         self.qint_tags = torch.tensor(qint_tags)
+        self.otf_graph = otf_graph
         if not rbf_spherical:
             rbf_spherical = rbf
 
@@ -880,7 +882,7 @@ class GemNetOC(ScaledModule):
 
     def generate_graph(self, data, cutoff, max_neighbors):
         """Generate a radius/nearest neighbor graph."""
-        otf_graph = cutoff > 6 or max_neighbors > 50
+        otf_graph = cutoff > 6 or max_neighbors > 50 or self.otf_graph
 
         if self.use_pbc:
             if otf_graph:
