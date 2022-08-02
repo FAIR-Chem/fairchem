@@ -235,6 +235,7 @@ class GemNetOC(ScaledModule):
         atom_interaction: bool = False,
         scale_basis: bool = False,
         qint_tags: list = [0, 1, 2],
+        num_elements: int = 83,
         otf_graph: bool = False,
         **kwargs,  # backwards compatibility with deprecated arguments
     ):
@@ -284,7 +285,7 @@ class GemNetOC(ScaledModule):
         )
 
         # Embedding blocks
-        self.atom_emb = AtomEmbedding(emb_size_atom)
+        self.atom_emb = AtomEmbedding(emb_size_atom, num_elements)
         self.edge_emb = EdgeEmbedding(
             emb_size_atom, num_radial, emb_size_edge, activation=activation
         )
