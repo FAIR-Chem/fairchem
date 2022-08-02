@@ -19,6 +19,7 @@ from torch_scatter import scatter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomRotate
 from ocpmodels.common.utils import (
+    compute_neighbors,
     conditional_grad,
     get_pbc_distances,
     radius_graph_pbc,
@@ -189,42 +190,43 @@ class spinconv(BaseModel):
         self.num_atoms = len(data.batch)
         self.batch_size = len(data.natoms)
 
-        atomic_numbers = data.atomic_numbers.long()
         pos = data.pos
         if self.regress_forces:
             pos = pos.requires_grad_(True)
-
-        if self.otf_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, 100
-            )
-            data.edge_index = edge_index
-            data.cell_offsets = cell_offsets
-            data.neighbors = neighbors
-
         if self.use_pbc:
-            assert (
-                atomic_numbers.dim() == 1
-                and atomic_numbers.dtype == torch.long
-            )
+            if self.otf_graph:
+                edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                    data, self.cutoff, self.max_num_neighbors
+                )
+            else:
+                edge_index = data.edge_index
+                cell_offsets = data.cell_offsets
+                neighbors = data.neighbors
 
             out = get_pbc_distances(
-                pos,
-                data.edge_index,
+                data.pos,
+                edge_index,
                 data.cell,
-                data.cell_offsets,
-                data.neighbors,
+                cell_offsets,
+                neighbors,
+                return_offsets=True,
                 return_distance_vec=True,
             )
 
             edge_index = out["edge_index"]
             edge_distance = out["distances"]
             edge_distance_vec = out["distance_vec"]
-
         else:
-            edge_index = radius_graph(pos, r=self.cutoff, batch=data.batch)
+            self.otf_graph = True
+            edge_index = radius_graph(
+                data.pos,
+                r=self.cutoff,
+                batch=data.batch,
+                max_num_neighbors=self.max_num_neighbors,
+            )
             j, i = edge_index
-            edge_distance_vec = pos[j] - pos[i]
+            edge_distance_vec = data.pos[j] - data.pos[i]
+
             edge_distance = edge_distance_vec.norm(dim=-1)
 
         edge_index, edge_distance, edge_distance_vec = self._filter_edges(
