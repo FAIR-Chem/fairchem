@@ -36,11 +36,12 @@ from typing import Optional, Tuple
 
 import torch
 from torch import nn
-from torch_geometric.nn import MessagePassing
+from torch_geometric.nn import MessagePassing, radius_graph
 from torch_scatter import scatter, segment_coo
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
+    compute_neighbors,
     conditional_grad,
     get_pbc_distances,
     radius_graph_pbc,
@@ -77,6 +78,7 @@ class PaiNN(ScaledModule):
         direct_forces=True,
         use_pbc=True,
         otf_graph=True,
+        num_elements=83,
     ):
         super(PaiNN, self).__init__()
 
@@ -96,7 +98,7 @@ class PaiNN(ScaledModule):
 
         #### Learnable parameters #############################################
 
-        self.atom_emb = AtomEmbedding(hidden_channels)
+        self.atom_emb = AtomEmbedding(hidden_channels, num_elements)
 
         self.radial_basis = RadialBasis(
             num_radial=num_rbf,
@@ -329,27 +331,31 @@ class PaiNN(ScaledModule):
         )
 
     def generate_graph(self, data):
-        otf_graph = (
-            self.cutoff > 6 or self.max_neighbors > 50 or self.otf_graph
-        )
+        if self.use_pbc:
+            if self.otf_graph:
+                edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                    data, self.cutoff, self.max_neighbors
+                )
+            else:
+                edge_index = data.edge_index
+                cell_offsets = data.cell_offsets
+                neighbors = data.neighbors
 
-        if self.use_pbc and otf_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, self.max_neighbors
-            )
-
+            # Switch the indices, so the second one becomes the target index,
+            # over which we can efficiently aggregate.
             out = get_pbc_distances(
                 data.pos,
                 edge_index,
                 data.cell,
                 cell_offsets,
                 neighbors,
-                return_offsets=False,
+                return_offsets=True,
                 return_distance_vec=True,
             )
 
             edge_index = out["edge_index"]
             edge_dist = out["distances"]
+
             # Unit vectors pointing from edge_index[1] to edge_index[0],
             # i.e., edge_index[0] - edge_index[1] divided by the norm.
             # make sure that the distances are not close to zero before dividing
@@ -358,7 +364,21 @@ class PaiNN(ScaledModule):
 
             edge_vector = out["distance_vec"] / edge_dist[:, None]
         else:
-            raise NotImplementedError
+            edge_index = radius_graph(
+                data.pos,
+                r=self.cutoff,
+                batch=data.batch,
+                max_num_neighbors=self.max_neighbors,
+            )
+            j, i = edge_index
+            distance_vec = data.pos[j] - data.pos[i]
+
+            edge_dist = distance_vec.norm(dim=-1)
+            edge_vector = distance_vec / edge_dist[:, None]
+            cell_offsets = torch.zeros(
+                edge_index.shape[1], 3, device=data.pos.device
+            )
+            neighbors = compute_neighbors(data, edge_index)
 
         empty_image = neighbors == 0
         if torch.any(empty_image):
