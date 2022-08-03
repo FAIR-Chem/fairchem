@@ -33,8 +33,11 @@ class BaseModel(nn.Module):
         if not self.otf_graph:
             try:
                 edge_index = data.edge_index
-                cell_offsets = data.cell_offsets
-                neighbors = data.neighbors
+
+                if self.use_pbc:
+                    cell_offsets = data.cell_offsets
+                    neighbors = data.neighbors
+
             except AttributeError:
                 logging.warning(
                     "Turning otf_graph=True as required attributes not present in data object"
