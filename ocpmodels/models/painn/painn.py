@@ -46,6 +46,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base import BaseModel
 from ocpmodels.models.gemnet.layers.base_layers import ScaledSiLU
 from ocpmodels.models.gemnet.layers.embedding_block import AtomEmbedding
 from ocpmodels.models.gemnet.layers.radial_basis import RadialBasis
@@ -55,7 +56,7 @@ from .utils import get_edge_id, repeat_blocks
 
 
 @registry.register_model("painn")
-class PaiNN(ScaledModule):
+class PaiNN(ScaledModule, BaseModel):
     r"""PaiNN model based on the description in Schütt et al. (2021):
     Equivariant message passing for the prediction of tensorial properties
     and molecular spectra, https://arxiv.org/abs/2102.03150.
@@ -331,54 +332,20 @@ class PaiNN(ScaledModule):
         )
 
     def generate_graph(self, data):
-        if self.use_pbc:
-            if self.otf_graph:
-                edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                    data, self.cutoff, self.max_neighbors
-                )
-            else:
-                edge_index = data.edge_index
-                cell_offsets = data.cell_offsets
-                neighbors = data.neighbors
+        (
+            edge_index,
+            edge_dist,
+            distance_vec,
+            cell_offsets,
+            neighbors,
+        ) = self.get_graph_properties(data)
 
-            # Switch the indices, so the second one becomes the target index,
-            # over which we can efficiently aggregate.
-            out = get_pbc_distances(
-                data.pos,
-                edge_index,
-                data.cell,
-                cell_offsets,
-                neighbors,
-                return_offsets=True,
-                return_distance_vec=True,
-            )
-
-            edge_index = out["edge_index"]
-            edge_dist = out["distances"]
-
-            # Unit vectors pointing from edge_index[1] to edge_index[0],
-            # i.e., edge_index[0] - edge_index[1] divided by the norm.
-            # make sure that the distances are not close to zero before dividing
-            mask_zero = torch.isclose(edge_dist, torch.tensor(0.0), atol=1e-6)
-            edge_dist[mask_zero] = 1.0e-6
-
-            edge_vector = out["distance_vec"] / edge_dist[:, None]
-        else:
-            edge_index = radius_graph(
-                data.pos,
-                r=self.cutoff,
-                batch=data.batch,
-                max_num_neighbors=self.max_neighbors,
-            )
-            j, i = edge_index
-            distance_vec = data.pos[j] - data.pos[i]
-
-            edge_dist = distance_vec.norm(dim=-1)
-            edge_vector = distance_vec / edge_dist[:, None]
-            cell_offsets = torch.zeros(
-                edge_index.shape[1], 3, device=data.pos.device
-            )
-            neighbors = compute_neighbors(data, edge_index)
+        # Unit vectors pointing from edge_index[1] to edge_index[0],
+        # i.e., edge_index[0] - edge_index[1] divided by the norm.
+        # make sure that the distances are not close to zero before dividing
+        mask_zero = torch.isclose(edge_dist, torch.tensor(0.0), atol=1e-6)
+        edge_dist[mask_zero] = 1.0e-6
+        edge_vector = distance_vec / edge_dist[:, None]
 
         empty_image = neighbors == 0
         if torch.any(empty_image):

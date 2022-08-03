@@ -82,7 +82,7 @@ class spinconv(BaseModel):
         self.num_atoms = 0
         self.hidden_channels = hidden_channels
         self.embedding_size = embedding_size
-        self.max_num_neighbors = max_num_neighbors
+        self.max_num_neighbors = self.max_neighbors = max_num_neighbors
         self.sphere_message = sphere_message
         self.output_message = output_message
         self.force_estimator = force_estimator
@@ -193,41 +193,14 @@ class spinconv(BaseModel):
         pos = data.pos
         if self.regress_forces:
             pos = pos.requires_grad_(True)
-        if self.use_pbc:
-            if self.otf_graph:
-                edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                    data, self.cutoff, self.max_num_neighbors
-                )
-            else:
-                edge_index = data.edge_index
-                cell_offsets = data.cell_offsets
-                neighbors = data.neighbors
 
-            out = get_pbc_distances(
-                data.pos,
-                edge_index,
-                data.cell,
-                cell_offsets,
-                neighbors,
-                return_offsets=True,
-                return_distance_vec=True,
-            )
-
-            edge_index = out["edge_index"]
-            edge_distance = out["distances"]
-            edge_distance_vec = out["distance_vec"]
-        else:
-            self.otf_graph = True
-            edge_index = radius_graph(
-                data.pos,
-                r=self.cutoff,
-                batch=data.batch,
-                max_num_neighbors=self.max_num_neighbors,
-            )
-            j, i = edge_index
-            edge_distance_vec = data.pos[j] - data.pos[i]
-
-            edge_distance = edge_distance_vec.norm(dim=-1)
+        (
+            edge_index,
+            edge_distance,
+            edge_distance_vec,
+            cell_offsets,
+            neighbors,
+        ) = self.get_graph_properties(data)
 
         edge_index, edge_distance, edge_distance_vec = self._filter_edges(
             edge_index,

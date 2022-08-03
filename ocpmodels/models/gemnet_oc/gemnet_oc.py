@@ -21,6 +21,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base import BaseModel
 
 from .initializers import get_initializer
 from .interaction_indices import (
@@ -48,7 +49,7 @@ from .utils import (
 
 
 @registry.register_model("gemnet_oc")
-class GemNetOC(ScaledModule):
+class GemNetOC(ScaledModule, BaseModel):
     """
     Arguments
     ---------
@@ -885,49 +886,16 @@ class GemNetOC(ScaledModule):
         """Generate a radius/nearest neighbor graph."""
         otf_graph = cutoff > 6 or max_neighbors > 50 or self.otf_graph
 
-        if self.use_pbc:
-            if otf_graph:
-                edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
-                    data, cutoff, max_neighbors
-                )
-            else:
-                edge_index = data.edge_index
-                cell_offsets = data.cell_offsets
-                num_neighbors = data.neighbors
-
-            out = get_pbc_distances(
-                data.pos,
-                edge_index,
-                data.cell,
-                cell_offsets,
-                num_neighbors,
-                return_offsets=False,
-                return_distance_vec=True,
-            )
-
-            edge_index = out["edge_index"]
-            edge_dist = out["distances"]
-            # These vectors actually point in the opposite direction.
-            # But we want to use col as idx_t for efficient aggregation.
-            edge_vector = -out["distance_vec"] / edge_dist[:, None]
-            cell_offsets = -cell_offsets  # a - c + offset
-        else:
-            otf_graph = True
-            edge_index = radius_graph(
-                data.pos,
-                r=self.cutoff,
-                batch=data.batch,
-                max_num_neighbors=max_neighbors,
-            )
-            j, i = edge_index
-            distance_vec = data.pos[j] - data.pos[i]
-
-            edge_dist = distance_vec.norm(dim=-1)
-            edge_vector = -distance_vec / edge_dist[:, None]
-            cell_offsets = torch.zeros(
-                edge_index.shape[1], 3, device=data.pos.device
-            )
-            num_neighbors = compute_neighbors(data, edge_index)
+        (
+            edge_index,
+            edge_dist,
+            edge_vector,
+            cell_offsets,
+            num_neighbors,
+        ) = self.get_graph_properties(data)
+        # These vectors actually point in the opposite direction.
+        # But we want to use col as idx_t for efficient aggregation.
+        edge_vector = -edge_vector / edge_dist[:, None]
 
         graph = {
             "edge_index": edge_index,
