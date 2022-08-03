@@ -251,6 +251,7 @@ class ForceNet(BaseModel):
         decoder_activation_str="swish",
         training=True,
         otf_graph=False,
+        use_pbc=True,
     ):
 
         super(ForceNet, self).__init__()
@@ -288,6 +289,7 @@ class ForceNet(BaseModel):
         self.num_layers = num_interactions
         self.max_n = max_n
         self.activation_str = activation_str
+        self.use_pbc = use_pbc
         self.max_neighbors = 50
 
         if self.ablation == "edgelinear":
