@@ -50,7 +50,7 @@ class BaseModel(nn.Module):
 
             edge_index = out["edge_index"]
             edge_dist = out["distances"]
-            distance_vec = out["distance_vec"] / edge_dist[:, None]
+            distance_vec = out["distance_vec"]
         else:
             self.otf_graph = True
             edge_index = radius_graph(
