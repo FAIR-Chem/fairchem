@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import logging
+
 import torch
 import torch.nn as nn
 from torch_geometric.nn import radius_graph
@@ -28,15 +30,22 @@ class BaseModel(nn.Module):
         raise NotImplementedError
 
     def get_graph_properties(self, data):
+        if not self.otf_graph:
+            try:
+                edge_index = data.edge_index
+                cell_offsets = data.cell_offsets
+                neighbors = data.neighbors
+            except AttributeError:
+                logging.warning(
+                    "Turning otf_graph=True as required attributes not present in data object"
+                )
+                self.otf_graph = True
+
         if self.use_pbc:
             if self.otf_graph:
                 edge_index, cell_offsets, neighbors = radius_graph_pbc(
                     data, self.cutoff, self.max_neighbors
                 )
-            else:
-                edge_index = data.edge_index
-                cell_offsets = data.cell_offsets
-                neighbors = data.neighbors
 
             out = get_pbc_distances(
                 data.pos,
@@ -52,13 +61,14 @@ class BaseModel(nn.Module):
             edge_dist = out["distances"]
             distance_vec = out["distance_vec"]
         else:
-            self.otf_graph = True
-            edge_index = radius_graph(
-                data.pos,
-                r=self.cutoff,
-                batch=data.batch,
-                max_num_neighbors=self.max_neighbors,
-            )
+            if self.otf_graph:
+                edge_index = radius_graph(
+                    data.pos,
+                    r=self.cutoff,
+                    batch=data.batch,
+                    max_num_neighbors=self.max_neighbors,
+                )
+
             j, i = edge_index
             distance_vec = data.pos[j] - data.pos[i]
 
