@@ -36,15 +36,17 @@ from typing import Optional, Tuple
 
 import torch
 from torch import nn
-from torch_geometric.nn import MessagePassing
+from torch_geometric.nn import MessagePassing, radius_graph
 from torch_scatter import scatter, segment_coo
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
+    compute_neighbors,
     conditional_grad,
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base import BaseModel
 from ocpmodels.models.gemnet.layers.base_layers import ScaledSiLU
 from ocpmodels.models.gemnet.layers.embedding_block import AtomEmbedding
 from ocpmodels.models.gemnet.layers.radial_basis import RadialBasis
@@ -54,7 +56,7 @@ from .utils import get_edge_id, repeat_blocks
 
 
 @registry.register_model("painn")
-class PaiNN(ScaledModule):
+class PaiNN(ScaledModule, BaseModel):
     r"""PaiNN model based on the description in Schütt et al. (2021):
     Equivariant message passing for the prediction of tensorial properties
     and molecular spectra, https://arxiv.org/abs/2102.03150.
@@ -77,6 +79,7 @@ class PaiNN(ScaledModule):
         direct_forces=True,
         use_pbc=True,
         otf_graph=True,
+        num_elements=83,
     ):
         super(PaiNN, self).__init__()
 
@@ -96,7 +99,7 @@ class PaiNN(ScaledModule):
 
         #### Learnable parameters #############################################
 
-        self.atom_emb = AtomEmbedding(hidden_channels)
+        self.atom_emb = AtomEmbedding(hidden_channels, num_elements)
 
         self.radial_basis = RadialBasis(
             num_radial=num_rbf,
@@ -328,37 +331,21 @@ class PaiNN(ScaledModule):
             id_swap,
         )
 
-    def generate_graph(self, data):
-        otf_graph = (
-            self.cutoff > 6 or self.max_neighbors > 50 or self.otf_graph
-        )
+    def generate_graph_values(self, data):
+        (
+            edge_index,
+            edge_dist,
+            distance_vec,
+            cell_offsets,
+            neighbors,
+        ) = self.generate_graph(data)
 
-        if self.use_pbc and otf_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, self.max_neighbors
-            )
-
-            out = get_pbc_distances(
-                data.pos,
-                edge_index,
-                data.cell,
-                cell_offsets,
-                neighbors,
-                return_offsets=False,
-                return_distance_vec=True,
-            )
-
-            edge_index = out["edge_index"]
-            edge_dist = out["distances"]
-            # Unit vectors pointing from edge_index[1] to edge_index[0],
-            # i.e., edge_index[0] - edge_index[1] divided by the norm.
-            # make sure that the distances are not close to zero before dividing
-            mask_zero = torch.isclose(edge_dist, torch.tensor(0.0), atol=1e-6)
-            edge_dist[mask_zero] = 1.0e-6
-
-            edge_vector = out["distance_vec"] / edge_dist[:, None]
-        else:
-            raise NotImplementedError
+        # Unit vectors pointing from edge_index[1] to edge_index[0],
+        # i.e., edge_index[0] - edge_index[1] divided by the norm.
+        # make sure that the distances are not close to zero before dividing
+        mask_zero = torch.isclose(edge_dist, torch.tensor(0.0), atol=1e-6)
+        edge_dist[mask_zero] = 1.0e-6
+        edge_vector = distance_vec / edge_dist[:, None]
 
         empty_image = neighbors == 0
         if torch.any(empty_image):
@@ -407,7 +394,7 @@ class PaiNN(ScaledModule):
             edge_dist,
             edge_vector,
             id_swap,
-        ) = self.generate_graph(data)
+        ) = self.generate_graph_values(data)
 
         assert z.dim() == 1 and z.dtype == torch.long
 
