@@ -29,7 +29,7 @@ class BaseModel(nn.Module):
     def forward(self, data):
         raise NotImplementedError
 
-    def get_graph_properties(self, data):
+    def generate_graph(self, data):
         if not self.otf_graph:
             try:
                 edge_index = data.edge_index

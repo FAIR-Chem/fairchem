@@ -331,14 +331,14 @@ class PaiNN(ScaledModule, BaseModel):
             id_swap,
         )
 
-    def generate_graph(self, data):
+    def generate_graph_values(self, data):
         (
             edge_index,
             edge_dist,
             distance_vec,
             cell_offsets,
             neighbors,
-        ) = self.get_graph_properties(data)
+        ) = self.generate_graph(data)
 
         # Unit vectors pointing from edge_index[1] to edge_index[0],
         # i.e., edge_index[0] - edge_index[1] divided by the norm.
@@ -394,7 +394,7 @@ class PaiNN(ScaledModule, BaseModel):
             edge_dist,
             edge_vector,
             id_swap,
-        ) = self.generate_graph(data)
+        ) = self.generate_graph_values(data)
 
         assert z.dim() == 1 and z.dtype == torch.long
 

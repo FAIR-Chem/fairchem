@@ -96,7 +96,7 @@ class SchNetWrap(SchNet, BaseModel):
             distance_vec,
             cell_offsets,
             neighbors,
-        ) = self.get_graph_properties(data)
+        ) = self.generate_graph(data)
 
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long

@@ -146,7 +146,7 @@ class DimeNetWrap(DimeNet, BaseModel):
             distance_vec,
             offsets,
             neighbors,
-        ) = self.get_graph_properties(data)
+        ) = self.generate_graph(data)
 
         data.edge_index = edge_index
         data.cell_offsets = offsets

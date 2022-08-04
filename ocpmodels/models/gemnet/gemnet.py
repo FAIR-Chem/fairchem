@@ -434,7 +434,7 @@ class GemNetT(BaseModel):
             distance_vec,
             cell_offsets,
             neighbors,
-        ) = self.get_graph_properties(data)
+        ) = self.generate_graph(data)
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
         V_st = -distance_vec / D_st[:, None]

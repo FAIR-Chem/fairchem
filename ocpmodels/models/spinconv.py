@@ -200,7 +200,7 @@ class spinconv(BaseModel):
             edge_distance_vec,
             cell_offsets,
             neighbors,
-        ) = self.get_graph_properties(data)
+        ) = self.generate_graph(data)
 
         edge_index, edge_distance, edge_distance_vec = self._filter_edges(
             edge_index,

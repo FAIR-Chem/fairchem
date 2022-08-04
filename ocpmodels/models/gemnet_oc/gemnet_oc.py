@@ -882,7 +882,7 @@ class GemNetOC(ScaledModule, BaseModel):
             )
         return subgraph
 
-    def generate_graph(self, data, cutoff, max_neighbors):
+    def generate_graph_dict(self, data, cutoff, max_neighbors):
         """Generate a radius/nearest neighbor graph."""
         otf_graph = cutoff > 6 or max_neighbors > 50 or self.otf_graph
 
@@ -892,7 +892,7 @@ class GemNetOC(ScaledModule, BaseModel):
             edge_vector,
             cell_offsets,
             num_neighbors,
-        ) = self.get_graph_properties(data)
+        ) = self.generate_graph(data)
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
         edge_vector = -edge_vector / edge_dist[:, None]
@@ -962,7 +962,7 @@ class GemNetOC(ScaledModule, BaseModel):
             or self.edge_atom_interaction
             or self.atom_interaction
         ):
-            a2a_graph = self.generate_graph(
+            a2a_graph = self.generate_graph_dict(
                 data, self.cutoff_aint, self.max_neighbors_aint
             )
             main_graph = self.subselect_graph(
@@ -982,7 +982,7 @@ class GemNetOC(ScaledModule, BaseModel):
                 self.max_neighbors_aint,
             )
         else:
-            main_graph = self.generate_graph(
+            main_graph = self.generate_graph_dict(
                 data, self.cutoff, self.max_neighbors
             )
             a2a_graph = {}

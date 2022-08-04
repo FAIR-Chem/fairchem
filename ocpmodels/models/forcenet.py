@@ -443,7 +443,7 @@ class ForceNet(BaseModel):
             edge_vec,
             cell_offsets,
             neighbors,
-        ) = self.get_graph_properties(data)
+        ) = self.generate_graph(data)
 
         data.edge_index = edge_index
         data.cell_offsets = cell_offsets

@@ -127,7 +127,7 @@ class CGCNN(BaseModel):
             distance_vec,
             cell_offsets,
             neighbors,
-        ) = self.get_graph_properties(data)
+        ) = self.generate_graph(data)
 
         data.edge_index = edge_index
         data.edge_attr = self.distance_expansion(distances)

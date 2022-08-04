@@ -282,7 +282,7 @@ class SphericalChannelNetwork(BaseModel):
             edge_distance_vec,
             cell_offsets,
             neighbors,
-        ) = self.get_graph_properties(data)
+        ) = self.generate_graph(data)
 
         ###############################################################
         # Initialize data structures
