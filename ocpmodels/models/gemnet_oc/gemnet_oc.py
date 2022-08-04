@@ -21,6 +21,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base import BaseModel
 
 from .initializers import get_initializer
 from .interaction_indices import (
@@ -48,7 +49,7 @@ from .utils import (
 
 
 @registry.register_model("gemnet_oc")
-class GemNetOC(ScaledModule):
+class GemNetOC(ScaledModule, BaseModel):
     """
     Arguments
     ---------
@@ -235,6 +236,7 @@ class GemNetOC(ScaledModule):
         atom_interaction: bool = False,
         scale_basis: bool = False,
         qint_tags: list = [0, 1, 2],
+        num_elements: int = 83,
         otf_graph: bool = False,
         **kwargs,  # backwards compatibility with deprecated arguments
     ):
@@ -284,7 +286,7 @@ class GemNetOC(ScaledModule):
         )
 
         # Embedding blocks
-        self.atom_emb = AtomEmbedding(emb_size_atom)
+        self.atom_emb = AtomEmbedding(emb_size_atom, num_elements)
         self.edge_emb = EdgeEmbedding(
             emb_size_atom, num_radial, emb_size_edge, activation=activation
         )
@@ -880,53 +882,20 @@ class GemNetOC(ScaledModule):
             )
         return subgraph
 
-    def generate_graph(self, data, cutoff, max_neighbors):
+    def generate_graph_dict(self, data, cutoff, max_neighbors):
         """Generate a radius/nearest neighbor graph."""
         otf_graph = cutoff > 6 or max_neighbors > 50 or self.otf_graph
 
-        if self.use_pbc:
-            if otf_graph:
-                edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
-                    data, cutoff, max_neighbors
-                )
-            else:
-                edge_index = data.edge_index
-                cell_offsets = data.cell_offsets
-                num_neighbors = data.neighbors
-
-            out = get_pbc_distances(
-                data.pos,
-                edge_index,
-                data.cell,
-                cell_offsets,
-                num_neighbors,
-                return_offsets=False,
-                return_distance_vec=True,
-            )
-
-            edge_index = out["edge_index"]
-            edge_dist = out["distances"]
-            # These vectors actually point in the opposite direction.
-            # But we want to use col as idx_t for efficient aggregation.
-            edge_vector = -out["distance_vec"] / edge_dist[:, None]
-            cell_offsets = -cell_offsets  # a - c + offset
-        else:
-            otf_graph = True
-            edge_index = radius_graph(
-                data.pos,
-                r=self.cutoff,
-                batch=data.batch,
-                max_num_neighbors=max_neighbors,
-            )
-            j, i = edge_index
-            distance_vec = data.pos[j] - data.pos[i]
-
-            edge_dist = distance_vec.norm(dim=-1)
-            edge_vector = -distance_vec / edge_dist[:, None]
-            cell_offsets = torch.zeros(
-                edge_index.shape[1], 3, device=data.pos.device
-            )
-            num_neighbors = compute_neighbors(data, edge_index)
+        (
+            edge_index,
+            edge_dist,
+            distance_vec,
+            cell_offsets,
+            num_neighbors,
+        ) = self.generate_graph(data)
+        # These vectors actually point in the opposite direction.
+        # But we want to use col as idx_t for efficient aggregation.
+        edge_vector = -distance_vec / edge_dist[:, None]
 
         graph = {
             "edge_index": edge_index,
@@ -993,7 +962,7 @@ class GemNetOC(ScaledModule):
             or self.edge_atom_interaction
             or self.atom_interaction
         ):
-            a2a_graph = self.generate_graph(
+            a2a_graph = self.generate_graph_dict(
                 data, self.cutoff_aint, self.max_neighbors_aint
             )
             main_graph = self.subselect_graph(
@@ -1013,7 +982,7 @@ class GemNetOC(ScaledModule):
                 self.max_neighbors_aint,
             )
         else:
-            main_graph = self.generate_graph(
+            main_graph = self.generate_graph_dict(
                 data, self.cutoff, self.max_neighbors
             )
             a2a_graph = {}

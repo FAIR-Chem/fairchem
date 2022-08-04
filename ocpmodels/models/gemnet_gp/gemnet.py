@@ -21,6 +21,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base import BaseModel
 
 from .layers.atom_update_block import OutputBlock
 from .layers.base_layers import Dense
@@ -39,7 +40,7 @@ from .utils import (
 
 
 @registry.register_model("gp_gemnet_t")
-class GraphParallelGemNetT(torch.nn.Module):
+class GraphParallelGemNetT(BaseModel):
     """
     GemNet-T, triplets-only variant of GemNet
 
@@ -425,51 +426,16 @@ class GraphParallelGemNetT(torch.nn.Module):
     def generate_interaction_graph(self, data):
         num_atoms = data.atomic_numbers.size(0)
 
-        if self.use_pbc:
-            if self.otf_graph:
-                edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                    data, self.cutoff, self.max_neighbors
-                )
-            else:
-                edge_index = data.edge_index
-                cell_offsets = data.cell_offsets
-                neighbors = data.neighbors
-
-            # Switch the indices, so the second one becomes the target index,
-            # over which we can efficiently aggregate.
-            out = get_pbc_distances(
-                data.pos,
-                edge_index,
-                data.cell,
-                cell_offsets,
-                neighbors,
-                return_offsets=True,
-                return_distance_vec=True,
-            )
-
-            edge_index = out["edge_index"]
-            D_st = out["distances"]
-            # These vectors actually point in the opposite direction.
-            # But we want to use col as idx_t for efficient aggregation.
-            V_st = -out["distance_vec"] / D_st[:, None]
-            # offsets_ca = -out["offsets"]  # a - c + offset
-        else:
-            self.otf_graph = True
-            edge_index = radius_graph(
-                data.pos,
-                r=self.cutoff,
-                batch=data.batch,
-                max_num_neighbors=self.max_neighbors,
-            )
-            j, i = edge_index
-            distance_vec = data.pos[j] - data.pos[i]
-
-            D_st = distance_vec.norm(dim=-1)
-            V_st = -distance_vec / D_st[:, None]
-            cell_offsets = torch.zeros(
-                edge_index.shape[1], 3, device=data.pos.device
-            )
-            neighbors = compute_neighbors(data, edge_index)
+        (
+            edge_index,
+            D_st,
+            distance_vec,
+            cell_offsets,
+            neighbors,
+        ) = self.generate_graph(data)
+        # These vectors actually point in the opposite direction.
+        # But we want to use col as idx_t for efficient aggregation.
+        V_st = -distance_vec / D_st[:, None]
 
         # Mask interaction edges if required
         if self.otf_graph or np.isclose(self.cutoff, 6):
