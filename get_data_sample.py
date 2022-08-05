@@ -83,58 +83,6 @@ if __name__ == "__main__":
     task = registry.get_task_class(config["mode"])(config)
     task.setup(trainer)
 
-    def test_rotation_invariance(graph, rotation="z", dim="2D"):
-        """Investigate if the frame averaging output is
-        the same for the original graph and a rotated version.
-        Basically test rotation invariance of such method.
-
-        Args:
-            graph (_type_): input molecule we want to rotate
-            rotation (str): axis on which we rotate the graph
-            dim (str): whether we focus on 2D or 3D frame averaging.
-
-        Returns:
-            bool: True if FA yields rotation invariant rep.
-        """
-        # Frame averaging for original graph
-        original_pos = deepcopy(graph.pos)
-        if dim == "2D":
-            graph, all_original_fa = frame_averaging_2D(graph, False)
-        else:
-            graph, all_original_fa = frame_averaging(graph, False)
-
-        # Rotate graph
-        rotated_graph = deepcopy(graph)
-        degrees = (0, 180)
-        degree = math.pi * random.uniform(*degrees) / 180.0
-        sin, cos = math.sin(degree), math.cos(degree)
-
-        if rotation == "x":
-            R = torch.tensor([[1, 0, 0], [0, cos, sin], [0, -sin, cos]])
-        elif rotation == "y":
-            R = torch.tensor([[cos, 0, -sin], [0, 1, 0], [sin, 0, cos]])
-        else:
-            R = torch.tensor([[cos, sin, 0], [-sin, cos, 0], [0, 0, 1]])
-        rotated_graph.pos = (graph.pos @ R.T).to(graph.pos.device, graph.pos.dtype)
-
-        # Frame averaging rotated graph
-        if dim == "2D":
-            rotated_graph, all_fa = frame_averaging_2D(rotated_graph, False)
-        else:
-            rotated_graph, all_fa = frame_averaging(rotated_graph, False)
-
-        # Check if one of these frames equal the input frame (for rotated examples)
-        count = 0  # count times fa is equal to original fa
-        for fa in all_fa:
-            if not torch.allclose(fa, graph.updated_pos, atol=1e-2):
-                count += 1
-
-        # Check if FA is the same for default eigenvector. Shortcut to above.
-        if torch.allclose(rotated_graph.updated_pos, graph.updated_pos, atol=1e-2):
-            print("Default frame is rotation invariant")
-
-        return count == len(all_fa) - 1
-
     def all_frames(eigenvec, pos):
         """Compute all frames for a given graph
         Related to frame ambiguity issue
@@ -162,23 +110,20 @@ if __name__ == "__main__":
             if not torch.allclose(
                 new_eigenvec @ new_eigenvec.T, torch.eye(dim), atol=1e-05
             ):
-                # print("Matrix not close to being orthogonal")
-                # continue
-                pass
+                continue
 
             # Check if determinant is 1
             if not torch.allclose(
                 torch.linalg.det(new_eigenvec), torch.tensor(1.0), atol=1e-03
             ):
-                # print("Determinant is not 1")
-                # continue
-                pass
+                continue
 
             # Consider frame if it passes above checks
             fa = pos @ new_eigenvec
             all_fa.append(fa)
 
-        return all_fa
+        # Return one frame at random among plausible ones
+        return random.choice(all_fa)
 
     def check_constraints(eigenval, eigenvec, dim):
         """Check requirements for frame averaging are satisfied
@@ -191,10 +136,10 @@ if __name__ == "__main__":
         # Check eigenvalues are different
         if dim == 3:
             if (eigenval[1] / eigenval[0] > 0.90) or (eigenval[2] / eigenval[1] > 0.90):
-                print("Issue: eigenvalues too similar")
+                print("Eigenvalues are quite similar")
         else:
             if eigenval[1] / eigenval[0] > 0.90:
-                print("Issue: eigenvalues too similar")
+                print("Eigenvalues are quite similar")
 
         # Check eigenvectors are orthonormal
         if not torch.allclose(eigenvec @ eigenvec.T, torch.eye(dim), atol=1e-05):
@@ -202,9 +147,9 @@ if __name__ == "__main__":
 
         # Check determinant of eigenvectors is 1
         if not torch.allclose(
-            torch.abs(torch.linalg.det(eigenvec)), torch.tensor(1.0), atol=1e-03
+            torch.linalg.det(eigenvec), torch.tensor(1.0), atol=1e-03
         ):
-            print("Determinant is not 1 or (-1)")
+            print("Determinant is not 1")
 
     def frame_averaging(g, random_sign=False):
         """Computes new positions for the graph atoms,
@@ -238,21 +183,9 @@ if __name__ == "__main__":
         eigenval = eigenval[idx]
 
         # Compute all frames
-        all_fa = all_frames(eigenvec, pos)
+        g.updated_pos = all_frames(eigenvec, pos)
 
-        # Change signs of eigenvectors
-        if random_sign:
-            plus_minus = torch.randint(0, 2, (3,))
-            plus_minus[plus_minus == 0] = -1
-            eigenvec = plus_minus * eigenvec
-
-        # Compute new positions
-        g.updated_pos = pos @ eigenvec
-
-        # Check if FA constraints are satisfied
-        check_constraints(eigenval, eigenvec, dim=3)
-
-        return g, all_fa
+        return g
 
     def frame_averaging_2D(g, random_sign=True):
         """Computes new positions for the graph atoms,
@@ -287,24 +220,10 @@ if __name__ == "__main__":
         eigenvec = eigenvec[:, idx]
 
         # Compute all frames
-        all_fa = all_frames(eigenvec, pos_2D)
-        all_fa = [torch.cat((item, g.pos[:, 2].unsqueeze(1)), dim=1) for item in all_fa]
+        pos_2D = all_frames(eigenvec, pos_2D)
+        g.updated_pos = torch.cat((pos_2D, g.pos[:, 2].unsqueeze(1)), dim=1)
 
-        # TODO: remove, simply select from all_fa. Update g.pos
-
-        # Change signs of eigenvectors
-        if random_sign:
-            plus_minus = torch.randint(0, 2, (2,))
-            plus_minus[plus_minus == 0] = -1
-            eigenvec = plus_minus * eigenvec
-        # Compute new positions
-        g.updated_pos = deepcopy(g.pos)
-        g.updated_pos[:, :2] = pos_2D @ eigenvec
-
-        # Check if FA constraints are satisfied
-        check_constraints(eigenval, eigenvec, dim=2)
-
-        return g, all_fa
+        return g
 
     if opts.no_frame_averaging is None:
         for batch in trainer.train_loader:
@@ -317,33 +236,9 @@ if __name__ == "__main__":
         #    b[i], all_fa = frame_averaging_2D(b[i], random_sign=False)
         count = 0
         count_1 = 0
-        count_2 = 0
         for i in range(len(b.sid)):
             g = Batch.get_example(b, i)
-
-            # Check invariance to rotations of 3D frame averaging
-            if test_rotation_invariance(g, rotation="z", dim="3D"):
-                print("Rotation invariant around z")
-                count_1 += 1
-            if test_rotation_invariance(g, rotation="y", dim="3D"):
-                print("Rotation invariant around y")
-            if test_rotation_invariance(g, rotation="x", dim="3D"):
-                print("Rotation invariant around x")
-
-            # Check invariance to rotations of frame averaging on 2D only
-            if test_rotation_invariance(g, rotation="z", dim="2D"):
-                print("Rotation invariant around z")
-                count += 1
-            else:
-                count_2 += 2
-            if test_rotation_invariance(g, rotation="y", dim="2D"):
-                print("Rotation invariant around y")
-            if test_rotation_invariance(g, rotation="x", dim="2D"):
-                print("Rotation invariant around x")
-            # Here: we only expect rotation invariance around z
-
-        # 2D case
-        new_pos, all_fa = frame_averaging_2D(g, random_sign=True)
+            g = frame_averaging_2D(g, random_sign=False)
 
         # Equivalent to frame averaging, except that X' = XU, not (X-t)U
         # from torch_geometric.transforms import NormalizeRotation

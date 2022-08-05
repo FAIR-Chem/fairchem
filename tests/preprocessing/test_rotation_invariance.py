@@ -7,8 +7,6 @@ from itertools import product
 import torch
 from minydra import resolved_args
 from torch_geometric.data import Batch
-from torch_geometric.transforms import RandomRotate
-from torch_geometric.utils import remove_self_loops, sort_edge_index
 
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
