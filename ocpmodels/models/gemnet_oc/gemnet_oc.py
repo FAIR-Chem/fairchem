@@ -385,11 +385,22 @@ class GemNetOC(ScaledModule, BaseModel):
                 scales = torch.load(scale_file, map_location="cpu")
                 self.load_scales(scales)
             else:
-                logging.warning(
+                logging.error(
                     f"Scale file '{scale_file}' does not exist. "
-                    f"The model will use unit scaling factors "
-                    f"unless it was loaded from a checkpoint."
+                    f"If you're running a pretrained checkpoint, "
+                    f"predictions will be inaccurate without the "
+                    f"scale file used during training. "
+                    f"If you do not want to use a scale file, remove "
+                    f"the `scale_file` line from the config yaml."
                 )
+                raise FileNotFoundError
+        else:
+            logging.warning(
+                "`scale_file` is set to `None`. "
+                "The model will use unit scaling factors. "
+                "If you're running a pretrained checkpoint, "
+                "this will likely lead to inaccurate predictions."
+            )
 
     def set_cutoffs(self, cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint):
         self.cutoff = cutoff
