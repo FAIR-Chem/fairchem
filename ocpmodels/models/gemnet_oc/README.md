@@ -4,7 +4,7 @@ Johannes Gasteiger, Muhammed Shuaibi, Anuroop Sriram, Stephan Günnemann, Zachar
 
 [[`arXiv:2204.02782`](https://arxiv.org/abs/2204.02782)]
 
-When running inference with a pretrained GemNet-OC model, make sure the
+When running inference with a pretrained GemNet-OC model, make sure that the
 `scale_file` path is correct in the config, otherwise predictions will be inaccurate.
 
 | Model | Val ID 30k Force MAE | Val ID 30k Energy MAE | Val ID 30k Force cos | Test metrics | Download |
