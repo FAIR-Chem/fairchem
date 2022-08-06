@@ -240,6 +240,8 @@ class ForcesTrainer(BaseTrainer):
             else:
                 predictions["energy"] = out["energy"].detach()
                 predictions["forces"] = out["forces"].detach()
+                if self.ema:
+                    self.ema.restore()
                 return predictions
 
         predictions["forces"] = np.array(predictions["forces"])
