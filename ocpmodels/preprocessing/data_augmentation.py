@@ -1,5 +1,6 @@
-from itertools import product
 import random
+from itertools import product
+
 import torch
 from torch_geometric.data import Batch
 
@@ -44,6 +45,7 @@ def all_frames(eigenvec, pos):
     # Return one frame at random among plausible ones
     return random.choice(all_fa)
 
+
 def check_constraints(eigenval, eigenvec, dim):
     """Check requirements for frame averaging are satisfied
 
@@ -65,10 +67,9 @@ def check_constraints(eigenval, eigenvec, dim):
         print("Matrix not orthogonal")
 
     # Check determinant of eigenvectors is 1
-    if not torch.allclose(
-        torch.linalg.det(eigenvec), torch.tensor(1.0), atol=1e-03
-    ):
+    if not torch.allclose(torch.linalg.det(eigenvec), torch.tensor(1.0), atol=1e-03):
         print("Determinant is not 1")
+
 
 def frame_averaging(g, random_sign=False):
     """Computes new positions for the graph atoms,
@@ -103,15 +104,11 @@ def frame_averaging(g, random_sign=False):
 
     # Compute all frames
     g.pos = all_frames(eigenvec, pos)
-    
-    # Update distances too
-    g.distances = torch.sqrt(
-        ((g.pos[g.edge_index[0, :]] - g.pos[g.edge_index[1, :]]) ** 2).sum(
-            -1
-        )
-    ).to(dtype=g.distances.dtype)
+
+    # No need to update distances, they are preserved. 
 
     return g
+
 
 def frame_averaging_2D(g, random_sign=True):
     """Computes new positions for the graph atoms,
@@ -147,13 +144,8 @@ def frame_averaging_2D(g, random_sign=True):
 
     # Compute all frames
     g.pos[:, :2] = all_frames(eigenvec, pos_2D)
-    #g.pos = torch.cat((pos_2D, g.pos[:, 2].unsqueeze(1)), dim=1)
+    # g.pos = torch.cat((pos_2D, g.pos[:, 2].unsqueeze(1)), dim=1)
 
-    # Update distances too
-    g.distances = torch.sqrt(
-        ((g.pos[g.edge_index[0, :]] - g.pos[g.edge_index[1, :]]) ** 2).sum(
-            -1
-        )
-    ).to(dtype=g.distances.dtype)
+    # No need to update distances, they are preserved. 
 
     return g

@@ -40,6 +40,7 @@ from ocpmodels.modules.exponential_moving_average import (
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
+from ocpmodels.preprocessing.data_augmentation import frame_averaging_2D, frame_averaging
 
 
 @registry.register_trainer("base")
@@ -270,7 +271,7 @@ class BaseTrainer(ABC):
         if self.config.get("dataset", None):
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
-            )(self.config["dataset"])
+            )(self.config["dataset"], transform=frame_averaging_2D)
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
                 self.config["optim"]["batch_size"],
@@ -284,7 +285,7 @@ class BaseTrainer(ABC):
             if self.config.get("val_dataset", None):
                 self.val_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(self.config["val_dataset"])
+                )(self.config["val_dataset"], transform=frame_averaging_2D)
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
                     self.config["optim"].get(
@@ -300,7 +301,7 @@ class BaseTrainer(ABC):
             if self.config.get("test_dataset", None):
                 self.test_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(self.config["test_dataset"])
+                )(self.config["test_dataset"], transform=frame_averaging_2D)
                 self.test_sampler = self.get_sampler(
                     self.test_dataset,
                     self.config["optim"].get(
