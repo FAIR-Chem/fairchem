@@ -22,14 +22,13 @@ from ocpmodels.preprocessing import (
 )
 from ocpmodels.common.utils import (
     get_pbc_distances,
-    radius_graph_pbc,
 )
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1
 
 
-class GaussianSmearing(torch.nn.Module):
+class GaussianSmearing(nn.Module):
     def __init__(self, start=0.0, stop=5.0, num_gaussians=50):
         super().__init__()
         offset = torch.linspace(start, stop, num_gaussians)
@@ -41,7 +40,7 @@ class GaussianSmearing(torch.nn.Module):
         return torch.exp(self.coeff * torch.pow(dist, 2))
 
 
-class EmbeddingBlock(torch.nn.Module):
+class EmbeddingBlock(nn.Module):
     def __init__(
         self,
         num_gaussians,
@@ -71,6 +70,7 @@ class EmbeddingBlock(torch.nn.Module):
             self.phys_lin = Linear(self.phys_emb.n_properties, phys_hidden_channels)
         else:
             phys_hidden_channels = self.phys_emb.n_properties
+
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = Embedding(
@@ -79,6 +79,7 @@ class EmbeddingBlock(torch.nn.Module):
             self.group_embedding = Embedding(
                 self.phys_emb.group_size, pg_hidden_channels
             )
+
         # Tag embedding
         if tag_hidden_channels:
             self.tag = Embedding(3, tag_hidden_channels)
@@ -99,6 +100,7 @@ class EmbeddingBlock(torch.nn.Module):
         # MLP
         self.lin = Linear(hidden_channels, hidden_channels)
         self.lin_e = Linear(num_gaussians+3, hidden_channels)
+        # TODO: check if it has to be hidden_channels
 
         self.reset_parameters()
 
@@ -161,10 +163,10 @@ class InteractionBlock(MessagePassing):
     def __init__(self, hidden_channels, act):
         super(InteractionBlock, self).__init__()
         self.act = act
-        self.lin = torch.nn.Linear(hidden_channels, hidden_channels)
+        self.lin = nn.Linear(hidden_channels, hidden_channels)
 
     def reset_parameters(self):
-        torch.nn.init.xavier_uniform_(self.lin.weight)
+        nn.init.xavier_uniform_(self.lin.weight)
         self.lin.bias.data.fill_(0)
 
     def forward(self, h, edge_index, e):
@@ -173,7 +175,7 @@ class InteractionBlock(MessagePassing):
         return h
 
 
-class OutputBlock(torch.nn.Module):
+class OutputBlock(nn.Module):
     def __init__(self, energy_head, hidden_channels, act):
         super().__init__()
         self.energy_head = energy_head
@@ -196,12 +198,12 @@ class OutputBlock(torch.nn.Module):
             self.w_lin = Linear(hidden_channels, 1)
 
     def reset_parameters(self):
-        torch.nn.init.xavier_uniform_(self.lin1.weight)
+        nn.init.xavier_uniform_(self.lin1.weight)
         self.lin1.bias.data.fill_(0)
-        torch.nn.init.xavier_uniform_(self.lin2.weight)
+        nn.init.xavier_uniform_(self.lin2.weight)
         self.lin2.bias.data.fill_(0)
-        if self.energy_head == "weighted-av-final-embeds":
-            torch.nn.init.xavier_uniform_(self.w_lin.weight)
+        if self.energy_head in {"weigthed-av-final-embeds", "weigthed-av-final-embeds"}:
+            nn.init.xavier_uniform_(self.w_lin.weight)
             self.w_lin.bias.data.fill_(0)
 
     def forward(self, h, edge_index, edge_weight, batch):
@@ -254,9 +256,8 @@ class SfariNet(BaseModel):
         phys_embeds: bool = False,
         graph_rewiring=False,
         energy_head=False,
-        ):
+    ):
         super(SfariNet, self).__init__()
-        self.otf_graph = otf_graph
         self.cutoff = cutoff
         self.act = act
         self.use_pbc = use_pbc
@@ -289,7 +290,7 @@ class SfariNet(BaseModel):
         )
 
         # Interaction block
-        self.interaction_blocks = torch.nn.ModuleList(
+        self.interaction_blocks = nn.ModuleList(
             [
                 InteractionBlock(
                     hidden_channels,
@@ -365,7 +366,7 @@ class SfariNet(BaseModel):
             edge_weight = rel_pos.norm(dim=-1)
             edge_attr = self.distance_expansion(edge_weight)
 
-        ## Normalize and squash to [0,1] for gaussian basis
+        # Normalize and squash to [0,1] for gaussian basis
         rel_pos_normalized = rel_pos / edge_weight.view(-1, 1)
         rel_pos_normalized = (rel_pos_normalized + 1) / 2.0
         

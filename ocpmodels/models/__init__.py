@@ -14,3 +14,4 @@ from .new_forcenet import NewForceNet
 from .new_schnet import NewSchNetWrap as NewSchNet
 from .schnet import SchNetWrap as SchNet
 from .spinconv import spinconv
+from .sfarinet import SfariNet
