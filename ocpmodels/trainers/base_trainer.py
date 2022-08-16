@@ -41,8 +41,8 @@ from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
 from ocpmodels.preprocessing.data_augmentation import (
-    frame_averaging,
     frame_averaging_2D,
+    frame_averaging_3D,
 )
 
 
@@ -172,6 +172,8 @@ class BaseTrainer(ABC):
         # Frame averaging
         if frame_averaging:
             self.fa = eval("frame_averaging_" + frame_averaging)
+        else:
+            self.fa = None
 
         self.normalizer = normalizer
         # This supports the legacy way of providing norm parameters in dataset

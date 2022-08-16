@@ -19,18 +19,17 @@ if __name__ == "__main__":
     if not args.mode or not args.config_yml:
         args.mode = "train"
         # args.config_yml = "configs/is2re/10k/dimenet_plus_plus/new_dpp.yml"
-        # args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
+        args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
         # args.config_yml = "configs/is2re/10k/forcenet/new_forcenet.yml"
-        args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
+        # args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/best_checkpoint.pt"
         warnings.warn("No model / mode is given; chosen as default")
 
     config = build_config(args, override_args)
 
     # Customise args
-    config["model"][
-        "energy_head"
-    ] = False  # pooling, weighted-av-init-embeds, graclus, random
+    # config["model"]["energy_head"] = False  # pooling, weighted-av-init-embeds, graclus, random
+    config["frame_averaging"] = "2D"
     # config["model"]["graph_rewiring"] = "one-supernode-per-graph"
     # config["model"]["phys_embeds"] = True
     # config['model']['use_pbc'] = True
@@ -53,6 +52,7 @@ if __name__ == "__main__":
         amp=config.get("amp", False),
         cpu=config.get("cpu", False),
         new_gnn=config.get("new_gnn"),
+        frame_averaging=config.get("frame_averaging", None),
     )
 
     trainer.train()

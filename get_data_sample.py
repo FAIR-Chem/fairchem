@@ -151,7 +151,7 @@ if __name__ == "__main__":
         ):
             print("Determinant is not 1")
 
-    def frame_averaging(g, random_sign=False):
+    def frame_averaging_3D(g, random_sign=False):
         """Computes new positions for the graph atoms,
         based on a frame averaging building on PCA.
 
@@ -239,7 +239,7 @@ if __name__ == "__main__":
         for i in range(len(b.sid)):
             g = Batch.get_example(b, i)
             g = frame_averaging_2D(g, random_sign=False)
-            g = frame_averaging(g, random_sign=False)
+            g = frame_averaging_3D(g, random_sign=False)
 
         # Equivalent to frame averaging, except that X' = XU, not (X-t)U
         # from torch_geometric.transforms import NormalizeRotation

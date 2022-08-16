@@ -28,7 +28,7 @@ def all_frames(eigenvec, pos):
 
         # Check if eigenv is orthonormal
         if not torch.allclose(
-            new_eigenvec @ new_eigenvec.T, torch.eye(dim), atol=1e-05
+            new_eigenvec @ new_eigenvec.T, torch.eye(dim), atol=1e-03
         ):
             continue
 
@@ -40,6 +40,10 @@ def all_frames(eigenvec, pos):
 
         # Consider frame if it passes above checks
         fa = pos @ new_eigenvec
+        all_fa.append(fa)
+
+    # Handle rare case where no R is positive orthogonal
+    if all_fa == []:
         all_fa.append(fa)
 
     # Return one frame at random among plausible ones
@@ -63,7 +67,7 @@ def check_constraints(eigenval, eigenvec, dim):
             print("Eigenvalues are quite similar")
 
     # Check eigenvectors are orthonormal
-    if not torch.allclose(eigenvec @ eigenvec.T, torch.eye(dim), atol=1e-05):
+    if not torch.allclose(eigenvec @ eigenvec.T, torch.eye(dim), atol=1e-03):
         print("Matrix not orthogonal")
 
     # Check determinant of eigenvectors is 1
@@ -71,7 +75,7 @@ def check_constraints(eigenval, eigenvec, dim):
         print("Determinant is not 1")
 
 
-def frame_averaging(g, random_sign=False):
+def frame_averaging_3D(g, random_sign=False):
     """Computes new positions for the graph atoms,
     using on frame averaging, which builds on PCA.
 
@@ -105,7 +109,7 @@ def frame_averaging(g, random_sign=False):
     # Compute all frames
     g.pos = all_frames(eigenvec, pos)
 
-    # No need to update distances, they are preserved. 
+    # No need to update distances, they are preserved.
 
     return g
 
@@ -146,6 +150,6 @@ def frame_averaging_2D(g, random_sign=True):
     g.pos[:, :2] = all_frames(eigenvec, pos_2D)
     # g.pos = torch.cat((pos_2D, g.pos[:, 2].unsqueeze(1)), dim=1)
 
-    # No need to update distances, they are preserved. 
+    # No need to update distances, they are preserved.
 
     return g

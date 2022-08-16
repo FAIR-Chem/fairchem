@@ -30,7 +30,7 @@ def test_rotation_invariance(graph, rotation="z", dim="2D"):
     if dim == "2D":
         graph, _ = frame_averaging_2D(graph, False)
     else:
-        graph, _ = frame_averaging(graph, False)
+        graph, _ = frame_averaging_3D(graph, False)
 
     # Rotate graph
     rotated_graph = deepcopy(graph)
@@ -50,7 +50,7 @@ def test_rotation_invariance(graph, rotation="z", dim="2D"):
     if dim == "2D":
         rotated_graph, all_fa = frame_averaging_2D(rotated_graph, False)
     else:
-        rotated_graph, all_fa = frame_averaging(rotated_graph, False)
+        rotated_graph, all_fa = frame_averaging_3D(rotated_graph, False)
 
     # Check if one of these frames equal the input frame (for rotated examples)
     count = 0  # count times fa is equal to original fa
@@ -122,7 +122,7 @@ def check_constraints(eigenval, eigenvec, dim):
         print("Determinant is not 1")
 
 
-def frame_averaging(g, random_sign=False):
+def frame_averaging_3D(g, random_sign=False):
     """Computes new positions for the graph atoms,
     based on a frame averaging building on PCA.
 
