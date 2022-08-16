@@ -1,15 +1,17 @@
 """ Code of the Scalable Frame Averaging (Rotation Invariant) GNN
 """
 
-import torch
 from math import sqrt
+
+import torch
 from torch import nn
 from torch.nn import Embedding, Linear
+from torch_geometric.nn import MessagePassing, radius_graph
 from torch_geometric.nn.acts import swish
-from torch_geometric.nn import radius_graph, MessagePassing
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_pbc_distances
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
@@ -19,9 +21,6 @@ from ocpmodels.preprocessing import (
     one_supernode_per_atom_type_dist,
     one_supernode_per_graph,
     remove_tag0_nodes,
-)
-from ocpmodels.common.utils import (
-    get_pbc_distances,
 )
 
 NUM_CLUSTERS = 20
@@ -50,7 +49,7 @@ class EmbeddingBlock(nn.Module):
         phys_hidden_channels,
         phys_embeds,
         graph_rewiring,
-        act, 
+        act,
     ):
         super().__init__()
         self.act = act
@@ -96,31 +95,33 @@ class EmbeddingBlock(nn.Module):
             - phys_hidden_channels
             - 2 * pg_hidden_channels,
         )
-        
+
         # MLP
         self.lin = Linear(hidden_channels, hidden_channels)
-        self.lin_e = Linear(num_gaussians+3, hidden_channels)
+        self.lin_e = Linear(num_gaussians + 3, hidden_channels)
         # TODO: check if it has to be hidden_channels
 
         self.reset_parameters()
 
     def reset_parameters(self):
-        self.emb.weight.data.uniform_(-sqrt(3), sqrt(3))
+        self.emb.reset_parameters()
         if self.use_mlp_phys:
-            self.phys_lin.reset_parameters()
+            nn.init.xavier_uniform_(self.phys_lin.weight)
         if self.use_tag:
-            self.tag.weight.data.uniform_(-sqrt(3), sqrt(3))
+            self.tag_embedding.reset_parameters()
         if self.use_pg:
-            self.period_embedding.weight.data.uniform_(-sqrt(3), sqrt(3))
-            self.group_embedding.weight.data.uniform_(-sqrt(3), sqrt(3))
-        self.lin_e.reset_parameters()
-        self.lin.reset_parameters()
+            self.period_embedding.reset_parameters()
+            self.group_embedding.reset_parameters()
+        nn.init.xavier_uniform_(self.lin.weight)
+        self.lin.bias.data.fill_(0)
+        nn.init.xavier_uniform_(self.lin_e.weight)
+        self.lin_e.bias.data.fill_(0)
 
-    def forward(self, z, pos_vec, edge_attr, tag=None, subnodes=None):
+    def forward(self, z, rel_pos, edge_attr, tag=None, subnodes=None):
         # Create edge embeddings from d_ij || r_ij
-        e = torch.cat((pos_vec, edge_attr), dim=1)  
+        e = torch.cat((rel_pos, edge_attr), dim=1)
         # Extension: learn a bond feature vector and concat to above
-        
+
         # Create atom embeddings based on its characteristic number
         h = self.emb(z)
 
@@ -138,7 +139,7 @@ class EmbeddingBlock(nn.Module):
             if self.use_mlp_phys:
                 h_phys = self.phys_lin(h_phys)
             h = torch.cat((h, h_phys), dim=1)
-        
+
         # Concat period & group embedding
         if self.use_pg:
             h_period = self.period_embedding(self.phys_emb.period[z])
@@ -153,8 +154,8 @@ class EmbeddingBlock(nn.Module):
             h += h_pos
 
         # Apply MLP
-        h = self.act(self.lin(h))
-        e = self.act(self.lin_e(e))
+        h = self.lin(h)
+        e = self.lin_e(e)
 
         return h, e
 
@@ -171,8 +172,11 @@ class InteractionBlock(MessagePassing):
 
     def forward(self, h, edge_index, e):
         h = self.propagate(edge_index, x=h, W=e)
-        h = self.act(self.lin(h))
+        h = self.lin(self.act(h))
         return h
+
+    def message(self, x_j, W):
+        return x_j * W
 
 
 class OutputBlock(nn.Module):
@@ -206,7 +210,7 @@ class OutputBlock(nn.Module):
             nn.init.xavier_uniform_(self.w_lin.weight)
             self.w_lin.bias.data.fill_(0)
 
-    def forward(self, h, edge_index, edge_weight, batch):
+    def forward(self, h, edge_index, edge_weight, batch, alpha):
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
 
@@ -234,7 +238,6 @@ class OutputBlock(nn.Module):
 
 @registry.register_model("sfarinet")
 class SfariNet(BaseModel):
-
     def __init__(
         self,
         num_atoms,
@@ -243,7 +246,7 @@ class SfariNet(BaseModel):
         act=swish,
         new_gnn: bool = True,
         use_pbc: bool = True,
-        predict_forces: bool = True,
+        regress_forces: bool = True,
         otf_graph: bool = False,
         num_gaussians: int = 50,
         num_filters: int = 128,
@@ -266,7 +269,7 @@ class SfariNet(BaseModel):
         self.pg_hidden_channels = pg_hidden_channels
         self.phys_hidden_channels = phys_hidden_channels
         self.phys_embeds = phys_embeds
-        self.predict_forces = predict_forces
+        self.regress_forces = regress_forces
         self.graph_rewiring = graph_rewiring
         self.energy_head = energy_head
         self.use_positional_embeds = graph_rewiring in {
@@ -274,7 +277,7 @@ class SfariNet(BaseModel):
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
-        # Gaussian Basis 
+        # Gaussian Basis
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
 
         # Embedding block
@@ -286,7 +289,7 @@ class SfariNet(BaseModel):
             phys_hidden_channels,
             phys_embeds,
             graph_rewiring,
-            act, 
+            act,
         )
 
         # Interaction block
@@ -294,6 +297,7 @@ class SfariNet(BaseModel):
             [
                 InteractionBlock(
                     hidden_channels,
+                    act,
                 )
                 for _ in range(num_interactions)
             ]
@@ -301,11 +305,6 @@ class SfariNet(BaseModel):
 
         # Output block
         self.output_block = OutputBlock(energy_head, hidden_channels, act)
-
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        pass
 
     def forward(self, data):
         # Rewire the graph
@@ -346,7 +345,7 @@ class SfariNet(BaseModel):
                 data.cell,
                 data.cell_offsets,
                 data.neighbors,
-                return_distance_vec=True
+                return_distance_vec=True,
             )
 
             edge_index = out["edge_index"]
@@ -362,14 +361,14 @@ class SfariNet(BaseModel):
             )
             # edge_index = data.edge_index
             row, col = edge_index
-            rel_pos = (pos[row] - pos[col])
+            rel_pos = pos[row] - pos[col]
             edge_weight = rel_pos.norm(dim=-1)
             edge_attr = self.distance_expansion(edge_weight)
 
         # Normalize and squash to [0,1] for gaussian basis
         rel_pos_normalized = rel_pos / edge_weight.view(-1, 1)
         rel_pos_normalized = (rel_pos_normalized + 1) / 2.0
-        
+
         pooling_loss = None  # deal with pooling loss
 
         # Embedding block
@@ -383,14 +382,14 @@ class SfariNet(BaseModel):
 
         # Interaction blocks
         for interaction in self.interaction_blocks:
-            h = h + interaction(h, e)
+            h = h + interaction(h, edge_index, e)
             # potential output block for skip connection
 
         # Output block
-        energy = self.output_block(h, h, edge_index, edge_weight, batch, alpha)
+        energy = self.output_block(h, edge_index, edge_weight, batch, alpha)
         # or skip-connection
 
-        if self.predict_forces:
+        if self.regress_forces:
             force = self.decoder(h)
             return energy, force
 
