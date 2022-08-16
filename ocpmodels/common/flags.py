@@ -6,8 +6,8 @@ LICENSE file in the root directory of this source tree.
 """
 
 import argparse
-from pathlib import Path
 import os
+from pathlib import Path
 
 
 class Flags:
@@ -135,6 +135,12 @@ class Flags:
             "--new_gnn",
             action="store_false",
             help="Whether to use original GNN models or modified ones",
+        )
+        self.parser.add_argument(
+            "--fa",
+            default=False,
+            choices=[False, "2D", "3D"],
+            help="Specify which frame averaging method to use",
         )
         self.parser.add_argument(
             "--note",

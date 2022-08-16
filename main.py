@@ -62,6 +62,7 @@ class Runner(submitit.helpers.Checkpointable):
                 cpu=config.get("cpu", False),
                 slurm=config.get("slurm", {}),
                 new_gnn=config.get("new_gnn", True),
+                frame_averaging=config.get("frame_averaging", None),
                 data_split=config.get("data_split", None),
                 note=config.get("note", ""),
             )

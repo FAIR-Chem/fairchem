@@ -63,6 +63,7 @@ class EnergyTrainer(BaseTrainer):
         optimizer,
         identifier,
         normalizer=None,
+        frame_averaging=None,
         timestamp_id=None,
         run_dir=None,
         is_debug=False,
@@ -100,6 +101,7 @@ class EnergyTrainer(BaseTrainer):
             new_gnn=new_gnn,
             data_split=data_split,
             note=note,
+            frame_averaging=frame_averaging,
         )
 
     def load_task(self):
@@ -191,7 +193,7 @@ class EnergyTrainer(BaseTrainer):
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out, pooling_loss = self._forward(batch)
-                    loss = self._compute_loss(out, batch) 
+                    loss = self._compute_loss(out, batch)
                     if pooling_loss is not None:
                         loss += pooling_loss
                 loss = self.scaler.scale(loss) if self.scaler else loss
