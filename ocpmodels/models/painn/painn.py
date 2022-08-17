@@ -131,9 +131,13 @@ class PaiNN(ScaledModule, BaseModel):
 
         # Load scaling factors
         if scale_file is not None:
-            if os.path.isfile(scale_file):
+            if isinstance(scale_file, str) and os.path.isfile(scale_file):
                 logging.info(f"Loading scaling factors from {scale_file}")
                 scales = torch.load(scale_file, map_location="cpu")
+                self.load_scales(scales)
+            elif isinstance(scale_file, dict):
+                logging.info("Loading scaling factors from checkpoint")
+                scales = scale_file
                 self.load_scales(scales)
             else:
                 logging.warning(
