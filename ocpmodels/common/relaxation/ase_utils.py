@@ -108,7 +108,10 @@ class OCPCalculator(Calculator):
             else:
                 config = config_yml
             # Only keeps the train data that might have normalizer values
-            config["dataset"] = config["dataset"][0]
+            if isinstance(config["dataset"], list):
+                config["dataset"] = config["dataset"][0]
+            elif isinstance(config["dataset"], dict):
+                config["dataset"] = config["dataset"].get("train", None)
         else:
             # Loads the config from the checkpoint directly
             config = torch.load(checkpoint, map_location=torch.device(device))[
