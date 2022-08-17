@@ -381,8 +381,11 @@ class GemNetOC(ScaledModule, BaseModel):
 
         # Load scaling factors
         if scale_file is not None:
-            if os.path.isfile(scale_file):
+            if isinstance(scale_file, str) and os.path.isfile(scale_file):
                 scales = torch.load(scale_file, map_location="cpu")
+                self.load_scales(scales)
+            elif isinstance(scale_file, dict):
+                scales = scale_file
                 self.load_scales(scales)
             else:
                 logging.error(

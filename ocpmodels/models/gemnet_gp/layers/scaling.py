@@ -79,8 +79,14 @@ class AutomaticFit:
         Load variable from file or set to initial value of the variable.
         """
         value = None
-        if self.scale_file is not None and os.path.isfile(self.scale_file):
+        if (
+            self.scale_file is not None
+            and isinstance(self.scale_file, str)
+            and os.path.isfile(self.scale_file)
+        ):
             value = read_value_json(self.scale_file, self._name)
+        elif isinstance(self.scale_file, dict):
+            value = self.scale_file.get(self._name, None)
         else:
             logging.warning(
                 f"Scale file '{self.scale_file}' does not exist. "
