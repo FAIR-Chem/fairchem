@@ -38,13 +38,13 @@ def all_frames(eigenvec, pos):
         ):
             continue
 
-        # Consider frame if it passes above checks
+        # Consider frame if it passes above check
         fa = pos @ new_eigenvec
         all_fa.append(fa)
 
     # Handle rare case where no R is positive orthogonal
     if all_fa == []:
-        all_fa.append(fa)
+        all_fa.append(pos @ eigenvec)
 
     # Return one frame at random among plausible ones
     return random.choice(all_fa)
