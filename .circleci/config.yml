@@ -27,9 +27,9 @@ jobs:
               conda update conda
               #conda install mamba -n base -c conda-forge
               # Install ocp conda env
-              conda create --name ocp-models --clone base
+              #conda create --name ocp-models --clone base
               source /home/circleci/miniconda/etc/profile.d/conda.sh
-              conda activate ocp-models
+              conda activate base
               conda install -c conda-forge conda-merge
               conda-merge env.common.yml env.cpu.yml > env.yml
               conda env create -f env.yml
