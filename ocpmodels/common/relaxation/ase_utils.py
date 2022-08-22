@@ -26,7 +26,7 @@ from ocpmodels.common.utils import (
     setup_imports,
     setup_logging,
 )
-from ocpmodels.datasets.trajectory_lmdb import data_list_collater
+from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -66,7 +66,12 @@ class OCPCalculator(Calculator):
     implemented_properties = ["energy", "forces"]
 
     def __init__(
-        self, config_yml=None, checkpoint=None, cutoff=6, max_neighbors=50
+        self,
+        config_yml=None,
+        checkpoint=None,
+        cutoff=6,
+        max_neighbors=50,
+        device="cpu",
     ):
         """
         OCP-ASE Calculator
@@ -103,10 +108,13 @@ class OCPCalculator(Calculator):
             else:
                 config = config_yml
             # Only keeps the train data that might have normalizer values
-            config["dataset"] = config["dataset"][0]
+            if isinstance(config["dataset"], list):
+                config["dataset"] = config["dataset"][0]
+            elif isinstance(config["dataset"], dict):
+                config["dataset"] = config["dataset"].get("train", None)
         else:
             # Loads the config from the checkpoint directly
-            config = torch.load(checkpoint, map_location=torch.device("cpu"))[
+            config = torch.load(checkpoint, map_location=torch.device(device))[
                 "config"
             ]
 
@@ -140,9 +148,9 @@ class OCPCalculator(Calculator):
             optimizer=config["optim"],
             identifier="",
             slurm=config.get("slurm", {}),
-            local_rank=config.get("local_rank", 0),
+            local_rank=config.get("local_rank", device),
             is_debug=config.get("is_debug", True),
-            cpu=True,
+            cpu=True if device == "cpu" else False,
         )
 
         if checkpoint is not None:

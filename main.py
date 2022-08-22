@@ -14,7 +14,7 @@ from pathlib import Path
 
 import submitit
 
-from ocpmodels.common import distutils
+from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
@@ -36,7 +36,8 @@ class Runner(submitit.helpers.Checkpointable):
 
         if args.distributed:
             distutils.setup(config)
-
+            if config["gp_gpus"] is not None:
+                gp_utils.setup_gp(config)
         try:
             setup_imports(
                 skip_experimental_imports=config.get(
@@ -54,7 +55,6 @@ class Runner(submitit.helpers.Checkpointable):
                 timestamp_id=config.get("timestamp_id", None),
                 run_dir=config.get("run_dir", "./"),
                 is_debug=config.get("is_debug", False),
-                is_vis=config.get("is_vis", False),
                 print_every=config.get("print_every", 10),
                 seed=config.get("seed", 0),
                 logger=config.get("logger", "tensorboard"),
@@ -62,6 +62,7 @@ class Runner(submitit.helpers.Checkpointable):
                 amp=config.get("amp", False),
                 cpu=config.get("cpu", False),
                 slurm=config.get("slurm", {}),
+                noddp=config.get("noddp", False),
             )
             self.task = registry.get_task_class(config["mode"])(self.config)
             self.task.setup(self.trainer)

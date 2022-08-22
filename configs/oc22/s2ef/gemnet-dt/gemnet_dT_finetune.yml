@@ -1,0 +1,75 @@
+includes:
+  - configs/oc22/s2ef/base.yml
+
+model:
+  name: gemnet_t
+  num_spherical: 7
+  num_radial: 128
+  num_blocks: 3
+  emb_size_atom: 512
+  emb_size_edge: 512
+  emb_size_trip: 64
+  emb_size_rbf: 16
+  emb_size_cbf: 16
+  emb_size_bil_trip: 64
+  num_before_skip: 1
+  num_after_skip: 2
+  num_concat: 1
+  num_atom: 3
+  cutoff: 6.0
+  max_neighbors: 50
+  rbf:
+    name: gaussian
+  envelope:
+    name: polynomial
+    exponent: 5
+  cbf:
+    name: spherical_harmonics
+  extensive: True
+  otf_graph: True
+  output_init: HeOrthogonal
+  activation: silu
+  scale_file: configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
+
+  regress_forces: True
+  direct_forces: True
+
+optim:
+  batch_size: 16
+  eval_batch_size: 16
+  eval_every: 5000
+  num_workers: 2
+  lr_initial: 0.0001
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True}
+  warmup_steps: -1 # don't warm-up the learning rate
+  # warmup_factor: 0.2
+  lr_gamma: 0.8
+  # Following calculation is for an effective batch size of 16 x 16 GPUs = 256
+  # and a dataset size of 8225293 (1 epoch ~ 32000 steps).
+  lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+    - 64000 # ~2 epochs
+    - 96000 # ~3 epochs
+    - 128000 # ~4 epochs
+    - 160000 # ~5 epochs
+    - 192000 # ~6 epochs
+    - 224000 # ~7 epochs
+    - 256000 # ~8 epochs
+    - 288000 # ~9 epochs
+    - 320000 # ~10 epochs
+    - 336000 # ~10.5 epochs
+    - 352000 # ~11 epochs
+    - 368000 # ~11.5 epochs
+    - 384000 # ~12 epochs
+    - 400000 # ~12.5 epochs
+    - 416000 # ~13 epochs
+    - 432000 # ~13.5 epochs
+    - 448000 # ~14 epochs
+    - 464000 # ~14.5 epochs
+  max_epochs: 15
+  ema_decay: 0.999
+  clip_grad_norm: 10
+  loss_energy: mae
+  loss_force: l2mae
+  force_coefficient: 100
+  energy_coefficient: 1
