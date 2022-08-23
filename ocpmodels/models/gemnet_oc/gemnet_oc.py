@@ -908,13 +908,14 @@ class GemNetOC(ScaledModule, BaseModel):
             num_neighbors,
         ) = self.generate_graph(
             data,
-            otf_graph=otf_graph,
             cutoff=cutoff,
             max_neighbors=max_neighbors,
+            otf_graph=otf_graph,
         )
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
         edge_vector = -distance_vec / edge_dist[:, None]
+        cell_offsets = -cell_offsets  # a - c + offset
 
         graph = {
             "edge_index": edge_index,

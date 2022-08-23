@@ -30,17 +30,23 @@ class BaseModel(nn.Module):
         raise NotImplementedError
 
     def generate_graph(
-        self, data, otf_graph=None, cutoff=None, max_neighbors=None
+        self,
+        data,
+        cutoff=None,
+        max_neighbors=None,
+        use_pbc=None,
+        otf_graph=None,
     ):
-        otf_graph = otf_graph or self.otf_graph
         cutoff = cutoff or self.cutoff
         max_neighbors = max_neighbors or self.max_neighbors
+        use_pbc = use_pbc or self.use_pbc
+        otf_graph = otf_graph or self.otf_graph
 
         if not otf_graph:
             try:
                 edge_index = data.edge_index
 
-                if self.use_pbc:
+                if use_pbc:
                     cell_offsets = data.cell_offsets
                     neighbors = data.neighbors
 
@@ -50,7 +56,7 @@ class BaseModel(nn.Module):
                 )
                 otf_graph = True
 
-        if self.use_pbc:
+        if use_pbc:
             if otf_graph:
                 edge_index, cell_offsets, neighbors = radius_graph_pbc(
                     data, cutoff, max_neighbors
