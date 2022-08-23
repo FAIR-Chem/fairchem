@@ -29,8 +29,14 @@ class BaseModel(nn.Module):
     def forward(self, data):
         raise NotImplementedError
 
-    def generate_graph(self, data):
-        if not self.otf_graph:
+    def generate_graph(
+        self, data, otf_graph=None, cutoff=None, max_neighbors=None
+    ):
+        otf_graph = otf_graph or self.otf_graph
+        cutoff = cutoff or self.cutoff
+        max_neighbors = max_neighbors or self.max_neighbors
+
+        if not otf_graph:
             try:
                 edge_index = data.edge_index
 
@@ -42,12 +48,12 @@ class BaseModel(nn.Module):
                 logging.warning(
                     "Turning otf_graph=True as required attributes not present in data object"
                 )
-                self.otf_graph = True
+                otf_graph = True
 
         if self.use_pbc:
-            if self.otf_graph:
+            if otf_graph:
                 edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                    data, self.cutoff, self.max_neighbors
+                    data, cutoff, max_neighbors
                 )
 
             out = get_pbc_distances(
@@ -64,12 +70,12 @@ class BaseModel(nn.Module):
             edge_dist = out["distances"]
             distance_vec = out["distance_vec"]
         else:
-            if self.otf_graph:
+            if otf_graph:
                 edge_index = radius_graph(
                     data.pos,
-                    r=self.cutoff,
+                    r=cutoff,
                     batch=data.batch,
-                    max_num_neighbors=self.max_neighbors,
+                    max_num_neighbors=max_neighbors,
                 )
 
             j, i = edge_index
