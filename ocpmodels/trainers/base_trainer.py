@@ -447,7 +447,14 @@ class BaseTrainer(ABC):
                 "If you're generating predictions with a pretrained checkpoint, this is the correct behavior. "
                 "To disable this, delete `scale_dict` from the checkpoint. "
             )
-            self.model.module.module.load_scales(checkpoint["scale_dict"])
+            if isinstance(self.model, OCPDataParallel):
+                self.model.module.load_scales(checkpoint["scale_dict"])
+            elif isinstance(self.model, DistributedDataParallel):
+                self.model.module.module.load_scales(checkpoint["scale_dict"])
+            else:
+                raise NotImplementedError(
+                    f"Loading scaling factors not supported for type {type(self.model)}. "
+                )
 
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
