@@ -401,8 +401,6 @@ class GemNetOC(ScaledModule, BaseModel):
             logging.warning(
                 "`scale_file` is set to `None`. "
                 "The model will use unit scaling factors. "
-                "If you're running a pretrained checkpoint, "
-                "this will likely lead to inaccurate predictions."
             )
 
     def set_cutoffs(self, cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint):

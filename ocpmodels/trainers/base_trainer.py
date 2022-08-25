@@ -441,6 +441,20 @@ class BaseTrainer(ABC):
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
+        if "scale_dict" in checkpoint and checkpoint["scale_dict"] is not None:
+            logging.info(
+                "Overwriting scaling factors with those loaded from checkpoint. "
+                "If you're generating predictions with a pretrained checkpoint, this is the correct behavior. "
+                "To disable this, delete `scale_dict` from the checkpoint. "
+            )
+            if isinstance(self.model, OCPDataParallel):
+                self.model.module.load_scales(checkpoint["scale_dict"])
+            elif isinstance(self.model, DistributedDataParallel):
+                self.model.module.module.load_scales(checkpoint["scale_dict"])
+            else:
+                raise NotImplementedError(
+                    f"Loading scaling factors not supported for type {type(self.model)}. "
+                )
 
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
