@@ -1,0 +1,70 @@
+program: main.py # sbatch.py
+method: random
+metric:
+  goal: minimize
+  name: val_loss
+
+parameters:
+  mode: train
+  config-yml: configs/is2re/10k/sfarinet/sfarinet.yml
+  hidden_channels:
+    values: [256, 320, 180]
+    probabilities: [0.33, 0.34, 0.33]
+  num_filters:
+    values: [50, 100, 150]
+    probabilities: [0.33, 0.34, 0.33]
+  num_interactions:
+      values: [2, 3, 4]
+      probabilities: [0.33, 0.34, 0.33]
+  num_gaussians:
+    values: [50, 100]
+    probabilities: [0.5, 0.5]
+  cutoff:
+    values: [6.0, 4.0, 8.0]
+    probabilities: [0.33, 0.34, 0.33]
+  use_pbc:
+    values: [True]
+  tag_hidden_channels:
+    values: [0, 32, 64] # 32]
+    probabilities: [0.33, 0.34, 0.33]
+  pg_hidden_channels:
+    values: [0, 32] # 32 -> period & group embedding hidden channels]
+    probabilities: [0.5, 0.5]
+  phys_embeds:
+    values: [False, 32] # True]
+    probabilities: [0.5, 0.5]
+  phys_hidden_channels:
+    values: [0, 32]
+    probabilities: [0.5, 0.5]
+  graph_rewiring:
+    values: [False, remove-tag-0]
+    probabilities: [0.5, 0.5]
+  energy_head:
+    values: [False, pooling, weighted-av-initial-embeds]
+    probabilities: [0.33, 0.34, 0.33]
+  batch_size:
+    values: [32, 64, 128]
+    probabilities: [0.33, 0.34, 0.33]
+  eval_batch_size:
+    values: [64]
+  lr_initial:
+    distribution: q_uniform
+    min: 0.0005
+    max: 0.02
+  lr_gamma:
+    values: [0.1, 0.005, 0.02]
+    probabilities: [0.33, 0.34, 0.33]
+  #optim.lr_milestones:
+  #  values:
+  #  [[1562, 2343, 3125]]
+  warmup_steps:
+    values: [450, 200, 600]
+    probabilities: [0.33, 0.34, 0.33]
+  warmup_factor:
+    values: [0.2, 0.1, 0.3]
+    probabilities: [0.33, 0.34, 0.33]
+  max_epochs:
+    values: [20]
+
+# command:
+  #

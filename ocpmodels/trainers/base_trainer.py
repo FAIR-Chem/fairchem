@@ -770,6 +770,7 @@ class BaseTrainer(ABC):
 
         # Compute performance metrics on all four validation splits
         cumulated_time = 0
+        cumulated_mae = 0
         metrics_dict = {}
         logging.info("Evaluating on 4 val splits.")
         for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
@@ -802,11 +803,13 @@ class BaseTrainer(ABC):
             start_time = time.time()
             self.metrics = self.validate(split="eval", disable_tqdm=True, name_split=s)
             metrics_dict[s] = self.metrics
+            cumulated_mae += self.metrics["energy_mae"]["metric"]
             cumulated_time += time.time() - start_time
 
         # Log time
         if self.config["logger"] == "wandb" and distutils.is_master():
             self.logger.log({"Val. time": cumulated_time})
+            self.logger.log({"Overall MAE": cumulated_mae / 4})
 
         if final:
             # Print results

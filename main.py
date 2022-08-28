@@ -169,13 +169,15 @@ if __name__ == "__main__":
     args, override_args = parser.parse_known_args()
     if not args.mode or not args.config_yml:
         args.mode = "train"
-        args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
+        # args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
+        args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
         warnings.warn("No model / mode is given; chosen as default")
     if args.logdir:
         args.logdir = resolve(args.logdir)
 
     config = build_config(args, override_args)
+    config["optim"]["eval_batch_size"] = config["optim"]["batch_size"]
 
     if args.submit:  # Run on cluster
         slurm_add_params = config.get("slurm", None)  # additional slurm arguments
