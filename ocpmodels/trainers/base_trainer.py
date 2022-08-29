@@ -541,7 +541,7 @@ class BaseTrainer(ABC):
     ):
         if not self.is_debug and distutils.is_master():
             if training_state:
-                save_checkpoint(
+                return save_checkpoint(
                     {
                         "epoch": self.epoch,
                         "step": self.step,
@@ -573,7 +573,7 @@ class BaseTrainer(ABC):
                 if self.ema:
                     self.ema.store()
                     self.ema.copy_to()
-                save_checkpoint(
+                ckpt_path = save_checkpoint(
                     {
                         "state_dict": self.model.state_dict(),
                         "normalizers": {
@@ -591,6 +591,8 @@ class BaseTrainer(ABC):
                 )
                 if self.ema:
                     self.ema.restore()
+                return ckpt_path
+        return None
 
     def save_hpo(self, epoch, step, metrics, checkpoint_every):
         # default is no checkpointing

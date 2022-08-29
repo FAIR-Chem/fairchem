@@ -54,6 +54,7 @@ def save_checkpoint(
 ):
     filename = os.path.join(checkpoint_dir, checkpoint_file)
     torch.save(state, filename)
+    return filename
 
 
 class Complete(object):
