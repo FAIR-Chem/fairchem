@@ -9,12 +9,13 @@ import math
 import torch
 from torch_scatter import scatter
 
+from ocpmodels.modules.scaling import ScaleFactor
+
 from ..initializers import get_initializer
 from .base_layers import Dense, ResidualLayer
-from .scaling import ScaledModule, ScalingFactor
 
 
-class AtomUpdateBlock(ScaledModule):
+class AtomUpdateBlock(torch.nn.Module):
     """
     Aggregate the message embeddings of the atoms
 
@@ -45,7 +46,7 @@ class AtomUpdateBlock(ScaledModule):
         self.dense_rbf = Dense(
             emb_size_rbf, emb_size_edge, activation=None, bias=False
         )
-        self.scale_sum = ScalingFactor()
+        self.scale_sum = ScaleFactor()
 
         self.layers = self.get_mlp(
             emb_size_edge, emb_size_atom, nHidden, activation
@@ -79,7 +80,7 @@ class AtomUpdateBlock(ScaledModule):
         x2 = scatter(
             x, idx_atom, dim=0, dim_size=nAtoms, reduce="sum"
         )  # (nAtoms, emb_size_edge)
-        x = self.scale_sum(x2, x_ref=m)
+        x = self.scale_sum(x2, ref=m)
 
         for layer in self.layers:
             x = layer(x)  # (nAtoms, emb_size_atom)
@@ -140,7 +141,7 @@ class OutputBlock(AtomUpdateBlock):
             self.seq_energy2 = None
 
         if self.direct_forces:
-            self.scale_rbf_F = ScalingFactor()
+            self.scale_rbf_F = ScaleFactor()
             self.seq_forces = self.get_mlp(
                 emb_size_edge, emb_size_edge, nHidden, activation
             )
@@ -166,7 +167,7 @@ class OutputBlock(AtomUpdateBlock):
         x_E = scatter(
             x, idx_atom, dim=0, dim_size=nAtoms, reduce="sum"
         )  # (nAtoms, emb_size_edge)
-        x_E = self.scale_sum(x_E, x_ref=m)
+        x_E = self.scale_sum(x_E, ref=m)
 
         for layer in self.seq_energy_pre:
             x_E = layer(x_E)  # (nAtoms, emb_size_atom)
@@ -186,7 +187,7 @@ class OutputBlock(AtomUpdateBlock):
             basis_emb_F = self.dense_rbf_F(basis_rad)
             # (nEdges, emb_size_edge)
             x_F_basis = x_F * basis_emb_F
-            x_F = self.scale_rbf_F(x_F_basis, x_ref=x_F)
+            x_F = self.scale_rbf_F(x_F_basis, ref=x_F)
         else:
             x_F = 0
         # ------------------------------------------------------------------ #
