@@ -16,10 +16,14 @@ import logging
 import os
 import sys
 import time
+from argparse import Namespace
 from bisect import bisect
+from contextlib import contextmanager
+from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict
 
 import numpy as np
 import torch
@@ -857,3 +861,64 @@ def check_traj_files(batch, traj_dir):
     traj_dir = Path(traj_dir)
     traj_files = [traj_dir / f"{id}.traj" for id in batch[0].sid.tolist()]
     return all(fl.exists() for fl in traj_files)
+
+
+@contextmanager
+def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
+    from ocpmodels.common import distutils, gp_utils
+    from ocpmodels.common.registry import registry
+
+    if TYPE_CHECKING:
+        from ocpmodels.tasks.task import BaseTask
+        from ocpmodels.trainers import BaseTrainer
+
+    @dataclass
+    class _TrainingContext:
+        config: Dict[str, Any]
+        task: "BaseTask"
+        trainer: "BaseTrainer"
+
+    setup_logging()
+    config = copy.deepcopy(config)
+
+    if args.distributed:
+        distutils.setup(config)
+        if config["gp_gpus"] is not None:
+            gp_utils.setup_gp(config)
+    try:
+        setup_imports()
+        trainer_cls = registry.get_trainer_class(
+            config.get("trainer", "energy")
+        )
+        assert trainer_cls is not None, "Trainer not found"
+        trainer = trainer_cls(
+            task=config["task"],
+            model=config["model"],
+            dataset=config["dataset"],
+            optimizer=config["optim"],
+            identifier=config["identifier"],
+            timestamp_id=config.get("timestamp_id", None),
+            run_dir=config.get("run_dir", "./"),
+            is_debug=config.get("is_debug", False),
+            print_every=config.get("print_every", 10),
+            seed=config.get("seed", 0),
+            logger=config.get("logger", "tensorboard"),
+            local_rank=config["local_rank"],
+            amp=config.get("amp", False),
+            cpu=config.get("cpu", False),
+            slurm=config.get("slurm", {}),
+            noddp=config.get("noddp", False),
+        )
+
+        task_cls = registry.get_task_class(config["mode"])
+        assert task_cls is not None, "Task not found"
+        task = task_cls(config)
+        start_time = time.time()
+        ctx = _TrainingContext(config=config, task=task, trainer=trainer)
+        yield ctx
+        distutils.synchronize()
+        if distutils.is_master():
+            logging.info(f"Total time taken: {time.time() - start_time}")
+    finally:
+        if args.distributed:
+            distutils.cleanup()
