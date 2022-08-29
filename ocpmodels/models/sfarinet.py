@@ -81,7 +81,7 @@ class EmbeddingBlock(nn.Module):
 
         # Tag embedding
         if tag_hidden_channels:
-            self.tag = Embedding(3, tag_hidden_channels)
+            self.tag_embedding = Embedding(3, tag_hidden_channels)
 
         # Positional encoding
         if self.use_positional_embeds:
@@ -130,7 +130,7 @@ class EmbeddingBlock(nn.Module):
 
         # Concat tag embedding
         if self.use_tag:
-            h_tag = self.tag(tag)
+            h_tag = self.tag_embedding(tag)
             h = torch.cat((h, h_tag), dim=1)
 
         # Concat physics embeddings
