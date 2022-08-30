@@ -10,10 +10,10 @@ class PhysEmbedding(nn.Module):
         Create physical embeddings meta class with sub-emeddings for each atom
 
         Args:
-            props (bool, optional): Whether to create a properties embedding.
+            props (bool, optional): Whether to create an embedding of physical embeddings
                 Defaults to True.
-            props_grad (bool, optional): Whether the properties embedding should be
-                learned or kept fixed. Defaults to False.
+            props_grad (bool, optional): Whether the physical properties embedding should
+                be learned or kept fixed. Defaults to False.
             pg (bool, optional): Whether to use period and group embeddings.
                 Defaults to False.
             short (bool, optional)
@@ -27,9 +27,6 @@ class PhysEmbedding(nn.Module):
             "dipole_polarizability",
             "electron_affinity",
             "en_allen",
-            "specific_heat",
-            "melting_point",
-            "thermal_conductivity",
             "vdw_radius",
             "metallic_radius",
             "metallic_radius_c12",
@@ -81,6 +78,7 @@ class PhysEmbedding(nn.Module):
         self.register_buffer("group", group)
         self.register_buffer("period", period)
 
+        # Create an embedding of physical properties
         if props:
             # Select only potentially relevant elements
             df = df[self.properties_list]

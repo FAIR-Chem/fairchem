@@ -63,9 +63,9 @@ class EmbeddingBlock(nn.Module):
         }
 
         # Phys embeddings
-        self.phys_emb = PhysEmbedding(props=phys_embeds, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(props=phys_embeds, props_grad=self.use_mlp_phys, pg=self.use_pg)
         # With MLP
-        if self.use_mlp_phys:
+        if self.use_mlp_phys and phys_embeds:
             self.phys_lin = Linear(self.phys_emb.n_properties, phys_hidden_channels)
         else:
             phys_hidden_channels = self.phys_emb.n_properties

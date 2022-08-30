@@ -20,11 +20,11 @@ parameters:
   model.use_pbc:
     values: [True]
   model.tag_hidden_channels:
-    values: [0, 32, 64] # 32]
+    values: [0, 32, 64]
   model.pg_hidden_channels:
-    values: [0, 32] # 32 -> period & group embedding hidden channels]
+    values: [0, 32]
   model.phys_embeds:
-    values: [False, 32] # True]
+    values: [False, True]
   model.phys_hidden_channels:
     values: [0, 32]
   model.graph_rewiring:
