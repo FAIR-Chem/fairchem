@@ -55,7 +55,7 @@ class EmbeddingBlock(nn.Module):
         self.act = act
         self.use_tag = tag_hidden_channels > 0
         self.use_pg = pg_hidden_channels > 0
-        self.use_mlp_phys = phys_hidden_channels > 0
+        self.use_mlp_phys = phys_hidden_channels > 0 and phys_embeds
         self.use_positional_embeds = graph_rewiring in {
             "one-supernode-per-graph",
             "one-supernode-per-atom-type",
@@ -63,9 +63,9 @@ class EmbeddingBlock(nn.Module):
         }
 
         # Phys embeddings
-        self.phys_emb = PhysEmbedding(props=phys_embeds, props_grad=self.use_mlp_phys, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(props=phys_embeds, props_grad=phys_hidden_channels > 0, pg=self.use_pg)
         # With MLP
-        if self.use_mlp_phys and phys_embeds:
+        if self.use_mlp_phys:
             self.phys_lin = Linear(self.phys_emb.n_properties, phys_hidden_channels)
         else:
             phys_hidden_channels = self.phys_emb.n_properties
@@ -255,7 +255,7 @@ class SfariNet(BaseModel):
         hidden_channels: int = 128,
         tag_hidden_channels: int = 32,
         pg_hidden_channels: int = 32,
-        phys_hidden_channels: int = 32,
+        phys_hidden_channels: int = 0,
         phys_embeds: bool = False,
         graph_rewiring=False,
         energy_head=False,
