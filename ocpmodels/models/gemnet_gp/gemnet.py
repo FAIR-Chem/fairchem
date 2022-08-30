@@ -22,6 +22,7 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.models.base import BaseModel
+from ocpmodels.modules.scaling.compat import load_scales_compat
 
 from .layers.atom_update_block import OutputBlock
 from .layers.base_layers import Dense
@@ -99,6 +100,8 @@ class GraphParallelGemNetT(BaseModel):
             Initialization method for the final dense layer.
         activation: str
             Name of the activation function.
+        scale_file: str
+            Path to the json file containing the scaling factors.
     """
 
     def __init__(
@@ -133,6 +136,7 @@ class GraphParallelGemNetT(BaseModel):
         activation: str = "swish",
         scale_num_blocks: bool = False,
         scatter_atoms: bool = True,
+        scale_file: Optional[str] = None,
     ):
         super().__init__()
         self.num_targets = num_targets
@@ -250,6 +254,8 @@ class GraphParallelGemNetT(BaseModel):
 
         self.out_blocks = torch.nn.ModuleList(out_blocks)
         self.int_blocks = torch.nn.ModuleList(int_blocks)
+
+        load_scales_compat(self, scale_file)
 
     def get_triplets(self, edge_index, num_atoms):
         """

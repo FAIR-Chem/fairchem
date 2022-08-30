@@ -22,6 +22,7 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.models.base import BaseModel
+from ocpmodels.modules.scaling.compat import load_scales_compat
 
 from .initializers import get_initializer
 from .interaction_indices import (
@@ -161,6 +162,8 @@ class GemNetOC(BaseModel):
         Initialization method for the final dense layer.
     activation: str
         Name of the activation function.
+    scale_file: str
+        Path to the pytorch file containing the scaling factors.
 
     quad_interaction: bool
         Whether to use quadruplet interactions (with dihedral angles)
@@ -234,6 +237,7 @@ class GemNetOC(BaseModel):
         qint_tags: list = [0, 1, 2],
         num_elements: int = 83,
         otf_graph: bool = False,
+        scale_file: Optional[str] = None,
         **kwargs,  # backwards compatibility with deprecated arguments
     ):
         super().__init__()
@@ -374,6 +378,8 @@ class GemNetOC(BaseModel):
         self.out_energy.reset_parameters(out_initializer)
         if direct_forces:
             self.out_forces.reset_parameters(out_initializer)
+
+        load_scales_compat(self, scale_file)
 
     def set_cutoffs(self, cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint):
         self.cutoff = cutoff

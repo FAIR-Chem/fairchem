@@ -1,7 +1,7 @@
 import logging
 import math
 from contextlib import contextmanager
-from typing import Callable, Optional, TypedDict
+from typing import Callable, Optional, TypedDict, Union
 
 import torch
 import torch.nn as nn
@@ -21,15 +21,25 @@ class ScaleFactor(nn.Module):
     name: Optional[str] = None
     stats: Optional[_Stats] = None
 
-    def __init__(self):
+    compat_name: Optional[str] = None
+
+    def __init__(self, compat_name: Optional[str] = None):
         super().__init__()
 
         self.index_fn = None
         self.name = None
         self.stats = None
 
+        self.compat_name = compat_name
+
         self.register_buffer("scale", torch.tensor(1.0))
         self.register_buffer("fitted", torch.tensor(False))
+
+    def set_(self, scale: Union[float, torch.Tensor]):
+        if isinstance(scale, float):
+            scale = self.scale.new_tensor(scale)
+        self.scale = scale
+        self.fitted[...] = True
 
     def initialize(
         self,
@@ -103,7 +113,12 @@ class ScaleFactor(nn.Module):
             )
         self.stats["n_samples"] += n_samples
 
-    def forward(self, x: torch.Tensor, ref: Optional[torch.Tensor] = None):
+    def forward(
+        self,
+        x: torch.Tensor,
+        *,
+        ref: Optional[torch.Tensor] = None,
+    ):
         if self.index_fn is not None:
             self.index_fn(self)
 

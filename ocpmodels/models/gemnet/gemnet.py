@@ -21,6 +21,7 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.models.base import BaseModel
+from ocpmodels.modules.scaling.compat import load_scales_compat
 
 from .layers.atom_update_block import OutputBlock
 from .layers.base_layers import Dense
@@ -98,6 +99,8 @@ class GemNetT(BaseModel):
             Initialization method for the final dense layer.
         activation: str
             Name of the activation function.
+        scale_file: str
+            Path to the json file containing the scaling factors.
     """
 
     def __init__(
@@ -131,6 +134,7 @@ class GemNetT(BaseModel):
         output_init: str = "HeOrthogonal",
         activation: str = "swish",
         num_elements: int = 83,
+        scale_file: Optional[str] = None,
     ):
         super().__init__()
         self.num_targets = num_targets
@@ -253,6 +257,8 @@ class GemNetT(BaseModel):
             (self.mlp_rbf_h.linear.weight, self.num_blocks),
             (self.mlp_rbf_out.linear.weight, self.num_blocks + 1),
         ]
+
+        load_scales_compat(self, scale_file)
 
     def get_triplets(self, edge_index, num_atoms):
         """

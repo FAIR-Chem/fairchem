@@ -260,14 +260,14 @@ class TripletInteraction(torch.nn.Module):
             activation=None,
             bias=False,
         )
-        self.scale_rbf = ScaleFactor()
+        self.scale_rbf = ScaleFactor(name + "_had_rbf")
 
         self.mlp_cbf = EfficientInteractionBilinear(
             emb_size_trip, emb_size_cbf, emb_size_bilinear
         )
 
         # combines scaling for bilinear layer and summation
-        self.scale_cbf_sum = ScaleFactor()
+        self.scale_cbf_sum = ScaleFactor(name + "_sum_cbf")
 
         # Down and up projections
         self.down_projection = Dense(

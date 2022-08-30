@@ -51,6 +51,7 @@ from ocpmodels.models.gemnet.layers.base_layers import ScaledSiLU
 from ocpmodels.models.gemnet.layers.embedding_block import AtomEmbedding
 from ocpmodels.models.gemnet.layers.radial_basis import RadialBasis
 from ocpmodels.modules.scaling import ScaleFactor
+from ocpmodels.modules.scaling.compat import load_scales_compat
 
 from .utils import get_edge_id, repeat_blocks
 
@@ -79,6 +80,7 @@ class PaiNN(BaseModel):
         use_pbc=True,
         otf_graph=True,
         num_elements=83,
+        scale_file: Optional[str] = None,
     ):
         super(PaiNN, self).__init__()
 
@@ -128,6 +130,8 @@ class PaiNN(BaseModel):
         self.inv_sqrt_2 = 1 / math.sqrt(2.0)
 
         self.reset_parameters()
+
+        load_scales_compat(self, scale_file)
 
     def reset_parameters(self):
         nn.init.xavier_uniform_(self.out_energy[0].weight)

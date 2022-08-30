@@ -75,7 +75,7 @@ class AtomUpdateBlock(torch.nn.Module):
         self.dense_rbf = Dense(
             emb_size_rbf, emb_size_edge, activation=None, bias=False
         )
-        self.scale_sum = ScaleFactor()
+        self.scale_sum = ScaleFactor(name + "_sum")
 
         self.layers = self.get_mlp(
             emb_size_edge, emb_size_atom, nHidden, activation
@@ -173,7 +173,7 @@ class OutputBlock(AtomUpdateBlock):
         )
 
         if self.direct_forces:
-            self.scale_rbf_F = ScaleFactor()
+            self.scale_rbf_F = ScaleFactor(name + "_had")
             self.seq_forces = self.get_mlp(
                 emb_size_edge, emb_size_edge, nHidden, activation
             )
@@ -219,7 +219,7 @@ class OutputBlock(AtomUpdateBlock):
         x_E = gp_utils.scatter_to_model_parallel_region(x_E, dim=0)
 
         # (nAtoms, emb_size_edge)
-        x_E = self.scale_sum(m, x_E)
+        x_E = self.scale_sum(x_E, ref=m)
 
         for layer in self.seq_energy:
             x_E = layer(x_E)  # (nAtoms, emb_size_atom)
