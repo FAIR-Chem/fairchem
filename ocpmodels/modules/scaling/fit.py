@@ -1,5 +1,6 @@
 import logging
 import math
+import readline
 import sys
 from itertools import islice
 from pathlib import Path
@@ -7,7 +8,9 @@ from typing import TYPE_CHECKING, Dict, Literal
 
 import torch
 import torch.nn as nn
+from torch.nn.parallel.distributed import DistributedDataParallel
 
+from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.flags import flags
 from ocpmodels.common.utils import (
     build_config,
@@ -15,9 +18,18 @@ from ocpmodels.common.utils import (
     setup_logging,
 )
 from ocpmodels.modules.scaling import ScaleFactor
+from ocpmodels.modules.scaling.compat import load_scales_compat
 
 if TYPE_CHECKING:
     from ocpmodels.trainers.base_trainer import BaseTrainer
+
+
+def _prefilled_input(prompt: str, prefill: str = ""):
+    readline.set_startup_hook(lambda: readline.insert_text(prefill))
+    try:
+        return input(prompt)
+    finally:
+        readline.set_startup_hook()
 
 
 def _train_batch(trainer: "BaseTrainer", batch):
@@ -28,16 +40,15 @@ def _train_batch(trainer: "BaseTrainer", batch):
         del out, loss
 
 
-def main(
-    *,
-    num_batches: int = 16,
-):
+def main(*, num_batches: int = 16):
+    # region args/config setup
     setup_logging()
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     _config = build_config(args, override_args)
     _config["logger"] = "tensorboard"
+    # endregion
 
     assert not args.distributed, "This doesn't work with DDP"
     with new_trainer_context(args=args, config=_config) as ctx:
@@ -50,13 +61,58 @@ def main(
         ), "Checkpoint file not specified. Please specify --checkpoint <path>"
         ckpt_file = Path(ckpt_file)
 
-        logging.info(f"Run fitting for model: {args.identifier}")
-        logging.info(f"Target ckpt path: {ckpt_file}")
+        logging.info(
+            f"Input checkpoint path: {ckpt_file}, {ckpt_file.exists()=}"
+        )
+
+        model: nn.Module = trainer.model
+        val_loader = trainer.val_loader
+        assert (
+            val_loader is not None
+        ), "Val dataset is required for making predictions"
+
+        if ckpt_file.exists():
+            trainer.load_checkpoint(str(ckpt_file))
+
+        # region reoad scale file contents if necessary
+        # unwrap module from DP/DDP
+        unwrapped_model = model
+        while isinstance(
+            unwrapped_model, (DistributedDataParallel, OCPDataParallel)
+        ):
+            unwrapped_model = unwrapped_model.module
+        assert isinstance(
+            unwrapped_model, nn.Module
+        ), "Model is not a nn.Module"
+        load_scales_compat(unwrapped_model, config.get("scale_file", None))
+        # endregion
+
+        model.eval()
+
+        # recursively go through the submodules and get the ScaleFactor modules
+        scale_factors: Dict[str, ScaleFactor] = {
+            name: module
+            for name, module in model.named_modules()
+            if isinstance(module, ScaleFactor)
+        }
 
         mode: Literal["all", "unfitted"] = "all"
 
-        if ckpt_file.exists():
-            logging.warning(f"Already found existing file: {ckpt_file}")
+        # region detect fitted/unfitted factors
+        fitted_scale_factors = [
+            f"{name}: {module.scale_factor.item():.3f}"
+            for name, module in scale_factors.items()
+            if module.fitted
+        ]
+        unfitted_scale_factors = [
+            name for name, module in scale_factors.items() if not module.fitted
+        ]
+        fitted_scale_factors_str = ", ".join(fitted_scale_factors)
+        logging.info(f"Fitted scale factors: [{fitted_scale_factors_str}]")
+        unfitted_scale_factors_str = ", ".join(unfitted_scale_factors)
+        logging.info(f"Unfitted scale factors: [{unfitted_scale_factors_str}]")
+
+        if fitted_scale_factors:
             flag = input(
                 "Do you want to continue and fit all scale factors (1), "
                 "only fit the variables not fitted yet (2), or exit (3)? "
@@ -71,50 +127,59 @@ def main(
                 print(flag)
                 logging.info("Exiting script")
                 sys.exit()
+        # endregion
 
-        model: nn.Module = trainer.model
-        val_loader = trainer.val_loader
-        assert (
-            val_loader is not None
-        ), "Val dataset is required for making predictions"
+        # region get the output path
+        out_path = Path(
+            _prefilled_input(
+                "Enter output path for fitted scale factors: ",
+                prefill=str(ckpt_file),
+            )
+        )
+        if out_path.exists():
+            logging.warning(f"Already found existing file: {out_path}")
+            flag = input(
+                "Do you want to continue and overwrite existing file (1), "
+                "or exit (2)? "
+            )
+            if str(flag) == "1":
+                logging.info("Overwriting existing file.")
+            else:
+                logging.info("Exiting script")
+                sys.exit()
 
-        if ckpt_file.exists():
-            trainer.load_checkpoint(str(ckpt_file))
+        logging.info(
+            f"Output path for fitted scale factors: {out_path}, {out_path.exists()=}"
+        )
+        # endregion
 
-        model.eval()
-
-        # recursively go through the submodules and get the ScaleFactor modules
-        scale_factors: Dict[str, ScaleFactor] = {
-            name: module
-            for name, module in model.named_modules()
-            if isinstance(module, ScaleFactor)
-        }
-
+        # region reset the scale factors if mode == "all"
         if mode == "all":
             logging.info("Fitting all scale factors.")
             for name, scale_factor in scale_factors.items():
-                if scale_factor.fitted.item():
+                if scale_factor.fitted:
                     logging.info(
-                        f"{name} is already fitted in the checkpoint, resetting it."
+                        f"{name} is already fitted in the checkpoint, resetting it. {scale_factor.scale_factor}"
                     )
-                scale_factor.fitted[...] = False
-                scale_factor.scale[...] = 1.0
+                scale_factor.reset_()
+        # endregion
 
-        # we do a single pass through the network to get the correct execution order of the scale factors
+        # region we do a single pass through the network to get the correct execution order of the scale factors
         scale_factor_indices: Dict[str, int] = {}
         max_idx = 0
 
-        def index_fn(module: ScaleFactor):
-            nonlocal max_idx
-            assert module.name is not None
-            if module.name not in scale_factor_indices:
-                scale_factor_indices[module.name] = max_idx
-                logging.debug(f"Scale factor for {module.name} = {max_idx}")
-                max_idx += 1
-
         # initialize all scale factors
-        for name, scale_factor in scale_factors.items():
-            scale_factor.initialize(name=name, index_fn=index_fn)
+        for name, module in scale_factors.items():
+
+            def index_fn(name=name):
+                nonlocal max_idx
+                assert name is not None
+                if name not in scale_factor_indices:
+                    scale_factor_indices[name] = max_idx
+                    logging.debug(f"Scale factor for {name} = {max_idx}")
+                    max_idx += 1
+
+            module.initialize_(index_fn=index_fn)
 
         # single pass through network
         _train_batch(trainer, next(iter(val_loader)))
@@ -129,35 +194,46 @@ def main(
         for name, _ in sorted_factors:
             logging.info(f"{name}: {scale_factor_indices[name]}")
 
+        # endregion
+
         # loop over the scale factors in the computation order
         # and fit them one by one
         logging.info("Start fitting")
 
         for name, module in sorted_factors:
-            if mode == "unfitted" and module.fitted.item():
+            if mode == "unfitted" and module.fitted:
                 logging.info(f"Skipping {name} (already fitted)")
                 continue
 
-            with module.observe_and_fit():
-                logging.info(f"Fitting {name}...")
+            logging.info(f"Fitting {name}...")
+            with module.fit_context_():
                 for batch in islice(val_loader, num_batches):
                     _train_batch(trainer, batch)
+                stats, ratio, value = module.fit_()
+
+                logging.info(
+                    f"Variable: {name}, "
+                    f"Var_in: {stats['variance_in']:.3f}, "
+                    f"Var_out: {stats['variance_out']:.3f}, "
+                    f"Ratio: {ratio:.3f} => Scaling factor: {value:.3f}"
+                )
 
         # make sure all scale factors are fitted
         for name, module in sorted_factors:
-            assert module.fitted.item(), f"{name} is not fitted"
+            assert module.fitted, f"{name} is not fitted"
 
-        # save the scale factors to the checkpoint file
-        trainer.config["cmd"]["checkpoint_dir"] = ckpt_file.parent
+        # region save the scale factors to the checkpoint file
+        trainer.config["cmd"]["checkpoint_dir"] = out_path.parent
         trainer.is_debug = False
         out_file = trainer.save(
             metrics=None,
-            checkpoint_file=f"{ckpt_file.stem}_scaled{ckpt_file.suffix}",
+            checkpoint_file=out_path.name,
             training_state=False,
         )
         assert out_file is not None, "Failed to save checkpoint"
         out_file = Path(out_file)
         assert out_file.exists(), f"Failed to save checkpoint to {out_file}"
+        # endregion
         logging.info(f"Saved results to: {out_file}")
 
 

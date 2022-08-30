@@ -34,7 +34,7 @@ def load_scales_compat(module: nn.Module, scale_file: Optional[str]):
         return
 
     scale_factors = {
-        module.compat_name or name: (module, name)
+        module.name or name: (module, name)
         for name, module in module.named_modules()
         if isinstance(module, ScaleFactor)
     }

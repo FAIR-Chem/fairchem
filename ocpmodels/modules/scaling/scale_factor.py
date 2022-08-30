@@ -1,6 +1,6 @@
+from contextlib import contextmanager
 import logging
 import math
-from contextlib import contextmanager
 from typing import Callable, Optional, TypedDict, Union
 
 import torch
@@ -13,46 +13,53 @@ class _Stats(TypedDict):
     n_samples: int
 
 
-class ScaleFactor(nn.Module):
-    scale: torch.Tensor
-    fitted: torch.Tensor
+IndexFn = Callable[[], None]
 
-    index_fn: Optional[Callable[["ScaleFactor"], None]] = None
+
+class ScaleFactor(nn.Module):
+    scale_factor: torch.Tensor
+
     name: Optional[str] = None
+    index_fn: Optional[IndexFn] = None
     stats: Optional[_Stats] = None
 
-    compat_name: Optional[str] = None
-
-    def __init__(self, compat_name: Optional[str] = None):
+    def __init__(self, name: Optional[str] = None):
         super().__init__()
 
+        self.name = name
         self.index_fn = None
-        self.name = None
         self.stats = None
 
-        self.compat_name = compat_name
+        self.scale_factor = nn.parameter.Parameter(
+            torch.tensor(0.0), requires_grad=False
+        )
 
-        self.register_buffer("scale", torch.tensor(1.0))
-        self.register_buffer("fitted", torch.tensor(False))
+    @property
+    def fitted(self):
+        return bool((self.scale_factor != 0.0).item())
 
+    @torch.jit.unused
+    def reset_(self):
+        self.scale_factor.zero_()
+
+    @torch.jit.unused
     def set_(self, scale: Union[float, torch.Tensor]):
-        if isinstance(scale, float):
-            scale = self.scale.new_tensor(scale)
-        self.scale = scale
-        self.fitted[...] = True
+        self.scale_factor.fill_(scale)
 
-    def initialize(
-        self,
-        *,
-        name: Optional[str] = None,
-        index_fn: Optional[Callable[["ScaleFactor"], None]] = None,
-    ):
-        self.name = name
+    @torch.jit.unused
+    def initialize_(self, *, index_fn: Optional[IndexFn] = None):
         self.index_fn = index_fn
 
-    @torch.no_grad()
+    @contextmanager
     @torch.jit.unused
-    def fit(self):
+    def fit_context_(self):
+        self.stats = _Stats(variance_in=0.0, variance_out=0.0, n_samples=0)
+        yield
+        del self.stats
+        self.stats = None
+
+    @torch.jit.unused
+    def fit_(self):
         assert self.stats, "Stats not set"
         for k, v in self.stats.items():
             assert v > 0, f"{k} is {v}"
@@ -67,40 +74,19 @@ class ScaleFactor(nn.Module):
         ratio = self.stats["variance_out"] / self.stats["variance_in"]
         value = math.sqrt(1 / ratio)
 
-        self.scale = self.scale * value
-        self.fitted[...] = True
+        self.set_(value)
 
-        logging.info(
-            f"Variable: {self.name}, "
-            f"Var_in: {self.stats['variance_in']:.3f}, "
-            f"Var_out: {self.stats['variance_out']:.3f}, "
-            f"Ratio: {ratio:.3f} => Scaling factor: {value:.3f}"
-        )
-
-        del self.stats
-        self.stats = None
-
-    @torch.no_grad()
-    @torch.jit.unused
-    @contextmanager
-    def observe_and_fit(self):
-        with torch.no_grad():
-            self.stats = _Stats(variance_in=0.0, variance_out=0.0, n_samples=0)
-            yield
-            self.fit()
+        stats = dict(**self.stats)
+        return stats, ratio, value
 
     @torch.no_grad()
     @torch.jit.unused
     def _observe(self, x: torch.Tensor, ref: Optional[torch.Tensor] = None):
-        if self.fitted:
-            return
-
         if self.stats is None:
             logging.debug("Observer not initialized but self.observe() called")
             return
 
         n_samples = x.shape[0]
-
         self.stats["variance_out"] += (
             torch.mean(torch.var(x, dim=0)).item() * n_samples
         )
@@ -120,9 +106,11 @@ class ScaleFactor(nn.Module):
         ref: Optional[torch.Tensor] = None,
     ):
         if self.index_fn is not None:
-            self.index_fn(self)
+            self.index_fn()
 
-        x = x * self.scale
+        if self.fitted:
+            x = x * self.scale_factor
+
         if not torch.jit.is_scripting():
             self._observe(x, ref=ref)
 
