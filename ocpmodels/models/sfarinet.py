@@ -206,7 +206,7 @@ class OutputBlock(nn.Module):
         self.lin1.bias.data.fill_(0)
         nn.init.xavier_uniform_(self.lin2.weight)
         self.lin2.bias.data.fill_(0)
-        if self.energy_head in {"weigthed-av-final-embeds", "weigthed-av-final-embeds"}:
+        if self.energy_head in {"weigthed-av-initial-embeds", "weigthed-av-final-embeds"}:
             nn.init.xavier_uniform_(self.w_lin.weight)
             self.w_lin.bias.data.fill_(0)
 
@@ -227,7 +227,7 @@ class OutputBlock(nn.Module):
         h = self.act(h)
         h = self.lin2(h)
 
-        if self.energy_head in {"weigthed-av-final-embeds", "weigthed-av-final-embeds"}:
+        if self.energy_head in {"weigthed-av-initial-embeds", "weigthed-av-final-embeds"}:
             h = h * alpha
 
         # Global pooling
