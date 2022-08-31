@@ -217,7 +217,7 @@ class OutputBlock(nn.Module):
         elif self.energy_head == "graclus":
             h, batch = self.graclus(h, edge_index, edge_weight, batch)
 
-        elif self.energy_head:
+        elif self.energy_head in {"pooling", "random"}:
             h, batch, pooling_loss = self.hierarchical_pooling(
                 h, edge_index, edge_weight, batch
             )
