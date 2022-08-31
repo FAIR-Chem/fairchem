@@ -145,6 +145,7 @@ class DimeNetWrap(DimeNet, BaseModel):
             dist,
             _,
             cell_offsets,
+            offsets,
             neighbors,
         ) = self.generate_graph(data)
 
@@ -152,15 +153,6 @@ class DimeNetWrap(DimeNet, BaseModel):
         data.cell_offsets = cell_offsets
         data.neighbors = neighbors
         j, i = edge_index
-
-        # Compute the offset distances.
-        cell = torch.repeat_interleave(data.cell, neighbors, dim=0)
-        offsets = (
-            data.cell_offsets.float()
-            .view(-1, 1, 3)
-            .bmm(cell.float())
-            .view(-1, 3)
-        )
 
         _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
             edge_index,
