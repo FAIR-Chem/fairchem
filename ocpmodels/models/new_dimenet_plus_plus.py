@@ -360,7 +360,7 @@ class EHOutputPPBlock(torch.nn.Module):
             )
         elif self.energy_head == "graclus":
             self.graclus = Graclus(hidden_channels, self.act)
-        elif self.energy_head:
+        elif self.energy_head == "weighted-av-final-embeds":
             self.w_lin = Linear(hidden_channels, 1)
 
         self.reset_parameters()
@@ -372,7 +372,7 @@ class EHOutputPPBlock(torch.nn.Module):
             glorot_orthogonal(lin.weight, scale=2.0)
             lin.bias.data.fill_(0)
         self.lin.weight.data.fill_(0)
-        if self.energy_head in {"weighted-av-init-embeds", "weighted-av-final-embeds"}:
+        if self.energy_head == "weighted-av-final-embeds":
             self.w_lin.bias.data.fill_(0)
             torch.nn.init.xavier_uniform_(self.w_lin.weight)
 
@@ -394,7 +394,7 @@ class EHOutputPPBlock(torch.nn.Module):
             x = self.act(lin(x))
         x = self.lin(x)
 
-        if self.energy_head in {"weigthed-av-final-embeds", "weigthed-av-final-embeds"}:
+        if self.energy_head == "weigthed-av-final-embeds":
             x = x * alpha
 
         return x, pooling_loss, batch
@@ -571,6 +571,9 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             ]
         )
 
+        if self.energy_head == "weigthed-av-initial-embeds":
+            self.w_lin = Linear(hidden_channels, 1)
+
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -580,6 +583,10 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             out.reset_parameters()
         for interaction in self.interaction_blocks:
             interaction.reset_parameters()
+        if self.energy_head == "weigthed-av-initial-embeds":
+            self.w_lin.bias.data.fill_(0)
+            torch.nn.init.xavier_uniform_(self.w_lin.weight)
+
 
     def triplets(self, edge_index, cell_offsets, num_nodes):
         row, col = edge_index  # j->i
@@ -768,6 +775,9 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             )
         else:
             P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
+        
+        if self.energy_head == "weigthed-av-initial-embeds":
+            alpha = self.w_lin(P)
 
         # Interaction blocks.
         for interaction_block, output_block in zip(
@@ -782,6 +792,9 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
                 pooling_loss += pooling_loss_bis
             else:
                 P += output_block(x, rbf, i, num_nodes=pos.size(0))
+
+        if self.energy_head == "weigthed-av-initial-embeds":
+            P = P * alpha
 
         # Output
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)

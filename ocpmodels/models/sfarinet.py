@@ -198,7 +198,7 @@ class OutputBlock(nn.Module):
             )
         elif self.energy_head == "graclus":
             self.graclus = Graclus(hidden_channels, self.act)
-        elif self.energy_head:
+        elif self.energy_head == "weigthed-av-final-embeds":
             self.w_lin = Linear(hidden_channels, 1)
 
     def reset_parameters(self):
@@ -206,7 +206,7 @@ class OutputBlock(nn.Module):
         self.lin1.bias.data.fill_(0)
         nn.init.xavier_uniform_(self.lin2.weight)
         self.lin2.bias.data.fill_(0)
-        if self.energy_head in {"weigthed-av-initial-embeds", "weigthed-av-final-embeds"}:
+        if self.energy_head == "weigthed-av-final-embeds":
             nn.init.xavier_uniform_(self.w_lin.weight)
             self.w_lin.bias.data.fill_(0)
 
@@ -305,6 +305,9 @@ class SfariNet(BaseModel):
 
         # Output block
         self.output_block = OutputBlock(energy_head, hidden_channels, act)
+        
+        if self.energy_head == 'weighted-av-initial-embeds':
+            self.w_lin = Linear(hidden_channels, 1)
 
     def forward(self, data):
         # Rewire the graph
