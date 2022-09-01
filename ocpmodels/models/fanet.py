@@ -64,11 +64,13 @@ class EmbeddingBlock(nn.Module):
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
-        self.second_layer_MLP = second_layer_MLP 
+        self.second_layer_MLP = second_layer_MLP
         self.mlp_rij = mlp_rij
 
         # Phys embeddings
-        self.phys_emb = PhysEmbedding(props=phys_embeds, props_grad=phys_hidden_channels > 0, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(
+            props=phys_embeds, props_grad=phys_hidden_channels > 0, pg=self.use_pg
+        )
         # With MLP
         if self.use_mlp_phys:
             self.phys_lin = Linear(self.phys_emb.n_properties, phys_hidden_channels)
@@ -106,13 +108,13 @@ class EmbeddingBlock(nn.Module):
         self.lin_e = Linear(num_gaussians + 3, num_filters)
         if self.second_layer_MLP:
             self.lin_2 = Linear(hidden_channels, hidden_channels)
-            self.lin_e_2 = Linear(hidden_channels, num_filters)
+            self.lin_e_2 = Linear(num_filters, num_filters)
             # TODO: check if num_filters has to be hidden_channels
-        
+
         # MLP r_ij
-        if self.mlp_rij_hidden > 0:
-            self.lin_r = Linear(3, self.mlp_rij_hidden)
-            self.lin_e = Linear(num_gaussians + self.mlp_rij_hidden, num_filters)
+        if self.mlp_rij > 0:
+            self.lin_r = Linear(3, self.mlp_rij)
+            self.lin_e = Linear(num_gaussians + self.mlp_rij, num_filters)
 
         self.reset_parameters()
 
@@ -134,13 +136,13 @@ class EmbeddingBlock(nn.Module):
             self.lin_2.bias.data.fill_(0)
             nn.init.xavier_uniform_(self.lin_e_2.weight)
             self.lin_e_2.bias.data.fill_(0)
-        if self.mlp_rij_hidden > 0:
+        if self.mlp_rij > 0:
             nn.init.xavier_uniform_(self.lin_r.weight)
             self.lin_r.bias.data.fill_(0)
 
     def forward(self, z, rel_pos, edge_attr, tag=None, subnodes=None):
         # Create edge embeddings from d_ij || r_ij
-        if self.mlp_rij_hidden > 0:
+        if self.mlp_rij > 0:
             rel_pos = self.lin_r(rel_pos)
         e = torch.cat((rel_pos, edge_attr), dim=1)
         # TODO: can I improve the 3D information catpured (more than r_ij)
@@ -219,11 +221,11 @@ class InteractionBlock(MessagePassing):
         W = self.lin_e_2(self.act(self.lin_e_1(e)))  # transform edge rep
         h = self.lin_down(h)  # downscale node rep.
         h = self.propagate(edge_index, x=h, W=W)  # propagate
-        h = self.lin_up(self.act(h))  # upscale node rep. 
+        h = self.lin_up(self.act(h))  # upscale node rep.
         return h
 
-    def message(self, h_j, W):
-        return h_j * W
+    def message(self, x_j, W):
+        return x_j * W
 
 
 class OutputBlock(nn.Module):
@@ -275,7 +277,10 @@ class OutputBlock(nn.Module):
         h = self.act(h)
         h = self.lin2(h)
 
-        if self.energy_head in {"weigthed-av-initial-embeds", "weigthed-av-final-embeds"}:
+        if self.energy_head in {
+            "weigthed-av-initial-embeds",
+            "weigthed-av-final-embeds",
+        }:
             h = h * alpha
 
         # Global pooling
@@ -312,7 +317,6 @@ class FANet(BaseModel):
         second_layer_MLP: bool = False,
         mlp_rij: int = 0,
         complex_mp: bool = False,
-
     ):
         super(FANet, self).__init__()
         self.cutoff = cutoff
@@ -333,9 +337,8 @@ class FANet(BaseModel):
         }
         # Gaussian Basis
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
-        self.skip_co = skip_co  
+        self.skip_co = skip_co
         self.normalized_rel_pos = normalized_rel_pos
-        
 
         # Embedding block
         self.embed_block = EmbeddingBlock(
@@ -367,8 +370,8 @@ class FANet(BaseModel):
 
         # Output block
         self.output_block = OutputBlock(energy_head, hidden_channels, act)
-        
-        if self.energy_head == 'weighted-av-initial-embeds':
+
+        if self.energy_head == "weighted-av-initial-embeds":
             self.w_lin = Linear(hidden_channels, 1)
 
     def forward(self, data):
@@ -445,12 +448,14 @@ class FANet(BaseModel):
             alpha = self.w_lin(h)
         else:
             alpha = None
-        energy_skip_co = torch.zeros(1, device=h.device)
+        energy_skip_co = torch.zeros(max(batch) + 1, device=h.device).unsqueeze(1)
 
         # Interaction blocks
         for interaction in self.interaction_blocks:
             if self.skip_co:
-                energy_skip_co += self.output_block(h, edge_index, edge_weight, batch, alpha)
+                energy_skip_co += self.output_block(
+                    h, edge_index, edge_weight, batch, alpha
+                )
             h = h + interaction(h, edge_index, e)
 
         # Output block

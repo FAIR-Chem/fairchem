@@ -19,11 +19,12 @@ model:
                                     # one-supernode-per-atom-type, one-supernode-per-atom-type-dist}
   energy_head: False # can be {False, weighted-av-initial-embeds,
                                               # weighted-av-final-embeds, pooling, graclus, random}
+  # new features
   skip_co: False   # output skip connections
   normalized_rel_pos: False  # normalize r_ij + squash in [0,1]
   second_layer_MLP: False  # in EmbeddingBlock
   mlp_rij: 0   # apply mlp to r_ij
-  complex_mp: false   # concat (e_ij || h_i || h_j) for W in MP
+  complex_mp: False   # concat (e_ij || h_i || h_j) for W in MP
 
 # *** Important note ***
 #   The total number of gpus used for this run was 1.
