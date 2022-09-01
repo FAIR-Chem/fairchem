@@ -341,6 +341,7 @@ class PaiNN(ScaledModule, BaseModel):
             edge_dist,
             distance_vec,
             cell_offsets,
+            _,  # cell offset distances
             neighbors,
         ) = self.generate_graph(data)
 

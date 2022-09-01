@@ -442,6 +442,7 @@ class ForceNet(BaseModel):
             edge_dist,
             edge_vec,
             cell_offsets,
+            _,  # cell offset distances
             neighbors,
         ) = self.generate_graph(data)
 
