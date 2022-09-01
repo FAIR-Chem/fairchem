@@ -392,7 +392,8 @@ def build_config(args, args_override):
     config["checkpoint"] = args.checkpoint
     config["cpu"] = args.cpu
     config["new_gnn"] = args.new_gnn
-    config["frame_averaging"] = args.fa
+    if "frame_averaging" not in config:
+        config["frame_averaging"] = args.fa
     config["note"] = args.note
     # Submit
     config["submit"] = args.submit

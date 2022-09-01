@@ -5,7 +5,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --mem=32GB
+#SBATCH --output='/network/scratch/a/alexandre.duval/ocp/runs/sweep/output-%j.out'
 
 module load anaconda/3
 conda activate ocp
-wandb agent --count 50 mila-ocp/ocp/zrq4hlvi
+wandb agent --count 40 mila-ocp/ocp/8p8wecso   #ib5jnh2u

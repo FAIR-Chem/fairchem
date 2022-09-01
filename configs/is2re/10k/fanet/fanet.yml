@@ -43,3 +43,5 @@ optim:
   warmup_steps: 468
   warmup_factor: 0.2
   max_epochs: 20
+
+frame_averaging: False # 2D, 3D, False

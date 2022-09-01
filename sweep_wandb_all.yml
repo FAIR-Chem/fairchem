@@ -5,6 +5,8 @@ metric:
   name: val/loss
 
 parameters:
+  #mode: "train"
+  #config_yml: "configs/is2re/10k/sfarinet/sfarinet.yml" 
   model.hidden_channels: 
     values: [256, 320, 180]
   model.num_filters:
@@ -44,7 +46,7 @@ parameters:
     min: 200
     max: 600
   optim.warmup_factor:
-    values: [0.1, 0.2, 0.3, 0.4]
+    values: [0.1, 0.2, 0.3]
   optim.max_epochs:
     values: [20]
   #optim.lr_milestones:
@@ -56,8 +58,7 @@ command:
   - ${interpreter}
   - ${program}
   - "--config-yml"
-  - "configs/is2re/10k/sfarinet/sfarinet.yml"
+  - "configs/is2re/all/sfarinet/sfarinet.yml"
   - "--mode"
   - "train"
-  - "--frame_averaging=2D"
   - ${args}
