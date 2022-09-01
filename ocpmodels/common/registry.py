@@ -200,15 +200,10 @@ class Registry:
     @classmethod
     def get_class(cls, name: str, mapping_name: str):
         existing_mapping = cls.mapping[mapping_name].get(name, None)
-        if cls.get("absolute_registry", False) or existing_mapping is None:
-            try:
-                return _get_absolute_mapping(name)
-            except RuntimeError as e:
-                if existing_mapping is not None:
-                    return existing_mapping
-                raise e
+        if existing_mapping is not None:
+            return existing_mapping
 
-        return existing_mapping
+        return _get_absolute_mapping(name)
 
     @classmethod
     def get_task_class(cls, name):
