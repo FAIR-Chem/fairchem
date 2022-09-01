@@ -47,7 +47,9 @@ def load_model(request):
     # download and load weights.
     checkpoint_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_base_s2ef_all.pt"
     checkpoint_path = req.urlretrieve(checkpoint_url)
-    checkpoint = torch.load(checkpoint_path[0])
+    checkpoint = torch.load(
+        checkpoint_path[0], map_location=torch.device("cpu")
+    )
 
     model = GemNetOC(
         None,
