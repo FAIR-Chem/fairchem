@@ -287,7 +287,7 @@ class PaiNN(ScaledModule, BaseModel):
 
             # Create indexing array
             edge_reorder_idx = repeat_blocks(
-                neighbors_per_image // 2,
+                torch.div(neighbors_per_image, 2, rounding_mode="floor"),
                 repeats=2,
                 continuous_indexing=True,
                 repeat_inc=edge_index_new.size(1),
@@ -341,6 +341,7 @@ class PaiNN(ScaledModule, BaseModel):
             edge_dist,
             distance_vec,
             cell_offsets,
+            _,  # cell offset distances
             neighbors,
         ) = self.generate_graph(data)
 

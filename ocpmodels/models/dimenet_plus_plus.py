@@ -389,13 +389,14 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         (
             edge_index,
             dist,
-            distance_vec,
+            _,
+            cell_offsets,
             offsets,
             neighbors,
         ) = self.generate_graph(data)
 
         data.edge_index = edge_index
-        data.cell_offsets = offsets
+        data.cell_offsets = cell_offsets
         data.neighbors = neighbors
         j, i = edge_index
 

@@ -401,8 +401,6 @@ class GemNetOC(ScaledModule, BaseModel):
             logging.warning(
                 "`scale_file` is set to `None`. "
                 "The model will use unit scaling factors. "
-                "If you're running a pretrained checkpoint, "
-                "this will likely lead to inaccurate predictions."
             )
 
     def set_cutoffs(self, cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint):
@@ -905,11 +903,18 @@ class GemNetOC(ScaledModule, BaseModel):
             edge_dist,
             distance_vec,
             cell_offsets,
+            _,  # cell offset distances
             num_neighbors,
-        ) = self.generate_graph(data)
+        ) = self.generate_graph(
+            data,
+            cutoff=cutoff,
+            max_neighbors=max_neighbors,
+            otf_graph=otf_graph,
+        )
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
         edge_vector = -distance_vec / edge_dist[:, None]
+        cell_offsets = -cell_offsets  # a - c + offset
 
         graph = {
             "edge_index": edge_index,
