@@ -431,6 +431,7 @@ class GraphParallelGemNetT(BaseModel):
             D_st,
             distance_vec,
             cell_offsets,
+            _,  # cell offset distances
             neighbors,
         ) = self.generate_graph(data)
         # These vectors actually point in the opposite direction.
