@@ -252,8 +252,12 @@ def setup_experimental_imports(root_folder: str):
 
 
 # Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
-def setup_imports(skip_experimental_imports: Optional[bool] = None):
+def setup_imports(config: Optional[dict] = None):
     from ocpmodels.common.registry import registry
+
+    skip_experimental_imports = (config or {}).get(
+        "skip_experimental_imports", None
+    )
 
     # First, check if imports are already setup
     has_already_setup = registry.get("imports_setup", no_warning=True)

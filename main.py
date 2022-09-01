@@ -39,11 +39,7 @@ class Runner(submitit.helpers.Checkpointable):
             if config["gp_gpus"] is not None:
                 gp_utils.setup_gp(config)
         try:
-            setup_imports(
-                skip_experimental_imports=config.get(
-                    "skip_experimental_imports", None
-                )
-            )
+            setup_imports(config)
             self.trainer = registry.get_trainer_class(
                 config.get("trainer", "energy")
             )(
