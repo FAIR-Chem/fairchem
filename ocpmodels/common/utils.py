@@ -509,7 +509,9 @@ def get_pbc_distances(
     return out
 
 
-def radius_graph_pbc(data, radius, max_num_neighbors_threshold, pbc=[True, True, True]):
+def radius_graph_pbc(
+    data, radius, max_num_neighbors_threshold, pbc=[True, True, False]
+):
     device = data.pos.device
     batch_size = len(data.natoms)
 
@@ -568,10 +570,10 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold, pbc=[True, True,
     # Note that the unit cell volume V = a1 * (a2 x a3) and that
     # (a2 x a3) / V is also the reciprocal primitive vector
     # (crystallographer's definition).
-    
+
     cross_a2a3 = torch.cross(data.cell[:, 1], data.cell[:, 2], dim=-1)
     cell_vol = torch.sum(data.cell[:, 0] * cross_a2a3, dim=-1, keepdim=True)
-    
+
     if pbc[0]:
         inv_min_dist_a1 = torch.norm(cross_a2a3 / cell_vol, p=2, dim=-1)
         rep_a1 = torch.ceil(radius * inv_min_dist_a1)
