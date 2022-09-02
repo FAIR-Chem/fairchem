@@ -65,8 +65,8 @@ class TestRadiusGraphPBC:
         rgpbc_features = {tuple(x.tolist()) for x in rgpbc_features}
 
         # Ensure sets are not empty
-        assert len(a2g_features > 0)
-        assert len(rgpbc_features > 0)
+        assert len(a2g_features) > 0
+        assert len(rgpbc_features) > 0
 
         # Ensure sets are the same
         assert a2g_features == rgpbc_features
