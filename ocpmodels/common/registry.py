@@ -21,6 +21,31 @@ Various decorators for registry different kind of classes with unique keys
 
 - Register a model: ``@registry.register_model``
 """
+import importlib
+
+
+def _get_absolute_mapping(name: str):
+    # in this case, the `name` should be the fully qualified name of the class
+    # e.g., `ocpmodels.tasks.base_task.BaseTask`
+    # we can use importlib to get the module (e.g., `ocpmodels.tasks.base_task`)
+    # and then import the class (e.g., `BaseTask`)
+
+    module_name = ".".join(name.split(".")[:-1])
+    class_name = name.split(".")[-1]
+
+    try:
+        module = importlib.import_module(module_name)
+    except ModuleNotFoundError as e:
+        raise RuntimeError(
+            f"Could not import module {module_name=} for class {name=}"
+        ) from e
+
+    try:
+        return getattr(module, class_name)
+    except AttributeError as e:
+        raise RuntimeError(
+            f"Could not import class {class_name=} from module {module_name=}"
+        ) from e
 
 
 class Registry:
@@ -173,24 +198,32 @@ class Registry:
         current[path[-1]] = obj
 
     @classmethod
+    def get_class(cls, name: str, mapping_name: str):
+        existing_mapping = cls.mapping[mapping_name].get(name, None)
+        if existing_mapping is not None:
+            return existing_mapping
+
+        return _get_absolute_mapping(name)
+
+    @classmethod
     def get_task_class(cls, name):
-        return cls.mapping["task_name_mapping"].get(name, None)
+        return cls.get_class(name, "task_name_mapping")
 
     @classmethod
     def get_dataset_class(cls, name):
-        return cls.mapping["dataset_name_mapping"].get(name, None)
+        return cls.get_class(name, "dataset_name_mapping")
 
     @classmethod
     def get_model_class(cls, name):
-        return cls.mapping["model_name_mapping"].get(name, None)
+        return cls.get_class(name, "model_name_mapping")
 
     @classmethod
     def get_logger_class(cls, name):
-        return cls.mapping["logger_name_mapping"].get(name, None)
+        return cls.get_class(name, "logger_name_mapping")
 
     @classmethod
     def get_trainer_class(cls, name):
-        return cls.mapping["trainer_name_mapping"].get(name, None)
+        return cls.get_class(name, "trainer_name_mapping")
 
     @classmethod
     def get(cls, name, default=None, no_warning=False):
