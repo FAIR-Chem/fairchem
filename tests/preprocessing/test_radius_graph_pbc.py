@@ -10,6 +10,7 @@ import os
 import ase
 import numpy as np
 import pytest
+import torch
 from ase.io import read
 from pymatgen.io.ase import AseAtomsAdaptor
 
@@ -26,7 +27,7 @@ def load_data(request):
         format="json",
     )
     a2g = AtomsToGraphs(
-        max_neigh=12,
+        max_neigh=200,
         radius=6,
         r_energy=True,
         r_forces=True,
@@ -42,11 +43,30 @@ class TestRadiusGraphPBC:
         data = self.data
         batch = data_list_collater([data] * 5)
 
-        out = radius_graph_pbc(data, radius=6, pbc=[True, True, False])
+        out = radius_graph_pbc(
+            batch,
+            radius=6,
+            max_num_neighbors_threshold=200,
+            pbc=[True, True, False],
+        )
 
         edge_index, cell_offsets, neighbors = out
 
-        np.testing.assert_array_equal(
-            batch.edge_index,
-            edge_index,
-        )
+        # Combine both edge indices and offsets to one tensor
+        a2g_features = torch.cat(
+            (batch.edge_index, batch.cell_offsets.T), dim=0
+        ).T
+        rgpbc_features = torch.cat(
+            (edge_index, cell_offsets.T), dim=0
+        ).T.long()
+
+        # Convert rows of tensors to sets. The order of edges is not guaranteed
+        a2g_features = {tuple(x.tolist()) for x in a2g_features}
+        rgpbc_features = {tuple(x.tolist()) for x in rgpbc_features}
+
+        # Ensure sets are not empty
+        assert len(a2g_features > 0)
+        assert len(rgpbc_features > 0)
+
+        # Ensure sets are the same
+        assert a2g_features == rgpbc_features
