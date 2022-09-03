@@ -77,6 +77,7 @@ class EnergyTrainer(BaseTrainer):
         slurm={},
         new_gnn=True,
         data_split=None,
+        test_rotation_invariance=False,
         note="",
     ):
         super().__init__(
@@ -102,6 +103,7 @@ class EnergyTrainer(BaseTrainer):
             data_split=data_split,
             note=note,
             frame_averaging=frame_averaging,
+            test_rotation_invariance=test_rotation_invariance,
         )
 
     def load_task(self):
@@ -280,6 +282,12 @@ class EnergyTrainer(BaseTrainer):
             self._forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
 
+        # Check rotation invariance
+        if self.test_rotation_invariance:
+            energy_diff_z, energy_diff = self._test_rotation_invariance()
+            self.logger.log({"2D_ri": energy_diff_z})
+            self.logger.log({"3D_ri": energy_diff})
+
         self.train_dataset.close_db()
         if "val_dataset" in self.config:
             self.val_dataset.close_db()
@@ -349,3 +357,24 @@ class EnergyTrainer(BaseTrainer):
                 step=self.step,
                 split="train",
             )
+
+    def _test_rotation_invariance(self):
+        # Check for rotation invariance
+        self.model.eval()
+        loader_iter = iter(self.val_loader)
+        energy_diff = torch.zeros(1, device=self.model.device)
+        energy_diff_z = torch.zeros(1, device=self.model.device)
+
+        for i in range(10):
+            batch = next(loader_iter)
+            energy_diff_z += self.test_rotation_invariance(batch, "z")
+
+        for i in range(10):
+            batch = next(loader_iter)
+            energy_diff += self.test_rotation_invariance(batch)
+
+        batch_size = len(batch[0].natoms)
+        energy_diff_z = energy_diff_z / (i * batch_size)
+        energy_diff = energy_diff / (i * batch_size)
+
+        return energy_diff_z, energy_diff

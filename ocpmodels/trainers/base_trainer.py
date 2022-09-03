@@ -13,6 +13,7 @@ import subprocess
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -32,6 +33,7 @@ from ocpmodels.common.data_parallel import (
     ParallelCollater,
 )
 from ocpmodels.common.registry import registry
+from ocpmodels.common.transforms import RandomRotate
 from ocpmodels.common.utils import save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -72,12 +74,14 @@ class BaseTrainer(ABC):
         new_gnn=True,
         data_split=None,
         note="",
+        test_rotation_invariance=None,
     ):
         self.name = name
         self.cpu = cpu
         self.epoch = 0
         self.step = 0
         self.new_gnn = new_gnn
+        self.test_rotation_invariance = test_rotation_invariance
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
@@ -822,3 +826,41 @@ class BaseTrainer(ABC):
                 for _, val in v.items():
                     store.append(round(val["metric"], 4))
                 print(k, store)
+
+    def test_rotation_invariance(self, batch, rotation=None):
+        """Compare predictions of rotated versions of the same graphs
+
+        Args:
+            batch (data.Batch): batch of graphs
+            model (data.model): GNN model we test the rotation invariance of
+            energy_diff (int, optional): energy difference in predictions across rotated graphs
+            rotation (str, optional): type of rotation applied. Defaults to None.
+
+        Returns:
+            _type_: metric quantifying the difference in prediction
+        """
+
+        random.seed(1)
+
+        # Sampling a random rotation within [-180, 180] for all axes.
+        if rotation == "z":
+            transform = RandomRotate([-180, 180], [2])
+        elif rotation == "x":
+            transform = RandomRotate([-180, 180], [0])
+        elif rotation == "y":
+            transform = RandomRotate([-180, 180], [1])
+        else:
+            transform = RandomRotate([-180, 180], [0, 1, 2])
+
+        batch_rotated, rot, inv_rot = transform(deepcopy(batch[0]))
+        assert not torch.allclose(batch[0].pos, batch_rotated.pos, atol=1e-05)
+
+        # Pass it through the model.
+        energies1, _ = self.model(batch)
+        energies2, _ = self.model([batch_rotated])
+
+        # Compare predicted energies (after inv-rotation).
+        # print('Perfect invariance:', torch.allclose(energies1, energies2, atol=1e-05))
+        energies_diff = torch.abs(energies1 - energies2).sum()
+
+        return energies_diff

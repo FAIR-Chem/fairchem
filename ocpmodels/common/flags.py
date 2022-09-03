@@ -148,6 +148,12 @@ class Flags:
             default="",
             help="Note describing this run to be added to the logger",
         )
+        self.parser.add_argument(
+            "--test_ri",
+            type=bool,
+            default=False,
+            help="Test rotation invariance of model",
+        )
 
 
 flags = Flags()
