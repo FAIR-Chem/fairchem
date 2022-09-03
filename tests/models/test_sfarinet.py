@@ -56,7 +56,7 @@ def load_model(request):
 
 @pytest.mark.usefixtures("load_data")
 @pytest.mark.usefixtures("load_model")
-class TestDimeNet:
+class TestSfarinet:
     def test_rotation_invariance(self):
         random.seed(1)
         data = self.data
