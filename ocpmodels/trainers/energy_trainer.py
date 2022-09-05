@@ -362,16 +362,16 @@ class EnergyTrainer(BaseTrainer):
         # Check for rotation invariance
         self.model.eval()
         loader_iter = iter(self.val_loader)
-        energy_diff = torch.zeros(1, device=self.model.device)
-        energy_diff_z = torch.zeros(1, device=self.model.device)
+        energy_diff = torch.zeros(1, device=self.device)
+        energy_diff_z = torch.zeros(1, device=self.device)
 
         for i in range(10):
             batch = next(loader_iter)
-            energy_diff_z += self.test_rotation_invariance(batch, "z")
+            energy_diff_z += self.rotation_invariance_check(batch, "z")
 
         for i in range(10):
             batch = next(loader_iter)
-            energy_diff += self.test_rotation_invariance(batch)
+            energy_diff += self.rotation_invariance_check(batch)
 
         batch_size = len(batch[0].natoms)
         energy_diff_z = energy_diff_z / (i * batch_size)

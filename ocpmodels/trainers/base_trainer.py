@@ -138,6 +138,7 @@ class BaseTrainer(ABC):
             "amp": amp,
             "run_dir": run_dir,
             "frame_averaging": frame_averaging,
+            "test_ri": test_rotation_invariance,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
                 "identifier": identifier,
@@ -827,7 +828,7 @@ class BaseTrainer(ABC):
                     store.append(round(val["metric"], 4))
                 print(k, store)
 
-    def test_rotation_invariance(self, batch, rotation=None):
+    def rotation_invariance_check(self, batch, rotation=None):
         """Compare predictions of rotated versions of the same graphs
 
         Args:
