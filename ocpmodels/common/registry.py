@@ -35,9 +35,9 @@ def _get_absolute_mapping(name: str):
 
     try:
         module = importlib.import_module(module_name)
-    except ModuleNotFoundError as e:
+    except (ModuleNotFoundError, ValueError) as e:
         raise RuntimeError(
-            f"Could not import module {module_name=} for class {name=}"
+            f"Could not import module {module_name=} for import {name=}"
         ) from e
 
     try:
@@ -198,12 +198,40 @@ class Registry:
         current[path[-1]] = obj
 
     @classmethod
+    def __import_error(cls, name: str, mapping_name: str):
+        kind = mapping_name[: -len("_name_mapping")]
+        existing_keys = list(cls.mapping[mapping_name].keys())
+
+        o = cls.mapping[mapping_name].get(existing_keys[-1], None)
+        if o is not None:
+            o = f"{o.__module__}.{o.__qualname__}"
+        else:
+            o = "ocpmodels.trainers.ForcesTrainer"
+
+        existing_keys = [f"'{name}'" for name in existing_keys]
+        existing_keys = (
+            ", ".join(existing_keys[:-1]) + " or " + existing_keys[-1]
+        )
+        return RuntimeError(
+            f"Failed to find the {kind} '{name}'. "
+            f"You may either use a {kind} from the registry (one of {existing_keys}) "
+            f"or provide the full import path to the {kind} (e.g., '{o}')."
+        )
+
+    @classmethod
     def get_class(cls, name: str, mapping_name: str):
         existing_mapping = cls.mapping[mapping_name].get(name, None)
         if existing_mapping is not None:
             return existing_mapping
 
-        return _get_absolute_mapping(name)
+        # mapping be class path of type `{module_name}.{class_name}` (e.g., `ocpmodels.trainers.ForcesTrainer`)
+        if name.count(".") < 1:
+            raise cls.__import_error(name, mapping_name)
+
+        try:
+            return _get_absolute_mapping(name)
+        except RuntimeError as e:
+            raise cls.__import_error(name, mapping_name) from e
 
     @classmethod
     def get_task_class(cls, name):
