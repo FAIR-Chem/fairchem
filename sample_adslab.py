@@ -309,6 +309,7 @@ if __name__ == "__main__":
                         possible_surfaces[surface_id],
                         surface_id,
                         len(possible_surfaces),
+                        no_loader=args.no_loader,
                     )
                     print(
                         "# Selected surface:",
