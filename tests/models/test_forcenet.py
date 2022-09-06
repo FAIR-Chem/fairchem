@@ -14,9 +14,10 @@ import torch
 from ase.io import read
 from torch_geometric.data import Data
 
+from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.utils import setup_imports
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.models import ForceNet
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -40,7 +41,9 @@ def load_data(request):
 
 @pytest.fixture(scope="class")
 def load_model(request):
-    model = ForceNet(
+    setup_imports()
+
+    model = registry.get_model_class("forcenet")(
         None,
         32,
         1,
