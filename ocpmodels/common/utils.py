@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import numpy as np
 import torch
@@ -230,9 +230,38 @@ def add_edge_distance_to_graph(
     return batch
 
 
+def setup_experimental_imports(root_folder: str):
+    experimental_folder = os.path.join(root_folder, "../experimental/")
+    if os.path.exists(experimental_folder):
+        experimental_files = glob.glob(
+            experimental_folder + "**/*py",
+            recursive=True,
+        )
+        # Ignore certain directories within experimental
+        ignore_file = os.path.join(experimental_folder, ".ignore")
+        if os.path.exists(ignore_file):
+            ignored = []
+            with open(ignore_file) as f:
+                for line in f.read().splitlines():
+                    ignored += glob.glob(
+                        experimental_folder + line + "/**/*py", recursive=True
+                    )
+            for f in ignored:
+                experimental_files.remove(f)
+        for f in experimental_files:
+            splits = f.split(os.sep)
+            file_name = ".".join(splits[-splits[::-1].index("..") :])
+            module_name = file_name[: file_name.find(".py")]
+            importlib.import_module(module_name)
+
+
 # Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
-def setup_imports():
+def setup_imports(config: Optional[dict] = None):
     from ocpmodels.common.registry import registry
+
+    skip_experimental_imports = (config or {}).get(
+        "skip_experimental_imports", None
+    )
 
     # First, check if imports are already setup
     has_already_setup = registry.get("imports_setup", no_warning=True)
@@ -274,28 +303,8 @@ def setup_imports():
                     "ocpmodels.%s.%s" % (key[1:], module_name)
                 )
 
-    experimental_folder = os.path.join(root_folder, "../experimental/")
-    if os.path.exists(experimental_folder):
-        experimental_files = glob.glob(
-            experimental_folder + "**/*py",
-            recursive=True,
-        )
-        # Ignore certain directories within experimental
-        ignore_file = os.path.join(experimental_folder, ".ignore")
-        if os.path.exists(ignore_file):
-            ignored = []
-            with open(ignore_file) as f:
-                for line in f.read().splitlines():
-                    ignored += glob.glob(
-                        experimental_folder + line + "/**/*py", recursive=True
-                    )
-            for f in ignored:
-                experimental_files.remove(f)
-        for f in experimental_files:
-            splits = f.split(os.sep)
-            file_name = ".".join(splits[-splits[::-1].index("..") :])
-            module_name = file_name[: file_name.find(".py")]
-            importlib.import_module(module_name)
+    if not skip_experimental_imports:
+        setup_experimental_imports(root_folder)
 
     registry.register("imports_setup", True)
 
@@ -887,7 +896,7 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         if config["gp_gpus"] is not None:
             gp_utils.setup_gp(config)
     try:
-        setup_imports()
+        setup_imports(config)
         trainer_cls = registry.get_trainer_class(
             config.get("trainer", "energy")
         )

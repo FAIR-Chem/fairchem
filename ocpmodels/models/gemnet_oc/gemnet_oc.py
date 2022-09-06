@@ -881,6 +881,7 @@ class GemNetOC(BaseModel):
             edge_dist,
             distance_vec,
             cell_offsets,
+            _,  # cell offset distances
             num_neighbors,
         ) = self.generate_graph(
             data,
