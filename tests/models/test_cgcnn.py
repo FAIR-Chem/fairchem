@@ -18,7 +18,6 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomRotate
 from ocpmodels.common.utils import setup_imports
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.models import CGCNN
 from ocpmodels.preprocessing import AtomsToGraphs
 
 

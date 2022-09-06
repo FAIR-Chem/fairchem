@@ -16,9 +16,10 @@ import torch
 from ase.io import read
 from torch_geometric.data import Data
 
+from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.utils import setup_imports
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.models import GemNetOC
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -43,6 +44,7 @@ def load_data(request):
 @pytest.fixture(scope="class")
 def load_model(request):
     torch.manual_seed(4)
+    setup_imports()
 
     # download and load weights.
     checkpoint_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_base_s2ef_all.pt"
@@ -51,7 +53,7 @@ def load_model(request):
         checkpoint_path[0], map_location=torch.device("cpu")
     )
 
-    model = GemNetOC(
+    model = registry.get_model_class("gemnet_oc")(
         None,
         -1,
         1,
