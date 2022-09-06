@@ -32,4 +32,8 @@ py_args: "" # arguments for main.py
 note: "" # wandb run note
 git_checkout: null # if null, no checkout. Use as `git_checkout=some-branch` or `git_checkout=somecommithash`
 
+sweep: false
+count: 0
+array: 0
+
 dev: false

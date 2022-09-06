@@ -18,11 +18,12 @@ template = """\
 #SBATCH --output={output}
 {time}
 
-{git_checkout}
-
 # {sbatch_command_line}
 # git commit: {git_commit}
 # cwd: {cwd}
+
+{git_checkout}
+{sbatch_py_vars}
 
 export MASTER_PORT=$(expr 10000 + $(echo -n $SLURM_JOBID | tail -c 4))
 echo "Master port $MASTER_PORT"
@@ -30,7 +31,7 @@ echo "Master port $MASTER_PORT"
 module load anaconda/3
 conda activate {env}
 
-srun --output={output} python main.py {py_args}
+srun --output={output} {python_command}
 """
 
 
@@ -90,9 +91,23 @@ def get_commit():
     return commit
 
 
+def make_sbatch_py_vars(sbatch_py_vars):
+    s = ""
+    for k, v in sbatch_py_vars.items():
+        k = "SBATCH_PY_" + k.replace("-", "_").upper()
+        s += k
+        if v:
+            s += f"={v}"
+        else:
+            s += "=true"
+        s += "\n"
+    return s[:-1]
+
+
 if __name__ == "__main__":
     # has the submission been successful?
     success = False
+    sbatch_py_vars = {}
 
     # repository root
     root = Path(__file__).resolve().parent
@@ -115,9 +130,12 @@ if __name__ == "__main__":
 
     # distribute training
     if args.ntasks_per_node > 1 and "--distributed" not in args.py_args:
-        args.py_args += (
-            f" --distributed --num-nodes {args.nodes} --num-gpus {args.ntasks_per_node}"
-        )
+        if args.sweep:
+            sbatch_py_vars["distributed"] = None
+            sbatch_py_vars["num-nodes"] = args.nodes
+            sbatch_py_vars["num-gpus"] = args.ntasks_per_node
+        else:
+            args.py_args += f" --distributed --num-nodes {args.nodes} --num-gpus {args.ntasks_per_node}"
 
     # add logdir to main.py's command-line arguments
     if "--logdir" not in args.py_args and args.logdir:
@@ -131,6 +149,12 @@ if __name__ == "__main__":
         args.py_args += f' --note "{note}"'
 
     git_checkout = f"git checkout {args.git_checkout}" if args.git_checkout else ""
+
+    if args.sweep:
+        count = f" --count {args.count}" if args.count else ""
+        python_command = f"wandb agent{count} {args.sweep}"
+    else:
+        python_command = f"python main.py {args.py_args}"
 
     # format string template with defaults + command-line args
     script = template.format(
@@ -147,8 +171,9 @@ if __name__ == "__main__":
         ntasks=args.ntasks,
         output=str(resolve(args.output)),
         partition=args.partition,
-        py_args=args.py_args,
+        python_command=python_command,
         sbatch_command_line=" ".join(["python"] + sys.argv),
+        sbatch_py_vars=make_sbatch_py_vars(sbatch_py_vars),
         time="" if not args.time else f"#SBATCH --time={args.time}",
     )
 
@@ -176,7 +201,8 @@ if __name__ == "__main__":
         f.write(script)
 
     # command to request the job
-    command = f"sbatch {str(script_path)}"
+    array = f" --array={args.array}" if args.array else ""
+    command = f"sbatch{array} {str(script_path)}"
     print(f"Executing:\n{command}")
     print(f"\nFile content:\n{'=' * 50}\n{script}{'=' * 50}\n")
 
