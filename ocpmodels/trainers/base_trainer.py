@@ -45,6 +45,7 @@ from ocpmodels.modules.scheduler import LRScheduler
 from ocpmodels.preprocessing.data_augmentation import (
     frame_averaging_2D,
     frame_averaging_3D,
+    full_frame_averaging,
 )
 
 
@@ -82,6 +83,7 @@ class BaseTrainer(ABC):
         self.step = 0
         self.new_gnn = new_gnn
         self.test_rotation_invariance = test_rotation_invariance
+        self.frame_averaging = frame_averaging
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
@@ -177,7 +179,14 @@ class BaseTrainer(ABC):
 
         # Frame averaging
         if frame_averaging:
-            self.fa = eval("frame_averaging_" + frame_averaging)
+            if frame_averaging.lower() == "2d":
+                self.fa = frame_averaging_2D
+            elif frame_averaging.lower() == "3d":
+                self.fa = frame_averaging_3D
+            elif frame_averaging.lower() == "full":
+                self.fa = full_frame_averaging
+            else:
+                raise ValueError(f"Unknown frame averaging: {frame_averaging}")
         else:
             self.fa = None
 

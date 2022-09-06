@@ -143,7 +143,7 @@ class EnergyTrainer(BaseTrainer):
             disable=disable_tqdm,
         ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out, _ = self._forward(batch)
+                out, _ = self._forward(batch, self.frame_averaging)
 
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(out["energy"])
@@ -194,7 +194,7 @@ class EnergyTrainer(BaseTrainer):
 
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out, pooling_loss = self._forward(batch)
+                    out, pooling_loss = self._forward(batch, self.frame_averaging)
                     loss = self._compute_loss(out, batch)
                     if pooling_loss is not None:
                         loss += pooling_loss
@@ -279,7 +279,7 @@ class EnergyTrainer(BaseTrainer):
         if self.logger is not None:
             start_time = time.time()
             # batch = next(iter(self.train_loader))
-            self._forward(batch)
+            self._forward(batch, self.frame_averaging)
             self.logger.log({"Batch time": time.time() - start_time})
 
         # Check rotation invariance
@@ -294,8 +294,19 @@ class EnergyTrainer(BaseTrainer):
         if "test_dataset" in self.config:
             self.test_dataset.close_db()
 
-    def _forward(self, batch_list):
-        output, pooling_loss = self.model(batch_list)
+    def _forward(self, batch_list, fa=False):
+
+        if fa == "full":
+            y1, p1 = self.model(batch_list)
+            batch_list[0].pos = batch_list[0].new_pos
+            y2, p2 = self.model(batch_list)
+            output = (y1 + y2) / 2
+            try:
+                pooling_loss = (p1 + p2) / 2
+            except TypeError:
+                pooling_loss = None
+        else:
+            output, pooling_loss = self.model(batch_list)
 
         if output.shape[-1] == 1:
             output = output.view(-1)

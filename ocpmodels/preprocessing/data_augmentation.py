@@ -1,17 +1,20 @@
 import random
+from copy import deepcopy
 from itertools import product
 
 import torch
 from torch_geometric.data import Batch
 
 
-def all_frames(eigenvec, pos):
+def all_frames(eigenvec, pos, rand=True):
     """Compute all frames for a given graph
     Related to frame ambiguity issue
 
     Args:
         eigenvec (tensor): eigenvectors matrix
         pos (tensor): position vector (x-t)
+        rand: whether to return all possible frames (False)
+            or one at random (True)
 
     Returns:
         tensor: lists of 3D positions tensors
@@ -47,7 +50,10 @@ def all_frames(eigenvec, pos):
         all_fa.append(pos @ eigenvec)
 
     # Return one frame at random among plausible ones
-    return random.choice(all_fa)
+    if rand:
+        return random.choice(all_fa)
+
+    return all_fa
 
 
 def check_constraints(eigenval, eigenvec, dim):
@@ -149,6 +155,43 @@ def frame_averaging_2D(g, random_sign=True):
     # Compute all frames
     g.pos[:, :2] = all_frames(eigenvec, pos_2D)
     # g.pos = torch.cat((pos_2D, g.pos[:, 2].unsqueeze(1)), dim=1)
+
+    # No need to update distances, they are preserved.
+
+    return g
+
+
+def full_frame_averaging(g, random_sign=True):
+    """Computes new positions for the graph atoms,
+    based on a frame averaging building on PCA, with all frames
+
+    Args:
+        g (_type_): graph
+        random_sign (bool): True if we take a random sign for eigenv
+
+    Returns:
+        _type_: updated positions
+    """
+
+    # Compute centroid and covariance
+    pos_2D = g.pos[:, :2] - g.pos[:, :2].mean(dim=0, keepdim=True)
+    C = torch.matmul(pos_2D.t(), pos_2D)
+
+    # Eigendecomposition
+    eigenval, eigenvec = torch.linalg.eig(C)
+
+    # Convert to real
+    eigenvec = eigenvec.real
+    eigenval = eigenval.real
+
+    # Sort, if necessary
+    idx = eigenval.argsort(descending=True)
+    eigenval = eigenval[idx]
+    eigenvec = eigenvec[:, idx]
+
+    # Compute all frames
+    g.new_pos = deepcopy(g.pos)
+    g.pos[:, :2], g.new_pos[:, :2] = all_frames(eigenvec, pos_2D, rand=False)
 
     # No need to update distances, they are preserved.
 

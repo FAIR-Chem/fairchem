@@ -21,6 +21,7 @@ if __name__ == "__main__":
         # args.config_yml = "configs/is2re/10k/dimenet_plus_plus/new_dpp.yml"
         # args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
         # args.config_yml = "configs/is2re/10k/forcenet/new_forcenet.yml"
+        # args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
         args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/best_checkpoint.pt"
         warnings.warn("No model / mode is given; chosen as default")
@@ -34,6 +35,8 @@ if __name__ == "__main__":
     # config["model"]["phys_embeds"] = True
     # config['model']['use_pbc'] = True
     # config['model']['graph_rewiring'] = 'remove-tag-0'
+    config["frame_averaging"] = "full"
+    config["test_ri"] = True
 
     setup_imports()
     trainer = EnergyTrainer(
