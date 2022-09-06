@@ -358,6 +358,7 @@ class EnergyTrainer(BaseTrainer):
                 split="train",
             )
 
+    @torch.no_grad()
     def _test_rotation_invariance(self):
         # Check for rotation invariance
         self.model.eval()
