@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 import torch
 from ase.io import read
+from ase.lattice.cubic import FaceCenteredCubic
 from pymatgen.io.ase import AseAtomsAdaptor
 
 from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
@@ -70,3 +71,113 @@ class TestRadiusGraphPBC:
 
         # Ensure sets are the same
         assert a2g_features == rgpbc_features
+        
+    def test_radius_graph_pbc_bulk(self):
+        radius = 10
+
+        # Must be sufficiently large to ensure all edges are retained
+        max_neigh = 2000
+
+        a2g = AtomsToGraphs(radius = radius, max_neigh=max_neigh)
+        structure = FaceCenteredCubic('Pt', size = [1, 2, 3])
+
+        # Use the radius as a multiplier to ensure adequate distance between repeated cells
+        structure.cell[0] *= radius
+        structure.cell[1] *= radius
+        structure.cell[2] *= radius
+
+        data = a2g.convert(structure)
+        non_pbc = data.edge_index.shape[1]
+
+        # Get number of neighbors for all possible PBC combinations
+        structure.cell[0] /= radius
+        data = a2g.convert(structure)
+        pbc_x = data.edge_index.shape[1]
+
+        structure.cell[1] /= radius
+        data = a2g.convert(structure)
+        pbc_xy = data.edge_index.shape[1]
+
+        structure.cell[0] *= radius
+        data = a2g.convert(structure)
+        pbc_y = data.edge_index.shape[1]
+
+        structure.cell[2] /= radius
+        data = a2g.convert(structure)
+        pbc_yz = data.edge_index.shape[1]
+
+        structure.cell[1] *= radius
+        data = a2g.convert(structure)
+        pbc_z = data.edge_index.shape[1]
+
+        structure.cell[0] /= radius
+        data = a2g.convert(structure)
+        pbc_xz = data.edge_index.shape[1]
+
+        structure.cell[1] /= radius
+        data = a2g.convert(structure)
+        pbc_all = data.edge_index.shape[1]
+
+        # Ensure edges are actually found
+        assert non_pbc > 0
+        assert pbc_x > non_pbc
+        assert pbc_y > non_pbc
+        assert pbc_z > non_pbc
+        assert pbc_xy > max(pbc_x, pbc_y)
+        assert pbc_yz > max(pbc_y, pbc_z)
+        assert pbc_xz > max(pbc_x, pbc_z)
+        assert pbc_all > max(pbc_xy, pbc_yz, pbc_xz)
+
+        structure = FaceCenteredCubic('Pt', size = [1, 2, 3])
+        data = a2g.convert(structure)
+
+        batch = data_list_collater([data])
+
+        # Ensure radius_graph_pbc matches AtomsToGraphs for all PBC combinations
+        out = radius_graph_pbc(batch, 
+                               radius=radius, 
+                               max_num_neighbors_threshold = max_neigh, 
+                               pbc = [False, False, False])
+        assert out[-1].item() == non_pbc
+
+        out = radius_graph_pbc(batch, 
+                               radius=radius, 
+                               max_num_neighbors_threshold = max_neigh, 
+                               pbc = [True, False, False])
+        assert out[-1].item() == pbc_x
+
+        out = radius_graph_pbc(batch, 
+                               radius=radius, 
+                               max_num_neighbors_threshold = max_neigh, 
+                               pbc = [False, True, False])
+        assert out[-1].item() == pbc_y
+
+        out = radius_graph_pbc(batch, 
+                               radius=radius, 
+                               max_num_neighbors_threshold = max_neigh, 
+                               pbc = [False, False, True])
+        assert out[-1].item() == pbc_z
+
+        out = radius_graph_pbc(batch, 
+                               radius=radius, 
+                               max_num_neighbors_threshold = max_neigh, 
+                               pbc = [True, True, False])
+        assert out[-1].item() == pbc_xy
+
+        out = radius_graph_pbc(batch, 
+                               radius=radius, 
+                               max_num_neighbors_threshold = max_neigh, 
+                               pbc = [False, True, True])
+        assert out[-1].item() == pbc_yz
+
+        out = radius_graph_pbc(batch, 
+                               radius=radius, 
+                               max_num_neighbors_threshold = max_neigh, 
+                               pbc = [True, False, True])
+        assert out[-1].item() == pbc_xz
+
+        out = radius_graph_pbc(batch, 
+                               radius=radius, 
+                               max_num_neighbors_threshold = max_neigh, 
+                               pbc = [True, True, True])
+        assert out[-1].item() == pbc_all
