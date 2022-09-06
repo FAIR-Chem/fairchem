@@ -8,7 +8,7 @@
   Approx(
   	array([[0.]], dtype=float32), 
   	rtol=1e-05, 
-  	atol=1e-08
+  	atol=1e-06
   )
 # ---
 # name: TestDimeNet.test_energy_force_shape.2
@@ -54,6 +54,6 @@
   	       [-0., -0., -0.],
   	       [-0., -0., -0.]], dtype=float32), 
   	rtol=1e-05, 
-  	atol=1e-08
+  	atol=1e-06
   )
 # ---

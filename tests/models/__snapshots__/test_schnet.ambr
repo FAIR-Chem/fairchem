@@ -8,7 +8,7 @@
   Approx(
   	array([[-5.483429]], dtype=float32), 
   	rtol=1e-05, 
-  	atol=1e-08
+  	atol=1e-06
   )
 # ---
 # name: TestSchNet.test_energy_force_shape.2
@@ -54,6 +54,6 @@
   	       [ 2.52768815e-01, -1.05491355e-01, -1.07253861e+00],
   	       [ 5.89928776e-03,  4.08237502e-02,  6.04341447e-01]], dtype=float32), 
   	rtol=1e-05, 
-  	atol=1e-08
+  	atol=1e-06
   )
 # ---
