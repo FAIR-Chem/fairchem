@@ -45,7 +45,7 @@ def load_model(request):
     torch.manual_seed(4)
     setup_imports()
 
-    model = registry.get_model_class("dimenet_plus_plus")(
+    model = registry.get_model_class("dimenetplusplus")(
         None,
         32,
         1,
