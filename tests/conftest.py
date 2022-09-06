@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from syrupy.types import SerializableData
 
 DEFAULT_RTOL = 1.0e-05
-DEFAULT_ATOL = 1.0e-08
+DEFAULT_ATOL = 1.0e-06
 
 
 class Approx:
