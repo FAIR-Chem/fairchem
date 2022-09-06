@@ -8,7 +8,7 @@
   Approx(
   	array([[-0.6980915]], dtype=float32), 
   	rtol=1e-05, 
-  	atol=1e-08
+  	atol=1e-06
   )
 # ---
 # name: TestCGCNN.test_energy_force_shape.2
@@ -54,6 +54,6 @@
   	       [ 1.38049727e-04,  1.89953746e-04, -7.36690999e-05],
   	       [-1.85473706e-04,  4.05476487e-04,  1.94478640e-03]], dtype=float32), 
   	rtol=1e-05, 
-  	atol=1e-08
+  	atol=1e-06
   )
 # ---
