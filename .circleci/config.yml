@@ -17,7 +17,7 @@ commands:
     steps:
       - checkout
       - restore_cache:
-          key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}
+          key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
       - run:
           name: Install conda and environment
           command: |
@@ -42,12 +42,12 @@ commands:
       - save_cache:
           paths:
             - /home/circleci/miniconda
-          key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}
+          key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
   install_deps_macos:
     steps:
       - checkout
       - restore_cache:
-          key: conda-macos-{{ checksum ".circleci/config.yml" }}
+          key: conda-macos-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
       - run:
           name: Install conda and environment
           command: |
@@ -65,12 +65,12 @@ commands:
       - save_cache:
           paths:
             - $HOME/miniconda3
-          key: conda-macos-{{ checksum ".circleci/config.yml" }}
+          key: conda-macos-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
   install_deps_windows:
     steps:
       - checkout
       - restore_cache:
-          key: conda-windows-{{ checksum ".circleci/config.yml" }}
+          key: conda-windows-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
       - run:
           name: Install conda and environment
           command: |
@@ -90,7 +90,7 @@ commands:
       - save_cache:
           paths:
             - C:\tools\miniconda3
-          key: conda-windows-{{ checksum ".circleci/config.yml" }}
+          key: conda-windows-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
 
 
 jobs:
