@@ -59,11 +59,7 @@ class TestForceNet:
         energy, forces = self.model(data_list_collater([data]))
 
         assert snapshot == energy.shape
-        assert snapshot == pytest.approx(
-            energy.detach(), rel=1.0e-3, abs=1.0e-3
-        )
+        assert snapshot == pytest.approx(energy.detach())
 
         assert snapshot == forces.shape
-        assert snapshot == pytest.approx(
-            forces.detach(), rel=1.0e-3, abs=1.0e-3
-        )
+        assert snapshot == pytest.approx(forces.detach())
