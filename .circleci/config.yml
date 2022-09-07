@@ -74,7 +74,7 @@ commands:
       - run:
           name: Install conda and environment
           command: |
-            if (Test-Path -Path "C:\tools\miniconda3"){
+            if (Test-Path -Path "C:\tools\miniconda3\envs\ocp-models"){
               Write-Host "miniconda installed already."
               C:\tools\miniconda3\Scripts\conda.exe init powershell
             }
