@@ -5,7 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 import pytest
@@ -27,8 +27,8 @@ class Approx:
         self,
         data: Union[np.ndarray, list],
         *,
-        rtol: float,
-        atol: float,
+        rtol: Optional[float] = None,
+        atol: Optional[float] = None,
     ):
         if isinstance(data, list):
             self.data = np.array(data)
@@ -37,8 +37,8 @@ class Approx:
         else:
             raise TypeError(f"Cannot convert {type(data)} to np.array")
 
-        self.rtol = rtol
-        self.atol = atol
+        self.rtol = rtol if rtol is not None else DEFAULT_RTOL
+        self.atol = atol if atol is not None else DEFAULT_ATOL
         self.tol_repr = True
 
     def __repr__(self):
@@ -55,9 +55,11 @@ class _ApproxNumpyFormatter:
         self.data = data
 
     def __repr__(self):
-        rtol = self.data.rel or DEFAULT_RTOL
-        atol = self.data.abs or DEFAULT_ATOL
-        return Approx(self.data.expected, rtol=rtol, atol=atol).__repr__()
+        return Approx(
+            self.data.expected,
+            rtol=self.data.rel,
+            atol=self.data.abs,
+        ).__repr__()
 
 
 def _try_parse_approx(data: "SerializableData"):
