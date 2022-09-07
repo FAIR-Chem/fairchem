@@ -298,9 +298,11 @@ class EnergyTrainer(BaseTrainer):
 
         if fa == "full":
             y1, p1 = self.model(batch_list)
+            original_pos = batch_list[0].pos
             batch_list[0].pos = batch_list[0].new_pos
             y2, p2 = self.model(batch_list)
             output = (y1 + y2) / 2
+            batch_list[0].pos = original_pos
             try:
                 pooling_loss = (p1 + p2) / 2
             except TypeError:
