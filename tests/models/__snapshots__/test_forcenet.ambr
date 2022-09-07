@@ -6,9 +6,7 @@
 # ---
 # name: TestForceNet.test_energy_force_shape.1
   Approx(
-  	array([[5.4464083]], dtype=float32), 
-  	rtol=0.001, 
-  	atol=0.001
+  	array([[5.4464083]], dtype=float32)
   )
 # ---
 # name: TestForceNet.test_energy_force_shape.2
@@ -52,8 +50,6 @@
   	       [ 1.36593431e-01, -3.22298646e-01,  1.27883935e+00],
   	       [ 6.13107383e-01, -5.51185012e-02, -2.86964476e-02],
   	       [ 2.06872270e-01, -1.47157997e-01,  2.15230256e-01],
-  	       [ 7.88176805e-02, -8.68521333e-02,  9.16256189e-01]], dtype=float32), 
-  	rtol=0.001, 
-  	atol=0.001
+  	       [ 7.88176805e-02, -8.68521333e-02,  9.16256189e-01]], dtype=float32)
   )
 # ---
