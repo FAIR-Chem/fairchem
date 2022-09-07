@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import io
 import logging
 import os
 import random
@@ -52,7 +53,9 @@ def load_model(request):
     # and then load it with torch.load
     r = requests.get(checkpoint_url, stream=True)
     r.raise_for_status()
-    checkpoint = torch.load(r.raw, map_location=torch.device("cpu"))
+    checkpoint = torch.load(
+        io.BytesIO(r.content), map_location=torch.device("cpu")
+    )
 
     model = registry.get_model_class("gemnet_oc")(
         None,
