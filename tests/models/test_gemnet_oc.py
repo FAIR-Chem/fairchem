@@ -8,10 +8,10 @@ LICENSE file in the root directory of this source tree.
 import logging
 import os
 import random
-from urllib import request as req
 
 import numpy as np
 import pytest
+import requests
 import torch
 from ase.io import read
 
@@ -45,16 +45,14 @@ def load_model(request):
     torch.manual_seed(4)
     setup_imports()
 
-    import os
-
-    os.system("pip install --upgrade pip-system-certs")
-
     # download and load weights.
     checkpoint_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_base_s2ef_all.pt"
-    checkpoint_path = req.urlretrieve(checkpoint_url)
-    checkpoint = torch.load(
-        checkpoint_path[0], map_location=torch.device("cpu")
-    )
+
+    # load buffer into memory as a stream
+    # and then load it with torch.load
+    r = requests.get(checkpoint_url, stream=True)
+    r.raise_for_status()
+    checkpoint = torch.load(r.raw, map_location=torch.device("cpu"))
 
     model = registry.get_model_class("gemnet_oc")(
         None,
