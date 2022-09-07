@@ -14,7 +14,6 @@ import numpy as np
 import pytest
 import torch
 from ase.io import read
-from torch_geometric.data import Data
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomRotate
@@ -141,22 +140,15 @@ class TestGemNetOC:
             decimal=3,
         )
 
-    def test_energy_force_shape_and_values(self):
+    def test_energy_force_shape(self, snapshot):
+        # Recreate the Data object to only keep the necessary features.
         data = self.data
 
         # Pass it through the model.
-        out = self.model(data_list_collater([data]))
+        energy, forces = self.model(data_list_collater([data]))
 
-        # Compare shape of predicted energies, forces.
-        energy = out[0].detach()
-        np.testing.assert_equal(energy.shape, torch.Size([1]))
-        np.testing.assert_almost_equal(energy.item(), 0.0597, decimal=4)
+        assert snapshot == energy.shape
+        assert snapshot == pytest.approx(energy.detach())
 
-        forces = out[1].detach()
-        np.testing.assert_equal(
-            forces.shape, torch.Size([data.pos.shape[0], 3])
-        )
-        np.testing.assert_almost_equal(
-            forces.mean().item(), -0.0006, decimal=4
-        )
-        np.testing.assert_almost_equal(forces.std().item(), 0.0328, decimal=4)
+        assert snapshot == forces.shape
+        assert snapshot == pytest.approx(forces.detach())

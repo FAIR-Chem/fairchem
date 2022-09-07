@@ -12,7 +12,6 @@ import numpy as np
 import pytest
 import torch
 from ase.io import read
-from torch_geometric.data import Batch, Data
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomRotate
@@ -41,6 +40,7 @@ def load_data(request):
 
 @pytest.fixture(scope="class")
 def load_model(request):
+    torch.manual_seed(4)
     setup_imports()
 
     model = registry.get_model_class("schnet")(
@@ -76,15 +76,15 @@ class TestSchNet:
             decimal=5,
         )
 
-    def test_energy_force_shape(self):
+    def test_energy_force_shape(self, snapshot):
+        # Recreate the Data object to only keep the necessary features.
         data = self.data
 
         # Pass it through the model.
-        out = self.model(data_list_collater([data]))
+        energy, forces = self.model(data_list_collater([data]))
 
-        # Compare shape of predicted energies, forces.
-        energy = out[0].detach()
-        np.testing.assert_equal(energy.shape, (1, 1))
+        assert snapshot == energy.shape
+        assert snapshot == pytest.approx(energy.detach())
 
-        forces = out[1].detach()
-        np.testing.assert_equal(forces.shape, (data.pos.shape[0], 3))
+        assert snapshot == forces.shape
+        assert snapshot == pytest.approx(forces.detach())
