@@ -1,3 +1,10 @@
+"""
+Copyright (c) Facebook, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+
 from typing import TYPE_CHECKING, Union
 
 import numpy as np
@@ -13,6 +20,10 @@ DEFAULT_ATOL = 1.0e-06
 
 
 class Approx:
+    """
+    Wrapper object for approximately compared numpy arrays.
+    """
+
     def __init__(
         self,
         data: Union[np.ndarray, list],
@@ -62,12 +73,28 @@ def _approx_from_string(data_str: str):
 
 
 class ApproxExtension(AmberSnapshotExtension):
+    """
+    By default, syrupy uses the __repr__ of the expected (snapshot) and actual values
+    to serialize them into strings. Then, it compares the strings to see if they match.
+
+    However, this behavior is not ideal for comparing floats/ndarrays. For example,
+    if we have a snapshot with a float value of 0.1, and the actual value is 0.10000000000000001,
+    then the strings will not match, even though the values are effectively equal.
+
+    To work around this, we override the serialize method to seralize the expected value
+    into a special representation. Then, we override the matches function (which originally does a
+    simple string comparison) to parse the expected and actual values into numpy arrays.
+    Finally, we compare the arrays using np.allclose.
+    """
+
     def matches(
         self,
         *,
         serialized_data: "SerializableData",
         snapshot_data: "SerializableData",
     ) -> bool:
+        # if both serialized_data and snapshot_data are serialized Approx objects,
+        # then we can load them as numpy arrays and compare them using np.allclose
         if isinstance(serialized_data, str):
             serialized_data_ = serialized_data.strip()
             if serialized_data_.startswith("Approx("):
@@ -92,6 +119,8 @@ class ApproxExtension(AmberSnapshotExtension):
         )
 
     def serialize(self, data, **kwargs):
+        # we override the existing serialization behavior
+        # of the `pytest.approx()` object to serialize it into a special string.
         if isinstance(data, type(pytest.approx(np.array(0.0)))):
             return super().serialize(_ApproxNumpyFormatter(data), **kwargs)
         elif isinstance(data, type(pytest.approx(0.0))):
