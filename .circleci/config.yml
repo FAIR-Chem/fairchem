@@ -147,7 +147,6 @@ jobs:
           command: |
             C:\tools\miniconda3\Scripts\conda.exe activate
             conda activate ocp-models
-            pip install --upgrade pip-system-certs
             pip install -e .
             pre-commit install
             pytest tests

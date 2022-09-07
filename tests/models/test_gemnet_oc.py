@@ -45,6 +45,10 @@ def load_model(request):
     torch.manual_seed(4)
     setup_imports()
 
+    import os
+
+    os.system("pip install --upgrade pip-system-certs")
+
     # download and load weights.
     checkpoint_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_base_s2ef_all.pt"
     checkpoint_path = req.urlretrieve(checkpoint_url)
