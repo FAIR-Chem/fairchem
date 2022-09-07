@@ -6,15 +6,11 @@ LICENSE file in the root directory of this source tree.
 """
 
 import os
-import random
 
 import numpy as np
 import pytest
-import torch
 from ase.io import read
-from torch_geometric.data import Data
 
-from ocpmodels.common.transforms import RandomRotate
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.models import ForceNet
 from ocpmodels.preprocessing import AtomsToGraphs
@@ -52,15 +48,19 @@ def load_model(request):
 @pytest.mark.usefixtures("load_data")
 @pytest.mark.usefixtures("load_model")
 class TestForceNet:
-    def test_energy_force_shape(self):
+    def test_energy_force_shape(self, snapshot):
+        # Recreate the Data object to only keep the necessary features.
         data = self.data
 
         # Pass it through the model.
-        out = self.model(data_list_collater([data]))
+        energy, forces = self.model(data_list_collater([data]))
 
-        # Compare shape of predicted energies, forces.
-        energy = out[0].detach()
-        np.testing.assert_equal(energy.shape, (1, 1))
+        assert snapshot == energy.shape
+        assert snapshot == pytest.approx(
+            energy.detach(), rel=1.0e-3, abs=1.0e-3
+        )
 
-        forces = out[1].detach()
-        np.testing.assert_equal(forces.shape, (data.pos.shape[0], 3))
+        assert snapshot == forces.shape
+        assert snapshot == pytest.approx(
+            forces.detach(), rel=1.0e-3, abs=1.0e-3
+        )
