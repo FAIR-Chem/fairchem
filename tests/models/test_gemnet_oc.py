@@ -130,7 +130,7 @@ class TestGemNetOC:
 
         # Compare predicted energies and forces (after inv-rotation).
         energies = out[0].detach()
-        np.testing.assert_almost_equal(energies[0], energies[1], decimal=4)
+        np.testing.assert_almost_equal(energies[0], energies[1], decimal=3)
 
         forces = out[1].detach()
         logging.info(forces)

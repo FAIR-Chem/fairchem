@@ -73,7 +73,7 @@ class TestSchNet:
         np.testing.assert_array_almost_equal(
             forces[: forces.shape[0] // 2],
             torch.matmul(forces[forces.shape[0] // 2 :], inv_rot),
-            decimal=5,
+            decimal=4,
         )
 
     def test_energy_force_shape(self, snapshot):
