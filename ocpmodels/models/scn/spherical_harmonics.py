@@ -357,7 +357,8 @@ class SphericalHarmonicsHelper:
 # Borrowed from e3nn @ 0.4.0:
 # https://github.com/e3nn/e3nn/blob/0.4.0/e3nn/o3/_wigner.py#L37
 #
-# In 0.5.0, e3nn shifted to torch.matrix_exp which is significantly slower.
+# In 0.5.0, e3nn shifted to torch.matrix_exp which is significantly slower:
+# https://github.com/e3nn/e3nn/blob/0.5.0/e3nn/o3/_wigner.py#L92
 def wigner_D(l, alpha, beta, gamma):
     if not l < len(_Jd):
         raise NotImplementedError(
