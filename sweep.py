@@ -74,7 +74,7 @@ def make_sbatch_exec(args):
     def run_sbatch():
         wandb.init(mode="disabled")
         args = " ".join([f"--{k}={v}" for k, v in wandb.config.items()])
-        py_args = f'py_args="{args}"'
+        py_args = f"py_args={args}"
 
         command = f"python sbatch.py {sbatch_args}"
         print("\n" + "=" * 30 + "\n" + command + "\n")
@@ -89,10 +89,13 @@ if __name__ == "__main__":
     args = resolved_args(
         defaults=discover_minydra_defaults(), strict=False
     ).pretty_print()
+    name = args.name or make_wandb_sweep_name()
+    parameters = read_sweep_params(args.params)
+    parameters["wandb_tag"] = {"values": [name]}
     sweep_configuration = {
-        "name": args.name or make_wandb_sweep_name(),
+        "name": name,
         "method": args.method,
-        "parameters": read_sweep_params(args.params),
+        "parameters": parameters,
     }
     sweep_id = wandb.sweep(sweep_configuration)
 

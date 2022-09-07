@@ -79,6 +79,7 @@ class EnergyTrainer(BaseTrainer):
         data_split=None,
         test_rotation_invariance=False,
         note="",
+        wandb_tag=None,
     ):
         super().__init__(
             task=task,

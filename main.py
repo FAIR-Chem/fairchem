@@ -67,6 +67,7 @@ class Runner(submitit.helpers.Checkpointable):
                 data_split=config.get("data_split", None),
                 note=config.get("note", ""),
                 test_rotation_invariance=config.get("test_ri", None),
+                wandb_tag=config.get("wandb_tag", None),
             )
             self.task = registry.get_task_class(config["mode"])(self.config)
             self.task.setup(self.trainer)
