@@ -64,7 +64,7 @@ commands:
             fi
       - save_cache:
           paths:
-            - $HOME/miniconda3
+            - /Users/distiller/miniconda3
           key: conda-macos-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
   install_deps_windows:
     steps:
