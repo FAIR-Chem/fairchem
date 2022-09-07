@@ -5,7 +5,9 @@ from uuid import uuid4
 from datetime import datetime
 from pathlib import Path
 import os
+import sys
 import yaml
+import re
 
 
 def run_command(command):
@@ -68,18 +70,43 @@ def read_sweep_params(path):
     return params
 
 
-def make_sbatch_exec(args):
+def get_sweep_out_path(name):
+    n = now()
+    fname = f"{n}_{name}.txt"
+    sweeps_dir = resolve(__file__).parent / "data" / "sweeps"
+    files = list(sweeps_dir.glob(f"*{name}.txt"))
+    if len(files) > 1:
+        raise ValueError("Too many matching sweep files for " + name)
+    if len(files) == 1:
+        f = files[0]
+        f.rename(f.parent / fname)
+    print("Writing to:", str(sweeps_dir / fname))
+    return sweeps_dir / fname
+
+
+def make_sbatch_exec(args, path, jobs):
     sbatch_args = " ".join([f"{k}={v}" for k, v in args.items()])
 
     def run_sbatch():
         wandb.init(mode="disabled")
         args = " ".join([f"--{k}={v}" for k, v in wandb.config.items()])
         py_args = f"py_args={args}"
-
         command = f"python sbatch.py {sbatch_args}"
-        print("\n" + "=" * 30 + "\n" + command + "\n")
-        print(run_command(command.split(" ") + [py_args]))
-        print("\n" + "=" * 30 + "\n")
+        print("\n" + "░" * 50 + "\n" + command + "\n")
+        out = run_command(command.split(" ") + [py_args])
+        print(out)
+        job = re.findall(r"Submitted batch job (\d+)", out)
+        if job:
+            jobs.append(job[0])
+        with path.open("a") as f:
+            f.write("\n\n\n" + "░" * 80)
+            f.write("\n" + "░" * 80)
+            f.write("\n" + "░" * 80 + "\n\n\n")
+            f.write(command + " " + py_args)
+            f.write("\n\nResult:\n")
+            f.write(out)
+            f.write("\n\n")
+        print("\n" + "░" * 50 + "\n")
         wandb.finish(exit_code=0, quiet=True)
 
     return run_sbatch
@@ -89,6 +116,7 @@ if __name__ == "__main__":
     args = resolved_args(
         defaults=discover_minydra_defaults(), strict=False
     ).pretty_print()
+    jobs = []
     name = args.name or make_wandb_sweep_name()
     parameters = read_sweep_params(args.params)
     parameters["wandb_tag"] = {"values": [name]}
@@ -99,10 +127,50 @@ if __name__ == "__main__":
     }
     sweep_id = wandb.sweep(sweep_configuration)
 
+    fpath = get_sweep_out_path(name)
+    fpath.parent.mkdir(parents=True, exist_ok=True)
+
+    pre_exists = fpath.exists()
+
+    with open(fpath, "a") as f:
+        if pre_exists:
+            f.write("\n\n" + "█" * 120)
+            f.write("\n" + "█" * 120)
+            f.write("\n" + "█" * 120)
+            f.write("\n" + "█" * 120)
+            f.write("\n" + "█" * 120 + "\n\n")
+        f.write(" ".join(sys.argv))
+
     count = args.count
     del args.name
     del args.method
     del args.params
     del args.count
 
-    wandb.agent(sweep_id, function=make_sbatch_exec(args), count=count)
+    wandb.agent(sweep_id, function=make_sbatch_exec(args, fpath, jobs), count=count)
+
+    with open(fpath, "r") as f:
+        lines = f.read()
+
+    pre_existing_jobs = re.findall(r" ► (\d+)", lines)
+    lines = lines.split("\n")
+
+    new_f = []
+    delete = False
+    for l in lines:
+        if "░ ░ ░ ░ ░" in l and not delete:
+            delete = True
+        if "░ ░ ░ ░ ░" in l and delete:
+            delete = False
+        if not delete:
+            new_f.append(l)
+
+    with open(fpath, "w") as f:
+        f.write("\n".join(new_f))
+        f.write("\n\n" + ("░ ░ ░ " * 10)[:-1] + "\n")
+        f.write("   Sweep Job IDs\n")
+        if jobs:
+            f.write("\n".join([f" ► {j}" for j in (pre_existing_jobs + jobs)]))
+        f.write("\n" + ("░ ░ ░ " * 10)[:-1] + "\n")
+
+    print(f"\nSweep File:\n{str(fpath)}")
