@@ -1,0 +1,6 @@
+# default minydra args for sweep.py
+
+method: random
+params: sweep_wandb_all.yml
+count: 1
+name: null
