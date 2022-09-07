@@ -76,6 +76,7 @@ commands:
           command: |
             if (Test-Path -Path "C:\tools\miniconda3"){
               Write-Host "miniconda installed already."
+              C:\tools\miniconda3\Scripts\conda.exe init powershell
             }
             else {
               choco install -y --no-progress miniconda3
