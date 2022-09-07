@@ -6,9 +6,7 @@
 # ---
 # name: TestGemNetT.test_energy_force_shape.1
   Approx(
-  	array([[-2.8309784]], dtype=float32), 
-  	rtol=1e-05, 
-  	atol=1e-06
+  	array([[-2.8309784]], dtype=float32)
   )
 # ---
 # name: TestGemNetT.test_energy_force_shape.2
@@ -52,8 +50,6 @@
   	       [ 2.6626289e-01, -5.2011424e-01,  7.8410697e-01],
   	       [ 2.5859460e-01, -4.4564921e-01,  3.8762924e-01],
   	       [ 3.4471753e-01, -4.1330525e-01, -2.7253401e-01],
-  	       [ 3.1812382e-01, -3.8451308e-01,  2.8622845e-01]], dtype=float32), 
-  	rtol=1e-05, 
-  	atol=1e-06
+  	       [ 3.1812382e-01, -3.8451308e-01,  2.8622845e-01]], dtype=float32)
   )
 # ---

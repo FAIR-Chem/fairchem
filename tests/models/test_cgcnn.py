@@ -13,9 +13,10 @@ import pytest
 import torch
 from ase.io import read
 
+from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.utils import setup_imports
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.models import CGCNN
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -40,8 +41,10 @@ def load_data(request):
 @pytest.fixture(scope="class")
 def load_model(request):
     torch.manual_seed(4)
+    setup_imports()
+
     num_gaussians = 50
-    model = CGCNN(
+    model = registry.get_model_class("cgcnn")(
         None,
         num_gaussians,
         1,

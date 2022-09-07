@@ -14,9 +14,10 @@ import pytest
 import torch
 from ase.io import read
 
+from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.utils import setup_imports
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.models import DimeNetPlusPlus
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -41,7 +42,9 @@ def load_data(request):
 @pytest.fixture(scope="class")
 def load_model(request):
     torch.manual_seed(4)
-    model = DimeNetPlusPlus(
+    setup_imports()
+
+    model = registry.get_model_class("dimenetplusplus")(
         None,
         32,
         1,

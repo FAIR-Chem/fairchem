@@ -226,29 +226,72 @@ def add_edge_distance_to_graph(
     return batch
 
 
-def setup_experimental_imports(root_folder: str):
-    experimental_folder = os.path.join(root_folder, "../experimental/")
-    if os.path.exists(experimental_folder):
-        experimental_files = glob.glob(
-            experimental_folder + "**/*py",
-            recursive=True,
-        )
-        # Ignore certain directories within experimental
-        ignore_file = os.path.join(experimental_folder, ".ignore")
-        if os.path.exists(ignore_file):
-            ignored = []
-            with open(ignore_file) as f:
-                for line in f.read().splitlines():
-                    ignored += glob.glob(
-                        experimental_folder + line + "/**/*py", recursive=True
+def _import_local_file(path: Path, *, project_root: Path):
+    """
+    Imports a Python file as a module
+
+    :param path: The path to the file to import
+    :type path: Path
+    :param project_root: The root directory of the project (i.e., the "ocp" folder)
+    :type project_root: Path
+    """
+
+    path = path.resolve()
+    project_root = project_root.resolve()
+
+    module_name = ".".join(
+        path.absolute()
+        .relative_to(project_root.absolute())
+        .with_suffix("")
+        .parts
+    )
+    logging.debug(f"Resolved module name of {path} to {module_name}")
+    importlib.import_module(module_name)
+
+
+def setup_experimental_imports(project_root: Path):
+    experimental_folder = (project_root / "experimental").resolve()
+    if not experimental_folder.exists() or not experimental_folder.is_dir():
+        return
+
+    experimental_files = [
+        f.resolve().absolute() for f in experimental_folder.rglob("*.py")
+    ]
+    # Ignore certain directories within experimental
+    ignore_file = experimental_folder / ".ignore"
+    if ignore_file.exists():
+        with open(ignore_file, "r") as f:
+            for line in f.read().splitlines():
+                for ignored_file in (experimental_folder / line).rglob("*.py"):
+                    experimental_files.remove(
+                        ignored_file.resolve().absolute()
                     )
-            for f in ignored:
-                experimental_files.remove(f)
-        for f in experimental_files:
-            splits = f.split(os.sep)
-            file_name = ".".join(splits[-splits[::-1].index("..") :])
-            module_name = file_name[: file_name.find(".py")]
-            importlib.import_module(module_name)
+
+    for f in experimental_files:
+        _import_local_file(f, project_root=project_root)
+
+
+def _get_project_root():
+    """
+    Gets the root folder of the project (the "ocp" folder)
+    :return: The absolute path to the project root.
+    """
+    from ocpmodels.common.registry import registry
+
+    # Automatically load all of the modules, so that
+    # they register with registry
+    root_folder = registry.get("ocpmodels_root", no_warning=True)
+
+    if root_folder is not None:
+        assert isinstance(root_folder, str), "ocpmodels_root must be a string"
+        root_folder = Path(root_folder).resolve().absolute()
+        assert root_folder.exists(), f"{root_folder} does not exist"
+        assert root_folder.is_dir(), f"{root_folder} is not a directory"
+    else:
+        root_folder = Path(__file__).resolve().absolute().parent.parent
+
+    # root_folder is the "ocpmodes" folder, so we need to go up one more level
+    return root_folder.parent
 
 
 # Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
@@ -263,46 +306,21 @@ def setup_imports(config: Optional[dict] = None):
     has_already_setup = registry.get("imports_setup", no_warning=True)
     if has_already_setup:
         return
-    # Automatically load all of the modules, so that
-    # they register with registry
-    root_folder = registry.get("ocpmodels_root", no_warning=True)
 
-    if root_folder is None:
-        root_folder = os.path.dirname(os.path.abspath(__file__))
-        root_folder = os.path.join(root_folder, "..")
+    try:
+        project_root = _get_project_root()
+        logging.info(f"Project root: {project_root}")
+        importlib.import_module("ocpmodels.common.logger")
 
-    trainer_folder = os.path.join(root_folder, "trainers")
-    trainer_pattern = os.path.join(trainer_folder, "**", "*.py")
-    datasets_folder = os.path.join(root_folder, "datasets")
-    datasets_pattern = os.path.join(datasets_folder, "*.py")
-    model_folder = os.path.join(root_folder, "models")
-    model_pattern = os.path.join(model_folder, "*.py")
-    task_folder = os.path.join(root_folder, "tasks")
-    task_pattern = os.path.join(task_folder, "*.py")
+        import_keys = ["trainers", "datasets", "models", "tasks"]
+        for key in import_keys:
+            for f in (project_root / "ocpmodels" / key).rglob("*.py"):
+                _import_local_file(f, project_root=project_root)
 
-    importlib.import_module("ocpmodels.common.logger")
-
-    files = (
-        glob.glob(datasets_pattern, recursive=True)
-        + glob.glob(model_pattern, recursive=True)
-        + glob.glob(trainer_pattern, recursive=True)
-        + glob.glob(task_pattern, recursive=True)
-    )
-
-    for f in files:
-        for key in ["/trainers", "/datasets", "/models", "/tasks"]:
-            if f.find(key) != -1:
-                splits = f.split(os.sep)
-                file_name = splits[-1]
-                module_name = file_name[: file_name.find(".py")]
-                importlib.import_module(
-                    "ocpmodels.%s.%s" % (key[1:], module_name)
-                )
-
-    if not skip_experimental_imports:
-        setup_experimental_imports(root_folder)
-
-    registry.register("imports_setup", True)
+        if not skip_experimental_imports:
+            setup_experimental_imports(project_root)
+    finally:
+        registry.register("imports_setup", True)
 
 
 def dict_set_recursively(dictionary, key_sequence, val):
