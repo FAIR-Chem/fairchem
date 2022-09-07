@@ -39,7 +39,7 @@ commands:
               conda install -c conda-forge conda-merge
               conda-merge env.common.yml env.cpu.yml > env.yml
               mamba env update -n ocp-models --file env.yml
-              conda install pytest-cov
+              pip install pytest-cov==3.0.0
             fi
       - save_cache:
           paths:
