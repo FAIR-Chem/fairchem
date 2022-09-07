@@ -5,18 +5,17 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 import pytest
 from syrupy.extensions.amber import AmberSnapshotExtension
 
-
 if TYPE_CHECKING:
-    from syrupy.types import SerializableData
+    from syrupy.types import SerializableData, SerializedData, SnapshotIndex
 
-DEFAULT_RTOL = 1.0e-05
-DEFAULT_ATOL = 1.0e-06
+DEFAULT_RTOL = 1.0e-03
+DEFAULT_ATOL = 1.0e-03
 
 
 class Approx:
@@ -28,8 +27,8 @@ class Approx:
         self,
         data: Union[np.ndarray, list],
         *,
-        rtol: float,
-        atol: float,
+        rtol: Optional[float] = None,
+        atol: Optional[float] = None,
     ):
         if isinstance(data, list):
             self.data = np.array(data)
@@ -38,15 +37,17 @@ class Approx:
         else:
             raise TypeError(f"Cannot convert {type(data)} to np.array")
 
-        self.rtol = rtol
-        self.atol = atol
+        self.rtol = rtol if rtol is not None else DEFAULT_RTOL
+        self.atol = atol if atol is not None else DEFAULT_ATOL
+        self.tol_repr = True
 
     def __repr__(self):
         data = np.array_repr(self.data)
         data = "\n".join(f"\t{line}" for line in data.splitlines())
-        return (
-            f"Approx(\n{data}, \n\trtol={self.rtol}, \n\tatol={self.atol}\n)"
-        )
+        tol_repr = ""
+        if self.tol_repr:
+            tol_repr = f", \n\trtol={self.rtol}, \n\tatol={self.atol}"
+        return f"Approx(\n{data}{tol_repr}\n)"
 
 
 class _ApproxNumpyFormatter:
@@ -54,22 +55,34 @@ class _ApproxNumpyFormatter:
         self.data = data
 
     def __repr__(self):
-        rtol = self.data.rel or DEFAULT_RTOL
-        atol = self.data.abs or DEFAULT_ATOL
-        return Approx(self.data.expected, rtol=rtol, atol=atol).__repr__()
+        return Approx(
+            self.data.expected,
+            rtol=self.data.rel,
+            atol=self.data.abs,
+        ).__repr__()
 
 
-def _approx_from_string(data_str: str):
+def _try_parse_approx(data: "SerializableData"):
     """
     Parse the string representation of an Approx object.
     We can just use eval here, since we know the string is safe.
     """
+    if not isinstance(data, str):
+        return None
 
-    return eval(
-        data_str.replace("dtype=", "dtype=np."),
+    data = data.strip()
+    if not data.startswith("Approx("):
+        return None
+
+    approx = eval(
+        data.replace("dtype=", "dtype=np."),
         {"Approx": Approx, "np": np},
         {"array": np.array},
     )
+    if not isinstance(approx, Approx):
+        return None
+
+    return approx
 
 
 class ApproxExtension(AmberSnapshotExtension):
@@ -95,27 +108,18 @@ class ApproxExtension(AmberSnapshotExtension):
     ) -> bool:
         # if both serialized_data and snapshot_data are serialized Approx objects,
         # then we can load them as numpy arrays and compare them using np.allclose
-        if isinstance(serialized_data, str):
-            serialized_data_ = serialized_data.strip()
-            if serialized_data_.startswith("Approx("):
-                serialized_data = _approx_from_string(serialized_data_)
-        if isinstance(snapshot_data, str):
-            snapshot_data_ = snapshot_data.strip()
-            if snapshot_data_.startswith("Approx("):
-                snapshot_data = _approx_from_string(snapshot_data_)
-
-        if not isinstance(serialized_data, Approx) or not isinstance(
-            snapshot_data, Approx
-        ):
-            return super().matches(
-                serialized_data=serialized_data, snapshot_data=snapshot_data
+        serialized_approx = _try_parse_approx(serialized_data)
+        snapshot_approx = _try_parse_approx(snapshot_data)
+        if serialized_approx is not None and snapshot_approx is not None:
+            return np.allclose(
+                snapshot_approx.data,
+                serialized_approx.data,
+                rtol=serialized_approx.rtol,
+                atol=serialized_approx.atol,
             )
 
-        return np.allclose(
-            snapshot_data.data,
-            serialized_data.data,
-            rtol=serialized_data.rtol,
-            atol=serialized_data.atol,
+        return super().matches(
+            serialized_data=serialized_data, snapshot_data=snapshot_data
         )
 
     def serialize(self, data, **kwargs):
@@ -126,6 +130,19 @@ class ApproxExtension(AmberSnapshotExtension):
         elif isinstance(data, type(pytest.approx(0.0))):
             raise NotImplementedError("Scalar approx not implemented yet")
         return super().serialize(data, **kwargs)
+
+    def write_snapshot(
+        self, *, data: "SerializedData", index: "SnapshotIndex"
+    ) -> None:
+        # Right before writing to file, we update the serialized snapshot data
+        # and remove the atol/rtol from the string representation.
+        # This is an implementation detail, and is not necessary for the extension to work.
+        # It just makes the snapshot files a bit cleaner.
+        approx = _try_parse_approx(data)
+        if approx is not None:
+            approx.tol_repr = False
+            data = self.serialize(approx)
+        return super().write_snapshot(data=data, index=index)
 
 
 @pytest.fixture

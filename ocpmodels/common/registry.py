@@ -200,22 +200,28 @@ class Registry:
     @classmethod
     def __import_error(cls, name: str, mapping_name: str):
         kind = mapping_name[: -len("_name_mapping")]
-        existing_keys = list(cls.mapping[mapping_name].keys())
+        mapping = cls.mapping.get(mapping_name, {})
+        existing_keys = list(mapping.keys())
 
-        o = cls.mapping[mapping_name].get(existing_keys[-1], None)
-        if o is not None:
-            o = f"{o.__module__}.{o.__qualname__}"
+        existing_cls_path = (
+            mapping.get(existing_keys[-1], None) if existing_keys else None
+        )
+        if existing_cls_path is not None:
+            existing_cls_path = f"{existing_cls_path.__module__}.{existing_cls_path.__qualname__}"
         else:
-            o = "ocpmodels.trainers.ForcesTrainer"
+            existing_cls_path = "ocpmodels.trainers.ForcesTrainer"
 
         existing_keys = [f"'{name}'" for name in existing_keys]
         existing_keys = (
             ", ".join(existing_keys[:-1]) + " or " + existing_keys[-1]
         )
+        existing_keys_str = (
+            f" (one of {existing_keys})" if existing_keys else ""
+        )
         return RuntimeError(
             f"Failed to find the {kind} '{name}'. "
-            f"You may either use a {kind} from the registry (one of {existing_keys}) "
-            f"or provide the full import path to the {kind} (e.g., '{o}')."
+            f"You may either use a {kind} from the registry{existing_keys_str} "
+            f"or provide the full import path to the {kind} (e.g., '{existing_cls_path}')."
         )
 
     @classmethod
