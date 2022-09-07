@@ -5,19 +5,21 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import io
 import logging
 import os
 import random
-from urllib import request as req
 
 import numpy as np
 import pytest
+import requests
 import torch
 from ase.io import read
 
+from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.utils import setup_imports
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.models import GemNetOC
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -42,15 +44,20 @@ def load_data(request):
 @pytest.fixture(scope="class")
 def load_model(request):
     torch.manual_seed(4)
+    setup_imports()
 
     # download and load weights.
     checkpoint_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_base_s2ef_all.pt"
-    checkpoint_path = req.urlretrieve(checkpoint_url)
+
+    # load buffer into memory as a stream
+    # and then load it with torch.load
+    r = requests.get(checkpoint_url, stream=True)
+    r.raise_for_status()
     checkpoint = torch.load(
-        checkpoint_path[0], map_location=torch.device("cpu")
+        io.BytesIO(r.content), map_location=torch.device("cpu")
     )
 
-    model = GemNetOC(
+    model = registry.get_model_class("gemnet_oc")(
         None,
         -1,
         1,
@@ -128,7 +135,7 @@ class TestGemNetOC:
 
         # Compare predicted energies and forces (after inv-rotation).
         energies = out[0].detach()
-        np.testing.assert_almost_equal(energies[0], energies[1], decimal=4)
+        np.testing.assert_almost_equal(energies[0], energies[1], decimal=3)
 
         forces = out[1].detach()
         logging.info(forces)

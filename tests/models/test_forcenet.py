@@ -11,8 +11,9 @@ import numpy as np
 import pytest
 from ase.io import read
 
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import setup_imports
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.models import ForceNet
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -36,7 +37,9 @@ def load_data(request):
 
 @pytest.fixture(scope="class")
 def load_model(request):
-    model = ForceNet(
+    setup_imports()
+
+    model = registry.get_model_class("forcenet")(
         None,
         32,
         1,
@@ -56,11 +59,7 @@ class TestForceNet:
         energy, forces = self.model(data_list_collater([data]))
 
         assert snapshot == energy.shape
-        assert snapshot == pytest.approx(
-            energy.detach(), rel=1.0e-3, abs=1.0e-3
-        )
+        assert snapshot == pytest.approx(energy.detach())
 
         assert snapshot == forces.shape
-        assert snapshot == pytest.approx(
-            forces.detach(), rel=1.0e-3, abs=1.0e-3
-        )
+        assert snapshot == pytest.approx(forces.detach())
