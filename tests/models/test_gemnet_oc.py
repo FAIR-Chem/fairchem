@@ -150,11 +150,13 @@ class TestGemNetOC:
         # Compare shape of predicted energies, forces.
         energy = out[0].detach()
         np.testing.assert_equal(energy.shape, torch.Size([1]))
-        np.testing.assert_almost_equal(energy.item(), 0.05976763)
+        np.testing.assert_almost_equal(energy.item(), 0.0597, decimal=4)
 
         forces = out[1].detach()
         np.testing.assert_equal(
             forces.shape, torch.Size([data.pos.shape[0], 3])
         )
-        np.testing.assert_almost_equal(forces.mean().item(), -0.00064363)
-        np.testing.assert_almost_equal(forces.std().item(), 0.03278705)
+        np.testing.assert_almost_equal(
+            forces.mean().item(), -0.0006, decimal=4
+        )
+        np.testing.assert_almost_equal(forces.std().item(), 0.0328, decimal=4)
