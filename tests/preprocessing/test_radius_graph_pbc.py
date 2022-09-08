@@ -150,6 +150,7 @@ class TestRadiusGraphPBC:
         assert (
             sort_edge_index(out[0]) == sort_edge_index(radgraph.edge_index)
         ).all()
+        assert torch.count_nonzero(out[1]) == 0
 
         # Ensure radius_graph_pbc matches AtomsToGraphs for all PBC combinations
         out = radius_graph_pbc(
