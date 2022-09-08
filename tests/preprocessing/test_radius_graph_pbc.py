@@ -13,6 +13,7 @@ import pytest
 import torch
 from ase.io import read
 from ase.lattice.cubic import FaceCenteredCubic
+from ase.build import molecule
 from pymatgen.io.ase import AseAtomsAdaptor
 from torch_geometric.transforms.radius_graph import RadiusGraph
 from torch_geometric.utils.sort_edge_index import sort_edge_index
@@ -74,7 +75,7 @@ class TestRadiusGraphPBC:
         # Ensure sets are the same
         assert a2g_features == rgpbc_features
 
-    def test_radius_graph_pbc_bulk(self):
+    def test_bulk(self):
         radius = 10
 
         # Must be sufficiently large to ensure all edges are retained
@@ -150,7 +151,6 @@ class TestRadiusGraphPBC:
         assert (
             sort_edge_index(out[0]) == sort_edge_index(radgraph.edge_index)
         ).all()
-        assert torch.count_nonzero(out[1]) == 0
 
         # Ensure radius_graph_pbc matches AtomsToGraphs for all PBC combinations
         out = radius_graph_pbc(
@@ -208,3 +208,38 @@ class TestRadiusGraphPBC:
             pbc=[True, True, True],
         )
         assert out[-1].item() == pbc_all
+
+    def test_molecule(self):
+        radius = 6
+        max_neigh = 100
+        a2g = AtomsToGraphs(radius=radius, max_neigh=max_neigh)
+        structure = molecule("CH3COOH")
+        structure.cell = [[20, 0, 0], [0, 20, 0], [0, 0, 20]]
+        data = a2g.convert(structure)
+        batch = data_list_collater([data] * 5)
+        out = radius_graph_pbc(
+            batch,
+            radius=radius,
+            max_num_neighbors_threshold=max_neigh,
+            pbc=[False, False, False],
+        )
+        edge_index, cell_offsets, neighbors = out
+
+        # Combine both edge indices and offsets to one tensor
+        a2g_features = torch.cat(
+            (batch.edge_index, batch.cell_offsets.T), dim=0
+        ).T
+        rgpbc_features = torch.cat(
+            (edge_index, cell_offsets.T), dim=0
+        ).T.long()
+
+        # Convert rows of tensors to sets. The order of edges is not guaranteed
+        a2g_features = {tuple(x.tolist()) for x in a2g_features}
+        rgpbc_features = {tuple(x.tolist()) for x in rgpbc_features}
+
+        # Ensure sets are not empty
+        assert len(a2g_features) > 0
+        assert len(rgpbc_features) > 0
+
+        # Ensure sets are the same
+        assert a2g_features == rgpbc_features
