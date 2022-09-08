@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   win: circleci/windows@2.4.0
+  codecov: codecov/codecov@3.1.1
 
 workflows:
   version: 2
@@ -38,6 +39,7 @@ commands:
               conda install -c conda-forge conda-merge
               conda-merge env.common.yml env.cpu.yml > env.yml
               mamba env update -n ocp-models --file env.yml
+              pip install pytest-cov==3.0.0
             fi
       - save_cache:
           paths:
@@ -119,7 +121,9 @@ jobs:
             conda activate ocp-models
             pip install -e .
             pre-commit install
-            pytest /home/circleci/project/tests
+            pytest --cov-report=xml --cov=ocpmodels/ /home/circleci/project/tests
+      - codecov/upload:
+          file: coverage.xml
 
   test_macos:
     macos:
