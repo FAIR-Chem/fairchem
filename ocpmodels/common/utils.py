@@ -537,7 +537,9 @@ def get_pbc_distances(
     return out
 
 
-def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
+def radius_graph_pbc(
+    data, radius, max_num_neighbors_threshold, pbc=[True, True, False]
+):
     device = data.pos.device
     batch_size = len(data.natoms)
 
@@ -596,22 +598,30 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     # Note that the unit cell volume V = a1 * (a2 x a3) and that
     # (a2 x a3) / V is also the reciprocal primitive vector
     # (crystallographer's definition).
+
     cross_a2a3 = torch.cross(data.cell[:, 1], data.cell[:, 2], dim=-1)
     cell_vol = torch.sum(data.cell[:, 0] * cross_a2a3, dim=-1, keepdim=True)
-    inv_min_dist_a1 = torch.norm(cross_a2a3 / cell_vol, p=2, dim=-1)
-    rep_a1 = torch.ceil(radius * inv_min_dist_a1)
 
-    cross_a3a1 = torch.cross(data.cell[:, 2], data.cell[:, 0], dim=-1)
-    inv_min_dist_a2 = torch.norm(cross_a3a1 / cell_vol, p=2, dim=-1)
-    rep_a2 = torch.ceil(radius * inv_min_dist_a2)
+    if pbc[0]:
+        inv_min_dist_a1 = torch.norm(cross_a2a3 / cell_vol, p=2, dim=-1)
+        rep_a1 = torch.ceil(radius * inv_min_dist_a1)
+    else:
+        rep_a1 = data.cell.new_zeros(1)
 
-    if radius >= 20:
-        # Cutoff larger than the vacuum layer of 20A
+    if pbc[1]:
+        cross_a3a1 = torch.cross(data.cell[:, 2], data.cell[:, 0], dim=-1)
+        inv_min_dist_a2 = torch.norm(cross_a3a1 / cell_vol, p=2, dim=-1)
+        rep_a2 = torch.ceil(radius * inv_min_dist_a2)
+    else:
+        rep_a2 = data.cell.new_zeros(1)
+
+    if pbc[2]:
         cross_a1a2 = torch.cross(data.cell[:, 0], data.cell[:, 1], dim=-1)
         inv_min_dist_a3 = torch.norm(cross_a1a2 / cell_vol, p=2, dim=-1)
         rep_a3 = torch.ceil(radius * inv_min_dist_a3)
     else:
         rep_a3 = data.cell.new_zeros(1)
+
     # Take the max over all images for uniformity. This is essentially padding.
     # Note that this can significantly increase the number of computed distances
     # if the required repetitions are very different between images
@@ -624,7 +634,7 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
         torch.arange(-rep, rep + 1, device=device, dtype=torch.float)
         for rep in max_rep
     ]
-    unit_cell = torch.cat(torch.meshgrid(cells_per_dim), dim=-1).reshape(-1, 3)
+    unit_cell = torch.cartesian_prod(*cells_per_dim)
     num_cells = len(unit_cell)
     unit_cell_per_atom = unit_cell.view(1, num_cells, 3).repeat(
         len(index2), 1, 1
