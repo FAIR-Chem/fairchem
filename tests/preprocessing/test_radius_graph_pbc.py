@@ -14,6 +14,8 @@ import torch
 from ase.io import read
 from ase.lattice.cubic import FaceCenteredCubic
 from pymatgen.io.ase import AseAtomsAdaptor
+from torch_geometric.transforms.radius_graph import RadiusGraph
+from torch_geometric.utils.sort_edge_index import sort_edge_index
 
 from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 from ocpmodels.datasets import data_list_collater
@@ -133,7 +135,9 @@ class TestRadiusGraphPBC:
 
         batch = data_list_collater([data])
 
-        # Ensure radius_graph_pbc matches AtomsToGraphs for all PBC combinations
+        # Ensure radius_graph_pbc matches radius_graph for non-PBC condition
+        RG = RadiusGraph(r=radius, max_num_neighbors=max_neigh)
+
         out = radius_graph_pbc(
             batch,
             radius=radius,
@@ -142,6 +146,12 @@ class TestRadiusGraphPBC:
         )
         assert out[-1].item() == non_pbc
 
+        radgraph = RG(batch)
+        assert (
+            sort_edge_index(out[0]) == sort_edge_index(radgraph.edge_index)
+        ).all()
+
+        # Ensure radius_graph_pbc matches AtomsToGraphs for all PBC combinations
         out = radius_graph_pbc(
             batch,
             radius=radius,
