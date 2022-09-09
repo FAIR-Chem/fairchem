@@ -1,6 +1,7 @@
-from contextlib import contextmanager
+import itertools
 import logging
 import math
+from contextlib import contextmanager
 from typing import Callable, Optional, TypedDict, Union
 
 import torch
@@ -23,7 +24,11 @@ class ScaleFactor(nn.Module):
     index_fn: Optional[IndexFn] = None
     stats: Optional[_Stats] = None
 
-    def __init__(self, name: Optional[str] = None):
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        enforce_consistency: bool = True,
+    ):
         super().__init__()
 
         self.name = name
@@ -33,6 +38,44 @@ class ScaleFactor(nn.Module):
         self.scale_factor = nn.parameter.Parameter(
             torch.tensor(0.0), requires_grad=False
         )
+        if enforce_consistency:
+            self._register_load_state_dict_pre_hook(self._enforce_consistency)
+
+    def _enforce_consistency(
+        self,
+        state_dict,
+        prefix,
+        _local_metadata,
+        _strict,
+        _missing_keys,
+        _unexpected_keys,
+        _error_msgs,
+    ):
+        if not self.fitted:
+            return
+
+        persistent_buffers = {
+            k: v
+            for k, v in self._buffers.items()
+            if k not in self._non_persistent_buffers_set
+        }
+        local_name_params = itertools.chain(
+            self._parameters.items(), persistent_buffers.items()
+        )
+        local_state = {k: v for k, v in local_name_params if v is not None}
+
+        for name, param in local_state.items():
+            key = prefix + name
+            if key not in state_dict:
+                continue
+
+            input_param = state_dict[key]
+            if not torch.allclose(param, input_param):
+                raise ValueError(
+                    f"Scale factor parameter {key} is inconsistent with the loaded state dict.\n"
+                    f"Expected: {param}\n"
+                    f"Actual: {input_param}"
+                )
 
     @property
     def fitted(self):
