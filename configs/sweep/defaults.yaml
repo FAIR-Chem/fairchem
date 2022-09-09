@@ -4,3 +4,4 @@ method: random
 params: sweep_wandb_all.yml
 count: 1
 name: null
+mode: run_jobs # "run_jobs" or "print_commands"

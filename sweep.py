@@ -1,6 +1,6 @@
+import wandb
 from minydra import resolved_args
 import subprocess
-import wandb
 from uuid import uuid4
 from datetime import datetime
 from pathlib import Path
@@ -80,11 +80,12 @@ def get_sweep_out_path(name):
     if len(files) == 1:
         f = files[0]
         f.rename(f.parent / fname)
-    print("Writing to:", str(sweeps_dir / fname))
     return sweeps_dir / fname
 
 
-def make_sbatch_exec(args, path, jobs):
+def make_sbatch_exec(args, log_file_path, jobs, mode):
+    if mode == "print_commands":
+        args.dev = True
     sbatch_args = " ".join([f"{k}={v}" for k, v in args.items()])
 
     def run_sbatch():
@@ -92,30 +93,45 @@ def make_sbatch_exec(args, path, jobs):
         args = " ".join([f"--{k}={v}" for k, v in wandb.config.items()])
         py_args = f"py_args={args}"
         command = f"python sbatch.py {sbatch_args}"
-        print("\n" + "░" * 50 + "\n" + command + "\n")
         out = run_command(command.split(" ") + [py_args])
-        print(out)
         job = re.findall(r"Submitted batch job (\d+)", out)
         if job:
             jobs.append(job[0])
-        with path.open("a") as f:
-            f.write("\n\n\n" + "░" * 80)
-            f.write("\n" + "░" * 80)
-            f.write("\n" + "░" * 80 + "\n\n\n")
-            f.write(command + " " + py_args)
-            f.write("\n\nResult:\n")
-            f.write(out)
-            f.write("\n\n")
-        print("\n" + "░" * 50 + "\n")
+        if mode == "print_commands":
+            python_command_lines = [
+                line for line in out.split("\n") if "python main.py" in line
+            ]
+            if python_command_lines:
+                line = python_command_lines[0]
+                print("\npython main.py" + line.split("python main.py")[-1] + "\n")
+            pass
+        else:
+            print("\n" + "░" * 50 + "\n" + command + "\n")
+            print(out)
+            with log_file_path.open("a") as f:
+                f.write("\n\n\n" + "░" * 80)
+                f.write("\n" + "░" * 80)
+                f.write("\n" + "░" * 80 + "\n\n\n")
+                f.write(command + " " + py_args)
+                f.write("\n\nResult:\n")
+                f.write(out)
+                f.write("\n\n")
+            print("\n" + "░" * 50 + "\n")
         wandb.finish(exit_code=0, quiet=True)
 
     return run_sbatch
 
 
 if __name__ == "__main__":
-    args = resolved_args(
-        defaults=discover_minydra_defaults(), strict=False
-    ).pretty_print()
+    args = resolved_args(defaults=discover_minydra_defaults(), strict=False)
+
+    if args.mode not in {"run_jobs", "print_commands"}:
+        raise ValueError("Unknown args.mode: " + str(args.mode))
+    if args.mode == "print_commands":
+        os.environ["WANDB_SILENT"] = "true"
+    else:
+        args.pretty_print()
+
     jobs = []
     name = args.name or make_wandb_sweep_name()
     parameters = read_sweep_params(args.params)
@@ -132,45 +148,52 @@ if __name__ == "__main__":
 
     pre_exists = fpath.exists()
 
-    with open(fpath, "a") as f:
-        if pre_exists:
-            f.write("\n\n" + "█" * 120)
-            f.write("\n" + "█" * 120)
-            f.write("\n" + "█" * 120)
-            f.write("\n" + "█" * 120)
-            f.write("\n" + "█" * 120 + "\n\n")
-        f.write(" ".join(sys.argv))
+    if args.mode != "python_command":
+        print("Writing to:", str(fpath))
+        with open(fpath, "a") as f:
+            if pre_exists:
+                f.write("\n\n" + "█" * 120)
+                f.write("\n" + "█" * 120)
+                f.write("\n" + "█" * 120)
+                f.write("\n" + "█" * 120)
+                f.write("\n" + "█" * 120 + "\n\n")
+            f.write(" ".join(sys.argv))
 
     count = args.count
+    mode = args.mode
     del args.name
     del args.method
     del args.params
     del args.count
+    del args.mode
 
-    wandb.agent(sweep_id, function=make_sbatch_exec(args, fpath, jobs), count=count)
+    wandb.agent(
+        sweep_id, function=make_sbatch_exec(args, fpath, jobs, mode), count=count
+    )
+    if mode != "print_commands":
 
-    with open(fpath, "r") as f:
-        lines = f.read()
+        with open(fpath, "r") as f:
+            lines = f.read()
 
-    pre_existing_jobs = re.findall(r" ► (\d+)", lines)
-    lines = lines.split("\n")
+        pre_existing_jobs = re.findall(r" ► (\d+)", lines)
+        lines = lines.split("\n")
 
-    new_f = []
-    delete = False
-    for l in lines:
-        if "░ ░ ░ ░ ░" in l and not delete:
-            delete = True
-        if "░ ░ ░ ░ ░" in l and delete:
-            delete = False
-        if not delete:
-            new_f.append(l)
+        new_f = []
+        delete = False
+        for l in lines:
+            if "░ ░ ░ ░ ░" in l and not delete:
+                delete = True
+            if "░ ░ ░ ░ ░" in l and delete:
+                delete = False
+            if not delete:
+                new_f.append(l)
 
-    with open(fpath, "w") as f:
-        f.write("\n".join(new_f))
-        f.write("\n\n" + ("░ ░ ░ " * 10)[:-1] + "\n")
-        f.write("   Sweep Job IDs\n")
-        if jobs:
-            f.write("\n".join([f" ► {j}" for j in (pre_existing_jobs + jobs)]))
-        f.write("\n" + ("░ ░ ░ " * 10)[:-1] + "\n")
+        with open(fpath, "w") as f:
+            f.write("\n".join(new_f))
+            f.write("\n\n" + ("░ ░ ░ " * 10)[:-1] + "\n")
+            f.write("   Sweep Job IDs\n")
+            if jobs:
+                f.write("\n".join([f" ► {j}" for j in (pre_existing_jobs + jobs)]))
+            f.write("\n" + ("░ ░ ░ " * 10)[:-1] + "\n")
 
-    print(f"\nSweep File:\n{str(fpath)}")
+        print(f"\nSweep File:\n{str(fpath)}")
