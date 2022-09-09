@@ -43,7 +43,6 @@ from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
 
 
-
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
     def __init__(
@@ -187,7 +186,6 @@ class BaseTrainer(ABC):
 
         if self.is_hpo:
             # conditional import is necessary for checkpointing
-
 
             # sets the hpo checkpoint frequency
             # default is no checkpointing
