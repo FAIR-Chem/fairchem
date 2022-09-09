@@ -149,6 +149,12 @@ class Flags:
             help="Note describing this run to be added to the logger",
         )
         self.parser.add_argument(
+            "--wandb_tag",
+            type=str,
+            default="",
+            help="Single tag for wandb",
+        )
+        self.parser.add_argument(
             "--test_ri",
             type=bool,
             default=False,
