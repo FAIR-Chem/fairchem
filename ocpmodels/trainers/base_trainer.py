@@ -6,14 +6,12 @@ LICENSE file in the root directory of this source tree.
 """
 import datetime
 import errno
-import json
 import logging
 import os
 import random
 import subprocess
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING, List
 
 import numpy as np
 import torch
@@ -33,10 +31,7 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
-    build_config,
-    plot_histogram,
     save_checkpoint,
-    warmup_lr_lambda,
 )
 
 from ocpmodels.modules.evaluator import Evaluator
@@ -45,72 +40,8 @@ from ocpmodels.modules.exponential_moving_average import (
 )
 from ocpmodels.modules.loss import AtomwiseL2Loss, DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
-from ocpmodels.modules.scaling import ScaleFactor
 from ocpmodels.modules.scheduler import LRScheduler
 
-if TYPE_CHECKING:
-    from torch.nn.modules.module import _IncompatibleKeys
-
-
-def _resolve_scale_factor_submodule(model: nn.Module, name: str):
-    try:
-        scale = model.get_submodule(name)
-        if not isinstance(scale, ScaleFactor):
-            return None
-        return scale
-    except AttributeError:
-        return None
-
-
-def _report_incompat_keys(
-    model: nn.Module,
-    keys: "_IncompatibleKeys",
-    strict: bool = False,
-):
-    # filter out the missing scale factor keys for the new scaling factor module
-    missing_keys: List[str] = []
-    for full_key_name in keys.missing_keys:
-        parent_module_name, _ = full_key_name.rsplit(".", 1)
-        scale_factor = _resolve_scale_factor_submodule(
-            model, parent_module_name
-        )
-        if scale_factor is None:
-            missing_keys.append(full_key_name)
-
-    # filter out unexpected scale factor keys that remain from the old scaling modules
-    unexpected_keys: List[str] = []
-    for full_key_name in keys.unexpected_keys:
-        parent_module_name, _ = full_key_name.rsplit(".", 1)
-        scale_factor = _resolve_scale_factor_submodule(
-            model, parent_module_name
-        )
-        if scale_factor is None:
-            unexpected_keys.append(full_key_name)
-
-    error_msgs = []
-    if len(unexpected_keys) > 0:
-        error_msgs.insert(
-            0,
-            "Unexpected key(s) in state_dict: {}. ".format(
-                ", ".join('"{}"'.format(k) for k in unexpected_keys)
-            ),
-        )
-    if len(missing_keys) > 0:
-        error_msgs.insert(
-            0,
-            "Missing key(s) in state_dict: {}. ".format(
-                ", ".join('"{}"'.format(k) for k in missing_keys)
-            ),
-        )
-
-    if len(error_msgs) > 0:
-        error_msg = "Error(s) in loading state_dict for {}:\n\t{}".format(
-            model.__class__.__name__, "\n\t".join(error_msgs)
-        )
-        if strict:
-            raise RuntimeError(error_msg)
-        else:
-            logging.warning(error_msg)
 
 
 @registry.register_trainer("base")
@@ -256,9 +187,7 @@ class BaseTrainer(ABC):
 
         if self.is_hpo:
             # conditional import is necessary for checkpointing
-            from ray import tune
 
-            from ocpmodels.common.hpo_utils import tune_reporter
 
             # sets the hpo checkpoint frequency
             # default is no checkpointing
@@ -498,8 +427,7 @@ class BaseTrainer(ABC):
             new_dict = checkpoint["state_dict"]
 
         strict = self.config["task"].get("strict_load", True)
-        incompat_keys = self.model.load_state_dict(new_dict, strict=False)
-        _report_incompat_keys(self.model, incompat_keys, strict=strict)
+        self.model.load_state_dict(new_dict, strict=strict)
 
         if "optimizer" in checkpoint:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
