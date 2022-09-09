@@ -30,6 +30,7 @@ from ocpmodels.models.scn.smearing import (
 from ocpmodels.models.scn.spherical_harmonics import SphericalHarmonicsHelper
 
 try:
+    import e3nn
     from e3nn import o3
 except ImportError:
     pass
@@ -104,9 +105,11 @@ class SphericalChannelNetwork(BaseModel):
 
         if "e3nn" not in sys.modules:
             logging.error(
-                "You need to install the e3nn library to use the SCN model"
+                "You need to install e3nn v0.2.6 to use the SCN model"
             )
             raise ImportError
+
+        assert e3nn.__version__ == "0.2.6"
 
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
