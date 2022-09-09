@@ -405,6 +405,7 @@ def build_config(args, args_override):
     config["distributed_port"] = args.distributed_port
     config["world_size"] = args.num_nodes * args.num_gpus
     config["distributed_backend"] = args.distributed_backend
+    config["wandb_tag"] = args.wandb_tag if hasattr(args, "wandb_tag") else None
 
     return config
 
@@ -833,3 +834,14 @@ def resolve(path):
         pathlib.Path: the resolved Path
     """
     return Path(os.path.expandvars(os.path.expanduser(str(path)))).resolve()
+
+
+def update_from_sbatch_py_vars(args):
+    sbatch_py_vars = {
+        k.replace("SBATCH_PY_", "").lower(): v if v != "true" else True
+        for k, v in os.environ.items()
+        if k.startswith("SBATCH_PY_")
+    }
+    for k, v in sbatch_py_vars.items():
+        setattr(args, k, v)
+    return args

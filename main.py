@@ -27,6 +27,7 @@ from ocpmodels.common.utils import (
     save_experiment_log,
     setup_imports,
     setup_logging,
+    update_from_sbatch_py_vars,
 )
 
 
@@ -66,6 +67,7 @@ class Runner(submitit.helpers.Checkpointable):
                 data_split=config.get("data_split", None),
                 note=config.get("note", ""),
                 test_rotation_invariance=config.get("test_ri", None),
+                wandb_tag=config.get("wandb_tag", None),
             )
             self.task = registry.get_task_class(config["mode"])(self.config)
             self.task.setup(self.trainer)
@@ -168,6 +170,7 @@ if __name__ == "__main__":
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
+    args = update_from_sbatch_py_vars(args)
     if not args.mode or not args.config_yml:
         args.mode = "train"
         # args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"

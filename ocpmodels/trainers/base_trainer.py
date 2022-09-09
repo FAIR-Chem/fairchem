@@ -76,6 +76,7 @@ class BaseTrainer(ABC):
         data_split=None,
         note="",
         test_rotation_invariance=None,
+        wandb_tag=None,
     ):
         self.name = name
         self.cpu = cpu
@@ -154,6 +155,7 @@ class BaseTrainer(ABC):
             },
             "slurm": slurm,
             "note": note,
+            "wandb_tag": wandb_tag,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp else None

@@ -81,3 +81,7 @@ command:
   - "--mode"
   - "train"
   - ${args}
+  - "--logdir"
+  - "$SCRATCH/ocp/runs/$SLURM_JOB_ID"
+  - "--run-dir"
+  - "$SCRATCH/ocp/runs/$SLURM_JOB_ID"
