@@ -8,7 +8,6 @@ LICENSE file in the root directory of this source tree.
 import ast
 import collections
 import copy
-import glob
 import importlib
 import itertools
 import json
@@ -23,10 +22,11 @@ from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
 
 import numpy as np
 import torch
+import torch.nn as nn
 import torch_geometric
 import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -34,6 +34,9 @@ from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import segment_coo, segment_csr
+
+if TYPE_CHECKING:
+    from torch.nn.modules.module import _IncompatibleKeys
 
 
 def pyg2_data_transform(data: Data):
@@ -960,3 +963,79 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
     finally:
         if args.distributed:
             distutils.cleanup()
+
+
+def _resolve_scale_factor_submodule(model: nn.Module, name: str):
+    from ocpmodels.modules.scaling.scale_factor import ScaleFactor
+
+    try:
+        scale = model.get_submodule(name)
+        if not isinstance(scale, ScaleFactor):
+            return None
+        return scale
+    except AttributeError:
+        return None
+
+
+def _report_incompat_keys(
+    model: nn.Module,
+    keys: "_IncompatibleKeys",
+    strict: bool = False,
+):
+    # filter out the missing scale factor keys for the new scaling factor module
+    missing_keys: List[str] = []
+    for full_key_name in keys.missing_keys:
+        parent_module_name, _ = full_key_name.rsplit(".", 1)
+        scale_factor = _resolve_scale_factor_submodule(
+            model, parent_module_name
+        )
+        if scale_factor is not None:
+            continue
+        missing_keys.append(full_key_name)
+
+    # filter out unexpected scale factor keys that remain from the old scaling modules
+    unexpected_keys: List[str] = []
+    for full_key_name in keys.unexpected_keys:
+        parent_module_name, _ = full_key_name.rsplit(".", 1)
+        scale_factor = _resolve_scale_factor_submodule(
+            model, parent_module_name
+        )
+        if scale_factor is not None:
+            continue
+        unexpected_keys.append(full_key_name)
+
+    error_msgs = []
+    if len(unexpected_keys) > 0:
+        error_msgs.insert(
+            0,
+            "Unexpected key(s) in state_dict: {}. ".format(
+                ", ".join('"{}"'.format(k) for k in unexpected_keys)
+            ),
+        )
+    if len(missing_keys) > 0:
+        error_msgs.insert(
+            0,
+            "Missing key(s) in state_dict: {}. ".format(
+                ", ".join('"{}"'.format(k) for k in missing_keys)
+            ),
+        )
+
+    if len(error_msgs) > 0:
+        error_msg = "Error(s) in loading state_dict for {}:\n\t{}".format(
+            model.__class__.__name__, "\n\t".join(error_msgs)
+        )
+        if strict:
+            raise RuntimeError(error_msg)
+        else:
+            logging.warning(error_msg)
+
+    return missing_keys, unexpected_keys
+
+
+def load_state_dict(
+    module: nn.Module,
+    state_dict: Mapping[str, torch.Tensor],
+    strict: bool = True,
+):
+    incompat_keys = module.load_state_dict(state_dict, strict=False)  # type: ignore
+    return _report_incompat_keys(module, incompat_keys, strict=strict)
