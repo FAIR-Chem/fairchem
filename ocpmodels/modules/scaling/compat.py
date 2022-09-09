@@ -1,23 +1,28 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import torch
 import torch.nn as nn
 
 from .scale_factor import ScaleFactor
 
+ScaleDict = Union[Dict[str, float], Dict[str, torch.Tensor]]
 
-def load_scales_compat(module: nn.Module, scale_file: Optional[str]):
+
+def _load_scale_dict(scale_file: Optional[Union[str, ScaleDict]]):
     if not scale_file:
-        return
+        return None
+
+    if isinstance(scale_file, dict):
+        return scale_file
 
     path = Path(scale_file)
     if not path.exists():
-        return
+        return None
 
-    scale_dict: Optional[Dict[str, float]] = None
+    scale_dict: Optional[ScaleDict] = None
     if path.suffix == ".pt":
         scale_dict = torch.load(path)
     elif path.suffix == ".json":
@@ -30,6 +35,14 @@ def load_scales_compat(module: nn.Module, scale_file: Optional[str]):
     else:
         raise ValueError(f"Unsupported scale file extension: {path.suffix}")
 
+    if not scale_dict:
+        return None
+
+    return scale_dict
+
+
+def load_scales_compat(module: nn.Module, scale_file: Optional[str]):
+    scale_dict = _load_scale_dict(scale_file)
     if not scale_dict:
         return
 
