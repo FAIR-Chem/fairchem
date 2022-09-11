@@ -1,0 +1,28 @@
+includes:
+  - configs/oc22/is2re/base.yml
+
+model:
+  name: dimenetplusplus
+  hidden_channels: 256
+  out_emb_channels: 192
+  num_blocks: 3
+  cutoff: 6.0
+  num_radial: 6
+  num_spherical: 7
+  num_before_skip: 1
+  num_after_skip: 2
+  num_output_layers: 3
+  regress_forces: False
+  use_pbc: True
+  otf_graph: True
+
+optim:
+  batch_size: 6
+  eval_batch_size: 6
+  num_workers: 4
+  lr_initial: 0.0001
+  max_epochs: 200
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.8
+  patience: 3

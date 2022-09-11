@@ -19,6 +19,7 @@ from torch_scatter import scatter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomRotate
 from ocpmodels.common.utils import (
+    compute_neighbors,
     conditional_grad,
     get_pbc_distances,
     radius_graph_pbc,
@@ -81,7 +82,7 @@ class spinconv(BaseModel):
         self.num_atoms = 0
         self.hidden_channels = hidden_channels
         self.embedding_size = embedding_size
-        self.max_num_neighbors = max_num_neighbors
+        self.max_num_neighbors = self.max_neighbors = max_num_neighbors
         self.sphere_message = sphere_message
         self.output_message = output_message
         self.force_estimator = force_estimator
@@ -189,43 +190,18 @@ class spinconv(BaseModel):
         self.num_atoms = len(data.batch)
         self.batch_size = len(data.natoms)
 
-        atomic_numbers = data.atomic_numbers.long()
         pos = data.pos
         if self.regress_forces:
             pos = pos.requires_grad_(True)
 
-        if self.otf_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, 100
-            )
-            data.edge_index = edge_index
-            data.cell_offsets = cell_offsets
-            data.neighbors = neighbors
-
-        if self.use_pbc:
-            assert (
-                atomic_numbers.dim() == 1
-                and atomic_numbers.dtype == torch.long
-            )
-
-            out = get_pbc_distances(
-                pos,
-                data.edge_index,
-                data.cell,
-                data.cell_offsets,
-                data.neighbors,
-                return_distance_vec=True,
-            )
-
-            edge_index = out["edge_index"]
-            edge_distance = out["distances"]
-            edge_distance_vec = out["distance_vec"]
-
-        else:
-            edge_index = radius_graph(pos, r=self.cutoff, batch=data.batch)
-            j, i = edge_index
-            edge_distance_vec = pos[j] - pos[i]
-            edge_distance = edge_distance_vec.norm(dim=-1)
+        (
+            edge_index,
+            edge_distance,
+            edge_distance_vec,
+            cell_offsets,
+            _,  # cell offset distances
+            neighbors,
+        ) = self.generate_graph(data)
 
         edge_index, edge_distance, edge_distance_vec = self._filter_edges(
             edge_index,
@@ -615,7 +591,7 @@ class spinconv(BaseModel):
         num_atoms = len(data.batch)
 
         edge_vec_0 = edge_distance_vec
-        edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0 ** 2, dim=1))
+        edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 
         if torch.min(edge_vec_0_distance) < 0.0001:
             print(
@@ -643,7 +619,7 @@ class spinconv(BaseModel):
         )
 
         edge_vec_2 = avg_vector[edge_index[1, :]] + 0.0001
-        edge_vec_2_distance = torch.sqrt(torch.sum(edge_vec_2 ** 2, dim=1))
+        edge_vec_2_distance = torch.sqrt(torch.sum(edge_vec_2**2, dim=1))
 
         if torch.min(edge_vec_2_distance) < 0.000001:
             print(
@@ -656,11 +632,11 @@ class spinconv(BaseModel):
         norm_0_2 = edge_vec_2 / (edge_vec_2_distance.view(-1, 1))
         norm_z = torch.cross(norm_x, norm_0_2, dim=1)
         norm_z = norm_z / (
-            torch.sqrt(torch.sum(norm_z ** 2, dim=1, keepdim=True)) + 0.0000001
+            torch.sqrt(torch.sum(norm_z**2, dim=1, keepdim=True)) + 0.0000001
         )
         norm_y = torch.cross(norm_x, norm_z, dim=1)
         norm_y = norm_y / (
-            torch.sqrt(torch.sum(norm_y ** 2, dim=1, keepdim=True)) + 0.0000001
+            torch.sqrt(torch.sum(norm_y**2, dim=1, keepdim=True)) + 0.0000001
         )
 
         norm_x = norm_x.view(-1, 3, 1)

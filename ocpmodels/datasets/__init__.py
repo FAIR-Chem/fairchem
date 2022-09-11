@@ -9,3 +9,4 @@ from .lmdb_dataset import (
     TrajectoryLmdbDataset,
     data_list_collater,
 )
+from .oc22_lmdb_dataset import OC22LmdbDataset

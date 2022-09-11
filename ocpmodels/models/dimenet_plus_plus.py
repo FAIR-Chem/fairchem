@@ -53,6 +53,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base import BaseModel
 
 try:
     import sympy as sym
@@ -336,7 +337,7 @@ class DimeNetPlusPlus(torch.nn.Module):
 
 
 @registry.register_model("dimenetplusplus")
-class DimeNetPlusPlusWrap(DimeNetPlusPlus):
+class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
     def __init__(
         self,
         num_atoms,
@@ -363,6 +364,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
+        self.max_neighbors = 50
 
         super(DimeNetPlusPlusWrap, self).__init__(
             hidden_channels=hidden_channels,
@@ -384,34 +386,19 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
     def _forward(self, data):
         pos = data.pos
         batch = data.batch
+        (
+            edge_index,
+            dist,
+            _,
+            cell_offsets,
+            offsets,
+            neighbors,
+        ) = self.generate_graph(data)
 
-        if self.otf_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, 50
-            )
-            data.edge_index = edge_index
-            data.cell_offsets = cell_offsets
-            data.neighbors = neighbors
-
-        if self.use_pbc:
-            out = get_pbc_distances(
-                pos,
-                data.edge_index,
-                data.cell,
-                data.cell_offsets,
-                data.neighbors,
-                return_offsets=True,
-            )
-
-            edge_index = out["edge_index"]
-            dist = out["distances"]
-            offsets = out["offsets"]
-
-            j, i = edge_index
-        else:
-            edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
-            j, i = edge_index
-            dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
+        data.edge_index = edge_index
+        data.cell_offsets = cell_offsets
+        data.neighbors = neighbors
+        j, i = edge_index
 
         _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
             edge_index,

@@ -1,7 +1,23 @@
 # Training and evaluating models on the OC20 dataset
 
+- [Getting Started](#getting-started)
+- [Initial Structure to Relaxed Energy (IS2RE)](#initial-structure-to-relaxed-energy-prediction-is2re)
+  - [IS2RE Relaxations](#is2re-relaxations)
+- [Structure to Energy and Forces (S2EF)](#structure-to-energy-and-forces-s2ef)
+- [Initial Structure to Relaxed Structure (IS2RS)](#initial-structure-to-relaxed-structure-is2rs)
+- [Create EvalAI submission files](#create-evalai-submission-files)
+  - [S2EF/IS2RE](#s2efis2re)
+  - [IS2RS](#is2rs)
+
+## Getting Started
+
 The [Open Catalyst Project](https://opencatalystproject.org/) consists of three
-distinct tasks. This document is a tutorial for training and evaluating models
+distinct tasks:
+- Initial Structure to Relaxed Energy prediction (IS2RE)
+- Structure to Energy and Forces (S2EF)
+- Initial Structure to Relaxed Structure (IS2RS)
+
+This document is a tutorial for training and evaluating models
 for each of these tasks as well as generating submission files for the
 [evaluation server hosted on EvalAI](https://eval.ai/web/challenges/challenge-page/712/overview).
 
@@ -84,6 +100,7 @@ python main.py --mode predict --config-yml configs/is2re/10k/schnet/schnet.yml \
 The predictions are stored in `[RESULTS_DIR]/is2re_predictions.npz` and later used to create a submission file to be uploaded to EvalAI.
 
 ### IS2RE Relaxations
+
 Alternatively, the IS2RE task may be approached by 2 methods as described in our paper:
 
 - Single Model: Relaxed energy predictions are extracted from relaxed structures generated via ML relaxations from a single model.

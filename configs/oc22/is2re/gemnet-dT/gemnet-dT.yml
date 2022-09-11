@@ -1,0 +1,51 @@
+# Run this on 1 GPU -- so with an effective batch size of 8.
+includes:
+  - configs/oc22/is2re/base.yml
+
+model:
+  name: gemnet_t
+  num_spherical: 7
+  num_radial: 64
+  num_blocks: 5
+  emb_size_atom: 256
+  emb_size_edge: 512
+  emb_size_trip: 64
+  emb_size_rbf: 64
+  emb_size_cbf: 16
+  emb_size_bil_trip: 64
+  num_before_skip: 1
+  num_after_skip: 2
+  num_concat: 1
+  num_atom: 3
+  cutoff: 12.0
+  max_neighbors: 50
+  rbf:
+    name: gaussian
+  envelope:
+    name: polynomial
+    exponent: 5
+  cbf:
+    name: spherical_harmonics
+  extensive: True
+  otf_graph: True
+  output_init: HeOrthogonal
+  activation: silu
+  scale_file: configs/oc22/scaling_factors/gemnet-dT_c12.json
+  regress_forces: False
+
+optim:
+  batch_size: 8
+  eval_batch_size: 8
+  num_workers: 2
+  lr_initial: 1.e-4
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True}
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.8
+  patience: 3
+  max_epochs: 100
+  energy_coefficient: 1
+  ema_decay: 0.999
+  clip_grad_norm: 10
+  loss_energy: mae
