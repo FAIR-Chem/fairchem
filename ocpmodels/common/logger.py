@@ -67,6 +67,9 @@ class WandBLogger(Logger):
             wandb_id += f"{slurm_jobid}-"
         wandb_id += self.config["cmd"]["timestamp_id"] + "-" + config["model"]
 
+        wandb_tag = config.get("wandb_tag")
+        tags = [wandb_tag] if wandb_tag else []
+
         wandb.init(
             config=self.config,
             id=wandb_id,
@@ -75,6 +78,7 @@ class WandBLogger(Logger):
             project=project,
             resume="allow",
             notes=self.config["note"],
+            tags=tags,
         )
 
         sbatch_files = list(Path(self.config["run_dir"]).glob("sbatch_script*.sh"))

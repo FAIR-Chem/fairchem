@@ -76,6 +76,7 @@ class BaseTrainer(ABC):
         data_split=None,
         note="",
         test_rotation_invariance=None,
+        wandb_tag=None,
         choice_fa=None,
     ):
         self.name = name
@@ -157,6 +158,7 @@ class BaseTrainer(ABC):
             },
             "slurm": slurm,
             "note": note,
+            "wandb_tag": wandb_tag,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp else None
@@ -630,6 +632,7 @@ class BaseTrainer(ABC):
         rank = distutils.get_rank()
 
         loader = self.val_loader if split[:3] in {"val", "eva"} else self.test_loader
+        val_time = time.time()
 
         for i, batch in tqdm(
             enumerate(loader),
@@ -649,6 +652,8 @@ class BaseTrainer(ABC):
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
             metrics = evaluator.update("loss", loss.item(), metrics)
 
+        val_time = time.time() - val_time
+
         aggregated_metrics = {}
         for k in metrics:
             aggregated_metrics[k] = {
@@ -666,6 +671,7 @@ class BaseTrainer(ABC):
 
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": self.epoch})
+        log_dict.update({"val_time": val_time})
         if distutils.is_master():
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
             logging.info(", ".join(log_str))

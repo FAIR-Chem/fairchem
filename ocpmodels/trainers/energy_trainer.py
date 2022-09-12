@@ -81,6 +81,7 @@ class EnergyTrainer(BaseTrainer):
         test_rotation_invariance=False,
         choice_fa=None,
         note="",
+        wandb_tag=None,
     ):
         super().__init__(
             task=task,
@@ -107,6 +108,7 @@ class EnergyTrainer(BaseTrainer):
             frame_averaging=frame_averaging,
             test_rotation_invariance=test_rotation_invariance,
             choice_fa=choice_fa,
+            wandb_tag=wandb_tag,
         )
 
     def load_task(self):
