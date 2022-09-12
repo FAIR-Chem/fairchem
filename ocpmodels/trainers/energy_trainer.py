@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
+import os
 import time
 
 import torch
@@ -78,6 +79,7 @@ class EnergyTrainer(BaseTrainer):
         new_gnn=True,
         data_split=None,
         test_rotation_invariance=False,
+        choice_fa=None,
         note="",
     ):
         super().__init__(
@@ -104,6 +106,7 @@ class EnergyTrainer(BaseTrainer):
             note=note,
             frame_averaging=frame_averaging,
             test_rotation_invariance=test_rotation_invariance,
+            choice_fa=choice_fa,
         )
 
     def load_task(self):
@@ -143,7 +146,7 @@ class EnergyTrainer(BaseTrainer):
             disable=disable_tqdm,
         ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out, _ = self._forward(batch, self.frame_averaging)
+                out, _ = self._forward(batch)
 
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(out["energy"])
@@ -194,7 +197,7 @@ class EnergyTrainer(BaseTrainer):
 
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out, pooling_loss = self._forward(batch, self.frame_averaging)
+                    out, pooling_loss = self._forward(batch)
                     loss = self._compute_loss(out, batch)
                     if pooling_loss is not None:
                         loss += pooling_loss
@@ -249,14 +252,6 @@ class EnergyTrainer(BaseTrainer):
                                     disable_tqdm=False,
                                 )
 
-                        # Evaluate current model on all 4 validation splits
-                        if ((epoch_int % 100 == 0) and (epoch_int != 0)) or (
-                            epoch_int == self.config["optim"]["max_epochs"] - 1
-                        ):
-                            self.eval_all_val_splits(
-                                epoch_int == self.config["optim"]["max_epochs"] - 1
-                            )
-
                         if self.is_hpo:
                             self.hpo_update(
                                 self.epoch,
@@ -279,32 +274,54 @@ class EnergyTrainer(BaseTrainer):
         if self.logger is not None:
             start_time = time.time()
             # batch = next(iter(self.train_loader))
-            self._forward(batch, self.frame_averaging)
+            self._forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
+
+        # Load current best checkpoint
+        if self.config["optim"]["max_epochs"] > 2:
+            checkpoint_path = os.path.join(
+                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
+            )
+            self.load_checkpoint(checkpoint_path=checkpoint_path)
+            logging.info(
+                "Checking models are identical:"
+                + str(list(self.model.parameters())[0].data.view(-1)[:20]),
+            )
 
         # Check rotation invariance
         if self.test_rotation_invariance:
-            energy_diff_z, energy_diff = self._test_rotation_invariance()
-            self.logger.log({"2D_ri": energy_diff_z})
-            self.logger.log({"3D_ri": energy_diff})
+            energy_diff_z, energy_diff, pos_diff_z = self._test_rotation_invariance()
+            if self.logger:
+                self.logger.log({"2D_ri": energy_diff_z})
+                self.logger.log({"3D_ri": energy_diff})
+                self.logger.log({"2D_pos_ri": pos_diff_z})
 
+        # Evaluate current model on all 4 validation splits
+        self.eval_all_val_splits()
+
+        # Close datasets
         self.train_dataset.close_db()
         if "val_dataset" in self.config:
             self.val_dataset.close_db()
         if "test_dataset" in self.config:
             self.test_dataset.close_db()
 
-    def _forward(self, batch_list, fa=False):
+    def _forward(self, batch_list):
 
-        if fa == "full":
-            y1, p1 = self.model(batch_list)
-            original_pos = batch_list[0].pos
-            batch_list[0].pos = batch_list[0].new_pos
-            y2, p2 = self.model(batch_list)
-            output = (y1 + y2) / 2
-            batch_list[0].pos = original_pos
+        if self.frame_averaging and (
+            self.choice_fa == "full" or self.choice_fa == "e3-full"
+        ):
+            original_pos = batch_list[0].pos  # optional?
+            y_all, p_all = [], []
+            for i in range(len(batch_list[0].fa_pos)):
+                batch_list[0].pos = batch_list[0].fa_pos[i]
+                y, p = self.model(batch_list)
+                y_all.append(y)
+                p_all.append(p)
+            batch_list[0].pos = original_pos  # TODO: optional?
+            output = sum(y_all) / len(y_all)
             try:
-                pooling_loss = (p1 + p2) / 2
+                pooling_loss = sum(p) / len(p)
             except TypeError:
                 pooling_loss = None
         else:
@@ -373,22 +390,49 @@ class EnergyTrainer(BaseTrainer):
 
     @torch.no_grad()
     def _test_rotation_invariance(self):
-        # Check for rotation invariance
+        """Test the rotation invariance property of models
+
+        Returns:
+            (tensor, tensor, tensor): metrics to measure RI
+            difference in energy pred. / pos. between G and rotated G
+        """
+
         self.model.eval()
-        loader_iter = iter(self.val_loader)
         energy_diff = torch.zeros(1, device=self.device)
         energy_diff_z = torch.zeros(1, device=self.device)
 
-        for i in range(10):
-            batch = next(loader_iter)
-            energy_diff_z += self.rotation_invariance_check(batch, "z")
+        # TODO: define 10k val_loader instead
 
-        for i in range(10):
-            batch = next(loader_iter)
-            energy_diff += self.rotation_invariance_check(batch)
+        for i, batch in enumerate(self.val_loader):
 
+            # Pass it through the model.
+            energies1, _ = self._forward(batch)
+
+            # Rotate graph and compute prediction
+            batch_rotated = self.rotate_graph(batch, rotation="z")
+            energies2, _ = self._forward([batch_rotated])
+
+            # Difference in predictions
+            energy_diff_z += torch.abs(energies1["energy"] - energies2["energy"]).sum()
+
+            # Diff in positions -- could remove model prediction
+            pos_diff_z = 0
+            if hasattr(batch[0], "fa_pos"):
+                for pos1, pos2 in zip(batch[0].fa_pos, batch_rotated.fa_pos):
+                    pos_diff_z += pos1 - pos2
+                pos_diff_z = pos_diff_z.sum()
+
+            # 3D Rotation
+            batch_rotated = self.rotate_graph(batch)
+            energies2, _ = self._forward([batch_rotated])
+            energy_diff += torch.abs(energies1["energy"] - energies2["energy"]).sum()
+
+            if i == 100:
+                break
+
+        # Aggregate the results
         batch_size = len(batch[0].natoms)
         energy_diff_z = energy_diff_z / (i * batch_size)
         energy_diff = energy_diff / (i * batch_size)
 
-        return energy_diff_z, energy_diff
+        return energy_diff_z, energy_diff, pos_diff_z

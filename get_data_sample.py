@@ -36,12 +36,16 @@ from ocpmodels.preprocessing import (
     one_supernode_per_graph,
     remove_tag0_nodes,
 )
+from ocpmodels.preprocessing.data_augmentation import (
+    frame_averaging_2D,
+    frame_averaging_3D,
+)
 
 if __name__ == "__main__":
 
     opts = resolved_args()
 
-    sys.argv[1:] = ["--mode=train", "--config=configs/is2re/10k/schnet/schnet.yml"]
+    sys.argv[1:] = ["--mode=train", "--config-yml=configs/is2re/10k/schnet/schnet.yml"]
     setup_logging()
 
     parser = flags.get_parser()
@@ -53,7 +57,7 @@ if __name__ == "__main__":
     config["logger"] = "dummy"
 
     if opts.victor_local:
-        config["dataset"][0]["src"] = "data/is2re/All/train/data.lmdb"
+        config["dataset"][0]["src"] = "data/is2re/10k/train/data.lmdb"
         config["dataset"] = config["dataset"][:1]
         config["optim"]["num_workers"] = 0
         config["optim"]["batch_size"] = opts.bs or config["optim"]["batch_size"]
@@ -83,149 +87,20 @@ if __name__ == "__main__":
     task = registry.get_task_class(config["mode"])(config)
     task.setup(trainer)
 
-    def all_frames(eigenvec, pos):
-        """Compute all frames for a given graph
-        Related to frame ambiguity issue
-
-        Args:
-            eigenvec (_type_): eigenvectors matrix
-            pos (_type_): position vector (x-t)
-            t (_type_, optional): original fa, for rotated matrix.
-                Defaults to None.
-
-        Returns:
-            _type_: lists of 3D positions tensors
-        """
-        dim = pos.shape[1]  # to differentiate between 2D or 3D case
-        plus_minus_list = list(product([-1, 1], repeat=dim))
-        plus_minus_list = [torch.tensor(x) for x in plus_minus_list]
-        all_fa = []
-
-        for pm in plus_minus_list:
-
-            # Append new graph positions to list
-            new_eigenvec = pm * eigenvec
-
-            # Check if eigenv is orthonormal
-            if not torch.allclose(
-                new_eigenvec @ new_eigenvec.T, torch.eye(dim), atol=1e-05
-            ):
-                continue
-
-            # Check if determinant is 1
-            if not torch.allclose(
-                torch.linalg.det(new_eigenvec), torch.tensor(1.0), atol=1e-03
-            ):
-                continue
-
-            # Consider frame if it passes above checks
-            fa = pos @ new_eigenvec
-            all_fa.append(fa)
-
-        # Return one frame at random among plausible ones
-        return random.choice(all_fa)
-
-    def check_constraints(eigenval, eigenvec, dim):
-        """Check requirements for frame averaging are satisfied
-
-        Args:
-            eigenval (tensor): eigenvalues
-            eigenvec (tensor): eigenvectors
-            dim (int): 2D or 3D frame averaging
-        """
-        # Check eigenvalues are different
-        if dim == 3:
-            if (eigenval[1] / eigenval[0] > 0.90) or (eigenval[2] / eigenval[1] > 0.90):
-                print("Eigenvalues are quite similar")
-        else:
-            if eigenval[1] / eigenval[0] > 0.90:
-                print("Eigenvalues are quite similar")
-
-        # Check eigenvectors are orthonormal
-        if not torch.allclose(eigenvec @ eigenvec.T, torch.eye(dim), atol=1e-05):
-            print("Matrix not orthogonal")
-
-        # Check determinant of eigenvectors is 1
-        if not torch.allclose(
-            torch.linalg.det(eigenvec), torch.tensor(1.0), atol=1e-03
-        ):
-            print("Determinant is not 1")
-
-    def frame_averaging_3D(g, random_sign=False):
-        """Computes new positions for the graph atoms,
-        based on a frame averaging building on PCA.
-
-        Args:
-            g (_type_): graph
-            random_sign (bool): whether to pick sign of U at random
-
-        Returns:
-            _type_: updated positions
-        """
-
-        # Compute centroid and covariance
-        pos = g.pos - g.pos.mean(dim=0, keepdim=True)
-        C = torch.matmul(pos.t(), pos)
-
-        # Eigendecomposition
-        eigenval, eigenvec = torch.linalg.eig(C)
-
-        # Check if eigenvec, eigenval are real or complex ?
-        if not torch.isreal(eigenvec).all():
-            print("Eigenvec is complex")
-        else:
-            eigenvec = eigenvec.real
-            eigenval = eigenval.real
-
-        # Sort, if necessary
-        idx = eigenval.argsort(descending=True)
-        eigenvec = eigenvec[:, idx]
-        eigenval = eigenval[idx]
-
-        # Compute all frames
-        g.updated_pos = all_frames(eigenvec, pos)
-
-        return g
-
-    def frame_averaging_2D(g, random_sign=True):
-        """Computes new positions for the graph atoms,
-        based on a frame averaging building on PCA.
-
-        Args:
-            g (_type_): graph
-            random_sign (bool): True if we take a random sign for eigenv
-
-        Returns:
-            _type_: updated positions
-        """
-
-        # Compute centroid and covariance
-        pos_2D = g.pos[:, :2] - g.pos[:, :2].mean(dim=0, keepdim=True)
-        C = torch.matmul(pos_2D.t(), pos_2D)
-
-        # Eigendecomposition
-        eigenval, eigenvec = torch.linalg.eig(C)
-
-        # Check if eigenvec, eigenval are real or complex ?
-        # TODO: convert directly to real
-        if not torch.isreal(eigenvec).all():
-            print("Eigenvec is complex")
-        else:
-            eigenvec = eigenvec.real
-            eigenval = eigenval.real
-
-        # Sort, if necessary
-        idx = eigenval.argsort(descending=True)
-        eigenval = eigenval[idx]
-        eigenvec = eigenvec[:, idx]
-
-        # Compute all frames
-        pos_2D = all_frames(eigenvec, pos_2D)
-        g.updated_pos = torch.cat((pos_2D, g.pos[:, 2].unsqueeze(1)), dim=1)
-
-        return g
-
     if opts.no_frame_averaging is None:
+
+        i = 0
+        for batch in trainer.val_loader:
+            g_list = batch[0].to_data_list()
+            for g in g_list:
+                # rotate graph
+                g = frame_averaging_2D(g, choice_fa="full")
+            i += 1
+            g_batch = Batch.from_data_list(g_list)
+            print("apply forward function on g_batch")
+            if i == 10:
+                break
+
         for batch in trainer.train_loader:
             break
         # Set up
@@ -238,8 +113,9 @@ if __name__ == "__main__":
         count_1 = 0
         for i in range(len(b.sid)):
             g = Batch.get_example(b, i)
-            g = frame_averaging_2D(g, random_sign=False)
-            g = frame_averaging_3D(g, random_sign=False)
+            g = frame_averaging_2D(g, choice_fa="random")
+            g = frame_averaging_3D(g, choice_fa="random")
+            g = frame_averaging_2D(g, choice_fa="full")
 
         # Equivalent to frame averaging, except that X' = XU, not (X-t)U
         # from torch_geometric.transforms import NormalizeRotation

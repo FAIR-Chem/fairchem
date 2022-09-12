@@ -9,4 +9,4 @@
 
 module load anaconda/3
 conda activate ocp
-wandb agent --count 40 mila-ocp/ocp/8p8wecso   #ib5jnh2u
+wandb agent --count 20 mila-ocp/ocp/k1u044na  #ib5jnh2u

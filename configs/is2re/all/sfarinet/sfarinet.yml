@@ -39,3 +39,4 @@ optim:
   max_epochs: 17
 
 frame_averaging: False # 2D, 3D, False
+choice_fa: False # can be {None, full, random, det, e3-full, e3-random, e3-det}

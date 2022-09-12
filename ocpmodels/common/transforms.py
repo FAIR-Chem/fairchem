@@ -64,7 +64,9 @@ class RandomRotate(object):
 
         # LinearTransformation only rotates `.pos`; need to rotate `.cell` too.
         if hasattr(data_rotated, "cell"):
-            data_rotated.cell = torch.matmul(data_rotated.cell, matrix)
+            data_rotated.cell = torch.matmul(
+                data_rotated.cell, matrix.to(data_rotated.cell.device)
+            )
 
         return (
             data_rotated,

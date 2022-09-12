@@ -19,6 +19,7 @@ model:
                                     # one-supernode-per-atom-type, one-supernode-per-atom-type-dist}
   energy_head: False # can be {False, weighted-av-initial-embeds,
                                               # weighted-av-final-embeds, pooling, graclus, random}
+
   # new features
   skip_co: False   # output skip connections
   normalized_rel_pos: False  # normalize r_ij + squash in [0,1]
@@ -46,3 +47,4 @@ optim:
   max_epochs: 20
 
 frame_averaging: False # 2D, 3D, False
+choice_fa: False # can be {None, full, random, det, e3, e3-random, e3-det}

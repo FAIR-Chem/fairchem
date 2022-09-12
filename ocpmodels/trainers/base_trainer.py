@@ -23,6 +23,7 @@ import torch.optim as optim
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
+from torch_geometric.data import Batch
 from tqdm import tqdm
 
 import ocpmodels
@@ -45,7 +46,6 @@ from ocpmodels.modules.scheduler import LRScheduler
 from ocpmodels.preprocessing.data_augmentation import (
     frame_averaging_2D,
     frame_averaging_3D,
-    full_frame_averaging,
 )
 
 
@@ -76,6 +76,7 @@ class BaseTrainer(ABC):
         data_split=None,
         note="",
         test_rotation_invariance=None,
+        choice_fa=None,
     ):
         self.name = name
         self.cpu = cpu
@@ -84,6 +85,7 @@ class BaseTrainer(ABC):
         self.new_gnn = new_gnn
         self.test_rotation_invariance = test_rotation_invariance
         self.frame_averaging = frame_averaging
+        self.choice_fa = choice_fa
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
@@ -140,6 +142,7 @@ class BaseTrainer(ABC):
             "amp": amp,
             "run_dir": run_dir,
             "frame_averaging": frame_averaging,
+            "choice_fa": choice_fa,
             "test_ri": test_rotation_invariance,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
@@ -183,8 +186,6 @@ class BaseTrainer(ABC):
                 self.fa = frame_averaging_2D
             elif frame_averaging.lower() == "3d":
                 self.fa = frame_averaging_3D
-            elif frame_averaging.lower() == "full":
-                self.fa = full_frame_averaging
             else:
                 raise ValueError(f"Unknown frame averaging: {frame_averaging}")
         else:
@@ -296,7 +297,7 @@ class BaseTrainer(ABC):
         if self.config.get("dataset", None):
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
-            )(self.config["dataset"], transform=self.fa)
+            )(self.config["dataset"], transform=self.fa, choice_fa=self.choice_fa)
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
                 self.config["optim"]["batch_size"],
@@ -310,7 +311,11 @@ class BaseTrainer(ABC):
             if self.config.get("val_dataset", None):
                 self.val_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(self.config["val_dataset"], transform=self.fa)
+                )(
+                    self.config["val_dataset"],
+                    transform=self.fa,
+                    choice_fa=self.choice_fa,
+                )
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
                     self.config["optim"].get(
@@ -326,7 +331,11 @@ class BaseTrainer(ABC):
             if self.config.get("test_dataset", None):
                 self.test_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(self.config["test_dataset"], transform=self.fa)
+                )(
+                    self.config["test_dataset"],
+                    transform=self.fa,
+                    choice_fa=self.choice_fa,
+                )
                 self.test_sampler = self.get_sampler(
                     self.test_dataset,
                     self.config["optim"].get(
@@ -631,7 +640,7 @@ class BaseTrainer(ABC):
         ):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out, pooling_loss = self._forward(batch, self.frame_averaging)
+                out, pooling_loss = self._forward(batch)
             loss = self._compute_loss(out, batch)
             if pooling_loss is not None:
                 loss += pooling_loss
@@ -769,19 +778,8 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(self, final=False):
+    def eval_all_val_splits(self):
         """Evaluate model on all four validation splits"""
-
-        if final:
-            # Load current best checkpoint
-            checkpoint_path = os.path.join(
-                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
-            )
-            self.load_checkpoint(checkpoint_path=checkpoint_path)
-            logging.info(
-                "Checking models are identical:"
-                + str(list(self.model.parameters())[0].data.view(-1)[:20]),
-            )
 
         # Compute performance metrics on all four validation splits
         cumulated_time = 0
@@ -801,7 +799,11 @@ class BaseTrainer(ABC):
             if self.config.get("val_dataset", None):
                 self.val_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(self.config["val_dataset"])
+                )(
+                    self.config["val_dataset"],
+                    transform=self.fa,
+                    choice_fa=self.choice_fa,
+                )
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
                     self.config["optim"].get(
@@ -826,28 +828,25 @@ class BaseTrainer(ABC):
             self.logger.log({"Val. time": cumulated_time})
             self.logger.log({"Overall MAE": cumulated_mae / 4})
 
-        if final:
-            # Print results
-            print("----- FINAL RESULTS -----")
-            print("Total time taken: ", time.time() - start_time)
-            print(self.metrics.keys())
-            for k, v in metrics_dict.items():
-                store = []
-                for _, val in v.items():
-                    store.append(round(val["metric"], 4))
-                print(k, store)
+        # Print results
+        print("----- FINAL RESULTS -----")
+        print("Total time taken: ", time.time() - start_time)
+        print(self.metrics.keys())
+        for k, v in metrics_dict.items():
+            store = []
+            for _, val in v.items():
+                store.append(round(val["metric"], 4))
+            print(k, store)
 
-    def rotation_invariance_check(self, batch, rotation=None):
-        """Compare predictions of rotated versions of the same graphs
+    def rotate_graph(self, batch, rotation=None):
+        """Rotate all graphs in a batch
 
         Args:
             batch (data.Batch): batch of graphs
-            model (data.model): GNN model we test the rotation invariance of
-            energy_diff (int, optional): energy difference in predictions across rotated graphs
             rotation (str, optional): type of rotation applied. Defaults to None.
 
         Returns:
-            _type_: metric quantifying the difference in prediction
+            data.Batch: rotated batch
         """
 
         random.seed(1)
@@ -862,15 +861,17 @@ class BaseTrainer(ABC):
         else:
             transform = RandomRotate([-180, 180], [0, 1, 2])
 
+        # Rotate graph
         batch_rotated, rot, inv_rot = transform(deepcopy(batch[0]))
         assert not torch.allclose(batch[0].pos, batch_rotated.pos, atol=1e-05)
 
-        # Pass it through the model.
-        energies1, _ = self.model(batch)
-        energies2, _ = self.model([batch_rotated])
+        # Recompute fa-pos for batch_rotated
+        if hasattr(batch[0], "fa_pos"):
+            delattr(batch_rotated, "fa_pos")  # delete it otherwise can't iterate
+            g_list = batch_rotated.to_data_list()
+            for g in g_list:
+                g = self.fa(g, self.choice_fa)
+            batch_rotated = Batch.from_data_list(g_list)
+            batch_rotated.neighbors = batch[0].neighbors
 
-        # Compare predicted energies (after inv-rotation).
-        # print('Perfect invariance:', torch.allclose(energies1, energies2, atol=1e-05))
-        energies_diff = torch.abs(energies1 - energies2).sum()
-
-        return energies_diff
+        return batch_rotated

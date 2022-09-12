@@ -1,14 +1,14 @@
 program: main.py # sbatch.py
-method: random
+method: bayes
 metric:
   goal: minimize
   name: val/loss
 
 parameters:
   model.hidden_channels: 
-    values: [256, 320, 180]
+    values: [256, 320, 180, 384]
   model.num_filters:
-    values: [50, 100, 150]
+    values: [50, 100, 180]
   model.num_interactions:
       values: [2, 3, 4]
   model.num_gaussians:
@@ -18,46 +18,57 @@ parameters:
   model.use_pbc:
     values: [True]
   model.tag_hidden_channels:
-    values: [0, 32, 64]
+    values: [64]
   model.pg_hidden_channels:
     values: [0, 32]
   model.phys_embeds:
     values: [False, True]
   model.phys_hidden_channels:
-    values: [0, 32]
+    values: [0]
   model.graph_rewiring:
     values: [False, remove-tag-0]
   model.energy_head:
-    values: [False, pooling, weighted-av-initial-embeds] 
+    values: [False, pooling, weighted-av-initial-embeds, weighted-av-final-embeds, graclus, random] 
+    probabilities: [0.5, 0.1, 0.1, 0.1, 0.1, 0.1] 
   optim.batch_size:
-    values: [32, 64]
+    values: [64]
   optim.lr_initial:
     distribution: uniform
-    min: 0.001
-    max: 0.01
+    min: 0.003
+    max: 0.007
   optim.lr_gamma:
     distribution: uniform
-    min: 0.005
-    max: 0.11
+    min: 0.01
+    max: 0.10
   optim.warmup_steps:
     distribution: int_uniform
-    min: 200
-    max: 600
+    min: 300
+    max: 700
   optim.warmup_factor:
-    values: [0.1, 0.2, 0.3, 0.4]
+    values: [0.2, 0.3, 0.4]
   optim.max_epochs:
     values: [20]
+  model.skip_co:
+    values: [False, True]
+  model.normalized_rel_pos: 
+    values: [False, True]  # normalize r_ij + squash in [0,1]
+  model.second_layer_MLP: 
+    values: [False, True]  # in EmbeddingBlock
+  model.mlp_rij: 
+    values: [0, 32, 64]   # apply mlp to r_ij
+  model.complex_mp: 
+    values: [False, True]   # concat (e_ij || h_i || h_j) for W in MP
   #optim.lr_milestones:
   #  values:
   #  [[1562, 2343, 3125]]
+  # - "--frame_averaging=2D"
 
 command: 
   - ${env}
   - ${interpreter}
   - ${program}
   - "--config-yml"
-  - "configs/is2re/10k/sfarinet/sfarinet.yml"
+  - "configs/is2re/all/fanet/fanet.yml"
   - "--mode"
   - "train"
-  - "--frame_averaging=2D"
   - ${args}

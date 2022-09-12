@@ -19,10 +19,10 @@ if __name__ == "__main__":
     if not args.mode or not args.config_yml:
         args.mode = "train"
         # args.config_yml = "configs/is2re/10k/dimenet_plus_plus/new_dpp.yml"
-        # args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
+        args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
         # args.config_yml = "configs/is2re/10k/forcenet/new_forcenet.yml"
         # args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
-        args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
+        # args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/best_checkpoint.pt"
         warnings.warn("No model / mode is given; chosen as default")
 
@@ -35,8 +35,11 @@ if __name__ == "__main__":
     # config["model"]["phys_embeds"] = True
     # config['model']['use_pbc'] = True
     # config['model']['graph_rewiring'] = 'remove-tag-0'
-    config["frame_averaging"] = "full"
+    config["frame_averaging"] = "3d"
+    config["choice_fa"] = "random"
     config["test_ri"] = True
+    config["optim"]["max_epochs"] = 0
+    # config["model"]["graph_rewiring"] = "one-supernode-per-atom-type-dist"
 
     setup_imports()
     trainer = EnergyTrainer(
@@ -56,6 +59,8 @@ if __name__ == "__main__":
         cpu=config.get("cpu", False),
         new_gnn=config.get("new_gnn"),
         frame_averaging=config.get("frame_averaging", None),
+        test_rotation_invariance=config.get("test_ri", None),
+        choice_fa=config.get("choice_fa", None),
     )
 
     trainer.train()

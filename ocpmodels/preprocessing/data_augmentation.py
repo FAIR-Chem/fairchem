@@ -6,54 +6,57 @@ import torch
 from torch_geometric.data import Batch
 
 
-def all_frames(eigenvec, pos, rand=True):
+def all_frames(eigenvec, pos, choice_fa="random", pos_3D=None):
     """Compute all frames for a given graph
     Related to frame ambiguity issue
 
     Args:
         eigenvec (tensor): eigenvectors matrix
-        pos (tensor): position vector (x-t)
-        rand: whether to return all possible frames (False)
-            or one at random (True)
+        pos (tensor): position vector (X-1t)
+        choice_fa: whether to return one random frame (random),
+            one deterministic frame (det), all E(3) frames (e3)
+            or all frames (else).
+        pos_3D: 3rd position coordinate of atoms
 
     Returns:
         tensor: lists of 3D positions tensors
     """
     dim = pos.shape[1]  # to differentiate between 2D or 3D case
-    plus_minus_list = list(product([-1, 1], repeat=dim))
+    plus_minus_list = list(product([1, -1], repeat=dim))
     plus_minus_list = [torch.tensor(x) for x in plus_minus_list]
     all_fa = []
+    e3 = choice_fa in {"e3-full", "e3-random", "e3-det"}
 
     for pm in plus_minus_list:
 
         # Append new graph positions to list
         new_eigenvec = pm * eigenvec
 
-        # Check if eigenv is orthonormal
-        if not torch.allclose(
-            new_eigenvec @ new_eigenvec.T, torch.eye(dim), atol=1e-03
-        ):
-            continue
-
         # Check if determinant is 1
-        if not torch.allclose(
+        if not e3 and not torch.allclose(
             torch.linalg.det(new_eigenvec), torch.tensor(1.0), atol=1e-03
         ):
             continue
 
         # Consider frame if it passes above check
         fa = pos @ new_eigenvec
-        all_fa.append(fa)
+        if pos_3D is not None:
+            all_fa.append(torch.cat((fa, pos_3D.unsqueeze(1)), dim=1))
+        else:
+            all_fa.append(fa)
 
     # Handle rare case where no R is positive orthogonal
     if all_fa == []:
         all_fa.append(pos @ eigenvec)
 
-    # Return one frame at random among plausible ones
-    if rand:
-        return random.choice(all_fa)
+    # Return frame(s) depending on method choice_fa
+    if choice_fa == "full" or choice_fa == "e3-full":
+        return all_fa
 
-    return all_fa
+    elif choice_fa == "det" or choice_fa == "e3-det":
+        return all_fa[0]
+
+    return random.choice(all_fa)
 
 
 def check_constraints(eigenval, eigenvec, dim):
@@ -81,13 +84,13 @@ def check_constraints(eigenval, eigenvec, dim):
         print("Determinant is not 1")
 
 
-def frame_averaging_3D(g, random_sign=False):
+def frame_averaging_3D(g, choice_fa="random"):
     """Computes new positions for the graph atoms,
     using on frame averaging, which builds on PCA.
 
     Args:
         g (data.Data): input graph
-        random_sign (bool): whether to pick sign of U at random
+        choice_fa (str): FA method used (random, det, e3, all)
 
     Returns:
         data.Data: graph with updated positions (and distances)
@@ -113,20 +116,23 @@ def frame_averaging_3D(g, random_sign=False):
     eigenval = eigenval[idx]
 
     # Compute all frames
-    g.pos = all_frames(eigenvec, pos)
+    if choice_fa == "full" or choice_fa == "e3-full":
+        g.fa_pos = all_frames(eigenvec, pos, "full")
+    else:
+        g.pos = all_frames(eigenvec, pos, choice_fa)
 
     # No need to update distances, they are preserved.
 
     return g
 
 
-def frame_averaging_2D(g, random_sign=True):
+def frame_averaging_2D(g, choice_fa="random"):
     """Computes new positions for the graph atoms,
     based on a frame averaging building on PCA.
 
     Args:
-        g (_type_): graph
-        random_sign (bool): True if we take a random sign for eigenv
+        g (data.Data): graph
+        choice_fa (str): FA method used (random, det, e3, all)
 
     Returns:
         _type_: updated positions
@@ -139,48 +145,7 @@ def frame_averaging_2D(g, random_sign=True):
     # Eigendecomposition
     eigenval, eigenvec = torch.linalg.eig(C)
 
-    # Check if eigenvec, eigenval are real or complex ?
-    # TODO: convert directly to real
-    if not torch.isreal(eigenvec).all():
-        print("Eigenvec is complex")
-    else:
-        eigenvec = eigenvec.real
-        eigenval = eigenval.real
-
-    # Sort, if necessary
-    idx = eigenval.argsort(descending=True)
-    eigenval = eigenval[idx]
-    eigenvec = eigenvec[:, idx]
-
-    # Compute all frames
-    g.pos[:, :2] = all_frames(eigenvec, pos_2D)
-    # g.pos = torch.cat((pos_2D, g.pos[:, 2].unsqueeze(1)), dim=1)
-
-    # No need to update distances, they are preserved.
-
-    return g
-
-
-def full_frame_averaging(g, random_sign=True):
-    """Computes new positions for the graph atoms,
-    based on a frame averaging building on PCA, with all frames
-
-    Args:
-        g (_type_): graph
-        random_sign (bool): True if we take a random sign for eigenv
-
-    Returns:
-        _type_: updated positions
-    """
-
-    # Compute centroid and covariance
-    pos_2D = g.pos[:, :2] - g.pos[:, :2].mean(dim=0, keepdim=True)
-    C = torch.matmul(pos_2D.t(), pos_2D)
-
-    # Eigendecomposition
-    eigenval, eigenvec = torch.linalg.eig(C)
-
-    # Convert to real
+    # Convert eigenval to real values
     eigenvec = eigenvec.real
     eigenval = eigenval.real
 
@@ -190,8 +155,10 @@ def full_frame_averaging(g, random_sign=True):
     eigenvec = eigenvec[:, idx]
 
     # Compute all frames
-    g.new_pos = deepcopy(g.pos)
-    g.pos[:, :2], g.new_pos[:, :2] = all_frames(eigenvec, pos_2D, rand=False)
+    if choice_fa == "full" or choice_fa == "e3-full":
+        g.fa_pos = all_frames(eigenvec, pos_2D, "full", g.pos[:, 2])
+    else:
+        g.pos[:, :2] = all_frames(eigenvec, pos_2D, choice_fa)
 
     # No need to update distances, they are preserved.
 
