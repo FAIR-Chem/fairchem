@@ -105,6 +105,7 @@ class EnergyTrainer(BaseTrainer):
             note=note,
             frame_averaging=frame_averaging,
             test_rotation_invariance=test_rotation_invariance,
+            wandb_tag=wandb_tag,
         )
 
     def load_task(self):
