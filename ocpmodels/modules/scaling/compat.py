@@ -22,11 +22,13 @@ def _load_scale_dict(scale_file: Optional[Union[str, ScaleDict]]):
         return None
 
     if isinstance(scale_file, dict):
+        if not scale_file:
+            logging.warning("Empty scale dictionary provided to model.")
         return scale_file
 
     path = Path(scale_file)
     if not path.exists():
-        return None
+        raise ValueError(f"Scale file {path} does not exist.")
 
     scale_dict: Optional[ScaleDict] = None
     if path.suffix == ".pt":
@@ -47,7 +49,9 @@ def _load_scale_dict(scale_file: Optional[Union[str, ScaleDict]]):
     return scale_dict
 
 
-def load_scales_compat(module: nn.Module, scale_file: Optional[str]):
+def load_scales_compat(
+    module: nn.Module, scale_file: Optional[Union[str, ScaleDict]]
+):
     scale_dict = _load_scale_dict(scale_file)
     if not scale_dict:
         return
