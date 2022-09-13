@@ -12,10 +12,10 @@ from torch_scatter import scatter
 from torch_scatter.utils import broadcast
 
 from ocpmodels.common import gp_utils
+from ocpmodels.modules.scaling import ScaleFactor
 
 from ..initializers import he_orthogonal_init
 from .base_layers import Dense, ResidualLayer
-from .scaling import ScalingFactor
 
 
 def scatter_sum(
@@ -58,8 +58,6 @@ class AtomUpdateBlock(torch.nn.Module):
             Number of residual blocks.
         activation: callable/str
             Name of the activation function to use in the dense layers.
-        scale_file: str
-            Path to the json file containing the scaling factors.
     """
 
     def __init__(
@@ -69,7 +67,6 @@ class AtomUpdateBlock(torch.nn.Module):
         emb_size_rbf: int,
         nHidden: int,
         activation=None,
-        scale_file=None,
         name: str = "atom_update",
     ):
         super().__init__()
@@ -78,9 +75,7 @@ class AtomUpdateBlock(torch.nn.Module):
         self.dense_rbf = Dense(
             emb_size_rbf, emb_size_edge, activation=None, bias=False
         )
-        self.scale_sum = ScalingFactor(
-            scale_file=scale_file, name=name + "_sum"
-        )
+        self.scale_sum = ScaleFactor(name + "_sum")
 
         self.layers = self.get_mlp(
             emb_size_edge, emb_size_atom, nHidden, activation
@@ -114,7 +109,7 @@ class AtomUpdateBlock(torch.nn.Module):
         x2 = gp_utils.scatter_to_model_parallel_region(x2, dim=0)
 
         # (nAtoms, emb_size_edge)
-        x = self.scale_sum(m, x2)
+        x = self.scale_sum(x2, ref=m)
 
         for layer in self.layers:
             x = layer(x)  # (nAtoms, emb_size_atom)
@@ -142,8 +137,6 @@ class OutputBlock(AtomUpdateBlock):
             If true directly predict forces without taking the gradient of the energy potential.
         output_init: int
             Kernel initializer of the final dense layer.
-        scale_file: str
-            Path to the json file containing the scaling factors.
     """
 
     def __init__(
@@ -156,7 +149,6 @@ class OutputBlock(AtomUpdateBlock):
         activation=None,
         direct_forces=True,
         output_init="HeOrthogonal",
-        scale_file=None,
         name: str = "output",
         **kwargs,
     ):
@@ -168,7 +160,6 @@ class OutputBlock(AtomUpdateBlock):
             emb_size_rbf=emb_size_rbf,
             nHidden=nHidden,
             activation=activation,
-            scale_file=scale_file,
             **kwargs,
         )
 
@@ -182,9 +173,7 @@ class OutputBlock(AtomUpdateBlock):
         )
 
         if self.direct_forces:
-            self.scale_rbf_F = ScalingFactor(
-                scale_file=scale_file, name=name + "_had"
-            )
+            self.scale_rbf_F = ScaleFactor(name + "_had")
             self.seq_forces = self.get_mlp(
                 emb_size_edge, emb_size_edge, nHidden, activation
             )
@@ -230,7 +219,7 @@ class OutputBlock(AtomUpdateBlock):
         x_E = gp_utils.scatter_to_model_parallel_region(x_E, dim=0)
 
         # (nAtoms, emb_size_edge)
-        x_E = self.scale_sum(m, x_E)
+        x_E = self.scale_sum(x_E, ref=m)
 
         for layer in self.seq_energy:
             x_E = layer(x_E)  # (nAtoms, emb_size_atom)
@@ -245,7 +234,7 @@ class OutputBlock(AtomUpdateBlock):
 
             rbf_emb_F = self.dense_rbf_F(rbf)  # (nEdges, emb_size_edge)
             x_F_rbf = x_F * rbf_emb_F
-            x_F = self.scale_rbf_F(x_F, x_F_rbf)
+            x_F = self.scale_rbf_F(x_F_rbf, ref=x_F)
 
             x_F = self.out_forces(x_F)  # (nEdges, num_targets)
         else:

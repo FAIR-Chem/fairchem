@@ -21,6 +21,7 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.models.base import BaseModel
+from ocpmodels.modules.scaling.compat import load_scales_compat
 
 from .layers.atom_update_block import OutputBlock
 from .layers.base_layers import Dense
@@ -28,7 +29,6 @@ from .layers.efficient import EfficientInteractionDownProjection
 from .layers.embedding_block import AtomEmbedding, EdgeEmbedding
 from .layers.interaction_block import InteractionBlockTripletsOnly
 from .layers.radial_basis import RadialBasis
-from .layers.scaling import AutomaticFit
 from .layers.spherical_basis import CircularBasisLayer
 from .utils import (
     inner_product_normalized,
@@ -133,8 +133,8 @@ class GemNetT(BaseModel):
         use_pbc: bool = True,
         output_init: str = "HeOrthogonal",
         activation: str = "swish",
-        scale_file: Optional[str] = None,
         num_elements: int = 83,
+        scale_file: Optional[str] = None,
     ):
         super().__init__()
         self.num_targets = num_targets
@@ -151,8 +151,6 @@ class GemNetT(BaseModel):
         self.regress_forces = regress_forces
         self.otf_graph = otf_graph
         self.use_pbc = use_pbc
-
-        AutomaticFit.reset()  # make sure that queue is empty (avoid potential error)
 
         # GemNet variants
         self.direct_forces = direct_forces
@@ -231,7 +229,6 @@ class GemNetT(BaseModel):
                     num_concat=num_concat,
                     num_atom=num_atom,
                     activation=activation,
-                    scale_file=scale_file,
                     name=f"IntBlock_{i+1}",
                 )
             )
@@ -247,7 +244,6 @@ class GemNetT(BaseModel):
                     activation=activation,
                     output_init=output_init,
                     direct_forces=direct_forces,
-                    scale_file=scale_file,
                     name=f"OutBlock_{i}",
                 )
             )
@@ -261,6 +257,8 @@ class GemNetT(BaseModel):
             (self.mlp_rbf_h.linear.weight, self.num_blocks),
             (self.mlp_rbf_out.linear.weight, self.num_blocks + 1),
         ]
+
+        load_scales_compat(self, scale_file)
 
     def get_triplets(self, edge_index, num_atoms):
         """
