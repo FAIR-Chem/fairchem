@@ -6,12 +6,13 @@ LICENSE file in the root directory of this source tree.
 
 import torch
 
+from ocpmodels.modules.scaling import ScaleFactor
+
 from .basis_utils import get_sph_harm_basis
 from .radial_basis import GaussianBasis, RadialBasis
-from .scaling import ScaledModule, ScalingFactor
 
 
-class CircularBasisLayer(ScaledModule):
+class CircularBasisLayer(torch.nn.Module):
     """
     2D Fourier Bessel Basis
 
@@ -40,7 +41,7 @@ class CircularBasisLayer(ScaledModule):
 
         self.scale_basis = scale_basis
         if self.scale_basis:
-            self.scale_cbf = ScalingFactor()
+            self.scale_cbf = ScaleFactor()
 
         cbf_name = cbf["name"].lower()
         cbf_hparams = cbf.copy()
@@ -68,7 +69,7 @@ class CircularBasisLayer(ScaledModule):
         # (num_edges, num_radial), (num_triplets, num_spherical)
 
 
-class SphericalBasisLayer(ScaledModule):
+class SphericalBasisLayer(torch.nn.Module):
     """
     3D Fourier Bessel Basis
 
@@ -98,7 +99,7 @@ class SphericalBasisLayer(ScaledModule):
 
         self.scale_basis = scale_basis
         if self.scale_basis:
-            self.scale_sbf = ScalingFactor()
+            self.scale_sbf = ScaleFactor()
 
         sbf_name = sbf["name"].lower()
         sbf_hparams = sbf.copy()
