@@ -380,11 +380,12 @@ class EHOutputPPBlock(torch.nn.Module):
         x = self.lin_rbf(rbf) * x
         x = scatter(x, i, dim=0, dim_size=num_nodes)
 
+        pooling_loss = None
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(x)
         elif self.energy_head == "graclus":
             x, batch = self.graclus(x, edge_index, edge_weight, batch)
-        elif self.energy_head:
+        elif self.energy_head in {"pooling", "random"}:
             x, batch, pooling_loss = self.hierarchical_pooling(
                 x, edge_index, edge_weight, batch
             )
@@ -587,7 +588,6 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             self.w_lin.bias.data.fill_(0)
             torch.nn.init.xavier_uniform_(self.w_lin.weight)
 
-
     def triplets(self, edge_index, cell_offsets, num_nodes):
         row, col = edge_index  # j->i
 
@@ -775,7 +775,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             )
         else:
             P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
-        
+
         if self.energy_head == "weigthed-av-initial-embeds":
             alpha = self.w_lin(P)
 

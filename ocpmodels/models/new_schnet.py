@@ -485,7 +485,7 @@ class NewSchNetWrap(NewSchNet):
         elif self.energy_head == "graclus":
             h, batch = self.graclus(h, edge_index, edge_weight, batch)
 
-        elif self.energy_head:
+        if self.energy_head in {"pooling", "random"}:
             h, batch, pooling_loss = self.hierarchical_pooling(
                 h, edge_index, edge_weight, batch
             )
