@@ -17,6 +17,15 @@ class _Stats(TypedDict):
 IndexFn = Callable[[], None]
 
 
+def _check_consistency(old: torch.Tensor, new: torch.Tensor, key: str):
+    if not torch.allclose(old, new):
+        raise ValueError(
+            f"Scale factor parameter {key} is inconsistent with the loaded state dict.\n"
+            f"Old: {old}\n"
+            f"Actual: {new}"
+        )
+
+
 class ScaleFactor(nn.Module):
     scale_factor: torch.Tensor
 
@@ -70,12 +79,7 @@ class ScaleFactor(nn.Module):
                 continue
 
             input_param = state_dict[key]
-            if not torch.allclose(param, input_param):
-                raise ValueError(
-                    f"Scale factor parameter {key} is inconsistent with the loaded state dict.\n"
-                    f"Expected: {param}\n"
-                    f"Actual: {input_param}"
-                )
+            _check_consistency(old=param, new=input_param, key=key)
 
     @property
     def fitted(self):
@@ -87,6 +91,12 @@ class ScaleFactor(nn.Module):
 
     @torch.jit.unused
     def set_(self, scale: Union[float, torch.Tensor]):
+        if self.fitted:
+            _check_consistency(
+                old=self.scale_factor,
+                new=torch.tensor(scale) if isinstance(scale, float) else scale,
+                key="scale_factor",
+            )
         self.scale_factor.fill_(scale)
 
     @torch.jit.unused

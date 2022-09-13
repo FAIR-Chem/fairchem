@@ -12,7 +12,6 @@ import random
 import subprocess
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
@@ -38,6 +37,7 @@ from ocpmodels.modules.exponential_moving_average import (
 )
 from ocpmodels.modules.loss import AtomwiseL2Loss, DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
+from ocpmodels.modules.scaling.compat import load_scales_compat
 from ocpmodels.modules.scheduler import LRScheduler
 
 
@@ -433,6 +433,20 @@ class BaseTrainer(ABC):
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
+
+        scale_dict = checkpoint.get("scale_dict", None)
+        if scale_dict:
+            logging.info(
+                "Overwriting scaling factors with those loaded from checkpoint. "
+                "If you're generating predictions with a pretrained checkpoint, this is the correct behavior. "
+                "To disable this, delete `scale_dict` from the checkpoint. "
+            )
+            module = self.model
+            while isinstance(
+                module, (OCPDataParallel, DistributedDataParallel)
+            ):
+                module = module.module
+            load_scales_compat(module, scale_dict)
 
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
