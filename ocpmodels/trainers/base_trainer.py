@@ -38,11 +38,19 @@ from ocpmodels.modules.exponential_moving_average import (
 from ocpmodels.modules.loss import AtomwiseL2Loss, DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scaling.compat import load_scales_compat
+from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.modules.scheduler import LRScheduler
 
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
+    @property
+    def _unwrapped_model(self):
+        module = self.model
+        while isinstance(module, (OCPDataParallel, DistributedDataParallel)):
+            module = module.module
+        return module
+
     def __init__(
         self,
         task,
@@ -441,12 +449,7 @@ class BaseTrainer(ABC):
                 "If you're generating predictions with a pretrained checkpoint, this is the correct behavior. "
                 "To disable this, delete `scale_dict` from the checkpoint. "
             )
-            module = self.model
-            while isinstance(
-                module, (OCPDataParallel, DistributedDataParallel)
-            ):
-                module = module.module
-            load_scales_compat(module, scale_dict)
+            load_scales_compat(self._unwrapped_model, scale_dict)
 
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
@@ -629,6 +632,8 @@ class BaseTrainer(ABC):
 
     @torch.no_grad()
     def validate(self, split="val", disable_tqdm=False):
+        ensure_fitted(self._unwrapped_model)
+
         if distutils.is_master():
             logging.info(f"Evaluating on {split}.")
         if self.is_hpo:
