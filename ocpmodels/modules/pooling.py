@@ -199,7 +199,6 @@ class Hierarchical_Pooling(torch.nn.Module):
         self.num_layers = num_layers
         self.pooling_type = pooling_type
 
-        self.w_lin = Linear(hidden_channels, 1)
         self.cluster_mlp = Linear(hidden_channels, num_clusters)
         if num_layers > 1:
             self.cluster_mlp_2 = Linear(hidden_channels, self.num_clusters_2)
@@ -208,8 +207,6 @@ class Hierarchical_Pooling(torch.nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        self.w_lin.bias.data.fill_(0)
-        torch.nn.init.xavier_uniform_(self.w_lin.weight)
         self.cluster_mlp.bias.data.fill_(0)
         torch.nn.init.xavier_uniform_(self.cluster_mlp.weight)
         self.dense_gnn.reset_parameters()
