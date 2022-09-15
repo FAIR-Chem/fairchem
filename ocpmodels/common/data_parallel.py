@@ -165,15 +165,16 @@ class BalancedBatchSampler(Sampler):
         if not isinstance(dataset, _HasMetadata):
             if force_balancing:
                 logging.warning(
-                    f"Dataset {type(dataset)} does not have the `metadata_path` attribute. "
+                    f"Dataset `{type(dataset).__qualname__}` does not have the `metadata_path` attribute. "
                     "BalancedBatchSampler has to load the data to "
                     "determine batch sizes, which incurs "
-                    "significant overhead!"
+                    "significant overhead! "
+                    "You can disable balancing by setting `optim.load_balancing` to `None`."
                 )
                 self.sizes = None
             else:
                 logging.warning(
-                    f"Dataset {type(dataset)} does not have the `metadata_path` attribute. "
+                    f"Dataset `{type(dataset).__qualname__}` does not have the `metadata_path` attribute. "
                     "Batches will not be balanced, "
                     "which can incur significant overhead!"
                 )
@@ -186,7 +187,8 @@ class BalancedBatchSampler(Sampler):
                         f"No metadata file found at '{dataset.metadata_path}'. "
                         "BalancedBatchSampler has to load the data to "
                         "determine batch sizes, which incurs "
-                        "significant overhead!"
+                        "significant overhead! "
+                        "You can disable balancing by setting `optim.load_balancing` to `None`."
                     )
                     self.sizes = None
                 else:
