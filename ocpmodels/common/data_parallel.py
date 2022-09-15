@@ -161,10 +161,25 @@ class BalancedBatchSampler(Sampler):
         self.shuffle = shuffle
         self.drop_last = drop_last
 
-        self.balance_batches = self.num_replicas > 1 and isinstance(
-            dataset, _HasMetadata
-        )
-        if self.balance_batches:
+        self.balance_batches = self.num_replicas > 1
+        if not isinstance(dataset, _HasMetadata):
+            if force_balancing:
+                logging.warning(
+                    f"Dataset {type(dataset)} does not have the `metadata_path` attribute. "
+                    "BalancedBatchSampler has to load the data to "
+                    "determine batch sizes, which incurs "
+                    "significant overhead!"
+                )
+                self.sizes = None
+            else:
+                logging.warning(
+                    f"Dataset {type(dataset)} does not have the `metadata_path` attribute. "
+                    "Batches will not be balanced, "
+                    "which can incur significant overhead!"
+                )
+                self.balance_batches = False
+                self.sizes = None
+        elif self.balance_batches:
             if not dataset.metadata_path.is_file():
                 if force_balancing:
                     logging.warning(
