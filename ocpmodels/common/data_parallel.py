@@ -8,6 +8,8 @@ LICENSE file in the root directory of this source tree.
 import heapq
 import logging
 from itertools import chain
+from pathlib import Path
+from typing import Protocol, runtime_checkable
 
 import numba
 import numpy as np
@@ -130,6 +132,13 @@ def balanced_partition(sizes, num_parts):
     return idx_balanced
 
 
+@runtime_checkable
+class _HasMetadata(Protocol):
+    @property
+    def metadata_path(self) -> Path:
+        ...
+
+
 class BalancedBatchSampler(Sampler):
     def __init__(
         self,
@@ -152,12 +161,11 @@ class BalancedBatchSampler(Sampler):
         self.shuffle = shuffle
         self.drop_last = drop_last
 
-        self.balance_batches = self.num_replicas > 1
+        self.balance_batches = self.num_replicas > 1 and isinstance(
+            dataset, _HasMetadata
+        )
         if self.balance_batches:
-            if (
-                not hasattr(dataset, "metadata_path")
-                or not dataset.metadata_path.is_file()
-            ):
+            if not dataset.metadata_path.is_file():
                 if force_balancing:
                     logging.warning(
                         f"No metadata file found at '{dataset.metadata_path}'. "
@@ -187,7 +195,7 @@ class BalancedBatchSampler(Sampler):
             self.sizes = None
 
         self.single_sampler = DistributedSampler(
-            dataset,
+            self.dataset,
             num_replicas=num_replicas,
             rank=rank,
             shuffle=shuffle,
@@ -207,41 +215,38 @@ class BalancedBatchSampler(Sampler):
 
     def __iter__(self):
         for batch_idx in self.batch_sampler:
-            if self.balance_batches:
-                if self.sizes is None:
-                    # Unfortunately, we need to load the data to know the image sizes
-                    data_list = [self.dataset[idx] for idx in batch_idx]
-
-                    if self.mode == "atoms":
-                        sizes = [data.num_nodes for data in data_list]
-                    elif self.mode == "neighbors":
-                        sizes = [
-                            data.edge_index.shape[1] for data in data_list
-                        ]
-                    else:
-                        raise NotImplementedError(
-                            f"Unknown load balancing mode: {self.mode}"
-                        )
-                else:
-                    sizes = [self.sizes[idx] for idx in batch_idx]
-
-                idx_sizes = torch.stack(
-                    [torch.tensor(batch_idx), torch.tensor(sizes)]
-                )
-                idx_sizes_all = distutils.all_gather(
-                    idx_sizes, device=self.device
-                )
-                idx_sizes_all = torch.cat(idx_sizes_all, dim=-1).cpu()
-                if gp_utils.initialized():
-                    idx_sizes_all = torch.unique(input=idx_sizes_all, dim=1)
-                idx_all = idx_sizes_all[0]
-                sizes_all = idx_sizes_all[1]
-
-                local_idx_balanced = balanced_partition(
-                    sizes_all.numpy(), num_parts=self.num_replicas
-                )
-                # Since DistributedSampler pads the last batch
-                # this should always have an entry for each replica.
-                yield idx_all[local_idx_balanced[self.rank]]
-            else:
+            if not self.balance_batches:
                 yield batch_idx
+                continue
+
+            if self.sizes is None:
+                # Unfortunately, we need to load the data to know the image sizes
+                data_list = [self.dataset[idx] for idx in batch_idx]
+
+                if self.mode == "atoms":
+                    sizes = [data.num_nodes for data in data_list]
+                elif self.mode == "neighbors":
+                    sizes = [data.edge_index.shape[1] for data in data_list]
+                else:
+                    raise NotImplementedError(
+                        f"Unknown load balancing mode: {self.mode}"
+                    )
+            else:
+                sizes = [self.sizes[idx] for idx in batch_idx]
+
+            idx_sizes = torch.stack(
+                [torch.tensor(batch_idx), torch.tensor(sizes)]
+            )
+            idx_sizes_all = distutils.all_gather(idx_sizes, device=self.device)
+            idx_sizes_all = torch.cat(idx_sizes_all, dim=-1).cpu()
+            if gp_utils.initialized():
+                idx_sizes_all = torch.unique(input=idx_sizes_all, dim=1)
+            idx_all = idx_sizes_all[0]
+            sizes_all = idx_sizes_all[1]
+
+            local_idx_balanced = balanced_partition(
+                sizes_all.numpy(), num_parts=self.num_replicas
+            )
+            # Since DistributedSampler pads the last batch
+            # this should always have an entry for each replica.
+            yield idx_all[local_idx_balanced[self.rank]]
