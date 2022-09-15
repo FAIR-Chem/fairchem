@@ -231,11 +231,11 @@ class BalancedBatchSampler(Sampler):
         self.single_sampler.set_epoch(epoch)
 
     def __iter__(self):
-        for batch_idx in self.batch_sampler:
-            if not self.balance_batches:
-                yield batch_idx
-                continue
+        if not self.balance_batches:
+            yield from self.batch_sampler
+            return
 
+        for batch_idx in self.batch_sampler:
             if self.sizes is None:
                 # Unfortunately, we need to load the data to know the image sizes
                 data_list = [self.dataset[idx] for idx in batch_idx]
