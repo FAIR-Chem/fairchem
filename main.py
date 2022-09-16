@@ -30,6 +30,13 @@ from ocpmodels.common.utils import (
     update_from_sbatch_py_vars,
 )
 
+try:
+    import ipdb  # noqa: F401
+
+    os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
+except:  # noqa: E722
+    pass
+
 
 class Runner(submitit.helpers.Checkpointable):
     def __init__(self):
