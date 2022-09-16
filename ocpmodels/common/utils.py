@@ -30,6 +30,8 @@ from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import segment_coo, segment_csr
+from ocpmodels.common.flags import flags
+from ocpmodels.common.registry import registry
 
 
 def pyg2_data_transform(data: Data):
@@ -845,3 +847,53 @@ def update_from_sbatch_py_vars(args):
     for k, v in sbatch_py_vars.items():
         setattr(args, k, v)
     return args
+
+
+def make_trainer(
+    str_args=["--mode=train", "--config=configs/is2re/10k/schnet/new_schnet.yml"],
+    overrides={},
+):
+    argv = [a for a in sys.argv]
+    assert isinstance(str_args, list)
+    sys.argv[1:] = str_args
+    setup_logging()
+
+    parser = flags.get_parser()
+    args, override_args = parser.parse_known_args()
+    config = build_config(args, override_args)
+
+    for k, v in overrides.items():
+        if isinstance(v, dict):
+            for kk, vv in v.items():
+                config[k][kk] = vv
+        else:
+            config[k] = v
+
+    setup_imports()
+    trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
+        task=config["task"],
+        model_attributes=config["model"],
+        dataset=config["dataset"],
+        optimizer=config["optim"],
+        identifier=config["identifier"],
+        timestamp_id=config.get("timestamp_id", None),
+        run_dir=config.get("run_dir", "./"),
+        is_debug=config.get("is_debug", False),
+        print_every=config.get("print_every", 100),
+        seed=config.get("seed", 0),
+        logger=config.get("logger", "wandb"),
+        local_rank=config["local_rank"],
+        amp=config.get("amp", False),
+        cpu=config.get("cpu", False),
+        slurm=config.get("slurm", {}),
+        new_gnn=config.get("new_gnn", True),
+        data_split=config.get("data_split", None),
+        note=config.get("note", ""),
+    )
+
+    task = registry.get_task_class(config["mode"])(config)
+    task.setup(trainer)
+
+    sys.argv = argv
+
+    return trainer
