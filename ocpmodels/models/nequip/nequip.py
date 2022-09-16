@@ -92,10 +92,11 @@ class NequipWrap(nn.Module):
         resnet=False,
         regress_forces=False,
         direct_forces=False,
-        direct_pos=False,
-        otf_graph=False,
+        otf_graph=True,
         use_pbc=False,
         max_neighbors=50,
+        ave_num_neighbors=None,
+        reduce_energy="sum",
         **convolution_args,
     ):
         super().__init__()
@@ -103,9 +104,10 @@ class NequipWrap(nn.Module):
         self.otf_graph = otf_graph
         self.regress_forces = regress_forces
         self.direct_forces = direct_forces
-        self.direct_pos = direct_pos
         self.cutoff = cutoff
-        self.max_neighbors = 50
+        self.max_neighbors = max_neighbors
+        self.ave_num_neighbors = ave_num_neighbors
+        self.reduce_energy = reduce_energy
         config = {
             "BesselBasis_trainable": BesselBasis_trainable,
             "PolynomialCutoff_p": PolynomialCutoff_p,
@@ -153,14 +155,36 @@ class NequipWrap(nn.Module):
             }
         )
 
-        layers["total_energy_sum"] = (
-            AtomwiseReduce,
-            dict(
-                reduce="sum",
-                field=AtomicDataDict.PER_ATOM_ENERGY_KEY,
-                out_field=AtomicDataDict.TOTAL_ENERGY_KEY,
-            ),
-        )
+        if self.direct_forces:
+            layers["output_hidden_to_vect"] = (
+                # add direct force to output block
+                AtomwiseLinear,
+                dict(
+                    irreps_out="1x1o",
+                    out_field="per_atom_force",
+                ),
+            )
+
+        if self.reduce_energy == "normalized_sum":
+            layers["total_energy_sum"] = (
+                AtomwiseReduce,
+                dict(
+                    reduce="normalized_sum",
+                    avg_num_atoms=self.ave_num_neighbors,
+                    field=AtomicDataDict.PER_ATOM_ENERGY_KEY,
+                    out_field=AtomicDataDict.TOTAL_ENERGY_KEY,
+                ),
+            )
+
+        else:
+            layers["total_energy_sum"] = (
+                AtomwiseReduce,
+                dict(
+                    reduce="sum",
+                    field=AtomicDataDict.PER_ATOM_ENERGY_KEY,
+                    out_field=AtomicDataDict.TOTAL_ENERGY_KEY,
+                ),
+            )
 
         self.model = SequentialGraphNetwork.from_parameters(
             shared_params=config, layers=layers
@@ -230,12 +254,13 @@ class NequipWrap(nn.Module):
         data.edge_vec = edge_vec
 
         data = self.convert_ocp(data)
-
-        if self.direct_forces:
-            forces = self.model(data)["Nx3"]
-
         energy = self._forward(data)["total_energy"]
-        if self.regress_forces:
+
+        if self.regress_forces and self.direct_forces:
+            forces = self.model(data)["per_atom_force"]
+            return energy, forces
+
+        if self.regress_forces and not self.direct_forces:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,
