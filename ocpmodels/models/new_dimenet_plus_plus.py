@@ -780,6 +780,9 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             alpha = self.w_lin(x)
 
         # Interaction blocks.
+
+        energy_Ps = []
+
         for interaction_block, output_block in zip(
             self.interaction_blocks, self.output_blocks[1:]
         ):
@@ -788,18 +791,25 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
                 P_bis, pooling_loss_bis, _ = output_block(
                     x, rbf, i, edge_index, dist, data.batch, num_nodes=pos.size(0)
                 )
-                if P_bis.shape == P:  # avoid graclus occasional issue
-                    P += P_bis
+                energy_Ps.append(
+                    P_bis.sum(0) / len(P)
+                    if batch is None
+                    else scatter(P_bis, batch, dim=0)
+                )
                 if pooling_loss_bis is not None:
                     pooling_loss += pooling_loss_bis
             else:
                 P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
+        P_bis = sum(energy_Ps or [0])
+
         if self.energy_head == "weighted-av-initial-embeds":
             P = P * alpha
 
         # Output
+        # scatter
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+        energy = energy + P_bis
 
         return energy, pooling_loss
 
