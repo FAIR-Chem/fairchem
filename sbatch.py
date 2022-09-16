@@ -28,8 +28,13 @@ template = """\
 export MASTER_PORT=$(expr 10000 + $(echo -n $SLURM_JOBID | tail -c 4))
 echo "Master port $MASTER_PORT"
 
-module load anaconda/3
-conda activate {env}
+if {virtualenv}
+then
+    source {env}/bin/activate
+else
+    module load anaconda/3
+    conda activate {env}
+fi
 
 srun --output={output} {python_command}
 """
@@ -156,6 +161,12 @@ if __name__ == "__main__":
     else:
         python_command = f"python main.py {args.py_args}"
 
+    # conda or pip
+    if "virtualenv" in args and args.virtualenv is True:
+        virtualenv = "true"
+    else:
+        virtualenv = "false"
+
     # format string template with defaults + command-line args
     script = template.format(
         cpus=args.cpus,
@@ -175,6 +186,7 @@ if __name__ == "__main__":
         sbatch_command_line=" ".join(["python"] + sys.argv),
         sbatch_py_vars=make_sbatch_py_vars(sbatch_py_vars),
         time="" if not args.time else f"#SBATCH --time={args.time}",
+        virtualenv=virtualenv,
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
