@@ -1,75 +1,87 @@
 import pandas as pd
 import torch
-from mendeleev.fetch import fetch_table
+import torch.nn as nn
+from mendeleev.fetch import fetch_ionization_energies, fetch_table
 
 
-class PhysEmbedding:
-    def __init__(self, phys=True, short=False) -> None:
+class PhysEmbedding(nn.Module):
+    def __init__(self, props=True, props_grad=False, pg=False, short=False) -> None:
+        """
+        Create physical embeddings meta class with sub-emeddings for each atom
+
+        Args:
+            props (bool, optional): Whether to create a properties embedding.
+                Defaults to True.
+            props_grad (bool, optional): Whether the properties embedding should be
+                learned or kept fixed. Defaults to False.
+            pg (bool, optional): Whether to use period and group embeddings.
+                Defaults to False.
+            short (bool, optional)
+        """
+        super().__init__()
 
         self.properties_list = [
             "atomic_radius",
             "atomic_volume",
-            "atomic_weight",
-            "atomic_weight_uncertainty",
             "density",
             "dipole_polarizability",
             "electron_affinity",
             "en_allen",
-            "boiling_point",
             "specific_heat",
-            "evaporation_heat",
-            "fusion_heat",
             "melting_point",
             "thermal_conductivity",
-            "heat_of_formation",
             "vdw_radius",
             "metallic_radius",
             "metallic_radius_c12",
             "covalent_radius_pyykko_double",
             "covalent_radius_pyykko_triple",
             "covalent_radius_pyykko",
+            "IE1",
+            "IE2",
         ]
-        self.short = short
-        self.phys_embeddings = None
-        self.phys_embeds_size = 0
-        self.group = None
         self.group_size = 0
-        self.period = None
         self.period_size = 0
+        self.n_properties = 0
 
-    def create(self, phys=True):
-        """Create an embedding vector for each atom
-        containing key physics properties
+        self.props = props
+        self.props_grad = props_grad
+        self.pg = pg
+        self.short = short
 
-        Args:
-            short (bool, optional): whether to exclude 'NaN' values columns
-            Defaults to False.
-        """
-        # Convert to torch tensor and cuda
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        group = None
+        period = None
 
         # Load table with all properties of all periodic table elements
         df = fetch_table("elements")
         df = df.set_index("atomic_number")
 
-        # Fetch group and period data
-        df.group_id = df.group_id.fillna(value=19.0)
-        self.group_size = df.group_id.unique().shape[0]
-        self.group = torch.cat(
-            [
-                torch.ones(1, dtype=torch.long),
-                torch.tensor(df.group_id.loc[:100].values, dtype=torch.long),
-            ]
-        ).to(device)
-        self.period_size = df.period.loc[:100].unique().shape[0]
-        self.period = torch.cat(
-            [
-                torch.ones(1, dtype=torch.long),
-                torch.tensor(df.period.loc[:100].values, dtype=torch.long),
-            ]
-        ).to(device)
+        # Add ionization energy
+        ies = fetch_ionization_energies(degree=[1, 2])
+        df = pd.concat([df, ies], axis=1)
 
-        if phys:
+        # Fetch group and period data
+        if pg:
+            df.group_id = df.group_id.fillna(value=19.0)
+            self.group_size = df.group_id.unique().shape[0]
+            group = torch.cat(
+                [
+                    torch.ones(1, dtype=torch.long),
+                    torch.tensor(df.group_id.loc[:100].values, dtype=torch.long),
+                ]
+            )
+
+            self.period_size = df.period.loc[:100].unique().shape[0]
+            period = torch.cat(
+                [
+                    torch.ones(1, dtype=torch.long),
+                    torch.tensor(df.period.loc[:100].values, dtype=torch.long),
+                ]
+            )
+
+        self.register_buffer("group", group)
+        self.register_buffer("period", period)
+
+        if props:
             # Select only potentially relevant elements
             df = df[self.properties_list]
             df = df.loc[:85, :]
@@ -92,11 +104,22 @@ class PhysEmbedding:
                     value=df[col_missing_val].mean()
                 )
 
-            self.phys_embeds_size = len(df.columns)
-
-            self.phys_embeddings = torch.cat(
+            self.n_properties = len(df.columns)
+            properties = torch.cat(
                 [
-                    torch.zeros(1, self.phys_embeds_size),
+                    torch.zeros(1, self.n_properties),
                     torch.from_numpy(df.values).float(),
                 ]
-            ).to(device)
+            )
+            if props_grad:
+                self.register_parameter("properties", nn.Parameter(properties))
+            else:
+                self.register_buffer("properties", properties)
+
+    @property
+    def device(self):
+        if self.props:
+            return self.properties.device
+        if self.pg:
+            return self.group.device
+        # raise ValueError("PhysEmb has no device because it has no tensor!")

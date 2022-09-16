@@ -19,7 +19,14 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.preprocessing import (
+    one_supernode_per_atom_type,
+    one_supernode_per_atom_type_dist,
+    one_supernode_per_graph,
+    remove_tag0_nodes,
+)
 
 
 class InteractionBlock(torch.nn.Module):
@@ -158,6 +165,7 @@ class NewSchNet(torch.nn.Module):
         pg_hidden_channels: int = 32,
         phys_embeds: bool = False,
         phys_hidden_channels: int = 32,
+        graph_rewiring=False,
         num_filters: int = 128,
         num_interactions: int = 6,
         num_gaussians: int = 50,
@@ -185,6 +193,12 @@ class NewSchNet(torch.nn.Module):
         self.use_pg = pg_hidden_channels > 0
         self.use_mlp_phys = phys_hidden_channels > 0 and phys_embeds
         self.use_phys_embeddings = phys_embeds
+        self.use_positional_embeds = graph_rewiring in {
+            "one-supernode-per-graph",
+            "one-supernode-per-atom-type",
+            "one-supernode-per-atom-type-dist",
+        }
+        # self.use_positional_embeds = False
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         # self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
@@ -195,22 +209,21 @@ class NewSchNet(torch.nn.Module):
             self.tag_embedding = Embedding(3, tag_hidden_channels)
 
         # Phys embeddings
-        self.Femb = PhysEmbedding()
-        self.Femb.create(phys=phys_embeds)
-        if phys_embeds:
-            if self.use_mlp_phys:
-                self.phys_lin = Linear(
-                    self.Femb.phys_embeds_size, self.phys_hidden_channels
-                )
-            else:
-                self.phys_hidden_channels = self.Femb.phys_embeds_size
+        self.phys_emb = PhysEmbedding(props=phys_embeds, pg=self.use_pg)
+        if self.use_mlp_phys:
+            self.phys_lin = Linear(
+                self.phys_emb.n_properties, self.phys_hidden_channels
+            )
+        else:
+            self.phys_hidden_channels = self.phys_emb.n_properties
+
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = Embedding(
-                self.Femb.period_size, self.pg_hidden_channels
+                self.phys_emb.period_size, self.pg_hidden_channels
             )
             self.group_embedding = Embedding(
-                self.Femb.group_size, self.pg_hidden_channels
+                self.phys_emb.group_size, self.pg_hidden_channels
             )
 
         assert (
@@ -218,6 +231,7 @@ class NewSchNet(torch.nn.Module):
             < hidden_channels
         )
 
+        # Main embedding
         self.embedding = Embedding(
             85,
             hidden_channels
@@ -225,8 +239,10 @@ class NewSchNet(torch.nn.Module):
             - self.phys_hidden_channels
             - 2 * self.pg_hidden_channels,
         )
-        # self.embedding = Embedding(100, hidden_channels)
-        # hidden_channels += tag_hidden_channels
+
+        # Position encoding
+        if self.use_positional_embeds:
+            self.pe = PositionalEncoding(hidden_channels, 210)
 
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
         self.interactions = ModuleList()
@@ -275,7 +291,7 @@ class NewSchNet(torch.nn.Module):
             f"{self.__class__.__name__}("
             f"hidden_channels={self.hidden_channels}, "
             f"tag_hidden_channels={self.tag_hidden_channels}, "
-            f"phys_embeddings={self.phys_hidden_channels}, "
+            f"properties={self.phys_hidden_channels}, "
             f"period_hidden_channels={self.pg_hidden_channels}, "
             f"group_hidden_channels={self.pg_hidden_channels}, "
             f"num_filters={self.num_filters}, "
@@ -306,12 +322,14 @@ class NewSchNetWrap(NewSchNet):
         num_gaussians=50,
         cutoff=10.0,
         readout="add",
+        graph_rewiring=False,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
+        self.graph_rewiring = graph_rewiring
 
         super(NewSchNetWrap, self).__init__(
             hidden_channels=hidden_channels,
@@ -319,6 +337,7 @@ class NewSchNetWrap(NewSchNet):
             pg_hidden_channels=pg_hidden_channels,
             phys_hidden_channels=phys_hidden_channels,
             phys_embeds=phys_embeds,
+            graph_rewiring=graph_rewiring,
             num_filters=num_filters,
             num_interactions=num_interactions,
             num_gaussians=num_gaussians,
@@ -329,11 +348,7 @@ class NewSchNetWrap(NewSchNet):
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
         """"""
-        z = data.atomic_numbers.long()
-        # Convert z to index mapping
-        pos = data.pos
-        batch = data.batch
-
+        # Re-compute on the fly the graph
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
                 data, self.cutoff, 50
@@ -342,6 +357,35 @@ class NewSchNetWrap(NewSchNet):
             data.cell_offsets = cell_offsets
             data.neighbors = neighbors
 
+        # Rewire the graph
+        if not self.graph_rewiring:
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "remove-tag-0":
+            data = remove_tag0_nodes(data)
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-graph":
+            data = one_supernode_per_graph(data)
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-atom-type":
+            data = one_supernode_per_atom_type(data)
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
+            data = one_supernode_per_atom_type_dist(data)
+            z = data.atomic_numbers.long()
+            pos = data.pos
+            batch = data.batch
+        else:
+            raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
+
+        # Use periodic boundary conditions
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
 
@@ -356,9 +400,17 @@ class NewSchNetWrap(NewSchNet):
             edge_index = out["edge_index"]
             edge_weight = out["distances"]
             edge_attr = self.distance_expansion(edge_weight)
-
-        assert z.dim() == 1 and z.dtype == torch.long
-        batch = torch.zeros_like(z) if batch is None else batch
+        else:
+            edge_index = radius_graph(
+                pos,
+                r=self.cutoff,
+                batch=batch,
+                max_num_neighbors=self.max_num_neighbors,
+            )
+            # edge_index = data.edge_index
+            row, col = edge_index
+            edge_weight = (pos[row] - pos[col]).norm(dim=-1)
+            edge_attr = self.distance_expansion(edge_weight)
 
         h = self.embedding(z)
 
@@ -367,27 +419,28 @@ class NewSchNetWrap(NewSchNet):
             h_tag = self.tag_embedding(data.tags)
             h = torch.cat((h, h_tag), dim=1)
 
+        if self.phys_emb.device != batch.device:
+            self.phys_emb = self.phys_emb.to(batch.device)
+
         if self.use_phys_embeddings:
-            h_phys = self.Femb.phys_embeddings[z]
+            h_phys = self.phys_emb.properties[z]
             if self.use_mlp_phys:
                 h_phys = self.phys_lin(h_phys)
             h = torch.cat((h, h_phys), dim=1)
 
         if self.use_pg:
-            # assert self.Femb.period is not None
-            h_period = self.period_embedding(self.Femb.period[z])
-            h_group = self.group_embedding(self.Femb.group[z])
+            # assert self.phys_emb.period is not None
+            h_period = self.period_embedding(self.phys_emb.period[z])
+            h_group = self.group_embedding(self.phys_emb.group[z])
             h = torch.cat((h, h_period, h_group), dim=1)
 
-        edge_index = radius_graph(
-            pos,
-            r=self.cutoff,
-            batch=batch,
-            max_num_neighbors=self.max_num_neighbors,
-        )
-        row, col = edge_index
-        edge_weight = (pos[row] - pos[col]).norm(dim=-1)
-        edge_attr = self.distance_expansion(edge_weight)
+        if self.use_positional_embeds:
+            idx_of_non_zero_val = (data.tags == 0).nonzero().T.squeeze(0)
+            h_pos = torch.zeros_like(h, device=h.device)
+            h_pos[idx_of_non_zero_val, :] = self.pe(data.subnodes).to(
+                device=h_pos.device
+            )
+            h += h_pos
 
         for interaction in self.interactions:
             h = h + interaction(h, edge_index, edge_weight, edge_attr)

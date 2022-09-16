@@ -34,7 +34,9 @@ from ocpmodels.common.data_parallel import (
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
-from ocpmodels.modules.exponential_moving_average import ExponentialMovingAverage
+from ocpmodels.modules.exponential_moving_average import (
+    ExponentialMovingAverage,
+)
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
@@ -754,7 +756,7 @@ class BaseTrainer(ABC):
             )
 
         # Compute performance metrics on all four validation splits
-        start_time = time.time()
+        cumulated_time = 0
         metrics_dict = {}
         logging.info("Evaluating on 4 val splits.")
         for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
@@ -784,12 +786,14 @@ class BaseTrainer(ABC):
                 )
 
             # Call validate function
+            start_time = time.time()
             self.metrics = self.validate(split="eval", disable_tqdm=True, name_split=s)
             metrics_dict[s] = self.metrics
+            cumulated_time += time.time() - start_time
 
-            # Log results
-            if self.config["logger"] == "wandb" and distutils.is_master():
-                self.logger.log({"Val. time": time.time() - start_time})
+        # Log time
+        if self.config["logger"] == "wandb" and distutils.is_master():
+            self.logger.log({"Val. time": cumulated_time})
 
         if final:
             # Print results

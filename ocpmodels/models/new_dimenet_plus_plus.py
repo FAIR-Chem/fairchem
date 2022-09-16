@@ -34,6 +34,7 @@ THE SOFTWARE.
 
 from math import pi as PI
 from math import sqrt
+from pickle import FALSE
 
 import torch
 from torch import nn
@@ -55,7 +56,14 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.preprocessing import (
+    one_supernode_per_atom_type,
+    one_supernode_per_atom_type_dist,
+    one_supernode_per_graph,
+    remove_tag0_nodes,
+)
 
 try:
     import sympy as sym
@@ -98,7 +106,7 @@ class EmbeddingBlock(torch.nn.Module):
         self.lin_rbf.reset_parameters()
         self.lin.reset_parameters()
 
-    def forward(self, x, rbf, i, j, tags=None):
+    def forward(self, x, rbf, i, j, tags=None, subnodes=None):
         x = self.emb(x)
         rbf = self.act(self.lin_rbf(rbf))
         return self.act(self.lin(torch.cat([x[i], x[j], rbf], dim=-1)))
@@ -113,6 +121,7 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         pg_hidden_channels,
         phys_hidden_channels,
         phys_embeds,
+        graph_rewiring,
         act=swish,
     ):
         super().__init__()
@@ -120,29 +129,37 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         self.use_tag = tag_hidden_channels > 0
         self.use_pg = pg_hidden_channels > 0
         self.use_mlp_phys = phys_hidden_channels > 0
+        self.use_positional_embeds = graph_rewiring in {
+            "one-supernode-per-graph",
+            "one-supernode-per-atom-type",
+            "one-supernode-per-atom-type-dist",
+        }
+        # self.use_positional_embeds = False
 
         # Phys embeddings
-        self.Femb = PhysEmbedding()
-        self.Femb.create(phys=phys_embeds)
+        self.phys_emb = PhysEmbedding(props=phys_embeds, pg=self.use_pg)
         # With MLP
         if self.use_mlp_phys:
-            self.phys_lin = Linear(
-                self.Femb.phys_embeds_size, phys_hidden_channels
-            )
+            self.phys_lin = Linear(self.phys_emb.n_properties, phys_hidden_channels)
         else:
-            phys_hidden_channels = self.Femb.phys_embeds_size
+            phys_hidden_channels = self.phys_emb.n_properties
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = Embedding(
-                self.Femb.period_size, pg_hidden_channels
+                self.phys_emb.period_size, pg_hidden_channels
             )
             self.group_embedding = Embedding(
-                self.Femb.group_size, pg_hidden_channels
+                self.phys_emb.group_size, pg_hidden_channels
             )
-
+        # Tag embedding
         if tag_hidden_channels:
             self.tag = Embedding(3, tag_hidden_channels)
 
+        # Position encoding
+        if self.use_positional_embeds:
+            self.pe = PositionalEncoding(hidden_channels, 210)
+
+        # Main embedding
         self.emb = Embedding(
             85,
             hidden_channels
@@ -153,13 +170,6 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
 
         self.lin_rbf = Linear(num_radial, hidden_channels)
         self.lin = Linear(3 * hidden_channels, hidden_channels)
-
-        # # TODO: test this setting
-        # self.emb = Embedding(95, hidden_channels)
-        # self.tag = Embedding(3, tag_hidden_channels)
-
-        # self.lin_rbf = Linear(num_radial, hidden_channels)
-        # self.lin = Linear(3 * hidden_channels + 2 * tag_hidden_channels, hidden_channels)
 
         self.reset_parameters()
 
@@ -175,25 +185,47 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         self.lin_rbf.reset_parameters()
         self.lin.reset_parameters()
 
-    def forward(self, x, rbf, i, j, tag):
+    def forward(self, x, rbf, i, j, tag=None, subnodes=None):
 
         x_ = self.emb(x)
         rbf = self.act(self.lin_rbf(rbf))
 
+        if self.phys_emb.device != x.device:
+            self.phys_emb = self.phys_emb.to(x.device)
+
         if self.use_tag:
             x_tag = self.tag(tag)
             x_ = torch.cat((x_, x_tag), dim=1)
-        if self.Femb.phys_embeds_size > 0:
-            x_phys = self.Femb.phys_embeddings[x]
+
+        if self.phys_emb.n_properties > 0:
+            x_phys = self.phys_emb.properties[x]
             if self.use_mlp_phys:
                 x_phys = self.phys_lin(x_phys)
             x_ = torch.cat((x_, x_phys), dim=1)
+
         if self.use_pg:
-            x_period = self.period_embedding(self.Femb.period[x])
-            x_group = self.group_embedding(self.Femb.group[x])
+            x_period = self.period_embedding(self.phys_emb.period[x])
+            x_group = self.group_embedding(self.phys_emb.group[x])
             x_ = torch.cat((x_, x_period, x_group), dim=1)
 
-        return self.act(self.lin(torch.cat([x_[i], x_[j], rbf,], dim=-1,)))
+        if self.use_positional_embeds:
+            idx_of_non_zero_val = (tag == 0).nonzero().T.squeeze(0)
+            x_pos = torch.zeros_like(x_, device=x_.device)
+            x_pos[idx_of_non_zero_val, :] = self.pe(subnodes).to(device=x_pos.device)
+            x_ += x_pos
+
+        return self.act(
+            self.lin(
+                torch.cat(
+                    [
+                        x_[i],
+                        x_[j],
+                        rbf,
+                    ],
+                    dim=-1,
+                )
+            )
+        )
 
 
 class InteractionPPBlock(torch.nn.Module):
@@ -229,17 +261,11 @@ class InteractionPPBlock(torch.nn.Module):
 
         # Residual layers before and after skip connection.
         self.layers_before_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_before_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_before_skip)]
         )
         self.lin = nn.Linear(hidden_channels, hidden_channels)
         self.layers_after_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_after_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_after_skip)]
         )
 
         self.reset_parameters()
@@ -371,6 +397,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
         pg_hidden_channels,
         phys_hidden_channels,
         phys_embeds,
+        graph_rewiring,
         out_channels,
         num_blocks,
         int_emb_size,
@@ -389,9 +416,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
 
         self.cutoff = cutoff
 
-        assert (
-            tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
-        )
+        assert tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
         if sym is None:
             raise ImportError("Package `sympy` could not be found.")
 
@@ -404,7 +429,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             num_spherical, num_radial, cutoff, envelope_exponent
         )
 
-        if self.use_tag or phys_embeds or self.use_pg:
+        if self.use_tag or phys_embeds or self.use_pg or graph_rewiring:
             self.emb = AdvancedEmbeddingBlock(
                 num_radial,
                 hidden_channels,
@@ -412,6 +437,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
                 pg_hidden_channels,
                 phys_hidden_channels,
                 phys_embeds,
+                graph_rewiring,
                 act,
             )
         else:
@@ -518,6 +544,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         num_after_skip=2,
         num_output_layers=3,
         phys_embeds=False,
+        graph_rewiring=False,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
@@ -525,6 +552,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         self.cutoff = cutoff
         self.otf_graph = otf_graph
         self.new_gnn = new_gnn
+        self.graph_rewiring = graph_rewiring
 
         super(NewDimeNetPlusPlusWrap, self).__init__(
             hidden_channels=hidden_channels,
@@ -532,6 +560,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             pg_hidden_channels=pg_hidden_channels,
             phys_hidden_channels=phys_hidden_channels,
             phys_embeds=phys_embeds,
+            graph_rewiring=graph_rewiring,
             out_channels=num_targets,
             num_blocks=num_blocks,
             int_emb_size=int_emb_size,
@@ -548,8 +577,6 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
 
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
-        pos = data.pos
-        batch = data.batch
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
@@ -558,6 +585,31 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             data.edge_index = edge_index
             data.cell_offsets = cell_offsets
             data.neighbors = neighbors
+
+        # Rewire the graph
+        if not self.graph_rewiring:
+            pos = data.pos
+            batch = data.batch
+            data.subnodes = False
+        elif self.graph_rewiring == "remove-tag-0":
+            data = remove_tag0_nodes(data)
+            pos = data.pos
+            batch = data.batch
+            data.subnodes = False
+        elif self.graph_rewiring == "one-supernode-per-graph":
+            data = one_supernode_per_graph(data)
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-atom-type":
+            data = one_supernode_per_atom_type(data)
+            pos = data.pos
+            batch = data.batch
+        elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
+            data = one_supernode_per_atom_type_dist(data)
+            pos = data.pos
+            batch = data.batch
+        else:
+            raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
 
         if self.use_pbc:
             out = get_pbc_distances(
@@ -607,7 +659,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         sbf = self.sbf(dist, angle, idx_kj)
 
         # Embedding block.
-        x = self.emb(data.atomic_numbers.long(), rbf, i, j, data.tags)
+        x = self.emb(data.atomic_numbers.long(), rbf, i, j, data.tags, data.subnodes)
         P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
 
         # Interaction blocks.
