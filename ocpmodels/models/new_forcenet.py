@@ -491,7 +491,10 @@ class NewForceNet(BaseModel):
             )
         elif self.energy_head == "graclus":
             self.graclus = Graclus(hidden_channels, self.activation)
-        elif self.energy_head:
+        elif self.energy_head in {
+            "weighted-av-initial-embeds",
+            "weighted-av-final-embeds",
+        }:
             self.w_lin = nn.Linear(hidden_channels, 1)
 
         # Projection layer for energy prediction
@@ -656,6 +659,13 @@ class NewForceNet(BaseModel):
         # MLPs
         h = self.lin(h)
         h = self.activation(h)
+
+        # Weighted average
+        if self.energy_head in {
+            "weighted-av-initial-embeds",
+            "weighted-av-final-embeds",
+        }:
+            h = h * alpha
 
         out = scatter(h, batch, dim=0, reduce="add")
 

@@ -276,7 +276,10 @@ class NewSchNet(torch.nn.Module):
             )
         elif self.energy_head == "graclus":
             self.graclus = Graclus(hidden_channels, self.act)
-        elif self.energy_head:
+        elif self.energy_head in {
+            "weighted-av-initial-embeds",
+            "weighted-av-final-embeds",
+        }:
             self.w_lin = Linear(hidden_channels, 1)
 
         self.register_buffer("initial_atomref", atomref)
@@ -495,7 +498,10 @@ class NewSchNetWrap(NewSchNet):
         h = self.act(h)
         h = self.lin2(h)
 
-        if self.energy_head in {"weigthed-av-final-embeds", "weigthed-av-final-embeds"}:
+        if self.energy_head in {
+            "weighted-av-initial-embeds",
+            "weighted-av-final-embeds",
+        }:
             h = h * alpha
 
         if self.atomref is not None:

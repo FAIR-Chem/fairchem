@@ -349,7 +349,7 @@ class EHOutputPPBlock(torch.nn.Module):
             self.lins.append(nn.Linear(out_emb_channels, out_emb_channels))
         self.lin = nn.Linear(out_emb_channels, out_channels, bias=False)
 
-        # weigthed average & pooling
+        # weighted average & pooling
         if self.energy_head in {"pooling", "random"}:
             self.hierarchical_pooling = Hierarchical_Pooling(
                 hidden_channels,
@@ -395,7 +395,7 @@ class EHOutputPPBlock(torch.nn.Module):
             x = self.act(lin(x))
         x = self.lin(x)
 
-        if self.energy_head == "weigthed-av-final-embeds":
+        if self.energy_head == "weighted-av-final-embeds":
             x = x * alpha
 
         return x, pooling_loss, batch
@@ -572,7 +572,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             ]
         )
 
-        if self.energy_head == "weigthed-av-initial-embeds":
+        if self.energy_head == "weighted-av-initial-embeds":
             self.w_lin = Linear(hidden_channels, 1)
 
         self.reset_parameters()
@@ -584,7 +584,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             out.reset_parameters()
         for interaction in self.interaction_blocks:
             interaction.reset_parameters()
-        if self.energy_head == "weigthed-av-initial-embeds":
+        if self.energy_head == "weighted-av-initial-embeds":
             self.w_lin.bias.data.fill_(0)
             torch.nn.init.xavier_uniform_(self.w_lin.weight)
 
@@ -776,8 +776,8 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         else:
             P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
 
-        if self.energy_head == "weigthed-av-initial-embeds":
-            alpha = self.w_lin(P)
+        if self.energy_head == "weighted-av-initial-embeds":
+            alpha = self.w_lin(x)
 
         # Interaction blocks.
         for interaction_block, output_block in zip(
@@ -785,15 +785,17 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         ):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
             if self.energy_head:
-                P_bis, pooling_loss_bis, batch = output_block(
+                P_bis, pooling_loss_bis, _ = output_block(
                     x, rbf, i, edge_index, dist, data.batch, num_nodes=pos.size(0)
                 )
-                P += P_bis
-                pooling_loss += pooling_loss_bis
+                if P_bis.shape == P:  # avoid graclus occasional issue
+                    P += P_bis
+                if pooling_loss_bis is not None:
+                    pooling_loss += pooling_loss_bis
             else:
                 P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
-        if self.energy_head == "weigthed-av-initial-embeds":
+        if self.energy_head == "weighted-av-initial-embeds":
             P = P * alpha
 
         # Output
