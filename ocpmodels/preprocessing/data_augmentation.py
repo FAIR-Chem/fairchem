@@ -5,6 +5,8 @@ from itertools import product
 import torch
 from torch_geometric.data import Batch
 
+from ocpmodels.common.transforms import RandomRotate
+
 
 def all_frames(eigenvec, pos, choice_fa="random", pos_3D=None):
     """Compute all frames for a given graph
@@ -163,3 +165,27 @@ def frame_averaging_2D(g, choice_fa="random"):
     # No need to update distances, they are preserved.
 
     return g
+
+
+def data_augmentation(g, *args):
+    """Data augmentation where we randomly rotate each graph
+    in the dataloader transform
+
+    Args:
+        g (data.Data): single graph
+        rotation (str, optional): around which axis do we rotate it.
+            Defaults to 'z'.
+
+    Returns:
+        (data.Data): rotated graph
+    """
+    # random.seed(1)
+
+    # Sampling a random rotation within [-180, 180] for all axes.
+    transform = RandomRotate([-180, 180], [2])
+    # transform = RandomRotate([-180, 180], [0, 1, 2])  # 3D
+
+    # Rotate graph
+    graph_rotated, _, _ = transform(g)  # deepcopy
+
+    return graph_rotated

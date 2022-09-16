@@ -46,5 +46,5 @@ optim:
   warmup_factor: 0.2
   max_epochs: 20
 
-frame_averaging: False # 2D, 3D, False
+frame_averaging: False # 2D, 3D, da, False
 choice_fa: False # can be {None, full, random, det, e3, e3-random, e3-det}

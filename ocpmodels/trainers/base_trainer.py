@@ -44,6 +44,7 @@ from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
 from ocpmodels.preprocessing.data_augmentation import (
+    data_augmentation,
     frame_averaging_2D,
     frame_averaging_3D,
 )
@@ -188,6 +189,8 @@ class BaseTrainer(ABC):
                 self.fa = frame_averaging_2D
             elif frame_averaging.lower() == "3d":
                 self.fa = frame_averaging_3D
+            elif frame_averaging.lower() == "da":
+                self.fa = data_augmentation
             else:
                 raise ValueError(f"Unknown frame averaging: {frame_averaging}")
         else:
