@@ -9,7 +9,7 @@ import heapq
 import logging
 from itertools import chain
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Literal, Protocol, Union, runtime_checkable
 
 import numba
 import numpy as np
@@ -147,69 +147,22 @@ class BalancedBatchSampler(Sampler):
         num_replicas,
         rank,
         device,
-        mode="atoms",
+        mode: Union[Literal["atoms", "neighbors"], bool] = "atoms",
         shuffle=True,
         drop_last=False,
         force_balancing=False,
     ):
+        if mode is True:
+            mode = "atoms"
+
         self.dataset = dataset
         self.batch_size = batch_size
         self.num_replicas = num_replicas
         self.rank = rank
         self.device = device
-        self.mode = mode.lower()
+        self.mode = mode
         self.shuffle = shuffle
         self.drop_last = drop_last
-
-        self.balance_batches = self.num_replicas > 1
-        if not isinstance(dataset, _HasMetadata):
-            if force_balancing:
-                logging.warning(
-                    f"Dataset `{type(dataset).__qualname__}` does not have the `metadata_path` attribute. "
-                    "BalancedBatchSampler has to load the data to "
-                    "determine batch sizes, which incurs "
-                    "significant overhead! "
-                    "You can disable balancing by setting `optim.load_balancing` to `None`."
-                )
-                self.sizes = None
-            else:
-                logging.warning(
-                    f"Dataset `{type(dataset).__qualname__}` does not have the `metadata_path` attribute. "
-                    "Batches will not be balanced, "
-                    "which can incur significant overhead!"
-                )
-                self.balance_batches = False
-                self.sizes = None
-        elif self.balance_batches:
-            if not dataset.metadata_path.is_file():
-                if force_balancing:
-                    logging.warning(
-                        f"No metadata file found at '{dataset.metadata_path}'. "
-                        "BalancedBatchSampler has to load the data to "
-                        "determine batch sizes, which incurs "
-                        "significant overhead! "
-                        "You can disable balancing by setting `optim.load_balancing` to `None`."
-                    )
-                    self.sizes = None
-                else:
-                    logging.warning(
-                        f"No metadata file found at '{dataset.metadata_path}'. "
-                        "Batches will not be balanced, "
-                        "which can incur significant overhead!"
-                    )
-                    self.balance_batches = False
-                    self.sizes = None
-            else:
-                if self.mode == "atoms":
-                    self.sizes = np.load(dataset.metadata_path)["natoms"]
-                elif self.mode == "neighbors":
-                    self.sizes = np.load(dataset.metadata_path)["neighbors"]
-                else:
-                    raise NotImplementedError(
-                        f"Unknown load balancing mode: {self.mode}"
-                    )
-        else:
-            self.sizes = None
 
         self.single_sampler = DistributedSampler(
             self.dataset,
@@ -223,6 +176,70 @@ class BalancedBatchSampler(Sampler):
             batch_size,
             drop_last=drop_last,
         )
+
+        self.sizes = None
+        self.balance_batches = True
+        if self.num_replicas <= 1:
+            self.balance_batches = False
+            logging.info(
+                "Batch balancing is disabled for single GPU training."
+            )
+            return
+
+        if self.mode is False:
+            self.balance_batches = False
+            logging.info(
+                "Batch balancing is disabled because `optim.load_balancing` is `False`"
+            )
+
+        if not self.balance_batches:
+            return
+
+        if not isinstance(dataset, _HasMetadata):
+            self.balance_batches = force_balancing
+            if force_balancing:
+                logging.warning(
+                    f"Dataset `{type(dataset).__qualname__}` does not have the `metadata_path` attribute. "
+                    "BalancedBatchSampler has to load the data to "
+                    "determine batch sizes, which incurs "
+                    "significant overhead! "
+                    "You can disable balancing by setting `optim.load_balancing` to `None`."
+                )
+            else:
+                logging.warning(
+                    f"Dataset `{type(dataset).__qualname__}` does not have the `metadata_path` attribute. "
+                    "Batches will not be balanced, "
+                    "which can incur significant overhead!"
+                )
+            return
+
+        if not dataset.metadata_path.is_file():
+            self.balance_batches = force_balancing
+            if force_balancing:
+                logging.warning(
+                    f"No metadata file found at '{dataset.metadata_path}'. "
+                    "BalancedBatchSampler has to load the data to "
+                    "determine batch sizes, which incurs "
+                    "significant overhead! "
+                    "You can disable balancing by setting `optim.load_balancing` to `None`."
+                )
+            else:
+                logging.warning(
+                    f"No metadata file found at '{dataset.metadata_path}'. "
+                    "Batches will not be balanced, "
+                    "which can incur significant overhead!"
+                )
+
+            return
+
+        if self.mode == "atoms":
+            self.sizes = np.load(dataset.metadata_path)["natoms"]
+        elif self.mode == "neighbors":
+            self.sizes = np.load(dataset.metadata_path)["neighbors"]
+        else:
+            raise NotImplementedError(
+                f"Unknown load balancing mode: {self.mode}"
+            )
 
     def __len__(self):
         return len(self.batch_sampler)
