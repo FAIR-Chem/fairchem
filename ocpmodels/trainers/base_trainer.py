@@ -858,8 +858,6 @@ class BaseTrainer(ABC):
             data.Batch: rotated batch
         """
 
-        random.seed(1)
-
         # Sampling a random rotation within [-180, 180] for all axes.
         if rotation == "z":
             transform = RandomRotate([-180, 180], [2])
@@ -871,16 +869,16 @@ class BaseTrainer(ABC):
             transform = RandomRotate([-180, 180], [0, 1, 2])
 
         # Rotate graph
-        batch_rotated, rot, inv_rot = transform(deepcopy(batch[0]))
-        assert not torch.allclose(batch[0].pos, batch_rotated.pos, atol=1e-05)
+        batch_rotated, rot, inv_rot = transform(deepcopy(batch))
+        assert not torch.allclose(batch.pos, batch_rotated.pos, atol=1e-05)
 
         # Recompute fa-pos for batch_rotated
-        if hasattr(batch[0], "fa_pos"):
+        if hasattr(batch, "fa_pos"):
             delattr(batch_rotated, "fa_pos")  # delete it otherwise can't iterate
             g_list = batch_rotated.to_data_list()
             for g in g_list:
                 g = self.fa(g, self.choice_fa)
             batch_rotated = Batch.from_data_list(g_list)
-            batch_rotated.neighbors = batch[0].neighbors
+            batch_rotated.neighbors = batch.neighbors
 
         return batch_rotated

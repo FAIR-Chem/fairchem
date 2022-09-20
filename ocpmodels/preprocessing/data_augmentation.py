@@ -56,9 +56,9 @@ def all_frames(eigenvec, pos, choice_fa="random", pos_3D=None):
         return all_fa
 
     elif choice_fa == "det" or choice_fa == "e3-det":
-        return all_fa[0]
+        return [all_fa[0]]
 
-    return random.choice(all_fa)
+    return [random.choice(all_fa)]
 
 
 def check_constraints(eigenval, eigenvec, dim):
@@ -117,11 +117,8 @@ def frame_averaging_3D(g, choice_fa="random"):
     eigenvec = eigenvec[:, idx]
     eigenval = eigenval[idx]
 
-    # Compute all frames
-    if choice_fa == "full" or choice_fa == "e3-full":
-        g.fa_pos = all_frames(eigenvec, pos, "full")
-    else:
-        g.pos = all_frames(eigenvec, pos, choice_fa)
+    # Compute fa_pos
+    g.fa_pos = all_frames(eigenvec, pos, choice_fa)
 
     # No need to update distances, they are preserved.
 
@@ -157,10 +154,7 @@ def frame_averaging_2D(g, choice_fa="random"):
     eigenvec = eigenvec[:, idx]
 
     # Compute all frames
-    if choice_fa == "full" or choice_fa == "e3-full":
-        g.fa_pos = all_frames(eigenvec, pos_2D, "full", g.pos[:, 2])
-    else:
-        g.pos[:, :2] = all_frames(eigenvec, pos_2D, choice_fa)
+    g.fa_pos = all_frames(eigenvec, pos_2D, choice_fa, g.pos[:, 2])
 
     # No need to update distances, they are preserved.
 
@@ -179,7 +173,6 @@ def data_augmentation(g, *args):
     Returns:
         (data.Data): rotated graph
     """
-    # random.seed(1)
 
     # Sampling a random rotation within [-180, 180] for all axes.
     transform = RandomRotate([-180, 180], [2])

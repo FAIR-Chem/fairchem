@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 import logging
 import os
 import time
+from copy import deepcopy
 
 import torch
 import torch_geometric
@@ -298,6 +299,8 @@ class EnergyTrainer(BaseTrainer):
                 self.logger.log({"3D_ri": energy_diff})
                 self.logger.log({"2D_pos_ri": pos_diff_z})
 
+        # Test equivariance
+
         # Evaluate current model on all 4 validation splits
         self.eval_all_val_splits()
 
@@ -310,17 +313,15 @@ class EnergyTrainer(BaseTrainer):
 
     def _forward(self, batch_list):
 
-        if self.frame_averaging and (
-            self.choice_fa == "full" or self.choice_fa == "e3-full"
-        ):
-            original_pos = batch_list[0].pos  # optional?
+        if self.frame_averaging and self.frame_averaging != "da":
+            original_pos = batch_list[0].pos
             y_all, p_all = [], []
             for i in range(len(batch_list[0].fa_pos)):
                 batch_list[0].pos = batch_list[0].fa_pos[i]
-                y, p = self.model(batch_list)
+                y, p = self.model(deepcopy(batch_list))
                 y_all.append(y)
                 p_all.append(p)
-            batch_list[0].pos = original_pos  # TODO: optional?
+            batch_list[0].pos = original_pos
             output = sum(y_all) / len(y_all)
             try:
                 pooling_loss = sum(p) / len(p)
@@ -408,26 +409,27 @@ class EnergyTrainer(BaseTrainer):
         for i, batch in enumerate(self.val_loader):
 
             # Pass it through the model.
-            energies1, _ = self._forward(batch)
+            energies1, _ = self._forward(deepcopy(batch))
 
             # Rotate graph and compute prediction
-            batch_rotated = self.rotate_graph(batch, rotation="z")
-            energies2, _ = self._forward([batch_rotated])
+            batch_rotated = self.rotate_graph(batch[0], rotation="z")
+            energies2, _ = self._forward(deepcopy([batch_rotated]))
 
             # Difference in predictions
             energy_diff_z += torch.abs(energies1["energy"] - energies2["energy"]).sum()
 
             # Diff in positions -- could remove model prediction
-            pos_diff_z = 0
+            pos_diff_z = -1
             if hasattr(batch[0], "fa_pos"):
+                pos_diff_z = 0
                 for pos1, pos2 in zip(batch[0].fa_pos, batch_rotated.fa_pos):
                     pos_diff_z += pos1 - pos2
                 pos_diff_z = pos_diff_z.sum()
 
             # 3D Rotation
-            batch_rotated = self.rotate_graph(batch)
-            energies2, _ = self._forward([batch_rotated])
-            energy_diff += torch.abs(energies1["energy"] - energies2["energy"]).sum()
+            batch_rotated = self.rotate_graph(batch[0])
+            energies3, _ = self._forward([batch_rotated])
+            energy_diff += torch.abs(energies1["energy"] - energies3["energy"]).sum()
 
             if i == 100:
                 break

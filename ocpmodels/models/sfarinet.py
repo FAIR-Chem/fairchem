@@ -63,7 +63,9 @@ class EmbeddingBlock(nn.Module):
         }
 
         # Phys embeddings
-        self.phys_emb = PhysEmbedding(props=phys_embeds, props_grad=phys_hidden_channels > 0, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(
+            props=phys_embeds, props_grad=phys_hidden_channels > 0, pg=self.use_pg
+        )
         # With MLP
         if self.use_mlp_phys:
             self.phys_lin = Linear(self.phys_emb.n_properties, phys_hidden_channels)
@@ -227,7 +229,10 @@ class OutputBlock(nn.Module):
         h = self.act(h)
         h = self.lin2(h)
 
-        if self.energy_head in {"weighted-av-initial-embeds", "weighted-av-final-embeds"}:
+        if self.energy_head in {
+            "weighted-av-initial-embeds",
+            "weighted-av-final-embeds",
+        }:
             h = h * alpha
 
         # Global pooling
@@ -305,8 +310,8 @@ class SfariNet(BaseModel):
 
         # Output block
         self.output_block = OutputBlock(energy_head, hidden_channels, act)
-        
-        if self.energy_head == 'weighted-av-initial-embeds':
+
+        if self.energy_head == "weighted-av-initial-embeds":
             self.w_lin = Linear(hidden_channels, 1)
 
     def forward(self, data):
@@ -360,12 +365,13 @@ class SfariNet(BaseModel):
                 pos,
                 r=self.cutoff,
                 batch=batch,
-                max_num_neighbors=self.max_num_neighbors,
+                max_num_neighbors=40,
             )
             # edge_index = data.edge_index
             row, col = edge_index
             rel_pos = pos[row] - pos[col]
             edge_weight = rel_pos.norm(dim=-1)
+            # edge_weight = data.distances
             edge_attr = self.distance_expansion(edge_weight)
 
         # Normalize and squash to [0,1] for gaussian basis

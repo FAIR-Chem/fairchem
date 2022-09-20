@@ -777,7 +777,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
 
         if self.energy_head == "weighted-av-initial-embeds":
-            alpha = self.w_lin(x)
+            alpha = self.w_lin(scatter(x, i, dim=0, dim_size=pos.size(0)))
 
         # Interaction blocks.
 
