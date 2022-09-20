@@ -34,7 +34,7 @@ from ocpmodels.common.data_parallel import (
     ParallelCollater,
 )
 from ocpmodels.common.registry import registry
-from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.transforms import RandomReflect, RandomRotate
 from ocpmodels.common.utils import save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -76,7 +76,7 @@ class BaseTrainer(ABC):
         new_gnn=True,
         data_split=None,
         note="",
-        test_rotation_invariance=None,
+        test_invariance=None,
         wandb_tag=None,
         choice_fa=None,
     ):
@@ -85,7 +85,7 @@ class BaseTrainer(ABC):
         self.epoch = 0
         self.step = 0
         self.new_gnn = new_gnn
-        self.test_rotation_invariance = test_rotation_invariance
+        self.test_invariance = test_invariance
         self.frame_averaging = frame_averaging
         self.choice_fa = choice_fa
 
@@ -145,7 +145,7 @@ class BaseTrainer(ABC):
             "run_dir": run_dir,
             "frame_averaging": frame_averaging,
             "choice_fa": choice_fa,
-            "test_ri": test_rotation_invariance,
+            "test_ri": test_invariance,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
                 "identifier": identifier,
@@ -882,3 +882,32 @@ class BaseTrainer(ABC):
             batch_rotated.neighbors = batch.neighbors
 
         return batch_rotated
+
+    def reflect_graph(self, batch, reflection=None):
+        """Rotate all graphs in a batch
+
+        Args:
+            batch (data.Batch): batch of graphs
+            rotation (str, optional): type of rotation applied. Defaults to None.
+
+        Returns:
+            data.Batch: rotated batch
+        """
+
+        # Sampling a random rotation within [-180, 180] for all axes.
+        transform = RandomReflect()
+
+        # Rotate graph
+        batch_reflected, rot, inv_rot = transform(deepcopy(batch))
+        assert not torch.allclose(batch.pos, batch_reflected.pos, atol=1e-05)
+
+        # Recompute fa-pos for batch_rotated
+        if hasattr(batch, "fa_pos"):
+            delattr(batch_reflected, "fa_pos")  # delete it otherwise can't iterate
+            g_list = batch_reflected.to_data_list()
+            for g in g_list:
+                g = self.fa(g, self.choice_fa)
+            batch_reflected = Batch.from_data_list(g_list)
+            batch_reflected.neighbors = batch.neighbors
+
+        return batch_reflected

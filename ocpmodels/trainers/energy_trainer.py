@@ -79,7 +79,7 @@ class EnergyTrainer(BaseTrainer):
         slurm={},
         new_gnn=True,
         data_split=None,
-        test_rotation_invariance=False,
+        test_invariance=False,
         choice_fa=None,
         note="",
         wandb_tag=None,
@@ -107,7 +107,7 @@ class EnergyTrainer(BaseTrainer):
             data_split=data_split,
             note=note,
             frame_averaging=frame_averaging,
-            test_rotation_invariance=test_rotation_invariance,
+            test_invariance=test_invariance,
             choice_fa=choice_fa,
             wandb_tag=wandb_tag,
         )
@@ -292,12 +292,18 @@ class EnergyTrainer(BaseTrainer):
             )
 
         # Check rotation invariance
-        if self.test_rotation_invariance:
-            energy_diff_z, energy_diff, pos_diff_z = self._test_rotation_invariance()
+        if self.test_invariance:
+            (
+                energy_diff_z,
+                energy_diff,
+                pos_diff_z,
+                energy_diff_refl,
+            ) = self._test_invariance()
             if self.logger:
                 self.logger.log({"2D_ri": energy_diff_z})
                 self.logger.log({"3D_ri": energy_diff})
                 self.logger.log({"2D_pos_ri": pos_diff_z})
+                self.logger.log({"2D_pos_refl_i": energy_diff_refl})
 
         # Test equivariance
 
@@ -392,7 +398,7 @@ class EnergyTrainer(BaseTrainer):
             )
 
     @torch.no_grad()
-    def _test_rotation_invariance(self):
+    def _test_invariance(self):
         """Test the rotation invariance property of models
 
         Returns:
@@ -403,8 +409,7 @@ class EnergyTrainer(BaseTrainer):
         self.model.eval()
         energy_diff = torch.zeros(1, device=self.device)
         energy_diff_z = torch.zeros(1, device=self.device)
-
-        # TODO: define 10k val_loader instead
+        energy_diff_refl = torch.zeros(1, device=self.device)
 
         for i, batch in enumerate(self.val_loader):
 
@@ -413,7 +418,7 @@ class EnergyTrainer(BaseTrainer):
 
             # Rotate graph and compute prediction
             batch_rotated = self.rotate_graph(batch[0], rotation="z")
-            energies2, _ = self._forward(deepcopy([batch_rotated]))
+            energies2, _ = self._forward([batch_rotated])
 
             # Difference in predictions
             energy_diff_z += torch.abs(energies1["energy"] - energies2["energy"]).sum()
@@ -426,10 +431,17 @@ class EnergyTrainer(BaseTrainer):
                     pos_diff_z += pos1 - pos2
                 pos_diff_z = pos_diff_z.sum()
 
+            # Reflect graph
+            batch_reflected = self.reflect_graph(batch[0])
+            energies3, _ = self._forward([batch_reflected])
+            energy_diff_refl += torch.abs(
+                energies1["energy"] - energies3["energy"]
+            ).sum()
+
             # 3D Rotation
             batch_rotated = self.rotate_graph(batch[0])
-            energies3, _ = self._forward([batch_rotated])
-            energy_diff += torch.abs(energies1["energy"] - energies3["energy"]).sum()
+            energies4, _ = self._forward([batch_rotated])
+            energy_diff += torch.abs(energies1["energy"] - energies4["energy"]).sum()
 
             if i == 100:
                 break
@@ -438,5 +450,6 @@ class EnergyTrainer(BaseTrainer):
         batch_size = len(batch[0].natoms)
         energy_diff_z = energy_diff_z / (i * batch_size)
         energy_diff = energy_diff / (i * batch_size)
+        energy_diff_refl = energy_diff_refl / (i * batch_size)
 
-        return energy_diff_z, energy_diff, pos_diff_z
+        return energy_diff_z, energy_diff, pos_diff_z, energy_diff_refl

@@ -73,7 +73,7 @@ class Runner(submitit.helpers.Checkpointable):
                 frame_averaging=config.get("frame_averaging", None),
                 data_split=config.get("data_split", None),
                 note=config.get("note", ""),
-                test_rotation_invariance=config.get("test_ri", None),
+                test_invariance=config.get("test_ri", None),
                 choice_fa=config.get("choice_fa", None),
                 wandb_tag=config.get("wandb_tag", None),
             )
@@ -190,6 +190,13 @@ if __name__ == "__main__":
 
     config = build_config(args, override_args)
     config["optim"]["eval_batch_size"] = config["optim"]["batch_size"]
+
+    config["model"]["graph_rewiring"] = "remove-tag-0"
+    config["frame_averaging"] = "3d"
+    config["choice_fa"] = "random"
+    config["test_ri"] = True
+    config["optim"]["max_epochs"] = 3
+    config["model"]["use_pbc"] = False
 
     if args.submit:  # Run on cluster
         slurm_add_params = config.get("slurm", None)  # additional slurm arguments

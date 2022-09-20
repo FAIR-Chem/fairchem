@@ -34,7 +34,7 @@ if __name__ == "__main__":
     # config["model"]["graph_rewiring"] = "one-supernode-per-graph"
     # config["model"]["phys_embeds"] = True
     # config['model']['use_pbc'] = True
-    config['model']['graph_rewiring'] = 'remove-tag-0'
+    config["model"]["graph_rewiring"] = "remove-tag-0"
     config["frame_averaging"] = "3d"
     config["choice_fa"] = "random"
     config["test_ri"] = True
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         cpu=config.get("cpu", False),
         new_gnn=config.get("new_gnn"),
         frame_averaging=config.get("frame_averaging", None),
-        test_rotation_invariance=config.get("test_ri", None),
+        test_invariance=config.get("test_ri", None),
         choice_fa=config.get("choice_fa", None),
     )
 

@@ -1,5 +1,4 @@
 import random
-from copy import deepcopy
 from itertools import product
 
 import torch
@@ -179,6 +178,6 @@ def data_augmentation(g, *args):
     # transform = RandomRotate([-180, 180], [0, 1, 2])  # 3D
 
     # Rotate graph
-    graph_rotated, _, _ = transform(g)  # deepcopy
+    graph_rotated, _, _ = transform(g)
 
     return graph_rotated
