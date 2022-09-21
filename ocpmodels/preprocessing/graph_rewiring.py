@@ -66,7 +66,7 @@ def remove_tag0_nodes(data):
     return data
 
 
-def one_supernode_per_graph(data, verbose=False):
+def one_supernode_per_graph(data, cutoff=6.0, verbose=False):
     """Generate a single supernode representing all tag0 atoms
 
     Args:
@@ -75,6 +75,8 @@ def one_supernode_per_graph(data, verbose=False):
     batch_size = max(data.batch).item() + 1
     device = data.edge_index.device
     original_ptr = deepcopy(data.ptr)
+
+    original_data = deepcopy(data)
 
     # ids of sub-surface nodes, per batch
     sub_nodes = [
@@ -214,10 +216,10 @@ def one_supernode_per_graph(data, verbose=False):
         data.batch[data.edge_index[0, :]], return_counts=True
     )
 
-    return data
+    return adjust_cutoff_distances(data, cutoff)
 
 
-def one_supernode_per_atom_type(data):
+def one_supernode_per_atom_type(data, cutoff=6.0):
     """Create one supernode for each sub-surface atom type
     and remove all such tag-0 atoms.
 
@@ -431,10 +433,10 @@ def one_supernode_per_atom_type(data):
         )
     )
 
-    return data
+    return adjust_cutoff_distances(data, cutoff)
 
 
-def one_supernode_per_atom_type_dist(data):
+def one_supernode_per_atom_type_dist(data, cutoff=6.0):
     """Create one supernode for each sub-surface atom type
     and remove all such tag-0 atoms.
     Distance to supernode is defined as min. dist of subnodes
@@ -642,4 +644,13 @@ def one_supernode_per_atom_type_dist(data):
         ]
     )
 
+    return adjust_cutoff_distances(data, cutoff)
+
+
+def adjust_cutoff_distances(data, cutoff=6.0):
+    # remove long edges (> cutoff)
+    cutoff_mask = data.distances > cutoff
+    data.edge_index = data.edge_index[:, cutoff_mask]
+    data.cell_offsets = data.cell_offsets[cutoff_mask, :]
+    data.distances = data.distances[cutoff_mask]
     return data
