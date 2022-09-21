@@ -181,6 +181,7 @@ class OCPCalculator(Calculator):
     def calculate(self, atoms, properties, system_changes):
         Calculator.calculate(self, atoms, properties, system_changes)
         data_object = self.a2g.convert(atoms)
+        data_object.tags = torch.from_numpy(atoms.get_tags())
         batch = data_list_collater([data_object], otf_graph=True)
 
         predictions = self.trainer.predict(
