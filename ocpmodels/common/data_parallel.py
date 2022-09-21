@@ -9,7 +9,7 @@ import heapq
 import logging
 from itertools import chain
 from pathlib import Path
-from typing import Literal, Protocol, Union, runtime_checkable
+from typing import List, Literal, Protocol, Union, runtime_checkable
 
 import numba
 import numpy as np
@@ -140,6 +140,24 @@ class _HasMetadata(Protocol):
 
 
 class BalancedBatchSampler(Sampler):
+    def _load_dataset(self, dataset, mode: Literal["atoms", "neighbors"]):
+        errors: List[str] = []
+        if not isinstance(dataset, _HasMetadata):
+            errors.append(
+                f"Dataset {dataset} does not have a metadata_path attribute."
+            )
+            return None, errors
+        if not dataset.metadata_path.exists():
+            errors.append(
+                f"Metadata file {dataset.metadata_path} does not exist."
+            )
+            return None, errors
+
+        key = {"atoms": "natoms", "neighbors": "neighbors"}[mode]
+        sizes = np.load(dataset.metadata_path)[key]
+
+        return sizes, errors
+
     def __init__(
         self,
         dataset,
@@ -147,13 +165,21 @@ class BalancedBatchSampler(Sampler):
         num_replicas,
         rank,
         device,
-        mode: Union[Literal["atoms", "neighbors"], bool] = "atoms",
+        mode: Union[str, bool] = "atoms",
         shuffle=True,
         drop_last=False,
         force_balancing=False,
+        throw_on_error=False,
     ):
         if mode is True:
             mode = "atoms"
+
+        if isinstance(mode, str):
+            mode = mode.lower()
+            if mode not in ("atoms", "neighbors"):
+                raise ValueError(
+                    f"Invalid mode {mode}. Must be one of 'atoms', 'neighbors', or a boolean."
+                )
 
         self.dataset = dataset
         self.batch_size = batch_size
@@ -178,68 +204,41 @@ class BalancedBatchSampler(Sampler):
         )
 
         self.sizes = None
-        self.balance_batches = True
+        self.balance_batches = False
+
         if self.num_replicas <= 1:
-            self.balance_batches = False
             logging.info(
                 "Batch balancing is disabled for single GPU training."
             )
             return
 
         if self.mode is False:
-            self.balance_batches = False
             logging.info(
                 "Batch balancing is disabled because `optim.load_balancing` is `False`"
             )
-
-        if not self.balance_batches:
             return
 
-        if not isinstance(dataset, _HasMetadata):
+        self.sizes, errors = self._load_dataset(dataset, self.mode)
+        if self.sizes is None:
             self.balance_batches = force_balancing
             if force_balancing:
-                logging.warning(
-                    f"Dataset `{type(dataset).__qualname__}` does not have the `metadata_path` attribute. "
-                    "BalancedBatchSampler has to load the data to "
-                    "determine batch sizes, which incurs "
-                    "significant overhead! "
-                    "You can disable balancing by setting `optim.load_balancing` to `None`."
+                errors.append(
+                    "BalancedBatchSampler has to load the data to  determine batch sizes, which incurs significant overhead! "
+                    "You can disable balancing by setting `optim.load_balancing` to `False`."
                 )
             else:
-                logging.warning(
-                    f"Dataset `{type(dataset).__qualname__}` does not have the `metadata_path` attribute. "
-                    "Batches will not be balanced, "
-                    "which can incur significant overhead!"
+                errors.append(
+                    "Batches will not be balanced, which can incur significant overhead!"
                 )
-            return
-
-        if not dataset.metadata_path.is_file():
-            self.balance_batches = force_balancing
-            if force_balancing:
-                logging.warning(
-                    f"No metadata file found at '{dataset.metadata_path}'. "
-                    "BalancedBatchSampler has to load the data to "
-                    "determine batch sizes, which incurs "
-                    "significant overhead! "
-                    "You can disable balancing by setting `optim.load_balancing` to `None`."
-                )
-            else:
-                logging.warning(
-                    f"No metadata file found at '{dataset.metadata_path}'. "
-                    "Batches will not be balanced, "
-                    "which can incur significant overhead!"
-                )
-
-            return
-
-        if self.mode == "atoms":
-            self.sizes = np.load(dataset.metadata_path)["natoms"]
-        elif self.mode == "neighbors":
-            self.sizes = np.load(dataset.metadata_path)["neighbors"]
         else:
-            raise NotImplementedError(
-                f"Unknown load balancing mode: {self.mode}"
-            )
+            self.balance_batches = True
+
+        if errors:
+            msg = "BalancedBatchSampler: " + " ".join(errors)
+            if throw_on_error:
+                raise RuntimeError(msg)
+            else:
+                logging.warning(msg)
 
     def __len__(self):
         return len(self.batch_sampler)
