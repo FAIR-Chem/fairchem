@@ -76,8 +76,6 @@ def one_supernode_per_graph(data, cutoff=6.0, verbose=False):
     device = data.edge_index.device
     original_ptr = deepcopy(data.ptr)
 
-    original_data = deepcopy(data)
-
     # ids of sub-surface nodes, per batch
     sub_nodes = [
         where((data.tags == 0) * (data.batch == i))[0] for i in range(batch_size)
@@ -211,11 +209,6 @@ def one_supernode_per_graph(data, cutoff=6.0, verbose=False):
             torch.arange(p, data.ptr[i + 1], dtype=torch.long, device=device)
         ] = tensor(i, dtype=data.batch.dtype, device=device)
 
-    # neighbors
-    _, data.neighbors = torch.unique(
-        data.batch[data.edge_index[0, :]], return_counts=True
-    )
-
     return adjust_cutoff_distances(data, cutoff)
 
 
@@ -325,13 +318,6 @@ def one_supernode_per_atom_type(data, cutoff=6.0):
             )
             for i in range(batch_size)
         ]
-    )
-    # data.batch = torch.cat([torch.tensor(i).expand(data.natoms[i])
-    #     for  i in range(batch_size) ])
-
-    # neighbors
-    _, data.neighbors = torch.unique(
-        data.batch[data.edge_index[0, :]], return_counts=True
     )
 
     # tags
@@ -548,11 +534,6 @@ def one_supernode_per_atom_type_dist(data, cutoff=6.0):
         ]
     )
 
-    # neighbors
-    _, data.neighbors = torch.unique(
-        data.batch[data.edge_index[0, :]], return_counts=True
-    )
-
     # tags
     data.tags = torch.cat(
         [
@@ -653,4 +634,7 @@ def adjust_cutoff_distances(data, cutoff=6.0):
     data.edge_index = data.edge_index[:, cutoff_mask]
     data.cell_offsets = data.cell_offsets[cutoff_mask, :]
     data.distances = data.distances[cutoff_mask]
+    _, data.neighbors = torch.unique(
+        data.batch[data.edge_index[0, :]], return_counts=True
+    )
     return data
