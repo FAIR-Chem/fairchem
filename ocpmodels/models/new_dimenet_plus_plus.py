@@ -791,9 +791,6 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
                 P_bis, pooling_loss_bis, _ = output_block(
                     x, rbf, i, edge_index, dist, data.batch, num_nodes=pos.size(0)
                 )
-                if len(batch) != len(P_bis):
-                    print("\nGraclus issue: cropping P_bis\n")
-                    P_bis = P_bis[: len(batch)]
                 energy_Ps.append(
                     P_bis.sum(0) / len(P)
                     if batch is None

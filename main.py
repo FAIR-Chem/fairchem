@@ -191,13 +191,6 @@ if __name__ == "__main__":
     config = build_config(args, override_args)
     config["optim"]["eval_batch_size"] = config["optim"]["batch_size"]
 
-    config["model"]["graph_rewiring"] = "remove-tag-0"
-    config["frame_averaging"] = "3d"
-    config["choice_fa"] = "random"
-    config["test_ri"] = True
-    config["optim"]["max_epochs"] = 3
-    config["model"]["use_pbc"] = False
-
     if args.submit:  # Run on cluster
         slurm_add_params = config.get("slurm", None)  # additional slurm arguments
         if args.sweep_yml:  # Run grid search
