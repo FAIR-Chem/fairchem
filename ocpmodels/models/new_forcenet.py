@@ -260,6 +260,7 @@ class NewForceNet(BaseModel):
         training=True,
         otf_graph=False,
         phys_embeds=False,
+        phys_hidden_channels=0,
         predict_forces=False,
         use_pbc=True,
         graph_rewiring=False,
@@ -314,6 +315,8 @@ class NewForceNet(BaseModel):
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
+        self.phys_hidden_channels = phys_hidden_channels
+        self.use_mlp_phys = phys_hidden_channels > 0 and phys_embeds
         # self.use_positional_embeds = False
 
         assert tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
@@ -360,6 +363,12 @@ class NewForceNet(BaseModel):
 
         # Phys embeddings
         self.phys_emb = PhysEmbedding(props=self.phys_embeds, pg=self.use_pg)
+        if self.use_mlp_phys:
+            self.phys_lin = nn.Linear(
+                self.phys_emb.n_properties, self.phys_hidden_channels
+            )
+        else:
+            self.phys_hidden_channels = self.phys_emb.n_properties
 
         # Period + group embeddings
         if self.use_pg:
@@ -380,7 +389,7 @@ class NewForceNet(BaseModel):
                 100,
                 hidden_channels
                 - tag_hidden_channels
-                - self.phys_emb.n_properties
+                - self.phys_hidden_channels
                 - 2 * pg_hidden_channels,
             )
             # self.embedding = nn.Embedding(100, hidden_channels)
@@ -421,7 +430,7 @@ class NewForceNet(BaseModel):
                     basis.out_dim,
                     hidden_channels
                     - tag_hidden_channels
-                    - self.phys_emb.n_properties
+                    - self.phys_hidden_channels
                     - 2 * pg_hidden_channels,
                 ),
             )
