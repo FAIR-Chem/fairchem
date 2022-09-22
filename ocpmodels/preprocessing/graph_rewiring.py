@@ -630,7 +630,7 @@ def one_supernode_per_atom_type_dist(data, cutoff=6.0):
 
 def adjust_cutoff_distances(data, cutoff=6.0):
     # remove long edges (> cutoff)
-    cutoff_mask = data.distances > cutoff
+    cutoff_mask = data.distances <= cutoff
     data.edge_index = data.edge_index[:, cutoff_mask]
     data.cell_offsets = data.cell_offsets[cutoff_mask, :]
     data.distances = data.distances[cutoff_mask]
