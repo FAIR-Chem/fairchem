@@ -23,6 +23,7 @@ from ocpmodels.common.utils import check_traj_files
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from ocpmodels.modules.scaling.util import ensure_fitted
 
 
 @registry.register_trainer("forces")
@@ -155,6 +156,8 @@ class ForcesTrainer(BaseTrainer):
         results_file=None,
         disable_tqdm=False,
     ):
+        ensure_fitted(self._unwrapped_model)
+
         if distutils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
         assert isinstance(
@@ -284,6 +287,8 @@ class ForcesTrainer(BaseTrainer):
                 )
 
     def train(self, disable_eval_tqdm=False):
+        ensure_fitted(self._unwrapped_model, warn=True)
+
         eval_every = self.config["optim"].get(
             "eval_every", len(self.train_loader)
         )
@@ -594,6 +599,8 @@ class ForcesTrainer(BaseTrainer):
         return metrics
 
     def run_relaxations(self, split="val"):
+        ensure_fitted(self._unwrapped_model)
+
         logging.info("Running ML-relaxations")
         self.model.eval()
         if self.ema:
