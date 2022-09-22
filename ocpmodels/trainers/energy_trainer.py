@@ -205,6 +205,8 @@ class EnergyTrainer(BaseTrainer):
                     if pooling_loss is not None:
                         loss += pooling_loss
                 loss = self.scaler.scale(loss) if self.scaler else loss
+                if torch.isnan(loss):
+                    breakpoint()
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
 
