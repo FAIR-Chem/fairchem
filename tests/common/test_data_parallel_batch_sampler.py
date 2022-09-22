@@ -1,5 +1,5 @@
+import tempfile
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pytest
@@ -25,13 +25,16 @@ def valid_path_dataset():
         def __getitem__(self, idx):
             return self.data[idx]
 
-    with NamedTemporaryFile("w+b") as f:
+    _, file = tempfile.mkstemp(suffix=".npz")
+    try:
         np.savez(
             natoms=np.array(SIZE_ATOMS),
             neighbors=np.array(SIZE_NEIGHBORS),
-            file=f,
+            file=file,
         )
-        yield _Dataset(DATA, f.name)
+        yield _Dataset(DATA, file)
+    finally:
+        Path(file).unlink()
 
 
 @pytest.fixture
