@@ -37,14 +37,14 @@ def _get_absolute_mapping(name: str):
         module = importlib.import_module(module_name)
     except (ModuleNotFoundError, ValueError) as e:
         raise RuntimeError(
-            f"Could not import module {module_name=} for import {name=}"
+            f"Could not import module {module_name} for import {name}"
         ) from e
 
     try:
         return getattr(module, class_name)
     except AttributeError as e:
         raise RuntimeError(
-            f"Could not import class {class_name=} from module {module_name=}"
+            f"Could not import class {class_name} from module {module_name}"
         ) from e
 
 
