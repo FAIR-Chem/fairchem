@@ -721,7 +721,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
                 batch = data.batch
             else:
                 raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
-            self.rewiting_time = time() - t
+            self.rewiring_time = time() - t
 
         if self.use_pbc:
             out = get_pbc_distances(
