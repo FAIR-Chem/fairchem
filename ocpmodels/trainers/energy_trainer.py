@@ -83,6 +83,7 @@ class EnergyTrainer(BaseTrainer):
         choice_fa=None,
         note="",
         wandb_tag=None,
+        verbose=True,
     ):
         super().__init__(
             task=task,
@@ -110,6 +111,7 @@ class EnergyTrainer(BaseTrainer):
             test_invariance=test_invariance,
             choice_fa=choice_fa,
             wandb_tag=wandb_tag,
+            verbose=verbose,
         )
 
     def load_task(self):
