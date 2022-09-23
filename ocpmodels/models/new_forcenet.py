@@ -582,6 +582,8 @@ class NewForceNet(BaseModel):
 
         if self.phys_emb.n_properties > 0:
             h_phys = self.phys_emb.properties[z]
+            if self.use_mlp_phys:
+                h_phys = self.phys_lin(h_phys)
             h = torch.cat((h, h_phys), dim=1)
 
         if self.use_pg:
