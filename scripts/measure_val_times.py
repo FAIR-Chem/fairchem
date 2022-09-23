@@ -25,7 +25,7 @@ except:  # noqa: E722
     pass
 
 
-def print_time_stats(times_dict, keylen=50):
+def print_time_stats(times_dict, keylen=55):
     for note, s in times_dict.items():
         n = note + "  " + "⸱" * (keylen - len(note))
         print(f"• {n} {s['mean']:8.4f}s +/- {s['std']:.4f}s")
@@ -61,6 +61,9 @@ def save_and_print(output_json, times, rewiring_times, configs, TRAINER_CONF_OVE
     print_time_stats(stats)
     print("\nREWIRINGS")
     print_time_stats(rewiring_stats)
+    print()
+    print("-" * 82)
+    print()
 
     with output_json.open("w") as f:
         out_dict = {
@@ -584,7 +587,7 @@ if __name__ == "__main__":
     torch.set_grad_enabled(False)
     output_dir = Path(__file__).resolve().parent.parent / "data" / "times"
     output_dir.mkdir(exist_ok=True, parents=True)
-    output_json = output_dir / "measured_times.json"
+    output_json = output_dir / args.output_filename
 
     existing_confs = set()
 
@@ -597,7 +600,8 @@ if __name__ == "__main__":
 
     for c, config in enumerate(configs):
         note = config["overrides"]["note"]
-        if c in existing_confs:
+        if note in existing_confs:
+            print("🤠 Data for", note, "already exists. Skipping.")
             continue
         trainer = make_trainer(**config, verbose=False)
         trainer.model.eval()
