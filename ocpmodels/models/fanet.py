@@ -3,7 +3,6 @@
 
 from math import sqrt
 from time import time
-
 import torch
 from torch import nn
 from torch.nn import Embedding, Linear
@@ -378,31 +377,34 @@ class FANet(BaseModel):
     def forward(self, data):
         # Rewire the graph
         if not self.graph_rewiring:
+            z = data.atomic_numbers.long()
             pos = data.pos
             batch = data.batch
-            data.subnodes = False
         else:
             t = time()
             if self.graph_rewiring == "remove-tag-0":
                 data = remove_tag0_nodes(data)
+                z = data.atomic_numbers.long()
                 pos = data.pos
                 batch = data.batch
-                data.subnodes = False
             elif self.graph_rewiring == "one-supernode-per-graph":
                 data = one_supernode_per_graph(data)
+                z = data.atomic_numbers.long()
                 pos = data.pos
                 batch = data.batch
             elif self.graph_rewiring == "one-supernode-per-atom-type":
                 data = one_supernode_per_atom_type(data)
+                z = data.atomic_numbers.long()
                 pos = data.pos
                 batch = data.batch
             elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
                 data = one_supernode_per_atom_type_dist(data)
+                z = data.atomic_numbers.long()
                 pos = data.pos
                 batch = data.batch
             else:
                 raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
-            self.rewiting_time = time() - t
+            self.rewiring_time = time()
 
         # Use periodic boundary conditions
         if self.use_pbc:
