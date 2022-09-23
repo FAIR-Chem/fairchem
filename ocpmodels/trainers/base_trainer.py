@@ -79,6 +79,7 @@ class BaseTrainer(ABC):
         test_invariance=None,
         wandb_tag=None,
         choice_fa=None,
+        verbose=True,
     ):
         self.name = name
         self.cpu = cpu
@@ -221,7 +222,7 @@ class BaseTrainer(ABC):
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
-        if distutils.is_master():
+        if distutils.is_master() and verbose:
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 

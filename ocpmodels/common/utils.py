@@ -852,6 +852,7 @@ def update_from_sbatch_py_vars(args):
 def make_trainer(
     str_args=["--mode=train", "--config=configs/is2re/10k/schnet/new_schnet.yml"],
     overrides={},
+    verbose=True,
 ):
     argv = [a for a in sys.argv]
     assert isinstance(str_args, list)
@@ -887,8 +888,13 @@ def make_trainer(
         cpu=config.get("cpu", False),
         slurm=config.get("slurm", {}),
         new_gnn=config.get("new_gnn", True),
+        frame_averaging=config.get("frame_averaging", None),
         data_split=config.get("data_split", None),
         note=config.get("note", ""),
+        test_invariance=config.get("test_ri", None),
+        choice_fa=config.get("choice_fa", None),
+        wandb_tag=config.get("wandb_tag", None),
+        verbose=verbose,
     )
 
     task = registry.get_task_class(config["mode"])(config)

@@ -83,6 +83,7 @@ class EnergyTrainer(BaseTrainer):
         choice_fa=None,
         note="",
         wandb_tag=None,
+        verbose=True,
     ):
         super().__init__(
             task=task,
@@ -110,6 +111,7 @@ class EnergyTrainer(BaseTrainer):
             test_invariance=test_invariance,
             choice_fa=choice_fa,
             wandb_tag=wandb_tag,
+            verbose=verbose,
         )
 
     def load_task(self):
@@ -205,6 +207,8 @@ class EnergyTrainer(BaseTrainer):
                     if pooling_loss is not None:
                         loss += pooling_loss
                 loss = self.scaler.scale(loss) if self.scaler else loss
+                if torch.isnan(loss):
+                    breakpoint()
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
 

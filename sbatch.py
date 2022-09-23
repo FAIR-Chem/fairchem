@@ -32,7 +32,9 @@ if {virtualenv}
 then
     source {env}/bin/activate
 else
-    module load anaconda/3
+    export LD_DEBUG=libs,files
+    module load anaconda/3 &>> {debug_dir}/libtinfo-hunt.txt
+    unset LD_DEBUG
     conda activate {env}
 fi
 
@@ -187,6 +189,7 @@ if __name__ == "__main__":
         sbatch_py_vars=make_sbatch_py_vars(sbatch_py_vars),
         time="" if not args.time else f"#SBATCH --time={args.time}",
         virtualenv=virtualenv,
+        debug_dir="$SCRATCH/ocp/runs/$SLURM_JOBID",
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
