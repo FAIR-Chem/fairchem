@@ -887,8 +887,12 @@ def make_trainer(
         cpu=config.get("cpu", False),
         slurm=config.get("slurm", {}),
         new_gnn=config.get("new_gnn", True),
+        frame_averaging=config.get("frame_averaging", None),
         data_split=config.get("data_split", None),
         note=config.get("note", ""),
+        test_invariance=config.get("test_ri", None),
+        choice_fa=config.get("choice_fa", None),
+        wandb_tag=config.get("wandb_tag", None),
     )
 
     task = registry.get_task_class(config["mode"])(config)
