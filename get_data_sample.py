@@ -87,7 +87,11 @@ if __name__ == "__main__":
     task = registry.get_task_class(config["mode"])(config)
     task.setup(trainer)
 
-    if opts.no_frame_averaging is None:
+    for batch in trainer.val_loader:
+        break
+    print("The `batch` variable from `trainer.val_loader` is ready.")
+
+    if opts.frame_averaging:
 
         i = 0
         for batch in trainer.val_loader:

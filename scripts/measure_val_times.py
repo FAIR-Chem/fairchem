@@ -35,7 +35,7 @@ except:  # noqa: E722
     pass
 
 
-def print_time_stats(times_dict: dict, keylen: int = 55) -> None:
+def print_time_stats(times_dict: dict, keylen: int = 60) -> None:
     """
     Prints a dictionnary of time statistics
 
@@ -45,7 +45,7 @@ def print_time_stats(times_dict: dict, keylen: int = 55) -> None:
             Defaults to 55.
     """
     for note, s in times_dict.items():
-        n = note + "  " + "⸱" * (keylen - len(note))
+        n = note + "  " + "." * (keylen - len(note))
         print(f"• {n} {s['mean']:8.4f}s +/- {s['std']:.4f}s")
 
 
@@ -601,6 +601,7 @@ if __name__ == "__main__":
             "ignore_confs": [],  # list of config indices to ignore
             "overwrite": False,  # overwrite existing file
             "dryrun": False,  # run things but don't load from/save to file
+            "ignores": [],  # list of config ids to ignore
         }
     ).pretty_print()
 
@@ -650,6 +651,9 @@ if __name__ == "__main__":
         if note in existing_confs:
             # config has already been timed: ignore
             print(f"🤠 Data for `{note}` already exists. Skipping.")
+            continue
+        if c in args.ignores:
+            print(f"🙈 config {c} is ignored from the command-line.")
             continue
 
         # create trainer in eval modefor this config
