@@ -593,15 +593,15 @@ if __name__ == "__main__":
     # parse command-line arguments
     args = resolved_args(
         defaults={
-            "n_runs": 1,  # runs for the same trainer
-            "max_confs": -1,  # crop the number of confs to test
-            "max_batchs": -1,  # crop the number of batchs to test
-            "conf_idx": None,  # run for this single conf index in the list of configs
-            "output_filename": "measured_times.json",  # output file name in data/times/
-            "ignore_confs": [],  # list of config indices to ignore
-            "overwrite": False,  # overwrite existing file
-            "dryrun": False,  # run things but don't load from/save to file
-            "ignores": [],  # list of config ids to ignore
+            "n_runs": 1,  # (int) runs for the same trainer
+            "max_confs": -1,  # (int) crop the number of confs to test
+            "max_batchs": -1,  # (int) crop the number of batchs to test
+            "conf_ids": [],  # (list[int]) list of conf ids to measure. Defaults to all if empty
+            "output_filename": "measured_times.json",  # (str) output file name in data/times/
+            "ignore_confs": [],  # (list[int]) list of config indices to ignore
+            "overwrite": False,  # (bool) overwrite existing file
+            "dryrun": False,  # (bool) run things but don't load from/save to file
+            "ignores": [],  # (list[int]) list of config ids to ignore
         }
     ).pretty_print()
 
@@ -611,14 +611,14 @@ if __name__ == "__main__":
     if args.max_confs > 0:
         # crop the number of confs to process, for debugging purposes
         configs = configs[: args.max_confs]
-    elif args.conf_idx is not None:
+    elif args.conf_ids:
         # select a single conf
         if args.max_confs > 0:
             print(
-                "\nWARNING: `conf_idx` has precedence over `max_confs`",
+                "\nWARNING: `conf_ids` has precedence over `max_confs`",
                 "which will be ignored\n",
             )
-        configs = [configs[args.conf_idx]]
+        configs = [configs[c] for c in args.conf_ids]
 
     # initiate the time and rewiring time data stores
     times = {c["overrides"]["note"]: [[] for _ in range(args.n_runs)] for c in configs}
