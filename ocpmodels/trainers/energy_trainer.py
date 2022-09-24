@@ -259,6 +259,13 @@ class EnergyTrainer(BaseTrainer):
                                     disable_tqdm=False,
                                 )
 
+                        # Evaluate current model on all 4 validation splits
+                        if ((epoch_int % 100 == 0) and (epoch_int != 0)) or (
+                            epoch_int == self.config["optim"]["max_epochs"] - 1
+                        ):
+                            self.eval_all_val_splits(
+                                epoch_int == self.config["optim"]["max_epochs"] - 1
+                            )
                         if self.is_hpo:
                             self.hpo_update(
                                 self.epoch,
@@ -312,7 +319,7 @@ class EnergyTrainer(BaseTrainer):
         # Test equivariance
 
         # Evaluate current model on all 4 validation splits
-        self.eval_all_val_splits()
+        # self.eval_all_val_splits()
 
         # Close datasets
         self.train_dataset.close_db()

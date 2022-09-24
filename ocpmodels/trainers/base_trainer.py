@@ -788,8 +788,19 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(self):
+    def eval_all_val_splits(self, final=True):
         """Evaluate model on all four validation splits"""
+
+        if final:
+            # Load current best checkpoint
+            checkpoint_path = os.path.join(
+                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
+            )
+            self.load_checkpoint(checkpoint_path=checkpoint_path)
+            logging.info(
+                "Checking models are identical:"
+                + str(list(self.model.parameters())[0].data.view(-1)[:20]),
+            )
 
         # Compute performance metrics on all four validation splits
         cumulated_time = 0
