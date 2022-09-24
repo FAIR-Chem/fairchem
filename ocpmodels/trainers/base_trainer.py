@@ -788,7 +788,7 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(self, final=True):
+    def eval_all_val_splits(self, final=True, disable_tqdm=True):
         """Evaluate model on all four validation splits"""
 
         if final:
@@ -839,7 +839,7 @@ class BaseTrainer(ABC):
 
             # Call validate function
             start_time = time.time()
-            self.metrics = self.validate(split="eval", disable_tqdm=True, name_split=s)
+            self.metrics = self.validate(split="eval", disable_tqdm=disable_tqdm, name_split=s)
             metrics_dict[s] = self.metrics
             cumulated_mae += self.metrics["energy_mae"]["metric"]
             cumulated_time += time.time() - start_time
