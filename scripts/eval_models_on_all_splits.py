@@ -22,6 +22,16 @@ def read_str_args(run_dir):
     return [re.sub(r"(--[a-z_\.]+)\s(.+)", r"\1=\2", a) for a in str_args]
 
 
+def parse_conf(str_args):
+    conf = {}
+    for a in str_args:
+        k = a.split("=")[0].strip().replace("--", "")
+        v = a.split("=")[1].strip()
+        conf[k] = v
+    conf["model"] = conf["config-yml"].split("/")[-1].split(".")[0]
+    return conf
+
+
 TRAINER_CONF_OVERRIDES = {
     "optim": {
         "num_workers": 6,
@@ -56,4 +66,7 @@ if __name__ == "__main__":
         trainer: EnergyTrainer = make_trainer(str_args, overrides, verbose=False)
         trainer.model.eval()
         trainer.config["cmd"]["checkpoint_dir"] = str(ckpt_dir)
+        print(parse_conf(str_args))
         trainer.eval_all_val_splits(final=True, disable_tqdm=False)
+
+        print("-" * 80 + "\n\n")
