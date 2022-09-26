@@ -969,10 +969,12 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
 
 
 def _resolve_scale_factor_submodule(model: nn.Module, name: str):
+    import operator
+
     from ocpmodels.modules.scaling.scale_factor import ScaleFactor
 
     try:
-        scale = model.get_submodule(name)
+        scale = operator.attrgetter(name)(model)
         if not isinstance(scale, ScaleFactor):
             return None
         return scale
