@@ -1,4 +1,5 @@
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
@@ -12,12 +13,18 @@ SIZE_ATOMS = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 SIZE_NEIGHBORS = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
 
 
+@contextmanager
+def _temp_file(name: str):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        yield Path(tmpdir) / name
+
+
 @pytest.fixture
 def valid_path_dataset():
     class _Dataset(Dataset):
-        def __init__(self, data, fpath: str):
+        def __init__(self, data, fpath: Path):
             self.data = data
-            self.metadata_path = Path(fpath)
+            self.metadata_path = fpath
 
         def __len__(self):
             return len(self.data)
@@ -25,16 +32,13 @@ def valid_path_dataset():
         def __getitem__(self, idx):
             return self.data[idx]
 
-    _, file = tempfile.mkstemp(suffix=".npz")
-    try:
+    with _temp_file("metadata.npz") as file:
         np.savez(
             natoms=np.array(SIZE_ATOMS),
             neighbors=np.array(SIZE_NEIGHBORS),
             file=file,
         )
         yield _Dataset(DATA, file)
-    finally:
-        Path(file).unlink()
 
 
 @pytest.fixture
