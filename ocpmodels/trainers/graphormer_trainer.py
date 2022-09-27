@@ -1,10 +1,11 @@
 import logging
+from functools import partial
 
 import torch
 from torch.utils.data import DataLoader
 
 from ocpmodels.common.registry import registry
-from ocpmodels.models.utils.dense_types import Batch, Data
+from ocpmodels.models.utils.dense_types import Batch, Data, ExpandPBCConfig
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers import EnergyTrainer
@@ -25,6 +26,12 @@ class GraphromerEnergyTrainer(EnergyTrainer):
         self.loss_fn["positions"] = self.loss_fn.pop("force")
         return return_value
 
+    @property
+    def _expand_pbc(self):
+        return self.config["task"].get(
+            "expand_pbc", ExpandPBCConfig(cutoff=8.0, filter_by_tag=True)
+        )
+
     def load_datasets(self):
         super().load_datasets()
 
@@ -35,14 +42,15 @@ class GraphromerEnergyTrainer(EnergyTrainer):
             if dataset is None:
                 continue
 
-            existing_transform = getattr(dataset, "transform", lambda x: x)
-            setattr(
-                dataset,
-                "transform",
-                lambda data: existing_transform(
-                    Data.from_torch_geometric_data(data)
-                ),
+            transform = partial(
+                Data.from_torch_geometric_data, pbc=self._expand_pbc
             )
+            existing_transform = getattr(dataset, "transform", None)
+            if existing_transform is not None:
+                transform = lambda x: existing_transform(
+                    transform(x)
+                )  # type: ignore
+            setattr(dataset, "transform", transform)
 
     def get_dataloader(self, dataset, sampler):
         # sets dataloader collate fn for dense tensors
