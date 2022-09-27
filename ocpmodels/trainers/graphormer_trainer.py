@@ -35,7 +35,14 @@ class GraphromerEnergyTrainer(EnergyTrainer):
             if dataset is None:
                 continue
 
-            dataset.transform = Data.from_torch_geometric_data
+            existing_transform = getattr(dataset, "transform", lambda x: x)
+            setattr(
+                dataset,
+                "transform",
+                lambda data: existing_transform(
+                    Data.from_torch_geometric_data(data)
+                ),
+            )
 
     def get_dataloader(self, dataset, sampler):
         # sets dataloader collate fn for dense tensors
