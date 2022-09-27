@@ -101,7 +101,7 @@ class GraphromerEnergyTrainer(EnergyTrainer):
         relaxed_energy = torch.cat(
             [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
         )
-        relaxed_energy = relaxed_energy.float().squeeze(dim=-1)
+        relaxed_energy = relaxed_energy.float().view(-1)
         # relaxed_energy = (relaxed_energy - self.e_mean) / self.e_std
         if norm and self.normalizer.get("normalize_labels", False):
             relaxed_energy = self.normalizers["target"].norm(relaxed_energy)
