@@ -920,7 +920,8 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         trainer: "BaseTrainer"
 
     setup_logging()
-    config = copy.deepcopy(config)
+    original_config = config
+    config = copy.deepcopy(original_config)
 
     if args.distributed:
         distutils.setup(config)
@@ -955,7 +956,9 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         assert task_cls is not None, "Task not found"
         task = task_cls(config)
         start_time = time.time()
-        ctx = _TrainingContext(config=config, task=task, trainer=trainer)
+        ctx = _TrainingContext(
+            config=original_config, task=task, trainer=trainer
+        )
         yield ctx
         distutils.synchronize()
         if distutils.is_master():
