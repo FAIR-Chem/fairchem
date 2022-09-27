@@ -23,6 +23,7 @@ from ocpmodels.common.utils import check_traj_files
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from ocpmodels.modules.scaling.util import ensure_fitted
 
 
 @registry.register_trainer("forces")
@@ -155,6 +156,8 @@ class ForcesTrainer(BaseTrainer):
         results_file=None,
         disable_tqdm=False,
     ):
+        ensure_fitted(self._unwrapped_model)
+
         if distutils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
         assert isinstance(
@@ -240,6 +243,8 @@ class ForcesTrainer(BaseTrainer):
             else:
                 predictions["energy"] = out["energy"].detach()
                 predictions["forces"] = out["forces"].detach()
+                if self.ema:
+                    self.ema.restore()
                 return predictions
 
         predictions["forces"] = np.array(predictions["forces"])
@@ -264,7 +269,10 @@ class ForcesTrainer(BaseTrainer):
         if (
             "mae" in primary_metric
             and val_metrics[primary_metric]["metric"] < self.best_val_metric
-        ) or (val_metrics[primary_metric]["metric"] > self.best_val_metric):
+        ) or (
+            "mae" not in primary_metric
+            and val_metrics[primary_metric]["metric"] > self.best_val_metric
+        ):
             self.best_val_metric = val_metrics[primary_metric]["metric"]
             self.save(
                 metrics=val_metrics,
@@ -279,6 +287,8 @@ class ForcesTrainer(BaseTrainer):
                 )
 
     def train(self, disable_eval_tqdm=False):
+        ensure_fitted(self._unwrapped_model, warn=True)
+
         eval_every = self.config["optim"].get(
             "eval_every", len(self.train_loader)
         )
@@ -288,7 +298,13 @@ class ForcesTrainer(BaseTrainer):
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
-        self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
+        if (
+            not hasattr(self, "primary_metric")
+            or self.primary_metric != primary_metric
+        ):
+            self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
+        else:
+            primary_metric = self.primary_metric
         self.metrics = {}
 
         # Calculate start_epoch from step instead of loading the epoch number
@@ -496,17 +512,41 @@ class ForcesTrainer(BaseTrainer):
                         [batch.fixed.to(self.device) for batch in batch_list]
                     )
                     mask = fixed == 0
-                    loss.append(
-                        force_mult
-                        * self.loss_fn["force"](
-                            out["forces"][mask], force_target[mask]
+                    if (
+                        self.config["optim"]
+                        .get("loss_force", "mae")
+                        .startswith("atomwise")
+                    ):
+                        force_mult = self.config["optim"].get(
+                            "force_coefficient", 1
                         )
-                    )
+                        natoms = torch.cat(
+                            [
+                                batch.natoms.to(self.device)
+                                for batch in batch_list
+                            ]
+                        )
+                        natoms = torch.repeat_interleave(natoms, natoms)
+                        force_loss = force_mult * self.loss_fn["force"](
+                            out["forces"][mask],
+                            force_target[mask],
+                            natoms=natoms[mask],
+                            batch_size=batch_list[0].natoms.shape[0],
+                        )
+                        loss.append(force_loss)
+                    else:
+                        loss.append(
+                            force_mult
+                            * self.loss_fn["force"](
+                                out["forces"][mask], force_target[mask]
+                            )
+                        )
                 else:
                     loss.append(
                         force_mult
                         * self.loss_fn["force"](out["forces"], force_target)
                     )
+
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
             assert hasattr(lc, "grad_fn")
@@ -559,6 +599,8 @@ class ForcesTrainer(BaseTrainer):
         return metrics
 
     def run_relaxations(self, split="val"):
+        ensure_fitted(self._unwrapped_model)
+
         logging.info("Running ML-relaxations")
         self.model.eval()
         if self.ema:
@@ -568,8 +610,14 @@ class ForcesTrainer(BaseTrainer):
         evaluator_is2rs, metrics_is2rs = Evaluator(task="is2rs"), {}
         evaluator_is2re, metrics_is2re = Evaluator(task="is2re"), {}
 
-        if hasattr(self.relax_dataset[0], "pos_relaxed") and hasattr(
-            self.relax_dataset[0], "y_relaxed"
+        # Need both `pos_relaxed` and `y_relaxed` to compute val IS2R* metrics.
+        # Else just generate predictions.
+        if (
+            hasattr(self.relax_dataset[0], "pos_relaxed")
+            and self.relax_dataset[0].pos_relaxed is not None
+        ) and (
+            hasattr(self.relax_dataset[0], "y_relaxed")
+            and self.relax_dataset[0].y_relaxed is not None
         ):
             split = "val"
         else:

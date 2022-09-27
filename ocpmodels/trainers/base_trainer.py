@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 """
 import datetime
 import errno
-import json
 import logging
 import os
 import random
@@ -24,30 +23,34 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 import ocpmodels
-from ocpmodels.common import distutils
+from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
     OCPDataParallel,
     ParallelCollater,
 )
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    build_config,
-    plot_histogram,
-    save_checkpoint,
-    warmup_lr_lambda,
-)
+from ocpmodels.common.utils import load_state_dict, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
 )
-from ocpmodels.modules.loss import DDPLoss, L2MAELoss
+from ocpmodels.modules.loss import AtomwiseL2Loss, DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
+from ocpmodels.modules.scaling.compat import load_scales_compat
+from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.modules.scheduler import LRScheduler
 
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
+    @property
+    def _unwrapped_model(self):
+        module = self.model
+        while isinstance(module, (OCPDataParallel, DistributedDataParallel)):
+            module = module.module
+        return module
+
     def __init__(
         self,
         task,
@@ -150,7 +153,13 @@ class BaseTrainer(ABC):
         self.scaler = torch.cuda.amp.GradScaler() if amp else None
 
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
-            self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
+            if "SLURM_ARRAY_JOB_ID" in os.environ:
+                self.config["slurm"]["job_id"] = "%s_%s" % (
+                    os.environ["SLURM_ARRAY_JOB_ID"],
+                    os.environ["SLURM_ARRAY_TASK_ID"],
+                )
+            else:
+                self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
             self.config["slurm"]["folder"] = self.config["slurm"][
                 "folder"
             ].replace("%j", self.config["slurm"]["job_id"])
@@ -183,9 +192,6 @@ class BaseTrainer(ABC):
 
         if self.is_hpo:
             # conditional import is necessary for checkpointing
-            from ray import tune
-
-            from ocpmodels.common.hpo_utils import tune_reporter
 
             # sets the hpo checkpoint frequency
             # default is no checkpointing
@@ -243,11 +249,17 @@ class BaseTrainer(ABC):
             balancing_mode = "atoms"
             force_balancing = False
 
+        if gp_utils.initialized():
+            num_replicas = gp_utils.get_dp_world_size()
+            rank = gp_utils.get_dp_rank()
+        else:
+            num_replicas = distutils.get_world_size()
+            rank = distutils.get_rank()
         sampler = BalancedBatchSampler(
             dataset,
             batch_size=batch_size,
-            num_replicas=distutils.get_world_size(),
-            rank=distutils.get_rank(),
+            num_replicas=num_replicas,
+            rank=rank,
             device=self.device,
             mode=balancing_mode,
             shuffle=shuffle,
@@ -394,25 +406,32 @@ class BaseTrainer(ABC):
         checkpoint = torch.load(checkpoint_path, map_location=map_location)
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
+        self.best_val_metric = checkpoint.get("best_val_metric", None)
+        self.primary_metric = checkpoint.get("primary_metric", None)
 
-        # Load model, optimizer, normalizer state dict.
-        # if trained with ddp and want to load in non-ddp, modify keys from
-        # module.module.. -> module..
-        first_key = next(iter(checkpoint["state_dict"]))
-        if (
-            not distutils.initialized() or self.config["noddp"]
-        ) and first_key.split(".")[1] == "module":
-            # No need for OrderedDict since dictionaries are technically ordered
-            # since Python 3.6 and officially ordered since Python 3.7
-            new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
-            self.model.load_state_dict(new_dict)
-        elif distutils.initialized() and first_key.split(".")[1] != "module":
+        # Match the "module." count in the keys of model and checkpoint state_dict
+        # DataParallel model has 1 "module.",  DistributedDataParallel has 2 "module."
+        # Not using either of the above two would have no "module."
+
+        ckpt_key_count = next(iter(checkpoint["state_dict"])).count("module")
+        mod_key_count = next(iter(self.model.state_dict())).count("module")
+        key_count_diff = mod_key_count - ckpt_key_count
+
+        if key_count_diff > 0:
             new_dict = {
-                f"module.{k}": v for k, v in checkpoint["state_dict"].items()
+                key_count_diff * "module." + k: v
+                for k, v in checkpoint["state_dict"].items()
             }
-            self.model.load_state_dict(new_dict)
+        elif key_count_diff < 0:
+            new_dict = {
+                k[len("module.") * abs(key_count_diff) :]: v
+                for k, v in checkpoint["state_dict"].items()
+            }
         else:
-            self.model.load_state_dict(checkpoint["state_dict"])
+            new_dict = checkpoint["state_dict"]
+
+        strict = self.config["task"].get("strict_load", True)
+        load_state_dict(self.model, new_dict, strict=strict)
 
         if "optimizer" in checkpoint:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
@@ -422,6 +441,15 @@ class BaseTrainer(ABC):
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
+
+        scale_dict = checkpoint.get("scale_dict", None)
+        if scale_dict:
+            logging.info(
+                "Overwriting scaling factors with those loaded from checkpoint. "
+                "If you're generating predictions with a pretrained checkpoint, this is the correct behavior. "
+                "To disable this, delete `scale_dict` from the checkpoint. "
+            )
+            load_scales_compat(self._unwrapped_model, scale_dict)
 
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
@@ -442,12 +470,13 @@ class BaseTrainer(ABC):
                 self.loss_fn[loss] = nn.MSELoss()
             elif loss_name == "l2mae":
                 self.loss_fn[loss] = L2MAELoss()
+            elif loss_name == "atomwisel2":
+                self.loss_fn[loss] = AtomwiseL2Loss()
             else:
                 raise NotImplementedError(
                     f"Unknown loss function name: {loss_name}"
                 )
-            if distutils.initialized():
-                self.loss_fn[loss] = DDPLoss(self.loss_fn[loss])
+            self.loss_fn[loss] = DDPLoss(self.loss_fn[loss])
 
     def load_optimizer(self):
         optimizer = self.config["optim"].get("optimizer", "AdamW")
@@ -507,7 +536,7 @@ class BaseTrainer(ABC):
     ):
         if not self.is_debug and distutils.is_master():
             if training_state:
-                save_checkpoint(
+                return save_checkpoint(
                     {
                         "epoch": self.epoch,
                         "step": self.step,
@@ -526,6 +555,11 @@ class BaseTrainer(ABC):
                         "amp": self.scaler.state_dict()
                         if self.scaler
                         else None,
+                        "best_val_metric": self.best_val_metric,
+                        "primary_metric": self.config["task"].get(
+                            "primary_metric",
+                            self.evaluator.task_primary_metric[self.name],
+                        ),
                     },
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
@@ -534,7 +568,7 @@ class BaseTrainer(ABC):
                 if self.ema:
                     self.ema.store()
                     self.ema.copy_to()
-                save_checkpoint(
+                ckpt_path = save_checkpoint(
                     {
                         "state_dict": self.model.state_dict(),
                         "normalizers": {
@@ -552,6 +586,8 @@ class BaseTrainer(ABC):
                 )
                 if self.ema:
                     self.ema.restore()
+                return ckpt_path
+        return None
 
     def save_hpo(self, epoch, step, metrics, checkpoint_every):
         # default is no checkpointing
@@ -596,6 +632,8 @@ class BaseTrainer(ABC):
 
     @torch.no_grad()
     def validate(self, split="val", disable_tqdm=False):
+        ensure_fitted(self._unwrapped_model)
+
         if distutils.is_master():
             logging.info(f"Evaluating on {split}.")
         if self.is_hpo:

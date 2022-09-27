@@ -21,6 +21,31 @@ Various decorators for registry different kind of classes with unique keys
 
 - Register a model: ``@registry.register_model``
 """
+import importlib
+
+
+def _get_absolute_mapping(name: str):
+    # in this case, the `name` should be the fully qualified name of the class
+    # e.g., `ocpmodels.tasks.base_task.BaseTask`
+    # we can use importlib to get the module (e.g., `ocpmodels.tasks.base_task`)
+    # and then import the class (e.g., `BaseTask`)
+
+    module_name = ".".join(name.split(".")[:-1])
+    class_name = name.split(".")[-1]
+
+    try:
+        module = importlib.import_module(module_name)
+    except (ModuleNotFoundError, ValueError) as e:
+        raise RuntimeError(
+            f"Could not import module `{module_name}` for import `{name}`"
+        ) from e
+
+    try:
+        return getattr(module, class_name)
+    except AttributeError as e:
+        raise RuntimeError(
+            f"Could not import class `{class_name}` from module `{module_name}`"
+        ) from e
 
 
 class Registry:
@@ -173,24 +198,66 @@ class Registry:
         current[path[-1]] = obj
 
     @classmethod
+    def __import_error(cls, name: str, mapping_name: str):
+        kind = mapping_name[: -len("_name_mapping")]
+        mapping = cls.mapping.get(mapping_name, {})
+        existing_keys = list(mapping.keys())
+
+        existing_cls_path = (
+            mapping.get(existing_keys[-1], None) if existing_keys else None
+        )
+        if existing_cls_path is not None:
+            existing_cls_path = f"{existing_cls_path.__module__}.{existing_cls_path.__qualname__}"
+        else:
+            existing_cls_path = "ocpmodels.trainers.ForcesTrainer"
+
+        existing_keys = [f"'{name}'" for name in existing_keys]
+        existing_keys = (
+            ", ".join(existing_keys[:-1]) + " or " + existing_keys[-1]
+        )
+        existing_keys_str = (
+            f" (one of {existing_keys})" if existing_keys else ""
+        )
+        return RuntimeError(
+            f"Failed to find the {kind} '{name}'. "
+            f"You may either use a {kind} from the registry{existing_keys_str} "
+            f"or provide the full import path to the {kind} (e.g., '{existing_cls_path}')."
+        )
+
+    @classmethod
+    def get_class(cls, name: str, mapping_name: str):
+        existing_mapping = cls.mapping[mapping_name].get(name, None)
+        if existing_mapping is not None:
+            return existing_mapping
+
+        # mapping be class path of type `{module_name}.{class_name}` (e.g., `ocpmodels.trainers.ForcesTrainer`)
+        if name.count(".") < 1:
+            raise cls.__import_error(name, mapping_name)
+
+        try:
+            return _get_absolute_mapping(name)
+        except RuntimeError as e:
+            raise cls.__import_error(name, mapping_name) from e
+
+    @classmethod
     def get_task_class(cls, name):
-        return cls.mapping["task_name_mapping"].get(name, None)
+        return cls.get_class(name, "task_name_mapping")
 
     @classmethod
     def get_dataset_class(cls, name):
-        return cls.mapping["dataset_name_mapping"].get(name, None)
+        return cls.get_class(name, "dataset_name_mapping")
 
     @classmethod
     def get_model_class(cls, name):
-        return cls.mapping["model_name_mapping"].get(name, None)
+        return cls.get_class(name, "model_name_mapping")
 
     @classmethod
     def get_logger_class(cls, name):
-        return cls.mapping["logger_name_mapping"].get(name, None)
+        return cls.get_class(name, "logger_name_mapping")
 
     @classmethod
     def get_trainer_class(cls, name):
-        return cls.mapping["trainer_name_mapping"].get(name, None)
+        return cls.get_class(name, "trainer_name_mapping")
 
     @classmethod
     def get(cls, name, default=None, no_warning=False):

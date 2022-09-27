@@ -6,17 +6,14 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
-import os
-from collections import defaultdict
 
-import numpy as np
 import torch
 import torch_geometric
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
-from ocpmodels.modules.normalizer import Normalizer
+from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
@@ -108,6 +105,8 @@ class EnergyTrainer(BaseTrainer):
     def predict(
         self, loader, per_image=True, results_file=None, disable_tqdm=False
     ):
+        ensure_fitted(self._unwrapped_model)
+
         if distutils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
         assert isinstance(
@@ -163,13 +162,15 @@ class EnergyTrainer(BaseTrainer):
         return predictions
 
     def train(self, disable_eval_tqdm=False):
+        ensure_fitted(self._unwrapped_model, warn=True)
+
         eval_every = self.config["optim"].get(
             "eval_every", len(self.train_loader)
         )
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
-        self.best_val_mae = 1e9
+        self.best_val_metric = 1e9
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
@@ -251,9 +252,9 @@ class EnergyTrainer(BaseTrainer):
                             val_metrics[
                                 self.evaluator.task_primary_metric[self.name]
                             ]["metric"]
-                            < self.best_val_mae
+                            < self.best_val_metric
                         ):
-                            self.best_val_mae = val_metrics[
+                            self.best_val_metric = val_metrics[
                                 self.evaluator.task_primary_metric[self.name]
                             ]["metric"]
                             self.save(

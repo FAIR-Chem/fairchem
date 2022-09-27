@@ -7,21 +7,15 @@ LICENSE file in the root directory of this source tree.
 
 import copy
 import logging
-import os
-import sys
-import time
-from pathlib import Path
 
 import submitit
 
-from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
-from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     build_config,
     create_grid,
+    new_trainer_context,
     save_experiment_log,
-    setup_imports,
     setup_logging,
 )
 
@@ -31,44 +25,13 @@ class Runner(submitit.helpers.Checkpointable):
         self.config = None
 
     def __call__(self, config):
-        setup_logging()
-        self.config = copy.deepcopy(config)
+        with new_trainer_context(args=args, config=config) as ctx:
+            self.config = ctx.config
+            self.task = ctx.task
+            self.trainer = ctx.trainer
 
-        if args.distributed:
-            distutils.setup(config)
-
-        try:
-            setup_imports()
-            self.trainer = registry.get_trainer_class(
-                config.get("trainer", "energy")
-            )(
-                task=config["task"],
-                model=config["model"],
-                dataset=config["dataset"],
-                optimizer=config["optim"],
-                identifier=config["identifier"],
-                timestamp_id=config.get("timestamp_id", None),
-                run_dir=config.get("run_dir", "./"),
-                is_debug=config.get("is_debug", False),
-                print_every=config.get("print_every", 10),
-                seed=config.get("seed", 0),
-                logger=config.get("logger", "tensorboard"),
-                local_rank=config["local_rank"],
-                amp=config.get("amp", False),
-                cpu=config.get("cpu", False),
-                slurm=config.get("slurm", {}),
-                noddp=config.get("noddp", False),
-            )
-            self.task = registry.get_task_class(config["mode"])(self.config)
             self.task.setup(self.trainer)
-            start_time = time.time()
             self.task.run()
-            distutils.synchronize()
-            if distutils.is_master():
-                logging.info(f"Total time taken: {time.time() - start_time}")
-        finally:
-            if args.distributed:
-                distutils.cleanup()
 
     def checkpoint(self, *args, **kwargs):
         new_runner = Runner()

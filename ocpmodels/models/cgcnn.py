@@ -73,7 +73,7 @@ class CGCNN(BaseModel):
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
-
+        self.max_neighbors = 50
         # Get CGCNN atom embeddings
         if embeddings == "khot":
             embeddings = KHOT_EMBEDDINGS
@@ -121,34 +121,16 @@ class CGCNN(BaseModel):
             self.embedding = self.embedding.to(data.atomic_numbers.device)
         data.x = self.embedding[data.atomic_numbers.long() - 1]
 
-        pos = data.pos
+        (
+            edge_index,
+            distances,
+            distance_vec,
+            cell_offsets,
+            _,  # cell offset distances
+            neighbors,
+        ) = self.generate_graph(data)
 
-        if self.otf_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, 50
-            )
-            data.edge_index = edge_index
-            data.cell_offsets = cell_offsets
-            data.neighbors = neighbors
-
-        if self.use_pbc:
-            out = get_pbc_distances(
-                pos,
-                data.edge_index,
-                data.cell,
-                data.cell_offsets,
-                data.neighbors,
-            )
-
-            data.edge_index = out["edge_index"]
-            distances = out["distances"]
-        else:
-            data.edge_index = radius_graph(
-                data.pos, r=self.cutoff, batch=data.batch
-            )
-            row, col = data.edge_index
-            distances = (pos[row] - pos[col]).norm(dim=-1)
-
+        data.edge_index = edge_index
         data.edge_attr = self.distance_expansion(distances)
         # Forward pass through the network
         mol_feats = self._convolve(data)

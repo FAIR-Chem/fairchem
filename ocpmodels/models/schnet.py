@@ -15,10 +15,11 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base import BaseModel
 
 
 @registry.register_model("schnet")
-class SchNetWrap(SchNet):
+class SchNetWrap(SchNet, BaseModel):
     r"""Wrapper around the continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
     Quantum Interactions" <https://arxiv.org/abs/1706.08566>`_. Each layer uses interaction
@@ -73,7 +74,7 @@ class SchNetWrap(SchNet):
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
-
+        self.max_neighbors = 50
         super(SchNetWrap, self).__init__(
             hidden_channels=hidden_channels,
             num_filters=num_filters,
@@ -89,29 +90,18 @@ class SchNetWrap(SchNet):
         pos = data.pos
         batch = data.batch
 
-        if self.otf_graph:
-            edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                data, self.cutoff, 50
-            )
-            data.edge_index = edge_index
-            data.cell_offsets = cell_offsets
-            data.neighbors = neighbors
+        (
+            edge_index,
+            edge_weight,
+            distance_vec,
+            cell_offsets,
+            _,  # cell offset distances
+            neighbors,
+        ) = self.generate_graph(data)
 
-        # TODO return distance computation in radius_graph_pbc to remove need
-        # for get_pbc_distances call
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
 
-            out = get_pbc_distances(
-                pos,
-                data.edge_index,
-                data.cell,
-                data.cell_offsets,
-                data.neighbors,
-            )
-
-            edge_index = out["edge_index"]
-            edge_weight = out["distances"]
             edge_attr = self.distance_expansion(edge_weight)
 
             h = self.embedding(z)
