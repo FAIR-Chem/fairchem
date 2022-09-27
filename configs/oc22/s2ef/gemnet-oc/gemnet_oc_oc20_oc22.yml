@@ -1,5 +1,5 @@
 includes:
-  - configs/oc22/s2ef/base.yml
+  - configs/oc22/s2ef/base_joint.yml
 
 model:
   name: gemnet_oc
