@@ -119,7 +119,7 @@ class OCPCalculator(Calculator):
             ]
 
             # Load the trainer based on the dataset used
-            if config["task"]["dataset"] == "trajectory_lmdb":
+            if "forces" in config["task"]["description"]:
                 config["trainer"] = "forces"
             else:
                 config["trainer"] = "energy"
