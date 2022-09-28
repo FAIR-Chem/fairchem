@@ -124,6 +124,7 @@ class BaseTrainer(ABC):
         logger_name = logger if isinstance(logger, str) else logger["name"]
         self.config = {
             "task": task,
+            "trainer": "forces" if name == "s2ef" else "energy",
             "model": model.pop("name"),
             "model_attributes": model,
             "optim": optimizer,
