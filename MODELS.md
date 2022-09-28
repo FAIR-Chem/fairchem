@@ -1,9 +1,21 @@
-# Pretrained models for OCP
+# Pretrained OCP models
 
 This page summarizes all the pretrained models released as part of the [Open Catalyst Project](https://opencatalystproject.org/). All models were trained using this codebase.
 
-* All configurations for these models are available in the [`configs/`](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs) directory.
-* All of these models are trained on various splits of the OC20 S2EF / IS2RE datasets. For details, see [https://arxiv.org/abs/2010.09990](https://arxiv.org/abs/2010.09990) and https://github.com/Open-Catalyst-Project/ocp/blob/master/DATASET.md.
+* [Open Catalyst 2020 (OC20)](#open-catalyst-2020-oc20)
+    * [S2EF models optimized for EFwT](#s2ef-models-optimized-for-efwt)
+    * [S2EF models optimized for force](#s2ef-models-optimized-for-force-only)
+    * [IS2RE models](#is2re-models)
+* [Open Catalyst 2022 (OC22)](#open-catalyst-2022-oc22)
+    * [S2EF models](#s2ef-models)
+
+* * *
+
+
+# Open Catalyst 2020 (OC20)
+
+* All configurations for these models are available in the [`configs/`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs) directory.
+* All of these models are trained on various splits of the OC20 S2EF / IS2RE datasets. For details, see [https://arxiv.org/abs/2010.09990](https://arxiv.org/abs/2010.09990) and https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md.
 
 ## S2EF models: optimized for EFwT
 
@@ -72,5 +84,33 @@ OC20 dataset or pretrained models, as well as the original paper for each model:
     journal = {ACS Catalysis},
     year = {2021},
     doi = {10.1021/acscatal.0c04525},
+}
+```
+
+# Open Catalyst 2022 (OC22)
+
+* All configurations for these models are available in the [`configs/oc22`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/oc22) directory.
+* All of these models are trained on various splits of the OC22 S2EF / IS2RE datasets. For details, see [https://arxiv.org/abs/2206.08917](https://arxiv.org/abs/2206.08917) and https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md.
+
+## S2EF models
+
+|Model	|Training	|Download	|val ID force MAE	|val ID energy MAE	|
+|---	|---	|---	|---	|---	|
+|GemNet-dT | OC22	|[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_09/oc22/s2ef/gndt_oc22_all_s2ef.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/gemnet-dt/gemnet-dT.yml)	|0.032	|1.127	|
+|GemNet-OC | OC22	|[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_09/oc22/s2ef/gnoc_oc22_all_s2ef.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/gemnet-oc/gemnet_oc.yml)	|0.030	|0.563	|
+|GemNet-OC | OC20+OC22	|[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_09/oc22/s2ef/gnoc_oc22_oc20_all_s2ef.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/gemnet-oc/gemnet_oc_oc20_oc22.yml)	|0.027	|0.483	|
+|GemNet-OC | OC20->OC22	|[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_09/oc22/s2ef/gnoc_finetune_all_s2ef.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/gemnet-oc/gemnet_oc_finetune.yml)	|0.030	|0.417	|
+
+The Open Catalyst 2022 (OC22) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
+
+Please consider citing the following paper in any research manuscript using the
+OC22 dataset or pretrained models, as well as the original paper for each model:
+
+```
+@article{oc22_dataset,
+    author = {Tran*, Richard and Lan*, Janice and Shuaibi*, Muhammed and Wood*, Brandon and Goyal*, Siddharth and Das, Abhishek and Heras-Domingo, Javier and Kolluru, Adeesh and Rizvi, Ammar and Shoghi, Nima and Sriram, Anuroop and Ulissi, Zachary and Zitnick, C. Lawrence},
+    title = {The Open Catalyst 2022 (OC22) Dataset and Challenges for Oxide Electrocatalysis},
+    year = {2022},
+    journal = {arXiv preprint arXiv:2206.08917},
 }
 ```
