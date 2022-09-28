@@ -12,7 +12,6 @@ Environment (ASE)
 import copy
 import logging
 import os
-import warnings
 
 import torch
 import yaml
