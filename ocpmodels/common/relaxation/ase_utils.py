@@ -118,7 +118,7 @@ class OCPCalculator(Calculator):
                 "config"
             ]
 
-            # Load the trainer based on the dataset used
+            # Load the trainer based on the task description
             if "forces" in config["task"]["description"]:
                 config["trainer"] = "forces"
             else:
