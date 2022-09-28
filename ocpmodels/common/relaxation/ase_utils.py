@@ -12,6 +12,7 @@ Environment (ASE)
 import copy
 import logging
 import os
+import warnings
 
 import torch
 import yaml
@@ -69,6 +70,7 @@ class OCPCalculator(Calculator):
         self,
         config_yml=None,
         checkpoint=None,
+        trainer=None,
         cutoff=6,
         max_neighbors=50,
         device="cpu",
@@ -81,6 +83,8 @@ class OCPCalculator(Calculator):
                 Path to yaml config or could be a dictionary.
             checkpoint (str):
                 Path to trained checkpoint.
+            trainer (str):
+                OCP trainer to be used. "forces" for S2EF, "energy" for IS2RE.
             cutoff (int):
                 Cutoff radius to be used for data preprocessing.
             max_neighbors (int):
@@ -118,11 +122,19 @@ class OCPCalculator(Calculator):
                 "config"
             ]
 
-            # Load the trainer based on the task description
-            if "forces" in config["task"]["description"]:
+            # for older checkpoints, identify trainer from dataset class
+            if config["task"]["dataset"] == "trajectory_lmdb":
                 config["trainer"] = "forces"
-            else:
+            elif config["task"]["dataset"] == "single_point_lmdb":
                 config["trainer"] = "energy"
+            else:
+                if "trainer" not in config:
+                    if trainer is None:
+                        warnings.warn(
+                            "Unable to identify OCP trainer, defaulting to `forces`. Specify the `trainer` argument into OCPCalculator if otherwise."
+                        )
+                        trainer = "forces"
+                    config["trainer"] = trainer
 
             config["model_attributes"]["name"] = config.pop("model")
             config["model"] = config["model_attributes"]
