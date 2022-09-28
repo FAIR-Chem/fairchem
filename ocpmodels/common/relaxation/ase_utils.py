@@ -133,7 +133,7 @@ class OCPCalculator(Calculator):
                     logging.warning(
                         "Unable to identify OCP trainer, defaulting to `forces`. Specify the `trainer` argument into OCPCalculator if otherwise."
                     )
-            config["trainer"] = "forces"
+                    config["trainer"] = "forces"
 
         config["model_attributes"]["name"] = config.pop("model")
         config["model"] = config["model_attributes"]
