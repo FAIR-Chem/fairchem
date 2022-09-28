@@ -121,23 +121,22 @@ class OCPCalculator(Calculator):
             config = torch.load(checkpoint, map_location=torch.device(device))[
                 "config"
             ]
+        if trainer is not None:  # passing the arg overrides everything else
+            config["trainer"] = trainer
+        else:
+            if "trainer" not in config:  # older checkpoint
+                if config["task"]["dataset"] == "trajectory_lmdb":
+                    config["trainer"] = "forces"
+                elif config["task"]["dataset"] == "single_point_lmdb":
+                    config["trainer"] = "energy"
+                else:
+                    logging.warning(
+                        "Unable to identify OCP trainer, defaulting to `forces`. Specify the `trainer` argument into OCPCalculator if otherwise."
+                    )
+            config["trainer"] = "forces"
 
-            # for older checkpoints, identify trainer from dataset class
-            if config["task"]["dataset"] == "trajectory_lmdb":
-                config["trainer"] = "forces"
-            elif config["task"]["dataset"] == "single_point_lmdb":
-                config["trainer"] = "energy"
-            else:
-                if "trainer" not in config:
-                    if trainer is None:
-                        warnings.warn(
-                            "Unable to identify OCP trainer, defaulting to `forces`. Specify the `trainer` argument into OCPCalculator if otherwise."
-                        )
-                        trainer = "forces"
-                    config["trainer"] = trainer
-
-            config["model_attributes"]["name"] = config.pop("model")
-            config["model"] = config["model_attributes"]
+        config["model_attributes"]["name"] = config.pop("model")
+        config["model"] = config["model_attributes"]
 
         # Calculate the edge indices on the fly
         config["model"]["otf_graph"] = True
