@@ -388,33 +388,12 @@ def build_config(args, args_override):
         overrides = create_dict_from_args(args_override)
         config, _ = merge_dicts(config, overrides)
 
-    # Some other flags.
-    config["mode"] = args.mode
-    config["data_split"] = str(args.config_yml).split("/")[2]
-    config["identifier"] = args.identifier
-    config["timestamp_id"] = args.timestamp_id
-    config["seed"] = args.seed
-    config["is_debug"] = args.debug
-    config["run_dir"] = resolve(args.run_dir)
-    config["print_every"] = args.print_every
-    config["amp"] = args.amp
-    config["checkpoint"] = args.checkpoint
-    config["cpu"] = args.cpu
-    config["new_gnn"] = args.new_gnn
-    config["test_ri"] = args.test_ri
+    config.update(**vars(args))
+    config["data_split"] = config["data_split"].split("/")[2]
+    config["run_dir"] = resolve(config["run_dir"])
     if "frame_averaging" not in config:
         config["frame_averaging"] = args.fa
-    config["note"] = args.note
-    # Submit
-    config["submit"] = args.submit
-    config["summit"] = args.summit
-    # Distributed
-    config["distributed"] = args.distributed
-    config["local_rank"] = args.local_rank
-    config["distributed_port"] = args.distributed_port
     config["world_size"] = args.num_nodes * args.num_gpus
-    config["distributed_backend"] = args.distributed_backend
-    config["wandb_tags"] = args.wandb_tags
 
     return config
 
