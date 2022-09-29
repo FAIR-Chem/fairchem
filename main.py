@@ -24,6 +24,7 @@ from ocpmodels.common.utils import (
     setup_logging,
     update_from_sbatch_py_vars,
 )
+from ocpmodels.trainers import BaseTrainer
 
 try:
     import ipdb  # noqa: F401
@@ -56,7 +57,6 @@ def read_slurm_env(config):
     try:
         if params:
             params = params[0]
-            config["slurm"] = {}
             for kv in params.split(","):
                 k, v = kv.split("=")
                 config["slurm"][k] = v
@@ -140,27 +140,27 @@ if __name__ == "__main__":
         setup_imports()
         run_config = should_continue(run_config)
         run_config = read_slurm_env(run_config)
-        trainer = registry.get_trainer_class(run_config.get("trainer", "energy"))(
+        trainer: BaseTrainer = registry.get_trainer_class(run_config["trainer"])(
             task=run_config["task"],
             model_attributes=run_config["model"],
             dataset=run_config["dataset"],
             optimizer=run_config["optim"],
-            run_dir=run_config.get("run_dir", "./"),
-            is_debug=run_config.get("is_debug", False),
-            print_every=run_config.get("print_every", 100),
-            seed=run_config.get("seed", 0),
-            logger=run_config.get("logger", "wandb"),
+            run_dir=run_config["run_dir"],
+            is_debug=run_config["is_debug"],
+            print_every=run_config["print_every"],
+            seed=run_config["seed"],
+            logger=run_config["logger"],
             local_rank=run_config["local_rank"],
-            amp=run_config.get("amp", False),
-            cpu=run_config.get("cpu", False),
-            slurm=run_config.get("slurm", {}),
-            new_gnn=run_config.get("new_gnn", True),
-            frame_averaging=run_config.get("frame_averaging", None),
-            data_split=run_config.get("data_split", None),
-            note=run_config.get("note", ""),
-            test_invariance=run_config.get("test_ri", None),
-            choice_fa=run_config.get("choice_fa", None),
-            wandb_tags=run_config.get("wandb_tags", None),
+            amp=run_config["amp"],
+            cpu=run_config["cpu"],
+            slurm=run_config["slurm"],
+            new_gnn=run_config["new_gnn"],
+            frame_averaging=run_config["frame_averaging"],
+            data_split=run_config["data_split"],
+            note=run_config["note"],
+            test_ri=run_config["test_ri"],
+            choice_fa=run_config["choice_fa"],
+            wandb_tags=run_config["wandb_tags"],
         )
         task = registry.get_task_class(run_config["mode"])(run_config)
         task.setup(trainer)

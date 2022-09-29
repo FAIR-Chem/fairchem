@@ -74,7 +74,7 @@ class BaseTrainer(ABC):
         new_gnn=True,
         data_split=None,
         note="",
-        test_invariance=None,
+        test_ri=None,
         wandb_tags=[],
         choice_fa=None,
         verbose=True,
@@ -84,7 +84,7 @@ class BaseTrainer(ABC):
         self.epoch = 0
         self.step = 0
         self.new_gnn = new_gnn
-        self.test_invariance = test_invariance
+        self.test_ri = test_ri
         self.frame_averaging = frame_averaging
         self.choice_fa = choice_fa
 
@@ -136,7 +136,7 @@ class BaseTrainer(ABC):
             "run_dir": run_dir,
             "frame_averaging": frame_averaging,
             "choice_fa": choice_fa,
-            "test_ri": test_invariance,
+            "test_ri": test_ri,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
                 "print_every": print_every,

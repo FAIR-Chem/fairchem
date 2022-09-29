@@ -36,21 +36,21 @@ if __name__ == "__main__":
 
         # Define trainer
         setup_imports()
-        trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
+        trainer = registry.get_trainer_class(config["trainer"])(
             task=config["task"],
             model=config["model"],
             dataset=config["dataset"],
             optimizer=config["optim"],
-            run_dir=config.get("run_dir", "./"),
+            run_dir=config["run_dir"],
             is_debug=True,
             print_every=config.get("print_every", 100),
-            seed=config.get("seed", 0),
+            seed=config["seed"],
             logger=config.get("logger", "tensorboard"),
             local_rank=config["local_rank"],
-            amp=config.get("amp", False),
-            cpu=config.get("cpu", False),
-            slurm=config.get("slurm", {}),
-            new_gnn=config.get("new_gnn", True),
+            amp=config["amp"],
+            cpu=config["cpu"],
+            slurm=config["slurm"],
+            new_gnn=config["new_gnn"],
         )
 
         # Load checkpoint

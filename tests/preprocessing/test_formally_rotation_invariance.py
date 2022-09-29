@@ -69,23 +69,23 @@ if __name__ == "__main__":
     # Repeat for test_ood_ads  test_ood_both  test_ood_cat
 
     setup_imports()
-    trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
+    trainer = registry.get_trainer_class(config["trainer"])(
         task=config["task"],
         model_attributes=config["model"],
         dataset=config["dataset"],
         optimizer=config["optim"],
-        run_dir=config.get("run_dir", "./"),
+        run_dir=config["run_dir"],
         is_debug=True,
         print_every=config.get("print_every", 100),
-        seed=config.get("seed", 0),
-        logger=config.get("logger", "wandb"),
+        seed=config["seed"],
+        logger=config["logger"],
         local_rank=config["local_rank"],
-        amp=config.get("amp", False),
-        cpu=config.get("cpu", False),
-        slurm=config.get("slurm", {}),
-        new_gnn=config.get("new_gnn", True),
-        data_split=config.get("data_split", None),
-        note=config.get("note", ""),
+        amp=config["amp"],
+        cpu=config["cpu"],
+        slurm=config["slurm"],
+        new_gnn=config["new_gnn"],
+        data_split=config["data_split"],
+        note=config["note"],
     )
 
     # Load checkpoint

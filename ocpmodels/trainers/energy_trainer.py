@@ -76,7 +76,7 @@ class EnergyTrainer(BaseTrainer):
         slurm={},
         new_gnn=True,
         data_split=None,
-        test_invariance=False,
+        test_ri=False,
         choice_fa=None,
         note="",
         wandb_tags=[],
@@ -103,7 +103,7 @@ class EnergyTrainer(BaseTrainer):
             data_split=data_split,
             note=note,
             frame_averaging=frame_averaging,
-            test_invariance=test_invariance,
+            test_ri=test_ri,
             choice_fa=choice_fa,
             wandb_tags=wandb_tags,
             verbose=verbose,
@@ -298,13 +298,13 @@ class EnergyTrainer(BaseTrainer):
             )
 
         # Check rotation invariance
-        if self.test_invariance:
+        if self.test_ri:
             (
                 energy_diff_z,
                 energy_diff,
                 pos_diff_z,
                 energy_diff_refl,
-            ) = self._test_invariance()
+            ) = self.test_rotational_invariance()
             if self.logger:
                 self.logger.log({"2D_ri": energy_diff_z})
                 self.logger.log({"3D_ri": energy_diff})
@@ -404,7 +404,7 @@ class EnergyTrainer(BaseTrainer):
             )
 
     @torch.no_grad()
-    def _test_invariance(self):
+    def test_rotational_invariance(self):
         """Test the rotation invariance property of models
 
         Returns:

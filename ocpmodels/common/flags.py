@@ -39,9 +39,10 @@ class Flags:
             help="Experiment identifier to use as wandb name",
         )
         self.parser.add_argument(
-            "--debug",
+            "--is_debug",
             action="store_true",
             help="Whether this is a debugging run or not",
+            default=False,
         )
         self.parser.add_argument(
             "--run-dir",
@@ -59,7 +60,10 @@ class Flags:
             "--seed", default=0, type=int, help="Seed for torch, cuda, numpy"
         )
         self.parser.add_argument(
-            "--amp", action="store_true", help="Use mixed-precision training"
+            "--amp",
+            action="store_true",
+            help="Use mixed-precision training",
+            default=False,
         )
         self.parser.add_argument(
             "--checkpoint", type=str, help="Model checkpoint to load"
@@ -149,6 +153,13 @@ class Flags:
             help="Note describing this run to be added to the logger",
         )
         self.parser.add_argument(
+            "--logger",
+            type=str,
+            default="wandb",
+            help="Logger to use. Options: [wandb, tensorboard, dummy]",
+            choices=["wandb", "tensorboard", "dummy"],
+        )
+        self.parser.add_argument(
             "--wandb_tags",
             type=str,
             default="",
@@ -165,6 +176,20 @@ class Flags:
             type=int,
             default=100,
             help="Printing frequency (in steps)",
+        )
+        self.parser.add_argument(
+            "--frame_averaging",
+            type=str,
+            default="",
+            help="Frame averaging method to use",
+            choices=["", "2D", "3D"],  # @AlDu -> update
+        )
+        self.parser.add_argument(
+            "--choice_fa",
+            type=str,
+            default="",
+            help="Frame averaging method to use",
+            choices=["random", "e3", "det", "all"],  # @AlDu -> check
         )
 
 

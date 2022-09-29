@@ -391,6 +391,7 @@ def build_config(args, args_override):
     config.update(**vars(args))
     config["data_split"] = config["data_split"].split("/")[2]
     config["run_dir"] = resolve(config["run_dir"])
+    config["slurm"] = {}
     if "frame_averaging" not in config:
         config["frame_averaging"] = args.fa  # @AlDu do we need to keep this?
     config["world_size"] = args.num_nodes * args.num_gpus
@@ -866,27 +867,27 @@ def make_trainer(
             config[k] = v
 
     setup_imports()
-    trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
+    trainer = registry.get_trainer_class(config["trainer"])(
         task=config["task"],
         model_attributes=config["model"],
         dataset=config["dataset"],
         optimizer=config["optim"],
-        run_dir=config.get("run_dir", "./"),
+        run_dir=config["run_dir"],
         is_debug=config.get("is_debug", False),
         print_every=config.get("print_every", 100),
-        seed=config.get("seed", 0),
-        logger=config.get("logger", "wandb"),
+        seed=config["seed"],
+        logger=config["logger"],
         local_rank=config["local_rank"],
-        amp=config.get("amp", False),
-        cpu=config.get("cpu", False),
-        slurm=config.get("slurm", {}),
-        new_gnn=config.get("new_gnn", True),
-        frame_averaging=config.get("frame_averaging", None),
-        data_split=config.get("data_split", None),
-        note=config.get("note", ""),
-        test_invariance=config.get("test_ri", None),
-        choice_fa=config.get("choice_fa", None),
-        wandb_tags=config.get("wandb_tags", None),
+        amp=config["amp"],
+        cpu=config["cpu"],
+        slurm=config["slurm"],
+        new_gnn=config["new_gnn"],
+        frame_averaging=config["frame_averaging"],
+        data_split=config["data_split"],
+        note=config["note"],
+        test_ri=config["test_ri"],
+        choice_fa=config["choice_fa"],
+        wandb_tags=config["wandb_tags"],
         verbose=verbose,
     )
 

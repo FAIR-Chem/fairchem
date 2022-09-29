@@ -73,22 +73,22 @@ if __name__ == "__main__":
 
     AutomaticFit.set2fitmode()
 
-    trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
+    trainer = registry.get_trainer_class(config["trainer"])(
         task=config["task"],
         model=config["model"],
         dataset=config["dataset"],
         optimizer=config["optim"],
         identifier=config["identifier"],
-        run_dir=config.get("run_dir", "./"),
+        run_dir=config["run_dir"],
         is_debug=config.get("is_debug", False),
         is_vis=config.get("is_vis", False),
         print_every=config.get("print_every", 10),
-        seed=config.get("seed", 0),
+        seed=config["seed"],
         logger=config.get("logger", "tensorboard"),
         local_rank=config["local_rank"],
-        amp=config.get("amp", False),
-        cpu=config.get("cpu", False),
-        slurm=config.get("slurm", {}),
+        amp=config["amp"],
+        cpu=config["cpu"],
+        slurm=config["slurm"],
     )
 
     # Fitting loop

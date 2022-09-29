@@ -124,13 +124,13 @@ class OCPCalculator(Calculator):
             del config["dataset"]["src"]
             config["normalizer"] = config["dataset"]
 
-        self.trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
+        self.trainer = registry.get_trainer_class(config["trainer"])(
             task=config["task"],
             model=config["model"],
             dataset=None,
             normalizer=config["normalizer"],
             optimizer=config["optim"],
-            slurm=config.get("slurm", {}),
+            slurm=config["slurm"],
             local_rank=config.get("local_rank", 0),
             is_debug=config.get("is_debug", True),
             cpu=True,

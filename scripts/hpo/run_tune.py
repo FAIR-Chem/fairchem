@@ -14,21 +14,21 @@ from ocpmodels.common.utils import build_config, setup_imports
 def ocp_trainable(config, checkpoint_dir=None):
     setup_imports()
     # trainer defaults are changed to run HPO
-    trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
+    trainer = registry.get_trainer_class(config["trainer"])(
         task=config["task"],
         model=config["model"],
         dataset=config["dataset"],
         optimizer=config["optim"],
-        run_dir=config.get("run_dir", "./"),
+        run_dir=config["run_dir"],
         is_debug=config.get("is_debug", False),
         is_vis=config.get("is_vis", False),
         is_hpo=config.get("is_hpo", True),  # hpo
         print_every=config.get("print_every", 100),
-        seed=config.get("seed", 0),
+        seed=config["seed"],
         logger=config.get("logger", None),  # hpo
         local_rank=config["local_rank"],
-        amp=config.get("amp", False),
-        cpu=config.get("cpu", False),
+        amp=config["amp"],
+        cpu=config["cpu"],
     )
     # add checkpoint here
     if checkpoint_dir:
