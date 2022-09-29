@@ -35,7 +35,10 @@ try:
 
     os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
 except:  # noqa: E722
-    pass
+    print(
+        "`ipdb` is not installed. ",
+        "Consider `pip install ipdb` to improve your debugging experience.",
+    )
 
 
 class Runner(submitit.helpers.Checkpointable):
