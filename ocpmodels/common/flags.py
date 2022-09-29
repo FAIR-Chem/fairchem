@@ -6,8 +6,8 @@ LICENSE file in the root directory of this source tree.
 """
 
 import argparse
-from pathlib import Path
 import os
+from pathlib import Path
 
 
 class Flags:
@@ -137,10 +137,28 @@ class Flags:
             help="Whether to use original GNN models or modified ones",
         )
         self.parser.add_argument(
+            "--fa",
+            default=False,
+            choices=[False, "2D", "3D"],
+            help="Specify which frame averaging method to use",
+        )
+        self.parser.add_argument(
             "--note",
             type=str,
             default="",
             help="Note describing this run to be added to the logger",
+        )
+        self.parser.add_argument(
+            "--wandb_tag",
+            type=str,
+            default="",
+            help="Single tag for wandb",
+        )
+        self.parser.add_argument(
+            "--test_ri",
+            type=bool,
+            default=False,
+            help="Test rotation invariance of model",
         )
 
 

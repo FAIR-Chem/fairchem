@@ -17,6 +17,8 @@ model:
   phys_hidden_channels: 0
   graph_rewiring: False # can be in {false, remove-tag-0, one-supernode-per-graph,
                                     # one-supernode-per-atom-type, one-supernode-per-atom-type-dist}
+  energy_head: weighted-av-initial-embeds # can be {False, weighted-av-initial-embeds,
+                                              # weighted-av-final-embeds, pooling, diff_pooling}
 
 # *** Important note ***
 #   The total number of gpus used for this run was 1.

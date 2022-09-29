@@ -1,0 +1,87 @@
+program: main.py # sbatch.py
+method: random
+metric:
+  goal: minimize
+  name: val/loss
+
+parameters:
+  #mode: "train"
+  #config_yml: "configs/is2re/10k/sfarinet/sfarinet.yml"
+  model.hidden_channels:
+    distribution: q_uniform
+    min: 150
+    max: 400
+    q: 20
+  model.num_filters:
+    distribution: q_uniform
+    min: 20
+    max: 200
+    q: 10
+  model.num_interactions:
+      values: [1, 2, 3, 4, 5]
+  model.num_gaussians:
+    distribution: q_uniform
+    min: 20
+    max: 150
+    q: 10
+  model.cutoff:
+    values: [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+  model.use_pbc:
+    values: [True]
+  model.tag_hidden_channels:
+    distribution: q_uniform
+    min: 16
+    max: 128
+    q: 16
+  model.pg_hidden_channels:
+    distribution: q_uniform
+    min: 0
+    max: 64
+    q: 16
+  model.phys_embeds:
+    values: [False, True]
+  model.phys_hidden_channels:
+    distribution: q_uniform
+    min: 0
+    max: 32
+    q: 16
+  model.graph_rewiring:
+    values: [False, remove-tag-0]
+  model.energy_head:
+    values: [False, pooling, weighted-av-initial-embeds]
+  optim.batch_size:
+    values: [64]
+  optim.lr_initial:
+    distribution: log_uniform
+    min: 0.0005
+    max: 0.01
+  optim.lr_gamma:
+    distribution: uniform
+    min: 0.005
+    max: 0.11
+  optim.warmup_steps:
+    distribution: q_uniform
+    min: 100
+    max: 600
+    q: 50
+  optim.warmup_factor:
+    values: [0.1, 0.2, 0.3]
+  optim.max_epochs:
+    values: [30]
+  #optim.lr_milestones:
+  #  values:
+  #  [[1562, 2343, 3125]]
+
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - "--config-yml"
+  - "configs/is2re/all/sfarinet/sfarinet.yml"
+  - "--mode"
+  - "train"
+  - ${args}
+  - "--logdir"
+  - "$SCRATCH/ocp/runs/$SLURM_JOB_ID"
+  - "--run-dir"
+  - "$SCRATCH/ocp/runs/$SLURM_JOB_ID"

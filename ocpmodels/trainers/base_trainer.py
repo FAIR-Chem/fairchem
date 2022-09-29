@@ -13,6 +13,7 @@ import subprocess
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +23,7 @@ import torch.optim as optim
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
+from torch_geometric.data import Batch
 from tqdm import tqdm
 
 import ocpmodels
@@ -32,6 +34,7 @@ from ocpmodels.common.data_parallel import (
     ParallelCollater,
 )
 from ocpmodels.common.registry import registry
+from ocpmodels.common.transforms import RandomReflect, RandomRotate
 from ocpmodels.common.utils import save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -40,6 +43,11 @@ from ocpmodels.modules.exponential_moving_average import (
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
+from ocpmodels.preprocessing.data_augmentation import (
+    data_augmentation,
+    frame_averaging_2D,
+    frame_averaging_3D,
+)
 
 
 @registry.register_trainer("base")
@@ -51,6 +59,7 @@ class BaseTrainer(ABC):
         dataset,
         optimizer,
         identifier,
+        frame_averaging=None,
         normalizer=None,
         timestamp_id=None,
         run_dir=None,
@@ -67,12 +76,19 @@ class BaseTrainer(ABC):
         new_gnn=True,
         data_split=None,
         note="",
+        test_invariance=None,
+        wandb_tag=None,
+        choice_fa=None,
+        verbose=True,
     ):
         self.name = name
         self.cpu = cpu
         self.epoch = 0
         self.step = 0
         self.new_gnn = new_gnn
+        self.test_invariance = test_invariance
+        self.frame_averaging = frame_averaging
+        self.choice_fa = choice_fa
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
@@ -128,6 +144,9 @@ class BaseTrainer(ABC):
             "logger": logger,
             "amp": amp,
             "run_dir": run_dir,
+            "frame_averaging": frame_averaging,
+            "choice_fa": choice_fa,
+            "test_ri": test_invariance,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
                 "identifier": identifier,
@@ -141,6 +160,7 @@ class BaseTrainer(ABC):
             },
             "slurm": slurm,
             "note": note,
+            "wandb_tag": wandb_tag,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp else None
@@ -163,6 +183,19 @@ class BaseTrainer(ABC):
             self.config["test_dataset"] = dataset.get("test", None)
         else:
             self.config["dataset"] = dataset
+
+        # Frame averaging
+        if frame_averaging:
+            if frame_averaging.lower() == "2d":
+                self.fa = frame_averaging_2D
+            elif frame_averaging.lower() == "3d":
+                self.fa = frame_averaging_3D
+            elif frame_averaging.lower() == "da":
+                self.fa = data_augmentation
+            else:
+                raise ValueError(f"Unknown frame averaging: {frame_averaging}")
+        else:
+            self.fa = None
 
         self.normalizer = normalizer
         # This supports the legacy way of providing norm parameters in dataset
@@ -189,7 +222,7 @@ class BaseTrainer(ABC):
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
-        if distutils.is_master():
+        if distutils.is_master() and verbose:
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
@@ -270,7 +303,7 @@ class BaseTrainer(ABC):
         if self.config.get("dataset", None):
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
-            )(self.config["dataset"])
+            )(self.config["dataset"], transform=self.fa, choice_fa=self.choice_fa)
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
                 self.config["optim"]["batch_size"],
@@ -284,7 +317,11 @@ class BaseTrainer(ABC):
             if self.config.get("val_dataset", None):
                 self.val_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(self.config["val_dataset"])
+                )(
+                    self.config["val_dataset"],
+                    transform=self.fa,
+                    choice_fa=self.choice_fa,
+                )
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
                     self.config["optim"].get(
@@ -300,7 +337,11 @@ class BaseTrainer(ABC):
             if self.config.get("test_dataset", None):
                 self.test_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(self.config["test_dataset"])
+                )(
+                    self.config["test_dataset"],
+                    transform=self.fa,
+                    choice_fa=self.choice_fa,
+                )
                 self.test_sampler = self.get_sampler(
                     self.test_dataset,
                     self.config["optim"].get(
@@ -595,6 +636,7 @@ class BaseTrainer(ABC):
         rank = distutils.get_rank()
 
         loader = self.val_loader if split[:3] in {"val", "eva"} else self.test_loader
+        val_time = time.time()
 
         for i, batch in tqdm(
             enumerate(loader),
@@ -605,12 +647,16 @@ class BaseTrainer(ABC):
         ):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch)
+                out, pooling_loss = self._forward(batch)
             loss = self._compute_loss(out, batch)
+            if pooling_loss is not None:
+                loss += pooling_loss
 
             # Compute metrics.
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
             metrics = evaluator.update("loss", loss.item(), metrics)
+
+        val_time = time.time() - val_time
 
         aggregated_metrics = {}
         for k in metrics:
@@ -629,6 +675,7 @@ class BaseTrainer(ABC):
 
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": self.epoch})
+        log_dict.update({"val_time": val_time})
         if distutils.is_master():
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
             logging.info(", ".join(log_str))
@@ -741,7 +788,7 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(self, final=False):
+    def eval_all_val_splits(self, final=True, disable_tqdm=True):
         """Evaluate model on all four validation splits"""
 
         if final:
@@ -757,6 +804,7 @@ class BaseTrainer(ABC):
 
         # Compute performance metrics on all four validation splits
         cumulated_time = 0
+        cumulated_mae = 0
         metrics_dict = {}
         logging.info("Evaluating on 4 val splits.")
         for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
@@ -772,7 +820,11 @@ class BaseTrainer(ABC):
             if self.config.get("val_dataset", None):
                 self.val_dataset = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(self.config["val_dataset"])
+                )(
+                    self.config["val_dataset"],
+                    transform=self.fa,
+                    choice_fa=self.choice_fa,
+                )
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
                     self.config["optim"].get(
@@ -787,21 +839,87 @@ class BaseTrainer(ABC):
 
             # Call validate function
             start_time = time.time()
-            self.metrics = self.validate(split="eval", disable_tqdm=True, name_split=s)
+            self.metrics = self.validate(split="eval", disable_tqdm=disable_tqdm, name_split=s)
             metrics_dict[s] = self.metrics
+            cumulated_mae += self.metrics["energy_mae"]["metric"]
             cumulated_time += time.time() - start_time
 
         # Log time
         if self.config["logger"] == "wandb" and distutils.is_master():
             self.logger.log({"Val. time": cumulated_time})
+            self.logger.log({"Overall MAE": cumulated_mae / 4})
 
-        if final:
-            # Print results
-            print("----- FINAL RESULTS -----")
-            print("Total time taken: ", time.time() - start_time)
-            print(self.metrics.keys())
-            for k, v in metrics_dict.items():
-                store = []
-                for _, val in v.items():
-                    store.append(round(val["metric"], 4))
-                print(k, store)
+        # Print results
+        print("----- FINAL RESULTS -----")
+        print("Total time taken: ", time.time() - start_time)
+        print(self.metrics.keys())
+        for k, v in metrics_dict.items():
+            store = []
+            for _, val in v.items():
+                store.append(round(val["metric"], 4))
+            print(k, store)
+
+    def rotate_graph(self, batch, rotation=None):
+        """Rotate all graphs in a batch
+
+        Args:
+            batch (data.Batch): batch of graphs
+            rotation (str, optional): type of rotation applied. Defaults to None.
+
+        Returns:
+            data.Batch: rotated batch
+        """
+
+        # Sampling a random rotation within [-180, 180] for all axes.
+        if rotation == "z":
+            transform = RandomRotate([-180, 180], [2])
+        elif rotation == "x":
+            transform = RandomRotate([-180, 180], [0])
+        elif rotation == "y":
+            transform = RandomRotate([-180, 180], [1])
+        else:
+            transform = RandomRotate([-180, 180], [0, 1, 2])
+
+        # Rotate graph
+        batch_rotated, rot, inv_rot = transform(deepcopy(batch))
+        assert not torch.allclose(batch.pos, batch_rotated.pos, atol=1e-05)
+
+        # Recompute fa-pos for batch_rotated
+        if hasattr(batch, "fa_pos"):
+            delattr(batch_rotated, "fa_pos")  # delete it otherwise can't iterate
+            g_list = batch_rotated.to_data_list()
+            for g in g_list:
+                g = self.fa(g, self.choice_fa)
+            batch_rotated = Batch.from_data_list(g_list)
+            batch_rotated.neighbors = batch.neighbors
+
+        return batch_rotated
+
+    def reflect_graph(self, batch, reflection=None):
+        """Rotate all graphs in a batch
+
+        Args:
+            batch (data.Batch): batch of graphs
+            rotation (str, optional): type of rotation applied. Defaults to None.
+
+        Returns:
+            data.Batch: rotated batch
+        """
+
+        # Sampling a random rotation within [-180, 180] for all axes.
+        transform = RandomReflect()
+
+        # Rotate graph
+        batch_reflected, rot, inv_rot = transform(deepcopy(batch))
+        assert not torch.allclose(batch.pos, batch_reflected.pos, atol=1e-05)
+
+        # Recompute fa-pos for batch_rotated
+        if hasattr(batch, "fa_pos"):
+            delattr(batch_reflected, "fa_pos")  # delete it otherwise can't iterate
+            g_list = batch_reflected.to_data_list()
+            for g in g_list:
+                g = self.fa(g, self.choice_fa)
+            batch_reflected = Batch.from_data_list(g_list)
+            batch_reflected.neighbors = batch.neighbors
+
+        return batch_reflected

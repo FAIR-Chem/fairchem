@@ -10,7 +10,9 @@ import logging
 import math
 import pickle
 import random
+import time
 import warnings
+from datetime import datetime
 from pathlib import Path
 
 import lmdb
@@ -40,7 +42,7 @@ class LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None):
+    def __init__(self, config, transform=None, choice_fa=None):
         super(LmdbDataset, self).__init__()
         self.config = config
 
@@ -71,11 +73,13 @@ class LmdbDataset(Dataset):
             self.num_samples = len(self._keys)
 
         self.transform = transform
+        self.choice_fa = choice_fa
 
     def __len__(self):
         return self.num_samples
 
     def __getitem__(self, idx):
+        t0 = time.time_ns()
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
             db_idx = bisect.bisect(self._keylen_cumulative, idx)
@@ -96,9 +100,18 @@ class LmdbDataset(Dataset):
         else:
             datapoint_pickled = self.env.begin().get(self._keys[idx])
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
-
+        t1 = time.time_ns()
         if self.transform is not None:
-            data_object = self.transform(data_object)
+            data_object = self.transform(data_object, self.choice_fa)
+        t2 = time.time_ns()
+
+        load_time = (t1 - t0) * 1e-9  # time in s
+        transform_time = (t2 - t1) * 1e-9  # time in s
+        total_get_time = (t2 - t0) * 1e-9  # time in s
+
+        data_object.load_time = load_time
+        data_object.transform_time = transform_time
+        data_object.total_get_time = total_get_time
 
         return data_object
 

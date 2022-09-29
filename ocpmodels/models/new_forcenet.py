@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 import logging
 import os
 from math import pi as PI
-
+from time import time
 import numpy as np
 import torch
 import torch.nn as nn
@@ -23,12 +23,16 @@ from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
 from ocpmodels.preprocessing import (
     one_supernode_per_atom_type,
     one_supernode_per_atom_type_dist,
     one_supernode_per_graph,
     remove_tag0_nodes,
 )
+
+NUM_CLUSTERS = 20
+NUM_POOLING_LAYERS = 1
 
 
 class FNDecoder(nn.Module):
@@ -256,9 +260,11 @@ class NewForceNet(BaseModel):
         training=True,
         otf_graph=False,
         phys_embeds=False,
+        phys_hidden_channels=0,
         predict_forces=False,
         use_pbc=True,
         graph_rewiring=False,
+        energy_head=False,
     ):
 
         super(NewForceNet, self).__init__()
@@ -303,11 +309,14 @@ class NewForceNet(BaseModel):
         self.phys_embeds = phys_embeds
         self.predict_forces = predict_forces
         self.graph_rewiring = graph_rewiring
+        self.energy_head = energy_head
         self.use_positional_embeds = graph_rewiring in {
             "one-supernode-per-graph",
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
+        self.phys_hidden_channels = phys_hidden_channels
+        self.use_mlp_phys = phys_hidden_channels > 0 and phys_embeds
         # self.use_positional_embeds = False
 
         assert tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
@@ -354,6 +363,12 @@ class NewForceNet(BaseModel):
 
         # Phys embeddings
         self.phys_emb = PhysEmbedding(props=self.phys_embeds, pg=self.use_pg)
+        if self.use_mlp_phys:
+            self.phys_lin = nn.Linear(
+                self.phys_emb.n_properties, self.phys_hidden_channels
+            )
+        else:
+            self.phys_hidden_channels = self.phys_emb.n_properties
 
         # Period + group embeddings
         if self.use_pg:
@@ -374,7 +389,7 @@ class NewForceNet(BaseModel):
                 100,
                 hidden_channels
                 - tag_hidden_channels
-                - self.phys_emb.n_properties
+                - self.phys_hidden_channels
                 - 2 * pg_hidden_channels,
             )
             # self.embedding = nn.Embedding(100, hidden_channels)
@@ -415,7 +430,7 @@ class NewForceNet(BaseModel):
                     basis.out_dim,
                     hidden_channels
                     - tag_hidden_channels
-                    - self.phys_emb.n_properties
+                    - self.phys_hidden_channels
                     - 2 * pg_hidden_channels,
                 ),
             )
@@ -474,6 +489,23 @@ class NewForceNet(BaseModel):
                 decoder_type, decoder_activation_str, self.output_dim
             )
 
+        # Pooling & weighted average blocks
+        if self.energy_head in {"pooling", "random"}:
+            self.hierarchical_pooling = Hierarchical_Pooling(
+                hidden_channels,
+                self.activation,
+                NUM_POOLING_LAYERS,
+                NUM_CLUSTERS,
+                self.energy_head,
+            )
+        elif self.energy_head == "graclus":
+            self.graclus = Graclus(hidden_channels, self.activation)
+        elif self.energy_head in {
+            "weighted-av-initial-embeds",
+            "weighted-av-final-embeds",
+        }:
+            self.w_lin = nn.Linear(hidden_channels, 1)
+
         # Projection layer for energy prediction
         self.energy_mlp = nn.Linear(self.output_dim, 1)
 
@@ -484,28 +516,31 @@ class NewForceNet(BaseModel):
             z = data.atomic_numbers.long()
             pos = data.pos
             batch = data.batch
-        elif self.graph_rewiring == "remove-tag-0":
-            data = remove_tag0_nodes(data)
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-        elif self.graph_rewiring == "one-supernode-per-graph":
-            data = one_supernode_per_graph(data)
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-        elif self.graph_rewiring == "one-supernode-per-atom-type":
-            data = one_supernode_per_atom_type(data)
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-        elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
-            data = one_supernode_per_atom_type_dist(data)
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
         else:
-            raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
+            t = time()
+            if self.graph_rewiring == "remove-tag-0":
+                data = remove_tag0_nodes(data)
+                z = data.atomic_numbers.long()
+                pos = data.pos
+                batch = data.batch
+            elif self.graph_rewiring == "one-supernode-per-graph":
+                data = one_supernode_per_graph(data)
+                z = data.atomic_numbers.long()
+                pos = data.pos
+                batch = data.batch
+            elif self.graph_rewiring == "one-supernode-per-atom-type":
+                data = one_supernode_per_atom_type(data)
+                z = data.atomic_numbers.long()
+                pos = data.pos
+                batch = data.batch
+            elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
+                data = one_supernode_per_atom_type_dist(data)
+                z = data.atomic_numbers.long()
+                pos = data.pos
+                batch = data.batch
+            else:
+                raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
+            self.rewiring_time = time() - t
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
@@ -550,6 +585,8 @@ class NewForceNet(BaseModel):
 
         if self.phys_emb.n_properties > 0:
             h_phys = self.phys_emb.properties[z]
+            if self.use_mlp_phys:
+                h_phys = self.phys_lin(h_phys)
             h = torch.cat((h, h_phys), dim=1)
 
         if self.use_pg:
@@ -613,12 +650,36 @@ class NewForceNet(BaseModel):
         else:
             edge_attr = self.basis_fun(raw_edge_attr)
 
+        if self.energy_head == "weighted-av-initial-embeds":
+            alpha = self.w_lin(h)
+
         # pass edge_attributes through interaction blocks
         for i, interaction in enumerate(self.interactions):
             h = h + interaction(h, edge_index, edge_attr, edge_weight)
 
+        pooling_loss = None  # deal with pooling loss
+
+        if self.energy_head == "weighted-av-final-embeds":
+            alpha = self.w_lin(h)
+
+        elif self.energy_head == "graclus":
+            h, batch = self.graclus(h, edge_index, edge_weight, batch)
+
+        if self.energy_head in {"pooling", "random"}:
+            h, batch, pooling_loss = self.hierarchical_pooling(
+                h, edge_index, edge_weight, batch
+            )
+
+        # MLPs
         h = self.lin(h)
         h = self.activation(h)
+
+        # Weighted average
+        if self.energy_head in {
+            "weighted-av-initial-embeds",
+            "weighted-av-final-embeds",
+        }:
+            h = h * alpha
 
         out = scatter(h, batch, dim=0, reduce="add")
 
@@ -628,7 +689,7 @@ class NewForceNet(BaseModel):
             force = self.decoder(h)
             return energy, force
 
-        return energy
+        return energy, pooling_loss
 
     @property
     def num_params(self):

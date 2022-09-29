@@ -2,7 +2,7 @@ includes:
   - configs/is2re/10k/base.yml
 
 model:
-  name: new_schnet
+  name: fanet
   hidden_channels: 256
   num_filters: 128
   num_interactions: 3
@@ -19,6 +19,14 @@ model:
                                     # one-supernode-per-atom-type, one-supernode-per-atom-type-dist}
   energy_head: False # can be {False, weighted-av-initial-embeds,
                                               # weighted-av-final-embeds, pooling, graclus, random}
+
+  # new features
+  skip_co: False   # output skip connections
+  normalized_rel_pos: False  # normalize r_ij + squash in [0,1]
+  second_layer_MLP: False  # in EmbeddingBlock
+  mlp_rij: 0   # apply mlp to r_ij
+  complex_mp: False   # concat (e_ij || h_i || h_j) for W in MP
+
 # *** Important note ***
 #   The total number of gpus used for this run was 1.
 #   If the global batch size (num_gpus * batch_size) is modified
@@ -37,3 +45,6 @@ optim:
   warmup_steps: 468
   warmup_factor: 0.2
   max_epochs: 20
+
+frame_averaging: False # 2D, 3D, da, False
+choice_fa: False # can be {None, full, random, det, e3, e3-random, e3-det}

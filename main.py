@@ -27,7 +27,15 @@ from ocpmodels.common.utils import (
     save_experiment_log,
     setup_imports,
     setup_logging,
+    update_from_sbatch_py_vars,
 )
+
+try:
+    import ipdb  # noqa: F401
+
+    os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
+except:  # noqa: E722
+    pass
 
 
 class Runner(submitit.helpers.Checkpointable):
@@ -62,8 +70,12 @@ class Runner(submitit.helpers.Checkpointable):
                 cpu=config.get("cpu", False),
                 slurm=config.get("slurm", {}),
                 new_gnn=config.get("new_gnn", True),
+                frame_averaging=config.get("frame_averaging", None),
                 data_split=config.get("data_split", None),
                 note=config.get("note", ""),
+                test_invariance=config.get("test_ri", None),
+                choice_fa=config.get("choice_fa", None),
+                wandb_tag=config.get("wandb_tag", None),
             )
             self.task = registry.get_task_class(config["mode"])(self.config)
             self.task.setup(self.trainer)
@@ -166,15 +178,18 @@ if __name__ == "__main__":
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
+    args = update_from_sbatch_py_vars(args)
     if not args.mode or not args.config_yml:
         args.mode = "train"
-        args.config_yml = "configs/is2re/10k/schnet/schnet.yml"
+        # args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
+        args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
         warnings.warn("No model / mode is given; chosen as default")
     if args.logdir:
         args.logdir = resolve(args.logdir)
 
     config = build_config(args, override_args)
+    config["optim"]["eval_batch_size"] = config["optim"]["batch_size"]
 
     if args.submit:  # Run on cluster
         slurm_add_params = config.get("slurm", None)  # additional slurm arguments

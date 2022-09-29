@@ -6,10 +6,11 @@ LICENSE file in the root directory of this source tree.
 """
 from math import pi as PI
 from typing import Optional
-
+from time import time
 import torch
 import torch.nn.functional as F
 from torch.nn import Embedding, Linear, ModuleList, Sequential
+from torch_geometric.data import Batch
 from torch_geometric.nn import MessagePassing, radius_graph
 from torch_scatter import scatter
 
@@ -21,12 +22,16 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
 from ocpmodels.preprocessing import (
     one_supernode_per_atom_type,
     one_supernode_per_atom_type_dist,
     one_supernode_per_graph,
     remove_tag0_nodes,
 )
+
+NUM_CLUSTERS = 20
+NUM_POOLING_LAYERS = 1
 
 
 class InteractionBlock(torch.nn.Module):
@@ -166,6 +171,7 @@ class NewSchNet(torch.nn.Module):
         phys_embeds: bool = False,
         phys_hidden_channels: int = 32,
         graph_rewiring=False,
+        energy_head=False,
         num_filters: int = 128,
         num_interactions: int = 6,
         num_gaussians: int = 50,
@@ -199,6 +205,7 @@ class NewSchNet(torch.nn.Module):
             "one-supernode-per-atom-type-dist",
         }
         # self.use_positional_embeds = False
+        self.energy_head = energy_head
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         # self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
@@ -244,6 +251,7 @@ class NewSchNet(torch.nn.Module):
         if self.use_positional_embeds:
             self.pe = PositionalEncoding(hidden_channels, 210)
 
+        # Interaction block
         self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
         self.interactions = ModuleList()
         for _ in range(num_interactions):
@@ -252,9 +260,27 @@ class NewSchNet(torch.nn.Module):
             )
             self.interactions.append(block)
 
+        # Output block
         self.lin1 = Linear(hidden_channels, hidden_channels // 2)
         self.act = ShiftedSoftplus()
         self.lin2 = Linear(hidden_channels // 2, 1)
+
+        # weigthed average & pooling
+        if self.energy_head in {"pooling", "random"}:
+            self.hierarchical_pooling = Hierarchical_Pooling(
+                hidden_channels,
+                self.act,
+                NUM_POOLING_LAYERS,
+                NUM_CLUSTERS,
+                self.energy_head,
+            )
+        elif self.energy_head == "graclus":
+            self.graclus = Graclus(hidden_channels, self.act)
+        elif self.energy_head in {
+            "weighted-av-initial-embeds",
+            "weighted-av-final-embeds",
+        }:
+            self.w_lin = Linear(hidden_channels, 1)
 
         self.register_buffer("initial_atomref", atomref)
         self.atomref = None
@@ -273,6 +299,9 @@ class NewSchNet(torch.nn.Module):
         if self.use_pg:
             self.period_embedding.reset_parameters()
             self.group_embedding.reset_parameters()
+        if self.energy_head in {"weighted-av-init-embeds", "weighted-av-final-embeds"}:
+            self.w_lin.bias.data.fill_(0)
+            torch.nn.init.xavier_uniform_(self.w_lin.weight)
         for interaction in self.interactions:
             interaction.reset_parameters()
         torch.nn.init.xavier_uniform_(self.lin1.weight)
@@ -294,10 +323,11 @@ class NewSchNet(torch.nn.Module):
             f"properties={self.phys_hidden_channels}, "
             f"period_hidden_channels={self.pg_hidden_channels}, "
             f"group_hidden_channels={self.pg_hidden_channels}, "
+            f"energy_head={self.energy_head}",
             f"num_filters={self.num_filters}, "
             f"num_interactions={self.num_interactions}, "
             f"num_gaussians={self.num_gaussians}, "
-            f"cutoff={self.cutoff})"
+            f"cutoff={self.cutoff})",
         )
 
 
@@ -323,6 +353,7 @@ class NewSchNetWrap(NewSchNet):
         cutoff=10.0,
         readout="add",
         graph_rewiring=False,
+        energy_head=False,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
@@ -338,6 +369,7 @@ class NewSchNetWrap(NewSchNet):
             phys_hidden_channels=phys_hidden_channels,
             phys_embeds=phys_embeds,
             graph_rewiring=graph_rewiring,
+            energy_head=energy_head,
             num_filters=num_filters,
             num_interactions=num_interactions,
             num_gaussians=num_gaussians,
@@ -362,28 +394,31 @@ class NewSchNetWrap(NewSchNet):
             z = data.atomic_numbers.long()
             pos = data.pos
             batch = data.batch
-        elif self.graph_rewiring == "remove-tag-0":
-            data = remove_tag0_nodes(data)
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-        elif self.graph_rewiring == "one-supernode-per-graph":
-            data = one_supernode_per_graph(data)
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-        elif self.graph_rewiring == "one-supernode-per-atom-type":
-            data = one_supernode_per_atom_type(data)
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-        elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
-            data = one_supernode_per_atom_type_dist(data)
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
         else:
-            raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
+            t = time()
+            if self.graph_rewiring == "remove-tag-0":
+                data = remove_tag0_nodes(data)
+                z = data.atomic_numbers.long()
+                pos = data.pos
+                batch = data.batch
+            elif self.graph_rewiring == "one-supernode-per-graph":
+                data = one_supernode_per_graph(data)
+                z = data.atomic_numbers.long()
+                pos = data.pos
+                batch = data.batch
+            elif self.graph_rewiring == "one-supernode-per-atom-type":
+                data = one_supernode_per_atom_type(data)
+                z = data.atomic_numbers.long()
+                pos = data.pos
+                batch = data.batch
+            elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
+                data = one_supernode_per_atom_type_dist(data)
+                z = data.atomic_numbers.long()
+                pos = data.pos
+                batch = data.batch
+            else:
+                raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
+            self.rewiring_time = time() - t
 
         # Use periodic boundary conditions
         if self.use_pbc:
@@ -442,27 +477,51 @@ class NewSchNetWrap(NewSchNet):
             )
             h += h_pos
 
+        if self.energy_head == "weighted-av-initial-embeds":
+            alpha = self.w_lin(h)
+
         for interaction in self.interactions:
             h = h + interaction(h, edge_index, edge_weight, edge_attr)
 
+        pooling_loss = None  # deal with pooling loss
+
+        if self.energy_head == "weighted-av-final-embeds":
+            alpha = self.w_lin(h)
+
+        elif self.energy_head == "graclus":
+            h, batch = self.graclus(h, edge_index, edge_weight, batch)
+
+        if self.energy_head in {"pooling", "random"}:
+            h, batch, pooling_loss = self.hierarchical_pooling(
+                h, edge_index, edge_weight, batch
+            )
+
+        # MLP
         h = self.lin1(h)
         h = self.act(h)
         h = self.lin2(h)
 
+        if self.energy_head in {
+            "weighted-av-initial-embeds",
+            "weighted-av-final-embeds",
+        }:
+            h = h * alpha
+
         if self.atomref is not None:
             h = h + self.atomref(z)
 
+        # Global pooling
         out = scatter(h, batch, dim=0, reduce=self.readout)
 
         if self.scale is not None:
             out = self.scale * out
 
-        return out
+        return out, pooling_loss
 
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy = self._forward(data)
+        energy, pooling_loss = self._forward(data)
 
         if self.regress_forces:
             forces = -1 * (
@@ -475,7 +534,7 @@ class NewSchNetWrap(NewSchNet):
             )
             return energy, forces
         else:
-            return energy
+            return energy, pooling_loss
 
     @property
     def num_params(self):

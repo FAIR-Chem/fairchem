@@ -6,7 +6,7 @@ from time import time
 
 import torch
 from torch import cat, isin, tensor, where
-from torch_geometric.utils import coalesce, remove_self_loops
+from torch_geometric.utils import coalesce, remove_self_loops, sort_edge_index
 
 
 def remove_tag0_nodes(data):
@@ -66,7 +66,7 @@ def remove_tag0_nodes(data):
     return data
 
 
-def one_supernode_per_graph(data, verbose=False):
+def one_supernode_per_graph(data, cutoff=6.0, verbose=False):
     """Generate a single supernode representing all tag0 atoms
 
     Args:
@@ -101,7 +101,17 @@ def one_supernode_per_graph(data, verbose=False):
     )
 
     # super node position for a batch is the mean of its aggregates
-    sn_pos = [data.pos[sub_nodes[i]].mean(0) for i in range(batch_size)]
+    # sn_pos = [data.pos[sub_nodes[i]].mean(0) for i in range(batch_size)]
+    sn_pos = [
+        torch.cat(
+            [
+                data.pos[sub_nodes[i], :2].mean(0),
+                data.pos[sub_nodes[i], 2].max().unsqueeze(0),
+            ],
+            dim=0,
+        )
+        for i in range(batch_size)
+    ]
     # the super node force is the mean of the force applied to its aggregates
     sn_force = [data.force[sub_nodes[i]].mean(0) for i in range(batch_size)]
 
@@ -189,8 +199,29 @@ def one_supernode_per_graph(data, verbose=False):
     )
     # Remove self loops
     ei_sn, new_cell_offsets = remove_self_loops(ei_sn, new_cell_offsets)
+
+    # Remove tag0 related duplicates
+    # First, store tag 1/2 adjacency
+    new_non_sub_nodes = where(data.tags != 0)[0]
+    tag12_ei = ei_sn[:, torch.isin(ei_sn, new_non_sub_nodes).all(dim=0)]
+    tag12_cell_offsets_ei = new_cell_offsets[
+        torch.isin(ei_sn, new_non_sub_nodes).all(dim=0), :
+    ]
+    # Remove duplicate in supernode adjacency
+    indxes = torch.isin(ei_sn, torch.tensor(new_sn_ids).to(device=ei_sn.device)).any(
+        dim=0
+    )
+    ei_sn, new_cell_offsets = coalesce(
+        ei_sn[:, indxes], edge_attr=new_cell_offsets[indxes, :], reduce="min"
+    )
+    # Merge back both
+    ei_sn = torch.cat([tag12_ei, ei_sn], dim=1)
+    new_cell_offsets = torch.cat([tag12_cell_offsets_ei, new_cell_offsets], dim=0)
+    ei_sn, new_cell_offsets = sort_edge_index(ei_sn, edge_attr=new_cell_offsets)
+
     # Remove duplicate entries
-    ei_sn, new_cell_offsets = coalesce(ei_sn, edge_attr=new_cell_offsets, reduce="min")
+    # ei_sn, new_cell_offsets = coalesce(ei_sn, edge_attr=new_cell_offsets, reduce="min")
+
     # ensure correct type
     data.edge_index = ei_sn.to(dtype=data.edge_index.dtype)
     data.cell_offsets = new_cell_offsets.to(dtype=data.cell_offsets.dtype)
@@ -209,15 +240,10 @@ def one_supernode_per_graph(data, verbose=False):
             torch.arange(p, data.ptr[i + 1], dtype=torch.long, device=device)
         ] = tensor(i, dtype=data.batch.dtype, device=device)
 
-    # neighbors
-    _, data.neighbors = torch.unique(
-        data.batch[data.edge_index[0, :]], return_counts=True
-    )
-
-    return data
+    return adjust_cutoff_distances(data, new_sn_ids, cutoff)
 
 
-def one_supernode_per_atom_type(data):
+def one_supernode_per_atom_type(data, cutoff=6.0):
     """Create one supernode for each sub-surface atom type
     and remove all such tag-0 atoms.
 
@@ -273,7 +299,13 @@ def one_supernode_per_atom_type(data):
     new_sn_ids_cat = [s for sn in new_sn_ids for s in sn]
 
     # supernode positions
-    supernodes_pos = [data.pos[sn, :].mean(0)[None, :] for sn in supernodes_composition]
+    # supernodes_pos = [data.pos[sn, :].mean(0)[None, :] for sn in supernodes_composition]
+    supernodes_pos = [
+        torch.cat(
+            [data.pos[sn, :2].mean(0), data.pos[sn, 2].max().unsqueeze(0)], dim=0
+        )[None, :]
+        for sn in supernodes_composition
+    ]
 
     # number of atoms per graph in the batch
     data.ptr = torch.tensor(
@@ -282,6 +314,31 @@ def one_supernode_per_atom_type(data):
         device=device,
     )
     data.natoms = data.ptr[1:] - data.ptr[:-1]
+
+    # batch
+    data.batch = torch.cat(
+        [
+            torch.tensor(i, device=device).expand(
+                non_sub_nodes[i].shape[0] + num_supernodes[i]
+            )
+            for i in range(batch_size)
+        ]
+    )
+
+    # tags
+    data.tags = torch.cat(
+        [
+            torch.cat(
+                [
+                    data.tags[non_sub_nodes[i]],
+                    torch.tensor([0], dtype=data.tags.dtype, device=device).expand(
+                        num_supernodes[i]
+                    ),
+                ]
+            )
+            for i in range(batch_size)
+        ]
+    )
 
     # re-index edges
     num_nodes = original_ptr[-1]  # + sum(num_supernodes)
@@ -311,41 +368,33 @@ def one_supernode_per_atom_type(data):
     data.edge_index, data.cell_offsets = remove_self_loops(
         data.edge_index, data.cell_offsets
     )
+
+    # Remove tag0 related duplicates
+    # First, store tag 1/2 adjacency
+    new_non_sub_nodes = where(data.tags != 0)[0]
+    tag12_ei = data.edge_index[
+        :, torch.isin(data.edge_index, new_non_sub_nodes).all(dim=0)
+    ]
+    tag12_cell_offsets_ei = data.cell_offsets[
+        torch.isin(data.edge_index, new_non_sub_nodes).all(dim=0), :
+    ]
+    # Remove duplicate in supernode adjacency
+    indxes = torch.isin(
+        data.edge_index, torch.tensor(new_sn_ids_cat).to(device=data.edge_index.device)
+    ).any(dim=0)
     data.edge_index, data.cell_offsets = coalesce(
-        data.edge_index, edge_attr=data.cell_offsets, reduce="min"
+        data.edge_index[:, indxes], edge_attr=data.cell_offsets[indxes, :], reduce="min"
+    )
+    # Merge back both
+    data.edge_index = torch.cat([tag12_ei, data.edge_index], dim=1)
+    data.cell_offsets = torch.cat([tag12_cell_offsets_ei, data.cell_offsets], dim=0)
+    data.edge_index, data.cell_offsets = sort_edge_index(
+        data.edge_index, edge_attr=data.cell_offsets
     )
 
-    # batch
-    data.batch = torch.cat(
-        [
-            torch.tensor(i, device=device).expand(
-                non_sub_nodes[i].shape[0] + num_supernodes[i]
-            )
-            for i in range(batch_size)
-        ]
-    )
-    # data.batch = torch.cat([torch.tensor(i).expand(data.natoms[i])
-    #     for  i in range(batch_size) ])
-
-    # neighbors
-    _, data.neighbors = torch.unique(
-        data.batch[data.edge_index[0, :]], return_counts=True
-    )
-
-    # tags
-    data.tags = torch.cat(
-        [
-            torch.cat(
-                [
-                    data.tags[non_sub_nodes[i]],
-                    torch.tensor([0], dtype=data.tags.dtype, device=device).expand(
-                        num_supernodes[i]
-                    ),
-                ]
-            )
-            for i in range(batch_size)
-        ]
-    )
+    # data.edge_index, data.cell_offsets = coalesce(
+    #     data.edge_index, edge_attr=data.cell_offsets, reduce="min"
+    # )
 
     # SNs are last in their batch
     data.atomic_numbers = cat(
@@ -431,10 +480,10 @@ def one_supernode_per_atom_type(data):
         )
     )
 
-    return data
+    return adjust_cutoff_distances(data, new_sn_ids_cat, cutoff)
 
 
-def one_supernode_per_atom_type_dist(data):
+def one_supernode_per_atom_type_dist(data, cutoff=6.0):
     """Create one supernode for each sub-surface atom type
     and remove all such tag-0 atoms.
     Distance to supernode is defined as min. dist of subnodes
@@ -487,7 +536,13 @@ def one_supernode_per_atom_type_dist(data):
     new_sn_ids_cat = [s for sn in new_sn_ids for s in sn]
 
     # supernode positions
-    supernodes_pos = [data.pos[sn, :].mean(0)[None, :] for sn in supernodes_composition]
+    # supernodes_pos = [data.pos[sn, :].mean(0)[None, :] for sn in supernodes_composition]
+    supernodes_pos = [
+        torch.cat(
+            [data.pos[sn, :2].mean(0), data.pos[sn, 2].max().unsqueeze(0)], dim=0
+        )[None, :]
+        for sn in supernodes_composition
+    ]
 
     # number of atoms per graph in the batch
     data.ptr = torch.tensor(
@@ -496,6 +551,31 @@ def one_supernode_per_atom_type_dist(data):
         device=device,
     )
     data.natoms = data.ptr[1:] - data.ptr[:-1]
+
+    # batch
+    data.batch = torch.cat(
+        [
+            torch.tensor(i, device=device).expand(
+                non_sub_nodes[i].shape[0] + num_supernodes[i]
+            )
+            for i in range(batch_size)
+        ]
+    )
+
+    # tags
+    data.tags = torch.cat(
+        [
+            torch.cat(
+                [
+                    data.tags[non_sub_nodes[i]],
+                    torch.tensor([0], dtype=data.tags.dtype, device=device).expand(
+                        num_supernodes[i]
+                    ),
+                ]
+            )
+            for i in range(batch_size)
+        ]
+    )
 
     # re-index edges
     num_nodes = original_ptr[-1]  # + sum(num_supernodes)
@@ -532,39 +612,33 @@ def one_supernode_per_atom_type_dist(data):
     _, data.distances = coalesce(
         data.edge_index, edge_attr=data.distances, reduce="min"
     )
+
+    # Remove tag0 related duplicates
+    # First, store tag 1/2 adjacency
+    new_non_sub_nodes = where(data.tags != 0)[0]
+    tag12_ei = data.edge_index[
+        :, torch.isin(data.edge_index, new_non_sub_nodes).all(dim=0)
+    ]
+    tag12_cell_offsets_ei = data.cell_offsets[
+        torch.isin(data.edge_index, new_non_sub_nodes).all(dim=0), :
+    ]
+    # Remove duplicate in supernode adjacency
+    indxes = torch.isin(
+        data.edge_index, torch.tensor(new_sn_ids_cat).to(device=data.edge_index.device)
+    ).any(dim=0)
     data.edge_index, data.cell_offsets = coalesce(
-        data.edge_index, edge_attr=data.cell_offsets, reduce="min"
+        data.edge_index[:, indxes], edge_attr=data.cell_offsets[indxes, :], reduce="min"
+    )
+    # Merge back both
+    data.edge_index = torch.cat([tag12_ei, data.edge_index], dim=1)
+    data.cell_offsets = torch.cat([tag12_cell_offsets_ei, data.cell_offsets], dim=0)
+    data.edge_index, data.cell_offsets = sort_edge_index(
+        data.edge_index, edge_attr=data.cell_offsets
     )
 
-    # batch
-    data.batch = torch.cat(
-        [
-            torch.tensor(i, device=device).expand(
-                non_sub_nodes[i].shape[0] + num_supernodes[i]
-            )
-            for i in range(batch_size)
-        ]
-    )
-
-    # neighbors
-    _, data.neighbors = torch.unique(
-        data.batch[data.edge_index[0, :]], return_counts=True
-    )
-
-    # tags
-    data.tags = torch.cat(
-        [
-            torch.cat(
-                [
-                    data.tags[non_sub_nodes[i]],
-                    torch.tensor([0], dtype=data.tags.dtype, device=device).expand(
-                        num_supernodes[i]
-                    ),
-                ]
-            )
-            for i in range(batch_size)
-        ]
-    )
+    # data.edge_index, data.cell_offsets = coalesce(
+    #     data.edge_index, edge_attr=data.cell_offsets, reduce="min"
+    # )
 
     # SNs are last in their batch
     data.atomic_numbers = cat(
@@ -642,4 +716,19 @@ def one_supernode_per_atom_type_dist(data):
         ]
     )
 
+    return adjust_cutoff_distances(data, new_sn_ids_cat, cutoff)
+
+
+def adjust_cutoff_distances(data, sn_indxes, cutoff=6.0):
+    # remove long edges (> cutoff), for sn related edges only
+    sn_indxes = torch.isin(
+        data.edge_index, torch.tensor(sn_indxes).to(device=data.edge_index.device)
+    ).any(dim=0)
+    cutoff_mask = torch.logical_not((data.distances > cutoff) * sn_indxes)
+    data.edge_index = data.edge_index[:, cutoff_mask]
+    data.cell_offsets = data.cell_offsets[cutoff_mask, :]
+    data.distances = data.distances[cutoff_mask]
+    _, data.neighbors = torch.unique(
+        data.batch[data.edge_index[0, :]], return_counts=True
+    )
     return data

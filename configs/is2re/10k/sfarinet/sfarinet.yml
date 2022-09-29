@@ -2,7 +2,7 @@ includes:
   - configs/is2re/10k/base.yml
 
 model:
-  name: new_schnet
+  name: sfarinet
   hidden_channels: 256
   num_filters: 128
   num_interactions: 3
@@ -37,3 +37,6 @@ optim:
   warmup_steps: 468
   warmup_factor: 0.2
   max_epochs: 20
+
+frame_averaging: False # 2D, 3D, da, False
+choice_fa: False # can be {None, full, random, det, e3-full, e3-random, e3-det}

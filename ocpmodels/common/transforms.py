@@ -64,7 +64,9 @@ class RandomRotate(object):
 
         # LinearTransformation only rotates `.pos`; need to rotate `.cell` too.
         if hasattr(data_rotated, "cell"):
-            data_rotated.cell = torch.matmul(data_rotated.cell, matrix)
+            data_rotated.cell = torch.matmul(
+                data_rotated.cell, matrix.to(data_rotated.cell.device)
+            )
 
         return (
             data_rotated,
@@ -75,4 +77,42 @@ class RandomRotate(object):
     def __repr__(self):
         return "{}({}, axis={})".format(
             self.__class__.__name__, self.degrees, self.axis
+        )
+
+
+class RandomReflect(object):
+    r"""Reflect node positions around a specific axis (x, y, x=y) or the origin
+    z-axis remains fixed.
+
+    Info -- type 0: reflect wrt x-axis, type1: wrt y-axis, type2: y=x, type3: origin
+    """
+
+    def __init__(self):
+        self.reflection_type = random.choice([0, 1, 2, 3])
+
+    def __call__(self, data):
+        if self.reflection_type == 0:
+            matrix = torch.FloatTensor([[-1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        elif self.reflection_type == 1:
+            matrix = torch.FloatTensor([[1, 0, 0], [0, -1, 0], [0, 0, 1]])
+        elif self.reflection_type == 2:
+            matrix = torch.FloatTensor([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+        elif self.reflection_type == 3:
+            matrix = torch.FloatTensor([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
+
+        data_reflected = LinearTransformation(matrix)(data)
+
+        if torch_geometric.__version__.startswith("2."):
+            matrix = matrix.T
+
+        # LinearTransformation only rotates `.pos`; need to rotate `.cell` too.
+        if hasattr(data_reflected, "cell"):
+            data_reflected.cell = torch.matmul(
+                data_reflected.cell, matrix.to(data_reflected.cell.device)
+            )
+
+        return (
+            data_reflected,
+            matrix,
+            torch.inverse(matrix),
         )

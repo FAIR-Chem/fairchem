@@ -58,6 +58,7 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
 from ocpmodels.preprocessing import (
     one_supernode_per_atom_type,
     one_supernode_per_atom_type_dist,
@@ -65,10 +66,15 @@ from ocpmodels.preprocessing import (
     remove_tag0_nodes,
 )
 
+from time import time
+
 try:
     import sympy as sym
 except ImportError:
     sym = None
+
+NUM_CLUSTERS = 20
+NUM_POOLING_LAYERS = 1
 
 
 class BesselBasisLayer(torch.nn.Module):
@@ -323,6 +329,80 @@ class InteractionPPBlock(torch.nn.Module):
         return h
 
 
+class EHOutputPPBlock(torch.nn.Module):
+    def __init__(
+        self,
+        num_radial,
+        hidden_channels,
+        out_emb_channels,
+        out_channels,
+        num_layers,
+        energy_head,
+        act=swish,
+    ):
+        super(EHOutputPPBlock, self).__init__()
+        self.act = act
+        self.energy_head = energy_head
+
+        self.lin_rbf = nn.Linear(num_radial, hidden_channels, bias=False)
+        self.lin_up = nn.Linear(hidden_channels, out_emb_channels, bias=True)
+        self.lins = torch.nn.ModuleList()
+        for _ in range(num_layers):
+            self.lins.append(nn.Linear(out_emb_channels, out_emb_channels))
+        self.lin = nn.Linear(out_emb_channels, out_channels, bias=False)
+
+        # weighted average & pooling
+        if self.energy_head in {"pooling", "random"}:
+            self.hierarchical_pooling = Hierarchical_Pooling(
+                hidden_channels,
+                self.act,
+                NUM_POOLING_LAYERS,
+                NUM_CLUSTERS,
+                self.energy_head,
+            )
+        elif self.energy_head == "graclus":
+            self.graclus = Graclus(hidden_channels, self.act)
+        elif self.energy_head == "weighted-av-final-embeds":
+            self.w_lin = Linear(hidden_channels, 1)
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        glorot_orthogonal(self.lin_rbf.weight, scale=2.0)
+        glorot_orthogonal(self.lin_up.weight, scale=2.0)
+        for lin in self.lins:
+            glorot_orthogonal(lin.weight, scale=2.0)
+            lin.bias.data.fill_(0)
+        self.lin.weight.data.fill_(0)
+        if self.energy_head == "weighted-av-final-embeds":
+            self.w_lin.bias.data.fill_(0)
+            torch.nn.init.xavier_uniform_(self.w_lin.weight)
+
+    def forward(self, x, rbf, i, edge_index, edge_weight, batch, num_nodes=None):
+        x = self.lin_rbf(rbf) * x
+        x = scatter(x, i, dim=0, dim_size=num_nodes)
+
+        pooling_loss = None
+        if self.energy_head == "weighted-av-final-embeds":
+            alpha = self.w_lin(x)
+        elif self.energy_head == "graclus":
+            x, batch = self.graclus(x, edge_index, edge_weight, batch)
+        elif self.energy_head in {"pooling", "random"}:
+            x, batch, pooling_loss = self.hierarchical_pooling(
+                x, edge_index, edge_weight, batch
+            )
+
+        x = self.lin_up(x)
+        for lin in self.lins:
+            x = self.act(lin(x))
+        x = self.lin(x)
+
+        if self.energy_head == "weighted-av-final-embeds":
+            x = x * alpha
+
+        return x, pooling_loss, batch
+
+
 class OutputPPBlock(torch.nn.Module):
     def __init__(
         self,
@@ -367,6 +447,11 @@ class NewDimeNetPlusPlus(torch.nn.Module):
 
     Args:
         hidden_channels (int): Hidden embedding size.
+        tag_hidden_channels (int): tag embedding size
+        pg_hidden_channels (int): period & group embedding size
+        phys_hidden_channels (int): MLP hidden size for physics embedding
+        phys_embeds (bool): whether we use physics embeddings or not
+        graph_rewiring (str): name of rewiring method. Default=False.
         out_channels (int): Size of each output sample.
         num_blocks (int): Number of building blocks.
         int_emb_size (int): Embedding size used for interaction triplets
@@ -443,19 +528,35 @@ class NewDimeNetPlusPlus(torch.nn.Module):
         else:
             self.emb = EmbeddingBlock(num_radial, hidden_channels, act)
 
-        self.output_blocks = torch.nn.ModuleList(
-            [
-                OutputPPBlock(
-                    num_radial,
-                    hidden_channels,
-                    out_emb_channels,
-                    out_channels,
-                    num_output_layers,
-                    act,
-                )
-                for _ in range(num_blocks + 1)
-            ]
-        )
+        if self.energy_head:
+            self.output_blocks = torch.nn.ModuleList(
+                [
+                    EHOutputPPBlock(
+                        num_radial,
+                        hidden_channels,
+                        out_emb_channels,
+                        out_channels,
+                        num_output_layers,
+                        self.energy_head,
+                        act,
+                    )
+                    for _ in range(num_blocks + 1)
+                ]
+            )
+        else:
+            self.output_blocks = torch.nn.ModuleList(
+                [
+                    OutputPPBlock(
+                        num_radial,
+                        hidden_channels,
+                        out_emb_channels,
+                        out_channels,
+                        num_output_layers,
+                        act,
+                    )
+                    for _ in range(num_blocks + 1)
+                ]
+            )
 
         self.interaction_blocks = torch.nn.ModuleList(
             [
@@ -473,6 +574,9 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             ]
         )
 
+        if self.energy_head == "weighted-av-initial-embeds":
+            self.w_lin = Linear(hidden_channels, 1)
+
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -482,6 +586,9 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             out.reset_parameters()
         for interaction in self.interaction_blocks:
             interaction.reset_parameters()
+        if self.energy_head == "weighted-av-initial-embeds":
+            self.w_lin.bias.data.fill_(0)
+            torch.nn.init.xavier_uniform_(self.w_lin.weight)
 
     def triplets(self, edge_index, cell_offsets, num_nodes):
         row, col = edge_index  # j->i
@@ -545,6 +652,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         num_output_layers=3,
         phys_embeds=False,
         graph_rewiring=False,
+        energy_head=False,
     ):
         self.num_targets = num_targets
         self.regress_forces = regress_forces
@@ -553,6 +661,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         self.otf_graph = otf_graph
         self.new_gnn = new_gnn
         self.graph_rewiring = graph_rewiring
+        self.energy_head = energy_head
 
         super(NewDimeNetPlusPlusWrap, self).__init__(
             hidden_channels=hidden_channels,
@@ -591,25 +700,28 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             pos = data.pos
             batch = data.batch
             data.subnodes = False
-        elif self.graph_rewiring == "remove-tag-0":
-            data = remove_tag0_nodes(data)
-            pos = data.pos
-            batch = data.batch
-            data.subnodes = False
-        elif self.graph_rewiring == "one-supernode-per-graph":
-            data = one_supernode_per_graph(data)
-            pos = data.pos
-            batch = data.batch
-        elif self.graph_rewiring == "one-supernode-per-atom-type":
-            data = one_supernode_per_atom_type(data)
-            pos = data.pos
-            batch = data.batch
-        elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
-            data = one_supernode_per_atom_type_dist(data)
-            pos = data.pos
-            batch = data.batch
         else:
-            raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
+            t = time()
+            if self.graph_rewiring == "remove-tag-0":
+                data = remove_tag0_nodes(data)
+                pos = data.pos
+                batch = data.batch
+                data.subnodes = False
+            elif self.graph_rewiring == "one-supernode-per-graph":
+                data = one_supernode_per_graph(data)
+                pos = data.pos
+                batch = data.batch
+            elif self.graph_rewiring == "one-supernode-per-atom-type":
+                data = one_supernode_per_atom_type(data)
+                pos = data.pos
+                batch = data.batch
+            elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
+                data = one_supernode_per_atom_type_dist(data)
+                pos = data.pos
+                batch = data.batch
+            else:
+                raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
+            self.rewiring_time = time() - t
 
         if self.use_pbc:
             out = get_pbc_distances(
@@ -658,25 +770,58 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         rbf = self.rbf(dist)
         sbf = self.sbf(dist, angle, idx_kj)
 
+        pooling_loss = None  # deal with pooling loss
+
         # Embedding block.
         x = self.emb(data.atomic_numbers.long(), rbf, i, j, data.tags, data.subnodes)
-        P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
+        if self.energy_head:
+            P, pooling_loss, batch = self.output_blocks[0](
+                x, rbf, i, edge_index, dist, data.batch, num_nodes=pos.size(0)
+            )
+        else:
+            P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
+
+        if self.energy_head == "weighted-av-initial-embeds":
+            alpha = self.w_lin(scatter(x, i, dim=0, dim_size=pos.size(0)))
 
         # Interaction blocks.
+
+        energy_Ps = []
+
         for interaction_block, output_block in zip(
             self.interaction_blocks, self.output_blocks[1:]
         ):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
-            P += output_block(x, rbf, i, num_nodes=pos.size(0))
+            if self.energy_head:
+                P_bis, pooling_loss_bis, _ = output_block(
+                    x, rbf, i, edge_index, dist, data.batch, num_nodes=pos.size(0)
+                )
+                energy_Ps.append(
+                    P_bis.sum(0) / len(P)
+                    if batch is None
+                    else scatter(P_bis, batch, dim=0)
+                )
+                if pooling_loss_bis is not None:
+                    pooling_loss += pooling_loss_bis
+            else:
+                P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
+        P_bis = sum(energy_Ps or [0])
+
+        if self.energy_head == "weighted-av-initial-embeds":
+            P = P * alpha
+
+        # Output
+        # scatter
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+        energy = energy + P_bis
 
-        return energy
+        return energy, pooling_loss
 
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy = self._forward(data)
+        energy, pooling_loss = self._forward(data)
 
         if self.regress_forces:
             forces = -1 * (
@@ -689,7 +834,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             )
             return energy, forces
         else:
-            return energy
+            return energy, pooling_loss
 
     @property
     def num_params(self):

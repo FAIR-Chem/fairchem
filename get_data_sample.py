@@ -10,8 +10,11 @@ Out[1]: ...
 In [2]: print(batch)
 
 """
+import math
+import random
 import sys
 from copy import deepcopy
+from itertools import product
 from time import time
 
 import matplotlib.pyplot as plt
@@ -19,6 +22,8 @@ import numpy as np
 import torch  # noqa: F401
 from minydra import resolved_args
 from torch import cat, isin, tensor, where
+from torch_geometric.data import Batch
+from torch_geometric.transforms import RandomRotate
 from torch_geometric.utils import remove_self_loops, sort_edge_index
 from tqdm import tqdm
 
@@ -31,12 +36,16 @@ from ocpmodels.preprocessing import (
     one_supernode_per_graph,
     remove_tag0_nodes,
 )
+from ocpmodels.preprocessing.data_augmentation import (
+    frame_averaging_2D,
+    frame_averaging_3D,
+)
 
 if __name__ == "__main__":
 
     opts = resolved_args()
 
-    sys.argv[1:] = ["--mode=train", "--config=configs/is2re/10k/schnet/schnet.yml"]
+    sys.argv[1:] = ["--mode=train", "--config-yml=configs/is2re/10k/schnet/schnet.yml"]
     setup_logging()
 
     parser = flags.get_parser()
@@ -44,11 +53,11 @@ if __name__ == "__main__":
     config = build_config(args, override_args)
 
     config["optim"]["num_workers"] = 4
-    config["optim"]["batch_size"] = 3
+    config["optim"]["batch_size"] = 64
     config["logger"] = "dummy"
 
     if opts.victor_local:
-        config["dataset"][0]["src"] = "data/is2re/All/train/data.lmdb"
+        config["dataset"][0]["src"] = "data/is2re/10k/train/data.lmdb"
         config["dataset"] = config["dataset"][:1]
         config["optim"]["num_workers"] = 0
         config["optim"]["batch_size"] = opts.bs or config["optim"]["batch_size"]
@@ -77,6 +86,45 @@ if __name__ == "__main__":
 
     task = registry.get_task_class(config["mode"])(config)
     task.setup(trainer)
+
+    for batch in trainer.val_loader:
+        break
+    print("The `batch` variable from `trainer.val_loader` is ready.")
+
+    if opts.frame_averaging:
+
+        i = 0
+        for batch in trainer.val_loader:
+            g_list = batch[0].to_data_list()
+            for g in g_list:
+                # rotate graph
+                g = frame_averaging_2D(g, choice_fa="full")
+            i += 1
+            g_batch = Batch.from_data_list(g_list)
+            print("apply forward function on g_batch")
+            if i == 10:
+                break
+
+        for batch in trainer.train_loader:
+            break
+        # Set up
+        b = batch[0]
+        g = batch[0][0]  # graph
+
+        # for i in range(len(b.sid)):
+        #    b[i], all_fa = frame_averaging_2D(b[i], random_sign=False)
+        count = 0
+        count_1 = 0
+        for i in range(len(b.sid)):
+            g = Batch.get_example(b, i)
+            g = frame_averaging_2D(g, choice_fa="random")
+            g = frame_averaging_3D(g, choice_fa="random")
+            g = frame_averaging_2D(g, choice_fa="full")
+
+        # Equivalent to frame averaging, except that X' = XU, not (X-t)U
+        # from torch_geometric.transforms import NormalizeRotation
+        # NormalizeR = NormalizeRotation(sort=True)
+        # g_normalize_rotation = NormalizeR(g)
 
     if opts.no_single_super_node is None:
 
