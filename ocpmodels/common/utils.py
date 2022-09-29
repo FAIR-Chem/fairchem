@@ -14,6 +14,7 @@ import itertools
 import json
 import logging
 import os
+import subprocess
 import sys
 import time
 from bisect import bisect
@@ -30,6 +31,8 @@ from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import segment_coo, segment_csr
+
+import ocpmodels
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 
@@ -878,3 +881,24 @@ def make_script_trainer(
     sys.argv = argv
 
     return trainer
+
+
+def get_commit_hash():
+    try:
+        commit_hash = (
+            subprocess.check_output(
+                [
+                    "git",
+                    "-C",
+                    ocpmodels.__path__[0],
+                    "describe",
+                    "--always",
+                ]
+            )
+            .strip()
+            .decode("ascii")
+        )
+    # catch instances where code is not being run from a git repo
+    except Exception:
+        commit_hash = None
+    return commit_hash

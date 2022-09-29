@@ -9,7 +9,6 @@ import errno
 import logging
 import os
 import random
-import subprocess
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -26,7 +25,6 @@ from torch.utils.data import DataLoader
 from torch_geometric.data import Batch
 from tqdm import tqdm
 
-import ocpmodels
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
@@ -35,7 +33,7 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomReflect, RandomRotate
-from ocpmodels.common.utils import save_checkpoint
+from ocpmodels.common.utils import save_checkpoint, get_commit_hash
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
@@ -52,51 +50,41 @@ from ocpmodels.preprocessing.data_augmentation import (
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
-    def __init__(
-        self,
-        task=None,
-        model=None,
-        dataset=None,
-        optimizer=None,
-        frame_averaging=None,
-        normalizer=None,
-        run_dir=None,
-        is_debug=False,
-        is_hpo=False,
-        print_every=100,
-        seed=None,
-        logger="tensorboard",
-        local_rank=0,
-        amp=False,
-        cpu=False,
-        name="base_trainer",
-        slurm={},
-        new_gnn=True,
-        data_split=None,
-        note="",
-        test_ri=None,
-        wandb_tags=[],
-        choice_fa=None,
-        verbose=True,
-        **kwargs,  # important: catch-all for various trainers
-    ):
-        self.name = name
-        self.cpu = cpu
+    def __init__(self, **kwargs):
+
+        run_dir = kwargs["run_dir"]
+        model_name = kwargs["model"].pop("name")
+        optim = kwargs.pop("optimizer")
+
+        self.config = {
+            **kwargs,
+            "model_name": model_name,
+            "optim": optim,
+            "gpus": distutils.get_world_size() if not self.cpu else 0,
+            "timestamp_id": self.timestamp_id,
+            "commit": get_commit_hash(),
+            "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
+            "results_dir": str(Path(run_dir) / "results"),
+            "logs_dir": str(Path(run_dir) / "logs"),
+        }
+
         self.epoch = 0
         self.step = 0
-        self.new_gnn = new_gnn
-        self.test_ri = test_ri
-        self.frame_averaging = frame_averaging
-        self.choice_fa = choice_fa
+        self.cpu = self.config["cpu"]
+        self.name = self.config["name"]
+        self.new_gnn = self.config["new_gnn"]
+        self.test_ri = self.config["test_ri"]
+        self.frame_averaging = self.config["frame_averaging"]
+        self.choice_fa = self.config["choice_fa"]
+        self.is_debug = self.config["is_debug"]
+        self.is_hpo = self.config["is_hpo"]
 
         if torch.cuda.is_available() and not self.cpu:
-            self.device = torch.device(f"cuda:{local_rank}")
+            self.device = torch.device(f"cuda:{self.config['local_rank']}")
         else:
             self.device = torch.device("cpu")
             self.cpu = True  # handle case when `--cpu` isn't specified
             # but there are no gpu devices available
-        if run_dir is None:
-            run_dir = os.getcwd()
 
         timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(self.device)
         # create directories from master rank only
@@ -106,99 +94,56 @@ class BaseTrainer(ABC):
         )
         self.timestamp_id = timestamp
 
-        try:
-            commit_hash = (
-                subprocess.check_output(
-                    [
-                        "git",
-                        "-C",
-                        ocpmodels.__path__[0],
-                        "describe",
-                        "--always",
-                    ]
-                )
-                .strip()
-                .decode("ascii")
-            )
-        # catch instances where code is not being run from a git repo
-        except Exception:
-            commit_hash = None
-
-        # logger_name = logger if isinstance(logger, str) else logger["name"]
-        model_name = model.pop("name")
-        self.config = {
-            "task": task,
-            "data_split": data_split,
-            "model_name": model_name,
-            "model": model,
-            "optim": optimizer,
-            "logger": logger,
-            "amp": amp,
-            "run_dir": run_dir,
-            "frame_averaging": frame_averaging,
-            "choice_fa": choice_fa,
-            "test_ri": test_ri,
-            "gpus": distutils.get_world_size() if not self.cpu else 0,
-            "print_every": print_every,
-            "seed": seed,
-            "timestamp_id": self.timestamp_id,
-            "commit": commit_hash,
-            "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
-            "results_dir": str(Path(run_dir) / "results"),
-            "logs_dir": str(Path(run_dir) / "logs"),
-            "slurm": slurm,
-            "note": note,
-            "wandb_tags": wandb_tags,
-        }
         # AMP Scaler
-        self.scaler = torch.cuda.amp.GradScaler() if amp else None
+        self.scaler = torch.cuda.amp.GradScaler() if self.config["amp"] else None
 
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
             self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
             self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
                 "%j", self.config["slurm"]["job_id"]
             )
-        if isinstance(dataset, list):
-            if len(dataset) > 0:
-                self.config["dataset"] = dataset[0]
-            if len(dataset) > 1:
-                self.config["val_dataset"] = dataset[1]
-            if len(dataset) > 2:
-                self.config["test_dataset"] = dataset[2]
-        elif isinstance(dataset, dict):
-            self.config["dataset"] = dataset.get("train", None)
-            self.config["val_dataset"] = dataset.get("val", None)
-            self.config["test_dataset"] = dataset.get("test", None)
+
+        if isinstance(kwargs["dataset"], list):
+            if len(kwargs["dataset"]) > 0:
+                self.config["dataset"] = kwargs["dataset"][0]
+            if len(kwargs["dataset"]) > 1:
+                self.config["val_dataset"] = kwargs["dataset"][1]
+            if len(kwargs["dataset"]) > 2:
+                self.config["test_dataset"] = kwargs["dataset"][2]
+        elif isinstance(kwargs["dataset"], dict):
+            self.config["dataset"] = kwargs["dataset"].get("train", None)
+            self.config["val_dataset"] = kwargs["dataset"].get("val", None)
+            self.config["test_dataset"] = kwargs["dataset"].get("test", None)
         else:
-            self.config["dataset"] = dataset
+            self.config["dataset"] = kwargs["dataset"]
 
         # Frame averaging
-        if frame_averaging:
-            if frame_averaging.lower() == "2d":
+        if self.frame_averaging:
+            if self.frame_averaging.lower() == "2d":
                 self.fa = frame_averaging_2D
-            elif frame_averaging.lower() == "3d":
+            elif self.frame_averaging.lower() == "3d":
                 self.fa = frame_averaging_3D
-            elif frame_averaging.lower() == "da":
+            elif self.frame_averaging.lower() == "da":
                 self.fa = data_augmentation
             else:
-                raise ValueError(f"Unknown frame averaging: {frame_averaging}")
+                raise ValueError(f"Unknown frame averaging: {self.frame_averaging}")
         else:
             self.fa = None
 
-        self.normalizer = normalizer
+        self.normalizer = kwargs["normalizer"]
         # This supports the legacy way of providing norm parameters in dataset
-        if self.config.get("dataset", None) is not None and normalizer is None:
+        if (
+            self.config.get("dataset", None) is not None
+            and kwargs["normalizer"] is None
+        ):
             self.normalizer = self.config["dataset"]
 
-        if not is_debug and distutils.is_master() and not is_hpo:
+        if not self.is_debug and distutils.is_master() and not self.is_hpo:
             os.makedirs(self.config["checkpoint_dir"], exist_ok=True)
             os.makedirs(self.config["results_dir"], exist_ok=True)
             os.makedirs(self.config["logs_dir"], exist_ok=True)
             # TODO: do not create all three directory depending on mode
             # "Predict" -> result, "Train" -> checkpoint and logs.
-
-        self.is_debug = is_debug
-        self.is_hpo = is_hpo
 
         if self.is_hpo:
             # conditional import is necessary for checkpointing
@@ -210,11 +155,11 @@ class BaseTrainer(ABC):
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
-        if distutils.is_master() and verbose:
+        if distutils.is_master() and self.config["verbose"]:
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
-        self.evaluator = Evaluator(task=name)
+        self.evaluator = Evaluator(task=self.config["name"])
 
     def load(self):
         self.load_seed_from_config()
