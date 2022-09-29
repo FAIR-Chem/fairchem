@@ -392,7 +392,7 @@ def build_config(args, args_override):
     config["data_split"] = config["data_split"].split("/")[2]
     config["run_dir"] = resolve(config["run_dir"])
     if "frame_averaging" not in config:
-        config["frame_averaging"] = args.fa
+        config["frame_averaging"] = args.fa  # @AlDu do we need to keep this?
     config["world_size"] = args.num_nodes * args.num_gpus
 
     return config
