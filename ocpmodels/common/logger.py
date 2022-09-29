@@ -67,7 +67,7 @@ class WandBLogger(Logger):
             wandb_id += f"{slurm_jobid}-"
         wandb_id += self.config["cmd"]["timestamp_id"] + "-" + config["model"]
 
-        wandb_tags = [t.trim() for t in config.get("wandb_tags", "").split(",")]
+        wandb_tags = [t.strip() for t in config.get("wandb_tags", "").split(",")]
 
         wandb.init(
             config=self.config,
