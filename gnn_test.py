@@ -28,8 +28,8 @@ if __name__ == "__main__":
 
     config = build_config(args, override_args)
 
-    # Customise args
-    # config["model"]["energy_head"] = "weighted-av-initial-embeds"  # pooling, weighted-av-init-embeds, graclus, random
+    # Customize args
+    # config["model"]["energy_head"] = "weighted-av-initial-embeds"  # pooling, weighted-av-init-embeds, graclus, random # noqa: E501
     # config["frame_averaging"] = "2D"
     # config["model"]["graph_rewiring"] = "one-supernode-per-graph"
     # config["model"]["phys_embeds"] = True
@@ -64,7 +64,8 @@ if __name__ == "__main__":
     trainer.train()
 
     trainer.load_checkpoint(
-        checkpoint_path="checkpoints/2022-04-28-11-42-56-dimenetplusplus/best_checkpoint.pt"
+        checkpoint_path="checkpoints/2022-04-28-11-42-56-dimenetplusplus/"
+        + "best_checkpoint.pt"
     )
 
     predictions = trainer.predict(

@@ -135,7 +135,7 @@ def frame_averaging_3D(g, random_sign=False):
     pos = g.pos - g.pos.mean(dim=0, keepdim=True)
     C = torch.matmul(pos.t(), pos)
 
-    # Eigendecomposition
+    # Eigen decomposition
     eigenval, eigenvec = torch.linalg.eig(C)
 
     # Check if eigenvec, eigenval are real or complex ?
@@ -184,7 +184,7 @@ def frame_averaging_2D(g, random_sign=False):
     pos_2D = g.pos[:, :2] - g.pos[:, :2].mean(dim=0, keepdim=True)
     C = torch.matmul(pos_2D.t(), pos_2D)
 
-    # Eigendecomposition
+    # Eigen decomposition
     eigenval, eigenvec = torch.linalg.eig(C)
 
     # Check if eigenvec, eigenval are real or complex ?

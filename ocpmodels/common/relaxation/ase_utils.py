@@ -22,7 +22,6 @@ from ase.constraints import FixAtoms
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
-    radius_graph_pbc,
     setup_imports,
     setup_logging,
 )

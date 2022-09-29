@@ -6,7 +6,6 @@ import random
 import sys
 import torch
 from ocpmodels.common.transforms import RandomRotate
-from ocpmodels.datasets import data_list_collater
 from copy import deepcopy
 
 
@@ -16,7 +15,8 @@ def original_test_rotation_invariance(batch, model, rotation=None):
     Args:
         batch (data.Batch): batch of graphs
         model (data.model): GNN model we test the rotation invariance of
-        energy_diff (int, optional): energy difference in predictions across rotated graphs
+        energy_diff (int, optional): energy difference in predictions across rotated
+            graphs
         rotation (str, optional): type of rotation applied. Defaults to None.
 
     Returns:
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     trainer_config = build_config(args, override_args)
 
     # Add this to try out on test datasets
-    # self.config["test_dataset"] = {'src':'/network/projects/_groups/ocp/oc20/is2re/all/test_id/data.lmdb'}
+    # self.config["test_dataset"] = {'src':'/network/projects/_groups/ocp/oc20/is2re/all/test_id/data.lmdb'} # noqa: E501
     # Repeat for test_ood_ads  test_ood_both  test_ood_cat
 
     setup_imports()
@@ -74,23 +74,23 @@ if __name__ == "__main__":
     # Load checkpoint
     if checkpoint == "fa":
         trainer.load_checkpoint(
-            checkpoint_path="/network/scratch/a/alexandre.duval/key_checkpoints/2208025_fa_best_checkpoint.pt"
+            checkpoint_path="/network/scratch/a/alexandre.duval/key_checkpoints/2208025_fa_best_checkpoint.pt"  # noqa: E501
         )
     elif checkpoint == "no_fa":
         trainer.load_checkpoint(
-            checkpoint_path="/network/scratch/a/alexandre.duval/key_checkpoints/2207626_sfarinet_nofa_best_checkpoint.pt"
+            checkpoint_path="/network/scratch/a/alexandre.duval/key_checkpoints/2207626_sfarinet_nofa_best_checkpoint.pt"  # noqa: E501
         )
     elif checkpoint == "dpp":
         trainer.load_checkpoint(
-            checkpoint_path="/network/scratch/a/alexandre.duval/key_checkpoints/new_dpp_best_checkpoint.pt"
+            checkpoint_path="/network/scratch/a/alexandre.duval/key_checkpoints/new_dpp_best_checkpoint.pt"  # noqa: E501
         )
     elif checkpoint == "schnet":
         trainer.load_checkpoint(
-            checkpoint_path="/network/scratch/a/alexandre.duval/key_checkpoints/new_schnet_best_checkpoint.pt"
+            checkpoint_path="/network/scratch/a/alexandre.duval/key_checkpoints/new_schnet_best_checkpoint.pt"  # noqa: E501
         )
     elif checkpoint == "forcenet":
         trainer.load_checkpoint(
-            checkpoint_path="/network/scratch/a/alexandre.duval/key_checkpoints/new_forcenet_best_checkpoint.pt"
+            checkpoint_path="/network/scratch/a/alexandre.duval/key_checkpoints/new_forcenet_best_checkpoint.pt"  # noqa: E501
         )
     else:
         pass

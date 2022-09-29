@@ -20,7 +20,7 @@ def make_wandb_sweep_name():
 
 def resolve(path):
     """
-    Resolves a path: expand user (~) and env vars ($SCRATCH) and resovles to
+    Resolves a path: expand user (~) and env vars ($SCRATCH) and resolves to
     an absolute path.
 
     Args:
@@ -51,7 +51,7 @@ def discover_minydra_defaults():
 
 
     Returns:
-        list[pathlib.Path]: Path to the shared defaults and optionnally
+        list[pathlib.Path]: Path to the shared defaults and optionally
             to a user-specific one if it exists
     """
     root = Path(__file__).resolve().parent
@@ -180,13 +180,13 @@ if __name__ == "__main__":
 
         new_f = []
         delete = False
-        for l in lines:
-            if "░ ░ ░ ░ ░" in l and not delete:
+        for line in lines:
+            if "░ ░ ░ ░ ░" in line and not delete:
                 delete = True
-            if "░ ░ ░ ░ ░" in l and delete:
+            if "░ ░ ░ ░ ░" in line and delete:
                 delete = False
             if not delete:
-                new_f.append(l)
+                new_f.append(line)
 
         with open(fpath, "w") as f:
             f.write("\n".join(new_f))

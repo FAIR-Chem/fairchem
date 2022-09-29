@@ -7,9 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
-import pathlib
 from collections import defaultdict
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -34,13 +32,14 @@ class ForcesTrainer(BaseTrainer):
     .. note::
 
         Examples of configurations for task, model, dataset and optimizer
-        can be found in `configs/ocp_s2ef <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_
+        can be found in `configs/ocp_s2ef <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_ # noqa: E501
         and `configs/ocp_is2rs <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2rs/>`_.
 
     Args:
         task (dict): Task configuration.
         model (dict): Model configuration.
-        dataset (dict): Dataset configuration. The dataset needs to be a SinglePointLMDB dataset.
+        dataset (dict): Dataset configuration. The dataset needs to be a
+            SinglePointLMDB dataset.
         optimizer (dict): Optimizer configuration.
         run_dir (str, optional): Path to the run directory where logs are to be saved.
             (default: :obj:`None`)
@@ -54,7 +53,8 @@ class ForcesTrainer(BaseTrainer):
             (default: :obj:`None`)
         logger (str, optional): Type of logger to be used.
             (default: :obj:`tensorboard`)
-        local_rank (int, optional): Local rank of the process, only applicable for distributed training.
+        local_rank (int, optional): Local rank of the process, only applicable for
+            distributed training.
             (default: :obj:`0`)
         amp (bool, optional): Run using automatic mixed precision.
             (default: :obj:`False`)
@@ -350,7 +350,8 @@ class ForcesTrainer(BaseTrainer):
                     if self.config["task"].get("eval_relaxations", False):
                         if "relax_dataset" not in self.config["task"]:
                             logging.warning(
-                                "Cannot evaluate relaxations, relax_dataset not specified"
+                                "Cannot evaluate relaxations, "
+                                + "relax_dataset not specified"
                             )
                         else:
                             self.run_relaxations()

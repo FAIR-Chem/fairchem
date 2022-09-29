@@ -374,7 +374,7 @@ class BaseTrainer(ABC):
         if distutils.is_master():
             logging.info(f"Loading model: {self.config['model']}")
 
-        # TODO: depreicated, remove.
+        # TODO: deprecated, remove.
         bond_feat_dim = None
         bond_feat_dim = self.config["model_attributes"].get("num_gaussians", 50)
 

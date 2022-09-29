@@ -86,7 +86,7 @@ class ValidateTask(BaseTask):
 
 
 @registry.register_task("run-relaxations")
-class RelxationTask(BaseTask):
+class RelaxationTask(BaseTask):
     def run(self):
         assert isinstance(
             self.trainer, ForcesTrainer
