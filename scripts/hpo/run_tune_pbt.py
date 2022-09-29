@@ -22,7 +22,6 @@ def ocp_trainable(config, checkpoint_dir=None):
         model=config["model"],
         dataset=config["dataset"],
         optimizer=config["optim"],
-        identifier=config["identifier"],
         run_dir=config.get("run_dir", "./"),
         is_debug=config.get("is_debug", False),
         is_vis=config.get("is_vis", False),

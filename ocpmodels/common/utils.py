@@ -427,6 +427,7 @@ def create_grid(base_config, sweep_file):
     for i, override_vals in enumerate(values):
         config = copy.deepcopy(base_config)
         config = _update_config(config, keys, override_vals)
+        # WARNING identifier has been deprecated in favour of wandb_name
         config["identifier"] = config["identifier"] + f"_run{i}"
         configs.append(config)
     return configs
@@ -870,7 +871,6 @@ def make_trainer(
         model_attributes=config["model"],
         dataset=config["dataset"],
         optimizer=config["optim"],
-        identifier=config["identifier"],
         run_dir=config.get("run_dir", "./"),
         is_debug=config.get("is_debug", False),
         print_every=config.get("print_every", 100),

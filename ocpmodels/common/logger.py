@@ -72,7 +72,7 @@ class WandBLogger(Logger):
         wandb.init(
             config=self.config,
             id=wandb_id,
-            name=self.config["cmd"]["identifier"],
+            name=self.config["wandb_name"] or wandb_id,
             dir=self.config["cmd"]["logs_dir"],
             project=project,
             resume="allow",

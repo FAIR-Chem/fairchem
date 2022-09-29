@@ -58,7 +58,6 @@ class BaseTrainer(ABC):
         model_attributes,
         dataset,
         optimizer,
-        identifier,
         frame_averaging=None,
         normalizer=None,
         run_dir=None,
@@ -104,10 +103,7 @@ class BaseTrainer(ABC):
         timestamp = datetime.datetime.fromtimestamp(timestamp.int()).strftime(
             "%Y-%m-%d-%H-%M-%S"
         )
-        if identifier:
-            self.timestamp_id = f"{timestamp}-{identifier}"
-        else:
-            self.timestamp_id = timestamp
+        self.timestamp_id = timestamp
 
         try:
             commit_hash = (
@@ -143,7 +139,6 @@ class BaseTrainer(ABC):
             "test_ri": test_invariance,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
-                "identifier": identifier,
                 "print_every": print_every,
                 "seed": seed,
                 "timestamp_id": self.timestamp_id,

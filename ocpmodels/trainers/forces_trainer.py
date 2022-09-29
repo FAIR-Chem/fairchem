@@ -42,7 +42,6 @@ class ForcesTrainer(BaseTrainer):
         model (dict): Model configuration.
         dataset (dict): Dataset configuration. The dataset needs to be a SinglePointLMDB dataset.
         optimizer (dict): Optimizer configuration.
-        identifier (str): Experiment identifier that is appended to log directory.
         run_dir (str, optional): Path to the run directory where logs are to be saved.
             (default: :obj:`None`)
         is_debug (bool, optional): Run in debug mode.
@@ -69,7 +68,6 @@ class ForcesTrainer(BaseTrainer):
         model,
         dataset,
         optimizer,
-        identifier,
         normalizer=None,
         run_dir=None,
         is_debug=False,
@@ -87,7 +85,6 @@ class ForcesTrainer(BaseTrainer):
             model=model,
             dataset=dataset,
             optimizer=optimizer,
-            identifier=identifier,
             normalizer=normalizer,
             run_dir=run_dir,
             is_debug=is_debug,

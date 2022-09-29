@@ -41,7 +41,6 @@ if __name__ == "__main__":
             model=config["model"],
             dataset=config["dataset"],
             optimizer=config["optim"],
-            identifier=config["identifier"],
             run_dir=config.get("run_dir", "./"),
             is_debug=True,
             print_every=config.get("print_every", 100),

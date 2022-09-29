@@ -36,7 +36,6 @@ class EnergyTrainer(BaseTrainer):
         dataset (dict): Dataset configuration. The dataset needs to be a
             SinglePointLMDB dataset.
         optimizer (dict): Optimizer configuration.
-        identifier (str): Experiment identifier that is appended to log directory.
         run_dir (str, optional): Path to the run directory where logs are to be saved.
             (default: :obj:`None`)
         is_debug (bool, optional): Run in debug mode.
@@ -63,7 +62,6 @@ class EnergyTrainer(BaseTrainer):
         model_attributes,
         dataset,
         optimizer,
-        identifier,
         normalizer=None,
         frame_averaging=None,
         run_dir=None,
@@ -89,7 +87,6 @@ class EnergyTrainer(BaseTrainer):
             model_attributes=model_attributes,
             dataset=dataset,
             optimizer=optimizer,
-            identifier=identifier,
             normalizer=normalizer,
             run_dir=run_dir,
             is_debug=is_debug,

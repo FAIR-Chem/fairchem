@@ -44,12 +44,13 @@ if __name__ == "__main__":
 
     scale_file = config["model"]["scale_file"]
 
-    logging.info(f"Run fitting for model: {args.identifier}")
+    # Warning: identifier has been deprecated in favour of wandb_name
+    logging.info(f"Run fitting for model: {args.wandb_name}")
     logging.info(f"Target scale file: {scale_file}")
 
     def initialize_scale_file(scale_file):
         # initialize file
-        preset = {"comment": args.identifier}
+        preset = {"comment": args.wandb_name}
         write_json(scale_file, preset)
 
     if os.path.exists(scale_file):

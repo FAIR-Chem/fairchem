@@ -33,10 +33,10 @@ class Flags:
             help="Path to a config file listing data, model, optim parameters.",
         )
         self.parser.add_argument(
-            "--identifier",
+            "--wandb_name",
             default="",
             type=str,
-            help="Experiment identifier to append to checkpoint/log/result directory",
+            help="Experiment identifier to use as wandb name",
         )
         self.parser.add_argument(
             "--debug",
