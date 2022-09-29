@@ -54,12 +54,10 @@ class BaseTrainer(ABC):
 
         run_dir = kwargs["run_dir"]
         model_name = kwargs["model"].pop("name")
-        optim = kwargs.pop("optimizer")
 
         self.config = {
             **kwargs,
             "model_name": model_name,
-            "optim": optim,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "timestamp_id": self.timestamp_id,
             "commit": get_commit_hash(),
