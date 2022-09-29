@@ -35,7 +35,8 @@ from ocpmodels.common.registry import registry
 
 
 def pyg2_data_transform(data: Data):
-    # if we're on the new pyg (2.0 or later), we need to convert the data to the new format
+    # if we're on the new pyg (2.0 or later), we need to convert the data to the
+    # new format
     if torch_geometric.__version__ >= "2.0":
         return Data(**{k: v for k, v in data.__dict__.items() if v is not None})
 
@@ -88,7 +89,8 @@ def warmup_lr_lambda(current_step, optim_config):
         or "warmup_epochs" in optim_config
     ):
         raise Exception(
-            "ConfigError: please define lr_milestones in steps not epochs and define warmup_steps instead of warmup_epochs"
+            "ConfigError: please define lr_milestones in steps not"
+            + " epochs and define warmup_steps instead of warmup_epochs"
         )
 
     if current_step <= optim_config["warmup_steps"]:
@@ -110,8 +112,12 @@ def print_cuda_usage():
 
 
 def conditional_grad(dec):
-    "Decorator to enable/disable grad depending on whether force/energy predictions are being made"
-    # Adapted from https://stackoverflow.com/questions/60907323/accessing-class-property-as-decorator-argument
+    """
+    Decorator to enable/disable grad depending on whether force/energy
+    predictions are being made
+    """
+    # Adapted from
+    # https://stackoverflow.com/questions/60907323/accessing-class-property-as-decorator-argument
     def decorator(func):
         @wraps(func)
         def cls_method(self, *args, **kwargs):
@@ -326,7 +332,8 @@ def load_config(path: str, previous_includes: list = []):
     path = Path(path)
     if path in previous_includes:
         raise ValueError(
-            f"Cyclic config include detected. {path} included in sequence {previous_includes}."
+            "Cyclic config include detected. "
+            + f"{path} included in sequence {previous_includes}."
         )
     previous_includes = previous_includes + [path]
     direct_config = yaml.safe_load(open(path, "r"))
@@ -512,7 +519,8 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     # position of the atoms
     atom_pos = data.pos
 
-    # Before computing the pairwise distances between atoms, first create a list of atom indices to compare for the entire batch
+    # Before computing the pairwise distances between atoms, first create a list
+    # of atom indices to compare for the entire batch
     num_atoms_per_image = data.natoms
     num_atoms_per_image_sqr = (num_atoms_per_image**2).long()
 
@@ -523,12 +531,15 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     num_atoms_per_image_expand = torch.repeat_interleave(
         num_atoms_per_image, num_atoms_per_image_sqr
     )
-
-    # Compute a tensor containing sequences of numbers that range from 0 to num_atoms_per_image_sqr for each image
-    # that is used to compute indices for the pairs of atoms. This is a very convoluted way to implement
-    # the following (but 10x faster since it removes the for loop)
+    # Compute a tensor containing sequences of numbers that range from 0 to
+    # num_atoms_per_image_sqr for each image that is used to compute indices for
+    # the pairs of atoms. This is a very convoluted way to implement the following
+    # (but 10x faster since it removes the for loop)
     # for batch_idx in range(batch_size):
-    #    batch_count = torch.cat([batch_count, torch.arange(num_atoms_per_image_sqr[batch_idx], device=device)], dim=0)
+    #    batch_count = torch.cat([
+    #        batch_count,
+    #        torch.arange(num_atoms_per_image_sqr[batch_idx], device=device)
+    #    ], dim=0)
     num_atom_pairs = torch.sum(num_atoms_per_image_sqr)
     index_sqr_offset = (
         torch.cumsum(num_atoms_per_image_sqr, dim=0) - num_atoms_per_image_sqr
@@ -539,7 +550,8 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     atom_count_sqr = torch.arange(num_atom_pairs, device=device) - index_sqr_offset
 
     # Compute the indices for the pairs of atoms (using division and mod)
-    # If the systems get too large this apporach could run into numerical precision issues
+    # If the systems get too large this approach could run into numerical
+    # precision issues
     index1 = (atom_count_sqr // num_atoms_per_image_expand) + index_offset_expand
     index2 = (atom_count_sqr % num_atoms_per_image_expand) + index_offset_expand
     # Get the positions for each atom
@@ -625,7 +637,8 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     )
 
     if not torch.all(mask_num_neighbors):
-        # Mask out the atoms to ensure each atom has at most max_num_neighbors_threshold neighbors
+        # Mask out the atoms to ensure each atom has at most
+        # max_num_neighbors_threshold neighbors
         index1 = torch.masked_select(index1, mask_num_neighbors)
         index2 = torch.masked_select(index2, mask_num_neighbors)
         unit_cell = torch.masked_select(
@@ -669,7 +682,8 @@ def get_max_neighbors_mask(natoms, index, atom_distance, max_num_neighbors_thres
         )
         return mask_num_neighbors, num_neighbors_image
 
-    # Create a tensor of size [num_atoms, max_num_neighbors] to sort the distances of the neighbors.
+    # Create a tensor of size [num_atoms, max_num_neighbors] to sort the distances
+    # of the neighbors.
     # Fill with infinity so we can easily remove unused distances later.
     distance_sort = torch.full([num_atoms * max_num_neighbors], np.inf, device=device)
 
@@ -726,8 +740,8 @@ def get_pruned_edge_idx(edge_index, num_atoms=None, max_neigh=1e9):
 
 def merge_dicts(dict1: dict, dict2: dict):
     """Recursively merge two dictionaries.
-    Values in dict2 override values in dict1. If dict1 and dict2 contain a dictionary as a
-    value, this will call itself recursively to merge these dictionaries.
+    Values in dict2 override values in dict1. If dict1 and dict2 contain a dictionary
+    as a value, this will call itself recursively to merge these dictionaries.
     This does not modify the input dictionaries (creates an internal copy).
     Additionally returns a list of detected duplicates.
     Adapted from https://github.com/TUM-DAML/seml/blob/master/seml/utils.py
@@ -737,7 +751,8 @@ def merge_dicts(dict1: dict, dict2: dict):
     dict1: dict
         First dict.
     dict2: dict
-        Second dict. Values in dict2 will override values from dict1 in case they share the same key.
+        Second dict. Values in dict2 will override values from dict1 in case they share
+        the same key.
 
     Returns
     -------
@@ -826,7 +841,7 @@ def check_traj_files(batch, traj_dir):
 
 def resolve(path):
     """
-    Resolves a path: expand user (~) and env vars ($SCRATCH) and resovles to
+    Resolves a path: expand user (~) and env vars ($SCRATCH) and resolves to
     an absolute path.
 
     Args:

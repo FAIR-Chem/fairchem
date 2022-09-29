@@ -198,12 +198,12 @@ class NewForceNet(BaseModel):
     Args:
         num_atoms (int): Unused argument
         bond_feat_dim (int): Unused argument
-        num_targets (int): Unused argumebt
+        num_targets (int): Unused argument
         hidden_channels (int, optional): Number of hidden channels.
             (default: :obj:`512`)
         tag_hidden_channels (int, optional): Number of hidden channels.
             (default: :obj:`512`)
-        num_iteractions (int, optional): Number of interaction blocks.
+        num_interactions (int, optional): Number of interaction blocks.
             (default: :obj:`5`)
         cutoff (float, optional): Cutoff distance for interatomic interactions.
             (default: :obj:`6.0`)
@@ -287,11 +287,15 @@ class NewForceNet(BaseModel):
         Descriptions of ablations:
             - none: base ForceNet model
             - nofilter: no element-wise filter parameterization in message modeling
-            - nocond: convolutional filter is only conditioned on edge features, not node embeddings
+            - nocond: convolutional filter is only conditioned on edge features, not
+                node embeddings
             - nodistlist: no atomic radius information in edge features
-            - onlydist: edge features only contains distance information. Orientation information is ommited.
-            - nodelinear: node update MLP function is replaced with linear function followed by batch normalization
-            - edgelinear: edge MLP transformation function is replaced with linear function followed by batch normalization.
+            - onlydist: edge features only contains distance information. Orientation
+                information is ommited.
+            - nodelinear: node update MLP function is replaced with linear function
+                followed by batch normalization
+            - edgelinear: edge MLP transformation function is replaced with linear
+                function followed by batch normalization.
             - noself: no self edge of m_t.
         """
 
