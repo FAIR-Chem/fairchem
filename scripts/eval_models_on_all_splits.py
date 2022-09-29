@@ -7,7 +7,7 @@ from minydra import resolved_args
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from ocpmodels.common.utils import make_trainer, resolve
+from ocpmodels.common.utils import make_script_trainer, resolve
 from ocpmodels.trainers import EnergyTrainer
 
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         overrides = {
             **TRAINER_CONF_OVERRIDES,
         }
-        trainer: EnergyTrainer = make_trainer(str_args, overrides, verbose=False)
+        trainer: EnergyTrainer = make_script_trainer(str_args, overrides, verbose=False)
         trainer.model.eval()
         trainer.config["cmd"]["checkpoint_dir"] = str(ckpt_dir)
         print(parse_conf(str_args))

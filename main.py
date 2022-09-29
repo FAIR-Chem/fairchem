@@ -127,42 +127,23 @@ if __name__ == "__main__":
     if args.logdir:
         args.logdir = resolve(args.logdir)
 
-    run_config = build_config(args, override_args)
-    run_config["optim"]["eval_batch_size"] = run_config["optim"]["batch_size"]
+    trainer_config = build_config(args, override_args)
+    trainer_config["optim"]["eval_batch_size"] = trainer_config["optim"]["batch_size"]
 
     setup_logging()
-    original_run_config = copy.deepcopy(run_config)
+    original_trainer_config = copy.deepcopy(trainer_config)
 
     if args.distributed:
-        distutils.setup(run_config)
+        distutils.setup(trainer_config)
 
     try:
         setup_imports()
-        run_config = should_continue(run_config)
-        run_config = read_slurm_env(run_config)
-        trainer: BaseTrainer = registry.get_trainer_class(run_config["trainer"])(
-            task=run_config["task"],
-            model_attributes=run_config["model"],
-            dataset=run_config["dataset"],
-            optimizer=run_config["optim"],
-            run_dir=run_config["run_dir"],
-            is_debug=run_config["is_debug"],
-            print_every=run_config["print_every"],
-            seed=run_config["seed"],
-            logger=run_config["logger"],
-            local_rank=run_config["local_rank"],
-            amp=run_config["amp"],
-            cpu=run_config["cpu"],
-            slurm=run_config["slurm"],
-            new_gnn=run_config["new_gnn"],
-            frame_averaging=run_config["frame_averaging"],
-            data_split=run_config["data_split"],
-            note=run_config["note"],
-            test_ri=run_config["test_ri"],
-            choice_fa=run_config["choice_fa"],
-            wandb_tags=run_config["wandb_tags"],
+        trainer_config = should_continue(trainer_config)
+        trainer_config = read_slurm_env(trainer_config)
+        trainer: BaseTrainer = registry.get_trainer_class(trainer_config["trainer"])(
+            **trainer_config
         )
-        task = registry.get_task_class(run_config["mode"])(run_config)
+        task = registry.get_task_class(trainer_config["mode"])(trainer_config)
         task.setup(trainer)
         start_time = time.time()
         task.run()

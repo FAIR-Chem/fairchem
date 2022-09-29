@@ -88,51 +88,50 @@ class OCPCalculator(Calculator):
 
         if config_yml is not None:
             if isinstance(config_yml, str):
-                config = yaml.safe_load(open(config_yml, "r"))
+                trainer_config = yaml.safe_load(open(config_yml, "r"))
 
-                if "includes" in config:
-                    for include in config["includes"]:
+                if "includes" in trainer_config:
+                    for include in trainer_config["includes"]:
                         # Change the path based on absolute path of config_yml
                         path = os.path.join(config_yml.split("configs")[0], include)
                         include_config = yaml.safe_load(open(path, "r"))
-                        config.update(include_config)
+                        trainer_config.update(include_config)
             else:
-                config = config_yml
+                trainer_config = config_yml
             # Only keeps the train data that might have normalizer values
-            config["dataset"] = config["dataset"][0]
+            trainer_config["dataset"] = trainer_config["dataset"][0]
         else:
-            # Loads the config from the checkpoint directly
-            config = torch.load(checkpoint, map_location=torch.device("cpu"))["config"]
+            # Loads the trainer_config from the checkpoint directly
+            trainer_config = torch.load(
+                checkpoint,
+                map_location=torch.device("cpu"),
+            )["config"]
 
             # Load the trainer based on the dataset used
-            if config["task"]["dataset"] == "trajectory_lmdb":
-                config["trainer"] = "forces"
+            if trainer_config["task"]["dataset"] == "trajectory_lmdb":
+                trainer_config["trainer"] = "forces"
             else:
-                config["trainer"] = "energy"
+                trainer_config["trainer"] = "energy"
 
-            config["model_attributes"]["name"] = config.pop("model")
-            config["model"] = config["model_attributes"]
+            trainer_config["model_attributes"]["name"] = trainer_config.pop("model")
+            trainer_config["model"] = trainer_config["model_attributes"]
 
         # Calculate the edge indices on the fly
-        config["model"]["otf_graph"] = True
+        trainer_config["model"]["otf_graph"] = True
 
-        # Save config so obj can be transported over network (pkl)
-        self.config = copy.deepcopy(config)
-        self.config["checkpoint"] = checkpoint
+        # Save trainer_config so obj can be transported over network (pkl)
+        self.trainer_config = copy.deepcopy(trainer_config)
+        self.trainer_config["checkpoint"] = checkpoint
 
-        if "normalizer" not in config:
-            del config["dataset"]["src"]
-            config["normalizer"] = config["dataset"]
+        if "normalizer" not in trainer_config:
+            del trainer_config["dataset"]["src"]
+            trainer_config["normalizer"] = trainer_config["dataset"]
 
-        self.trainer = registry.get_trainer_class(config["trainer"])(
-            task=config["task"],
-            model=config["model"],
+        self.trainer = registry.get_trainer_class(trainer_config["trainer"])(
+            **trainer_config,
             dataset=None,
-            normalizer=config["normalizer"],
-            optimizer=config["optim"],
-            slurm=config["slurm"],
-            local_rank=config.get("local_rank", 0),
-            is_debug=config.get("is_debug", True),
+            local_rank=trainer_config.get("local_rank", 0),
+            is_debug=trainer_config.get("is_debug", True),
             cpu=True,
         )
 

@@ -62,31 +62,14 @@ if __name__ == "__main__":
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
-    config = build_config(args, override_args)
+    trainer_config = build_config(args, override_args)
 
     # Add this to try out on test datasets
     # self.config["test_dataset"] = {'src':'/network/projects/_groups/ocp/oc20/is2re/all/test_id/data.lmdb'}
     # Repeat for test_ood_ads  test_ood_both  test_ood_cat
 
     setup_imports()
-    trainer = registry.get_trainer_class(config["trainer"])(
-        task=config["task"],
-        model_attributes=config["model"],
-        dataset=config["dataset"],
-        optimizer=config["optim"],
-        run_dir=config["run_dir"],
-        is_debug=True,
-        print_every=config.get("print_every", 100),
-        seed=config["seed"],
-        logger=config["logger"],
-        local_rank=config["local_rank"],
-        amp=config["amp"],
-        cpu=config["cpu"],
-        slurm=config["slurm"],
-        new_gnn=config["new_gnn"],
-        data_split=config["data_split"],
-        note=config["note"],
-    )
+    trainer = registry.get_trainer_class(trainer_config["trainer"])(**trainer_config)
 
     # Load checkpoint
     if checkpoint == "fa":
@@ -130,5 +113,5 @@ if __name__ == "__main__":
     energy_diff_z = energy_diff_z / (i * batch_size)
     energy_diff = energy_diff / (i * batch_size)
 
-    task = registry.get_task_class(config["mode"])(config)
+    task = registry.get_task_class(trainer_config["mode"])(trainer_config)
     task.setup(trainer)

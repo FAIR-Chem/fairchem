@@ -10,31 +10,20 @@ Out[1]: ...
 In [2]: print(batch)
 
 """
-import math
-import random
-import sys
 from copy import deepcopy
-from itertools import product
 from time import time
 
-import matplotlib.pyplot as plt
-import numpy as np
 import torch  # noqa: F401
 from minydra import resolved_args
 from torch import cat, isin, tensor, where
 from torch_geometric.data import Batch
-from torch_geometric.transforms import RandomRotate
-from torch_geometric.utils import remove_self_loops, sort_edge_index
-from tqdm import tqdm
+from torch_geometric.utils import remove_self_loops
 
-from ocpmodels.common.flags import flags
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import build_config, setup_imports, setup_logging
+from ocpmodels.common.utils import make_script_trainer
 from ocpmodels.preprocessing import (
     one_supernode_per_atom_type,
     one_supernode_per_atom_type_dist,
     one_supernode_per_graph,
-    remove_tag0_nodes,
 )
 from ocpmodels.preprocessing.data_augmentation import (
     frame_averaging_2D,
@@ -45,45 +34,25 @@ if __name__ == "__main__":
 
     opts = resolved_args()
 
-    sys.argv[1:] = ["--mode=train", "--config-yml=configs/is2re/10k/schnet/schnet.yml"]
-    setup_logging()
-
-    parser = flags.get_parser()
-    args, override_args = parser.parse_known_args()
-    config = build_config(args, override_args)
-
-    config["optim"]["num_workers"] = 4
-    config["optim"]["batch_size"] = 64
-    config["logger"] = "dummy"
+    trainer_config = {
+        "optim": {
+            "num_workers": 4,
+            "batch_size": 64,
+        },
+        "logger": {
+            "dummy",
+        },
+    }
 
     if opts.victor_local:
-        config["dataset"][0]["src"] = "data/is2re/10k/train/data.lmdb"
-        config["dataset"] = config["dataset"][:1]
-        config["optim"]["num_workers"] = 0
-        config["optim"]["batch_size"] = opts.bs or config["optim"]["batch_size"]
+        trainer_config["dataset"][0]["src"] = "data/is2re/10k/train/data.lmdb"
+        trainer_config["dataset"] = trainer_config["dataset"][:1]
+        trainer_config["optim"]["num_workers"] = 0
+        trainer_config["optim"]["batch_size"] = (
+            opts.bs or trainer_config["optim"]["batch_size"]
+        )
 
-    setup_imports()
-    trainer = registry.get_trainer_class(config["trainer"])(
-        task=config["task"],
-        model_attributes=config["model"],
-        dataset=config["dataset"],
-        optimizer=config["optim"],
-        run_dir=config["run_dir"],
-        is_debug=config.get("is_debug", False),
-        print_every=config.get("print_every", 100),
-        seed=config["seed"],
-        logger=config["logger"],
-        local_rank=config["local_rank"],
-        amp=config["amp"],
-        cpu=config["cpu"],
-        slurm=config["slurm"],
-        new_gnn=config["new_gnn"],
-        data_split=config["data_split"],
-        note=config["note"],
-    )
-
-    task = registry.get_task_class(config["mode"])(config)
-    task.setup(trainer)
+    trainer = make_script_trainer(overrides=trainer_config)
 
     for batch in trainer.val_loader:
         break
@@ -469,33 +438,3 @@ if __name__ == "__main__":
                 ** 2
             ).sum(-1)
         )
-
-    if opts.plot_tags is not None:
-        tags = {
-            0: [],
-            1: [],
-            2: [],
-        }
-        for batch in tqdm(trainer.train_loader):
-            for b in batch:
-                for t in tags:
-                    tags[t].append((b.tags == t).sum().item())
-
-        x = np.arange(len(tags[0]))
-        ys = [np.array(tags[t]) for t in range(3)]
-        z = np.zeros(len(x))
-        fig = plt.figure(num=1)
-        ax = fig.add_subplot(111)
-        colors = {
-            0: "b",
-            1: "y",
-            2: "g",
-        }
-        for t in tags:
-            ax.plot(x, ys[t], color=colors[t], lw=1, label=f"tag {t}")
-        for t in tags:
-            ax.fill_between(
-                x, ys[t], where=ys[t] > z, color=colors[t], interpolate=True
-            )
-        plt.legend()
-        plt.savefig("tags_dist.png", dpi=150)

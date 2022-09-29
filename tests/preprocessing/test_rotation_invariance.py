@@ -1,6 +1,5 @@
 import math
 import random
-import sys
 from copy import deepcopy
 from itertools import product
 
@@ -8,9 +7,7 @@ import torch
 from minydra import resolved_args
 from torch_geometric.data import Batch
 
-from ocpmodels.common.flags import flags
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import build_config, setup_imports, setup_logging
+from ocpmodels.common.utils import make_script_trainer
 
 
 def test_rotation_invariance(graph, rotation="z", dim="2D"):
@@ -228,45 +225,25 @@ if __name__ == "__main__":
 
     opts = resolved_args()
 
-    sys.argv[1:] = ["--mode=train", "--config=configs/is2re/10k/schnet/schnet.yml"]
-    setup_logging()
-
-    parser = flags.get_parser()
-    args, override_args = parser.parse_known_args()
-    config = build_config(args, override_args)
-
-    config["optim"]["num_workers"] = 4
-    config["optim"]["batch_size"] = 64
-    config["logger"] = "dummy"
+    trainer_config = {
+        "optim": {
+            "num_workers": 4,
+            "batch_size": 64,
+        },
+        "logger": {
+            "dummy",
+        },
+    }
 
     if opts.victor_local:
-        config["dataset"][0]["src"] = "data/is2re/All/train/data.lmdb"
-        config["dataset"] = config["dataset"][:1]
-        config["optim"]["num_workers"] = 0
-        config["optim"]["batch_size"] = opts.bs or config["optim"]["batch_size"]
+        trainer_config["dataset"][0]["src"] = "data/is2re/All/train/data.lmdb"
+        trainer_config["dataset"] = trainer_config["dataset"][:1]
+        trainer_config["optim"]["num_workers"] = 0
+        trainer_config["optim"]["batch_size"] = (
+            opts.bs or trainer_config["optim"]["batch_size"]
+        )
 
-    setup_imports()
-    trainer = registry.get_trainer_class(config["trainer"])(
-        task=config["task"],
-        model_attributes=config["model"],
-        dataset=config["dataset"],
-        optimizer=config["optim"],
-        run_dir=config["run_dir"],
-        is_debug=config.get("is_debug", False),
-        print_every=config.get("print_every", 100),
-        seed=config["seed"],
-        logger=config["logger"],
-        local_rank=config["local_rank"],
-        amp=config["amp"],
-        cpu=config["cpu"],
-        slurm=config["slurm"],
-        new_gnn=config["new_gnn"],
-        data_split=config["data_split"],
-        note=config["note"],
-    )
-
-    task = registry.get_task_class(config["mode"])(config)
-    task.setup(trainer)
+    trainer = make_script_trainer(overrides=trainer_config)
 
     for batch in trainer.train_loader:
         break

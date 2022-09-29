@@ -845,7 +845,7 @@ def update_from_sbatch_py_vars(args):
     return args
 
 
-def make_trainer(
+def make_script_trainer(
     str_args=["--mode=train", "--config=configs/is2re/10k/schnet/new_schnet.yml"],
     overrides={},
     verbose=True,
@@ -857,41 +857,22 @@ def make_trainer(
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
-    config = build_config(args, override_args)
+    trainer_config = build_config(args, override_args)
 
     for k, v in overrides.items():
         if isinstance(v, dict):
             for kk, vv in v.items():
-                config[k][kk] = vv
+                trainer_config[k][kk] = vv
         else:
-            config[k] = v
+            trainer_config[k] = v
 
     setup_imports()
-    trainer = registry.get_trainer_class(config["trainer"])(
-        task=config["task"],
-        model_attributes=config["model"],
-        dataset=config["dataset"],
-        optimizer=config["optim"],
-        run_dir=config["run_dir"],
-        is_debug=config.get("is_debug", False),
-        print_every=config.get("print_every", 100),
-        seed=config["seed"],
-        logger=config["logger"],
-        local_rank=config["local_rank"],
-        amp=config["amp"],
-        cpu=config["cpu"],
-        slurm=config["slurm"],
-        new_gnn=config["new_gnn"],
-        frame_averaging=config["frame_averaging"],
-        data_split=config["data_split"],
-        note=config["note"],
-        test_ri=config["test_ri"],
-        choice_fa=config["choice_fa"],
-        wandb_tags=config["wandb_tags"],
+    trainer = registry.get_trainer_class(trainer_config["trainer"])(
+        **trainer_config,
         verbose=verbose,
     )
 
-    task = registry.get_task_class(config["mode"])(config)
+    task = registry.get_task_class(trainer_config["mode"])(trainer_config)
     task.setup(trainer)
 
     sys.argv = argv

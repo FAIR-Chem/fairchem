@@ -25,7 +25,7 @@ from time import time
 from minydra import resolved_args
 from tqdm import tqdm
 
-from ocpmodels.common.utils import make_trainer
+from ocpmodels.common.utils import make_script_trainer
 
 try:
     import ipdb  # noqa: F401
@@ -657,7 +657,7 @@ if __name__ == "__main__":
             continue
 
         # create trainer in eval modefor this config
-        trainer = make_trainer(**config, verbose=False)
+        trainer = make_script_trainer(**config, verbose=False)
         trainer.model.eval()
 
         # for each run (to have stats)
