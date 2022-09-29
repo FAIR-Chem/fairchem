@@ -4,30 +4,13 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
-
 import warnings
-
-from ocpmodels.common.flags import flags
-from ocpmodels.common.utils import build_config, setup_imports
+from ocpmodels.common.utils import make_script_trainer
 from ocpmodels.trainers import EnergyTrainer
+import sys
 
 if __name__ == "__main__":
-
-    parser = flags.get_parser()
-    args, override_args = parser.parse_known_args()
-
-    if not args.mode or not args.config_yml:
-        args.mode = "train"
-        # args.config_yml = "configs/is2re/10k/dimenet_plus_plus/new_dpp.yml"
-        # args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
-        # args.config_yml = "configs/is2re/10k/forcenet/new_forcenet.yml"
-        args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
-        # args.config_yml = "configs/is2re/10k/fanet/fanet.yml"
-        # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/best_checkpoint.pt"
-        warnings.warn("No model / mode is given; chosen as default")
-
-    config = build_config(args, override_args)
-
+    config = {}
     # Customize args
     # config["model"]["energy_head"] = "weighted-av-initial-embeds"  # pooling, weighted-av-init-embeds, graclus, random # noqa: E501
     # config["frame_averaging"] = "2D"
@@ -41,25 +24,19 @@ if __name__ == "__main__":
     config["optim"]["max_epochs"] = 0
     config["model"]["use_pbc"] = False
 
-    setup_imports()
-    trainer = EnergyTrainer(
-        task=config["task"],
-        model_attributes=config["model"],
-        dataset=config["dataset"],
-        optimizer=config["optim"],
-        run_dir=config["run_dir"],
-        is_debug=True,
-        print_every=100,
-        seed=config["seed"],
-        logger=config["logger"],
-        local_rank=config["local_rank"],
-        amp=config["amp"],
-        cpu=config["cpu"],
-        new_gnn=config.get("new_gnn"),
-        frame_averaging=config["frame_averaging"],
-        test_ri=config["test_ri"],
-        choice_fa=config["choice_fa"],
-    )
+    str_args = sys.argv[1:]
+    if all("--config-yml" not in arg for arg in str_args):
+        # str_args.append("--config-yml=configs/is2re/10k/dimenet_plus_plus/new_dpp.yml")
+        # str_args.append("--config-yml=configs/is2re/10k/schnet/new_schnet.yml")
+        # str_args.append("--config-yml=configs/is2re/10k/forcenet/new_forcenet.yml")
+        str_args.append("--config-yml=configs/is2re/10k/sfarinet/sfarinet.yml")
+        # str_args.append("--config-yml=configs/is2re/10k/fanet/fanet.yml")
+        # str_args.append("--checkpoint=checkpoints/2022-04-26-12-23-28-schnet/best_checkpoint.pt")
+        warnings.warn(
+            "No model / mode is given; chosen as default" + f"Using: {str_args[-1]}"
+        )
+
+    trainer: EnergyTrainer = make_script_trainer(str_args=str_args, overrides=config)
 
     trainer.train()
 
