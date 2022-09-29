@@ -28,86 +28,10 @@ class EnergyTrainer(BaseTrainer):
 
         Examples of configurations for task, model, dataset and optimizer
         can be found in `configs/ocp_is2re <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_. # noqa: E501
-
-
-    Args:
-        task (dict): Task configuration.
-        model (dict): Model configuration.
-        dataset (dict): Dataset configuration. The dataset needs to be a
-            SinglePointLMDB dataset.
-        optimizer (dict): Optimizer configuration.
-        run_dir (str, optional): Path to the run directory where logs are to be saved.
-            (default: :obj:`None`)
-        is_debug (bool, optional): Run in debug mode.
-            (default: :obj:`False`)
-        is_hpo (bool, optional): Run hyperparameter optimization with Ray Tune.
-            (default: :obj:`False`)
-        print_every (int, optional): Frequency of printing logs.
-            (default: :obj:`100`)
-        seed (int, optional): Random number seed.
-            (default: :obj:`None`)
-        logger (str, optional): Type of logger to be used.
-            (default: :obj:`tensorboard`)
-        local_rank (int, optional): Local rank of the process, only applicable
-            for distributed training. (default: :obj:`0`)
-        amp (bool, optional): Run using automatic mixed precision.
-            (default: :obj:`False`)
-        slurm (dict): Slurm configuration. Currently just for keeping track.
-            (default: :obj:`{}`)
     """
 
-    def __init__(
-        self,
-        task,
-        model_attributes,
-        dataset,
-        optimizer,
-        normalizer=None,
-        frame_averaging=None,
-        run_dir=None,
-        is_debug=False,
-        is_hpo=False,
-        print_every=100,
-        seed=None,
-        logger="tensorboard",
-        local_rank=0,
-        amp=False,
-        cpu=False,
-        slurm={},
-        new_gnn=True,
-        data_split=None,
-        test_ri=False,
-        choice_fa=None,
-        note="",
-        wandb_tags=[],
-        verbose=True,
-    ):
-        super().__init__(
-            task=task,
-            model_attributes=model_attributes,
-            dataset=dataset,
-            optimizer=optimizer,
-            normalizer=normalizer,
-            run_dir=run_dir,
-            is_debug=is_debug,
-            is_hpo=is_hpo,
-            print_every=print_every,
-            seed=seed,
-            logger=logger,
-            local_rank=local_rank,
-            amp=amp,
-            cpu=cpu,
-            name="is2re",
-            slurm=slurm,
-            new_gnn=new_gnn,
-            data_split=data_split,
-            note=note,
-            frame_averaging=frame_averaging,
-            test_ri=test_ri,
-            choice_fa=choice_fa,
-            wandb_tags=wandb_tags,
-            verbose=verbose,
-        )
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs, name="is2re")
 
     def load_task(self):
         logging.info(f"Loading dataset: {self.config['task']['dataset']}")

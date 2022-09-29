@@ -78,6 +78,7 @@ class BaseTrainer(ABC):
         wandb_tags=[],
         choice_fa=None,
         verbose=True,
+        **kwargs,  # important: catch-all for various trainers
     ):
         self.name = name
         self.cpu = cpu

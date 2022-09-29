@@ -35,69 +35,10 @@ class ForcesTrainer(BaseTrainer):
         can be found in `configs/ocp_s2ef <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_ # noqa: E501
         and `configs/ocp_is2rs <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2rs/>`_.
 
-    Args:
-        task (dict): Task configuration.
-        model (dict): Model configuration.
-        dataset (dict): Dataset configuration. The dataset needs to be a
-            SinglePointLMDB dataset.
-        optimizer (dict): Optimizer configuration.
-        run_dir (str, optional): Path to the run directory where logs are to be saved.
-            (default: :obj:`None`)
-        is_debug (bool, optional): Run in debug mode.
-            (default: :obj:`False`)
-        is_hpo (bool, optional): Run hyperparameter optimization with Ray Tune.
-            (default: :obj:`False`)
-        print_every (int, optional): Frequency of printing logs.
-            (default: :obj:`100`)
-        seed (int, optional): Random number seed.
-            (default: :obj:`None`)
-        logger (str, optional): Type of logger to be used.
-            (default: :obj:`tensorboard`)
-        local_rank (int, optional): Local rank of the process, only applicable for
-            distributed training.
-            (default: :obj:`0`)
-        amp (bool, optional): Run using automatic mixed precision.
-            (default: :obj:`False`)
-        slurm (dict): Slurm configuration. Currently just for keeping track.
-            (default: :obj:`{}`)
     """
 
-    def __init__(
-        self,
-        task,
-        model,
-        dataset,
-        optimizer,
-        normalizer=None,
-        run_dir=None,
-        is_debug=False,
-        is_hpo=False,
-        print_every=100,
-        seed=None,
-        logger="tensorboard",
-        local_rank=0,
-        amp=False,
-        cpu=False,
-        slurm={},
-    ):
-        super().__init__(
-            task=task,
-            model=model,
-            dataset=dataset,
-            optimizer=optimizer,
-            normalizer=normalizer,
-            run_dir=run_dir,
-            is_debug=is_debug,
-            is_hpo=is_hpo,
-            print_every=print_every,
-            seed=seed,
-            logger=logger,
-            local_rank=local_rank,
-            amp=amp,
-            cpu=cpu,
-            name="s2ef",
-            slurm=slurm,
-        )
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs, name="s2ef")
 
     def load_task(self):
         logging.info(f"Loading dataset: {self.config['task']['dataset']}")
