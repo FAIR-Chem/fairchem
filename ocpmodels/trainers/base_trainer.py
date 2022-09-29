@@ -77,7 +77,7 @@ class BaseTrainer(ABC):
         data_split=None,
         note="",
         test_invariance=None,
-        wandb_tag=None,
+        wandb_tags=[],
         choice_fa=None,
         verbose=True,
     ):
@@ -160,7 +160,7 @@ class BaseTrainer(ABC):
             },
             "slurm": slurm,
             "note": note,
-            "wandb_tag": wandb_tag,
+            "wandb_tags": wandb_tags,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp else None
@@ -839,7 +839,9 @@ class BaseTrainer(ABC):
 
             # Call validate function
             start_time = time.time()
-            self.metrics = self.validate(split="eval", disable_tqdm=disable_tqdm, name_split=s)
+            self.metrics = self.validate(
+                split="eval", disable_tqdm=disable_tqdm, name_split=s
+            )
             metrics_dict[s] = self.metrics
             cumulated_mae += self.metrics["energy_mae"]["metric"]
             cumulated_time += time.time() - start_time

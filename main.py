@@ -77,7 +77,7 @@ class Runner(submitit.helpers.Checkpointable):
                 note=config.get("note", ""),
                 test_invariance=config.get("test_ri", None),
                 choice_fa=config.get("choice_fa", None),
-                wandb_tag=config.get("wandb_tag", None),
+                wandb_tags=config.get("wandb_tags", None),
             )
             self.task = registry.get_task_class(config["mode"])(self.config)
             self.task.setup(self.trainer)

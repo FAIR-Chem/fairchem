@@ -82,7 +82,7 @@ class EnergyTrainer(BaseTrainer):
         test_invariance=False,
         choice_fa=None,
         note="",
-        wandb_tag=None,
+        wandb_tags=[],
         verbose=True,
     ):
         super().__init__(
@@ -110,7 +110,7 @@ class EnergyTrainer(BaseTrainer):
             frame_averaging=frame_averaging,
             test_invariance=test_invariance,
             choice_fa=choice_fa,
-            wandb_tag=wandb_tag,
+            wandb_tags=wandb_tags,
             verbose=verbose,
         )
 

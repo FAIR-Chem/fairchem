@@ -149,10 +149,10 @@ class Flags:
             help="Note describing this run to be added to the logger",
         )
         self.parser.add_argument(
-            "--wandb_tag",
+            "--wandb_tags",
             type=str,
             default="",
-            help="Single tag for wandb",
+            help="Comma-separated tags for wandb",
         )
         self.parser.add_argument(
             "--test_ri",

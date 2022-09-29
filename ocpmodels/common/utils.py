@@ -414,7 +414,7 @@ def build_config(args, args_override):
     config["distributed_port"] = args.distributed_port
     config["world_size"] = args.num_nodes * args.num_gpus
     config["distributed_backend"] = args.distributed_backend
-    config["wandb_tag"] = args.wandb_tag if hasattr(args, "wandb_tag") else None
+    config["wandb_tags"] = args.wandb_tags
 
     return config
 
@@ -908,7 +908,7 @@ def make_trainer(
         note=config.get("note", ""),
         test_invariance=config.get("test_ri", None),
         choice_fa=config.get("choice_fa", None),
-        wandb_tag=config.get("wandb_tag", None),
+        wandb_tags=config.get("wandb_tags", None),
         verbose=verbose,
     )
 

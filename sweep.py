@@ -135,7 +135,7 @@ if __name__ == "__main__":
     jobs = []
     name = args.name or make_wandb_sweep_name()
     parameters = read_sweep_params(args.params)
-    parameters["wandb_tag"] = {"values": [name]}
+    parameters["wandb_tags"] = {"values": [name]}
     sweep_configuration = {
         "name": name,
         "method": args.method,
