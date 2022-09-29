@@ -389,7 +389,7 @@ def build_config(args, args_override):
         config, _ = merge_dicts(config, overrides)
 
     config.update(**vars(args))
-    config["data_split"] = config["data_split"].split("/")[2]
+    config["data_split"] = str(config["config_yml"]).split("/")[2]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
     if "frame_averaging" not in config:

@@ -54,10 +54,10 @@ from ocpmodels.preprocessing.data_augmentation import (
 class BaseTrainer(ABC):
     def __init__(
         self,
-        task,
-        model_attributes,
-        dataset,
-        optimizer,
+        task=None,
+        model=None,
+        dataset=None,
+        optimizer=None,
         frame_averaging=None,
         normalizer=None,
         run_dir=None,
@@ -125,12 +125,12 @@ class BaseTrainer(ABC):
             commit_hash = None
 
         # logger_name = logger if isinstance(logger, str) else logger["name"]
-        model_name = model_attributes.pop("name")
+        model_name = model.pop("name")
         self.config = {
             "task": task,
             "data_split": data_split,
-            "model": model_name,
-            "model_attributes": model_attributes,
+            "model_name": model_name,
+            "model": model,
             "optim": optimizer,
             "logger": logger,
             "amp": amp,
@@ -285,7 +285,7 @@ class BaseTrainer(ABC):
     def load_datasets(self):
         self.parallel_collater = ParallelCollater(
             0 if self.cpu else 1,
-            self.config["model_attributes"].get("otf_graph", False),
+            self.config["model"].get("otf_graph", False),
         )
 
         self.train_loader = self.val_loader = self.test_loader = None
@@ -377,7 +377,7 @@ class BaseTrainer(ABC):
 
         # TODO: deprecated, remove.
         bond_feat_dim = None
-        bond_feat_dim = self.config["model_attributes"].get("num_gaussians", 50)
+        bond_feat_dim = self.config["model"].get("num_gaussians", 50)
 
         loader = self.train_loader or self.val_loader or self.test_loader
         self.model = registry.get_model_class(self.config["model"])(
@@ -389,7 +389,7 @@ class BaseTrainer(ABC):
             bond_feat_dim=bond_feat_dim,
             num_targets=self.num_targets,
             new_gnn=self.new_gnn,
-            **self.config["model_attributes"],
+            **self.config["model"],
         ).to(self.device)
 
         if distutils.is_master():

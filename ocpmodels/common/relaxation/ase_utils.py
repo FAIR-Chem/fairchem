@@ -112,8 +112,7 @@ class OCPCalculator(Calculator):
             else:
                 trainer_config["trainer"] = "energy"
 
-            trainer_config["model_attributes"]["name"] = trainer_config.pop("model")
-            trainer_config["model"] = trainer_config["model_attributes"]
+            trainer_config["model"]["name"] = trainer_config.pop("model_name")
 
         # Calculate the edge indices on the fly
         trainer_config["model"]["otf_graph"] = True

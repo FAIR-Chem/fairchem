@@ -123,7 +123,10 @@ if __name__ == "__main__":
         # args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
         args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
-        warnings.warn("No model / mode is given; chosen as default")
+        warnings.warn(
+            "\n>>>> No model / mode is given. "
+            + f"{args.config_yml} chosen as default\n"
+        )
     if args.logdir:
         args.logdir = resolve(args.logdir)
 
