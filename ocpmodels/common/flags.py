@@ -160,6 +160,12 @@ class Flags:
             default=False,
             help="Test rotation invariance of model",
         )
+        self.parser.add_argument(
+            "--print_every",
+            type=int,
+            default=100,
+            help="Printing frequency (in steps)",
+        )
 
 
 flags = Flags()

@@ -172,7 +172,7 @@ class EnergyTrainer(BaseTrainer):
 
     def train(self, disable_eval_tqdm=False):
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
-        self.config["cmd"]["print_every"] = eval_every  # Temporary
+        # self.config["cmd"]["print_every"] = eval_every  # Temporary -> @AlDu I'm removing this ok?
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
