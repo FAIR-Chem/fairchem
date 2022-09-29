@@ -65,7 +65,7 @@ if __name__ == "__main__":
         }
         trainer: EnergyTrainer = make_script_trainer(str_args, overrides, verbose=False)
         trainer.model.eval()
-        trainer.config["cmd"]["checkpoint_dir"] = str(ckpt_dir)
+        trainer.config["checkpoint_dir"] = str(ckpt_dir)
         print(parse_conf(str_args))
         trainer.eval_all_val_splits(final=True, disable_tqdm=False)
 

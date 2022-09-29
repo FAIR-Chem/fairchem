@@ -23,7 +23,7 @@ class BaseTask:
 
         # save checkpoint path to runner state for slurm resubmissions
         self.chkpt_path = os.path.join(
-            self.trainer.config["cmd"]["checkpoint_dir"], "checkpoint.pt"
+            self.trainer.config["checkpoint_dir"], "checkpoint.pt"
         )
 
     def run(self):

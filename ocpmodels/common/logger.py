@@ -65,7 +65,7 @@ class WandBLogger(Logger):
         slurm_jobid = os.environ.get("SLURM_JOB_ID")
         if slurm_jobid:
             wandb_id += f"{slurm_jobid}-"
-        wandb_id += self.config["cmd"]["timestamp_id"] + "-" + config["model"]
+        wandb_id += self.config["timestamp_id"] + "-" + config["model_name"]
 
         wandb_tags = [t.strip() for t in config.get("wandb_tags", "").split(",")]
 
@@ -73,7 +73,7 @@ class WandBLogger(Logger):
             config=self.config,
             id=wandb_id,
             name=self.config["wandb_name"] or wandb_id,
-            dir=self.config["cmd"]["logs_dir"],
+            dir=self.config["logs_dir"],
             project=project,
             resume="allow",
             notes=self.config["note"],
@@ -111,7 +111,7 @@ class WandBLogger(Logger):
 class TensorboardLogger(Logger):
     def __init__(self, config):
         super().__init__(config)
-        self.writer = SummaryWriter(self.config["cmd"]["logs_dir"])
+        self.writer = SummaryWriter(self.config["logs_dir"])
 
     # TODO: add a model hook for watching gradients.
     def watch(self, model):

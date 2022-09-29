@@ -91,7 +91,7 @@ class EnergyTrainer(BaseTrainer):
 
     def train(self, disable_eval_tqdm=False):
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
-        # self.config["cmd"]["print_every"] = eval_every  # Temporary -> @AlDu I'm removing this ok?
+        # self.config["print_every"] = eval_every  # Temporary -> @AlDu I'm removing this ok?
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
@@ -213,7 +213,7 @@ class EnergyTrainer(BaseTrainer):
         # Load current best checkpoint
         if self.config["optim"]["max_epochs"] > 2:
             checkpoint_path = os.path.join(
-                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
+                self.config["checkpoint_dir"], "best_checkpoint.pt"
             )
             self.load_checkpoint(checkpoint_path=checkpoint_path)
             logging.info(
@@ -312,7 +312,7 @@ class EnergyTrainer(BaseTrainer):
             }
         )
         if (
-            self.step % self.config["cmd"]["print_every"] == 0
+            self.step % self.config["print_every"] == 0
             and distutils.is_master()
             and not self.is_hpo
         ):

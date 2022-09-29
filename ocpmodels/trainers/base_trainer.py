@@ -139,15 +139,13 @@ class BaseTrainer(ABC):
             "choice_fa": choice_fa,
             "test_ri": test_ri,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
-            "cmd": {
-                "print_every": print_every,
-                "seed": seed,
-                "timestamp_id": self.timestamp_id,
-                "commit": commit_hash,
-                "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
-                "results_dir": str(Path(run_dir) / "results"),
-                "logs_dir": str(Path(run_dir) / "logs"),
-            },
+            "print_every": print_every,
+            "seed": seed,
+            "timestamp_id": self.timestamp_id,
+            "commit": commit_hash,
+            "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
+            "results_dir": str(Path(run_dir) / "results"),
+            "logs_dir": str(Path(run_dir) / "logs"),
             "slurm": slurm,
             "note": note,
             "wandb_tags": wandb_tags,
@@ -193,9 +191,9 @@ class BaseTrainer(ABC):
             self.normalizer = self.config["dataset"]
 
         if not is_debug and distutils.is_master() and not is_hpo:
-            os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
-            os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
-            os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
+            os.makedirs(self.config["checkpoint_dir"], exist_ok=True)
+            os.makedirs(self.config["results_dir"], exist_ok=True)
+            os.makedirs(self.config["logs_dir"], exist_ok=True)
             # TODO: do not create all three directory depending on mode
             # "Predict" -> result, "Train" -> checkpoint and logs.
 
@@ -230,7 +228,7 @@ class BaseTrainer(ABC):
 
     def load_seed_from_config(self):
         # https://pytorch.org/docs/stable/notes/randomness.html
-        seed = self.config["cmd"]["seed"]
+        seed = self.config["seed"]
         if seed is None:
             return
 
@@ -545,7 +543,7 @@ class BaseTrainer(ABC):
                         "ema": self.ema.state_dict() if self.ema else None,
                         "amp": self.scaler.state_dict() if self.scaler else None,
                     },
-                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
+                    checkpoint_dir=self.config["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
             else:
@@ -563,7 +561,7 @@ class BaseTrainer(ABC):
                         "val_metrics": metrics,
                         "amp": self.scaler.state_dict() if self.scaler else None,
                     },
-                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
+                    checkpoint_dir=self.config["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
                 if self.ema:
@@ -735,7 +733,7 @@ class BaseTrainer(ABC):
             return
 
         results_file_path = os.path.join(
-            self.config["cmd"]["results_dir"],
+            self.config["results_dir"],
             f"{self.name}_{results_file}_{distutils.get_rank()}.npz",
         )
         np.savez_compressed(
@@ -748,13 +746,13 @@ class BaseTrainer(ABC):
         if distutils.is_master():
             gather_results = defaultdict(list)
             full_path = os.path.join(
-                self.config["cmd"]["results_dir"],
+                self.config["results_dir"],
                 f"{self.name}_{results_file}.npz",
             )
 
             for i in range(distutils.get_world_size()):
                 rank_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
+                    self.config["results_dir"],
                     f"{self.name}_{results_file}_{i}.npz",
                 )
                 rank_results = np.load(rank_path, allow_pickle=True)
@@ -784,7 +782,7 @@ class BaseTrainer(ABC):
         if final:
             # Load current best checkpoint
             checkpoint_path = os.path.join(
-                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
+                self.config["checkpoint_dir"], "best_checkpoint.pt"
             )
             self.load_checkpoint(checkpoint_path=checkpoint_path)
             logging.info(

@@ -250,7 +250,7 @@ class ForcesTrainer(BaseTrainer):
                     }
                 )
                 if (
-                    self.step % self.config["cmd"]["print_every"] == 0
+                    self.step % self.config["print_every"] == 0
                     and distutils.is_master()
                     and not self.is_hpo
                 ):
@@ -536,7 +536,7 @@ class ForcesTrainer(BaseTrainer):
         if self.config["task"].get("write_pos", False):
             rank = distutils.get_rank()
             pos_filename = os.path.join(
-                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.npz"
+                self.config["results_dir"], f"relaxed_pos_{rank}.npz"
             )
             np.savez_compressed(
                 pos_filename,
@@ -549,13 +549,13 @@ class ForcesTrainer(BaseTrainer):
             if distutils.is_master():
                 gather_results = defaultdict(list)
                 full_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
+                    self.config["results_dir"],
                     "relaxed_positions.npz",
                 )
 
                 for i in range(distutils.get_world_size()):
                     rank_path = os.path.join(
-                        self.config["cmd"]["results_dir"],
+                        self.config["results_dir"],
                         f"relaxed_pos_{i}.npz",
                     )
                     rank_results = np.load(rank_path, allow_pickle=True)
