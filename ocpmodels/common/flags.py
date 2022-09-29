@@ -45,6 +45,12 @@ class Flags:
             default=False,
         )
         self.parser.add_argument(
+            "--is_hpo",
+            action="store_true",
+            help="Whether this is a HPO run or not",
+            default=False,
+        )
+        self.parser.add_argument(
             "--run-dir",
             default="$SCRATCH/ocp/runs/$SLURM_JOB_ID",
             type=str,

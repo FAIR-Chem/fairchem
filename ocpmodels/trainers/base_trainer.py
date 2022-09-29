@@ -58,8 +58,7 @@ class BaseTrainer(ABC):
         self.config = {
             **kwargs,
             "model_name": model_name,
-            "gpus": distutils.get_world_size() if not self.cpu else 0,
-            "timestamp_id": self.timestamp_id,
+            "gpus": distutils.get_world_size() if not kwargs["cpu"] else 0,
             "commit": get_commit_hash(),
             "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
             "results_dir": str(Path(run_dir) / "results"),
@@ -91,6 +90,8 @@ class BaseTrainer(ABC):
             "%Y-%m-%d-%H-%M-%S"
         )
         self.timestamp_id = timestamp
+
+        self.config["timestamp_id"] = self.timestamp_id
 
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if self.config["amp"] else None
