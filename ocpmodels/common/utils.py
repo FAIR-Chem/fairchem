@@ -846,7 +846,7 @@ def update_from_sbatch_py_vars(args):
 
 
 def make_script_trainer(
-    str_args=["--mode=train", "--config=configs/is2re/10k/schnet/new_schnet.yml"],
+    str_args=[],
     overrides={},
     verbose=True,
 ):
