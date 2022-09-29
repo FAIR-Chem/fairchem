@@ -146,7 +146,6 @@ if __name__ == "__main__":
             dataset=run_config["dataset"],
             optimizer=run_config["optim"],
             identifier=run_config["identifier"],
-            timestamp_id=run_config.get("timestamp_id", None),
             run_dir=run_config.get("run_dir", "./"),
             is_debug=run_config.get("is_debug", False),
             print_every=run_config.get("print_every", 100),

@@ -61,7 +61,6 @@ class BaseTrainer(ABC):
         identifier,
         frame_averaging=None,
         normalizer=None,
-        timestamp_id=None,
         run_dir=None,
         is_debug=False,
         is_hpo=False,
@@ -99,21 +98,16 @@ class BaseTrainer(ABC):
         if run_dir is None:
             run_dir = os.getcwd()
 
-        if timestamp_id is None:
-            timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(
-                self.device
-            )
-            # create directories from master rank only
-            distutils.broadcast(timestamp, 0)
-            timestamp = datetime.datetime.fromtimestamp(timestamp.int()).strftime(
-                "%Y-%m-%d-%H-%M-%S"
-            )
-            if identifier:
-                self.timestamp_id = f"{timestamp}-{identifier}"
-            else:
-                self.timestamp_id = timestamp
+        timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(self.device)
+        # create directories from master rank only
+        distutils.broadcast(timestamp, 0)
+        timestamp = datetime.datetime.fromtimestamp(timestamp.int()).strftime(
+            "%Y-%m-%d-%H-%M-%S"
+        )
+        if identifier:
+            self.timestamp_id = f"{timestamp}-{identifier}"
         else:
-            self.timestamp_id = timestamp_id
+            self.timestamp_id = timestamp
 
         try:
             commit_hash = (

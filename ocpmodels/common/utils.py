@@ -871,7 +871,6 @@ def make_trainer(
         dataset=config["dataset"],
         optimizer=config["optim"],
         identifier=config["identifier"],
-        timestamp_id=config.get("timestamp_id", None),
         run_dir=config.get("run_dir", "./"),
         is_debug=config.get("is_debug", False),
         print_every=config.get("print_every", 100),
