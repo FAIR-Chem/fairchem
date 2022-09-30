@@ -45,7 +45,6 @@ def load_model(request):
         None,
         32,
         1,
-        new_gnn=None,
         cutoff=6.0,
         regress_forces=True,
         use_pbc=True,

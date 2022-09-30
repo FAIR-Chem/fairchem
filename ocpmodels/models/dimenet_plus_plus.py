@@ -356,7 +356,6 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
         num_atoms,
         bond_feat_dim,  # not used
         num_targets,
-        new_gnn,  # not used
         use_pbc=True,
         regress_forces=True,
         hidden_channels=128,

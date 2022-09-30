@@ -148,11 +148,6 @@ class Flags:
         self.parser.add_argument("--local_rank", default=0, type=int, help="Local rank")
         # Additional arguments
         self.parser.add_argument(
-            "--new_gnn",
-            action="store_false",
-            help="Whether to use original GNN models or modified ones",
-        )
-        self.parser.add_argument(
             "--fa",
             default=False,
             choices=[False, "2D", "3D"],

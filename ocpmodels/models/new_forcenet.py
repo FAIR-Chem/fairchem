@@ -240,7 +240,6 @@ class NewForceNet(BaseModel):
         num_atoms,  # not used
         bond_feat_dim,  # not used
         num_targets,  # not used
-        new_gnn=True,
         hidden_channels=512,
         tag_hidden_channels=64,
         pg_hidden_channels=32,
@@ -270,7 +269,6 @@ class NewForceNet(BaseModel):
         super(NewForceNet, self).__init__()
         self.training = training
         self.ablation = ablation
-        self.new_gnn = new_gnn
         if self.ablation not in [
             "none",
             "nofilter",

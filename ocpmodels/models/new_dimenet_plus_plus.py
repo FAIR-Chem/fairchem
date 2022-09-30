@@ -506,7 +506,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             raise ImportError("Package `sympy` could not be found.")
 
         self.num_blocks = num_blocks
-        self.use_tag = tag_hidden_channels > 0  # and self.new_gnn
+        self.use_tag = tag_hidden_channels > 0
         self.use_pg = pg_hidden_channels > 0
 
         self.rbf = BesselBasisLayer(num_radial, cutoff, envelope_exponent)
@@ -631,7 +631,6 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         num_atoms,
         bond_feat_dim,  # not used
         num_targets,
-        new_gnn=True,
         use_pbc=True,
         regress_forces=True,
         hidden_channels=128,
@@ -659,7 +658,6 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
-        self.new_gnn = new_gnn
         self.graph_rewiring = graph_rewiring
         self.energy_head = energy_head
 

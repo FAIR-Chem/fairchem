@@ -69,7 +69,6 @@ class BaseTrainer(ABC):
         self.step = 0
         self.cpu = self.config["cpu"]
         self.name = self.config["name"]
-        self.new_gnn = self.config["new_gnn"]
         self.test_ri = self.config["test_ri"]
         self.frame_averaging = self.config["frame_averaging"]
         self.choice_fa = self.config["choice_fa"]
@@ -332,7 +331,6 @@ class BaseTrainer(ABC):
             num_atoms=num_atoms,
             bond_feat_dim=bond_feat_dim,
             num_targets=self.num_targets,
-            new_gnn=self.new_gnn,
             **self.config["model"],
         ).to(self.device)
 

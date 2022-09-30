@@ -338,7 +338,6 @@ class NewSchNetWrap(NewSchNet):
         num_atoms,  # not used
         bond_feat_dim,  # not used
         num_targets,
-        new_gnn,  # not used
         use_pbc=True,
         regress_forces=True,
         otf_graph=False,

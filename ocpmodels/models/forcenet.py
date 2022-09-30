@@ -225,7 +225,6 @@ class ForceNet(BaseModel):
         num_atoms,  # not used
         bond_feat_dim,  # not used
         num_targets,  # not used
-        new_gnn,  # not used
         hidden_channels=512,
         num_interactions=5,
         cutoff=6.0,

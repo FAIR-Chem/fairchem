@@ -44,7 +44,6 @@ def load_model(request):
         None,
         32,
         1,
-        new_gnn=None,
         cutoff=6.0,
     )
     request.cls.model = model

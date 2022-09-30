@@ -297,7 +297,6 @@ class FANet(BaseModel):
         bond_feat_dim,  # not used
         num_targets,
         act=swish,
-        new_gnn: bool = True,
         use_pbc: bool = True,
         regress_forces: bool = True,
         otf_graph: bool = False,
