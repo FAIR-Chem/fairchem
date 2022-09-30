@@ -63,7 +63,7 @@ if __name__ == "__main__":
         overrides = {
             **TRAINER_CONF_OVERRIDES,
         }
-        trainer: EnergyTrainer = make_script_trainer(str_args, overrides, verbose=False)
+        trainer: EnergyTrainer = make_script_trainer(str_args, overrides, silent=True)
         trainer.model.eval()
         trainer.config["checkpoint_dir"] = str(ckpt_dir)
         print(parse_conf(str_args))

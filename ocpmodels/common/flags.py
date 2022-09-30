@@ -72,6 +72,12 @@ class Flags:
             default=False,
         )
         self.parser.add_argument(
+            "--silent",
+            action="store_true",
+            help="Prevent the trainer from printing some stuff",
+            default=False,
+        )
+        self.parser.add_argument(
             "--checkpoint", type=str, help="Model checkpoint to load"
         )
         self.parser.add_argument(

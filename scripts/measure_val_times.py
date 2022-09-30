@@ -656,8 +656,8 @@ if __name__ == "__main__":
             print(f"🙈 config {c} is ignored from the command-line.")
             continue
 
-        # create trainer in eval modefor this config
-        trainer = make_script_trainer(**config, verbose=False)
+        # create trainer in eval mode for this config
+        trainer = make_script_trainer(**config, silent=True)
         trainer.model.eval()
 
         # for each run (to have stats)

@@ -851,7 +851,7 @@ def update_from_sbatch_py_vars(args):
 def make_script_trainer(
     str_args=[],
     overrides={},
-    verbose=True,
+    silent=False,
 ):
     argv = [a for a in sys.argv]
     assert isinstance(str_args, list)
@@ -872,7 +872,7 @@ def make_script_trainer(
     setup_imports()
     trainer = registry.get_trainer_class(trainer_config["trainer"])(
         **trainer_config,
-        verbose=verbose,
+        silent=silent,
     )
 
     task = registry.get_task_class(trainer_config["mode"])(trainer_config)

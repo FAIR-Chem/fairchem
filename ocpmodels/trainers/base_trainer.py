@@ -154,7 +154,7 @@ class BaseTrainer(ABC):
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
-        if distutils.is_master() and self.config["verbose"]:
+        if distutils.is_master() and not self.config["silent"]:
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
