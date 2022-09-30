@@ -138,6 +138,11 @@ class OCPCalculator(Calculator):
             config["model_attributes"]["name"] = config.pop("model")
             config["model"] = config["model_attributes"]
 
+        # for checkpoints with relaxation datasets defined, remove to avoid
+        # unnecesarily trying to load that dataset
+        if "relax_dataset" in config["task"]:
+            del config["task"]["relax_dataset"]
+
         # Calculate the edge indices on the fly
         config["model"]["otf_graph"] = True
 
