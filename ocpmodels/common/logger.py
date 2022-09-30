@@ -55,11 +55,6 @@ class Logger(ABC):
 class WandBLogger(Logger):
     def __init__(self, trainer_config):
         super().__init__(trainer_config)
-        project = (
-            self.trainer_config["logger"].get("project", None)
-            if isinstance(self.trainer_config["logger"], dict)
-            else None
-        )
 
         wandb_id = ""
         slurm_jobid = os.environ.get("SLURM_JOB_ID")
@@ -78,7 +73,7 @@ class WandBLogger(Logger):
             id=wandb_id,
             name=self.trainer_config["wandb_name"] or wandb_id,
             dir=self.trainer_config["logs_dir"],
-            project=project,
+            project=self.trainer_config["wandb_project"],
             resume="allow",
             notes=self.trainer_config["note"],
             tags=wandb_tags,
