@@ -317,17 +317,19 @@ class BaseTrainer(ABC):
         if distutils.is_master():
             logging.info(f"Loading model: {self.config['model']}")
 
-        # TODO: deprecated, remove.
+        # TODO: deprecated, remove. @AlDu is this still todo? Or was it someone else?
         bond_feat_dim = None
         bond_feat_dim = self.config["model"].get("num_gaussians", 50)
 
         loader = self.train_loader or self.val_loader or self.test_loader
-        self.model = registry.get_model_class(self.config["model"])(
-            num_atoms=loader.dataset[0].x.shape[-1]
-            if loader
-            and hasattr(loader.dataset[0], "x")
-            and loader.dataset[0].x is not None
-            else None,
+        num_atoms = None
+        if loader:
+            sample = loader.dataset[0]
+            if hasattr(sample, "x") and hasattr(sample.x, "shape"):
+                num_atoms = sample.x.shape[-1]
+
+        self.model = registry.get_model_class(self.config["model_name"])(
+            num_atoms=num_atoms,
             bond_feat_dim=bond_feat_dim,
             num_targets=self.num_targets,
             new_gnn=self.new_gnn,
