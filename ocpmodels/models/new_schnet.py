@@ -10,7 +10,6 @@ from time import time
 import torch
 import torch.nn.functional as F
 from torch.nn import Embedding, Linear, ModuleList, Sequential
-from torch_geometric.data import Batch
 from torch_geometric.nn import MessagePassing, radius_graph
 from torch_scatter import scatter
 
@@ -265,7 +264,7 @@ class NewSchNet(torch.nn.Module):
         self.act = ShiftedSoftplus()
         self.lin2 = Linear(hidden_channels // 2, 1)
 
-        # weigthed average & pooling
+        # weighted average & pooling
         if self.energy_head in {"pooling", "random"}:
             self.hierarchical_pooling = Hierarchical_Pooling(
                 hidden_channels,

@@ -1,7 +1,6 @@
 """ Code of the Scalable Frame Averaging (Rotation Invariant) GNN
 """
 
-from math import sqrt
 from time import time
 import torch
 from torch import nn

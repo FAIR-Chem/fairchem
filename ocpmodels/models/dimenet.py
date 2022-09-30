@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 """
 
 import torch
-from torch import nn
 from torch_geometric.nn import DimeNet, radius_graph
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
@@ -32,10 +31,10 @@ class DimeNetWrap(DimeNet):
         num_atoms (int): Unused argument
         bond_feat_dim (int): Unused argument
         num_targets (int): Number of targets to predict.
-        use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
-            (default: :obj:`True`)
-        regress_forces (bool, optional): If set to :obj:`True`, predict forces by differentiating
-            energy with respect to positions.
+        use_pbc (bool, optional): If set to :obj:`True`, account for periodic
+            boundary conditions. (default: :obj:`True`)
+        regress_forces (bool, optional): If set to :obj:`True`, predict forces by
+            differentiating energy with respect to positions.
             (default: :obj:`True`)
         hidden_channels (int, optional): Number of hidden channels.
             (default: :obj:`128`)
@@ -47,8 +46,8 @@ class DimeNetWrap(DimeNet):
             (default: :obj:`7`)
         num_radial (int, optional): Number of radial basis functions.
             (default: :obj:`6`)
-        otf_graph (bool, optional): If set to :obj:`True`, compute graph edges on the fly.
-            (default: :obj:`False`)
+        otf_graph (bool, optional): If set to :obj:`True`, compute graph edges on
+            the fly. (default: :obj:`False`)
         cutoff (float, optional): Cutoff distance for interatomic interactions.
             (default: :obj:`10.0`)
         envelope_exponent (int, optional): Shape of the smooth cutoff.

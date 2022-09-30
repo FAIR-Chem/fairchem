@@ -6,15 +6,11 @@ LICENSE file in the root directory of this source tree.
 """
 
 import os
-import random
 
 import numpy as np
 import pytest
-import torch
 from ase.io import read
-from torch_geometric.data import Data
 
-from ocpmodels.common.transforms import RandomRotate
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.models import NewForceNet
 from ocpmodels.preprocessing import AtomsToGraphs

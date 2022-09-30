@@ -1,7 +1,6 @@
 """ Code of the Scalable Frame Averaging (Rotation Invariant) GNN
 """
 
-from math import sqrt
 from time import time
 import torch
 from torch import nn
@@ -145,7 +144,7 @@ class EmbeddingBlock(nn.Module):
         if self.mlp_rij > 0:
             rel_pos = self.lin_r(rel_pos)
         e = torch.cat((rel_pos, edge_attr), dim=1)
-        # TODO: can I improve the 3D information catpured (more than r_ij)
+        # TODO: can I improve the 3D information captured (more than r_ij)
         # Linear(rel_pos), cat((rel_pos, other, pos_i, pos_j, edge_attr))
         # Extension: learn a bond feature vector and concat to above
 
@@ -403,7 +402,7 @@ class FANet(BaseModel):
                 batch = data.batch
             else:
                 raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
-            self.rewiring_time = time()
+            self.rewiring_time = time() - t
 
         # Use periodic boundary conditions
         if self.use_pbc:

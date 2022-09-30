@@ -3,7 +3,7 @@ Python script to time a list of OCP trainer configurations
 |
 use as:
 |
-$ pyhton scripts/measure_val_times.py n_runs=5 output_filename="times_n_runs_5.json"
+$ python scripts/measure_val_times.py n_runs=5 output_filename="times_n_runs_5.json"
 |
 Re-running with the same output_filename will resume timing, ignoring already timed
 configs. A config is considered timed after all its runs are completed.
@@ -37,7 +37,7 @@ except:  # noqa: E722
 
 def print_time_stats(times_dict: dict, keylen: int = 60) -> None:
     """
-    Prints a dictionnary of time statistics
+    Prints a dictionary of time statistics
 
     Args:
         times_dict (dict): the time to print, expects "mean" and "std" sub keys
@@ -596,8 +596,8 @@ if __name__ == "__main__":
             "n_runs": 1,  # (int) runs for the same trainer
             "max_confs": -1,  # (int) crop the number of confs to test
             "max_batchs": -1,  # (int) crop the number of batchs to test
-            "conf_ids": [],  # (list[int]) list of conf ids to measure. Defaults to all if empty
-            "output_filename": "measured_times.json",  # (str) output file name in data/times/
+            "conf_ids": [],  # (list[int]) list of conf ids to measure. Defaults to all if empty # noqa: E501
+            "output_filename": "measured_times.json",  # (str) output file name in data/times/ # noqa: E501
             "ignore_confs": [],  # (list[int]) list of config indices to ignore
             "overwrite": False,  # (bool) overwrite existing file
             "dryrun": False,  # (bool) run things but don't load from/save to file

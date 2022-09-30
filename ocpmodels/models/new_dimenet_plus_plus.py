@@ -34,7 +34,6 @@ THE SOFTWARE.
 
 from math import pi as PI
 from math import sqrt
-from pickle import FALSE
 
 import torch
 from torch import nn
@@ -469,7 +468,7 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             interaction blocks after the skip connection. (default: :obj:`2`)
         num_output_layers: (int, optional): Number of linear layers for the
             output blocks. (default: :obj:`3`)
-        act: (function, optional): The activation funtion.
+        act: (function, optional): The activation function.
             (default: :obj:`swish`)
     """
 
