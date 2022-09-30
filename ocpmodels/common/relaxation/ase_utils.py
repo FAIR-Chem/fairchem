@@ -108,6 +108,12 @@ class OCPCalculator(Calculator):
                         )
                         include_config = yaml.safe_load(open(path, "r"))
                         config.update(include_config)
+                if "scale_file" in config["model"]:
+                    scale_file_path = os.path.join(
+                        config_yml.split("configs")[0],
+                        config["model"]["scale_file"],
+                    )
+                    config["model"]["scale_file"] = scale_file_path
             else:
                 config = config_yml
             # Only keeps the train data that might have normalizer values
