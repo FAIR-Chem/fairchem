@@ -134,8 +134,9 @@ class OCPCalculator(Calculator):
                     )
                     config["trainer"] = "forces"
 
-        config["model_attributes"]["name"] = config.pop("model")
-        config["model"] = config["model_attributes"]
+        if "model_attributes" in config:
+            config["model_attributes"]["name"] = config.pop("model")
+            config["model"] = config["model_attributes"]
 
         # Calculate the edge indices on the fly
         config["model"]["otf_graph"] = True
