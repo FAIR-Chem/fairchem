@@ -16,3 +16,5 @@ task:
   metric: mae
   labels:
     - relaxed energy
+
+normalizer: null

@@ -21,3 +21,5 @@ task:
   grad_input: atomic forces
   train_on_free_atoms: True
   eval_on_free_atoms: True
+
+normalizer: null
