@@ -536,7 +536,10 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     # Compute the indices for the pairs of atoms (using division and mod)
     # If the systems get too large this approach could run into numerical
     # precision issues
-    index1 = (atom_count_sqr // num_atoms_per_image_expand) + index_offset_expand
+    index1 = (
+        torch.div(atom_count_sqr, num_atoms_per_image_expand, rounding_mode="trunc")
+        + index_offset_expand
+    )
     index2 = (atom_count_sqr % num_atoms_per_image_expand) + index_offset_expand
     # Get the positions for each atom
     pos1 = torch.index_select(atom_pos, 0, index1)
