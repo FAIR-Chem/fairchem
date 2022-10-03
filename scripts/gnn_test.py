@@ -4,10 +4,15 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+import sys
 import warnings
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from ocpmodels.common.utils import make_script_trainer
 from ocpmodels.trainers import EnergyTrainer
-import sys
+
 
 if __name__ == "__main__":
     config = {}

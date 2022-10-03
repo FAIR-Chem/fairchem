@@ -10,7 +10,9 @@ Out[1]: ...
 In [2]: print(batch)
 
 """
+import sys
 from copy import deepcopy
+from pathlib import Path
 from time import time
 
 import torch  # noqa: F401
@@ -18,6 +20,8 @@ from minydra import resolved_args
 from torch import cat, isin, tensor, where
 from torch_geometric.data import Batch
 from torch_geometric.utils import remove_self_loops
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from ocpmodels.common.utils import make_script_trainer
 from ocpmodels.preprocessing import (
