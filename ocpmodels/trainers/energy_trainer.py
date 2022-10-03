@@ -89,7 +89,7 @@ class EnergyTrainer(BaseTrainer):
 
         return predictions
 
-    def train(self, disable_eval_tqdm=False):
+    def train(self, disable_eval_tqdm=False, debug_batches=-1):
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
         # self.config["print_every"] = eval_every  # Temporary -> @AlDu I'm removing this ok?
         primary_metric = self.config["task"].get(
@@ -101,6 +101,7 @@ class EnergyTrainer(BaseTrainer):
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // len(self.train_loader)
         start_time = time.time()
+
         print("---Beginning of Training---")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
@@ -201,7 +202,14 @@ class EnergyTrainer(BaseTrainer):
                 else:
                     self.scheduler.step()
 
+                if debug_batches > 0 and i > debug_batches:
+                    break
+                # End of batch.
+
+            # End of epoch.
             torch.cuda.empty_cache()
+
+        # End of training.
 
         # Time model
         if self.logger is not None:
@@ -249,7 +257,7 @@ class EnergyTrainer(BaseTrainer):
 
     def _forward(self, batch_list):
 
-        if self.frame_averaging and self.frame_averaging != "da":
+        if self.config["frame_averaging"] and self.config["frame_averaging"] != "da":
             original_pos = batch_list[0].pos
             y_all, p_all = [], []
             for i in range(len(batch_list[0].fa_pos)):

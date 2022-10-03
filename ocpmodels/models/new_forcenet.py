@@ -250,6 +250,7 @@ class NewForceNet(BaseModel):
         self.depth_mlp_node = kwargs["depth_mlp_node"]
         self.energy_head = kwargs["energy_head"]
         self.feat = kwargs["feat"]
+        self.graph_rewiring = kwargs["graph_rewiring"]
         self.hidden_channels = kwargs["hidden_channels"]
         self.num_interactions = kwargs["num_interactions"]
         self.max_n = kwargs["max_n"]

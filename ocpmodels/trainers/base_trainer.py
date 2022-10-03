@@ -50,6 +50,7 @@ class BaseTrainer(ABC):
 
         run_dir = kwargs["run_dir"]
         model_name = kwargs["model"].pop("name")
+        kwargs["model"]["graph_rewiring"] = kwargs["graph_rewiring"]
 
         self.config = {
             **kwargs,

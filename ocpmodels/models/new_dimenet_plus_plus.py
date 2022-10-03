@@ -479,6 +479,7 @@ class NewDimeNetPlusPlus(BaseModel):
         self.energy_head = kwargs["energy_head"]
         self.envelope_exponent = kwargs["envelope_exponent"]
         self.hidden_channels = kwargs["hidden_channels"]
+        self.graph_rewiring = kwargs["graph_rewiring"]
         self.int_emb_size = kwargs["int_emb_size"]
         self.num_after_skip = kwargs["num_after_skip"]
         self.num_before_skip = kwargs["num_before_skip"]
