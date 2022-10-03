@@ -3,6 +3,10 @@ includes:
 
 model:
   name: new_forcenet
+  decoder_type: mlp
+  num_freqs: 50
+  predict_forces: false
+  training: true
   num_interactions: 5
   cutoff: 6
   basis: "sphallmul"
