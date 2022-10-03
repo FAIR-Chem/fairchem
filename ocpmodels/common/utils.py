@@ -14,6 +14,7 @@ import itertools
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import time
@@ -35,6 +36,45 @@ from torch_scatter import segment_coo, segment_csr
 import ocpmodels
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
+
+
+def run_command(command):
+    """
+    Run a shell command and return the output.
+    """
+    return subprocess.check_output(command.split(" ")).decode("utf-8").strip()
+
+
+def count_gpus():
+    gpus = 0
+    if os.environ.get("SLURM_JOB_ID"):
+        try:
+            slurm_gpus = run_command(
+                f"squeue --job {os.environ['SLURM_JOB_ID']} -o %b"
+            ).split("\n")[1]
+            gpus = int(re.findall(r".*(\d+)", slurm_gpus)[0])
+        except subprocess.CalledProcessError:
+            gpus = torch.cuda.device_count()
+    else:
+        gpus = torch.cuda.device_count()
+
+    return gpus
+
+
+def count_cpus():
+    cpus = None
+    if os.environ.get("SLURM_JOB_ID"):
+        try:
+            slurm_cpus = run_command(
+                f"squeue --job {os.environ['SLURM_JOB_ID']} -o %c"
+            ).split("\n")[1]
+            cpus = int(slurm_cpus)
+        except subprocess.CalledProcessError:
+            cpus = os.cpu_count()
+    else:
+        cpus = os.cpu_count()
+
+    return cpus
 
 
 def pyg2_data_transform(data: Data):
@@ -395,6 +435,20 @@ def build_config(args, args_override):
     config["data_split"] = str(config["config_yml"]).split("/")[2]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
+    if config["cpus_to_workers"]:
+        cpus = count_cpus()
+        gpus = count_gpus()
+        if cpus is not None:
+            if gpus == 0:
+                workers = cpus - 1
+            else:
+                workers = cpus // gpus
+            if not config["silent"]:
+                print(
+                    f"Overriding num_workers from {config['optim']['num_workers']}",
+                    f"to {workers} to match the machine's CPUs.",
+                )
+            config["optim"]["num_workers"] = workers
     if "frame_averaging" not in config:
         config["frame_averaging"] = args.fa  # @AlDu do we need to keep this?
     config["world_size"] = args.num_nodes * args.num_gpus

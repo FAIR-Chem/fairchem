@@ -101,6 +101,13 @@ class Flags:
             "--summit", action="store_true", help="Running on Summit cluster"
         )
         self.parser.add_argument(
+            "--cpus_to_workers",
+            action="store_true",
+            default=True,
+            help="Match dataloader workers to available cpus "
+            + "(may be divided by number of GPUs)",
+        )
+        self.parser.add_argument(
             "--logdir",
             default="$SCRATCH/ocp/runs/$SLURM_JOB_ID",
             type=Path,
@@ -189,7 +196,7 @@ class Flags:
             type=str,
             default="",
             help="Frame averaging method to use",
-            choices=["", "2D", "3D", "DA"],  # @AlDu -> update
+            choices=["", "2d", "3d", "da"],  # @AlDu -> update
         )
         self.parser.add_argument(
             "--wandb_project",
