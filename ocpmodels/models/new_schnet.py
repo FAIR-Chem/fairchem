@@ -5,7 +5,6 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 from math import pi as PI
-from typing import Optional
 from time import time
 import torch
 import torch.nn.functional as F
