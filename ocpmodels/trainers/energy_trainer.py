@@ -134,7 +134,9 @@ class EnergyTrainer(BaseTrainer):
                         loss += pooling_loss
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 if torch.isnan(loss):
-                    breakpoint()
+                    print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
+                    self.logger.add_tags(["nan_loss"])
+                    return True
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
 

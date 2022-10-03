@@ -68,7 +68,7 @@ class WandBLogger(Logger):
             t.strip() for t in trainer_config.get("wandb_tags", "").split(",")
         ]
 
-        wandb.init(
+        self.run = wandb.init(
             config=self.trainer_config,
             id=wandb_id,
             name=self.trainer_config["wandb_name"] or wandb_id,
@@ -107,6 +107,11 @@ class WandBLogger(Logger):
     def mark_preempting(self):
         wandb.mark_preempting()
 
+    def add_tags(self, tags):
+        if not isinstance(tags, list):
+            tags = [tags]
+        self.run.tags = self.run.tags + tags
+
 
 @registry.register_logger("tensorboard")
 class TensorboardLogger(Logger):
@@ -136,6 +141,9 @@ class TensorboardLogger(Logger):
     def log_plots(self, plots):
         pass
 
+    def add_tags(self, tags):
+        pass
+
 
 @registry.register_logger("dummy")
 class DummyLogger(Logger):
@@ -149,4 +157,7 @@ class DummyLogger(Logger):
         pass
 
     def watch(self, model):
+        pass
+
+    def add_tags(self, tags):
         pass

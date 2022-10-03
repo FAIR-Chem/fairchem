@@ -905,13 +905,15 @@ def update_from_sbatch_py_vars(args):
     return args
 
 
-def make_script_trainer(
-    str_args=[],
-    overrides={},
-    silent=False,
-):
+def make_script_trainer(str_args=[], overrides={}, silent=False, mode="train"):
     argv = [a for a in sys.argv]
     assert isinstance(str_args, list)
+
+    if silent and all("--silent" not in s for s in str_args):
+        str_args.append("--silent")
+    if all("--mode" not in s for s in str_args):
+        str_args.append(f"--mode={mode}")
+
     sys.argv[1:] = str_args
     setup_logging()
 
