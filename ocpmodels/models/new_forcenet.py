@@ -250,7 +250,6 @@ class NewForceNet(BaseModel):
         self.depth_mlp_node = kwargs["depth_mlp_node"]
         self.energy_head = kwargs["energy_head"]
         self.feat = kwargs["feat"]
-        self.graph_rewiring = kwargs["graph_rewiring"]
         self.hidden_channels = kwargs["hidden_channels"]
         self.num_interactions = kwargs["num_interactions"]
         self.max_n = kwargs["max_n"]
@@ -498,35 +497,9 @@ class NewForceNet(BaseModel):
     def forward(self, data):
 
         # Rewire the graph
-        if not self.graph_rewiring:
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-        else:
-            t = time()
-            if self.graph_rewiring == "remove-tag-0":
-                data = remove_tag0_nodes(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-graph":
-                data = one_supernode_per_graph(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type":
-                data = one_supernode_per_atom_type(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
-                data = one_supernode_per_atom_type_dist(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            else:
-                raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
-            self.rewiring_time = time() - t
+        z = data.atomic_numbers.long()
+        pos = data.pos
+        batch = data.batch
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(

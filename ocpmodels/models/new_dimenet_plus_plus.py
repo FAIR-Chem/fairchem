@@ -58,15 +58,9 @@ from ocpmodels.common.utils import (
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-from ocpmodels.preprocessing import (
-    one_supernode_per_atom_type,
-    one_supernode_per_atom_type_dist,
-    one_supernode_per_graph,
-    remove_tag0_nodes,
-)
+
 from ocpmodels.models.base import BaseModel
 
-from time import time
 
 try:
     import sympy as sym
@@ -484,7 +478,6 @@ class NewDimeNetPlusPlus(BaseModel):
         self.cutoff = kwargs["cutoff"]
         self.energy_head = kwargs["energy_head"]
         self.envelope_exponent = kwargs["envelope_exponent"]
-        self.graph_rewiring = kwargs["graph_rewiring"]
         self.hidden_channels = kwargs["hidden_channels"]
         self.int_emb_size = kwargs["int_emb_size"]
         self.num_after_skip = kwargs["num_after_skip"]
@@ -642,32 +635,10 @@ class NewDimeNetPlusPlus(BaseModel):
             data.neighbors = neighbors
 
         # Rewire the graph
-        if not self.graph_rewiring:
-            pos = data.pos
-            batch = data.batch
+        pos = data.pos
+        batch = data.batch
+        if not hasattr(data, "subnodes"):
             data.subnodes = False
-        else:
-            t = time()
-            if self.graph_rewiring == "remove-tag-0":
-                data = remove_tag0_nodes(data)
-                pos = data.pos
-                batch = data.batch
-                data.subnodes = False
-            elif self.graph_rewiring == "one-supernode-per-graph":
-                data = one_supernode_per_graph(data)
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type":
-                data = one_supernode_per_atom_type(data)
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
-                data = one_supernode_per_atom_type_dist(data)
-                pos = data.pos
-                batch = data.batch
-            else:
-                raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
-            self.rewiring_time = time() - t
 
         if self.use_pbc:
             out = get_pbc_distances(

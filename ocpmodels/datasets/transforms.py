@@ -1,14 +1,40 @@
+import torch
+
 from ocpmodels.preprocessing.data_augmentation import (
     frame_averaging_2D,
     frame_averaging_3D,
     data_augmentation,
 )
+from ocpmodels.preprocessing.graph_rewiring import (
+    remove_tag0_nodes,
+    one_supernode_per_atom_type,
+    one_supernode_per_atom_type_dist,
+    one_supernode_per_graph,
+)
 
 
-class FrameAveragingTransform:
+class Transform:
+    def __call__(self, data):
+        raise NotImplementedError
+
+    def __str__(self):
+        name = self.__class__.__name__
+        items = [
+            f"{k}={v}"
+            for k, v in self.__dict__.items()
+            if not callable(v) and k != "inactive"
+        ]
+        s = f"{name}({', '.join(items)})"
+        if self.inactive:
+            s = f"[inactive] {s}"
+        return s
+
+
+class FrameAveraging(Transform):
     def __init__(self, fa_type=None, fa_frames=None):
-        self.fa_frames = (fa_frames if fa_frames is not None else "all").lower()
+        self.fa_frames = ("all" if fa_frames is None else fa_frames).lower()
         self.fa_type = ("" if fa_type is None else fa_type).lower()
+        self.inactive = not self.fa_type
         assert self.fa_type in {
             "",
             "2d",
@@ -32,17 +58,38 @@ class FrameAveragingTransform:
             else:
                 raise ValueError(f"Unknown frame averaging: {self.fa_type}")
 
-    def __str__(self):
-        return (
-            "FrameAveragingTransform"
-            + f"(fa_type={self.fa_type}, fa_frames={self.fa_frames})"
-        )
+    def __call__(self, data):
+        if self.inactive:
+            return data
+        return self.fa_func(data, self.fa_frames)
+
+
+class GraphRewiring(Transform):
+    def __init__(self, rewiring_type=None) -> None:
+        self.rewiring_type = rewiring_type
+
+        self.inactive = not self.rewiring_type
+
+        if self.rewiring_type:
+            if self.rewiring_type == "remove-tag-0":
+                self.rewiring_func = remove_tag0_nodes
+            elif self.rewiring_type == "one-supernode-per-graph":
+                self.rewiring_func = one_supernode_per_graph
+            elif self.rewiring_type == "one-supernode-per-atom-type":
+                self.rewiring_func = one_supernode_per_atom_type
+            elif self.rewiring_type == "one-supernode-per-atom-type-dist":
+                self.rewiring_func = one_supernode_per_atom_type_dist
+            else:
+                raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
 
     def __call__(self, data):
-        if self.fa_type:
-            return self.fa_func(data, self.fa_frames)
-        else:
+        data.batch = torch.zeros(data.num_nodes, dtype=torch.long)
+        data.natoms = torch.tensor([data.natoms])
+        data.ptr = torch.tensor([0, data.natoms])
+
+        if self.inactive:
             return data
+        return self.rewiring_func(data)
 
 
 class Compose:
@@ -65,11 +112,8 @@ class Compose:
 
 
 def get_transforms(trainer_config):
-    transforms = []
-    if trainer_config["frame_averaging"]:
-        transforms.append(
-            FrameAveragingTransform(
-                trainer_config["frame_averaging"], trainer_config["fa_frames"]
-            )
-        )
+    transforms = [
+        GraphRewiring(trainer_config["model"]["graph_rewiring"]),
+        FrameAveraging(trainer_config["frame_averaging"], trainer_config["fa_frames"]),
+    ]
     return Compose(transforms)

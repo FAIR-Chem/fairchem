@@ -872,11 +872,10 @@ def make_script_trainer(
         else:
             trainer_config[k] = v
 
+    trainer_config["silent"] = silent
+
     setup_imports()
-    trainer = registry.get_trainer_class(trainer_config["trainer"])(
-        **trainer_config,
-        silent=silent,
-    )
+    trainer = registry.get_trainer_class(trainer_config["trainer"])(**trainer_config)
 
     task = registry.get_task_class(trainer_config["mode"])(trainer_config)
     task.setup(trainer)

@@ -200,7 +200,7 @@ class Flags:
         self.parser.add_argument(
             "--fa_frames",
             type=str,
-            default="",
+            default="all",
             help="Frame averaging method to use",
             choices=["random", "e3", "det", "all"],  # @AlDu -> check
         )
