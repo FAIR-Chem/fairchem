@@ -34,7 +34,8 @@ class EnergyTrainer(BaseTrainer):
         super().__init__(**kwargs, name="is2re")
 
     def load_task(self):
-        logging.info(f"Loading dataset: {self.config['task']['dataset']}")
+        if not self.silent:
+            logging.info(f"Loading dataset: {self.config['task']['dataset']}")
         self.num_targets = 1
 
     @torch.no_grad()
@@ -102,13 +103,18 @@ class EnergyTrainer(BaseTrainer):
         start_epoch = self.step // len(self.train_loader)
         start_time = time.time()
 
-        print("---Beginning of Training---")
+        if not self.silent:
+            print("---Beginning of Training---")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
+
+            if not self.silent:
+                print("Epoch: ", epoch_int)
+
             self.train_sampler.set_epoch(epoch_int)
             skip_steps = self.step % len(self.train_loader)
             train_loader_iter = iter(self.train_loader)
-            print("Epoch: ", epoch_int)
+
             if epoch_int == 1 and self.logger is not None:
                 self.logger.log({"Epoch time": time.time() - start_time})
 

@@ -69,6 +69,7 @@ class BaseTrainer(ABC):
         self.test_ri = self.config["test_ri"]
         self.is_debug = self.config["is_debug"]
         self.is_hpo = self.config["is_hpo"]
+        self.silent = self.config["silent"]
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{self.config['local_rank']}")
@@ -135,7 +136,7 @@ class BaseTrainer(ABC):
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
-        if distutils.is_master() and not self.config["silent"]:
+        if distutils.is_master() and not self.silent:
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
@@ -295,7 +296,7 @@ class BaseTrainer(ABC):
 
     def load_model(self):
         # Build model
-        if distutils.is_master():
+        if distutils.is_master() and not self.silent:
             logging.info(
                 f"Loading model {self.config['model_name']}: {self.config['model']}"
             )
@@ -318,7 +319,7 @@ class BaseTrainer(ABC):
             **self.config["model"],
         ).to(self.device)
 
-        if distutils.is_master():
+        if distutils.is_master() and not self.silent:
             logging.info(
                 f"Loaded {self.model.__class__.__name__} with "
                 f"{self.model.num_params} parameters."
