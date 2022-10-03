@@ -391,7 +391,7 @@ def build_config(args, args_override):
         overrides = create_dict_from_args(args_override)
         config, _ = merge_dicts(config, overrides)
 
-    config.update(**vars(args))
+    config, _ = merge_dicts(config, vars(args))
     config["data_split"] = str(config["config_yml"]).split("/")[2]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
