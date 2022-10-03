@@ -7,14 +7,14 @@ from torch_geometric.data import Batch
 from ocpmodels.common.transforms import RandomRotate
 
 
-def all_frames(eigenvec, pos, choice_fa="random", pos_3D=None):
+def all_frames(eigenvec, pos, fa_frames="random", pos_3D=None):
     """Compute all frames for a given graph
     Related to frame ambiguity issue
 
     Args:
         eigenvec (tensor): eigenvectors matrix
         pos (tensor): position vector (X-1t)
-        choice_fa: whether to return one random frame (random),
+        fa_frames: whether to return one random frame (random),
             one deterministic frame (det), all E(3) frames (e3)
             or all frames (else).
         pos_3D: 3rd position coordinate of atoms
@@ -26,7 +26,11 @@ def all_frames(eigenvec, pos, choice_fa="random", pos_3D=None):
     plus_minus_list = list(product([1, -1], repeat=dim))
     plus_minus_list = [torch.tensor(x) for x in plus_minus_list]
     all_fa = []
-    e3 = choice_fa in {"e3-full", "e3-random", "e3-det"}
+    e3 = fa_frames in {
+        "e3-full",
+        "e3-random",
+        "e3-det",
+    }  # @AlDu -> fix with FrameAveragingTransform
 
     for pm in plus_minus_list:
 
@@ -50,11 +54,11 @@ def all_frames(eigenvec, pos, choice_fa="random", pos_3D=None):
     if all_fa == []:
         all_fa.append(pos @ eigenvec)
 
-    # Return frame(s) depending on method choice_fa
-    if choice_fa == "full" or choice_fa == "e3-full":
+    # Return frame(s) depending on method fa_frames
+    if fa_frames == "full" or fa_frames == "e3-full":
         return all_fa
 
-    elif choice_fa == "det" or choice_fa == "e3-det":
+    elif fa_frames == "det" or fa_frames == "e3-det":
         return [all_fa[0]]
 
     return [random.choice(all_fa)]
@@ -85,13 +89,13 @@ def check_constraints(eigenval, eigenvec, dim):
         print("Determinant is not 1")
 
 
-def frame_averaging_3D(g, choice_fa="random"):
+def frame_averaging_3D(g, fa_frames="random"):
     """Computes new positions for the graph atoms,
     using on frame averaging, which builds on PCA.
 
     Args:
         g (data.Data): input graph
-        choice_fa (str): FA method used (random, det, e3, all)
+        fa_frames (str): FA method used (random, det, e3, all)
 
     Returns:
         data.Data: graph with updated positions (and distances)
@@ -117,20 +121,20 @@ def frame_averaging_3D(g, choice_fa="random"):
     eigenval = eigenval[idx]
 
     # Compute fa_pos
-    g.fa_pos = all_frames(eigenvec, pos, choice_fa)
+    g.fa_pos = all_frames(eigenvec, pos, fa_frames)
 
     # No need to update distances, they are preserved.
 
     return g
 
 
-def frame_averaging_2D(g, choice_fa="random"):
+def frame_averaging_2D(g, fa_frames="random"):
     """Computes new positions for the graph atoms,
     based on a frame averaging building on PCA.
 
     Args:
         g (data.Data): graph
-        choice_fa (str): FA method used (random, det, e3, all)
+        fa_frames (str): FA method used (random, det, e3, all)
 
     Returns:
         _type_: updated positions
@@ -153,7 +157,7 @@ def frame_averaging_2D(g, choice_fa="random"):
     eigenvec = eigenvec[:, idx]
 
     # Compute all frames
-    g.fa_pos = all_frames(eigenvec, pos_2D, choice_fa, g.pos[:, 2])
+    g.fa_pos = all_frames(eigenvec, pos_2D, fa_frames, g.pos[:, 2])
 
     # No need to update distances, they are preserved.
 

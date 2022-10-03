@@ -189,7 +189,7 @@ class Flags:
             type=str,
             default="",
             help="Frame averaging method to use",
-            choices=["", "2D", "3D"],  # @AlDu -> update
+            choices=["", "2D", "3D", "DA"],  # @AlDu -> update
         )
         self.parser.add_argument(
             "--wandb_project",
@@ -198,7 +198,7 @@ class Flags:
             help="WandB project name to use",
         )
         self.parser.add_argument(
-            "--choice_fa",
+            "--fa_frames",
             type=str,
             default="",
             help="Frame averaging method to use",

@@ -65,7 +65,7 @@ if __name__ == "__main__":
             g_list = batch[0].to_data_list()
             for g in g_list:
                 # rotate graph
-                g = frame_averaging_2D(g, choice_fa="full")
+                g = frame_averaging_2D(g, fa_frames="full")
             i += 1
             g_batch = Batch.from_data_list(g_list)
             print("apply forward function on g_batch")
@@ -84,9 +84,9 @@ if __name__ == "__main__":
         count_1 = 0
         for i in range(len(b.sid)):
             g = Batch.get_example(b, i)
-            g = frame_averaging_2D(g, choice_fa="random")
-            g = frame_averaging_3D(g, choice_fa="random")
-            g = frame_averaging_2D(g, choice_fa="full")
+            g = frame_averaging_2D(g, fa_frames="random")
+            g = frame_averaging_3D(g, fa_frames="random")
+            g = frame_averaging_2D(g, fa_frames="full")
 
         # Equivalent to frame averaging, except that X' = XU, not (X-t)U
         # from torch_geometric.transforms import NormalizeRotation

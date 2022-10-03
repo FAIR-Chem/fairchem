@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # config['model']['use_pbc'] = True
     config["model"]["graph_rewiring"] = "remove-tag-0"
     config["frame_averaging"] = "3d"
-    config["choice_fa"] = "random"
+    config["fa_frames"] = "random"
     config["test_ri"] = True
     config["optim"]["max_epochs"] = 0
     config["model"]["use_pbc"] = False

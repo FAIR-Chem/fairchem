@@ -42,7 +42,7 @@ class LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None, choice_fa=None):
+    def __init__(self, config, transform=None, fa_frames=None):
         super(LmdbDataset, self).__init__()
         self.config = config
 
@@ -73,7 +73,7 @@ class LmdbDataset(Dataset):
             self.num_samples = len(self._keys)
 
         self.transform = transform
-        self.choice_fa = choice_fa
+        self.fa_frames = fa_frames
 
     def __len__(self):
         return self.num_samples
@@ -102,7 +102,7 @@ class LmdbDataset(Dataset):
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
         t1 = time.time_ns()
         if self.transform is not None:
-            data_object = self.transform(data_object, self.choice_fa)
+            data_object = self.transform(data_object, self.fa_frames)
         t2 = time.time_ns()
 
         load_time = (t1 - t0) * 1e-9  # time in s

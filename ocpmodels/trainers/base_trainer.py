@@ -41,11 +41,7 @@ from ocpmodels.modules.exponential_moving_average import (
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
-from ocpmodels.preprocessing.data_augmentation import (
-    data_augmentation,
-    frame_averaging_2D,
-    frame_averaging_3D,
-)
+from ocpmodels.datasets.transforms import get_transforms
 
 
 @registry.register_trainer("base")
@@ -70,8 +66,6 @@ class BaseTrainer(ABC):
         self.cpu = self.config["cpu"]
         self.name = self.config["name"]
         self.test_ri = self.config["test_ri"]
-        self.frame_averaging = self.config["frame_averaging"]
-        self.choice_fa = self.config["choice_fa"]
         self.is_debug = self.config["is_debug"]
         self.is_hpo = self.config["is_hpo"]
 
@@ -114,19 +108,6 @@ class BaseTrainer(ABC):
             self.config["test_dataset"] = kwargs["dataset"].get("test", None)
         else:
             self.config["dataset"] = kwargs["dataset"]
-
-        # Frame averaging
-        if self.frame_averaging:
-            if self.frame_averaging.lower() == "2d":
-                self.fa = frame_averaging_2D
-            elif self.frame_averaging.lower() == "3d":
-                self.fa = frame_averaging_3D
-            elif self.frame_averaging.lower() == "da":
-                self.fa = data_augmentation
-            else:
-                raise ValueError(f"Unknown frame averaging: {self.frame_averaging}")
-        else:
-            self.fa = None
 
         self.normalizer = kwargs["normalizer"]
         # This supports the legacy way of providing norm parameters in dataset
@@ -231,10 +212,12 @@ class BaseTrainer(ABC):
 
         self.train_loader = self.val_loader = self.test_loader = None
 
+        transform = get_transforms(self.config)  # TODO: train/val/test behavior
+
         if self.config.get("dataset", None):
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
-            )(self.config["dataset"], transform=self.fa, choice_fa=self.choice_fa)
+            )(self.config["dataset"], transform=transform)
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
                 self.config["optim"]["batch_size"],
@@ -250,8 +233,7 @@ class BaseTrainer(ABC):
                     self.config["task"]["dataset"]
                 )(
                     self.config["val_dataset"],
-                    transform=self.fa,
-                    choice_fa=self.choice_fa,
+                    transform=transform,
                 )
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
@@ -270,8 +252,7 @@ class BaseTrainer(ABC):
                     self.config["task"]["dataset"]
                 )(
                     self.config["test_dataset"],
-                    transform=self.fa,
-                    choice_fa=self.choice_fa,
+                    transform=transform,
                 )
                 self.test_sampler = self.get_sampler(
                     self.test_dataset,
@@ -756,8 +737,7 @@ class BaseTrainer(ABC):
                     self.config["task"]["dataset"]
                 )(
                     self.config["val_dataset"],
-                    transform=self.fa,
-                    choice_fa=self.choice_fa,
+                    transform=get_transforms(self.config),
                 )
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
@@ -795,7 +775,9 @@ class BaseTrainer(ABC):
                 store.append(round(val["metric"], 4))
             print(k, store)
 
-    def rotate_graph(self, batch, rotation=None):
+    def rotate_graph(
+        self, batch, rotation=None
+    ):  # @AlDu TODO fix with FA as data-loading preprocess
         """Rotate all graphs in a batch
 
         Args:
@@ -825,7 +807,7 @@ class BaseTrainer(ABC):
             delattr(batch_rotated, "fa_pos")  # delete it otherwise can't iterate
             g_list = batch_rotated.to_data_list()
             for g in g_list:
-                g = self.fa(g, self.choice_fa)
+                g = self.fa(g, self.fa_frames)
             batch_rotated = Batch.from_data_list(g_list)
             batch_rotated.neighbors = batch.neighbors
 
@@ -854,7 +836,7 @@ class BaseTrainer(ABC):
             delattr(batch_reflected, "fa_pos")  # delete it otherwise can't iterate
             g_list = batch_reflected.to_data_list()
             for g in g_list:
-                g = self.fa(g, self.choice_fa)
+                g = self.fa(g, self.fa_frames)
             batch_reflected = Batch.from_data_list(g_list)
             batch_reflected.neighbors = batch.neighbors
 
