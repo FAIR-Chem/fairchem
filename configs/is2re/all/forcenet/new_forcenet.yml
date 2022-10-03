@@ -25,9 +25,6 @@ model:
   pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
   phys_embeds: False # True
   phys_hidden_channels: 0
-  graph_rewiring:
-    False # {false, remove-tag-0, one-supernode-per-graph,
-    # one-supernode-per-atom-type, one-supernode-per-atom-type-dist}
   energy_head: False # can be {False, weighted-av-initial-embeds,
                                               # weighted-av-final-embeds, pooling, graclus, random}
 

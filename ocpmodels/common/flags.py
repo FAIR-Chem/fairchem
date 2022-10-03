@@ -204,6 +204,19 @@ class Flags:
             help="Frame averaging method to use",
             choices=["random", "e3", "det", "all"],  # @AlDu -> check
         )
+        self.parser.add_argument(
+            "--graph_rewiring",
+            type=str,
+            default="remove-tag-0",
+            help="How to rewire the graph",
+            choices=[
+                "",
+                "remove-tag-0",
+                "one-supernode-per-graph",
+                "one-supernode-per-atom-type",
+                "one-supernode-per-atom-type-dist",
+            ],
+        )
 
 
 flags = Flags()

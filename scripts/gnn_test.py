@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # config["model"]["graph_rewiring"] = "one-supernode-per-graph"
     # config["model"]["phys_embeds"] = True
     # config['model']['use_pbc'] = True
-    config["model"]["graph_rewiring"] = "remove-tag-0"
+    config["graph_rewiring"] = "remove-tag-0"
     config["frame_averaging"] = "3d"
     config["fa_frames"] = "random"
     config["test_ri"] = True

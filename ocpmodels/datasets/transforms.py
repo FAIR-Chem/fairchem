@@ -113,7 +113,7 @@ class Compose:
 
 def get_transforms(trainer_config):
     transforms = [
-        GraphRewiring(trainer_config["model"]["graph_rewiring"]),
+        GraphRewiring(trainer_config["graph_rewiring"]),
         FrameAveraging(trainer_config["frame_averaging"], trainer_config["fa_frames"]),
     ]
     return Compose(transforms)
