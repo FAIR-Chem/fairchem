@@ -198,11 +198,14 @@ class NewSchNet(torch.nn.Module):
             "one-supernode-per-atom-type-dist",
         }
 
-        self.register_buffer("initial_atomref", kwargs["atomref"])
+        self.register_buffer(
+            "initial_atomref",
+            torch.tensor(kwargs["atomref"]) if kwargs["atomref"] is not None else None,
+        )
         self.atomref = None
         if kwargs["atomref"] is not None:
             self.atomref = Embedding(100, 1)
-            self.atomref.weight.data.copy_(kwargs["atomref"])
+            self.atomref.weight.data.copy_(torch.tensor(kwargs["atomref"]))
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         # self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
