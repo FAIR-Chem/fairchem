@@ -114,6 +114,7 @@ class ShiftedSoftplus(torch.nn.Module):
         return F.softplus(x) - self.shift
 
 
+@registry.register_model("new_schnet")
 class NewSchNet(torch.nn.Module):
     r"""The continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
@@ -162,49 +163,46 @@ class NewSchNet(torch.nn.Module):
 
     url = "http://www.quantum-machine.org/datasets/trained_schnet_models.zip"
 
-    def __init__(
-        self,
-        hidden_channels: int = 128,
-        tag_hidden_channels: int = 32,
-        pg_hidden_channels: int = 32,
-        phys_embeds: bool = False,
-        phys_hidden_channels: int = 32,
-        graph_rewiring=False,
-        energy_head=False,
-        num_filters: int = 128,
-        num_interactions: int = 6,
-        num_gaussians: int = 50,
-        cutoff: float = 10.0,
-        max_num_neighbors: int = 32,
-        readout: str = "add",
-        atomref: Optional[torch.Tensor] = None,
-    ):
+    def __init__(self, **kwargs):
         super(NewSchNet, self).__init__()
 
         import ase
 
-        self.hidden_channels = hidden_channels
-        self.tag_hidden_channels = tag_hidden_channels
-        self.pg_hidden_channels = pg_hidden_channels
-        self.phys_hidden_channels = phys_hidden_channels
-        self.num_filters = num_filters
-        self.num_interactions = num_interactions
-        self.num_gaussians = num_gaussians
-        self.cutoff = cutoff
-        self.max_num_neighbors = max_num_neighbors
-        self.readout = readout
+        self.num_targets = kwargs["num_targets"]
+        self.regress_forces = kwargs["regress_forces"]
+        self.use_pbc = kwargs["use_pbc"]
+        self.cutoff = kwargs["cutoff"]
+        self.otf_graph = kwargs["otf_graph"]
+        self.graph_rewiring = kwargs["graph_rewiring"]
+        self.hidden_channels = kwargs["hidden_channels"]
+        self.tag_hidden_channels = kwargs["tag_hidden_channels"]
+        self.pg_hidden_channels = kwargs["pg_hidden_channels"]
+        self.phys_hidden_channels = kwargs["phys_hidden_channels"]
+        self.num_filters = kwargs["num_filters"]
+        self.num_interactions = kwargs["num_interactions"]
+        self.num_gaussians = kwargs["num_gaussians"]
+        self.cutoff = kwargs["cutoff"]
+        self.max_num_neighbors = kwargs["max_num_neighbors"]
+        self.readout = kwargs["readout"]
+        self.phys_embeds = kwargs["phys_embeds"]
+        self.energy_head = kwargs["energy_head"]
+
         self.scale = None
-        self.use_tag = tag_hidden_channels > 0
-        self.use_pg = pg_hidden_channels > 0
-        self.use_mlp_phys = phys_hidden_channels > 0 and phys_embeds
-        self.use_phys_embeddings = phys_embeds
-        self.use_positional_embeds = graph_rewiring in {
+        self.use_tag = self.tag_hidden_channels > 0
+        self.use_pg = self.pg_hidden_channels > 0
+        self.use_mlp_phys = self.phys_hidden_channels > 0 and self.phys_embeds
+        self.use_phys_embeddings = self.phys_embeds
+        self.use_positional_embeds = self.graph_rewiring in {
             "one-supernode-per-graph",
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
-        # self.use_positional_embeds = False
-        self.energy_head = energy_head
+
+        self.register_buffer("initial_atomref", kwargs["atomref"])
+        self.atomref = None
+        if kwargs["atomref"] is not None:
+            self.atomref = Embedding(100, 1)
+            self.atomref.weight.data.copy_(kwargs["atomref"])
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         # self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
@@ -212,10 +210,10 @@ class NewSchNet(torch.nn.Module):
         self.register_buffer("atomic_mass", atomic_mass)
 
         if self.use_tag:
-            self.tag_embedding = Embedding(3, tag_hidden_channels)
+            self.tag_embedding = Embedding(3, self.tag_hidden_channels)
 
         # Phys embeddings
-        self.phys_emb = PhysEmbedding(props=phys_embeds, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(props=self.phys_embeds, pg=self.use_pg)
         if self.use_mlp_phys:
             self.phys_lin = Linear(
                 self.phys_emb.n_properties, self.phys_hidden_channels
@@ -233,59 +231,55 @@ class NewSchNet(torch.nn.Module):
             )
 
         assert (
-            tag_hidden_channels + 2 * pg_hidden_channels + phys_hidden_channels
-            < hidden_channels
+            self.tag_hidden_channels
+            + 2 * self.pg_hidden_channels
+            + self.phys_hidden_channels
+            < self.hidden_channels
         )
 
         # Main embedding
         self.embedding = Embedding(
             85,
-            hidden_channels
-            - tag_hidden_channels
+            self.hidden_channels
+            - self.tag_hidden_channels
             - self.phys_hidden_channels
             - 2 * self.pg_hidden_channels,
         )
 
         # Position encoding
         if self.use_positional_embeds:
-            self.pe = PositionalEncoding(hidden_channels, 210)
+            self.pe = PositionalEncoding(self.hidden_channels, 210)
 
         # Interaction block
-        self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
+        self.distance_expansion = GaussianSmearing(0.0, self.cutoff, self.num_gaussians)
         self.interactions = ModuleList()
-        for _ in range(num_interactions):
+        for _ in range(self.num_interactions):
             block = InteractionBlock(
-                hidden_channels, num_gaussians, num_filters, cutoff
+                self.hidden_channels, self.num_gaussians, self.num_filters, self.cutoff
             )
             self.interactions.append(block)
 
         # Output block
-        self.lin1 = Linear(hidden_channels, hidden_channels // 2)
+        self.lin1 = Linear(self.hidden_channels, self.hidden_channels // 2)
         self.act = ShiftedSoftplus()
-        self.lin2 = Linear(hidden_channels // 2, 1)
+        self.lin2 = Linear(self.hidden_channels // 2, 1)
 
         # weighted average & pooling
         if self.energy_head in {"pooling", "random"}:
             self.hierarchical_pooling = Hierarchical_Pooling(
-                hidden_channels,
+                self.hidden_channels,
                 self.act,
                 NUM_POOLING_LAYERS,
                 NUM_CLUSTERS,
                 self.energy_head,
             )
         elif self.energy_head == "graclus":
-            self.graclus = Graclus(hidden_channels, self.act)
+            self.graclus = Graclus(self.hidden_channels, self.act)
         elif self.energy_head in {
             "weighted-av-initial-embeds",
             "weighted-av-final-embeds",
         }:
-            self.w_lin = Linear(hidden_channels, 1)
-
-        self.register_buffer("initial_atomref", atomref)
-        self.atomref = None
-        if atomref is not None:
-            self.atomref = Embedding(100, 1)
-            self.atomref.weight.data.copy_(atomref)
+            self.w_lin = Linear(self.hidden_channels, 1)
 
         self.reset_parameters()
 
@@ -310,10 +304,6 @@ class NewSchNet(torch.nn.Module):
         if self.atomref is not None:
             self.atomref.weight.data.copy_(self.initial_atomref)
 
-    def forward(self, z, pos, batch=None):
-        """ """
-        raise NotImplementedError
-
     def __repr__(self):
         return (
             f"{self.__class__.__name__}("
@@ -327,52 +317,6 @@ class NewSchNet(torch.nn.Module):
             f"num_interactions={self.num_interactions}, "
             f"num_gaussians={self.num_gaussians}, "
             f"cutoff={self.cutoff})",
-        )
-
-
-@registry.register_model("new_schnet")
-class NewSchNetWrap(NewSchNet):
-    def __init__(
-        self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,
-        use_pbc=True,
-        regress_forces=True,
-        otf_graph=False,
-        hidden_channels=128,
-        tag_hidden_channels=32,
-        pg_hidden_channels=32,
-        phys_hidden_channels=32,
-        phys_embeds=False,
-        num_filters=128,
-        num_interactions=6,
-        num_gaussians=50,
-        cutoff=10.0,
-        readout="add",
-        graph_rewiring=False,
-        energy_head=False,
-    ):
-        self.num_targets = num_targets
-        self.regress_forces = regress_forces
-        self.use_pbc = use_pbc
-        self.cutoff = cutoff
-        self.otf_graph = otf_graph
-        self.graph_rewiring = graph_rewiring
-
-        super(NewSchNetWrap, self).__init__(
-            hidden_channels=hidden_channels,
-            tag_hidden_channels=tag_hidden_channels,
-            pg_hidden_channels=pg_hidden_channels,
-            phys_hidden_channels=phys_hidden_channels,
-            phys_embeds=phys_embeds,
-            graph_rewiring=graph_rewiring,
-            energy_head=energy_head,
-            num_filters=num_filters,
-            num_interactions=num_interactions,
-            num_gaussians=num_gaussians,
-            cutoff=cutoff,
-            readout=readout,
         )
 
     @conditional_grad(torch.enable_grad())
