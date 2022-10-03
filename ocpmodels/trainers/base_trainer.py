@@ -314,7 +314,9 @@ class BaseTrainer(ABC):
     def load_model(self):
         # Build model
         if distutils.is_master():
-            logging.info(f"Loading model: {self.config['model']}")
+            logging.info(
+                f"Loading model {self.config['model_name']}: {self.config['model']}"
+            )
 
         # TODO: deprecated, remove. @AlDu is this still todo? Or was it someone else?
         bond_feat_dim = None

@@ -14,6 +14,10 @@ model:
   num_output_layers: 3
   regress_forces: False
   use_pbc: True
+  basis_emb_size: 8
+  envelope_exponent: 5
+  act: swish
+  int_emb_size: 64
   # drlab attributes:
   tag_hidden_channels: 0 # 64
   pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels

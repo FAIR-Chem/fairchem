@@ -441,6 +441,7 @@ class OutputPPBlock(torch.nn.Module):
         return self.lin(x)
 
 
+@registry.register_model("new_dimenetplusplus")
 class NewDimeNetPlusPlus(torch.nn.Module):
     r"""DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
 
@@ -474,107 +475,117 @@ class NewDimeNetPlusPlus(torch.nn.Module):
 
     url = "https://github.com/klicperajo/dimenet/raw/master/pretrained"
 
-    def __init__(
-        self,
-        hidden_channels,
-        tag_hidden_channels,
-        pg_hidden_channels,
-        phys_hidden_channels,
-        phys_embeds,
-        graph_rewiring,
-        out_channels,
-        num_blocks,
-        int_emb_size,
-        basis_emb_size,
-        out_emb_channels,
-        num_spherical,
-        num_radial,
-        cutoff=5.0,
-        envelope_exponent=5,
-        num_before_skip=1,
-        num_after_skip=2,
-        num_output_layers=3,
-        act=swish,
-    ):
+    def __init__(self, **kwargs):
         super(NewDimeNetPlusPlus, self).__init__()
 
-        self.cutoff = cutoff
+        self.basis_emb_size = kwargs["basis_emb_size"]
+        self.cutoff = kwargs["cutoff"]
+        self.cutoff = kwargs["cutoff"]
+        self.energy_head = kwargs["energy_head"]
+        self.envelope_exponent = kwargs["envelope_exponent"]
+        self.graph_rewiring = kwargs["graph_rewiring"]
+        self.hidden_channels = kwargs["hidden_channels"]
+        self.int_emb_size = kwargs["int_emb_size"]
+        self.num_after_skip = kwargs["num_after_skip"]
+        self.num_before_skip = kwargs["num_before_skip"]
+        self.num_blocks = kwargs["num_blocks"]
+        self.num_output_layers = kwargs["num_output_layers"]
+        self.num_radial = kwargs["num_radial"]
+        self.num_spherical = kwargs["num_spherical"]
+        self.num_targets = kwargs["num_targets"]
+        self.otf_graph = kwargs["otf_graph"]
+        self.out_emb_channels = kwargs["out_emb_channels"]
+        self.pg_hidden_channels = kwargs["pg_hidden_channels"]
+        self.phys_embeds = kwargs["phys_embeds"]
+        self.phys_hidden_channels = kwargs["phys_hidden_channels"]
+        self.regress_forces = kwargs["regress_forces"]
+        self.tag_hidden_channels = kwargs["tag_hidden_channels"]
+        self.use_pbc = kwargs["use_pbc"]
 
-        assert tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
+        self.out_channels = self.num_targets
+        self.act = (
+            getattr(nn.functional, kwargs["act"]) if kwargs["act"] != "swish" else swish
+        )
+
+        self.use_tag = self.tag_hidden_channels > 0
+        self.use_pg = self.pg_hidden_channels > 0
+
+        assert (
+            self.tag_hidden_channels + 2 * self.pg_hidden_channels + 16
+            < self.hidden_channels
+        )
         if sym is None:
             raise ImportError("Package `sympy` could not be found.")
 
-        self.num_blocks = num_blocks
-        self.use_tag = tag_hidden_channels > 0
-        self.use_pg = pg_hidden_channels > 0
-
-        self.rbf = BesselBasisLayer(num_radial, cutoff, envelope_exponent)
+        self.rbf = BesselBasisLayer(
+            self.num_radial, self.cutoff, self.envelope_exponent
+        )
         self.sbf = SphericalBasisLayer(
-            num_spherical, num_radial, cutoff, envelope_exponent
+            self.num_spherical, self.num_radial, self.cutoff, self.envelope_exponent
         )
 
-        if self.use_tag or phys_embeds or self.use_pg or graph_rewiring:
+        if self.use_tag or self.phys_embeds or self.use_pg or self.graph_rewiring:
             self.emb = AdvancedEmbeddingBlock(
-                num_radial,
-                hidden_channels,
-                tag_hidden_channels,
-                pg_hidden_channels,
-                phys_hidden_channels,
-                phys_embeds,
-                graph_rewiring,
-                act,
+                self.num_radial,
+                self.hidden_channels,
+                self.tag_hidden_channels,
+                self.pg_hidden_channels,
+                self.phys_hidden_channels,
+                self.phys_embeds,
+                self.graph_rewiring,
+                self.act,
             )
         else:
-            self.emb = EmbeddingBlock(num_radial, hidden_channels, act)
+            self.emb = EmbeddingBlock(self.num_radial, self.hidden_channels, self.act)
 
         if self.energy_head:
             self.output_blocks = torch.nn.ModuleList(
                 [
                     EHOutputPPBlock(
-                        num_radial,
-                        hidden_channels,
-                        out_emb_channels,
-                        out_channels,
-                        num_output_layers,
+                        self.num_radial,
+                        self.hidden_channels,
+                        self.out_emb_channels,
+                        self.out_channels,
+                        self.num_output_layers,
                         self.energy_head,
-                        act,
+                        self.act,
                     )
-                    for _ in range(num_blocks + 1)
+                    for _ in range(self.num_blocks + 1)
                 ]
             )
         else:
             self.output_blocks = torch.nn.ModuleList(
                 [
                     OutputPPBlock(
-                        num_radial,
-                        hidden_channels,
-                        out_emb_channels,
-                        out_channels,
-                        num_output_layers,
-                        act,
+                        self.num_radial,
+                        self.hidden_channels,
+                        self.out_emb_channels,
+                        self.out_channels,
+                        self.num_output_layers,
+                        self.act,
                     )
-                    for _ in range(num_blocks + 1)
+                    for _ in range(self.num_blocks + 1)
                 ]
             )
 
         self.interaction_blocks = torch.nn.ModuleList(
             [
                 InteractionPPBlock(
-                    hidden_channels,
-                    int_emb_size,
-                    basis_emb_size,
-                    num_spherical,
-                    num_radial,
-                    num_before_skip,
-                    num_after_skip,
-                    act,
+                    self.hidden_channels,
+                    self.int_emb_size,
+                    self.basis_emb_size,
+                    self.num_spherical,
+                    self.num_radial,
+                    self.num_before_skip,
+                    self.num_after_skip,
+                    self.act,
                 )
-                for _ in range(num_blocks)
+                for _ in range(self.num_blocks)
             ]
         )
 
         if self.energy_head == "weighted-av-initial-embeds":
-            self.w_lin = Linear(hidden_channels, 1)
+            self.w_lin = Linear(self.hidden_channels, 1)
 
         self.reset_parameters()
 
@@ -617,69 +628,6 @@ class NewDimeNetPlusPlus(torch.nn.Module):
         idx_kj, idx_ji = idx_kj[mask], idx_ji[mask]
 
         return col, row, idx_i, idx_j, idx_k, idx_kj, idx_ji
-
-    def forward(self, z, pos, batch=None):
-        """ """
-        raise NotImplementedError
-
-
-@registry.register_model("new_dimenetplusplus")
-class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
-    def __init__(
-        self,
-        num_atoms,
-        bond_feat_dim,  # not used
-        num_targets,
-        use_pbc=True,
-        regress_forces=True,
-        hidden_channels=128,
-        tag_hidden_channels=32,
-        pg_hidden_channels=32,
-        phys_hidden_channels=32,
-        num_blocks=4,
-        int_emb_size=64,
-        basis_emb_size=8,
-        out_emb_channels=256,
-        num_spherical=7,
-        num_radial=6,
-        otf_graph=False,
-        cutoff=10.0,
-        envelope_exponent=5,
-        num_before_skip=1,
-        num_after_skip=2,
-        num_output_layers=3,
-        phys_embeds=False,
-        graph_rewiring=False,
-        energy_head=False,
-    ):
-        self.num_targets = num_targets
-        self.regress_forces = regress_forces
-        self.use_pbc = use_pbc
-        self.cutoff = cutoff
-        self.otf_graph = otf_graph
-        self.graph_rewiring = graph_rewiring
-        self.energy_head = energy_head
-
-        super(NewDimeNetPlusPlusWrap, self).__init__(
-            hidden_channels=hidden_channels,
-            tag_hidden_channels=tag_hidden_channels,
-            pg_hidden_channels=pg_hidden_channels,
-            phys_hidden_channels=phys_hidden_channels,
-            phys_embeds=phys_embeds,
-            graph_rewiring=graph_rewiring,
-            out_channels=num_targets,
-            num_blocks=num_blocks,
-            int_emb_size=int_emb_size,
-            basis_emb_size=basis_emb_size,
-            out_emb_channels=out_emb_channels,
-            num_spherical=num_spherical,
-            num_radial=num_radial,
-            cutoff=cutoff,
-            envelope_exponent=envelope_exponent,
-            num_before_skip=num_before_skip,
-            num_after_skip=num_after_skip,
-            num_output_layers=num_output_layers,
-        )
 
     @conditional_grad(torch.enable_grad())
     def _forward(self, data):
