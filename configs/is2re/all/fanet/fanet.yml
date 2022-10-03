@@ -3,6 +3,7 @@ includes:
 
 model:
   name: fanet
+  act: swish
   hidden_channels: 384
   num_filters: 128
   num_interactions: 4
