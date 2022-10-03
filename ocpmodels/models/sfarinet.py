@@ -242,75 +242,61 @@ class OutputBlock(nn.Module):
 
 @registry.register_model("sfarinet")
 class SfariNet(BaseModel):
-    def __init__(
-        self,
-        num_atoms,
-        bond_feat_dim,  # not used
-        num_targets,
-        act=swish,
-        use_pbc: bool = True,
-        regress_forces: bool = True,
-        otf_graph: bool = False,
-        num_gaussians: int = 50,
-        num_filters: int = 128,
-        num_interactions: int = 6,
-        cutoff: float = 10.0,
-        hidden_channels: int = 128,
-        tag_hidden_channels: int = 32,
-        pg_hidden_channels: int = 32,
-        phys_hidden_channels: int = 0,
-        phys_embeds: bool = False,
-        graph_rewiring=False,
-        energy_head=False,
-    ):
+    def __init__(self, **kwargs):
         super(SfariNet, self).__init__()
-        self.cutoff = cutoff
-        self.act = act
-        self.use_pbc = use_pbc
-        self.hidden_channels = hidden_channels
-        self.tag_hidden_channels = tag_hidden_channels
-        self.pg_hidden_channels = pg_hidden_channels
-        self.phys_hidden_channels = phys_hidden_channels
-        self.phys_embeds = phys_embeds
-        self.regress_forces = regress_forces
-        self.graph_rewiring = graph_rewiring
-        self.energy_head = energy_head
-        self.use_positional_embeds = graph_rewiring in {
+        self.cutoff = kwargs["cutoff"]
+        self.energy_head = kwargs["energy_head"]
+        self.graph_rewiring = kwargs["graph_rewiring"]
+        self.hidden_channels = kwargs["hidden_channels"]
+        self.num_gaussians = kwargs["num_gaussians"]
+        self.num_interactions = kwargs["num_interactions"]
+        self.pg_hidden_channels = kwargs["pg_hidden_channels"]
+        self.phys_embeds = kwargs["phys_embeds"]
+        self.phys_hidden_channels = kwargs["phys_hidden_channels"]
+        self.regress_forces = kwargs["regress_forces"]
+        self.tag_hidden_channels = kwargs["tag_hidden_channels"]
+        self.use_pbc = kwargs["use_pbc"]
+
+        self.use_positional_embeds = self.graph_rewiring in {
             "one-supernode-per-graph",
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
-        # Gaussian Basis
-        self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
+        self.distance_expansion = GaussianSmearing(0.0, self.cutoff, self.num_gaussians)
+        self.act = (
+            getattr(nn.functional, kwargs["act"]) if kwargs["act"] != "swish" else swish
+        )
 
         # Embedding block
         self.embed_block = EmbeddingBlock(
-            num_gaussians,
-            hidden_channels,
-            tag_hidden_channels,
-            pg_hidden_channels,
-            phys_hidden_channels,
-            phys_embeds,
-            graph_rewiring,
-            act,
+            self.num_gaussians,
+            self.hidden_channels,
+            self.tag_hidden_channels,
+            self.pg_hidden_channels,
+            self.phys_hidden_channels,
+            self.phys_embeds,
+            self.graph_rewiring,
+            self.act,
         )
 
         # Interaction block
         self.interaction_blocks = nn.ModuleList(
             [
                 InteractionBlock(
-                    hidden_channels,
-                    act,
+                    self.hidden_channels,
+                    self.act,
                 )
-                for _ in range(num_interactions)
+                for _ in range(self.num_interactions)
             ]
         )
 
         # Output block
-        self.output_block = OutputBlock(energy_head, hidden_channels, act)
+        self.output_block = OutputBlock(
+            self.energy_head, self.hidden_channels, self.act
+        )
 
         if self.energy_head == "weighted-av-initial-embeds":
-            self.w_lin = Linear(hidden_channels, 1)
+            self.w_lin = Linear(self.hidden_channels, 1)
 
     def forward(self, data):
         # Rewire the graph

@@ -3,6 +3,8 @@ includes:
 
 model:
   name: sfarinet
+  act: swish
+  regress_forces: false
   hidden_channels: 384
   num_filters: 128
   num_interactions: 4
