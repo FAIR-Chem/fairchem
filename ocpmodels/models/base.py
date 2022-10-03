@@ -6,17 +6,33 @@ LICENSE file in the root directory of this source tree.
 """
 
 import torch.nn as nn
+import torch
 
 
 class BaseModel(nn.Module):
-    def __init__(self, num_atoms=None, bond_feat_dim=None, num_targets=None):
+    def __init__(self, **kwargs):
         super(BaseModel, self).__init__()
-        self.num_atoms = num_atoms
-        self.bond_feat_dim = bond_feat_dim
-        self.num_targets = num_targets
+
+    def energy_forward(self, data):
+        raise NotImplementedError
 
     def forward(self, data):
-        raise NotImplementedError
+        if self.regress_forces:
+            data.pos.requires_grad_(True)
+        energy = self.energy_forward(data)
+
+        if self.regress_forces:
+            forces = -1 * (
+                torch.autograd.grad(
+                    energy,
+                    data.pos,
+                    grad_outputs=torch.ones_like(energy),
+                    create_graph=True,
+                )[0]
+            )
+            return energy, forces
+        else:
+            return energy
 
     @property
     def num_params(self):

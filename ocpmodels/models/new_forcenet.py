@@ -9,6 +9,7 @@ import logging
 import os
 from math import pi as PI
 from time import time
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -675,7 +676,3 @@ class NewForceNet(BaseModel):
             return energy, force
 
         return energy, pooling_loss
-
-    @property
-    def num_params(self):
-        return sum(p.numel() for p in self.parameters())

@@ -36,9 +36,11 @@ from .utils import (
     repeat_blocks,
 )
 
+from ocpmodels.models.base import BaseModel
+
 
 @registry.register_model("gemnet_t")
-class GemNetT(torch.nn.Module):
+class GemNetT(BaseModel):
     """
     GemNet-T, triplets-only variant of GemNet
 
@@ -610,7 +612,3 @@ class GemNetT(torch.nn.Module):
         else:
             # None is for pooling_loss -> @AlDu do we still need this?
             return E_t, None
-
-    @property
-    def num_params(self):
-        return sum(p.numel() for p in self.parameters())

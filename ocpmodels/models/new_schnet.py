@@ -322,7 +322,7 @@ class NewSchNet(torch.nn.Module):
         )
 
     @conditional_grad(torch.enable_grad())
-    def _forward(self, data):
+    def energy_forward(self, data):
         """"""
         # Re-compute on the fly the graph
         if self.otf_graph:
@@ -461,25 +461,3 @@ class NewSchNet(torch.nn.Module):
             out = self.scale * out
 
         return out, pooling_loss
-
-    def forward(self, data):
-        if self.regress_forces:
-            data.pos.requires_grad_(True)
-        energy, pooling_loss = self._forward(data)
-
-        if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    data.pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
-            )
-            return energy, forces
-        else:
-            return energy, pooling_loss
-
-    @property
-    def num_params(self):
-        return sum(p.numel() for p in self.parameters())

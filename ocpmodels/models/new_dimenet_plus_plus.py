@@ -64,6 +64,7 @@ from ocpmodels.preprocessing import (
     one_supernode_per_graph,
     remove_tag0_nodes,
 )
+from ocpmodels.models.base import BaseModel
 
 from time import time
 
@@ -442,7 +443,7 @@ class OutputPPBlock(torch.nn.Module):
 
 
 @registry.register_model("new_dimenetplusplus")
-class NewDimeNetPlusPlus(torch.nn.Module):
+class NewDimeNetPlusPlus(BaseModel):
     r"""DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
 
     Args:
