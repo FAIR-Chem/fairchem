@@ -55,11 +55,14 @@ if __name__ == "__main__":
         "--frame_averaging=2d --fa_frames=random",
         "--frame_averaging=2d --fa_frames=det",
         "--frame_averaging=2d --fa_frames=all",
-        "--frame_averaging=2d --fa_frames=e3",
-        "--frame_averaging=3d",
+        "--frame_averaging=2d --fa_frames=se3-all",
+        "--frame_averaging=2d --fa_frames=se3-random",
+        "--frame_averaging=3d --fa_frames=random",
+        "--frame_averaging=3d --fa_frames=all",
         "--frame_averaging=da",
         "--graph_rewiring=remove-tag-0",
-        "--frame_averaging=3d --graph_rewiring=remove-tag-0",
+        "--graph_rewiring=remove-tag-0 --frame_averaging=da",
+        "--frame_averaging=2d --fa_frames=random --graph_rewiring=remove-tag-0",
     ]
 
     if args.skip_models > 0:

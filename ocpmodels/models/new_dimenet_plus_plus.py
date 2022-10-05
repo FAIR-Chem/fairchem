@@ -55,12 +55,10 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-
-from ocpmodels.models.base import BaseModel
-
 
 try:
     import sympy as sym
@@ -474,7 +472,6 @@ class NewDimeNetPlusPlus(BaseModel):
         super(NewDimeNetPlusPlus, self).__init__()
 
         self.basis_emb_size = kwargs["basis_emb_size"]
-        self.cutoff = kwargs["cutoff"]
         self.cutoff = kwargs["cutoff"]
         self.energy_head = kwargs["energy_head"]
         self.envelope_exponent = kwargs["envelope_exponent"]

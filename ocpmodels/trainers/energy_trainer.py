@@ -244,7 +244,7 @@ class EnergyTrainer(BaseTrainer):
                 energy_diff,
                 pos_diff_z,
                 energy_diff_refl,
-            ) = self.test_rotational_invariance()
+            ) = self.test_invariance()
             if self.logger:
                 self.logger.log({"2D_ri": energy_diff_z})
                 self.logger.log({"3D_ri": energy_diff})
@@ -344,7 +344,7 @@ class EnergyTrainer(BaseTrainer):
             )
 
     @torch.no_grad()
-    def test_rotational_invariance(self):
+    def test_invariance(self):
         """Test the rotation invariance property of models
 
         Returns:
