@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 from math import pi as PI
+
 import torch
 import torch.nn.functional as F
 from torch.nn import Embedding, Linear, ModuleList, Sequential
@@ -17,10 +18,10 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-from ocpmodels.models.base import BaseModel
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1
@@ -122,11 +123,27 @@ class NewSchNet(BaseModel):
     :math:`\mathbf{e}_{j,i}` denotes the interatomic distances between atoms.
 
     Args:
+        cutoff (float, optional): Cutoff distance for interatomic interactions.
+            (default: :obj:`10.0`)
+        use_pbc (bool, optional): Use of periodic boundary conditions.
+            (default: true)
+        otf_graph (bool, optional): Recompute radius graph.
+            (default: false)
+        max_num_neighbors (int, optional): The maximum number of neighbors to
+            collect for each node within the :attr:`cutoff` distance.
+            (default: :obj:`32`)
+        graph_rewiring (str, optional): Method used to create the graph,
+            among "", remove-tag-0, supernodes.
+        energy_head (str, optional): Method to compute energy prediction
+            from atom representations.
         hidden_channels (int, optional): Hidden embedding size.
             (default: :obj:`128`)
         tag_hidden_channels (int, optional): Hidden tag embedding size.
             (default: :obj:`32`)
         pg_hidden_channels (int, optional): Hidden period and group embed size.
+            (default: obj:`32`)
+        phys_embed (bool, optional): Concat fixed physics-aware embeddings.
+        phys_hidden_channels (int, optional): Hidden size of learnable phys embed.
             (default: obj:`32`)
         num_filters (int, optional): The number of filters to use.
             (default: :obj:`128`)
@@ -134,21 +151,8 @@ class NewSchNet(BaseModel):
             (default: :obj:`6`)
         num_gaussians (int, optional): The number of gaussians :math:`\mu`.
             (default: :obj:`50`)
-        cutoff (float, optional): Cutoff distance for interatomic interactions.
-            (default: :obj:`10.0`)
-        max_num_neighbors (int, optional): The maximum number of neighbors to
-            collect for each node within the :attr:`cutoff` distance.
-            (default: :obj:`32`)
         readout (string, optional): Whether to apply :obj:`"add"` or
             :obj:`"mean"` global aggregation. (default: :obj:`"add"`)
-        dipole (bool, optional): If set to :obj:`True`, will use the magnitude
-            of the dipole moment to make the final prediction, *e.g.*, for
-            target 0 of :class:`torch_geometric.datasets.QM9`.
-            (default: :obj:`False`)
-        mean (float, optional): The mean of the property to predict.
-            (default: :obj:`None`)
-        std (float, optional): The standard deviation of the property to
-            predict. (default: :obj:`None`)
         atomref (torch.Tensor, optional): The reference of single-atom
             properties.
             Expects a vector of shape :obj:`(max_atomic_number, )`.
@@ -161,31 +165,26 @@ class NewSchNet(BaseModel):
 
         import ase
 
-        self.num_targets = kwargs["num_targets"]
-        self.regress_forces = kwargs["regress_forces"]
         self.use_pbc = kwargs["use_pbc"]
         self.cutoff = kwargs["cutoff"]
         self.otf_graph = kwargs["otf_graph"]
-        self.graph_rewiring = kwargs["graph_rewiring"]
-        self.hidden_channels = kwargs["hidden_channels"]
-        self.tag_hidden_channels = kwargs["tag_hidden_channels"]
-        self.pg_hidden_channels = kwargs["pg_hidden_channels"]
-        self.phys_hidden_channels = kwargs["phys_hidden_channels"]
+        self.scale = None
+
         self.num_filters = kwargs["num_filters"]
         self.num_interactions = kwargs["num_interactions"]
         self.num_gaussians = kwargs["num_gaussians"]
-        self.cutoff = kwargs["cutoff"]
         self.max_num_neighbors = kwargs["max_num_neighbors"]
         self.readout = kwargs["readout"]
-        self.phys_embeds = kwargs["phys_embeds"]
-        self.energy_head = kwargs["energy_head"]
-
-        self.scale = None
+        self.hidden_channels = kwargs["hidden_channels"]
+        self.tag_hidden_channels = kwargs["tag_hidden_channels"]
         self.use_tag = self.tag_hidden_channels > 0
+        self.pg_hidden_channels = kwargs["pg_hidden_channels"]
         self.use_pg = self.pg_hidden_channels > 0
-        self.use_mlp_phys = self.phys_hidden_channels > 0 and self.phys_embeds
-        self.use_phys_embeddings = self.phys_embeds
-        self.use_positional_embeds = self.graph_rewiring in {
+        self.phys_hidden_channels = kwargs["phys_hidden_channels"]
+        self.energy_head = kwargs["energy_head"]
+        self.use_phys_embeddings = kwargs["phys_embeds"]
+        self.use_mlp_phys = self.phys_hidden_channels > 0 and kwargs["phys_embeds"]
+        self.use_positional_embeds = kwargs["graph_rewiring"] in {
             "one-supernode-per-graph",
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
@@ -209,7 +208,7 @@ class NewSchNet(BaseModel):
             self.tag_embedding = Embedding(3, self.tag_hidden_channels)
 
         # Phys embeddings
-        self.phys_emb = PhysEmbedding(props=self.phys_embeds, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(props=kwargs["phys_embeds"], pg=self.use_pg)
         if self.use_mlp_phys:
             self.phys_lin = Linear(
                 self.phys_emb.n_properties, self.phys_hidden_channels
