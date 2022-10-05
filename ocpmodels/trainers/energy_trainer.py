@@ -92,7 +92,7 @@ class EnergyTrainer(BaseTrainer):
 
     def train(self, disable_eval_tqdm=False, debug_batches=-1):
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
-        # self.config["print_every"] = eval_every  # Temporary -> @AlDu I'm removing this ok?
+        self.config["print_every"] = eval_every  # Can comment out for better debug
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
@@ -244,7 +244,7 @@ class EnergyTrainer(BaseTrainer):
                 energy_diff,
                 pos_diff_z,
                 energy_diff_refl,
-            ) = self.test_invariance()
+            ) = self.test_model_e3_invariance()
             if self.logger:
                 self.logger.log({"2D_ri": energy_diff_z})
                 self.logger.log({"3D_ri": energy_diff})
@@ -344,8 +344,8 @@ class EnergyTrainer(BaseTrainer):
             )
 
     @torch.no_grad()
-    def test_invariance(self):
-        """Test the rotation invariance property of models
+    def test_model_e3_invariance(self):
+        """Test rotation and reflection invariance properties of GNNs
 
         Returns:
             (tensor, tensor, tensor): metrics to measure RI
