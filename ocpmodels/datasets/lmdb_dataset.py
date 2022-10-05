@@ -96,6 +96,7 @@ class LmdbDataset(Dataset):
         else:
             datapoint_pickled = self.env.begin().get(self._keys[idx])
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
+
         t1 = time.time_ns()
         if self.transform is not None:
             data_object = self.transform(data_object)

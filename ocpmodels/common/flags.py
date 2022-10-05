@@ -207,9 +207,9 @@ class Flags:
         self.parser.add_argument(
             "--fa_frames",
             type=str,
-            default="all",
+            default="random",
             help="Frame averaging method to use",
-            choices=["random", "e3", "det", "all"],  # @AlDu -> check
+            choices=["random", "det", "all", "se3-all", "se3-random", "se3-det"],
         )
         self.parser.add_argument(
             "--graph_rewiring",

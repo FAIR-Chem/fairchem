@@ -1,15 +1,15 @@
 import torch
 
 from ocpmodels.preprocessing.data_augmentation import (
+    data_augmentation,
     frame_averaging_2D,
     frame_averaging_3D,
-    data_augmentation,
 )
 from ocpmodels.preprocessing.graph_rewiring import (
-    remove_tag0_nodes,
     one_supernode_per_atom_type,
     one_supernode_per_atom_type_dist,
     one_supernode_per_graph,
+    remove_tag0_nodes,
 )
 
 
@@ -40,13 +40,15 @@ class FrameAveraging(Transform):
             "2d",
             "3d",
             "da",
-        }  # @AlDu
+        }
         assert self.fa_frames in {
             "random",
             "det",
-            "e3",
             "all",
-        }  # @AlDu -> fix with `all_frames`
+            "se3-random",
+            "se3-det",
+            "se3-all",
+        }
 
         if self.fa_type:
             if self.fa_type.lower() == "2d":
@@ -117,3 +119,8 @@ def get_transforms(trainer_config):
         FrameAveraging(trainer_config["frame_averaging"], trainer_config["fa_frames"]),
     ]
     return Compose(transforms)
+
+
+def fa_transform(g, fa_type=None, fa_frames=None):
+    fa_func = FrameAveraging(fa_type, fa_frames)
+    return fa_func(g)

@@ -15,8 +15,8 @@ def all_frames(eigenvec, pos, fa_frames="random", pos_3D=None):
         eigenvec (tensor): eigenvectors matrix
         pos (tensor): position vector (X-1t)
         fa_frames: whether to return one random frame (random),
-            one deterministic frame (det), all E(3) frames (e3)
-            or all frames (else).
+            one deterministic frame (det), all frames (all)
+            or SE(3) frames (se3- as prefix).
         pos_3D: 3rd position coordinate of atoms
 
     Returns:
@@ -27,10 +27,10 @@ def all_frames(eigenvec, pos, fa_frames="random", pos_3D=None):
     plus_minus_list = [torch.tensor(x) for x in plus_minus_list]
     all_fa = []
     e3 = fa_frames in {
-        "e3-full",
-        "e3-random",
-        "e3-det",
-    }  # @AlDu -> fix with FrameAveragingTransform
+        "all",
+        "random",
+        "det",
+    }
 
     for pm in plus_minus_list:
 
@@ -55,10 +55,10 @@ def all_frames(eigenvec, pos, fa_frames="random", pos_3D=None):
         all_fa.append(pos @ eigenvec)
 
     # Return frame(s) depending on method fa_frames
-    if fa_frames == "full" or fa_frames == "e3-full":
+    if fa_frames == "all" or fa_frames == "se3-all":
         return all_fa
 
-    elif fa_frames == "det" or fa_frames == "e3-det":
+    elif fa_frames == "det" or fa_frames == "se3-det":
         return [all_fa[0]]
 
     return [random.choice(all_fa)]
@@ -95,7 +95,7 @@ def frame_averaging_3D(g, fa_frames="random"):
 
     Args:
         g (data.Data): input graph
-        fa_frames (str): FA method used (random, det, e3, all)
+        fa_frames (str): FA method used (random, det, all, se3)
 
     Returns:
         data.Data: graph with updated positions (and distances)
@@ -134,7 +134,7 @@ def frame_averaging_2D(g, fa_frames="random"):
 
     Args:
         g (data.Data): graph
-        fa_frames (str): FA method used (random, det, e3, all)
+        fa_frames (str): FA method used (random, det, all, se3)
 
     Returns:
         _type_: updated positions
