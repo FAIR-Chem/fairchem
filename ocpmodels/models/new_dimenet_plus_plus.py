@@ -622,7 +622,7 @@ class NewDimeNetPlusPlus(BaseModel):
         return col, row, idx_i, idx_j, idx_k, idx_kj, idx_ji
 
     @conditional_grad(torch.enable_grad())
-    def _forward(self, data):
+    def energy_forward(self, data):
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
@@ -736,7 +736,7 @@ class NewDimeNetPlusPlus(BaseModel):
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy, pooling_loss = self._forward(data)
+        energy, pooling_loss = self.energy_forward(data)
 
         if self.regress_forces:
             forces = -1 * (
