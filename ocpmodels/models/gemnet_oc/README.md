@@ -1,4 +1,4 @@
-# How Do Graph Networks Generalize to Large and Diverse Molecular Systems?
+# GemNet-OC: Developing Graph Neural Networks for Large and Diverse Molecular Simulation Datasets
 
 Johannes Gasteiger, Muhammed Shuaibi, Anuroop Sriram, Stephan Günnemann, Zachary Ulissi, C. Lawrence Zitnick, Abhishek Das
 
@@ -21,9 +21,9 @@ If you use GemNet-OC in your work, please consider citing:
 
 ```bibtex
 @article{gasteiger_gemnet_oc_2022,
-  title={{How Do Graph Networks Generalize to Large and Diverse Molecular Systems?}},
-  author={Gasteiger, Johannes and Shuaibi, Muhammed and Sriram, Anuroop and G{\"u}nnemann, Stephan and Ulissi, Zachary and Zitnick, C Lawrence and Das, Abhishek},
-  journal={arXiv preprint arXiv:2204.02782},
-  year={2022}
+  title = {{GemNet-OC: Developing Graph Neural Networks for Large and Diverse Molecular Simulation Datasets}},
+  author = {Gasteiger, Johannes and Shuaibi, Muhammed and Sriram, Anuroop and G{\"u}nnemann, Stephan and Ulissi, Zachary and Zitnick, C Lawrence and Das, Abhishek},
+  journal = {Transactions on Machine Learning Research (TMLR)},
+  year = {2022},
 }
 ```
