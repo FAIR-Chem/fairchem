@@ -119,8 +119,3 @@ def get_transforms(trainer_config):
         FrameAveraging(trainer_config["frame_averaging"], trainer_config["fa_frames"]),
     ]
     return Compose(transforms)
-
-
-def fa_transform(g, fa_type=None, fa_frames=None):
-    fa_func = FrameAveraging(fa_type, fa_frames)
-    return fa_func(g)

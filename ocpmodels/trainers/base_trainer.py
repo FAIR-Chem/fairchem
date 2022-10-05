@@ -34,7 +34,7 @@ from ocpmodels.common.data_parallel import (
 from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomReflect, RandomRotate
 from ocpmodels.common.utils import get_commit_hash, save_checkpoint
-from ocpmodels.datasets.transforms import fa_transform, get_transforms
+from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
@@ -808,10 +808,11 @@ class BaseTrainer(ABC):
         if hasattr(batch, "fa_pos"):
             delattr(batch_rotated, "fa_pos")  # delete it otherwise can't iterate
             g_list = batch_rotated.to_data_list()
+            fa_transform = FrameAveraging(
+                self.config["frame_averaging"], self.config["fa_frames"]
+            )
             for g in g_list:
-                g = fa_transform(
-                    g, self.config["frame_averaging"], self.config["fa_frames"]
-                )
+                g = fa_transform(g)
             batch_rotated = Batch.from_data_list(g_list)
             batch_rotated.neighbors = batch.neighbors
 
@@ -839,10 +840,11 @@ class BaseTrainer(ABC):
         if hasattr(batch, "fa_pos"):
             delattr(batch_reflected, "fa_pos")  # delete it otherwise can't iterate
             g_list = batch_reflected.to_data_list()
+            fa_transform = FrameAveraging(
+                self.config["frame_averaging"], self.config["fa_frames"]
+            )
             for g in g_list:
-                g = fa_transform(
-                    g, self.config["frame_averaging"], self.config["fa_frames"]
-                )
+                g = fa_transform(g)
             batch_reflected = Batch.from_data_list(g_list)
             batch_reflected.neighbors = batch.neighbors
 
