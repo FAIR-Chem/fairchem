@@ -449,8 +449,6 @@ def build_config(args, args_override):
                     f"to {workers} to match the machine's CPUs.",
                 )
             config["optim"]["num_workers"] = workers
-    if "frame_averaging" not in config:
-        config["frame_averaging"] = args.fa  # @AlDu do we need to keep this?
     config["world_size"] = args.num_nodes * args.num_gpus
 
     return config

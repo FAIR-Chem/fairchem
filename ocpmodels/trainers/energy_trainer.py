@@ -101,22 +101,20 @@ class EnergyTrainer(BaseTrainer):
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // len(self.train_loader)
-        start_time = time.time()
+        epoch_time = []
 
         if not self.silent:
             print("---Beginning of Training---")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
-
+            
+            start_time = time.time()
             if not self.silent:
                 print("Epoch: ", epoch_int)
 
             self.train_sampler.set_epoch(epoch_int)
             skip_steps = self.step % len(self.train_loader)
             train_loader_iter = iter(self.train_loader)
-
-            if epoch_int == 1 and self.logger is not None:
-                self.logger.log({"Epoch time": time.time() - start_time})
 
             for i in range(skip_steps, len(self.train_loader)):
                 self.epoch = epoch_int + (i + 1) / len(self.train_loader)
@@ -216,6 +214,7 @@ class EnergyTrainer(BaseTrainer):
 
             # End of epoch.
             torch.cuda.empty_cache()
+            epoch_time.append(time.time() - start_time)
 
         # End of training.
 
@@ -225,6 +224,7 @@ class EnergyTrainer(BaseTrainer):
             # batch = next(iter(self.train_loader))
             self._forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
+            self.logger.log({"Epoch time": sum(epoch_time) / len(epoch_time)})
 
         # Load current best checkpoint
         if self.config["optim"]["max_epochs"] > 2:

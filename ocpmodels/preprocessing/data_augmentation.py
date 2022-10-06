@@ -2,7 +2,6 @@ import random
 from itertools import product
 
 import torch
-from torch_geometric.data import Batch
 
 from ocpmodels.common.transforms import RandomRotate
 
@@ -26,10 +25,10 @@ def all_frames(eigenvec, pos, fa_frames="random", pos_3D=None):
     plus_minus_list = list(product([1, -1], repeat=dim))
     plus_minus_list = [torch.tensor(x) for x in plus_minus_list]
     all_fa = []
-    e3 = fa_frames in {
-        "all",
-        "random",
-        "det",
+    se3 = fa_frames in {
+        "se3-all",
+        "se3-random",
+        "se3-det",
     }
 
     for pm in plus_minus_list:
@@ -37,8 +36,8 @@ def all_frames(eigenvec, pos, fa_frames="random", pos_3D=None):
         # Append new graph positions to list
         new_eigenvec = pm * eigenvec
 
-        # Check if determinant is 1
-        if not e3 and not torch.allclose(
+        # Check if determinant is 1 for SE(3) case
+        if se3 and not torch.allclose(
             torch.linalg.det(new_eigenvec), torch.tensor(1.0), atol=1e-03
         ):
             continue

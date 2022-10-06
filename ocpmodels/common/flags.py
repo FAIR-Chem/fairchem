@@ -196,7 +196,7 @@ class Flags:
             type=str,
             default="",
             help="Frame averaging method to use",
-            choices=["", "2d", "3d", "da"],
+            choices=["", "2D", "3D", "da"],
         )
         self.parser.add_argument(
             "--wandb_project",

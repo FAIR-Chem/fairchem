@@ -301,7 +301,6 @@ class BaseTrainer(ABC):
                 f"Loading model {self.config['model_name']}: {self.config['model']}"
             )
 
-        # TODO: deprecated, remove. @AlDu is this still todo? Or was it someone else?
         bond_feat_dim = None
         bond_feat_dim = self.config["model"].get("num_gaussians", 50)
 
@@ -779,7 +778,7 @@ class BaseTrainer(ABC):
 
     def rotate_graph(
         self, batch, rotation=None
-    ):  # @AlDu TODO fix with FA as data-loading preprocess
+    ):
         """Rotate all graphs in a batch
 
         Args:
