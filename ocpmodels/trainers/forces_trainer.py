@@ -216,12 +216,12 @@ class ForcesTrainer(BaseTrainer):
                 # default is ads energy not total energy
                 if self.config["dataset"].get("total_energy", False):
                     predictions["energy"].extend(
-                        out["energy"].to(torch.float32).tolist()
+                        out["energy"].to(torch.float32).numpy()
                     )
                     forces = out["forces"].cpu().detach().to(torch.float32)
                 else:
                     predictions["energy"].extend(
-                        out["energy"].to(torch.float16).tolist()
+                        out["energy"].to(torch.float16).numpy()
                     )
                     forces = out["forces"].cpu().detach().to(torch.float16)
                 per_image_forces = torch.split(forces, batch_natoms.tolist())
@@ -255,21 +255,9 @@ class ForcesTrainer(BaseTrainer):
                     self.ema.restore()
                 return predictions
 
-        if self.config["dataset"].get("total_energy", False):
-            predictions["forces"] = np.array(
-                predictions["forces"], dtype="float32"
-            )
-            predictions["energy"] = np.array(
-                predictions["energy"], dtype="float32"
-            )
-        else:
-            predictions["forces"] = np.array(
-                predictions["forces"], dtype="float16"
-            )
-            predictions["energy"] = np.array(
-                predictions["energy"], dtype="float16"
-            )
+        predictions["forces"] = np.array(predictions["forces"])
         predictions["chunk_idx"] = np.array(predictions["chunk_idx"])
+        predictions["energy"] = np.array(predictions["energy"])
         predictions["id"] = np.array(predictions["id"])
         self.save_results(
             predictions, results_file, keys=["energy", "forces", "chunk_idx"]
