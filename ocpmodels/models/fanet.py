@@ -2,6 +2,7 @@
 """
 
 from time import time
+
 import torch
 from torch import nn
 from torch.nn import Embedding, Linear
@@ -15,12 +16,6 @@ from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-from ocpmodels.preprocessing import (
-    one_supernode_per_atom_type,
-    one_supernode_per_atom_type_dist,
-    one_supernode_per_graph,
-    remove_tag0_nodes,
-)
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1
@@ -290,6 +285,43 @@ class OutputBlock(nn.Module):
 
 @registry.register_model("fanet")
 class FANet(BaseModel):
+    r"""Frame Averaging GNN model FANet.
+
+    Args:
+        cutoff (float): Cutoff distance for interatomic interactions.
+            (default: :obj:`6.0`)
+        use_pbc (bool): Use of periodic boundary conditions.
+            (default: true)
+        act (str): activation function
+            (default: swish)
+        max_num_neighbors (int): The maximum number of neighbors to
+            collect for each node within the :attr:`cutoff` distance.
+            (default: :obj:`32`)
+        graph_rewiring (str): Method used to create the graph,
+            among "", remove-tag-0, supernodes.
+        energy_head (str): Method to compute energy prediction
+            from atom representations.
+        hidden_channels (int): Hidden embedding size.
+            (default: :obj:`128`)
+        tag_hidden_channels (int): Hidden tag embedding size.
+            (default: :obj:`32`)
+        pg_hidden_channels (int): Hidden period and group embed size.
+            (default: obj:`32`)
+        phys_embed (bool): Concat fixed physics-aware embeddings.
+        phys_hidden_channels (int): Hidden size of learnable phys embed.
+            (default: obj:`32`)
+        num_interactions (int): The number of interaction blocks.
+            (default: :obj:`4`)
+        num_gaussians (int): The number of gaussians :math:`\mu`.
+            (default: :obj:`50`)
+        complex_mp (bool): Use a more complex Message Passing scheme.
+        mlp_rij (int): Output size of MLP taking r_ij as input.
+        second_layer_MLP (bool): use 2-layers MLP at the end of embedding block.
+        skip_co (bool): add a skip connection between interaction blocks and
+            energy-head.
+
+    """
+
     def __init__(self, **kwargs):
 
         super(FANet, self).__init__()
@@ -358,8 +390,12 @@ class FANet(BaseModel):
             self.energy_head, self.hidden_channels, self.act
         )
 
+        # Energy head
         if self.energy_head == "weighted-av-initial-embeds":
             self.w_lin = Linear(self.hidden_channels, 1)
+
+        # Force head
+        self.decoder = None
 
     def forward(self, data):
         # Rewire the graph
@@ -428,8 +464,28 @@ class FANet(BaseModel):
         if self.skip_co:
             energy += energy_skip_co
 
+        # Force-head
         if self.regress_forces:
             force = self.decoder(h)
             return energy, force
 
         return energy, pooling_loss
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}("
+            f"num_interactions_blocks={self.num_interactions}, "
+            f"hidden_channels={self.hidden_channels}, "
+            f"tag_hidden_channels={self.tag_hidden_channels}, "
+            f"phys properties={self.phys_hidden_channels}, "
+            f"period_hidden_channels={self.pg_hidden_channels}, "
+            f"group_hidden_channels={self.pg_hidden_channels}, "
+            f"energy_head={self.energy_head}",
+            f"num_filters={self.num_filters}, "
+            f"num_gaussians={self.num_gaussians}, "
+            f"cutoff={self.cutoff})",
+            f"second_layer_MLP={self.second_layer_MLP})",
+            f"skip_co={self.skip_co})",
+            f"complex_mp={self.complex_mp})",
+            f"mlp_rij={self.mlp_rij})",
+        )
