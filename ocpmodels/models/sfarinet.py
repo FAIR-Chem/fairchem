@@ -312,7 +312,7 @@ class SfariNet(BaseModel):
             self.w_lin = Linear(kwargs["hidden_channels"], 1)
 
         # Force head
-        self.decoder
+        self.decoder = None
 
     def forward(self, data):
         # Rewire the graph

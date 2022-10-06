@@ -10,9 +10,9 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 import torch
-import wandb
 from torch.utils.tensorboard import SummaryWriter
 
+import wandb
 from ocpmodels.common.registry import registry
 
 
@@ -64,9 +64,9 @@ class WandBLogger(Logger):
             self.trainer_config["timestamp_id"] + "-" + trainer_config["model_name"]
         )
 
-        wandb_tags = [
-            t.strip() for t in trainer_config.get("wandb_tags", "").split(",")
-        ]
+        wandb_tags = trainer_config.get("wandb_tags", "")
+        if wandb_tags:
+            wandb_tags = [t.strip() for t in wandb_tags[:63].split(",")]
 
         self.run = wandb.init(
             config=self.trainer_config,
