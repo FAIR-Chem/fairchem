@@ -32,7 +32,7 @@ def write_is2re_relaxations(args, dataset):
                 sid, _ = os.path.splitext(os.path.basename(system))
                 ids.append(str(sid))
                 # Read the last frame in the ML trajectory. Modify "-1" if you wish to modify which frame to use.
-                traj = ase.io.read(system, "199")
+                traj = ase.io.read(system, "-1")
                 energies.append(traj.get_potential_energy())
 
             submission_file[f"{split}_ids"] = np.array(ids)
