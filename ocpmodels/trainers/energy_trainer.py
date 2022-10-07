@@ -107,7 +107,7 @@ class EnergyTrainer(BaseTrainer):
             print("---Beginning of Training---")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
-            
+
             start_time = time.time()
             if not self.silent:
                 print("Epoch: ", epoch_int)
@@ -226,17 +226,6 @@ class EnergyTrainer(BaseTrainer):
             self.logger.log({"Batch time": time.time() - start_time})
             self.logger.log({"Epoch time": sum(epoch_time) / len(epoch_time)})
 
-        # Load current best checkpoint
-        if self.config["optim"]["max_epochs"] > 2:
-            checkpoint_path = os.path.join(
-                self.config["checkpoint_dir"], "best_checkpoint.pt"
-            )
-            self.load_checkpoint(checkpoint_path=checkpoint_path)
-            logging.info(
-                "Checking models are identical:"
-                + str(list(self.model.parameters())[0].data.view(-1)[:20]),
-            )
-
         # Check rotation invariance
         if self.test_ri:
             (
@@ -244,14 +233,14 @@ class EnergyTrainer(BaseTrainer):
                 energy_diff,
                 pos_diff_z,
                 energy_diff_refl,
-            ) = self.test_model_e3_invariance()
+            ) = self.test_model_invariance()
             if self.logger:
                 self.logger.log({"2D_ri": energy_diff_z})
                 self.logger.log({"3D_ri": energy_diff})
                 self.logger.log({"2D_pos_ri": pos_diff_z})
                 self.logger.log({"2D_pos_refl_i": energy_diff_refl})
 
-        # Test equivariance
+        # TODO: Test equivariance
 
         # Evaluate current model on all 4 validation splits
         # self.eval_all_val_splits()
@@ -344,7 +333,7 @@ class EnergyTrainer(BaseTrainer):
             )
 
     @torch.no_grad()
-    def test_model_e3_invariance(self):
+    def test_model_invariance(self):
         """Test rotation and reflection invariance properties of GNNs
 
         Returns:
@@ -364,7 +353,7 @@ class EnergyTrainer(BaseTrainer):
 
             # Rotate graph and compute prediction
             batch_rotated = self.rotate_graph(batch[0], rotation="z")
-            energies2, _ = self._forward([batch_rotated])
+            energies2, _ = self._forward(deepcopy([batch_rotated]))
 
             # Difference in predictions
             energy_diff_z += torch.abs(energies1["energy"] - energies2["energy"]).sum()

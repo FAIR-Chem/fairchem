@@ -155,12 +155,6 @@ class Flags:
         self.parser.add_argument("--local_rank", default=0, type=int, help="Local rank")
         # Additional arguments
         self.parser.add_argument(
-            "--fa",
-            default=False,
-            choices=[False, "2D", "3D"],
-            help="Specify which frame averaging method to use",
-        )
-        self.parser.add_argument(
             "--note",
             type=str,
             default="",
@@ -180,16 +174,28 @@ class Flags:
             help="Comma-separated tags for wandb",
         )
         self.parser.add_argument(
-            "--test_ri",
-            type=bool,
-            default=False,
-            help="Test rotation invariance of model",
-        )
-        self.parser.add_argument(
             "--print_every",
             type=int,
             default=100,
             help="Printing frequency (in steps)",
+        )
+        self.parser.add_argument(
+            "--wandb_project",
+            type=str,
+            default="ocp-2",
+            help="WandB project name to use",
+        )
+        self.parser.add_argument(
+            "--use_pbc",
+            type=bool,
+            default=True,
+            help="Whether to use periodic boundary conditions",
+        )
+        self.parser.add_argument(
+            "--test_ri",
+            type=bool,
+            default=False,
+            help="Test rotation invariance of model",
         )
         self.parser.add_argument(
             "--frame_averaging",
@@ -197,12 +203,6 @@ class Flags:
             default="",
             help="Frame averaging method to use",
             choices=["", "2D", "3D", "da"],
-        )
-        self.parser.add_argument(
-            "--wandb_project",
-            type=str,
-            default="ocp-2",
-            help="WandB project name to use",
         )
         self.parser.add_argument(
             "--fa_frames",

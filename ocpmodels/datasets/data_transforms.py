@@ -32,13 +32,13 @@ class Transform:
 
 class FrameAveraging(Transform):
     def __init__(self, fa_type=None, fa_frames=None):
-        self.fa_frames = ("random" if fa_frames is None else fa_frames).lower()
-        self.fa_type = ("" if fa_type is None else fa_type).lower()
+        self.fa_frames = "random" if fa_frames is None else fa_frames
+        self.fa_type = "" if fa_type is None else fa_type
         self.inactive = not self.fa_type
         assert self.fa_type in {
             "",
-            "2d",
-            "3d",
+            "2D",
+            "3D",
             "da",
         }
         assert self.fa_frames in {
@@ -51,11 +51,11 @@ class FrameAveraging(Transform):
         }
 
         if self.fa_type:
-            if self.fa_type.lower() == "2d":
+            if self.fa_type == "2D":
                 self.fa_func = frame_averaging_2D
-            elif self.fa_type.lower() == "3d":
+            elif self.fa_type == "3D":
                 self.fa_func = frame_averaging_3D
-            elif self.fa_type.lower() == "da":
+            elif self.fa_type == "da":
                 self.fa_func = data_augmentation
             else:
                 raise ValueError(f"Unknown frame averaging: {self.fa_type}")
