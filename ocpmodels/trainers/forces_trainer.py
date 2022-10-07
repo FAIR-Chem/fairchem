@@ -216,7 +216,7 @@ class ForcesTrainer(BaseTrainer):
                 # default is ads energy not total energy
                 if self.config["dataset"].get("total_energy", False):
                     predictions["energy"].extend(
-                        out["energy"].to(torch.float32).numpy()
+                        out["energy"].cpu().detach().to(torch.float32).numpy()
                     )
                     forces = out["forces"].cpu().detach().to(torch.float32)
                 else:
