@@ -776,9 +776,7 @@ class BaseTrainer(ABC):
                 store.append(round(val["metric"], 4))
             print(k, store)
 
-    def rotate_graph(
-        self, batch, rotation=None
-    ):
+    def rotate_graph(self, batch, rotation=None):
         """Rotate all graphs in a batch
 
         Args:
