@@ -221,7 +221,7 @@ class ForcesTrainer(BaseTrainer):
                     forces = out["forces"].cpu().detach().to(torch.float32)
                 else:
                     predictions["energy"].extend(
-                        out["energy"].to(torch.float16).numpy()
+                        out["energy"].cpu().detach().to(torch.float16).numpy()
                     )
                     forces = out["forces"].cpu().detach().to(torch.float16)
                 per_image_forces = torch.split(forces, batch_natoms.tolist())
