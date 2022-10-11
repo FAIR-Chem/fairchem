@@ -1,4 +1,5 @@
 import random
+from copy import deepcopy
 from itertools import product
 
 import torch
@@ -6,13 +7,14 @@ import torch
 from ocpmodels.common.transforms import RandomRotate
 
 
-def all_frames(eigenvec, pos, fa_frames="random", pos_3D=None):
+def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None):
     """Compute all frames for a given graph
     Related to frame ambiguity issue
 
     Args:
         eigenvec (tensor): eigenvectors matrix
         pos (tensor): position vector (X-1t)
+        cell (tensor): cell direction (3x3)
         fa_frames: whether to return one random frame (random),
             one deterministic frame (det), all frames (all)
             or SE(3) frames (se3- as prefix).
@@ -25,11 +27,13 @@ def all_frames(eigenvec, pos, fa_frames="random", pos_3D=None):
     plus_minus_list = list(product([1, -1], repeat=dim))
     plus_minus_list = [torch.tensor(x) for x in plus_minus_list]
     all_fa = []
+    all_cell = []
     se3 = fa_frames in {
         "se3-all",
         "se3-random",
         "se3-det",
     }
+    fa_cell = deepcopy(cell)
 
     for pm in plus_minus_list:
 
@@ -43,24 +47,30 @@ def all_frames(eigenvec, pos, fa_frames="random", pos_3D=None):
             continue
 
         # Consider frame if it passes above check
-        fa = pos @ new_eigenvec
+        fa_pos = pos @ new_eigenvec
+
         if pos_3D is not None:
-            all_fa.append(torch.cat((fa, pos_3D.unsqueeze(1)), dim=1))
+            fa_pos = torch.cat((fa_pos, pos_3D.unsqueeze(1)), dim=1)
+            fa_cell[:, :2, :2] = cell[:, :2, :2] @ new_eigenvec
         else:
-            all_fa.append(fa)
+            fa_cell = cell @ new_eigenvec
+
+        all_fa.append(fa_pos)
+        all_cell.append(fa_cell)
 
     # Handle rare case where no R is positive orthogonal
     if all_fa == []:
         all_fa.append(pos @ eigenvec)
+        all_cell.append(cell @ eigenvec)
 
     # Return frame(s) depending on method fa_frames
     if fa_frames == "all" or fa_frames == "se3-all":
-        return all_fa
+        return all_fa, all_cell
 
     elif fa_frames == "det" or fa_frames == "se3-det":
-        return [all_fa[0]]
+        return [all_fa[0]], [all_cell[0]]
 
-    return [random.choice(all_fa)]
+    return [random.choice(all_fa)], [random.choice(all_cell)]
 
 
 def check_constraints(eigenval, eigenvec, dim):
@@ -120,7 +130,7 @@ def frame_averaging_3D(g, fa_frames="random"):
     eigenval = eigenval[idx]
 
     # Compute fa_pos
-    g.fa_pos = all_frames(eigenvec, pos, fa_frames)
+    g.fa_pos, g.fa_cell = all_frames(eigenvec, pos, g.cell, fa_frames)
 
     # No need to update distances, they are preserved.
 
@@ -156,8 +166,7 @@ def frame_averaging_2D(g, fa_frames="random"):
     eigenvec = eigenvec[:, idx]
 
     # Compute all frames
-    g.fa_pos = all_frames(eigenvec, pos_2D, fa_frames, g.pos[:, 2])
-
+    g.fa_pos, g.fa_cell = all_frames(eigenvec, pos_2D, g.cell, fa_frames, g.pos[:, 2])
     # No need to update distances, they are preserved.
 
     return g
@@ -184,3 +193,30 @@ def data_augmentation(g, *args):
     graph_rotated, _, _ = transform(g)
 
     return graph_rotated
+
+
+def check_pbc_fa(val_loader, cell):
+    x_diff, y_diff = [], []
+    fa_x_diff, fa_y_diff = [], []
+    cell_diff = []
+    for batch in val_loader:
+        b = batch[0]
+        for i in range(batch_size):
+            x_diff.append(
+                max(b.pos[b.batch == i][:, 0]) - min(b.pos[b.batch == i][:, 0])
+            )
+            fa_x_diff.append(
+                max(b.fa_pos[0][b.batch == i][:, 0])
+                - min(b.fa_pos[0][b.batch == i][:, 0])
+            )
+            y_diff.append(
+                max(b.pos[b.batch == i][:, 1]) - min(b.pos[b.batch == i][:, 1])
+            )
+            fa_y_diff.append(
+                max(b.fa_pos[0][b.batch == i][:, 1])
+                - min(b.fa_pos[0][b.batch == i][:, 1])
+            )
+    # Do smth with cell and cell_offsets too.
+
+    # check distances after out_pbc when fa_pos is applied !
+    # rotate cell offsets of rotated graphs ?

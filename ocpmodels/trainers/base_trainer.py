@@ -776,9 +776,7 @@ class BaseTrainer(ABC):
                 store.append(round(val["metric"], 4))
             print(k, store)
 
-    def rotate_graph(
-        self, batch, rotation=None
-    ):
+    def rotate_graph(self, batch, rotation=None):
         """Rotate all graphs in a batch
 
         Args:
@@ -806,6 +804,7 @@ class BaseTrainer(ABC):
         # Recompute fa-pos for batch_rotated
         if hasattr(batch, "fa_pos"):
             delattr(batch_rotated, "fa_pos")  # delete it otherwise can't iterate
+            delattr(batch_rotated, "fa_cell")  # delete it otherwise can't iterate
             g_list = batch_rotated.to_data_list()
             fa_transform = FrameAveraging(
                 self.config["frame_averaging"], self.config["fa_frames"]
@@ -838,6 +837,7 @@ class BaseTrainer(ABC):
         # Recompute fa-pos for batch_rotated
         if hasattr(batch, "fa_pos"):
             delattr(batch_reflected, "fa_pos")  # delete it otherwise can't iterate
+            delattr(batch_reflected, "fa_cell")  # delete it otherwise can't iterate
             g_list = batch_reflected.to_data_list()
             fa_transform = FrameAveraging(
                 self.config["frame_averaging"], self.config["fa_frames"]

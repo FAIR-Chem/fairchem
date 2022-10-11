@@ -256,13 +256,16 @@ class EnergyTrainer(BaseTrainer):
 
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "da":
             original_pos = batch_list[0].pos
+            original_cell = batch_list[0].cell
             y_all, p_all = [], []
             for i in range(len(batch_list[0].fa_pos)):
                 batch_list[0].pos = batch_list[0].fa_pos[i]
+                batch_list[0].cell = batch_list[0].fa_cell[i]
                 y, p = self.model(deepcopy(batch_list))
                 y_all.append(y)
                 p_all.append(p)
             batch_list[0].pos = original_pos
+            batch_list[0].cell = original_cell
             output = sum(y_all) / len(y_all)
             try:
                 pooling_loss = sum(p) / len(p)
