@@ -30,7 +30,12 @@ class Flags:
         self.parser.add_argument(
             "--config-yml",
             type=Path,
-            help="Path to a config file listing data, model, optim parameters.",
+            help="LEGACY Path to a config file listing data, model, optim parameters.",
+        )
+        self.parser.add_argument(
+            "--config",
+            type=str,
+            help="Descriptor for the run configuration as '{model}-{task}-{split}'.",
         )
         self.parser.add_argument(
             "--wandb_name",
