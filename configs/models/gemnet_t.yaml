@@ -32,7 +32,7 @@ default:
     otf_graph: True # @AlexDuvalinho ??
     output_init: HeOrthogonal
     activation: silu
-    scale_file: configs/oc22/scaling_factors/gemnet-dT_c12.json
+    scale_file: configs/models/scaling_factors/gemnet-dT_c12.json
     regress_forces: False
   optim:
     batch_size: 8
@@ -69,7 +69,7 @@ s2ef:
   default:
     model:
       cutoff: 6.0
-      scale_file: configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
+      scale_file: configs/models/scaling_factors/gemnet-dT.json
       regress_forces: True
       direct_forces: True
       otf_graph: False
