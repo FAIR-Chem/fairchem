@@ -418,23 +418,23 @@ def load_config(config_str):
     conf_path = Path(__file__).resolve().parent.parent.parent / "configs" / "models"
 
     model_conf_path = list(conf_path.glob(f"{model}.y*ml"))[0]
-    dataset_conf_path = list(conf_path.glob(f"datasets/{task}.y*ml"))[0]
+    task_conf_path = list(conf_path.glob(f"datasets/{task}.y*ml"))[0]
 
     model_conf = yaml.safe_load(model_conf_path.read_text())
-    dataset_conf = yaml.safe_load(dataset_conf_path.read_text())
+    task_conf = yaml.safe_load(task_conf_path.read_text())
 
     assert "default" in model_conf
     assert task in model_conf
     assert split in model_conf[task]
 
-    assert "default" in dataset_conf
-    assert split in dataset_conf
+    assert "default" in task_conf
+    assert split in task_conf
 
     config, _ = merge_dicts({}, model_conf["default"])
     config, _ = merge_dicts(config, model_conf[task].get("default", {}))
     config, _ = merge_dicts(config, model_conf[task][split])
-    config, _ = merge_dicts(config, dataset_conf["default"])
-    config, _ = merge_dicts(config, dataset_conf[split])
+    config, _ = merge_dicts(config, task_conf["default"])
+    config, _ = merge_dicts(config, task_conf[split])
 
     return config
 
