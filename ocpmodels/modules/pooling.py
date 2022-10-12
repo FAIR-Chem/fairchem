@@ -106,7 +106,7 @@ def dense_hoscpool(
                 ) / (
                     k**0.5 - 1
                 )  # [0,1]
-            elif mask != None:
+            elif mask is not None:
                 ortho_loss = sum(
                     [
                         (
