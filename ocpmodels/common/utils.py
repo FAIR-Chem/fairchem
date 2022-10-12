@@ -371,7 +371,7 @@ def create_dict_from_args(args: list, sep: str = "."):
     return return_dict
 
 
-def load_config(path: str, previous_includes: list = []):
+def load_config_legacy(path: str, previous_includes: list = []):
     path = Path(path)
     if path in previous_includes:
         raise ValueError(
@@ -396,7 +396,7 @@ def load_config(path: str, previous_includes: list = []):
     duplicates_error = []
 
     for include in includes:
-        include_config, inc_dup_warning, inc_dup_error = load_config(
+        include_config, inc_dup_warning, inc_dup_error = load_config_legacy(
             include, previous_includes
         )
         duplicates_warning += inc_dup_warning
@@ -440,7 +440,7 @@ def load_config(config_str):
 
 
 def build_config(args, args_override):
-    config, duplicates_warning, duplicates_error = load_config(args.config_yml)
+    config, duplicates_warning, duplicates_error = load_config(args.config)
     if len(duplicates_warning) > 0:
         logging.warning(
             f"Overwritten config parameters from included configs "
@@ -458,7 +458,7 @@ def build_config(args, args_override):
         config, _ = merge_dicts(config, overrides)
 
     config, _ = merge_dicts(config, vars(args))
-    config["data_split"] = str(config["config_yml"]).split("/")[2]
+    config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
     if config["cpus_to_workers"]:
