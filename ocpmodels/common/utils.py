@@ -413,6 +413,32 @@ def load_config(path: str, previous_includes: list = []):
     return config, duplicates_warning, duplicates_error
 
 
+def load_config(config_str):
+    model, task, split = config_str.split("-")
+    conf_path = Path(__file__).resolve().parent.parent.parent / "configs" / "models"
+
+    model_conf_path = list(conf_path.glob(f"{model}.y*ml"))[0]
+    dataset_conf_path = list(conf_path.glob(f"datasets/{task}.y*ml"))[0]
+
+    model_conf = yaml.safe_load(model_conf_path.read_text())
+    dataset_conf = yaml.safe_load(dataset_conf_path.read_text())
+
+    assert "default" in model_conf
+    assert task in model_conf
+    assert split in model_conf[task]
+
+    assert "default" in dataset_conf
+    assert split in dataset_conf
+
+    config, _ = merge_dicts({}, model_conf["default"])
+    config, _ = merge_dicts(config, model_conf[task].get("default", {}))
+    config, _ = merge_dicts(config, model_conf[task][split])
+    config, _ = merge_dicts(config, dataset_conf["default"])
+    config, _ = merge_dicts(config, dataset_conf[split])
+
+    return config, [], []
+
+
 def build_config(args, args_override):
     config, duplicates_warning, duplicates_error = load_config(args.config_yml)
     if len(duplicates_warning) > 0:
