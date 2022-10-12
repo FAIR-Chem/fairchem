@@ -839,6 +839,8 @@ def merge_dicts(dict1: dict, dict2: dict):
             if isinstance(v, dict) and isinstance(dict1[k], dict):
                 return_dict[k], duplicates_k = merge_dicts(dict1[k], dict2[k])
                 duplicates += [f"{k}.{dup}" for dup in duplicates_k]
+            elif isinstance(v, list) and isinstance(dict1[k], list):
+                return_dict[k] = [merge_dicts(d1, d2)[0] for d1, d2 in zip(dict1[k], v)]
             else:
                 return_dict[k] = dict2[k]
                 duplicates.append(k)
