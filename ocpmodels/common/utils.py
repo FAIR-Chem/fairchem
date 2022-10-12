@@ -436,21 +436,17 @@ def load_config(config_str):
     config, _ = merge_dicts(config, dataset_conf["default"])
     config, _ = merge_dicts(config, dataset_conf[split])
 
-    return config, [], []
+    return config
 
 
 def build_config(args, args_override):
-    config, duplicates_warning, duplicates_error = load_config(args.config)
-    if len(duplicates_warning) > 0:
-        logging.warning(
-            f"Overwritten config parameters from included configs "
-            f"(non-included parameters take precedence): {duplicates_warning}"
-        )
-    if len(duplicates_error) > 0:
+
+    if args.config_yml:
         raise ValueError(
-            f"Conflicting (duplicate) parameters in simultaneously "
-            f"included configs: {duplicates_error}"
+            "Using LEGACY config format. Please update your config to the new format."
         )
+
+    config = load_config(args.config)
 
     # Check for overridden parameters.
     if args_override != []:
