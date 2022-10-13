@@ -18,6 +18,7 @@ except:  # noqa: E722
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from ocpmodels.common.utils import make_script_trainer
+from ocpmodels.trainers.energy_trainer import EnergyTrainer
 
 COLS = shutil.get_terminal_size().columns
 
@@ -100,8 +101,15 @@ if __name__ == "__main__":
     nk = len(str(len(configs)))
     for c, conf in enumerate(configs):
         print(f"🔄 Testing config {c+1}/{len(configs)} -> {conf_strs[c]}")
-        trainer = make_script_trainer(str_args=conf, overrides=overrides, silent=True)
+        trainer: EnergyTrainer = make_script_trainer(
+            str_args=conf,
+            overrides=overrides,
+            silent=True,
+        )
         is_nan = trainer.train(debug_batches=2)
+        trainer.eval_all_val_splits(final=False, debug_batches=2)
+        if trainer.test_ri:
+            trainer.test_model_invariance(debug_batches=2)
         clean_previous_line()
         symbol = "✅" if not is_nan else "❌"
         print(f"{symbol} Config {c+1:{nk}}/{len(configs)} -> {conf_strs[c]}")
