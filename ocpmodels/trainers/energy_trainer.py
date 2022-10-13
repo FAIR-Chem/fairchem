@@ -254,7 +254,7 @@ class EnergyTrainer(BaseTrainer):
 
     def _forward(self, batch_list):
 
-        if self.config["frame_averaging"] and self.config["frame_averaging"] != "da":
+        if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
             original_cell = batch_list[0].cell
             y_all, p_all = [], []
@@ -267,10 +267,7 @@ class EnergyTrainer(BaseTrainer):
             batch_list[0].pos = original_pos
             batch_list[0].cell = original_cell
             output = sum(y_all) / len(y_all)
-            try:
-                pooling_loss = sum(p) / len(p)
-            except TypeError:
-                pooling_loss = None
+            pooling_loss = sum(p_all) / len(p_all) if all(p_all) else None
         else:
             output, pooling_loss = self.model(batch_list)
 
@@ -355,8 +352,8 @@ class EnergyTrainer(BaseTrainer):
             energies1, _ = self._forward(deepcopy(batch))
 
             # Rotate graph and compute prediction
-            batch_rotated = self.rotate_graph(batch[0], rotation="z")
-            energies2, _ = self._forward(deepcopy([batch_rotated]))
+            batch_rotated = self.rotate_graph(batch, rotation="z")
+            energies2, _ = self._forward(deepcopy(batch_rotated))
 
             # Difference in predictions
             energy_diff_z += torch.abs(energies1["energy"] - energies2["energy"]).sum()
@@ -365,20 +362,20 @@ class EnergyTrainer(BaseTrainer):
             pos_diff_z = -1
             if hasattr(batch[0], "fa_pos"):
                 pos_diff_z = 0
-                for pos1, pos2 in zip(batch[0].fa_pos, batch_rotated.fa_pos):
+                for pos1, pos2 in zip(batch[0].fa_pos, batch_rotated[0].fa_pos):
                     pos_diff_z += pos1 - pos2
                 pos_diff_z = pos_diff_z.sum()
 
             # Reflect graph
-            batch_reflected = self.reflect_graph(batch[0])
-            energies3, _ = self._forward([batch_reflected])
+            batch_reflected = self.reflect_graph(batch)
+            energies3, _ = self._forward(batch_reflected)
             energy_diff_refl += torch.abs(
                 energies1["energy"] - energies3["energy"]
             ).sum()
 
             # 3D Rotation
-            batch_rotated = self.rotate_graph(batch[0])
-            energies4, _ = self._forward([batch_rotated])
+            batch_rotated = self.rotate_graph(batch)
+            energies4, _ = self._forward(batch_rotated)
             energy_diff += torch.abs(energies1["energy"] - energies4["energy"]).sum()
 
             if i == 100:

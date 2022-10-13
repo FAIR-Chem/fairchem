@@ -786,6 +786,8 @@ class BaseTrainer(ABC):
         Returns:
             data.Batch: rotated batch
         """
+        if isinstance(batch, list):
+            batch = batch[0]
 
         # Sampling a random rotation within [-180, 180] for all axes.
         if rotation == "z":
@@ -814,7 +816,7 @@ class BaseTrainer(ABC):
             batch_rotated = Batch.from_data_list(g_list)
             batch_rotated.neighbors = batch.neighbors
 
-        return batch_rotated
+        return [batch_rotated]
 
     def reflect_graph(self, batch, reflection=None):
         """Rotate all graphs in a batch
@@ -826,6 +828,8 @@ class BaseTrainer(ABC):
         Returns:
             data.Batch: rotated batch
         """
+        if isinstance(batch, list):
+            batch = batch[0]
 
         # Sampling a random rotation within [-180, 180] for all axes.
         transform = RandomReflect()
@@ -847,4 +851,4 @@ class BaseTrainer(ABC):
             batch_reflected = Batch.from_data_list(g_list)
             batch_reflected.neighbors = batch.neighbors
 
-        return batch_reflected
+        return [batch_reflected]

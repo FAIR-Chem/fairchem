@@ -59,9 +59,9 @@ if __name__ == "__main__":
         "--frame_averaging=2D --fa_frames=se3-random",
         "--frame_averaging=3D --fa_frames=random",
         "--frame_averaging=3D --fa_frames=all --test_ri=True",
-        "--frame_averaging=da --test_ri=True",
+        "--frame_averaging=DA --test_ri=True",
         "--graph_rewiring=remove-tag-0",
-        "--graph_rewiring=remove-tag-0 --frame_averaging=da",
+        "--graph_rewiring=remove-tag-0 --frame_averaging=DA",
         "--frame_averaging=2D --fa_frames=random --graph_rewiring=remove-tag-0",
     ]
 

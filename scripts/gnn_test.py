@@ -21,10 +21,10 @@ if __name__ == "__main__":
     # config["model"] = {"graph_rewiring": "one-supernode-per-graph"}
     # config["model"]= {"phys_embeds": True}
     config["graph_rewiring"] = "remove-tag-0"
-    config["frame_averaging"] = "3d"
+    config["frame_averaging"] = "2d"
     config["fa_frames"] = "random"
     config["test_ri"] = True
-    config["optim"] = {"max_epochs": 1}
+    config["optim"] = {"max_epochs": 0}
     config["model"] = {"use_pbc": True}
 
     checkpoint_path = None
