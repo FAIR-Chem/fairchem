@@ -371,7 +371,7 @@ def create_dict_from_args(args: list, sep: str = "."):
     return return_dict
 
 
-def load_config(path: str, previous_includes: list = []):
+def load_config_legacy(path: str, previous_includes: list = []):
     path = Path(path)
     if path in previous_includes:
         raise ValueError(
@@ -396,7 +396,7 @@ def load_config(path: str, previous_includes: list = []):
     duplicates_error = []
 
     for include in includes:
-        include_config, inc_dup_warning, inc_dup_error = load_config(
+        include_config, inc_dup_warning, inc_dup_error = load_config_legacy(
             include, previous_includes
         )
         duplicates_warning += inc_dup_warning
@@ -413,18 +413,40 @@ def load_config(path: str, previous_includes: list = []):
     return config, duplicates_warning, duplicates_error
 
 
+def load_config(config_str):
+    model, task, split = config_str.split("-")
+    conf_path = Path(__file__).resolve().parent.parent.parent / "configs" / "models"
+
+    model_conf_path = list(conf_path.glob(f"{model}.y*ml"))[0]
+    task_conf_path = list(conf_path.glob(f"datasets/{task}.y*ml"))[0]
+
+    model_conf = yaml.safe_load(model_conf_path.read_text())
+    task_conf = yaml.safe_load(task_conf_path.read_text())
+
+    assert "default" in model_conf
+    assert task in model_conf
+    assert split in model_conf[task]
+
+    assert "default" in task_conf
+    assert split in task_conf
+
+    config, _ = merge_dicts({}, model_conf["default"])
+    config, _ = merge_dicts(config, model_conf[task].get("default", {}))
+    config, _ = merge_dicts(config, model_conf[task][split])
+    config, _ = merge_dicts(config, task_conf["default"])
+    config, _ = merge_dicts(config, task_conf[split])
+
+    return config
+
+
 def build_config(args, args_override):
-    config, duplicates_warning, duplicates_error = load_config(args.config_yml)
-    if len(duplicates_warning) > 0:
-        logging.warning(
-            f"Overwritten config parameters from included configs "
-            f"(non-included parameters take precedence): {duplicates_warning}"
-        )
-    if len(duplicates_error) > 0:
+
+    if args.config_yml:
         raise ValueError(
-            f"Conflicting (duplicate) parameters in simultaneously "
-            f"included configs: {duplicates_error}"
+            "Using LEGACY config format. Please update your config to the new format."
         )
+
+    config = load_config(args.config)
 
     # Check for overridden parameters.
     if args_override != []:
@@ -432,7 +454,7 @@ def build_config(args, args_override):
         config, _ = merge_dicts(config, overrides)
 
     config, _ = merge_dicts(config, vars(args))
-    config["data_split"] = str(config["config_yml"]).split("/")[2]
+    config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
     if config["cpus_to_workers"]:
@@ -813,6 +835,8 @@ def merge_dicts(dict1: dict, dict2: dict):
             if isinstance(v, dict) and isinstance(dict1[k], dict):
                 return_dict[k], duplicates_k = merge_dicts(dict1[k], dict2[k])
                 duplicates += [f"{k}.{dup}" for dup in duplicates_k]
+            elif isinstance(v, list) and isinstance(dict1[k], list):
+                return_dict[k] = [merge_dicts(d1, d2)[0] for d1, d2 in zip(dict1[k], v)]
             else:
                 return_dict[k] = dict2[k]
                 duplicates.append(k)

@@ -43,11 +43,11 @@ if __name__ == "__main__":
         "optim": {"max_epochs": 1, "batch_size": 2},
     }
     models = [
-        ["--config-yml=configs/is2re/10k/schnet/new_schnet.yml"],
-        ["--config-yml=configs/is2re/10k/dimenet_plus_plus/new_dpp.yml"],
-        ["--config-yml=configs/is2re/10k/forcenet/new_forcenet.yml"],
-        ["--config-yml=configs/is2re/10k/fanet/fanet.yml"],
-        ["--config-yml=configs/is2re/10k/sfarinet/sfarinet.yml"],
+        ["--config=schnet-is2re-10k"],
+        ["--config=dpp-is2re-10k"],
+        ["--config=forcenet-is2re-10k"],
+        ["--config=fanet-is2re-10k"],
+        ["--config=sfarinet-is2re-10k"],
     ]
 
     features = [
