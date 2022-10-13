@@ -536,8 +536,10 @@ class BaseTrainer(ABC):
         pass
 
     @torch.no_grad()
-    def validate(self, split="val", disable_tqdm=False, name_split=None):
-        if distutils.is_master():
+    def validate(
+        self, split="val", disable_tqdm=False, name_split=None, debug_batches=-1
+    ):
+        if distutils.is_master() and not self.silent:
             if not name_split:
                 logging.info(f"Evaluating on {split}.")
         if self.is_hpo:
@@ -561,6 +563,10 @@ class BaseTrainer(ABC):
             desc="device {}".format(rank),
             disable=disable_tqdm,
         ):
+
+            if debug_batches > 0 and i == debug_batches:
+                break
+
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out, pooling_loss = self._forward(batch)
@@ -592,7 +598,7 @@ class BaseTrainer(ABC):
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": self.epoch})
         log_dict.update({"val_time": val_time})
-        if distutils.is_master():
+        if distutils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
             logging.info(", ".join(log_str))
 
@@ -704,7 +710,7 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(self, final=True, disable_tqdm=True):
+    def eval_all_val_splits(self, final=True, disable_tqdm=True, debug_batches=-1):
         """Evaluate model on all four validation splits"""
 
         if final:
@@ -722,7 +728,8 @@ class BaseTrainer(ABC):
         cumulated_time = 0
         cumulated_mae = 0
         metrics_dict = {}
-        logging.info("Evaluating on 4 val splits.")
+        if not self.silent:
+            logging.info("Evaluating on 4 val splits.")
         for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
 
             # Update the val. dataset we look at
@@ -755,7 +762,10 @@ class BaseTrainer(ABC):
             # Call validate function
             start_time = time.time()
             self.metrics = self.validate(
-                split="eval", disable_tqdm=disable_tqdm, name_split=s
+                split="eval",
+                disable_tqdm=disable_tqdm,
+                name_split=s,
+                debug_batches=debug_batches,
             )
             metrics_dict[s] = self.metrics
             cumulated_mae += self.metrics["energy_mae"]["metric"]
@@ -767,14 +777,16 @@ class BaseTrainer(ABC):
             self.logger.log({"Overall MAE": cumulated_mae / 4})
 
         # Print results
-        print("----- FINAL RESULTS -----")
-        print("Total time taken: ", time.time() - start_time)
-        print(self.metrics.keys())
+        if not self.silent:
+            print("----- FINAL RESULTS -----")
+            print("Total time taken: ", time.time() - start_time)
+            print(self.metrics.keys())
         for k, v in metrics_dict.items():
             store = []
             for _, val in v.items():
                 store.append(round(val["metric"], 4))
-            print(k, store)
+            if not self.silent:
+                print(k, store)
 
     def rotate_graph(self, batch, rotation=None):
         """Rotate all graphs in a batch
