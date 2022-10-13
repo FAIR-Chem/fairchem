@@ -836,6 +836,11 @@ def merge_dicts(dict1: dict, dict2: dict):
                 return_dict[k], duplicates_k = merge_dicts(dict1[k], dict2[k])
                 duplicates += [f"{k}.{dup}" for dup in duplicates_k]
             elif isinstance(v, list) and isinstance(dict1[k], list):
+                if len(dict1[k]) != len(dict2[k]):
+                    raise ValueError(
+                        f"List for key {k} has different length in dict1 and dict2."
+                        + " Use an empty dict {} to pad for items in the shorter list."
+                    )
                 return_dict[k] = [merge_dicts(d1, d2)[0] for d1, d2 in zip(dict1[k], v)]
             else:
                 return_dict[k] = dict2[k]
