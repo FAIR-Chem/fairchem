@@ -39,7 +39,7 @@ class FrameAveraging(Transform):
             "",
             "2D",
             "3D",
-            "da",
+            "DA",
         }
         assert self.fa_frames in {
             "random",
@@ -55,7 +55,7 @@ class FrameAveraging(Transform):
                 self.fa_func = frame_averaging_2D
             elif self.fa_type == "3D":
                 self.fa_func = frame_averaging_3D
-            elif self.fa_type == "da":
+            elif self.fa_type == "DA":
                 self.fa_func = data_augmentation
             else:
                 raise ValueError(f"Unknown frame averaging: {self.fa_type}")

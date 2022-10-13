@@ -202,7 +202,7 @@ class Flags:
             type=str,
             default="",
             help="Frame averaging method to use",
-            choices=["", "2D", "3D", "da"],
+            choices=["", "2D", "3D", "DA"],
         )
         self.parser.add_argument(
             "--fa_frames",
