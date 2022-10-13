@@ -349,7 +349,7 @@ class DimeNetPlusPlus(torch.nn.Module):
         raise NotImplementedError
 
 
-@registry.register_model("dimenetplusplus")
+@registry.register_model("old_dpp")
 class DimeNetPlusPlusWrap(DimeNetPlusPlus):
     def __init__(
         self,

@@ -434,7 +434,7 @@ class OutputPPBlock(torch.nn.Module):
         return self.lin(x)
 
 
-@registry.register_model("new_dimenetplusplus")
+@registry.register_model("dpp")
 class NewDimeNetPlusPlus(BaseModel):
     r"""DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
 

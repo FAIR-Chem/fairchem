@@ -17,7 +17,7 @@ from ocpmodels.common.utils import (
 )
 
 
-@registry.register_model("schnet")
+@registry.register_model("old_schnet")
 class SchNetWrap(SchNet):
     r"""Wrapper around the continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
