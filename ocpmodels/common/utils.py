@@ -418,7 +418,7 @@ def load_config(config_str):
     conf_path = Path(__file__).resolve().parent.parent.parent / "configs" / "models"
 
     model_conf_path = list(conf_path.glob(f"{model}.y*ml"))[0]
-    task_conf_path = list(conf_path.glob(f"datasets/{task}.y*ml"))[0]
+    task_conf_path = list(conf_path.glob(f"tasks/{task}.y*ml"))[0]
 
     model_conf = yaml.safe_load(model_conf_path.read_text())
     task_conf = yaml.safe_load(task_conf_path.read_text())
