@@ -11,20 +11,15 @@ Environment (ASE)
 """
 import copy
 import logging
-import os
 
 import torch
-import yaml
 from ase import Atoms
 from ase.calculators.calculator import Calculator
 from ase.calculators.singlepoint import SinglePointCalculator as sp
 from ase.constraints import FixAtoms
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    setup_imports,
-    setup_logging,
-)
+from ocpmodels.common.utils import setup_imports, setup_logging, load_config
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
@@ -64,13 +59,13 @@ def batch_to_atoms(batch):
 class OCPCalculator(Calculator):
     implemented_properties = ["energy", "forces"]
 
-    def __init__(self, config_yml=None, checkpoint=None, cutoff=6, max_neighbors=50):
+    def __init__(self, config=None, checkpoint=None, cutoff=6, max_neighbors=50):
         """
         OCP-ASE Calculator
 
         Args:
-            config_yml (str):
-                Path to yaml config or could be a dictionary.
+            config (str):
+                "{model}-{task}-{split}" config string or trainer config dictionary.
             checkpoint (str):
                 Path to trained checkpoint.
             cutoff (int):
@@ -83,20 +78,13 @@ class OCPCalculator(Calculator):
         Calculator.__init__(self)
 
         # Either the config path or the checkpoint path needs to be provided
-        assert config_yml or checkpoint is not None
+        assert config or checkpoint is not None
 
-        if config_yml is not None:
-            if isinstance(config_yml, str):
-                trainer_config = yaml.safe_load(open(config_yml, "r"))
-
-                if "includes" in trainer_config:
-                    for include in trainer_config["includes"]:
-                        # Change the path based on absolute path of config_yml
-                        path = os.path.join(config_yml.split("configs")[0], include)
-                        include_config = yaml.safe_load(open(path, "r"))
-                        trainer_config.update(include_config)
+        if config is not None:
+            if isinstance(config, str):
+                trainer_config = load_config(config)
             else:
-                trainer_config = config_yml
+                trainer_config = config
             # Only keeps the train data that might have normalizer values
             trainer_config["dataset"] = trainer_config["dataset"][0]
         else:
