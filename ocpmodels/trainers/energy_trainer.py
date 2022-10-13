@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
-import os
 import time
 from copy import deepcopy
 
@@ -63,8 +62,8 @@ class EnergyTrainer(BaseTrainer):
             self.normalizers["target"].to(self.device)
         predictions = {"id": [], "energy": []}
 
-        for i, batch in tqdm(
-            enumerate(loader),
+        for batch in tqdm(
+            loader,
             total=len(loader),
             position=rank,
             desc="device {}".format(rank),
@@ -213,6 +212,7 @@ class EnergyTrainer(BaseTrainer):
                 # End of batch.
 
             # End of epoch.
+            self._log_metrics(end_of_epoch=True)
             torch.cuda.empty_cache()
             epoch_time.append(time.time() - start_time)
 
@@ -307,7 +307,7 @@ class EnergyTrainer(BaseTrainer):
 
         return metrics
 
-    def _log_metrics(self):
+    def _log_metrics(self, end_of_epoch=False):
         log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
         log_dict.update(
             {
@@ -320,12 +320,12 @@ class EnergyTrainer(BaseTrainer):
             self.step % self.config["print_every"] == 0
             and distutils.is_master()
             and not self.is_hpo
-        ):
+        ) or (distutils.is_master() and end_of_epoch):
             log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
             print(", ".join(log_str))
             self.metrics = {}
 
-        if self.logger is not None:
+        if self.logger is not None and not end_of_epoch:
             self.logger.log(
                 log_dict,
                 step=self.step,

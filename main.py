@@ -118,14 +118,11 @@ if __name__ == "__main__":
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     args = update_from_sbatch_py_vars(args)
-    if not args.mode or not args.config_yml:
-        args.mode = "train"
-        # args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
-        args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
+    if not args.config:
+        args.config = "sfarinet-is2re-10k"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
         warnings.warn(
-            "\n>>>> No model / mode is given. "
-            + f"{args.config_yml} chosen as default\n"
+            f"\n>>>> No config is provided. Defaulting to {args.config} chosen\n"
         )
     if args.logdir:
         args.logdir = resolve(args.logdir)

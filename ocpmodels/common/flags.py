@@ -30,7 +30,12 @@ class Flags:
         self.parser.add_argument(
             "--config-yml",
             type=Path,
-            help="Path to a config file listing data, model, optim parameters.",
+            help="LEGACY Path to a config file listing data, model, optim parameters.",
+        )
+        self.parser.add_argument(
+            "--config",
+            type=str,
+            help="Descriptor for the run configuration as '{model}-{task}-{split}'.",
         )
         self.parser.add_argument(
             "--wandb_name",
@@ -93,12 +98,6 @@ class Flags:
             default=None,
             type=Path,
             help="Path to a config file with parameter sweeps",
-        )
-        self.parser.add_argument(
-            "--submit", action="store_true", help="Submit job to cluster"
-        )
-        self.parser.add_argument(
-            "--summit", action="store_true", help="Running on Summit cluster"
         )
         self.parser.add_argument(
             "--cpus_to_workers",

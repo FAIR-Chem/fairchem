@@ -31,13 +31,9 @@ if __name__ == "__main__":
     # "checkpoints/2022-04-28-11-42-56-dimenetplusplus/" + "best_checkpoint.pt"
 
     str_args = sys.argv[1:]
-    if all("--config-yml" not in arg for arg in str_args):
+    if all("config" not in arg for arg in str_args):
         str_args.append("--is_debug")
-        # str_args.append("--config-yml=configs/is2re/10k/dimenet_plus_plus/new_dpp.yml")
-        # str_args.append("--config-yml=configs/is2re/10k/schnet/new_schnet.yml")
-        # str_args.append("--config-yml=configs/is2re/10k/forcenet/new_forcenet.yml")
-        str_args.append("--config-yml=configs/is2re/10k/sfarinet/sfarinet.yml")
-        # str_args.append("--config-yml=configs/is2re/10k/fanet/fanet.yml")
+        str_args.append("--config=sfarinet-is2re-10k")
         warnings.warn(
             "No model / mode is given; chosen as default" + f"Using: {str_args[-1]}"
         )

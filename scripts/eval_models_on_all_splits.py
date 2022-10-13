@@ -28,7 +28,7 @@ def parse_conf(str_args):
         k = a.split("=")[0].strip().replace("--", "")
         v = a.split("=")[1].strip()
         conf[k] = v
-    conf["model"] = conf["config-yml"].split("/")[-1].split(".")[0]
+    conf["model_name"] = conf["config"].split("-")[0]
     return conf
 
 

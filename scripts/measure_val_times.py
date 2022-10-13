@@ -127,14 +127,14 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
         ],
         "overrides": {**TRAINER_CONF_OVERRIDES, "note": "schnet Baseline"},
     },
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
         ],
         "overrides": {
             **TRAINER_CONF_OVERRIDES,
@@ -144,14 +144,14 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
         ],
         "overrides": {**TRAINER_CONF_OVERRIDES, "note": "forcenet Baseline"},
     },
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.graph_rewiring=remove-tag-0",
         ],
         "overrides": {
@@ -162,7 +162,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.graph_rewiring=remove-tag-0",
         ],
         "overrides": {
@@ -173,7 +173,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.graph_rewiring=remove-tag-0",
         ],
         "overrides": {
@@ -184,7 +184,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.graph_rewiring=one-supernode-per-graph",
         ],
         "overrides": {
@@ -195,7 +195,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.graph_rewiring=one-supernode-per-graph",
         ],
         "overrides": {
@@ -206,7 +206,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.graph_rewiring=one-supernode-per-graph",
         ],
         "overrides": {
@@ -217,7 +217,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.graph_rewiring=one-supernode-per-atom-type",
         ],
         "overrides": {
@@ -228,7 +228,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.graph_rewiring=one-supernode-per-atom-type",
         ],
         "overrides": {
@@ -239,7 +239,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.graph_rewiring=one-supernode-per-atom-type",
         ],
         "overrides": {
@@ -250,7 +250,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.graph_rewiring=one-supernode-per-atom-type-dist",
         ],
         "overrides": {
@@ -261,7 +261,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.tag_hidden_channels=32",
         ],
         "overrides": {
@@ -272,7 +272,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.tag_hidden_channels=32",
         ],
         "overrides": {
@@ -283,7 +283,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.tag_hidden_channels=32",
         ],
         "overrides": {
@@ -294,7 +294,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.tag_hidden_channels=64",
         ],
         "overrides": {
@@ -305,7 +305,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.tag_hidden_channels=64",
         ],
         "overrides": {
@@ -316,7 +316,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.tag_hidden_channels=64",
         ],
         "overrides": {
@@ -327,7 +327,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.phys_embeds=true",
         ],
         "overrides": {**TRAINER_CONF_OVERRIDES, "note": "schnet Phys Embeds Fixed"},
@@ -335,7 +335,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.phys_embeds=true",
         ],
         "overrides": {
@@ -346,7 +346,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.phys_embeds=true",
         ],
         "overrides": {
@@ -357,7 +357,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.phys_embeds=true",
             "--model.phys_hidden_channels=32",
         ],
@@ -366,7 +366,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.phys_embeds=true",
             "--model.phys_hidden_channels=32",
         ],
@@ -375,7 +375,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.phys_embeds=true",
             "--model.phys_hidden_channels=32",
         ],
@@ -387,7 +387,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.pg_hidden_channels=32",
         ],
         "overrides": {
@@ -398,7 +398,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.pg_hidden_channels=32",
         ],
         "overrides": {
@@ -409,7 +409,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.pg_hidden_channels=32",
         ],
         "overrides": {
@@ -420,7 +420,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.phys_embeds=true",
             "--model.phys_hidden_channels=32",
             "--model.pg_hidden_channels=32",
@@ -431,7 +431,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.phys_embeds=true",
             "--model.phys_hidden_channels=32",
             "--model.pg_hidden_channels=32",
@@ -445,7 +445,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.phys_embeds=true",
             "--model.phys_hidden_channels=32",
             "--model.pg_hidden_channels=32",
@@ -456,7 +456,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.energy_head=weighted-av-initial-embeds",
         ],
         "overrides": {
@@ -467,7 +467,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.energy_head=weighted-av-initial-embeds",
         ],
         "overrides": {
@@ -478,7 +478,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.energy_head=weighted-av-initial-embeds",
         ],
         "overrides": {
@@ -489,7 +489,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.energy_head=weighted-av-final-embeds",
         ],
         "overrides": {
@@ -500,7 +500,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.energy_head=weighted-av-final-embeds",
         ],
         "overrides": {
@@ -511,7 +511,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.energy_head=weighted-av-final-embeds",
         ],
         "overrides": {
@@ -522,7 +522,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.energy_head=pooling",
         ],
         "overrides": {
@@ -533,7 +533,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.energy_head=pooling",
         ],
         "overrides": {
@@ -544,7 +544,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.energy_head=pooling",
         ],
         "overrides": {
@@ -555,7 +555,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/schnet/new_schnet.yml",
+            "--config=schnet-is2re-all",
             "--model.energy_head=graclus",
         ],
         "overrides": {
@@ -566,7 +566,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/dimenet_plus_plus/new_dpp.yml",
+            "--config=dpp-is2re-all",
             "--model.energy_head=graclus",
         ],
         "overrides": {
@@ -577,7 +577,7 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
-            "--config-yml=configs/is2re/all/forcenet/new_forcenet.yml",
+            "--config=forcenet-is2re-all",
             "--model.energy_head=graclus",
         ],
         "overrides": {
