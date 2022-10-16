@@ -34,6 +34,7 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None):
         "se3-det",
     }
     fa_cell = deepcopy(cell)
+    full_eigenvec = torch.eye(3)
 
     for pm in plus_minus_list:
 
@@ -51,9 +52,10 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None):
 
         if pos_3D is not None:
             fa_pos = torch.cat((fa_pos, pos_3D.unsqueeze(1)), dim=1)
-            fa_cell[:, :2, :2] = cell[:, :2, :2] @ new_eigenvec
+            full_eigenvec[:2, :2] = new_eigenvec
+            fa_cell = cell @ full_eigenvec
         else:
-            fa_cell = new_eigenvec.t() @ cell
+            fa_cell = cell @ new_eigenvec
 
         all_fa.append(fa_pos)
         all_cell.append(fa_cell)
@@ -70,7 +72,8 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None):
     elif fa_frames == "det" or fa_frames == "se3-det":
         return [all_fa[0]], [all_cell[0]]
 
-    return [random.choice(all_fa)], [random.choice(all_cell)]
+    index = random.randint(0, len(all_fa) - 1)
+    return [all_fa[index]], [all_cell[index]]
 
 
 def check_constraints(eigenval, eigenvec, dim):
