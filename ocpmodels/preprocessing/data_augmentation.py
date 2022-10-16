@@ -53,7 +53,7 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None):
             fa_pos = torch.cat((fa_pos, pos_3D.unsqueeze(1)), dim=1)
             fa_cell[:, :2, :2] = cell[:, :2, :2] @ new_eigenvec
         else:
-            fa_cell = cell @ new_eigenvec
+            fa_cell = new_eigenvec.t() @ cell
 
         all_fa.append(fa_pos)
         all_cell.append(fa_cell)
