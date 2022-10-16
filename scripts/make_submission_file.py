@@ -62,27 +62,12 @@ def write_predictions(args, dataset):
 
         for split in SPLITS[dataset]:
             res = np.load(vars(args)[split], allow_pickle=True)
-            verify_dtype(res, dataset)
             contents = res.files
             for i in contents:
                 key = "_".join([split, i])
                 submission_file[key] = res[i]
 
         np.savez_compressed(args.out_path, **submission_file)
-
-
-def verify_dtype(preds, dataset):
-    if dataset == "OC22":
-        if "energy" in preds:
-            assert preds["energy"].dtype in [
-                np.float32,
-                np.float64,
-            ], "Predictions written in the wrong precision. Ensure `total_energy` flag is True in the config."
-        if "forces" in preds:
-            assert preds["forces"].dtype in [
-                np.float32,
-                np.float64,
-            ], "Predictions written in the wrong precision. Ensure `total_energy` flag is True in the config."
 
 
 def main(args):
