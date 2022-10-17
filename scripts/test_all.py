@@ -96,6 +96,8 @@ if __name__ == "__main__":
         }
     )
 
+    command = "python " + " ".join(sys.argv)
+
     overrides = {
         "silent": True,
         "logger": "dummy",
@@ -158,6 +160,7 @@ if __name__ == "__main__":
 
     nk = len(str(len(configs)))
     test_start = time()
+    successes = 0
     for c, conf in enumerate(configs):
         times = Times()
         conf_start = time()
@@ -183,6 +186,8 @@ if __name__ == "__main__":
 
             clean_previous_line()
             symbol = "✅" if not is_nan else "❌"
+            if not is_nan:
+                successes += 1
 
         except Exception as e:
             print(f"\n{e}\n")
@@ -200,8 +205,8 @@ if __name__ == "__main__":
 
     test_duration = time() - test_start
     print(
-        f"\n\n🎉 Finished testing {len(configs)}"
+        f"\n\n🎉 {command} finished testing {len(configs)}"
         + f" configs in {format_timer(test_duration)}"
-        + f" on commit {get_commit_hash()}"
-        + f" ({str(datetime.now()).split('.')[0]})"
+        + f" on commit {get_commit_hash()}. {successes}/{len(configs)} succeeded."
+        + f" [{str(datetime.now()).split('.')[0]}]"
     )
