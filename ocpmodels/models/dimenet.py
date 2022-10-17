@@ -18,7 +18,7 @@ from ocpmodels.common.utils import (
 )
 
 
-@registry.register_model("dimenet")
+@registry.register_model("old_dimenet")
 class DimeNetWrap(DimeNet):
     r"""Wrapper around the directional message passing neural network (DimeNet) from the
     `"Directional Message Passing for Molecular Graphs"

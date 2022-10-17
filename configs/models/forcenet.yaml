@@ -58,7 +58,7 @@ is2re:
       num_interactions: 4
     optim:
       max_epochs: 8 # 20
-      
+
 
 # ------------------
 # -----  S2EF  -----

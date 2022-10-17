@@ -120,6 +120,9 @@ class EnergyTrainer(BaseTrainer):
                 self.step = epoch_int * len(self.train_loader) + i + 1
                 self.model.train()
 
+                if debug_batches > 0 and i == debug_batches:
+                    break
+
                 # Get a batch.
                 batch = next(train_loader_iter)
 
@@ -207,8 +210,6 @@ class EnergyTrainer(BaseTrainer):
                 else:
                     self.scheduler.step()
 
-                if debug_batches > 0 and i > debug_batches:
-                    break
                 # End of batch.
 
             # End of epoch.
@@ -322,7 +323,8 @@ class EnergyTrainer(BaseTrainer):
             and not self.is_hpo
         ) or (distutils.is_master() and end_of_epoch):
             log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
-            print(", ".join(log_str))
+            if not self.silent:
+                print(", ".join(log_str))
             self.metrics = {}
 
         if self.logger is not None and not end_of_epoch:
@@ -333,7 +335,7 @@ class EnergyTrainer(BaseTrainer):
             )
 
     @torch.no_grad()
-    def test_model_invariance(self):
+    def test_model_invariance(self, debug_batches=100):
         """Test rotation and reflection invariance properties of GNNs
 
         Returns:
@@ -347,7 +349,8 @@ class EnergyTrainer(BaseTrainer):
         energy_diff_refl = torch.zeros(1, device=self.device)
 
         for i, batch in enumerate(self.val_loader):
-
+            if debug_batches > 0 and i == debug_batches:
+                break
             # Pass it through the model.
             energies1, _ = self._forward(deepcopy(batch))
 
@@ -377,9 +380,6 @@ class EnergyTrainer(BaseTrainer):
             batch_rotated = self.rotate_graph(batch)
             energies4, _ = self._forward(batch_rotated)
             energy_diff += torch.abs(energies1["energy"] - energies4["energy"]).sum()
-
-            if i == 100:
-                break
 
         # Aggregate the results
         batch_size = len(batch[0].natoms)

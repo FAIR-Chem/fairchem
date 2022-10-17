@@ -108,7 +108,7 @@ class ShiftedSoftplus(torch.nn.Module):
         return F.softplus(x) - self.shift
 
 
-@registry.register_model("new_schnet")
+@registry.register_model("schnet")
 class NewSchNet(BaseModel):
     r"""The continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
