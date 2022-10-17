@@ -112,6 +112,18 @@ def should_continue(config):
     return config
 
 
+def print_warnings():
+    warnings = [
+        "`max_num_neighbors` is set to 40. This should be tuned per model.",
+    ]
+    print("\n" + "-" * 80)
+    print("🛑  OCP-DR-Lab Warnings:")
+    for warning in warnings:
+        print(f"  • {warning}")
+    print("Remove warnings when they are fixed in the code/configs.")
+    print("-" * 80 + "\n")
+
+
 if __name__ == "__main__":
     setup_logging()
 
@@ -146,6 +158,7 @@ if __name__ == "__main__":
         task = registry.get_task_class(trainer_config["mode"])(trainer_config)
         task.setup(trainer)
         start_time = time.time()
+        print_warnings()
         task.run()
         distutils.synchronize()
         logging.info(f"Total time taken: {time.time() - start_time}")
