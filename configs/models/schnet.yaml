@@ -1,6 +1,6 @@
 default:
   model:
-    name: new_schnet
+    name: schnet
     num_filters: 128
     num_gaussians: 100
     cutoff: 6.0

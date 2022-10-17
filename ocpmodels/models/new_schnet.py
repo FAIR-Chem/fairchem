@@ -161,7 +161,7 @@ class NewSchNet(BaseModel):
     url = "http://www.quantum-machine.org/datasets/trained_schnet_models.zip"
 
     def __init__(self, **kwargs):
-        super(NewSchNet, self).__init__()
+        super().__init__()
 
         import ase
 
