@@ -188,12 +188,12 @@ class EnergyTrainer(BaseTrainer):
                                 )
 
                         # Evaluate current model on all 4 validation splits
-                        if ((epoch_int % 100 == 0) and (epoch_int != 0)) or (
+                        is_final_epoch = debug_batches < 0 and (
                             epoch_int == self.config["optim"]["max_epochs"] - 1
-                        ):
-                            self.eval_all_val_splits(
-                                epoch_int == self.config["optim"]["max_epochs"] - 1
-                            )
+                        )
+                        if (epoch_int % 100 == 0 and epoch_int != 0) or is_final_epoch:
+                            self.eval_all_val_splits(is_final_epoch)
+
                         if self.is_hpo:
                             self.hpo_update(
                                 self.epoch,
@@ -228,7 +228,7 @@ class EnergyTrainer(BaseTrainer):
             self.logger.log({"Epoch time": sum(epoch_time) / len(epoch_time)})
 
         # Check rotation invariance
-        if self.test_ri:
+        if self.test_ri and debug_batches < 0:
             (
                 energy_diff_z,
                 energy_diff,
