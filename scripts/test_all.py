@@ -205,7 +205,7 @@ if __name__ == "__main__":
 
     test_duration = time() - test_start
     print(
-        f"\n\n🎉 {command} finished testing {len(configs)}"
+        f"\n\n🎉 `{command}` finished testing {len(configs)}"
         + f" configs in {format_timer(test_duration)}"
         + f" on commit {get_commit_hash()}. {successes}/{len(configs)} succeeded."
         + f" [{str(datetime.now()).split('.')[0]}]"
