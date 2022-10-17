@@ -29,7 +29,7 @@ default:
     eval_batch_size: 8
     num_workers: 8
     energy_coefficient: 0
-    warmup_factors: 0.2
+    warmup_factor: 0.2
     warmup_steps: 9375
     lr_gamma: 0.1
     lr_initial: 0.0005
