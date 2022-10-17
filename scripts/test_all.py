@@ -181,7 +181,7 @@ if __name__ == "__main__":
                 trainer.eval_all_val_splits(final=False, debug_batches=2)
 
             if trainer.test_ri:
-                with times.next("🎗  Test invariance"):
+                with times.next(" 🎗  Test invariance"):
                     trainer.test_model_invariance(debug_batches=2)
 
             clean_previous_line()
@@ -197,7 +197,7 @@ if __name__ == "__main__":
 
         conf_duration = time() - conf_start
         print(
-            f"{symbol} Config {c+1:{nk}}/{len(configs)} {format_times(times)}"
+            f"{symbol} {c+1:{nk}}/{len(configs)} {format_times(times)}"
             + f" ⌛️ Total: {format_timer(conf_duration)} ➡︎ {conf_strs[c]}"
         )
         clean_current_line()
