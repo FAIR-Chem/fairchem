@@ -1,8 +1,9 @@
 import os
 import shutil
 import sys
-from pathlib import Path
 import traceback
+from datetime import datetime
+from pathlib import Path
 from time import time
 
 from minydra import resolved_args
@@ -19,7 +20,7 @@ except:  # noqa: E722
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from ocpmodels.common.utils import make_script_trainer
+from ocpmodels.common.utils import get_commit_hash, make_script_trainer
 from ocpmodels.trainers.energy_trainer import EnergyTrainer
 
 COLS = shutil.get_terminal_size().columns
@@ -201,4 +202,6 @@ if __name__ == "__main__":
     print(
         f"\n\n🎉 Finished testing {len(configs)}"
         + f" configs in {format_timer(test_duration)}"
+        + f" on commit {get_commit_hash()}"
+        + f" ({str(datetime.now()).split('.')[0]})"
     )
