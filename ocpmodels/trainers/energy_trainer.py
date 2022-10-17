@@ -323,7 +323,8 @@ class EnergyTrainer(BaseTrainer):
             and not self.is_hpo
         ) or (distutils.is_master() and end_of_epoch):
             log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
-            print(", ".join(log_str))
+            if not self.silent:
+                print(", ".join(log_str))
             self.metrics = {}
 
         if self.logger is not None and not end_of_epoch:
