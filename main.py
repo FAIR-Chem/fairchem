@@ -10,167 +10,118 @@ import logging
 import os
 import re
 import subprocess
-import sys
 import time
 import warnings
 from pathlib import Path
-
-import submitit
 
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     build_config,
-    create_grid,
     resolve,
-    save_experiment_log,
     setup_imports,
     setup_logging,
     update_from_sbatch_py_vars,
 )
+from ocpmodels.trainers import BaseTrainer
 
 try:
     import ipdb  # noqa: F401
 
     os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
 except:  # noqa: E722
-    pass
+    print(
+        "`ipdb` is not installed. ",
+        "Consider `pip install ipdb` to improve your debugging experience.",
+    )
 
 
-class Runner(submitit.helpers.Checkpointable):
-    def __init__(self):
-        self.config = None
+def read_slurm_env(config):
+    """
+    Parses the output of `scontrol show` in order to store the slurm
+    config (mem, cpu, node, gres) as a `"slurm"` key in the `config` object.
 
-    def __call__(self, config):
-        setup_logging()
-        self.config = copy.deepcopy(config)
+    Args:
+        config (dict): Run configuration
 
-        if args.distributed:
-            distutils.setup(config)
-
-        try:
-            setup_imports()
-            config = self.should_continue(config)
-            config = self.read_slurm_env(config)
-            self.trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
-                task=config["task"],
-                model_attributes=config["model"],
-                dataset=config["dataset"],
-                optimizer=config["optim"],
-                identifier=config["identifier"],
-                timestamp_id=config.get("timestamp_id", None),
-                run_dir=config.get("run_dir", "./"),
-                is_debug=config.get("is_debug", False),
-                print_every=config.get("print_every", 100),
-                seed=config.get("seed", 0),
-                logger=config.get("logger", "wandb"),
-                local_rank=config["local_rank"],
-                amp=config.get("amp", False),
-                cpu=config.get("cpu", False),
-                slurm=config.get("slurm", {}),
-                new_gnn=config.get("new_gnn", True),
-                frame_averaging=config.get("frame_averaging", None),
-                data_split=config.get("data_split", None),
-                note=config.get("note", ""),
-                test_invariance=config.get("test_ri", None),
-                choice_fa=config.get("choice_fa", None),
-                wandb_tag=config.get("wandb_tag", None),
-            )
-            self.task = registry.get_task_class(config["mode"])(self.config)
-            self.task.setup(self.trainer)
-            start_time = time.time()
-            self.task.run()
-            distutils.synchronize()
-            logging.info(f"Total time taken: {time.time() - start_time}")
-            if self.trainer.logger is not None:
-                self.trainer.logger.log({"Total time": time.time() - start_time})
-        finally:
-            if args.distributed:
-                distutils.cleanup()
-
-    def checkpoint(self, *args, **kwargs):
-        new_runner = Runner()
-        self.trainer.save(checkpoint_file="checkpoint.pt", training_state=True)
-        self.config["checkpoint"] = self.task.chkpt_path
-        self.config["timestamp_id"] = self.trainer.timestamp_id
-        if self.trainer.logger is not None:
-            self.trainer.logger.mark_preempting()
-        return submitit.helpers.DelayedSubmission(new_runner, self.config)
-
-    def read_slurm_env(self, config):
-        """
-        Parses the output of `scontrol show` in order to store the slurm
-        config (mem, cpu, node, gres) as a `"slurm"` key in the `config` object.
-
-        Args:
-            config (dict): Run configuration
-
-        Returns:
-            dict: Updated run config if no "slurm" key exists or it's empty
-        """
-        if not config.get("slurm"):
-            return config
-
-        command = f"scontrol show job {os.environ.get('SLURM_JOB_ID')}"
-        scontrol = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
-        params = re.findall(r"TRES=(.+)\n", scontrol)
-        try:
-            if params:
-                params = params[0]
-                config["slurm"] = {}
-                for kv in params.split(","):
-                    k, v = kv.split("=")
-                    config["slurm"][k] = v
-        except Exception as e:
-            print("Slurm config creation exception", e)
-        finally:
-            return config
-
-    def should_continue(self, config):
-        """
-        Assuming runs are consistently executed in a `run_dir` with the
-        `run_dir/$SLURM_JOBID` pattern, this functions looks for an existing
-        directory with the same $SLURM_JOBID as the current job that contains
-        a checkpoint.
-
-        If there is one, it tries to find `best_checkpoint.ckpt`.
-        If the latter does not exist, it looks for the latest checkpoint,
-        assuming a naming convention like `checkpoint-{step}.pt`.
-
-        If a checkpoint is found, its path is set in `config["checkpoint"]`.
-        Otherwise, returns the original config.
-
-        Args:
-            config (dict): The original config to overwrite
-
-        Returns:
-            dict: The updated config if a checkpoint has been found
-        """
-        if config["checkpoint"]:
-            return config
-
-        job_id = os.environ.get("SLURM_JOBID")
-        if job_id is None:
-            return config
-
-        base_dir = Path(config["run_dir"]).resolve().parent
-        ckpt_dir = base_dir / job_id / "checkpoints"
-        if not ckpt_dir.exists() or not ckpt_dir.is_dir():
-            return config
-
-        best_ckp = ckpt_dir / "best_checkpoint.pt"
-        if best_ckp.exists():
-            config["checkpoint"] = str(best_ckp)
-        else:
-            ckpts = list(ckpt_dir.glob("checkpoint-*.pt"))
-            if not ckpts:
-                return config
-            latest_ckpt = sorted(ckpts, key=lambda f: f.stem)[-1]
-            if latest_ckpt.exists() and latest_ckpt.is_file():
-                config["checkpoint"] = str(latest_ckpt)
-
+    Returns:
+        dict: Updated run config if no "slurm" key exists or it's empty
+    """
+    if not config.get("slurm"):
         return config
+
+    command = f"scontrol show job {os.environ.get('SLURM_JOB_ID')}"
+    scontrol = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
+    params = re.findall(r"TRES=(.+)\n", scontrol)
+    try:
+        if params:
+            params = params[0]
+            for kv in params.split(","):
+                k, v = kv.split("=")
+                config["slurm"][k] = v
+    except Exception as e:
+        print("Slurm config creation exception", e)
+    finally:
+        return config
+
+
+def should_continue(config):
+    """
+    Assuming runs are consistently executed in a `run_dir` with the
+    `run_dir/$SLURM_JOBID` pattern, this functions looks for an existing
+    directory with the same $SLURM_JOBID as the current job that contains
+    a checkpoint.
+
+    If there is one, it tries to find `best_checkpoint.ckpt`.
+    If the latter does not exist, it looks for the latest checkpoint,
+    assuming a naming convention like `checkpoint-{step}.pt`.
+
+    If a checkpoint is found, its path is set in `config["checkpoint"]`.
+    Otherwise, returns the original config.
+
+    Args:
+        config (dict): The original config to overwrite
+
+    Returns:
+        dict: The updated config if a checkpoint has been found
+    """
+    if config["checkpoint"]:
+        return config
+
+    job_id = os.environ.get("SLURM_JOBID")
+    if job_id is None:
+        return config
+
+    base_dir = Path(config["run_dir"]).resolve().parent
+    ckpt_dir = base_dir / job_id / "checkpoints"
+    if not ckpt_dir.exists() or not ckpt_dir.is_dir():
+        return config
+
+    best_ckp = ckpt_dir / "best_checkpoint.pt"
+    if best_ckp.exists():
+        config["checkpoint"] = str(best_ckp)
+    else:
+        ckpts = list(ckpt_dir.glob("checkpoint-*.pt"))
+        if not ckpts:
+            return config
+        latest_ckpt = sorted(ckpts, key=lambda f: f.stem)[-1]
+        if latest_ckpt.exists() and latest_ckpt.is_file():
+            config["checkpoint"] = str(latest_ckpt)
+
+    return config
+
+
+def print_warnings():
+    warnings = [
+        "`max_num_neighbors` is set to 40. This should be tuned per model.",
+    ]
+    print("\n" + "-" * 80)
+    print("🛑  OCP-DR-Lab Warnings:")
+    for warning in warnings:
+        print(f"  • {warning}")
+    print("Remove warnings when they are fixed in the code/configs.")
+    print("-" * 80 + "\n")
 
 
 if __name__ == "__main__":
@@ -179,47 +130,40 @@ if __name__ == "__main__":
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     args = update_from_sbatch_py_vars(args)
-    if not args.mode or not args.config_yml:
-        args.mode = "train"
-        # args.config_yml = "configs/is2re/10k/schnet/new_schnet.yml"
-        args.config_yml = "configs/is2re/10k/sfarinet/sfarinet.yml"
+    if not args.config:
+        args.config = "sfarinet-is2re-10k"
         # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
-        warnings.warn("No model / mode is given; chosen as default")
+        warnings.warn(
+            f"\n>>>> No config is provided. Defaulting to {args.config} chosen\n"
+        )
     if args.logdir:
         args.logdir = resolve(args.logdir)
 
-    config = build_config(args, override_args)
-    config["optim"]["eval_batch_size"] = config["optim"]["batch_size"]
+    trainer_config = build_config(args, override_args)
+    trainer_config["optim"]["eval_batch_size"] = trainer_config["optim"]["batch_size"]
 
-    if args.submit:  # Run on cluster
-        slurm_add_params = config.get("slurm", None)  # additional slurm arguments
-        if args.sweep_yml:  # Run grid search
-            configs = create_grid(config, args.sweep_yml)
-        else:
-            configs = [config]
+    setup_logging()
+    original_trainer_config = copy.deepcopy(trainer_config)
 
-        logging.info(f"Submitting {len(configs)} jobs")
-        executor = submitit.AutoExecutor(
-            folder=args.logdir / "%j", slurm_max_num_timeout=3
+    if args.distributed:
+        distutils.setup(trainer_config)
+
+    try:
+        setup_imports()
+        trainer_config = should_continue(trainer_config)
+        trainer_config = read_slurm_env(trainer_config)
+        trainer: BaseTrainer = registry.get_trainer_class(trainer_config["trainer"])(
+            **trainer_config
         )
-        executor.update_parameters(
-            name=args.identifier,
-            mem_gb=args.slurm_mem,
-            timeout_min=args.slurm_timeout * 60,
-            slurm_partition=args.slurm_partition,
-            gpus_per_node=args.num_gpus,
-            cpus_per_task=(config["optim"]["num_workers"] + 1),
-            tasks_per_node=(args.num_gpus if args.distributed else 1),
-            nodes=args.num_nodes,
-            slurm_additional_parameters=slurm_add_params,
-        )
-        for config in configs:
-            config["slurm"] = copy.deepcopy(executor.parameters)
-            config["slurm"]["folder"] = str(executor.folder)
-        jobs = executor.map_array(Runner(), configs)
-        logging.info(f"Submitted jobs: {', '.join([job.job_id for job in jobs])}")
-        log_file = save_experiment_log(args, jobs, configs)
-        logging.info(f"Experiment log saved to: {log_file}")
-
-    else:  # Run locally
-        Runner()(config)
+        task = registry.get_task_class(trainer_config["mode"])(trainer_config)
+        task.setup(trainer)
+        start_time = time.time()
+        print_warnings()
+        task.run()
+        distutils.synchronize()
+        logging.info(f"Total time taken: {time.time() - start_time}")
+        if trainer.logger is not None:
+            trainer.logger.log({"Total time": time.time() - start_time})
+    finally:
+        if args.distributed:
+            distutils.cleanup()

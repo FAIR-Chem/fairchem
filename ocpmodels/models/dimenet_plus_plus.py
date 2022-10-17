@@ -236,7 +236,7 @@ class DimeNetPlusPlus(torch.nn.Module):
             interaction blocks after the skip connection. (default: :obj:`2`)
         num_output_layers: (int, optional): Number of linear layers for the
             output blocks. (default: :obj:`3`)
-        act: (function, optional): The activation funtion.
+        act: (function, optional): The activation function.
             (default: :obj:`swish`)
     """
 
@@ -349,14 +349,13 @@ class DimeNetPlusPlus(torch.nn.Module):
         raise NotImplementedError
 
 
-@registry.register_model("dimenetplusplus")
+@registry.register_model("old_dpp")
 class DimeNetPlusPlusWrap(DimeNetPlusPlus):
     def __init__(
         self,
         num_atoms,
         bond_feat_dim,  # not used
         num_targets,
-        new_gnn,  # not used
         use_pbc=True,
         regress_forces=True,
         hidden_channels=128,

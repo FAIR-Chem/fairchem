@@ -34,7 +34,6 @@ THE SOFTWARE.
 
 from math import pi as PI
 from math import sqrt
-from pickle import FALSE
 
 import torch
 from torch import nn
@@ -56,17 +55,10 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-from ocpmodels.preprocessing import (
-    one_supernode_per_atom_type,
-    one_supernode_per_atom_type_dist,
-    one_supernode_per_graph,
-    remove_tag0_nodes,
-)
-
-from time import time
 
 try:
     import sympy as sym
@@ -442,7 +434,8 @@ class OutputPPBlock(torch.nn.Module):
         return self.lin(x)
 
 
-class NewDimeNetPlusPlus(torch.nn.Module):
+@registry.register_model("dpp")
+class NewDimeNetPlusPlus(BaseModel):
     r"""DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
 
     Args:
@@ -461,6 +454,10 @@ class NewDimeNetPlusPlus(torch.nn.Module):
         num_radial (int): Number of radial basis functions.
         cutoff: (float, optional): Cutoff distance for interatomic
             interactions. (default: :obj:`5.0`)
+        use_pbc (bool, optional): Use of periodic boundary conditions.
+            (default: true)
+        otf_graph (bool, optional): Recompute radius graph.
+            (default: false)
         envelope_exponent (int, optional): Shape of the smooth cutoff.
             (default: :obj:`5`)
         num_before_skip: (int, optional): Number of residual layers in the
@@ -469,113 +466,109 @@ class NewDimeNetPlusPlus(torch.nn.Module):
             interaction blocks after the skip connection. (default: :obj:`2`)
         num_output_layers: (int, optional): Number of linear layers for the
             output blocks. (default: :obj:`3`)
-        act: (function, optional): The activation funtion.
+        act: (function, optional): The activation function.
             (default: :obj:`swish`)
+        regress_forces: (bool, optional): Compute atom forces from energy.
+            (default: false).
     """
 
     url = "https://github.com/klicperajo/dimenet/raw/master/pretrained"
 
-    def __init__(
-        self,
-        hidden_channels,
-        tag_hidden_channels,
-        pg_hidden_channels,
-        phys_hidden_channels,
-        phys_embeds,
-        graph_rewiring,
-        out_channels,
-        num_blocks,
-        int_emb_size,
-        basis_emb_size,
-        out_emb_channels,
-        num_spherical,
-        num_radial,
-        cutoff=5.0,
-        envelope_exponent=5,
-        num_before_skip=1,
-        num_after_skip=2,
-        num_output_layers=3,
-        act=swish,
-    ):
+    def __init__(self, **kwargs):
         super(NewDimeNetPlusPlus, self).__init__()
 
-        self.cutoff = cutoff
+        self.cutoff = kwargs["cutoff"]
+        self.use_pbc = kwargs["use_pbc"]
+        self.otf_graph = kwargs["otf_graph"]
+        self.regress_forces = kwargs["regress_forces"]
+        self.energy_head = kwargs["energy_head"]
+        use_tag = kwargs["tag_hidden_channels"] > 0
+        use_pg = kwargs["pg_hidden_channels"] > 0
+        act = (
+            getattr(nn.functional, kwargs["act"]) if kwargs["act"] != "swish" else swish
+        )
 
-        assert tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
+        assert (
+            kwargs["tag_hidden_channels"] + 2 * kwargs["pg_hidden_channels"] + 16
+            < kwargs["hidden_channels"]
+        )
         if sym is None:
             raise ImportError("Package `sympy` could not be found.")
 
-        self.num_blocks = num_blocks
-        self.use_tag = tag_hidden_channels > 0  # and self.new_gnn
-        self.use_pg = pg_hidden_channels > 0
-
-        self.rbf = BesselBasisLayer(num_radial, cutoff, envelope_exponent)
+        self.rbf = BesselBasisLayer(
+            kwargs["num_radial"], self.cutoff, kwargs["envelope_exponent"]
+        )
         self.sbf = SphericalBasisLayer(
-            num_spherical, num_radial, cutoff, envelope_exponent
+            kwargs["num_spherical"],
+            kwargs["num_radial"],
+            self.cutoff,
+            kwargs["envelope_exponent"],
         )
 
-        if self.use_tag or phys_embeds or self.use_pg or graph_rewiring:
+        if use_tag or use_pg or kwargs["phys_embeds"] or kwargs["graph_rewiring"]:
             self.emb = AdvancedEmbeddingBlock(
-                num_radial,
-                hidden_channels,
-                tag_hidden_channels,
-                pg_hidden_channels,
-                phys_hidden_channels,
-                phys_embeds,
-                graph_rewiring,
+                kwargs["num_radial"],
+                kwargs["hidden_channels"],
+                kwargs["tag_hidden_channels"],
+                kwargs["pg_hidden_channels"],
+                kwargs["phys_hidden_channels"],
+                kwargs["phys_embeds"],
+                kwargs["graph_rewiring"],
                 act,
             )
         else:
-            self.emb = EmbeddingBlock(num_radial, hidden_channels, act)
+            self.emb = EmbeddingBlock(
+                kwargs["num_radial"], kwargs["hidden_channels"], act
+            )
 
         if self.energy_head:
             self.output_blocks = torch.nn.ModuleList(
                 [
                     EHOutputPPBlock(
-                        num_radial,
-                        hidden_channels,
-                        out_emb_channels,
-                        out_channels,
-                        num_output_layers,
+                        kwargs["num_radial"],
+                        kwargs["hidden_channels"],
+                        kwargs["out_emb_channels"],
+                        kwargs["num_targets"],
+                        kwargs["num_output_layers"],
                         self.energy_head,
                         act,
                     )
-                    for _ in range(num_blocks + 1)
+                    for _ in range(kwargs["num_blocks"] + 1)
                 ]
             )
         else:
             self.output_blocks = torch.nn.ModuleList(
                 [
                     OutputPPBlock(
-                        num_radial,
-                        hidden_channels,
-                        out_emb_channels,
-                        out_channels,
-                        num_output_layers,
+                        kwargs["num_radial"],
+                        kwargs["hidden_channels"],
+                        kwargs["out_emb_channels"],
+                        kwargs["num_targets"],
+                        kwargs["num_output_layers"],
                         act,
                     )
-                    for _ in range(num_blocks + 1)
+                    for _ in range(kwargs["num_blocks"] + 1)
                 ]
             )
 
         self.interaction_blocks = torch.nn.ModuleList(
             [
                 InteractionPPBlock(
-                    hidden_channels,
-                    int_emb_size,
-                    basis_emb_size,
-                    num_spherical,
-                    num_radial,
-                    num_before_skip,
-                    num_after_skip,
+                    kwargs["hidden_channels"],
+                    kwargs["int_emb_size"],
+                    kwargs["basis_emb_size"],
+                    kwargs["num_spherical"],
+                    kwargs["num_radial"],
+                    kwargs["num_before_skip"],
+                    kwargs["num_after_skip"],
                     act,
                 )
-                for _ in range(num_blocks)
+                for _ in range(kwargs["num_blocks"])
             ]
         )
 
         if self.energy_head == "weighted-av-initial-embeds":
-            self.w_lin = Linear(hidden_channels, 1)
+            self.w_lin = Linear(kwargs["hidden_channels"], 1)
 
         self.reset_parameters()
 
@@ -619,73 +612,8 @@ class NewDimeNetPlusPlus(torch.nn.Module):
 
         return col, row, idx_i, idx_j, idx_k, idx_kj, idx_ji
 
-    def forward(self, z, pos, batch=None):
-        """ """
-        raise NotImplementedError
-
-
-@registry.register_model("new_dimenetplusplus")
-class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
-    def __init__(
-        self,
-        num_atoms,
-        bond_feat_dim,  # not used
-        num_targets,
-        new_gnn=True,
-        use_pbc=True,
-        regress_forces=True,
-        hidden_channels=128,
-        tag_hidden_channels=32,
-        pg_hidden_channels=32,
-        phys_hidden_channels=32,
-        num_blocks=4,
-        int_emb_size=64,
-        basis_emb_size=8,
-        out_emb_channels=256,
-        num_spherical=7,
-        num_radial=6,
-        otf_graph=False,
-        cutoff=10.0,
-        envelope_exponent=5,
-        num_before_skip=1,
-        num_after_skip=2,
-        num_output_layers=3,
-        phys_embeds=False,
-        graph_rewiring=False,
-        energy_head=False,
-    ):
-        self.num_targets = num_targets
-        self.regress_forces = regress_forces
-        self.use_pbc = use_pbc
-        self.cutoff = cutoff
-        self.otf_graph = otf_graph
-        self.new_gnn = new_gnn
-        self.graph_rewiring = graph_rewiring
-        self.energy_head = energy_head
-
-        super(NewDimeNetPlusPlusWrap, self).__init__(
-            hidden_channels=hidden_channels,
-            tag_hidden_channels=tag_hidden_channels,
-            pg_hidden_channels=pg_hidden_channels,
-            phys_hidden_channels=phys_hidden_channels,
-            phys_embeds=phys_embeds,
-            graph_rewiring=graph_rewiring,
-            out_channels=num_targets,
-            num_blocks=num_blocks,
-            int_emb_size=int_emb_size,
-            basis_emb_size=basis_emb_size,
-            out_emb_channels=out_emb_channels,
-            num_spherical=num_spherical,
-            num_radial=num_radial,
-            cutoff=cutoff,
-            envelope_exponent=envelope_exponent,
-            num_before_skip=num_before_skip,
-            num_after_skip=num_after_skip,
-            num_output_layers=num_output_layers,
-        )
-
     @conditional_grad(torch.enable_grad())
-    def _forward(self, data):
+    def energy_forward(self, data):
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
@@ -696,32 +624,10 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
             data.neighbors = neighbors
 
         # Rewire the graph
-        if not self.graph_rewiring:
-            pos = data.pos
-            batch = data.batch
+        pos = data.pos
+        batch = data.batch
+        if not hasattr(data, "subnodes"):
             data.subnodes = False
-        else:
-            t = time()
-            if self.graph_rewiring == "remove-tag-0":
-                data = remove_tag0_nodes(data)
-                pos = data.pos
-                batch = data.batch
-                data.subnodes = False
-            elif self.graph_rewiring == "one-supernode-per-graph":
-                data = one_supernode_per_graph(data)
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type":
-                data = one_supernode_per_atom_type(data)
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
-                data = one_supernode_per_atom_type_dist(data)
-                pos = data.pos
-                batch = data.batch
-            else:
-                raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
-            self.rewiring_time = time() - t
 
         if self.use_pbc:
             out = get_pbc_distances(
@@ -821,7 +727,7 @@ class NewDimeNetPlusPlusWrap(NewDimeNetPlusPlus):
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy, pooling_loss = self._forward(data)
+        energy, pooling_loss = self.energy_forward(data)
 
         if self.regress_forces:
             forces = -1 * (

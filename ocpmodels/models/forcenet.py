@@ -178,17 +178,17 @@ class InteractionBlock(MessagePassing):
 
 
 # flake8: noqa: C901
-@registry.register_model("forcenet")
+@registry.register_model("old_forcenet")
 class ForceNet(BaseModel):
     r"""Implementation of ForceNet architecture.
 
     Args:
         num_atoms (int): Unused argument
         bond_feat_dim (int): Unused argument
-        num_targets (int): Unused argumebt
+        num_targets (int): Unused argument
         hidden_channels (int, optional): Number of hidden channels.
             (default: :obj:`512`)
-        num_iteractions (int, optional): Number of interaction blocks.
+        num_interactions (int, optional): Number of interaction blocks.
             (default: :obj:`5`)
         cutoff (float, optional): Cutoff distance for interatomic interactions.
             (default: :obj:`6.0`)
@@ -225,7 +225,6 @@ class ForceNet(BaseModel):
         num_atoms,  # not used
         bond_feat_dim,  # not used
         num_targets,  # not used
-        new_gnn,  # not used
         hidden_channels=512,
         num_interactions=5,
         cutoff=6.0,

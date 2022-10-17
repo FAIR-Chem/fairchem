@@ -9,7 +9,6 @@ import errno
 import logging
 import os
 import random
-import subprocess
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -26,7 +25,6 @@ from torch.utils.data import DataLoader
 from torch_geometric.data import Batch
 from tqdm import tqdm
 
-import ocpmodels
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
@@ -35,7 +33,8 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.registry import registry
 from ocpmodels.common.transforms import RandomReflect, RandomRotate
-from ocpmodels.common.utils import save_checkpoint
+from ocpmodels.common.utils import get_commit_hash, save_checkpoint
+from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
@@ -43,174 +42,89 @@ from ocpmodels.modules.exponential_moving_average import (
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
-from ocpmodels.preprocessing.data_augmentation import (
-    data_augmentation,
-    frame_averaging_2D,
-    frame_averaging_3D,
-)
 
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
-    def __init__(
-        self,
-        task,
-        model_attributes,
-        dataset,
-        optimizer,
-        identifier,
-        frame_averaging=None,
-        normalizer=None,
-        timestamp_id=None,
-        run_dir=None,
-        is_debug=False,
-        is_hpo=False,
-        print_every=100,
-        seed=None,
-        logger="tensorboard",
-        local_rank=0,
-        amp=False,
-        cpu=False,
-        name="base_trainer",
-        slurm={},
-        new_gnn=True,
-        data_split=None,
-        note="",
-        test_invariance=None,
-        wandb_tag=None,
-        choice_fa=None,
-        verbose=True,
-    ):
-        self.name = name
-        self.cpu = cpu
+    def __init__(self, **kwargs):
+
+        run_dir = kwargs["run_dir"]
+        model_name = kwargs["model"].pop("name")
+        kwargs["model"]["graph_rewiring"] = kwargs["graph_rewiring"]
+
+        self.config = {
+            **kwargs,
+            "model_name": model_name,
+            "gpus": distutils.get_world_size() if not kwargs["cpu"] else 0,
+            "commit": get_commit_hash(),
+            "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
+            "results_dir": str(Path(run_dir) / "results"),
+            "logs_dir": str(Path(run_dir) / "logs"),
+        }
+
         self.epoch = 0
         self.step = 0
-        self.new_gnn = new_gnn
-        self.test_invariance = test_invariance
-        self.frame_averaging = frame_averaging
-        self.choice_fa = choice_fa
+        self.cpu = self.config["cpu"]
+        self.name = self.config["name"]
+        self.test_ri = self.config["test_ri"]
+        self.is_debug = self.config["is_debug"]
+        self.is_hpo = self.config["is_hpo"]
+        self.silent = self.config["silent"]
 
         if torch.cuda.is_available() and not self.cpu:
-            self.device = torch.device(f"cuda:{local_rank}")
+            self.device = torch.device(f"cuda:{self.config['local_rank']}")
         else:
             self.device = torch.device("cpu")
             self.cpu = True  # handle case when `--cpu` isn't specified
             # but there are no gpu devices available
-        if run_dir is None:
-            run_dir = os.getcwd()
 
-        if timestamp_id is None:
-            timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(
-                self.device
-            )
-            # create directories from master rank only
-            distutils.broadcast(timestamp, 0)
-            timestamp = datetime.datetime.fromtimestamp(timestamp.int()).strftime(
-                "%Y-%m-%d-%H-%M-%S"
-            )
-            if identifier:
-                self.timestamp_id = f"{timestamp}-{identifier}"
-            else:
-                self.timestamp_id = timestamp
-        else:
-            self.timestamp_id = timestamp_id
+        timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(self.device)
+        # create directories from master rank only
+        distutils.broadcast(timestamp, 0)
+        timestamp = datetime.datetime.fromtimestamp(timestamp.int()).strftime(
+            "%Y-%m-%d-%H-%M-%S"
+        )
+        self.timestamp_id = timestamp
 
-        try:
-            commit_hash = (
-                subprocess.check_output(
-                    [
-                        "git",
-                        "-C",
-                        ocpmodels.__path__[0],
-                        "describe",
-                        "--always",
-                    ]
-                )
-                .strip()
-                .decode("ascii")
-            )
-        # catch instances where code is not being run from a git repo
-        except Exception:
-            commit_hash = None
+        self.config["timestamp_id"] = self.timestamp_id
 
-        # logger_name = logger if isinstance(logger, str) else logger["name"]
-        model_name = model_attributes.pop("name")
-        self.config = {
-            "task": task,
-            "data_split": data_split,
-            "model": model_name,
-            "model_attributes": model_attributes,
-            "optim": optimizer,
-            "logger": logger,
-            "amp": amp,
-            "run_dir": run_dir,
-            "frame_averaging": frame_averaging,
-            "choice_fa": choice_fa,
-            "test_ri": test_invariance,
-            "gpus": distutils.get_world_size() if not self.cpu else 0,
-            "cmd": {
-                "identifier": identifier,
-                "print_every": print_every,
-                "seed": seed,
-                "timestamp_id": self.timestamp_id,
-                "commit": commit_hash,
-                "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
-                "results_dir": str(Path(run_dir) / "results"),
-                "logs_dir": str(Path(run_dir) / "logs"),
-            },
-            "slurm": slurm,
-            "note": note,
-            "wandb_tag": wandb_tag,
-        }
         # AMP Scaler
-        self.scaler = torch.cuda.amp.GradScaler() if amp else None
+        self.scaler = torch.cuda.amp.GradScaler() if self.config["amp"] else None
 
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
             self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
             self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
                 "%j", self.config["slurm"]["job_id"]
             )
-        if isinstance(dataset, list):
-            if len(dataset) > 0:
-                self.config["dataset"] = dataset[0]
-            if len(dataset) > 1:
-                self.config["val_dataset"] = dataset[1]
-            if len(dataset) > 2:
-                self.config["test_dataset"] = dataset[2]
-        elif isinstance(dataset, dict):
-            self.config["dataset"] = dataset.get("train", None)
-            self.config["val_dataset"] = dataset.get("val", None)
-            self.config["test_dataset"] = dataset.get("test", None)
-        else:
-            self.config["dataset"] = dataset
 
-        # Frame averaging
-        if frame_averaging:
-            if frame_averaging.lower() == "2d":
-                self.fa = frame_averaging_2D
-            elif frame_averaging.lower() == "3d":
-                self.fa = frame_averaging_3D
-            elif frame_averaging.lower() == "da":
-                self.fa = data_augmentation
-            else:
-                raise ValueError(f"Unknown frame averaging: {frame_averaging}")
+        if isinstance(kwargs["dataset"], list):
+            if len(kwargs["dataset"]) > 0:
+                self.config["dataset"] = kwargs["dataset"][0]
+            if len(kwargs["dataset"]) > 1:
+                self.config["val_dataset"] = kwargs["dataset"][1]
+            if len(kwargs["dataset"]) > 2:
+                self.config["test_dataset"] = kwargs["dataset"][2]
+        elif isinstance(kwargs["dataset"], dict):
+            self.config["dataset"] = kwargs["dataset"].get("train", None)
+            self.config["val_dataset"] = kwargs["dataset"].get("val", None)
+            self.config["test_dataset"] = kwargs["dataset"].get("test", None)
         else:
-            self.fa = None
+            self.config["dataset"] = kwargs["dataset"]
 
-        self.normalizer = normalizer
+        self.normalizer = kwargs["normalizer"]
         # This supports the legacy way of providing norm parameters in dataset
-        if self.config.get("dataset", None) is not None and normalizer is None:
+        if (
+            self.config.get("dataset", None) is not None
+            and kwargs["normalizer"] is None
+        ):
             self.normalizer = self.config["dataset"]
 
-        if not is_debug and distutils.is_master() and not is_hpo:
-            os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
-            os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
-            os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
+        if not self.is_debug and distutils.is_master() and not self.is_hpo:
+            os.makedirs(self.config["checkpoint_dir"], exist_ok=True)
+            os.makedirs(self.config["results_dir"], exist_ok=True)
+            os.makedirs(self.config["logs_dir"], exist_ok=True)
             # TODO: do not create all three directory depending on mode
             # "Predict" -> result, "Train" -> checkpoint and logs.
-
-        self.is_debug = is_debug
-        self.is_hpo = is_hpo
 
         if self.is_hpo:
             # conditional import is necessary for checkpointing
@@ -222,11 +136,11 @@ class BaseTrainer(ABC):
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
-        if distutils.is_master() and verbose:
+        if distutils.is_master() and not self.silent:
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
-        self.evaluator = Evaluator(task=name)
+        self.evaluator = Evaluator(task=self.config["name"])
 
     def load(self):
         self.load_seed_from_config()
@@ -240,7 +154,7 @@ class BaseTrainer(ABC):
 
     def load_seed_from_config(self):
         # https://pytorch.org/docs/stable/notes/randomness.html
-        seed = self.config["cmd"]["seed"]
+        seed = self.config["seed"]
         if seed is None:
             return
 
@@ -295,15 +209,17 @@ class BaseTrainer(ABC):
     def load_datasets(self):
         self.parallel_collater = ParallelCollater(
             0 if self.cpu else 1,
-            self.config["model_attributes"].get("otf_graph", False),
+            self.config["model"].get("otf_graph", False),
         )
 
         self.train_loader = self.val_loader = self.test_loader = None
 
+        transform = get_transforms(self.config)  # TODO: train/val/test behavior
+
         if self.config.get("dataset", None):
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
-            )(self.config["dataset"], transform=self.fa, choice_fa=self.choice_fa)
+            )(self.config["dataset"], transform=transform)
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
                 self.config["optim"]["batch_size"],
@@ -319,8 +235,7 @@ class BaseTrainer(ABC):
                     self.config["task"]["dataset"]
                 )(
                     self.config["val_dataset"],
-                    transform=self.fa,
-                    choice_fa=self.choice_fa,
+                    transform=transform,
                 )
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
@@ -339,8 +254,7 @@ class BaseTrainer(ABC):
                     self.config["task"]["dataset"]
                 )(
                     self.config["test_dataset"],
-                    transform=self.fa,
-                    choice_fa=self.choice_fa,
+                    transform=transform,
                 )
                 self.test_sampler = self.get_sampler(
                     self.test_dataset,
@@ -382,27 +296,29 @@ class BaseTrainer(ABC):
 
     def load_model(self):
         # Build model
-        if distutils.is_master():
-            logging.info(f"Loading model: {self.config['model']}")
+        if distutils.is_master() and not self.silent:
+            logging.info(
+                f"Loading model {self.config['model_name']}: {self.config['model']}"
+            )
 
-        # TODO: depreicated, remove.
         bond_feat_dim = None
-        bond_feat_dim = self.config["model_attributes"].get("num_gaussians", 50)
+        bond_feat_dim = self.config["model"].get("num_gaussians", 50)
 
         loader = self.train_loader or self.val_loader or self.test_loader
-        self.model = registry.get_model_class(self.config["model"])(
-            num_atoms=loader.dataset[0].x.shape[-1]
-            if loader
-            and hasattr(loader.dataset[0], "x")
-            and loader.dataset[0].x is not None
-            else None,
+        num_atoms = None
+        if loader:
+            sample = loader.dataset[0]
+            if hasattr(sample, "x") and hasattr(sample.x, "shape"):
+                num_atoms = sample.x.shape[-1]
+
+        self.model = registry.get_model_class(self.config["model_name"])(
+            num_atoms=num_atoms,
             bond_feat_dim=bond_feat_dim,
             num_targets=self.num_targets,
-            new_gnn=self.new_gnn,
-            **self.config["model_attributes"],
+            **self.config["model"],
         ).to(self.device)
 
-        if distutils.is_master():
+        if distutils.is_master() and not self.silent:
             logging.info(
                 f"Loaded {self.model.__class__.__name__} with "
                 f"{self.model.num_params} parameters."
@@ -555,7 +471,7 @@ class BaseTrainer(ABC):
                         "ema": self.ema.state_dict() if self.ema else None,
                         "amp": self.scaler.state_dict() if self.scaler else None,
                     },
-                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
+                    checkpoint_dir=self.config["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
             else:
@@ -573,7 +489,7 @@ class BaseTrainer(ABC):
                         "val_metrics": metrics,
                         "amp": self.scaler.state_dict() if self.scaler else None,
                     },
-                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
+                    checkpoint_dir=self.config["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
                 if self.ema:
@@ -620,8 +536,10 @@ class BaseTrainer(ABC):
         pass
 
     @torch.no_grad()
-    def validate(self, split="val", disable_tqdm=False, name_split=None):
-        if distutils.is_master():
+    def validate(
+        self, split="val", disable_tqdm=False, name_split=None, debug_batches=-1
+    ):
+        if distutils.is_master() and not self.silent:
             if not name_split:
                 logging.info(f"Evaluating on {split}.")
         if self.is_hpo:
@@ -645,6 +563,10 @@ class BaseTrainer(ABC):
             desc="device {}".format(rank),
             disable=disable_tqdm,
         ):
+
+            if debug_batches > 0 and i == debug_batches:
+                break
+
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out, pooling_loss = self._forward(batch)
@@ -676,7 +598,7 @@ class BaseTrainer(ABC):
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": self.epoch})
         log_dict.update({"val_time": val_time})
-        if distutils.is_master():
+        if distutils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
             logging.info(", ".join(log_str))
 
@@ -745,7 +667,7 @@ class BaseTrainer(ABC):
             return
 
         results_file_path = os.path.join(
-            self.config["cmd"]["results_dir"],
+            self.config["results_dir"],
             f"{self.name}_{results_file}_{distutils.get_rank()}.npz",
         )
         np.savez_compressed(
@@ -758,13 +680,13 @@ class BaseTrainer(ABC):
         if distutils.is_master():
             gather_results = defaultdict(list)
             full_path = os.path.join(
-                self.config["cmd"]["results_dir"],
+                self.config["results_dir"],
                 f"{self.name}_{results_file}.npz",
             )
 
             for i in range(distutils.get_world_size()):
                 rank_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
+                    self.config["results_dir"],
                     f"{self.name}_{results_file}_{i}.npz",
                 )
                 rank_results = np.load(rank_path, allow_pickle=True)
@@ -788,13 +710,13 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(self, final=True, disable_tqdm=True):
+    def eval_all_val_splits(self, final=True, disable_tqdm=True, debug_batches=-1):
         """Evaluate model on all four validation splits"""
 
         if final:
             # Load current best checkpoint
             checkpoint_path = os.path.join(
-                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
+                self.config["checkpoint_dir"], "best_checkpoint.pt"
             )
             self.load_checkpoint(checkpoint_path=checkpoint_path)
             logging.info(
@@ -806,7 +728,8 @@ class BaseTrainer(ABC):
         cumulated_time = 0
         cumulated_mae = 0
         metrics_dict = {}
-        logging.info("Evaluating on 4 val splits.")
+        if not self.silent:
+            logging.info("Evaluating on 4 val splits.")
         for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
 
             # Update the val. dataset we look at
@@ -822,8 +745,7 @@ class BaseTrainer(ABC):
                     self.config["task"]["dataset"]
                 )(
                     self.config["val_dataset"],
-                    transform=self.fa,
-                    choice_fa=self.choice_fa,
+                    transform=get_transforms(self.config),
                 )
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
@@ -839,7 +761,12 @@ class BaseTrainer(ABC):
 
             # Call validate function
             start_time = time.time()
-            self.metrics = self.validate(split="eval", disable_tqdm=disable_tqdm, name_split=s)
+            self.metrics = self.validate(
+                split="eval",
+                disable_tqdm=disable_tqdm,
+                name_split=s,
+                debug_batches=debug_batches,
+            )
             metrics_dict[s] = self.metrics
             cumulated_mae += self.metrics["energy_mae"]["metric"]
             cumulated_time += time.time() - start_time
@@ -850,14 +777,16 @@ class BaseTrainer(ABC):
             self.logger.log({"Overall MAE": cumulated_mae / 4})
 
         # Print results
-        print("----- FINAL RESULTS -----")
-        print("Total time taken: ", time.time() - start_time)
-        print(self.metrics.keys())
+        if not self.silent:
+            print("----- FINAL RESULTS -----")
+            print("Total time taken: ", time.time() - start_time)
+            print(self.metrics.keys())
         for k, v in metrics_dict.items():
             store = []
             for _, val in v.items():
                 store.append(round(val["metric"], 4))
-            print(k, store)
+            if not self.silent:
+                print(k, store)
 
     def rotate_graph(self, batch, rotation=None):
         """Rotate all graphs in a batch
@@ -869,6 +798,8 @@ class BaseTrainer(ABC):
         Returns:
             data.Batch: rotated batch
         """
+        if isinstance(batch, list):
+            batch = batch[0]
 
         # Sampling a random rotation within [-180, 180] for all axes.
         if rotation == "z":
@@ -887,13 +818,17 @@ class BaseTrainer(ABC):
         # Recompute fa-pos for batch_rotated
         if hasattr(batch, "fa_pos"):
             delattr(batch_rotated, "fa_pos")  # delete it otherwise can't iterate
+            delattr(batch_rotated, "fa_cell")  # delete it otherwise can't iterate
             g_list = batch_rotated.to_data_list()
+            fa_transform = FrameAveraging(
+                self.config["frame_averaging"], self.config["fa_frames"]
+            )
             for g in g_list:
-                g = self.fa(g, self.choice_fa)
+                g = fa_transform(g)
             batch_rotated = Batch.from_data_list(g_list)
             batch_rotated.neighbors = batch.neighbors
 
-        return batch_rotated
+        return [batch_rotated]
 
     def reflect_graph(self, batch, reflection=None):
         """Rotate all graphs in a batch
@@ -905,6 +840,8 @@ class BaseTrainer(ABC):
         Returns:
             data.Batch: rotated batch
         """
+        if isinstance(batch, list):
+            batch = batch[0]
 
         # Sampling a random rotation within [-180, 180] for all axes.
         transform = RandomReflect()
@@ -916,10 +853,14 @@ class BaseTrainer(ABC):
         # Recompute fa-pos for batch_rotated
         if hasattr(batch, "fa_pos"):
             delattr(batch_reflected, "fa_pos")  # delete it otherwise can't iterate
+            delattr(batch_reflected, "fa_cell")  # delete it otherwise can't iterate
             g_list = batch_reflected.to_data_list()
+            fa_transform = FrameAveraging(
+                self.config["frame_averaging"], self.config["fa_frames"]
+            )
             for g in g_list:
-                g = self.fa(g, self.choice_fa)
+                g = fa_transform(g)
             batch_reflected = Batch.from_data_list(g_list)
             batch_reflected.neighbors = batch.neighbors
 
-        return batch_reflected
+        return [batch_reflected]

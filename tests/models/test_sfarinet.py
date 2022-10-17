@@ -13,7 +13,6 @@ import numpy as np
 import pytest
 import torch
 from ase.io import read
-from torch_geometric.data import Data
 
 from ocpmodels.common.transforms import RandomRotate
 from ocpmodels.datasets import data_list_collater
@@ -46,7 +45,6 @@ def load_model(request):
         None,
         32,
         1,
-        new_gnn=None,
         cutoff=6.0,
         regress_forces=True,
         use_pbc=False,

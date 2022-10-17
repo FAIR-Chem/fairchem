@@ -6,15 +6,11 @@ LICENSE file in the root directory of this source tree.
 """
 
 import os
-import random
 
 import numpy as np
 import pytest
-import torch
 from ase.io import read
-from torch_geometric.data import Data
 
-from ocpmodels.common.transforms import RandomRotate
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.models import ForceNet
 from ocpmodels.preprocessing import AtomsToGraphs
@@ -44,7 +40,6 @@ def load_model(request):
         None,
         32,
         1,
-        new_gnn=None,
         cutoff=6.0,
     )
     request.cls.model = model

@@ -1,0 +1,168 @@
+default:
+  model:
+    name: schnet
+    num_filters: 128
+    num_gaussians: 100
+    cutoff: 6.0
+    use_pbc: True
+    regress_forces: False
+    readout: add
+    atomref: null
+    # drlab attributes:
+    tag_hidden_channels: 0 # 32
+    pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
+    phys_embeds: False # True
+    phys_hidden_channels: 0
+    energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds, pooling, graclus, random}
+  optim:
+    batch_size: 64
+    eval_batch_size: 64
+    num_workers: 4
+    lr_gamma: 0.1
+    warmup_factor: 0.2
+
+# -------------------
+# -----  IS2RE  -----
+# -------------------
+
+is2re:
+  10k:
+    model:
+      hidden_channels: 256
+      num_interactions: 3
+    optim:
+      lr_initial: 0.005
+      max_epochs: 20
+      lr_milestones:
+        - 1562
+        - 2343
+        - 3125
+      warmup_steps: 468
+
+  100k:
+    model:
+      hidden_channels: 384
+      num_interactions: 4
+    optim:
+      lr_initial: 0.0005
+      max_epochs: 25
+      lr_milestones:
+        - 15625
+        - 31250
+        - 46875
+      warmup_steps: 9375
+
+  all:
+    model:
+      hidden_channels: 384
+      num_interactions: 4
+    optim:
+      lr_initial: 0.001
+      max_epochs: 17
+      lr_gamma: 0.1
+      lr_milestones:
+        - 17981
+        - 26972
+        - 35963
+      warmup_steps: 5394
+
+# ------------------
+# -----  S2EF  -----
+# ------------------
+
+s2ef:
+  200k:
+    model:
+      hidden_channels: 1024
+      num_filters: 256
+      num_interactions: 3
+      num_gaussians: 200
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 4.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      batch_size: 32
+      eval_batch_size: 32
+      num_workers: 16
+      lr_initial: 0.0005
+      lr_gamma: 0.1
+      lr_milestones:
+        - 7812
+        - 12500
+        - 15625
+      warmup_steps: 4687
+      max_epochs: 30
+      force_coefficient: 100
+
+  2M:
+    model:
+      hidden_channels: 1024
+      num_filters: 256
+      num_interactions: 5
+      num_gaussians: 200
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 8.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      batch_size: 24
+      eval_batch_size: 24
+      num_workers: 16
+      lr_initial: 0.0001
+      lr_gamma: 0.1
+      lr_milestones:
+        - 52083
+        - 83333
+        - 104166
+      warmup_steps: 31250
+      max_epochs: 30
+      force_coefficient: 100
+
+  20M:
+    model:
+      hidden_channels: 1024
+      num_filters: 256
+      num_interactions: 5
+      num_gaussians: 200
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 48.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      batch_size: 24
+      eval_batch_size: 24
+      num_workers: 16
+      lr_initial: 0.0001
+      lr_gamma: 0.1
+      lr_milestones:
+        - 86805
+        - 138888
+        - 173611
+      warmup_steps: 52083
+      max_epochs: 30
+      force_coefficient: 50
+
+  all:
+    model:
+      hidden_channels: 1024
+      num_filters: 256
+      num_interactions: 5
+      num_gaussians: 200
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 64.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      batch_size: 20
+      eval_batch_size: 20
+      num_workers: 16
+      lr_initial: 0.0001
+      lr_gamma: 0.1
+      lr_milestones:
+        - 313907
+        - 523179
+        - 732451
+      warmup_steps: 209271
+      max_epochs: 15
+      force_coefficient: 30

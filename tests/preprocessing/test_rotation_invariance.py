@@ -1,6 +1,5 @@
 import math
 import random
-import sys
 from copy import deepcopy
 from itertools import product
 
@@ -8,9 +7,7 @@ import torch
 from minydra import resolved_args
 from torch_geometric.data import Batch
 
-from ocpmodels.common.flags import flags
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import build_config, setup_imports, setup_logging
+from ocpmodels.common.utils import make_script_trainer
 
 
 def test_rotation_invariance(graph, rotation="z", dim="2D"):
@@ -28,9 +25,9 @@ def test_rotation_invariance(graph, rotation="z", dim="2D"):
     """
     # Frame averaging for original graph
     if dim == "2D":
-        graph, _ = frame_averaging_2D(graph, choice_fa="random")
+        graph, _ = frame_averaging_2D(graph, fa_frames="random")
     else:
-        graph, _ = frame_averaging_3D(graph, choice_fa="random")
+        graph, _ = frame_averaging_3D(graph, fa_frames="random")
 
     # Rotate graph
     rotated_graph = deepcopy(graph)
@@ -138,7 +135,7 @@ def frame_averaging_3D(g, random_sign=False):
     pos = g.pos - g.pos.mean(dim=0, keepdim=True)
     C = torch.matmul(pos.t(), pos)
 
-    # Eigendecomposition
+    # Eigen decomposition
     eigenval, eigenvec = torch.linalg.eig(C)
 
     # Check if eigenvec, eigenval are real or complex ?
@@ -187,7 +184,7 @@ def frame_averaging_2D(g, random_sign=False):
     pos_2D = g.pos[:, :2] - g.pos[:, :2].mean(dim=0, keepdim=True)
     C = torch.matmul(pos_2D.t(), pos_2D)
 
-    # Eigendecomposition
+    # Eigen decomposition
     eigenval, eigenvec = torch.linalg.eig(C)
 
     # Check if eigenvec, eigenval are real or complex ?
@@ -228,47 +225,25 @@ if __name__ == "__main__":
 
     opts = resolved_args()
 
-    sys.argv[1:] = ["--mode=train", "--config=configs/is2re/10k/schnet/schnet.yml"]
-    setup_logging()
-
-    parser = flags.get_parser()
-    args, override_args = parser.parse_known_args()
-    config = build_config(args, override_args)
-
-    config["optim"]["num_workers"] = 4
-    config["optim"]["batch_size"] = 64
-    config["logger"] = "dummy"
+    trainer_config = {
+        "optim": {
+            "num_workers": 4,
+            "batch_size": 64,
+        },
+        "logger": {
+            "dummy",
+        },
+    }
 
     if opts.victor_local:
-        config["dataset"][0]["src"] = "data/is2re/All/train/data.lmdb"
-        config["dataset"] = config["dataset"][:1]
-        config["optim"]["num_workers"] = 0
-        config["optim"]["batch_size"] = opts.bs or config["optim"]["batch_size"]
+        trainer_config["dataset"][0]["src"] = "data/is2re/All/train/data.lmdb"
+        trainer_config["dataset"] = trainer_config["dataset"][:1]
+        trainer_config["optim"]["num_workers"] = 0
+        trainer_config["optim"]["batch_size"] = (
+            opts.bs or trainer_config["optim"]["batch_size"]
+        )
 
-    setup_imports()
-    trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
-        task=config["task"],
-        model_attributes=config["model"],
-        dataset=config["dataset"],
-        optimizer=config["optim"],
-        identifier=config["identifier"],
-        timestamp_id=config.get("timestamp_id", None),
-        run_dir=config.get("run_dir", "./"),
-        is_debug=config.get("is_debug", False),
-        print_every=config.get("print_every", 100),
-        seed=config.get("seed", 0),
-        logger=config.get("logger", "wandb"),
-        local_rank=config["local_rank"],
-        amp=config.get("amp", False),
-        cpu=config.get("cpu", False),
-        slurm=config.get("slurm", {}),
-        new_gnn=config.get("new_gnn", True),
-        data_split=config.get("data_split", None),
-        note=config.get("note", ""),
-    )
-
-    task = registry.get_task_class(config["mode"])(config)
-    task.setup(trainer)
+    trainer = make_script_trainer(overrides=trainer_config)
 
     for batch in trainer.train_loader:
         break

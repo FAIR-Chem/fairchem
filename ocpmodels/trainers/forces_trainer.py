@@ -7,9 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
-import pathlib
 from collections import defaultdict
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -34,75 +32,13 @@ class ForcesTrainer(BaseTrainer):
     .. note::
 
         Examples of configurations for task, model, dataset and optimizer
-        can be found in `configs/ocp_s2ef <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_
+        can be found in `configs/ocp_s2ef <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_ # noqa: E501
         and `configs/ocp_is2rs <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2rs/>`_.
 
-    Args:
-        task (dict): Task configuration.
-        model (dict): Model configuration.
-        dataset (dict): Dataset configuration. The dataset needs to be a SinglePointLMDB dataset.
-        optimizer (dict): Optimizer configuration.
-        identifier (str): Experiment identifier that is appended to log directory.
-        run_dir (str, optional): Path to the run directory where logs are to be saved.
-            (default: :obj:`None`)
-        is_debug (bool, optional): Run in debug mode.
-            (default: :obj:`False`)
-        is_hpo (bool, optional): Run hyperparameter optimization with Ray Tune.
-            (default: :obj:`False`)
-        print_every (int, optional): Frequency of printing logs.
-            (default: :obj:`100`)
-        seed (int, optional): Random number seed.
-            (default: :obj:`None`)
-        logger (str, optional): Type of logger to be used.
-            (default: :obj:`tensorboard`)
-        local_rank (int, optional): Local rank of the process, only applicable for distributed training.
-            (default: :obj:`0`)
-        amp (bool, optional): Run using automatic mixed precision.
-            (default: :obj:`False`)
-        slurm (dict): Slurm configuration. Currently just for keeping track.
-            (default: :obj:`{}`)
     """
 
-    def __init__(
-        self,
-        task,
-        model,
-        dataset,
-        optimizer,
-        identifier,
-        normalizer=None,
-        timestamp_id=None,
-        run_dir=None,
-        is_debug=False,
-        is_hpo=False,
-        print_every=100,
-        seed=None,
-        logger="tensorboard",
-        local_rank=0,
-        amp=False,
-        cpu=False,
-        slurm={},
-    ):
-        super().__init__(
-            task=task,
-            model=model,
-            dataset=dataset,
-            optimizer=optimizer,
-            identifier=identifier,
-            normalizer=normalizer,
-            timestamp_id=timestamp_id,
-            run_dir=run_dir,
-            is_debug=is_debug,
-            is_hpo=is_hpo,
-            print_every=print_every,
-            seed=seed,
-            logger=logger,
-            local_rank=local_rank,
-            amp=amp,
-            cpu=cpu,
-            name="s2ef",
-            slurm=slurm,
-        )
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs, name="s2ef")
 
     def load_task(self):
         logging.info(f"Loading dataset: {self.config['task']['dataset']}")
@@ -127,7 +63,7 @@ class ForcesTrainer(BaseTrainer):
 
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
-        if self.config["model_attributes"].get("regress_forces", True):
+        if self.config["model"].get("regress_forces", True):
             if self.normalizer.get("normalize_labels", False):
                 if "grad_target_mean" in self.normalizer:
                     self.normalizers["grad_target"] = Normalizer(
@@ -314,7 +250,7 @@ class ForcesTrainer(BaseTrainer):
                     }
                 )
                 if (
-                    self.step % self.config["cmd"]["print_every"] == 0
+                    self.step % self.config["print_every"] == 0
                     and distutils.is_master()
                     and not self.is_hpo
                 ):
@@ -355,7 +291,8 @@ class ForcesTrainer(BaseTrainer):
                     if self.config["task"].get("eval_relaxations", False):
                         if "relax_dataset" not in self.config["task"]:
                             logging.warning(
-                                "Cannot evaluate relaxations, relax_dataset not specified"
+                                "Cannot evaluate relaxations, "
+                                + "relax_dataset not specified"
                             )
                         else:
                             self.run_relaxations()
@@ -381,7 +318,7 @@ class ForcesTrainer(BaseTrainer):
 
     def _forward(self, batch_list):
         # forward pass.
-        if self.config["model_attributes"].get("regress_forces", True):
+        if self.config["model"].get("regress_forces", True):
             out_energy, out_forces = self.model(batch_list)
         else:
             out_energy = self.model(batch_list)
@@ -393,7 +330,7 @@ class ForcesTrainer(BaseTrainer):
             "energy": out_energy,
         }
 
-        if self.config["model_attributes"].get("regress_forces", True):
+        if self.config["model"].get("regress_forces", True):
             out["forces"] = out_forces
 
         return out
@@ -411,7 +348,7 @@ class ForcesTrainer(BaseTrainer):
         loss.append(energy_mult * self.loss_fn["energy"](out["energy"], energy_target))
 
         # Force loss.
-        if self.config["model_attributes"].get("regress_forces", True):
+        if self.config["model"].get("regress_forces", True):
             force_target = torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
             )
@@ -599,7 +536,7 @@ class ForcesTrainer(BaseTrainer):
         if self.config["task"].get("write_pos", False):
             rank = distutils.get_rank()
             pos_filename = os.path.join(
-                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.npz"
+                self.config["results_dir"], f"relaxed_pos_{rank}.npz"
             )
             np.savez_compressed(
                 pos_filename,
@@ -612,13 +549,13 @@ class ForcesTrainer(BaseTrainer):
             if distutils.is_master():
                 gather_results = defaultdict(list)
                 full_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
+                    self.config["results_dir"],
                     "relaxed_positions.npz",
                 )
 
                 for i in range(distutils.get_world_size()):
                     rank_path = os.path.join(
-                        self.config["cmd"]["results_dir"],
+                        self.config["results_dir"],
                         f"relaxed_pos_{i}.npz",
                     )
                     rank_results = np.load(rank_path, allow_pickle=True)

@@ -1,8 +1,8 @@
 """ Code of the Scalable Frame Averaging (Rotation Invariant) GNN
 """
 
-from math import sqrt
 from time import time
+
 import torch
 from torch import nn
 from torch.nn import Embedding, Linear
@@ -16,12 +16,6 @@ from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-from ocpmodels.preprocessing import (
-    one_supernode_per_atom_type,
-    one_supernode_per_atom_type_dist,
-    one_supernode_per_graph,
-    remove_tag0_nodes,
-)
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1
@@ -145,7 +139,7 @@ class EmbeddingBlock(nn.Module):
         if self.mlp_rij > 0:
             rel_pos = self.lin_r(rel_pos)
         e = torch.cat((rel_pos, edge_attr), dim=1)
-        # TODO: can I improve the 3D information catpured (more than r_ij)
+        # TODO: can I improve the 3D information captured (more than r_ij)
         # Linear(rel_pos), cat((rel_pos, other, pos_i, pos_j, edge_attr))
         # Extension: learn a bond feature vector and concat to above
 
@@ -291,120 +285,123 @@ class OutputBlock(nn.Module):
 
 @registry.register_model("fanet")
 class FANet(BaseModel):
-    def __init__(
-        self,
-        num_atoms,
-        bond_feat_dim,  # not used
-        num_targets,
-        act=swish,
-        new_gnn: bool = True,
-        use_pbc: bool = True,
-        regress_forces: bool = True,
-        otf_graph: bool = False,
-        num_gaussians: int = 50,
-        num_filters: int = 128,
-        num_interactions: int = 6,
-        cutoff: float = 10.0,
-        hidden_channels: int = 128,
-        tag_hidden_channels: int = 32,
-        pg_hidden_channels: int = 32,
-        phys_hidden_channels: int = 0,
-        phys_embeds: bool = False,
-        graph_rewiring=False,
-        energy_head=False,
-        skip_co: bool = False,
-        normalized_rel_pos: bool = False,
-        second_layer_MLP: bool = False,
-        mlp_rij: int = 0,
-        complex_mp: bool = False,
-    ):
+    r"""Frame Averaging GNN model FANet.
+
+    Args:
+        cutoff (float): Cutoff distance for interatomic interactions.
+            (default: :obj:`6.0`)
+        use_pbc (bool): Use of periodic boundary conditions.
+            (default: true)
+        act (str): activation function
+            (default: swish)
+        max_num_neighbors (int): The maximum number of neighbors to
+            collect for each node within the :attr:`cutoff` distance.
+            (default: :obj:`32`)
+        graph_rewiring (str): Method used to create the graph,
+            among "", remove-tag-0, supernodes.
+        energy_head (str): Method to compute energy prediction
+            from atom representations.
+        hidden_channels (int): Hidden embedding size.
+            (default: :obj:`128`)
+        tag_hidden_channels (int): Hidden tag embedding size.
+            (default: :obj:`32`)
+        pg_hidden_channels (int): Hidden period and group embed size.
+            (default: obj:`32`)
+        phys_embed (bool): Concat fixed physics-aware embeddings.
+        phys_hidden_channels (int): Hidden size of learnable phys embed.
+            (default: obj:`32`)
+        num_interactions (int): The number of interaction blocks.
+            (default: :obj:`4`)
+        num_gaussians (int): The number of gaussians :math:`\mu`.
+            (default: :obj:`50`)
+        complex_mp (bool): Use a more complex Message Passing scheme.
+        mlp_rij (int): Output size of MLP taking r_ij as input.
+        second_layer_MLP (bool): use 2-layers MLP at the end of embedding block.
+        skip_co (bool): add a skip connection between interaction blocks and
+            energy-head.
+
+    """
+
+    def __init__(self, **kwargs):
+
         super(FANet, self).__init__()
-        self.cutoff = cutoff
-        self.act = act
-        self.use_pbc = use_pbc
-        self.hidden_channels = hidden_channels
-        self.tag_hidden_channels = tag_hidden_channels
-        self.pg_hidden_channels = pg_hidden_channels
-        self.phys_hidden_channels = phys_hidden_channels
-        self.phys_embeds = phys_embeds
-        self.regress_forces = regress_forces
-        self.graph_rewiring = graph_rewiring
-        self.energy_head = energy_head
-        self.use_positional_embeds = graph_rewiring in {
+
+        self.act = kwargs["act"]
+        self.complex_mp = kwargs["complex_mp"]
+        self.cutoff = kwargs["cutoff"]
+        self.energy_head = kwargs["energy_head"]
+        self.graph_rewiring = kwargs["graph_rewiring"]
+        self.hidden_channels = kwargs["hidden_channels"]
+        self.mlp_rij = kwargs["mlp_rij"]
+        self.normalized_rel_pos = kwargs["normalized_rel_pos"]
+        self.num_filters = kwargs["num_filters"]
+        self.num_gaussians = kwargs["num_gaussians"]
+        self.num_interactions = kwargs["num_interactions"]
+        self.pg_hidden_channels = kwargs["pg_hidden_channels"]
+        self.phys_embeds = kwargs["phys_embeds"]
+        self.phys_hidden_channels = kwargs["phys_hidden_channels"]
+        self.regress_forces = kwargs["regress_forces"]
+        self.second_layer_MLP = kwargs["second_layer_MLP"]
+        self.skip_co = kwargs["skip_co"]
+        self.tag_hidden_channels = kwargs["tag_hidden_channels"]
+        self.use_pbc = kwargs["use_pbc"]
+
+        self.act = (
+            getattr(nn.functional, kwargs["act"]) if kwargs["act"] != "swish" else swish
+        )
+        self.use_positional_embeds = self.graph_rewiring in {
             "one-supernode-per-graph",
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
         # Gaussian Basis
-        self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
-        self.skip_co = skip_co
-        self.normalized_rel_pos = normalized_rel_pos
+        self.distance_expansion = GaussianSmearing(0.0, self.cutoff, self.num_gaussians)
 
         # Embedding block
         self.embed_block = EmbeddingBlock(
-            num_gaussians,
-            num_filters,
-            hidden_channels,
-            tag_hidden_channels,
-            pg_hidden_channels,
-            phys_hidden_channels,
-            phys_embeds,
-            graph_rewiring,
-            act,
-            second_layer_MLP,
-            mlp_rij,
+            self.num_gaussians,
+            self.num_filters,
+            self.hidden_channels,
+            self.tag_hidden_channels,
+            self.pg_hidden_channels,
+            self.phys_hidden_channels,
+            self.phys_embeds,
+            self.graph_rewiring,
+            self.act,
+            self.second_layer_MLP,
+            self.mlp_rij,
         )
 
         # Interaction block
         self.interaction_blocks = nn.ModuleList(
             [
                 InteractionBlock(
-                    hidden_channels,
-                    num_filters,
-                    act,
-                    complex_mp,
+                    self.hidden_channels,
+                    self.num_filters,
+                    self.act,
+                    self.complex_mp,
                 )
-                for _ in range(num_interactions)
+                for _ in range(self.num_interactions)
             ]
         )
 
         # Output block
-        self.output_block = OutputBlock(energy_head, hidden_channels, act)
+        self.output_block = OutputBlock(
+            self.energy_head, self.hidden_channels, self.act
+        )
 
+        # Energy head
         if self.energy_head == "weighted-av-initial-embeds":
-            self.w_lin = Linear(hidden_channels, 1)
+            self.w_lin = Linear(self.hidden_channels, 1)
+
+        # Force head
+        self.decoder = None
 
     def forward(self, data):
         # Rewire the graph
-        if not self.graph_rewiring:
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-        else:
-            t = time()
-            if self.graph_rewiring == "remove-tag-0":
-                data = remove_tag0_nodes(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-graph":
-                data = one_supernode_per_graph(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type":
-                data = one_supernode_per_atom_type(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
-                data = one_supernode_per_atom_type_dist(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            else:
-                raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
-            self.rewiring_time = time()
+        z = data.atomic_numbers.long()
+        pos = data.pos
+        batch = data.batch
 
         # Use periodic boundary conditions
         if self.use_pbc:
@@ -467,8 +464,28 @@ class FANet(BaseModel):
         if self.skip_co:
             energy += energy_skip_co
 
+        # Force-head
         if self.regress_forces:
             force = self.decoder(h)
             return energy, force
 
         return energy, pooling_loss
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}("
+            f"num_interactions_blocks={self.num_interactions}, "
+            f"hidden_channels={self.hidden_channels}, "
+            f"tag_hidden_channels={self.tag_hidden_channels}, "
+            f"phys properties={self.phys_hidden_channels}, "
+            f"period_hidden_channels={self.pg_hidden_channels}, "
+            f"group_hidden_channels={self.pg_hidden_channels}, "
+            f"energy_head={self.energy_head}",
+            f"num_filters={self.num_filters}, "
+            f"num_gaussians={self.num_gaussians}, "
+            f"cutoff={self.cutoff})",
+            f"second_layer_MLP={self.second_layer_MLP})",
+            f"skip_co={self.skip_co})",
+            f"complex_mp={self.complex_mp})",
+            f"mlp_rij={self.mlp_rij})",
+        )

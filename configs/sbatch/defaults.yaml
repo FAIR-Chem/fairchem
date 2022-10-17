@@ -1,6 +1,6 @@
 # Default arguments for /sbatch.py
 #
-# Overwerite them from the command-line with `$ python sbatch.py arg=value`
+# Overwrite them from the command-line with `$ python sbatch.py arg=value`
 #
 # `py_args` should be a string, it will be passed down to main.py as:
 #   $ python main.py py_args

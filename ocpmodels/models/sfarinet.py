@@ -1,8 +1,8 @@
 """ Code of the Scalable Frame Averaging (Rotation Invariant) GNN
 """
 
-from math import sqrt
 from time import time
+
 import torch
 from torch import nn
 from torch.nn import Embedding, Linear
@@ -16,12 +16,6 @@ from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-from ocpmodels.preprocessing import (
-    one_supernode_per_atom_type,
-    one_supernode_per_atom_type_dist,
-    one_supernode_per_graph,
-    remove_tag0_nodes,
-)
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1
@@ -101,7 +95,6 @@ class EmbeddingBlock(nn.Module):
         # MLP
         self.lin = Linear(hidden_channels, hidden_channels)
         self.lin_e = Linear(num_gaussians + 3, hidden_channels)
-        # TODO: check if it has to be hidden_channels
 
         self.reset_parameters()
 
@@ -243,108 +236,89 @@ class OutputBlock(nn.Module):
 
 @registry.register_model("sfarinet")
 class SfariNet(BaseModel):
-    def __init__(
-        self,
-        num_atoms,
-        bond_feat_dim,  # not used
-        num_targets,
-        act=swish,
-        new_gnn: bool = True,
-        use_pbc: bool = True,
-        regress_forces: bool = True,
-        otf_graph: bool = False,
-        num_gaussians: int = 50,
-        num_filters: int = 128,
-        num_interactions: int = 6,
-        cutoff: float = 10.0,
-        hidden_channels: int = 128,
-        tag_hidden_channels: int = 32,
-        pg_hidden_channels: int = 32,
-        phys_hidden_channels: int = 0,
-        phys_embeds: bool = False,
-        graph_rewiring=False,
-        energy_head=False,
-    ):
+    r"""The Scalable Frame Averaging Rotation Invariant GNN model Sfarinet.
+
+    Args:
+        cutoff (float): Cutoff distance for interatomic interactions.
+            (default: :obj:`10.0`)
+        use_pbc (bool): Use of periodic boundary conditions.
+            (default: true)
+        max_num_neighbors (int): The maximum number of neighbors to
+            collect for each node within the :attr:`cutoff` distance.
+            (default: :obj:`32`)
+        graph_rewiring (str): Method used to create the graph,
+            among "", remove-tag-0, supernodes.
+        energy_head (str): Method to compute energy prediction
+            from atom representations.
+        hidden_channels (int): Hidden embedding size.
+            (default: :obj:`128`)
+        tag_hidden_channels (int): Hidden tag embedding size.
+            (default: :obj:`32`)
+        pg_hidden_channels (int): Hidden period and group embed size.
+            (default: obj:`32`)
+        phys_embed (bool): Concat fixed physics-aware embeddings.
+        phys_hidden_channels (int): Hidden size of learnable phys embed.
+            (default: obj:`32`)
+        num_interactions (int): The number of interaction blocks.
+            (default: :obj:`6`)
+        num_gaussians (int): The number of gaussians :math:`\mu`.
+            (default: :obj:`50`)
+    """
+
+    def __init__(self, **kwargs):
         super(SfariNet, self).__init__()
-        self.cutoff = cutoff
-        self.act = act
-        self.use_pbc = use_pbc
-        self.hidden_channels = hidden_channels
-        self.tag_hidden_channels = tag_hidden_channels
-        self.pg_hidden_channels = pg_hidden_channels
-        self.phys_hidden_channels = phys_hidden_channels
-        self.phys_embeds = phys_embeds
-        self.regress_forces = regress_forces
-        self.graph_rewiring = graph_rewiring
-        self.energy_head = energy_head
-        self.use_positional_embeds = graph_rewiring in {
-            "one-supernode-per-graph",
-            "one-supernode-per-atom-type",
-            "one-supernode-per-atom-type-dist",
-        }
-        # Gaussian Basis
-        self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
+        self.cutoff = kwargs["cutoff"]
+        self.use_pbc = kwargs["use_pbc"]
+        self.max_num_neighbors = kwargs["max_num_neighbors"]
+        self.regress_forces = kwargs["regress_forces"]
+        self.energy_head = kwargs["energy_head"]
+
+        self.distance_expansion = GaussianSmearing(
+            0.0, self.cutoff, kwargs["num_gaussians"]
+        )
+        self.act = (
+            getattr(nn.functional, kwargs["act"]) if kwargs["act"] != "swish" else swish
+        )
 
         # Embedding block
         self.embed_block = EmbeddingBlock(
-            num_gaussians,
-            hidden_channels,
-            tag_hidden_channels,
-            pg_hidden_channels,
-            phys_hidden_channels,
-            phys_embeds,
-            graph_rewiring,
-            act,
+            kwargs["num_gaussians"],
+            kwargs["hidden_channels"],
+            kwargs["tag_hidden_channels"],
+            kwargs["pg_hidden_channels"],
+            kwargs["phys_hidden_channels"],
+            kwargs["phys_embeds"],
+            kwargs["graph_rewiring"],
+            self.act,
         )
 
         # Interaction block
         self.interaction_blocks = nn.ModuleList(
             [
                 InteractionBlock(
-                    hidden_channels,
-                    act,
+                    kwargs["hidden_channels"],
+                    self.act,
                 )
-                for _ in range(num_interactions)
+                for _ in range(kwargs["num_interactions"])
             ]
         )
 
         # Output block
-        self.output_block = OutputBlock(energy_head, hidden_channels, act)
+        self.output_block = OutputBlock(
+            self.energy_head, kwargs["hidden_channels"], self.act
+        )
 
         if self.energy_head == "weighted-av-initial-embeds":
-            self.w_lin = Linear(hidden_channels, 1)
+            self.w_lin = Linear(kwargs["hidden_channels"], 1)
+
+        # Force head
+        self.decoder = None
 
     def forward(self, data):
         # Rewire the graph
-        if not self.graph_rewiring:
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-        else:
-            t = time()
-            if self.graph_rewiring == "remove-tag-0":
-                data = remove_tag0_nodes(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-graph":
-                data = one_supernode_per_graph(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type":
-                data = one_supernode_per_atom_type(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
-                data = one_supernode_per_atom_type_dist(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            else:
-                raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
-            self.rewiring_time = time() - t
+        z = data.atomic_numbers.long()
+        pos = data.pos
+        batch = data.batch
 
         # Use periodic boundary conditions
         if self.use_pbc:
@@ -368,7 +342,7 @@ class SfariNet(BaseModel):
                 pos,
                 r=self.cutoff,
                 batch=batch,
-                max_num_neighbors=40,
+                max_num_neighbors=self.max_num_neighbors,
             )
             # edge_index = data.edge_index
             row, col = edge_index
@@ -401,8 +375,8 @@ class SfariNet(BaseModel):
         energy = self.output_block(h, edge_index, edge_weight, batch, alpha)
         # or skip-connection
 
+        # Force-head for S2EF, IS2RS
         if self.regress_forces:
             force = self.decoder(h)
             return energy, force
-
         return energy, pooling_loss

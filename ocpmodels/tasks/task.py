@@ -23,7 +23,7 @@ class BaseTask:
 
         # save checkpoint path to runner state for slurm resubmissions
         self.chkpt_path = os.path.join(
-            self.trainer.config["cmd"]["checkpoint_dir"], "checkpoint.pt"
+            self.trainer.config["checkpoint_dir"], "checkpoint.pt"
         )
 
     def run(self):
@@ -86,7 +86,7 @@ class ValidateTask(BaseTask):
 
 
 @registry.register_task("run-relaxations")
-class RelxationTask(BaseTask):
+class RelaxationTask(BaseTask):
     def run(self):
         assert isinstance(
             self.trainer, ForcesTrainer

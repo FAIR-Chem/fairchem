@@ -1,0 +1,38 @@
+default:
+  trainer: energy
+  logger: wandb
+
+  task:
+    dataset: single_point_lmdb
+    description: "Relaxed state energy prediction from initial structure."
+    type: regression
+    metric: mae
+    labels:
+      - relaxed energy
+
+  normalizer: null
+  model:
+    otf_graph: False
+    max_num_neighbors: 40
+  mode: train
+  dataset:
+    - src: /network/projects/_groups/ocp/oc20/is2re/all/train/data.lmdb
+      normalize_labels: True
+      target_mean: -1.525913953781128
+      target_std: 2.279365062713623
+    - src: /network/projects/_groups/ocp/oc20/is2re/all/val_id/data.lmdb # val_id val_ood_both  val_ood_cat  val_ood_ads
+
+10k:
+  dataset:
+    - src: /network/projects/_groups/ocp/oc20/is2re/10k/train/data.lmdb #  data/is2re/10k/train/data.lmdb
+    - {}
+
+100k:
+  dataset:
+    - src: /network/projects/_groups/ocp/oc20/is2re/100k/train/data.lmdb
+    - {}
+
+all:
+  dataset:
+    - src: /network/projects/_groups/ocp/oc20/is2re/all/train/data.lmdb
+    - {}

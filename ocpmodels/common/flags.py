@@ -30,18 +30,30 @@ class Flags:
         self.parser.add_argument(
             "--config-yml",
             type=Path,
-            help="Path to a config file listing data, model, optim parameters.",
+            help="LEGACY Path to a config file listing data, model, optim parameters.",
         )
         self.parser.add_argument(
-            "--identifier",
+            "--config",
+            type=str,
+            help="Descriptor for the run configuration as '{model}-{task}-{split}'.",
+        )
+        self.parser.add_argument(
+            "--wandb_name",
             default="",
             type=str,
-            help="Experiment identifier to append to checkpoint/log/result directory",
+            help="Experiment identifier to use as wandb name",
         )
         self.parser.add_argument(
-            "--debug",
+            "--is_debug",
             action="store_true",
             help="Whether this is a debugging run or not",
+            default=False,
+        )
+        self.parser.add_argument(
+            "--is_hpo",
+            action="store_true",
+            help="Whether this is a HPO run or not",
+            default=False,
         )
         self.parser.add_argument(
             "--run-dir",
@@ -59,7 +71,16 @@ class Flags:
             "--seed", default=0, type=int, help="Seed for torch, cuda, numpy"
         )
         self.parser.add_argument(
-            "--amp", action="store_true", help="Use mixed-precision training"
+            "--amp",
+            action="store_true",
+            help="Use mixed-precision training",
+            default=False,
+        )
+        self.parser.add_argument(
+            "--silent",
+            action="store_true",
+            help="Prevent the trainer from printing some stuff",
+            default=False,
         )
         self.parser.add_argument(
             "--checkpoint", type=str, help="Model checkpoint to load"
@@ -79,10 +100,11 @@ class Flags:
             help="Path to a config file with parameter sweeps",
         )
         self.parser.add_argument(
-            "--submit", action="store_true", help="Submit job to cluster"
-        )
-        self.parser.add_argument(
-            "--summit", action="store_true", help="Running on Summit cluster"
+            "--cpus_to_workers",
+            action="store_true",
+            default=True,
+            help="Match dataloader workers to available cpus "
+            + "(may be divided by number of GPUs)",
         )
         self.parser.add_argument(
             "--logdir",
@@ -132,33 +154,74 @@ class Flags:
         self.parser.add_argument("--local_rank", default=0, type=int, help="Local rank")
         # Additional arguments
         self.parser.add_argument(
-            "--new_gnn",
-            action="store_false",
-            help="Whether to use original GNN models or modified ones",
-        )
-        self.parser.add_argument(
-            "--fa",
-            default=False,
-            choices=[False, "2D", "3D"],
-            help="Specify which frame averaging method to use",
-        )
-        self.parser.add_argument(
             "--note",
             type=str,
             default="",
             help="Note describing this run to be added to the logger",
         )
         self.parser.add_argument(
-            "--wandb_tag",
+            "--logger",
+            type=str,
+            default="wandb",
+            help="Logger to use. Options: [wandb, tensorboard, dummy]",
+            choices=["wandb", "tensorboard", "dummy"],
+        )
+        self.parser.add_argument(
+            "--wandb_tags",
             type=str,
             default="",
-            help="Single tag for wandb",
+            help="Comma-separated tags for wandb",
+        )
+        self.parser.add_argument(
+            "--print_every",
+            type=int,
+            default=100,
+            help="Printing frequency (in steps)",
+        )
+        self.parser.add_argument(
+            "--wandb_project",
+            type=str,
+            default="ocp-2",
+            help="WandB project name to use",
+        )
+        self.parser.add_argument(
+            "--use_pbc",
+            type=bool,
+            default=True,
+            help="Whether to use periodic boundary conditions",
         )
         self.parser.add_argument(
             "--test_ri",
             type=bool,
             default=False,
             help="Test rotation invariance of model",
+        )
+        self.parser.add_argument(
+            "--frame_averaging",
+            type=str,
+            default="",
+            help="Frame averaging method to use",
+            choices=["", "2D", "3D", "DA"],
+        )
+        self.parser.add_argument(
+            "--fa_frames",
+            type=str,
+            default="random",
+            help="Frame averaging method to use",
+            choices=["random", "det", "all", "se3-all", "se3-random", "se3-det"],
+        )
+        self.parser.add_argument(
+            "--graph_rewiring",
+            type=str,
+            default="remove-tag-0",
+            help="How to rewire the graph",
+            choices=[
+                "",
+                "remove-tag-0",
+                "one-supernode-per-graph",
+                "one-supernode-per-atom-type",
+                "one-supernode-per-atom-type-dist",
+            ],
         )
 
 

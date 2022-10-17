@@ -7,12 +7,9 @@ LICENSE file in the root directory of this source tree.
 
 import bisect
 import logging
-import math
 import pickle
-import random
 import time
 import warnings
-from datetime import datetime
 from pathlib import Path
 
 import lmdb
@@ -21,7 +18,6 @@ import torch
 from torch.utils.data import Dataset
 from torch_geometric.data import Batch
 
-from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import pyg2_data_transform
 
@@ -42,7 +38,7 @@ class LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None, choice_fa=None):
+    def __init__(self, config, transform=None, fa_frames=None):
         super(LmdbDataset, self).__init__()
         self.config = config
 
@@ -73,7 +69,7 @@ class LmdbDataset(Dataset):
             self.num_samples = len(self._keys)
 
         self.transform = transform
-        self.choice_fa = choice_fa
+        self.fa_frames = fa_frames
 
     def __len__(self):
         return self.num_samples
@@ -100,9 +96,10 @@ class LmdbDataset(Dataset):
         else:
             datapoint_pickled = self.env.begin().get(self._keys[idx])
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
+
         t1 = time.time_ns()
         if self.transform is not None:
-            data_object = self.transform(data_object, self.choice_fa)
+            data_object = self.transform(data_object)
         t2 = time.time_ns()
 
         load_time = (t1 - t0) * 1e-9  # time in s

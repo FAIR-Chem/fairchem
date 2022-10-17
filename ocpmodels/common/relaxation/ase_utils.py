@@ -11,21 +11,15 @@ Environment (ASE)
 """
 import copy
 import logging
-import os
 
 import torch
-import yaml
 from ase import Atoms
 from ase.calculators.calculator import Calculator
 from ase.calculators.singlepoint import SinglePointCalculator as sp
 from ase.constraints import FixAtoms
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    radius_graph_pbc,
-    setup_imports,
-    setup_logging,
-)
+from ocpmodels.common.utils import setup_imports, setup_logging, load_config
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
@@ -65,13 +59,13 @@ def batch_to_atoms(batch):
 class OCPCalculator(Calculator):
     implemented_properties = ["energy", "forces"]
 
-    def __init__(self, config_yml=None, checkpoint=None, cutoff=6, max_neighbors=50):
+    def __init__(self, config=None, checkpoint=None, cutoff=6, max_neighbors=50):
         """
         OCP-ASE Calculator
 
         Args:
-            config_yml (str):
-                Path to yaml config or could be a dictionary.
+            config (str):
+                "{model}-{task}-{split}" config string or trainer config dictionary.
             checkpoint (str):
                 Path to trained checkpoint.
             cutoff (int):
@@ -84,56 +78,46 @@ class OCPCalculator(Calculator):
         Calculator.__init__(self)
 
         # Either the config path or the checkpoint path needs to be provided
-        assert config_yml or checkpoint is not None
+        assert config or checkpoint is not None
 
-        if config_yml is not None:
-            if isinstance(config_yml, str):
-                config = yaml.safe_load(open(config_yml, "r"))
-
-                if "includes" in config:
-                    for include in config["includes"]:
-                        # Change the path based on absolute path of config_yml
-                        path = os.path.join(config_yml.split("configs")[0], include)
-                        include_config = yaml.safe_load(open(path, "r"))
-                        config.update(include_config)
+        if config is not None:
+            if isinstance(config, str):
+                trainer_config = load_config(config)
             else:
-                config = config_yml
+                trainer_config = config
             # Only keeps the train data that might have normalizer values
-            config["dataset"] = config["dataset"][0]
+            trainer_config["dataset"] = trainer_config["dataset"][0]
         else:
-            # Loads the config from the checkpoint directly
-            config = torch.load(checkpoint, map_location=torch.device("cpu"))["config"]
+            # Loads the trainer_config from the checkpoint directly
+            trainer_config = torch.load(
+                checkpoint,
+                map_location=torch.device("cpu"),
+            )["config"]
 
             # Load the trainer based on the dataset used
-            if config["task"]["dataset"] == "trajectory_lmdb":
-                config["trainer"] = "forces"
+            if trainer_config["task"]["dataset"] == "trajectory_lmdb":
+                trainer_config["trainer"] = "forces"
             else:
-                config["trainer"] = "energy"
+                trainer_config["trainer"] = "energy"
 
-            config["model_attributes"]["name"] = config.pop("model")
-            config["model"] = config["model_attributes"]
+            trainer_config["model"]["name"] = trainer_config.pop("model_name")
 
         # Calculate the edge indices on the fly
-        config["model"]["otf_graph"] = True
+        trainer_config["model"]["otf_graph"] = True
 
-        # Save config so obj can be transported over network (pkl)
-        self.config = copy.deepcopy(config)
-        self.config["checkpoint"] = checkpoint
+        # Save trainer_config so obj can be transported over network (pkl)
+        self.trainer_config = copy.deepcopy(trainer_config)
+        self.trainer_config["checkpoint"] = checkpoint
 
-        if "normalizer" not in config:
-            del config["dataset"]["src"]
-            config["normalizer"] = config["dataset"]
+        if "normalizer" not in trainer_config:
+            del trainer_config["dataset"]["src"]
+            trainer_config["normalizer"] = trainer_config["dataset"]
 
-        self.trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
-            task=config["task"],
-            model=config["model"],
+        self.trainer = registry.get_trainer_class(trainer_config["trainer"])(
+            **trainer_config,
             dataset=None,
-            normalizer=config["normalizer"],
-            optimizer=config["optim"],
-            identifier="",
-            slurm=config.get("slurm", {}),
-            local_rank=config.get("local_rank", 0),
-            is_debug=config.get("is_debug", True),
+            local_rank=trainer_config.get("local_rank", 0),
+            is_debug=trainer_config.get("is_debug", True),
             cpu=True,
         )
 

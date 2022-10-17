@@ -14,6 +14,8 @@ import itertools
 import json
 import logging
 import os
+import re
+import subprocess
 import sys
 import time
 from bisect import bisect
@@ -30,12 +32,54 @@ from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import segment_coo, segment_csr
+
+import ocpmodels
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 
 
+def run_command(command):
+    """
+    Run a shell command and return the output.
+    """
+    return subprocess.check_output(command.split(" ")).decode("utf-8").strip()
+
+
+def count_gpus():
+    gpus = 0
+    if os.environ.get("SLURM_JOB_ID"):
+        try:
+            slurm_gpus = run_command(
+                f"squeue --job {os.environ['SLURM_JOB_ID']} -o %b"
+            ).split("\n")[1]
+            gpus = int(re.findall(r".*(\d+)", slurm_gpus)[0])
+        except subprocess.CalledProcessError:
+            gpus = torch.cuda.device_count()
+    else:
+        gpus = torch.cuda.device_count()
+
+    return gpus
+
+
+def count_cpus():
+    cpus = None
+    if os.environ.get("SLURM_JOB_ID"):
+        try:
+            slurm_cpus = run_command(
+                f"squeue --job {os.environ['SLURM_JOB_ID']} -o %c"
+            ).split("\n")[1]
+            cpus = int(slurm_cpus)
+        except subprocess.CalledProcessError:
+            cpus = os.cpu_count()
+    else:
+        cpus = os.cpu_count()
+
+    return cpus
+
+
 def pyg2_data_transform(data: Data):
-    # if we're on the new pyg (2.0 or later), we need to convert the data to the new format
+    # if we're on the new pyg (2.0 or later), we need to convert the data to the
+    # new format
     if torch_geometric.__version__ >= "2.0":
         return Data(**{k: v for k, v in data.__dict__.items() if v is not None})
 
@@ -88,7 +132,8 @@ def warmup_lr_lambda(current_step, optim_config):
         or "warmup_epochs" in optim_config
     ):
         raise Exception(
-            "ConfigError: please define lr_milestones in steps not epochs and define warmup_steps instead of warmup_epochs"
+            "ConfigError: please define lr_milestones in steps not"
+            + " epochs and define warmup_steps instead of warmup_epochs"
         )
 
     if current_step <= optim_config["warmup_steps"]:
@@ -110,8 +155,12 @@ def print_cuda_usage():
 
 
 def conditional_grad(dec):
-    "Decorator to enable/disable grad depending on whether force/energy predictions are being made"
-    # Adapted from https://stackoverflow.com/questions/60907323/accessing-class-property-as-decorator-argument
+    """
+    Decorator to enable/disable grad depending on whether force/energy
+    predictions are being made
+    """
+    # Adapted from
+    # https://stackoverflow.com/questions/60907323/accessing-class-property-as-decorator-argument
     def decorator(func):
         @wraps(func)
         def cls_method(self, *args, **kwargs):
@@ -322,11 +371,12 @@ def create_dict_from_args(args: list, sep: str = "."):
     return return_dict
 
 
-def load_config(path: str, previous_includes: list = []):
+def load_config_legacy(path: str, previous_includes: list = []):
     path = Path(path)
     if path in previous_includes:
         raise ValueError(
-            f"Cyclic config include detected. {path} included in sequence {previous_includes}."
+            "Cyclic config include detected. "
+            + f"{path} included in sequence {previous_includes}."
         )
     previous_includes = previous_includes + [path]
     direct_config = yaml.safe_load(open(path, "r"))
@@ -346,7 +396,7 @@ def load_config(path: str, previous_includes: list = []):
     duplicates_error = []
 
     for include in includes:
-        include_config, inc_dup_warning, inc_dup_error = load_config(
+        include_config, inc_dup_warning, inc_dup_error = load_config_legacy(
             include, previous_includes
         )
         duplicates_warning += inc_dup_warning
@@ -363,51 +413,65 @@ def load_config(path: str, previous_includes: list = []):
     return config, duplicates_warning, duplicates_error
 
 
+def load_config(config_str):
+    model, task, split = config_str.split("-")
+    conf_path = Path(__file__).resolve().parent.parent.parent / "configs" / "models"
+
+    model_conf_path = list(conf_path.glob(f"{model}.y*ml"))[0]
+    task_conf_path = list(conf_path.glob(f"tasks/{task}.y*ml"))[0]
+
+    model_conf = yaml.safe_load(model_conf_path.read_text())
+    task_conf = yaml.safe_load(task_conf_path.read_text())
+
+    assert "default" in model_conf
+    assert task in model_conf
+    assert split in model_conf[task]
+
+    assert "default" in task_conf
+    assert split in task_conf
+
+    config, _ = merge_dicts({}, model_conf["default"])
+    config, _ = merge_dicts(config, model_conf[task].get("default", {}))
+    config, _ = merge_dicts(config, model_conf[task][split])
+    config, _ = merge_dicts(config, task_conf["default"])
+    config, _ = merge_dicts(config, task_conf[split])
+
+    return config
+
+
 def build_config(args, args_override):
-    config, duplicates_warning, duplicates_error = load_config(args.config_yml)
-    if len(duplicates_warning) > 0:
-        logging.warning(
-            f"Overwritten config parameters from included configs "
-            f"(non-included parameters take precedence): {duplicates_warning}"
-        )
-    if len(duplicates_error) > 0:
+
+    if args.config_yml:
         raise ValueError(
-            f"Conflicting (duplicate) parameters in simultaneously "
-            f"included configs: {duplicates_error}"
+            "Using LEGACY config format. Please update your config to the new format."
         )
+
+    config = load_config(args.config)
 
     # Check for overridden parameters.
     if args_override != []:
         overrides = create_dict_from_args(args_override)
         config, _ = merge_dicts(config, overrides)
 
-    # Some other flags.
-    config["mode"] = args.mode
-    config["data_split"] = str(args.config_yml).split("/")[2]
-    config["identifier"] = args.identifier
-    config["timestamp_id"] = args.timestamp_id
-    config["seed"] = args.seed
-    config["is_debug"] = args.debug
-    config["run_dir"] = resolve(args.run_dir)
-    config["print_every"] = args.print_every
-    config["amp"] = args.amp
-    config["checkpoint"] = args.checkpoint
-    config["cpu"] = args.cpu
-    config["new_gnn"] = args.new_gnn
-    config["test_ri"] = args.test_ri
-    if "frame_averaging" not in config:
-        config["frame_averaging"] = args.fa
-    config["note"] = args.note
-    # Submit
-    config["submit"] = args.submit
-    config["summit"] = args.summit
-    # Distributed
-    config["distributed"] = args.distributed
-    config["local_rank"] = args.local_rank
-    config["distributed_port"] = args.distributed_port
+    config, _ = merge_dicts(config, vars(args))
+    config["data_split"] = args.config.split("-")[-1]
+    config["run_dir"] = resolve(config["run_dir"])
+    config["slurm"] = {}
+    if config["cpus_to_workers"]:
+        cpus = count_cpus()
+        gpus = count_gpus()
+        if cpus is not None:
+            if gpus == 0:
+                workers = cpus - 1
+            else:
+                workers = cpus // gpus
+            if not config["silent"]:
+                print(
+                    f"Overriding num_workers from {config['optim']['num_workers']}",
+                    f"to {workers} to match the machine's CPUs.",
+                )
+            config["optim"]["num_workers"] = workers
     config["world_size"] = args.num_nodes * args.num_gpus
-    config["distributed_backend"] = args.distributed_backend
-    config["wandb_tag"] = args.wandb_tag if hasattr(args, "wandb_tag") else None
 
     return config
 
@@ -441,6 +505,7 @@ def create_grid(base_config, sweep_file):
     for i, override_vals in enumerate(values):
         config = copy.deepcopy(base_config)
         config = _update_config(config, keys, override_vals)
+        # WARNING identifier has been deprecated in favour of wandb_name
         config["identifier"] = config["identifier"] + f"_run{i}"
         configs.append(config)
     return configs
@@ -512,7 +577,8 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     # position of the atoms
     atom_pos = data.pos
 
-    # Before computing the pairwise distances between atoms, first create a list of atom indices to compare for the entire batch
+    # Before computing the pairwise distances between atoms, first create a list
+    # of atom indices to compare for the entire batch
     num_atoms_per_image = data.natoms
     num_atoms_per_image_sqr = (num_atoms_per_image**2).long()
 
@@ -523,12 +589,15 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     num_atoms_per_image_expand = torch.repeat_interleave(
         num_atoms_per_image, num_atoms_per_image_sqr
     )
-
-    # Compute a tensor containing sequences of numbers that range from 0 to num_atoms_per_image_sqr for each image
-    # that is used to compute indices for the pairs of atoms. This is a very convoluted way to implement
-    # the following (but 10x faster since it removes the for loop)
+    # Compute a tensor containing sequences of numbers that range from 0 to
+    # num_atoms_per_image_sqr for each image that is used to compute indices for
+    # the pairs of atoms. This is a very convoluted way to implement the following
+    # (but 10x faster since it removes the for loop)
     # for batch_idx in range(batch_size):
-    #    batch_count = torch.cat([batch_count, torch.arange(num_atoms_per_image_sqr[batch_idx], device=device)], dim=0)
+    #    batch_count = torch.cat([
+    #        batch_count,
+    #        torch.arange(num_atoms_per_image_sqr[batch_idx], device=device)
+    #    ], dim=0)
     num_atom_pairs = torch.sum(num_atoms_per_image_sqr)
     index_sqr_offset = (
         torch.cumsum(num_atoms_per_image_sqr, dim=0) - num_atoms_per_image_sqr
@@ -539,8 +608,12 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     atom_count_sqr = torch.arange(num_atom_pairs, device=device) - index_sqr_offset
 
     # Compute the indices for the pairs of atoms (using division and mod)
-    # If the systems get too large this apporach could run into numerical precision issues
-    index1 = (atom_count_sqr // num_atoms_per_image_expand) + index_offset_expand
+    # If the systems get too large this approach could run into numerical
+    # precision issues
+    index1 = (
+        torch.div(atom_count_sqr, num_atoms_per_image_expand, rounding_mode="trunc")
+        + index_offset_expand
+    )
     index2 = (atom_count_sqr % num_atoms_per_image_expand) + index_offset_expand
     # Get the positions for each atom
     pos1 = torch.index_select(atom_pos, 0, index1)
@@ -625,7 +698,8 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     )
 
     if not torch.all(mask_num_neighbors):
-        # Mask out the atoms to ensure each atom has at most max_num_neighbors_threshold neighbors
+        # Mask out the atoms to ensure each atom has at most
+        # max_num_neighbors_threshold neighbors
         index1 = torch.masked_select(index1, mask_num_neighbors)
         index2 = torch.masked_select(index2, mask_num_neighbors)
         unit_cell = torch.masked_select(
@@ -669,7 +743,8 @@ def get_max_neighbors_mask(natoms, index, atom_distance, max_num_neighbors_thres
         )
         return mask_num_neighbors, num_neighbors_image
 
-    # Create a tensor of size [num_atoms, max_num_neighbors] to sort the distances of the neighbors.
+    # Create a tensor of size [num_atoms, max_num_neighbors] to sort the distances
+    # of the neighbors.
     # Fill with infinity so we can easily remove unused distances later.
     distance_sort = torch.full([num_atoms * max_num_neighbors], np.inf, device=device)
 
@@ -726,8 +801,8 @@ def get_pruned_edge_idx(edge_index, num_atoms=None, max_neigh=1e9):
 
 def merge_dicts(dict1: dict, dict2: dict):
     """Recursively merge two dictionaries.
-    Values in dict2 override values in dict1. If dict1 and dict2 contain a dictionary as a
-    value, this will call itself recursively to merge these dictionaries.
+    Values in dict2 override values in dict1. If dict1 and dict2 contain a dictionary
+    as a value, this will call itself recursively to merge these dictionaries.
     This does not modify the input dictionaries (creates an internal copy).
     Additionally returns a list of detected duplicates.
     Adapted from https://github.com/TUM-DAML/seml/blob/master/seml/utils.py
@@ -737,7 +812,8 @@ def merge_dicts(dict1: dict, dict2: dict):
     dict1: dict
         First dict.
     dict2: dict
-        Second dict. Values in dict2 will override values from dict1 in case they share the same key.
+        Second dict. Values in dict2 will override values from dict1 in case they share
+        the same key.
 
     Returns
     -------
@@ -759,6 +835,13 @@ def merge_dicts(dict1: dict, dict2: dict):
             if isinstance(v, dict) and isinstance(dict1[k], dict):
                 return_dict[k], duplicates_k = merge_dicts(dict1[k], dict2[k])
                 duplicates += [f"{k}.{dup}" for dup in duplicates_k]
+            elif isinstance(v, list) and isinstance(dict1[k], list):
+                if len(dict1[k]) != len(dict2[k]):
+                    raise ValueError(
+                        f"List for key {k} has different length in dict1 and dict2."
+                        + " Use an empty dict {} to pad for items in the shorter list."
+                    )
+                return_dict[k] = [merge_dicts(d1, d2)[0] for d1, d2 in zip(dict1[k], v)]
             else:
                 return_dict[k] = dict2[k]
                 duplicates.append(k)
@@ -826,7 +909,7 @@ def check_traj_files(batch, traj_dir):
 
 def resolve(path):
     """
-    Resolves a path: expand user (~) and env vars ($SCRATCH) and resovles to
+    Resolves a path: expand user (~) and env vars ($SCRATCH) and resolves to
     an absolute path.
 
     Args:
@@ -849,57 +932,58 @@ def update_from_sbatch_py_vars(args):
     return args
 
 
-def make_trainer(
-    str_args=["--mode=train", "--config=configs/is2re/10k/schnet/new_schnet.yml"],
-    overrides={},
-    verbose=True,
-):
+def make_script_trainer(str_args=[], overrides={}, silent=False, mode="train"):
     argv = [a for a in sys.argv]
     assert isinstance(str_args, list)
+
+    if silent and all("--silent" not in s for s in str_args):
+        str_args.append("--silent")
+    if all("--mode" not in s for s in str_args):
+        str_args.append(f"--mode={mode}")
+
     sys.argv[1:] = str_args
     setup_logging()
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
-    config = build_config(args, override_args)
+    trainer_config = build_config(args, override_args)
 
     for k, v in overrides.items():
         if isinstance(v, dict):
             for kk, vv in v.items():
-                config[k][kk] = vv
+                trainer_config[k][kk] = vv
         else:
-            config[k] = v
+            trainer_config[k] = v
+
+    trainer_config["silent"] = silent
 
     setup_imports()
-    trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
-        task=config["task"],
-        model_attributes=config["model"],
-        dataset=config["dataset"],
-        optimizer=config["optim"],
-        identifier=config["identifier"],
-        timestamp_id=config.get("timestamp_id", None),
-        run_dir=config.get("run_dir", "./"),
-        is_debug=config.get("is_debug", False),
-        print_every=config.get("print_every", 100),
-        seed=config.get("seed", 0),
-        logger=config.get("logger", "wandb"),
-        local_rank=config["local_rank"],
-        amp=config.get("amp", False),
-        cpu=config.get("cpu", False),
-        slurm=config.get("slurm", {}),
-        new_gnn=config.get("new_gnn", True),
-        frame_averaging=config.get("frame_averaging", None),
-        data_split=config.get("data_split", None),
-        note=config.get("note", ""),
-        test_invariance=config.get("test_ri", None),
-        choice_fa=config.get("choice_fa", None),
-        wandb_tag=config.get("wandb_tag", None),
-        verbose=verbose,
-    )
+    trainer = registry.get_trainer_class(trainer_config["trainer"])(**trainer_config)
 
-    task = registry.get_task_class(config["mode"])(config)
+    task = registry.get_task_class(trainer_config["mode"])(trainer_config)
     task.setup(trainer)
 
     sys.argv = argv
 
     return trainer
+
+
+def get_commit_hash():
+    try:
+        commit_hash = (
+            subprocess.check_output(
+                [
+                    "git",
+                    "-C",
+                    ocpmodels.__path__[0],
+                    "describe",
+                    "--always",
+                ]
+            )
+            .strip()
+            .decode("ascii")
+        )
+    # catch instances where code is not being run from a git repo
+    except Exception:
+        commit_hash = None
+    return commit_hash

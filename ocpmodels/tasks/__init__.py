@@ -3,6 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-__all__ = ["TrainTask", "PredictTask", "ValidateTask", "RelxationTask"]
+__all__ = ["TrainTask", "PredictTask", "ValidateTask", "RelaxationTask"]
 
-from .task import PredictTask, RelxationTask, TrainTask, ValidateTask
+from .task import PredictTask, RelaxationTask, TrainTask, ValidateTask

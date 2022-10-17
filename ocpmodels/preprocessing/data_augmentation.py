@@ -1,22 +1,23 @@
 import random
+from copy import deepcopy
 from itertools import product
 
 import torch
-from torch_geometric.data import Batch
 
 from ocpmodels.common.transforms import RandomRotate
 
 
-def all_frames(eigenvec, pos, choice_fa="random", pos_3D=None):
+def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None):
     """Compute all frames for a given graph
     Related to frame ambiguity issue
 
     Args:
         eigenvec (tensor): eigenvectors matrix
         pos (tensor): position vector (X-1t)
-        choice_fa: whether to return one random frame (random),
-            one deterministic frame (det), all E(3) frames (e3)
-            or all frames (else).
+        cell (tensor): cell direction (3x3)
+        fa_frames: whether to return one random frame (random),
+            one deterministic frame (det), all frames (all)
+            or SE(3) frames (se3- as prefix).
         pos_3D: 3rd position coordinate of atoms
 
     Returns:
@@ -26,38 +27,56 @@ def all_frames(eigenvec, pos, choice_fa="random", pos_3D=None):
     plus_minus_list = list(product([1, -1], repeat=dim))
     plus_minus_list = [torch.tensor(x) for x in plus_minus_list]
     all_fa = []
-    e3 = choice_fa in {"e3-full", "e3-random", "e3-det"}
+    all_cell = []
+    se3 = fa_frames in {
+        "se3-all",
+        "se3-random",
+        "se3-det",
+    }
+    fa_cell = deepcopy(cell)
+    full_eigenvec = torch.eye(3)
 
     for pm in plus_minus_list:
 
         # Append new graph positions to list
         new_eigenvec = pm * eigenvec
 
-        # Check if determinant is 1
-        if not e3 and not torch.allclose(
+        # Check if determinant is 1 for SE(3) case
+        if se3 and not torch.allclose(
             torch.linalg.det(new_eigenvec), torch.tensor(1.0), atol=1e-03
         ):
             continue
 
         # Consider frame if it passes above check
-        fa = pos @ new_eigenvec
+        fa_pos = pos @ new_eigenvec
+
         if pos_3D is not None:
-            all_fa.append(torch.cat((fa, pos_3D.unsqueeze(1)), dim=1))
+            fa_pos = torch.cat((fa_pos, pos_3D.unsqueeze(1)), dim=1)
+            full_eigenvec[:2, :2] = new_eigenvec
+            fa_cell = cell @ full_eigenvec
         else:
-            all_fa.append(fa)
+            fa_cell = cell @ new_eigenvec
+
+        all_fa.append(fa_pos)
+        all_cell.append(fa_cell)
 
     # Handle rare case where no R is positive orthogonal
     if all_fa == []:
         all_fa.append(pos @ eigenvec)
+        if pos_3D: 
+            all_cell.append(cell @ full_eigenvec)
+        else: 
+            all_cell.append(cell @ eigenvec)
 
-    # Return frame(s) depending on method choice_fa
-    if choice_fa == "full" or choice_fa == "e3-full":
-        return all_fa
+    # Return frame(s) depending on method fa_frames
+    if fa_frames == "all" or fa_frames == "se3-all":
+        return all_fa, all_cell
 
-    elif choice_fa == "det" or choice_fa == "e3-det":
-        return [all_fa[0]]
+    elif fa_frames == "det" or fa_frames == "se3-det":
+        return [all_fa[0]], [all_cell[0]]
 
-    return [random.choice(all_fa)]
+    index = random.randint(0, len(all_fa) - 1)
+    return [all_fa[index]], [all_cell[index]]
 
 
 def check_constraints(eigenval, eigenvec, dim):
@@ -85,13 +104,13 @@ def check_constraints(eigenval, eigenvec, dim):
         print("Determinant is not 1")
 
 
-def frame_averaging_3D(g, choice_fa="random"):
+def frame_averaging_3D(g, fa_frames="random"):
     """Computes new positions for the graph atoms,
     using on frame averaging, which builds on PCA.
 
     Args:
         g (data.Data): input graph
-        choice_fa (str): FA method used (random, det, e3, all)
+        fa_frames (str): FA method used (random, det, all, se3)
 
     Returns:
         data.Data: graph with updated positions (and distances)
@@ -117,20 +136,20 @@ def frame_averaging_3D(g, choice_fa="random"):
     eigenval = eigenval[idx]
 
     # Compute fa_pos
-    g.fa_pos = all_frames(eigenvec, pos, choice_fa)
+    g.fa_pos, g.fa_cell = all_frames(eigenvec, pos, g.cell, fa_frames)
 
     # No need to update distances, they are preserved.
 
     return g
 
 
-def frame_averaging_2D(g, choice_fa="random"):
+def frame_averaging_2D(g, fa_frames="random"):
     """Computes new positions for the graph atoms,
     based on a frame averaging building on PCA.
 
     Args:
         g (data.Data): graph
-        choice_fa (str): FA method used (random, det, e3, all)
+        fa_frames (str): FA method used (random, det, all, se3)
 
     Returns:
         _type_: updated positions
@@ -153,8 +172,7 @@ def frame_averaging_2D(g, choice_fa="random"):
     eigenvec = eigenvec[:, idx]
 
     # Compute all frames
-    g.fa_pos = all_frames(eigenvec, pos_2D, choice_fa, g.pos[:, 2])
-
+    g.fa_pos, g.fa_cell = all_frames(eigenvec, pos_2D, g.cell, fa_frames, g.pos[:, 2])
     # No need to update distances, they are preserved.
 
     return g
@@ -181,3 +199,30 @@ def data_augmentation(g, *args):
     graph_rotated, _, _ = transform(g)
 
     return graph_rotated
+
+
+def check_pbc_fa(val_loader, cell):
+    x_diff, y_diff = [], []
+    fa_x_diff, fa_y_diff = [], []
+    cell_diff = []
+    for batch in val_loader:
+        b = batch[0]
+        for i in range(batch_size):
+            x_diff.append(
+                max(b.pos[b.batch == i][:, 0]) - min(b.pos[b.batch == i][:, 0])
+            )
+            fa_x_diff.append(
+                max(b.fa_pos[0][b.batch == i][:, 0])
+                - min(b.fa_pos[0][b.batch == i][:, 0])
+            )
+            y_diff.append(
+                max(b.pos[b.batch == i][:, 1]) - min(b.pos[b.batch == i][:, 1])
+            )
+            fa_y_diff.append(
+                max(b.fa_pos[0][b.batch == i][:, 1])
+                - min(b.fa_pos[0][b.batch == i][:, 1])
+            )
+    # Do smth with cell and cell_offsets too.
+
+    # check distances after out_pbc when fa_pos is applied !
+    # rotate cell offsets of rotated graphs ?

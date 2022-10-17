@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
-import os
 import time
 from copy import deepcopy
 
@@ -28,94 +27,14 @@ class EnergyTrainer(BaseTrainer):
 
         Examples of configurations for task, model, dataset and optimizer
         can be found in `configs/ocp_is2re <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_. # noqa: E501
-
-
-    Args:
-        task (dict): Task configuration.
-        model (dict): Model configuration.
-        dataset (dict): Dataset configuration. The dataset needs to be a
-            SinglePointLMDB dataset.
-        optimizer (dict): Optimizer configuration.
-        identifier (str): Experiment identifier that is appended to log directory.
-        run_dir (str, optional): Path to the run directory where logs are to be saved.
-            (default: :obj:`None`)
-        is_debug (bool, optional): Run in debug mode.
-            (default: :obj:`False`)
-        is_hpo (bool, optional): Run hyperparameter optimization with Ray Tune.
-            (default: :obj:`False`)
-        print_every (int, optional): Frequency of printing logs.
-            (default: :obj:`100`)
-        seed (int, optional): Random number seed.
-            (default: :obj:`None`)
-        logger (str, optional): Type of logger to be used.
-            (default: :obj:`tensorboard`)
-        local_rank (int, optional): Local rank of the process, only applicable
-            for distributed training. (default: :obj:`0`)
-        amp (bool, optional): Run using automatic mixed precision.
-            (default: :obj:`False`)
-        slurm (dict): Slurm configuration. Currently just for keeping track.
-            (default: :obj:`{}`)
     """
 
-    def __init__(
-        self,
-        task,
-        model_attributes,
-        dataset,
-        optimizer,
-        identifier,
-        normalizer=None,
-        frame_averaging=None,
-        timestamp_id=None,
-        run_dir=None,
-        is_debug=False,
-        is_hpo=False,
-        print_every=100,
-        seed=None,
-        logger="tensorboard",
-        local_rank=0,
-        amp=False,
-        cpu=False,
-        slurm={},
-        new_gnn=True,
-        data_split=None,
-        test_invariance=False,
-        choice_fa=None,
-        note="",
-        wandb_tag=None,
-        verbose=True,
-    ):
-        super().__init__(
-            task=task,
-            model_attributes=model_attributes,
-            dataset=dataset,
-            optimizer=optimizer,
-            identifier=identifier,
-            normalizer=normalizer,
-            timestamp_id=timestamp_id,
-            run_dir=run_dir,
-            is_debug=is_debug,
-            is_hpo=is_hpo,
-            print_every=print_every,
-            seed=seed,
-            logger=logger,
-            local_rank=local_rank,
-            amp=amp,
-            cpu=cpu,
-            name="is2re",
-            slurm=slurm,
-            new_gnn=new_gnn,
-            data_split=data_split,
-            note=note,
-            frame_averaging=frame_averaging,
-            test_invariance=test_invariance,
-            choice_fa=choice_fa,
-            wandb_tag=wandb_tag,
-            verbose=verbose,
-        )
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs, name="is2re")
 
     def load_task(self):
-        logging.info(f"Loading dataset: {self.config['task']['dataset']}")
+        if not self.silent:
+            logging.info(f"Loading dataset: {self.config['task']['dataset']}")
         self.num_targets = 1
 
     @torch.no_grad()
@@ -143,8 +62,8 @@ class EnergyTrainer(BaseTrainer):
             self.normalizers["target"].to(self.device)
         predictions = {"id": [], "energy": []}
 
-        for i, batch in tqdm(
-            enumerate(loader),
+        for batch in tqdm(
+            loader,
             total=len(loader),
             position=rank,
             desc="device {}".format(rank),
@@ -170,9 +89,9 @@ class EnergyTrainer(BaseTrainer):
 
         return predictions
 
-    def train(self, disable_eval_tqdm=False):
+    def train(self, disable_eval_tqdm=False, debug_batches=-1):
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
-        self.config["cmd"]["print_every"] = eval_every  # Temporary
+        self.config["print_every"] = eval_every  # Can comment out for better debug
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
@@ -181,21 +100,28 @@ class EnergyTrainer(BaseTrainer):
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // len(self.train_loader)
-        start_time = time.time()
-        print("---Beginning of Training---")
+        epoch_time = []
+
+        if not self.silent:
+            print("---Beginning of Training---")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
+
+            start_time = time.time()
+            if not self.silent:
+                print("Epoch: ", epoch_int)
+
             self.train_sampler.set_epoch(epoch_int)
             skip_steps = self.step % len(self.train_loader)
             train_loader_iter = iter(self.train_loader)
-            print("Epoch: ", epoch_int)
-            if epoch_int == 1 and self.logger is not None:
-                self.logger.log({"Epoch time": time.time() - start_time})
 
             for i in range(skip_steps, len(self.train_loader)):
                 self.epoch = epoch_int + (i + 1) / len(self.train_loader)
                 self.step = epoch_int * len(self.train_loader) + i + 1
                 self.model.train()
+
+                if debug_batches > 0 and i == debug_batches:
+                    break
 
                 # Get a batch.
                 batch = next(train_loader_iter)
@@ -208,7 +134,9 @@ class EnergyTrainer(BaseTrainer):
                         loss += pooling_loss
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 if torch.isnan(loss):
-                    breakpoint()
+                    print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
+                    self.logger.add_tags(["nan_loss"])
+                    return True
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
 
@@ -260,12 +188,12 @@ class EnergyTrainer(BaseTrainer):
                                 )
 
                         # Evaluate current model on all 4 validation splits
-                        if ((epoch_int % 100 == 0) and (epoch_int != 0)) or (
+                        is_final_epoch = debug_batches < 0 and (
                             epoch_int == self.config["optim"]["max_epochs"] - 1
-                        ):
-                            self.eval_all_val_splits(
-                                epoch_int == self.config["optim"]["max_epochs"] - 1
-                            )
+                        )
+                        if (epoch_int % 100 == 0 and epoch_int != 0) or is_final_epoch:
+                            self.eval_all_val_splits(is_final_epoch)
+
                         if self.is_hpo:
                             self.hpo_update(
                                 self.epoch,
@@ -282,7 +210,14 @@ class EnergyTrainer(BaseTrainer):
                 else:
                     self.scheduler.step()
 
+                # End of batch.
+
+            # End of epoch.
+            self._log_metrics(end_of_epoch=True)
             torch.cuda.empty_cache()
+            epoch_time.append(time.time() - start_time)
+
+        # End of training.
 
         # Time model
         if self.logger is not None:
@@ -290,33 +225,23 @@ class EnergyTrainer(BaseTrainer):
             # batch = next(iter(self.train_loader))
             self._forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
-
-        # Load current best checkpoint
-        if self.config["optim"]["max_epochs"] > 2:
-            checkpoint_path = os.path.join(
-                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
-            )
-            self.load_checkpoint(checkpoint_path=checkpoint_path)
-            logging.info(
-                "Checking models are identical:"
-                + str(list(self.model.parameters())[0].data.view(-1)[:20]),
-            )
+            self.logger.log({"Epoch time": sum(epoch_time) / len(epoch_time)})
 
         # Check rotation invariance
-        if self.test_invariance:
+        if self.test_ri and debug_batches < 0:
             (
                 energy_diff_z,
                 energy_diff,
                 pos_diff_z,
                 energy_diff_refl,
-            ) = self._test_invariance()
+            ) = self.test_model_invariance()
             if self.logger:
                 self.logger.log({"2D_ri": energy_diff_z})
                 self.logger.log({"3D_ri": energy_diff})
                 self.logger.log({"2D_pos_ri": pos_diff_z})
                 self.logger.log({"2D_pos_refl_i": energy_diff_refl})
 
-        # Test equivariance
+        # TODO: Test equivariance
 
         # Evaluate current model on all 4 validation splits
         # self.eval_all_val_splits()
@@ -330,20 +255,20 @@ class EnergyTrainer(BaseTrainer):
 
     def _forward(self, batch_list):
 
-        if self.frame_averaging and self.frame_averaging != "da":
+        if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
+            original_cell = batch_list[0].cell
             y_all, p_all = [], []
             for i in range(len(batch_list[0].fa_pos)):
                 batch_list[0].pos = batch_list[0].fa_pos[i]
+                batch_list[0].cell = batch_list[0].fa_cell[i]
                 y, p = self.model(deepcopy(batch_list))
                 y_all.append(y)
                 p_all.append(p)
             batch_list[0].pos = original_pos
+            batch_list[0].cell = original_cell
             output = sum(y_all) / len(y_all)
-            try:
-                pooling_loss = sum(p) / len(p)
-            except TypeError:
-                pooling_loss = None
+            pooling_loss = sum(p_all) / len(p_all) if all(p_all) else None
         else:
             output, pooling_loss = self.model(batch_list)
 
@@ -383,7 +308,7 @@ class EnergyTrainer(BaseTrainer):
 
         return metrics
 
-    def _log_metrics(self):
+    def _log_metrics(self, end_of_epoch=False):
         log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
         log_dict.update(
             {
@@ -393,15 +318,16 @@ class EnergyTrainer(BaseTrainer):
             }
         )
         if (
-            self.step % self.config["cmd"]["print_every"] == 0
+            self.step % self.config["print_every"] == 0
             and distutils.is_master()
             and not self.is_hpo
-        ):
+        ) or (distutils.is_master() and end_of_epoch):
             log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
-            print(", ".join(log_str))
+            if not self.silent:
+                print(", ".join(log_str))
             self.metrics = {}
 
-        if self.logger is not None:
+        if self.logger is not None and not end_of_epoch:
             self.logger.log(
                 log_dict,
                 step=self.step,
@@ -409,8 +335,8 @@ class EnergyTrainer(BaseTrainer):
             )
 
     @torch.no_grad()
-    def _test_invariance(self):
-        """Test the rotation invariance property of models
+    def test_model_invariance(self, debug_batches=100):
+        """Test rotation and reflection invariance properties of GNNs
 
         Returns:
             (tensor, tensor, tensor): metrics to measure RI
@@ -423,13 +349,14 @@ class EnergyTrainer(BaseTrainer):
         energy_diff_refl = torch.zeros(1, device=self.device)
 
         for i, batch in enumerate(self.val_loader):
-
+            if debug_batches > 0 and i == debug_batches:
+                break
             # Pass it through the model.
             energies1, _ = self._forward(deepcopy(batch))
 
             # Rotate graph and compute prediction
-            batch_rotated = self.rotate_graph(batch[0], rotation="z")
-            energies2, _ = self._forward([batch_rotated])
+            batch_rotated = self.rotate_graph(batch, rotation="z")
+            energies2, _ = self._forward(deepcopy(batch_rotated))
 
             # Difference in predictions
             energy_diff_z += torch.abs(energies1["energy"] - energies2["energy"]).sum()
@@ -438,24 +365,21 @@ class EnergyTrainer(BaseTrainer):
             pos_diff_z = -1
             if hasattr(batch[0], "fa_pos"):
                 pos_diff_z = 0
-                for pos1, pos2 in zip(batch[0].fa_pos, batch_rotated.fa_pos):
+                for pos1, pos2 in zip(batch[0].fa_pos, batch_rotated[0].fa_pos):
                     pos_diff_z += pos1 - pos2
                 pos_diff_z = pos_diff_z.sum()
 
             # Reflect graph
-            batch_reflected = self.reflect_graph(batch[0])
-            energies3, _ = self._forward([batch_reflected])
+            batch_reflected = self.reflect_graph(batch)
+            energies3, _ = self._forward(batch_reflected)
             energy_diff_refl += torch.abs(
                 energies1["energy"] - energies3["energy"]
             ).sum()
 
             # 3D Rotation
-            batch_rotated = self.rotate_graph(batch[0])
-            energies4, _ = self._forward([batch_rotated])
+            batch_rotated = self.rotate_graph(batch)
+            energies4, _ = self._forward(batch_rotated)
             energy_diff += torch.abs(energies1["energy"] - energies4["energy"]).sum()
-
-            if i == 100:
-                break
 
         # Aggregate the results
         batch_size = len(batch[0].natoms)

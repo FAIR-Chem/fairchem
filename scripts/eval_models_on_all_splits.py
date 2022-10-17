@@ -7,7 +7,7 @@ from minydra import resolved_args
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from ocpmodels.common.utils import make_trainer, resolve
+from ocpmodels.common.utils import make_script_trainer, resolve
 from ocpmodels.trainers import EnergyTrainer
 
 
@@ -28,7 +28,7 @@ def parse_conf(str_args):
         k = a.split("=")[0].strip().replace("--", "")
         v = a.split("=")[1].strip()
         conf[k] = v
-    conf["model"] = conf["config-yml"].split("/")[-1].split(".")[0]
+    conf["model_name"] = conf["config"].split("-")[0]
     return conf
 
 
@@ -63,9 +63,9 @@ if __name__ == "__main__":
         overrides = {
             **TRAINER_CONF_OVERRIDES,
         }
-        trainer: EnergyTrainer = make_trainer(str_args, overrides, verbose=False)
+        trainer: EnergyTrainer = make_script_trainer(str_args, overrides, silent=True)
         trainer.model.eval()
-        trainer.config["cmd"]["checkpoint_dir"] = str(ckpt_dir)
+        trainer.config["checkpoint_dir"] = str(ckpt_dir)
         print(parse_conf(str_args))
         trainer.eval_all_val_splits(final=True, disable_tqdm=False)
 

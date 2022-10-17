@@ -9,6 +9,7 @@ import logging
 import os
 from math import pi as PI
 from time import time
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -191,22 +192,35 @@ class InteractionBlock(MessagePassing):
 
 
 # flake8: noqa: C901
-@registry.register_model("new_forcenet")
+@registry.register_model("forcenet")
 class NewForceNet(BaseModel):
     r"""Implementation of ForceNet architecture.
 
     Args:
-        num_atoms (int): Unused argument
-        bond_feat_dim (int): Unused argument
-        num_targets (int): Unused argumebt
+        cutoff (float, optional): Cutoff distance for interatomic interactions.
+            (default: :obj:`6.0`)
+        use_pbc (bool, optional): Use of periodic boundary conditions.
+            (default: true)
+        otf_graph (bool, optional): If set to :obj:`True`, compute graph edges on the fly.
+            (default: :obj:`False`)
+        max_num_neighbors (int, optional): The maximum number of neighbors to
+            collect for each node within the :attr:`cutoff` distance.
+            (default: :obj:`32`)
+        graph_rewiring (str, optional): Method used to create the graph,
+            among "", remove-tag-0, supernodes.
+        energy_head (str, optional): Method to compute energy prediction
+            from atom representations.
         hidden_channels (int, optional): Number of hidden channels.
             (default: :obj:`512`)
         tag_hidden_channels (int, optional): Number of hidden channels.
             (default: :obj:`512`)
-        num_iteractions (int, optional): Number of interaction blocks.
+        pg_hidden_channels (int, optional): Hidden period and group embed size.
+            (default: obj:`32`)
+        phys_embed (bool, optional): Concat fixed physics-aware embeddings.
+        phys_hidden_channels (int, optional): Hidden size of learnable phys embed.
+            (default: obj:`32`)
+        num_interactions (int, optional): Number of interaction blocks.
             (default: :obj:`5`)
-        cutoff (float, optional): Cutoff distance for interatomic interactions.
-            (default: :obj:`6.0`)
         feat (str, optional): Input features to be used
             (default: :obj:`full`)
         num_freqs (int, optional): Number of frequencies for basis function.
@@ -231,46 +245,30 @@ class NewForceNet(BaseModel):
             (default: :obj:`swish`)
         training (bool, optional): If set to :obj:`True`, specify training phase.
             (default: :obj:`True`)
-        otf_graph (bool, optional): If set to :obj:`True`, compute graph edges on the fly.
-            (default: :obj:`False`)
+        predict_forces (bool, optional): To predict forces from energy prediction.
     """
 
-    def __init__(
-        self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,  # not used
-        new_gnn=True,
-        hidden_channels=512,
-        tag_hidden_channels=64,
-        pg_hidden_channels=32,
-        num_interactions=5,
-        cutoff=6.0,
-        feat="full",
-        num_freqs=50,
-        max_n=3,
-        basis="sphallmul",
-        depth_mlp_edge=2,
-        depth_mlp_node=1,
-        activation_str="swish",
-        ablation="none",
-        decoder_hidden_channels=512,
-        decoder_type="mlp",
-        decoder_activation_str="swish",
-        training=True,
-        otf_graph=False,
-        phys_embeds=False,
-        phys_hidden_channels=0,
-        predict_forces=False,
-        use_pbc=True,
-        graph_rewiring=False,
-        energy_head=False,
-    ):
+    def __init__(self, **kwargs):
 
         super(NewForceNet, self).__init__()
-        self.training = training
-        self.ablation = ablation
-        self.new_gnn = new_gnn
+        self.ablation = kwargs["ablation"]
+        self.basis = kwargs["basis"]
+        self.cutoff = kwargs["cutoff"]
+        self.energy_head = kwargs["energy_head"]
+        self.feat = kwargs["feat"]
+        self.otf_graph = kwargs["otf_graph"]
+        self.predict_forces = kwargs["predict_forces"]
+        self.use_pbc = kwargs["use_pbc"]
+
+        self.use_tag = kwargs["tag_hidden_channels"] > 0
+        self.use_pg = kwargs["pg_hidden_channels"] > 0
+        self.use_positional_embeds = kwargs["graph_rewiring"] in {
+            "one-supernode-per-graph",
+            "one-supernode-per-atom-type",
+            "one-supernode-per-atom-type-dist",
+        }
+        self.use_mlp_phys = kwargs["phys_hidden_channels"] > 0 and kwargs["phys_embeds"]
+
         if self.ablation not in [
             "none",
             "nofilter",
@@ -281,51 +279,34 @@ class NewForceNet(BaseModel):
             "edgelinear",
             "noself",
         ]:
-            raise ValueError(f"Unknown ablation called {ablation}.")
+            raise ValueError(f"Unknown ablation called {self.ablation}.")
 
         """
         Descriptions of ablations:
             - none: base ForceNet model
             - nofilter: no element-wise filter parameterization in message modeling
-            - nocond: convolutional filter is only conditioned on edge features, not node embeddings
+            - nocond: convolutional filter is only conditioned on edge features, not
+                node embeddings
             - nodistlist: no atomic radius information in edge features
-            - onlydist: edge features only contains distance information. Orientation information is ommited.
-            - nodelinear: node update MLP function is replaced with linear function followed by batch normalization
-            - edgelinear: edge MLP transformation function is replaced with linear function followed by batch normalization.
+            - onlydist: edge features only contains distance information. Orientation
+                information is ommited.
+            - nodelinear: node update MLP function is replaced with linear function
+                followed by batch normalization
+            - edgelinear: edge MLP transformation function is replaced with linear
+                function followed by batch normalization.
             - noself: no self edge of m_t.
         """
 
-        self.otf_graph = otf_graph
-        self.cutoff = cutoff
-        self.output_dim = decoder_hidden_channels
-        self.feat = feat
-        self.num_freqs = num_freqs
-        self.num_layers = num_interactions
-        self.max_n = max_n
-        self.activation_str = activation_str
-        self.use_pbc = use_pbc
-        self.use_tag = tag_hidden_channels > 0
-        self.use_pg = pg_hidden_channels > 0
-        self.phys_embeds = phys_embeds
-        self.predict_forces = predict_forces
-        self.graph_rewiring = graph_rewiring
-        self.energy_head = energy_head
-        self.use_positional_embeds = graph_rewiring in {
-            "one-supernode-per-graph",
-            "one-supernode-per-atom-type",
-            "one-supernode-per-atom-type-dist",
-        }
-        self.phys_hidden_channels = phys_hidden_channels
-        self.use_mlp_phys = phys_hidden_channels > 0 and phys_embeds
-        # self.use_positional_embeds = False
-
-        assert tag_hidden_channels + 2 * pg_hidden_channels + 16 < hidden_channels
+        assert (
+            kwargs["tag_hidden_channels"] + 2 * kwargs["pg_hidden_channels"] + 16
+            < kwargs["hidden_channels"]
+        )
 
         if self.ablation == "edgelinear":
-            depth_mlp_edge = 0
+            kwargs["depth_mlp_edge"] = 0
 
         if self.ablation == "nodelinear":
-            depth_mlp_node = 0
+            kwargs["depth_mlp_node"] = 0
 
         # read atom map and atom radii
         atom_map = torch.zeros(101, 9)
@@ -338,7 +319,7 @@ class NewForceNet(BaseModel):
         atom_radii = atom_radii / 100
 
         self.atom_radii = nn.Parameter(atom_radii, requires_grad=False)
-        self.basis_type = basis
+        self.basis_type = self.basis
 
         self.pbc_apply_sph_harm = "sph" in self.basis_type
         self.pbc_sph_option = None
@@ -354,45 +335,45 @@ class NewForceNet(BaseModel):
         self.pbc_sph = None
         if self.pbc_apply_sph_harm:
             self.pbc_sph = SphericalSmearing(
-                max_n=self.max_n, option=self.pbc_sph_option
+                max_n=kwargs["max_n"], option=self.pbc_sph_option
             )
 
         # Tag embedding
         if self.use_tag:
-            self.tag_embedding = nn.Embedding(3, tag_hidden_channels)
+            self.tag_embedding = nn.Embedding(3, kwargs["tag_hidden_channels"])
 
         # Phys embeddings
-        self.phys_emb = PhysEmbedding(props=self.phys_embeds, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(props=kwargs["phys_embeds"], pg=self.use_pg)
         if self.use_mlp_phys:
             self.phys_lin = nn.Linear(
-                self.phys_emb.n_properties, self.phys_hidden_channels
+                self.phys_emb.n_properties, kwargs["phys_hidden_channels"]
             )
         else:
-            self.phys_hidden_channels = self.phys_emb.n_properties
+            kwargs["phys_hidden_channels"] = self.phys_emb.n_properties
 
         # Period + group embeddings
         if self.use_pg:
             self.period_embedding = nn.Embedding(
-                self.phys_emb.period_size, pg_hidden_channels
+                self.phys_emb.period_size, kwargs["pg_hidden_channels"]
             )
             self.group_embedding = nn.Embedding(
-                self.phys_emb.group_size, pg_hidden_channels
+                self.phys_emb.group_size, kwargs["pg_hidden_channels"]
             )
 
         # Position encoding
         if self.use_positional_embeds:
-            self.pe = PositionalEncoding(hidden_channels, 210)
+            self.pe = PositionalEncoding(kwargs["hidden_channels"], 210)
 
         # Main embedding
         if self.feat == "simple":
             self.embedding = nn.Embedding(
                 100,
-                hidden_channels
-                - tag_hidden_channels
-                - self.phys_hidden_channels
-                - 2 * pg_hidden_channels,
+                kwargs["hidden_channels"]
+                - kwargs["tag_hidden_channels"]
+                - kwargs["phys_hidden_channels"]
+                - 2 * kwargs["pg_hidden_channels"],
             )
-            # self.embedding = nn.Embedding(100, hidden_channels)
+            # self.embedding = nn.Embedding(100, kwargs["hidden_channels"])
 
             # set up dummy atom_map that only contains atomic_number information
             atom_map = torch.linspace(0, 1, 101).view(-1, 1).repeat(1, 9)
@@ -420,18 +401,18 @@ class NewForceNet(BaseModel):
                 node_basis_type = self.basis_type
             basis = Basis(
                 in_features,
-                num_freqs=num_freqs,
+                num_freqs=kwargs["num_freqs"],
                 basis_type=node_basis_type,
-                act=self.activation_str,
+                act=kwargs["activation_str"],
             )
             self.embedding = torch.nn.Sequential(
                 basis,
                 torch.nn.Linear(
                     basis.out_dim,
-                    hidden_channels
-                    - tag_hidden_channels
-                    - self.phys_hidden_channels
-                    - 2 * pg_hidden_channels,
+                    kwargs["hidden_channels"]
+                    - kwargs["tag_hidden_channels"]
+                    - kwargs["phys_hidden_channels"]
+                    - 2 * kwargs["pg_hidden_channels"],
                 ),
             )
 
@@ -460,87 +441,65 @@ class NewForceNet(BaseModel):
             in_feature = 7
         self.basis_fun = Basis(
             in_feature,
-            num_freqs,
+            kwargs["num_freqs"],
             self.basis_type,
-            self.activation_str,
+            kwargs["activation_str"],
             sph=self.pbc_sph,
         )
 
         # process interaction blocks
         self.interactions = torch.nn.ModuleList()
-        for _ in range(num_interactions):
+        for _ in range(kwargs["num_interactions"]):
             block = InteractionBlock(
-                hidden_channels,
+                kwargs["hidden_channels"],
                 self.basis_fun.out_dim,
                 self.basis_type,
-                depth_mlp_edge=depth_mlp_edge,
-                depth_mlp_trans=depth_mlp_node,
-                activation_str=self.activation_str,
-                ablation=ablation,
+                depth_mlp_edge=kwargs["depth_mlp_edge"],
+                depth_mlp_trans=kwargs["depth_mlp_node"],
+                activation_str=kwargs["activation_str"],
+                ablation=self.ablation,
             )
             self.interactions.append(block)
 
-        self.lin = torch.nn.Linear(hidden_channels, self.output_dim)
-        self.activation = Act(activation_str)
+        self.lin = torch.nn.Linear(
+            kwargs["hidden_channels"], kwargs["decoder_hidden_channels"]
+        )
+        self.activation = Act(kwargs["activation_str"])
 
         if self.predict_forces:
             # ForceNet decoder
             self.decoder = FNDecoder(
-                decoder_type, decoder_activation_str, self.output_dim
+                kwargs["decoder_type"],
+                kwargs["decoder_activation_str"],
+                kwargs["decoder_hidden_channels"],
             )
 
         # Pooling & weighted average blocks
         if self.energy_head in {"pooling", "random"}:
             self.hierarchical_pooling = Hierarchical_Pooling(
-                hidden_channels,
+                kwargs["hidden_channels"],
                 self.activation,
                 NUM_POOLING_LAYERS,
                 NUM_CLUSTERS,
                 self.energy_head,
             )
         elif self.energy_head == "graclus":
-            self.graclus = Graclus(hidden_channels, self.activation)
+            self.graclus = Graclus(kwargs["hidden_channels"], self.activation)
         elif self.energy_head in {
             "weighted-av-initial-embeds",
             "weighted-av-final-embeds",
         }:
-            self.w_lin = nn.Linear(hidden_channels, 1)
+            self.w_lin = nn.Linear(kwargs["hidden_channels"], 1)
 
         # Projection layer for energy prediction
-        self.energy_mlp = nn.Linear(self.output_dim, 1)
+        self.energy_mlp = nn.Linear(kwargs["decoder_hidden_channels"], 1)
 
     def forward(self, data):
 
         # Rewire the graph
-        if not self.graph_rewiring:
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-        else:
-            t = time()
-            if self.graph_rewiring == "remove-tag-0":
-                data = remove_tag0_nodes(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-graph":
-                data = one_supernode_per_graph(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type":
-                data = one_supernode_per_atom_type(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
-                data = one_supernode_per_atom_type_dist(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            else:
-                raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
-            self.rewiring_time = time() - t
+        z = data.atomic_numbers.long()
+        pos = data.pos
+        batch = data.batch
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
@@ -690,7 +649,3 @@ class NewForceNet(BaseModel):
             return energy, force
 
         return energy, pooling_loss
-
-    @property
-    def num_params(self):
-        return sum(p.numel() for p in self.parameters())

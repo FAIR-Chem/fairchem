@@ -5,12 +5,10 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 from math import pi as PI
-from typing import Optional
-from time import time
+
 import torch
 import torch.nn.functional as F
 from torch.nn import Embedding, Linear, ModuleList, Sequential
-from torch_geometric.data import Batch
 from torch_geometric.nn import MessagePassing, radius_graph
 from torch_scatter import scatter
 
@@ -20,15 +18,10 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-from ocpmodels.preprocessing import (
-    one_supernode_per_atom_type,
-    one_supernode_per_atom_type_dist,
-    one_supernode_per_graph,
-    remove_tag0_nodes,
-)
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1
@@ -115,7 +108,8 @@ class ShiftedSoftplus(torch.nn.Module):
         return F.softplus(x) - self.shift
 
 
-class NewSchNet(torch.nn.Module):
+@registry.register_model("schnet")
+class NewSchNet(BaseModel):
     r"""The continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
     Quantum Interactions" <https://arxiv.org/abs/1706.08566>`_ paper that uses
@@ -129,11 +123,27 @@ class NewSchNet(torch.nn.Module):
     :math:`\mathbf{e}_{j,i}` denotes the interatomic distances between atoms.
 
     Args:
+        cutoff (float, optional): Cutoff distance for interatomic interactions.
+            (default: :obj:`10.0`)
+        use_pbc (bool, optional): Use of periodic boundary conditions.
+            (default: true)
+        otf_graph (bool, optional): Recompute radius graph.
+            (default: false)
+        max_num_neighbors (int, optional): The maximum number of neighbors to
+            collect for each node within the :attr:`cutoff` distance.
+            (default: :obj:`32`)
+        graph_rewiring (str, optional): Method used to create the graph,
+            among "", remove-tag-0, supernodes.
+        energy_head (str, optional): Method to compute energy prediction
+            from atom representations.
         hidden_channels (int, optional): Hidden embedding size.
             (default: :obj:`128`)
         tag_hidden_channels (int, optional): Hidden tag embedding size.
             (default: :obj:`32`)
         pg_hidden_channels (int, optional): Hidden period and group embed size.
+            (default: obj:`32`)
+        phys_embed (bool, optional): Concat fixed physics-aware embeddings.
+        phys_hidden_channels (int, optional): Hidden size of learnable phys embed.
             (default: obj:`32`)
         num_filters (int, optional): The number of filters to use.
             (default: :obj:`128`)
@@ -141,21 +151,8 @@ class NewSchNet(torch.nn.Module):
             (default: :obj:`6`)
         num_gaussians (int, optional): The number of gaussians :math:`\mu`.
             (default: :obj:`50`)
-        cutoff (float, optional): Cutoff distance for interatomic interactions.
-            (default: :obj:`10.0`)
-        max_num_neighbors (int, optional): The maximum number of neighbors to
-            collect for each node within the :attr:`cutoff` distance.
-            (default: :obj:`32`)
         readout (string, optional): Whether to apply :obj:`"add"` or
             :obj:`"mean"` global aggregation. (default: :obj:`"add"`)
-        dipole (bool, optional): If set to :obj:`True`, will use the magnitude
-            of the dipole moment to make the final prediction, *e.g.*, for
-            target 0 of :class:`torch_geometric.datasets.QM9`.
-            (default: :obj:`False`)
-        mean (float, optional): The mean of the property to predict.
-            (default: :obj:`None`)
-        std (float, optional): The standard deviation of the property to
-            predict. (default: :obj:`None`)
         atomref (torch.Tensor, optional): The reference of single-atom
             properties.
             Expects a vector of shape :obj:`(max_atomic_number, )`.
@@ -163,49 +160,45 @@ class NewSchNet(torch.nn.Module):
 
     url = "http://www.quantum-machine.org/datasets/trained_schnet_models.zip"
 
-    def __init__(
-        self,
-        hidden_channels: int = 128,
-        tag_hidden_channels: int = 32,
-        pg_hidden_channels: int = 32,
-        phys_embeds: bool = False,
-        phys_hidden_channels: int = 32,
-        graph_rewiring=False,
-        energy_head=False,
-        num_filters: int = 128,
-        num_interactions: int = 6,
-        num_gaussians: int = 50,
-        cutoff: float = 10.0,
-        max_num_neighbors: int = 32,
-        readout: str = "add",
-        atomref: Optional[torch.Tensor] = None,
-    ):
-        super(NewSchNet, self).__init__()
+    def __init__(self, **kwargs):
+        super().__init__()
 
         import ase
 
-        self.hidden_channels = hidden_channels
-        self.tag_hidden_channels = tag_hidden_channels
-        self.pg_hidden_channels = pg_hidden_channels
-        self.phys_hidden_channels = phys_hidden_channels
-        self.num_filters = num_filters
-        self.num_interactions = num_interactions
-        self.num_gaussians = num_gaussians
-        self.cutoff = cutoff
-        self.max_num_neighbors = max_num_neighbors
-        self.readout = readout
+        self.use_pbc = kwargs["use_pbc"]
+        self.cutoff = kwargs["cutoff"]
+        self.otf_graph = kwargs["otf_graph"]
         self.scale = None
-        self.use_tag = tag_hidden_channels > 0
-        self.use_pg = pg_hidden_channels > 0
-        self.use_mlp_phys = phys_hidden_channels > 0 and phys_embeds
-        self.use_phys_embeddings = phys_embeds
-        self.use_positional_embeds = graph_rewiring in {
+        self.regress_forces = kwargs["regress_forces"]
+
+        self.num_filters = kwargs["num_filters"]
+        self.num_interactions = kwargs["num_interactions"]
+        self.num_gaussians = kwargs["num_gaussians"]
+        self.max_num_neighbors = kwargs["max_num_neighbors"]
+        self.readout = kwargs["readout"]
+        self.hidden_channels = kwargs["hidden_channels"]
+        self.tag_hidden_channels = kwargs["tag_hidden_channels"]
+        self.use_tag = self.tag_hidden_channels > 0
+        self.pg_hidden_channels = kwargs["pg_hidden_channels"]
+        self.use_pg = self.pg_hidden_channels > 0
+        self.phys_hidden_channels = kwargs["phys_hidden_channels"]
+        self.energy_head = kwargs["energy_head"]
+        self.use_phys_embeddings = kwargs["phys_embeds"]
+        self.use_mlp_phys = self.phys_hidden_channels > 0 and kwargs["phys_embeds"]
+        self.use_positional_embeds = kwargs["graph_rewiring"] in {
             "one-supernode-per-graph",
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
-        # self.use_positional_embeds = False
-        self.energy_head = energy_head
+
+        self.register_buffer(
+            "initial_atomref",
+            torch.tensor(kwargs["atomref"]) if kwargs["atomref"] is not None else None,
+        )
+        self.atomref = None
+        if kwargs["atomref"] is not None:
+            self.atomref = Embedding(100, 1)
+            self.atomref.weight.data.copy_(torch.tensor(kwargs["atomref"]))
 
         atomic_mass = torch.from_numpy(ase.data.atomic_masses)
         # self.covalent_radii = torch.from_numpy(ase.data.covalent_radii)
@@ -213,10 +206,10 @@ class NewSchNet(torch.nn.Module):
         self.register_buffer("atomic_mass", atomic_mass)
 
         if self.use_tag:
-            self.tag_embedding = Embedding(3, tag_hidden_channels)
+            self.tag_embedding = Embedding(3, self.tag_hidden_channels)
 
         # Phys embeddings
-        self.phys_emb = PhysEmbedding(props=phys_embeds, pg=self.use_pg)
+        self.phys_emb = PhysEmbedding(props=kwargs["phys_embeds"], pg=self.use_pg)
         if self.use_mlp_phys:
             self.phys_lin = Linear(
                 self.phys_emb.n_properties, self.phys_hidden_channels
@@ -234,59 +227,55 @@ class NewSchNet(torch.nn.Module):
             )
 
         assert (
-            tag_hidden_channels + 2 * pg_hidden_channels + phys_hidden_channels
-            < hidden_channels
+            self.tag_hidden_channels
+            + 2 * self.pg_hidden_channels
+            + self.phys_hidden_channels
+            < self.hidden_channels
         )
 
         # Main embedding
         self.embedding = Embedding(
             85,
-            hidden_channels
-            - tag_hidden_channels
+            self.hidden_channels
+            - self.tag_hidden_channels
             - self.phys_hidden_channels
             - 2 * self.pg_hidden_channels,
         )
 
         # Position encoding
         if self.use_positional_embeds:
-            self.pe = PositionalEncoding(hidden_channels, 210)
+            self.pe = PositionalEncoding(self.hidden_channels, 210)
 
         # Interaction block
-        self.distance_expansion = GaussianSmearing(0.0, cutoff, num_gaussians)
+        self.distance_expansion = GaussianSmearing(0.0, self.cutoff, self.num_gaussians)
         self.interactions = ModuleList()
-        for _ in range(num_interactions):
+        for _ in range(self.num_interactions):
             block = InteractionBlock(
-                hidden_channels, num_gaussians, num_filters, cutoff
+                self.hidden_channels, self.num_gaussians, self.num_filters, self.cutoff
             )
             self.interactions.append(block)
 
         # Output block
-        self.lin1 = Linear(hidden_channels, hidden_channels // 2)
+        self.lin1 = Linear(self.hidden_channels, self.hidden_channels // 2)
         self.act = ShiftedSoftplus()
-        self.lin2 = Linear(hidden_channels // 2, 1)
+        self.lin2 = Linear(self.hidden_channels // 2, 1)
 
-        # weigthed average & pooling
+        # weighted average & pooling
         if self.energy_head in {"pooling", "random"}:
             self.hierarchical_pooling = Hierarchical_Pooling(
-                hidden_channels,
+                self.hidden_channels,
                 self.act,
                 NUM_POOLING_LAYERS,
                 NUM_CLUSTERS,
                 self.energy_head,
             )
         elif self.energy_head == "graclus":
-            self.graclus = Graclus(hidden_channels, self.act)
+            self.graclus = Graclus(self.hidden_channels, self.act)
         elif self.energy_head in {
             "weighted-av-initial-embeds",
             "weighted-av-final-embeds",
         }:
-            self.w_lin = Linear(hidden_channels, 1)
-
-        self.register_buffer("initial_atomref", atomref)
-        self.atomref = None
-        if atomref is not None:
-            self.atomref = Embedding(100, 1)
-            self.atomref.weight.data.copy_(atomref)
+            self.w_lin = Linear(self.hidden_channels, 1)
 
         self.reset_parameters()
 
@@ -311,10 +300,6 @@ class NewSchNet(torch.nn.Module):
         if self.atomref is not None:
             self.atomref.weight.data.copy_(self.initial_atomref)
 
-    def forward(self, z, pos, batch=None):
-        """ """
-        raise NotImplementedError
-
     def __repr__(self):
         return (
             f"{self.__class__.__name__}("
@@ -330,55 +315,8 @@ class NewSchNet(torch.nn.Module):
             f"cutoff={self.cutoff})",
         )
 
-
-@registry.register_model("new_schnet")
-class NewSchNetWrap(NewSchNet):
-    def __init__(
-        self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,
-        new_gnn,  # not used
-        use_pbc=True,
-        regress_forces=True,
-        otf_graph=False,
-        hidden_channels=128,
-        tag_hidden_channels=32,
-        pg_hidden_channels=32,
-        phys_hidden_channels=32,
-        phys_embeds=False,
-        num_filters=128,
-        num_interactions=6,
-        num_gaussians=50,
-        cutoff=10.0,
-        readout="add",
-        graph_rewiring=False,
-        energy_head=False,
-    ):
-        self.num_targets = num_targets
-        self.regress_forces = regress_forces
-        self.use_pbc = use_pbc
-        self.cutoff = cutoff
-        self.otf_graph = otf_graph
-        self.graph_rewiring = graph_rewiring
-
-        super(NewSchNetWrap, self).__init__(
-            hidden_channels=hidden_channels,
-            tag_hidden_channels=tag_hidden_channels,
-            pg_hidden_channels=pg_hidden_channels,
-            phys_hidden_channels=phys_hidden_channels,
-            phys_embeds=phys_embeds,
-            graph_rewiring=graph_rewiring,
-            energy_head=energy_head,
-            num_filters=num_filters,
-            num_interactions=num_interactions,
-            num_gaussians=num_gaussians,
-            cutoff=cutoff,
-            readout=readout,
-        )
-
     @conditional_grad(torch.enable_grad())
-    def _forward(self, data):
+    def energy_forward(self, data):
         """"""
         # Re-compute on the fly the graph
         if self.otf_graph:
@@ -390,35 +328,9 @@ class NewSchNetWrap(NewSchNet):
             data.neighbors = neighbors
 
         # Rewire the graph
-        if not self.graph_rewiring:
-            z = data.atomic_numbers.long()
-            pos = data.pos
-            batch = data.batch
-        else:
-            t = time()
-            if self.graph_rewiring == "remove-tag-0":
-                data = remove_tag0_nodes(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-graph":
-                data = one_supernode_per_graph(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type":
-                data = one_supernode_per_atom_type(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            elif self.graph_rewiring == "one-supernode-per-atom-type-dist":
-                data = one_supernode_per_atom_type_dist(data)
-                z = data.atomic_numbers.long()
-                pos = data.pos
-                batch = data.batch
-            else:
-                raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
-            self.rewiring_time = time() - t
+        z = data.atomic_numbers.long()
+        pos = data.pos
+        batch = data.batch
 
         # Use periodic boundary conditions
         if self.use_pbc:
@@ -517,25 +429,3 @@ class NewSchNetWrap(NewSchNet):
             out = self.scale * out
 
         return out, pooling_loss
-
-    def forward(self, data):
-        if self.regress_forces:
-            data.pos.requires_grad_(True)
-        energy, pooling_loss = self._forward(data)
-
-        if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    data.pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
-            )
-            return energy, forces
-        else:
-            return energy, pooling_loss
-
-    @property
-    def num_params(self):
-        return sum(p.numel() for p in self.parameters())

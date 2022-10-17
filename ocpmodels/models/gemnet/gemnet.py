@@ -36,9 +36,11 @@ from .utils import (
     repeat_blocks,
 )
 
+from ocpmodels.models.base import BaseModel
+
 
 @registry.register_model("gemnet_t")
-class GemNetT(torch.nn.Module):
+class GemNetT(BaseModel):
     """
     GemNet-T, triplets-only variant of GemNet
 
@@ -102,77 +104,62 @@ class GemNetT(torch.nn.Module):
             Path to the json file containing the scaling factors.
     """
 
-    def __init__(
-        self,
-        num_atoms: Optional[int],
-        bond_feat_dim: int,
-        num_targets: int,
-        num_spherical: int,
-        num_radial: int,
-        num_blocks: int,
-        emb_size_atom: int,
-        emb_size_edge: int,
-        emb_size_trip: int,
-        emb_size_rbf: int,
-        emb_size_cbf: int,
-        emb_size_bil_trip: int,
-        num_before_skip: int,
-        num_after_skip: int,
-        num_concat: int,
-        num_atom: int,
-        regress_forces: bool = True,
-        direct_forces: bool = False,
-        cutoff: float = 6.0,
-        max_neighbors: int = 50,
-        rbf: dict = {"name": "gaussian"},
-        envelope: dict = {"name": "polynomial", "exponent": 5},
-        cbf: dict = {"name": "spherical_harmonics"},
-        extensive: bool = True,
-        otf_graph: bool = False,
-        use_pbc: bool = True,
-        output_init: str = "HeOrthogonal",
-        activation: str = "swish",
-        scale_file: Optional[str] = None,
-    ):
+    def __init__(self, **kwargs):
         super().__init__()
-        self.num_targets = num_targets
-        assert num_blocks > 0
-        self.num_blocks = num_blocks
-        self.extensive = extensive
+        self.activation = kwargs["activation"]
+        self.cbf = kwargs["cbf"]
+        self.cutoff = kwargs["cutoff"]
+        self.direct_forces = kwargs["direct_forces"]
+        self.emb_size_atom = kwargs["emb_size_atom"]
+        self.emb_size_bil_trip = kwargs["emb_size_bil_trip"]
+        self.emb_size_cbf = kwargs["emb_size_cbf"]
+        self.emb_size_edge = kwargs["emb_size_edge"]
+        self.emb_size_rbf = kwargs["emb_size_rbf"]
+        self.emb_size_trip = kwargs["emb_size_trip"]
+        self.envelope = kwargs["envelope"]
+        self.extensive = kwargs["extensive"]
+        self.max_neighbors = kwargs["max_neighbors"]
+        self.num_after_skip = kwargs["num_after_skip"]
+        self.num_atom = kwargs["num_atom"]
+        self.num_before_skip = kwargs["num_before_skip"]
+        self.num_blocks = kwargs["num_blocks"]
+        self.num_concat = kwargs["num_concat"]
+        self.num_radial = kwargs["num_radial"]
+        self.num_spherical = kwargs["num_spherical"]
+        self.num_targets = kwargs["num_targets"]
+        self.otf_graph = kwargs["otf_graph"]
+        self.output_init = kwargs["output_init"]
+        self.rbf = kwargs["rbf"]
+        self.regress_forces = kwargs["regress_forces"]
+        self.scale_file = kwargs["scale_file"]
+        self.use_pbc = kwargs["use_pbc"]
 
-        self.cutoff = cutoff
-        assert self.cutoff <= 6 or otf_graph
-
-        self.max_neighbors = max_neighbors
-        assert self.max_neighbors == 50 or otf_graph
-
-        self.regress_forces = regress_forces
-        self.otf_graph = otf_graph
-        self.use_pbc = use_pbc
+        assert self.num_blocks > 0
+        assert self.cutoff <= 6 or self.otf_graph
+        assert self.max_neighbors == 50 or self.otf_graph
 
         AutomaticFit.reset()  # make sure that queue is empty (avoid potential error)
 
         # GemNet variants
-        self.direct_forces = direct_forces
 
         ### ---------------------------------- Basis Functions ---------------------------------- ###
         self.radial_basis = RadialBasis(
-            num_radial=num_radial,
-            cutoff=cutoff,
-            rbf=rbf,
-            envelope=envelope,
+            num_radial=self.num_radial,
+            cutoff=self.cutoff,
+            rbf=self.rbf,
+            envelope=self.envelope,
         )
 
-        radial_basis_cbf3 = RadialBasis(
-            num_radial=num_radial,
-            cutoff=cutoff,
-            rbf=rbf,
-            envelope=envelope,
+        self.radial_basis_cbf3 = RadialBasis(
+            num_radial=self.num_radial,
+            cutoff=self.cutoff,
+            rbf=self.rbf,
+            envelope=self.envelope,
         )
         self.cbf_basis3 = CircularBasisLayer(
-            num_spherical,
-            radial_basis=radial_basis_cbf3,
-            cbf=cbf,
+            self.num_spherical,
+            radial_basis=self.radial_basis_cbf3,
+            cbf=self.cbf,
             efficient=True,
         )
         ### ------------------------------------------------------------------------------------- ###
@@ -180,34 +167,37 @@ class GemNetT(torch.nn.Module):
         ### ------------------------------- Share Down Projections ------------------------------ ###
         # Share down projection across all interaction blocks
         self.mlp_rbf3 = Dense(
-            num_radial,
-            emb_size_rbf,
+            self.num_radial,
+            self.emb_size_rbf,
             activation=None,
             bias=False,
         )
         self.mlp_cbf3 = EfficientInteractionDownProjection(
-            num_spherical, num_radial, emb_size_cbf
+            self.num_spherical, self.num_radial, self.emb_size_cbf
         )
 
         # Share the dense Layer of the atom embedding block accross the interaction blocks
         self.mlp_rbf_h = Dense(
-            num_radial,
-            emb_size_rbf,
+            self.num_radial,
+            self.emb_size_rbf,
             activation=None,
             bias=False,
         )
         self.mlp_rbf_out = Dense(
-            num_radial,
-            emb_size_rbf,
+            self.num_radial,
+            self.emb_size_rbf,
             activation=None,
             bias=False,
         )
         ### ------------------------------------------------------------------------------------- ###
 
         # Embedding block
-        self.atom_emb = AtomEmbedding(emb_size_atom)
+        self.atom_emb = AtomEmbedding(self.emb_size_atom)
         self.edge_emb = EdgeEmbedding(
-            emb_size_atom, num_radial, emb_size_edge, activation=activation
+            self.emb_size_atom,
+            self.num_radial,
+            self.emb_size_edge,
+            activation=self.activation,
         )
 
         out_blocks = []
@@ -215,37 +205,37 @@ class GemNetT(torch.nn.Module):
 
         # Interaction Blocks
         interaction_block = InteractionBlockTripletsOnly  # GemNet-(d)T
-        for i in range(num_blocks):
+        for i in range(self.num_blocks):
             int_blocks.append(
                 interaction_block(
-                    emb_size_atom=emb_size_atom,
-                    emb_size_edge=emb_size_edge,
-                    emb_size_trip=emb_size_trip,
-                    emb_size_rbf=emb_size_rbf,
-                    emb_size_cbf=emb_size_cbf,
-                    emb_size_bil_trip=emb_size_bil_trip,
-                    num_before_skip=num_before_skip,
-                    num_after_skip=num_after_skip,
-                    num_concat=num_concat,
-                    num_atom=num_atom,
-                    activation=activation,
-                    scale_file=scale_file,
+                    emb_size_atom=self.emb_size_atom,
+                    emb_size_edge=self.emb_size_edge,
+                    emb_size_trip=self.emb_size_trip,
+                    emb_size_rbf=self.emb_size_rbf,
+                    emb_size_cbf=self.emb_size_cbf,
+                    emb_size_bil_trip=self.emb_size_bil_trip,
+                    num_before_skip=self.num_before_skip,
+                    num_after_skip=self.num_after_skip,
+                    num_concat=self.num_concat,
+                    num_atom=self.num_atom,
+                    activation=self.activation,
+                    scale_file=self.scale_file,
                     name=f"IntBlock_{i+1}",
                 )
             )
 
-        for i in range(num_blocks + 1):
+        for i in range(self.num_blocks + 1):
             out_blocks.append(
                 OutputBlock(
-                    emb_size_atom=emb_size_atom,
-                    emb_size_edge=emb_size_edge,
-                    emb_size_rbf=emb_size_rbf,
-                    nHidden=num_atom,
-                    num_targets=num_targets,
-                    activation=activation,
-                    output_init=output_init,
-                    direct_forces=direct_forces,
-                    scale_file=scale_file,
+                    emb_size_atom=self.emb_size_atom,
+                    emb_size_edge=self.emb_size_edge,
+                    emb_size_rbf=self.emb_size_rbf,
+                    nHidden=self.num_atom,
+                    num_targets=self.num_targets,
+                    activation=self.activation,
+                    output_init=self.output_init,
+                    direct_forces=self.direct_forces,
+                    scale_file=self.scale_file,
                     name=f"OutBlock_{i}",
                 )
             )
@@ -366,7 +356,7 @@ class GemNetT(torch.nn.Module):
 
         # Create indexing array
         edge_reorder_idx = repeat_blocks(
-            neighbors_new // 2,
+            torch.div(neighbors_new, 2, rounding_mode="trunc"),
             repeats=2,
             continuous_indexing=True,
             repeat_inc=edge_index_new.size(1),
@@ -492,7 +482,7 @@ class GemNetT(torch.nn.Module):
         )
 
         # Indices for swapping c->a and a->c (for symmetric MP)
-        block_sizes = neighbors // 2
+        block_sizes = torch.div(neighbors, 2, rounding_mode="trunc")
         id_swap = repeat_blocks(
             block_sizes,
             repeats=2,
@@ -620,8 +610,5 @@ class GemNetT(torch.nn.Module):
 
             return E_t, F_t  # (nMolecules, num_targets), (nAtoms, 3)
         else:
-            return E_t
-
-    @property
-    def num_params(self):
-        return sum(p.numel() for p in self.parameters())
+            # None is for pooling_loss -> @AlDu do we still need this?
+            return E_t, None

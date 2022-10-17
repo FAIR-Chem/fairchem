@@ -33,23 +33,24 @@ if __name__ == "__main__":
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
-    config = build_config(args, override_args)
-    assert config["model"]["name"].startswith("gemnet")
-    config["logger"] = "tensorboard"
+    trainer_config = build_config(args, override_args)
+    assert trainer_config["model"]["name"].startswith("gemnet")
+    trainer_config["logger"] = "tensorboard"
 
     if args.distributed:
         raise ValueError("I don't think this works with DDP (race conditions).")
 
     setup_imports()
 
-    scale_file = config["model"]["scale_file"]
+    scale_file = trainer_config["model"]["scale_file"]
 
-    logging.info(f"Run fitting for model: {args.identifier}")
+    # Warning: identifier has been deprecated in favour of wandb_name
+    logging.info(f"Run fitting for model: {args.wandb_name}")
     logging.info(f"Target scale file: {scale_file}")
 
     def initialize_scale_file(scale_file):
         # initialize file
-        preset = {"comment": args.identifier}
+        preset = {"comment": args.wandb_name}
         write_json(scale_file, preset)
 
     if os.path.exists(scale_file):
@@ -72,22 +73,12 @@ if __name__ == "__main__":
 
     AutomaticFit.set2fitmode()
 
-    trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
-        task=config["task"],
-        model=config["model"],
-        dataset=config["dataset"],
-        optimizer=config["optim"],
-        identifier=config["identifier"],
-        run_dir=config.get("run_dir", "./"),
-        is_debug=config.get("is_debug", False),
-        is_vis=config.get("is_vis", False),
-        print_every=config.get("print_every", 10),
-        seed=config.get("seed", 0),
-        logger=config.get("logger", "tensorboard"),
-        local_rank=config["local_rank"],
-        amp=config.get("amp", False),
-        cpu=config.get("cpu", False),
-        slurm=config.get("slurm", {}),
+    trainer = registry.get_trainer_class(trainer_config["trainer"])(
+        **trainer_config,
+        is_debug=trainer_config.get("is_debug", False),
+        print_every=trainer_config.get("print_every", 10),
+        logger=trainer_config.get("logger", "tensorboard"),
+        is_vis=trainer_config.get("is_vis", False),
     )
 
     # Fitting loop

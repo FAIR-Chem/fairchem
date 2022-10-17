@@ -10,9 +10,9 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 import torch
-import wandb
 from torch.utils.tensorboard import SummaryWriter
 
+import wandb
 from ocpmodels.common.registry import registry
 
 
@@ -21,8 +21,8 @@ class Logger(ABC):
     tensorboard, etc.
     """
 
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, trainer_config):
+        self.trainer_config = trainer_config
 
     @abstractmethod
     def watch(self, model):
@@ -53,39 +53,39 @@ class Logger(ABC):
 
 @registry.register_logger("wandb")
 class WandBLogger(Logger):
-    def __init__(self, config):
-        super().__init__(config)
-        project = (
-            self.config["logger"].get("project", None)
-            if isinstance(self.config["logger"], dict)
-            else None
-        )
+    def __init__(self, trainer_config):
+        super().__init__(trainer_config)
 
         wandb_id = ""
         slurm_jobid = os.environ.get("SLURM_JOB_ID")
         if slurm_jobid:
             wandb_id += f"{slurm_jobid}-"
-        wandb_id += self.config["cmd"]["timestamp_id"] + "-" + config["model"]
-
-        wandb_tag = config.get("wandb_tag")
-        tags = [wandb_tag] if wandb_tag else []
-
-        wandb.init(
-            config=self.config,
-            id=wandb_id,
-            name=self.config["cmd"]["identifier"],
-            dir=self.config["cmd"]["logs_dir"],
-            project=project,
-            resume="allow",
-            notes=self.config["note"],
-            tags=tags,
+        wandb_id += (
+            self.trainer_config["timestamp_id"] + "-" + trainer_config["model_name"]
         )
 
-        sbatch_files = list(Path(self.config["run_dir"]).glob("sbatch_script*.sh"))
+        wandb_tags = trainer_config.get("wandb_tags", "")
+        if wandb_tags:
+            wandb_tags = [t.strip() for t in wandb_tags[:63].split(",")]
+
+        self.run = wandb.init(
+            config=self.trainer_config,
+            id=wandb_id,
+            name=self.trainer_config["wandb_name"] or wandb_id,
+            dir=self.trainer_config["logs_dir"],
+            project=self.trainer_config["wandb_project"],
+            resume="allow",
+            notes=self.trainer_config["note"],
+            tags=wandb_tags,
+        )
+
+        sbatch_files = list(
+            Path(self.trainer_config["run_dir"]).glob("sbatch_script*.sh")
+        )
         if len(sbatch_files) == 1:
             wandb.save(str(sbatch_files[0]))
 
-        with open(Path(self.config["run_dir"] / "wandb_url.txt"), "w") as f:
+        with open(Path(self.trainer_config["run_dir"] / "wandb_url.txt"), "w") as f:
             f.write(wandb.run.get_url())
 
     def watch(self, model):
@@ -107,12 +107,17 @@ class WandBLogger(Logger):
     def mark_preempting(self):
         wandb.mark_preempting()
 
+    def add_tags(self, tags):
+        if not isinstance(tags, list):
+            tags = [tags]
+        self.run.tags = self.run.tags + tags
+
 
 @registry.register_logger("tensorboard")
 class TensorboardLogger(Logger):
-    def __init__(self, config):
-        super().__init__(config)
-        self.writer = SummaryWriter(self.config["cmd"]["logs_dir"])
+    def __init__(self, trainer_config):
+        super().__init__(trainer_config)
+        self.writer = SummaryWriter(self.trainer_config["logs_dir"])
 
     # TODO: add a model hook for watching gradients.
     def watch(self, model):
@@ -136,11 +141,14 @@ class TensorboardLogger(Logger):
     def log_plots(self, plots):
         pass
 
+    def add_tags(self, tags):
+        pass
+
 
 @registry.register_logger("dummy")
 class DummyLogger(Logger):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, trainer_config):
+        super().__init__(trainer_config)
 
     def log_plots(self, plots):
         pass
@@ -149,4 +157,7 @@ class DummyLogger(Logger):
         pass
 
     def watch(self, model):
+        pass
+
+    def add_tags(self, tags):
         pass
