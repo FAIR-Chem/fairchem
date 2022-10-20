@@ -2,7 +2,6 @@ default:
   model:
     name: sfarinet
     act: swish
-    regress_forces: false
     num_filters: 128
     num_gaussians: 100
     cutoff: 6.0
@@ -14,7 +13,11 @@ default:
     phys_embeds: False # True
     phys_hidden_channels: 0
     energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds, pooling, graclus, random}
-  optim: 
+    force_decoder_type: "" # can be {"" or "simple"} | only used if regress_forces is True
+    force_decoder_model_config:
+      simple:
+        hidden_channels: 128
+  optim:
     warmup_factor: 0.2
     batch_size: 64
     eval_batch_size: 64
@@ -40,7 +43,6 @@ is2re:
         - 3125
       warmup_steps: 468
       max_epochs: 20
-
 
   100k:
     model:

@@ -234,6 +234,61 @@ class OutputBlock(nn.Module):
         return out
 
 
+class LambdaLayer(nn.Module):
+    def __init__(self, func):
+        super(LambdaLayer, self).__init__()
+        self.func = func
+
+    def forward(self, x):
+        return self.func(x)
+
+
+class ForceDecoder(nn.Module):
+    def __init__(self, type, model_configs, act):
+        """
+        Decoder predicting a force scalar per atom
+
+        Args:
+            type (str): Type of force decoder to use
+            model_config (dict): Dictionary of config parameters for the decoder's model
+            act (callable): Activation function (NOT a module)
+
+        Raises:
+            ValueError: Unknown type of decoder
+        """
+        super().__init__()
+        self.type = type
+        self.act = act
+        assert type in model_configs, f"Unknown type of force decoder: `{type}`"
+        self.model_config = model_configs[type]
+        if self.type == "simple":
+            self.model = nn.Sequential(
+                Linear(
+                    self.model_config["hidden_channels"],
+                    self.model_config["hidden_channels"] // 2,
+                ),
+                LambdaLayer(act),
+                Linear(self.model_config["hidden_channels"] // 2, 1),
+            )
+        else:
+            raise ValueError(f"Unknown force decoder type: `{self.type}`")
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        for layer in self.model:
+            if hasattr(layer, "reset_parameters"):
+                layer.reset_parameters()
+            else:
+                if hasattr(layer, "weight"):
+                    nn.init.xavier_uniform_(layer.weight)
+                if hasattr(layer, "bias"):
+                    layer.bias.data.fill_(0)
+
+    def forward(self, h):
+        return self.model(h)
+
+
 @registry.register_model("sfarinet")
 class SfariNet(BaseModel):
     r"""The Scalable Frame Averaging Rotation Invariant GNN model Sfarinet.
@@ -263,6 +318,9 @@ class SfariNet(BaseModel):
             (default: :obj:`6`)
         num_gaussians (int): The number of gaussians :math:`\mu`.
             (default: :obj:`50`)
+        force_decoder_type (str): Type of force decoder to use.
+        force_decoder_model_config (dict): Dictionary of config parameters
+            for the decoder's model
     """
 
     def __init__(self, **kwargs):
@@ -312,7 +370,17 @@ class SfariNet(BaseModel):
             self.w_lin = Linear(kwargs["hidden_channels"], 1)
 
         # Force head
-        self.decoder = None
+        self.decoder = (
+            None
+            if not self.regress_forces
+            else ForceDecoder(
+                kwargs["force_decoder_type"],
+                kwargs["force_decoder_model_config"],
+                self.act,
+            )
+        )
+
+        self.reset_parameters()
 
     def forward(self, data):
         # Rewire the graph
