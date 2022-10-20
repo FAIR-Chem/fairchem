@@ -13,6 +13,18 @@ class BaseModel(nn.Module):
     def __init__(self, **kwargs):
         super(BaseModel, self).__init__()
 
+    def reset_parameters(self):
+        for child in self.children:
+            if hasattr(child, "reset_parameters"):
+                assert isinstance(child, nn.Module)
+                assert isinstance(child.reset_parameters, callable)
+                child.reset_parameters()
+            else:
+                if hasattr(child, "weight"):
+                    nn.init.xavier_uniform_(child.weight)
+                if hasattr(child, "bias"):
+                    child.bias.data.fill_(0)
+
     def energy_forward(self, data):
         raise NotImplementedError
 
