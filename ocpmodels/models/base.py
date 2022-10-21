@@ -11,13 +11,13 @@ import torch
 
 class BaseModel(nn.Module):
     def __init__(self, **kwargs):
-        super(BaseModel, self).__init__()
+        super().__init__()
 
     def reset_parameters(self):
-        for child in self.children:
+        for child in self.children():
             if hasattr(child, "reset_parameters"):
                 assert isinstance(child, nn.Module)
-                assert isinstance(child.reset_parameters, callable)
+                assert callable(child.reset_parameters)
                 child.reset_parameters()
             else:
                 if hasattr(child, "weight"):
