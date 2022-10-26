@@ -1,5 +1,4 @@
 import numpy as np
-
 from ase import neighborlist
 from ase.neighborlist import natural_cutoffs
 
@@ -12,7 +11,7 @@ class DetectTrajAnomaly:
         atoms_tag,
         final_slab_atoms=None,
         surface_change_cutoff_multiplier=1.5,
-        desorption_cutoff_multiplier = 1.3,
+        desorption_cutoff_multiplier=1.3,
     ):
         """
         Flag anomalies based on initial and final stucture of a relaxation.
@@ -34,12 +33,11 @@ class DetectTrajAnomaly:
         self.atoms_tag = atoms_tag
         self.surface_change_cutoff_multiplier = surface_change_cutoff_multiplier
         self.desorption_cutoff_multiplier = desorption_cutoff_multiplier
-        
+
         if self.final_slab_atoms is None:
-            slab_idxs = [idx for idx, tag in enumerate(self.atoms_tag) if tag != 2] 
+            slab_idxs = [idx for idx, tag in enumerate(self.atoms_tag) if tag != 2]
             self.final_slab_atoms = self.init_atoms[slab_idxs]
-            
-            
+
     def is_adsorbate_dissociated(self):
         """
         Tests if the initial adsorbate connectivity is maintained.
@@ -48,12 +46,11 @@ class DetectTrajAnomaly:
             (bool): True if the connectivity was not maintained, otherwise False
         """
         adsorbate_idx = [idx for idx, tag in enumerate(self.atoms_tag) if tag == 2]
-        return (
+        return not (
             np.array_equal(
                 self._get_connectivity(self.init_atoms[adsorbate_idx]),
                 self._get_connectivity(self.final_atoms[adsorbate_idx]),
             )
-            is False
         )
 
     def has_surface_changed(self):
@@ -66,12 +63,16 @@ class DetectTrajAnomaly:
             (bool): True if the surface is reconstructed, otherwise False
         """
         surf_idx = [idx for idx, tag in enumerate(self.atoms_tag) if tag != 2]
-        
+
         adslab_connectivity = self._get_connectivity(self.final_atoms[surf_idx])
-        slab_connectivity_w_cushion = self._get_connectivity(self.final_slab_atoms, self.surface_change_cutoff_multiplier)
+        slab_connectivity_w_cushion = self._get_connectivity(
+            self.final_slab_atoms, self.surface_change_cutoff_multiplier
+        )
         slab_test = 1 in adslab_connectivity - slab_connectivity_w_cushion
-        
-        adslab_connectivity_w_cushion = self._get_connectivity(self.final_atoms[surf_idx], self.surface_change_cutoff_multiplier)
+
+        adslab_connectivity_w_cushion = self._get_connectivity(
+            self.final_atoms[surf_idx], self.surface_change_cutoff_multiplier
+        )
         slab_connectivity = self._get_connectivity(self.final_slab_atoms)
         adslab_test = 1 in slab_connectivity - adslab_connectivity_w_cushion
 
@@ -89,7 +90,9 @@ class DetectTrajAnomaly:
             idx for idx, tag in enumerate(self.atoms_tag) if tag == 2
         ]
         surface_atoms_idx = [idx for idx, tag in enumerate(self.atoms_tag) if tag != 2]
-        final_connectivity = self._get_connectivity(self.final_atoms, self.desorption_cutoff_multiplier)
+        final_connectivity = self._get_connectivity(
+            self.final_atoms, self.desorption_cutoff_multiplier
+        )
 
         for idx in adsorbate_atoms_idx:
             if sum(final_connectivity[idx][surface_atoms_idx]) >= 1:
