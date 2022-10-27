@@ -69,6 +69,7 @@ class OCPCalculator(Calculator):
         self,
         config_yml=None,
         checkpoint=None,
+        trainer=None,
         cutoff=6,
         max_neighbors=50,
         device="cpu",
@@ -81,6 +82,8 @@ class OCPCalculator(Calculator):
                 Path to yaml config or could be a dictionary.
             checkpoint (str):
                 Path to trained checkpoint.
+            trainer (str):
+                OCP trainer to be used. "forces" for S2EF, "energy" for IS2RE.
             cutoff (int):
                 Cutoff radius to be used for data preprocessing.
             max_neighbors (int):
@@ -117,15 +120,28 @@ class OCPCalculator(Calculator):
             config = torch.load(checkpoint, map_location=torch.device(device))[
                 "config"
             ]
+        if trainer is not None:  # passing the arg overrides everything else
+            config["trainer"] = trainer
+        else:
+            if "trainer" not in config:  # older checkpoint
+                if config["task"]["dataset"] == "trajectory_lmdb":
+                    config["trainer"] = "forces"
+                elif config["task"]["dataset"] == "single_point_lmdb":
+                    config["trainer"] = "energy"
+                else:
+                    logging.warning(
+                        "Unable to identify OCP trainer, defaulting to `forces`. Specify the `trainer` argument into OCPCalculator if otherwise."
+                    )
+                    config["trainer"] = "forces"
 
-            # Load the trainer based on the dataset used
-            if config["task"]["dataset"] == "trajectory_lmdb":
-                config["trainer"] = "forces"
-            else:
-                config["trainer"] = "energy"
-
+        if "model_attributes" in config:
             config["model_attributes"]["name"] = config.pop("model")
             config["model"] = config["model_attributes"]
+
+        # for checkpoints with relaxation datasets defined, remove to avoid
+        # unnecesarily trying to load that dataset
+        if "relax_dataset" in config["task"]:
+            del config["task"]["relax_dataset"]
 
         # Calculate the edge indices on the fly
         config["model"]["otf_graph"] = True

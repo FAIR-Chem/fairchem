@@ -22,6 +22,7 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.models.base import BaseModel
+from ocpmodels.modules.scaling.compat import load_scales_compat
 
 from .layers.atom_update_block import OutputBlock
 from .layers.base_layers import Dense
@@ -29,7 +30,6 @@ from .layers.efficient import EfficientInteractionDownProjection
 from .layers.embedding_block import AtomEmbedding, EdgeEmbedding
 from .layers.interaction_block import InteractionBlockTripletsOnly
 from .layers.radial_basis import RadialBasis
-from .layers.scaling import AutomaticFit
 from .layers.spherical_basis import CircularBasisLayer
 from .utils import (
     inner_product_normalized,
@@ -134,9 +134,9 @@ class GraphParallelGemNetT(BaseModel):
         use_pbc: bool = True,
         output_init: str = "HeOrthogonal",
         activation: str = "swish",
-        scale_file: Optional[str] = None,
         scale_num_blocks: bool = False,
         scatter_atoms: bool = True,
+        scale_file: Optional[str] = None,
     ):
         super().__init__()
         self.num_targets = num_targets
@@ -155,8 +155,6 @@ class GraphParallelGemNetT(BaseModel):
         self.regress_forces = regress_forces
         self.otf_graph = otf_graph
         self.use_pbc = use_pbc
-
-        AutomaticFit.reset()  # make sure that queue is empty (avoid potential error)
 
         # GemNet variants
         self.direct_forces = direct_forces
@@ -235,7 +233,6 @@ class GraphParallelGemNetT(BaseModel):
                     num_concat=num_concat,
                     num_atom=num_atom,
                     activation=activation,
-                    scale_file=scale_file,
                     name=f"IntBlock_{i+1}",
                 )
             )
@@ -251,13 +248,14 @@ class GraphParallelGemNetT(BaseModel):
                     activation=activation,
                     output_init=output_init,
                     direct_forces=direct_forces,
-                    scale_file=scale_file,
                     name=f"OutBlock_{i}",
                 )
             )
 
         self.out_blocks = torch.nn.ModuleList(out_blocks)
         self.int_blocks = torch.nn.ModuleList(int_blocks)
+
+        load_scales_compat(self, scale_file)
 
     def get_triplets(self, edge_index, num_atoms):
         """
@@ -431,6 +429,7 @@ class GraphParallelGemNetT(BaseModel):
             D_st,
             distance_vec,
             cell_offsets,
+            _,  # cell offset distances
             neighbors,
         ) = self.generate_graph(data)
         # These vectors actually point in the opposite direction.
