@@ -199,6 +199,7 @@ class spinconv(BaseModel):
             edge_distance,
             edge_distance_vec,
             cell_offsets,
+            _,  # cell offset distances
             neighbors,
         ) = self.generate_graph(data)
 

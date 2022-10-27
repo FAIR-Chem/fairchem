@@ -95,6 +95,7 @@ class SchNetWrap(SchNet, BaseModel):
             edge_weight,
             distance_vec,
             cell_offsets,
+            _,  # cell offset distances
             neighbors,
         ) = self.generate_graph(data)
 
