@@ -41,6 +41,7 @@ commands:
 
               # mamba env update -n ocp-models --file env.yml
               pip install pytest-cov==3.0.0
+              pip install syrupy
             fi
       - save_cache:
           paths:
