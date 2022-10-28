@@ -6,15 +6,21 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
+import os
 import time
+from collections import defaultdict
 from copy import deepcopy
 
+import numpy as np
 import torch
 import torch_geometric
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
+from ocpmodels.common.relaxation.ml_relaxation import ml_relax
+from ocpmodels.common.utils import check_traj_files
+from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
@@ -101,12 +107,6 @@ class EnergyTrainer(BaseTrainer):
         if self.normalizers is not None and "grad_target" in self.normalizers:
             self.normalizers["grad_target"].to(self.device)
 
-        if self.normalizers is not None and "grad_target" in self.normalizers:
-        if self.task_name == "s2ef":
-            predictions["forces"] = []
-            predictions["chunk_idx"] = []
-            self.normalizers["grad_target"].to(self.device)
-        for batch_list in tqdm(
         predictions = {"id": [], "energy": []}
         if self.task_name == "s2ef":
             predictions["forces"] = []
@@ -114,55 +114,16 @@ class EnergyTrainer(BaseTrainer):
 
         for batch_list in tqdm(
             loader,
-                out, _ = self._forward(batch_list)
+            total=len(loader),
             position=rank,
             desc="device {}".format(rank),
             disable=disable_tqdm,
-            if self.normalizers is not None and "grad_target" in self.normalizers:
-                self.normalizers["grad_target"].to(self.device)
         ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                system_ids = (
-                    [str(i) for i in batch_list[0].sid.tolist()]
-                    if self.task_name == "s2ef"
-                    else [
-                        str(i) + "_" + str(j)
-                        for i, j in zip(
-                            batch_list[0].sid.tolist(), batch_list[0].fid.tolist()
-                        )
-                    ]
-                )
-                predictions["id"].extend(system_ids)
-                predictions["energy"].extend(out["energy"].to(torch.float16).tolist())
+                out, _ = self._forward(batch_list)
 
-                if self.task_name == "s2ef":
-                    batch_natoms = torch.cat([batch.natoms for batch in batch_list])
-                    batch_fixed = torch.cat([batch.fixed for batch in batch_list])
-                    forces = out["forces"].cpu().detach().to(torch.float16)
-                    per_image_forces = torch.split(forces, batch_natoms.tolist())
-                    per_image_forces = [force.numpy() for force in per_image_forces]
-                    # evalAI only requires forces on free atoms
-                    if results_file is not None:
-                        _per_image_fixed = torch.split(
-                            batch_fixed, batch_natoms.tolist()
-                        )
-                        _per_image_free_forces = [
-                            force[(fixed == 0).tolist()]
-                            for force, fixed in zip(per_image_forces, _per_image_fixed)
-                        ]
-                        _chunk_idx = np.array(
-                            [
-                                free_force.shape[0]
-                                for free_force in _per_image_free_forces
-                            ]
-                        )
-                        per_image_forces = _per_image_free_forces
-                        predictions["chunk_idx"].extend(_chunk_idx)
-                    predictions["forces"].extend(per_image_forces)
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(out["energy"])
-                if self.task_name == "s2ef":
-                    predictions["forces"] = out["forces"].detach()
             if self.normalizers is not None and "grad_target" in self.normalizers:
                 self.normalizers["grad_target"].to(self.device)
 
@@ -221,7 +182,7 @@ class EnergyTrainer(BaseTrainer):
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
         self.config["print_every"] = eval_every  # Can comment out for better debug
         primary_metric = self.config["task"].get(
-            "primary_metric", self.evaluator.task_primary_metric[self.name]
+            "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )
         self.best_val_mae = 1e9
 
@@ -259,7 +220,9 @@ class EnergyTrainer(BaseTrainer):
                     out, pooling_loss = self._forward(batch)
                     loss = self._compute_loss(out, batch)
                     if pooling_loss is not None:
-                        loss += pooling_loss
+                        loss += pooling_loss * self.config["optim"].get(
+                            "pooling_coefficient", 1
+                        )
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 if torch.isnan(loss):
                     print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
@@ -295,13 +258,13 @@ class EnergyTrainer(BaseTrainer):
                             disable_tqdm=disable_eval_tqdm,
                         )
                         if (
-                            val_metrics[self.evaluator.task_primary_metric[self.name]][
-                                "metric"
-                            ]
+                            val_metrics[
+                                self.evaluator.task_primary_metric[self.task_name]
+                            ]["metric"]
                             < self.best_val_mae
                         ):
                             self.best_val_mae = val_metrics[
-                                self.evaluator.task_primary_metric[self.name]
+                                self.evaluator.task_primary_metric[self.task_name]
                             ]["metric"]
                             self.save(
                                 metrics=val_metrics,
@@ -386,52 +349,50 @@ class EnergyTrainer(BaseTrainer):
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
             original_cell = batch_list[0].cell
-            y_all, p_all = [], []
-            for i in range(len(batch_list[0].fa_pos)):
             e_all, p_all, f_all = [], [], []
 
+            for i in range(len(batch_list[0].fa_pos)):
+                batch_list[0].pos = batch_list[0].fa_pos[i]
                 batch_list[0].cell = batch_list[0].fa_cell[i]
-                y, p = self.model(deepcopy(batch_list))
-                y_all.append(y)
                 e, p, *f = self.model(deepcopy(batch_list))
                 e_all.append(e)
-            batch_list[0].cell = original_cell
+                p_all.append(p)
                 if f:
                     f_all.append(f[0])
 
-            output = sum(y_all) / len(y_all)
-            pooling_loss = sum(p_all) / len(p_all) if all(p_all) else None
+            batch_list[0].pos = original_pos
+            batch_list[0].cell = original_cell
             energy = sum(e_all) / len(e_all)
             forces = [sum(f_all) / len(f_all)] if f_all else []
-            output, pooling_loss = self.model(batch_list)
-
+            pooling_loss = sum(p_all) / len(p_all) if all(p_all) else None
+        else:
             energy, pooling_loss, *forces = self.model(batch_list)
-            output = output.view(-1)
+
         if energy.shape[-1] == 1:
             energy = energy.view(-1)
-            "energy": output,
+
         out = {"energy": energy}
 
         if forces:
             out["forces"] = forces[0]
 
         return out, pooling_loss
-        energy_target = torch.cat(
-            [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
+
+    def _compute_loss(self, out, batch_list):
         loss = []
 
         # Energy loss
+        energy_target = torch.cat(
+            [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
         )
 
         if self.normalizer.get("normalize_labels", False):
             target_normed = self.normalizers["target"].norm(energy_target)
         else:
             target_normed = energy_target
-
-        loss = self.loss_fn["energy"](out["energy"], target_normed)
         energy_mult = self.config["optim"].get("energy_coefficient", 1)
         loss.append(energy_mult * self.loss_fn["energy"](out["energy"], target_normed))
-        return loss
+
         # Force loss.
         if self.config["model"].get("regress_forces", True):
             force_target = torch.cat(
@@ -493,19 +454,49 @@ class EnergyTrainer(BaseTrainer):
             assert hasattr(lc, "grad_fn")
 
         loss = sum(loss)
+        return loss
+
     def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
-        energy_target = torch.cat(
-            [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
+        natoms = torch.cat(
+            [batch.natoms.to(self.device) for batch in batch_list], dim=0
         )
 
-        if self.normalizer.get("normalize_labels", False):
+        target = {
+            "energy": torch.cat(
+                [batch.y.to(self.device) for batch in batch_list], dim=0
+            ),
+            "natoms": natoms,
+        }
+
+        if self.task_name == "s2ef":
+            target["forces"] = torch.cat(
+                [batch.force.to(self.device) for batch in batch_list], dim=0
+            )
+            out["natoms"] = natoms
+
+            if self.config["task"].get("eval_on_free_atoms", True):
+                fixed = torch.cat([batch.fixed.to(self.device) for batch in batch_list])
+                mask = fixed == 0
+                out["forces"] = out["forces"][mask]
+                target["forces"] = target["forces"][mask]
+
+                s_idx = 0
+                natoms_free = []
+                for natoms in target["natoms"]:
+                    natoms_free.append(torch.sum(mask[s_idx : s_idx + natoms]).item())
+                    s_idx += natoms
+                target["natoms"] = torch.LongTensor(natoms_free).to(self.device)
+                out["natoms"] = torch.LongTensor(natoms_free).to(self.device)
+            if (
+                self.normalizer.get("normalize_labels")
+                and "grad_target" in self.normalizers
+            ):
+                out["forces"] = self.normalizers["grad_target"].denorm(out["forces"])
+
+        if self.normalizer.get("normalize_labels") and "target" in self.normalizers:
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
 
-        metrics = evaluator.eval(
-            out,
-            {"energy": energy_target},
-            prev_metrics=metrics,
-        )
+        metrics = evaluator.eval(out, target, prev_metrics=metrics)
 
         return metrics
 
@@ -553,14 +544,14 @@ class EnergyTrainer(BaseTrainer):
             if debug_batches > 0 and i == debug_batches:
                 break
             # Pass it through the model.
-            energies1, _ = self._forward(deepcopy(batch))
+            out1, _ = self._forward(deepcopy(batch))
 
             # Rotate graph and compute prediction
             batch_rotated = self.rotate_graph(batch, rotation="z")
-            energies2, _ = self._forward(deepcopy(batch_rotated))
+            out2, _ = self._forward(deepcopy(batch_rotated))
 
             # Difference in predictions
-            energy_diff_z += torch.abs(energies1["energy"] - energies2["energy"]).sum()
+            energy_diff_z += torch.abs(out1["energy"] - out2["energy"]).sum()
 
             # Diff in positions -- could remove model prediction
             pos_diff_z = -1
@@ -572,15 +563,13 @@ class EnergyTrainer(BaseTrainer):
 
             # Reflect graph
             batch_reflected = self.reflect_graph(batch)
-            energies3, _ = self._forward(batch_reflected)
-            energy_diff_refl += torch.abs(
-                energies1["energy"] - energies3["energy"]
-            ).sum()
+            out3, _ = self._forward(batch_reflected)
+            energy_diff_refl += torch.abs(out1["energy"] - out3["energy"]).sum()
 
             # 3D Rotation
             batch_rotated = self.rotate_graph(batch)
-            energies4, _ = self._forward(batch_rotated)
-            energy_diff += torch.abs(energies1["energy"] - energies4["energy"]).sum()
+            out4, _ = self._forward(batch_rotated)
+            energy_diff += torch.abs(out1["energy"] - out4["energy"]).sum()
 
         # Aggregate the results
         batch_size = len(batch[0].natoms)
@@ -589,3 +578,175 @@ class EnergyTrainer(BaseTrainer):
         energy_diff_refl = energy_diff_refl / (i * batch_size)
 
         return energy_diff_z, energy_diff, pos_diff_z, energy_diff_refl
+
+    def run_relaxations(self, split="val"):
+        logging.info("Running ML-relaxations")
+        self.model.eval()
+        if self.ema:
+            self.ema.store()
+            self.ema.copy_to()
+
+        evaluator_is2rs, metrics_is2rs = Evaluator(task="is2rs"), {}
+        evaluator_is2re, metrics_is2re = Evaluator(task="is2re"), {}
+
+        if hasattr(self.relax_dataset[0], "pos_relaxed") and hasattr(
+            self.relax_dataset[0], "y_relaxed"
+        ):
+            split = "val"
+        else:
+            split = "test"
+
+        ids = []
+        relaxed_positions = []
+        chunk_idx = []
+        for i, batch in tqdm(
+            enumerate(self.relax_loader), total=len(self.relax_loader)
+        ):
+            if i >= self.config["task"].get("num_relaxation_batches", 1e9):
+                break
+
+            # If all traj files already exist, then skip this batch
+            if check_traj_files(
+                batch, self.config["task"]["relax_opt"].get("traj_dir", None)
+            ):
+                logging.info(f"Skipping batch: {batch[0].sid.tolist()}")
+                continue
+
+            relaxed_batch = ml_relax(
+                batch=batch,
+                model=self,
+                steps=self.config["task"].get("relaxation_steps", 200),
+                fmax=self.config["task"].get("relaxation_fmax", 0.0),
+                relax_opt=self.config["task"]["relax_opt"],
+                device=self.device,
+                transform=None,
+            )
+
+            if self.config["task"].get("write_pos", False):
+                systemids = [str(i) for i in relaxed_batch.sid.tolist()]
+                natoms = relaxed_batch.natoms.tolist()
+                positions = torch.split(relaxed_batch.pos, natoms)
+                batch_relaxed_positions = [pos.tolist() for pos in positions]
+
+                relaxed_positions += batch_relaxed_positions
+                chunk_idx += natoms
+                ids += systemids
+
+            if split == "val":
+                mask = relaxed_batch.fixed == 0
+                s_idx = 0
+                natoms_free = []
+                for natoms in relaxed_batch.natoms:
+                    natoms_free.append(torch.sum(mask[s_idx : s_idx + natoms]).item())
+                    s_idx += natoms
+
+                target = {
+                    "energy": relaxed_batch.y_relaxed,
+                    "positions": relaxed_batch.pos_relaxed[mask],
+                    "cell": relaxed_batch.cell,
+                    "pbc": torch.tensor([True, True, True]),
+                    "natoms": torch.LongTensor(natoms_free),
+                }
+
+                prediction = {
+                    "energy": relaxed_batch.y,
+                    "positions": relaxed_batch.pos[mask],
+                    "cell": relaxed_batch.cell,
+                    "pbc": torch.tensor([True, True, True]),
+                    "natoms": torch.LongTensor(natoms_free),
+                }
+
+                metrics_is2rs = evaluator_is2rs.eval(
+                    prediction,
+                    target,
+                    metrics_is2rs,
+                )
+                metrics_is2re = evaluator_is2re.eval(
+                    {"energy": prediction["energy"]},
+                    {"energy": target["energy"]},
+                    metrics_is2re,
+                )
+
+        if self.config["task"].get("write_pos", False):
+            rank = distutils.get_rank()
+            pos_filename = os.path.join(
+                self.config["results_dir"], f"relaxed_pos_{rank}.npz"
+            )
+            np.savez_compressed(
+                pos_filename,
+                ids=ids,
+                pos=np.array(relaxed_positions, dtype=object),
+                chunk_idx=chunk_idx,
+            )
+
+            distutils.synchronize()
+            if distutils.is_master():
+                gather_results = defaultdict(list)
+                full_path = os.path.join(
+                    self.config["results_dir"],
+                    "relaxed_positions.npz",
+                )
+
+                for i in range(distutils.get_world_size()):
+                    rank_path = os.path.join(
+                        self.config["results_dir"],
+                        f"relaxed_pos_{i}.npz",
+                    )
+                    rank_results = np.load(rank_path, allow_pickle=True)
+                    gather_results["ids"].extend(rank_results["ids"])
+                    gather_results["pos"].extend(rank_results["pos"])
+                    gather_results["chunk_idx"].extend(rank_results["chunk_idx"])
+                    os.remove(rank_path)
+
+                # Because of how distributed sampler works, some system ids
+                # might be repeated to make no. of samples even across GPUs.
+                _, idx = np.unique(gather_results["ids"], return_index=True)
+                gather_results["ids"] = np.array(gather_results["ids"])[idx]
+                gather_results["pos"] = np.concatenate(
+                    np.array(gather_results["pos"])[idx]
+                )
+                gather_results["chunk_idx"] = np.cumsum(
+                    np.array(gather_results["chunk_idx"])[idx]
+                )[
+                    :-1
+                ]  # np.split does not need last idx, assumes n-1:end
+
+                logging.info(f"Writing results to {full_path}")
+                np.savez_compressed(full_path, **gather_results)
+
+        if split == "val":
+            for task in ["is2rs", "is2re"]:
+                metrics = eval(f"metrics_{task}")
+                aggregated_metrics = {}
+                for k in metrics:
+                    aggregated_metrics[k] = {
+                        "total": distutils.all_reduce(
+                            metrics[k]["total"],
+                            average=False,
+                            device=self.device,
+                        ),
+                        "numel": distutils.all_reduce(
+                            metrics[k]["numel"],
+                            average=False,
+                            device=self.device,
+                        ),
+                    }
+                    aggregated_metrics[k]["metric"] = (
+                        aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
+                    )
+                metrics = aggregated_metrics
+
+                # Make plots.
+                log_dict = {f"{task}_{k}": metrics[k]["metric"] for k in metrics}
+                if self.logger is not None:
+                    self.logger.log(
+                        log_dict,
+                        step=self.step,
+                        split=split,
+                    )
+
+                if distutils.is_master():
+                    logging.info(metrics)
+
+        if self.ema:
+            self.ema.restore()
