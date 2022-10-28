@@ -221,7 +221,7 @@ class EnergyTrainer(BaseTrainer):
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
         self.config["print_every"] = eval_every  # Can comment out for better debug
         primary_metric = self.config["task"].get(
-            "primary_metric", self.evaluator.task_primary_metric[self.task_name]
+            "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
         self.best_val_mae = 1e9
 
@@ -259,9 +259,7 @@ class EnergyTrainer(BaseTrainer):
                     out, pooling_loss = self._forward(batch)
                     loss = self._compute_loss(out, batch)
                     if pooling_loss is not None:
-                        loss += pooling_loss * self.config["optim"].get(
-                            "pooling_coefficient", 1
-                        )
+                        loss += pooling_loss
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 if torch.isnan(loss):
                     print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
@@ -297,13 +295,13 @@ class EnergyTrainer(BaseTrainer):
                             disable_tqdm=disable_eval_tqdm,
                         )
                         if (
-                            val_metrics[
-                                self.evaluator.task_primary_metric[self.task_name]
-                            ]["metric"]
+                            val_metrics[self.evaluator.task_primary_metric[self.name]][
+                                "metric"
+                            ]
                             < self.best_val_mae
                         ):
                             self.best_val_mae = val_metrics[
-                                self.evaluator.task_primary_metric[self.task_name]
+                                self.evaluator.task_primary_metric[self.name]
                             ]["metric"]
                             self.save(
                                 metrics=val_metrics,
@@ -390,28 +388,39 @@ class EnergyTrainer(BaseTrainer):
             original_cell = batch_list[0].cell
             y_all, p_all = [], []
             for i in range(len(batch_list[0].fa_pos)):
-                batch_list[0].pos = batch_list[0].fa_pos[i]
+            e_all, p_all, f_all = [], [], []
+
                 batch_list[0].cell = batch_list[0].fa_cell[i]
                 y, p = self.model(deepcopy(batch_list))
                 y_all.append(y)
-                p_all.append(p)
-            batch_list[0].pos = original_pos
+                e, p, *f = self.model(deepcopy(batch_list))
+                e_all.append(e)
             batch_list[0].cell = original_cell
+                if f:
+                    f_all.append(f[0])
+
             output = sum(y_all) / len(y_all)
             pooling_loss = sum(p_all) / len(p_all) if all(p_all) else None
-        else:
+            energy = sum(e_all) / len(e_all)
+            forces = [sum(f_all) / len(f_all)] if f_all else []
             output, pooling_loss = self.model(batch_list)
 
-        if output.shape[-1] == 1:
+            energy, pooling_loss, *forces = self.model(batch_list)
             output = output.view(-1)
-
-        return {
+        if energy.shape[-1] == 1:
+            energy = energy.view(-1)
             "energy": output,
-        }, pooling_loss
+        out = {"energy": energy}
 
-    def _compute_loss(self, out, batch_list):
+        if forces:
+            out["forces"] = forces[0]
+
+        return out, pooling_loss
         energy_target = torch.cat(
             [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
+        loss = []
+
+        # Energy loss
         )
 
         if self.normalizer.get("normalize_labels", False):
@@ -420,8 +429,70 @@ class EnergyTrainer(BaseTrainer):
             target_normed = energy_target
 
         loss = self.loss_fn["energy"](out["energy"], target_normed)
+        energy_mult = self.config["optim"].get("energy_coefficient", 1)
+        loss.append(energy_mult * self.loss_fn["energy"](out["energy"], target_normed))
         return loss
+        # Force loss.
+        if self.config["model"].get("regress_forces", True):
+            force_target = torch.cat(
+                [batch.force.to(self.device) for batch in batch_list], dim=0
+            )
+            if (
+                self.normalizer.get("normalize_labels", False)
+                and "grad_target" in self.normalizers
+            ):
+                force_target = self.normalizers["grad_target"].norm(force_target)
 
+            tag_specific_weights = self.config["task"].get("tag_specific_weights", [])
+            if tag_specific_weights != []:
+                # handle tag specific weights as introduced in forcenet
+                assert len(tag_specific_weights) == 3
+
+                batch_tags = torch.cat(
+                    [batch.tags.float().to(self.device) for batch in batch_list],
+                    dim=0,
+                )
+                weight = torch.zeros_like(batch_tags)
+                weight[batch_tags == 0] = tag_specific_weights[0]
+                weight[batch_tags == 1] = tag_specific_weights[1]
+                weight[batch_tags == 2] = tag_specific_weights[2]
+
+                loss_force_list = torch.abs(out["forces"] - force_target)
+                train_loss_force_unnormalized = torch.sum(
+                    loss_force_list * weight.view(-1, 1)
+                )
+                train_loss_force_normalizer = 3.0 * weight.sum()
+
+                # add up normalizer to obtain global normalizer
+                distutils.all_reduce(train_loss_force_normalizer)
+
+                # perform loss normalization before backprop
+                train_loss_force_normalized = train_loss_force_unnormalized * (
+                    distutils.get_world_size() / train_loss_force_normalizer
+                )
+                loss.append(train_loss_force_normalized)
+
+            else:
+                # Force coefficient = 30 has been working well for us.
+                force_mult = self.config["optim"].get("force_coefficient", 30)
+                if self.config["task"].get("train_on_free_atoms", False):
+                    fixed = torch.cat(
+                        [batch.fixed.to(self.device) for batch in batch_list]
+                    )
+                    mask = fixed == 0
+                    loss.append(
+                        force_mult
+                        * self.loss_fn["force"](out["forces"][mask], force_target[mask])
+                    )
+                else:
+                    loss.append(
+                        force_mult * self.loss_fn["force"](out["forces"], force_target)
+                    )
+        # Sanity check to make sure the compute graph is correct.
+        for lc in loss:
+            assert hasattr(lc, "grad_fn")
+
+        loss = sum(loss)
     def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
         energy_target = torch.cat(
             [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
