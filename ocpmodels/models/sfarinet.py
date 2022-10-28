@@ -454,5 +454,5 @@ class SfariNet(BaseModel):
         # Force-head for S2EF, IS2RS
         if self.regress_forces:
             force = self.decoder(h)
-            return energy, force
+            return energy, pooling_loss, force
         return energy, pooling_loss
