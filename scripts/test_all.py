@@ -93,6 +93,7 @@ if __name__ == "__main__":
             "ignore_str": "",  # (str) ignore configs containing this string
             "only_str": "",  # (str) only selects configs containing this string
             "traceback": False,  # (bool) print traceback on error
+            "n": -1,  # (int) how many configs to run
         }
     )
 
@@ -144,6 +145,9 @@ if __name__ == "__main__":
 
     if args.skip_configs > 0:
         configs = configs[args.skip_configs :]
+
+    if args.n > 0:
+        configs = configs[: args.n]
 
     conf_strs = [
         " ".join(conf).replace("--", "").replace("configs/is2re/10k/", "")
