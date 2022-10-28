@@ -40,6 +40,7 @@ class Evaluator:
             "forces_magnitude",
             "energy_mae",
             "energy_force_within_threshold",
+            "energy_within_threshold",
         ],
         "is2rs": [
             "average_distance_within_threshold",
