@@ -71,6 +71,9 @@ is2re:
 # ------------------
 
 s2ef:
+  default:
+    model:
+      regress_forces: True
   200k:
     model:
       hidden_channels: 1024

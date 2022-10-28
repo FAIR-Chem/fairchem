@@ -65,6 +65,9 @@ is2re:
 # ------------------
 
 s2ef:
+  default:
+    model:
+      regress_forces: True
   200k:
 
   2M:
