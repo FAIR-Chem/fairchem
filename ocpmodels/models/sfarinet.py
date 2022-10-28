@@ -244,7 +244,7 @@ class LambdaLayer(nn.Module):
 
 
 class ForceDecoder(nn.Module):
-    def __init__(self, type, model_configs, act):
+    def __init__(self, type, input_channel, model_configs, act):
         """
         Decoder predicting a force scalar per atom
 
@@ -264,11 +264,11 @@ class ForceDecoder(nn.Module):
         if self.type == "simple":
             self.model = nn.Sequential(
                 Linear(
+                    input_channel,
                     self.model_config["hidden_channels"],
-                    self.model_config["hidden_channels"] // 2,
                 ),
                 LambdaLayer(act),
-                Linear(self.model_config["hidden_channels"] // 2, 1),
+                Linear(self.model_config["hidden_channels"], 1),
             )
         else:
             raise ValueError(f"Unknown force decoder type: `{self.type}`")
@@ -324,7 +324,7 @@ class SfariNet(BaseModel):
     """
 
     def __init__(self, **kwargs):
-        super(SfariNet, self).__init__()
+        super().__init__()
         self.cutoff = kwargs["cutoff"]
         self.use_pbc = kwargs["use_pbc"]
         self.max_num_neighbors = kwargs["max_num_neighbors"]
@@ -369,12 +369,20 @@ class SfariNet(BaseModel):
         if self.energy_head == "weighted-av-initial-embeds":
             self.w_lin = Linear(kwargs["hidden_channels"], 1)
 
+        if not self.regress_forces and kwargs["force_decoder_type"]:
+            print(
+                "\nWarning: force_decoder_type is set to",
+                kwargs["force_decoder_type"],
+                "but regress_forces is False. Ignoring force_decoder_type.\n",
+            )
+
         # Force head
         self.decoder = (
             None
             if not self.regress_forces
             else ForceDecoder(
                 kwargs["force_decoder_type"],
+                kwargs["hidden_channels"],
                 kwargs["force_decoder_model_config"],
                 self.act,
             )
