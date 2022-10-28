@@ -1,5 +1,5 @@
 default:
-  trainer: forces
+  trainer: single
   logger: wandb
   task:
     dataset: trajectory_lmdb

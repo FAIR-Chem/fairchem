@@ -25,7 +25,7 @@ from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
-@registry.register_trainer("energy")
+@registry.register_trainer("single")
 class EnergyTrainer(BaseTrainer):
     """
     Trainer class for the Initial Structure to Relaxed Energy (IS2RE) task.
@@ -463,7 +463,15 @@ class EnergyTrainer(BaseTrainer):
 
         target = {
             "energy": torch.cat(
-                [batch.y.to(self.device) for batch in batch_list], dim=0
+                [
+                    (
+                        batch.y.to(self.device)
+                        if self.task_name == "s2ef"
+                        else batch.y_relaxed.to(self.device)
+                    )
+                    for batch in batch_list
+                ],
+                dim=0,
             ),
             "natoms": natoms,
         }
@@ -580,6 +588,7 @@ class EnergyTrainer(BaseTrainer):
         return energy_diff_z, energy_diff, pos_diff_z, energy_diff_refl
 
     def run_relaxations(self, split="val"):
+        assert self.task_name == "s2ef"
         logging.info("Running ML-relaxations")
         self.model.eval()
         if self.ema:
