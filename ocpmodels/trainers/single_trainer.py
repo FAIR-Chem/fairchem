@@ -15,6 +15,7 @@ from tqdm import tqdm
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
+from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
@@ -36,6 +37,43 @@ class EnergyTrainer(BaseTrainer):
         if not self.silent:
             logging.info(f"Loading dataset: {self.config['task']['dataset']}")
         self.num_targets = 1
+
+        # start imports from
+        # force_trainer:
+
+        if "relax_dataset" in self.config["task"]:
+            self.relax_dataset = registry.get_dataset_class("lmdb")(
+                self.config["task"]["relax_dataset"]
+            )
+            self.relax_sampler = self.get_sampler(
+                self.relax_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.relax_loader = self.get_dataloader(
+                self.relax_dataset,
+                self.relax_sampler,
+            )
+        # If we're computing gradients wrt input, set mean of normalizer to 0 --
+        # since it is lost when compute dy / dx -- and std to forward target std
+        if self.config["model"].get("regress_forces", True):
+            if self.normalizer.get("normalize_labels", False):
+                if "grad_target_mean" in self.normalizer:
+                    self.normalizers["grad_target"] = Normalizer(
+                        mean=self.normalizer["grad_target_mean"],
+                        std=self.normalizer["grad_target_std"],
+                        device=self.device,
+                    )
+                else:
+                    self.normalizers["grad_target"] = Normalizer(
+                        tensor=self.train_loader.dataset.data.y[
+                            self.train_loader.dataset.__indices__
+                        ],
+                        device=self.device,
+                    )
+                    self.normalizers["grad_target"].mean.fill_(0)
 
     @torch.no_grad()
     def predict(self, loader, per_image=True, results_file=None, disable_tqdm=False):
