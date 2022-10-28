@@ -64,7 +64,7 @@ class EnergyTrainer(BaseTrainer):
             )
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
-        if self.config["model"].get("regress_forces", True):
+        if self.config["model"].get("regress_forces"):
             if self.normalizer.get("normalize_labels", False):
                 if "grad_target_mean" in self.normalizer:
                     self.normalizers["grad_target"] = Normalizer(
@@ -394,7 +394,7 @@ class EnergyTrainer(BaseTrainer):
         loss.append(energy_mult * self.loss_fn["energy"](out["energy"], target_normed))
 
         # Force loss.
-        if self.config["model"].get("regress_forces", True):
+        if self.config["model"].get("regress_forces"):
             force_target = torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
             )
