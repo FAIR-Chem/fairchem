@@ -98,9 +98,15 @@ class EnergyTrainer(BaseTrainer):
 
         if self.normalizers is not None and "target" in self.normalizers:
             self.normalizers["target"].to(self.device)
-        predictions = {"id": [], "energy": []}
+        if self.normalizers is not None and "grad_target" in self.normalizers:
+            self.normalizers["grad_target"].to(self.device)
 
-        for batch in tqdm(
+        predictions = {"id": [], "energy": []}
+        if self.task_name == "s2ef":
+            predictions["forces"] = []
+            predictions["chunk_idx"] = []
+
+        for batch_list in tqdm(
             loader,
             total=len(loader),
             position=rank,
@@ -108,16 +114,55 @@ class EnergyTrainer(BaseTrainer):
             disable=disable_tqdm,
         ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out, _ = self._forward(batch)
+                out, _ = self._forward(batch_list)
 
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(out["energy"])
+            if self.normalizers is not None and "grad_target" in self.normalizers:
+                self.normalizers["grad_target"].to(self.device)
 
             if per_image:
-                predictions["id"].extend([str(i) for i in batch[0].sid.tolist()])
-                predictions["energy"].extend(out["energy"].tolist())
+                system_ids = (
+                    [str(i) for i in batch_list[0].sid.tolist()]
+                    if self.task_name == "s2ef"
+                    else [
+                        str(i) + "_" + str(j)
+                        for i, j in zip(
+                            batch_list[0].sid.tolist(), batch_list[0].fid.tolist()
+                        )
+                    ]
+                )
+                predictions["id"].extend(system_ids)
+                predictions["energy"].extend(out["energy"].to(torch.float16).tolist())
+
+                if self.task_name == "s2ef":
+                    batch_natoms = torch.cat([batch.natoms for batch in batch_list])
+                    batch_fixed = torch.cat([batch.fixed for batch in batch_list])
+                    forces = out["forces"].cpu().detach().to(torch.float16)
+                    per_image_forces = torch.split(forces, batch_natoms.tolist())
+                    per_image_forces = [force.numpy() for force in per_image_forces]
+                    # evalAI only requires forces on free atoms
+                    if results_file is not None:
+                        _per_image_fixed = torch.split(
+                            batch_fixed, batch_natoms.tolist()
+                        )
+                        _per_image_free_forces = [
+                            force[(fixed == 0).tolist()]
+                            for force, fixed in zip(per_image_forces, _per_image_fixed)
+                        ]
+                        _chunk_idx = np.array(
+                            [
+                                free_force.shape[0]
+                                for free_force in _per_image_free_forces
+                            ]
+                        )
+                        per_image_forces = _per_image_free_forces
+                        predictions["chunk_idx"].extend(_chunk_idx)
+                    predictions["forces"].extend(per_image_forces)
             else:
                 predictions["energy"] = out["energy"].detach()
+                if self.task_name == "s2ef":
+                    predictions["forces"] = out["forces"].detach()
                 return predictions
 
         self.save_results(predictions, results_file, keys=["energy"])
