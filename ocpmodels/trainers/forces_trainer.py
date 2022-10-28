@@ -199,7 +199,7 @@ class ForcesTrainer(BaseTrainer):
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
         checkpoint_every = self.config["optim"].get("checkpoint_every", eval_every)
         primary_metric = self.config["task"].get(
-            "primary_metric", self.evaluator.task_primary_metric[self.name]
+            "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )
         self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
         self.metrics = {}

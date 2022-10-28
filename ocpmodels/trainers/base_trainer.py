@@ -65,7 +65,7 @@ class BaseTrainer(ABC):
         self.epoch = 0
         self.step = 0
         self.cpu = self.config["cpu"]
-        self.name = self.config["name"]
+        self.task_name = self.config["name"]
         self.test_ri = self.config["test_ri"]
         self.is_debug = self.config["is_debug"]
         self.is_hpo = self.config["is_hpo"]
@@ -550,7 +550,7 @@ class BaseTrainer(ABC):
             self.ema.store()
             self.ema.copy_to()
 
-        evaluator, metrics = Evaluator(task=self.name), {}
+        evaluator, metrics = Evaluator(task=self.task_name), {}
         rank = distutils.get_rank()
 
         loader = self.val_loader if split[:3] in {"val", "eva"} else self.test_loader
@@ -668,7 +668,7 @@ class BaseTrainer(ABC):
 
         results_file_path = os.path.join(
             self.config["results_dir"],
-            f"{self.name}_{results_file}_{distutils.get_rank()}.npz",
+            f"{self.task_name}_{results_file}_{distutils.get_rank()}.npz",
         )
         np.savez_compressed(
             results_file_path,
@@ -681,13 +681,13 @@ class BaseTrainer(ABC):
             gather_results = defaultdict(list)
             full_path = os.path.join(
                 self.config["results_dir"],
-                f"{self.name}_{results_file}.npz",
+                f"{self.task_name}_{results_file}.npz",
             )
 
             for i in range(distutils.get_world_size()):
                 rank_path = os.path.join(
                     self.config["results_dir"],
-                    f"{self.name}_{results_file}_{i}.npz",
+                    f"{self.task_name}_{results_file}_{i}.npz",
                 )
                 rank_results = np.load(rank_path, allow_pickle=True)
                 gather_results["ids"].extend(rank_results["ids"])

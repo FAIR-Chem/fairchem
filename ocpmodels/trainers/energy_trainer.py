@@ -93,7 +93,7 @@ class EnergyTrainer(BaseTrainer):
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
         self.config["print_every"] = eval_every  # Can comment out for better debug
         primary_metric = self.config["task"].get(
-            "primary_metric", self.evaluator.task_primary_metric[self.name]
+            "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )
         self.best_val_mae = 1e9
 
@@ -167,13 +167,13 @@ class EnergyTrainer(BaseTrainer):
                             disable_tqdm=disable_eval_tqdm,
                         )
                         if (
-                            val_metrics[self.evaluator.task_primary_metric[self.name]][
-                                "metric"
-                            ]
+                            val_metrics[
+                                self.evaluator.task_primary_metric[self.task_name]
+                            ]["metric"]
                             < self.best_val_mae
                         ):
                             self.best_val_mae = val_metrics[
-                                self.evaluator.task_primary_metric[self.name]
+                                self.evaluator.task_primary_metric[self.task_name]
                             ]["metric"]
                             self.save(
                                 metrics=val_metrics,
