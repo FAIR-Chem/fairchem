@@ -81,7 +81,10 @@ def pyg2_data_transform(data: Data):
     # if we're on the new pyg (2.0 or later), we need to convert the data to the
     # new format
     if torch_geometric.__version__ >= "2.0":
-        return Data(**{k: v for k, v in data.__dict__.items() if v is not None})
+        source = data.__dict__
+        if "_store" in source:
+            source = source["_store"]
+        return Data(**{k: v for k, v in source.items() if v is not None})
 
     return data
 
