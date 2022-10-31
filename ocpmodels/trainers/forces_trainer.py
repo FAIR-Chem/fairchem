@@ -224,7 +224,7 @@ class ForcesTrainer(BaseTrainer):
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
-                    loss = self._compute_loss(out, batch)
+                    loss = self.compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
@@ -335,7 +335,7 @@ class ForcesTrainer(BaseTrainer):
 
         return out
 
-    def _compute_loss(self, out, batch_list):
+    def compute_loss(self, out, batch_list):
         loss = []
 
         # Energy loss.

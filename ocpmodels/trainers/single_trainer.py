@@ -215,7 +215,7 @@ class EnergyTrainer(BaseTrainer):
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out, pooling_loss = self._forward(batch)
-                    loss = self._compute_loss(out, batch)
+                    loss = self.compute_loss(out, batch)
                     if pooling_loss is not None:
                         loss += pooling_loss * self.config["optim"].get(
                             "pooling_coefficient", 1
@@ -375,7 +375,7 @@ class EnergyTrainer(BaseTrainer):
 
         return out, pooling_loss
 
-    def _compute_loss(self, out, batch_list):
+    def compute_loss(self, out, batch_list):
         loss = []
 
         # Energy loss

@@ -571,7 +571,7 @@ class BaseTrainer(ABC):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out, pooling_loss = self._forward(batch)
-            loss = self._compute_loss(out, batch)
+            loss = self.compute_loss(out, batch)
             if pooling_loss is not None:
                 loss += pooling_loss
 
@@ -627,7 +627,7 @@ class BaseTrainer(ABC):
         """Derived classes should implement this function."""
 
     @abstractmethod
-    def _compute_loss(self, out, batch_list):
+    def compute_loss(self, out, batch_list):
         """Derived classes should implement this function."""
 
     def _backward(self, loss):
