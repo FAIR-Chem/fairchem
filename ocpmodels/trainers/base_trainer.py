@@ -734,11 +734,11 @@ class BaseTrainer(ABC):
         for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
 
             # Update the val. dataset we look at
-            self.config["val_dataset"] = {
-                "src": "/network/projects/_groups/ocp/oc20/is2re/all/"
-                + s
-                + "/data.lmdb"
-            }
+            base = Path(f"/network/projects/ocp/oc20/{self.task_name}/all/{s}/")
+            src = base / "data.lmdb"
+            if not src.exists():
+                src = base
+            self.config["val_dataset"] = {"src": str(src)}
 
             # Load val dataset
             if self.config.get("val_dataset", None):
