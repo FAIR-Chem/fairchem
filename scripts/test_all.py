@@ -214,8 +214,9 @@ if __name__ == "__main__":
         print("-" * 10)
 
     test_duration = time() - test_start
+    emo = "🎉" if successes == len(configs) else "😢"
     print(
-        f"\n\n🎉 `{command}` finished testing {c+1}/{len(configs)}"
+        f"\n\n{emo} `{command}` finished testing {c+1}/{len(configs)}"
         + f" configs in {format_timer(test_duration)}"
         + f" on commit {get_commit_hash()}. {successes} succeeded."
         + f" [{str(datetime.now()).split('.')[0]}]"
