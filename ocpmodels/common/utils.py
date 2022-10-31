@@ -435,6 +435,7 @@ def load_config(config_str):
     config, _ = merge_dicts(config, model_conf[task][split])
     config, _ = merge_dicts(config, task_conf["default"])
     config, _ = merge_dicts(config, task_conf[split])
+    config["task_name"] = task
 
     return config
 

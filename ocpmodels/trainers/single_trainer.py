@@ -36,9 +36,6 @@ class EnergyTrainer(BaseTrainer):
         can be found in `configs/ocp_is2re <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_. # noqa: E501
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs, name="is2re")
-
     def load_task(self):
         if not self.silent:
             logging.info(f"Loading dataset: {self.config['task']['dataset']}")

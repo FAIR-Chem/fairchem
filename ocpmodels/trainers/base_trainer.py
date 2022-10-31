@@ -65,7 +65,8 @@ class BaseTrainer(ABC):
         self.epoch = 0
         self.step = 0
         self.cpu = self.config["cpu"]
-        self.task_name = self.config["name"]
+        self.task_name = self.config.get("task_name", self.config.get("name"))
+        assert self.task_name, "Specify task name (got {})".format(self.task_name)
         self.test_ri = self.config["test_ri"]
         self.is_debug = self.config["is_debug"]
         self.is_hpo = self.config["is_hpo"]
@@ -140,7 +141,7 @@ class BaseTrainer(ABC):
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
-        self.evaluator = Evaluator(task=self.config["name"])
+        self.evaluator = Evaluator(task=self.task_name)
 
     def load(self):
         self.load_seed_from_config()
