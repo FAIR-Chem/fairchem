@@ -42,9 +42,9 @@ class BaseModel(nn.Module):
                     create_graph=True,
                 )[0]
             )
-            return energy, forces
+            return energy, pooling_loss, forces
         else:
-            return energy
+            return energy, pooling_loss
 
     @property
     def num_params(self):
