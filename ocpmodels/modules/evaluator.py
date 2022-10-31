@@ -71,7 +71,10 @@ class Evaluator:
         for attr in self.task_attributes[self.task]:
             assert attr in prediction
             assert attr in target
-            assert prediction[attr].shape == target[attr].shape
+            assert prediction[attr].shape == target[attr].shape, (
+                f"Expected {attr} to have shape {target[attr].shape},"
+                + f" got {prediction[attr].shape}."
+            )
 
         metrics = prev_metrics
 
