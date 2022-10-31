@@ -570,13 +570,13 @@ class BaseTrainer(ABC):
 
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out, pooling_loss = self._forward(batch)
-            loss = self.compute_loss(out, batch)
-            if pooling_loss is not None:
-                loss += pooling_loss
+                preds = self.model_forward(batch)
+            loss = self.compute_loss(preds, batch)
+            if preds.get("pooling_loss") is not None:
+                loss += preds["pooling_loss"]
 
             # Compute metrics.
-            metrics = self._compute_metrics(out, batch, evaluator, metrics)
+            metrics = self._compute_metrics(preds, batch, evaluator, metrics)
             metrics = evaluator.update("loss", loss.item(), metrics)
 
         val_time = time.time() - val_time
@@ -623,7 +623,7 @@ class BaseTrainer(ABC):
         return metrics
 
     @abstractmethod
-    def _forward(self, batch_list):
+    def model_forward(self, batch_list):
         """Derived classes should implement this function."""
 
     @abstractmethod

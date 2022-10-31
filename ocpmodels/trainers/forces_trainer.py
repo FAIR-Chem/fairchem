@@ -122,7 +122,7 @@ class ForcesTrainer(BaseTrainer):
             disable=disable_tqdm,
         ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch_list)
+                out = self.model_forward(batch_list)
 
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(out["energy"])
@@ -223,7 +223,7 @@ class ForcesTrainer(BaseTrainer):
 
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out = self._forward(batch)
+                    out = self.model_forward(batch)
                     loss = self.compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
@@ -316,7 +316,7 @@ class ForcesTrainer(BaseTrainer):
         if "test_dataset" in self.config:
             self.test_dataset.close_db()
 
-    def _forward(self, batch_list):
+    def model_forward(self, batch_list):
         # forward pass.
         if self.config["model"].get("regress_forces", True):
             out_energy, out_forces = self.model(batch_list)

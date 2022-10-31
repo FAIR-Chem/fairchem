@@ -70,16 +70,16 @@ class EnergyTrainer(BaseTrainer):
             disable=disable_tqdm,
         ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out, _ = self._forward(batch)
+                preds = self.model_forward(batch)
 
             if self.normalizers is not None and "target" in self.normalizers:
-                out["energy"] = self.normalizers["target"].denorm(out["energy"])
+                preds["energy"] = self.normalizers["target"].denorm(preds["energy"])
 
             if per_image:
                 predictions["id"].extend([str(i) for i in batch[0].sid.tolist()])
-                predictions["energy"].extend(out["energy"].tolist())
+                predictions["energy"].extend(preds["energy"].tolist())
             else:
-                predictions["energy"] = out["energy"].detach()
+                predictions["energy"] = preds["energy"].detach()
                 return predictions
 
         self.save_results(predictions, results_file, keys=["energy"])
@@ -128,10 +128,11 @@ class EnergyTrainer(BaseTrainer):
 
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out, pooling_loss = self._forward(batch)
-                    loss = self.compute_loss(out, batch)
-                    if pooling_loss is not None:
-                        loss += pooling_loss
+                    preds = self.model_forward(batch)
+                    loss = self.compute_loss(preds, batch)
+                    if preds.get("pooling_loss") is not None:
+                        loss += preds["pooling_loss"]
+
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 if torch.isnan(loss):
                     print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
@@ -142,10 +143,7 @@ class EnergyTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out,
-                    batch,
-                    self.evaluator,
-                    metrics={},
+                    preds, batch, self.evaluator, metrics={}
                 )
                 self.metrics = self.evaluator.update(
                     "loss", loss.item() / scale, self.metrics
@@ -223,7 +221,7 @@ class EnergyTrainer(BaseTrainer):
         if self.logger is not None:
             start_time = time.time()
             # batch = next(iter(self.train_loader))
-            self._forward(batch)
+            self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
             self.logger.log({"Epoch time": sum(epoch_time) / len(epoch_time)})
 
@@ -253,7 +251,7 @@ class EnergyTrainer(BaseTrainer):
         if "test_dataset" in self.config:
             self.test_dataset.close_db()
 
-    def _forward(self, batch_list):
+    def model_forward(self, batch_list):
 
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
@@ -262,22 +260,23 @@ class EnergyTrainer(BaseTrainer):
             for i in range(len(batch_list[0].fa_pos)):
                 batch_list[0].pos = batch_list[0].fa_pos[i]
                 batch_list[0].cell = batch_list[0].fa_cell[i]
-                y, p = self.model(deepcopy(batch_list))
-                y_all.append(y)
-                p_all.append(p)
+                preds = self.model(deepcopy(batch_list))
+                y_all.append(preds["energy"])
+                if preds.get("pooling_loss") is not None:
+                    p_all.append(preds["pooling_loss"])
             batch_list[0].pos = original_pos
             batch_list[0].cell = original_cell
-            output = sum(y_all) / len(y_all)
-            pooling_loss = sum(p_all) / len(p_all) if all(p_all) else None
+            preds["energy"] = sum(y_all) / len(y_all)
+            preds["pooling_loss"] = (
+                sum(p_all) / len(p_all) if (p_all and all(p_all)) else None
+            )
         else:
-            output, pooling_loss = self.model(batch_list)
+            preds = self.model(batch_list)
 
-        if output.shape[-1] == 1:
-            output = output.view(-1)
+        if preds["energy"].shape[-1] == 1:
+            preds["energy"] = preds["energy"].view(-1)
 
-        return {
-            "energy": output,
-        }, pooling_loss
+        return preds
 
     def compute_loss(self, out, batch_list):
         energy_target = torch.cat(
@@ -352,14 +351,14 @@ class EnergyTrainer(BaseTrainer):
             if debug_batches > 0 and i == debug_batches:
                 break
             # Pass it through the model.
-            energies1, _ = self._forward(deepcopy(batch))
+            preds1 = self.model_forward(deepcopy(batch))
 
             # Rotate graph and compute prediction
             batch_rotated = self.rotate_graph(batch, rotation="z")
-            energies2, _ = self._forward(deepcopy(batch_rotated))
+            preds2 = self.model_forward(deepcopy(batch_rotated))
 
             # Difference in predictions
-            energy_diff_z += torch.abs(energies1["energy"] - energies2["energy"]).sum()
+            energy_diff_z += torch.abs(preds1["energy"] - preds2["energy"]).sum()
 
             # Diff in positions -- could remove model prediction
             pos_diff_z = -1
@@ -371,15 +370,13 @@ class EnergyTrainer(BaseTrainer):
 
             # Reflect graph
             batch_reflected = self.reflect_graph(batch)
-            energies3, _ = self._forward(batch_reflected)
-            energy_diff_refl += torch.abs(
-                energies1["energy"] - energies3["energy"]
-            ).sum()
+            preds3 = self.model_forward(batch_reflected)
+            energy_diff_refl += torch.abs(preds1["energy"] - preds3["energy"]).sum()
 
             # 3D Rotation
             batch_rotated = self.rotate_graph(batch)
-            energies4, _ = self._forward(batch_rotated)
-            energy_diff += torch.abs(energies1["energy"] - energies4["energy"]).sum()
+            preds4 = self.model_forward(batch_rotated)
+            energy_diff += torch.abs(preds1["energy"] - preds4["energy"]).sum()
 
         # Aggregate the results
         batch_size = len(batch[0].natoms)

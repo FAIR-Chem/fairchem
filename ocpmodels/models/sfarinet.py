@@ -452,7 +452,11 @@ class SfariNet(BaseModel):
         # or skip-connection
 
         # Force-head for S2EF, IS2RS
+
+        preds = {"energy": energy, "pooling_loss": pooling_loss}
+
         if self.regress_forces:
-            force = self.decoder(h)
-            return energy, pooling_loss, force
-        return energy, pooling_loss
+            forces = self.decoder(h)
+            preds["forces"] = forces
+
+        return preds

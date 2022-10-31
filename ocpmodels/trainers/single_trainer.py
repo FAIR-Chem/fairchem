@@ -117,10 +117,10 @@ class EnergyTrainer(BaseTrainer):
             disable=disable_tqdm,
         ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out, _ = self._forward(batch_list)
+                preds = self.model_forward(batch_list)
 
             if self.normalizers is not None and "target" in self.normalizers:
-                out["energy"] = self.normalizers["target"].denorm(out["energy"])
+                preds["energy"] = self.normalizers["target"].denorm(preds["energy"])
             if self.normalizers is not None and "grad_target" in self.normalizers:
                 self.normalizers["grad_target"].to(self.device)
 
@@ -136,12 +136,12 @@ class EnergyTrainer(BaseTrainer):
                     ]
                 )
                 predictions["id"].extend(system_ids)
-                predictions["energy"].extend(out["energy"].to(torch.float16).tolist())
+                predictions["energy"].extend(preds["energy"].to(torch.float16).tolist())
 
                 if self.task_name == "s2ef":
                     batch_natoms = torch.cat([batch.natoms for batch in batch_list])
                     batch_fixed = torch.cat([batch.fixed for batch in batch_list])
-                    forces = out["forces"].cpu().detach().to(torch.float16)
+                    forces = preds["forces"].cpu().detach().to(torch.float16)
                     per_image_forces = torch.split(forces, batch_natoms.tolist())
                     per_image_forces = [force.numpy() for force in per_image_forces]
                     # evalAI only requires forces on free atoms
@@ -163,9 +163,9 @@ class EnergyTrainer(BaseTrainer):
                         predictions["chunk_idx"].extend(_chunk_idx)
                     predictions["forces"].extend(per_image_forces)
             else:
-                predictions["energy"] = out["energy"].detach()
+                predictions["energy"] = preds["energy"].detach()
                 if self.task_name == "s2ef":
-                    predictions["forces"] = out["forces"].detach()
+                    predictions["forces"] = preds["forces"].detach()
                 return predictions
 
         self.save_results(predictions, results_file, keys=["energy"])
@@ -214,12 +214,11 @@ class EnergyTrainer(BaseTrainer):
 
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out, pooling_loss = self._forward(batch)
-                    loss = self.compute_loss(out, batch)
-                    if pooling_loss is not None:
-                        loss += pooling_loss * self.config["optim"].get(
-                            "pooling_coefficient", 1
-                        )
+                    preds = self.model_forward(batch)
+                    loss = self.compute_loss(preds, batch)
+                    if preds.get("pooling_loss") is not None:
+                        coeff = self.config["optim"].get("pooling_coefficient", 1)
+                        loss += preds["pooling_loss"] * coeff
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 if torch.isnan(loss):
                     print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
@@ -230,7 +229,7 @@ class EnergyTrainer(BaseTrainer):
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
-                    out,
+                    preds,
                     batch,
                     self.evaluator,
                     metrics={},
@@ -311,7 +310,7 @@ class EnergyTrainer(BaseTrainer):
         if self.logger is not None:
             start_time = time.time()
             # batch = next(iter(self.train_loader))
-            self._forward(batch)
+            self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
             self.logger.log({"Epoch time": sum(epoch_time) / len(epoch_time)})
 
@@ -341,7 +340,7 @@ class EnergyTrainer(BaseTrainer):
         if "test_dataset" in self.config:
             self.test_dataset.close_db()
 
-    def _forward(self, batch_list):
+    def model_forward(self, batch_list):
 
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
@@ -351,31 +350,29 @@ class EnergyTrainer(BaseTrainer):
             for i in range(len(batch_list[0].fa_pos)):
                 batch_list[0].pos = batch_list[0].fa_pos[i]
                 batch_list[0].cell = batch_list[0].fa_cell[i]
-                e, p, *f = self.model(deepcopy(batch_list))
-                e_all.append(e)
-                p_all.append(p)
-                if f:
-                    f_all.append(f[0])
+                preds = self.model(deepcopy(batch_list))
+                e_all.append(preds["energy"])
+                if preds.get("pooling_loss") is not None:
+                    p_all.append(preds["pooling_loss"])
+                if preds.get("forces") is not None:
+                    f_all.append(preds["forces"])
 
             batch_list[0].pos = original_pos
             batch_list[0].cell = original_cell
-            energy = sum(e_all) / len(e_all)
-            forces = [sum(f_all) / len(f_all)] if f_all else []
-            pooling_loss = sum(p_all) / len(p_all) if all(p_all) else None
+            preds = {"energy": sum(e_all) / len(e_all)}
+            if len(p_all) > 0 and all(p_all):
+                preds["pooling_loss"] = sum(p_all) / len(p_all)
+            if len(f_all) > 0 and all(f_all):
+                preds["forces"] = sum(f_all) / len(f_all)
         else:
-            energy, pooling_loss, *forces = self.model(batch_list)
+            preds = self.model(batch_list)
 
-        if energy.shape[-1] == 1:
-            energy = energy.view(-1)
+        if preds["energy"].shape[-1] == 1:
+            preds["energy"] = preds["energy"].view(-1)
 
-        out = {"energy": energy}
+        return preds
 
-        if forces:
-            out["forces"] = forces[0]
-
-        return out, pooling_loss
-
-    def compute_loss(self, out, batch_list):
+    def compute_loss(self, preds, batch_list):
         loss = []
 
         # Energy loss
@@ -394,7 +391,9 @@ class EnergyTrainer(BaseTrainer):
         else:
             target_normed = energy_target
         energy_mult = self.config["optim"].get("energy_coefficient", 1)
-        loss.append(energy_mult * self.loss_fn["energy"](out["energy"], target_normed))
+        loss.append(
+            energy_mult * self.loss_fn["energy"](preds["energy"], target_normed)
+        )
 
         # Force loss.
         if self.config["model"].get("regress_forces"):
@@ -421,7 +420,7 @@ class EnergyTrainer(BaseTrainer):
                 weight[batch_tags == 1] = tag_specific_weights[1]
                 weight[batch_tags == 2] = tag_specific_weights[2]
 
-                loss_force_list = torch.abs(out["forces"] - force_target)
+                loss_force_list = torch.abs(preds["forces"] - force_target)
                 train_loss_force_unnormalized = torch.sum(
                     loss_force_list * weight.view(-1, 1)
                 )
@@ -446,11 +445,14 @@ class EnergyTrainer(BaseTrainer):
                     mask = fixed == 0
                     loss.append(
                         force_mult
-                        * self.loss_fn["force"](out["forces"][mask], force_target[mask])
+                        * self.loss_fn["force"](
+                            preds["forces"][mask], force_target[mask]
+                        )
                     )
                 else:
                     loss.append(
-                        force_mult * self.loss_fn["force"](out["forces"], force_target)
+                        force_mult
+                        * self.loss_fn["force"](preds["forces"], force_target)
                     )
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
@@ -459,7 +461,7 @@ class EnergyTrainer(BaseTrainer):
         loss = sum(loss)
         return loss
 
-    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+    def _compute_metrics(self, preds, batch_list, evaluator, metrics={}):
         natoms = torch.cat(
             [batch.natoms.to(self.device) for batch in batch_list], dim=0
         )
@@ -483,12 +485,12 @@ class EnergyTrainer(BaseTrainer):
             target["forces"] = torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
             )
-            out["natoms"] = natoms
+            preds["natoms"] = natoms
 
             if self.config["task"].get("eval_on_free_atoms", True):
                 fixed = torch.cat([batch.fixed.to(self.device) for batch in batch_list])
                 mask = fixed == 0
-                out["forces"] = out["forces"][mask]
+                preds["forces"] = preds["forces"][mask]
                 target["forces"] = target["forces"][mask]
 
                 s_idx = 0
@@ -497,17 +499,19 @@ class EnergyTrainer(BaseTrainer):
                     natoms_free.append(torch.sum(mask[s_idx : s_idx + natoms]).item())
                     s_idx += natoms
                 target["natoms"] = torch.LongTensor(natoms_free).to(self.device)
-                out["natoms"] = torch.LongTensor(natoms_free).to(self.device)
+                preds["natoms"] = torch.LongTensor(natoms_free).to(self.device)
             if (
                 self.normalizer.get("normalize_labels")
                 and "grad_target" in self.normalizers
             ):
-                out["forces"] = self.normalizers["grad_target"].denorm(out["forces"])
+                preds["forces"] = self.normalizers["grad_target"].denorm(
+                    preds["forces"]
+                )
 
         if self.normalizer.get("normalize_labels") and "target" in self.normalizers:
-            out["energy"] = self.normalizers["target"].denorm(out["energy"])
+            preds["energy"] = self.normalizers["target"].denorm(preds["energy"])
 
-        metrics = evaluator.eval(out, target, prev_metrics=metrics)
+        metrics = evaluator.eval(preds, target, prev_metrics=metrics)
 
         return metrics
 
@@ -555,14 +559,14 @@ class EnergyTrainer(BaseTrainer):
             if debug_batches > 0 and i == debug_batches:
                 break
             # Pass it through the model.
-            out1, _ = self._forward(deepcopy(batch))
+            preds1 = self.model_forward(deepcopy(batch))
 
             # Rotate graph and compute prediction
             batch_rotated = self.rotate_graph(batch, rotation="z")
-            out2, _ = self._forward(deepcopy(batch_rotated))
+            preds2 = self.model_forward(deepcopy(batch_rotated))
 
             # Difference in predictions
-            energy_diff_z += torch.abs(out1["energy"] - out2["energy"]).sum()
+            energy_diff_z += torch.abs(preds1["energy"] - preds2["energy"]).sum()
 
             # Diff in positions -- could remove model prediction
             pos_diff_z = -1
@@ -574,13 +578,13 @@ class EnergyTrainer(BaseTrainer):
 
             # Reflect graph
             batch_reflected = self.reflect_graph(batch)
-            out3, _ = self._forward(batch_reflected)
-            energy_diff_refl += torch.abs(out1["energy"] - out3["energy"]).sum()
+            preds3 = self.model_forward(batch_reflected)
+            energy_diff_refl += torch.abs(preds1["energy"] - preds3["energy"]).sum()
 
             # 3D Rotation
             batch_rotated = self.rotate_graph(batch)
-            out4, _ = self._forward(batch_rotated)
-            energy_diff += torch.abs(out1["energy"] - out4["energy"]).sum()
+            preds4 = self.model_forward(batch_rotated)
+            energy_diff += torch.abs(preds1["energy"] - preds4["energy"]).sum()
 
         # Aggregate the results
         batch_size = len(batch[0].natoms)

@@ -428,4 +428,7 @@ class NewSchNet(BaseModel):
         if self.scale is not None:
             out = self.scale * out
 
-        return out, pooling_loss
+        return {
+            "energy": out,
+            "pooling_loss": pooling_loss,
+        }

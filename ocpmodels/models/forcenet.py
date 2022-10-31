@@ -644,8 +644,10 @@ class NewForceNet(BaseModel):
 
         energy = self.energy_mlp(out)
 
+        preds = {"energy": energy, "pooling_loss": pooling_loss}
+
         if self.predict_forces:
             forces = self.decoder(h)
-            return energy, pooling_loss, forces
+            preds["forces"] = forces
 
-        return energy, pooling_loss
+        return preds

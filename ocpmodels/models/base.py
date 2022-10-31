@@ -31,20 +31,19 @@ class BaseModel(nn.Module):
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy, pooling_loss = self.energy_forward(data)
+        preds = self.energy_forward(data)
 
         if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
-                    energy,
+                    preds["energy"],
                     data.pos,
-                    grad_outputs=torch.ones_like(energy),
+                    grad_outputs=torch.ones_like(preds["energy"]),
                     create_graph=True,
                 )[0]
             )
-            return energy, pooling_loss, forces
-        else:
-            return energy, pooling_loss
+            preds["forces"] = forces
+        return preds
 
     @property
     def num_params(self):

@@ -722,25 +722,28 @@ class NewDimeNetPlusPlus(BaseModel):
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
         energy = energy + P_bis
 
-        return energy, pooling_loss
+        return {
+            "energy": energy,
+            "pooling_loss": pooling_loss,
+        }
 
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy, pooling_loss = self.energy_forward(data)
+        preds = self.energy_forward(data)
 
         if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
-                    energy,
+                    preds["energy"],
                     data.pos,
-                    grad_outputs=torch.ones_like(energy),
+                    grad_outputs=torch.ones_like(preds["energy"]),
                     create_graph=True,
                 )[0]
             )
-            return energy, forces
-        else:
-            return energy, pooling_loss
+            preds["forces"] = forces
+
+        return preds
 
     @property
     def num_params(self):

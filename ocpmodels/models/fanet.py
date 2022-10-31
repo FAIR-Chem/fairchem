@@ -464,12 +464,14 @@ class FANet(BaseModel):
         if self.skip_co:
             energy += energy_skip_co
 
+        preds = {"energy": energy, "pooling_loss": pooling_loss}
+
         # Force-head
         if self.regress_forces:
-            force = self.decoder(h)
-            return energy, force
+            forces = self.decoder(h)
+            preds["forces"] = forces
 
-        return energy, pooling_loss
+        return preds
 
     def __repr__(self):
         return (
