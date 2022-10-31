@@ -383,7 +383,13 @@ class EnergyTrainer(BaseTrainer):
 
         # Energy loss
         energy_target = torch.cat(
-            [batch.y_relaxed.to(self.device) for batch in batch_list], dim=0
+            [
+                batch.y_relaxed.to(self.device)
+                if self.task_name == "is2re"
+                else batch.y.to(self.device)
+                for batch in batch_list
+            ],
+            dim=0,
         )
 
         if self.normalizer.get("normalize_labels", False):
