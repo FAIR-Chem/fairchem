@@ -31,7 +31,7 @@ class BaseModel(nn.Module):
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy = self.energy_forward(data)
+        energy, pooling_loss = self.energy_forward(data)
 
         if self.regress_forces:
             forces = -1 * (
