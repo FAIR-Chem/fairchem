@@ -268,7 +268,7 @@ class ForceDecoder(nn.Module):
                     self.model_config["hidden_channels"],
                 ),
                 LambdaLayer(act),
-                Linear(self.model_config["hidden_channels"], 1),
+                Linear(self.model_config["hidden_channels"], 3),
             )
         else:
             raise ValueError(f"Unknown force decoder type: `{self.type}`")
