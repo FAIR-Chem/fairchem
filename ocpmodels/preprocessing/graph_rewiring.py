@@ -32,7 +32,8 @@ def remove_tag0_nodes(data):
     data.force = data.force[non_sub, :]
     data.fixed = data.fixed[non_sub]
     data.tags = data.tags[non_sub]
-    data.pos_relaxed = data.pos_relaxed[non_sub, :]
+    if hasattr(data, "pos_relaxed"):
+        data.pos_relaxed = data.pos_relaxed[non_sub, :]
 
     # per-edge tensors
     data.edge_index = data.edge_index[:, neither_is_sub]
@@ -131,12 +132,13 @@ def one_supernode_per_graph(data, cutoff=6.0, verbose=False):
         ]
     )
     # relaxed position for supernode is the same as initial position
-    data.pos_relaxed = cat(
-        [
-            cat([data.pos_relaxed[non_sub_nodes[i]], sn_pos[i][None, :]])
-            for i in range(batch_size)
-        ]
-    )
+    if hasattr(data, "pos_relaxed"):
+        data.pos_relaxed = cat(
+            [
+                cat([data.pos_relaxed[non_sub_nodes[i]], sn_pos[i][None, :]])
+                for i in range(batch_size)
+            ]
+        )
     # idem
     data.force = cat(
         [
@@ -416,21 +418,22 @@ def one_supernode_per_atom_type(data, cutoff=6.0):
     )
 
     # pos relaxed
-    data.pos_relaxed = cat(
-        [
-            cat(
-                [
-                    data.pos_relaxed[non_sub_nodes[i]],
-                    cat(
-                        supernodes_pos[
-                            acc_num_supernodes[i] : acc_num_supernodes[i + 1]
-                        ]
-                    ),
-                ]
-            )
-            for i in range(batch_size)
-        ]
-    )
+    if hasattr(data, "pos_relaxed"):
+        data.pos_relaxed = cat(
+            [
+                cat(
+                    [
+                        data.pos_relaxed[non_sub_nodes[i]],
+                        cat(
+                            supernodes_pos[
+                                acc_num_supernodes[i] : acc_num_supernodes[i + 1]
+                            ]
+                        ),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
 
     # the force applied on the super node is the mean of the force applied
     # to its aggregates (per batch)
@@ -662,21 +665,22 @@ def one_supernode_per_atom_type_dist(data, cutoff=6.0):
     )
 
     # pos relaxed
-    data.pos_relaxed = cat(
-        [
-            cat(
-                [
-                    data.pos_relaxed[non_sub_nodes[i]],
-                    cat(
-                        supernodes_pos[
-                            acc_num_supernodes[i] : acc_num_supernodes[i + 1]
-                        ]
-                    ),
-                ]
-            )
-            for i in range(batch_size)
-        ]
-    )
+    if hasattr(data, "pos_relaxed"):
+        data.pos_relaxed = cat(
+            [
+                cat(
+                    [
+                        data.pos_relaxed[non_sub_nodes[i]],
+                        cat(
+                            supernodes_pos[
+                                acc_num_supernodes[i] : acc_num_supernodes[i + 1]
+                            ]
+                        ),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
 
     # the force applied on the super node is the mean of the force applied
     # to its aggregates (per batch)
