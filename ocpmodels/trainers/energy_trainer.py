@@ -268,7 +268,9 @@ class EnergyTrainer(BaseTrainer):
             batch_list[0].cell = original_cell
             preds["energy"] = sum(y_all) / len(y_all)
             preds["pooling_loss"] = (
-                sum(p_all) / len(p_all) if (p_all and all(p_all)) else None
+                sum(p_all) / len(p_all)
+                if (p_all and all(y is not None for y in p_all))
+                else None
             )
         else:
             preds = self.model(batch_list)

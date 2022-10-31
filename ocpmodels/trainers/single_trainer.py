@@ -360,9 +360,9 @@ class EnergyTrainer(BaseTrainer):
             batch_list[0].pos = original_pos
             batch_list[0].cell = original_cell
             preds = {"energy": sum(e_all) / len(e_all)}
-            if len(p_all) > 0 and all(p_all):
+            if len(p_all) > 0 and all(y is not None for y in p_all):
                 preds["pooling_loss"] = sum(p_all) / len(p_all)
-            if len(f_all) > 0 and all(f_all):
+            if len(f_all) > 0 and all(y is not None for y in f_all):
                 preds["forces"] = sum(f_all) / len(f_all)
         else:
             preds = self.model(batch_list)
