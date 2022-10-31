@@ -68,10 +68,11 @@ s2ef:
   default:
     model:
       regress_forces: True
-  200k:
+      predict_forces: True
+  200k: {}
 
-  2M:
+  2M: {}
 
-  20M:
+  20M: {}
 
-  all:
+  all: {}
