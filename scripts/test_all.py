@@ -158,9 +158,9 @@ if __name__ == "__main__":
 
     print("🥁 Configs to test:")
     for c, conf in enumerate(configs):
-        print(f"  • {c+1} " + conf_strs[c])
         if c and c % len(features) == 0:
             print()
+        print(f"  • {c+1:3} " + conf_strs[c])
 
     print()
 
@@ -195,6 +195,10 @@ if __name__ == "__main__":
             if not is_nan:
                 successes += 1
 
+        except KeyboardInterrupt:
+            print("\n\nInterrupting. 👋 Bye!")
+            break
+
         except Exception as e:
             print(f"\n{e}\n")
             if args.traceback:
@@ -211,8 +215,8 @@ if __name__ == "__main__":
 
     test_duration = time() - test_start
     print(
-        f"\n\n🎉 `{command}` finished testing {len(configs)}"
+        f"\n\n🎉 `{command}` finished testing {c+1}/{len(configs)}"
         + f" configs in {format_timer(test_duration)}"
-        + f" on commit {get_commit_hash()}. {successes}/{len(configs)} succeeded."
+        + f" on commit {get_commit_hash()}. {successes} succeeded."
         + f" [{str(datetime.now()).split('.')[0]}]"
     )
