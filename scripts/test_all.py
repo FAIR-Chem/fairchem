@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import sys
 import traceback
@@ -102,7 +103,7 @@ if __name__ == "__main__":
     overrides = {
         "silent": True,
         "logger": "dummy",
-        "optim": {"max_epochs": 1, "batch_size": 2},
+        "optim": {"max_epochs": 1, "batch_size": 2, "num_workers": 0},
     }
     models = [
         ["--config=schnet-is2re-10k"],
@@ -111,6 +112,7 @@ if __name__ == "__main__":
         ["--config=fanet-is2re-10k"],
         ["--config=sfarinet-is2re-10k"],
         ["--config=sfarinet-s2ef-200k"],
+        ["--config=fanet-s2ef-200k"],
         ["--config=forcenet-s2ef-200k"],
     ]
 
@@ -132,8 +134,15 @@ if __name__ == "__main__":
     simples = [
         "--config=schnet-s2ef-200k --regress_forces=from_energy",
         "--config=dpp-s2ef-200k --regress_forces=from_energy",
+        "--config=forcenet-s2ef-200k --regress_forces=from_energy",
+        "--config=sfarinet-s2ef-200k --regress_forces=from_energy",
+        "--config=fanet-s2ef-200k --regress_forces=from_energy",
+        "--config=forcenet-s2ef-200k --regress_forces=direct",
+        "--config=sfarinet-s2ef-200k --regress_forces=direct",
+        "--config=fanet-s2ef-200k --regress_forces=direct",
         "--config=forcenet-s2ef-200k --regress_forces=direct_with_gradient_target",
         "--config=sfarinet-s2ef-200k --regress_forces=direct_with_gradient_target",
+        "--config=fanet-s2ef-200k --regress_forces=direct_with_gradient_target",
     ]
     simples = [s.split() for s in simples]
 
@@ -151,7 +160,7 @@ if __name__ == "__main__":
             c for c in configs if all(igs not in " ".join(c) for igs in args.ignore_str)
         ]
     if args.only_str:
-        configs = [c for c in configs if args.only_str in " ".join(c)]
+        configs = [c for c in configs if re.findall(args.only_str, " ".join(c))]
 
     if args.skip_configs > 0:
         configs = configs[args.skip_configs :]
@@ -168,9 +177,11 @@ if __name__ == "__main__":
         print("No configs to run 🥶")
     else:
         print("🥁 Configs to test:")
+        p = 0
         for c, conf in enumerate(configs):
-            if c and c % len(features) == 0:
+            if c and p <= len(models) and c % len(features) == 0:
                 print()
+                p += 1
             print(f"  • {c+1:3} " + conf_strs[c])
 
         print()
