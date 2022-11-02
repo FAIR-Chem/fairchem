@@ -35,13 +35,14 @@ class BaseModel(nn.Module):
     def forward(self, data):
         grad_forces = forces = None
 
+        if self.regress_forces in {"from_energy", "direct_with_gradient_target"}:
+            # energy gradient w.r.t. positions will be computed
+            data.pos.requires_grad_(True)
+
         # predict energy
         preds = self.energy_forward(data)
 
         if self.regress_forces:
-            # energy gradient w.r.t. positions will be computed
-            if self.regress_forces in {"from_energy", "direct_with_gradient_target"}:
-                data.pos.requires_grad_(True)
 
             if self.regress_forces in {"direct", "direct_with_gradient_target"}:
                 # predict forces
