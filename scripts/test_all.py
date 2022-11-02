@@ -129,12 +129,20 @@ if __name__ == "__main__":
         "--frame_averaging=2D --fa_frames=random --graph_rewiring=remove-tag-0",
     ]
 
+    simples = [
+        "--config=schnet-s2ef-200k --regress_forces=from_energy",
+        "--config=dpp-s2ef-200k --regress_forces=from_energy",
+        "--config=forcenet-s2ef-200k --regress_forces=direct_with_gradient_target",
+        "--config=sfarinet-s2ef-200k --regress_forces=direct_with_gradient_target",
+    ]
+    simples = [s.split() for s in simples]
+
     if args.skip_models > 0:
         models = models[args.skip_models :]
     if args.skip_features > 0:
         features = features[args.skip_features :]
 
-    configs = [m + f.split() for m in models for f in features]
+    configs = [m + f.split() for m in models for f in features] + simples
 
     if args.ignore_str:
         if isinstance(args.ignore_str, str):
@@ -156,17 +164,20 @@ if __name__ == "__main__":
         for conf in configs
     ]
 
-    print("🥁 Configs to test:")
-    for c, conf in enumerate(configs):
-        if c and c % len(features) == 0:
-            print()
-        print(f"  • {c+1:3} " + conf_strs[c])
+    if not configs:
+        print("No configs to run 🥶")
+    else:
+        print("🥁 Configs to test:")
+        for c, conf in enumerate(configs):
+            if c and c % len(features) == 0:
+                print()
+            print(f"  • {c+1:3} " + conf_strs[c])
 
-    print()
+        print()
 
     nk = len(str(len(configs)))
     test_start = time()
-    successes = 0
+    successes = c = 0
     for c, conf in enumerate(configs):
         times = Times()
         conf_start = time()
@@ -216,7 +227,7 @@ if __name__ == "__main__":
     test_duration = time() - test_start
     emo = "🎉" if successes == len(configs) else "😢"
     print(
-        f"\n\n{emo} `{command}` finished testing {c+1}/{len(configs)}"
+        f"\n\n{emo} `{command}` finished testing {c+1 if c else 0}/{len(configs)}"
         + f" configs in {format_timer(test_duration)}"
         + f" on commit {get_commit_hash()}. {successes} succeeded."
         + f" [{str(datetime.now()).split('.')[0]}]"
