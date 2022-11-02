@@ -16,6 +16,7 @@ default:
     feat: "full"
     hidden_channels: 512
     decoder_hidden_channels: 512
+    regress_forces: False
     max_n: 3
     use_pbc: True
     # drlab attributes:
