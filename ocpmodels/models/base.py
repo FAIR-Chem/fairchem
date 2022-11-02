@@ -28,13 +28,29 @@ class BaseModel(nn.Module):
     def energy_forward(self, data):
         raise NotImplementedError
 
+    def forces_forward(self, preds):
+        raise NotImplementedError
+
     def forward(self, data):
-        if self.regress_forces:
+        if self.regress_forces_as_grad:
             data.pos.requires_grad_(True)
         preds = self.energy_forward(data)
+        forces = self.forces_forward(preds)
+        grad_forces = None
 
-        if self.regress_forces:
-            forces = -1 * (
+        if self.regress_forces_as_grad or self.direct_forces:
+            if self.regress_forces_as_grad:
+                if "gemnet" in self.__class__.__name__.lower():
+                    assert forces is not None
+                    grad_forces = forces
+                else:
+                    assert (
+                        forces is None
+                    ), "A force decoder and forces_as_grad are mutually exclusive"
+            else:
+                assert forces is not None, "direct_forces requires a force decoder"
+
+            grad_forces = grad_forces or -1 * (
                 torch.autograd.grad(
                     preds["energy"],
                     data.pos,
@@ -42,7 +58,13 @@ class BaseModel(nn.Module):
                     create_graph=True,
                 )[0]
             )
-            preds["forces"] = forces
+
+            if self.regress_forces_as_grad:
+                preds["forces"] = grad_forces
+            else:
+                preds["forces"] = forces
+                preds["grad_forces"] = grad_forces
+
         return preds
 
     @property

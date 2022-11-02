@@ -109,7 +109,7 @@ class ShiftedSoftplus(torch.nn.Module):
 
 
 @registry.register_model("schnet")
-class NewSchNet(BaseModel):
+class SchNet(BaseModel):
     r"""The continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
     Quantum Interactions" <https://arxiv.org/abs/1706.08566>`_ paper that uses
@@ -314,6 +314,10 @@ class NewSchNet(BaseModel):
             f"num_gaussians={self.num_gaussians}, "
             f"cutoff={self.cutoff})",
         )
+
+    @conditional_grad(torch.enable_grad())
+    def forces_forward(self, preds):
+        return
 
     @conditional_grad(torch.enable_grad())
     def energy_forward(self, data):

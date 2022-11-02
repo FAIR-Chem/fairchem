@@ -435,7 +435,7 @@ class OutputPPBlock(torch.nn.Module):
 
 
 @registry.register_model("dpp")
-class NewDimeNetPlusPlus(BaseModel):
+class DimeNetPlusPlus(BaseModel):
     r"""DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
 
     Args:
@@ -727,23 +727,9 @@ class NewDimeNetPlusPlus(BaseModel):
             "pooling_loss": pooling_loss,
         }
 
-    def forward(self, data):
-        if self.regress_forces:
-            data.pos.requires_grad_(True)
-        preds = self.energy_forward(data)
-
-        if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    preds["energy"],
-                    data.pos,
-                    grad_outputs=torch.ones_like(preds["energy"]),
-                    create_graph=True,
-                )[0]
-            )
-            preds["forces"] = forces
-
-        return preds
+    @conditional_grad(torch.enable_grad())
+    def forces_forward(self, preds):
+        return
 
     @property
     def num_params(self):

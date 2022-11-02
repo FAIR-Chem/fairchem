@@ -1,8 +1,6 @@
 """ Code of the Scalable Frame Averaging (Rotation Invariant) GNN
 """
 
-from time import time
-
 import torch
 from torch import nn
 from torch.nn import Embedding, Linear
@@ -11,7 +9,7 @@ from torch_geometric.nn.acts import swish
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances
+from ocpmodels.common.utils import get_pbc_distances, conditional_grad
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
@@ -390,7 +388,11 @@ class SfariNet(BaseModel):
 
         self.reset_parameters()
 
-    def forward(self, data):
+    @conditional_grad(torch.enable_grad())
+    def forces_forward(self, preds):
+        return self.decoder(preds["hidden_state"])
+
+    def energy_forward(self, data):
         # Rewire the graph
         z = data.atomic_numbers.long()
         pos = data.pos
@@ -453,10 +455,6 @@ class SfariNet(BaseModel):
 
         # Force-head for S2EF, IS2RS
 
-        preds = {"energy": energy, "pooling_loss": pooling_loss}
-
-        if self.regress_forces:
-            forces = self.decoder(h)
-            preds["forces"] = forces
+        preds = {"energy": energy, "pooling_loss": pooling_loss, "hidden_state": h}
 
         return preds

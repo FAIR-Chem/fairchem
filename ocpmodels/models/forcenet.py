@@ -193,7 +193,7 @@ class InteractionBlock(MessagePassing):
 
 # flake8: noqa: C901
 @registry.register_model("forcenet")
-class NewForceNet(BaseModel):
+class ForceNet(BaseModel):
     r"""Implementation of ForceNet architecture.
 
     Args:
