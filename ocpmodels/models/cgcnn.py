@@ -33,7 +33,7 @@ class CGCNN(BaseModel):
         num_targets (int): Number of targets to predict.
         use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
             (default: :obj:`True`)
-        regress_forces (bool, optional): If set to :obj:`True`, predict forces by differentiating
+        regress_forces_as_grad (bool, optional): If set to :obj:`True`, predict forces by differentiating
             energy with respect to positions.
             (default: :obj:`True`)
         atom_embedding_size (int, optional): Size of atom embeddings.
@@ -58,7 +58,7 @@ class CGCNN(BaseModel):
         bond_feat_dim,
         num_targets,
         use_pbc=True,
-        regress_forces=True,
+        regress_forces_as_grad=True,
         atom_embedding_size=64,
         num_graph_conv_layers=6,
         fc_feat_size=128,
@@ -69,7 +69,7 @@ class CGCNN(BaseModel):
         embeddings="khot",
     ):
         super(CGCNN, self).__init__(num_atoms, bond_feat_dim, num_targets)
-        self.regress_forces = regress_forces
+        self.regress_forces_as_grad = regress_forces_as_grad
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
@@ -158,11 +158,11 @@ class CGCNN(BaseModel):
         return energy
 
     def forward(self, data):
-        if self.regress_forces:
+        if self.regress_forces_as_grad:
             data.pos.requires_grad_(True)
         energy = self._forward(data)
 
-        if self.regress_forces:
+        if self.regress_forces_as_grad:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,

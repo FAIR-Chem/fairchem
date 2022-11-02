@@ -468,7 +468,7 @@ class NewDimeNetPlusPlus(BaseModel):
             output blocks. (default: :obj:`3`)
         act: (function, optional): The activation function.
             (default: :obj:`swish`)
-        regress_forces: (bool, optional): Compute atom forces from energy.
+        regress_forces_as_grad: (bool, optional): Compute atom forces from energy.
             (default: false).
     """
 
@@ -480,7 +480,7 @@ class NewDimeNetPlusPlus(BaseModel):
         self.cutoff = kwargs["cutoff"]
         self.use_pbc = kwargs["use_pbc"]
         self.otf_graph = kwargs["otf_graph"]
-        self.regress_forces = kwargs["regress_forces"]
+        self.regress_forces_as_grad = kwargs["regress_forces_as_grad"]
         self.energy_head = kwargs["energy_head"]
         use_tag = kwargs["tag_hidden_channels"] > 0
         use_pg = kwargs["pg_hidden_channels"] > 0

@@ -8,7 +8,7 @@ default:
     num_gaussians: 100
     cutoff: 6.0
     use_pbc: True
-    regress_forces: False
+    regress_forces_as_grad: False
     # drlab attributes:
     tag_hidden_channels: 0 # 32
     pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
@@ -74,7 +74,7 @@ is2re:
 s2ef:
   default:
     model:
-      regress_forces: True
+      regress_forces_as_grad: True
   200k: {}
 
   2M: {}

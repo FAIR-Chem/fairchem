@@ -9,7 +9,7 @@ model:
   num_graph_conv_layers: 6
   num_gaussians: 100
   cutoff: 6.0
-  regress_forces: False
+  regress_forces_as_grad: False
   use_pbc: True
 
 # *** Important note ***

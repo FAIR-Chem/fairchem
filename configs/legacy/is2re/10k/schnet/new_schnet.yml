@@ -9,7 +9,7 @@ model:
   num_gaussians: 100
   cutoff: 6.0
   use_pbc: True
-  regress_forces: False
+  regress_forces_as_grad: False
   readout: add
   atomref: null
   # drlab attributes:

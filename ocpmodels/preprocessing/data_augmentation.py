@@ -63,9 +63,9 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None):
     # Handle rare case where no R is positive orthogonal
     if all_fa == []:
         all_fa.append(pos @ eigenvec)
-        if pos_3D: 
+        if pos_3D:
             all_cell.append(cell @ full_eigenvec)
-        else: 
+        else:
             all_cell.append(cell @ eigenvec)
 
     # Return frame(s) depending on method fa_frames

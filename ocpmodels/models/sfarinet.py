@@ -328,7 +328,7 @@ class SfariNet(BaseModel):
         self.cutoff = kwargs["cutoff"]
         self.use_pbc = kwargs["use_pbc"]
         self.max_num_neighbors = kwargs["max_num_neighbors"]
-        self.regress_forces = kwargs["regress_forces"]
+        self.regress_forces_as_grad = kwargs["regress_forces_as_grad"]
         self.energy_head = kwargs["energy_head"]
 
         self.distance_expansion = GaussianSmearing(
@@ -369,17 +369,17 @@ class SfariNet(BaseModel):
         if self.energy_head == "weighted-av-initial-embeds":
             self.w_lin = Linear(kwargs["hidden_channels"], 1)
 
-        if not self.regress_forces and kwargs["force_decoder_type"]:
+        if not self.regress_forces_as_grad and kwargs["force_decoder_type"]:
             print(
                 "\nWarning: force_decoder_type is set to",
                 kwargs["force_decoder_type"],
-                "but regress_forces is False. Ignoring force_decoder_type.\n",
+                "but regress_forces_as_grad is False. Ignoring force_decoder_type.\n",
             )
 
         # Force head
         self.decoder = (
             None
-            if not self.regress_forces
+            if not self.regress_forces_as_grad
             else ForceDecoder(
                 kwargs["force_decoder_type"],
                 kwargs["hidden_channels"],

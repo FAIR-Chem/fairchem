@@ -41,7 +41,7 @@ class spinconv(BaseModel):
         bond_feat_dim,  # not used
         num_targets,
         use_pbc=True,
-        regress_forces=True,
+        regress_forces_as_grad=True,
         otf_graph=False,
         hidden_channels=32,
         mid_hidden_channels=200,
@@ -69,7 +69,7 @@ class spinconv(BaseModel):
 
         self.num_targets = num_targets
         self.num_random_rotations = num_rand_rotations
-        self.regress_forces = regress_forces
+        self.regress_forces_as_grad = regress_forces_as_grad
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
@@ -187,7 +187,7 @@ class spinconv(BaseModel):
 
         atomic_numbers = data.atomic_numbers.long()
         pos = data.pos
-        if self.regress_forces:
+        if self.regress_forces_as_grad:
             pos = pos.requires_grad_(True)
 
         if self.otf_graph:
@@ -300,7 +300,7 @@ class spinconv(BaseModel):
         energy = self.energyembeddingblock(energy, atomic_numbers, atomic_numbers)
         energy = scatter(energy, data.batch, dim=0)
 
-        if self.regress_forces:
+        if self.regress_forces_as_grad:
             if self.force_estimator == "grad":
                 forces = -1 * (
                     torch.autograd.grad(
@@ -320,7 +320,7 @@ class spinconv(BaseModel):
                     data.batch,
                 )
 
-        if not self.regress_forces:
+        if not self.regress_forces_as_grad:
             return energy
         else:
             return energy, forces

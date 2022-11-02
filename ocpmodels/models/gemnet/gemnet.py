@@ -80,7 +80,7 @@ class GemNetT(BaseModel):
         num_atom: int
             Number of residual blocks in the atom embedding blocks.
 
-        regress_forces: bool
+        regress_forces_as_grad: bool
             Whether to predict forces. Default: True
         direct_forces: bool
             If True predict forces based on aggregation of interatomic directions.
@@ -130,7 +130,7 @@ class GemNetT(BaseModel):
         self.otf_graph = kwargs["otf_graph"]
         self.output_init = kwargs["output_init"]
         self.rbf = kwargs["rbf"]
-        self.regress_forces = kwargs["regress_forces"]
+        self.regress_forces_as_grad = kwargs["regress_forces_as_grad"]
         self.scale_file = kwargs["scale_file"]
         self.use_pbc = kwargs["use_pbc"]
 
@@ -513,7 +513,7 @@ class GemNetT(BaseModel):
         batch = data.batch
         atomic_numbers = data.atomic_numbers.long()
 
-        if self.regress_forces and not self.direct_forces:
+        if self.regress_forces_as_grad and not self.direct_forces:
             pos.requires_grad_(True)
 
         (

@@ -17,7 +17,7 @@ from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
+from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc, conditional_grad
 from ocpmodels.datasets.embeddings import ATOMIC_RADII, CONTINUOUS_EMBEDDINGS
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.activations import Act
@@ -494,7 +494,8 @@ class NewForceNet(BaseModel):
         # Projection layer for energy prediction
         self.energy_mlp = nn.Linear(kwargs["decoder_hidden_channels"], 1)
 
-    def forward(self, data):
+    @conditional_grad(torch.no_grad())
+    def energy_forward(self, data):
 
         # Rewire the graph
         z = data.atomic_numbers.long()
@@ -644,10 +645,10 @@ class NewForceNet(BaseModel):
 
         energy = self.energy_mlp(out)
 
-        preds = {"energy": energy, "pooling_loss": pooling_loss}
-
-        if self.predict_forces:
-            forces = self.decoder(h)
-            preds["forces"] = forces
+        preds = {"energy": energy, "pooling_loss": pooling_loss, "hidden_state": h}
 
         return preds
+
+    @conditional_grad(torch.enable_grad())
+    def forces_forward(self, preds):
+        return self.decoder(preds["hidden_state"])

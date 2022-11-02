@@ -168,7 +168,7 @@ def conditional_grad(dec):
         @wraps(func)
         def cls_method(self, *args, **kwargs):
             f = func
-            if self.regress_forces and not getattr(self, "direct_forces", 0):
+            if self.regress_forces_as_grad and not getattr(self, "direct_forces", 0):
                 f = dec(func)
             return f(self, *args, **kwargs)
 

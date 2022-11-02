@@ -63,7 +63,7 @@ class ForcesTrainer(BaseTrainer):
 
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
-        if self.config["model"].get("regress_forces", True):
+        if self.config["model"].get("regress_forces_as_grad", True):
             if self.normalizer.get("normalize_labels", False):
                 if "grad_target_mean" in self.normalizer:
                     self.normalizers["grad_target"] = Normalizer(
@@ -318,7 +318,7 @@ class ForcesTrainer(BaseTrainer):
 
     def model_forward(self, batch_list):
         # forward pass.
-        if self.config["model"].get("regress_forces", True):
+        if self.config["model"].get("regress_forces_as_grad", True):
             out_energy, out_forces = self.model(batch_list)
         else:
             out_energy = self.model(batch_list)
@@ -330,7 +330,7 @@ class ForcesTrainer(BaseTrainer):
             "energy": out_energy,
         }
 
-        if self.config["model"].get("regress_forces", True):
+        if self.config["model"].get("regress_forces_as_grad", True):
             out["forces"] = out_forces
 
         return out
@@ -348,7 +348,7 @@ class ForcesTrainer(BaseTrainer):
         loss.append(energy_mult * self.loss_fn["energy"](out["energy"], energy_target))
 
         # Force loss.
-        if self.config["model"].get("regress_forces", True):
+        if self.config["model"].get("regress_forces_as_grad", True):
             force_target = torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
             )

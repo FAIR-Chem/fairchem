@@ -45,7 +45,7 @@ def load_model(request):
         32,
         1,
         cutoff=6.0,
-        regress_forces=True,
+        regress_forces_as_grad=True,
         use_pbc=True,
     )
     request.cls.model = model

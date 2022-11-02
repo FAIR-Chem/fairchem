@@ -340,7 +340,7 @@ class FANet(BaseModel):
         self.pg_hidden_channels = kwargs["pg_hidden_channels"]
         self.phys_embeds = kwargs["phys_embeds"]
         self.phys_hidden_channels = kwargs["phys_hidden_channels"]
-        self.regress_forces = kwargs["regress_forces"]
+        self.regress_forces_as_grad = kwargs["regress_forces_as_grad"]
         self.second_layer_MLP = kwargs["second_layer_MLP"]
         self.skip_co = kwargs["skip_co"]
         self.tag_hidden_channels = kwargs["tag_hidden_channels"]
@@ -467,7 +467,7 @@ class FANet(BaseModel):
         preds = {"energy": energy, "pooling_loss": pooling_loss}
 
         # Force-head
-        if self.regress_forces:
+        if self.regress_forces_as_grad:
             forces = self.decoder(h)
             preds["forces"] = forces
 

@@ -33,7 +33,7 @@ default:
     output_init: HeOrthogonal
     activation: silu
     scale_file: configs/models/scaling_factors/gemnet-dT_c12.json
-    regress_forces: False
+    regress_forces_as_grad: False
   optim:
     batch_size: 8
     eval_batch_size: 8
@@ -70,7 +70,7 @@ s2ef:
     model:
       cutoff: 6.0
       scale_file: configs/models/scaling_factors/gemnet-dT.json
-      regress_forces: True
+      regress_forces_as_grad: True
       direct_forces: True
       otf_graph: False
       max_neighbors: 50

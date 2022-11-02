@@ -6,7 +6,7 @@ default:
     num_gaussians: 100
     cutoff: 6.0
     use_pbc: True
-    regress_forces: False
+    regress_forces_as_grad: False
     # drlab attributes:
     hidden_channels: 256
     num_interactions: 3
@@ -15,7 +15,7 @@ default:
     phys_embeds: False # True
     phys_hidden_channels: 0
     energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds, pooling, graclus, random}
-    force_decoder_type: "simple" # can be {"" or "simple"} | only used if regress_forces is True
+    force_decoder_type: "simple" # can be {"" or "simple"} | only used if regress_forces_as_grad is True
     force_decoder_model_config:
       simple:
         hidden_channels: 128
@@ -83,7 +83,7 @@ s2ef:
   default:
     model:
       hidden_channels: 384
-      regress_forces: True
+      regress_forces_as_grad: True
     optim:
       warmup_steps: 5394
       lr_milestones:

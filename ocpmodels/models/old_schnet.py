@@ -34,7 +34,7 @@ class SchNetWrap(SchNet):
         num_targets (int): Number of targets to predict.
         use_pbc (bool, optional): If set to :obj:`True`, account for periodic
             boundary conditions. (default: :obj:`True`)
-        regress_forces (bool, optional): If set to :obj:`True`, predict forces by
+        regress_forces_as_grad (bool, optional): If set to :obj:`True`, predict forces by
             differentiating energy with respect to positions. (default: :obj:`True`)
         otf_graph (bool, optional): If set to :obj:`True`, compute graph edges on
             the fly. (default: :obj:`False`)
@@ -56,7 +56,7 @@ class SchNetWrap(SchNet):
         self,
         num_targets,
         use_pbc=True,
-        regress_forces=True,
+        regress_forces_as_grad=True,
         otf_graph=False,
         hidden_channels=128,
         num_filters=128,
@@ -66,7 +66,7 @@ class SchNetWrap(SchNet):
         readout="add",
     ):
         self.num_targets = num_targets
-        self.regress_forces = regress_forces
+        self.regress_forces_as_grad = regress_forces_as_grad
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
@@ -126,11 +126,11 @@ class SchNetWrap(SchNet):
         return energy
 
     def forward(self, data):
-        if self.regress_forces:
+        if self.regress_forces_as_grad:
             data.pos.requires_grad_(True)
         energy = self._forward(data)
 
-        if self.regress_forces:
+        if self.regress_forces_as_grad:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,
