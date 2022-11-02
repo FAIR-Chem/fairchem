@@ -596,6 +596,7 @@ class GemNetT(BaseModel):
         dim_size = preds["dim_size"]
         E_t = preds["energy"]
         pos = preds["pos"]
+
         if self.direct_forces:
             # map forces in edge directions
             F_st_vec = F_st[:, :, None] * V_st[:, None, :]

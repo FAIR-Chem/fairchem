@@ -47,7 +47,11 @@ class Evaluator:
             "positions_mae",
             "positions_mse",
         ],
-        "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
+        "is2re": [
+            "energy_mae",
+            "energy_mse",
+            "energy_within_threshold",
+        ],
     }
 
     task_attributes = {

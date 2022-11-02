@@ -230,7 +230,7 @@ class ForcesTrainer(BaseTrainer):
                 scale = self.scaler.get_scale() if self.scaler else 1.0
 
                 # Compute metrics.
-                self.metrics = self._compute_metrics(
+                self.metrics = self.compute_metrics(
                     out,
                     batch,
                     self.evaluator,
@@ -407,7 +407,7 @@ class ForcesTrainer(BaseTrainer):
         loss = sum(loss)
         return loss
 
-    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+    def compute_metrics(self, out, batch_list, evaluator, metrics={}):
         natoms = torch.cat(
             [batch.natoms.to(self.device) for batch in batch_list], dim=0
         )

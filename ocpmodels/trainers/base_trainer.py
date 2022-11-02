@@ -576,7 +576,7 @@ class BaseTrainer(ABC):
                 loss += preds["pooling_loss"]
 
             # Compute metrics.
-            metrics = self._compute_metrics(preds, batch, evaluator, metrics)
+            metrics = self.compute_metrics(preds, batch, evaluator, metrics)
             metrics = evaluator.update("loss", loss.item(), metrics)
 
         val_time = time.time() - val_time
