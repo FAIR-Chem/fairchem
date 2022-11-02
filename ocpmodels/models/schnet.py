@@ -18,7 +18,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
-from ocpmodels.models.base import BaseModel
+from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
@@ -169,7 +169,7 @@ class SchNet(BaseModel):
         self.cutoff = kwargs["cutoff"]
         self.otf_graph = kwargs["otf_graph"]
         self.scale = None
-        self.regress_forces_as_grad = kwargs["regress_forces_as_grad"]
+        self.regress_forces = kwargs["regress_forces"]
 
         self.num_filters = kwargs["num_filters"]
         self.num_interactions = kwargs["num_interactions"]

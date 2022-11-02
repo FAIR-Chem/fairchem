@@ -19,7 +19,7 @@ from torch_scatter import scatter
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc, conditional_grad
 from ocpmodels.datasets.embeddings import ATOMIC_RADII, CONTINUOUS_EMBEDDINGS
-from ocpmodels.models.base import BaseModel
+from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
@@ -245,19 +245,18 @@ class ForceNet(BaseModel):
             (default: :obj:`swish`)
         training (bool, optional): If set to :obj:`True`, specify training phase.
             (default: :obj:`True`)
-        predict_forces (bool, optional): To predict forces from energy prediction.
     """
 
     def __init__(self, **kwargs):
 
-        super(NewForceNet, self).__init__()
+        super(ForceNet, self).__init__()
         self.ablation = kwargs["ablation"]
         self.basis = kwargs["basis"]
         self.cutoff = kwargs["cutoff"]
         self.energy_head = kwargs["energy_head"]
         self.feat = kwargs["feat"]
         self.otf_graph = kwargs["otf_graph"]
-        self.predict_forces = kwargs["predict_forces"]
+        self.regress_forces = kwargs["regress_forces"]
         self.use_pbc = kwargs["use_pbc"]
 
         self.use_tag = kwargs["tag_hidden_channels"] > 0
@@ -466,7 +465,7 @@ class ForceNet(BaseModel):
         )
         self.activation = Act(kwargs["activation_str"])
 
-        if self.predict_forces:
+        if "direct" in self.regress_forces:
             # ForceNet decoder
             self.decoder = FNDecoder(
                 kwargs["decoder_type"],
@@ -651,4 +650,5 @@ class ForceNet(BaseModel):
 
     @conditional_grad(torch.enable_grad())
     def forces_forward(self, preds):
+        assert "direct" in self.regress_forces
         return self.decoder(preds["hidden_state"])

@@ -5,7 +5,7 @@ default:
     num_gaussians: 100
     cutoff: 6.0
     use_pbc: True
-    regress_forces_as_grad: False
+    regress_forces: False
     readout: add
     atomref: null
     # drlab attributes:
@@ -73,7 +73,7 @@ is2re:
 s2ef:
   default:
     model:
-      regress_forces_as_grad: True
+      regress_forces: "from_energy"
   200k:
     model:
       hidden_channels: 1024

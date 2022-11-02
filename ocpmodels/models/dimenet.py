@@ -33,7 +33,7 @@ class DimeNetWrap(DimeNet):
         num_targets (int): Number of targets to predict.
         use_pbc (bool, optional): If set to :obj:`True`, account for periodic
             boundary conditions. (default: :obj:`True`)
-        regress_forces_as_grad (bool, optional): If set to :obj:`True`, predict forces by
+        regress_forces (bool, optional): If set to :obj:`True`, predict forces by
             differentiating energy with respect to positions.
             (default: :obj:`True`)
         hidden_channels (int, optional): Number of hidden channels.
@@ -69,7 +69,7 @@ class DimeNetWrap(DimeNet):
         bond_feat_dim,  # not used
         num_targets,
         use_pbc=True,
-        regress_forces_as_grad=True,
+        regress_forces=True,
         hidden_channels=128,
         num_blocks=6,
         num_bilinear=8,
@@ -84,7 +84,7 @@ class DimeNetWrap(DimeNet):
         max_angles_per_image=int(1e6),
     ):
         self.num_targets = num_targets
-        self.regress_forces_as_grad = regress_forces_as_grad
+        self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
@@ -220,11 +220,11 @@ class DimeNetWrap(DimeNet):
         return energy
 
     def forward(self, data):
-        if self.regress_forces_as_grad:
+        if self.regress_forces:
             data.pos.requires_grad_(True)
         energy = self._forward(data)
 
-        if self.regress_forces_as_grad:
+        if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,

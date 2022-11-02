@@ -357,7 +357,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
         bond_feat_dim,  # not used
         num_targets,
         use_pbc=True,
-        regress_forces_as_grad=True,
+        regress_forces=True,
         hidden_channels=128,
         num_blocks=4,
         int_emb_size=64,
@@ -373,7 +373,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
         num_output_layers=3,
     ):
         self.num_targets = num_targets
-        self.regress_forces_as_grad = regress_forces_as_grad
+        self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
@@ -470,11 +470,11 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
         return energy
 
     def forward(self, data):
-        if self.regress_forces_as_grad:
+        if self.regress_forces:
             data.pos.requires_grad_(True)
         energy = self._forward(data)
 
-        if self.regress_forces_as_grad:
+        if self.regress_forces:
             forces = -1 * (
                 torch.autograd.grad(
                     energy,

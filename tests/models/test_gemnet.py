@@ -60,8 +60,7 @@ def load_model(request):
         num_after_skip=2,
         num_concat=1,
         num_atom=3,
-        regress_forces_as_grad=True,
-        direct_forces=True,
+        regress_forces="direct",
         scale_file=os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "gemnet-dT-scales.json"
         ),

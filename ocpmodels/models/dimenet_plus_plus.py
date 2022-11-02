@@ -55,7 +55,7 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
-from ocpmodels.models.base import BaseModel
+from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
@@ -468,19 +468,19 @@ class DimeNetPlusPlus(BaseModel):
             output blocks. (default: :obj:`3`)
         act: (function, optional): The activation function.
             (default: :obj:`swish`)
-        regress_forces_as_grad: (bool, optional): Compute atom forces from energy.
+        regress_forces: (bool, optional): Compute atom forces from energy.
             (default: false).
     """
 
     url = "https://github.com/klicperajo/dimenet/raw/master/pretrained"
 
     def __init__(self, **kwargs):
-        super(NewDimeNetPlusPlus, self).__init__()
+        super(DimeNetPlusPlus, self).__init__()
 
         self.cutoff = kwargs["cutoff"]
         self.use_pbc = kwargs["use_pbc"]
         self.otf_graph = kwargs["otf_graph"]
-        self.regress_forces_as_grad = kwargs["regress_forces_as_grad"]
+        self.regress_forces = kwargs["regress_forces"]
         self.energy_head = kwargs["energy_head"]
         use_tag = kwargs["tag_hidden_channels"] > 0
         use_pg = kwargs["pg_hidden_channels"] > 0

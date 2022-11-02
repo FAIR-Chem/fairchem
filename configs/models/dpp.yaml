@@ -10,7 +10,7 @@ default:
     num_before_skip: 1
     num_after_skip: 2
     num_output_layers: 3
-    regress_forces_as_grad: False
+    regress_forces: False
     use_pbc: True
     basis_emb_size: 8
     envelope_exponent: 5
@@ -83,7 +83,7 @@ is2re:
 s2ef:
   default:
     model:
-      regress_forces_as_grad: True
+      regress_forces: "from_energy"
     optim:
       num_workers: 8
       eval_every: 10000

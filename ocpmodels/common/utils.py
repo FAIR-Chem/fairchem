@@ -168,7 +168,7 @@ def conditional_grad(dec):
         @wraps(func)
         def cls_method(self, *args, **kwargs):
             f = func
-            if self.regress_forces_as_grad and not getattr(self, "direct_forces", 0):
+            if self.regress_forces in {"from_energy", "direct_with_gradient_target"}:
                 f = dec(func)
             return f(self, *args, **kwargs)
 
@@ -461,6 +461,26 @@ def build_config(args, args_override):
     config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
+
+    if "regress_forces" in config["model"]:
+        if not isinstance(config["model"]["regress_forces"], str):
+            if config["model"]["regress_forces"] is False:
+                config["model"]["regress_forces"] = ""
+            else:
+                raise ValueError(
+                    "regress_forces must be a string: 'from_energy' or 'direct'"
+                    + " or 'direct_with_gradient_target'"
+                )
+        if config["model"]["regress_forces"] not in {
+            "from_energy",
+            "direct",
+            "direct_with_gradient_target",
+        }:
+            raise ValueError(
+                "regress_forces must be a string: 'from_energy' or 'direct'"
+                + " or 'direct_with_gradient_target'"
+            )
+
     if config["cpus_to_workers"]:
         cpus = count_cpus()
         gpus = count_gpus()

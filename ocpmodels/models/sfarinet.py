@@ -10,7 +10,7 @@ from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances, conditional_grad
-from ocpmodels.models.base import BaseModel
+from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
@@ -326,7 +326,7 @@ class SfariNet(BaseModel):
         self.cutoff = kwargs["cutoff"]
         self.use_pbc = kwargs["use_pbc"]
         self.max_num_neighbors = kwargs["max_num_neighbors"]
-        self.regress_forces_as_grad = kwargs["regress_forces_as_grad"]
+        self.regress_forces = kwargs["regress_forces"]
         self.energy_head = kwargs["energy_head"]
 
         self.distance_expansion = GaussianSmearing(
@@ -367,23 +367,23 @@ class SfariNet(BaseModel):
         if self.energy_head == "weighted-av-initial-embeds":
             self.w_lin = Linear(kwargs["hidden_channels"], 1)
 
-        if not self.regress_forces_as_grad and kwargs["force_decoder_type"]:
+        if not self.regress_forces and kwargs["force_decoder_type"]:
             print(
                 "\nWarning: force_decoder_type is set to",
                 kwargs["force_decoder_type"],
-                "but regress_forces_as_grad is False. Ignoring force_decoder_type.\n",
+                "but regress_forces is False. Ignoring force_decoder_type.\n",
             )
 
         # Force head
         self.decoder = (
-            None
-            if not self.regress_forces_as_grad
-            else ForceDecoder(
+            ForceDecoder(
                 kwargs["force_decoder_type"],
                 kwargs["hidden_channels"],
                 kwargs["force_decoder_model_config"],
                 self.act,
             )
+            if "direct" in self.regress_forces
+            else None
         )
 
         self.reset_parameters()

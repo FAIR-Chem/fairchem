@@ -61,7 +61,7 @@ class SingleTrainer(BaseTrainer):
             )
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
-        if self.config["model"].get("regress_forces_as_grad"):
+        if self.config["model"].get("regress_forces"):
             if self.normalizer.get("normalize_labels", False):
                 if "grad_target_mean" in self.normalizer:
                     self.normalizers["grad_target"] = Normalizer(
@@ -442,21 +442,27 @@ class SingleTrainer(BaseTrainer):
             else:
                 # Force coefficient = 30 has been working well for us.
                 force_mult = self.config["optim"].get("force_coefficient", 30)
+                mask = torch.ones_like(force_target).bool().to(self.device)
                 if self.config["task"].get("train_on_free_atoms", False):
                     fixed = torch.cat(
                         [batch.fixed.to(self.device) for batch in batch_list]
                     )
                     mask = fixed == 0
-                    loss.append(
-                        force_mult
-                        * self.loss_fn["force"](
-                            preds["forces"][mask], force_target[mask]
-                        )
+
+                loss.append(
+                    force_mult
+                    * self.loss_fn["force"](preds["forces"][mask], force_target[mask])
+                )
+                if "forces_grad_target" in preds:
+                    energy_grad_mult = self.config["optim"].get(
+                        "energy_grad_coefficient", 10
                     )
-                else:
+                    grad_target = preds["forces_grad_target"]
                     loss.append(
-                        force_mult
-                        * self.loss_fn["force"](preds["forces"], force_target)
+                        energy_grad_mult
+                        * self.loss_fn["force"](
+                            preds["forces"][mask], grad_target[mask]
+                        )
                     )
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:

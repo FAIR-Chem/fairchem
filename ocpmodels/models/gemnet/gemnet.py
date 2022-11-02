@@ -36,7 +36,7 @@ from .utils import (
     repeat_blocks,
 )
 
-from ocpmodels.models.base import BaseModel
+from ocpmodels.models.base_model import BaseModel
 
 
 @registry.register_model("gemnet_t")
@@ -80,7 +80,7 @@ class GemNetT(BaseModel):
         num_atom: int
             Number of residual blocks in the atom embedding blocks.
 
-        regress_forces_as_grad: bool
+        regress_forces: bool
             Whether to predict forces. Default: True
         direct_forces: bool
             If True predict forces based on aggregation of interatomic directions.
@@ -109,7 +109,6 @@ class GemNetT(BaseModel):
         self.activation = kwargs["activation"]
         self.cbf = kwargs["cbf"]
         self.cutoff = kwargs["cutoff"]
-        self.direct_forces = kwargs["direct_forces"]
         self.emb_size_atom = kwargs["emb_size_atom"]
         self.emb_size_bil_trip = kwargs["emb_size_bil_trip"]
         self.emb_size_cbf = kwargs["emb_size_cbf"]
@@ -130,9 +129,11 @@ class GemNetT(BaseModel):
         self.otf_graph = kwargs["otf_graph"]
         self.output_init = kwargs["output_init"]
         self.rbf = kwargs["rbf"]
-        self.regress_forces_as_grad = kwargs["regress_forces_as_grad"]
+        self.regress_forces = kwargs["regress_forces"]
         self.scale_file = kwargs["scale_file"]
         self.use_pbc = kwargs["use_pbc"]
+
+        self.direct_forces = "direct" in self.regress_forces # kwargs["direct_forces"]
 
         assert self.num_blocks > 0
         assert self.cutoff <= 6 or self.otf_graph
@@ -513,7 +514,7 @@ class GemNetT(BaseModel):
         batch = data.batch
         atomic_numbers = data.atomic_numbers.long()
 
-        if self.regress_forces_as_grad and not self.direct_forces:
+        if self.regress_forces and not self.direct_forces:
             pos.requires_grad_(True)
 
         (
@@ -609,7 +610,7 @@ class GemNetT(BaseModel):
                 reduce="add",
             )  # (nAtoms, num_targets, 3)
             return F_t.squeeze(1)  # (nAtoms, 3)
-        if self.regress_forces_as_grad:
+        if self.regress_forces:
             if self.num_targets > 1:
                 forces = []
                 for i in range(self.num_targets):

@@ -12,7 +12,7 @@ from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances
-from ocpmodels.models.base import BaseModel
+from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
@@ -340,7 +340,7 @@ class FANet(BaseModel):
         self.pg_hidden_channels = kwargs["pg_hidden_channels"]
         self.phys_embeds = kwargs["phys_embeds"]
         self.phys_hidden_channels = kwargs["phys_hidden_channels"]
-        self.regress_forces_as_grad = kwargs["regress_forces_as_grad"]
+        self.regress_forces = kwargs["regress_forces"]
         self.second_layer_MLP = kwargs["second_layer_MLP"]
         self.skip_co = kwargs["skip_co"]
         self.tag_hidden_channels = kwargs["tag_hidden_channels"]
@@ -467,7 +467,7 @@ class FANet(BaseModel):
         preds = {"energy": energy, "pooling_loss": pooling_loss}
 
         # Force-head
-        if self.regress_forces_as_grad:
+        if self.regress_forces:
             forces = self.decoder(h)
             preds["forces"] = forces
 
