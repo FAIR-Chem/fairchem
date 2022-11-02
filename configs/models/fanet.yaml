@@ -21,12 +21,17 @@ default:
     second_layer_MLP: False # in EmbeddingBlock
     mlp_rij: 0 # apply mlp to r_ij
     complex_mp: False # concat (e_ij || h_i || h_j) for W in MP
+    force_decoder_type: "simple" # can be {"" or "simple"} | only used if regress_forces is True
+    force_decoder_model_config:
+      simple:
+        hidden_channels: 128
 
   optim:
     batch_size: 64
     eval_batch_size: 64
     num_workers: 4
     lr_gamma: 0.1
+    lr_initial: 0.001
     warmup_factor: 0.2
 
   frame_averaging: False # 2D, 3D, da, False
@@ -75,6 +80,14 @@ s2ef:
   default:
     model:
       regress_forces: "direct"
+      force_coefficient: 30
+      energy_grad_coefficient: 10
+    optim:
+      warmup_steps: 5394
+      lr_milestones:
+        - 17981
+        - 26972
+        - 35963
   200k: {}
 
   2M: {}
