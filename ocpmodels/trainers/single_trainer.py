@@ -26,7 +26,7 @@ from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
 @registry.register_trainer("single")
-class EnergyTrainer(BaseTrainer):
+class SingleTrainer(BaseTrainer):
     """
     Trainer class for the Initial Structure to Relaxed Energy (IS2RE) task.
 
@@ -390,7 +390,11 @@ class EnergyTrainer(BaseTrainer):
             target_normed = self.normalizers["target"].norm(energy_target)
         else:
             target_normed = energy_target
-        energy_mult = self.config["optim"].get("energy_coefficient", 1)
+        energy_mult = (
+            self.config["optim"].get("energy_coefficient", 1)
+            if self.task_name != "is2re"
+            else 1
+        )
         loss.append(
             energy_mult * self.loss_fn["energy"](preds["energy"], target_normed)
         )
