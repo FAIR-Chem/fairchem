@@ -468,17 +468,19 @@ def build_config(args, args_override):
                 config["model"]["regress_forces"] = ""
             else:
                 raise ValueError(
-                    "regress_forces must be a string: 'from_energy' or 'direct'"
-                    + " or 'direct_with_gradient_target'"
+                    "regress_forces must be False or a string: "
+                    + "'from_energy' or 'direct' or 'direct_with_gradient_target'"
+                    + f". Received: `{str(config['model']['regress_forces'])}`"
                 )
-        if config["model"]["regress_forces"] not in {
+        elif config["model"]["regress_forces"] not in {
             "from_energy",
             "direct",
             "direct_with_gradient_target",
         }:
             raise ValueError(
-                "regress_forces must be a string: 'from_energy' or 'direct'"
-                + " or 'direct_with_gradient_target'"
+                "regress_forces must be False or a string: "
+                + "'from_energy' or 'direct' or 'direct_with_gradient_target'"
+                + f". Received: `{str(config['model']['regress_forces'])}`"
             )
 
     if config["cpus_to_workers"]:
