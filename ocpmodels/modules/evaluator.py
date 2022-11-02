@@ -66,10 +66,16 @@ class Evaluator:
         "is2re": "energy_mae",
     }
 
-    def __init__(self, task=None):
+    def __init__(self, task=None, model_regresses_forces=""):
         assert task in ["s2ef", "is2rs", "is2re"]
         self.task = task
         self.metric_fn = self.task_metrics[task]
+        self.expect_forces_grad_target = (
+            model_regresses_forces == "direct_with_gradient_target"
+        )
+        if self.expect_forces_grad_target:
+            self.task_attributes[task].append("forces_grad_target")
+            self.task_metrics["s2ef"].append("forces_grad_mae")
 
     def eval(self, prediction, target, prev_metrics={}):
         for attr in self.task_attributes[self.task]:
@@ -166,6 +172,10 @@ def positions_mae(prediction, target):
 
 def positions_mse(prediction, target):
     return squared_error(prediction["positions"], target["positions"])
+
+
+def forces_grad_mae(prediction, target):
+    return absolute_error(prediction["forces"], target["forces_grad_target"])
 
 
 def energy_force_within_threshold(prediction, target):

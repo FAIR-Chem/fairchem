@@ -497,11 +497,16 @@ class SingleTrainer(BaseTrainer):
             )
             preds["natoms"] = natoms
 
+            if "forces_grad_target" in preds:
+                target["forces_grad_target"] = preds["forces_grad_target"]
+
             if self.config["task"].get("eval_on_free_atoms", True):
                 fixed = torch.cat([batch.fixed.to(self.device) for batch in batch_list])
                 mask = fixed == 0
                 preds["forces"] = preds["forces"][mask]
                 target["forces"] = target["forces"][mask]
+                if "forces_grad_target" in target:
+                    target["forces_grad_target"] = target["forces_grad_target"][mask]
 
                 s_idx = 0
                 natoms_free = []
@@ -612,8 +617,17 @@ class SingleTrainer(BaseTrainer):
             self.ema.store()
             self.ema.copy_to()
 
-        evaluator_is2rs, metrics_is2rs = Evaluator(task="is2rs"), {}
-        evaluator_is2re, metrics_is2re = Evaluator(task="is2re"), {}
+        evaluator_is2rs = Evaluator(
+            task="is2rs",
+            regress_forces=self.config["model"].get("regress_forces", ""),
+        )
+        evaluator_is2re = Evaluator(
+            task="is2re",
+            regress_forces=self.config["model"].get("regress_forces", ""),
+        )
+
+        metrics_is2rs = {}
+        metrics_is2re = {}
 
         if hasattr(self.relax_dataset[0], "pos_relaxed") and hasattr(
             self.relax_dataset[0], "y_relaxed"

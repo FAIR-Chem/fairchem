@@ -141,7 +141,10 @@ class BaseTrainer(ABC):
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
-        self.evaluator = Evaluator(task=self.task_name)
+        self.evaluator = Evaluator(
+            task=self.task_name,
+            regress_forces=self.config["model"].get("regress_forces", ""),
+        )
 
     def load(self):
         self.load_seed_from_config()
@@ -551,7 +554,11 @@ class BaseTrainer(ABC):
             self.ema.store()
             self.ema.copy_to()
 
-        evaluator, metrics = Evaluator(task=self.task_name), {}
+        evaluator = Evaluator(
+            task=self.task_name,
+            regress_forces=self.config["model"].get("regress_forces", ""),
+        )
+        metrics = {}
         rank = distutils.get_rank()
 
         loader = self.val_loader if split[:3] in {"val", "eva"} else self.test_loader
