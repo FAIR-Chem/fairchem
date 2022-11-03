@@ -11,7 +11,7 @@ class LambdaLayer(nn.Module):
 
 
 class ForceDecoder(nn.Module):
-    def __init__(self, type, input_channel, model_configs, act):
+    def __init__(self, type, input_channels, model_configs, act):
         """
         Decoder predicting a force scalar per atom
 
@@ -31,7 +31,7 @@ class ForceDecoder(nn.Module):
         if self.type == "simple":
             self.model = nn.Sequential(
                 nn.Linear(
-                    input_channel,
+                    input_channels,
                     self.model_config["hidden_channels"],
                 ),
                 LambdaLayer(act),
@@ -40,7 +40,7 @@ class ForceDecoder(nn.Module):
         elif self.type == "mlp":  # from forcenet
             self.model = nn.Sequential(
                 nn.Linear(
-                    self.model_config["hidden_channels"],
+                    input_channels,
                     self.model_config["hidden_channels"],
                 ),
                 nn.BatchNorm1d(self.model_config["hidden_channels"]),
