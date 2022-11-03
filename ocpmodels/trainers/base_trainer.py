@@ -32,7 +32,7 @@ from ocpmodels.common.data_parallel import (
     ParallelCollater,
 )
 from ocpmodels.common.registry import registry
-from ocpmodels.common.transforms import RandomReflect, RandomRotate
+from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
 from ocpmodels.common.utils import get_commit_hash, save_checkpoint
 from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
@@ -143,7 +143,7 @@ class BaseTrainer(ABC):
 
         self.evaluator = Evaluator(
             task=self.task_name,
-            regress_forces=self.config["model"].get("regress_forces", ""),
+            model_regresses_forces=self.config["model"].get("regress_forces", ""),
         )
 
     def load(self):
@@ -556,7 +556,7 @@ class BaseTrainer(ABC):
 
         evaluator = Evaluator(
             task=self.task_name,
-            regress_forces=self.config["model"].get("regress_forces", ""),
+            model_regresses_forces=self.config["model"].get("regress_forces", ""),
         )
         metrics = {}
         rank = distutils.get_rank()
@@ -827,6 +827,8 @@ class BaseTrainer(ABC):
         if hasattr(batch, "fa_pos"):
             delattr(batch_rotated, "fa_pos")  # delete it otherwise can't iterate
             delattr(batch_rotated, "fa_cell")  # delete it otherwise can't iterate
+            delattr(batch_rotated, "fa_rot")  # delete it otherwise can't iterate
+
             g_list = batch_rotated.to_data_list()
             fa_transform = FrameAveraging(
                 self.config["frame_averaging"], self.config["fa_frames"]
@@ -836,7 +838,7 @@ class BaseTrainer(ABC):
             batch_rotated = Batch.from_data_list(g_list)
             batch_rotated.neighbors = batch.neighbors
 
-        return [batch_rotated]
+        return {"batch_list": [batch_rotated], "rot": rot}
 
     def reflect_graph(self, batch, reflection=None):
         """Rotate all graphs in a batch
@@ -862,6 +864,7 @@ class BaseTrainer(ABC):
         if hasattr(batch, "fa_pos"):
             delattr(batch_reflected, "fa_pos")  # delete it otherwise can't iterate
             delattr(batch_reflected, "fa_cell")  # delete it otherwise can't iterate
+            delattr(batch_reflected, "fa_rot")  # delete it otherwise can't iterate
             g_list = batch_reflected.to_data_list()
             fa_transform = FrameAveraging(
                 self.config["frame_averaging"], self.config["fa_frames"]
@@ -871,4 +874,4 @@ class BaseTrainer(ABC):
             batch_reflected = Batch.from_data_list(g_list)
             batch_reflected.neighbors = batch.neighbors
 
-        return [batch_reflected]
+        return {"batch_list": [batch_reflected], "rot": rot}

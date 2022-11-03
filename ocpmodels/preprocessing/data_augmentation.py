@@ -4,10 +4,10 @@ from itertools import product
 
 import torch
 
-from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.graph_transforms import RandomRotate
 
 
-def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None):
+def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0):
     """Compute all frames for a given graph
     Related to frame ambiguity issue
 
@@ -28,6 +28,7 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None):
     plus_minus_list = [torch.tensor(x) for x in plus_minus_list]
     all_fa = []
     all_cell = []
+    all_rots = []
     se3 = fa_frames in {
         "se3-all",
         "se3-random",
@@ -59,6 +60,7 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None):
 
         all_fa.append(fa_pos)
         all_cell.append(fa_cell)
+        all_rots.append(new_eigenvec)
 
     # Handle rare case where no R is positive orthogonal
     if all_fa == []:
@@ -70,13 +72,13 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None):
 
     # Return frame(s) depending on method fa_frames
     if fa_frames == "all" or fa_frames == "se3-all":
-        return all_fa, all_cell
+        return all_fa, all_cell, all_rots
 
     elif fa_frames == "det" or fa_frames == "se3-det":
-        return [all_fa[0]], [all_cell[0]]
+        return [all_fa[det_index]], [all_cell[det_index]], [all_rots[det_index]]
 
     index = random.randint(0, len(all_fa) - 1)
-    return [all_fa[index]], [all_cell[index]]
+    return [all_fa[index]], [all_cell[index]], [all_rots[index]]
 
 
 def check_constraints(eigenval, eigenvec, dim):
@@ -136,7 +138,7 @@ def frame_averaging_3D(g, fa_frames="random"):
     eigenval = eigenval[idx]
 
     # Compute fa_pos
-    g.fa_pos, g.fa_cell = all_frames(eigenvec, pos, g.cell, fa_frames)
+    g.fa_pos, g.fa_cell, g.fa_rot = all_frames(eigenvec, pos, g.cell, fa_frames)
 
     # No need to update distances, they are preserved.
 
@@ -172,7 +174,9 @@ def frame_averaging_2D(g, fa_frames="random"):
     eigenvec = eigenvec[:, idx]
 
     # Compute all frames
-    g.fa_pos, g.fa_cell = all_frames(eigenvec, pos_2D, g.cell, fa_frames, g.pos[:, 2])
+    g.fa_pos, g.fa_cell, g.fa_rot = all_frames(
+        eigenvec, pos_2D, g.cell, fa_frames, g.pos[:, 2]
+    )
     # No need to update distances, they are preserved.
 
     return g

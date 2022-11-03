@@ -356,8 +356,8 @@ class EnergyTrainer(BaseTrainer):
             preds1 = self.model_forward(deepcopy(batch))
 
             # Rotate graph and compute prediction
-            batch_rotated = self.rotate_graph(batch, rotation="z")
-            preds2 = self.model_forward(deepcopy(batch_rotated))
+            rotated = self.rotate_graph(batch, rotation="z")
+            preds2 = self.model_forward(deepcopy(rotated["batch_list"]))
 
             # Difference in predictions
             energy_diff_z += torch.abs(preds1["energy"] - preds2["energy"]).sum()
@@ -366,7 +366,7 @@ class EnergyTrainer(BaseTrainer):
             pos_diff_z = -1
             if hasattr(batch[0], "fa_pos"):
                 pos_diff_z = 0
-                for pos1, pos2 in zip(batch[0].fa_pos, batch_rotated[0].fa_pos):
+                for pos1, pos2 in zip(batch[0].fa_pos, rotated["batch_list"][0].fa_pos):
                     pos_diff_z += pos1 - pos2
                 pos_diff_z = pos_diff_z.sum()
 
@@ -376,8 +376,8 @@ class EnergyTrainer(BaseTrainer):
             energy_diff_refl += torch.abs(preds1["energy"] - preds3["energy"]).sum()
 
             # 3D Rotation
-            batch_rotated = self.rotate_graph(batch)
-            preds4 = self.model_forward(batch_rotated)
+            rotated = self.rotate_graph(batch)
+            preds4 = self.model_forward(rotated["batch_list"])
             energy_diff += torch.abs(preds1["energy"] - preds4["energy"]).sum()
 
         # Aggregate the results
