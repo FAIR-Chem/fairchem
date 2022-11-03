@@ -316,17 +316,9 @@ class SingleTrainer(BaseTrainer):
 
         # Check rotation invariance
         if self.test_ri and debug_batches < 0:
-            (
-                energy_diff_z,
-                energy_diff,
-                pos_diff_z,
-                energy_diff_refl,
-            ) = self.test_model_invariance()
+            invariance = self.test_model_invariance()
             if self.logger:
-                self.logger.log({"2D_ri": energy_diff_z})
-                self.logger.log({"3D_ri": energy_diff})
-                self.logger.log({"2D_pos_ri": pos_diff_z})
-                self.logger.log({"2D_pos_refl_i": energy_diff_refl})
+                self.logger.log(invariance)
 
         # TODO: Test equivariance
 
@@ -570,6 +562,10 @@ class SingleTrainer(BaseTrainer):
         energy_diff_z = torch.zeros(1, device=self.device)
         energy_diff_refl = torch.zeros(1, device=self.device)
 
+        forces_diff = torch.zeros(1, device=self.device)
+        forces_diff_z = torch.zeros(1, device=self.device)
+        forces_diff_refl = torch.zeros(1, device=self.device)
+
         for i, batch in enumerate(self.val_loader):
             if debug_batches > 0 and i == debug_batches:
                 break
@@ -577,29 +573,35 @@ class SingleTrainer(BaseTrainer):
             preds1 = self.model_forward(deepcopy(batch))
 
             # Rotate graph and compute prediction
-            batch_rotated = self.rotate_graph(batch, rotation="z")
-            preds2 = self.model_forward(deepcopy(batch_rotated))
+            rotated = self.rotate_graph(batch, rotation="z")
+            preds2 = self.model_forward(deepcopy(rotated["batch_list"]))
 
             # Difference in predictions
             energy_diff_z += torch.abs(preds1["energy"] - preds2["energy"]).sum()
+            if self.task_name == "s2ef":
+                forces_diff_z += torch.abs(preds1["forces"] - preds2["forces"]).sum()
 
             # Diff in positions -- could remove model prediction
             pos_diff_z = -1
             if hasattr(batch[0], "fa_pos"):
                 pos_diff_z = 0
-                for pos1, pos2 in zip(batch[0].fa_pos, batch_rotated[0].fa_pos):
+                for pos1, pos2 in zip(batch[0].fa_pos, rotated["batch_list"][0].fa_pos):
                     pos_diff_z += pos1 - pos2
                 pos_diff_z = pos_diff_z.sum()
 
             # Reflect graph
-            batch_reflected = self.reflect_graph(batch)
-            preds3 = self.model_forward(batch_reflected)
+            reflected = self.reflect_graph(batch)
+            preds3 = self.model_forward(reflected["batch_list"])
             energy_diff_refl += torch.abs(preds1["energy"] - preds3["energy"]).sum()
+            if self.task_name == "s2ef":
+                forces_diff_refl += torch.abs(preds1["forces"] - preds3["forces"]).sum()
 
             # 3D Rotation
-            batch_rotated = self.rotate_graph(batch)
-            preds4 = self.model_forward(batch_rotated)
+            rotated = self.rotate_graph(batch)
+            preds4 = self.model_forward(rotated["batch_list"])
             energy_diff += torch.abs(preds1["energy"] - preds4["energy"]).sum()
+            if self.task_name == "s2ef":
+                forces_diff += torch.abs(preds1["forces"] - preds4["forces"]).sum()
 
         # Aggregate the results
         batch_size = len(batch[0].natoms)
@@ -607,7 +609,25 @@ class SingleTrainer(BaseTrainer):
         energy_diff = energy_diff / (i * batch_size)
         energy_diff_refl = energy_diff_refl / (i * batch_size)
 
-        return energy_diff_z, energy_diff, pos_diff_z, energy_diff_refl
+        invariance = {
+            "2D_E_ri": energy_diff_z,
+            "3D_E_ri": energy_diff,
+            "2D_pos_ri": pos_diff_z,
+            "2D_E_refl_i": energy_diff_refl,
+        }
+        if self.task_name == "s2ef":
+            forces_diff_z = forces_diff_z / (i * batch_size)
+            forces_diff = forces_diff / (i * batch_size)
+            forces_diff_refl = forces_diff_refl / (i * batch_size)
+            invariance.update(
+                {
+                    "2D_F_ri": forces_diff_z,
+                    "3D_F_ri": forces_diff,
+                    "2D_F_refl_i": forces_diff_refl,
+                }
+            )
+
+        return invariance
 
     def run_relaxations(self, split="val"):
         assert self.task_name == "s2ef"
@@ -619,11 +639,11 @@ class SingleTrainer(BaseTrainer):
 
         evaluator_is2rs = Evaluator(
             task="is2rs",
-            regress_forces=self.config["model"].get("regress_forces", ""),
+            model_regresses_forces=self.config["model"].get("regress_forces", ""),
         )
         evaluator_is2re = Evaluator(
             task="is2re",
-            regress_forces=self.config["model"].get("regress_forces", ""),
+            model_regresses_forces=self.config["model"].get("regress_forces", ""),
         )
 
         metrics_is2rs = {}
