@@ -13,7 +13,7 @@ import pytest
 import torch
 from ase.io import read
 
-from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.graph_transforms import RandomRotate
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.models import NewSchNet
 from ocpmodels.preprocessing import AtomsToGraphs

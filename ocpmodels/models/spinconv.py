@@ -17,7 +17,7 @@ from torch_geometric.nn import MessagePassing, SchNet, radius_graph
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.graph_transforms import RandomRotate
 from ocpmodels.common.utils import (
     conditional_grad,
     get_pbc_distances,

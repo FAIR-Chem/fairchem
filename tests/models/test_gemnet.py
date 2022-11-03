@@ -15,7 +15,7 @@ import torch
 from ase.io import read
 from torch_geometric.data import Data
 
-from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.graph_transforms import RandomRotate
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.models import GemNetT
 from ocpmodels.preprocessing import AtomsToGraphs
