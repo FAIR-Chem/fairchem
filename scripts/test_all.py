@@ -103,7 +103,12 @@ if __name__ == "__main__":
     overrides = {
         "silent": True,
         "logger": "dummy",
-        "optim": {"max_epochs": 1, "batch_size": 2, "num_workers": 0},
+        "optim": {
+            "max_epochs": 1,
+            "batch_size": 2,
+            "num_workers": 0,
+            "eval_batch_size": 2,
+        },
     }
     models = [
         ["--config=schnet-is2re-10k"],
