@@ -62,7 +62,7 @@ def test_rotation_invariance(graph, rotation="z", dim="2D"):
     return count == len(all_fa) - 1
 
 
-def all_frames(eigenvec, pos):
+def all_frames_deprecated(eigenvec, pos):
     """Compute all frames for a given graph
     Related to frame ambiguity issue
 
@@ -151,7 +151,7 @@ def frame_averaging_3D(g, random_sign=False):
     eigenval = eigenval[idx]
 
     # Compute all frames
-    all_fa = all_frames(eigenvec, pos)
+    all_fa = all_frames_deprecated(eigenvec, pos)
 
     # Change signs of eigenvectors
     if random_sign:
@@ -201,7 +201,7 @@ def frame_averaging_2D(g, random_sign=False):
     eigenvec = eigenvec[:, idx]
 
     # Compute all frames
-    all_fa = all_frames(eigenvec, pos_2D)
+    all_fa = all_frames_deprecated(eigenvec, pos_2D)
     all_fa = [torch.cat((item, g.pos[:, 2].unsqueeze(1)), dim=1) for item in all_fa]
 
     # TODO: remove, simply select from all_fa. Update g.pos
