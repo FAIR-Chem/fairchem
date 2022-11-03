@@ -28,6 +28,8 @@ template = """\
 export MASTER_PORT=$(expr 10000 + $(echo -n $SLURM_JOBID | tail -c 4))
 echo "Master port $MASTER_PORT"
 
+cd {code_loc}
+
 if {virtualenv}
 then
     source {env}/bin/activate
@@ -190,6 +192,7 @@ if __name__ == "__main__":
         time="" if not args.time else f"#SBATCH --time={args.time}",
         virtualenv=virtualenv,
         debug_dir="$SCRATCH/ocp/runs/$SLURM_JOBID",
+        code_loc=(str(resolve(args.code_loc)) if args.code_loc else str(root)),
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
