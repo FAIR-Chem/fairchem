@@ -77,6 +77,7 @@ class WandBLogger(Logger):
             resume="allow",
             notes=self.trainer_config["note"],
             tags=wandb_tags,
+            entity="mila-ocp",
         )
 
         sbatch_files = list(
