@@ -69,6 +69,7 @@ class AtomsToGraphs:
         r_distances=False,
         r_edges=True,
         r_fixed=True,
+        r_pbc=False,
     ):
         self.max_neigh = max_neigh
         self.radius = radius
@@ -77,6 +78,7 @@ class AtomsToGraphs:
         self.r_distances = r_distances
         self.r_fixed = r_fixed
         self.r_edges = r_edges
+        self.r_pbc = r_pbc
 
     def _get_neighbors_pymatgen(self, atoms):
         """Preforms nearest neighbor search and returns edge index, distances,
@@ -178,6 +180,8 @@ class AtomsToGraphs:
                     if isinstance(constraint, FixAtoms):
                         fixed_idx[constraint.index] = 1
             data.fixed = fixed_idx
+        if self.r_pbc:
+            data.pbc = atoms.pbc
 
         return data
 
