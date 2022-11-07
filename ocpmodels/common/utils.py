@@ -551,12 +551,12 @@ def radius_graph_pbc(
     batch_size = len(data.natoms)
 
     if hasattr(data, "pbc"):
-        data.pbc = np.array(data.pbc)
+        data.pbc = torch.array(data.pbc)
 
         for i in range(2):
-            if not np.any(data.pbc[:, i]):
+            if not torch.any(data.pbc[:, i]):
                 pbc[i] = False
-            elif np.all(data.pbc[:, i]):
+            elif torch.all(data.pbc[:, i]):
                 pbc[i] = True
             else:
                 raise RuntimeError(
