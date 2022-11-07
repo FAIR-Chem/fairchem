@@ -187,7 +187,7 @@ class AtomsToGraphs:
                         fixed_idx[constraint.index] = 1
             data.fixed = fixed_idx
         if self.r_pbc:
-            data.pbc = atoms.pbc
+            data.pbc = torch.tensor(atoms.pbc)
 
         return data
 
