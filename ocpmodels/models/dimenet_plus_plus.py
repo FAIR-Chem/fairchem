@@ -72,7 +72,7 @@ class InteractionPPBlock(torch.nn.Module):
         num_radial,
         num_before_skip,
         num_after_skip,
-        act='swish',
+        act="silu",
     ):
         act = activation_resolver(act)
         super(InteractionPPBlock, self).__init__()
@@ -172,7 +172,7 @@ class OutputPPBlock(torch.nn.Module):
         out_emb_channels,
         out_channels,
         num_layers,
-        act='swish',
+        act="silu",
     ):
         act = activation_resolver(act)
         super(OutputPPBlock, self).__init__()
@@ -227,7 +227,7 @@ class DimeNetPlusPlus(torch.nn.Module):
         num_output_layers: (int, optional): Number of linear layers for the
             output blocks. (default: :obj:`3`)
         act: (function, optional): The activation funtion.
-            (default: :obj:`swish`)
+            (default: :obj:`silu`)
     """
 
     url = "https://github.com/klicperajo/dimenet/raw/master/pretrained"
@@ -247,11 +247,11 @@ class DimeNetPlusPlus(torch.nn.Module):
         num_before_skip=1,
         num_after_skip=2,
         num_output_layers=3,
-        act='swish',
+        act="silu",
     ):
-        
+
         act = activation_resolver(act)
-        
+
         super(DimeNetPlusPlus, self).__init__()
 
         self.cutoff = cutoff
