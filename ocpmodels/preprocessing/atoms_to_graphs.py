@@ -45,7 +45,7 @@ class AtomsToGraphs:
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
-        r_edges (bool): Return interatomic edges with other properties. Default is True, so energy will be returned.
+        r_edges (bool): Return interatomic edges with other properties. Default is True, so edges will be returned.
         r_fixed (bool): Return a binary vector with flags for fixed (1) vs free (0) atoms.
         Default is True, so the fixed indices will be returned.
         r_pbc (bool): Return the periodic boundary conditions with other properties.
@@ -58,7 +58,7 @@ class AtomsToGraphs:
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
-        r_edges (bool): Return interatomic edges with other properties. Default is True, so energy will be returned.
+        r_edges (bool): Return interatomic edges with other properties. Default is True, so edges will be returned.
         r_fixed (bool): Return a binary vector with flags for fixed (1) vs free (0) atoms.
         Default is True, so the fixed indices will be returned.
         r_pbc (bool): Return the periodic boundary conditions with other properties.
