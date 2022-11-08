@@ -333,12 +333,13 @@ class SingleTrainer(BaseTrainer):
             self.test_dataset.close_db()
 
     def model_forward(self, batch_list):
-
+        # Distinguish frame averaging from base case.
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
             original_cell = batch_list[0].cell
             e_all, p_all, f_all = [], [], []
 
+            # Compute model prediction for each frame
             for i in range(len(batch_list[0].fa_pos)):
                 batch_list[0].pos = batch_list[0].fa_pos[i]
                 batch_list[0].cell = batch_list[0].fa_cell[i]
@@ -347,10 +348,21 @@ class SingleTrainer(BaseTrainer):
                 if preds.get("pooling_loss") is not None:
                     p_all.append(preds["pooling_loss"])
                 if preds.get("forces") is not None:
-                    f_all.append(preds["forces"])
-
+                    # Transform forces to guarantee equivariance of FA method
+                    fa_rot = torch.repeat_interleave(
+                        batch_list[0].fa_rot[i], batch_list[0].natoms, dim=0
+                    )
+                    g_forces = (
+                        preds["forces"]
+                        .view(-1, 1, 3)
+                        .bmm(fa_rot.transpose(1, 2).to(preds["forces"].device))
+                        .view(-1, 3)
+                    )
+                    f_all.append(g_forces)
             batch_list[0].pos = original_pos
             batch_list[0].cell = original_cell
+
+            # Average predictions over frames
             preds = {"energy": sum(e_all) / len(e_all)}
             if len(p_all) > 0 and all(y is not None for y in p_all):
                 preds["pooling_loss"] = sum(p_all) / len(p_all)
@@ -579,7 +591,18 @@ class SingleTrainer(BaseTrainer):
             # Difference in predictions
             energy_diff_z += torch.abs(preds1["energy"] - preds2["energy"]).sum()
             if self.task_name == "s2ef":
-                forces_diff_z += torch.abs(preds1["forces"] - preds2["forces"]).sum()
+                forces_diff_z += torch.abs(
+                    preds1["forces"] @ rotated["rot"].to(preds1["forces"].device)
+                    - preds2["forces"]
+                ).sum()
+                assert torch.allclose(
+                    torch.abs(
+                        batch[0].force @ rotated["rot"].to(batch[0].force.device)
+                        - rotated["batch_list"][0].force
+                    ).sum(),
+                    torch.tensor([0.0]),
+                    atol=1e-05,
+                )
 
             # Diff in positions -- could remove model prediction
             pos_diff_z = -1
