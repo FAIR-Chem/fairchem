@@ -45,8 +45,11 @@ class AtomsToGraphs:
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
+        r_edges (bool): Return interatomic edges with other properties. Default is True, so edges will be returned.
         r_fixed (bool): Return a binary vector with flags for fixed (1) vs free (0) atoms.
         Default is True, so the fixed indices will be returned.
+        r_pbc (bool): Return the periodic boundary conditions with other properties.
+        Default is False, so the periodic boundary conditions will not be returned.
 
     Attributes:
         max_neigh (int): Maximum number of neighbors to consider.
@@ -55,8 +58,11 @@ class AtomsToGraphs:
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
+        r_edges (bool): Return interatomic edges with other properties. Default is True, so edges will be returned.
         r_fixed (bool): Return a binary vector with flags for fixed (1) vs free (0) atoms.
         Default is True, so the fixed indices will be returned.
+        r_pbc (bool): Return the periodic boundary conditions with other properties.
+        Default is False, so the periodic boundary conditions will not be returned.
 
     """
 
@@ -69,6 +75,7 @@ class AtomsToGraphs:
         r_distances=False,
         r_edges=True,
         r_fixed=True,
+        r_pbc=False,
     ):
         self.max_neigh = max_neigh
         self.radius = radius
@@ -77,6 +84,7 @@ class AtomsToGraphs:
         self.r_distances = r_distances
         self.r_fixed = r_fixed
         self.r_edges = r_edges
+        self.r_pbc = r_pbc
 
     def _get_neighbors_pymatgen(self, atoms):
         """Preforms nearest neighbor search and returns edge index, distances,
@@ -128,8 +136,8 @@ class AtomsToGraphs:
             atoms (ase.atoms.Atoms): An ASE atoms object.
 
         Returns:
-            data (torch_geometric.data.Data): A torch geometic data object with edge_index, positions, atomic_numbers,
-            and optionally, energy, forces, and distances.
+            data (torch_geometric.data.Data): A torch geometic data object with positions, atomic_numbers, tags,
+            and optionally, energy, forces, distances, edges, and periodic boundary conditions.
             Optional properties can included by setting r_property=True when constructing the class.
         """
 
@@ -178,6 +186,8 @@ class AtomsToGraphs:
                     if isinstance(constraint, FixAtoms):
                         fixed_idx[constraint.index] = 1
             data.fixed = fixed_idx
+        if self.r_pbc:
+            data.pbc = torch.tensor(atoms.pbc)
 
         return data
 
