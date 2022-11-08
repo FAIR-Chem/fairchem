@@ -856,7 +856,7 @@ class BaseTrainer(ABC):
         # Sampling a random rotation within [-180, 180] for all axes.
         transform = RandomReflect()
 
-        # Rotate graph
+        # Reflect batch
         batch_reflected, rot, inv_rot = transform(deepcopy(batch))
         assert not torch.allclose(batch.pos, batch_reflected.pos, atol=1e-05)
 

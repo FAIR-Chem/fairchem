@@ -67,6 +67,11 @@ class RandomRotate(object):
             data_rotated.cell = torch.matmul(
                 data_rotated.cell, matrix.to(data_rotated.cell.device)
             )
+        # And .force too
+        if hasattr(data_rotated, "force"):
+            data_rotated.force = torch.matmul(
+                data_rotated.force, matrix.to(data_rotated.force.device)
+            )
 
         return (
             data_rotated,
@@ -109,6 +114,11 @@ class RandomReflect(object):
         if hasattr(data_reflected, "cell"):
             data_reflected.cell = torch.matmul(
                 data_reflected.cell, matrix.to(data_reflected.cell.device)
+            )
+        # And .force too
+        if hasattr(data_reflected, "force"):
+            data_reflected.force = torch.matmul(
+                data_reflected.force, matrix.to(data_reflected.force.device)
             )
 
         return (
