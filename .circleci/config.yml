@@ -36,10 +36,8 @@ commands:
               conda activate base
               conda install -c conda-forge conda-merge
               conda-merge env.common.yml env.cpu.yml > env.yml
-
               conda env create -f env.yml
-
-              # mamba env update -n ocp-models --file env.yml
+              conda activate ocp-models
               pip install pytest-cov==3.0.0
               pip install syrupy
             fi
@@ -65,6 +63,9 @@ commands:
               conda install -c conda-forge conda-merge
               conda-merge env.common.yml env.cpu.yml > env.yml
               conda env create -f env.yml
+              conda activate ocp-models
+              pip install pytest-cov==3.0.0
+              pip install syrupy
             fi
       - save_cache:
           paths:
@@ -90,6 +91,9 @@ commands:
               conda install -c conda-forge conda-merge
               conda-merge env.common.yml env.cpu.yml | out-file env.yml -Encoding utf8
               conda env create -f env.yml
+              conda activate ocp-models
+              pip install pytest-cov==3.0.0
+              pip install syrupy
             }
       - save_cache:
           paths:
