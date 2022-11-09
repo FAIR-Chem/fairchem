@@ -144,7 +144,7 @@ jobs:
             conda activate ocp-models
             pip install -e .
             pre-commit install
-            pytest tests
+            pytest --import-mode=importlib tests
 
   test_windows:
     executor:
