@@ -35,7 +35,6 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
         "se3-det",
     }
     fa_cell = deepcopy(cell)
-    full_eigenvec = torch.eye(3)
 
     for pm in plus_minus_list:
 
@@ -52,6 +51,7 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
         fa_pos = pos @ new_eigenvec
 
         if pos_3D is not None:
+            full_eigenvec = torch.eye(3)
             fa_pos = torch.cat((fa_pos, pos_3D.unsqueeze(1)), dim=1)
             full_eigenvec[:2, :2] = new_eigenvec
             new_eigenvec = full_eigenvec
@@ -64,11 +64,8 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
 
     # Handle rare case where no R is positive orthogonal
     if all_fa_pos == []:
-        all_fa_pos.append(pos @ eigenvec)
-        if pos_3D:
-            all_cell.append(cell @ full_eigenvec)
-        else:
-            all_cell.append(cell @ eigenvec)
+        all_fa_pos.append(pos @ new_eigenvec)
+        all_cell.append(cell @ new_eigenvec)
 
     # Return frame(s) depending on method fa_frames
     if fa_frames == "all" or fa_frames == "se3-all":
