@@ -181,7 +181,7 @@ class Flags:
         self.parser.add_argument(
             "--wandb_project",
             type=str,
-            default="ocp-2",
+            default="ocp-3",
             help="WandB project name to use",
         )
         self.parser.add_argument(
