@@ -12,8 +12,9 @@ from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import get_pbc_distances
-from ocpmodels.models.base import BaseModel
+from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
+from ocpmodels.models.force_decoder import ForceDecoder
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
 
@@ -395,7 +396,16 @@ class FANet(BaseModel):
             self.w_lin = Linear(self.hidden_channels, 1)
 
         # Force head
-        self.decoder = None
+        self.decoder = (
+            ForceDecoder(
+                kwargs["force_decoder_type"],
+                kwargs["hidden_channels"],
+                kwargs["force_decoder_model_config"],
+                self.act,
+            )
+            if "direct" in self.regress_forces
+            else None
+        )
 
     def forward(self, data):
         # Rewire the graph
@@ -464,12 +474,14 @@ class FANet(BaseModel):
         if self.skip_co:
             energy += energy_skip_co
 
+        preds = {"energy": energy, "pooling_loss": pooling_loss}
+
         # Force-head
         if self.regress_forces:
-            force = self.decoder(h)
-            return energy, force
+            forces = self.decoder(h)
+            preds["forces"] = forces
 
-        return energy, pooling_loss
+        return preds
 
     def __repr__(self):
         return (

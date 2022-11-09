@@ -36,7 +36,7 @@ from .utils import (
     repeat_blocks,
 )
 
-from ocpmodels.models.base import BaseModel
+from ocpmodels.models.base_model import BaseModel
 
 
 @registry.register_model("gemnet_t")
@@ -109,7 +109,6 @@ class GemNetT(BaseModel):
         self.activation = kwargs["activation"]
         self.cbf = kwargs["cbf"]
         self.cutoff = kwargs["cutoff"]
-        self.direct_forces = kwargs["direct_forces"]
         self.emb_size_atom = kwargs["emb_size_atom"]
         self.emb_size_bil_trip = kwargs["emb_size_bil_trip"]
         self.emb_size_cbf = kwargs["emb_size_cbf"]
@@ -133,6 +132,8 @@ class GemNetT(BaseModel):
         self.regress_forces = kwargs["regress_forces"]
         self.scale_file = kwargs["scale_file"]
         self.use_pbc = kwargs["use_pbc"]
+
+        self.direct_forces = "direct" in self.regress_forces # kwargs["direct_forces"]
 
         assert self.num_blocks > 0
         assert self.cutoff <= 6 or self.otf_graph
@@ -508,7 +509,7 @@ class GemNetT(BaseModel):
         )
 
     @conditional_grad(torch.enable_grad())
-    def forward(self, data):
+    def energy_forward(self, data):
         pos = data.pos
         batch = data.batch
         atomic_numbers = data.atomic_numbers.long()
@@ -579,36 +580,47 @@ class GemNetT(BaseModel):
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
             )  # (nMolecules, num_targets)
 
-        if self.regress_forces:
-            if self.direct_forces:
-                # map forces in edge directions
-                F_st_vec = F_st[:, :, None] * V_st[:, None, :]
-                # (nEdges, num_targets, 3)
-                F_t = scatter(
-                    F_st_vec,
-                    idx_t,
-                    dim=0,
-                    dim_size=data.atomic_numbers.size(0),
-                    reduce="add",
-                )  # (nAtoms, num_targets, 3)
-                F_t = F_t.squeeze(1)  # (nAtoms, 3)
-            else:
-                if self.num_targets > 1:
-                    forces = []
-                    for i in range(self.num_targets):
-                        # maybe this can be solved differently
-                        forces += [
-                            -torch.autograd.grad(
-                                E_t[:, i].sum(), pos, create_graph=True
-                            )[0]
-                        ]
-                    F_t = torch.stack(forces, dim=1)
-                    # (nAtoms, num_targets, 3)
-                else:
-                    F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
-                    # (nAtoms, 3)
+        return {
+            "energy": E_t,
+            "F_st": F_st,
+            "V_st": V_st,
+            "idx_t": idx_t,
+            "dim_size": data.atomic_numbers.size(0),
+            "pos": pos,
+        }
 
-            return E_t, F_t  # (nMolecules, num_targets), (nAtoms, 3)
-        else:
-            # None is for pooling_loss -> @AlDu do we still need this?
-            return E_t, None
+    @conditional_grad(torch.enable_grad())
+    def forces_forward(self, preds):
+        F_st = preds["F_st"]
+        V_st = preds["V_st"]
+        idx_t = preds["idx_t"]
+        dim_size = preds["dim_size"]
+        E_t = preds["energy"]
+        pos = preds["pos"]
+
+        if self.direct_forces:
+            # map forces in edge directions
+            F_st_vec = F_st[:, :, None] * V_st[:, None, :]
+            # (nEdges, num_targets, 3)
+            F_t = scatter(
+                F_st_vec,
+                idx_t,
+                dim=0,
+                dim_size=dim_size,
+                reduce="add",
+            )  # (nAtoms, num_targets, 3)
+            return F_t.squeeze(1)  # (nAtoms, 3)
+        if self.regress_forces:
+            if self.num_targets > 1:
+                forces = []
+                for i in range(self.num_targets):
+                    # maybe this can be solved differently
+                    forces += [
+                        -torch.autograd.grad(E_t[:, i].sum(), pos, create_graph=True)[0]
+                    ]
+                return torch.stack(forces, dim=1)
+                # (nAtoms, num_targets, 3)
+            else:
+                # (nAtoms, 3)
+                return -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
+        return

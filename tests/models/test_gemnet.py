@@ -15,7 +15,7 @@ import torch
 from ase.io import read
 from torch_geometric.data import Data
 
-from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.graph_transforms import RandomRotate
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.models import GemNetT
 from ocpmodels.preprocessing import AtomsToGraphs
@@ -60,8 +60,7 @@ def load_model(request):
         num_after_skip=2,
         num_concat=1,
         num_atom=3,
-        regress_forces=True,
-        direct_forces=True,
+        regress_forces="direct",
         scale_file=os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "gemnet-dT-scales.json"
         ),

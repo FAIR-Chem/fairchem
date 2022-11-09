@@ -33,14 +33,15 @@ THE SOFTWARE.
 """
 
 from math import pi as PI
+from math import sqrt
 
 import torch
 from torch import nn
+from torch.nn import Embedding, Linear
 from torch_geometric.nn import radius_graph
 from torch_geometric.nn.acts import swish
 from torch_geometric.nn.inits import glorot_orthogonal
 from torch_geometric.nn.models.dimenet import (
-    EmbeddingBlock,
     Envelope,
     ResidualLayer,
     SphericalBasisLayer,
@@ -54,11 +55,18 @@ from ocpmodels.common.utils import (
     get_pbc_distances,
     radius_graph_pbc,
 )
+from ocpmodels.models.base_model import BaseModel
+from ocpmodels.models.utils.pos_encodings import PositionalEncoding
+from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
 
 try:
     import sympy as sym
 except ImportError:
     sym = None
+
+NUM_CLUSTERS = 20
+NUM_POOLING_LAYERS = 1
 
 
 class BesselBasisLayer(torch.nn.Module):
@@ -78,6 +86,144 @@ class BesselBasisLayer(torch.nn.Module):
     def forward(self, dist):
         dist = dist.unsqueeze(-1) / self.cutoff
         return self.envelope(dist) * (self.freq * dist).sin()
+
+
+class EmbeddingBlock(torch.nn.Module):
+    def __init__(self, num_radial, hidden_channels, act=swish):
+        super().__init__()
+        self.act = act
+
+        self.emb = Embedding(85, hidden_channels)
+        self.lin_rbf = Linear(num_radial, hidden_channels)
+        self.lin = Linear(3 * hidden_channels, hidden_channels)
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        self.emb.weight.data.uniform_(-sqrt(3), sqrt(3))
+        self.lin_rbf.reset_parameters()
+        self.lin.reset_parameters()
+
+    def forward(self, x, rbf, i, j, tags=None, subnodes=None):
+        x = self.emb(x)
+        rbf = self.act(self.lin_rbf(rbf))
+        return self.act(self.lin(torch.cat([x[i], x[j], rbf], dim=-1)))
+
+
+class AdvancedEmbeddingBlock(torch.nn.Module):
+    def __init__(
+        self,
+        num_radial,
+        hidden_channels,
+        tag_hidden_channels,
+        pg_hidden_channels,
+        phys_hidden_channels,
+        phys_embeds,
+        graph_rewiring,
+        act=swish,
+    ):
+        super().__init__()
+        self.act = act
+        self.use_tag = tag_hidden_channels > 0
+        self.use_pg = pg_hidden_channels > 0
+        self.use_mlp_phys = phys_hidden_channels > 0
+        self.use_positional_embeds = graph_rewiring in {
+            "one-supernode-per-graph",
+            "one-supernode-per-atom-type",
+            "one-supernode-per-atom-type-dist",
+        }
+        # self.use_positional_embeds = False
+
+        # Phys embeddings
+        self.phys_emb = PhysEmbedding(props=phys_embeds, pg=self.use_pg)
+        # With MLP
+        if self.use_mlp_phys:
+            self.phys_lin = Linear(self.phys_emb.n_properties, phys_hidden_channels)
+        else:
+            phys_hidden_channels = self.phys_emb.n_properties
+        # Period + group embeddings
+        if self.use_pg:
+            self.period_embedding = Embedding(
+                self.phys_emb.period_size, pg_hidden_channels
+            )
+            self.group_embedding = Embedding(
+                self.phys_emb.group_size, pg_hidden_channels
+            )
+        # Tag embedding
+        if tag_hidden_channels:
+            self.tag = Embedding(3, tag_hidden_channels)
+
+        # Position encoding
+        if self.use_positional_embeds:
+            self.pe = PositionalEncoding(hidden_channels, 210)
+
+        # Main embedding
+        self.emb = Embedding(
+            85,
+            hidden_channels
+            - tag_hidden_channels
+            - phys_hidden_channels
+            - 2 * pg_hidden_channels,
+        )
+
+        self.lin_rbf = Linear(num_radial, hidden_channels)
+        self.lin = Linear(3 * hidden_channels, hidden_channels)
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        self.emb.weight.data.uniform_(-sqrt(3), sqrt(3))
+        if self.use_mlp_phys:
+            self.phys_lin.reset_parameters()
+        if self.use_tag:
+            self.tag.weight.data.uniform_(-sqrt(3), sqrt(3))
+        if self.use_pg:
+            self.period_embedding.weight.data.uniform_(-sqrt(3), sqrt(3))
+            self.group_embedding.weight.data.uniform_(-sqrt(3), sqrt(3))
+        self.lin_rbf.reset_parameters()
+        self.lin.reset_parameters()
+
+    def forward(self, x, rbf, i, j, tag=None, subnodes=None):
+
+        x_ = self.emb(x)
+        rbf = self.act(self.lin_rbf(rbf))
+
+        if self.phys_emb.device != x.device:
+            self.phys_emb = self.phys_emb.to(x.device)
+
+        if self.use_tag:
+            x_tag = self.tag(tag)
+            x_ = torch.cat((x_, x_tag), dim=1)
+
+        if self.phys_emb.n_properties > 0:
+            x_phys = self.phys_emb.properties[x]
+            if self.use_mlp_phys:
+                x_phys = self.phys_lin(x_phys)
+            x_ = torch.cat((x_, x_phys), dim=1)
+
+        if self.use_pg:
+            x_period = self.period_embedding(self.phys_emb.period[x])
+            x_group = self.group_embedding(self.phys_emb.group[x])
+            x_ = torch.cat((x_, x_period, x_group), dim=1)
+
+        if self.use_positional_embeds:
+            idx_of_non_zero_val = (tag == 0).nonzero().T.squeeze(0)
+            x_pos = torch.zeros_like(x_, device=x_.device)
+            x_pos[idx_of_non_zero_val, :] = self.pe(subnodes).to(device=x_pos.device)
+            x_ += x_pos
+
+        return self.act(
+            self.lin(
+                torch.cat(
+                    [
+                        x_[i],
+                        x_[j],
+                        rbf,
+                    ],
+                    dim=-1,
+                )
+            )
+        )
 
 
 class InteractionPPBlock(torch.nn.Module):
@@ -175,6 +321,80 @@ class InteractionPPBlock(torch.nn.Module):
         return h
 
 
+class EHOutputPPBlock(torch.nn.Module):
+    def __init__(
+        self,
+        num_radial,
+        hidden_channels,
+        out_emb_channels,
+        out_channels,
+        num_layers,
+        energy_head,
+        act=swish,
+    ):
+        super(EHOutputPPBlock, self).__init__()
+        self.act = act
+        self.energy_head = energy_head
+
+        self.lin_rbf = nn.Linear(num_radial, hidden_channels, bias=False)
+        self.lin_up = nn.Linear(hidden_channels, out_emb_channels, bias=True)
+        self.lins = torch.nn.ModuleList()
+        for _ in range(num_layers):
+            self.lins.append(nn.Linear(out_emb_channels, out_emb_channels))
+        self.lin = nn.Linear(out_emb_channels, out_channels, bias=False)
+
+        # weighted average & pooling
+        if self.energy_head in {"pooling", "random"}:
+            self.hierarchical_pooling = Hierarchical_Pooling(
+                hidden_channels,
+                self.act,
+                NUM_POOLING_LAYERS,
+                NUM_CLUSTERS,
+                self.energy_head,
+            )
+        elif self.energy_head == "graclus":
+            self.graclus = Graclus(hidden_channels, self.act)
+        elif self.energy_head == "weighted-av-final-embeds":
+            self.w_lin = Linear(hidden_channels, 1)
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        glorot_orthogonal(self.lin_rbf.weight, scale=2.0)
+        glorot_orthogonal(self.lin_up.weight, scale=2.0)
+        for lin in self.lins:
+            glorot_orthogonal(lin.weight, scale=2.0)
+            lin.bias.data.fill_(0)
+        self.lin.weight.data.fill_(0)
+        if self.energy_head == "weighted-av-final-embeds":
+            self.w_lin.bias.data.fill_(0)
+            torch.nn.init.xavier_uniform_(self.w_lin.weight)
+
+    def forward(self, x, rbf, i, edge_index, edge_weight, batch, num_nodes=None):
+        x = self.lin_rbf(rbf) * x
+        x = scatter(x, i, dim=0, dim_size=num_nodes)
+
+        pooling_loss = None
+        if self.energy_head == "weighted-av-final-embeds":
+            alpha = self.w_lin(x)
+        elif self.energy_head == "graclus":
+            x, batch = self.graclus(x, edge_index, edge_weight, batch)
+        elif self.energy_head in {"pooling", "random"}:
+            x, batch, pooling_loss = self.hierarchical_pooling(
+                x, edge_index, edge_weight, batch
+            )
+
+        x = self.lin_up(x)
+        for lin in self.lins:
+            x = self.act(lin(x))
+        x = self.lin(x)
+
+        if self.energy_head == "weighted-av-final-embeds":
+            x = x * alpha
+
+        return x, pooling_loss, batch
+
+
 class OutputPPBlock(torch.nn.Module):
     def __init__(
         self,
@@ -214,11 +434,17 @@ class OutputPPBlock(torch.nn.Module):
         return self.lin(x)
 
 
-class DimeNetPlusPlus(torch.nn.Module):
+@registry.register_model("dpp")
+class DimeNetPlusPlus(BaseModel):
     r"""DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
 
     Args:
         hidden_channels (int): Hidden embedding size.
+        tag_hidden_channels (int): tag embedding size
+        pg_hidden_channels (int): period & group embedding size
+        phys_hidden_channels (int): MLP hidden size for physics embedding
+        phys_embeds (bool): whether we use physics embeddings or not
+        graph_rewiring (str): name of rewiring method. Default=False.
         out_channels (int): Size of each output sample.
         num_blocks (int): Number of building blocks.
         int_emb_size (int): Embedding size used for interaction triplets
@@ -228,6 +454,10 @@ class DimeNetPlusPlus(torch.nn.Module):
         num_radial (int): Number of radial basis functions.
         cutoff: (float, optional): Cutoff distance for interatomic
             interactions. (default: :obj:`5.0`)
+        use_pbc (bool, optional): Use of periodic boundary conditions.
+            (default: true)
+        otf_graph (bool, optional): Recompute radius graph.
+            (default: false)
         envelope_exponent (int, optional): Shape of the smooth cutoff.
             (default: :obj:`5`)
         num_before_skip: (int, optional): Number of residual layers in the
@@ -238,72 +468,107 @@ class DimeNetPlusPlus(torch.nn.Module):
             output blocks. (default: :obj:`3`)
         act: (function, optional): The activation function.
             (default: :obj:`swish`)
+        regress_forces: (bool, optional): Compute atom forces from energy.
+            (default: false).
     """
 
     url = "https://github.com/klicperajo/dimenet/raw/master/pretrained"
 
-    def __init__(
-        self,
-        hidden_channels,
-        out_channels,
-        num_blocks,
-        int_emb_size,
-        basis_emb_size,
-        out_emb_channels,
-        num_spherical,
-        num_radial,
-        cutoff=5.0,
-        envelope_exponent=5,
-        num_before_skip=1,
-        num_after_skip=2,
-        num_output_layers=3,
-        act=swish,
-    ):
+    def __init__(self, **kwargs):
         super(DimeNetPlusPlus, self).__init__()
 
-        self.cutoff = cutoff
+        self.cutoff = kwargs["cutoff"]
+        self.use_pbc = kwargs["use_pbc"]
+        self.otf_graph = kwargs["otf_graph"]
+        self.regress_forces = kwargs["regress_forces"]
+        self.energy_head = kwargs["energy_head"]
+        use_tag = kwargs["tag_hidden_channels"] > 0
+        use_pg = kwargs["pg_hidden_channels"] > 0
+        act = (
+            getattr(nn.functional, kwargs["act"]) if kwargs["act"] != "swish" else swish
+        )
 
+        assert (
+            kwargs["tag_hidden_channels"] + 2 * kwargs["pg_hidden_channels"] + 16
+            < kwargs["hidden_channels"]
+        )
         if sym is None:
             raise ImportError("Package `sympy` could not be found.")
 
-        self.num_blocks = num_blocks
-
-        self.rbf = BesselBasisLayer(num_radial, cutoff, envelope_exponent)
+        self.rbf = BesselBasisLayer(
+            kwargs["num_radial"], self.cutoff, kwargs["envelope_exponent"]
+        )
         self.sbf = SphericalBasisLayer(
-            num_spherical, num_radial, cutoff, envelope_exponent
+            kwargs["num_spherical"],
+            kwargs["num_radial"],
+            self.cutoff,
+            kwargs["envelope_exponent"],
         )
 
-        self.emb = EmbeddingBlock(num_radial, hidden_channels, act)
+        if use_tag or use_pg or kwargs["phys_embeds"] or kwargs["graph_rewiring"]:
+            self.emb = AdvancedEmbeddingBlock(
+                kwargs["num_radial"],
+                kwargs["hidden_channels"],
+                kwargs["tag_hidden_channels"],
+                kwargs["pg_hidden_channels"],
+                kwargs["phys_hidden_channels"],
+                kwargs["phys_embeds"],
+                kwargs["graph_rewiring"],
+                act,
+            )
+        else:
+            self.emb = EmbeddingBlock(
+                kwargs["num_radial"], kwargs["hidden_channels"], act
+            )
 
-        self.output_blocks = torch.nn.ModuleList(
-            [
-                OutputPPBlock(
-                    num_radial,
-                    hidden_channels,
-                    out_emb_channels,
-                    out_channels,
-                    num_output_layers,
-                    act,
-                )
-                for _ in range(num_blocks + 1)
-            ]
-        )
+        if self.energy_head:
+            self.output_blocks = torch.nn.ModuleList(
+                [
+                    EHOutputPPBlock(
+                        kwargs["num_radial"],
+                        kwargs["hidden_channels"],
+                        kwargs["out_emb_channels"],
+                        kwargs["num_targets"],
+                        kwargs["num_output_layers"],
+                        self.energy_head,
+                        act,
+                    )
+                    for _ in range(kwargs["num_blocks"] + 1)
+                ]
+            )
+        else:
+            self.output_blocks = torch.nn.ModuleList(
+                [
+                    OutputPPBlock(
+                        kwargs["num_radial"],
+                        kwargs["hidden_channels"],
+                        kwargs["out_emb_channels"],
+                        kwargs["num_targets"],
+                        kwargs["num_output_layers"],
+                        act,
+                    )
+                    for _ in range(kwargs["num_blocks"] + 1)
+                ]
+            )
 
         self.interaction_blocks = torch.nn.ModuleList(
             [
                 InteractionPPBlock(
-                    hidden_channels,
-                    int_emb_size,
-                    basis_emb_size,
-                    num_spherical,
-                    num_radial,
-                    num_before_skip,
-                    num_after_skip,
+                    kwargs["hidden_channels"],
+                    kwargs["int_emb_size"],
+                    kwargs["basis_emb_size"],
+                    kwargs["num_spherical"],
+                    kwargs["num_radial"],
+                    kwargs["num_before_skip"],
+                    kwargs["num_after_skip"],
                     act,
                 )
-                for _ in range(num_blocks)
+                for _ in range(kwargs["num_blocks"])
             ]
         )
+
+        if self.energy_head == "weighted-av-initial-embeds":
+            self.w_lin = Linear(kwargs["hidden_channels"], 1)
 
         self.reset_parameters()
 
@@ -314,6 +579,9 @@ class DimeNetPlusPlus(torch.nn.Module):
             out.reset_parameters()
         for interaction in self.interaction_blocks:
             interaction.reset_parameters()
+        if self.energy_head == "weighted-av-initial-embeds":
+            self.w_lin.bias.data.fill_(0)
+            torch.nn.init.xavier_uniform_(self.w_lin.weight)
 
     def triplets(self, edge_index, cell_offsets, num_nodes):
         row, col = edge_index  # j->i
@@ -344,60 +612,8 @@ class DimeNetPlusPlus(torch.nn.Module):
 
         return col, row, idx_i, idx_j, idx_k, idx_kj, idx_ji
 
-    def forward(self, z, pos, batch=None):
-        """ """
-        raise NotImplementedError
-
-
-@registry.register_model("old_dpp")
-class DimeNetPlusPlusWrap(DimeNetPlusPlus):
-    def __init__(
-        self,
-        num_atoms,
-        bond_feat_dim,  # not used
-        num_targets,
-        use_pbc=True,
-        regress_forces=True,
-        hidden_channels=128,
-        num_blocks=4,
-        int_emb_size=64,
-        basis_emb_size=8,
-        out_emb_channels=256,
-        num_spherical=7,
-        num_radial=6,
-        otf_graph=False,
-        cutoff=10.0,
-        envelope_exponent=5,
-        num_before_skip=1,
-        num_after_skip=2,
-        num_output_layers=3,
-    ):
-        self.num_targets = num_targets
-        self.regress_forces = regress_forces
-        self.use_pbc = use_pbc
-        self.cutoff = cutoff
-        self.otf_graph = otf_graph
-
-        super(DimeNetPlusPlusWrap, self).__init__(
-            hidden_channels=hidden_channels,
-            out_channels=num_targets,
-            num_blocks=num_blocks,
-            int_emb_size=int_emb_size,
-            basis_emb_size=basis_emb_size,
-            out_emb_channels=out_emb_channels,
-            num_spherical=num_spherical,
-            num_radial=num_radial,
-            cutoff=cutoff,
-            envelope_exponent=envelope_exponent,
-            num_before_skip=num_before_skip,
-            num_after_skip=num_after_skip,
-            num_output_layers=num_output_layers,
-        )
-
     @conditional_grad(torch.enable_grad())
-    def _forward(self, data):
-        pos = data.pos
-        batch = data.batch
+    def energy_forward(self, data):
 
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
@@ -406,6 +622,12 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
             data.edge_index = edge_index
             data.cell_offsets = cell_offsets
             data.neighbors = neighbors
+
+        # Rewire the graph
+        pos = data.pos
+        batch = data.batch
+        if not hasattr(data, "subnodes"):
+            data.subnodes = False
 
         if self.use_pbc:
             out = get_pbc_distances(
@@ -454,38 +676,60 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus):
         rbf = self.rbf(dist)
         sbf = self.sbf(dist, angle, idx_kj)
 
+        pooling_loss = None  # deal with pooling loss
+
         # Embedding block.
-        x = self.emb(data.atomic_numbers.long(), rbf, i, j)
-        P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
+        x = self.emb(data.atomic_numbers.long(), rbf, i, j, data.tags, data.subnodes)
+        if self.energy_head:
+            P, pooling_loss, batch = self.output_blocks[0](
+                x, rbf, i, edge_index, dist, data.batch, num_nodes=pos.size(0)
+            )
+        else:
+            P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
+
+        if self.energy_head == "weighted-av-initial-embeds":
+            alpha = self.w_lin(scatter(x, i, dim=0, dim_size=pos.size(0)))
 
         # Interaction blocks.
+
+        energy_Ps = []
+
         for interaction_block, output_block in zip(
             self.interaction_blocks, self.output_blocks[1:]
         ):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
-            P += output_block(x, rbf, i, num_nodes=pos.size(0))
+            if self.energy_head:
+                P_bis, pooling_loss_bis, _ = output_block(
+                    x, rbf, i, edge_index, dist, data.batch, num_nodes=pos.size(0)
+                )
+                energy_Ps.append(
+                    P_bis.sum(0) / len(P)
+                    if batch is None
+                    else scatter(P_bis, batch, dim=0)
+                )
+                if pooling_loss_bis is not None:
+                    pooling_loss += pooling_loss_bis
+            else:
+                P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
+        P_bis = sum(energy_Ps or [0])
+
+        if self.energy_head == "weighted-av-initial-embeds":
+            P = P * alpha
+
+        # Output
+        # scatter
         energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+        energy = energy + P_bis
 
-        return energy
+        return {
+            "energy": energy,
+            "pooling_loss": pooling_loss,
+        }
 
-    def forward(self, data):
-        if self.regress_forces:
-            data.pos.requires_grad_(True)
-        energy = self._forward(data)
-
-        if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    data.pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
-            )
-            return energy, forces
-        else:
-            return energy
+    @conditional_grad(torch.enable_grad())
+    def forces_forward(self, preds):
+        return
 
     @property
     def num_params(self):

@@ -122,7 +122,7 @@ class ForcesTrainer(BaseTrainer):
             disable=disable_tqdm,
         ):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch_list)
+                out = self.model_forward(batch_list)
 
             if self.normalizers is not None and "target" in self.normalizers:
                 out["energy"] = self.normalizers["target"].denorm(out["energy"])
@@ -199,7 +199,7 @@ class ForcesTrainer(BaseTrainer):
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
         checkpoint_every = self.config["optim"].get("checkpoint_every", eval_every)
         primary_metric = self.config["task"].get(
-            "primary_metric", self.evaluator.task_primary_metric[self.name]
+            "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )
         self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
         self.metrics = {}
@@ -223,14 +223,14 @@ class ForcesTrainer(BaseTrainer):
 
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out = self._forward(batch)
-                    loss = self._compute_loss(out, batch)
+                    out = self.model_forward(batch)
+                    loss = self.compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
 
                 # Compute metrics.
-                self.metrics = self._compute_metrics(
+                self.metrics = self.compute_metrics(
                     out,
                     batch,
                     self.evaluator,
@@ -316,7 +316,7 @@ class ForcesTrainer(BaseTrainer):
         if "test_dataset" in self.config:
             self.test_dataset.close_db()
 
-    def _forward(self, batch_list):
+    def model_forward(self, batch_list):
         # forward pass.
         if self.config["model"].get("regress_forces", True):
             out_energy, out_forces = self.model(batch_list)
@@ -335,7 +335,7 @@ class ForcesTrainer(BaseTrainer):
 
         return out
 
-    def _compute_loss(self, out, batch_list):
+    def compute_loss(self, out, batch_list):
         loss = []
 
         # Energy loss.
@@ -407,7 +407,7 @@ class ForcesTrainer(BaseTrainer):
         loss = sum(loss)
         return loss
 
-    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+    def compute_metrics(self, out, batch_list, evaluator, metrics={}):
         natoms = torch.cat(
             [batch.natoms.to(self.device) for batch in batch_list], dim=0
         )

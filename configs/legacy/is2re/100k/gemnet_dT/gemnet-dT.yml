@@ -36,7 +36,7 @@ model:
   output_init: HeOrthogonal
   activation: silu
   scale_file: configs/oc22/scaling_factors/gemnet-dT_c12.json
-  regress_forces: False
+  regress_forces_as_grad: False
 
 optim:
   batch_size: 8

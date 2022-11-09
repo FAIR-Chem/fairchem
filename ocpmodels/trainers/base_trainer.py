@@ -32,7 +32,7 @@ from ocpmodels.common.data_parallel import (
     ParallelCollater,
 )
 from ocpmodels.common.registry import registry
-from ocpmodels.common.transforms import RandomReflect, RandomRotate
+from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
 from ocpmodels.common.utils import get_commit_hash, save_checkpoint
 from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
@@ -65,7 +65,8 @@ class BaseTrainer(ABC):
         self.epoch = 0
         self.step = 0
         self.cpu = self.config["cpu"]
-        self.name = self.config["name"]
+        self.task_name = self.config.get("task_name", self.config.get("name"))
+        assert self.task_name, "Specify task name (got {})".format(self.task_name)
         self.test_ri = self.config["test_ri"]
         self.is_debug = self.config["is_debug"]
         self.is_hpo = self.config["is_hpo"]
@@ -140,7 +141,10 @@ class BaseTrainer(ABC):
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
-        self.evaluator = Evaluator(task=self.config["name"])
+        self.evaluator = Evaluator(
+            task=self.task_name,
+            model_regresses_forces=self.config["model"].get("regress_forces", ""),
+        )
 
     def load(self):
         self.load_seed_from_config()
@@ -550,7 +554,11 @@ class BaseTrainer(ABC):
             self.ema.store()
             self.ema.copy_to()
 
-        evaluator, metrics = Evaluator(task=self.name), {}
+        evaluator = Evaluator(
+            task=self.task_name,
+            model_regresses_forces=self.config["model"].get("regress_forces", ""),
+        )
+        metrics = {}
         rank = distutils.get_rank()
 
         loader = self.val_loader if split[:3] in {"val", "eva"} else self.test_loader
@@ -569,13 +577,13 @@ class BaseTrainer(ABC):
 
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out, pooling_loss = self._forward(batch)
-            loss = self._compute_loss(out, batch)
-            if pooling_loss is not None:
-                loss += pooling_loss
+                preds = self.model_forward(batch)
+            loss = self.compute_loss(preds, batch)
+            if preds.get("pooling_loss") is not None:
+                loss += preds["pooling_loss"]
 
             # Compute metrics.
-            metrics = self._compute_metrics(out, batch, evaluator, metrics)
+            metrics = self.compute_metrics(preds, batch, evaluator, metrics)
             metrics = evaluator.update("loss", loss.item(), metrics)
 
         val_time = time.time() - val_time
@@ -622,11 +630,11 @@ class BaseTrainer(ABC):
         return metrics
 
     @abstractmethod
-    def _forward(self, batch_list):
+    def model_forward(self, batch_list):
         """Derived classes should implement this function."""
 
     @abstractmethod
-    def _compute_loss(self, out, batch_list):
+    def compute_loss(self, out, batch_list):
         """Derived classes should implement this function."""
 
     def _backward(self, loss):
@@ -668,7 +676,7 @@ class BaseTrainer(ABC):
 
         results_file_path = os.path.join(
             self.config["results_dir"],
-            f"{self.name}_{results_file}_{distutils.get_rank()}.npz",
+            f"{self.task_name}_{results_file}_{distutils.get_rank()}.npz",
         )
         np.savez_compressed(
             results_file_path,
@@ -681,13 +689,13 @@ class BaseTrainer(ABC):
             gather_results = defaultdict(list)
             full_path = os.path.join(
                 self.config["results_dir"],
-                f"{self.name}_{results_file}.npz",
+                f"{self.task_name}_{results_file}.npz",
             )
 
             for i in range(distutils.get_world_size()):
                 rank_path = os.path.join(
                     self.config["results_dir"],
-                    f"{self.name}_{results_file}_{i}.npz",
+                    f"{self.task_name}_{results_file}_{i}.npz",
                 )
                 rank_results = np.load(rank_path, allow_pickle=True)
                 gather_results["ids"].extend(rank_results["ids"])
@@ -733,11 +741,11 @@ class BaseTrainer(ABC):
         for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
 
             # Update the val. dataset we look at
-            self.config["val_dataset"] = {
-                "src": "/network/projects/_groups/ocp/oc20/is2re/all/"
-                + s
-                + "/data.lmdb"
-            }
+            base = Path(f"/network/projects/ocp/oc20/{self.task_name}/all/{s}/")
+            src = base / "data.lmdb"
+            if not src.exists():
+                src = base
+            self.config["val_dataset"] = {"src": str(src)}
 
             # Load val dataset
             if self.config.get("val_dataset", None):
@@ -819,6 +827,8 @@ class BaseTrainer(ABC):
         if hasattr(batch, "fa_pos"):
             delattr(batch_rotated, "fa_pos")  # delete it otherwise can't iterate
             delattr(batch_rotated, "fa_cell")  # delete it otherwise can't iterate
+            delattr(batch_rotated, "fa_rot")  # delete it otherwise can't iterate
+
             g_list = batch_rotated.to_data_list()
             fa_transform = FrameAveraging(
                 self.config["frame_averaging"], self.config["fa_frames"]
@@ -828,7 +838,7 @@ class BaseTrainer(ABC):
             batch_rotated = Batch.from_data_list(g_list)
             batch_rotated.neighbors = batch.neighbors
 
-        return [batch_rotated]
+        return {"batch_list": [batch_rotated], "rot": rot}
 
     def reflect_graph(self, batch, reflection=None):
         """Rotate all graphs in a batch
@@ -846,7 +856,7 @@ class BaseTrainer(ABC):
         # Sampling a random rotation within [-180, 180] for all axes.
         transform = RandomReflect()
 
-        # Rotate graph
+        # Reflect batch
         batch_reflected, rot, inv_rot = transform(deepcopy(batch))
         assert not torch.allclose(batch.pos, batch_reflected.pos, atol=1e-05)
 
@@ -854,6 +864,7 @@ class BaseTrainer(ABC):
         if hasattr(batch, "fa_pos"):
             delattr(batch_reflected, "fa_pos")  # delete it otherwise can't iterate
             delattr(batch_reflected, "fa_cell")  # delete it otherwise can't iterate
+            delattr(batch_reflected, "fa_rot")  # delete it otherwise can't iterate
             g_list = batch_reflected.to_data_list()
             fa_transform = FrameAveraging(
                 self.config["frame_averaging"], self.config["fa_frames"]
@@ -863,4 +874,4 @@ class BaseTrainer(ABC):
             batch_reflected = Batch.from_data_list(g_list)
             batch_reflected.neighbors = batch.neighbors
 
-        return [batch_reflected]
+        return {"batch_list": [batch_reflected], "rot": rot}

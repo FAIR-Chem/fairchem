@@ -1,8 +1,6 @@
 """ Code of the Scalable Frame Averaging (Rotation Invariant) GNN
 """
 
-from time import time
-
 import torch
 from torch import nn
 from torch.nn import Embedding, Linear
@@ -11,11 +9,12 @@ from torch_geometric.nn.acts import swish
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances
-from ocpmodels.models.base import BaseModel
+from ocpmodels.common.utils import get_pbc_distances, conditional_grad
+from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
+from ocpmodels.models.force_decoder import ForceDecoder
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1
@@ -263,10 +262,13 @@ class SfariNet(BaseModel):
             (default: :obj:`6`)
         num_gaussians (int): The number of gaussians :math:`\mu`.
             (default: :obj:`50`)
+        force_decoder_type (str): Type of force decoder to use.
+        force_decoder_model_config (dict): Dictionary of config parameters
+            for the decoder's model
     """
 
     def __init__(self, **kwargs):
-        super(SfariNet, self).__init__()
+        super().__init__()
         self.cutoff = kwargs["cutoff"]
         self.use_pbc = kwargs["use_pbc"]
         self.max_num_neighbors = kwargs["max_num_neighbors"]
@@ -311,10 +313,32 @@ class SfariNet(BaseModel):
         if self.energy_head == "weighted-av-initial-embeds":
             self.w_lin = Linear(kwargs["hidden_channels"], 1)
 
-        # Force head
-        self.decoder = None
+        if not self.regress_forces and kwargs["force_decoder_type"]:
+            print(
+                "\nWarning: force_decoder_type is set to",
+                kwargs["force_decoder_type"],
+                "but regress_forces is False. Ignoring force_decoder_type.\n",
+            )
 
-    def forward(self, data):
+        # Force head
+        self.decoder = (
+            ForceDecoder(
+                kwargs["force_decoder_type"],
+                kwargs["hidden_channels"],
+                kwargs["force_decoder_model_config"],
+                self.act,
+            )
+            if "direct" in self.regress_forces
+            else None
+        )
+
+        self.reset_parameters()
+
+    @conditional_grad(torch.enable_grad())
+    def forces_forward(self, preds):
+        return self.decoder(preds["hidden_state"])
+
+    def energy_forward(self, data):
         # Rewire the graph
         z = data.atomic_numbers.long()
         pos = data.pos
@@ -376,7 +400,7 @@ class SfariNet(BaseModel):
         # or skip-connection
 
         # Force-head for S2EF, IS2RS
-        if self.regress_forces:
-            force = self.decoder(h)
-            return energy, force
-        return energy, pooling_loss
+
+        preds = {"energy": energy, "pooling_loss": pooling_loss, "hidden_state": h}
+
+        return preds

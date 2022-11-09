@@ -1,6 +1,6 @@
 import torch
 
-from ocpmodels.preprocessing.data_augmentation import (
+from ocpmodels.preprocessing.frame_averaging import (
     data_augmentation,
     frame_averaging_2D,
     frame_averaging_3D,
@@ -113,8 +113,21 @@ class Compose:
         return format_string
 
 
+class AddAttributes:
+    def __call__(self, data):
+        if not hasattr(data, "distances"):
+            data.distances = torch.sqrt(
+                (
+                    (data.pos[data.edge_index[0, :]] - data.pos[data.edge_index[1, :]])
+                    ** 2
+                ).sum(-1)
+            ).float()
+        return data
+
+
 def get_transforms(trainer_config):
     transforms = [
+        AddAttributes(),
         GraphRewiring(trainer_config["graph_rewiring"]),
         FrameAveraging(trainer_config["frame_averaging"], trainer_config["fa_frames"]),
     ]

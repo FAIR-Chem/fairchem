@@ -15,7 +15,7 @@ model:
   sphere_message: fullconv
   output_message: fullconv
   force_estimator: random
-  regress_forces: True
+  regress_forces_as_grad: True
   use_pbc: True
   scale_distances: True
   basis_width_scalar: 3.0

@@ -5,7 +5,7 @@ from ocpmodels.common.registry import registry
 import random
 import sys
 import torch
-from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.graph_transforms import RandomRotate
 from copy import deepcopy
 
 

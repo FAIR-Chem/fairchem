@@ -10,7 +10,7 @@ from pathlib import Path
 
 import torch
 
-from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.graph_transforms import RandomRotate
 from ocpmodels.common.utils import get_pbc_distances, make_script_trainer
 from ocpmodels.datasets.data_transforms import FrameAveraging
 from ocpmodels.trainers import EnergyTrainer

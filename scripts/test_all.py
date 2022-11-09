@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import sys
 import traceback
@@ -93,6 +94,7 @@ if __name__ == "__main__":
             "ignore_str": "",  # (str) ignore configs containing this string
             "only_str": "",  # (str) only selects configs containing this string
             "traceback": False,  # (bool) print traceback on error
+            "n": -1,  # (int) how many configs to run
         }
     )
 
@@ -101,7 +103,12 @@ if __name__ == "__main__":
     overrides = {
         "silent": True,
         "logger": "dummy",
-        "optim": {"max_epochs": 1, "batch_size": 2},
+        "optim": {
+            "max_epochs": 1,
+            "batch_size": 2,
+            "num_workers": 0,
+            "eval_batch_size": 2,
+        },
     }
     models = [
         ["--config=schnet-is2re-10k"],
@@ -109,6 +116,9 @@ if __name__ == "__main__":
         ["--config=forcenet-is2re-10k"],
         ["--config=fanet-is2re-10k"],
         ["--config=sfarinet-is2re-10k"],
+        ["--config=sfarinet-s2ef-200k"],
+        ["--config=fanet-s2ef-200k"],
+        ["--config=forcenet-s2ef-200k"],
     ]
 
     features = [
@@ -126,12 +136,27 @@ if __name__ == "__main__":
         "--frame_averaging=2D --fa_frames=random --graph_rewiring=remove-tag-0",
     ]
 
+    simples = [
+        "--config=schnet-s2ef-200k --regress_forces=from_energy",
+        "--config=dpp-s2ef-200k --regress_forces=from_energy",
+        "--config=forcenet-s2ef-200k --regress_forces=from_energy",
+        "--config=sfarinet-s2ef-200k --regress_forces=from_energy",
+        "--config=fanet-s2ef-200k --regress_forces=from_energy",
+        "--config=forcenet-s2ef-200k --regress_forces=direct",
+        "--config=sfarinet-s2ef-200k --regress_forces=direct",
+        "--config=fanet-s2ef-200k --regress_forces=direct",
+        "--config=forcenet-s2ef-200k --regress_forces=direct_with_gradient_target",
+        "--config=sfarinet-s2ef-200k --regress_forces=direct_with_gradient_target",
+        "--config=fanet-s2ef-200k --regress_forces=direct_with_gradient_target",
+    ]
+    simples = [s.split() for s in simples]
+
     if args.skip_models > 0:
         models = models[args.skip_models :]
     if args.skip_features > 0:
         features = features[args.skip_features :]
 
-    configs = [m + f.split() for m in models for f in features]
+    configs = [m + f.split() for m in models for f in features] + simples
 
     if args.ignore_str:
         if isinstance(args.ignore_str, str):
@@ -140,27 +165,35 @@ if __name__ == "__main__":
             c for c in configs if all(igs not in " ".join(c) for igs in args.ignore_str)
         ]
     if args.only_str:
-        configs = [c for c in configs if args.only_str in " ".join(c)]
+        configs = [c for c in configs if re.findall(args.only_str, " ".join(c))]
 
     if args.skip_configs > 0:
         configs = configs[args.skip_configs :]
+
+    if args.n > 0:
+        configs = configs[: args.n]
 
     conf_strs = [
         " ".join(conf).replace("--", "").replace("configs/is2re/10k/", "")
         for conf in configs
     ]
 
-    print("🥁 Configs to test:")
-    for c, conf in enumerate(configs):
-        print(f"  • {c+1} " + conf_strs[c])
-        if c and c % len(features) == 0:
-            print()
+    if not configs:
+        print("No configs to run 🥶")
+    else:
+        print("🥁 Configs to test:")
+        p = 0
+        for c, conf in enumerate(configs):
+            if c and p <= len(models) and c % len(features) == 0:
+                print()
+                p += 1
+            print(f"  • {c+1:3} " + conf_strs[c])
 
-    print()
+        print()
 
     nk = len(str(len(configs)))
     test_start = time()
-    successes = 0
+    successes = c = 0
     for c, conf in enumerate(configs):
         times = Times()
         conf_start = time()
@@ -189,6 +222,10 @@ if __name__ == "__main__":
             if not is_nan:
                 successes += 1
 
+        except KeyboardInterrupt:
+            print("\n\nInterrupting. 👋 Bye!")
+            break
+
         except Exception as e:
             print(f"\n{e}\n")
             if args.traceback:
@@ -204,9 +241,10 @@ if __name__ == "__main__":
         print("-" * 10)
 
     test_duration = time() - test_start
+    emo = "🎉" if successes == len(configs) else "😢"
     print(
-        f"\n\n🎉 `{command}` finished testing {len(configs)}"
+        f"\n\n{emo} `{command}` finished testing {c+1 if c else 0}/{len(configs)}"
         + f" configs in {format_timer(test_duration)}"
-        + f" on commit {get_commit_hash()}. {successes}/{len(configs)} succeeded."
+        + f" on commit {get_commit_hash()}. {successes} succeeded."
         + f" [{str(datetime.now()).split('.')[0]}]"
     )

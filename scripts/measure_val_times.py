@@ -674,7 +674,7 @@ if __name__ == "__main__":
                 # time the forward pass
                 t = time()
                 with torch.cuda.amp.autocast(enabled=trainer.scaler is not None):
-                    _ = trainer._forward(batch)
+                    _ = trainer.model_forward(batch)
                 forward_duration = time() - t
 
                 if trainer.model.module.graph_rewiring:

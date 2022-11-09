@@ -43,7 +43,7 @@ model:
   num_before_skip: 1
   num_after_skip: 2
   num_output_layers: 3
-  regress_forces: True
+  regress_forces_as_grad: True
   use_pbc: True
 
 # *** Important note ***

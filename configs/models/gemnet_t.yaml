@@ -5,7 +5,6 @@ default:
   model:
     name: gemnet_t
     use_pbc: true
-    direct_forces: false
     num_spherical: 7
     num_radial: 64
     num_blocks: 5
@@ -70,8 +69,7 @@ s2ef:
     model:
       cutoff: 6.0
       scale_file: configs/models/scaling_factors/gemnet-dT.json
-      regress_forces: True
-      direct_forces: True
+      regress_forces: "direct"
       otf_graph: False
       max_neighbors: 50
       num_radial: 128

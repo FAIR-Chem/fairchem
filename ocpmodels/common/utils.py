@@ -81,7 +81,10 @@ def pyg2_data_transform(data: Data):
     # if we're on the new pyg (2.0 or later), we need to convert the data to the
     # new format
     if torch_geometric.__version__ >= "2.0":
-        return Data(**{k: v for k, v in data.__dict__.items() if v is not None})
+        source = data.__dict__
+        if "_store" in source:
+            source = source["_store"]
+        return Data(**{k: v for k, v in source.items() if v is not None})
 
     return data
 
@@ -165,7 +168,7 @@ def conditional_grad(dec):
         @wraps(func)
         def cls_method(self, *args, **kwargs):
             f = func
-            if self.regress_forces and not getattr(self, "direct_forces", 0):
+            if self.regress_forces in {"from_energy", "direct_with_gradient_target"}:
                 f = dec(func)
             return f(self, *args, **kwargs)
 
@@ -435,6 +438,7 @@ def load_config(config_str):
     config, _ = merge_dicts(config, model_conf[task][split])
     config, _ = merge_dicts(config, task_conf["default"])
     config, _ = merge_dicts(config, task_conf[split])
+    config["task_name"] = task
 
     return config
 
@@ -457,6 +461,28 @@ def build_config(args, args_override):
     config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
+
+    if "regress_forces" in config["model"]:
+        if not isinstance(config["model"]["regress_forces"], str):
+            if config["model"]["regress_forces"] is False:
+                config["model"]["regress_forces"] = ""
+            else:
+                raise ValueError(
+                    "regress_forces must be False or a string: "
+                    + "'from_energy' or 'direct' or 'direct_with_gradient_target'"
+                    + f". Received: `{str(config['model']['regress_forces'])}`"
+                )
+        elif config["model"]["regress_forces"] not in {
+            "from_energy",
+            "direct",
+            "direct_with_gradient_target",
+        }:
+            raise ValueError(
+                "regress_forces must be False or a string: "
+                + "'from_energy' or 'direct' or 'direct_with_gradient_target'"
+                + f". Received: `{str(config['model']['regress_forces'])}`"
+            )
+
     if config["cpus_to_workers"]:
         cpus = count_cpus()
         gpus = count_gpus()

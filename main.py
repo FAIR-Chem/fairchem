@@ -115,9 +115,11 @@ def should_continue(config):
 def print_warnings():
     warnings = [
         "`max_num_neighbors` is set to 40. This should be tuned per model.",
+        "`tag_specific_weights` is not handled for "
+        + "`regress_forces: direct_with_gradient_target` in compute_loss()",
     ]
     print("\n" + "-" * 80)
-    print("🛑  OCP-DR-Lab Warnings:")
+    print("🛑  OCP-DR-Lab Warnings (nota benes):")
     for warning in warnings:
         print(f"  • {warning}")
     print("Remove warnings when they are fixed in the code/configs.")

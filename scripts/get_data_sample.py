@@ -29,7 +29,7 @@ from ocpmodels.preprocessing import (
     one_supernode_per_atom_type_dist,
     one_supernode_per_graph,
 )
-from ocpmodels.preprocessing.data_augmentation import (
+from ocpmodels.preprocessing.frame_averaging import (
     frame_averaging_2D,
     frame_averaging_3D,
 )

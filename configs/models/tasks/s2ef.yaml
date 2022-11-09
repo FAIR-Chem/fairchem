@@ -1,5 +1,5 @@
 default:
-  trainer: forces
+  trainer: single
   logger: wandb
   task:
     dataset: trajectory_lmdb
@@ -13,6 +13,9 @@ default:
     eval_on_free_atoms: True
   normalizer: null
   mode: train
+  model:
+    otf_graph: False
+    max_num_neighbors: 40
   dataset:
     - src: /network/projects/_groups/ocp/oc20/s2ef/200k/train
       normalize_labels: True
@@ -25,15 +28,19 @@ default:
 200k:
   dataset:
     - src: /network/projects/_groups/ocp/oc20/s2ef/200k/train
+    - {}
 
 2M:
   dataset:
     - src: /network/projects/_groups/ocp/oc20/s2ef/2M/train/
+    - {}
 
 20M:
   dataset:
     - src: /network/projects/_groups/ocp/oc20/s2ef/20M/train/
+    - {}
 
 all:
   dataset:
     - src: /network/projects/_groups/ocp/oc20/s2ef/all/train/
+    - {}
