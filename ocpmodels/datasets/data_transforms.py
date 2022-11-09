@@ -1,6 +1,6 @@
 import torch
 
-from ocpmodels.preprocessing.data_augmentation import (
+from ocpmodels.preprocessing.frame_averaging import (
     data_augmentation,
     frame_averaging_2D,
     frame_averaging_3D,
