@@ -92,8 +92,6 @@ commands:
               conda-merge env.common.yml env.cpu.yml | out-file env.yml -Encoding utf8
               conda env create -f env.yml
               conda activate ocp-models
-              pip install pytest-cov==3.0.0
-              pip install syrupy
             }
       - save_cache:
           paths:
@@ -157,6 +155,8 @@ jobs:
           command: |
             C:\tools\miniconda3\Scripts\conda.exe init powershell
             conda activate ocp-models
+            pip install pytest-cov==3.0.0
+            pip install syrupy
             pip install -e .
             pre-commit install
             pytest tests
