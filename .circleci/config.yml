@@ -155,7 +155,7 @@ jobs:
       - run:
           name: install ocp and run tests
           command: |
-            C:\tools\miniconda3\Scripts\conda.exe activate
+            C:\tools\miniconda3\Scripts\conda.exe init powershell
             conda activate ocp-models
             pip install -e .
             pre-commit install
