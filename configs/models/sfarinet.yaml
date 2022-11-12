@@ -15,10 +15,12 @@ default:
     phys_embeds: False # True
     phys_hidden_channels: 0
     energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds, pooling, graclus, random}
-    force_decoder_type: "simple" # can be {"" or "simple"} | only used if regress_forces is True
+    force_decoder_type: "mlp" # can be {"" or "simple"} | only used if regress_forces is True
     force_decoder_model_config:
       simple:
         hidden_channels: 128
+      mlp:
+        hidden_channels: 256
   optim:
     warmup_factor: 0.2
     batch_size: 64
