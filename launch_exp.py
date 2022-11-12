@@ -1,7 +1,7 @@
 from minydra import resolved_args
 from pathlib import Path
 from yaml import safe_load
-import subprocess
+import os
 from sbatch import now
 
 
@@ -75,12 +75,13 @@ if __name__ == "__main__":
 
     if "y" in confirm:
         outputs = [
-            subprocess.check_output(command.split(" ")).decode("utf-8").strip()
-            for command in commands
+            print(f"Launching job {c:3}", end="\r") or os.popen(command).read().strip()
+            for c, command in enumerate(commands)
         ]
         outdir = Path(__file__).parent / "data" / "exp_outputs"
         outdir.mkdir(exist_ok=True, parents=True)
         outfile = outdir / f"{exp_name}_{now()}.txt"
         outfile.write_text(f"\n\n{'#' * 80}\n{'#' * 80}\n\n".join(outputs))
+        print(f"Output written to {str(outfile)}")
     else:
         print("Aborting")
