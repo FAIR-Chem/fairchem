@@ -16,6 +16,7 @@ default:
   model:
     otf_graph: False
     max_num_neighbors: 40
+    regress_forces: from_energy # can be in{ "from_energy", "direct", "direct_with_gradient_target" }
   dataset:
     - src: /network/projects/_groups/ocp/oc20/s2ef/200k/train
       normalize_labels: True
