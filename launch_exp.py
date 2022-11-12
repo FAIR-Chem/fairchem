@@ -81,7 +81,7 @@ if __name__ == "__main__":
         outdir = Path(__file__).parent / "data" / "exp_outputs"
         outdir.mkdir(exist_ok=True, parents=True)
         outfile = outdir / f"{exp_name}_{now()}.txt"
-        exp_separator = "\n" * 4 + "{'#' * 80}\n" * 4 + "\n" * 4
+        exp_separator = "\n" * 4 + f"{'#' * 80}\n" * 4 + "\n" * 4
         outfile.write_text(exp_separator.join(outputs))
         print(f"Output written to {str(outfile)}")
     else:
