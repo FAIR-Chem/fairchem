@@ -86,9 +86,9 @@ if __name__ == "__main__":
             print(f"Launching job {c:3}", end="\r") or os.popen(command).read().strip()
             for c, command in enumerate(commands)
         ]
-        outdir = Path(__file__).parent / "data" / "exp_outputs"
-        outdir.mkdir(exist_ok=True, parents=True)
+        outdir = Path(__file__).resolve().parent / "data" / "exp_outputs"
         outfile = outdir / f"{exp_name}_{now()}.txt"
+        outfile.parent.mkdir(exist_ok=True, parents=True)
         exp_separator = "\n" * 4 + f"{'#' * 80}\n" * 4 + "\n" * 4
         with outfile.open("w") as f:
             f.write(exp_separator.join(outputs))
