@@ -15,7 +15,7 @@ runs:
     time: 24:00:00
   config: forcenet-is2re-all
   mode: train
-  graph_rewiring: ""
+  graph_rewiring: "''"
   optim:
     max_epochs: 15
   wandb_project: 'ocp-2'
@@ -26,7 +26,7 @@ runs:
     time: 24:00:00
   config: forcenet-is2re-all
   mode: train
-  graph_rewiring: ""
+  graph_rewiring: "''"
   optim:
     max_epochs: 15
   wandb_project: 'ocp-2'
@@ -37,7 +37,7 @@ runs:
     time: 24:00:00
   config: forcenet-is2re-all
   mode: train
-  graph_rewiring: ""
+  graph_rewiring: "''"
   optim:
     max_epochs: 15
   wandb_project: 'ocp-2'
@@ -51,7 +51,7 @@ runs:
     time: 15:00:00
   config: dpp-is2re-all
   mode: train
-  graph_rewiring: ''
+  graph_rewiring: "''"
   optim:
     max_epochs: 12
   wandb_project: 'ocp-2'
@@ -62,7 +62,7 @@ runs:
     time: 15:00:00
   config: dpp-is2re-all
   mode: train
-  graph_rewiring: ''
+  graph_rewiring: "''"
   optim:
     max_epochs: 12
   wandb_project: 'ocp-2'
@@ -73,7 +73,7 @@ runs:
     time: 15:00:00
   config: dpp-is2re-all
   mode: train
-  graph_rewiring: ''
+  graph_rewiring: "''"
   optim:
     max_epochs: 12
   wandb_project: 'ocp-2'
@@ -87,7 +87,7 @@ runs:
     time: 12:00:00
   config: schnet-is2re-all
   mode: train
-  graph_rewiring: ''
+  graph_rewiring: "''"
   optim:
     max_epochs: 25
   wandb_project: 'ocp-2'
@@ -98,7 +98,7 @@ runs:
     time: 12:00:00
   config: schnet-is2re-all
   mode: train
-  graph_rewiring: ''
+  graph_rewiring: "''"
   optim:
     max_epochs: 25
   wandb_project: 'ocp-2'
@@ -109,7 +109,7 @@ runs:
     time: 12:00:00
   config: schnet-is2re-all
   mode: train
-  graph_rewiring: ''
+  graph_rewiring: "''"
   optim:
     max_epochs: 25
   wandb_project: 'ocp-2'
