@@ -1,0 +1,118 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:4
+  partition: long
+  code_loc: '~/ocp-project/run-repos/ocp-1'
+  git_checkout:
+
+default: {}
+runs:
+# ----------------------
+# -----  Forcenet  -----
+# ----------------------
+- job:
+    time: 24:00:00
+  config: forcenet-is2re-all
+  mode: train
+  graph_rewiring: ""
+  optim:
+    max_epochs: 15
+  wandb_project: 'ocp-2'
+  wandb_tags: '3-seeds-w4'
+  note: 'Baseline Forcenet: 3 seeds reproduction of Table 1 (s0)'
+  seed: 0
+- job:
+    time: 24:00:00
+  config: forcenet-is2re-all
+  mode: train
+  graph_rewiring: ""
+  optim:
+    max_epochs: 15
+  wandb_project: 'ocp-2'
+  wandb_tags: '3-seeds-w4'
+  note: 'Baseline Forcenet: 3 seeds reproduction of Table 1 (s1)'
+  seed: 1
+- job:
+    time: 24:00:00
+  config: forcenet-is2re-all
+  mode: train
+  graph_rewiring: ""
+  optim:
+    max_epochs: 15
+  wandb_project: 'ocp-2'
+  wandb_tags: '3-seeds-w4'
+  note: 'Baseline Forcenet: 3 seeds reproduction of Table 1 (s2)'
+  seed: 2
+# -----------------
+# -----  D++  -----
+# -----------------
+- job:
+    time: 15:00:00
+  config: dpp-is2re-all
+  mode: train
+  graph_rewiring: ''
+  optim:
+    max_epochs: 12
+  wandb_project: 'ocp-2'
+  wandb_tags: '3-seeds-w4'
+  note: 'Baseline D++: 3 seeds reproduction of Table 1 (s0)'
+  seed: 0
+- job:
+    time: 15:00:00
+  config: dpp-is2re-all
+  mode: train
+  graph_rewiring: ''
+  optim:
+    max_epochs: 12
+  wandb_project: 'ocp-2'
+  wandb_tags: '3-seeds-w4'
+  note: 'Baseline D++: 3 seeds reproduction of Table 1 (s1)'
+  seed: 1
+- job:
+    time: 15:00:00
+  config: dpp-is2re-all
+  mode: train
+  graph_rewiring: ''
+  optim:
+    max_epochs: 12
+  wandb_project: 'ocp-2'
+  wandb_tags: '3-seeds-w4'
+  note: 'Baseline D++: 3 seeds reproduction of Table 1 (s2)'
+  seed: 2
+# --------------------
+# -----  SchNet  -----
+# --------------------
+- job:
+    time: 12:00:00
+  config: schnet-is2re-all
+  mode: train
+  graph_rewiring: ''
+  optim:
+    max_epochs: 25
+  wandb_project: 'ocp-2'
+  wandb_tags: '3-seeds-w4'
+  note: 'Baseline SchNet: 3 seeds reproduction of Table 1 (s0)'
+  seed: 0
+- job:
+    time: 12:00:00
+  config: schnet-is2re-all
+  mode: train
+  graph_rewiring: ''
+  optim:
+    max_epochs: 25
+  wandb_project: 'ocp-2'
+  wandb_tags: '3-seeds-w4'
+  note: 'Baseline SchNet: 3 seeds reproduction of Table 1 (s1)'
+  seed: 1
+- job:
+    time: 12:00:00
+  config: schnet-is2re-all
+  mode: train
+  graph_rewiring: ''
+  optim:
+    max_epochs: 25
+  wandb_project: 'ocp-2'
+  wandb_tags: '3-seeds-w4'
+  note: 'Baseline SchNet: 3 seeds reproduction of Table 1 (s2)'
+  seed: 2

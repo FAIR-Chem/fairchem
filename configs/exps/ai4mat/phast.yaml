@@ -1,0 +1,160 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:4
+  partition: long
+  code_loc: '~/ocp-project/run-repos/ocp-1'
+  git_checkout:
+
+default: {}
+runs:
+# ----------------------
+# -----  Forcenet  -----
+# ----------------------
+- job:
+    time: 5:00:00
+  config: forcenet-is2re-all
+  mode: train
+  optim:
+    max_epochs: 15
+  model:
+    tag_hidden_channels: 64
+    pg_hidden_channels: 32
+    hidden_channels: 300
+    decoder_hidden_channels: 300
+    graph_rewiring: 'remove-tag-0'
+    phys_embeds: True
+  wandb_tags: '3-seeds-w4'
+  note: 'PhAST ForceNET: 3 seeds reproduction of Table 1 (s0)'
+  seed: 0
+- job:
+    time: 5:00:00
+  config: forcenet-is2re-all
+  mode: train
+  optim:
+    max_epochs: 15
+  model:
+    tag_hidden_channels: 64
+    pg_hidden_channels: 32
+    hidden_channels: 300
+    decoder_hidden_channels: 300
+    graph_rewiring: 'remove-tag-0'
+    phys_embeds: True
+  wandb_tags: '3-seeds-w4'
+  note: 'PhAST ForceNET: 3 seeds reproduction of Table 1 (s1)'
+  seed: 1
+- job:
+    time: 5:00:00
+  config: forcenet-is2re-all
+  mode: train
+  optim:
+    max_epochs: 15
+  model:
+    tag_hidden_channels: 64
+    pg_hidden_channels: 32
+    hidden_channels: 300
+    decoder_hidden_channels: 300
+    graph_rewiring: 'remove-tag-0'
+    phys_embeds: True
+  wandb_tags: '3-seeds-w4'
+  note: 'PhAST ForceNET: 3 seeds reproduction of Table 1 (s2)'
+  seed: 2
+# -----------------
+# -----  D++  -----
+# -----------------
+- job:
+    time: 8:00:00
+    config: dpp-is2re-all
+    mode: train
+    optim:
+      max_epochs: 12
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 64
+      hidden_channels: 272
+      graph_rewiring: 'remove-tag-0'
+      energy_head: 'weighted-av-final-embeds'
+    wandb_tags: '3-seeds-w4'
+    note: 'PhAST D++: 3 seeds reproduction of Table 1 (s0)'
+    seed: 0
+- job:
+    time: 8:00:00
+    config: dpp-is2re-all
+    mode: train
+    optim:
+      max_epochs: 12
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 64
+      hidden_channels: 272
+      graph_rewiring: 'remove-tag-0'
+      energy_head: 'weighted-av-final-embeds'
+    wandb_tags: '3-seeds-w4'
+    note: 'PhAST D++: 3 seeds reproduction of Table 1 (s1)'
+    seed: 1
+- job:
+    time: 8:00:00
+    config: dpp-is2re-all
+    mode: train
+    optim:
+      max_epochs: 12
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 64
+      hidden_channels: 272
+      graph_rewiring: 'remove-tag-0'
+      energy_head: 'weighted-av-final-embeds'
+    wandb_tags: '3-seeds-w4'
+    note: 'PhAST D++: 3 seeds reproduction of Table 1 (s2)'
+    seed: 2
+# --------------------
+# -----  SchNet  -----
+# --------------------
+-job:
+  time: 4:00:00
+  config: schnet-is2re-all
+  mode: train
+  optim:
+    lr_initial: 0.0007
+    max_epochs: 25
+  model:
+    phys_embeds: True
+    tag_hidden_channels: 128
+    hidden_channels: 416
+    graph_rewiring: 'remove-tag-0'
+    energy_head: 'weighted-av-initial-embeds'
+  wandb_tags: '3-seeds-w4'
+  note: 'PhAST SchNet: 3 seeds reproduction of Table 1 (s0)'
+  seed: 0
+-job:
+  time: 4:00:00
+  config: schnet-is2re-all
+  mode: train
+  optim:
+    lr_initial: 0.0007
+    max_epochs: 25
+  model:
+    phys_embeds: True
+    tag_hidden_channels: 128
+    hidden_channels: 416
+    graph_rewiring: 'remove-tag-0'
+    energy_head: 'weighted-av-initial-embeds'
+  wandb_tags: '3-seeds-w4'
+  note: 'PhAST SchNet: 3 seeds reproduction of Table 1 (s1)'
+  seed: 1
+-job:
+  time: 4:00:00
+  config: schnet-is2re-all
+  mode: train
+  optim:
+    lr_initial: 0.0007
+    max_epochs: 25
+  model:
+    phys_embeds: True
+    tag_hidden_channels: 128
+    hidden_channels: 416
+    graph_rewiring: 'remove-tag-0'
+    energy_head: 'weighted-av-initial-embeds'
+  wandb_tags: '3-seeds-w4'
+  note: 'PhAST SchNet: 3 seeds reproduction of Table 1 (s2)'
+  seed: 2
