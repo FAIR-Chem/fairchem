@@ -6,6 +6,7 @@ job:
   partition: long
 
 default:
+  mode: train
   model:
     force_decoder_type: mlp
     force_decoder_model_config:
