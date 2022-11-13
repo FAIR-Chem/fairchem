@@ -50,8 +50,6 @@ if __name__ == "__main__":
     exp_file = find_exp(exp_name)
 
     exp = safe_load(exp_file.open("r"))
-    if "time" in exp["job"]:
-        exp["job"]["time"] = seconds_to_time_str(exp["job"]["time"])
 
     runs = exp["runs"]
 
@@ -63,6 +61,8 @@ if __name__ == "__main__":
 
         job.update(run.pop("job", {}))
         params.update(run)
+        if "time" in job:
+            job["time"] = seconds_to_time_str(job["time"])
 
         if "wandb_tags" in params:
             params["wandb_tags"] += "," + exp_name
