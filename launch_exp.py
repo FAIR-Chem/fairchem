@@ -32,7 +32,7 @@ def cli_arg(args, key=""):
         if isinstance(v, dict):
             s += cli_arg(v, key=f"{parent}{k}")
         else:
-            if " " in str(v):
+            if " " in str(v) or "," in str(v):
                 v = f"'{v}'"
             s += f" --{parent}{k}={v}"
     return s
@@ -71,11 +71,11 @@ if __name__ == "__main__":
         command = f"python sbatch.py {sbatch_args} {py_args}"
         commands.append(command)
 
-    print(f"About to run {len(commands)} jobs:\n • " + "\n\n  • ".join(commands))
+    print(f"🔥 About to run {len(commands)} jobs:\n\n • " + "\n\n  • ".join(commands))
 
-    confirm = input("Confirm? [y/n]")
+    confirm = input("\n🚦 Confirm? [y/n]")
 
-    if "y" in confirm:
+    if confirm == "y":
         outputs = [
             print(f"Launching job {c:3}", end="\r") or os.popen(command).read().strip()
             for c, command in enumerate(commands)
