@@ -55,6 +55,9 @@ if __name__ == "__main__":
 
     for run in runs:
         params = exp["default"].copy()
+        job = exp["job"].copy()
+
+        job.update(run.pop("job", {}))
         params.update(run)
 
         if "wandb_tags" in params:
@@ -64,8 +67,7 @@ if __name__ == "__main__":
 
         py_args = f'py_args="{cli_arg(params).strip()}"'
 
-        sbatch_args = " ".join([f"{k}={v}" for k, v in exp["job"].items()])
-
+        sbatch_args = " ".join([f"{k}={v}" for k, v in job.items()])
         command = f"python sbatch.py {sbatch_args} {py_args}"
         commands.append(command)
 
