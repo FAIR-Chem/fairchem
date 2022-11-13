@@ -90,7 +90,8 @@ if __name__ == "__main__":
         outdir.mkdir(exist_ok=True, parents=True)
         outfile = outdir / f"{exp_name}_{now()}.txt"
         exp_separator = "\n" * 4 + f"{'#' * 80}\n" * 4 + "\n" * 4
-        outfile.write_text(exp_separator.join(outputs))
+        with outfile.open("w") as f:
+            f.write(exp_separator.join(outputs))
         print(f"Output written to {str(outfile)}")
     else:
         print("Aborting")
