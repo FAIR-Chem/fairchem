@@ -1,10 +1,12 @@
+# $ git checkout fbfc90457230488d545eadb54b8e9d745c6ca447
+# $ python launch_exp.py exp=ai4mat/baselines
 job:
   mem: 32GB
   cpus: 4
   gres: gpu:4
   partition: long
   code_loc: '~/ocp-project/run-repos/ocp-1'
-  git_checkout: 714dcb201a7e30816d5ef18298868044317ddd64
+  git_checkout: fbfc90457230488d545eadb54b8e9d745c6ca447
 
 default: {}
 runs:
