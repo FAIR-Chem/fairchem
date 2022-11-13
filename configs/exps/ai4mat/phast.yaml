@@ -4,7 +4,7 @@ job:
   gres: gpu:4
   partition: long
   code_loc: '~/ocp-project/run-repos/ocp-1'
-  git_checkout:
+  git_checkout: 99bae363303f4e83c28fc4ade3177b1d8b48161b
 
 default: {}
 runs:
