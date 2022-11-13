@@ -1,7 +1,10 @@
-from minydra import resolved_args
-from pathlib import Path
-from yaml import safe_load
 import os
+import re
+from pathlib import Path
+
+from minydra import resolved_args
+from yaml import safe_load
+
 from sbatch import now
 
 
@@ -41,6 +44,7 @@ def cli_arg(args, key=""):
 if __name__ == "__main__":
     args = resolved_args()
     assert "exp" in args
+    regex = args.get("match", ".*")
 
     exp_name = args.exp.replace(".yml", "").replace(".yaml", "")
     exp_file = find_exp(exp_name)
@@ -70,6 +74,8 @@ if __name__ == "__main__":
         sbatch_args = " ".join([f"{k}={v}" for k, v in job.items()])
         command = f"python sbatch.py {sbatch_args} {py_args}"
         commands.append(command)
+
+    commands = [c for c in commands if re.findall(regex, c)]
 
     print(f"🔥 About to run {len(commands)} jobs:\n\n • " + "\n\n  • ".join(commands))
 
