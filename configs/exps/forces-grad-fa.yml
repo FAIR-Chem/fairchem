@@ -8,6 +8,7 @@ job:
 
 default:
   mode: train
+  test_ri: true
   model:
     force_decoder_type: mlp
     force_decoder_model_config:
