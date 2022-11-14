@@ -718,7 +718,9 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(self, final=True, disable_tqdm=True, debug_batches=-1):
+    def eval_all_val_splits(
+        self, final=True, disable_tqdm=True, debug_batches=-1, epoch=-1
+    ):
         """Evaluate model on all four validation splits"""
 
         if final:
@@ -780,13 +782,22 @@ class BaseTrainer(ABC):
             cumulated_time += time.time() - start_time
 
         # Log time
-        if self.config["logger"] == "wandb" and distutils.is_master():
-            self.logger.log({"Val. time": cumulated_time})
-            self.logger.log({"Overall MAE": cumulated_mae / 4})
+        if final and self.config["logger"] == "wandb" and distutils.is_master():
+            overall_mae = cumulated_mae / 4
+            sid = os.getenv("SLURM_JOB_ID")
+            self.logger.log({"Eval time": cumulated_time})
+            self.logger.log({"Overall MAE": overall_mae})
+            if self.logger.ntfy:
+                self.logger.ntfy.notify(message=f"{sid} - Overall MAE: {overall_mae}")
 
         # Print results
         if not self.silent:
-            print("----- FINAL RESULTS -----")
+            if final:
+                print("----- FINAL RESULTS -----")
+            elif epoch >= 0:
+                print(f"----- RESULTS AT EPOCH {epoch} -----")
+            else:
+                print("----- RESULTS -----")
             print("Total time taken: ", time.time() - start_time)
             print(self.metrics.keys())
         for k, v in metrics_dict.items():

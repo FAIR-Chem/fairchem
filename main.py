@@ -14,6 +14,8 @@ import time
 import warnings
 from pathlib import Path
 
+from ntfy_wrapper import Notifier
+
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
@@ -127,6 +129,8 @@ def print_warnings():
 
 
 if __name__ == "__main__":
+    ntfy = None
+
     setup_logging()
 
     parser = flags.get_parser()
@@ -154,6 +158,13 @@ if __name__ == "__main__":
         setup_imports()
         trainer_config = should_continue(trainer_config)
         trainer_config = read_slurm_env(trainer_config)
+        if trainer_config.get("logger") == "wandb" and distutils.is_master():
+            ntfy = Notifier(
+                defaults={"title": trainer_config.get("wandb_project", "OCP")},
+                warnings=False,
+                verbose=False,
+            )
+            ntfy(f"{os.getenv('SLURM_JOB_ID')} - Training started 🚀")
         trainer: BaseTrainer = registry.get_trainer_class(trainer_config["trainer"])(
             **trainer_config
         )
@@ -161,11 +172,22 @@ if __name__ == "__main__":
         task.setup(trainer)
         start_time = time.time()
         print_warnings()
+        trainer.logger.ntfy = ntfy
         task.run()
         distutils.synchronize()
         logging.info(f"Total time taken: {time.time() - start_time}")
         if trainer.logger is not None:
             trainer.logger.log({"Total time": time.time() - start_time})
+    except Exception as e:
+        if ntfy is not None:
+            ntfy(
+                f"{os.getenv('SLURM_JOB_ID')} - Training failed 😭 - {e}",
+                click=trainer.logger.run.get_url(),
+            )
+        if args.debug:
+            ipdb.post_mortem()
+        else:
+            raise e
     finally:
         if args.distributed:
             distutils.cleanup()

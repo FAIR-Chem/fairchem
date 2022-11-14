@@ -279,7 +279,7 @@ class SingleTrainer(BaseTrainer):
                             epoch_int == self.config["optim"]["max_epochs"] - 1
                         )
                         if (epoch_int % 100 == 0 and epoch_int != 0) or is_final_epoch:
-                            self.eval_all_val_splits(is_final_epoch)
+                            self.eval_all_val_splits(is_final_epoch, epoch=epoch_int)
 
                         if self.is_hpo:
                             self.hpo_update(
