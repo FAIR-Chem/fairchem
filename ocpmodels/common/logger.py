@@ -24,6 +24,7 @@ class Logger(ABC):
     def __init__(self, trainer_config):
         self.trainer_config = trainer_config
         self.ntfy = None
+        self.url = None
 
     @abstractmethod
     def watch(self, model):
@@ -87,8 +88,9 @@ class WandBLogger(Logger):
         if len(sbatch_files) == 1:
             wandb.save(str(sbatch_files[0]))
 
+        self.url = wandb.run.get_url()
         with open(Path(self.trainer_config["run_dir"] / "wandb_url.txt"), "w") as f:
-            f.write(wandb.run.get_url())
+            f.write(self.url)
 
     def watch(self, model):
         wandb.watch(model)

@@ -160,7 +160,7 @@ if __name__ == "__main__":
         trainer_config = read_slurm_env(trainer_config)
         if trainer_config.get("logger") == "wandb" and distutils.is_master():
             ntfy = Notifier(
-                defaults={"title": trainer_config.get("wandb_project", "OCP")},
+                notify_defaults={"title": trainer_config.get("wandb_project", "OCP")},
                 warnings=False,
                 verbose=False,
             )
@@ -180,14 +180,13 @@ if __name__ == "__main__":
             trainer.logger.log({"Total time": time.time() - start_time})
     except Exception as e:
         if ntfy is not None:
+            e_name = e.__class__.__name__
             ntfy(
-                f"{os.getenv('SLURM_JOB_ID')} - Training failed 😭 - {e}",
-                click=trainer.logger.run.get_url(),
+                f"{os.getenv('SLURM_JOB_ID')} - Training failed 😭"
+                + f"{e_name} - {str(e)}",
+                click=trainer.logger.url or "https://ntfy.sh/app",
             )
-        if args.debug:
-            ipdb.post_mortem()
-        else:
-            raise e
+        raise e
     finally:
         if args.distributed:
             distutils.cleanup()
