@@ -4,6 +4,7 @@ job:
   gres: gpu:4
   time: 12:00:00
   partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
 
 default:
   mode: train

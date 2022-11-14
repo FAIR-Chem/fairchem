@@ -33,6 +33,7 @@ default:
     lr_gamma: 0.1
     lr_initial: 0.001
     warmup_factor: 0.2
+    max_epochs: 20
 
   frame_averaging: False # 2D, 3D, da, False
   fa_frames: False # can be {None, full, random, det, e3, e3-random, e3-det}

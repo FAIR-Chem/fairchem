@@ -493,7 +493,7 @@ class ForceNet(BaseModel):
         # Projection layer for energy prediction
         self.energy_mlp = nn.Linear(kwargs["decoder_hidden_channels"], 1)
 
-    @conditional_grad(torch.no_grad())
+    @conditional_grad(torch.enable_grad())
     def energy_forward(self, data):
 
         # Rewire the graph

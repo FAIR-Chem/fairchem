@@ -338,6 +338,7 @@ class SfariNet(BaseModel):
     def forces_forward(self, preds):
         return self.decoder(preds["hidden_state"])
 
+    @conditional_grad(torch.enable_grad())
     def energy_forward(self, data):
         # Rewire the graph
         z = data.atomic_numbers.long()
