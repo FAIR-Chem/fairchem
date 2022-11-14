@@ -23,6 +23,7 @@ class Logger(ABC):
 
     def __init__(self, trainer_config):
         self.trainer_config = trainer_config
+        self.ntfy = None
 
     @abstractmethod
     def watch(self, model):
