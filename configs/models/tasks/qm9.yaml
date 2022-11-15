@@ -1,0 +1,18 @@
+default:
+  src: /network/projects/ocp/qm9
+  seed: 123
+  target: 7 # can be int or list of ints to select the targets to predict
+            # as per https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html?highlight=qm9#torch_geometric.datasets.QM9
+            # SchNet predicts U0 (https://github.com/atomistic-machine-learning/SchNet#qm9)
+
+all:
+  dataset:
+    - ratio:
+        start: 0.0
+        end: 0.75
+    - ratio:
+        start: 0.75
+        end: 0.85
+    - ratio:
+        start: 0.85
+        end: 1.0
