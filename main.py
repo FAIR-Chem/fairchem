@@ -14,7 +14,6 @@ import time
 import warnings
 from pathlib import Path
 
-from ntfy_wrapper import Notifier
 
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
@@ -129,7 +128,7 @@ def print_warnings():
 
 
 if __name__ == "__main__":
-    ntfy = None
+    ntfy = trainer = None
 
     setup_logging()
 
@@ -155,33 +154,42 @@ if __name__ == "__main__":
         distutils.setup(trainer_config)
 
     try:
+        # -------------------
+        # -----  Setup  -----
+        # -------------------
         setup_imports()
         trainer_config = should_continue(trainer_config)
         trainer_config = read_slurm_env(trainer_config)
-        if trainer_config.get("logger") == "wandb" and distutils.is_master():
-            ntfy = Notifier(
-                notify_defaults={"title": trainer_config.get("wandb_project", "OCP")},
-                warnings=False,
-                verbose=False,
-            )
-            ntfy(f"{os.getenv('SLURM_JOB_ID')} - Training started 🚀")
-        trainer: BaseTrainer = registry.get_trainer_class(trainer_config["trainer"])(
+        # -------------------
+        # -----  Train  -----
+        # -------------------
+        trainer: BaseTrainer = registry.get_trainer_class(trainer_config["qtrainer"])(
             **trainer_config
         )
         task = registry.get_task_class(trainer_config["mode"])(trainer_config)
         task.setup(trainer)
         start_time = time.time()
+        if trainer.logger is not None:
+            message = f"{os.getenv('SLURM_JOB_ID')} - Training started 🚀"
+            if trainer_config.get("note"):
+                message += f" - {trainer_config.get('note')}"
+            if trainer_config.get("wandb_tags"):
+                message += f" - {trainer_config.get('wandb_tags')}"
+            trainer.logger.ntfy(message)
         print_warnings()
-        trainer.logger.ntfy = ntfy
         task.run()
+        # -----------------
+        # -----  End  -----
+        # -----------------
         distutils.synchronize()
         logging.info(f"Total time taken: {time.time() - start_time}")
         if trainer.logger is not None:
             trainer.logger.log({"Total time": time.time() - start_time})
+
     except Exception as e:
-        if ntfy is not None:
+        if trainer and trainer.logger:
             e_name = e.__class__.__name__
-            ntfy(
+            trainer.logger.ntfy(
                 f"{os.getenv('SLURM_JOB_ID')} - Training failed 😭"
                 + f"{e_name} - {str(e)}",
                 click=trainer.logger.url or "https://ntfy.sh/app",
