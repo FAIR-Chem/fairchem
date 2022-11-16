@@ -67,8 +67,13 @@ class Evaluator:
     }
 
     def __init__(self, task=None, model_regresses_forces=""):
-        assert task in ["s2ef", "is2rs", "is2re"]
+        assert task in ["s2ef", "is2rs", "is2re", "qm9"]
         self.task = task
+
+        self.task_metrics["qm9"] = self.task_metrics["is2re"].copy()
+        self.task_attributes["qm9"] = self.task_attributes["is2re"].copy()
+        self.task_primary_metric["qm9"] = self.task_primary_metric["is2re"]
+
         self.metric_fn = self.task_metrics[task]
         self.expect_forces_grad_target = (
             model_regresses_forces == "direct_with_gradient_target"
