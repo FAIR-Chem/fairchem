@@ -330,6 +330,7 @@ class FANet(BaseModel):
         self.energy_head = kwargs["energy_head"]
         self.graph_rewiring = kwargs["graph_rewiring"]
         self.hidden_channels = kwargs["hidden_channels"]
+        self.max_num_neighbors = kwargs["max_num_neighbors"]
         self.mlp_rij = kwargs["mlp_rij"]
         self.normalized_rel_pos = kwargs["normalized_rel_pos"]
         self.num_filters = kwargs["num_filters"]
