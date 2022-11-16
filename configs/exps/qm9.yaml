@@ -14,7 +14,7 @@ default:
   wandb_tags: qm9-test
   model:
     phys_embeds: True
-    tag_hidden_channels: 64
+    tag_hidden_channels: 0
     energy_head: weighted-av-final-embeds
     pg_hidden_channels: 32
 

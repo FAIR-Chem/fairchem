@@ -14,6 +14,8 @@ import time
 import warnings
 from pathlib import Path
 
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
 
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
