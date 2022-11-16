@@ -483,7 +483,7 @@ def build_config(args, args_override):
                 + f". Received: `{str(config['model']['regress_forces'])}`"
             )
 
-    if config["cpus_to_workers"]:
+    if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
         gpus = count_gpus()
         if cpus is not None:
