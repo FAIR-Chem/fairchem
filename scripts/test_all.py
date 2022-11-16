@@ -111,14 +111,17 @@ if __name__ == "__main__":
         },
     }
     models = [
-        ["--config=schnet-is2re-10k"],
         ["--config=dpp-is2re-10k"],
-        ["--config=forcenet-is2re-10k"],
         ["--config=fanet-is2re-10k"],
-        ["--config=sfarinet-is2re-10k"],
-        ["--config=sfarinet-s2ef-200k"],
+        ["--config=fanet-qm9-10k"],
         ["--config=fanet-s2ef-200k"],
+        ["--config=forcenet-is2re-10k"],
         ["--config=forcenet-s2ef-200k"],
+        ["--config=schnet-is2re-10k"],
+        ["--config=schnet-qm9-10k"],
+        ["--config=sfarinet-is2re-10k"],
+        ["--config=sfarinet-qm9-10k"],
+        ["--config=sfarinet-s2ef-200k"],
     ]
 
     features = [
