@@ -94,7 +94,11 @@ class QM9Dataset(QM9):
         t0 = time.time_ns()
         data = super().__getitem__(self.samples[idx])
         data.y = data.y[0, self.target]
-        data.y = (data.y - self.target_means) / self.target_stds
+        data.natoms = len(data.pos)
+        data.atomic_numbers = data.z
+        data.cell_offsets = torch.zeros((data.edge_index.shape[1], 3))
+        del data.z
+        data.tags = torch.full((data.natoms,), -1, dtype=torch.long)
         t1 = time.time_ns()
         if self._transform is not None:
             data = self._transform(data)
