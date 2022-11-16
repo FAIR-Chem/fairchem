@@ -1,0 +1,32 @@
+job:
+  mem: 48GB
+  cpus: 6
+  gres: gpu:1
+  time: 12:00:00
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-3
+
+default:
+  mode: train
+  test_ri: true
+  frame_averaging: 3D
+  fa_frames: random
+  wandb_tags: qm9-test
+  model:
+    phys_embeds: True
+    tag_hidden_channels: 64
+    energy_head: weighted-av-final-embeds
+    pg_hidden_channels: 32
+
+runs:
+  - config: sfarinet-qm9-all
+    note: sfarinet qm9 2D FA random
+
+  - config: fanet-qm9-all
+    note: fanet qm9 2D FA random
+
+  - config: forcenet-qm9-all
+    note: forcenet qm9 2D FA random
+
+  - config: schnet-qm9-all
+    note: forcenet qm9 2D FA random
