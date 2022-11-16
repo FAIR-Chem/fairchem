@@ -84,6 +84,9 @@ class QM9Dataset(QM9):
             end = int(config["ratio"]["end"] * self.base_length)
             self.samples = perm[start:end]
 
+    def close_db(self):
+        pass
+
     def __len__(self):
         return len(self.samples)
 
