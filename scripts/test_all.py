@@ -139,7 +139,7 @@ if __name__ == "__main__":
         "--frame_averaging=2D --fa_frames=random --graph_rewiring=remove-tag-0",
     ]
 
-    simples = [
+    singles = [
         "--config=schnet-s2ef-200k --regress_forces=from_energy",
         "--config=dpp-s2ef-200k --regress_forces=from_energy",
         "--config=forcenet-s2ef-200k --regress_forces=from_energy",
@@ -152,14 +152,14 @@ if __name__ == "__main__":
         "--config=sfarinet-s2ef-200k --regress_forces=direct_with_gradient_target",
         "--config=fanet-s2ef-200k --regress_forces=direct_with_gradient_target",
     ]
-    simples = [s.split() for s in simples]
+    singles = [s.split() for s in singles]
 
     if args.skip_models > 0:
         models = models[args.skip_models :]
     if args.skip_features > 0:
         features = features[args.skip_features :]
 
-    configs = [m + f.split() for m in models for f in features] + simples
+    configs = [m + f.split() for m in models for f in features] + singles
 
     if args.ignore_str:
         if isinstance(args.ignore_str, str):
