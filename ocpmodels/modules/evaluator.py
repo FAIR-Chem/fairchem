@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 import numpy as np
 import torch
 
+from ocpmodels.common.utils import Units
 
 """
 An evaluation module for use with the OCP dataset and suite of tasks. It should
@@ -20,7 +21,7 @@ evaluator = Evaluator(task="is2re")
 perf = evaluator.eval(prediction, target)
 ```
 
-task: "s2ef", "is2rs", "is2re".
+task: "s2ef", "is2rs", "is2re", "qm9".
 
 We specify a default set of metrics for each task, but should be easy to extend
 to add more metrics. `evaluator.eval` takes as input two dictionaries, one for
@@ -52,27 +53,31 @@ class Evaluator:
             "energy_mse",
             "energy_within_threshold",
         ],
+        "qm9": [
+            "energy_mae",
+            "energy_mse",
+            "energy_mae_kcalmol",
+            "energy_within_threshold",
+        ],
     }
 
     task_attributes = {
         "s2ef": ["energy", "forces", "natoms"],
         "is2rs": ["positions", "cell", "pbc", "natoms"],
         "is2re": ["energy"],
+        "qm9": ["energy"],
     }
 
     task_primary_metric = {
         "s2ef": "energy_force_within_threshold",
         "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
+        "qm9": "qm9",
     }
 
     def __init__(self, task=None, model_regresses_forces=""):
         assert task in ["s2ef", "is2rs", "is2re", "qm9"]
         self.task = task
-
-        self.task_metrics["qm9"] = self.task_metrics["is2re"].copy()
-        self.task_attributes["qm9"] = self.task_attributes["is2re"].copy()
-        self.task_primary_metric["qm9"] = self.task_primary_metric["is2re"]
 
         self.metric_fn = self.task_metrics[task]
         self.expect_forces_grad_target = (
@@ -125,6 +130,11 @@ class Evaluator:
 
 def energy_mae(prediction, target):
     return absolute_error(prediction["energy"], target["energy"])
+
+
+def energy_mae_kcalmol(prediction, target):
+    """Energy MAE in kcal/mol instead of eV."""
+    return Units.ev_to_kcalmol(absolute_error(prediction["energy"], target["energy"]))
 
 
 def energy_mse(prediction, target):
