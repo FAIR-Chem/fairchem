@@ -798,7 +798,7 @@ class BaseTrainer(ABC):
             self.logger.log({"Eval time": cumulated_time})
             self.logger.log({"Overall MAE": overall_mae})
             if self.logger.ntfy:
-                self.logger.ntfy.notify(
+                self.logger.ntfy(
                     message=f"{sid} - Overall MAE: {overall_mae}", click=self.logger.url
                 )
 
