@@ -163,7 +163,7 @@ if __name__ == "__main__":
         # -------------------
         # -----  Train  -----
         # -------------------
-        trainer: BaseTrainer = registry.get_trainer_class(trainer_config["qtrainer"])(
+        trainer: BaseTrainer = registry.get_trainer_class(trainer_config["trainer"])(
             **trainer_config
         )
         task = registry.get_task_class(trainer_config["mode"])(trainer_config)
