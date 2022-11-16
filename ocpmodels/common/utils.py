@@ -37,6 +37,8 @@ import ocpmodels
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 
+OCP_TASKS = {"s2ef", "is2re", "is2es"}
+
 
 def run_command(command):
     """

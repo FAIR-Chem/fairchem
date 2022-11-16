@@ -738,16 +738,26 @@ class BaseTrainer(ABC):
         cumulated_time = 0
         cumulated_mae = 0
         metrics_dict = {}
+
+        if self.task_name in OCP_TASKS:
+            val_sets = ["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]
+        elif self.task_name == "qm9":
+            val_sets = ["val"]
+        else:
+            raise ValueError(f"Unknown task {self.task_name}")
+
         if not self.silent:
-            logging.info("Evaluating on 4 val splits.")
-        for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
+            logging.info(f"Evaluating on {len(val_sets)} val splits.")
+
+        for i, s in enumerate(val_sets):
 
             # Update the val. dataset we look at
-            base = Path(f"/network/projects/ocp/oc20/{self.task_name}/all/{s}/")
-            src = base / "data.lmdb"
-            if not src.exists():
-                src = base
-            self.config["val_dataset"] = {"src": str(src)}
+            if self.task_name in OCP_TASKS:
+                base = Path(f"/network/projects/ocp/oc20/{self.task_name}/all/{s}/")
+                src = base / "data.lmdb"
+                if not src.exists():
+                    src = base
+                self.config["val_dataset"] = {"src": str(src)}
 
             # Load val dataset
             if self.config.get("val_dataset", None):
