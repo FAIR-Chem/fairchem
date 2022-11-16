@@ -36,12 +36,14 @@ default:
       ratio:
         start: 0.75
         end: 0.85
-    - src: /network/projects/ocp/qm9
-      target: 7 # predict internal energy at 0K at index 7
-      seed: 123
-      ratio:
-        start: 0.85
-        end: 1.0
+
+    # TEST SET DO NOT ENABLE
+    # - src: /network/projects/ocp/qm9
+    #   target: 7 # predict internal energy at 0K at index 7
+    #   seed: 123
+    #   ratio:
+    #     start: 0.85
+    #     end: 1.0
 
 # ^`target` is an int to select the target to predict as per
 # https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html?highlight=qm9#torch_geometric.datasets.QM9
