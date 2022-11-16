@@ -67,13 +67,13 @@ class QM9Dataset(QM9):
 
     def __init__(self, config, transform=None):
         self.root = Path(config["src"])
-        assert self.root.exists()
+        assert self.root.exists(), f"QM9 dataset not found in {config['src']}"
         super().__init__(str(self.root))
         self.base_length = super().__len__()
         self.target = config["target"]
-        # `._transform` not to conflict with built-in `.transform` which
-        # would break the super().__getitem__ call
-        self._transform = transform
+        self.target_means = Y_MEANS[self.target]
+        self.target_stds = Y_STDS[self.target]
+        self.transform = transform
         g = torch.Generator()
         g.manual_seed(config["seed"])
         perm = torch.randperm(self.base_length, generator=g)
@@ -96,8 +96,8 @@ class QM9Dataset(QM9):
         data.y = data.y[0, self.target]
         data.y = (data.y - self.target_means) / self.target_stds
         t1 = time.time_ns()
-        if self._transform is not None:
-            data = self._transform(data)
+        if self.transform is not None:
+            data = self.transform(data)
         t2 = time.time_ns()
 
         load_time = (t1 - t0) * 1e-9  # time in s
