@@ -40,6 +40,20 @@ from ocpmodels.common.registry import registry
 OCP_TASKS = {"s2ef", "is2re", "is2es"}
 
 
+class Units:
+    """
+    Energy converter: https://www.unitsconverters.com/fr/Kcal/Mol-A-Ev/Particle/Utu-7727-6180
+    """
+
+    @staticmethod
+    def ev_to_kcalmol(energy):
+        return energy * 23.0621
+
+    @staticmethod
+    def kcalmol_to_ev(energy):
+        return energy / 23.0621
+
+
 def run_command(command):
     """
     Run a shell command and return the output.
