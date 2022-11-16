@@ -78,3 +78,13 @@ s2ef:
   20M: {}
 
   all: {}
+
+qm9:
+  default:
+    model:
+      num_interactions: 4
+    optim:
+      max_epochs: 8 # 20
+
+  10k: {}
+  all: {}

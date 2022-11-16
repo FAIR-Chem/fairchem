@@ -96,3 +96,17 @@ s2ef:
   20M: {}
 
   all: {}
+
+qm9:
+  default:
+    optim:
+      lr_initial: 0.001
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 16000
+        - 25000
+        - 35000
+      warmup_steps: 5394
+      max_epochs: 17
+
+  10k: {}
+  all: {}

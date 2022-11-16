@@ -156,3 +156,21 @@ s2ef:
       warmup_steps: 130794
       max_epochs: 7
       force_coefficient: 50
+
+qm9:
+  default:
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 4.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      lr_initial: 0.0001
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 115082
+        - 230164
+        - 345246
+      warmup_steps: 57541
+      max_epochs: 8
+
+  10k: {}
+  all: {}

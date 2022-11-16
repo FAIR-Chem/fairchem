@@ -37,6 +37,9 @@ default:
 # -------------------
 
 is2re:
+  default:
+    model:
+      force_decoder_type: null
   10k:
     model:
       num_interactions: 3
@@ -101,4 +104,22 @@ s2ef:
 
   20M: {}
 
+  all: {}
+
+qm9:
+  default:
+    model:
+      hidden_channels: 384
+      num_interactions: 4
+
+    optim:
+      lr_initial: 0.001
+      lr_milestones:
+        - 17981
+        - 26972
+        - 35963
+      warmup_steps: 5394
+      max_epochs: 17
+
+  10k: {}
   all: {}
