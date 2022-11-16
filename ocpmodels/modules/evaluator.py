@@ -134,7 +134,10 @@ def energy_mae(prediction, target):
 
 def energy_mae_kcalmol(prediction, target):
     """Energy MAE in kcal/mol instead of eV."""
-    return Units.ev_to_kcalmol(absolute_error(prediction["energy"], target["energy"]))
+    return absolute_error(
+        Units.ev_to_kcalmol(prediction["energy"]),
+        Units.ev_to_kcalmol(target["energy"]),
+    )
 
 
 def energy_mse(prediction, target):
