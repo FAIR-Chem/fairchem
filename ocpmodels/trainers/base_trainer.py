@@ -33,7 +33,7 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.registry import registry
 from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
-from ocpmodels.common.utils import get_commit_hash, save_checkpoint
+from ocpmodels.common.utils import get_commit_hash, save_checkpoint, OCP_TASKS
 from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
