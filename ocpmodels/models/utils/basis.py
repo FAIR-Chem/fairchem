@@ -141,7 +141,7 @@ class Basis(nn.Module):
         act="ssp",
         sph=None,
     ):
-        super(Basis, self).__init__()
+        super().__init__()
 
         self.num_freqs = num_freqs
         self.basis_type = basis_type
@@ -226,7 +226,7 @@ class Basis(nn.Module):
 
 class SphericalSmearing(nn.Module):
     def __init__(self, max_n=10, option="all"):
-        super(SphericalSmearing, self).__init__()
+        super().__init__()
 
         self.max_n = max_n
 
@@ -261,8 +261,8 @@ class SphericalSmearing(nn.Module):
         phi = torch.acos(xyz[:, 2])
         theta = torch.atan2(-xyz[:, 1], -xyz[:, 0]) + math.pi
 
-        phi = phi.cpu().numpy()
-        theta = theta.cpu().numpy()
+        phi = phi.detach().cpu().numpy()
+        theta = theta.detach().cpu().numpy()
 
         m_tile = np.tile(self.m, (len(xyz), 1))
         n_tile = np.tile(self.n, (len(xyz), 1))
