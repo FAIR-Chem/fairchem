@@ -11,7 +11,7 @@ class DetectTrajAnomaly:
         atoms_tag,
         final_slab_atoms=None,
         surface_change_cutoff_multiplier=1.5,
-        desorption_cutoff_multiplier=1.3,
+        desorption_cutoff_multiplier=1.5,
     ):
         """
         Flag anomalies based on initial and final stucture of a relaxation.
@@ -111,10 +111,10 @@ class DetectTrajAnomaly:
         Returns:
             (np.ndarray): The connectivity matrix of the atoms object.
         """
-        cutoff = list(np.array(natural_cutoffs(atoms)) * cutoff_multiplier)
-        neighborList = neighborlist.NeighborList(
+        cutoff = natural_cutoffs(atoms, mult=cutoff_multiplier)
+        ase_neighbor_list = neighborlist.NeighborList(
             cutoff, self_interaction=False, bothways=True
         )
-        neighborList.update(atoms)
-        matrix = neighborlist.get_connectivity_matrix(neighborList.nl).toarray()
+        ase_neighbor_list.update(atoms)
+        matrix = neighborlist.get_connectivity_matrix(ase_neighbor_list.nl).toarray()
         return matrix
