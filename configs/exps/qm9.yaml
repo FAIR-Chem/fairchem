@@ -4,7 +4,7 @@ job:
   gres: gpu:1
   time: 12:00:00
   partition: long
-  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-3
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
 
 default:
   wandb_project: ocp-qm9
