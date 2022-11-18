@@ -72,7 +72,7 @@ class Evaluator:
         "s2ef": "energy_force_within_threshold",
         "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
-        "qm9": "qm9",
+        "qm9": "energy_mae",
     }
 
     def __init__(self, task=None, model_regresses_forces=""):
