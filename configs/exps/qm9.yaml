@@ -18,6 +18,13 @@ default:
     tag_hidden_channels: 0
     energy_head: weighted-av-final-embeds
     pg_hidden_channels: 32
+  optim:
+    lr_initial: 0.001
+    lr_gamma: 0.95
+    lr_gamma_freq: 1500
+    lr_milestones: null
+    max_epochs: 50
+    batch_size: 64
 
 runs:
   - config: sfarinet-qm9-all
@@ -30,4 +37,4 @@ runs:
     note: forcenet qm9 3D FA random
 
   - config: schnet-qm9-all
-    note: forcenet qm9 2D FA random
+    note: forcenet qm9 3D FA random
