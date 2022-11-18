@@ -86,12 +86,19 @@ if __name__ == "__main__":
             print(f"Launching job {c:3}", end="\r") or os.popen(command).read().strip()
             for c, command in enumerate(commands)
         ]
-        outdir = Path(__file__).resolve().parent / "data" / "exp_outputs"
+        outdir = Path(__file__).resolve().parent / "data" / "exp_outputs" / exp_name
         outfile = outdir / f"{exp_name}_{now()}.txt"
         outfile.parent.mkdir(exist_ok=True, parents=True)
         exp_separator = "\n" * 4 + f"{'#' * 80}\n" * 4 + "\n" * 4
+        text = exp_separator.join(outputs)
+        jobs = [
+            line.replace(sep, "").strip()
+            for line in text.splitlines()
+            if (sep := "Submitted batch job ") in line
+        ]
+        text += f"\n\n>>> All jobs launched: {' '.join(jobs)}"
         with outfile.open("w") as f:
-            f.write(exp_separator.join(outputs))
+            f.write(text)
         print(f"Output written to {str(outfile)}")
     else:
         print("Aborting")
