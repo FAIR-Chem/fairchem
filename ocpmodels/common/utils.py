@@ -146,10 +146,14 @@ def warmup_lr_lambda(current_step, optim_config):
 
     # keep this block for older configs that have warmup_epochs instead of warmup_steps
     # and lr_milestones are defined in epochs
-    if (
-        any(x < 100 for x in optim_config["lr_milestones"])
-        or "warmup_epochs" in optim_config
-    ):
+    lr_milestones = optim_config.get("lr_milestones")
+    if lr_milestones is None:
+        assert optim_config.get("lr_gamma_freq") is not None
+        lr_milestones = (
+            np.arange(1, optim_config["max_epochs"]) * optim_config["lr_gamma_freq"]
+        )
+
+    if any(x < 100 for x in lr_milestones) or "warmup_epochs" in optim_config:
         raise Exception(
             "ConfigError: please define lr_milestones in steps not"
             + " epochs and define warmup_steps instead of warmup_epochs"
@@ -159,7 +163,7 @@ def warmup_lr_lambda(current_step, optim_config):
         alpha = current_step / float(optim_config["warmup_steps"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
     else:
-        idx = bisect(optim_config["lr_milestones"], current_step)
+        idx = bisect(lr_milestones, current_step)
         return pow(optim_config["lr_gamma"], idx)
 
 
