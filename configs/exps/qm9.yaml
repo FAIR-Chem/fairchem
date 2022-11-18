@@ -5,6 +5,7 @@ job:
   time: 12:00:00
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-3
+  wandb_project: ocp-qm9
 
 default:
   mode: train
