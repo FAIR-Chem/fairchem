@@ -15,29 +15,28 @@ default:
       mlp:
         hidden_channels: 256
 runs:
-  - config: sfarinet-se2f-2M
+  - config: sfarinet-s2ef-2M
     frame_averaging: 2D
     fa_frames: random
     note: sfarinet 2D FA random
-  - config: sfarinet-se2f-2M
+  - config: sfarinet-s2ef-2M
     frame_averaging: 2D
     fa_frames: all
     note: sfarinet 2D FA all
-  - config: sfarinet-se2f-2M
+  - config: sfarinet-s2ef-2M
     frame_averaging: 3D
     fa_frames: random
     note: sfarinet 3D FA random
-  - config: sfarinet-se2f-2M
+  - config: sfarinet-s2ef-2M
     frame_averaging: 3D
     fa_frames: all
     note: sfarinet 3D FA all
-  - config: sfarinet-se2f-2M
+  - config: sfarinet-s2ef-2M
     frame_averaging: 3D
     fa_frames: all
     model:
       regress_forces: direct_with_gradient_target
     note: sfarinet 3D FA all regress direct_with_gradient_target
-
 
   - config: fanet-s2ef-2M
     frame_averaging: 2D
@@ -61,7 +60,6 @@ runs:
     model:
       regress_forces: direct_with_gradient_target
     note: fanet 3D FA all regress direct_with_gradient_target
-
 
   - config: forcenet-s2ef-2M
     frame_averaging: 2D
