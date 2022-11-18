@@ -96,9 +96,10 @@ if __name__ == "__main__":
             for line in text.splitlines()
             if (sep := "Submitted batch job ") in line
         ]
-        text += f"\n\n>>> All jobs launched: {' '.join(jobs)}"
+        text += f"{exp_separator}All jobs launched: {' '.join(jobs)}"
         with outfile.open("w") as f:
             f.write(text)
         print(f"Output written to {str(outfile)}")
+        print("All job launched:", " ".join(jobs))
     else:
         print("Aborting")
