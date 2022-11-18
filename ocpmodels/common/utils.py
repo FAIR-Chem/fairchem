@@ -37,6 +37,22 @@ import ocpmodels
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 
+OCP_TASKS = {"s2ef", "is2re", "is2es"}
+
+
+class Units:
+    """
+    Energy converter: https://www.unitsconverters.com/fr/Kcal/Mol-A-Ev/Particle/Utu-7727-6180
+    """
+
+    @staticmethod
+    def ev_to_kcalmol(energy):
+        return energy * 23.0621
+
+    @staticmethod
+    def kcalmol_to_ev(energy):
+        return energy / 23.0621
+
 
 def run_command(command):
     """
@@ -130,10 +146,14 @@ def warmup_lr_lambda(current_step, optim_config):
 
     # keep this block for older configs that have warmup_epochs instead of warmup_steps
     # and lr_milestones are defined in epochs
-    if (
-        any(x < 100 for x in optim_config["lr_milestones"])
-        or "warmup_epochs" in optim_config
-    ):
+    lr_milestones = optim_config.get("lr_milestones")
+    if lr_milestones is None:
+        assert optim_config.get("lr_gamma_freq") is not None
+        lr_milestones = (
+            np.arange(1, optim_config["max_epochs"]) * optim_config["lr_gamma_freq"]
+        )
+
+    if any(x < 100 for x in lr_milestones) or "warmup_epochs" in optim_config:
         raise Exception(
             "ConfigError: please define lr_milestones in steps not"
             + " epochs and define warmup_steps instead of warmup_epochs"
@@ -143,7 +163,7 @@ def warmup_lr_lambda(current_step, optim_config):
         alpha = current_step / float(optim_config["warmup_steps"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
     else:
-        idx = bisect(optim_config["lr_milestones"], current_step)
+        idx = bisect(lr_milestones, current_step)
         return pow(optim_config["lr_gamma"], idx)
 
 
@@ -483,7 +503,7 @@ def build_config(args, args_override):
                 + f". Received: `{str(config['model']['regress_forces'])}`"
             )
 
-    if config["cpus_to_workers"]:
+    if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
         gpus = count_gpus()
         if cpus is not None:

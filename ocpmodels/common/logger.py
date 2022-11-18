@@ -192,3 +192,8 @@ class DummyLogger(Logger):
 
     def add_tags(self, tags):
         pass
+
+    def notify(self, *args, **kwargs):
+        if not hasattr(self, "notifications"):
+            self.notifications = []
+        self.notifications.append((args, kwargs))
