@@ -14,6 +14,9 @@ import time
 import warnings
 from pathlib import Path
 
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
+
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
@@ -127,6 +130,8 @@ def print_warnings():
 
 
 if __name__ == "__main__":
+    ntfy = trainer = None
+
     setup_logging()
 
     parser = flags.get_parser()
@@ -151,21 +156,47 @@ if __name__ == "__main__":
         distutils.setup(trainer_config)
 
     try:
+        # -------------------
+        # -----  Setup  -----
+        # -------------------
         setup_imports()
         trainer_config = should_continue(trainer_config)
         trainer_config = read_slurm_env(trainer_config)
+        # -------------------
+        # -----  Train  -----
+        # -------------------
         trainer: BaseTrainer = registry.get_trainer_class(trainer_config["trainer"])(
             **trainer_config
         )
         task = registry.get_task_class(trainer_config["mode"])(trainer_config)
         task.setup(trainer)
         start_time = time.time()
+        if trainer.logger is not None:
+            message = f"{os.getenv('SLURM_JOB_ID')} - Training started 🚀"
+            if trainer_config.get("note"):
+                message += f" - {trainer_config.get('note')}"
+            if trainer_config.get("wandb_tags"):
+                message += f" - {trainer_config.get('wandb_tags')}"
+            trainer.logger.ntfy(message)
         print_warnings()
         task.run()
+        # -----------------
+        # -----  End  -----
+        # -----------------
         distutils.synchronize()
         logging.info(f"Total time taken: {time.time() - start_time}")
         if trainer.logger is not None:
             trainer.logger.log({"Total time": time.time() - start_time})
+
+    except Exception as e:
+        if trainer and trainer.logger:
+            e_name = e.__class__.__name__
+            trainer.logger.ntfy(
+                f"{os.getenv('SLURM_JOB_ID')} - Training failed 😭"
+                + f"{e_name} - {str(e)}",
+                click=trainer.logger.url or "https://ntfy.sh/app",
+            )
+        raise e
     finally:
         if args.distributed:
             distutils.cleanup()

@@ -19,7 +19,7 @@ from tqdm import tqdm
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import check_traj_files
+from ocpmodels.common.utils import check_traj_files, OCP_TASKS
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -279,7 +279,7 @@ class SingleTrainer(BaseTrainer):
                             epoch_int == self.config["optim"]["max_epochs"] - 1
                         )
                         if (epoch_int % 100 == 0 and epoch_int != 0) or is_final_epoch:
-                            self.eval_all_val_splits(is_final_epoch)
+                            self.eval_all_val_splits(is_final_epoch, epoch=epoch_int)
 
                         if self.is_hpo:
                             self.hpo_update(
@@ -336,13 +336,15 @@ class SingleTrainer(BaseTrainer):
         # Distinguish frame averaging from base case.
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
-            original_cell = batch_list[0].cell
+            if self.task_name in OCP_TASKS:
+                original_cell = batch_list[0].cell
             e_all, p_all, f_all = [], [], []
 
             # Compute model prediction for each frame
             for i in range(len(batch_list[0].fa_pos)):
                 batch_list[0].pos = batch_list[0].fa_pos[i]
-                batch_list[0].cell = batch_list[0].fa_cell[i]
+                if self.task_name in OCP_TASKS:
+                    batch_list[0].cell = batch_list[0].fa_cell[i]
                 preds = self.model(deepcopy(batch_list))
                 e_all.append(preds["energy"])
                 if preds.get("pooling_loss") is not None:
@@ -360,7 +362,8 @@ class SingleTrainer(BaseTrainer):
                     )
                     f_all.append(g_forces)
             batch_list[0].pos = original_pos
-            batch_list[0].cell = original_cell
+            if self.task_name in OCP_TASKS:
+                batch_list[0].cell = original_cell
 
             # Average predictions over frames
             preds = {"energy": sum(e_all) / len(e_all)}
@@ -396,7 +399,7 @@ class SingleTrainer(BaseTrainer):
             target_normed = energy_target
         energy_mult = (
             self.config["optim"].get("energy_coefficient", 1)
-            if self.task_name != "is2re"
+            if self.task_name in {"is2rs", "s2ef"}
             else 1
         )
         loss.append(
@@ -404,7 +407,7 @@ class SingleTrainer(BaseTrainer):
         )
 
         # Force loss.
-        if self.task_name != "is2re":
+        if self.task_name in {"is2rs", "s2ef"}:
             force_target = torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
             )
@@ -485,7 +488,7 @@ class SingleTrainer(BaseTrainer):
                 [
                     (
                         batch.y.to(self.device)
-                        if self.task_name == "s2ef"
+                        if self.task_name in {"s2ef", "qm9"}
                         else batch.y_relaxed.to(self.device)
                     )
                     for batch in batch_list

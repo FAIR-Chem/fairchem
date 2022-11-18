@@ -33,7 +33,7 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.registry import registry
 from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
-from ocpmodels.common.utils import get_commit_hash, save_checkpoint
+from ocpmodels.common.utils import get_commit_hash, save_checkpoint, OCP_TASKS
 from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -718,7 +718,9 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(self, final=True, disable_tqdm=True, debug_batches=-1):
+    def eval_all_val_splits(
+        self, final=True, disable_tqdm=True, debug_batches=-1, epoch=-1
+    ):
         """Evaluate model on all four validation splits"""
 
         if final:
@@ -736,16 +738,26 @@ class BaseTrainer(ABC):
         cumulated_time = 0
         cumulated_mae = 0
         metrics_dict = {}
+
+        if self.task_name in OCP_TASKS:
+            val_sets = ["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]
+        elif self.task_name == "qm9":
+            val_sets = ["val"]
+        else:
+            raise ValueError(f"Unknown task {self.task_name}")
+
         if not self.silent:
-            logging.info("Evaluating on 4 val splits.")
-        for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
+            logging.info(f"Evaluating on {len(val_sets)} val splits.")
+
+        for i, s in enumerate(val_sets):
 
             # Update the val. dataset we look at
-            base = Path(f"/network/projects/ocp/oc20/{self.task_name}/all/{s}/")
-            src = base / "data.lmdb"
-            if not src.exists():
-                src = base
-            self.config["val_dataset"] = {"src": str(src)}
+            if self.task_name in OCP_TASKS:
+                base = Path(f"/network/projects/ocp/oc20/{self.task_name}/all/{s}/")
+                src = base / "data.lmdb"
+                if not src.exists():
+                    src = base
+                self.config["val_dataset"] = {"src": str(src)}
 
             # Load val dataset
             if self.config.get("val_dataset", None):
@@ -780,13 +792,24 @@ class BaseTrainer(ABC):
             cumulated_time += time.time() - start_time
 
         # Log time
-        if self.config["logger"] == "wandb" and distutils.is_master():
-            self.logger.log({"Val. time": cumulated_time})
-            self.logger.log({"Overall MAE": cumulated_mae / 4})
+        if final and self.config["logger"] == "wandb" and distutils.is_master():
+            overall_mae = cumulated_mae / 4
+            sid = os.getenv("SLURM_JOB_ID")
+            self.logger.log({"Eval time": cumulated_time})
+            self.logger.log({"Overall MAE": overall_mae})
+            if self.logger.ntfy:
+                self.logger.ntfy(
+                    message=f"{sid} - Overall MAE: {overall_mae}", click=self.logger.url
+                )
 
         # Print results
         if not self.silent:
-            print("----- FINAL RESULTS -----")
+            if final:
+                print("----- FINAL RESULTS -----")
+            elif epoch >= 0:
+                print(f"----- RESULTS AT EPOCH {epoch} -----")
+            else:
+                print("----- RESULTS -----")
             print("Total time taken: ", time.time() - start_time)
             print(self.metrics.keys())
         for k, v in metrics_dict.items():

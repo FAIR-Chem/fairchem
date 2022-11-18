@@ -15,6 +15,14 @@ from torch.utils.tensorboard import SummaryWriter
 import wandb
 from ocpmodels.common.registry import registry
 
+NTFY_OK = False
+try:
+    import ntfy_wrapper  # noqa: F401
+
+    NTFY_OK = True
+except ImportError:
+    pass
+
 
 class Logger(ABC):
     """Generic class to interface with various logging modules, e.g. wandb,
@@ -23,6 +31,27 @@ class Logger(ABC):
 
     def __init__(self, trainer_config):
         self.trainer_config = trainer_config
+        self._ntfy = None
+        self.url = None
+
+    def ntfy(self, *args, **kwargs):
+        global NTFY_OK
+        try:
+            if NTFY_OK:
+                if self._ntfy is None:
+                    from ntfy_wrapper import Notifier
+
+                    self._ntfy = Notifier(
+                        notify_defaults={
+                            "title": self.trainer_config.get("wandb_project", "OCP")
+                        },
+                        warnings=False,
+                        verbose=False,
+                    )
+                self._ntfy(*args, **kwargs)
+        except Exception as e:
+            logging.warning(f"Logger failed to send notification: {e}")
+            NTFY_OK = False
 
     @abstractmethod
     def watch(self, model):
@@ -86,8 +115,9 @@ class WandBLogger(Logger):
         if len(sbatch_files) == 1:
             wandb.save(str(sbatch_files[0]))
 
+        self.url = wandb.run.get_url()
         with open(Path(self.trainer_config["run_dir"] / "wandb_url.txt"), "w") as f:
-            f.write(wandb.run.get_url())
+            f.write(self.url)
 
     def watch(self, model):
         wandb.watch(model)
@@ -162,3 +192,8 @@ class DummyLogger(Logger):
 
     def add_tags(self, tags):
         pass
+
+    def notify(self, *args, **kwargs):
+        if not hasattr(self, "notifications"):
+            self.notifications = []
+        self.notifications.append((args, kwargs))

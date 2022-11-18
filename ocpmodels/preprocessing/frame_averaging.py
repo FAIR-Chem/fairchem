@@ -56,7 +56,8 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
             full_eigenvec[:2, :2] = new_eigenvec
             new_eigenvec = full_eigenvec
 
-        fa_cell = cell @ new_eigenvec
+        if cell is not None:
+            fa_cell = cell @ new_eigenvec
 
         all_fa_pos.append(fa_pos)
         all_cell.append(fa_cell)
@@ -65,7 +66,7 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
     # Handle rare case where no R is positive orthogonal
     if all_fa_pos == []:
         all_fa_pos.append(pos @ new_eigenvec)
-        all_cell.append(cell @ new_eigenvec)
+        all_cell.append(cell @ new_eigenvec if cell is not None else None)
 
     # Return frame(s) depending on method fa_frames
     if fa_frames == "all" or fa_frames == "se3-all":
@@ -135,7 +136,9 @@ def frame_averaging_3D(g, fa_frames="random"):
     eigenval = eigenval[idx]
 
     # Compute fa_pos
-    g.fa_pos, g.fa_cell, g.fa_rot = all_frames(eigenvec, pos, g.cell, fa_frames)
+    g.fa_pos, g.fa_cell, g.fa_rot = all_frames(
+        eigenvec, pos, g.cell if hasattr(g, "cell") else None, fa_frames
+    )
 
     # No need to update distances, they are preserved.
 
@@ -172,7 +175,7 @@ def frame_averaging_2D(g, fa_frames="random"):
 
     # Compute all frames
     g.fa_pos, g.fa_cell, g.fa_rot = all_frames(
-        eigenvec, pos_2D, g.cell, fa_frames, g.pos[:, 2]
+        eigenvec, pos_2D, g.cell if hasattr(g, "cell") else None, fa_frames, g.pos[:, 2]
     )
     # No need to update distances, they are preserved.
 

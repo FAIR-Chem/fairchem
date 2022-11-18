@@ -101,9 +101,9 @@ class Flags:
             help="Path to a config file with parameter sweeps",
         )
         self.parser.add_argument(
-            "--cpus_to_workers",
+            "--no_cpus_to_workers",
             action="store_true",
-            default=True,
+            default=False,
             help="Match dataloader workers to available cpus "
             + "(may be divided by number of GPUs)",
         )
