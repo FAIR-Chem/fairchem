@@ -21,13 +21,13 @@ default:
 
 runs:
   - config: sfarinet-qm9-all
-    note: sfarinet qm9 2D FA random
+    note: sfarinet qm9 3D FA random
 
   - config: fanet-qm9-all
-    note: fanet qm9 2D FA random
+    note: fanet qm9 3D FA random
 
   - config: forcenet-qm9-all
-    note: forcenet qm9 2D FA random
+    note: forcenet qm9 3D FA random
 
   - config: schnet-qm9-all
     note: forcenet qm9 2D FA random
