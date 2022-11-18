@@ -194,7 +194,7 @@ if __name__ == "__main__":
             trainer.logger.ntfy(
                 f"{os.getenv('SLURM_JOB_ID')} - Training failed 😭"
                 + f"{e_name} - {str(e)}",
-                click=trainer.logger.url or "https://ntfy.sh/app",
+                click=trainer.logger.url or None,
             )
         raise e
     finally:
