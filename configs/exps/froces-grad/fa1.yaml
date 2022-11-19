@@ -1,0 +1,87 @@
+job:
+  mem: 48GB
+  cpus: 6
+  gres: gpu:1
+  time: 12:00:00
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
+
+default:
+  mode: train
+  test_ri: true
+  model:
+    force_decoder_type: mlp
+    force_decoder_model_config:
+      mlp:
+        hidden_channels: 256
+  optim:
+    batch_size: 128
+runs:
+  - config: sfarinet-s2ef-2M
+    frame_averaging: 2D
+    fa_frames: random
+    note: sfarinet 2D FA random
+  - config: sfarinet-s2ef-2M
+    frame_averaging: 2D
+    fa_frames: all
+    note: sfarinet 2D FA all
+  - config: sfarinet-s2ef-2M
+    frame_averaging: 3D
+    fa_frames: random
+    note: sfarinet 3D FA random
+  - config: sfarinet-s2ef-2M
+    frame_averaging: 3D
+    fa_frames: all
+    note: sfarinet 3D FA all
+  - config: sfarinet-s2ef-2M
+    frame_averaging: 3D
+    fa_frames: all
+    model:
+      regress_forces: direct_with_gradient_target
+    note: sfarinet 3D FA all regress direct_with_gradient_target
+
+  - config: fanet-s2ef-2M
+    frame_averaging: 2D
+    fa_frames: random
+    note: fanet 2D FA random
+  - config: fanet-s2ef-2M
+    frame_averaging: 2D
+    fa_frames: all
+    note: fanet 2D FA all
+  - config: fanet-s2ef-2M
+    frame_averaging: 3D
+    fa_frames: random
+    note: fanet 3D FA random
+  - config: fanet-s2ef-2M
+    frame_averaging: 3D
+    fa_frames: all
+    note: fanet 3D FA all
+  - config: fanet-s2ef-2M
+    frame_averaging: 3D
+    fa_frames: all
+    model:
+      regress_forces: direct_with_gradient_target
+    note: fanet 3D FA all regress direct_with_gradient_target
+
+  - config: forcenet-s2ef-2M
+    frame_averaging: 2D
+    fa_frames: random
+    note: forcenet 2D FA random
+  - config: forcenet-s2ef-2M
+    frame_averaging: 2D
+    fa_frames: all
+    note: forcenet 2D FA all
+  - config: forcenet-s2ef-2M
+    frame_averaging: 3D
+    fa_frames: random
+    note: forcenet 3D FA random
+  - config: forcenet-s2ef-2M
+    frame_averaging: 3D
+    fa_frames: all
+    note: forcenet 3D FA all
+  - config: forcenet-s2ef-2M
+    frame_averaging: 3D
+    fa_frames: all
+    model:
+      regress_forces: direct_with_gradient_target
+    note: forcenet 3D FA all regress direct_with_gradient_target
