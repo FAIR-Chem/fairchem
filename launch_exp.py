@@ -36,7 +36,13 @@ def cli_arg(args, key=""):
             s += cli_arg(v, key=f"{parent}{k}")
         else:
             if " " in str(v) or "," in str(v) or isinstance(v, str):
-                v = f"'{v}'"
+                if "'" in str(v) and '"' in str(v):
+                    v = str(v).replace("'", "\\'")
+                    v = f"'{v}'"
+                elif "'" in str(v):
+                    v = f'"{v}"'
+                else:
+                    v = f"'{v}'"
             s += f" --{parent}{k}={v}"
     return s
 
