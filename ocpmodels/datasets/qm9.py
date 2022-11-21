@@ -7,6 +7,11 @@ from torch_geometric.datasets import QM9
 
 from ocpmodels.common.registry import registry
 
+# from torch_geometric.datasets import QM9
+# qm = QM9(root=path)
+# qm.mean(7)
+# qm.std(7)
+
 Y_MEANS = torch.tensor(
     [
         2.672952651977539,
@@ -65,8 +70,21 @@ class QM9Dataset(QM9):
     https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html?highlight=qm9#torch_geometric.datasets.QM9 # noqa: E501
     """
 
-    def __init__(self, config, transform=None):
+    def __init__(
+        self,
+        config={
+            "src": "/network/projects/ocp/qm9",
+            "target": 7,
+            "seed": 123,
+            "normalize_labels": True,
+            "target_mean": -11178.966796875,
+            "target_std": 1085.5787353515625,
+            "ratio": {"start": 0, "end": 0.75},
+        },
+        transform=None,
+    ):
         self.root = Path(config["src"])
+        self.config = config
         assert self.root.exists(), f"QM9 dataset not found in {config['src']}"
         super().__init__(str(self.root))
         self.base_length = super().__len__()
