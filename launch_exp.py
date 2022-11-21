@@ -35,7 +35,7 @@ def cli_arg(args, key=""):
         if isinstance(v, dict):
             s += cli_arg(v, key=f"{parent}{k}")
         else:
-            if " " in str(v) or "," in str(v):
+            if " " in str(v) or "," in str(v) or isinstance(v, str):
                 v = f"'{v}'"
             s += f" --{parent}{k}={v}"
     return s
