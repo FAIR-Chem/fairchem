@@ -563,6 +563,7 @@ def build_config(args, args_override):
     config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
+    config["job_id"] = os.environ.get("SLURM_JOB_ID", "no-job-id")
 
     if "regress_forces" in config["model"]:
         if not isinstance(config["model"]["regress_forces"], str):
