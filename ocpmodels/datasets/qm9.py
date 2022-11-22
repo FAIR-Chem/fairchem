@@ -6,6 +6,7 @@ import torch
 from torch_geometric.datasets import QM9
 
 from ocpmodels.common.registry import registry
+from copy import deepcopy
 
 # from torch_geometric.datasets import QM9
 # qm = QM9(root=path)
@@ -61,6 +62,37 @@ Y_STDS = torch.tensor(
     ],
     dtype=torch.float32,
 )
+
+
+def set_qm9_target_stats(trainer_config):
+    """
+    Set target stats for QM9 dataset if the trainer config specifies the
+    qm9 task as `model-task-split`.
+
+    For the qm9 task, for each dataset, if "normalize_labels" is set to True,
+    then new keys are added to the dataset config: "target_mean" and "target_std"
+    according to the dataset's "target" key which is an index in the list of QM9
+    properties to predict.
+
+    Args:
+        trainer_config (dict): The trainer config.
+
+    Returns:
+        dict: The trainer config with stats for each dataset, if relevant.
+    """
+    if "-qm9-" not in trainer_config["config"]:
+        return trainer_config
+
+    for d, dataset in deepcopy(trainer_config["config"]["dataset"]):
+        if not dataset.get("normalize_labels", False):
+            continue
+        assert "target" in dataset
+        mean = Y_MEANS[dataset["target"]]
+        std = Y_STDS[dataset["target"]]
+        trainer_config["config"]["dataset"][d]["target_mean"] = mean
+        trainer_config["config"]["dataset"][d]["target_std"] = std
+
+    return trainer_config
 
 
 @registry.register_dataset("qm9")

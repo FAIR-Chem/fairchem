@@ -36,6 +36,7 @@ from torch_scatter import segment_coo, segment_csr
 import ocpmodels
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
+from ocpmodels.datasets.qm9 import set_qm9_target_stats
 
 OCP_TASKS = {"s2ef", "is2re", "is2es"}
 
@@ -502,6 +503,8 @@ def build_config(args, args_override):
                 + "'from_energy' or 'direct' or 'direct_with_gradient_target'"
                 + f". Received: `{str(config['model']['regress_forces'])}`"
             )
+
+    config = set_qm9_target_stats(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
