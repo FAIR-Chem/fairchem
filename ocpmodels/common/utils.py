@@ -110,14 +110,14 @@ def set_qm9_target_stats(trainer_config):
     if "-qm9-" not in trainer_config["config"]:
         return trainer_config
 
-    for d, dataset in deepcopy(trainer_config["config"]["dataset"]):
+    for d, dataset in enumerate(deepcopy(trainer_config["dataset"])):
         if not dataset.get("normalize_labels", False):
             continue
         assert "target" in dataset
         mean = target_means[dataset["target"]]
         std = target_stds[dataset["target"]]
-        trainer_config["config"]["dataset"][d]["target_mean"] = mean
-        trainer_config["config"]["dataset"][d]["target_std"] = std
+        trainer_config["dataset"][d]["target_mean"] = mean
+        trainer_config["dataset"][d]["target_std"] = std
 
     return trainer_config
 
