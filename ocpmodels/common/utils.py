@@ -453,11 +453,11 @@ def load_config(config_str):
     assert "default" in task_conf
     assert split in task_conf
 
-    config, _ = merge_dicts({}, model_conf["default"])
+    config, _ = merge_dicts({}, task_conf["default"])
+    config, _ = merge_dicts(config, task_conf[split])
+    config, _ = merge_dicts(config, model_conf["default"])
     config, _ = merge_dicts(config, model_conf[task].get("default", {}))
     config, _ = merge_dicts(config, model_conf[task][split])
-    config, _ = merge_dicts(config, task_conf["default"])
-    config, _ = merge_dicts(config, task_conf[split])
     config["task_name"] = task
 
     return config
