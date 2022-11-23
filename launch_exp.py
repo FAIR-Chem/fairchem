@@ -66,6 +66,8 @@ if __name__ == "__main__":
         job = exp["job"].copy()
 
         job.update(run.pop("job", {}))
+        if run.pop("_no_exp_default_", False):
+            params = {}
         params.update(run)
         if "time" in job:
             job["time"] = seconds_to_time_str(job["time"])
