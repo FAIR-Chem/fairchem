@@ -32,20 +32,29 @@ class QM9Dataset(QM9):
         self.config = config
         assert self.root.exists(), f"QM9 dataset not found in {config['src']}"
         super().__init__(str(self.root))
-        self.base_length = super().__len__()
-        self.target = config["target"]
+        self.base_length = super().__len__()  # full dataset length
+        self.target = config["target"]  # index of target to predict
+
         # `._transform` not to conflict with built-in `.transform` which
         # would break the super().__getitem__ call
         self._transform = transform
-        g = torch.Generator()
-        g.manual_seed(config["seed"])
-        perm = torch.randperm(self.base_length, generator=g)
-        if config["ratio"]["start"] == 0:
-            self.samples = perm[: int(config["ratio"]["end"] * self.base_length)]
+
+        # randomize samples except if seed is < 0
+
+        if config["seed"] >= 0:
+            g = torch.Generator()
+            g.manual_seed(config["seed"])
+            self.perm = torch.randperm(self.base_length, generator=g)
         else:
-            start = int(config["ratio"]["start"] * self.base_length)
-            end = int(config["ratio"]["end"] * self.base_length)
-            self.samples = perm[start:end]
+            self.perm = torch.arange(self.base_length)
+
+        start = int(config["ratio"]["start"] * self.base_length)
+        end = int(config["ratio"]["end"] * self.base_length)
+
+        if start == 0:
+            self.samples = self.perm[:end]
+        else:
+            self.samples = self.perm[start:end]
 
     def close_db(self):
         pass
