@@ -1,0 +1,4 @@
+input_csv_times: results.csv
+input_csv_seeds: results_phast.csv
+output_dir: output
+output_filename: summary.png

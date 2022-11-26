@@ -1,0 +1,3 @@
+input_csv: results_ablation.csv
+output_dir: output
+output_filename: ablation.png

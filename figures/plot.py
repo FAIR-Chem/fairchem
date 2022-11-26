@@ -2,8 +2,9 @@
 This script plots the difference between the performance of models with and without
 PhAST.
 """
-print("Imports...", end="")
-from argparse import ArgumentParser
+import sys
+import hydra
+from hydra.utils import get_original_cwd, to_absolute_path
 import yaml
 import numpy as np
 import pandas as pd
@@ -14,289 +15,138 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.transforms as transforms
+from utils import plot_setup
+from utils import get_palette_val
 
 
-# -----------------------
-# -----  Constants  -----
-# -----------------------
-
-dict_metrics = {
-    "names": {
-        "tpr": "TPR, Recall, Sensitivity",
-        "tnr": "TNR, Specificity, Selectivity",
-        "fpr": "FPR",
-        "fpt": "False positives relative to image size",
-        "fnr": "FNR, Miss rate",
-        "fnt": "False negatives relative to image size",
-        "mpr": "May positive rate (MPR)",
-        "mnr": "May negative rate (MNR)",
-        "accuracy": "Accuracy (ignoring may)",
-        "error": "Error",
-        "f05": "F05 score",
-        "precision": "Precision",
-        "edge_coherence": "Edge coherence",
-        "accuracy_must_may": "Accuracy (ignoring cannot)",
-    },
-    "key_metrics": ["mae_phast_impr", "time_phast_fraction"],
-}
-
-dict_archs = OrderedDict(
-    [
-        ("SchNet", "SchNet"),
-        ("D++", "DimeNet++"),
-        ("ForceNet", "ForceNet"),
-    ]
-)
-dict_val = OrderedDict(
-    [
-        ("id", "ID"),
-        ("ad", "OOD-ad"),
-        ("cat", "OOD-cat"),
-        ("both", "OOD-both"),
-    ]
-)
-dict_models = OrderedDict(
-    [
-        ("baseline", "Baseline"),
-        ("phast", "PhAST"),
-    ]
-)
-
-# Model features
-model_feats = [
-    "masker",
-    "seg",
-    "depth",
-    "dada_seg",
-    "dada_masker",
-    "spade",
-    "pseudo",
-    "ground",
-    "instagan",
-]
-
-# Colors
-crest = sns.color_palette("crest", as_cmap=False, n_colors=4)
-palette_val = crest
-sns.palplot(palette_val)
-set2 = sns.color_palette("Set2", as_cmap=False, n_colors=3)
-palette_baseline_phast = [set2[1], set2[2]]
-sns.palplot(set2)
-vlag = sns.color_palette("vlag", as_cmap=False, n_colors=3)
-palette_baseline_phast = [vlag[2], vlag[0]]
-sns.palplot(vlag)
-
-
-# Markers
-dict_mae_markers = OrderedDict([("id", "o"), ("ad", "s"), ("cat", "^"), ("both", "h")])
-dict_time_markers = OrderedDict([("baseline", "d"), ("phast", "*")])
-
-
-def parsed_args():
-    """
-    Parse and returns command-line args
-
-    Returns:
-        argparse.Namespace: the parsed arguments
-    """
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--input_csv",
-        default="results.csv",
-        type=str,
-        help="CSV containing the main results",
+def preprocess_df(df, config):
+    # Seed
+    df["seed"] = [None for _ in range(len(df))]
+    for seed in config.seeds:
+        df.loc[df["Notes"].str.contains(f"s{seed}", regex=False), "seed"] = seed
+    # Architecture
+    df["architecture"] = [None for _ in range(len(df))]
+    for architecture in config.architectures:
+        df.loc[
+            df["Name"].str.contains(architecture.key, regex=False), "architecture"
+        ] = architecture.name
+    # Baseline
+    df["baseline"] = [False for _ in range(len(df))]
+    df.loc[df["Notes"].str.contains("Baseline", regex=False), "baseline"] = True
+    # Rename validation split columns
+    rename_dict = {split.key: split.short for split in config.val_splits}
+    df = df.rename(columns=rename_dict)
+    # Melt validation split columns
+    value_vars = [v for v in rename_dict.values()]
+    df = pd.melt(
+        df,
+        id_vars=["architecture", "baseline", "seed"],
+        value_vars=value_vars,
+        var_name="val",
+        value_name="mae",
     )
-    parser.add_argument(
-        "--output_dir",
-        default="output",
-        type=str,
-        help="Output directory",
-    )
-    parser.add_argument(
-        "--dpi",
-        default=150,
-        type=int,
-        help="DPI for the output images",
-    )
-    parser.add_argument(
-        "--n_bs",
-        default=1e6,
-        type=int,
-        help="Number of bootrstrap samples",
-    )
-    parser.add_argument(
-        "--alpha",
-        default=0.99,
-        type=float,
-        help="Confidence level",
-    )
-    parser.add_argument(
-        "--bs_seed",
-        default=17,
-        type=int,
-        help="Bootstrap random seed, for reproducibility",
-    )
-
-    return parser.parse_args()
+    return df
 
 
-def trim_mean_wrapper(a):
-    return trim_mean(a, proportiontocut=0.2)
-
-
-def find_model_pairs(technique, model_feats):
-    model_pairs = []
-    for mi in df.loc[df[technique]].model_feats.unique():
-        for mj in df.model_feats.unique():
-            if mj == mi:
-                continue
-
-            if df.loc[df.model_feats == mj, technique].unique()[0]:
-                continue
-
-            is_pair = True
-            for f in model_feats:
-                if f == technique:
-                    continue
-                elif (
-                    df.loc[df.model_feats == mj, f].unique()[0]
-                    != df.loc[df.model_feats == mi, f].unique()[0]
-                ):
-                    is_pair = False
-                    break
-                else:
-                    pass
-            if is_pair:
-                model_pairs.append((mi, mj))
-                break
-    return model_pairs
-
-
-if __name__ == "__main__":
-    # -----------------------------
-    # -----  Parse arguments  -----
-    # -----------------------------
-    args = parsed_args()
-    print("Args:\n" + "\n".join([f"    {k:20}: {v}" for k, v in vars(args).items()]))
-
-    # Determine output dir
-    if args.output_dir is None:
-        output_dir = Path(os.environ["SLURM_TMPDIR"])
-    else:
-        output_dir = Path(args.output_dir)
-    if not output_dir.exists():
-        output_dir.mkdir(parents=True, exist_ok=False)
-
-    # Store args
-    output_yml = output_dir / "phast_summary_plot.yml"
-    with open(output_yml, "w") as f:
-        yaml.dump(vars(args), f)
-
-    # Read CSV
-    df = pd.read_csv(args.input_csv, index_col=False)
-
+def make_plot_dataframes(df_orig, df_orig_times):
     # Build data set
-    df_mae = pd.DataFrame(
-        columns=["architecture", "val", "mae_phast_impr"]
-    )
-    df_time = pd.DataFrame(
-        columns=["architecture", "model", "time", "phast_fraction"]
-    )
-    for arch in df.architecture.unique():
-        for val in df.val.unique():
-            df_arch_val = df.loc[(df.architecture == arch) & (df.val == val)]
-            # MAE
-            mae_baseline = df_arch_val.loc[df_arch_val.baseline == True]["mae"].values
-            mae_phast = df_arch_val.loc[df_arch_val.baseline == False]["mae"].values
-            mae_phast_impr = -100.0 * ((mae_phast - mae_baseline) / mae_baseline)
-            # Update df
-            dfaux = pd.DataFrame.from_dict(
-                {
-                    "architecture": arch,
-                    "val": val,
-                    "mae_phast_impr": mae_phast_impr,
-                }
-            )
-            df_mae = pd.concat([df_mae, dfaux], axis=0, ignore_index=True)
-            # Time
-            time_baseline = df_arch_val.loc[df_arch_val.baseline == True]["inf. time"].values
-            time_phast = df_arch_val.loc[df_arch_val.baseline == False]["inf. time"].values
-            time_phast_fraction = 100 * (time_phast / time_baseline)
-            # Update df
-            dfaux = pd.DataFrame.from_dict(
-                {
-                    "architecture": arch,
-                    "model": "baseline",
-                    "time": time_baseline,
-                    "phast_fraction": 0.,
-                }
-            )
-            df_time = pd.concat([df_time, dfaux], axis=0, ignore_index=True)
-            dfaux = pd.DataFrame.from_dict(
-                {
-                    "architecture": arch,
-                    "model": "phast",
-                    "time": time_phast,
-                    "phast_fraction": time_phast_fraction,
-                }
-            )
-            df_time = pd.concat([df_time, dfaux], axis=0, ignore_index=True)
+    df_mae = pd.DataFrame(columns=["architecture", "val", "mae_phast_impr", "seed"])
+    df_time = pd.DataFrame(columns=["architecture", "model", "time", "phast_fraction"])
+    for val in df_orig.val.unique():
+        df_val = df_orig.loc[(df_orig.val == val)]
+        for arch in df_val.architecture.unique():
+            df_arch = df_val.loc[(df_val.architecture == arch)]
+            time_phast = df_orig_times.loc[
+                (df_orig_times.val == val)
+                & (df_orig_times.architecture == arch)
+                & (df_orig_times.baseline == False)
+            ]["inf. time"].values
+            time_baseline = df_orig_times.loc[
+                (df_orig_times.val == val)
+                & (df_orig_times.architecture == arch)
+                & (df_orig_times.baseline == True)
+            ]["inf. time"].values
+            for seed_phast in df_arch.seed.unique():
+                mae_phast = df_arch.loc[
+                    (df_arch.seed == seed_phast) & (df_arch.baseline == False)
+                ]["mae"].values
+                for seed_baseline in df_arch.seed.unique():
+                    mae_baseline = df_arch.loc[
+                        (df_arch.seed == seed_baseline) & (df_arch.baseline == True)
+                    ]["mae"].values
+                    # MAE
+                    mae_phast_impr = -100.0 * (
+                        (mae_phast - mae_baseline) / mae_baseline
+                    )
+                    # Update df
+                    dfaux = pd.DataFrame.from_dict(
+                        {
+                            "architecture": arch,
+                            "val": val,
+                            "mae_phast_impr": mae_phast_impr,
+                            "seed": seed_phast,
+                        }
+                    )
+                    df_mae = pd.concat([df_mae, dfaux], axis=0, ignore_index=True)
+                    # Time
+                    time_phast_fraction = 100 * (time_phast / time_baseline)
+                    # Update df
+                    dfaux = pd.DataFrame.from_dict(
+                        {
+                            "architecture": arch,
+                            "model": "baseline",
+                            "time": time_baseline,
+                            "phast_fraction": 0.0,
+                        }
+                    )
+                    df_time = pd.concat([df_time, dfaux], axis=0, ignore_index=True)
+                    dfaux = pd.DataFrame.from_dict(
+                        {
+                            "architecture": arch,
+                            "model": "phast",
+                            "time": time_phast,
+                            "phast_fraction": time_phast_fraction,
+                        }
+                    )
+                    df_time = pd.concat([df_time, dfaux], axis=0, ignore_index=True)
 
-    ### Plot
+    return df_mae, df_time
 
-    # Set up plot
-    sns.reset_orig()
-    sns.set(style="whitegrid")
-    plt.rcParams.update({"font.family": "serif"})
-    plt.rcParams.update(
-        {
-            "font.serif": [
-                "Computer Modern Roman",
-                "Times New Roman",
-                "Utopia",
-                "New Century Schoolbook",
-                "Century Schoolbook L",
-                "ITC Bookman",
-                "Bookman",
-                "Times",
-                "Palatino",
-                "Charter",
-                "serif" "Bitstream Vera Serif",
-                "DejaVu Serif",
-            ]
-        }
-    )
+
+def plot(df_orig, df_mae, df_time, config):
+    plot_setup()
 
     fig, axes = plt.subplots(
-        nrows=1, ncols=2, sharey=True, dpi=args.dpi, figsize=(8, 2)
+        nrows=1, ncols=2, sharey=True, dpi=config.plot.dpi, figsize=(8, 2)
     )
-
-    metrics = ["mae_phast_impr", ""]
-#     dict_ci = {m: {} for m in metrics}
 
     # MAE PhAST improvement
     ax = sns.pointplot(
         ax=axes[0],
         data=df_mae,
-        order=dict_archs.keys(),
+        estimator=np.mean,
+        errorbar="ci",
+        n_boot=config.plot.bs_n,
+        seed=config.plot.bs_seed,
+        order=[el.name for el in config.data.architectures],
         x="mae_phast_impr",
         y="architecture",
         hue="val",
-        hue_order=[k for k in dict_mae_markers.keys()],
-        markers=[v for v in dict_mae_markers.values()],
-        dodge=0.5,
-        palette=palette_val,
-#             errwidth=1.5,
-#             scale=0.6,
+        hue_order=[el.short for el in config.data.val_splits],
+        markers=[
+            config.plot.markers.val_splits[el.short] for el in config.data.val_splits
+        ],
+        dodge=config.plot.dodge,
+        palette=get_palette_val(
+            config.plot.colors.val.palette, len(config.data.val_splits)
+        ),
+        errwidth=config.plot.errwidth,
+        scale=config.plot.scale,
         join=False,
-#             estimator=trim_mean_wrapper,
-#             ci=int(args.alpha * 100),
-#             n_boot=args.n_bs,
-#             seed=args.bs_seed,
     )
     # Legend
-    leg_handles, leg_labels = ax.get_legend_handles_labels()
-    leg_labels = [dict_val[val] for val in leg_labels]
+    leg_handles, _ = ax.get_legend_handles_labels()
+    leg_labels = [el.name for el in config.data.val_splits]
     leg = ax.legend(
         handles=leg_handles,
         labels=leg_labels,
@@ -306,28 +156,23 @@ if __name__ == "__main__":
         framealpha=1.0,
         frameon=False,
         handletextpad=-0.4,
-        ncol=len(dict_val),
+        ncol=len(config.data.val_splits),
     )
-    # Plot Baseline
-    df_mae_baseline = pd.DataFrame(
-            {"architecture": df.architecture.unique(), "mae": [0.0, 0.0, 0.0]}
-    )
-    ax = sns.pointplot(
-        ax=axes[0],
-        data=df_mae_baseline,
-        order=dict_archs.keys(),
-        x="mae",
-        y="architecture",
-        markers=dict_time_markers["baseline"],
-        color=palette_baseline_phast[0],
-#             errwidth=1.5,
-#             scale=0.6,
-        join=False,
-#             estimator=trim_mean_wrapper,
-#             ci=int(args.alpha * 100),
-#             n_boot=args.n_bs,
-#             seed=args.bs_seed,
-    )
+    if config.plot.plot_baseline:
+        # Plot Baseline
+        df_mae_baseline = pd.DataFrame(
+            {"architecture": df_orig.architecture.unique(), "mae": [0.0, 0.0, 0.0]}
+        )
+        ax = sns.pointplot(
+            ax=axes[0],
+            data=df_mae_baseline,
+            order=[el.name for el in config.data.architectures],
+            x="mae",
+            y="architecture",
+            markers=config.plot.markers.models["baseline"],
+            color=get_palette_methods(config.plot.colors.methods.palette)[0],
+            join=False,
+        )
     # Set X-label
     ax.set_xlabel("MAE improvement [%]")
 
@@ -335,24 +180,18 @@ if __name__ == "__main__":
     ax = sns.pointplot(
         ax=axes[1],
         data=df_time,
-        order=dict_archs.keys(),
+        order=[el.name for el in config.data.architectures],
         x="time",
         y="architecture",
         hue="model",
-        hue_order=["baseline", "phast"],
-        markers=[v for v in dict_time_markers.values()],
-        palette=palette_baseline_phast,
-#             errwidth=1.5,
-#             scale=0.6,
+        hue_order=[el.key for el in config.data.models],
+        markers=[config.plot.markers.models[el.key] for el in config.data.models],
+        palette=get_palette_methods(config.plot.colors.methods.palette),
         join=False,
-#             estimator=trim_mean_wrapper,
-#             ci=int(args.alpha * 100),
-#             n_boot=args.n_bs,
-#             seed=args.bs_seed,
     )
     # Legend
-    leg_handles, leg_labels = ax.get_legend_handles_labels()
-    leg_labels = [dict_models[model] for model in leg_labels]
+    leg_handles, _ = ax.get_legend_handles_labels()
+    leg_labels = [el.name for el in config.data.models]
     leg = ax.legend(
         handles=leg_handles,
         labels=leg_labels,
@@ -362,7 +201,7 @@ if __name__ == "__main__":
         framealpha=1.0,
         frameon=False,
         handletextpad=-0.4,
-        ncol=len(dict_val),
+        ncol=len(config.data.val_splits),
     )
     # Set X-label
     ax.set_xlabel("Inference time [s]")
@@ -378,7 +217,9 @@ if __name__ == "__main__":
         ax.set_ylabel(None)
 
         # Y-tick labels
-        ax.set_yticklabels(list(dict_archs.values()), fontsize="medium")
+        ax.set_yticklabels(
+            list([el.name for el in config.data.architectures]), fontsize="medium"
+        )
 
         # X-ticks
         xticks = ax.get_xticks()
@@ -425,8 +266,38 @@ if __name__ == "__main__":
                 alpha=0.05,
             )
             ax.add_patch(rect)
+    return fig
 
 
+@hydra.main(config_path="./config", config_name="main")
+def main(config):
+    # Determine output dir
+    if config.io.output_dir.upper() == "SLURM_TMPDIR":
+        output_dir = Path(os.environ["SLURM_TMPDIR"])
+    else:
+        output_dir = Path(to_absolute_path(config.io.output_dir))
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=False)
+    # Store args
+    #     output_yml = output_dir / "phast_summary_plot.yml"
+    #     with open(output_yml, "w") as f:
+    #         yaml.dump(vars(config), f)
+    # Read CSVs
+    df_orig = pd.read_csv(to_absolute_path(config.io.input_csv_seeds), index_col=False)
+    df_orig_times = pd.read_csv(
+        to_absolute_path(config.io.input_csv_times), index_col=False
+    )
+    # Pre-process DataFrame
+    df_orig = preprocess_df(df_orig, config.data)
+    # Prepare data frames for plotting
+    df_mae, df_time = make_plot_dataframes(df_orig, df_orig_times)
+    # Plot
+    fig = plot(df_orig, df_mae, df_time, config)
     # Save figure
-    output_fig = output_dir / "summary.png"
-    fig.savefig(output_fig, dpi=fig.dpi, bbox_inches="tight")
+    output_fig = output_dir / config.io.output_filename
+    fig.savefig(output_fig, bbox_inches="tight")
+
+
+if __name__ == "__main__":
+    main()
+    sys.exit()

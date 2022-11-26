@@ -1,0 +1,109 @@
+plot:
+    dpi: 150
+    dodge: 0.6
+    scale: 0.75
+    errwidth: 1.5
+    bs_n: 1000
+    bs_seed: 17
+    plot_baseline: False
+    markers:
+        val_splits:
+            id: "o"
+            ad: "s"
+            cat: "^"
+            both: "h"
+        models:
+            baseline: "d"
+            phast: "*"
+        architectures:
+            SchNet: "o"
+            D++: "s"
+            ForceNet: "^"
+    colors:
+        val:
+            palette: mako
+        methods:
+            palette: vlag
+        methods_family:
+            palette: colorblind
+data:
+    seeds:
+        - 0
+        - 1
+        - 2
+    architectures:
+        - key: schnet
+          name: SchNet
+        - key: dpp
+          name: D++
+        - key: forcenet
+          name: ForceNet
+    val_splits:
+        - key: "eval/val_id-energy_mae"
+          short: id
+          name: ID
+        - key: "eval/val_ood_ads-energy_mae"
+          short: ad
+          name: OOD-ad
+        - key: "eval/val_ood_cat-energy_mae"
+          short: cat
+          name: OOD-cat
+        - key: "eval/val_ood_both-energy_mae"
+          short: both
+          name: OOD-both
+    models:
+        - key: baseline
+          name: Baseline
+        - key: phast
+          name: PhAST
+    methods:
+        - key: "tag-embed"
+          name: "tag-embed"
+        - key: "phys-embed"
+          name: "phys-embed"
+        - key: "l-phys-embed"
+          name: "l-phys-embed"
+        - key: "pg"
+          name: "pg"
+        - key: "All"
+          name: "all"
+        - key: "remove-tag-0"
+          name: "remove-tag-0"
+        - key: "sn-graph"
+          name: "sn-graph"
+        - key: "sn-atom-type"
+          name: "sn-atom-type"
+        - key: "w-init"
+          name: "w-init"
+        - key: "w-final"
+          name: "w-final"
+#         - key: "graclus"
+#           name: "graclus"
+        - key: "hoscpool"
+          name: "hoscpool"
+    methods_family:
+        - key: "tag-embed"
+          name: "atom-embeddings"
+        - key: "phys-embed"
+          name: "atom-embeddings"
+        - key: "l-phys-embed"
+          name: "atom-embeddings"
+        - key: "pg"
+          name: "atom-embeddings"
+        - key: "All"
+          name: "atom-embeddings"
+        - key: "remove-tag-0"
+          name: "graph-creation"
+        - key: "sn-graph"
+          name: "graph-creation"
+        - key: "sn-atom-type"
+          name: "graph-creation"
+        - key: "w-init"
+          name: "energy-head"
+        - key: "w-final"
+          name: "energy-head"
+#         - key: "graclus"
+#           name: "energy-head"
+        - key: "hoscpool"
+          name: "energy-head"
+
