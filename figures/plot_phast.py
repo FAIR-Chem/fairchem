@@ -255,8 +255,8 @@ def plot(df_orig, df_mae, df_time, config):
         # Y-lim
         display2data = ax.transData.inverted()
         ax2display = ax.transAxes
-        _, y_bottom = display2data.transform(ax.transAxes.transform((0.0, 0.02)))
-        _, y_top = display2data.transform(ax.transAxes.transform((0.0, 0.98)))
+        _, y_bottom = display2data.transform(ax.transAxes.transform((0.0, 0.0)))
+        _, y_top = display2data.transform(ax.transAxes.transform((0.0, 1.0)))
         ax.set_ylim(bottom=y_bottom, top=y_top)
 
         # Draw line at H0
