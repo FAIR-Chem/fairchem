@@ -222,7 +222,7 @@ def plot(df_orig, df_mae, df_time, config):
         y_coord = height * idx + height / 1.5 + offset * idx
         ax.annotate(f"{time_impr}x", xy=(0.0, idx),  xycoords='axes fraction',
                 xytext=(0.0, y_coord), textcoords='axes fraction',
-                horizontalalignment='right', verticalalignment='top',
+                horizontalalignment='right', verticalalignment='top', fontsize="small",
                 bbox=dict(boxstyle="round", fc="w", ec="k"),
                 )
     # Legend
