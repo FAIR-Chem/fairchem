@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
-from collections import OrderedDict
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -111,6 +110,29 @@ def plot(df_orig, df_mae, df_time, config):
         nrows=1, ncols=2, sharey=True, dpi=config.plot.dpi, figsize=(8, 8)
     )
 
+    # Auxiliary figure to get legend handles
+    figaux, axesaux = plt.subplots(
+        nrows=1, ncols=2, sharey=True, dpi=config.plot.dpi, figsize=(8, 8)
+    )
+    axaux = sns.pointplot(
+        ax=axesaux[0],
+        data=df_mae,
+        estimator=np.mean,
+        errorbar=None,
+        order=[el.key for el in config.data.methods],
+        x="mae_phast_impr",
+        y="method",
+        hue="val",
+        hue_order=[el.short for el in config.data.val_splits],
+        markers=[
+            config.plot.markers.val_splits[el.short] for el in config.data.val_splits
+        ],
+        dodge=config.plot.dodge,
+        color="black",
+        scale=config.plot.scale,
+        join=False,
+    )
+    leg_handles, _ = axaux.get_legend_handles_labels()
     # MAE PhAST improvement
     ax = sns.pointplot(
         ax=axes[0],
@@ -133,7 +155,6 @@ def plot(df_orig, df_mae, df_time, config):
         scale=0.0,
         join=False,
     )
-    leg_handles, leg_labels = ax.get_legend_handles_labels()
     for arch in df_orig.architecture.unique():
         ax = sns.pointplot(
             ax=axes[0],
@@ -154,9 +175,9 @@ def plot(df_orig, df_mae, df_time, config):
             scale=config.plot.scale,
             join=False,
         )
-    # Legend
+    # Legend architectures
     leg_labels = [el.name for el in config.data.architectures]
-    leg = ax.legend(
+    leg1 = ax.legend(
         handles=leg_handles[:3],
         labels=leg_labels,
         loc="center",
@@ -167,6 +188,24 @@ def plot(df_orig, df_mae, df_time, config):
         handletextpad=-0.4,
         ncol=len(config.data.val_splits),
     )
+    # Legend val
+    leg_handles = []
+    for val_split, color in zip(
+        config.data.val_splits,
+        get_palette_val(config.plot.colors.val.palette, len(config.data.val_splits)),
+    ):
+        leg_handles.append(mpatches.Patch(color=color, label=val_split.name))
+    leg2 = ax.legend(
+        handles=leg_handles,
+        loc="center",
+        title="",
+        bbox_to_anchor=(-0.2, 1.09, 1.0, 0.0),
+        framealpha=1.0,
+        frameon=False,
+        handletextpad=0.4,
+        ncol=len(config.data.val_splits),
+    )
+    ax.add_artist(leg1)
     if config.plot.plot_baseline:
         # Plot Baseline
         df_mae_baseline = pd.DataFrame(
@@ -230,7 +269,7 @@ def plot(df_orig, df_mae, df_time, config):
     for ax in axes:
 
         # Change spines
-        sns.despine(left=True, bottom=True)
+        sns.despine(ax=ax, left=True, bottom=True)
 
         # Set Y-label
         ax.set_ylabel(None)

@@ -10,13 +10,12 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
-from collections import OrderedDict
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.transforms as transforms
 from utils import plot_setup
-from utils import get_palette_val
+from utils import get_palette_val, get_palette_methods
 
 
 def preprocess_df(df, config):
@@ -141,21 +140,44 @@ def plot(df_orig, df_mae, df_time, config):
             config.plot.colors.val.palette, len(config.data.val_splits)
         ),
         errwidth=config.plot.errwidth,
-        scale=config.plot.scale,
+        scale=0.0,
         join=False,
     )
-    # Legend
-    leg_handles, _ = ax.get_legend_handles_labels()
-    leg_labels = [el.name for el in config.data.val_splits]
-    leg = ax.legend(
+    for arch in df_orig.architecture.unique():
+        ax = sns.pointplot(
+            ax=axes[0],
+            data=df_mae.loc[df_mae["architecture"] == arch],
+            estimator=np.mean,
+            errorbar=None,
+            order=[el.name for el in config.data.architectures],
+            x="mae_phast_impr",
+            y="architecture",
+            hue="val",
+            hue_order=[el.short for el in config.data.val_splits],
+            markers=config.plot.markers.architectures[arch],
+            dodge=config.plot.dodge,
+            palette=get_palette_val(
+                config.plot.colors.val.palette, len(config.data.val_splits)
+            ),
+            errwidth=0.0,
+            scale=config.plot.scale,
+            join=False,
+        )
+    # Legend val
+    leg_handles = []
+    for val_split, color in zip(
+        config.data.val_splits,
+        get_palette_val(config.plot.colors.val.palette, len(config.data.val_splits)),
+    ):
+        leg_handles.append(mpatches.Patch(color=color, label=val_split.name))
+    leg2 = ax.legend(
         handles=leg_handles,
-        labels=leg_labels,
         loc="center",
         title="",
-        bbox_to_anchor=(-0.2, 1.1, 1.0, 0.0),
+        bbox_to_anchor=(-0.2, 1.09, 1.0, 0.0),
         framealpha=1.0,
         frameon=False,
-        handletextpad=-0.4,
+        handletextpad=0.4,
         ncol=len(config.data.val_splits),
     )
     if config.plot.plot_baseline:
@@ -211,7 +233,7 @@ def plot(df_orig, df_mae, df_time, config):
     for ax in axes:
 
         # Change spines
-        sns.despine(left=True, bottom=True)
+        sns.despine(ax=ax, left=True, bottom=True)
 
         # Set Y-label
         ax.set_ylabel(None)

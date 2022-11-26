@@ -90,9 +90,6 @@ def get_palettes_methods_family(df_all, methods, palette_name):
     palette_base = {
         fam: color for fam, color in zip(df["method-family"].unique(), palette_base)
     }
-    import ipdb
-
-    ipdb.set_trace()
     palette = []
     idx = 0
     for method in methods:
