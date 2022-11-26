@@ -6,6 +6,7 @@ plot:
     bs_n: 1000
     bs_seed: 17
     plot_baseline: False
+    shade_alpha: 0.15
     markers:
         val_splits:
             id: "o"
@@ -22,10 +23,10 @@ plot:
     colors:
         val:
             palette: mako
-        methods:
+        models:
             palette: vlag
         methods_family:
-            palette: colorblind
+            palette: magma
 data:
     seeds:
         - 0

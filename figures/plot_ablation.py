@@ -13,7 +13,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.transforms as transforms
-from utils import get_palettes_methods_family, get_palette_val, get_palette_methods
+from utils import get_palette_methods_family, get_palette_val, get_palette_models
 from utils import plot_setup
 
 
@@ -182,11 +182,11 @@ def plot(df_orig, df_mae, df_time, config):
         labels=leg_labels,
         loc="center",
         title="",
-        bbox_to_anchor=(-0.2, 1.05, 1.0, 0.0),
+        bbox_to_anchor=(-0.52, 1.05, 1.0, 0.0),
         framealpha=1.0,
         frameon=False,
         handletextpad=-0.4,
-        ncol=len(config.data.val_splits),
+        ncol=len(config.data.architectures),
     )
     # Legend val
     leg_handles = []
@@ -221,7 +221,7 @@ def plot(df_orig, df_mae, df_time, config):
             x="mae_phast_impr",
             y="method",
             markers=config.plot.markers.models["baseline"],
-            color=get_palette_methods(config.plot.colors.methods.palette)[0],
+            color=get_palette_models(config.plot.colors.models.palette)[0],
             errwidth=1.5,
             scale=0.6,
             join=False,
@@ -241,25 +241,46 @@ def plot(df_orig, df_mae, df_time, config):
         hue="model",
         hue_order=["baseline", "phast"],
         markers=[config.plot.markers.models[el.key] for el in config.data.models],
-        palette=get_palette_methods(config.plot.colors.methods.palette),
+        palette=get_palette_models(config.plot.colors.models.palette),
         dodge=config.plot.dodge * 0.5,
         errwidth=config.plot.errwidth,
-        scale=config.plot.scale,
+        scale=0.0,
         join=False,
     )
-    # Legend
-    leg_handles, _ = ax.get_legend_handles_labels()
-    leg_labels = [el.name for el in config.data.models]
-    leg = ax.legend(
+    for arch in df_orig.architecture.unique():
+        ax = sns.pointplot(
+            ax=axes[1],
+            data=df_time[df_time["architecture"] == arch],
+            estimator=np.mean,
+            errorbar=min_max_errorbar,
+            order=[el.key for el in config.data.methods],
+            x="time",
+            y="method",
+            hue="model",
+            hue_order=["baseline", "phast"],
+            markers=config.plot.markers.architectures[arch],
+            palette=get_palette_models(config.plot.colors.models.palette),
+            dodge=config.plot.dodge * 0.5,
+            errwidth=0.0,
+            scale=config.plot.scale,
+            join=False,
+        )
+    # Legend models
+    leg_handles = []
+    for model, color in zip(
+        config.data.models,
+        get_palette_models(config.plot.colors.models.palette),
+    ):
+        leg_handles.append(mpatches.Patch(color=color, label=model.name))
+    leg1 = ax.legend(
         handles=leg_handles,
-        labels=leg_labels,
         loc="center",
         title="",
-        bbox_to_anchor=(-0.2, 1.05, 1.0, 0.0),
+        bbox_to_anchor=(0.0, 1.09, 1.0, 0.0),
         framealpha=1.0,
         frameon=False,
-        handletextpad=-0.4,
-        ncol=len(config.data.val_splits),
+        handletextpad=0.4,
+        ncol=len(config.data.models),
     )
     # Set X-label
     ax.set_xlabel("Inference time [s]")
@@ -286,7 +307,7 @@ def plot(df_orig, df_mae, df_time, config):
             xticks = np.append(xticks, 0.0)
             xticklabels = np.append(xticklabels, 0.0)
         ax.set_xticks(xticks)
-        ax.set_xticklabels(xticklabels, fontsize="small")
+        ax.set_xticklabels(xticklabels.astype(int), fontsize="small")
 
         # Y-lim
         display2data = ax.transData.inverted()
@@ -302,7 +323,7 @@ def plot(df_orig, df_mae, df_time, config):
             ax.plot(x, y, linestyle=":", linewidth=2.0, color="black", zorder=1)
 
         # Draw shaded areas
-        shade_palette = get_palettes_methods_family(
+        shade_palette = get_palette_methods_family(
             df_orig,
             [el.key for el in config.data.methods],
             config.plot.colors.methods_family.palette,
@@ -327,10 +348,36 @@ def plot(df_orig, df_mae, df_time, config):
                 linewidth=0.0,
                 edgecolor="none",
                 facecolor=shade_palette[idx],
-                alpha=0.15,
+                alpha=config.plot.shade_alpha,
                 zorder=0,
             )
             ax.add_patch(rect)
+    # Legend methods family
+    palette_methodsfam = []
+    for color in shade_palette[::-1]:
+        if color not in palette_methodsfam:
+            palette_methodsfam.append(color)
+    methods_family = []
+    for methodfam in config.data.methods_family:
+        if methodfam.name not in methods_family:
+            methods_family.append(methodfam.name)
+    leg_handles = []
+    for methodfam, color in zip(
+        methods_family,
+        palette_methodsfam,
+    ):
+        leg_handles.append(mpatches.Patch(color=color, label=methodfam, alpha=config.plot.shade_alpha))
+    leg2 = ax.legend(
+        handles=leg_handles,
+        loc="center",
+        title="",
+        bbox_to_anchor=(-0.2, 1.05, 1.0, 0.0),
+        framealpha=1.0,
+        frameon=False,
+        handletextpad=0.4,
+        ncol=len(config.data.methods_family),
+    )
+    ax.add_artist(leg1)
     return fig
 
 

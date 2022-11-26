@@ -44,7 +44,7 @@ def get_palette_val(palette_name, n_colors):
     return sns.color_palette(palette_name, as_cmap=False, n_colors=n_colors)
 
 
-def get_palette_methods(palette_name):
+def get_palette_models(palette_name):
     palette = sns.color_palette(palette_name, as_cmap=False, n_colors=3)
     return [palette[2], palette[0]]
 
@@ -81,7 +81,7 @@ def get_palettes_methods_family_prev(df_all, methods):
     return palette[::-1]
 
 
-def get_palettes_methods_family(df_all, methods, palette_name):
+def get_palette_methods_family(df_all, methods, palette_name):
     df = df_all[["method", "method-family"]].value_counts().reset_index(name="count")
     n_per_fam = df["method-family"].value_counts().drop("baseline")
     palette_base = sns.color_palette(

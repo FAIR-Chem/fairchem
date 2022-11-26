@@ -250,7 +250,7 @@ def plot(df_orig, df_mae, df_time, config):
             xticks = np.append(xticks, 0.0)
             xticklabels = np.append(xticklabels, 0.0)
         ax.set_xticks(xticks)
-        ax.set_xticklabels(xticklabels, fontsize="small")
+        ax.set_xticklabels(xticklabels.astype(int), fontsize="small")
 
         # Y-lim
         display2data = ax.transData.inverted()
