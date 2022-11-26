@@ -182,7 +182,7 @@ def plot(df_orig, df_mae, df_time, config):
         labels=leg_labels,
         loc="center",
         title="",
-        bbox_to_anchor=(-0.52, 1.05, 1.0, 0.0),
+        bbox_to_anchor=(-0.4, 1.05, 1.0, 0.0),
         framealpha=1.0,
         frameon=False,
         handletextpad=-0.4,
@@ -276,7 +276,7 @@ def plot(df_orig, df_mae, df_time, config):
         handles=leg_handles,
         loc="center",
         title="",
-        bbox_to_anchor=(0.0, 1.09, 1.0, 0.0),
+        bbox_to_anchor=(0.0, 1.05, 1.0, 0.0),
         framealpha=1.0,
         frameon=False,
         handletextpad=0.4,
@@ -359,8 +359,8 @@ def plot(df_orig, df_mae, df_time, config):
             palette_methodsfam.append(color)
     methods_family = []
     for methodfam in config.data.methods_family:
-        if methodfam.name not in methods_family:
-            methods_family.append(methodfam.name)
+        if methodfam.short not in methods_family:
+            methods_family.append(methodfam.short)
     leg_handles = []
     for methodfam, color in zip(
         methods_family,
@@ -371,7 +371,7 @@ def plot(df_orig, df_mae, df_time, config):
         handles=leg_handles,
         loc="center",
         title="",
-        bbox_to_anchor=(-0.2, 1.05, 1.0, 0.0),
+        bbox_to_anchor=(-0.6, -0.12, 1.0, 0.0),
         framealpha=1.0,
         frameon=False,
         handletextpad=0.4,

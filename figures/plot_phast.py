@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.transforms as transforms
 from utils import plot_setup
-from utils import get_palette_val, get_palette_methods
+from utils import get_palette_val, get_palette_models
 
 
 def preprocess_df(df, config):
@@ -192,7 +192,7 @@ def plot(df_orig, df_mae, df_time, config):
             x="mae",
             y="architecture",
             markers=config.plot.markers.models["baseline"],
-            color=get_palette_methods(config.plot.colors.methods.palette)[0],
+            color=get_palette_models(config.plot.colors.models.palette)[0],
             join=False,
         )
     # Set X-label
@@ -208,9 +208,23 @@ def plot(df_orig, df_mae, df_time, config):
         hue="model",
         hue_order=[el.key for el in config.data.models],
         markers=[config.plot.markers.models[el.key] for el in config.data.models],
-        palette=get_palette_methods(config.plot.colors.methods.palette),
+        palette=get_palette_models(config.plot.colors.models.palette),
         join=False,
     )
+    # Text annotations
+    for idx, arch in enumerate(config.data.architectures[::-1]):
+        df_arch = df_time.loc[df_time.architecture == arch.name]
+        time_baseline = df_arch.loc[df_arch.model == "baseline", "time"].mean()
+        time_phast = df_arch.loc[df_arch.model == "phast", "time"].mean()
+        time_impr = round(time_baseline / time_phast, 1)
+        offset = 0.05
+        height = 0.3
+        y_coord = height * idx + height / 1.5 + offset * idx
+        ax.annotate(f"{time_impr}x", xy=(0.0, idx),  xycoords='axes fraction',
+                xytext=(0.0, y_coord), textcoords='axes fraction',
+                horizontalalignment='right', verticalalignment='top',
+                bbox=dict(boxstyle="round", fc="w", ec="k"),
+                )
     # Legend
     leg_handles, _ = ax.get_legend_handles_labels()
     leg_labels = [el.name for el in config.data.models]
