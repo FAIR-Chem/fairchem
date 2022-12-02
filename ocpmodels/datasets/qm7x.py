@@ -448,7 +448,7 @@ class BaseQM7X(Molecule, CDataset):
         """
         datadic = {}
         structure_count = 0
-        for set_id in QM7X.set_ids:
+        for set_id in self.set_ids:
             with h5py.File(in_dir + set_id + ".hdf5", "r") as f:
                 for idmol in f:
                     print(
@@ -498,11 +498,18 @@ class InMemoryQM7X(BaseQM7X):
         attribute_remapping={"atNUM": "z", "atXYZ": "pos"},
         max_structures=-1,
         selector=[".+"],
+        set_ids=None,
     ):
         ignores = set(ignore_features)
         self.attribute_remapping = attribute_remapping
         self.y = y
         self.max_structures = max_structures
+
+        if set_ids is not None:
+            assert isinstance(set_ids, list)
+            assert all(s in BaseQM7X.set_ids for s in set_ids)
+            self.set_ids = set_ids
+
         super().__init__(
             in_dir=in_dir,
             features=features,
