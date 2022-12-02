@@ -44,6 +44,9 @@ if __name__ == "__main__":
 
     set_ids = None
     if args.set_id is not None:
+        if args.set_id == "from_procid":
+            args.set_id = (int(os.environ["SLURM_PROCID"]) + 1) * 1000
+            print("Setting `set_id` to", args.set_id)
         set_ids = [str(int(args.set_id)).strip()]
     if args.set_ids is not None:
         set_ids = [x.strip() for x in args.set_ids.split(",")]
