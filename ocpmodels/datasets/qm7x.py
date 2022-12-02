@@ -605,7 +605,7 @@ class QM7X(InMemoryQM7X):
         )
 
         self.sample_mapping = []
-        for idmol in self.ds:
+        for idmol in self.ds:  # self.ds contains the path to all molecules .pt files
             for d, data in enumerate(torch.load(self.ds[idmol])):
                 assert (
                     data.idmol == idmol
@@ -613,7 +613,7 @@ class QM7X(InMemoryQM7X):
                 self.sample_mapping.append((idmol, d))
 
     def load_data(self, selector, in_dir):
-        paths = Path(in_dir).glob("*.pt")
+        paths = sorted(Path(in_dir).glob("*.pt"))
         datadict = defaultdict(dict)
         for p in paths:
             idmol = int(p.stem)
