@@ -13,8 +13,9 @@ from rdkit.Chem import AllChem
 from scipy import spatial as sp
 from torch import as_tensor
 from torch_geometric.data import Data
-
+import json
 from cosmosis.dataset import CDataset
+from tqdm import tqdm
 
 
 class Molecule:
@@ -590,6 +591,8 @@ class QM7X(InMemoryQM7X):
         attribute_remapping={"atNUM": "z", "atXYZ": "pos"},
         max_structures=-1,
         selector=[".+"],
+        sample_mapping_path=None,
+        split=None,
     ):
         self.attribute_remapping = attribute_remapping
         self.y = y
@@ -603,14 +606,29 @@ class QM7X(InMemoryQM7X):
             max_structures=max_structures,
             selector=selector,
         )
-
-        self.sample_mapping = []
-        for idmol in self.ds:  # self.ds contains the path to all molecules .pt files
-            for d, data in enumerate(torch.load(self.ds[idmol])):
-                assert (
-                    data.idmol == idmol
-                ), f"idmol mismatch: data ({data.idmol}) != ds index ({idmol})"
-                self.sample_mapping.append((idmol, d))
+        if sample_mapping_path is not None:
+            smp = Path(sample_mapping_path).expanduser().resolve()
+            assert smp.exists(), f"sample mapping path {str(smp)} does not exist"
+            all_samples = json.loads(smp.read_text())
+            assert "structures" in all_samples
+            assert split is not None
+            assert split in all_samples, f"split {split} not found in sample mapping"
+            self.sample_mapping = [
+                all_samples["structures"][i] for i in all_samples[split]
+            ]
+            ds_keys = set(self.ds.keys())
+            idmols = set([i[0] for i in self.sample_mapping])
+            assert all(i in ds_keys for i in idmols)
+        else:
+            self.sample_mapping = []
+            for idmol in tqdm(
+                self.ds
+            ):  # self.ds contains the path to all molecules .pt files
+                for d, data in enumerate(torch.load(self.ds[idmol])):
+                    assert (
+                        data.idmol == idmol
+                    ), f"idmol mismatch: data ({data.idmol}) != ds index ({idmol})"
+                    self.sample_mapping.append((idmol, d))
 
     def load_data(self, selector, in_dir):
         paths = sorted(Path(in_dir).glob("*.pt"))
