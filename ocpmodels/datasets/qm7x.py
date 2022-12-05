@@ -1,10 +1,12 @@
+import time
+from torch.utils.data import Dataset
 import random
 import re
 from abc import abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable
 from pathlib import Path
-
+import pickle
 import h5py
 import numpy as np
 import torch
@@ -16,6 +18,7 @@ from torch_geometric.data import Data
 import json
 from cosmosis.dataset import CDataset
 from tqdm import tqdm
+import lmdb
 
 
 class Molecule:
@@ -581,7 +584,7 @@ class InMemoryQM7X(BaseQM7X):
         return data
 
 
-class QM7X(InMemoryQM7X):
+class QM7XFromPT(InMemoryQM7X):
     def __init__(
         self,
         in_dir,
@@ -612,9 +615,11 @@ class QM7X(InMemoryQM7X):
             all_samples = json.loads(smp.read_text())
             assert "structures" in all_samples
             assert split is not None
-            assert split in all_samples, f"split {split} not found in sample mapping"
+            assert (
+                split in all_samples["splits"]
+            ), f"split {split} not found in sample mapping"
             self.sample_mapping = [
-                all_samples["structures"][i] for i in all_samples[split]
+                all_samples["structures"][i] for i in all_samples["splits"][split]
             ]
             ds_keys = set(self.ds.keys())
             idmols = set([i[0] for i in self.sample_mapping])
@@ -640,3 +645,123 @@ class QM7X(InMemoryQM7X):
 
     def from_ds(self, idmol, idconf):
         return torch.load(self.ds[idmol])[idconf]
+
+    def __getitem__(self, i):
+        idmol, idconf = self.sample_mapping[i]
+        data = self.from_ds(idmol, idconf)
+
+        for k, v in self.attribute_remapping.items():
+            setattr(data, v, getattr(data, k))
+            delattr(data, k)
+
+        if self.y:
+            setattr(data, "y", getattr(data, self.y))
+
+        if self.transform is not None:
+            if callable(self.transform):
+                data = self.transform(data)
+            elif isinstance(self.transform, Iterable):
+                for transform in self.transform:
+                    data = transform(data)
+            else:
+                raise ValueError(
+                    "`transform` must be None, callable or iterable. Received: "
+                    + str(self.transform)
+                )
+
+        data.idmol = idmol
+        data.idconf = idconf
+
+        return data
+
+
+class QM7XFromLMDB(Dataset):
+    # Designed to use LMDBs created by:
+    # 1. python scripts/make_qm7x_preprocessed.py \
+    #       input_dir="/home/mila/s/schmidtv/scratch/ocp-scratch/qm7x/" \
+    #       output_dir="/home/mila/s/schmidtv/scratch/ocp-scratch/qm7x/processed/" \
+    #       set_id=X
+    #    for X in {1000, ..., 8000}
+    #    (see Victor's make_qm7x_data.sh for a multi-task SLURM job version)
+    # 2. python scripts/make_qm7x_lmdbs.py \
+    #        input_dir="/home/mila/s/schmidtv/scratch/ocp-scratch/qm7x/processed" \
+    #        workers=2
+
+    def __init__(self, lmdb_path, sample_mapping_path, split, transform=None):
+        lmdb_path = Path(lmdb_path).expanduser().resolve()
+        self.lmdb_path = str(lmdb_path)
+        if not lmdb_path.exists():
+            raise FileNotFoundError(f"lmdb path {str(lmdb_path)} does not exist")
+        lmdbs = None
+        if lmdb_path.is_dir():
+            lmdbs = sorted(lmdb_path.glob("*.lmdb"))
+        else:
+            assert lmdb_path.suffix == ".lmdb"
+            lmdbs = [lmdb_path]
+        self.env_paths = lmdbs
+        self.envs = [
+            lmdb.open(
+                str(ep),
+                subdir=False,
+                readonly=True,
+                lock=False,
+                readahead=False,
+                meminit=False,
+                max_readers=1,
+            )
+            for ep in self.env_paths
+        ]
+
+        sample_mapping_path = Path(sample_mapping_path).expanduser().resolve()
+        assert (
+            sample_mapping_path.exists()
+        ), f"sample mapping path {str(sample_mapping_path)} does not exist"
+        all_samples = json.loads(sample_mapping_path.read_text())
+        assert "structures" in all_samples
+        assert split is not None
+        assert (
+            split in all_samples["splits"]
+        ), f"split {split} not found in sample mapping"
+
+        self.keys = [
+            f'{all_samples["structures"][i][0]}-{all_samples["structures"][i][1]}'
+            for i in all_samples["splits"][split]
+        ]
+
+        self.env_keys = {}
+        for e, env in enumerate(self.envs):
+            with env.begin() as txn:
+                keys = list(
+                    map(
+                        lambda k: k.decode("utf-8"), txn.cursor().iternext(values=False)
+                    )
+                )
+            for k in keys:
+                self.env_keys[k] = e
+
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.keys)
+
+    def __getitem__(self, i):
+        t0 = time.time_ns()
+        key = self.keys[i]
+        env = self.envs[self.env_keys[key]]
+        with env.begin() as txn:
+            data_object = pickle.loads(txn.get(key.encode("utf-8")))
+
+        t1 = time.time_ns()
+        if self.transform is not None:
+            data_object = self.transform(data_object)
+        t2 = time.time_ns()
+
+        load_time = (t1 - t0) * 1e-9  # time in s
+        transform_time = (t2 - t1) * 1e-9  # time in s
+        total_get_time = (t2 - t0) * 1e-9  # time in s
+
+        data_object.load_time = load_time
+        data_object.transform_time = transform_time
+        data_object.total_get_time = total_get_time
+
+        return data_object
