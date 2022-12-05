@@ -1,104 +1,120 @@
-import math
 import numpy as np
-import pandas as pd
-import pickle
-
-from tqdm import tqdm
-from ase.geometry import find_mic
 from ase import neighborlist
 from ase.neighborlist import natural_cutoffs
-from ase.io import read, write
-from ase.io.trajectory import Trajectory
-from pymatgen.io.ase import AseAtomsAdaptor
-from pymatgen.core.structure import SiteCollection
-from pymatgen.core.surface import SlabGenerator
-from pymatgen.analysis.local_env import VoronoiNN
+
 
 class DetectTrajAnomaly:
-    def __init__(self, init_atoms, final_atoms, atoms_tag):
+    def __init__(
+        self,
+        init_atoms,
+        final_atoms,
+        atoms_tag,
+        final_slab_atoms=None,
+        surface_change_cutoff_multiplier=1.5,
+        desorption_cutoff_multiplier=1.5,
+    ):
         """
-        flag anomalies based on initial and final stucture of a relaxation.
+        Flag anomalies based on initial and final stucture of a relaxation.
+
         Args:
-               init_atoms         `ase.Atoms` of the adslab in its initial state
-               final_atoms        `ase.Atoms` of the adslab in its final state
-               atoms_tag (list)    0=bulk, 1=surface, 2=adsorbate
+            init_atoms (ase.Atoms): the adslab in its initial state
+            final_atoms (ase.Atoms): the adslab in its final state
+            atoms_tag (list): the atom tags; 0=bulk, 1=surface, 2=adsorbate
+            final_slab_atoms (ase.Atoms, optional): the relaxed slab if unspecified this defaults
+            to using the initial adslab instead.
+            surface_change_cutoff_multiplier (float, optional): cushion for small atom movements
+                when assessing atom connectivity for reconstruction
+            desorption_cutoff_multiplier (float, optional): cushion for physisorbed systems to not
+                be discarded. Applied to the covalent radii.
         """
         self.init_atoms = init_atoms
         self.final_atoms = final_atoms
+        self.final_slab_atoms = final_slab_atoms
         self.atoms_tag = atoms_tag
+        self.surface_change_cutoff_multiplier = surface_change_cutoff_multiplier
+        self.desorption_cutoff_multiplier = desorption_cutoff_multiplier
+
+        if self.final_slab_atoms is None:
+            slab_idxs = [idx for idx, tag in enumerate(self.atoms_tag) if tag != 2]
+            self.final_slab_atoms = self.init_atoms[slab_idxs]
 
     def is_adsorbate_dissociated(self):
         """
-        True if the adsorbate is dissociated.
-        """
-        # test to see if adsorbate is dissociated from surface
-        adsorbate_idx = [idx for idx, tag in enumerate(self.atoms_tag) if tag==2]
+        Tests if the initial adsorbate connectivity is maintained.
 
-        # if adsorbate is dissociated, the connectivity matrix would change
-        initial_connectivity = self._get_connectivity(self.init_atoms[adsorbate_idx])
-        final_connectivity = self._get_connectivity(self.final_atoms[adsorbate_idx])
-        return np.array_equal(initial_connectivity, final_connectivity) is False
+        Returns:
+            (bool): True if the connectivity was not maintained, otherwise False
+        """
+        adsorbate_idx = [idx for idx, tag in enumerate(self.atoms_tag) if tag == 2]
+        return not (
+            np.array_equal(
+                self._get_connectivity(self.init_atoms[adsorbate_idx]),
+                self._get_connectivity(self.final_atoms[adsorbate_idx]),
+            )
+        )
 
-    def is_surface_reconstructed(self, slab_movement_thres=1):
+    def has_surface_changed(self):
         """
-        if any slab atoms moved more than X Angstrom, consider possible reconstruction.
-        A larger X means the user is more conversative of what's considered reconstructed.
-        """
-        slab_idx = [idx for idx, tag in enumerate(self.atoms_tag) if tag!=2]
-        slab_init = self.init_atoms[slab_idx]
-        slab_final = self.final_atoms[slab_idx]
-        max_slab_movement = self._find_max_movement(slab_init, slab_final)
-        return max_slab_movement >= slab_movement_thres
+        Tests bond breaking / forming events within a tolerance on the surface so
+        that systems with significant adsorbate induces surface changes may be discarded
+        since the reference to the relaxed slab may no longer be valid.
 
-    def is_adsorbate_desorbed(self, neighbor_thres=3):
+        Returns:
+            (bool): True if the surface is reconstructed, otherwise False
         """
-        if the adsorbate binding atoms have no connection with slab atoms,
-        consider it desorbed (returns True).
-        Args:
-            neighbor_thres    Given an atom, threshold (angstorm) for getting connecting
-                              neighbor atoms, 3 is a fairly reasonable number.
-        """
-        adsorbate_atoms_idx = [idx for idx, tag in enumerate(self.atoms_tag) if tag==2]
-        surface_atoms_idx = [idx for idx, tag in enumerate(self.atoms_tag) if tag==1]
-        adslab_struct = AseAtomsAdaptor.get_structure(self.final_atoms)
+        surf_idx = [idx for idx, tag in enumerate(self.atoms_tag) if tag != 2]
 
-        vnn = VoronoiNN(allow_pathological=True, tol=0.8, cutoff=6)
+        adslab_connectivity = self._get_connectivity(self.final_atoms[surf_idx])
+        slab_connectivity_w_cushion = self._get_connectivity(
+            self.final_slab_atoms, self.surface_change_cutoff_multiplier
+        )
+        slab_test = 1 in adslab_connectivity - slab_connectivity_w_cushion
+
+        adslab_connectivity_w_cushion = self._get_connectivity(
+            self.final_atoms[surf_idx], self.surface_change_cutoff_multiplier
+        )
+        slab_connectivity = self._get_connectivity(self.final_slab_atoms)
+        adslab_test = 1 in slab_connectivity - adslab_connectivity_w_cushion
+
+        return any([slab_test, adslab_test])
+
+    def is_adsorbate_desorbed(self):
+        """
+        If the adsorbate binding atoms have no connection with slab atoms,
+        consider it desorbed.
+
+        Returns:
+            (bool): True if there is desorption, otherwise False
+        """
+        adsorbate_atoms_idx = [
+            idx for idx, tag in enumerate(self.atoms_tag) if tag == 2
+        ]
+        surface_atoms_idx = [idx for idx, tag in enumerate(self.atoms_tag) if tag != 2]
+        final_connectivity = self._get_connectivity(
+            self.final_atoms, self.desorption_cutoff_multiplier
+        )
+
         for idx in adsorbate_atoms_idx:
-            neighbors = adslab_struct.get_neighbors(adslab_struct[idx], neighbor_thres)
-            surface_neighbors = [n.index for n in neighbors if n.index in surface_atoms_idx]
-            if len(surface_neighbors) != 0:
+            if sum(final_connectivity[idx][surface_atoms_idx]) >= 1:
                 return False
         return True
 
-    def _find_max_movement(self, init_atoms, final_atoms):
-        '''
-        Given ase.Atoms objects, find the furthest distance that any single atom in
-        a set of atoms traveled (in Angstroms)
-        Args:
-                init_atoms      `ase.Atoms` of the structure in its initial state
-                final_atoms     `ase.Atoms` of the structure in its final state
-        Returns:
-                max_movement    A float indicating the further movement of any single atom
-                                before and after relaxation (in Angstroms)
-        '''
-        # Calculate the distances for each atom
-        distances = final_atoms.positions - init_atoms.positions
-
-        # Reduce the distances in case atoms wrapped around (the minimum image convention)
-        _, movements = find_mic(distances, final_atoms.cell, final_atoms.pbc)
-        max_movement = max(movements)
-        return max_movement
-
-    def _get_connectivity(self, atoms):
+    def _get_connectivity(self, atoms, cutoff_multiplier=1.0):
         """
         Generate the connectivity of an atoms obj.
+
         Args:
-                    atoms      An `ase.Atoms` object
+            atoms (ase.Atoms): object which will have its connectivity considered
+            cutoff_multiplier (float, optional): cushion for small atom movements when assessing
+                atom connectivity
+
         Returns:
-                    matrix     The connectivity matrix of the atoms object.
+            (np.ndarray): The connectivity matrix of the atoms object.
         """
-        cutoff = natural_cutoffs(atoms)
-        neighborList = neighborlist.NeighborList(cutoff, self_interaction=False, bothways=True)
-        neighborList.update(atoms)
-        matrix = neighborlist.get_connectivity_matrix(neighborList.nl).toarray()
+        cutoff = natural_cutoffs(atoms, mult=cutoff_multiplier)
+        ase_neighbor_list = neighborlist.NeighborList(
+            cutoff, self_interaction=False, bothways=True
+        )
+        ase_neighbor_list.update(atoms)
+        matrix = neighborlist.get_connectivity_matrix(ase_neighbor_list.nl).toarray()
         return matrix
