@@ -6,7 +6,7 @@ default:
     num_gaussians: 100
     cutoff: 6.0
     use_pbc: True
-    regress_forces: False
+    regress_forces: False # can be in {"from_energy", "direct", "direct_with_gradient_target"}
     # drlab attributes:
     hidden_channels: 256
     num_interactions: 3
@@ -88,16 +88,26 @@ is2re:
 s2ef:
   default:
     model:
-      hidden_channels: 384
+      num_interactions: 4
+      hidden_channels: 512
+      num_gaussians: 150
+      num_filters: 256
       regress_forces: "direct"
       force_coefficient: 30
       energy_grad_coefficient: 10
     optim:
-      warmup_steps: 5394
+      warmup_factor: 0.2
+      batch_size: 32
+      eval_batch_size: 32
+      num_workers: 4
+      lr_gamma: 0.1
+      lr_initial: 0.0002
+      max_epochs: 20
+      warmup_steps: 20000
       lr_milestones:
-        - 17981
-        - 26972
-        - 35963
+        - 40000
+        - 60000
+        - 80000
   200k: {}
 
   2M: {}
