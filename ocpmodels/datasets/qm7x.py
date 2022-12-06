@@ -687,8 +687,19 @@ class QM7XFromLMDB(Dataset):
     #        input_dir="/home/mila/s/schmidtv/scratch/ocp-scratch/qm7x/processed" \
     #        workers=2
 
-    def __init__(self, lmdb_path, sample_mapping_path, split, transform=None):
-        lmdb_path = Path(lmdb_path).expanduser().resolve()
+    def __init__(
+        self,
+        config={
+            "lmdb_path": "/network/projects/ocp/qm7x/processed",
+            "sample_mapping_path": Path(__file__).resolve().parent.parent.parent
+            / "configs"
+            / "qm7x-metadata"
+            / "samples.json",
+            "split": "train",
+        },
+        transform=None,
+    ):
+        lmdb_path = Path(config["lmdb_path"]).expanduser().resolve()
         self.lmdb_path = str(lmdb_path)
         if not lmdb_path.exists():
             raise FileNotFoundError(f"lmdb path {str(lmdb_path)} does not exist")
@@ -712,7 +723,8 @@ class QM7XFromLMDB(Dataset):
             for ep in self.env_paths
         ]
 
-        sample_mapping_path = Path(sample_mapping_path).expanduser().resolve()
+        sample_mapping_path = Path(config["sample_mapping_path"]).expanduser().resolve()
+        split = config.get("split")
         assert (
             sample_mapping_path.exists()
         ), f"sample mapping path {str(sample_mapping_path)} does not exist"
@@ -756,6 +768,13 @@ class QM7XFromLMDB(Dataset):
             data_object = self.transform(data_object)
         t2 = time.time_ns()
 
+        data.y  # ePBE0+MBD
+        data.force  # totFOR
+        data.tags = torch.full((data.natoms,), -1, dtype=torch.long)
+        data.cell_offsets = torch.zeros((data.edge_index.shape[1], 3))
+        data.atomic_numbers = data.atNUM
+        data.natoms = len(data.pos)
+
         load_time = (t1 - t0) * 1e-9  # time in s
         transform_time = (t2 - t1) * 1e-9  # time in s
         total_get_time = (t2 - t0) * 1e-9  # time in s
@@ -765,3 +784,76 @@ class QM7XFromLMDB(Dataset):
         data_object.total_get_time = total_get_time
 
         return data_object
+
+
+if __name__ == "__main__":
+    from ocpmodels.datasets.qm7x import QM7XFromLMDB as QM7X
+    from pathlib import Path
+    from tqdm import tqdm
+    import numpy as np
+    import json
+    from ocpmodels.common.data_parallel import ParallelCollater
+
+    in_dir = Path("/network/projects/ocp/qm7x/processed")
+    smp = Path("configs/models/qm7x-metadata/samples.json")
+    split = "train"
+    config = {
+        "lmdb_path": in_dir,
+        "sample_mapping_path": smp,
+        "split": split,
+    }
+
+    ql = QM7X(config=config)
+
+    max_iter = None
+    data = {}
+    ignores = {
+        "idconf",
+        "load_time",
+        "transform_time",
+        "total_get_time",
+        "atNUM",
+        "atXYZ",
+        "distance",
+        "idmol",
+    }
+    parallel_collater = ParallelCollater(0, True)
+
+    for b, batch in enumerate(
+        tqdm(
+            torch.utils.data.DataLoader(
+                ql, batch_size=512, num_workers=8, collate_fn=parallel_collater
+            )
+        )
+    ):
+        s = {k: v for k, v in batch[0].to_dict().items() if k not in ignores}
+        for k, v in s.items():
+            if k not in data:
+                data[k] = []
+            data[k].extend(
+                [
+                    x.reshape((-1,)).tolist() if isinstance(x, np.ndarray) else [x]
+                    for x in v
+                ]
+            )
+        if max_iter and b > max_iter:
+            break
+
+    stats = {}
+    for k, v in tqdm(data.items()):
+        stats[k] = {}
+        s = np.concatenate([z.reshape(-1) for x in v for z in x], axis=0)
+        nans = np.isnan(s)
+        if nans.sum():
+            print(
+                f"WARNING: {nans.sum()} NaNs in {k} ignoring",
+                "those values to compute stats",
+            )
+        non_nans = np.where(~nans)
+        stats[k]["mean"] = np.mean(s[non_nans])
+        stats[k]["std"] = np.sqrt(np.mean((s[non_nans] - stats[k]["mean"]) ** 2))
+
+    Path("configs/models/qm7x-metadata/stats.json").write_text(
+        json.dumps({k: v.tolist() for k, v in stats.items()})
+    )
+    print("\n\n", stats)
