@@ -6,6 +6,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from time import time
+import numpy as np
 
 from minydra import resolved_args
 
@@ -196,18 +197,23 @@ if __name__ == "__main__":
         " ".join(conf).replace("--", "").replace("configs/is2re/10k/", "")
         for conf in configs
     ]
+    order = np.argsort(conf_strs)
+    configs = [configs[o] for o in order]
+    conf_strs = [conf_strs[o] for o in order]
 
     if not configs:
         print("No configs to run 🥶")
     else:
         print("🥁 Configs to test:")
-        p = 0
+        current = None
         for c, conf in enumerate(configs):
-            if c and p <= len(models) and c % len(features) == 0:
+            model = conf[0].split("=")[1].split("-")[0]
+            if current is None:
+                current = model
+            if model != current:
                 print()
-                p += 1
+                current = model
             print(f"  • {c+1:3} " + conf_strs[c])
-
         print()
 
     nk = len(str(len(configs)))
