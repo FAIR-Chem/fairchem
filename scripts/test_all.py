@@ -122,6 +122,8 @@ if __name__ == "__main__":
         ["--config=sfarinet-is2re-10k"],
         ["--config=sfarinet-qm9-10k"],
         ["--config=sfarinet-s2ef-200k"],
+        ["--config=sfarinet-qm7x-all"],
+        ["--config=schnet-qm7x-all"],
     ]
 
     features = [
@@ -151,6 +153,9 @@ if __name__ == "__main__":
         "--config=forcenet-s2ef-200k --regress_forces=direct_with_gradient_target",
         "--config=sfarinet-s2ef-200k --regress_forces=direct_with_gradient_target",
         "--config=fanet-s2ef-200k --regress_forces=direct_with_gradient_target",
+        "--config=sfarinet-qm7x-all --regress_forces=direct",
+        "--config=sfarinet-qm7x-all --regress_forces=direct_with_gradient_target",
+        "--config=sfarinet-qm7x-all --regress_forces=from_energy",
     ]
     singles = [s.split() for s in singles]
 
