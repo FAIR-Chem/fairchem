@@ -1,0 +1,51 @@
+default:
+  trainer: single
+  logger: wandb
+
+  model:
+    otf_graph: True
+    max_num_neighbors: 40
+    use_pbc: False
+    force_decoder_type: null
+
+  task:
+    dataset: qm7x
+    description: "QM7-X"
+    type: regression
+    metric: mae
+    labels:
+      - total system energy
+
+  optim:
+    force_coefficient: 30
+    energy_coefficient: 1
+    energy_grad_coefficient: 10
+
+  normalizer: null
+
+  mode: train
+  dataset:
+    - in_dir: /network/projects/ocp/qm7x/processed
+      normalize_labels: True # mean and std of target will be set by qm9.py if this is True
+      split: train
+      target: ePBE0+MBD
+      forces_target: totFOR
+    - in_dir: /network/projects/ocp/qm7x/processed
+      normalize_labels: True # mean and std of target will be set by qm9.py if this is True
+      split: val_id
+      target: ePBE0+MBD
+      forces_target: totFOR
+
+    # TEST SET DO NOT ENABLE
+    # - src: /network/projects/ocp/qm9
+    #   target: 7 # predict internal energy at 0K at index 7
+    #   seed: 123
+    #   ratio:
+    #     start: 0.85
+    #     end: 1.0
+
+# ^`target` is a string to select the target to predict as per
+# https://arxiv.org/abs/2006.15139 Table 2
+
+
+all: {}
