@@ -758,10 +758,9 @@ class QM7XFromLMDB(Dataset):
         if config.get("1k"):
             txs = [env.begin() for env in self.envs]
             self.env_keys = {
-                [t for t, tx in enumerate(txs) if tx.get(k.encode("utf-8"))][0]: k
+                k: [t for t, tx in enumerate(txs) if tx.get(k.encode("utf-8"))][0]
                 for k in self.keys
             }
-            txs = [e.close() for e in txs]
         else:
             for e, env in enumerate(self.envs):
                 with env.begin() as txn:
@@ -786,17 +785,17 @@ class QM7XFromLMDB(Dataset):
         with env.begin() as txn:
             data = pickle.loads(txn.get(key.encode("utf-8")))
 
-        t1 = time.time_ns()
-        if self.transform is not None:
-            data = self.transform(data)
-        t2 = time.time_ns()
-
         data.y = torch.tensor(data["ePBE0+MBD"])
         data.force = torch.tensor(data["totFOR"])
         data.pos = torch.tensor(data["atXYZ"])
         data.natoms = len(data.pos)
         data.tags = torch.full((data.natoms,), -1, dtype=torch.long)
         data.atomic_numbers = torch.tensor(data.atNUM, dtype=torch.long)
+
+        t1 = time.time_ns()
+        if self.transform is not None:
+            data = self.transform(data)
+        t2 = time.time_ns()
 
         load_time = (t1 - t0) * 1e-9  # time in s
         transform_time = (t2 - t1) * 1e-9  # time in s
