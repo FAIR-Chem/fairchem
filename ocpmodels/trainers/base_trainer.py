@@ -50,7 +50,7 @@ class BaseTrainer(ABC):
 
         run_dir = kwargs["run_dir"]
         model_name = kwargs["model"].pop("name")
-        kwargs["model"]["graph_rewiring"] = kwargs["graph_rewiring"]
+        kwargs["model"]["graph_rewiring"] = kwargs.get("graph_rewiring")
 
         self.config = {
             **kwargs,
@@ -863,7 +863,8 @@ class BaseTrainer(ABC):
             for g in g_list:
                 g = fa_transform(g)
             batch_rotated = Batch.from_data_list(g_list)
-            batch_rotated.neighbors = batch.neighbors
+            if hasattr(batch, "neighbors"):
+                batch_rotated.neighbors = batch.neighbors
 
         return {"batch_list": [batch_rotated], "rot": rot}
 
@@ -899,6 +900,7 @@ class BaseTrainer(ABC):
             for g in g_list:
                 g = fa_transform(g)
             batch_reflected = Batch.from_data_list(g_list)
-            batch_reflected.neighbors = batch.neighbors
+            if hasattr(batch, "neighbors"):
+                batch_reflected.neighbors = batch.neighbors
 
         return {"batch_list": [batch_reflected], "rot": rot}

@@ -133,7 +133,7 @@ class AddAttributes:
 def get_transforms(trainer_config):
     transforms = [
         AddAttributes(),
-        GraphRewiring(trainer_config["graph_rewiring"]),
+        GraphRewiring(trainer_config.get("graph_rewiring")),
         FrameAveraging(trainer_config["frame_averaging"], trainer_config["fa_frames"]),
     ]
     return Compose(transforms)
