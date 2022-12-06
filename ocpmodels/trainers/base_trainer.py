@@ -743,6 +743,8 @@ class BaseTrainer(ABC):
             val_sets = ["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]
         elif self.task_name == "qm9":
             val_sets = ["val"]
+        elif self.task_name == "qm7x":
+            val_sets = ["val_id", "val_ood"]
         else:
             raise ValueError(f"Unknown task {self.task_name}")
 
@@ -758,6 +760,8 @@ class BaseTrainer(ABC):
                 if not src.exists():
                     src = base
                 self.config["val_dataset"] = {"src": str(src)}
+            elif self.task_name == "qm7x":
+                self.config["val_dataset"] = {**self.config["val_dataset"], "split": s}
 
             # Load val dataset
             if self.config.get("val_dataset", None):
