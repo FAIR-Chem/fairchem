@@ -3,7 +3,7 @@ default:
   logger: wandb
 
   model:
-    otf_graph: True
+    otf_graph: False
     max_num_neighbors: 40
     use_pbc: False
     force_decoder_type: null
