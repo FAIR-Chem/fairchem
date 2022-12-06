@@ -1,0 +1,94 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:4
+  partition: long
+
+default:
+	test_ri: True
+  time: 24:00:00
+  mode: train
+  optim:
+    lr_initial: 0.001
+    max_epochs: 20
+  model:
+    phys_embeds: False
+    tag_hidden_channels: 64
+    hidden_channels: 256
+    graph_rewiring: 'remove-tag-0'
+    energy_head: 'weighted-av-initial-embeds' # False ?
+  wandb_tags: 'test-icml-1'
+
+runs:
+  - config: sfarinet-is2re-all
+    note: 'Baseline'
+  - config: sfarinet-is2re-all
+    note: 'Test 2D all symmetries IS2RE + FA correctness'
+    frame_averaging: 2D
+    fa_frames: all
+  - config: sfarinet-is2re-all
+    note: 'Test 3D all symmetries IS2RE + FA correctness'
+    frame_averaging: 3D
+    fa_frames: all
+  - config: sfarinet-is2re-all
+    note: 'Test 2D random symmetries IS2RE + FA correctness'
+    frame_averaging: 2D
+    fa_frames: random
+  - config: sfarinet-is2re-all
+    note: 'Test 3D random symmetries IS2RE + FA correctness'
+    frame_averaging: 3D
+    fa_frames: random
+  - config: sfarinet-is2re-all
+    note: 'Test 2D det symmetries IS2RE + FA correctness'
+    frame_averaging: 2D
+    fa_frames: det
+  - config: sfarinet-is2re-all
+    note: 'Test 3D se3-random symmetries IS2RE + FA correctness'
+    frame_averaging: 2D
+    fa_frames: se3-random
+  - config: sfarinet-is2re-all
+    note: 'Test 3D se3-all symmetries IS2RE + FA correctness'
+    frame_averaging: 2D
+    fa_frames: se3-all
+  - config: sfarinet-is2re-all
+    note: 'Test invariance of DA'
+    frame_averaging: 'DA'
+  - config: sfarinet-is2re-all
+    note: 'Test invariance of DA more epochs'
+    optim:
+      max_epochs: 40
+    frame_averaging: 'DA'
+  - config: sfarinet-s2ef-2M
+    note: 'Test Force Equivariance'
+    frame_averaging: 2D
+    fa_frames: all
+  - config: sfarinet-s2ef-2M
+    note: 'Test Force Equivariance'
+    frame_averaging: 3D
+    fa_frames: all
+  - config: sfarinet-s2ef-2M
+    note: 'Test Force Equivariance'
+    frame_averaging: 3D
+    fa_frames: all
+  - config: sfarinet-s2ef-2M
+    note: 'Test Force Equivariance'
+    frame_averaging: 3D
+    fa_frames: random
+  - config: sfarinet-s2ef-2M
+    note: 'Test Force Equivariance'
+    frame_averaging: 2D
+    fa_frames: random
+  - config: sfarinet-s2ef-2M
+    note: 'Test Forces SE(3)-Equivariance'
+    frame_averaging: 2D
+    fa_frames: se3-all
+  - config: sfarinet-s2ef-2M
+    note: 'Test Forces SE(3)-Equivariance'
+    frame_averaging: 2D
+    fa_frames: se3-random
+  - config: sfarinet-s2ef-2M
+    model:
+      regress_forces: direct
+  - config: sfarinet-s2ef-2M
+    model:
+      regress_forces: direct_with_gradient_target

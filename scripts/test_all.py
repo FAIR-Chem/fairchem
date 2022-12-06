@@ -218,7 +218,7 @@ if __name__ == "__main__":
 
             if trainer.test_ri:
                 with times.next(" 🎗  Test invariance"):
-                    trainer.test_model_invariance(debug_batches=2)
+                    trainer.test_model_symmetries(debug_batches=2)
 
             clean_previous_line()
             symbol = "✅" if not is_nan else "❌"

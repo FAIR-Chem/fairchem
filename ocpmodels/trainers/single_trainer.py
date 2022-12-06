@@ -19,7 +19,7 @@ from tqdm import tqdm
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import check_traj_files, OCP_TASKS
+from ocpmodels.common.utils import OCP_TASKS, check_traj_files
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -314,11 +314,11 @@ class SingleTrainer(BaseTrainer):
             self.logger.log({"Batch time": time.time() - start_time})
             self.logger.log({"Epoch time": sum(epoch_time) / len(epoch_time)})
 
-        # Check rotation invariance
+        # Check respect of symmetries
         if self.test_ri and debug_batches < 0:
-            invariance = self.test_model_invariance()
+            symmetry = self.test_model_symmetries()
             if self.logger:
-                self.logger.log(invariance)
+                self.logger.log(symmetry)
 
         # TODO: Test equivariance
 
@@ -564,19 +564,20 @@ class SingleTrainer(BaseTrainer):
             )
 
     @torch.no_grad()
-    def test_model_invariance(self, debug_batches=100):
-        """Test rotation and reflection invariance properties of GNNs
+    def test_model_symmetries(self, debug_batches=100):
+        """Test rotation and reflection invariance & equivariance
+        of GNNs
 
         Returns:
-            (tensor, tensor, tensor): metrics to measure RI
-            difference in energy pred. / pos. between G and rotated G
+            (tensors): metrics to measure RI difference in
+            energy/force pred. or pos. between G and rotated G
         """
 
         self.model.eval()
+
         energy_diff = torch.zeros(1, device=self.device)
         energy_diff_z = torch.zeros(1, device=self.device)
         energy_diff_refl = torch.zeros(1, device=self.device)
-
         forces_diff = torch.zeros(1, device=self.device)
         forces_diff_z = torch.zeros(1, device=self.device)
         forces_diff_refl = torch.zeros(1, device=self.device)
@@ -584,14 +585,14 @@ class SingleTrainer(BaseTrainer):
         for i, batch in enumerate(self.val_loader):
             if debug_batches > 0 and i == debug_batches:
                 break
-            # Pass it through the model.
+            # Compute model prediction
             preds1 = self.model_forward(deepcopy(batch))
 
-            # Rotate graph and compute prediction
+            # Compute prediction on rotated graph
             rotated = self.rotate_graph(batch, rotation="z")
             preds2 = self.model_forward(deepcopy(rotated["batch_list"]))
 
-            # Difference in predictions
+            # Difference in predictions, for energy and forces
             energy_diff_z += torch.abs(preds1["energy"] - preds2["energy"]).sum()
             if self.task_name == "s2ef":
                 forces_diff_z += torch.abs(
@@ -607,7 +608,7 @@ class SingleTrainer(BaseTrainer):
                     atol=1e-05,
                 )
 
-            # Diff in positions -- could remove model prediction
+            # Diff in positions
             pos_diff_z = -1
             if hasattr(batch[0], "fa_pos"):
                 pos_diff_z = 0
@@ -615,14 +616,14 @@ class SingleTrainer(BaseTrainer):
                     pos_diff_z += pos1 - pos2
                 pos_diff_z = pos_diff_z.sum()
 
-            # Reflect graph
+            # Reflect graph and compute diff in prediction
             reflected = self.reflect_graph(batch)
             preds3 = self.model_forward(reflected["batch_list"])
             energy_diff_refl += torch.abs(preds1["energy"] - preds3["energy"]).sum()
             if self.task_name == "s2ef":
                 forces_diff_refl += torch.abs(preds1["forces"] - preds3["forces"]).sum()
 
-            # 3D Rotation
+            # 3D Rotation and compute diff in prediction
             rotated = self.rotate_graph(batch)
             preds4 = self.model_forward(rotated["batch_list"])
             energy_diff += torch.abs(preds1["energy"] - preds4["energy"]).sum()
@@ -635,17 +636,19 @@ class SingleTrainer(BaseTrainer):
         energy_diff = energy_diff / (i * batch_size)
         energy_diff_refl = energy_diff_refl / (i * batch_size)
 
-        invariance = {
+        symmetry = {
             "2D_E_ri": energy_diff_z,
             "3D_E_ri": energy_diff,
             "2D_pos_ri": pos_diff_z,
             "2D_E_refl_i": energy_diff_refl,
         }
+
+        # Test equivariance of forces
         if self.task_name == "s2ef":
             forces_diff_z = forces_diff_z / (i * batch_size)
             forces_diff = forces_diff / (i * batch_size)
             forces_diff_refl = forces_diff_refl / (i * batch_size)
-            invariance.update(
+            symmetry.update(
                 {
                     "2D_F_ri": forces_diff_z,
                     "3D_F_ri": forces_diff,
@@ -653,7 +656,7 @@ class SingleTrainer(BaseTrainer):
                 }
             )
 
-        return invariance
+        return symmetry
 
     def run_relaxations(self, split="val"):
         assert self.task_name == "s2ef"

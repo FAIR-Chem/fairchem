@@ -232,7 +232,7 @@ class EnergyTrainer(BaseTrainer):
                 energy_diff,
                 pos_diff_z,
                 energy_diff_refl,
-            ) = self.test_model_invariance()
+            ) = self.test_model_symmetries()
             if self.logger:
                 self.logger.log({"2D_ri": energy_diff_z})
                 self.logger.log({"3D_ri": energy_diff})
@@ -336,7 +336,7 @@ class EnergyTrainer(BaseTrainer):
             )
 
     @torch.no_grad()
-    def test_model_invariance(self, debug_batches=100):
+    def test_model_symmetries(self, debug_batches=100):
         """Test rotation and reflection invariance properties of GNNs
 
         Returns:

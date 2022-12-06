@@ -41,12 +41,6 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
         # Append new graph positions to list
         new_eigenvec = pm * eigenvec
 
-        # Check if determinant is 1 for SE(3) case
-        if se3 and not torch.allclose(
-            torch.linalg.det(new_eigenvec), torch.tensor(1.0), atol=1e-03
-        ):
-            continue
-
         # Consider frame if it passes above check
         fa_pos = pos @ new_eigenvec
 
@@ -59,13 +53,21 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
         if cell is not None:
             fa_cell = cell @ new_eigenvec
 
+        # Check if determinant is 1 for SE(3) case
+        if se3 and not torch.allclose(
+            torch.linalg.det(new_eigenvec), torch.tensor(1.0), atol=1e-03
+        ):
+            continue
+
         all_fa_pos.append(fa_pos)
         all_cell.append(fa_cell)
         all_rots.append(new_eigenvec.unsqueeze(0))
 
     # Handle rare case where no R is positive orthogonal
     if all_fa_pos == []:
-        all_fa_pos.append(pos @ new_eigenvec)
+        all_fa_pos.append(
+            pos @ new_eigenvec[:2, :2] if pos_3D is not None else pos @ new_eigenvec
+        )
         all_cell.append(cell @ new_eigenvec if cell is not None else None)
 
     # Return frame(s) depending on method fa_frames
