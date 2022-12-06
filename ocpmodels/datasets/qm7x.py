@@ -15,10 +15,20 @@ from rdkit.Chem import AllChem
 from scipy import spatial as sp
 from torch import as_tensor
 from torch_geometric.data import Data
-import json
 from cosmosis.dataset import CDataset
 from tqdm import tqdm
 import lmdb
+
+
+try:
+    import orjson as json  # noqa: F401
+except:  # noqa: E722
+    import json
+
+    print(
+        "`orjson` is not installed. ",
+        "Consider `pip install orjson` to speed up json loading.",
+    )
 
 
 class Molecule:
