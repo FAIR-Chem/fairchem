@@ -3,6 +3,7 @@ from minydra import resolved_args
 from pathlib import Path
 import os
 import sys
+import multiprocessing as mp
 
 try:
     import ipdb  # noqa: F401
@@ -16,19 +17,64 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from ocpmodels.datasets.qm7x import InMemoryQM7X
 
 
+def write(mp_args):
+    input_dir, output_dir, max_structures, set_ids, worker_id = mp_args
+    if worker_id >= 0:
+        print("Starting worker", worker_id)
+
+    qm7x = InMemoryQM7X(
+        f"{str(input_dir)}/",
+        features=[],
+        ignore_features=[],
+        y="",
+        attribute_remapping={},
+        max_structures=max_structures,
+        selector=[".+"],
+        set_ids=set_ids if isinstance(set_ids, list) else [set_ids],
+    )
+
+    idmol = None
+    batch_list = []
+
+    for i in range(len(qm7x)):
+        q = qm7x[i]
+        if idmol is None:
+            idmol = q.idmol
+
+        if q.idmol == idmol:
+            batch_list.append(q)
+        else:
+            out = output_dir / f"{idmol}.pt"
+            torch.save(batch_list, out)
+            idmol = q.idmol
+            batch_list = [q]
+
+    if batch_list:
+        out = output_dir / f"{idmol}.pt"
+        torch.save(batch_list, out)
+
+    print(
+        ("" if worker_id < 0 else f"Worker {worker_id} ") + f"Processed {i} structures"
+    )
+
+
 if __name__ == "__main__":
     # typical use:
-    # $ python scripts/make_qm7x_preprocessed.py input_dir=/path/to/qm7x/ output_dir=/path/to/output_dir/ # noqa: E501
+    # $ python scripts/make_qm7x_preprocessed.py \
+    #       input_dir=/path/to/qm7x/ \
+    #       output_dir=/path/to/output_dir/ \
+    #       set_ids=all \
+    #       multi_processing=True \
     # NB: input_dir should contain the qm7x uncompressed .h5 files
-    # NB2: creating InMemoryQM7X will be very slow (~30mins)
+    # NB2: creating each InMemoryQM7X will be very slow (~1h)
     args = resolved_args(
         defaults={
             "input_dir": None,
             "output_dir": None,
-            "print_every": 1000,
             "max_structures": -1,
             "set_id": None,
             "set_ids": None,
+            "multi_processing": False,
         }
     ).pretty_print()
 
@@ -49,37 +95,21 @@ if __name__ == "__main__":
             print("Setting `set_id` to", args.set_id)
         set_ids = [str(int(args.set_id)).strip()]
     if args.set_ids is not None:
-        set_ids = [x.strip() for x in args.set_ids.split(",")]
-
-    qm7x = InMemoryQM7X(
-        f"{str(input_dir)}/",
-        features=[],
-        ignore_features=[],
-        y="",
-        attribute_remapping={},
-        max_structures=args.max_structures,
-        selector=[".+"],
-        set_ids=set_ids,
-    )
-
-    idmol = None
-    batch_list = []
-
-    for i in range(len(qm7x)):
-        q = qm7x[i]
-        if idmol is None:
-            idmol = q.idmol
-
-        if q.idmol == idmol:
-            batch_list.append(q)
+        if args.set_ids == "all":
+            set_ids = [str(i).strip() for i in range(1000, 9000, 1000)]
         else:
-            out = output_dir / f"{idmol}.pt"
-            torch.save(batch_list, out)
-            idmol = q.idmol
-            batch_list = [q]
+            set_ids = [x.strip() for x in args.set_ids.split(",")]
 
-        if i and i % args.print_every == 0:
-            print(f"Processed {i} structures")
-
-    out = output_dir / f"{idmol}.pt"
-    torch.save(batch_list, out)
+    if args.multi_processing:
+        print("Using multi processing: 1 worker per set_id.")
+        if args.set_ids != "all":
+            print("Set `set_ids` to `all` to use all 8 set_ids.")
+        mp_args = [
+            (input_dir, output_dir, args.max_structures, s_id, s)
+            for s, s_id in enumerate(set_ids)
+        ]
+        pool = mp.Pool(processes=len(set_ids))
+        list(pool.imap(write, mp_args))
+        pool.close()
+    else:
+        write((input_dir, output_dir, args.max_structures, set_ids, -1))
