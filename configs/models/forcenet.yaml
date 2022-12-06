@@ -88,3 +88,12 @@ qm9:
 
   10k: {}
   all: {}
+
+qm7x:
+  default:
+    model:
+      num_interactions: 4
+    optim:
+      max_epochs: 20
+
+  all: {}
