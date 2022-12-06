@@ -85,12 +85,13 @@ class GraphRewiring(Transform):
                 raise ValueError(f"Unknown self.graph_rewiring {self.graph_rewiring}")
 
     def __call__(self, data):
+        if self.inactive:
+            return data
+
         data.batch = torch.zeros(data.num_nodes, dtype=torch.long)
         data.natoms = torch.tensor([data.natoms])
         data.ptr = torch.tensor([0, data.natoms])
 
-        if self.inactive:
-            return data
         return self.rewiring_func(data)
 
 
@@ -115,7 +116,11 @@ class Compose:
 
 class AddAttributes:
     def __call__(self, data):
-        if not hasattr(data, "distances"):
+        if (
+            not hasattr(data, "distances")
+            and hasattr(data, "edge_index")
+            and data.edge_index is not None
+        ):
             data.distances = torch.sqrt(
                 (
                     (data.pos[data.edge_index[0, :]] - data.pos[data.edge_index[1, :]])

@@ -97,3 +97,4 @@ qm7x:
       max_epochs: 20
 
   all: {}
+  1k: {}

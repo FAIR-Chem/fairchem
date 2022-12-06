@@ -22,15 +22,16 @@ default:
     energy_grad_coefficient: 10
 
   normalizer: null
+  graph_rewiring: ""
 
   mode: train
   dataset:
-    - in_dir: /network/projects/ocp/qm7x/processed
+    - src: /network/projects/ocp/qm7x/processed
       normalize_labels: True # mean and std of target will be set by qm9.py if this is True
       split: train
       target: ePBE0+MBD
       forces_target: totFOR
-    - in_dir: /network/projects/ocp/qm7x/processed
+    - src: /network/projects/ocp/qm7x/processed
       normalize_labels: True # mean and std of target will be set by qm9.py if this is True
       split: val_id
       target: ePBE0+MBD
@@ -49,3 +50,8 @@ default:
 
 
 all: {}
+
+1k:
+  dataset:
+    - 1k: true
+    - 1k: true

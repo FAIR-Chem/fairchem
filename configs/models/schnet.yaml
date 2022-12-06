@@ -204,3 +204,4 @@ qm7x:
       warmup_steps: 5394
 
   all: {}
+  1k: {}

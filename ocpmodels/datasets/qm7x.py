@@ -18,7 +18,7 @@ from torch_geometric.data import Data
 from cosmosis.dataset import CDataset
 from tqdm import tqdm
 import lmdb
-
+from ocpmodels.common.registry import registry
 
 try:
     import orjson as json  # noqa: F401
@@ -685,6 +685,7 @@ class QM7XFromPT(InMemoryQM7X):
         return data
 
 
+@registry.register_dataset("qm7x")
 class QM7XFromLMDB(Dataset):
     # Designed to use LMDBs created by:
     # 1. python scripts/make_qm7x_preprocessed.py \
@@ -700,16 +701,12 @@ class QM7XFromLMDB(Dataset):
     def __init__(
         self,
         config={
-            "lmdb_path": "/network/projects/ocp/qm7x/processed",
-            "sample_mapping_path": Path(__file__).resolve().parent.parent.parent
-            / "configs"
-            / "qm7x-metadata"
-            / "samples.json",
+            "src": "/network/projects/ocp/qm7x/processed",
             "split": "train",
         },
         transform=None,
     ):
-        lmdb_path = Path(config["lmdb_path"]).expanduser().resolve()
+        lmdb_path = Path(config["src"]).expanduser().resolve()
         self.lmdb_path = str(lmdb_path)
         if not lmdb_path.exists():
             raise FileNotFoundError(f"lmdb path {str(lmdb_path)} does not exist")
@@ -733,7 +730,14 @@ class QM7XFromLMDB(Dataset):
             for ep in self.env_paths
         ]
 
-        sample_mapping_path = Path(config["sample_mapping_path"]).expanduser().resolve()
+        sample_mapping_path = (
+            Path(__file__).resolve().parent.parent.parent
+            / "configs"
+            / "models"
+            / "qm7x-metadata"
+            / ("samples-1k.json" if config.get("1k") else "samples.json")
+        )
+
         split = config.get("split")
         assert (
             sample_mapping_path.exists()
@@ -751,15 +755,24 @@ class QM7XFromLMDB(Dataset):
         ]
 
         self.env_keys = {}
-        for e, env in enumerate(self.envs):
-            with env.begin() as txn:
-                keys = list(
-                    map(
-                        lambda k: k.decode("utf-8"), txn.cursor().iternext(values=False)
+        if config.get("1k"):
+            txs = [env.begin() for env in self.envs]
+            self.env_keys = {
+                [t for t, tx in enumerate(txs) if tx.get(k.encode("utf-8"))][0]: k
+                for k in self.keys
+            }
+            txs = [e.close() for e in txs]
+        else:
+            for e, env in enumerate(self.envs):
+                with env.begin() as txn:
+                    keys = list(
+                        map(
+                            lambda k: k.decode("utf-8"),
+                            txn.cursor().iternext(values=False),
+                        )
                     )
-                )
-            for k in keys:
-                self.env_keys[k] = e
+                for k in keys:
+                    self.env_keys[k] = e
 
         self.transform = transform
 
@@ -795,6 +808,10 @@ class QM7XFromLMDB(Dataset):
 
         return data
 
+    def close_db(self):
+        for env in self.envs:
+            env.close()
+
 
 if __name__ == "__main__":
     from ocpmodels.datasets.qm7x import QM7XFromLMDB as QM7X
@@ -804,11 +821,11 @@ if __name__ == "__main__":
     import json
     from ocpmodels.common.data_parallel import ParallelCollater
 
-    in_dir = Path("/network/projects/ocp/qm7x/processed")
+    src = Path("/network/projects/ocp/qm7x/processed")
     smp = Path("configs/models/qm7x-metadata/samples.json")
     split = "train"
     config = {
-        "lmdb_path": in_dir,
+        "src": src,
         "sample_mapping_path": smp,
         "split": split,
     }

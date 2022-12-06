@@ -70,6 +70,7 @@ class Evaluator:
         "is2rs": ["positions", "cell", "pbc", "natoms"],
         "is2re": ["energy"],
         "qm9": ["energy"],
+        "qm7x": ["energy"],
     }
 
     task_primary_metric = {
@@ -77,6 +78,7 @@ class Evaluator:
         "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
         "qm9": "energy_mae",
+        "qm7x": "forces_mae",
     }
 
     def __init__(self, task=None, model_regresses_forces=""):

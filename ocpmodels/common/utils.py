@@ -142,7 +142,7 @@ def set_qm7x_target_stats(trainer_config):
     Returns:
         dict: The trainer config with stats for each dataset, if relevant.
     """
-    if "-qm9-" not in trainer_config["config"]:
+    if "-qm7x-" not in trainer_config["config"]:
         return trainer_config
 
     target_stats = json.loads(
@@ -610,7 +610,9 @@ def build_config(args, args_override):
         overrides = create_dict_from_args(args_override)
         config, _ = merge_dicts(config, overrides)
 
-    config, _ = merge_dicts(config, vars(args))
+    config, _ = merge_dicts(
+        config, {k: v for k, v in vars(args).items() if v is not None}
+    )
     config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}

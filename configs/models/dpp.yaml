@@ -175,7 +175,7 @@ qm9:
   10k: {}
   all: {}
 
-qm9:
+qm7x:
   default:
     optim:
       # *** Important note ***
@@ -191,3 +191,4 @@ qm9:
       max_epochs: 8
 
   all: {}
+  1k: {}
