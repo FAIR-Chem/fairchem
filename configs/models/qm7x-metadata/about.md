@@ -1,4 +1,4 @@
-This file describes `./samples.json`
+# `samples.json`
 
 It contains a dictionary where:
 
@@ -16,7 +16,7 @@ Reading the dataset:
 from pathlib import Path
 
 if __name__ == "__main__":
-    sample_mapping_path = Path("configs/models/qm7x-sample-mapping/samples.json")
+    sample_mapping_path = Path("configs/models/qm7x-metadata/samples.json")
     samples = json.loads(sample_mapping_path.read_text())
     data = {
         k: [samples["structures"][i] for i in v] for k, v in samples["splits"].items()
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     # val_ood : 12423
     # test    : 10100
 
-    sample_mapping_path = Path("configs/models/qm7x-sample-mapping/samples.json")
+    sample_mapping_path = Path("configs/models/qm7x-metadata/samples.json")
     all_samples = json.loads(sample_mapping_path.read_text())["structures"]
 
     # Make sets containing molecule ids for each splits:
@@ -114,4 +114,14 @@ if __name__ == "__main__":
             "splits": splits,
         })
     )
+```
+
+# `stats.json`
+
+Mean and std for each physicochemical properties in the QM7-X dataset where each property is considered as a flattened list, i.e. stats do not conserve shape
+
+Reproduce with
+
+```bash
+$ python ocpmodels/datasets/qm7x.py
 ```
