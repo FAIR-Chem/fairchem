@@ -58,6 +58,11 @@ class Evaluator:
             "energy_mse",
             "energy_within_threshold",
         ],
+        "qm7x": [
+            "energy_mae",
+            "energy_mse",
+            "energy_within_threshold",
+        ],
     }
 
     task_attributes = {
@@ -75,16 +80,29 @@ class Evaluator:
     }
 
     def __init__(self, task=None, model_regresses_forces=""):
-        assert task in ["s2ef", "is2rs", "is2re", "qm9"]
+        assert task in ["s2ef", "is2rs", "is2re", "qm9", "qm7x"]
         self.task = task
 
         self.metric_fn = self.task_metrics[task]
         self.expect_forces_grad_target = (
             model_regresses_forces == "direct_with_gradient_target"
         )
+        if model_regresses_forces and task == "qm7x":
+            self.task_metrics["qm7x"].extend(
+                [
+                    "forcesx_mae",
+                    "forcesy_mae",
+                    "forcesz_mae",
+                    "forces_mae",
+                    "forces_cos",
+                    "forces_magnitude",
+                ]
+            )
+            self.task_attributes["qm7x"].append("forces")
         if self.expect_forces_grad_target:
             self.task_attributes[task].append("forces_grad_target")
             self.task_metrics["s2ef"].append("forces_grad_mae")
+            self.task_metrics["qm7x"].append("forces_grad_mae")
 
     def eval(self, prediction, target, prev_metrics={}):
         for attr in self.task_attributes[self.task]:
