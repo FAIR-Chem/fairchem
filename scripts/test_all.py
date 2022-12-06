@@ -85,6 +85,10 @@ class Times:
         return Timer(name, self.times, is_first)
 
 
+def isin(key, args):
+    return any([key in arg for arg in args])
+
+
 if __name__ == "__main__":
     args = resolved_args(
         defaults={
@@ -174,6 +178,13 @@ if __name__ == "__main__":
         ]
     if args.only_str:
         configs = [c for c in configs if re.findall(args.only_str, " ".join(c))]
+
+    configs = [
+        c
+        for c in configs
+        if not (isin("qm7x", c) and isin("graph_rewiring", c))
+        and not (isin("qm9", c) and isin("graph_rewiring", c))
+    ]
 
     if args.skip_configs > 0:
         configs = configs[args.skip_configs :]
