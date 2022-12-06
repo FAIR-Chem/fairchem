@@ -761,29 +761,29 @@ class QM7XFromLMDB(Dataset):
         key = self.keys[i]
         env = self.envs[self.env_keys[key]]
         with env.begin() as txn:
-            data_object = pickle.loads(txn.get(key.encode("utf-8")))
+            data = pickle.loads(txn.get(key.encode("utf-8")))
 
         t1 = time.time_ns()
         if self.transform is not None:
-            data_object = self.transform(data_object)
+            data = self.transform(data)
         t2 = time.time_ns()
 
-        data.y  # ePBE0+MBD
-        data.force  # totFOR
-        data.tags = torch.full((data.natoms,), -1, dtype=torch.long)
-        data.cell_offsets = torch.zeros((data.edge_index.shape[1], 3))
-        data.atomic_numbers = data.atNUM
+        data.y = torch.tensor(data["ePBE0+MBD"])
+        data.force = torch.tensor(data["totFOR"])
+        data.pos = torch.tensor(data["atXYZ"])
         data.natoms = len(data.pos)
+        data.tags = torch.full((data.natoms,), -1, dtype=torch.long)
+        data.atomic_numbers = torch.tensor(data.atNUM, dtype=torch.long)
 
         load_time = (t1 - t0) * 1e-9  # time in s
         transform_time = (t2 - t1) * 1e-9  # time in s
         total_get_time = (t2 - t0) * 1e-9  # time in s
 
-        data_object.load_time = load_time
-        data_object.transform_time = transform_time
-        data_object.total_get_time = total_get_time
+        data.load_time = load_time
+        data.transform_time = transform_time
+        data.total_get_time = total_get_time
 
-        return data_object
+        return data
 
 
 if __name__ == "__main__":
