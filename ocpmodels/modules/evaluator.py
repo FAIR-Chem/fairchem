@@ -78,7 +78,7 @@ class Evaluator:
         "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
         "qm9": "energy_mae",
-        "qm7x": "forces_mae",
+        "qm7x": "energy_mae",
     }
 
     def __init__(self, task=None, model_regresses_forces=""):
@@ -101,6 +101,7 @@ class Evaluator:
                 ]
             )
             self.task_attributes["qm7x"].append("forces")
+            self.task_primary_metric["qm7x"] = "forces_mae"
         if self.expect_forces_grad_target:
             self.task_attributes[task].append("forces_grad_target")
             self.task_metrics["s2ef"].append("forces_grad_mae")
