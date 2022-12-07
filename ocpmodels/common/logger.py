@@ -36,6 +36,7 @@ class Logger(ABC):
 
     def ntfy(self, *args, **kwargs):
         global NTFY_OK
+        print("NTFY_OK: ", NTFY_OK)
         try:
             if NTFY_OK:
                 if self._ntfy is None:
@@ -48,6 +49,7 @@ class Logger(ABC):
                         warnings=False,
                         verbose=False,
                     )
+                print("\nNotifying", args, kwargs, end="\n\n")
                 self._ntfy(*args, **kwargs)
         except Exception as e:
             logging.warning(f"Logger failed to send notification: {e}")

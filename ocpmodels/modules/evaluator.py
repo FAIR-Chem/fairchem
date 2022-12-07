@@ -56,7 +56,6 @@ class Evaluator:
         "qm9": [
             "energy_mae",
             "energy_mse",
-            "energy_mae_kcalmol",
             "energy_within_threshold",
         ],
     }
@@ -72,7 +71,7 @@ class Evaluator:
         "s2ef": "energy_force_within_threshold",
         "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
-        "qm9": "energy_mae_kcalmol",
+        "qm9": "energy_mae",
     }
 
     def __init__(self, task=None, model_regresses_forces=""):
