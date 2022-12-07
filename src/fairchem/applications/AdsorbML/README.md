@@ -5,6 +5,6 @@
 
 We are currently in the process of organizing the dataset and scripts for release.
 
-Please check back in a few days for the respective download links and scripts to get started. Thank you for your patience.
+Update: Due to some slight delays the official release will be pushed out a few weeks and will be available at the start of the new year. Sorry for the invonenience and thank you for your patience.
 
 :construction:
