@@ -122,6 +122,57 @@ def set_qm9_target_stats(trainer_config):
     return trainer_config
 
 
+def set_qm7x_target_stats(trainer_config):
+    """
+    Set target stats for QM7-X dataset if the trainer config specifies the
+    qm7x task as `model-task-split`.
+
+    For the qm7x task, for each dataset, if "normalize_labels" is set to True,
+    then new keys are added to the dataset config: "target_mean" and "target_std"
+    according to the dataset's "target" key which is an index in the list of QM9
+    properties to predict.
+
+
+    Stats can be recomputed with:
+        python ocpmodels/datasets/qm7x.py
+
+    Args:
+        trainer_config (dict): The trainer config.
+
+    Returns:
+        dict: The trainer config with stats for each dataset, if relevant.
+    """
+    if "-qm7x-" not in trainer_config["config"]:
+        return trainer_config
+
+    target_stats = json.loads(
+        (
+            Path(__file__).resolve().parent.parent.parent
+            / "configs"
+            / "models"
+            / "qm7x-metadata"
+            / "stats.json"
+        ).read_text()
+    )
+
+    for d, dataset in enumerate(deepcopy(trainer_config["dataset"])):
+        if not dataset.get("normalize_labels", False):
+            continue
+        assert "target" in dataset
+        mean = target_stats[dataset["target"]]["mean"]
+        std = target_stats[dataset["target"]]["std"]
+        trainer_config["dataset"][d]["target_mean"] = mean
+        trainer_config["dataset"][d]["target_std"] = std
+
+        if trainer_config["model"].get("regress_forces"):
+            mean = target_stats[dataset["forces_target"]]["mean"]
+            std = target_stats[dataset["forces_target"]]["std"]
+            trainer_config["dataset"][d]["grad_target_mean"] = mean
+            trainer_config["dataset"][d]["grad_target_std"] = std
+
+    return trainer_config
+
+
 class Units:
     """
     Energy converter: https://www.unitsconverters.com/fr/Kcal/Mol-A-Ev/Particle/Utu-7727-6180
@@ -559,7 +610,9 @@ def build_config(args, args_override):
         overrides = create_dict_from_args(args_override)
         config, _ = merge_dicts(config, overrides)
 
-    config, _ = merge_dicts(config, vars(args))
+    config, _ = merge_dicts(
+        config, {k: v for k, v in vars(args).items() if v is not None}
+    )
     config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
@@ -587,6 +640,7 @@ def build_config(args, args_override):
             )
 
     config = set_qm9_target_stats(config)
+    config = set_qm7x_target_stats(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
