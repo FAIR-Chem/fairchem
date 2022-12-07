@@ -725,7 +725,7 @@ class QM7XFromLMDB(Dataset):
                 lock=False,
                 readahead=False,
                 meminit=False,
-                max_readers=1,
+                max_readers=128,
             )
             for ep in self.env_paths
         ]
@@ -754,36 +754,24 @@ class QM7XFromLMDB(Dataset):
             for i in all_samples["splits"][split]
         ]
 
-        self.env_keys = {}
-        if config.get("1k"):
-            txs = [env.begin() for env in self.envs]
-            self.env_keys = {
-                k: [t for t, tx in enumerate(txs) if tx.get(k.encode("utf-8"))][0]
-                for k in self.keys
-            }
-        else:
-            for e, env in enumerate(self.envs):
-                with env.begin() as txn:
-                    keys = list(
-                        map(
-                            lambda k: k.decode("utf-8"),
-                            txn.cursor().iternext(values=False),
-                        )
-                    )
-                for k in keys:
-                    self.env_keys[k] = e
-
         self.transform = transform
 
     def __len__(self):
         return len(self.keys)
 
+    def retrieve(self, key):
+        k = key.encode("utf-8")
+        for e in self.envs:
+            with e.begin() as txn:
+                v = txn.get(k)
+                if v is not None:
+                    return pickle.loads(v)
+        raise ValueError(f"Could not find key {key}")
+
     def __getitem__(self, i):
         t0 = time.time_ns()
         key = self.keys[i]
-        env = self.envs[self.env_keys[key]]
-        with env.begin() as txn:
-            data = pickle.loads(txn.get(key.encode("utf-8")))
+        data = self.retrieve(key)
 
         data.y = torch.tensor(data["ePBE0+MBD"])
         data.force = torch.tensor(data["totFOR"])
