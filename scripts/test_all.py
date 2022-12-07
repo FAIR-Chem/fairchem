@@ -10,6 +10,37 @@ import numpy as np
 
 from minydra import resolved_args
 
+args = resolved_args(
+    defaults={
+        "skip_features": -1,  # (int) how many features to skip
+        "skip_models": -1,  # (int) how many models to skip
+        "skip_configs": -1,  # (int) how many final configs to skip
+        "ignore_str": "",  # (str) ignore configs containing this string
+        "only_str": "",  # (str) only selects configs containing this string
+        "traceback": False,  # (bool) print traceback on error
+        "n": -1,  # (int) how many configs to run
+        "breakpoint": False,  # (bool) call breakpoints on errors
+        "help": False,  # (bool) print help
+    }
+)
+
+if args.help:
+    print("Usage: python test_all.py options=value true_flag -false_flag")
+    print(
+        """
+        skip_features -> -1,      # (int) how many features to skip
+        skip_models   -> -1,      # (int) how many models to skip
+        skip_configs  -> -1,      # (int) how many final configs to skip
+        ignore_str    -> "",      # (str) ignore configs containing this string
+        only_str      -> "",      # (str) only selects configs containing this string
+        traceback     -> False,   # (bool) print traceback on error
+        n             -> -1,      # (int) how many configs to run
+        breakpoint    -> False,   # (bool) call breakpoints on errors
+        help          -> False,   # (bool) print help
+        """
+    )
+    sys.exit(0)
+
 try:
     import ipdb  # noqa: F401
 
@@ -91,17 +122,6 @@ def isin(key, args):
 
 
 if __name__ == "__main__":
-    args = resolved_args(
-        defaults={
-            "skip_features": -1,  # (int) how many features to skip
-            "skip_models": -1,  # (int) how many models to skip
-            "skip_configs": -1,  # (int) how many final configs to skip
-            "ignore_str": "",  # (str) ignore configs containing this string
-            "only_str": "",  # (str) only selects configs containing this string
-            "traceback": False,  # (bool) print traceback on error
-            "n": -1,  # (int) how many configs to run
-        }
-    )
 
     command = "python " + " ".join(sys.argv)
 
@@ -256,6 +276,8 @@ if __name__ == "__main__":
             if args.traceback:
                 traceback.print_exc()
             symbol = "❌"
+            if args.breakpoint:
+                breakpoint()
 
         conf_duration = time() - conf_start
         print(
