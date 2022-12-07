@@ -1,7 +1,7 @@
 # more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
 job:
   mem: 48GB
-  cpus: 6
+  cpus: 12
   gres: gpu:1
   time: 12:00:00
   partition: long
