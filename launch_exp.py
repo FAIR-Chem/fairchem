@@ -95,7 +95,7 @@ if __name__ == "__main__":
             for c, command in enumerate(commands)
         ]
         outdir = Path(__file__).resolve().parent / "data" / "exp_outputs" / exp_name
-        outfile = outdir / f"{exp_name}_{now()}.txt"
+        outfile = outdir / f"{exp_name.split('/')[-1]}_{now()}.txt"
         outfile.parent.mkdir(exist_ok=True, parents=True)
         exp_separator = "\n" * 4 + f"{'#' * 80}\n" * 4 + "\n" * 4
         text = exp_separator.join(outputs)
