@@ -89,7 +89,7 @@ def should_continue(config):
     Returns:
         dict: The updated config if a checkpoint has been found
     """
-    if config["checkpoint"]:
+    if config.get("checkpoint"):
         return config
 
     job_id = os.environ.get("SLURM_JOBID")
