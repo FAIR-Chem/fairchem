@@ -14,7 +14,9 @@ from copy import deepcopy
 import numpy as np
 import torch
 import torch_geometric
+from torch_geometric.data import Data
 from tqdm import tqdm
+from typing import Dict, List
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
@@ -476,7 +478,9 @@ class SingleTrainer(BaseTrainer):
         loss = sum(loss)
         return loss
 
-    def compute_metrics(self, preds, batch_list, evaluator, metrics={}):
+    def compute_metrics(
+        self, preds: Dict, batch_list: List[Data], evaluator: Evaluator, metrics={}
+    ):
         natoms = torch.cat(
             [batch.natoms.to(self.device) for batch in batch_list], dim=0
         )
