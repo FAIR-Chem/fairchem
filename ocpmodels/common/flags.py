@@ -214,7 +214,6 @@ class Flags:
         self.parser.add_argument(
             "--graph_rewiring",
             type=str,
-            default="remove-tag-0",
             help="How to rewire the graph",
             choices=[
                 "",

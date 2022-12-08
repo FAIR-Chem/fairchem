@@ -19,6 +19,7 @@ import subprocess
 import sys
 import time
 from bisect import bisect
+from copy import deepcopy
 from functools import wraps
 from itertools import product
 from pathlib import Path
@@ -38,6 +39,138 @@ from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 
 OCP_TASKS = {"s2ef", "is2re", "is2es"}
+
+
+def set_qm9_target_stats(trainer_config):
+    """
+    Set target stats for QM9 dataset if the trainer config specifies the
+    qm9 task as `model-task-split`.
+
+    For the qm9 task, for each dataset, if "normalize_labels" is set to True,
+    then new keys are added to the dataset config: "target_mean" and "target_std"
+    according to the dataset's "target" key which is an index in the list of QM9
+    properties to predict.
+
+
+    Stats can be recomputed with:
+        from torch_geometric.datasets import QM9
+        qm = QM9(root=path)
+        qm.mean(7)
+        qm.std(7)
+
+    Args:
+        trainer_config (dict): The trainer config.
+
+    Returns:
+        dict: The trainer config with stats for each dataset, if relevant.
+    """
+    target_means = [
+        2.672952651977539,
+        75.28118133544922,
+        -6.536452770233154,
+        0.32204368710517883,
+        6.858491897583008,
+        1189.4105224609375,
+        4.056937217712402,
+        -11178.966796875,
+        -11178.7353515625,
+        -11178.7099609375,
+        -11179.875,
+        31.620365142822266,
+        -76.11600494384766,
+        -76.58049011230469,
+        -77.01825714111328,
+        -70.83665466308594,
+        9.966022491455078,
+        1.4067283868789673,
+        1.1273993253707886,
+    ]
+
+    target_stds = [
+        1.5034793615341187,
+        8.17383098602295,
+        0.5977412462234497,
+        1.274855375289917,
+        1.2841686010360718,
+        280.4781494140625,
+        0.9017231464385986,
+        1085.5787353515625,
+        1085.57275390625,
+        1085.57275390625,
+        1085.5924072265625,
+        4.067580699920654,
+        10.323753356933594,
+        10.415176391601562,
+        10.489270210266113,
+        9.498342514038086,
+        1830.4630126953125,
+        1.6008282899856567,
+        1.107471227645874,
+    ]
+    if "-qm9-" not in trainer_config["config"]:
+        return trainer_config
+
+    for d, dataset in enumerate(deepcopy(trainer_config["dataset"])):
+        if not dataset.get("normalize_labels", False):
+            continue
+        assert "target" in dataset
+        mean = target_means[dataset["target"]]
+        std = target_stds[dataset["target"]]
+        trainer_config["dataset"][d]["target_mean"] = mean
+        trainer_config["dataset"][d]["target_std"] = std
+
+    return trainer_config
+
+
+def set_qm7x_target_stats(trainer_config):
+    """
+    Set target stats for QM7-X dataset if the trainer config specifies the
+    qm7x task as `model-task-split`.
+
+    For the qm7x task, for each dataset, if "normalize_labels" is set to True,
+    then new keys are added to the dataset config: "target_mean" and "target_std"
+    according to the dataset's "target" key which is an index in the list of QM9
+    properties to predict.
+
+
+    Stats can be recomputed with:
+        python ocpmodels/datasets/qm7x.py
+
+    Args:
+        trainer_config (dict): The trainer config.
+
+    Returns:
+        dict: The trainer config with stats for each dataset, if relevant.
+    """
+    if "-qm7x-" not in trainer_config["config"]:
+        return trainer_config
+
+    target_stats = json.loads(
+        (
+            Path(__file__).resolve().parent.parent.parent
+            / "configs"
+            / "models"
+            / "qm7x-metadata"
+            / "stats.json"
+        ).read_text()
+    )
+
+    for d, dataset in enumerate(deepcopy(trainer_config["dataset"])):
+        if not dataset.get("normalize_labels", False):
+            continue
+        assert "target" in dataset
+        mean = target_stats[dataset["target"]]["mean"]
+        std = target_stats[dataset["target"]]["std"]
+        trainer_config["dataset"][d]["target_mean"] = mean
+        trainer_config["dataset"][d]["target_std"] = std
+
+        if trainer_config["model"].get("regress_forces"):
+            mean = target_stats[dataset["forces_target"]]["mean"]
+            std = target_stats[dataset["forces_target"]]["std"]
+            trainer_config["dataset"][d]["grad_target_mean"] = mean
+            trainer_config["dataset"][d]["grad_target_std"] = std
+
+    return trainer_config
 
 
 class Units:
@@ -477,10 +610,13 @@ def build_config(args, args_override):
         overrides = create_dict_from_args(args_override)
         config, _ = merge_dicts(config, overrides)
 
-    config, _ = merge_dicts(config, vars(args))
+    config, _ = merge_dicts(
+        config, {k: v for k, v in vars(args).items() if v is not None}
+    )
     config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
+    config["job_id"] = os.environ.get("SLURM_JOB_ID", "no-job-id")
 
     if "regress_forces" in config["model"]:
         if not isinstance(config["model"]["regress_forces"], str):
@@ -502,6 +638,9 @@ def build_config(args, args_override):
                 + "'from_energy' or 'direct' or 'direct_with_gradient_target'"
                 + f". Received: `{str(config['model']['regress_forces'])}`"
             )
+
+    config = set_qm9_target_stats(config)
+    config = set_qm7x_target_stats(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()

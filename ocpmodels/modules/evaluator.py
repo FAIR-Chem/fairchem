@@ -56,7 +56,11 @@ class Evaluator:
         "qm9": [
             "energy_mae",
             "energy_mse",
-            "energy_mae_kcalmol",
+            "energy_within_threshold",
+        ],
+        "qm7x": [
+            "energy_mae",
+            "energy_mse",
             "energy_within_threshold",
         ],
     }
@@ -66,31 +70,47 @@ class Evaluator:
         "is2rs": ["positions", "cell", "pbc", "natoms"],
         "is2re": ["energy"],
         "qm9": ["energy"],
+        "qm7x": ["energy"],
     }
 
     task_primary_metric = {
         "s2ef": "energy_force_within_threshold",
         "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
-        "qm9": "energy_mae_kcalmol",
+        "qm9": "energy_mae",
+        "qm7x": "energy_mae",
     }
 
     def __init__(self, task=None, model_regresses_forces=""):
-        assert task in ["s2ef", "is2rs", "is2re", "qm9"]
+        assert task in ["s2ef", "is2rs", "is2re", "qm9", "qm7x"]
         self.task = task
 
         self.metric_fn = self.task_metrics[task]
         self.expect_forces_grad_target = (
             model_regresses_forces == "direct_with_gradient_target"
         )
+        if model_regresses_forces and task == "qm7x":
+            self.task_metrics["qm7x"].extend(
+                [
+                    "forcesx_mae",
+                    "forcesy_mae",
+                    "forcesz_mae",
+                    "forces_mae",
+                    "forces_cos",
+                    "forces_magnitude",
+                ]
+            )
+            self.task_attributes["qm7x"].append("forces")
+            self.task_primary_metric["qm7x"] = "forces_mae"
         if self.expect_forces_grad_target:
             self.task_attributes[task].append("forces_grad_target")
             self.task_metrics["s2ef"].append("forces_grad_mae")
+            self.task_metrics["qm7x"].append("forces_grad_mae")
 
     def eval(self, prediction, target, prev_metrics={}):
         for attr in self.task_attributes[self.task]:
-            assert attr in prediction
-            assert attr in target
+            assert attr in prediction, f"Expected {attr} in prediction."
+            assert attr in target, f"Expected {attr} in target."
             assert prediction[attr].shape == target[attr].shape, (
                 f"Expected {attr} to have shape {target[attr].shape},"
                 + f" got {prediction[attr].shape}."

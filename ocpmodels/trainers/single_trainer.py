@@ -14,7 +14,9 @@ from copy import deepcopy
 import numpy as np
 import torch
 import torch_geometric
+from torch_geometric.data import Data
 from tqdm import tqdm
+from typing import Dict, List
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
@@ -397,17 +399,15 @@ class SingleTrainer(BaseTrainer):
             target_normed = self.normalizers["target"].norm(energy_target)
         else:
             target_normed = energy_target
-        energy_mult = (
-            self.config["optim"].get("energy_coefficient", 1)
-            if self.task_name in {"is2rs", "s2ef"}
-            else 1
-        )
+        energy_mult = self.config["optim"].get("energy_coefficient", 1)
         loss.append(
             energy_mult * self.loss_fn["energy"](preds["energy"], target_normed)
         )
 
         # Force loss.
-        if self.task_name in {"is2rs", "s2ef"}:
+        if self.task_name in {"is2rs", "s2ef"} or self.config["model"].get(
+            "regress_forces"
+        ):
             force_target = torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
             )
@@ -478,7 +478,9 @@ class SingleTrainer(BaseTrainer):
         loss = sum(loss)
         return loss
 
-    def compute_metrics(self, preds, batch_list, evaluator, metrics={}):
+    def compute_metrics(
+        self, preds: Dict, batch_list: List[Data], evaluator: Evaluator, metrics={}
+    ):
         natoms = torch.cat(
             [batch.natoms.to(self.device) for batch in batch_list], dim=0
         )
@@ -486,11 +488,9 @@ class SingleTrainer(BaseTrainer):
         target = {
             "energy": torch.cat(
                 [
-                    (
-                        batch.y.to(self.device)
-                        if self.task_name in {"s2ef", "qm9"}
-                        else batch.y_relaxed.to(self.device)
-                    )
+                    batch.y_relaxed.to(self.device)
+                    if self.task_name == "is2re"
+                    else batch.y.to(self.device)
                     for batch in batch_list
                 ],
                 dim=0,
@@ -498,7 +498,7 @@ class SingleTrainer(BaseTrainer):
             "natoms": natoms,
         }
 
-        if self.task_name == "s2ef":
+        if self.config["model"].get("regress_forces", False):
             target["forces"] = torch.cat(
                 [batch.force.to(self.device) for batch in batch_list], dim=0
             )
@@ -507,7 +507,10 @@ class SingleTrainer(BaseTrainer):
             if "forces_grad_target" in preds:
                 target["forces_grad_target"] = preds["forces_grad_target"]
 
-            if self.config["task"].get("eval_on_free_atoms", True):
+            if (
+                self.config["task"].get("eval_on_free_atoms", False)
+                and self.task_name in OCP_TASKS
+            ):
                 fixed = torch.cat([batch.fixed.to(self.device) for batch in batch_list])
                 mask = fixed == 0
                 preds["forces"] = preds["forces"][mask]

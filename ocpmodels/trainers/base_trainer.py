@@ -50,7 +50,7 @@ class BaseTrainer(ABC):
 
         run_dir = kwargs["run_dir"]
         model_name = kwargs["model"].pop("name")
-        kwargs["model"]["graph_rewiring"] = kwargs["graph_rewiring"]
+        kwargs["model"]["graph_rewiring"] = kwargs.get("graph_rewiring")
 
         self.config = {
             **kwargs,
@@ -743,6 +743,8 @@ class BaseTrainer(ABC):
             val_sets = ["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]
         elif self.task_name == "qm9":
             val_sets = ["val"]
+        elif self.task_name == "qm7x":
+            val_sets = ["val_id", "val_ood"]
         else:
             raise ValueError(f"Unknown task {self.task_name}")
 
@@ -758,6 +760,8 @@ class BaseTrainer(ABC):
                 if not src.exists():
                     src = base
                 self.config["val_dataset"] = {"src": str(src)}
+            elif self.task_name == "qm7x":
+                self.config["val_dataset"] = {**self.config["val_dataset"], "split": s}
 
             # Load val dataset
             if self.config.get("val_dataset", None):
@@ -859,7 +863,8 @@ class BaseTrainer(ABC):
             for g in g_list:
                 g = fa_transform(g)
             batch_rotated = Batch.from_data_list(g_list)
-            batch_rotated.neighbors = batch.neighbors
+            if hasattr(batch, "neighbors"):
+                batch_rotated.neighbors = batch.neighbors
 
         return {"batch_list": [batch_rotated], "rot": rot}
 
@@ -895,6 +900,7 @@ class BaseTrainer(ABC):
             for g in g_list:
                 g = fa_transform(g)
             batch_reflected = Batch.from_data_list(g_list)
-            batch_reflected.neighbors = batch.neighbors
+            if hasattr(batch, "neighbors"):
+                batch_reflected.neighbors = batch.neighbors
 
         return {"batch_list": [batch_reflected], "rot": rot}

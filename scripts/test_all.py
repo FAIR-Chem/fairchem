@@ -6,8 +6,40 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from time import time
+import numpy as np
 
 from minydra import resolved_args
+
+args = resolved_args(
+    defaults={
+        "skip_features": -1,  # (int) how many features to skip
+        "skip_models": -1,  # (int) how many models to skip
+        "skip_configs": -1,  # (int) how many final configs to skip
+        "ignore_str": "",  # (str) ignore configs containing this string
+        "only_str": "",  # (str) only selects configs containing this string
+        "traceback": False,  # (bool) print traceback on error
+        "n": -1,  # (int) how many configs to run
+        "breakpoint": False,  # (bool) call breakpoints on errors
+        "help": False,  # (bool) print help
+    }
+)
+
+if args.help:
+    print("Usage: python test_all.py options=value true_flag -false_flag")
+    print(
+        """
+        skip_features -> -1,      # (int) how many features to skip
+        skip_models   -> -1,      # (int) how many models to skip
+        skip_configs  -> -1,      # (int) how many final configs to skip
+        ignore_str    -> "",      # (str) ignore configs containing this string
+        only_str      -> "",      # (str) only selects configs containing this string
+        traceback     -> False,   # (bool) print traceback on error
+        n             -> -1,      # (int) how many configs to run
+        breakpoint    -> False,   # (bool) call breakpoints on errors
+        help          -> False,   # (bool) print help
+        """
+    )
+    sys.exit(0)
 
 try:
     import ipdb  # noqa: F401
@@ -85,18 +117,11 @@ class Times:
         return Timer(name, self.times, is_first)
 
 
+def isin(key, args):
+    return any([key in arg for arg in args])
+
+
 if __name__ == "__main__":
-    args = resolved_args(
-        defaults={
-            "skip_features": -1,  # (int) how many features to skip
-            "skip_models": -1,  # (int) how many models to skip
-            "skip_configs": -1,  # (int) how many final configs to skip
-            "ignore_str": "",  # (str) ignore configs containing this string
-            "only_str": "",  # (str) only selects configs containing this string
-            "traceback": False,  # (bool) print traceback on error
-            "n": -1,  # (int) how many configs to run
-        }
-    )
 
     command = "python " + " ".join(sys.argv)
 
@@ -122,6 +147,8 @@ if __name__ == "__main__":
         ["--config=sfarinet-is2re-10k"],
         ["--config=sfarinet-qm9-10k"],
         ["--config=sfarinet-s2ef-200k"],
+        ["--config=sfarinet-qm7x-1k"],
+        ["--config=schnet-qm7x-1k"],
     ]
 
     features = [
@@ -151,6 +178,9 @@ if __name__ == "__main__":
         "--config=forcenet-s2ef-200k --regress_forces=direct_with_gradient_target",
         "--config=sfarinet-s2ef-200k --regress_forces=direct_with_gradient_target",
         "--config=fanet-s2ef-200k --regress_forces=direct_with_gradient_target",
+        "--config=sfarinet-qm7x-1k --regress_forces=direct",
+        "--config=sfarinet-qm7x-1k --regress_forces=direct_with_gradient_target",
+        "--config=sfarinet-qm7x-1k --regress_forces=from_energy",
     ]
     singles = [s.split() for s in singles]
 
@@ -170,6 +200,13 @@ if __name__ == "__main__":
     if args.only_str:
         configs = [c for c in configs if re.findall(args.only_str, " ".join(c))]
 
+    configs = [
+        c
+        for c in configs
+        if not (isin("qm7x", c) and isin("graph_rewiring", c))
+        and not (isin("qm9", c) and isin("graph_rewiring", c))
+    ]
+
     if args.skip_configs > 0:
         configs = configs[args.skip_configs :]
 
@@ -180,18 +217,23 @@ if __name__ == "__main__":
         " ".join(conf).replace("--", "").replace("configs/is2re/10k/", "")
         for conf in configs
     ]
+    order = np.argsort(conf_strs)
+    configs = [configs[o] for o in order]
+    conf_strs = [conf_strs[o] for o in order]
 
     if not configs:
         print("No configs to run 🥶")
     else:
         print("🥁 Configs to test:")
-        p = 0
+        current = None
         for c, conf in enumerate(configs):
-            if c and p <= len(models) and c % len(features) == 0:
+            model = conf[0].split("=")[1].split("-")[0]
+            if current is None:
+                current = model
+            if model != current:
                 print()
-                p += 1
+                current = model
             print(f"  • {c+1:3} " + conf_strs[c])
-
         print()
 
     nk = len(str(len(configs)))
@@ -234,6 +276,8 @@ if __name__ == "__main__":
             if args.traceback:
                 traceback.print_exc()
             symbol = "❌"
+            if args.breakpoint:
+                breakpoint()
 
         conf_duration = time() - conf_start
         print(

@@ -156,7 +156,11 @@ class TrajectoryLmdbDataset(LmdbDataset):
 def data_list_collater(data_list, otf_graph=False):
     batch = Batch.from_data_list(data_list)
 
-    if not otf_graph:
+    if (
+        not otf_graph
+        and hasattr(data_list[0], "edge_index")
+        and data_list[0].edge_index is not None
+    ):
         try:
             n_neighbors = []
             for i, data in enumerate(data_list):

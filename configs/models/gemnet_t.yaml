@@ -100,3 +100,9 @@ qm9:
 
   10k: {}
   all: {}
+
+qm7x:
+  default: {}
+
+  all: {}
+  1k: {}

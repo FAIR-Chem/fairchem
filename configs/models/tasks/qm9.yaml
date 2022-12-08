@@ -21,16 +21,14 @@ default:
   mode: train
   dataset:
     - src: /network/projects/ocp/qm9
-      target: 7 # predict internal energy at 0K at index 7
+      target: 12 # predict atomization energy at 0K at index 12
       seed: 123
-      normalize_labels: True
-      target_mean: -11178.966796875 # mean of U0 (see qm9.py it you want to change the target_mean)
-      target_std: 1085.5787353515625 # std of U0 (see qm9.py it you want to change the target_std)
+      normalize_labels: True # mean and std of target will be set by qm9.py if this is True
       ratio:
         start: 0
         end: 0.75
     - src: /network/projects/ocp/qm9
-      target: 7 # predict internal energy at 0K at index 7
+      target: 12 # predict internal energy at 0K at index 7
       seed: 123
       ratio:
         start: 0.75

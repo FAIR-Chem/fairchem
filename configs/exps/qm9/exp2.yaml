@@ -13,7 +13,7 @@ default:
   test_ri: true
   frame_averaging: 3D
   fa_frames: random
-  wandb_tags: qm9-test'ez'""
+  wandb_tags: qm9-test
   model:
     phys_embeds: True
     tag_hidden_channels: 0
