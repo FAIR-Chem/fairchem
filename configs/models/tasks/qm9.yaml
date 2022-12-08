@@ -24,32 +24,21 @@ default:
       target: 12 # predict atomization energy at 0K at index 12
       seed: 123
       normalize_labels: True # mean and std of target will be set by qm9.py if this is True
-      ratio:
+      indices:
         start: 0
-        end: 0.75
+        end: 110000
     - src: /network/projects/ocp/qm9
       target: 12 # predict internal energy at 0K at index 7
       seed: 123
-      ratio:
-        start: 0.75
-        end: 0.85
+      indices:
+        start: 120000
+        end: -1 # TO FIX -> THIS IS THE TEST SET
 
-    # TEST SET DO NOT ENABLE
-    # - src: /network/projects/ocp/qm9
-    #   target: 7 # predict internal energy at 0K at index 7
-    #   seed: 123
-    #   ratio:
-    #     start: 0.85
-    #     end: 1.0
-
-# ^`target` is an int to select the target to predict as per
-# https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html?highlight=qm9#torch_geometric.datasets.QM9
-# SchNet predicts U0 (https://github.com/atomistic-machine-learning/SchNet#qm9)
 10k:
   dataset:
-    - ratio:
+    - indices:
         start: 0
-        end: 0.08
+        end: 10000
     - {}
     # - {}
 

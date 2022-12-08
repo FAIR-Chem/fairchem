@@ -175,8 +175,11 @@ s2ef:
 qm9:
   default:
     model:
-      hidden_channels: 384
-      num_interactions: 4
+      hidden_channels: 128
+      num_gaussians: 20
+      num_filters: 128
+      num_interactions: 3
+      cutoff: 5.0
     optim:
       lr_initial: 0.001
       max_epochs: 17
