@@ -2,7 +2,7 @@
 job:
   mem: 48GB
   cpus: 12
-  gres: gpu:1
+  gres: gpu:rtx8000:1
   time: 12:00:00
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
