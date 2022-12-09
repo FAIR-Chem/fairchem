@@ -311,11 +311,13 @@ class SingleTrainer(BaseTrainer):
         # Time model
         if self.logger is not None:
             start_time = time.time()
-            # batch = next(iter(self.train_loader))
+            if self.config["optim"]["max_epochs"] == 0:
+                batch = next(iter(self.train_loader))
+            else: 
+                self.logger.log({"Epoch time": sum(epoch_time) / len(epoch_time)})
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
-            self.logger.log({"Epoch time": sum(epoch_time) / len(epoch_time)})
-
+            
         # Check respect of symmetries
         if self.test_ri and debug_batches < 0:
             symmetry = self.test_model_symmetries()
