@@ -1,11 +1,23 @@
 import os
 import re
 from pathlib import Path
-
+import sys
 from minydra import resolved_args
 from yaml import safe_load
-
+import subprocess
 from sbatch import now
+
+
+def get_commit():
+    try:
+        commit = (
+            subprocess.check_output("git rev-parse --verify HEAD".split())
+            .decode("utf-8")
+            .strip()
+        )
+    except Exception:
+        commit = "unknown"
+    return commit
 
 
 def find_exp(name):
@@ -87,6 +99,12 @@ if __name__ == "__main__":
 
     print(f"🔥 About to run {len(commands)} jobs:\n\n • " + "\n\n  • ".join(commands))
 
+    separator = "\n" * 4 + f"{'#' * 80}\n" * 4 + "\n" * 4
+    text = "<><><> Experiment command: $ " + " ".join(["python"] + sys.argv)
+    text += "\n<><><> Experiment commit: " + get_commit()
+    text += "\n<><><> Experiment config:\n\n-----" + exp_file.read_text() + "-----"
+    text += "\n<><><> Experiment runs:\n\n • " + "\n\n  • ".join(commands) + separator
+
     confirm = input("\n🚦 Confirm? [y/n]")
 
     if confirm == "y":
@@ -97,14 +115,13 @@ if __name__ == "__main__":
         outdir = Path(__file__).resolve().parent / "data" / "exp_outputs" / exp_name
         outfile = outdir / f"{exp_name.split('/')[-1]}_{now()}.txt"
         outfile.parent.mkdir(exist_ok=True, parents=True)
-        exp_separator = "\n" * 4 + f"{'#' * 80}\n" * 4 + "\n" * 4
-        text = exp_separator.join(outputs)
+        text += separator.join(outputs)
         jobs = [
             line.replace(sep, "").strip()
             for line in text.splitlines()
             if (sep := "Submitted batch job ") in line
         ]
-        text += f"{exp_separator}All jobs launched: {' '.join(jobs)}"
+        text += f"{separator}All jobs launched: {' '.join(jobs)}"
         with outfile.open("w") as f:
             f.write(text)
         print(f"Output written to {str(outfile)}")
