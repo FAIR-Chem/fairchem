@@ -17,6 +17,7 @@ default:
   energy_head: False
   pg_hidden_channels: 0
   tag_hidden_channels: 0
+  frame_averaging: ""
 
 runs:
   - config: schnet-qm7x-all
