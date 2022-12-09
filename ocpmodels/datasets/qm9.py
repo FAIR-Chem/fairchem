@@ -24,7 +24,7 @@ class QM9Dataset(QM9):
             "normalize_labels": True,
             "target_mean": -11178.966796875,
             "target_std": 1085.5787353515625,
-            "ratio": {"start": 0, "end": 0.75},
+            "indices": {"start": 0, "end": 110000},
         },
         transform=None,
     ):
@@ -48,11 +48,16 @@ class QM9Dataset(QM9):
         else:
             self.perm = torch.arange(self.base_length)
 
-        start = int(config["ratio"]["start"] * self.base_length)
-        end = int(config["ratio"]["end"] * self.base_length)
+        start = int(config["indices"]["start"])
+        end = int(config["indices"]["end"])
 
         if start == 0:
-            self.samples = self.perm[:end]
+            if end == -1:
+                self.samples = self.perm
+            else:
+                self.samples = self.perm[:end]
+        elif end == -1:
+            self.samples = self.perm[start:]
         else:
             self.samples = self.perm[start:end]
 

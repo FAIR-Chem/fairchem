@@ -401,6 +401,13 @@ class BaseTrainer(ABC):
 
     def load_optimizer(self):
         optimizer = self.config["optim"].get("optimizer", "AdamW")
+
+        if optimizer.lower() == "amsgrad":
+            optimizer = "Adam"
+            if "optimizer_params" not in self.config["optim"]:
+                self.config["optim"]["optimizer_params"] = {}
+            self.config["optim"]["optimizer_params"]["amsgrad"] = True
+
         optimizer = getattr(optim, optimizer)
 
         if self.config["optim"].get("weight_decay", 0) > 0:

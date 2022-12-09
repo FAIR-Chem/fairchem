@@ -21,5 +21,40 @@ default:
 runs:
   - config: schnet-qm7x-all
     note: SchNet qm7x baseline
+    model:
+      num_filters: 128
+      num_gaussians: 100
+      hidden_channels: 384
+      num_interactions: 4
+
   - config: schnet-qm7x-all
-    note: SchNet qm7x baseline
+    note: SchNet qm7x baseline - +filters
+    model:
+      num_filters: 256
+      num_gaussians: 100
+      hidden_channels: 384
+      num_interactions: 4
+
+  - config: schnet-qm7x-all
+    note: SchNet qm7x baseline - +filters +gaussians
+    model:
+      num_filters: 256
+      num_gaussians: 150
+      hidden_channels: 384
+      num_interactions: 4
+
+  - config: schnet-qm7x-all
+    note: SchNet qm7x baseline - +filters +gaussians +hidden_channels
+    model:
+      num_filters: 256
+      num_gaussians: 150
+      hidden_channels: 512
+      num_interactions: 4
+
+  - config: schnet-qm7x-all
+    note: SchNet qm7x baseline - +filters +gaussians +hidden_channels +interactions
+    model:
+      num_filters: 256
+      num_gaussians: 150
+      hidden_channels: 512
+      num_interactions: 5

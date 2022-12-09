@@ -164,13 +164,14 @@ qm9:
       #   The total number of gpus used for this run was 4.
       #   If the global batch size (num_gpus * batch_size) is modified
       #   the lr_milestones and warmup_steps need to be adjusted accordingly.
-      lr_initial: 0.0001
+      lr_initial: 0.001
       lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
-        - 115082
-        - 230164
-        - 345246
-      warmup_steps: 57541
-      max_epochs: 8
+        - 2000000
+        - 4000000
+        - 6000000
+      warmup_steps: 3000
+      lr_gamma: 0.1
+      max_epochs: 30
 
   10k: {}
   all: {}

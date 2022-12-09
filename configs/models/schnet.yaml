@@ -3,6 +3,8 @@ default:
     name: schnet
     num_filters: 128
     num_gaussians: 100
+    hidden_channels: 256
+    num_interactions: 3
     cutoff: 6.0
     use_pbc: True
     regress_forces: False
@@ -173,8 +175,11 @@ s2ef:
 qm9:
   default:
     model:
-      hidden_channels: 384
-      num_interactions: 4
+      hidden_channels: 128
+      num_gaussians: 20
+      num_filters: 128
+      num_interactions: 3
+      cutoff: 5.0
     optim:
       lr_initial: 0.001
       max_epochs: 17
@@ -196,13 +201,13 @@ qm7x:
     optim:
       batch_size: 128
       lr_initial: 0.001
-      max_epochs: 17
+      max_epochs: 25
       lr_gamma: 0.1
       lr_milestones:
-        - 17981
-        - 26972
-        - 35963
-      warmup_steps: 5394
+        - 31000
+        - 62000
+        - 93000
+      warmup_steps: 15000
 
   all: {}
   1k: {}
