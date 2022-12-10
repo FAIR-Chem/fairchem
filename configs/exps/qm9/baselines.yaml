@@ -3,7 +3,7 @@ job:
   mem: 48GB
   cpus: 6
   gres: gpu:1
-  time: 12:00:00
+  time: 1:00:00
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
 
@@ -31,11 +31,6 @@ runs:
       num_after_skip: 2
       num_blocks: 6
       int_emb_size: 128
-    optim:
-      lr_initial: 0.001
-      warmup_steps: 3000
-      batch_size: 32
-      max_epochs: 100
 
   - config: schnet-qm9-all
     model:

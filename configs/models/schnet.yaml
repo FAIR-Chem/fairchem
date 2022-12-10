@@ -182,12 +182,14 @@ qm9:
       cutoff: 5.0
     optim:
       lr_initial: 0.001
-      max_epochs: 30
-      lr_gamma: 0.1
+      max_epochs: 100
+      lr_gamma: 0.25
       lr_milestones:
         - 17981
         - 26972
         - 35963
+        - 52000
+        - 100000
       warmup_steps: 5394
 
   10k: {}
