@@ -49,7 +49,6 @@ class Logger(ABC):
                         warnings=False,
                         verbose=False,
                     )
-                print("\nNotifying", args, kwargs, end="\n\n")
                 self._ntfy(*args, **kwargs)
         except Exception as e:
             logging.warning(f"Logger failed to send notification: {e}")

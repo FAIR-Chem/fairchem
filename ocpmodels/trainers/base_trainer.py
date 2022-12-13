@@ -566,18 +566,12 @@ class BaseTrainer(ABC):
             model_regresses_forces=self.config["model"].get("regress_forces", ""),
         )
         metrics = {}
-        rank = distutils.get_rank()
+        desc = "device {}".format(distutils.get_rank())
 
         loader = self.val_loader if split[:3] in {"val", "eva"} else self.test_loader
         val_time = time.time()
 
-        for i, batch in tqdm(
-            enumerate(loader),
-            total=len(loader),
-            position=rank,
-            desc="device {}".format(rank),
-            disable=disable_tqdm,
-        ):
+        for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
 
             if debug_batches > 0 and i == debug_batches:
                 break
@@ -585,6 +579,7 @@ class BaseTrainer(ABC):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 preds = self.model_forward(batch)
+
             loss = self.compute_loss(preds, batch)
             if preds.get("pooling_loss") is not None:
                 loss += preds["pooling_loss"]
@@ -594,7 +589,6 @@ class BaseTrainer(ABC):
             metrics = evaluator.update("loss", loss.item(), metrics)
 
         val_time = time.time() - val_time
-
         aggregated_metrics = {}
         for k in metrics:
             aggregated_metrics[k] = {

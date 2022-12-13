@@ -4,7 +4,6 @@ import torch
 from torch import nn
 from torch.nn import Embedding, Linear
 from torch_geometric.nn import MessagePassing, radius_graph
-from torch_geometric.nn.acts import swish
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
@@ -14,6 +13,11 @@ from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.models.force_decoder import ForceDecoder
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
+
+try:
+    from torch_geometric.nn.acts import swish
+except ImportError:
+    from torch_geometric.nn.resolver import swish
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1

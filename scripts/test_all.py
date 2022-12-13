@@ -54,7 +54,7 @@ except:  # noqa: E722
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from ocpmodels.common.utils import get_commit_hash, make_script_trainer
-from ocpmodels.trainers.energy_trainer import EnergyTrainer
+from ocpmodels.trainers.single_trainer import SingleTrainer
 
 COLS = shutil.get_terminal_size().columns
 
@@ -246,7 +246,7 @@ if __name__ == "__main__":
 
         try:
             with times.next("👶 Make", True):
-                trainer: EnergyTrainer = make_script_trainer(
+                trainer: SingleTrainer = make_script_trainer(
                     str_args=conf,
                     overrides=overrides,
                     silent=True,
