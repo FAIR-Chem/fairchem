@@ -199,7 +199,7 @@ python main.py --mode run-relaxations --config-yml configs/s2ef/2M/schnet/schnet
 ```
 The relaxed structure positions are stored in `[RESULTS_DIR]/relaxed_positions.npz` and later used to create a submission file to be uploaded to EvalAI. Predicted trajectories are stored in `trajectories` directory for those interested in analyzing the complete relaxation trajectory.
 
-## Create EvalAI submission files
+## Create EvalAI OC20 submission files
 
 EvalAI expects results to be structured in a specific format for a submission to be successful. A submission must contain results from the 4 different splits - in distribution (id), out of distribution adsorbate (ood ads), out of distribution catalyst (ood cat), and out of distribution adsorbate and catalyst (ood both). Constructing the submission file for each of the above tasks is as follows:
 
@@ -223,3 +223,17 @@ EvalAI expects results to be structured in a specific format for a submission to
     ```
    The final submission file will be written to `is2rs_submission.npz` (rename accordingly).
 3. Upload `is2rs_submission.npz` to EvalAI.
+
+
+## Create EvalAI OC22 submission files
+
+EvalAI expects results to be structured in a specific format for a submission to be successful. A submission must contain results from the 2 different splits - in distribution (id) and out of distribution (ood). Construct submission files for the S2EF/IS2RE tasks as follows:
+
+### S2EF/IS2RE:
+1. Run predictions `--mode predict` on both the id and ood splits, generating `[s2ef/is2re]_predictions.npz` files for each split.
+2. Run the following command:
+    ```
+    python make_submission_file.py --oc22 --id path/to/id/file.npz --ood path/to/ood_ads/file.npz --out-path submission_file.npz
+    ```
+   Where `file.npz` corresponds to the respective `[s2ef/is2re]_predictions.npz` files generated for the corresponding task. The final submission file will be written to `submission_file.npz` (rename accordingly).
+3. Upload `submission_file.npz` to EvalAI.
