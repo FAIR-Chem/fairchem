@@ -20,14 +20,17 @@ default:
 
   mode: train
   dataset:
-    - src: /network/projects/ocp/qm9
+    default_val: val
+    train:
+      src: /network/projects/ocp/qm9
       target: 12 # predict atomization energy at 0K at index 12
       seed: 123
       normalize_labels: True # mean and std of target will be set by qm9.py if this is True
       indices:
         start: 0
         end: 110000
-    - src: /network/projects/ocp/qm9
+    val:
+      src: /network/projects/ocp/qm9
       target: 12 # predict atomization energy at 0K at index 12
       seed: 123
       indices:
@@ -36,10 +39,9 @@ default:
 
 10k:
   dataset:
-    - indices:
+    train:
+      indices:
         start: 0
         end: 10000
-    - {}
-    # - {}
 
 all: {}

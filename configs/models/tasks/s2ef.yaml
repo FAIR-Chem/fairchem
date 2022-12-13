@@ -18,30 +18,39 @@ default:
     max_num_neighbors: 40
     regress_forces: from_energy # can be in{ "from_energy", "direct", "direct_with_gradient_target" }
   dataset:
-    - src: /network/projects/_groups/ocp/oc20/s2ef/200k/train
+    default_val: val_id
+    train:
+      src: /network/projects/_groups/ocp/oc20/s2ef/200k/train
       normalize_labels: True
       target_mean: -0.7554450631141663
       target_std: 2.887317180633545
       grad_target_mean: 0.0
       grad_target_std: 2.887317180633545
-    - src: /network/projects/_groups/ocp/oc20/s2ef/all/val_id
+    val_id:
+      src: /network/projects/_groups/ocp/oc20/s2ef/all/val_id
+    val_ood_cat:
+      src: /network/projects/_groups/ocp/oc20/s2ef/all/val_ood_cat
+    val_ood_ads:
+      src: /network/projects/_groups/ocp/oc20/s2ef/all/val_ood_ads
+    val_ood_both:
+      src: /network/projects/_groups/ocp/oc20/s2ef/all/val_ood_both
 
 200k:
   dataset:
-    - src: /network/projects/_groups/ocp/oc20/s2ef/200k/train
-    - {}
+    train:
+      src: /network/projects/_groups/ocp/oc20/s2ef/200k/train
 
 2M:
   dataset:
-    - src: /network/projects/_groups/ocp/oc20/s2ef/2M/train/
-    - {}
+    train:
+      src: /network/projects/_groups/ocp/oc20/s2ef/2M/train/
 
 20M:
   dataset:
-    - src: /network/projects/_groups/ocp/oc20/s2ef/20M/train/
-    - {}
+    train:
+      src: /network/projects/_groups/ocp/oc20/s2ef/20M/train/
 
 all:
   dataset:
-    - src: /network/projects/_groups/ocp/oc20/s2ef/all/train/
-    - {}
+    train:
+      src: /network/projects/_groups/ocp/oc20/s2ef/all/train/

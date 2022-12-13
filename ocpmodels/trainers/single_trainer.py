@@ -73,8 +73,8 @@ class SingleTrainer(BaseTrainer):
                     )
                 else:
                     self.normalizers["grad_target"] = Normalizer(
-                        tensor=self.train_loader.dataset.data.y[
-                            self.train_loader.dataset.__indices__
+                        tensor=self.datasets["train"].data.y[
+                            self.datasets["train"].__indices__
                         ],
                         device=self.device,
                     )
@@ -178,7 +178,8 @@ class SingleTrainer(BaseTrainer):
         return predictions
 
     def train(self, disable_eval_tqdm=False, debug_batches=-1):
-        eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
+        n_train = len(self.loaders["train"])
+        eval_every = self.config["optim"].get("eval_every", n_train)
         self.config["print_every"] = eval_every  # Can comment out for better debug
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.task_name]
@@ -187,7 +188,7 @@ class SingleTrainer(BaseTrainer):
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
-        start_epoch = self.step // len(self.train_loader)
+        start_epoch = self.step // n_train
         epoch_time = []
 
         if not self.silent:
@@ -200,12 +201,12 @@ class SingleTrainer(BaseTrainer):
                 print("Epoch: ", epoch_int)
 
             self.train_sampler.set_epoch(epoch_int)
-            skip_steps = self.step % len(self.train_loader)
-            train_loader_iter = iter(self.train_loader)
+            skip_steps = self.step % n_train
+            train_loader_iter = iter(self.loaders["train"])
 
-            for i in range(skip_steps, len(self.train_loader)):
-                self.epoch = epoch_int + (i + 1) / len(self.train_loader)
-                self.step = epoch_int * len(self.train_loader) + i + 1
+            for i in range(skip_steps, n_train):
+                self.epoch = epoch_int + (i + 1) / n_train
+                self.step = epoch_int * n_train + i + 1
                 self.model.train()
 
                 if debug_batches > 0 and i == debug_batches:
@@ -252,7 +253,7 @@ class SingleTrainer(BaseTrainer):
 
                     if self.val_loader is not None:
                         val_metrics = self.validate(
-                            split="val",
+                            split=self.config["dataset"]["default_val"],
                             disable_tqdm=disable_eval_tqdm,
                         )
                         if (
@@ -312,12 +313,12 @@ class SingleTrainer(BaseTrainer):
         if self.logger is not None:
             start_time = time.time()
             if self.config["optim"]["max_epochs"] == 0:
-                batch = next(iter(self.train_loader))
-            else: 
+                batch = next(iter(self.loaders["train"]))
+            else:
                 self.logger.log({"Epoch time": sum(epoch_time) / len(epoch_time)})
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
-            
+
         # Check respect of symmetries
         if self.test_ri and debug_batches < 0:
             symmetry = self.test_model_symmetries()

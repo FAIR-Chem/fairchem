@@ -71,6 +71,9 @@ class BaseTrainer(ABC):
         self.is_debug = self.config["is_debug"]
         self.is_hpo = self.config["is_hpo"]
         self.silent = self.config["silent"]
+        self.datasets = {}
+        self.samplers = {}
+        self.loaders = {}
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{self.config['local_rank']}")
@@ -98,19 +101,7 @@ class BaseTrainer(ABC):
                 "%j", self.config["slurm"]["job_id"]
             )
 
-        if isinstance(kwargs["dataset"], list):
-            if len(kwargs["dataset"]) > 0:
-                self.config["dataset"] = kwargs["dataset"][0]
-            if len(kwargs["dataset"]) > 1:
-                self.config["val_dataset"] = kwargs["dataset"][1]
-            if len(kwargs["dataset"]) > 2:
-                self.config["test_dataset"] = kwargs["dataset"][2]
-        elif isinstance(kwargs["dataset"], dict):
-            self.config["dataset"] = kwargs["dataset"].get("train", None)
-            self.config["val_dataset"] = kwargs["dataset"].get("val", None)
-            self.config["test_dataset"] = kwargs["dataset"].get("test", None)
-        else:
-            self.config["dataset"] = kwargs["dataset"]
+        self.config["dataset"] = kwargs["dataset"]
 
         self.normalizer = kwargs["normalizer"]
         # This supports the legacy way of providing norm parameters in dataset
@@ -118,7 +109,7 @@ class BaseTrainer(ABC):
             self.config.get("dataset", None) is not None
             and kwargs["normalizer"] is None
         ):
-            self.normalizer = self.config["dataset"]
+            self.normalizer = self.config["dataset"]["train"]
 
         if not self.is_debug and distutils.is_master() and not self.is_hpo:
             os.makedirs(self.config["checkpoint_dir"], exist_ok=True)
@@ -216,61 +207,26 @@ class BaseTrainer(ABC):
             self.config["model"].get("otf_graph", False),
         )
 
-        self.train_loader = self.val_loader = self.test_loader = None
-
         transform = get_transforms(self.config)  # TODO: train/val/test behavior
+        batch_size = self.config["optim"]["batch_size"]
 
-        if self.config.get("dataset", None):
-            self.train_dataset = registry.get_dataset_class(
+        for split, ds_conf in self.config["dataset"].items():
+            if split == "default_val":
+                continue
+
+            shuffle = False
+            if split == "train":
+                shuffle = True
+
+            self.datasets[split] = registry.get_dataset_class(
                 self.config["task"]["dataset"]
-            )(self.config["dataset"], transform=transform)
-            self.train_sampler = self.get_sampler(
-                self.train_dataset,
-                self.config["optim"]["batch_size"],
-                shuffle=True,
+            )(ds_conf, transform=transform)
+            self.samplers[split] = self.get_sampler(
+                self.datasets[split], batch_size, shuffle=shuffle
             )
-            self.train_loader = self.get_dataloader(
-                self.train_dataset,
-                self.train_sampler,
+            self.loaders[split] = self.get_dataloader(
+                self.datasets[split], self.samplers[split]
             )
-
-            if self.config.get("val_dataset", None):
-                self.val_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(
-                    self.config["val_dataset"],
-                    transform=transform,
-                )
-                self.val_sampler = self.get_sampler(
-                    self.val_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.val_loader = self.get_dataloader(
-                    self.val_dataset,
-                    self.val_sampler,
-                )
-
-            if self.config.get("test_dataset", None):
-                self.test_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(
-                    self.config["test_dataset"],
-                    transform=transform,
-                )
-                self.test_sampler = self.get_sampler(
-                    self.test_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.test_loader = self.get_dataloader(
-                    self.test_dataset,
-                    self.test_sampler,
-                )
 
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
@@ -284,8 +240,8 @@ class BaseTrainer(ABC):
                 )
             else:
                 self.normalizers["target"] = Normalizer(
-                    tensor=self.train_loader.dataset.data.y[
-                        self.train_loader.dataset.__indices__
+                    tensor=self.datasets["train"].data.y[
+                        self.datasets["train"].__indices__
                     ],
                     device=self.device,
                 )
@@ -308,7 +264,7 @@ class BaseTrainer(ABC):
         bond_feat_dim = None
         bond_feat_dim = self.config["model"].get("num_gaussians", 50)
 
-        loader = self.train_loader or self.val_loader or self.test_loader
+        loader = list(self.loaders.values())[0] if self.loaders else None
         num_atoms = None
         if loader:
             sample = loader.dataset[0]
@@ -548,11 +504,14 @@ class BaseTrainer(ABC):
 
     @torch.no_grad()
     def validate(
-        self, split="val", disable_tqdm=False, name_split=None, debug_batches=-1
+        self,
+        split="val",
+        disable_tqdm=False,
+        debug_batches=-1,
+        is_final=False,
     ):
         if distutils.is_master() and not self.silent:
-            if not name_split:
-                logging.info(f"Evaluating on {split}.")
+            logging.info(f"Evaluating on {split}.")
         if self.is_hpo:
             disable_tqdm = True
 
@@ -568,7 +527,7 @@ class BaseTrainer(ABC):
         metrics = {}
         desc = "device {}".format(distutils.get_rank())
 
-        loader = self.val_loader if split[:3] in {"val", "eva"} else self.test_loader
+        loader = self.loaders[split]
         val_time = time.time()
 
         for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
@@ -613,8 +572,8 @@ class BaseTrainer(ABC):
 
         # Make plots.
         if self.logger is not None:
-            if split == "eval":
-                log_dict = {f"{name_split}-{k}": v for k, v in log_dict.items()}
+            if is_final:
+                log_dict = {f"eval-{k}": v for k, v in log_dict.items()}
                 self.logger.log(
                     log_dict,
                     split=split,
@@ -739,60 +698,21 @@ class BaseTrainer(ABC):
         cumulated_time = 0
         cumulated_mae = 0
         metrics_dict = {}
-
-        if self.task_name in OCP_TASKS:
-            val_sets = ["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]
-        elif self.task_name == "qm9":
-            val_sets = ["val"]
-        elif self.task_name == "qm7x":
-            val_sets = ["val_id", "val_ood"]
-        else:
-            raise ValueError(f"Unknown task {self.task_name}")
+        val_splits = [s for s in self.config["dataset"] if s.startswith("val_")]
 
         if not self.silent:
-            logging.info(f"Evaluating on {len(val_sets)} val splits.")
+            logging.info(f"Evaluating on {len(val_splits)} val splits.")
 
-        for i, s in enumerate(val_sets):
+        for split in val_splits:
 
-            # Update the val. dataset we look at
-            if self.task_name in OCP_TASKS:
-                base = Path(f"/network/projects/ocp/oc20/{self.task_name}/all/{s}/")
-                src = base / "data.lmdb"
-                if not src.exists():
-                    src = base
-                self.config["val_dataset"] = {"src": str(src)}
-            elif self.task_name == "qm7x":
-                self.config["val_dataset"] = {**self.config["val_dataset"], "split": s}
-
-            # Load val dataset
-            if self.config.get("val_dataset", None):
-                self.val_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(
-                    self.config["val_dataset"],
-                    transform=get_transforms(self.config),
-                )
-                self.val_sampler = self.get_sampler(
-                    self.val_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.val_loader = self.get_dataloader(
-                    self.val_dataset,
-                    self.val_sampler,
-                )
-
-            # Call validate function
             start_time = time.time()
             self.metrics = self.validate(
-                split="eval",
+                split=split,
                 disable_tqdm=disable_tqdm,
-                name_split=s,
                 debug_batches=debug_batches,
+                is_final=True,
             )
-            metrics_dict[s] = self.metrics
+            metrics_dict[split] = self.metrics
             cumulated_mae += self.metrics["energy_mae"]["metric"]
             cumulated_time += time.time() - start_time
 
