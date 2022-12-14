@@ -566,20 +566,20 @@ class BaseTrainer(ABC):
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": self.epoch})
         log_dict.update({"val_time": val_time})
+        log_dict.update({"n_samples": i + 1})
         if distutils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
             logging.info(", ".join(log_str))
 
         # Make plots.
         if self.logger is not None:
-            log_dict = {f"{split}-{k}": v for k, v in log_dict.items()}
+            log_dict = {f"{split}/{k}": v for k, v in log_dict.items()}
             if is_final:
                 self.logger.log(
                     log_dict,
                     split="eval",
                 )
             else:
-                log_dict = {f"{split}-{k}": v for k, v in log_dict.items()}
                 self.logger.log(
                     log_dict,
                     step=self.step,
@@ -738,7 +738,7 @@ class BaseTrainer(ABC):
             for _, val in v.items():
                 store.append(round(val["metric"], 4))
             if not self.silent:
-                logging.info("• ", k)
+                logging.info(f"•  {k}")
                 logging.info(
                     "\n".join([f"  > {k:24}: {v}" for k, v in zip(v.keys(), store)])
                 )

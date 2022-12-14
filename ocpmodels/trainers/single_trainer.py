@@ -179,7 +179,7 @@ class SingleTrainer(BaseTrainer):
 
         return predictions
 
-    def train(self, disable_eval_tqdm=False, debug_batches=-1):
+    def train(self, disable_eval_tqdm=True, debug_batches=-1):
         n_train = len(self.loaders["train"])
         eval_every = self.config["optim"].get("eval_every", n_train)
         self.config["print_every"] = eval_every  # Can comment out for better debug
@@ -244,7 +244,7 @@ class SingleTrainer(BaseTrainer):
                 )
 
                 # Log metrics.
-                self._log_metrics()
+                self.log_train_metrics()
 
                 if is_test_env:
                     continue
@@ -288,7 +288,7 @@ class SingleTrainer(BaseTrainer):
                 # End of batch.
 
             # End of epoch.
-            self._log_metrics(end_of_epoch=True)
+            self.log_train_metrics(end_of_epoch=True)
             torch.cuda.empty_cache()
             epoch_times.append(time.time() - start_time)
 
@@ -531,8 +531,8 @@ class SingleTrainer(BaseTrainer):
 
         return metrics
 
-    def _log_metrics(self, end_of_epoch=False):
-        log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
+    def log_train_metrics(self, end_of_epoch=False):
+        log_dict = {k: v["metric"] for k, v in self.metrics.items()}
         log_dict.update(
             {
                 "lr": self.scheduler.get_lr(),

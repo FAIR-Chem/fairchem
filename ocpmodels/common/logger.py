@@ -42,7 +42,6 @@ class Logger(ABC):
 
     def ntfy(self, *args, **kwargs):
         global NTFY_OK
-        print("NTFY_OK: ", NTFY_OK)
         try:
             if NTFY_OK:
                 if self._ntfy is None:
