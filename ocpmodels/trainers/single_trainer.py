@@ -200,7 +200,7 @@ class SingleTrainer(BaseTrainer):
             if not self.silent:
                 print("Epoch: ", epoch_int)
 
-            self.train_sampler.set_epoch(epoch_int)
+            self.samplers["train"].set_epoch(epoch_int)
             skip_steps = self.step % n_train
             train_loader_iter = iter(self.loaders["train"])
 
@@ -331,11 +331,8 @@ class SingleTrainer(BaseTrainer):
         # self.eval_all_val_splits()
 
         # Close datasets
-        self.train_dataset.close_db()
-        if "val_dataset" in self.config:
-            self.val_dataset.close_db()
-        if "test_dataset" in self.config:
-            self.test_dataset.close_db()
+        for ds in self.datasets.values():
+            ds.close_db()
 
     def model_forward(self, batch_list):
         # Distinguish frame averaging from base case.

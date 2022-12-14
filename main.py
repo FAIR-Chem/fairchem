@@ -148,7 +148,6 @@ if __name__ == "__main__":
 
     trainer_config = build_config(args, override_args)
     trainer_config["optim"]["eval_batch_size"] = trainer_config["optim"]["batch_size"]
-    breakpoint()
 
     setup_logging()
     original_trainer_config = copy.deepcopy(trainer_config)
