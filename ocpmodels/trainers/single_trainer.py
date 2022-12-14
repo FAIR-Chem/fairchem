@@ -331,8 +331,9 @@ class SingleTrainer(BaseTrainer):
         # self.eval_all_val_splits()
 
         # Close datasets
-        for ds in self.datasets.values():
-            ds.close_db()
+        if debug_batches < 0:
+            for ds in self.datasets.values():
+                ds.close_db()
 
     def model_forward(self, batch_list):
         # Distinguish frame averaging from base case.

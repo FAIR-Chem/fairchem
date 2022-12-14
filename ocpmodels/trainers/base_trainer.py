@@ -735,7 +735,7 @@ class BaseTrainer(ABC):
                 print(f"----- RESULTS AT EPOCH {epoch} -----")
             else:
                 print("----- RESULTS -----")
-            print("Total time taken: ", time.time() - start_time)
+            print("eval_all_val_splits time: ", time.time() - start_time)
             print(self.metrics.keys())
         for k, v in metrics_dict.items():
             store = []

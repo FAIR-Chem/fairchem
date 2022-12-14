@@ -126,6 +126,7 @@ class LmdbDataset(Dataset):
         return env
 
     def close_db(self):
+        print("Closing", str(self.path))
         if not self.path.is_file():
             for env in self.envs:
                 env.close()
