@@ -186,12 +186,12 @@ class SingleTrainer(BaseTrainer):
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )
-        self.best_val_mae = 1e9
+        self.best_val_metric = np.inf
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // n_train
-        epoch_time = []
+        epoch_times = []
 
         if not self.silent:
             print("---Beginning of Training---")
@@ -200,18 +200,18 @@ class SingleTrainer(BaseTrainer):
 
             start_time = time.time()
             if not self.silent:
-                logging.info("Epoch: ", epoch_int)
+                logging.info(f"Epoch: {epoch_int}")
 
             self.samplers["train"].set_epoch(epoch_int)
             skip_steps = self.step % n_train
             train_loader_iter = iter(self.loaders["train"])
+            self.model.train()
             i_for_epoch = 0
 
             for i in range(skip_steps, n_train):
                 i_for_epoch += 1
                 self.epoch = epoch_int + (i + 1) / n_train
                 self.step = epoch_int * n_train + i + 1
-                self.model.train()
 
                 # Get a batch.
                 batch = next(train_loader_iter)
@@ -245,16 +245,20 @@ class SingleTrainer(BaseTrainer):
                 # Log metrics.
                 self._log_metrics()
 
+                if is_test_env:
+                    continue
+
                 is_final_epoch = epoch_int == self.config["optim"]["max_epochs"] - 1
                 is_final_batch = (i == n_train - 1) or (
                     debug_batches > 0 and i_for_epoch == debug_batches
                 )
-
-                if is_test_env:
-                    continue
+                should_validate = (self.step % eval_every == 0) or (
+                    is_final_epoch and is_final_batch
+                )
+                primary_metric = self.evaluator.task_primary_metric[self.task_name]
 
                 # Evaluate on val set after every `eval_every` iterations.
-                if (self.step % eval_every == 0) or (is_final_epoch and is_final_batch):
+                if should_validate:
                     self.save(
                         checkpoint_file=f"checkpoint-{str(self.step).zfill(6)}.pt",
                         training_state=True,
@@ -265,48 +269,16 @@ class SingleTrainer(BaseTrainer):
                         disable_tqdm=disable_eval_tqdm,
                         debug_batches=debug_batches,
                     )
-                    if (
-                        val_metrics[self.evaluator.task_primary_metric[self.task_name]][
-                            "metric"
-                        ]
-                        < self.best_val_mae
-                    ):
-                        self.best_val_mae = val_metrics[
-                            self.evaluator.task_primary_metric[self.task_name]
-                        ]["metric"]
+                    if val_metrics[primary_metric]["metric"] < self.best_val_metric:
+                        self.best_val_metric = val_metrics[primary_metric]["metric"]
                         self.save(
                             metrics=val_metrics,
                             checkpoint_file="best_checkpoint.pt",
                             training_state=False,
                         )
-                        if "test" in self.loaders:
-                            self.predict(
-                                self.loaders["test"],
-                                results_file="predictions",
-                                disable_tqdm=False,
-                            )
+                    self.model.train()
 
-                    # Evaluate current model on all 4 validation splits
-                    if (epoch_int % 100 == 0 and epoch_int != 0) or is_final_epoch:
-                        self.eval_all_val_splits(
-                            is_final_epoch, epoch=epoch_int, debug_batches=debug_batches
-                        )
-
-                    if self.is_hpo:
-                        self.hpo_update(
-                            self.epoch,
-                            self.step,
-                            self.metrics,
-                            val_metrics,
-                        )
-
-                if self.scheduler.scheduler_type == "ReduceLROnPlateau":
-                    if self.step % eval_every == 0:
-                        self.scheduler.step(
-                            metrics=val_metrics[primary_metric]["metric"],
-                        )
-                else:
-                    self.scheduler.step()
+                self.scheduler_step(eval_every, val_metrics[primary_metric]["metric"])
 
                 if is_final_batch:
                     break
@@ -316,19 +288,27 @@ class SingleTrainer(BaseTrainer):
             # End of epoch.
             self._log_metrics(end_of_epoch=True)
             torch.cuda.empty_cache()
-            epoch_time.append(time.time() - start_time)
+            epoch_times.append(time.time() - start_time)
 
         # End of training.
 
+        self.eval_all_val_splits(True, epoch=epoch_int, debug_batches=debug_batches)
+
+        if "test" in self.loaders:
+            self.predict(self.loaders["test"], results_file="predictions")
+
         # Time model
         if self.logger is not None:
+            log_epoch_times = False
             start_time = time.time()
             if self.config["optim"]["max_epochs"] == 0:
                 batch = next(iter(self.loaders["train"]))
             else:
-                self.logger.log({"Epoch time": sum(epoch_time) / len(epoch_time)})
+                log_epoch_times = True
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
+            if log_epoch_times:
+                self.logger.log({"Epoch time": sum(epoch_times) / len(epoch_times)})
 
         # Check respect of symmetries
         if self.test_ri and not is_test_env:
@@ -337,9 +317,6 @@ class SingleTrainer(BaseTrainer):
                 self.logger.log(symmetry)
 
         # TODO: Test equivariance
-
-        # Evaluate current model on all 4 validation splits
-        # self.eval_all_val_splits()
 
         # Close datasets
         if debug_batches < 0:

@@ -572,17 +572,18 @@ class BaseTrainer(ABC):
 
         # Make plots.
         if self.logger is not None:
+            log_dict = {f"{split}-{k}": v for k, v in log_dict.items()}
             if is_final:
-                log_dict = {f"eval-{k}": v for k, v in log_dict.items()}
                 self.logger.log(
                     log_dict,
-                    split=split,
+                    split="eval",
                 )
             else:
+                log_dict = {f"{split}-{k}": v for k, v in log_dict.items()}
                 self.logger.log(
                     log_dict,
                     step=self.step,
-                    split=split,
+                    split="val",
                 )
         if self.ema:
             self.ema.restore()
@@ -825,3 +826,12 @@ class BaseTrainer(ABC):
                 batch_reflected.neighbors = batch.neighbors
 
         return {"batch_list": [batch_reflected], "rot": rot}
+
+    def scheduler_step(self, eval_every, metrics):
+        if self.scheduler.scheduler_type == "ReduceLROnPlateau":
+            if self.step % eval_every == 0:
+                self.scheduler.step(
+                    metrics=metrics,
+                )
+        else:
+            self.scheduler.step()
