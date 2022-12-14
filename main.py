@@ -205,3 +205,5 @@ if __name__ == "__main__":
             )
             distutils.cleanup()
             print("Done!")
+        print("Self-canceling SLURM job", os.getenv("SLURM_JOB_ID"))
+        os.system(f"scancel {os.getenv('SLURM_JOB_ID')}")

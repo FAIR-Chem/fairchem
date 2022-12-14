@@ -51,6 +51,8 @@ except:  # noqa: E722
         "Consider `pip install ipdb` to improve your debugging experience.",
     )
 
+os.environ["ocp_test_env"] = "1"
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from ocpmodels.common.utils import get_commit_hash, make_script_trainer

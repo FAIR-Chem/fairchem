@@ -26,6 +26,8 @@ from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
+is_test_env = os.environ.get("ocp_test_env", False)
+
 
 @registry.register_trainer("single")
 class SingleTrainer(BaseTrainer):
@@ -198,7 +200,7 @@ class SingleTrainer(BaseTrainer):
 
             start_time = time.time()
             if not self.silent:
-                print("Epoch: ", epoch_int)
+                logging.info("Epoch: ", epoch_int)
 
             self.samplers["train"].set_epoch(epoch_int)
             skip_steps = self.step % n_train
@@ -207,7 +209,6 @@ class SingleTrainer(BaseTrainer):
 
             for i in range(skip_steps, n_train):
                 i_for_epoch += 1
-                print("i_for_epoch: ", i_for_epoch)
                 self.epoch = epoch_int + (i + 1) / n_train
                 self.step = epoch_int * n_train + i + 1
                 self.model.train()
@@ -248,6 +249,9 @@ class SingleTrainer(BaseTrainer):
                 is_final_batch = (i == n_train - 1) or (
                     debug_batches > 0 and i_for_epoch == debug_batches
                 )
+
+                if is_test_env:
+                    continue
 
                 # Evaluate on val set after every `eval_every` iterations.
                 if (self.step % eval_every == 0) or (is_final_epoch and is_final_batch):
@@ -327,7 +331,7 @@ class SingleTrainer(BaseTrainer):
             self.logger.log({"Batch time": time.time() - start_time})
 
         # Check respect of symmetries
-        if self.test_ri and (True or debug_batches < 0):
+        if self.test_ri and not is_test_env:
             symmetry = self.test_model_symmetries()
             if self.logger:
                 self.logger.log(symmetry)
@@ -594,7 +598,6 @@ class SingleTrainer(BaseTrainer):
         forces_diff_refl = torch.zeros(1, device=self.device)
 
         for i, batch in enumerate(self.loaders[self.config["dataset"]["default_val"]]):
-            print("model_symmetries i: ", i)
             if debug_batches > 0 and i == debug_batches:
                 break
             # Compute model prediction
