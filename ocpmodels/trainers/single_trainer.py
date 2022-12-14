@@ -568,7 +568,7 @@ class SingleTrainer(BaseTrainer):
             )
 
     @torch.no_grad()
-    def test_model_symmetries(self, debug_batches=100):
+    def test_model_symmetries(self, debug_batches=-1):
         """Test rotation and reflection invariance & equivariance
         of GNNs
 
