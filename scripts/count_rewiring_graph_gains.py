@@ -94,7 +94,7 @@ if __name__ == "__main__":
         for batch in tqdm(trainer.val_loader):
             counter = increment(counter, batch, s)
 
-    for batch in tqdm(trainer.train_loader):
+    for batch in tqdm(trainer.loaders["train"]):
         counter = increment(counter, batch, "train")
 
     for dataset, counts in counter.items():

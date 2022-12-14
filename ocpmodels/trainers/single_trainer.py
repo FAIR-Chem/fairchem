@@ -588,7 +588,7 @@ class SingleTrainer(BaseTrainer):
         forces_diff_z = torch.zeros(1, device=self.device)
         forces_diff_refl = torch.zeros(1, device=self.device)
 
-        for i, batch in enumerate(self.val_loader):
+        for i, batch in enumerate(self.loaders[self.config["dataset"]["default_val"]]):
             if debug_batches > 0 and i == debug_batches:
                 break
             # Compute model prediction

@@ -76,7 +76,7 @@ if __name__ == "__main__":
             if i == 10:
                 break
 
-        for batch in trainer.train_loader:
+        for batch in trainer.loaders["train"]:
             break
         # Set up
         b = batch[0]
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     if opts.no_single_super_node is None:
 
-        for batch in trainer.train_loader:
+        for batch in trainer.loaders["train"]:
             break
         b = batch[0]
         b_bis = deepcopy(b)
@@ -344,7 +344,7 @@ if __name__ == "__main__":
     # check conditionno_several_super_node
     if opts.no_several_super_node is None:
 
-        for batch in trainer.train_loader:
+        for batch in trainer.loaders["train"]:
             break
         b = batch[0]
         data = deepcopy(b)

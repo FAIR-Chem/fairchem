@@ -77,7 +77,8 @@ class ValidateTask(BaseTask):
         # Note that the results won't be precise on multi GPUs due to
         # padding of extra images (although the difference should be minor)
         assert (
-            self.trainer.val_loader is not None
+            "default_val" in self.trainer.config["dataset"]
+            and self.trainer.config["dataset"]["default_val"] in self.trainer.loaders
         ), "Val dataset is required for making predictions"
         assert self.config["checkpoint"]
         self.trainer.validate(

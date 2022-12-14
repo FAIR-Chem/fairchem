@@ -245,7 +245,7 @@ if __name__ == "__main__":
 
     trainer = make_script_trainer(overrides=trainer_config)
 
-    for batch in trainer.train_loader:
+    for batch in trainer.loaders["train"]:
         break
     b = batch[0]
 
