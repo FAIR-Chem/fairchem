@@ -31,9 +31,9 @@ from ocpmodels.common.data_parallel import (
     OCPDataParallel,
     ParallelCollater,
 )
-from ocpmodels.common.registry import registry
 from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
-from ocpmodels.common.utils import get_commit_hash, save_checkpoint, OCP_TASKS
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_commit_hash, save_checkpoint
 from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -506,7 +506,7 @@ class BaseTrainer(ABC):
     def validate(
         self,
         split="val",
-        disable_tqdm=False,
+        disable_tqdm=True,
         debug_batches=-1,
         is_final=False,
     ):
@@ -690,10 +690,6 @@ class BaseTrainer(ABC):
                 self.config["checkpoint_dir"], "best_checkpoint.pt"
             )
             self.load_checkpoint(checkpoint_path=checkpoint_path)
-            logging.info(
-                "Checking models are identical:"
-                + str(list(self.model.parameters())[0].data.view(-1)[:20]),
-            )
 
         # Compute performance metrics on all four validation splits
         cumulated_time = 0
@@ -731,19 +727,21 @@ class BaseTrainer(ABC):
         # Print results
         if not self.silent:
             if final:
-                print("----- FINAL RESULTS -----")
+                logging.info("\n\n----- FINAL RESULTS -----")
             elif epoch >= 0:
-                print(f"----- RESULTS AT EPOCH {epoch} -----")
+                logging.info(f"----- RESULTS AT EPOCH {epoch} -----")
             else:
-                print("----- RESULTS -----")
-            print("eval_all_val_splits time: ", time.time() - start_time)
-            print(self.metrics.keys())
+                logging.info("----- RESULTS -----")
+            logging.info("eval_all_val_splits time: ", time.time() - start_time)
         for k, v in metrics_dict.items():
             store = []
             for _, val in v.items():
                 store.append(round(val["metric"], 4))
             if not self.silent:
-                print(k, store)
+                logging.info("• ", k)
+                logging.info(
+                    "\n".join([f"  > {k:24}: {v}" for k, v in zip(v.keys(), store)])
+                )
 
     def rotate_graph(self, batch, rotation=None):
         """Rotate all graphs in a batch

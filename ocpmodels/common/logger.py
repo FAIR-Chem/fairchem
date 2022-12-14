@@ -34,6 +34,12 @@ class Logger(ABC):
         self._ntfy = None
         self.url = None
 
+    def collect_output_files(self):
+        pass
+
+    def finish(self, *args, **kwargs):
+        pass
+
     def ntfy(self, *args, **kwargs):
         global NTFY_OK
         print("NTFY_OK: ", NTFY_OK)
@@ -143,6 +149,15 @@ class WandBLogger(Logger):
         if not isinstance(tags, list):
             tags = [tags]
         self.run.tags = self.run.tags + tags
+
+    def collect_output_files(self):
+        outputs = Path(self.trainer_config["run_dir"]).glob("out*.txt")
+        for o in outputs:
+            wandb.save(str(o))
+
+    def finish(self, failed=False):
+        self.collect_output_files()
+        wandb.finish(exit_code=int(bool(failed)))
 
 
 @registry.register_logger("tensorboard")

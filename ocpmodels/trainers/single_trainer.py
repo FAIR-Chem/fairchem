@@ -10,13 +10,13 @@ import os
 import time
 from collections import defaultdict
 from copy import deepcopy
+from typing import Dict, List
 
 import numpy as np
 import torch
 import torch_geometric
 from torch_geometric.data import Data
 from tqdm import tqdm
-from typing import Dict, List
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
@@ -187,6 +187,7 @@ class SingleTrainer(BaseTrainer):
             "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )
         self.best_val_metric = np.inf
+        current_val_metric = None
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
@@ -269,8 +270,9 @@ class SingleTrainer(BaseTrainer):
                         disable_tqdm=disable_eval_tqdm,
                         debug_batches=debug_batches,
                     )
-                    if val_metrics[primary_metric]["metric"] < self.best_val_metric:
-                        self.best_val_metric = val_metrics[primary_metric]["metric"]
+                    current_val_metric = val_metrics[primary_metric]["metric"]
+                    if current_val_metric < self.best_val_metric:
+                        self.best_val_metric = current_val_metric
                         self.save(
                             metrics=val_metrics,
                             checkpoint_file="best_checkpoint.pt",
@@ -278,7 +280,7 @@ class SingleTrainer(BaseTrainer):
                         )
                     self.model.train()
 
-                self.scheduler_step(eval_every, val_metrics[primary_metric]["metric"])
+                self.scheduler_step(eval_every, current_val_metric)
 
                 if is_final_batch:
                     break
@@ -564,6 +566,8 @@ class SingleTrainer(BaseTrainer):
             (tensors): metrics to measure RI difference in
             energy/force pred. or pos. between G and rotated G
         """
+        if not self.silent:
+            logging.info("Testing model symmetries")
 
         self.model.eval()
 
@@ -646,6 +650,13 @@ class SingleTrainer(BaseTrainer):
                     "3D_F_ri": forces_diff,
                     "2D_F_refl_i": forces_diff_refl,
                 }
+            )
+
+        if not self.silent:
+            logging.info(
+                "Symmetry results:\n{}".format(
+                    "\n".join([f"  • {k:12}: {v}" for k, v in symmetry.items()])
+                )
             )
 
         return symmetry

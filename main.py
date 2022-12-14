@@ -11,11 +11,9 @@ import os
 import re
 import subprocess
 import time
+import traceback
 import warnings
 from pathlib import Path
-
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-
 
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
@@ -28,6 +26,8 @@ from ocpmodels.common.utils import (
     update_from_sbatch_py_vars,
 )
 from ocpmodels.trainers import BaseTrainer
+
+# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 try:
     import ipdb  # noqa: F401
@@ -130,7 +130,7 @@ def print_warnings():
 
 
 if __name__ == "__main__":
-    ntfy = trainer = None
+    ntfy = trainer = error = None
 
     setup_logging()
 
@@ -177,7 +177,7 @@ if __name__ == "__main__":
                 message += f" - {trainer_config.get('note')}"
             if trainer_config.get("wandb_tags"):
                 message += f" - {trainer_config.get('wandb_tags')}"
-            trainer.logger.ntfy(message)
+            trainer.logger.ntfy(message, click=trainer.logger.url)
         print_warnings()
         task.run()
         # -----------------
@@ -196,7 +196,9 @@ if __name__ == "__main__":
                 + f"{e_name} - {str(e)}",
                 click=trainer.logger.url or None,
             )
-        raise e
+        error = True
+        print(traceback.format_exc())
+
     finally:
         if args.distributed:
             print(
@@ -205,5 +207,9 @@ if __name__ == "__main__":
             )
             distutils.cleanup()
             print("Done!")
+
+        if trainer.logger is not None:
+            trainer.logger.finish(error)
+
         print("Self-canceling SLURM job", os.getenv("SLURM_JOB_ID"))
         os.system(f"scancel {os.getenv('SLURM_JOB_ID')}")
