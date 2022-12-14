@@ -175,7 +175,9 @@ if __name__ == "__main__":
     script = template.format(
         cpus=args.cpus,
         cwd=str(Path.cwd()),
-        env=args.env,
+        env=args.env
+        if "a100" not in args.env
+        else f"{args.env}\n    module load cuda/11.2",
         git_commit=get_commit(),
         git_checkout=git_checkout,
         gres=args.gres,
