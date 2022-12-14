@@ -226,6 +226,19 @@ class BalancedBatchSampler(Sampler):
                 )
                 # Since DistributedSampler pads the last batch
                 # this should always have an entry for each replica.
-                yield idx_all[local_idx_balanced[self.rank]]
+                result = idx_all[local_idx_balanced[self.rank]]
             else:
-                yield batch_idx
+                result = batch_idx
+
+            print("result: ", result)
+            if any(r > 1e7 for r in result):
+                print("\nWARNING: Batch contains invalid indices!")
+                print("Skipping batch samples")
+                print("idx_sizes_all: ", idx_sizes_all)
+                print("local_idx_balanced: ", local_idx_balanced)
+                print("result: ", result)
+                print("self.rank: ", self.rank)
+                print("\n")
+                continue
+
+            yield result

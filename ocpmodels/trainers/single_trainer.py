@@ -203,14 +203,14 @@ class SingleTrainer(BaseTrainer):
             self.samplers["train"].set_epoch(epoch_int)
             skip_steps = self.step % n_train
             train_loader_iter = iter(self.loaders["train"])
+            i_for_epoch = 0
 
             for i in range(skip_steps, n_train):
+                i_for_epoch += 1
+                print("i_for_epoch: ", i_for_epoch)
                 self.epoch = epoch_int + (i + 1) / n_train
                 self.step = epoch_int * n_train + i + 1
                 self.model.train()
-
-                if debug_batches > 0 and i == debug_batches:
-                    break
 
                 # Get a batch.
                 batch = next(train_loader_iter)
@@ -244,53 +244,57 @@ class SingleTrainer(BaseTrainer):
                 # Log metrics.
                 self._log_metrics()
 
+                is_final_epoch = epoch_int == self.config["optim"]["max_epochs"] - 1
+                is_final_batch = (i == n_train - 1) or (
+                    debug_batches > 0 and i_for_epoch == debug_batches
+                )
+
                 # Evaluate on val set after every `eval_every` iterations.
-                if self.step % eval_every == 0:
+                if (self.step % eval_every == 0) or (is_final_epoch and is_final_batch):
                     self.save(
                         checkpoint_file=f"checkpoint-{str(self.step).zfill(6)}.pt",
                         training_state=True,
                     )
 
-                    if self.val_loader is not None:
-                        val_metrics = self.validate(
-                            split=self.config["dataset"]["default_val"],
-                            disable_tqdm=disable_eval_tqdm,
+                    val_metrics = self.validate(
+                        split=self.config["dataset"]["default_val"],
+                        disable_tqdm=disable_eval_tqdm,
+                        debug_batches=debug_batches,
+                    )
+                    if (
+                        val_metrics[self.evaluator.task_primary_metric[self.task_name]][
+                            "metric"
+                        ]
+                        < self.best_val_mae
+                    ):
+                        self.best_val_mae = val_metrics[
+                            self.evaluator.task_primary_metric[self.task_name]
+                        ]["metric"]
+                        self.save(
+                            metrics=val_metrics,
+                            checkpoint_file="best_checkpoint.pt",
+                            training_state=False,
                         )
-                        if (
-                            val_metrics[
-                                self.evaluator.task_primary_metric[self.task_name]
-                            ]["metric"]
-                            < self.best_val_mae
-                        ):
-                            self.best_val_mae = val_metrics[
-                                self.evaluator.task_primary_metric[self.task_name]
-                            ]["metric"]
-                            self.save(
-                                metrics=val_metrics,
-                                checkpoint_file="best_checkpoint.pt",
-                                training_state=False,
+                        if "test" in self.loaders:
+                            self.predict(
+                                self.loaders["test"],
+                                results_file="predictions",
+                                disable_tqdm=False,
                             )
-                            if self.test_loader is not None:
-                                self.predict(
-                                    self.test_loader,
-                                    results_file="predictions",
-                                    disable_tqdm=False,
-                                )
 
-                        # Evaluate current model on all 4 validation splits
-                        is_final_epoch = debug_batches < 0 and (
-                            epoch_int == self.config["optim"]["max_epochs"] - 1
+                    # Evaluate current model on all 4 validation splits
+                    if (epoch_int % 100 == 0 and epoch_int != 0) or is_final_epoch:
+                        self.eval_all_val_splits(
+                            is_final_epoch, epoch=epoch_int, debug_batches=debug_batches
                         )
-                        if (epoch_int % 100 == 0 and epoch_int != 0) or is_final_epoch:
-                            self.eval_all_val_splits(is_final_epoch, epoch=epoch_int)
 
-                        if self.is_hpo:
-                            self.hpo_update(
-                                self.epoch,
-                                self.step,
-                                self.metrics,
-                                val_metrics,
-                            )
+                    if self.is_hpo:
+                        self.hpo_update(
+                            self.epoch,
+                            self.step,
+                            self.metrics,
+                            val_metrics,
+                        )
 
                 if self.scheduler.scheduler_type == "ReduceLROnPlateau":
                     if self.step % eval_every == 0:
@@ -299,6 +303,9 @@ class SingleTrainer(BaseTrainer):
                         )
                 else:
                     self.scheduler.step()
+
+                if is_final_batch:
+                    break
 
                 # End of batch.
 
@@ -320,7 +327,7 @@ class SingleTrainer(BaseTrainer):
             self.logger.log({"Batch time": time.time() - start_time})
 
         # Check respect of symmetries
-        if self.test_ri and debug_batches < 0:
+        if self.test_ri and (True or debug_batches < 0):
             symmetry = self.test_model_symmetries()
             if self.logger:
                 self.logger.log(symmetry)
@@ -587,6 +594,7 @@ class SingleTrainer(BaseTrainer):
         forces_diff_refl = torch.zeros(1, device=self.device)
 
         for i, batch in enumerate(self.loaders[self.config["dataset"]["default_val"]]):
+            print("model_symmetries i: ", i)
             if debug_batches > 0 and i == debug_batches:
                 break
             # Compute model prediction

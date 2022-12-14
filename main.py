@@ -199,4 +199,9 @@ if __name__ == "__main__":
         raise e
     finally:
         if args.distributed:
+            print(
+                "Waiting for all processes to finish with distutils.cleanup()...",
+                end="",
+            )
             distutils.cleanup()
+            print("Done!")
