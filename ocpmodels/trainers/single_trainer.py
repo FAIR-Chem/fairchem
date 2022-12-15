@@ -181,6 +181,7 @@ class SingleTrainer(BaseTrainer):
 
     def train(self, disable_eval_tqdm=True, debug_batches=-1):
         n_train = len(self.loaders["train"])
+        epoch_int = 0
         eval_every = self.config["optim"].get("eval_every", n_train)
         self.config["print_every"] = eval_every  # Can comment out for better debug
         primary_metric = self.config["task"].get(
@@ -293,7 +294,6 @@ class SingleTrainer(BaseTrainer):
             epoch_times.append(time.time() - start_time)
 
         # End of training.
-
         self.eval_all_val_splits(True, epoch=epoch_int, debug_batches=debug_batches)
 
         if "test" in self.loaders:

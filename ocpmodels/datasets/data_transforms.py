@@ -32,7 +32,9 @@ class Transform:
 
 class FrameAveraging(Transform):
     def __init__(self, fa_type=None, fa_frames=None):
-        self.fa_frames = "random" if fa_frames is None else fa_frames
+        self.fa_frames = (
+            "random" if (fa_frames is None or fa_frames == "") else fa_frames
+        )
         self.fa_type = "" if fa_type is None else fa_type
         self.inactive = not self.fa_type
         assert self.fa_type in {

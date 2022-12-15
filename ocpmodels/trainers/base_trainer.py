@@ -684,7 +684,7 @@ class BaseTrainer(ABC):
     ):
         """Evaluate model on all four validation splits"""
 
-        if final:
+        if final and epoch != 0:
             # Load current best checkpoint
             checkpoint_path = os.path.join(
                 self.config["checkpoint_dir"], "best_checkpoint.pt"
