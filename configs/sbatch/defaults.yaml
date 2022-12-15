@@ -38,3 +38,4 @@ count: 0
 array: 0
 
 dev: false
+verbose: false

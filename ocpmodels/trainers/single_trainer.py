@@ -246,13 +246,16 @@ class SingleTrainer(BaseTrainer):
                 # Log metrics.
                 self.log_train_metrics()
 
-                if is_test_env:
-                    continue
-
                 is_final_epoch = epoch_int == self.config["optim"]["max_epochs"] - 1
                 is_final_batch = (i == n_train - 1) or (
                     debug_batches > 0 and i_for_epoch == debug_batches
                 )
+
+                if is_test_env:
+                    if is_final_batch:
+                        break
+                    continue
+
                 should_validate = (self.step % eval_every == 0) or (
                     is_final_epoch and is_final_batch
                 )
@@ -293,6 +296,9 @@ class SingleTrainer(BaseTrainer):
             epoch_times.append(time.time() - start_time)
 
         # End of training.
+
+        if is_test_env:
+            return
 
         self.eval_all_val_splits(True, epoch=epoch_int, debug_batches=debug_batches)
 

@@ -27,7 +27,7 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.trainers import BaseTrainer
 
-# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 try:
     import ipdb  # noqa: F401
@@ -208,7 +208,7 @@ if __name__ == "__main__":
             distutils.cleanup()
             print("Done!")
 
-        if trainer.logger is not None:
+        if trainer and trainer.logger:
             trainer.logger.finish(error)
 
         print("Self-canceling SLURM job", os.getenv("SLURM_JOB_ID"))

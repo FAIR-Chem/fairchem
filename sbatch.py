@@ -5,6 +5,7 @@ import os
 import subprocess
 from shutil import copyfile
 import sys
+import re
 
 template = """\
 #!/bin/bash
@@ -113,6 +114,37 @@ def make_sbatch_py_vars(sbatch_py_vars):
     return s[:-1]
 
 
+def add_jobid_to_log(j, command_line):
+    logfile = Path(__file__).resolve().parent / "data" / "sbatch_job_ids.txt"
+    if not logfile.exists():
+        logfile.touch()
+    n = now()
+    today = f">>> {n.split('_')[0]}"
+    job_line = f"    [{n.split('_')[1]}] {j} | {command_line}"
+    lines = logfile.read_text().splitlines()
+    dates = {
+        line.strip(): i
+        for i, line in enumerate(lines)
+        if re.search(r">>> \d{4}-\d{2}-\d{2}", line)
+    }
+    if today in dates:
+        line, jobs = [
+            (i, line)
+            for i, line in enumerate(lines)
+            if i > dates[today] and "All day's jobs:" in line
+        ][0]
+        lines[line] = jobs + f" {j}"
+        lines += [job_line]
+    else:
+        lines += [
+            f"\n{'-'*len(today)}\n{today}\n{'-'*len(today)}",
+            f"All day's jobs: {j}",
+            job_line,
+        ]
+
+    logfile.write_text("\n".join(lines))
+
+
 if __name__ == "__main__":
     # has the submission been successful?
     success = False
@@ -123,7 +155,8 @@ if __name__ == "__main__":
     # parse and resolve args.
     # defaults are loaded and overwritten from the command-line as `arg=value`
     args = resolved_args(defaults=discover_minydra_defaults())
-    args.pretty_print()
+    if args.verbose:
+        args.pretty_print()
 
     # set n_tasks_per node from gres if none is provided
     if args.ntasks_per_node is None:
@@ -223,8 +256,9 @@ if __name__ == "__main__":
     # command to request the job
     array = f" --array={args.array}" if args.array else ""
     command = f"sbatch{array} {str(script_path)}"
-    print(f"Executing:\n{command}")
-    print(f"\nFile content:\n{'=' * 50}\n{script}{'=' * 50}\n")
+    if args.verbose:
+        print(f"Executing:\n{command}")
+        print(f"\nFile content:\n{'=' * 50}\n{script}{'=' * 50}\n")
 
     # dev mode: don't actually exectue
     if args.dev:
@@ -240,15 +274,20 @@ if __name__ == "__main__":
             args.output = args.output.replace("/%j/", f"/{jobid.strip()}/")
             output_parent = resolve(args.output).parent
             if not output_parent.exists():
-                print("Creating directory", str(output_parent))
+                if args.verbose:
+                    print("Creating directory", str(output_parent))
                 output_parent.mkdir(parents=True, exist_ok=True)
             copyfile(script_path, output_parent / script_path.name)
+        if not args.verbose:
+            print("Submitted batch job", jobid)
+        add_jobid_to_log(jobid)
 
     if args.dev:
         pass
     else:
         # print command result
-        print(f"\n{out}\n")
+        if args.verbose:
+            print(f"\n{out}\n")
         if success and not resolve(args.output).parent.exists():
             print(
                 "\n >>>WARNING slurm output folder does not exist:",
