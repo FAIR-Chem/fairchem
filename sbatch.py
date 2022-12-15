@@ -127,10 +127,10 @@ def add_jobid_to_log(j, command_line, exp_name=None):
         for i, line in enumerate(lines)
         if re.search(r">>> \d{4}-\d{2}-\d{2}", line)
     }
-    exp_line = f"  • {exp_name}" if exp_name else ""
+    exp_line = f"  🧪 {exp_name}" if exp_name else ""
     if today in dates:
         day_jobs_line, jobs = [
-            (i, line)
+            (i + dates[today], line)
             for i, line in enumerate(lines[dates[today] :])
             if "All day's jobs:" in line
         ][0]
@@ -138,10 +138,10 @@ def add_jobid_to_log(j, command_line, exp_name=None):
         if exp_line:
             todays_exps = []
             for line in lines[dates[today] :]:
-                if "•" in line:
+                if "🧪" in line:
                     todays_exps.append(line)
             if not todays_exps or todays_exps[-1] != exp_line:
-                lines += [exp_line]
+                lines += [f"\n{exp_line}"]
         lines += [job_line]
     else:
         lines += [
