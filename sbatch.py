@@ -120,7 +120,7 @@ def add_jobid_to_log(j, command_line, exp_name=None):
         logfile.touch()
     n = now()
     today = f">>> {n.split('_')[0]}"
-    job_line = f"    [{n.split('_')[1]}] {j} | {command_line}"
+    job_line = f"    [{n.split('_')[1]}] {j}\n    {command_line}\n"
     lines = logfile.read_text().splitlines()
     dates = {
         line.strip(): i
