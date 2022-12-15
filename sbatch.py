@@ -114,7 +114,7 @@ def make_sbatch_py_vars(sbatch_py_vars):
     return s[:-1]
 
 
-def add_jobid_to_log(j, command_line):
+def add_jobid_to_log(j, command_line, exp_name=None):
     logfile = Path(__file__).resolve().parent / "data" / "sbatch_job_ids.txt"
     if not logfile.exists():
         logfile.touch()
@@ -127,20 +127,30 @@ def add_jobid_to_log(j, command_line):
         for i, line in enumerate(lines)
         if re.search(r">>> \d{4}-\d{2}-\d{2}", line)
     }
+    exp_line = f"  • {exp_name}" if exp_name else ""
     if today in dates:
-        line, jobs = [
+        day_jobs_line, jobs = [
             (i, line)
-            for i, line in enumerate(lines)
-            if i > dates[today] and "All day's jobs:" in line
+            for i, line in enumerate(lines[dates[today] :])
+            if "All day's jobs:" in line
         ][0]
-        lines[line] = jobs + f" {j}"
+        lines[day_jobs_line] = jobs + f" {j}"
+        if exp_line:
+            todays_exps = []
+            for line in lines[dates[today] :]:
+                if "•" in line:
+                    todays_exps.append(line)
+            if not todays_exps or todays_exps[-1] != exp_line:
+                lines += [exp_line]
         lines += [job_line]
     else:
         lines += [
             f"\n{'-'*len(today)}\n{today}\n{'-'*len(today)}",
             f"All day's jobs: {j}",
-            job_line,
         ]
+        if exp_line:
+            lines += [f"\n{exp_line}"]
+        lines += [job_line]
 
     logfile.write_text("\n".join(lines))
 
@@ -281,7 +291,7 @@ if __name__ == "__main__":
             copyfile(script_path, output_parent / script_path.name)
         if not args.verbose:
             print("Submitted batch job", jobid)
-        add_jobid_to_log(jobid, sbatch_command_line)
+        add_jobid_to_log(jobid, sbatch_command_line, args.exp_name)
 
     if args.dev:
         pass

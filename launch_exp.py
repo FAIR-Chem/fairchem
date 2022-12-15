@@ -91,7 +91,9 @@ if __name__ == "__main__":
 
         py_args = f'py_args="{cli_arg(params).strip()}"'
 
-        sbatch_args = " ".join([f"{k}={v}" for k, v in job.items()])
+        sbatch_args = " ".join(
+            [f"{k}={v}" for k, v in job.items()] + [f"exp_name={exp_name}"]
+        )
         command = f"python sbatch.py {sbatch_args} {py_args}"
         commands.append(command)
 

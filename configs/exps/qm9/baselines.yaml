@@ -6,6 +6,7 @@ job:
   time: 2:00:00
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
+  env: ocp-a100
 
 default:
   wandb_project: ocp-qm9
@@ -20,17 +21,17 @@ default:
   frame_averaging: ""
 
 runs:
-  - config: dpp-qm9-all
-    note: DimeNet++ qm9 baseline
-    # https://github.com/gasteigerjo/dimenet/blob/fd36d381a2b31721da0cbf879b2d0c0a166fa76b/config.yaml
+  # - config: dpp-qm9-all
+  #   note: DimeNet++ qm9 baseline
+  #   # https://github.com/gasteigerjo/dimenet/blob/fd36d381a2b31721da0cbf879b2d0c0a166fa76b/config.yaml
 
-    # TODO: num GPUs/batch_size, epochs, lr decay, emb_size, num_dense_output
-    model:
-      cutoff: 5.0
-      num_before_skip: 1
-      num_after_skip: 2
-      num_blocks: 6
-      int_emb_size: 128
+  #   # TODO: num GPUs/batch_size, epochs, lr decay, emb_size, num_dense_output
+  #   model:
+  #     cutoff: 5.0
+  #     num_before_skip: 1
+  #     num_after_skip: 2
+  #     num_blocks: 6
+  #     int_emb_size: 128
 
   - config: schnet-qm9-all
     model:
