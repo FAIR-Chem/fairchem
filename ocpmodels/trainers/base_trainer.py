@@ -732,7 +732,7 @@ class BaseTrainer(ABC):
                 logging.info(f"----- RESULTS AT EPOCH {epoch} -----")
             else:
                 logging.info("----- RESULTS -----")
-            logging.info("eval_all_val_splits time: ", time.time() - start_time)
+            logging.info(f"eval_all_val_splits time: {time.time() - start_time:.2f}s")
         for k, v in metrics_dict.items():
             store = []
             for _, val in v.items():
