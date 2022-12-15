@@ -36,5 +36,7 @@ git_checkout: null # if null, no checkout. Use as `git_checkout=some-branch` or 
 sweep: false
 count: 0
 array: 0
+exp_name: null
 
 dev: false
+verbose: false
