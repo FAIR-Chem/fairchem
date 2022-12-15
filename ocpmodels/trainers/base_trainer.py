@@ -24,6 +24,8 @@ from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch
 from tqdm import tqdm
+from rich.table import Table
+from rich.console import Console
 
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import (
@@ -304,7 +306,7 @@ class BaseTrainer(ABC):
             )
 
         map_location = torch.device("cpu") if self.cpu else self.device
-        logging.info(f"Loading checkpoint from: {checkpoint_path} onto {map_location}")
+        print(f"Loading checkpoint from: {checkpoint_path} onto {map_location}")
         checkpoint = torch.load(checkpoint_path, map_location=map_location)
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
@@ -511,6 +513,7 @@ class BaseTrainer(ABC):
         is_final=False,
     ):
         if distutils.is_master() and not self.silent:
+            print()
             logging.info(f"Evaluating on {split}.")
         if self.is_hpo:
             disable_tqdm = True
@@ -569,7 +572,8 @@ class BaseTrainer(ABC):
         log_dict.update({"n_samples": i + 1})
         if distutils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
-            logging.info(", ".join(log_str))
+            print("\n  > ".join([""] + log_str))
+            print()
 
         # Make plots.
         if self.logger is not None:
@@ -684,6 +688,15 @@ class BaseTrainer(ABC):
     ):
         """Evaluate model on all four validation splits"""
 
+        cumulated_time = 0
+        cumulated_mae = 0
+        metrics_dict = {}
+        val_splits = [s for s in self.config["dataset"] if s.startswith("val_")]
+
+        if not self.silent:
+            print()
+            logging.info(f"Evaluating on {len(val_splits)} val splits.")
+
         if final and epoch != 0:
             # Load current best checkpoint
             checkpoint_path = os.path.join(
@@ -691,17 +704,10 @@ class BaseTrainer(ABC):
             )
             self.load_checkpoint(checkpoint_path=checkpoint_path)
 
-        # Compute performance metrics on all four validation splits
-        cumulated_time = 0
-        cumulated_mae = 0
-        metrics_dict = {}
-        val_splits = [s for s in self.config["dataset"] if s.startswith("val_")]
-
-        if not self.silent:
-            logging.info(f"Evaluating on {len(val_splits)} val splits.")
+        silent = self.silent
+        self.silent = True
 
         for split in val_splits:
-
             start_time = time.time()
             self.metrics = self.validate(
                 split=split,
@@ -712,6 +718,8 @@ class BaseTrainer(ABC):
             metrics_dict[split] = self.metrics
             cumulated_mae += self.metrics["energy_mae"]["metric"]
             cumulated_time += time.time() - start_time
+
+        self.silent = silent
 
         # Log time
         if final and self.config["logger"] == "wandb" and distutils.is_master():
@@ -727,21 +735,27 @@ class BaseTrainer(ABC):
         # Print results
         if not self.silent:
             if final:
-                logging.info("\n\n----- FINAL RESULTS -----")
+                table = Table(title="Final results")
             elif epoch >= 0:
-                logging.info(f"----- RESULTS AT EPOCH {epoch} -----")
+                table = Table(title=f"Results at epoch {epoch}")
             else:
-                logging.info("----- RESULTS -----")
-            logging.info(f"eval_all_val_splits time: {time.time() - start_time:.2f}s")
-        for k, v in metrics_dict.items():
-            store = []
-            for _, val in v.items():
-                store.append(round(val["metric"], 4))
-            if not self.silent:
-                logging.info(f"•  {k}")
-                logging.info(
-                    "\n".join([f"  > {k:24}: {v}" for k, v in zip(v.keys(), store)])
-                )
+                table = Table(title="Results")
+            for c, col in enumerate(["Metric / Split"] + val_splits):
+                table.add_column(col, justify="left" if c == 0 else "right")
+
+            metrics = list(metrics_dict.values())[0].keys()
+            highlights = {"energy_mae", "forces_mae"}
+            for metric in sorted(metrics):
+                row = [metric] + [
+                    f"{metrics_dict[split][metric]['metric']:.5f}"
+                    for split in val_splits
+                ]
+                table.add_row(*row, style="on white" if metric in highlights else "")
+
+        logging.info(f"eval_all_val_splits time: {time.time() - start_time:.2f}s")
+        print()
+        console = Console()
+        console.print(table)
 
     def rotate_graph(self, batch, rotation=None):
         """Rotate all graphs in a batch

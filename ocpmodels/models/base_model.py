@@ -12,7 +12,6 @@ import torch
 class BaseModel(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
-        self.task_attributes = ["energy", "forces", "grad_forces", "pooling_loss"]
 
     def reset_parameters(self):
         for child in self.children():
@@ -70,7 +69,7 @@ class BaseModel(nn.Module):
                     f"Unknown forces regression mode {self.regress_forces}"
                 )
 
-        return {k: preds[k] for k in self.task_attributes if k in preds}
+        return preds
 
     def forces_as_energy_grad(self, pos, energy):
         return -1 * (

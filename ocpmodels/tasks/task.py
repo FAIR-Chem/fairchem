@@ -48,7 +48,7 @@ class TrainTask(BaseTask):
     def run(self):
         try:
             self.trainer.train(
-                disable_eval_tqdm=self.config.get("hide_eval_progressbar", False),
+                disable_eval_tqdm=self.config.get("show_eval_progressbar", True),
                 debug_batches=self.config.get("debug_batches", -1),
             )
         except RuntimeError as e:
@@ -67,7 +67,7 @@ class PredictTask(BaseTask):
         self.trainer.predict(
             self.trainer.test_loader,
             results_file=results_file,
-            disable_tqdm=self.config.get("hide_eval_progressbar", False),
+            disable_tqdm=self.config.get("show_eval_progressbar", True),
         )
 
 
@@ -83,7 +83,7 @@ class ValidateTask(BaseTask):
         assert self.config["checkpoint"]
         self.trainer.validate(
             split=self.trainer.config["dataset"]["default_val"],
-            disable_tqdm=self.config.get("hide_eval_progressbar", False),
+            disable_tqdm=self.config.get("show_eval_progressbar", True),
         )
 
 

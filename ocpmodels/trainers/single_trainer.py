@@ -202,6 +202,7 @@ class SingleTrainer(BaseTrainer):
 
             start_time = time.time()
             if not self.silent:
+                print()
                 logging.info(f"Epoch: {epoch_int}")
 
             self.samplers["train"].set_epoch(epoch_int)
@@ -554,7 +555,9 @@ class SingleTrainer(BaseTrainer):
         ) or (distutils.is_master() and end_of_epoch):
             log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
             if not self.silent:
-                print(", ".join(log_str))
+                print(
+                    f"Train metrics at step {self.step}:\n  > " + "\n  > ".join(log_str)
+                )
             self.metrics = {}
 
         if self.logger is not None and not end_of_epoch:

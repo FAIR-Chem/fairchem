@@ -133,6 +133,7 @@ if __name__ == "__main__":
     ntfy = trainer = error = None
 
     setup_logging()
+    slurm_job_id = os.environ.get("SLURM_JOB_ID")
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
@@ -172,7 +173,7 @@ if __name__ == "__main__":
         task.setup(trainer)
         start_time = time.time()
         if trainer.logger is not None:
-            message = f"{os.getenv('SLURM_JOB_ID')} - Training started 🚀"
+            message = f"{slurm_job_id} - Training started 🚀"
             if trainer_config.get("note"):
                 message += f" - {trainer_config.get('note')}"
             if trainer_config.get("wandb_tags"):
@@ -192,8 +193,7 @@ if __name__ == "__main__":
         if trainer and trainer.logger:
             e_name = e.__class__.__name__
             trainer.logger.ntfy(
-                f"{os.getenv('SLURM_JOB_ID')} - Training failed 😭"
-                + f"{e_name} - {str(e)}",
+                f"{slurm_job_id} - Training failed 😭" + f"{e_name} - {str(e)}",
                 click=trainer.logger.url or None,
             )
         error = True
@@ -211,5 +211,6 @@ if __name__ == "__main__":
         if trainer and trainer.logger:
             trainer.logger.finish(error)
 
-        print("Self-canceling SLURM job", os.getenv("SLURM_JOB_ID"))
-        os.system(f"scancel {os.getenv('SLURM_JOB_ID')}")
+        if "interactive" not in os.popen(f"squeue -hj {slurm_job_id}").read():
+            print("Self-canceling SLURM job", os.getenv("SLURM_JOB_ID"))
+            os.system(f"scancel {os.getenv('SLURM_JOB_ID')}")
