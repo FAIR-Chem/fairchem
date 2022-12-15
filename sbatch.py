@@ -191,6 +191,7 @@ if __name__ == "__main__":
         args.py_args += f' --note "{note}"'
 
     git_checkout = f"git checkout {args.git_checkout}" if args.git_checkout else ""
+    sbatch_command_line = " ".join(["python"] + sys.argv)
 
     if args.sweep:
         count = f" --count {args.count}" if args.count else ""
@@ -222,7 +223,7 @@ if __name__ == "__main__":
         output=str(resolve(args.output)),
         partition=args.partition,
         python_command=python_command,
-        sbatch_command_line=" ".join(["python"] + sys.argv),
+        sbatch_command_line=sbatch_command_line,
         sbatch_py_vars=make_sbatch_py_vars(sbatch_py_vars),
         time="" if not args.time else f"#SBATCH --time={args.time}",
         virtualenv=virtualenv,
@@ -280,7 +281,7 @@ if __name__ == "__main__":
             copyfile(script_path, output_parent / script_path.name)
         if not args.verbose:
             print("Submitted batch job", jobid)
-        add_jobid_to_log(jobid)
+        add_jobid_to_log(jobid, sbatch_command_line)
 
     if args.dev:
         pass
