@@ -36,6 +36,10 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
     }
     fa_cell = deepcopy(cell)
 
+    if fa_frames == "det" or fa_frames == "se3-det":
+        max_abs_cols = torch.argmax(torch.abs(eigenvec), axis=0)
+        plus_minus_list = [torch.sign(eigenvec[max_abs_cols, range(eigenvec.shape[1])])]
+
     for pm in plus_minus_list:
 
         # Append new graph positions to list
@@ -75,7 +79,7 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
 
     elif fa_frames == "det" or fa_frames == "se3-det":
         return [all_fa_pos[det_index]], [all_cell[det_index]], [all_rots[det_index]]
-
+        
     index = random.randint(0, len(all_fa_pos) - 1)
     return [all_fa_pos[index]], [all_cell[index]], [all_rots[index]]
 
