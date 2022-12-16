@@ -544,11 +544,12 @@ class BaseTrainer(ABC):
 
             loss = self.compute_loss(preds, batch)
             if preds.get("pooling_loss") is not None:
-                loss += preds["pooling_loss"]
+                loss["total_loss"] += preds["pooling_loss"]
 
             # Compute metrics.
             metrics = self.compute_metrics(preds, batch, evaluator, metrics)
-            metrics = evaluator.update("loss", loss.item(), metrics)
+            for k, v in loss.items():
+                metrics = evaluator.update(k, v.item(), metrics)
 
         val_time = time.time() - val_time
         aggregated_metrics = {}
@@ -604,7 +605,7 @@ class BaseTrainer(ABC):
 
     def _backward(self, loss):
         self.optimizer.zero_grad()
-        loss.backward()
+        loss["total_loss"].backward()
         # Scale down the gradients of shared parameters
         if hasattr(self.model.module, "shared_parameters"):
             for p, factor in self.model.module.shared_parameters:
@@ -744,8 +745,9 @@ class BaseTrainer(ABC):
                 table.add_column(col, justify="left" if c == 0 else "right")
 
             metrics = list(metrics_dict.values())[0].keys()
-            highlights = {"energy_mae", "forces_mae"}
-            for metric in sorted(metrics):
+            highlights = {"energy_mae", "forces_mae", "total_loss"}
+            for metric in sorted([m if "loss" not in m else f"z_{m}" for m in metrics]):
+                metric = metric[2:] if metric.startswith("z_") else metric
                 row = [metric] + [
                     f"{metrics_dict[split][metric]['metric']:.5f}"
                     for split in val_splits

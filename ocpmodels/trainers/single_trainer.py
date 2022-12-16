@@ -225,14 +225,16 @@ class SingleTrainer(BaseTrainer):
                     loss = self.compute_loss(preds, batch)
                     if preds.get("pooling_loss") is not None:
                         coeff = self.config["optim"].get("pooling_coefficient", 1)
-                        loss += preds["pooling_loss"] * coeff
-                loss = self.scaler.scale(loss) if self.scaler else loss
-                if torch.isnan(loss):
+                        loss["total_loss"] += preds["pooling_loss"] * coeff
+                loss = {
+                    k: self.scaler.scale(v) if self.scaler else v
+                    for k, v in loss.items()
+                }
+                if torch.isnan(loss["total_loss"]):
                     print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
                     self.logger.add_tags(["nan_loss"])
                     return True
                 self._backward(loss)
-                scale = self.scaler.get_scale() if self.scaler else 1.0
 
                 # Compute metrics.
                 self.metrics = self.compute_metrics(
@@ -241,9 +243,11 @@ class SingleTrainer(BaseTrainer):
                     self.evaluator,
                     metrics={},
                 )
-                self.metrics = self.evaluator.update(
-                    "loss", loss.item() / scale, self.metrics
-                )
+                scale = self.scaler.get_scale() if self.scaler else 1.0
+                for k, v in loss.items():
+                    self.metrics = self.evaluator.update(
+                        k, v.item() / scale, self.metrics
+                    )
 
                 # Log metrics.
                 self.log_train_metrics()
@@ -381,7 +385,7 @@ class SingleTrainer(BaseTrainer):
         return preds
 
     def compute_loss(self, preds, batch_list):
-        loss = []
+        loss = {"total_loss": []}
 
         # Energy loss
         energy_target = torch.cat(
@@ -399,9 +403,8 @@ class SingleTrainer(BaseTrainer):
         else:
             target_normed = energy_target
         energy_mult = self.config["optim"].get("energy_coefficient", 1)
-        loss.append(
-            energy_mult * self.loss_fn["energy"](preds["energy"], target_normed)
-        )
+        loss["energy_loss"] = self.loss_fn["energy"](preds["energy"], target_normed)
+        loss["total_loss"].append(energy_mult * loss["energy_loss"])
 
         # Force loss.
         if self.task_name in {"is2rs", "s2ef"} or self.config["model"].get(
@@ -455,26 +458,26 @@ class SingleTrainer(BaseTrainer):
                     )
                     mask = fixed == 0
 
-                loss.append(
-                    force_mult
-                    * self.loss_fn["force"](preds["forces"][mask], force_target[mask])
+                loss["force_loss"] = self.loss_fn["force"](
+                    preds["forces"][mask], force_target[mask]
                 )
+                loss["total_loss"].append(force_mult * loss["force_loss"])
                 if "forces_grad_target" in preds:
                     energy_grad_mult = self.config["optim"].get(
                         "energy_grad_coefficient", 10
                     )
                     grad_target = preds["forces_grad_target"]
-                    loss.append(
-                        energy_grad_mult
-                        * self.loss_fn["force"](
-                            preds["forces"][mask], grad_target[mask]
-                        )
+                    loss["energy_grad_loss"] = self.loss_fn["force"](
+                        preds["forces"][mask], grad_target[mask]
+                    )
+                    loss["total_loss"].append(
+                        energy_grad_mult * loss["energy_grad_loss"]
                     )
         # Sanity check to make sure the compute graph is correct.
-        for lc in loss:
+        for lc in loss["total_loss"]:
             assert hasattr(lc, "grad_fn")
 
-        loss = sum(loss)
+        loss["total_loss"] = sum(loss["total_loss"])
         return loss
 
     def compute_metrics(
@@ -664,10 +667,7 @@ class SingleTrainer(BaseTrainer):
 
         if not self.silent:
             logging.info("Symmetry results:")
-            print(
-                "\n  > "
-                + "\n".join([f"  > {k:12}: {v:.5f}" for k, v in symmetry.items()])
-            )
+            print("".join([f"\n  > {k:12}: {v:.5f}" for k, v in symmetry.items()]))
 
         return symmetry
 
