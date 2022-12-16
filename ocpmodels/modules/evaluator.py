@@ -102,10 +102,10 @@ class Evaluator:
             )
             self.task_attributes["qm7x"].append("forces")
             self.task_primary_metric["qm7x"] = "forces_mae"
-        if self.expect_forces_grad_target:
-            self.task_attributes[task].append("forces_grad_target")
-            self.task_metrics["s2ef"].append("forces_grad_mae")
-            self.task_metrics["qm7x"].append("forces_grad_mae")
+        # if self.expect_forces_grad_target:
+        #     self.task_attributes[task].append("forces_grad_target")
+        #     self.task_metrics["s2ef"].append("forces_grad_mae")
+        #     self.task_metrics["qm7x"].append("forces_grad_mae")
 
     def eval(self, prediction, target, prev_metrics={}):
         for attr in self.task_attributes[self.task]:

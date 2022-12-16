@@ -752,10 +752,11 @@ class BaseTrainer(ABC):
                 ]
                 table.add_row(*row, style="on white" if metric in highlights else "")
 
-        logging.info(f"eval_all_val_splits time: {time.time() - start_time:.2f}s")
-        print()
-        console = Console()
-        console.print(table)
+            logging.info(f"eval_all_val_splits time: {time.time() - start_time:.2f}s")
+            print()
+            console = Console()
+            console.print(table)
+            print()
 
     def rotate_graph(self, batch, rotation=None):
         """Rotate all graphs in a batch

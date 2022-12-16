@@ -322,7 +322,7 @@ class SingleTrainer(BaseTrainer):
 
         # Check respect of symmetries
         if self.test_ri and not is_test_env:
-            symmetry = self.test_model_symmetries()
+            symmetry = self.test_model_symmetries(debug_batches=debug_batches)
             if self.logger:
                 self.logger.log(symmetry)
 
@@ -643,10 +643,10 @@ class SingleTrainer(BaseTrainer):
         energy_diff_refl = energy_diff_refl / (i * batch_size)
 
         symmetry = {
-            "2D_E_ri": energy_diff_z,
-            "3D_E_ri": energy_diff,
-            "2D_pos_ri": pos_diff_z,
-            "2D_E_refl_i": energy_diff_refl,
+            "2D_E_ri": int(energy_diff_z),
+            "3D_E_ri": int(energy_diff),
+            "2D_pos_ri": int(pos_diff_z),
+            "2D_E_refl_i": int(energy_diff_refl),
         }
 
         # Test equivariance of forces
@@ -656,17 +656,17 @@ class SingleTrainer(BaseTrainer):
             forces_diff_refl = forces_diff_refl / (i * batch_size)
             symmetry.update(
                 {
-                    "2D_F_ri": forces_diff_z,
-                    "3D_F_ri": forces_diff,
-                    "2D_F_refl_i": forces_diff_refl,
+                    "2D_F_ri": int(forces_diff_z),
+                    "3D_F_ri": int(forces_diff),
+                    "2D_F_refl_i": int(forces_diff_refl),
                 }
             )
 
         if not self.silent:
-            logging.info(
-                "Symmetry results:\n{}".format(
-                    "\n".join([f"  • {k:12}: {v}" for k, v in symmetry.items()])
-                )
+            logging.info("Symmetry results:")
+            print(
+                "\n  > "
+                + "\n".join([f"  > {k:12}: {v:.5f}" for k, v in symmetry.items()])
             )
 
         return symmetry
