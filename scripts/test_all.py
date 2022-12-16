@@ -281,6 +281,7 @@ if __name__ == "__main__":
             if args.breakpoint:
                 breakpoint()
 
+        os.environ["ocp_test_env"] = ""
         conf_duration = time() - conf_start
         print(
             f"{symbol} {c+1:{nk}}/{len(configs)} {format_times(times)}"
