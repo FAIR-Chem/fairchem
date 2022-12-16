@@ -223,6 +223,12 @@ class Flags:
                 "one-supernode-per-atom-type-dist",
             ],
         )
+        self.parser.add_argument(
+            "--eval_on_test",
+            action="store_true",
+            default=False,
+            help="Evaluate on test set",
+        )
 
 
 flags = Flags()

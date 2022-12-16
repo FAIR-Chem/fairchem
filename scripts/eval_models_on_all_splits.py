@@ -67,6 +67,6 @@ if __name__ == "__main__":
         trainer.model.eval()
         trainer.config["checkpoint_dir"] = str(ckpt_dir)
         print(parse_conf(str_args))
-        trainer.eval_all_val_splits(final=True, disable_tqdm=False)
+        trainer.eval_all_splits(final=True, disable_tqdm=False)
 
         print("-" * 80 + "\n\n")

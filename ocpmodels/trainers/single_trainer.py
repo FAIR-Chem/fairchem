@@ -306,10 +306,12 @@ class SingleTrainer(BaseTrainer):
         if is_test_env:
             return
 
-        self.eval_all_val_splits(True, epoch=epoch_int, debug_batches=debug_batches)
+        self.eval_all_splits(True, epoch=epoch_int, debug_batches=debug_batches)
 
         if "test" in self.loaders:
-            self.predict(self.loaders["test"], results_file="predictions")
+            # TODO: update predict function
+            # self.predict(self.loaders["test"], results_file="predictions")
+            pass
 
         # Time model
         if self.logger is not None:
@@ -646,10 +648,10 @@ class SingleTrainer(BaseTrainer):
         energy_diff_refl = energy_diff_refl / (i * batch_size)
 
         symmetry = {
-            "2D_E_ri": int(energy_diff_z),
-            "3D_E_ri": int(energy_diff),
-            "2D_pos_ri": int(pos_diff_z),
-            "2D_E_refl_i": int(energy_diff_refl),
+            "2D_E_ri": float(energy_diff_z),
+            "3D_E_ri": float(energy_diff),
+            "2D_pos_ri": float(pos_diff_z),
+            "2D_E_refl_i": float(energy_diff_refl),
         }
 
         # Test equivariance of forces
@@ -659,9 +661,9 @@ class SingleTrainer(BaseTrainer):
             forces_diff_refl = forces_diff_refl / (i * batch_size)
             symmetry.update(
                 {
-                    "2D_F_ri": int(forces_diff_z),
-                    "3D_F_ri": int(forces_diff),
-                    "2D_F_refl_i": int(forces_diff_refl),
+                    "2D_F_ri": float(forces_diff_z),
+                    "3D_F_ri": float(forces_diff),
+                    "2D_F_refl_i": float(forces_diff_refl),
                 }
             )
 

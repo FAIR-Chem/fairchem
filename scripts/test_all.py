@@ -258,7 +258,7 @@ if __name__ == "__main__":
                 is_nan = trainer.train(debug_batches=2)
 
             with times.next("🧐 Eval"):
-                trainer.eval_all_val_splits(final=False, debug_batches=2)
+                trainer.eval_all_splits(final=False, debug_batches=2)
 
             if trainer.test_ri:
                 with times.next(" 🎗  Test invariance"):
