@@ -79,7 +79,7 @@ is2re:
         - 26972
         - 35963
       warmup_steps: 5394
-      max_epochs: 17
+      max_epochs: 20
 
 # ------------------
 # -----  S2EF  -----
