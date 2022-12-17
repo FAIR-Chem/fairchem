@@ -124,6 +124,8 @@ class WandBLogger(Logger):
         self.url = wandb.run.get_url()
         with open(Path(self.trainer_config["run_dir"] / "wandb_url.txt"), "w") as f:
             f.write(self.url)
+        self.collect_output_files(policy="live")
+        self.collect_output_files(policy="end")
 
     def watch(self, model):
         wandb.watch(model)
@@ -149,13 +151,13 @@ class WandBLogger(Logger):
             tags = [tags]
         self.run.tags = self.run.tags + tags
 
-    def collect_output_files(self):
+    def collect_output_files(self, policy="now"):
         outputs = Path(self.trainer_config["run_dir"]).glob("out*.txt")
         for o in outputs:
-            wandb.save(str(o))
+            wandb.save(str(o), policy=policy)
 
     def finish(self, failed=False):
-        self.collect_output_files()
+        self.collect_output_files(policy="now")
         wandb.finish(exit_code=int(bool(failed)))
 
 

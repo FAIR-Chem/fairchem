@@ -258,7 +258,7 @@ if __name__ == "__main__":
                 is_nan = trainer.train(debug_batches=2)
 
             with times.next("🧐 Eval"):
-                trainer.eval_all_val_splits(final=False, debug_batches=2)
+                trainer.eval_all_splits(final=False, debug_batches=2)
 
             if trainer.test_ri:
                 with times.next(" 🎗  Test invariance"):
@@ -281,6 +281,7 @@ if __name__ == "__main__":
             if args.breakpoint:
                 breakpoint()
 
+        os.environ["ocp_test_env"] = ""
         conf_duration = time() - conf_start
         print(
             f"{symbol} {c+1:{nk}}/{len(configs)} {format_times(times)}"

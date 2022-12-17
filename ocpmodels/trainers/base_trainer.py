@@ -72,6 +72,7 @@ class BaseTrainer(ABC):
         self.test_ri = self.config["test_ri"]
         self.is_debug = self.config["is_debug"]
         self.is_hpo = self.config["is_hpo"]
+        self.eval_on_test = self.config["eval_on_test"]
         self.silent = self.config["silent"]
         self.datasets = {}
         self.samplers = {}
@@ -544,11 +545,12 @@ class BaseTrainer(ABC):
 
             loss = self.compute_loss(preds, batch)
             if preds.get("pooling_loss") is not None:
-                loss += preds["pooling_loss"]
+                loss["total_loss"] += preds["pooling_loss"]
 
             # Compute metrics.
             metrics = self.compute_metrics(preds, batch, evaluator, metrics)
-            metrics = evaluator.update("loss", loss.item(), metrics)
+            for k, v in loss.items():
+                metrics = evaluator.update(k, v.item(), metrics)
 
         val_time = time.time() - val_time
         aggregated_metrics = {}
@@ -568,8 +570,8 @@ class BaseTrainer(ABC):
 
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": self.epoch})
-        log_dict.update({"val_time": val_time})
-        log_dict.update({"n_samples": i + 1})
+        log_dict.update({f"{split}_time": val_time})
+        log_dict.update({f"{split}_n_samples": i + 1})
         if distutils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
             print("\n  > ".join([""] + log_str))
@@ -604,7 +606,7 @@ class BaseTrainer(ABC):
 
     def _backward(self, loss):
         self.optimizer.zero_grad()
-        loss.backward()
+        loss["total_loss"].backward()
         # Scale down the gradients of shared parameters
         if hasattr(self.model.module, "shared_parameters"):
             for p, factor in self.model.module.shared_parameters:
@@ -683,7 +685,7 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(
+    def eval_all_splits(
         self, final=True, disable_tqdm=True, debug_batches=-1, epoch=-1
     ):
         """Evaluate model on all four validation splits"""
@@ -691,14 +693,15 @@ class BaseTrainer(ABC):
         cumulated_time = 0
         cumulated_mae = 0
         metrics_dict = {}
-        val_splits = [s for s in self.config["dataset"] if s.startswith("val_")]
+        # store all non-train splits: all vals and test
+        all_splits = [s for s in self.config["dataset"] if s.startswith("val")]
 
         if not self.silent:
             print()
-            logging.info(f"Evaluating on {len(val_splits)} val splits.")
+            logging.info(f"Evaluating on {len(all_splits)} val splits.")
 
+        # Load current best checkpoint for final evaluation
         if final and epoch != 0:
-            # Load current best checkpoint
             checkpoint_path = os.path.join(
                 self.config["checkpoint_dir"], "best_checkpoint.pt"
             )
@@ -706,24 +709,37 @@ class BaseTrainer(ABC):
 
         silent = self.silent
         self.silent = True
+        metrics_names = None
 
-        for split in val_splits:
+        # evaluate on all splits
+        for split in all_splits:
             start_time = time.time()
             self.metrics = self.validate(
                 split=split,
                 disable_tqdm=disable_tqdm,
                 debug_batches=debug_batches,
-                is_final=True,
+                is_final=final,
             )
             metrics_dict[split] = self.metrics
             cumulated_mae += self.metrics["energy_mae"]["metric"]
             cumulated_time += time.time() - start_time
+            if metrics_names is None:
+                metrics_names = list(self.metrics.keys())
 
         self.silent = silent
 
-        # Log time
+        # Average metrics over all val splits
+        metrics_dict["overall"] = {
+            m: {
+                "metric": sum([metrics_dict[s][m]["metric"] for s in all_splits])
+                / len(all_splits)
+            }
+            for m in metrics_names
+        }
+
+        # Log specific metrics
         if final and self.config["logger"] == "wandb" and distutils.is_master():
-            overall_mae = cumulated_mae / 4
+            overall_mae = cumulated_mae / len(all_splits)
             sid = os.getenv("SLURM_JOB_ID")
             self.logger.log({"Eval time": cumulated_time})
             self.logger.log({"Overall MAE": overall_mae})
@@ -731,6 +747,16 @@ class BaseTrainer(ABC):
                 self.logger.ntfy(
                     message=f"{sid} - Overall MAE: {overall_mae}", click=self.logger.url
                 )
+
+        # Run on test split
+        if final and "test" in self.config["dataset"] and self.eval_on_test:
+            metrics_dict["test"] = self.validate(
+                split="test",
+                disable_tqdm=disable_tqdm,
+                debug_batches=debug_batches,
+                is_final=final,
+            )
+            all_splits += ["test"]
 
         # Print results
         if not self.silent:
@@ -740,19 +766,20 @@ class BaseTrainer(ABC):
                 table = Table(title=f"Results at epoch {epoch}")
             else:
                 table = Table(title="Results")
-            for c, col in enumerate(["Metric / Split"] + val_splits):
+            for c, col in enumerate(["Metric / Split"] + all_splits):
                 table.add_column(col, justify="left" if c == 0 else "right")
 
-            metrics = list(metrics_dict.values())[0].keys()
-            highlights = {"energy_mae", "forces_mae"}
-            for metric in sorted(metrics):
+            highlights = {"energy_mae", "forces_mae", "total_loss"}
+            smn = sorted([m if "loss" not in m else f"z_{m}" for m in metrics_names])
+            for metric in smn:
+                metric = metric[2:] if metric.startswith("z_") else metric
                 row = [metric] + [
                     f"{metrics_dict[split][metric]['metric']:.5f}"
-                    for split in val_splits
+                    for split in all_splits
                 ]
                 table.add_row(*row, style="on white" if metric in highlights else "")
 
-            logging.info(f"eval_all_val_splits time: {time.time() - start_time:.2f}s")
+            logging.info(f"eval_all_splits time: {time.time() - start_time:.2f}s")
             print()
             console = Console()
             console.print(table)
