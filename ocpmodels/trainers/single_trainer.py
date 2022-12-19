@@ -589,6 +589,7 @@ class SingleTrainer(BaseTrainer):
         energy_diff = torch.zeros(1, device=self.device)
         energy_diff_z = torch.zeros(1, device=self.device)
         energy_diff_refl = torch.zeros(1, device=self.device)
+        pos_diff_total = torch.zeros(1, device=self.device)
         forces_diff = torch.zeros(1, device=self.device)
         forces_diff_z = torch.zeros(1, device=self.device)
         forces_diff_refl = torch.zeros(1, device=self.device)
@@ -620,12 +621,14 @@ class SingleTrainer(BaseTrainer):
                 )
 
             # Diff in positions
-            pos_diff_z = -1
+            pos_diff = -1
             if hasattr(batch[0], "fa_pos"):
-                pos_diff_z = 0
+                pos_diff = 0
+                # Compute total difference across frames
                 for pos1, pos2 in zip(batch[0].fa_pos, rotated["batch_list"][0].fa_pos):
-                    pos_diff_z += pos1 - pos2
-                pos_diff_z = pos_diff_z.sum()
+                    pos_diff += pos1 - pos2
+                # Manhanttan distance of pos matrix wrt 0 matrix.
+                pos_diff_total += torch.abs(pos_diff).sum()
 
             # Reflect graph and compute diff in prediction
             reflected = self.reflect_graph(batch)
@@ -646,11 +649,12 @@ class SingleTrainer(BaseTrainer):
         energy_diff_z = energy_diff_z / (i * batch_size)
         energy_diff = energy_diff / (i * batch_size)
         energy_diff_refl = energy_diff_refl / (i * batch_size)
+        pos_diff_total = pos_diff_total / (i * batch_size)
 
         symmetry = {
             "2D_E_ri": float(energy_diff_z),
             "3D_E_ri": float(energy_diff),
-            "2D_pos_ri": float(pos_diff_z),
+            "2D_pos_ri": float(pos_diff_total),
             "2D_E_refl_i": float(energy_diff_refl),
         }
 
