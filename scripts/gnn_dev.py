@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # config["model"]= {"phys_embeds": True}
     config["graph_rewiring"] = "remove-tag-0"
     config["frame_averaging"] = "2D"
-    config["fa_frames"] = "all"  # "random"
+    config["fa_frames"] = "det"  # "random"
     config["test_ri"] = True
     config["optim"] = {"max_epochs": 0}
     config["model"] = {"use_pbc": True}
