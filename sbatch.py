@@ -283,18 +283,19 @@ if __name__ == "__main__":
 
     # format string template with defaults + command-line args
     script = template.format(
+        code_loc=(str(resolve(args.code_loc)) if args.code_loc else str(root)),
         cwd=str(Path.cwd()),
+        debug_dir="$SCRATCH/ocp/runs/$SLURM_JOBID",
         env=args.env,
-        git_commit=get_commit(),
         git_checkout=git_checkout,
+        git_commit=get_commit(),
+        modules="\nmodule load ".join([""] + modules),
+        output=str(resolve(args.output)),
         python_command=python_command,
         sbatch_command_line=sbatch_command_line,
-        sbatch_py_vars=make_sbatch_py_vars(sbatch_py_vars),
         sbatch_params=make_sbatch_params(sbatch_params),
+        sbatch_py_vars=make_sbatch_py_vars(sbatch_py_vars),
         virtualenv=virtualenv,
-        debug_dir="$SCRATCH/ocp/runs/$SLURM_JOBID",
-        code_loc=(str(resolve(args.code_loc)) if args.code_loc else str(root)),
-        modules="\nmodule load ".join([""] + modules),
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
