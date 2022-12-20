@@ -23,13 +23,12 @@ echo "Master port $MASTER_PORT"
 
 cd {code_loc}
 
+{modules}
+
 if {virtualenv}
 then
     source {env}/bin/activate
 else
-    export LD_DEBUG=libs,files
-    module load anaconda/3 &>> {debug_dir}/libtinfo-hunt.txt
-    unset LD_DEBUG
     conda activate {env}
 fi
 
@@ -204,6 +203,13 @@ if __name__ == "__main__":
     # parse and resolve args.
     # defaults are loaded and overwritten from the command-line as `arg=value`
     args = resolved_args(defaults=discover_minydra_defaults())
+    modules = (
+        []
+        if not args.modules
+        else args.modules.split(",")
+        if isinstance(args.modules, str)
+        else args.modules
+    )
     if args.verbose:
         args.pretty_print()
 
@@ -272,12 +278,13 @@ if __name__ == "__main__":
         del sbatch_params["partition"]
         sbatch_params["account"] = "rrg-bengioy-ad_gpu"
 
+    if "a100" in args.env:
+        modules += ["cuda/11.2"]
+
     # format string template with defaults + command-line args
     script = template.format(
         cwd=str(Path.cwd()),
-        env=args.env
-        if "a100" not in args.env
-        else f"{args.env}\n    module load cuda/11.2",
+        env=args.env,
         git_commit=get_commit(),
         git_checkout=git_checkout,
         python_command=python_command,
@@ -287,6 +294,7 @@ if __name__ == "__main__":
         virtualenv=virtualenv,
         debug_dir="$SCRATCH/ocp/runs/$SLURM_JOBID",
         code_loc=(str(resolve(args.code_loc)) if args.code_loc else str(root)),
+        modules="\nmodule load ".join([""] + modules),
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
