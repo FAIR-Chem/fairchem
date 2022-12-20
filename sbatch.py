@@ -9,15 +9,7 @@ import re
 
 template = """\
 #!/bin/bash
-#SBATCH --job-name={job_name}
-#SBATCH --nodes={nodes}
-#SBATCH --ntasks-per-node={ntasks_per_node}
-#SBATCH --partition={partition}
-#SBATCH --cpus-per-task={cpus}
-#SBATCH --mem={mem}
-#SBATCH --gres={gres}
-#SBATCH --output={output}
-{time}
+{sbatch_params}
 
 # {sbatch_command_line}
 # git commit: {git_commit}
@@ -43,6 +35,14 @@ fi
 
 srun --output={output} {python_command}
 """
+
+
+def make_sbatch_params(params):
+    sps = []
+    for k, v in params.items():
+        if v:
+            sps.append(f"#SBATCH --{k}={v}")
+    return "\n".join(sps) + "\n"
 
 
 def discover_minydra_defaults():
@@ -159,6 +159,7 @@ if __name__ == "__main__":
     # has the submission been successful?
     success = False
     sbatch_py_vars = {}
+    is_narval = "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
 
     # repository root
     root = Path(__file__).resolve().parent
@@ -215,27 +216,34 @@ if __name__ == "__main__":
     else:
         virtualenv = "false"
 
+    sbatch_params = {
+        "job-name": args.job_name,
+        "nodes": args.nodes or 1,
+        "ntasks-per-node": args.ntasks_per_node,
+        "partition": args.partition,
+        "cpus-per-task": args.cpus,
+        "mem": args.mem,
+        "gres": args.gres,
+        "output": str(resolve(args.output)),
+    }
+    if args.time:
+        sbatch_params["time"] = args.time
+    if is_narval:
+        del sbatch_params["partition"]
+        sbatch_params["account"] = "rrg-bengioy-ad_gpu"
+
     # format string template with defaults + command-line args
     script = template.format(
-        cpus=args.cpus,
         cwd=str(Path.cwd()),
         env=args.env
         if "a100" not in args.env
         else f"{args.env}\n    module load cuda/11.2",
         git_commit=get_commit(),
         git_checkout=git_checkout,
-        gres=args.gres,
-        job_name=args.job_name,
-        mem=args.mem,
-        nodes=args.nodes or 1,
-        ntasks_per_node=args.ntasks_per_node,
-        ntasks=args.ntasks,
-        output=str(resolve(args.output)),
-        partition=args.partition,
         python_command=python_command,
         sbatch_command_line=sbatch_command_line,
         sbatch_py_vars=make_sbatch_py_vars(sbatch_py_vars),
-        time="" if not args.time else f"#SBATCH --time={args.time}",
+        sbatch_params=make_sbatch_params(sbatch_params),
         virtualenv=virtualenv,
         debug_dir="$SCRATCH/ocp/runs/$SLURM_JOBID",
         code_loc=(str(resolve(args.code_loc)) if args.code_loc else str(root)),

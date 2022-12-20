@@ -1,0 +1,2 @@
+env: ~/.virtualenvs/ocp-env
+virtualenv: true
