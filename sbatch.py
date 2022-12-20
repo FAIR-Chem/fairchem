@@ -38,6 +38,16 @@ srun --output={output} {python_command}
 
 
 def make_sbatch_params(params):
+    """
+    Make a string containing the sbatch parameters as
+    #SBATCH --param=value
+
+    Args:
+        params (dict): dict of param/value to use to submit the job
+
+    Returns:
+        str: \n-joined string of #SBATCH --param=value
+    """
     sps = []
     for k, v in params.items():
         if v:
@@ -90,6 +100,13 @@ def now():
 
 
 def get_commit():
+    """
+    Get the git commit hash of the current repo
+
+    Returns:
+        str: Current git commit hash or "unknown" if not in a git repo or
+             an error occurred
+    """
     try:
         commit = (
             subprocess.check_output("git rev-parse --verify HEAD".split())
@@ -102,6 +119,16 @@ def get_commit():
 
 
 def make_sbatch_py_vars(sbatch_py_vars):
+    """
+    Turns a dict into a series of SBATCH_PY_{key.upper()}=value
+    to be parsed by main.py
+
+    Args:
+        sbatch_py_vars (dict): sbatch.py-specific env variables
+
+    Returns:
+        str: \n-joined string of SBATCH_PY_{key.upper()}=value
+    """
     s = ""
     for k, v in sbatch_py_vars.items():
         k = "SBATCH_PY_" + k.replace("-", "_").upper()
@@ -115,6 +142,17 @@ def make_sbatch_py_vars(sbatch_py_vars):
 
 
 def add_jobid_to_log(j, command_line, exp_name=None):
+    """
+    Stores the command into a log file. If an exp_name is provided, it will be appended
+    tio the appropriate experiment: as a new item if the latest experiment has the
+    same name, as a new experiment otherwise.
+
+    Args:
+        j (str): SLURM job id
+        command_line (str): command-line ran to submit the job
+        exp_name (str, optional): Optional experiment the job submission is part of.
+            Defaults to None.
+    """
     logfile = Path(__file__).resolve().parent / "data" / "sbatch_job_ids.txt"
     if not logfile.exists():
         logfile.touch()
@@ -216,6 +254,8 @@ if __name__ == "__main__":
     else:
         virtualenv = "false"
 
+    # create sbatch job submission parameters dictionary
+    # to use with make_sbatch_params()
     sbatch_params = {
         "job-name": args.job_name,
         "nodes": args.nodes or 1,
