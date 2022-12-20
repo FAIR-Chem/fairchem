@@ -39,6 +39,29 @@ from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 
 OCP_TASKS = {"s2ef", "is2re", "is2es"}
+ROOT = Path(__file__).resolve().parent.parent.parent
+
+
+def override_narval_paths(trainer_config):
+    is_narval = "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
+    if not is_narval:
+        return trainer_config
+    path_overrides = yaml.safe_load(
+        (ROOT / "configs" / "models" / "tasks" / "_narval.yaml").read_text()
+    )
+    task = trainer_config["task_name"]
+    split = trainer_config["task_split"]
+    assert task in path_overrides, f"Task {task} not found in Narval paths overrides"
+
+    assert (
+        split in path_overrides[task]
+    ), f"Split {split} not found in Narval paths overrides for task {task}"
+
+    trainer_config["dataset"], _ = merge_dicts(
+        trainer_config["dataset"], path_overrides[task][split]
+    )
+
+    return trainer_config
 
 
 def set_qm9_target_stats(trainer_config):
@@ -148,13 +171,7 @@ def set_qm7x_target_stats(trainer_config):
         return trainer_config
 
     target_stats = json.loads(
-        (
-            Path(__file__).resolve().parent.parent.parent
-            / "configs"
-            / "models"
-            / "qm7x-metadata"
-            / "stats.json"
-        ).read_text()
+        (ROOT / "configs" / "models" / "qm7x-metadata" / "stats.json").read_text()
     )
 
     for d, dataset in deepcopy(trainer_config["dataset"]).items():
@@ -205,7 +222,8 @@ def count_gpus():
             slurm_gpus = run_command(
                 f"squeue --job {os.environ['SLURM_JOB_ID']} -o %b"
             ).split("\n")[1]
-            gpus = int(re.findall(r".*(\d+)", slurm_gpus)[0])
+            gpus = re.findall(r".*(\d+)", slurm_gpus) or 0
+            gpus = int(gpus[0]) if gpus != 0 else gpus
         except subprocess.CalledProcessError:
             gpus = torch.cuda.device_count()
     else:
@@ -575,7 +593,7 @@ def load_config_legacy(path: str, previous_includes: list = []):
 
 def load_config(config_str):
     model, task, split = config_str.split("-")
-    conf_path = Path(__file__).resolve().parent.parent.parent / "configs" / "models"
+    conf_path = ROOT / "configs" / "models"
 
     model_conf_path = list(conf_path.glob(f"{model}.y*ml"))[0]
     task_conf_path = list(conf_path.glob(f"tasks/{task}.y*ml"))[0]
@@ -596,6 +614,7 @@ def load_config(config_str):
     config, _ = merge_dicts(config, task_conf["default"])
     config, _ = merge_dicts(config, task_conf[split])
     config["task_name"] = task
+    config["task_split"] = split
 
     return config
 
@@ -645,6 +664,7 @@ def build_config(args, args_override):
 
     config = set_qm9_target_stats(config)
     config = set_qm7x_target_stats(config)
+    config = override_narval_paths(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
@@ -741,7 +761,7 @@ def get_pbc_distances(
     distances = distance_vectors.norm(dim=-1)
 
     # redundancy: remove zero distances
-    nonzero_idx = torch.arange(len(distances))[distances != 0]
+    nonzero_idx = torch.arange(len(distances), device=distances.device)[distances != 0]
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
 
@@ -1006,7 +1026,7 @@ def merge_dicts(dict1: dict, dict2: dict):
 
     Returns
     -------
-    return_dict: dict
+    return_dict_and_duplicates: tuple(dict, list(str))
         Merged dictionaries.
     """
     if not isinstance(dict1, dict):
