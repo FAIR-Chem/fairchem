@@ -43,7 +43,10 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def override_narval_paths(trainer_config):
-    is_narval = "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
+    is_narval = (
+        "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
+        or os.environ.get("HOME") == "/home/vsch"
+    )
     if not is_narval:
         return trainer_config
     path_overrides = yaml.safe_load(
@@ -57,6 +60,12 @@ def override_narval_paths(trainer_config):
         split in path_overrides[task]
     ), f"Split {split} not found in Narval paths overrides for task {task}"
 
+    print(
+        "Is on Narval. Overriding",
+        trainer_config["dataset"],
+        "with",
+        path_overrides[task][split],
+    )
     trainer_config["dataset"], _ = merge_dicts(
         trainer_config["dataset"], path_overrides[task][split]
     )
