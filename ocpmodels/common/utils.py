@@ -688,6 +688,7 @@ def build_config(args, args_override):
                 print(
                     f"Overriding num_workers from {config['optim']['num_workers']}",
                     f"to {workers} to match the machine's CPUs.",
+                    "Use --no_cpus_to_workers=true to disable this behavior.",
                 )
             config["optim"]["num_workers"] = workers
     config["world_size"] = args.num_nodes * args.num_gpus
