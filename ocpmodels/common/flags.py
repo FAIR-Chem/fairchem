@@ -176,8 +176,9 @@ class Flags:
         self.parser.add_argument(
             "--print_every",
             type=int,
-            default=100,
-            help="Printing frequency (in steps)",
+            default=-1,
+            help="Printing frequency (in steps). "
+            + "Default (-1) prints at the end of the epoch.",
         )
         self.parser.add_argument(
             "--wandb_project",

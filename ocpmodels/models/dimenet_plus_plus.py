@@ -574,6 +574,8 @@ class DimeNetPlusPlus(BaseModel):
         if self.energy_head == "weighted-av-initial-embeds":
             self.w_lin = Linear(kwargs["hidden_channels"], 1)
 
+        self.task = kwargs["task_name"]
+
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -652,6 +654,13 @@ class DimeNetPlusPlus(BaseModel):
             edge_index = radius_graph(pos, r=self.cutoff, batch=batch)
             j, i = edge_index
             dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
+
+        if self.task == "qm9" and edge_index.shape[1] != len(data.cell_offsets):
+            data.cell_offsets = torch.zeros(
+                (edge_index.shape[1], 3),
+                device=edge_index.device,
+                dtype=data.cell_offsets.dtype,
+            )
 
         _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
             edge_index,

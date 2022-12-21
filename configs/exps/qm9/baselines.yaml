@@ -21,17 +21,29 @@ default:
   frame_averaging: ""
 
 runs:
-  # - config: dpp-qm9-all
-  #   note: DimeNet++ qm9 baseline
-  #   # https://github.com/gasteigerjo/dimenet/blob/fd36d381a2b31721da0cbf879b2d0c0a166fa76b/config.yaml
+  - config: dpp-qm9-all
+    note: DimeNet++ qm9 baseline
+    # https://github.com/gasteigerjo/dimenet/blob/fd36d381a2b31721da0cbf879b2d0c0a166fa76b/config.yaml
 
-  #   # TODO: num GPUs/batch_size, epochs, lr decay, emb_size, num_dense_output
-  #   model:
-  #     cutoff: 5.0
-  #     num_before_skip: 1
-  #     num_after_skip: 2
-  #     num_blocks: 6
-  #     int_emb_size: 128
+    # TODO: num GPUs/batch_size, epochs, lr decay, emb_size, num_dense_output
+    model:
+      cutoff: 5.0
+      num_before_skip: 1
+      num_after_skip: 2
+      num_blocks: 6
+      int_emb_size: 128
+    optim:
+      batch_size: 128
+      warmup_steps: 1000
+      lr_initial: 0.001
+      # parameters EMA
+      ema_decay: 0.999
+      # exp. decay to 0.01 * lr_initial in 4000000 steps
+      decay_steps: 4000000
+      decay_rate: 0.01
+      # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
+      max_epochs: 872
+
 
   - config: schnet-qm9-all
     model:
@@ -40,6 +52,18 @@ runs:
       num_filters: 128
       num_interactions: 3
       cutoff: 5.0
+    optim:
+      # from d++
+      batch_size: 128
+      warmup_steps: 1000
+      lr_initial: 0.001
+      # parameters EMA
+      ema_decay: 0.999
+      # exp. decay to 0.01 * lr_initial in 4000000 steps
+      decay_steps: 4000000
+      decay_rate: 0.01
+      # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
+      max_epochs: 872
     note: SchNet qm9 baseline
 
   - config: schnet-qm9-all
@@ -49,6 +73,18 @@ runs:
       num_filters: 128
       num_interactions: 3
       cutoff: 5.0
+    optim:
+      # from d++
+      batch_size: 128
+      warmup_steps: 1000
+      lr_initial: 0.001
+      # parameters EMA
+      ema_decay: 0.999
+      # exp. decay to 0.01 * lr_initial in 4000000 steps
+      decay_steps: 4000000
+      decay_rate: 0.01
+      # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
+      max_epochs: 872
     note: SchNet qm9 baseline 100 num_gaussians
 
   - config: schnet-qm9-all
@@ -58,4 +94,16 @@ runs:
       num_filters: 128
       num_interactions: 6
       cutoff: 5.0
+    optim:
+      # from d++
+      batch_size: 128
+      warmup_steps: 1000
+      lr_initial: 0.001
+      # parameters EMA
+      ema_decay: 0.999
+      # exp. decay to 0.01 * lr_initial in 4000000 steps
+      decay_steps: 4000000
+      decay_rate: 0.01
+      # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
+      max_epochs: 872
     note: SchNet qm9 baseline 100 num_gaussians 6 interactions

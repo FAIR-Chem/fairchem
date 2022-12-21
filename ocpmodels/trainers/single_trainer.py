@@ -183,7 +183,8 @@ class SingleTrainer(BaseTrainer):
         n_train = len(self.loaders["train"])
         epoch_int = 0
         eval_every = self.config["optim"].get("eval_every", n_train)
-        self.config["print_every"] = eval_every  # Can comment out for better debug
+        if self.config["print_every"] < 0:
+            self.config["print_every"] = n_train
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )

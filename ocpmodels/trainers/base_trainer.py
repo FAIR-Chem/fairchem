@@ -159,9 +159,10 @@ class BaseTrainer(ABC):
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+        if "cpu" not in str(self.device):
+            torch.cuda.manual_seed_all(seed)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
     def load_logger(self):
         self.logger = None
@@ -278,6 +279,7 @@ class BaseTrainer(ABC):
             num_atoms=num_atoms,
             bond_feat_dim=bond_feat_dim,
             num_targets=self.num_targets,
+            task_name=self.task_name,
             **self.config["model"],
         ).to(self.device)
 

@@ -324,12 +324,21 @@ def warmup_lr_lambda(current_step, optim_config):
             + " epochs and define warmup_steps instead of warmup_epochs"
         )
 
+    # warmup
     if current_step <= optim_config["warmup_steps"]:
         alpha = current_step / float(optim_config["warmup_steps"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
-    else:
-        idx = bisect(lr_milestones, current_step)
-        return pow(optim_config["lr_gamma"], idx)
+
+    # post warm up
+    if "decay_steps" in optim_config:
+        # exponential decay per step
+        assert "decay_rate" in optim_config, "decay_rate must be defined in optim"
+        return optim_config["decay_rate"] ** (
+            (current_step - optim_config["warmup_steps"]) / optim_config["decay_steps"]
+        )
+    # per-milestones decay
+    idx = bisect(lr_milestones, current_step)
+    return pow(optim_config["lr_gamma"], idx)
 
 
 def print_cuda_usage():
