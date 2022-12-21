@@ -229,6 +229,12 @@ class Flags:
             default=False,
             help="Evaluate on test set",
         )
+        self.parser.add_argument(
+            "--narval",
+            action="store_true",
+            default=False,
+            help="is on Narval DRAC cluster",
+        )
 
 
 flags = Flags()

@@ -46,6 +46,7 @@ def override_narval_paths(trainer_config):
     is_narval = (
         "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
         or os.environ.get("HOME") == "/home/vsch"
+        or trainer_config["narval"]
     )
     if not is_narval:
         return trainer_config
