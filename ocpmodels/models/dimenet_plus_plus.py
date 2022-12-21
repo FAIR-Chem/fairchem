@@ -655,11 +655,11 @@ class DimeNetPlusPlus(BaseModel):
             j, i = edge_index
             dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
-        if self.task == "qm9" and edge_index.shape[1] != len(data.cell_offsets):
+        if (
+            self.task == "qm9" and edge_index.shape[1] != len(data.cell_offsets)
+        ) or self.task == "qm7x":
             data.cell_offsets = torch.zeros(
-                (edge_index.shape[1], 3),
-                device=edge_index.device,
-                dtype=data.cell_offsets.dtype,
+                (edge_index.shape[1], 3), device=edge_index.device
             )
 
         _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
