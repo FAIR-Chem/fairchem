@@ -37,8 +37,8 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
     fa_cell = deepcopy(cell)
 
     if fa_frames == "det" or fa_frames == "se3-det":
-        max_abs_cols = torch.argmax(torch.abs(eigenvec), axis=0)
-        plus_minus_list = [torch.sign(eigenvec[max_abs_cols, range(eigenvec.shape[1])])]
+        sum_eigenvec = torch.sum(eigenvec, axis=0)
+        plus_minus_list = [torch.where(sum_eigenvec >= 0, 1.0, -1.0)]
 
     for pm in plus_minus_list:
 
@@ -79,7 +79,7 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
 
     elif fa_frames == "det" or fa_frames == "se3-det":
         return [all_fa_pos[det_index]], [all_cell[det_index]], [all_rots[det_index]]
-        
+
     index = random.randint(0, len(all_fa_pos) - 1)
     return [all_fa_pos[index]], [all_cell[index]], [all_rots[index]]
 
@@ -126,14 +126,7 @@ def frame_averaging_3D(g, fa_frames="random"):
     C = torch.matmul(pos.t(), pos)
 
     # Eigendecomposition
-    eigenval, eigenvec = torch.linalg.eig(C)
-
-    # Check if eigenvec, eigenval are real or complex ?
-    if not torch.isreal(eigenvec).all():
-        print("Eigenvec is complex")
-    else:
-        eigenvec = eigenvec.real
-        eigenval = eigenval.real
+    eigenval, eigenvec = torch.linalg.eigh(C)
 
     # Sort, if necessary
     idx = eigenval.argsort(descending=True)
@@ -167,12 +160,7 @@ def frame_averaging_2D(g, fa_frames="random"):
     C = torch.matmul(pos_2D.t(), pos_2D)
 
     # Eigendecomposition
-    eigenval, eigenvec = torch.linalg.eig(C)
-
-    # Convert eigenval to real values
-    eigenvec = eigenvec.real
-    eigenval = eigenval.real
-
+    eigenval, eigenvec = torch.linalg.eigh(C)
     # Sort, if necessary
     idx = eigenval.argsort(descending=True)
     eigenval = eigenval[idx]

@@ -70,15 +70,34 @@ def test_rotation_invariance(graph, rotation="z", dim="2D"):
     return count == len(all_fa) - 1
 
 
-def custom_rotate_graph(g):
+def custom_rotate_graph(g, degrees=None):
     # Return rotated graph
     rotated_graph = deepcopy(g)
-    degrees = (0, 180)
-    degree = math.pi * random.uniform(*degrees) / 180.0
+    if degrees is None:
+        degrees = (0, 360)
+        degree = math.pi * random.uniform(*degrees) / 180.0
+    else:
+        degree = math.pi * degrees / 180.0
     sin, cos = math.sin(degree), math.cos(degree)
     R = torch.tensor([[cos, sin, 0], [-sin, cos, 0], [0, 0, 1]])
     rotated_graph.pos = (g.pos @ R.T).to(g.pos.device, g.pos.dtype)
-    return rotated_graph
+    rotated_graph.cell = torch.matmul(rotated_graph.cell, R)
+    return rotated_graph, R
+
+
+def summary_fa(g):
+    pos_2D = g.pos[:, :2] - g.pos[:, :2].mean(dim=0, keepdim=True)
+    C = torch.matmul(pos_2D.t(), pos_2D)
+    eigenval, eigenvec = torch.linalg.eigh(C)
+    idx = eigenval.argsort(descending=True)
+    eigenval = eigenval[idx]
+    eigenvec = eigenvec[:, idx]
+    # sum_eigenvec = torch.sum(eigenvec, axis=0)
+    # sign = torch.where(sum_eigenvec >= 0, 1., -1.)
+    sign = torch.ones(2)
+    new_eigenvec = sign * eigenvec
+    fa_pos = g.pos[:, :2] @ new_eigenvec
+    return fa_pos, new_eigenvec, sign, eigenval, C
 
 
 if __name__ == "__main__":
@@ -101,6 +120,7 @@ if __name__ == "__main__":
 
     # Compute rotated graph and corresponding fa_pos, fa_cell, fa_rot
     for i, batch in enumerate(trainer.loaders["val_id"]):
+        break
         rotated_batch_1 = trainer.rotate_graph(batch, rotation="z")
         rotated_batch_2 = trainer.rotate_graph(batch, rotation="z")
         fa_pos_batch = batch[0]["fa_pos"][0]
@@ -134,17 +154,49 @@ if __name__ == "__main__":
 
     # For a finer analysus
 
-    # # Choose one graph only
-    # count = 0
-    # b = batch[0]
-    # for i in range(len(b.sid)):
-    #     g = deecopy(Batch.get_example(b, i))
-    #     rotated_g = Batch.get_example(rotated_b, i)
-    #     # rotated_g = custom_rotate_graph(g)
-    #     rotated_g = frame_averaging_2D(rotated_g, "det")
-    #     pos_diff = torch.sum(g.fa_pos - rotated_g.fa_pos[0])
-    #     if torch.allclose(pos_diff, torch.zeros(1)):
-    #         count += 1
-    #     # rotated_graph, all_fa = frame_averaging_3D(rotated_graph, False)
-
-    #     test_rotation_invariance(batch, rotation="z", dim="2D")
+    # Choose one graph only
+    b = deepcopy(batch[0])
+    # Otherwise can't iterate
+    b_fa_pos = b.fa_pos
+    b_fa_rot = b.fa_rot
+    b_fa_cell = b.fa_cell
+    delattr(b, "fa_pos")
+    delattr(b, "fa_cell")
+    delattr(b, "fa_rot")
+    for i in range(len(b.sid) - 1):
+        # Get graph and reset attributes
+        g = deepcopy(Batch.get_example(b, i))
+        g.fa_pos = b_fa_pos[0][b.ptr[i] : b.ptr[i + 1]]
+        g.fa_rot = b_fa_rot[0][i, :, :]
+        g.fa_cell = b_fa_cell[0][i, :, :]
+        count = 0
+        count_fix = 0
+        for j in range(0, 360, 60):
+            rotated_g, R = custom_rotate_graph(deepcopy(g), degrees=j)
+            # FA summary
+            fa_pos, U, sign, eigenval, C = summary_fa(g)
+            r_fa_pos, r_U, r_sign, r_eigenval, r_C = summary_fa(rotated_g)
+            print(fa_pos[:3], "\n", U, "\n", sign, "\n", eigenval, "\n", C)
+            print(r_fa_pos[:3], "\n", r_U, "\n", r_sign, "\n", r_eigenval, "\n", r_C)
+            # Frame averaging on rotated graph
+            rotated_g = frame_averaging_2D(rotated_g, "det")
+            # print(R)
+            # print(rotated_g.fa_rot[0])
+            # Pos difference
+            pos_diff = torch.sum(torch.abs(g.fa_pos - rotated_g.fa_pos[0]))
+            # print(g.fa_pos[:2])
+            # print(rotated_g.fa_pos[0][:2])
+            # Prints
+            sign_diff = r_sign * sign
+            r_new_U = r_U * sign_diff
+            new_r_fa_pos = rotated_g.pos[:, :2] @ r_new_U
+            new_pos_diff = torch.sum(torch.abs(fa_pos - new_r_fa_pos))
+            if pos_diff < 1:
+                print(j)
+                count += 1
+            if new_pos_diff < 1:
+                print("fix: ", j)
+                count_fix += 1
+        if count == 360 / 40:
+            print("ALL OF THEM")
+        # rotated_graph, all_fa = frame_averaging_3D(rotated_graph, False)
