@@ -5,7 +5,7 @@ metric:
   name: val/loss
 
 parameters:
-  model.hidden_channels: 
+  model.hidden_channels:
     values: [256, 320, 180, 384]
   model.num_filters:
     values: [50, 100, 180]
@@ -28,8 +28,8 @@ parameters:
   model.graph_rewiring:
     values: [False, remove-tag-0]
   model.energy_head:
-    values: [False, pooling, weighted-av-initial-embeds, weighted-av-final-embeds, graclus, random] 
-    probabilities: [0.5, 0.1, 0.1, 0.1, 0.1, 0.1] 
+    values: [False, pooling, weighted-av-initial-embeds, weighted-av-final-embeds, graclus, random]
+    probabilities: [0.5, 0.1, 0.1, 0.1, 0.1, 0.1]
   optim.batch_size:
     values: [64]
   optim.lr_initial:
@@ -50,20 +50,20 @@ parameters:
     values: [20]
   model.skip_co:
     values: [False, True]
-  model.normalized_rel_pos: 
+  model.normalize_rij:
     values: [False, True]  # normalize r_ij + squash in [0,1]
-  model.second_layer_MLP: 
+  model.second_layer_MLP:
     values: [False, True]  # in EmbeddingBlock
-  model.mlp_rij: 
+  model.mlp_rij:
     values: [0, 32, 64]   # apply mlp to r_ij
-  model.complex_mp: 
+  model.complex_mp:
     values: [False, True]   # concat (e_ij || h_i || h_j) for W in MP
   #optim.lr_milestones:
   #  values:
   #  [[1562, 2343, 3125]]
   # - "--frame_averaging=2D"
 
-command: 
+command:
   - ${env}
   - ${interpreter}
   - ${program}
