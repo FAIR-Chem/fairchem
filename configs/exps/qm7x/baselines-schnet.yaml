@@ -3,7 +3,7 @@ job:
   mem: 48GB
   cpus: 8
   gres: gpu:1
-  time: 24:00:00
+  time: 48:00:00
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
   env: ocp-a100
