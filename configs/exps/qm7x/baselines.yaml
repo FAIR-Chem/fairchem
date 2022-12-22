@@ -35,8 +35,8 @@ runs:
       lr_initial: 0.001
       # parameters EMA
       ema_decay: 0.999
-      # exp. decay to 0.01 * lr_initial in 4000000 steps
-      decay_steps: 4000000
+      # exp. decay to 0.01 * lr_initial in 1000000 steps
+      decay_steps: 1000000
       decay_rate: 0.01
       # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
       max_epochs: 872
@@ -55,8 +55,8 @@ runs:
       lr_initial: 0.001
       # parameters EMA
       ema_decay: 0.999
-      # exp. decay to 0.01 * lr_initial in 4000000 steps
-      decay_steps: 4000000
+      # exp. decay to 0.01 * lr_initial in 125000 steps
+      decay_steps: 125000
       decay_rate: 0.01
       # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
       max_epochs: 872
@@ -76,8 +76,8 @@ runs:
       lr_initial: 0.001
       # parameters EMA
       ema_decay: 0.999
-      # exp. decay to 0.01 * lr_initial in 4000000 steps
-      decay_steps: 4000000
+      # exp. decay to 0.01 * lr_initial in 125000 steps
+      decay_steps: 125000
       decay_rate: 0.01
       # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
       max_epochs: 872
@@ -97,8 +97,8 @@ runs:
       lr_initial: 0.001
       # parameters EMA
       ema_decay: 0.999
-      # exp. decay to 0.01 * lr_initial in 4000000 steps
-      decay_steps: 4000000
+      # exp. decay to 0.01 * lr_initial in 125000 steps
+      decay_steps: 125000
       decay_rate: 0.01
       # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
       max_epochs: 872
