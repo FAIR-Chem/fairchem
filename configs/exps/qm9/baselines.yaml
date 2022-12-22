@@ -52,7 +52,7 @@ runs:
       cutoff: 5.0
     optim:
       # from d++
-      batch_size: 128
+      batch_size: 1024
       warmup_steps: 1000
       lr_initial: 0.001
       # parameters EMA
@@ -73,7 +73,7 @@ runs:
       cutoff: 5.0
     optim:
       # from d++
-      batch_size: 128
+      batch_size: 1024
       warmup_steps: 1000
       lr_initial: 0.001
       # parameters EMA
@@ -94,7 +94,7 @@ runs:
       cutoff: 5.0
     optim:
       # from d++
-      batch_size: 128
+      batch_size: 1024
       warmup_steps: 1000
       lr_initial: 0.001
       # parameters EMA
