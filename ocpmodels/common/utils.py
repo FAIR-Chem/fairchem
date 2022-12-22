@@ -57,10 +57,12 @@ def move_qm7x_data_to_slurm_tmpdir(trainer_config):
             if lms in moved_data:
                 continue
             new_path = str(tmp_dir / lm.name)
+            if Path(new_path).exists():
+                continue
             moved_data[lms] = new_path
             print(f"Copying {lm} to {new_path}")
             subprocess.run(["cp", "-r", lms, new_path])
-            trainer_config["dataset"][s]["src"] = new_path
+        trainer_config["dataset"][s]["src"] = str(tmp_dir)
     print("Done moving data to", str(tmp_dir))
     return trainer_config
 
