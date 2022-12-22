@@ -95,9 +95,7 @@ class WandBLogger(Logger):
         slurm_jobid = os.environ.get("SLURM_JOB_ID")
         if slurm_jobid:
             wandb_id += f"{slurm_jobid}-"
-        wandb_id += (
-            self.trainer_config["timestamp_id"] + "-" + trainer_config["model_name"]
-        )
+        wandb_id += self.trainer_config["config"]
 
         wandb_tags = trainer_config.get("wandb_tags", "")
         if wandb_tags:
