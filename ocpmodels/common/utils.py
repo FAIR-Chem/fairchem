@@ -42,6 +42,29 @@ OCP_TASKS = {"s2ef", "is2re", "is2es"}
 ROOT = Path(__file__).resolve().parent.parent.parent
 
 
+def move_qm7x_data_to_slurm_tmpdir(trainer_config):
+    if trainer_config.get("no_qm7x_cp") or "-qm7x-" not in trainer_config["config"]:
+        return trainer_config
+
+    tmp_dir = Path(f"/Tmp/slurm.{os.environ.get('SLURM_JOB_ID')}.0")
+    moved_data = {}
+    for s, split in trainer_config["dataset"].items():
+        if not isinstance(split, dict):
+            continue
+        lmdbs = Path(split["src"]).glob("*.lmdb")
+        for lm in lmdbs:
+            lms = str(lm)
+            if lms in moved_data:
+                continue
+            new_path = str(tmp_dir / lm.name)
+            moved_data[lms] = new_path
+            print(f"Copying {lm} to {new_path}")
+            subprocess.run(["cp", "-r", lms, new_path])
+            trainer_config["dataset"][s]["src"] = new_path
+    print("Done moving data to", str(tmp_dir))
+    return trainer_config
+
+
 def override_narval_paths(trainer_config):
     is_narval = (
         "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
@@ -684,6 +707,7 @@ def build_config(args, args_override):
     config = set_qm9_target_stats(config)
     config = set_qm7x_target_stats(config)
     config = override_narval_paths(config)
+    config = move_qm7x_data_to_slurm_tmpdir(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
