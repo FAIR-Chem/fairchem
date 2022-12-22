@@ -21,26 +21,6 @@ default:
   frame_averaging: ""
 
 runs:
-  - config: dpp-qm7x-all
-    note: DimeNet++ qm7x baseline
-    model:
-      cutoff: 6.0
-      num_before_skip: 1
-      num_after_skip: 2
-      num_blocks: 6
-      int_emb_size: 128
-    optim:
-      batch_size: 128
-      warmup_steps: 1000
-      lr_initial: 0.001
-      # parameters EMA
-      ema_decay: 0.999
-      # exp. decay to 0.01 * lr_initial in 1000000 steps
-      decay_steps: 1000000
-      decay_rate: 0.01
-      # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
-  #     max_epochs: 872
-
   - config: schnet-qm7x-all
     model:
       hidden_channels: 128
@@ -51,16 +31,16 @@ runs:
     optim:
       # from d++
       batch_size: 1024
-      warmup_steps: 1000
-      lr_initial: 0.001
+      warmup_steps: 3000
+      lr_initial: 0.0025
       # parameters EMA
       ema_decay: 0.999
       # exp. decay to 0.01 * lr_initial in 125000 steps
-      decay_steps: 125000
+      decay_steps: 250000
       decay_rate: 0.01
       # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
       max_epochs: 872
-    note: SchNet qm7x baseline (moved data)
+    note: SchNet qm7x baseline larger lr & decay steps
 
   - config: schnet-qm7x-all
     model:
@@ -72,16 +52,16 @@ runs:
     optim:
       # from d++
       batch_size: 1024
-      warmup_steps: 1000
-      lr_initial: 0.001
+      warmup_steps: 3000
+      lr_initial: 0.0025
       # parameters EMA
       ema_decay: 0.999
       # exp. decay to 0.01 * lr_initial in 125000 steps
-      decay_steps: 125000
+      decay_steps: 250000
       decay_rate: 0.01
       # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
       max_epochs: 872
-    note: SchNet qm7x baseline 100 num_gaussians
+    note: SchNet qm7x baseline 100 num_gaussians larger lr & decay steps
 
   - config: schnet-qm7x-all
     model:
@@ -93,13 +73,34 @@ runs:
     optim:
       # from d++
       batch_size: 1024
-      warmup_steps: 1000
-      lr_initial: 0.001
+      warmup_steps: 3000
+      lr_initial: 0.0025
       # parameters EMA
       ema_decay: 0.999
       # exp. decay to 0.01 * lr_initial in 125000 steps
-      decay_steps: 125000
+      decay_steps: 250000
       decay_rate: 0.01
       # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
       max_epochs: 872
-    note: SchNet qm7x baseline 100 num_gaussians 6 interactions
+    note: SchNet qm7x baseline 100 num_gaussians 6 interactions larger lr & decay steps
+
+  - config: schnet-qm7x-all
+    model:
+      hidden_channels: 512
+      num_gaussians: 100
+      num_filters: 256
+      num_interactions: 6
+      cutoff: 5.0
+    optim:
+      # from d++
+      batch_size: 1024
+      warmup_steps: 3000
+      lr_initial: 0.0025
+      # parameters EMA
+      ema_decay: 0.999
+      # exp. decay to 0.01 * lr_initial in 125000 steps
+      decay_steps: 250000
+      decay_rate: 0.01
+      # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
+      max_epochs: 872
+    note: SchNet XL qm7x baseline larger lr & decay steps

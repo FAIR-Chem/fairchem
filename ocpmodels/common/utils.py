@@ -231,7 +231,8 @@ def set_qm7x_target_stats(trainer_config):
 
 class Units:
     """
-    Energy converter: https://www.unitsconverters.com/fr/Kcal/Mol-A-Ev/Particle/Utu-7727-6180
+    Energy converter:
+    https://www.unitsconverters.com/fr/Kcal/Mol-A-Ev/Particle/Utu-7727-6180
     """
 
     @staticmethod
