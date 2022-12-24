@@ -92,25 +92,26 @@ s2ef:
   default:
     model:
       num_interactions: 4
-      hidden_channels: 512
-      num_gaussians: 150
+      hidden_channels: 750
+      num_gaussians: 200
       num_filters: 256
       regress_forces: "direct"
       force_coefficient: 30
       energy_grad_coefficient: 10
     optim:
+      batch_size: 48
+      eval_batch_size: 48
+      warmup_steps: 25000
       warmup_factor: 0.2
-      batch_size: 32
-      eval_batch_size: 32
-      num_workers: 4
       lr_gamma: 0.1
       lr_initial: 0.0002
       max_epochs: 20
       warmup_steps: 20000
       lr_milestones:
-        - 40000
-        - 60000
-        - 80000
+        - 50000
+        - 70000
+        - 90000
+
   200k: {}
 
   2M: {}

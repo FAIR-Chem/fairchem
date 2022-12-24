@@ -1,9 +1,9 @@
 job:
   mem: 32GB
   cpus: 4
-  gres: gpu:rtx8000:4
+  gres: gpu:rtx8000:2
   partition: long
-  time: 36:00:00
+  time: 24:00:00
 
 default:
   test_ri: True
@@ -14,14 +14,7 @@ runs:
   - config: schnet-s2ef-2M
     note: 'Baseline Schnet S2EF'
     optim:
-      batch_size: 24
-      eval_batch_size: 24
+      batch_size: 96
+      eval_batch_size: 96
       lr_initial: 0.0001
-      lr_gamma: 0.1
-      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
-        - 20833
-        - 31250
-        - 41666
-      warmup_steps: 10416
       max_epochs: 15
-      force_coefficient: 50

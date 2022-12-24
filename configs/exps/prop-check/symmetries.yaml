@@ -14,6 +14,8 @@ default:
     tag_hidden_channels: 64
     pg_hidden_channels: 0  # shall have been 32
     energy_head: 'weighted-av-initial-embeds' # False ?
+  optim:
+    max_epochs: 5
   wandb_tags: 'prop-check-ICLM'
 
 runs:
@@ -24,10 +26,40 @@ runs:
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 3D
+    fa_frames: all
+  - config: sfarinet-s2ef-2M
+    note: 'Test Force Equivariance'
+    frame_averaging: 3D
     fa_frames: random
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 2D
-    fa_frames: det
+    fa_frames: random
   - config: sfarinet-s2ef-2M
-    note: 'Test Force Equivariance'
+    note: 'Test Forces SE(3)-Equivariance'
+    frame_averaging: 2D
+    fa_frames: se3-all
+  - config: sfarinet-s2ef-2M
+    note: 'Test Forces SE(3)-Equivariance'
+    frame_averaging: 2D
+    fa_frames: se3-random
+  - config: sfarinet-s2ef-2M
+    note: 'Test Forces with direct prediction'
+    model:
+      regress_forces: direct
+  - config: sfarinet-s2ef-2M
+    note: 'Test Forces direct with gradient_target'
+    model:
+      regress_forces: direct_with_gradient_target
+  - config: sfarinet-s2ef-2M
+    note: 'Test Forces direct with gradient_target'
+    model:
+      regress_forces: direct_with_gradient_target
+    frame_averaging: 2D
+    fa_frames: all
+  - config: sfarinet-s2ef-2M
+    note: 'Test Forces direct with gradient_target'
+    model:
+      regress_forces: direct_with_gradient_target
+    frame_averaging: 2D
+    fa_frames: random
