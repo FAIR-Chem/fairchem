@@ -146,12 +146,11 @@ class EmbeddingBlock(nn.Module):
             self.lin_e1.bias.data.fill_(0)
             nn.init.xavier_uniform_(self.lin_e2.weight)
             self.lin_e2.bias.data.fill_(0)
-        if self.edge_embed_type == 'all_rij":
+        if self.edge_embed_type == "all_rij":
             nn.init.xavier_uniform_(self.lin_e12.weight)
             self.lin_e12.bias.data.fill_(0)
             nn.init.xavier_uniform_(self.lin_e13.weight)
             self.lin_e13.bias.data.fill_(0)
-
 
     def forward(self, z, rel_pos, edge_attr, tag=None, subnodes=None):
 
@@ -214,20 +213,22 @@ class InteractionBlock(MessagePassing):
         super(InteractionBlock, self).__init__()
         self.act = act
 
-        if self.mp_type == 'attention':
+        if self.mp_type == "attention":
             pass
 
-        if self.mp_type == 'updownscale':
+        if self.mp_type == "updownscale":
             self.lin_geom = nn.Linear(num_filters, num_filters)
             self.lin_down = nn.Linear(hidden_channels, num_filters)
             self.lin_up = nn.Linear(num_filters, hidden_channels)
 
-        elif self.mp_type == 'simple':
+        elif self.mp_type == "simple":
             self.lin_geom = nn.Linear(num_filters, hidden_channels)
             self.lin_h = nn.Linear(hidden_channels, hidden_channels)
 
         else:
-            self.lin_geom = nn.Linear(num_filters + 2 * hidden_channels, hidden_channels)
+            self.lin_geom = nn.Linear(
+                num_filters + 2 * hidden_channels, hidden_channels
+            )
             self.lin_h = nn.Linear(hidden_channels, hidden_channels)
 
     def reset_parameters(self):
@@ -235,19 +236,19 @@ class InteractionBlock(MessagePassing):
         self.lin_geom.bias.data.fill_(0)
         nn.init.xavier_uniform_(self.lin_h.weight)
         self.lin_h.bias.data.fill_(0)
-        if self.mp_type == 'updownscale':
+        if self.mp_type == "updownscale":
             nn.init.xavier_uniform_(self.lin_up.weight)
             self.lin_up.bias.data.fill_(0)
             nn.init.xavier_uniform_(self.lin_down.weight)
             self.lin_down.bias.data.fill_(0)
 
     def forward(self, h, edge_index, e):
-        if self.mp_type != 'simple':
+        if self.mp_type != "simple":
             e = torch.cat([e, h[edge_index[0]], h[edge_index[1]]], dim=1)
         # W = self.lin_e_2(self.act(self.lin_e_1(e)))  # transform edge rep
         W = self.lin_geom(e)
 
-        if self.mp_type == 'updownscale':
+        if self.mp_type == "updownscale":
             h = self.lin_down(h)  # downscale node rep.
             h = self.propagate(edge_index, x=h, W=W)  # propagate
             h = self.lin_up(self.act(h))  # upscale node rep.
@@ -489,7 +490,7 @@ class FANet(BaseModel):
             edge_attr = self.distance_expansion(edge_weight)
 
         # Normalize and squash to [0,1] for gaussian basis
-        if self.edge_embed_hidden == 'all_rij':
+        if self.edge_embed_hidden == "all_rij":
             rel_pos_normalized = (rel_pos / edge_weight.view(-1, 1) + 1) / 2.0
 
         pooling_loss = None  # deal with pooling loss

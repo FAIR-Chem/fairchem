@@ -13,7 +13,8 @@ default:
     phys_embeds: True
     tag_hidden_channels: 64
     pg_hidden_channels: 0  # shall have been 32
-    energy_head: 'weighted-av-initial-embeds' # False ?
+    energy_head: False # False ?
+    regress_forces: from_energy
   optim:
     max_epochs: 5
   wandb_tags: 'prop-check-ICLM'
