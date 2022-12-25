@@ -233,11 +233,11 @@ class BalancedBatchSampler(Sampler):
             if any(r > 1e7 for r in result):
                 print("\n>>> WARNING: Batch contains invalid indices!")
                 print("Skipping batch samples")
-                print("idx_sizes_all: ", idx_sizes_all)
-                print("local_idx_balanced: ", local_idx_balanced)
-                print("result: ", result)
-                print("self.rank: ", self.rank)
-                print("\n")
+                # print("idx_sizes_all: ", idx_sizes_all)
+                # print("local_idx_balanced: ", local_idx_balanced)
+                # print("result: ", result)
+                # print("self.rank: ", self.rank)
+                # print("\n")
                 continue
 
             yield result
