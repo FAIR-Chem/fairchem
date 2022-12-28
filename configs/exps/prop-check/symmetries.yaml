@@ -3,7 +3,7 @@ job:
   cpus: 4
   gres: gpu:rtx8000:4
   partition: long
-  time: 24:00:00
+  time: 48:00:00
 
 default:
   test_ri: True
@@ -44,23 +44,3 @@ runs:
     note: 'Test Forces SE(3)-Equivariance'
     frame_averaging: 2D
     fa_frames: se3-random
-  - config: sfarinet-s2ef-2M
-    note: 'Test Forces with direct prediction'
-    model:
-      regress_forces: direct
-  - config: sfarinet-s2ef-2M
-    note: 'Test Forces direct with gradient_target'
-    model:
-      regress_forces: direct_with_gradient_target
-  - config: sfarinet-s2ef-2M
-    note: 'Test Forces direct with gradient_target'
-    model:
-      regress_forces: direct_with_gradient_target
-    frame_averaging: 2D
-    fa_frames: all
-  - config: sfarinet-s2ef-2M
-    note: 'Test Forces direct with gradient_target'
-    model:
-      regress_forces: direct_with_gradient_target
-    frame_averaging: 2D
-    fa_frames: random

@@ -37,39 +37,54 @@ runs:
       num_filters: 128
       num_interactions: 3
       cutoff: 5.0
-    note: Sfarinet qm9 baseline
+    note: Sfarinet qm9 baseline -- small model
     frame_averaging: "3D"
     fa_frames: "random"
 
   - config: sfarinet-qm9-all
-    model:
-      hidden_channels: 128
-      num_gaussians: 20
-      num_filters: 128
-      num_interactions: 3
-      cutoff: 5.0
-    note: Sfarinet qm9 baseline
+    note: Sfarinet Baseline
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet DA
+    frame_averaging: "DA"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet DA
+    frame_averaging: "DA"
+    optim:
+      max_epochs: 1200
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 3D random
+    frame_averaging: "3D"
+    fa_frames: "random"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 3D det
+    frame_averaging: "3D"
+    fa_frames: "det"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 3D all
     frame_averaging: "3D"
     fa_frames: "all"
 
   - config: sfarinet-qm9-all
-    model:
-      hidden_channels: 128
-      num_gaussians: 20
-      num_filters: 128
-      num_interactions: 3
-      cutoff: 5.0
-    note: Sfarinet qm9 baseline
+    note: Sfarinet 3D se3-all
     frame_averaging: "3D"
     fa_frames: "se3-all"
 
   - config: sfarinet-qm9-all
-    model:
-      hidden_channels: 128
-      num_gaussians: 20
-      num_filters: 128
-      num_interactions: 3
-      cutoff: 5.0
-    note: Sfarinet qm9 baseline
+    note: Sfarinet 3D se3-random
+    frame_averaging: "3D"
+    fa_frames: "se3-random"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 2D all
     frame_averaging: "2D"
     fa_frames: "all"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 2D random
+    frame_averaging: "2D"
+    fa_frames: "random"
