@@ -132,8 +132,9 @@ qm9:
       batch_size: 1024
       lr_initial: 0.001
       max_epochs: 1000
-      decay_steps: 12500
+      decay_steps: 125000
       decay_rate: 0.01
+      ema_decay: 0.999
       lr_gamma: 0.25
       lr_milestones:
         - 17981
@@ -141,7 +142,7 @@ qm9:
         - 35963
         - 52000
         - 100000
-      warmup_steps: 5394
+      warmup_steps: 1000
 
   10k: {}
   all: {}

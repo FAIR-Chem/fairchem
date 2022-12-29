@@ -1,8 +1,8 @@
 # more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
 job:
   mem: 48GB
-  cpus: 6
-  gres: gpu:1
+  cpus: 8
+  gres: gpu:rtx8000:1
   time: 8:00:00
   partition: long
 
