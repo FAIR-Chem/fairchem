@@ -64,6 +64,7 @@ class BaseTrainer(ABC):
             "logs_dir": str(Path(run_dir) / "logs"),
         }
 
+        self.sigterm = False
         self.epoch = 0
         self.step = 0
         self.cpu = self.config["cpu"]
@@ -538,6 +539,9 @@ class BaseTrainer(ABC):
 
         for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
 
+            if self.sigterm:
+                return "SIGTERM"
+
             if debug_batches > 0 and i == debug_batches:
                 break
 
@@ -574,6 +578,7 @@ class BaseTrainer(ABC):
         log_dict.update({"epoch": self.epoch})
         log_dict.update({f"{split}_time": val_time})
         log_dict.update({f"{split}_n_samples": i + 1})
+
         if distutils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
             print("\n  > ".join([""] + log_str))
@@ -722,6 +727,10 @@ class BaseTrainer(ABC):
                 debug_batches=debug_batches,
                 is_final=final,
             )
+
+            if self.metrics == "SIGTERM":
+                return "SIGTERM"
+
             metrics_dict[split] = self.metrics
             cumulated_mae += self.metrics["energy_mae"]["metric"]
             cumulated_time += time.time() - start_time
@@ -752,12 +761,17 @@ class BaseTrainer(ABC):
 
         # Run on test split
         if final and "test" in self.config["dataset"] and self.eval_on_test:
-            metrics_dict["test"] = self.validate(
+            test_metrics = self.validate(
                 split="test",
                 disable_tqdm=disable_tqdm,
                 debug_batches=debug_batches,
                 is_final=final,
             )
+
+            if test_metrics == "SIGTERM":
+                return "SIGTERM"
+
+            metrics_dict["test"] = test_metrics
             all_splits += ["test"]
 
         # Print results
@@ -877,3 +891,14 @@ class BaseTrainer(ABC):
                 )
         else:
             self.scheduler.step()
+
+    def handle_sigterm(self, signum, _):
+        """
+        Handle SIGTERM signal received.
+
+        Args:
+            signum (int): Signal number
+        """
+        if signum == 15 and not self.sigterm:
+            print("\nHandling SIGTERM signal received.\n")
+            self.sigterm = True

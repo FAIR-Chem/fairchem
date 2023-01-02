@@ -180,7 +180,16 @@ if __name__ == "__main__":
                 message += f" - {trainer_config.get('wandb_tags')}"
             trainer.logger.ntfy(message, click=trainer.logger.url)
         print_warnings()
-        task.run()
+
+        signal = task.run()
+
+        # handle job preemption / time limit
+        if signal == "SIGTERM":
+            print("\nJob was preempted. Wrapping up...\n")
+            for ds in trainer.datasets.values():
+                if hasattr(ds, "close_db") and callable(ds.close_db):
+                    ds.close_db()
+
         # -----------------
         # -----  End  -----
         # -----------------
@@ -209,7 +218,7 @@ if __name__ == "__main__":
             print("Done!")
 
         if trainer and trainer.logger:
-            trainer.logger.finish(error)
+            trainer.logger.finish(error or signal)
 
         if "interactive" not in os.popen(f"squeue -hj {slurm_job_id}").read():
             print("Self-canceling SLURM job", os.getenv("SLURM_JOB_ID"))
