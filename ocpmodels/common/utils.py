@@ -1243,3 +1243,19 @@ def get_commit_hash():
     except Exception:
         commit_hash = None
     return commit_hash
+
+
+def base_config(config, overrides={}):
+    from argparse import Namespace
+
+    n = Namespace()
+    n.num_gpus = 1
+    n.num_nodes = 1
+    n.config_yml = None
+    n.config = config
+
+    conf = build_config(
+        n, ["run_dir=.", "narval=", "no_qm7x_cp=true", "no_cpus_to_workers=true", "silent="]
+    )
+
+    return merge_dicts(conf, overrides)[0]
