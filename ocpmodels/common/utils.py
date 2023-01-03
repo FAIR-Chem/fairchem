@@ -43,28 +43,26 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
 
 
-def move_qm7x_data_to_slurm_tmpdir(trainer_config):
-    if trainer_config.get("no_qm7x_cp") or "-qm7x-" not in trainer_config["config"]:
+def move_lmdb_data_to_slurm_tmpdir(trainer_config):
+    if (
+        not trainer_config.get("cp_data_to_tmpdir")
+        or "-qm9-" in trainer_config["config"]
+    ):
         return trainer_config
 
     tmp_dir = Path(f"/Tmp/slurm.{JOB_ID}.0")
-    moved_data = {}
     for s, split in trainer_config["dataset"].items():
         if not isinstance(split, dict):
             continue
-        lmdbs = Path(split["src"]).glob("*.lmdb")
-        for lm in lmdbs:
-            lms = str(lm)
-            if lms in moved_data:
-                continue
-            new_path = str(tmp_dir / lm.name)
-            if Path(new_path).exists():
-                continue
-            moved_data[lms] = new_path
-            print(f"Copying {lm} to {new_path}")
-            subprocess.run(["cp", "-r", lms, new_path])
-        trainer_config["dataset"][s]["src"] = str(tmp_dir)
-    print("Done moving data to", str(tmp_dir))
+        new_dir = tmp_dir / Path(split["src"]).name
+        new_dir.mkdir(exist_ok=True)
+        command = ["rsync", "-av", f'{split["src"]}/', str(new_dir)]
+        print("Copying data: ", " ".join(command))
+        subprocess.run(command)
+        for f in new_dir.glob("*.lmdb-lock"):
+            f.unlink()
+        trainer_config["dataset"][s]["src"] = str(new_dir)
+    print("Done moving data to", str(new_dir))
     return trainer_config
 
 
@@ -218,15 +216,16 @@ def set_qm7x_target_stats(trainer_config):
         assert "target" in dataset, "target must be specified."
         mean = target_stats[dataset["target"]]["mean"]
         std = target_stats[dataset["target"]]["std"]
+        std_divider = trainer_config["dataset"][d].get("std_divider", 1.0)
         trainer_config["dataset"][d]["target_mean"] = mean
-        trainer_config["dataset"][d]["target_std"] = std
+        trainer_config["dataset"][d]["target_std"] = std / std_divider
 
         if trainer_config["model"].get("regress_forces"):
             assert "forces_target" in dataset, "forces_target must be specified."
             mean = target_stats[dataset["forces_target"]]["mean"]
             std = target_stats[dataset["forces_target"]]["std"]
             trainer_config["dataset"][d]["grad_target_mean"] = mean
-            trainer_config["dataset"][d]["grad_target_std"] = std
+            trainer_config["dataset"][d]["grad_target_std"] = std / std_divider
 
     return trainer_config
 
@@ -747,7 +746,7 @@ def build_config(args, args_override):
     config = set_qm7x_target_stats(config)
     config = override_narval_paths(config)
     config = auto_note(config)
-    config = move_qm7x_data_to_slurm_tmpdir(config)
+    config = move_lmdb_data_to_slurm_tmpdir(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()

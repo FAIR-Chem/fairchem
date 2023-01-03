@@ -236,10 +236,10 @@ class Flags:
             help="is on Narval DRAC cluster",
         )
         self.parser.add_argument(
-            "--no_qm7x_cp",
+            "--cp_data_to_tmpdir",
             action="store_true",
             default=False,
-            help="Don't copy QM7X data to $SLURM_TMPDIR and work from there",
+            help="Don't copy LMDB data to $SLURM_TMPDIR and work from there",
         )
 
 

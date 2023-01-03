@@ -108,7 +108,7 @@ class WandBLogger(Logger):
             dir=self.trainer_config["logs_dir"],
             project=self.trainer_config["wandb_project"],
             resume="allow",
-            notes=self.trainer_config["note"] or "",
+            notes=self.trainer_config.get("note", ""),
             tags=wandb_tags,
             entity="mila-ocp",
         )

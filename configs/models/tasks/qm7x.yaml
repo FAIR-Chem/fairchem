@@ -33,18 +33,21 @@ default:
       split: train
       target: ePBE0+MBD
       forces_target: totFOR
+      std_divider: 1.0
     val_id:
       src: /network/projects/ocp/qm7x/processed
       normalize_labels: True # mean and std of target will be set by utils.py if this is True
       split: val_id
       target: ePBE0+MBD
       forces_target: totFOR
+      std_divider: 1.0
     val_ood:
       src: /network/projects/ocp/qm7x/processed
       normalize_labels: True # mean and std of target will be set by utils.py if this is True
       split: val_ood
       target: ePBE0+MBD
       forces_target: totFOR
+      std_divider: 1.0
 
     # TEST SET DO NOT ENABLE
     # - src: /network/projects/ocp/qm9
