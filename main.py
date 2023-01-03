@@ -15,20 +15,23 @@ import traceback
 import warnings
 from pathlib import Path
 
+import torch
+
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
+    JOB_ID,
     build_config,
     resolve,
     setup_imports,
     setup_logging,
     update_from_sbatch_py_vars,
-    JOB_ID,
 )
 from ocpmodels.trainers import BaseTrainer
 
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+torch.multiprocessing.set_sharing_strategy("file_system")
 
 try:
     import ipdb  # noqa: F401
