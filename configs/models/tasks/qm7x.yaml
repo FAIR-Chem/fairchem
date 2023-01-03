@@ -29,19 +29,19 @@ default:
     default_val: val_id
     train:
       src: /network/projects/ocp/qm7x/processed
-      normalize_labels: True # mean and std of target will be set by qm9.py if this is True
+      normalize_labels: True # mean and std of target will be set by utils.py if this is True
       split: train
       target: ePBE0+MBD
       forces_target: totFOR
     val_id:
       src: /network/projects/ocp/qm7x/processed
-      normalize_labels: True # mean and std of target will be set by qm9.py if this is True
+      normalize_labels: True # mean and std of target will be set by utils.py if this is True
       split: val_id
       target: ePBE0+MBD
       forces_target: totFOR
     val_ood:
       src: /network/projects/ocp/qm7x/processed
-      normalize_labels: True # mean and std of target will be set by qm9.py if this is True
+      normalize_labels: True # mean and std of target will be set by utils.py if this is True
       split: val_ood
       target: ePBE0+MBD
       forces_target: totFOR
