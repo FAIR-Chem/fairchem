@@ -1,7 +1,7 @@
 # trainset has 4068193 samples
 job:
   mem: 48GB
-  cpus: 16
+  cpus: 8
   gres: gpu:1
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
@@ -18,6 +18,7 @@ default:
   pg_hidden_channels: 0
   tag_hidden_channels: 0
   frame_averaging: ""
+  cp_data_to_tmpdir: true
   note:
     task: name
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions
