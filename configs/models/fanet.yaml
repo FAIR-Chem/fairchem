@@ -17,10 +17,9 @@ default:
     energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds, pooling, graclus, random}
     # fanet new features
     skip_co: False # output skip connections
-    normalize_rij: False # normalize r_ij + squash in [0,1]
     second_layer_MLP: False # in EmbeddingBlock
-    mlp_rij: 0 # apply mlp to r_ij
-    complex_mp: False # concat (e_ij || h_i || h_j) for W in MP
+    edge_embed_type: rij # {'rij','all_rij','sh', 'all'})
+    mp_type: base # {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'}
     force_decoder_type: "simple" # can be {"" or "simple"} | only used if regress_forces is True
     force_decoder_model_config:
       simple:

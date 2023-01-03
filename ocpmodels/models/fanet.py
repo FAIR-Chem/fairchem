@@ -3,6 +3,7 @@
 import math
 
 import torch
+from e3nn.o3 import spherical_harmonics
 from torch import nn
 from torch.nn import Embedding, Linear
 from torch_geometric.nn import MessagePassing, radius_graph
@@ -114,15 +115,14 @@ class EmbeddingBlock(nn.Module):
         if self.edge_embed_type == "rij":
             self.lin_e1 = Linear(3, num_filters)
             self.lin_e2 = Linear(num_filters, num_filters)
-        elif self.edge_embed_type == "all-rij":
+        elif self.edge_embed_type == "all_rij":
             self.lin_e1 = Linear(3, num_filters // 3)  # r_ij
             self.lin_e12 = Linear(3, num_filters // 3)  # norm r_ij
-            self.lin_e13 = Linear(num_gaussians, math.ceil(num_filters // 3))  # d_ij
+            self.lin_e13 = Linear(
+                num_gaussians, num_filters - 2 * (num_filters // 3)
+            )  # d_ij
             self.lin_e2 = Linear(num_filters, num_filters)  # mlp of concat
         elif self.edge_embed_type == "sh":
-            self.spherical_harmonics = None
-            # TODO: compute SH e3nn.o3.spherical_harmonics,
-            # order 3, concatenated.
             self.lin_e1 = Linear(15, num_filters)
             self.lin_e2 = Linear(num_filters, num_filters)
         elif self.edge_embed_type == "all":
@@ -144,8 +144,6 @@ class EmbeddingBlock(nn.Module):
             self.group_embedding.reset_parameters()
         nn.init.xavier_uniform_(self.lin.weight)
         self.lin.bias.data.fill_(0)
-        nn.init.xavier_uniform_(self.lin_e.weight)
-        self.lin_e.bias.data.fill_(0)
         if self.second_layer_MLP:
             nn.init.xavier_uniform_(self.lin_2.weight)
             self.lin_2.bias.data.fill_(0)
@@ -166,21 +164,33 @@ class EmbeddingBlock(nn.Module):
         # --- Edge embedding --
 
         if self.edge_embed_type == "rij":
-            e = self.act(self.lin_e1(rel_pos))
-            e = self.lin_e2(e)
+            e = self.lin_e1(rel_pos)
         elif self.edge_embed_type == "all_rij":
-            rel_pos = self.act(self.lin_e1(rel_pos))  # r_ij
-            normalized_rel_pos = self.act(self.lin_e12(normalised_rel_pos))  # norm r_ij
-            edge_attr = self.act(self.lin_e13(edge_attr))  # d_ij
+            rel_pos = self.lin_e1(rel_pos)  # r_ij
+            normalized_rel_pos = self.lin_e12(normalised_rel_pos)  # norm r_ij
+            edge_attr = self.lin_e13(edge_attr)  # d_ij
             e = torch.cat((rel_pos, edge_attr, normalized_rel_pos), dim=1)
-            e = self.lin_e2(e)
         elif self.edge_embed_type == "sh":
-            e = self.act(self.lin_e1(self.spherical_harmonics))
-            e = self.lin_e2(e)
+            self.sh = spherical_harmonics(
+                l=[1, 2, 3],
+                x=normalised_rel_pos,
+                normalize=False,
+                normalization="component",
+            )
+            e = self.lin_e1(self.sh)
         elif self.edge_embed_type == "all":
-            e = torch.cat((rel_pos, self.spherical_harmonics), dim=1)
-            e = self.act(self.lin_e1(e))
+            self.sh = spherical_harmonics(
+                l=[1, 2, 3],
+                x=normalised_rel_pos,
+                normalize=False,
+                normalization="component",
+            )
+            e = torch.cat((rel_pos, self.sh), dim=1)
+            e = self.lin_e1(e)
+
+        if self.second_layer_MLP:
             e = self.lin_e2(e)
+            # e = self.lin_e2(self.act(e))
 
         # --- Node embedding --
 
@@ -229,30 +239,28 @@ class InteractionBlock(MessagePassing):
         self.act = act
         self.mp_type = mp_type
 
-        if self.mp_type == "base_with_att":
-            # --- Compute attention coefficients if required --
-            # Change message function
-            pass
-
-        if self.mp_type == "att":
-            # --- Compute attention coefficients if required --
-            # Change message function
-            pass
-
-        if self.mp_type == "local_env":
-            pass
+        if self.mp_type == "simple":
+            self.lin_geom = nn.Linear(num_filters, hidden_channels)
+            self.lin_h = nn.Linear(hidden_channels, hidden_channels)
 
         elif self.mp_type == "updownscale":
-            self.lin_geom = nn.Linear(
-                num_filters + 2 * hidden_channels, hidden_channels
-            )
+            self.lin_geom = nn.Linear(num_filters + 2 * hidden_channels, num_filters)
             # self.lin_geom = nn.Linear(num_filters, num_filters)  # like 'simple'
             self.lin_down = nn.Linear(hidden_channels, num_filters)
             self.lin_up = nn.Linear(num_filters, hidden_channels)
 
-        elif self.mp_type == "simple":
-            self.lin_geom = nn.Linear(num_filters, hidden_channels)
-            self.lin_h = nn.Linear(hidden_channels, hidden_channels)
+        elif self.mp_type == "base_with_att":
+            # --- Compute attention coefficients if required --
+            # Change message function
+            pass
+
+        elif self.mp_type == "att":
+            # --- Compute attention coefficients if required --
+            # Change message function
+            pass
+
+        elif self.mp_type == "local_env":
+            pass
 
         else:  # base
             self.lin_geom = nn.Linear(
@@ -291,7 +299,7 @@ class InteractionBlock(MessagePassing):
             pass
         elif self.mp_type == "local_env":
             pass
-        else:
+        else:  # base, simple
             h = self.lin_h(self.act(h))
             h = self.propagate(edge_index, x=h, W=W)  # propagate
 
@@ -521,7 +529,7 @@ class FANet(BaseModel):
 
         # Normalize and squash to [0,1] for gaussian basis
         rel_pos_normalized = None
-        if self.edge_embed_type == "all_rij":
+        if self.edge_embed_type in {"sh", "all_rij", "all"}:
             rel_pos_normalized = (rel_pos / edge_weight.view(-1, 1) + 1) / 2.0
 
         pooling_loss = None  # deal with pooling loss
