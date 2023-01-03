@@ -233,7 +233,7 @@ class BaseTrainer(ABC):
                             "Using max_steps.",
                         )
                     self.config["max_epochs"] = np.ceil(
-                        self.config["max_steps"]
+                        self.config["optim"]["max_steps"]
                         / np.ceil(len(self.datasets[split]) / batch_size)
                     )
                     print(

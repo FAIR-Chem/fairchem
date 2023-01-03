@@ -574,7 +574,7 @@ class DimeNetPlusPlus(BaseModel):
         if self.energy_head == "weighted-av-initial-embeds":
             self.w_lin = Linear(kwargs["hidden_channels"], 1)
 
-        self.task = kwargs["task"]["name"]
+        self.task = kwargs["task_name"]
 
         self.reset_parameters()
 
