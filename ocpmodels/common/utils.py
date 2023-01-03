@@ -214,18 +214,51 @@ def set_qm7x_target_stats(trainer_config):
             continue
         if not dataset.get("normalize_labels", False):
             continue
-        assert "target" in dataset
+        assert "target" in dataset, "target must be specified."
         mean = target_stats[dataset["target"]]["mean"]
         std = target_stats[dataset["target"]]["std"]
         trainer_config["dataset"][d]["target_mean"] = mean
         trainer_config["dataset"][d]["target_std"] = std
 
         if trainer_config["model"].get("regress_forces"):
+            assert "forces_target" in dataset, "forces_target must be specified."
             mean = target_stats[dataset["forces_target"]]["mean"]
             std = target_stats[dataset["forces_target"]]["std"]
             trainer_config["dataset"][d]["grad_target_mean"] = mean
             trainer_config["dataset"][d]["grad_target_std"] = std
 
+    return trainer_config
+
+
+def auto_note(trainer_config):
+    """
+    Turns a trainer's config note dictionary into a string.
+    Eg: note = {"model": "hidden_channels, num_gaussians", "optim": "lr, decay_steps"}
+       -> note = "hc128 ng20 - lr0.001 ds10000"
+
+    Does nothing if the note is not a dictionary.
+
+    Args:
+        trainer_config (dict): Trainer's full configuration
+
+    Returns:
+        dict: updated (or not) trainer config (identical but for the "note" key
+            if it was a dict)
+    """
+    if not isinstance(trainer_config.get("note"), dict):
+        return trainer_config
+
+    note = ""
+    for k, (key, subkeys) in enumerate(trainer_config["note"].items()):
+        if k > 0:
+            note += " - "
+        for i, subkey in enumerate(subkeys.split(",")):
+            subkey = subkey.strip()
+            if i > 0:
+                note += " "
+            new_subkey = "".join(s[0] for s in subkey.split("_"))
+            note += f"{new_subkey}{trainer_config[key][subkey]}"
+    trainer_config["note"] = note
     return trainer_config
 
 
@@ -678,6 +711,7 @@ def build_config(args, args_override):
         overrides = create_dict_from_args(args_override)
         config, _ = merge_dicts(config, overrides)
 
+    breakpoint()
     config, _ = merge_dicts(
         config, {k: v for k, v in vars(args).items() if v is not None}
     )
@@ -685,6 +719,8 @@ def build_config(args, args_override):
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
     config["job_id"] = os.environ.get("SLURM_JOB_ID", "no-job-id")
+
+    breakpoint()
 
     if "regress_forces" in config["model"]:
         if not isinstance(config["model"]["regress_forces"], str):
@@ -711,6 +747,8 @@ def build_config(args, args_override):
     config = set_qm7x_target_stats(config)
     config = override_narval_paths(config)
     config = move_qm7x_data_to_slurm_tmpdir(config)
+    breakpoint()
+    config = auto_note(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
@@ -1255,7 +1293,14 @@ def base_config(config, overrides={}):
     n.config = config
 
     conf = build_config(
-        n, ["run_dir=.", "narval=", "no_qm7x_cp=true", "no_cpus_to_workers=true", "silent="]
+        n,
+        [
+            "run_dir=.",
+            "narval=",
+            "no_qm7x_cp=true",
+            "no_cpus_to_workers=true",
+            "silent=",
+        ],
     )
 
     return merge_dicts(conf, overrides)[0]

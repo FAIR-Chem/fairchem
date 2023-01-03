@@ -157,7 +157,6 @@ class Flags:
         self.parser.add_argument(
             "--note",
             type=str,
-            default="",
             help="Note describing this run to be added to the logger",
         )
         self.parser.add_argument(
