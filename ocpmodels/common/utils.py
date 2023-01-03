@@ -259,7 +259,8 @@ def auto_note(trainer_config):
             new_subkey = (
                 "".join(s[0] for s in subkey.split("_")) if subkey != "name" else ""
             )
-            note += f"{new_subkey}{trainer_config[key][subkey]}"
+            dic = trainer_config[key] if key != "_root_" else trainer_config
+            note += f"{new_subkey}{dic[subkey]}"
     trainer_config["note"] = note
 
     if not trainer_config.get("wandb_name"):
@@ -394,8 +395,13 @@ def warmup_lr_lambda(current_step, optim_config):
     if "decay_steps" in optim_config:
         # exponential decay per step
         assert "decay_rate" in optim_config, "decay_rate must be defined in optim"
+        ds = optim_config["decay_steps"]
+        if ds == "max_steps":
+            assert "max_steps" in optim_config, "max_steps must be defined in optim"
+            ds = optim_config["max_steps"]
+
         return optim_config["decay_rate"] ** (
-            (current_step - optim_config["warmup_steps"]) / optim_config["decay_steps"]
+            (current_step - optim_config["warmup_steps"]) / ds
         )
     # per-milestones decay
     idx = bisect(lr_milestones, current_step)
