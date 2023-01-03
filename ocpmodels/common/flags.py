@@ -237,7 +237,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--cp_data_to_tmpdir",
-            action="store_true",
+            type=bool,
             default=False,
             help="Don't copy LMDB data to $SLURM_TMPDIR and work from there",
         )
