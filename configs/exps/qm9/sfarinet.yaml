@@ -1,9 +1,7 @@
-# more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
 job:
   mem: 48GB
-  cpus: 8
+  cpus: 12
   gres: gpu:1
-  time: 24:00:00
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
   env: ocp-a100
@@ -37,19 +35,26 @@ default:
     phys_hidden_channels: 0
     energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds, pooling, graclus, random}
   optim:
-    batch_size: 512
-    warmup_steps: 1000
-    lr_initial: 0.002
+    batch_size: 64
+    warmup_steps: 3000
+    lr_initial: 0.0002
     # parameters EMA
     ema_decay: 0.999
     # exp. decay to 0.01 * lr_initial in 1000000 steps
-    decay_steps: 250000
-    decay_rate: 0.01
+    decay_steps: max_steps
+    decay_rate: 0.05 # at the end of training, lr is decay_rate*lr_initial
     # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
-    max_epochs: 872
+    max_epochs: -1
+    max_steps: 3000000
+  note:
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels
+    optim: batch_size, lr_initial
+    _root_: frame_averaging, fa_frames
 
 
 runs:
+  - config: sfarinet-qm9-all
+    note: Sfarinet qm9 baseline
   - config: sfarinet-qm9-all
     note: Sfarinet qm9 baseline
   - config: sfarinet-qm9-all
@@ -66,6 +71,38 @@ runs:
       num_interactions: 5
   - config: sfarinet-qm9-all
     note: Sfarinet qm9 PhAST-XLarge
+    model:
+      phys_embeds: True
+      phys_hidden_channels: 128
+      pg_hidden_channels: 128
+      hidden_channels: 512
+      num_interactions: 6
+      num_filters: 256
+      num_gaussians: 150
+  - config: sfarinet-qm9-all
+    frame_averaging: 3D
+    fa_frames: all
+    note: Sfarinet qm9 - baseline - FA-3d-all
+  - config: sfarinet-qm9-all
+    frame_averaging: 3D
+    fa_frames: all
+    note: Sfarinet qm9 - PhAST - FA-3d-all
+    model:
+      phys_embeds: True
+      pg_hidden_channels: 64
+  - config: sfarinet-qm9-all
+    frame_averaging: 3D
+    fa_frames: all
+    note: Sfarinet qm9 - PhAST-Large - FA-3d-all
+    model:
+      phys_embeds: True
+      pg_hidden_channels: 64
+      hidden_channels: 512
+      num_interactions: 5
+  - config: sfarinet-qm9-all
+    frame_averaging: 3D
+    fa_frames: all
+    note: Sfarinet qm9 - PhAST-XLarge - FA-3d-all
     model:
       phys_embeds: True
       phys_hidden_channels: 128

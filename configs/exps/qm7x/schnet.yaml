@@ -1,7 +1,7 @@
 # trainset has 4068193 samples
 job:
   mem: 48GB
-  cpus: 12
+  cpus: 16
   gres: gpu:1
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
@@ -11,87 +11,89 @@ default:
   wandb_project: ocp-qm
   mode: train
   test_ri: true
-  wandb_tags: qm7x
+  wandb_tags: qm7x, std/10
   phys_hidden_channels: 0
   phys_embeds: False
   energy_head: False
   pg_hidden_channels: 0
   tag_hidden_channels: 0
   frame_averaging: ""
+  note:
+    task: name
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions
+    optim: batch_size, lr_initial
+  dataset:
+    train:
+      std_divider: 10.0
+    val_id:
+      std_divider: 10.0
+    val_ood:
+      std_divider: 10.0
+  optim:
+    batch_size: 32
+    warmup_steps: 3000
+    lr_initial: 0.0005
+    # parameters EMA
+    ema_decay: 0.999
+    decay_steps: 750000
+    decay_rate: 0.05
+    max_steps: 1000000
 
 runs:
   - config: schnet-qm7x-all
     model:
-      hidden_channels: 256
-      num_gaussians: 100
-      num_filters: 256
+      hidden_channels: 128
+      num_gaussians: 20
+      num_filters: 128
       num_interactions: 6
       cutoff: 5.0
-    optim:
-      batch_size: 2048
-      warmup_steps: 1000
-      lr_initial: 0.005
-      # parameters EMA
-      ema_decay: 0.999
-      # exp. decay to 0.01 * lr_initial in 125000 steps
-      decay_steps: 400000 # decay_steps * batch_size / train_size = decay_epochs
-      decay_rate: 0.01
-      max_epochs: 300
-    note: SchNet qm7x - bs 2048 lr 0.005
+
 
   - config: schnet-qm7x-all
     model:
       hidden_channels: 256
-      num_gaussians: 100
+      num_gaussians: 20
       num_filters: 256
       num_interactions: 6
       cutoff: 5.0
-    optim:
-      batch_size: 2048
-      warmup_steps: 1000
-      lr_initial: 0.01
-      # parameters EMA
-      ema_decay: 0.999
-      # exp. decay to 0.01 * lr_initial in 125000 steps
-      decay_steps: 400000 #
-      decay_rate: 0.01
-      max_epochs: 300
-    note: SchNet qm7x - bs 2048 lr 0.01
 
   - config: schnet-qm7x-all
     model:
       hidden_channels: 256
-      num_gaussians: 100
+      num_gaussians: 20
       num_filters: 256
       num_interactions: 6
       cutoff: 5.0
     optim:
-      batch_size: 2048
-      warmup_steps: 1000
       lr_initial: 0.001
-      # parameters EMA
-      ema_decay: 0.999
-      # exp. decay to 0.01 * lr_initial in 125000 steps
-      decay_steps: 400000 #
-      decay_rate: 0.01
-      max_epochs: 300
-    note: SchNet qm7x - bs 2048 lr 0.001
 
   - config: schnet-qm7x-all
     model:
       hidden_channels: 512
-      num_gaussians: 200
+      num_gaussians: 20
       num_filters: 256
       num_interactions: 6
       cutoff: 5.0
     optim:
-      batch_size: 2048
-      warmup_steps: 1000
       lr_initial: 0.005
-      # parameters EMA
-      ema_decay: 0.999
-      # exp. decay to 0.01 * lr_initial in 125000 steps
-      decay_steps: 400000 # decay_steps * batch_size / train_size = decay_epochs
-      decay_rate: 0.01
-      max_epochs: 300
-    note: SchNet Large qm7x - bs 2048 lr 0.005 - hc 512 ng 200 nf 512
+
+  - config: schnet-qm7x-all
+    model:
+      hidden_channels: 128
+      num_gaussians: 20
+      num_filters: 128
+      num_interactions: 6
+      cutoff: 5.0
+    optim:
+      lr_initial: 0.0002
+
+  - config: schnet-qm7x-all
+    model:
+      hidden_channels: 512
+      num_gaussians: 20
+      num_filters: 512
+      num_interactions: 6
+      cutoff: 5.0
+    optim:
+      batch_size: 128
+      lr_initial: 0.0001
