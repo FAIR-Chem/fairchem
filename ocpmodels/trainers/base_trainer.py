@@ -35,7 +35,7 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_commit_hash, save_checkpoint
+from ocpmodels.common.utils import get_commit_hash, save_checkpoint, JOB_ID
 from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -99,8 +99,8 @@ class BaseTrainer(ABC):
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if self.config["amp"] else None
 
-        if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
-            self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
+        if JOB_ID and "folder" in self.config["slurm"]:
+            self.config["slurm"]["job_id"] = JOB_ID
             self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
                 "%j", self.config["slurm"]["job_id"]
             )
@@ -751,12 +751,12 @@ class BaseTrainer(ABC):
         # Log specific metrics
         if final and self.config["logger"] == "wandb" and distutils.is_master():
             overall_mae = cumulated_mae / len(all_splits)
-            sid = os.getenv("SLURM_JOB_ID")
             self.logger.log({"Eval time": cumulated_time})
             self.logger.log({"Overall MAE": overall_mae})
             if self.logger.ntfy:
                 self.logger.ntfy(
-                    message=f"{sid} - Overall MAE: {overall_mae}", click=self.logger.url
+                    message=f"{JOB_ID} - Overall MAE: {overall_mae}",
+                    click=self.logger.url,
                 )
 
         # Run on test split

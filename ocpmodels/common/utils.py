@@ -40,13 +40,14 @@ from ocpmodels.common.registry import registry
 
 OCP_TASKS = {"s2ef", "is2re", "is2es"}
 ROOT = Path(__file__).resolve().parent.parent.parent
+JOB_ID = os.environ.get("SLURM_JOB_ID")
 
 
 def move_qm7x_data_to_slurm_tmpdir(trainer_config):
     if trainer_config.get("no_qm7x_cp") or "-qm7x-" not in trainer_config["config"]:
         return trainer_config
 
-    tmp_dir = Path(f"/Tmp/slurm.{os.environ.get('SLURM_JOB_ID')}.0")
+    tmp_dir = Path(f"/Tmp/slurm.{JOB_ID}.0")
     moved_data = {}
     for s, split in trainer_config["dataset"].items():
         if not isinstance(split, dict):
@@ -256,9 +257,15 @@ def auto_note(trainer_config):
             subkey = subkey.strip()
             if i > 0:
                 note += " "
-            new_subkey = "".join(s[0] for s in subkey.split("_"))
+            new_subkey = (
+                "".join(s[0] for s in subkey.split("_")) if subkey != "name" else ""
+            )
             note += f"{new_subkey}{trainer_config[key][subkey]}"
     trainer_config["note"] = note
+
+    if not trainer_config.get("wandb_name"):
+        trainer_config["wandb_name"] = JOB_ID + " - " + note
+
     return trainer_config
 
 
@@ -286,11 +293,9 @@ def run_command(command):
 
 def count_gpus():
     gpus = 0
-    if os.environ.get("SLURM_JOB_ID"):
+    if JOB_ID:
         try:
-            slurm_gpus = run_command(
-                f"squeue --job {os.environ['SLURM_JOB_ID']} -o %b"
-            ).split("\n")[1]
+            slurm_gpus = run_command(f"squeue --job {JOB_ID} -o %b").split("\n")[1]
             gpus = re.findall(r".*(\d+)", slurm_gpus) or 0
             gpus = int(gpus[0]) if gpus != 0 else gpus
         except subprocess.CalledProcessError:
@@ -303,11 +308,9 @@ def count_gpus():
 
 def count_cpus():
     cpus = None
-    if os.environ.get("SLURM_JOB_ID"):
+    if JOB_ID:
         try:
-            slurm_cpus = run_command(
-                f"squeue --job {os.environ['SLURM_JOB_ID']} -o %c"
-            ).split("\n")[1]
+            slurm_cpus = run_command(f"squeue --job {JOB_ID} -o %c").split("\n")[1]
             cpus = int(slurm_cpus)
         except subprocess.CalledProcessError:
             cpus = os.cpu_count()
@@ -718,7 +721,7 @@ def build_config(args, args_override):
     config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
-    config["job_id"] = os.environ.get("SLURM_JOB_ID", "no-job-id")
+    config["job_id"] = JOB_ID or "no-job-id"
 
     breakpoint()
 

@@ -24,6 +24,7 @@ from ocpmodels.common.utils import (
     setup_imports,
     setup_logging,
     update_from_sbatch_py_vars,
+    JOB_ID,
 )
 from ocpmodels.trainers import BaseTrainer
 
@@ -54,7 +55,7 @@ def read_slurm_env(config):
     if not config.get("slurm"):
         return config
 
-    command = f"scontrol show job {os.environ.get('SLURM_JOB_ID')}"
+    command = f"scontrol show job {JOB_ID}"
     scontrol = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
     params = re.findall(r"TRES=(.+)\n", scontrol)
     try:
@@ -133,7 +134,6 @@ if __name__ == "__main__":
     ntfy = trainer = error = None
 
     setup_logging()
-    slurm_job_id = os.environ.get("SLURM_JOB_ID")
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
@@ -173,7 +173,7 @@ if __name__ == "__main__":
         task.setup(trainer)
         start_time = time.time()
         if trainer.logger is not None:
-            message = f"{slurm_job_id} - Training started 🚀"
+            message = f"{JOB_ID} - Training started 🚀"
             if trainer_config.get("note"):
                 message += f" - {trainer_config.get('note')}"
             if trainer_config.get("wandb_tags"):
@@ -202,7 +202,7 @@ if __name__ == "__main__":
         if trainer and trainer.logger:
             e_name = e.__class__.__name__
             trainer.logger.ntfy(
-                f"{slurm_job_id} - Training failed 😭" + f"{e_name} - {str(e)}",
+                f"{JOB_ID} - Training failed 😭" + f"{e_name} - {str(e)}",
                 click=trainer.logger.url or None,
             )
         error = True
@@ -220,6 +220,6 @@ if __name__ == "__main__":
         if trainer and trainer.logger:
             trainer.logger.finish(error or signal)
 
-        if "interactive" not in os.popen(f"squeue -hj {slurm_job_id}").read():
-            print("Self-canceling SLURM job", os.getenv("SLURM_JOB_ID"))
-            os.system(f"scancel {os.getenv('SLURM_JOB_ID')}")
+        if "interactive" not in os.popen(f"squeue -hj {JOB_ID}").read():
+            print("Self-canceling SLURM job", JOB_ID)
+            os.system(f"scancel {JOB_ID}")
