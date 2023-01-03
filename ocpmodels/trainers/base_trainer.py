@@ -68,7 +68,7 @@ class BaseTrainer(ABC):
         self.epoch = 0
         self.step = 0
         self.cpu = self.config["cpu"]
-        self.task_name = self.config.get("task_name", self.config.get("name"))
+        self.task_name = self.config["task"].get("name", self.config.get("name"))
         assert self.task_name, "Specify task name (got {})".format(self.task_name)
         self.test_ri = self.config["test_ri"]
         self.is_debug = self.config["is_debug"]

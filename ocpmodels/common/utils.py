@@ -79,8 +79,8 @@ def override_narval_paths(trainer_config):
     path_overrides = yaml.safe_load(
         (ROOT / "configs" / "models" / "tasks" / "_narval.yaml").read_text()
     )
-    task = trainer_config["task_name"]
-    split = trainer_config["task_split"]
+    task = trainer_config["task"]["name"]
+    split = trainer_config["task"]["split"]
     assert task in path_overrides, f"Task {task} not found in Narval paths overrides"
 
     assert (
@@ -694,8 +694,8 @@ def load_config(config_str):
     config, _ = merge_dicts(config, model_conf[task][split])
     config, _ = merge_dicts(config, task_conf["default"])
     config, _ = merge_dicts(config, task_conf[split])
-    config["task_name"] = task
-    config["task_split"] = split
+    config["task"]["name"] = task
+    config["task"]["split"] = split
 
     return config
 
@@ -714,7 +714,6 @@ def build_config(args, args_override):
         overrides = create_dict_from_args(args_override)
         config, _ = merge_dicts(config, overrides)
 
-    breakpoint()
     config, _ = merge_dicts(
         config, {k: v for k, v in vars(args).items() if v is not None}
     )
@@ -722,8 +721,6 @@ def build_config(args, args_override):
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
     config["job_id"] = JOB_ID or "no-job-id"
-
-    breakpoint()
 
     if "regress_forces" in config["model"]:
         if not isinstance(config["model"]["regress_forces"], str):
@@ -749,9 +746,9 @@ def build_config(args, args_override):
     config = set_qm9_target_stats(config)
     config = set_qm7x_target_stats(config)
     config = override_narval_paths(config)
-    config = move_qm7x_data_to_slurm_tmpdir(config)
-    breakpoint()
     config = auto_note(config)
+    breakpoint()
+    config = move_qm7x_data_to_slurm_tmpdir(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
