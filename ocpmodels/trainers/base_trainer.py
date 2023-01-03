@@ -219,13 +219,30 @@ class BaseTrainer(ABC):
             if split == "default_val":
                 continue
 
-            shuffle = False
-            if split == "train":
-                shuffle = True
-
             self.datasets[split] = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(ds_conf, transform=transform)
+
+            shuffle = False
+            if split == "train":
+                shuffle = True
+                if self.config["optim"].get("max_steps"):
+                    if self.config["optim"].get("max_epochs", -1) > 0:
+                        print(
+                            "WARNING: Both max_steps and max_epochs are set.",
+                            "Using max_steps.",
+                        )
+                    self.config["max_epochs"] = np.ceil(
+                        self.config["max_steps"]
+                        / np.ceil(len(self.datasets[split]) / batch_size)
+                    )
+                    print(
+                        "Setting max_epochs to",
+                        self.config["max_epochs"],
+                        f"from max_steps ({self.config['max_steps']})",
+                        f"and batch_size ({self.config['batch_size']})",
+                    )
+
             self.samplers[split] = self.get_sampler(
                 self.datasets[split], batch_size, shuffle=shuffle
             )
