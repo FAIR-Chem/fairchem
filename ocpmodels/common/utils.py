@@ -55,7 +55,14 @@ def move_lmdb_data_to_slurm_tmpdir(trainer_config):
         if not isinstance(split, dict):
             continue
         new_dir = tmp_dir / Path(split["src"]).name
-        new_dir.mkdir(exist_ok=True)
+        if new_dir.exists():
+            print(
+                f"Data already copied to {str(new_dir)} for split",
+                f"{s} with source path {split['src']}",
+            )
+            trainer_config["dataset"][s]["src"] = str(new_dir)
+            continue
+        new_dir.mkdir()
         command = ["rsync", "-av", f'{split["src"]}/', str(new_dir)]
         print("Copying data: ", " ".join(command))
         subprocess.run(command)
