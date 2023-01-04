@@ -134,7 +134,7 @@ def print_warnings():
 
 
 if __name__ == "__main__":
-    ntfy = trainer = error = None
+    ntfy = trainer = error = signal = None
 
     setup_logging()
 
