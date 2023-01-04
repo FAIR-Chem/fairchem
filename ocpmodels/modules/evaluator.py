@@ -56,12 +56,10 @@ class Evaluator:
         "qm9": [
             "energy_mae",
             "energy_mse",
-            "energy_within_threshold",
         ],
         "qm7x": [
             "energy_mae",
             "energy_mse",
-            "energy_within_threshold",
         ],
     }
 
