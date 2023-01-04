@@ -247,10 +247,12 @@ class SingleTrainer(BaseTrainer):
                     metrics={},
                 )
                 scale = self.scaler.get_scale() if self.scaler else 1.0
-                for k, v in loss.items():
-                    self.metrics = self.evaluator.update(
-                        k, v.item() / scale, self.metrics
-                    )
+
+                if i_for_epoch % log_train_every == 0:
+                    for k, v in loss.items():
+                        self.metrics = self.evaluator.update(
+                            k, v.item() / scale, self.metrics
+                        )
 
                 # Log metrics.
                 self.log_train_metrics()

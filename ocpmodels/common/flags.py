@@ -241,6 +241,12 @@ class Flags:
             default=False,
             help="Don't copy LMDB data to $SLURM_TMPDIR and work from there",
         )
+        self.parser.add_argument(
+            "--log_train_every",
+            type=int,
+            default=100,
+            help="Log training loss every n steps",
+        )
 
 
 flags = Flags()
