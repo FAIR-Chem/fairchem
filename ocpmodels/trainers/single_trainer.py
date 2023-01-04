@@ -183,7 +183,8 @@ class SingleTrainer(BaseTrainer):
         n_train = len(self.loaders["train"])
         epoch_int = 0
         eval_every = self.config["optim"].get("eval_every", n_train)
-        self.config["print_every"] = eval_every  # Can comment out for better debug
+        if self.config["print_every"] < 0:
+            self.config["print_every"] = n_train
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )
@@ -212,6 +213,8 @@ class SingleTrainer(BaseTrainer):
             i_for_epoch = 0
 
             for i in range(skip_steps, n_train):
+                if self.sigterm:
+                    return "SIGTERM"
                 i_for_epoch += 1
                 self.epoch = epoch_int + (i + 1) / n_train
                 self.step = epoch_int * n_train + i + 1
@@ -279,6 +282,8 @@ class SingleTrainer(BaseTrainer):
                         disable_tqdm=disable_eval_tqdm,
                         debug_batches=debug_batches,
                     )
+                    if val_metrics == "SIGTERM":
+                        return "SIGTERM"
                     current_val_metric = val_metrics[primary_metric]["metric"]
                     if current_val_metric < self.best_val_metric:
                         self.best_val_metric = current_val_metric
@@ -306,7 +311,9 @@ class SingleTrainer(BaseTrainer):
         if is_test_env:
             return
 
-        self.eval_all_splits(True, epoch=epoch_int, debug_batches=debug_batches)
+        eas = self.eval_all_splits(True, epoch=epoch_int, debug_batches=debug_batches)
+        if eas == "SIGTERM":
+            return "SIGTERM"
 
         if "test" in self.loaders:
             # TODO: update predict function
@@ -329,6 +336,8 @@ class SingleTrainer(BaseTrainer):
         # Check respect of symmetries
         if self.test_ri and not is_test_env:
             symmetry = self.test_model_symmetries(debug_batches=debug_batches)
+            if symmetry == "SIGTERM":
+                return "SIGTERM"
             if self.logger:
                 self.logger.log(symmetry)
 
@@ -595,8 +604,11 @@ class SingleTrainer(BaseTrainer):
         forces_diff_refl = torch.zeros(1, device=self.device)
 
         for i, batch in enumerate(self.loaders[self.config["dataset"]["default_val"]]):
+            if self.sigterm:
+                return "SIGTERM"
             if debug_batches > 0 and i == debug_batches:
                 break
+
             # Compute model prediction
             preds1 = self.model_forward(deepcopy(batch))
 

@@ -157,7 +157,6 @@ class Flags:
         self.parser.add_argument(
             "--note",
             type=str,
-            default="",
             help="Note describing this run to be added to the logger",
         )
         self.parser.add_argument(
@@ -176,8 +175,9 @@ class Flags:
         self.parser.add_argument(
             "--print_every",
             type=int,
-            default=100,
-            help="Printing frequency (in steps)",
+            default=-1,
+            help="Printing frequency (in steps). "
+            + "Default (-1) prints at the end of the epoch.",
         )
         self.parser.add_argument(
             "--wandb_project",
@@ -228,6 +228,18 @@ class Flags:
             action="store_true",
             default=False,
             help="Evaluate on test set",
+        )
+        self.parser.add_argument(
+            "--narval",
+            action="store_true",
+            default=False,
+            help="is on Narval DRAC cluster",
+        )
+        self.parser.add_argument(
+            "--cp_data_to_tmpdir",
+            type=bool,
+            default=False,
+            help="Don't copy LMDB data to $SLURM_TMPDIR and work from there",
         )
 
 

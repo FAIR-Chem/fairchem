@@ -95,9 +95,7 @@ class WandBLogger(Logger):
         slurm_jobid = os.environ.get("SLURM_JOB_ID")
         if slurm_jobid:
             wandb_id += f"{slurm_jobid}-"
-        wandb_id += (
-            self.trainer_config["timestamp_id"] + "-" + trainer_config["model_name"]
-        )
+        wandb_id += self.trainer_config["config"]
 
         wandb_tags = trainer_config.get("wandb_tags", "")
         if wandb_tags:
@@ -110,7 +108,7 @@ class WandBLogger(Logger):
             dir=self.trainer_config["logs_dir"],
             project=self.trainer_config["wandb_project"],
             resume="allow",
-            notes=self.trainer_config["note"],
+            notes=self.trainer_config.get("note", ""),
             tags=wandb_tags,
             entity="mila-ocp",
         )
@@ -156,9 +154,14 @@ class WandBLogger(Logger):
         for o in outputs:
             wandb.save(str(o), policy=policy)
 
-    def finish(self, failed=False):
+    def finish(self, error_or_signal=False):
+        exit_code = 0
+        if error_or_signal == "SIGTERM":
+            self.add_tags("Preempted")
+        if error_or_signal is True:
+            exit_code = 1
         self.collect_output_files(policy="now")
-        wandb.finish(exit_code=int(bool(failed)))
+        wandb.finish(exit_code=exit_code)
 
 
 @registry.register_logger("tensorboard")

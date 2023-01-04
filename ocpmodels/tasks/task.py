@@ -47,7 +47,7 @@ class TrainTask(BaseTask):
 
     def run(self):
         try:
-            self.trainer.train(
+            return self.trainer.train(
                 disable_eval_tqdm=self.config.get("show_eval_progressbar", True),
                 debug_batches=self.config.get("debug_batches", -1),
             )

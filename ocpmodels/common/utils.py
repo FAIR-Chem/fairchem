@@ -40,23 +40,64 @@ from ocpmodels.common.registry import registry
 
 OCP_TASKS = {"s2ef", "is2re", "is2es"}
 ROOT = Path(__file__).resolve().parent.parent.parent
+JOB_ID = os.environ.get("SLURM_JOB_ID")
+
+
+def move_lmdb_data_to_slurm_tmpdir(trainer_config):
+    if (
+        not trainer_config.get("cp_data_to_tmpdir")
+        or "-qm9-" in trainer_config["config"]
+    ):
+        return trainer_config
+
+    tmp_dir = Path(f"/Tmp/slurm.{JOB_ID}.0")
+    for s, split in trainer_config["dataset"].items():
+        if not isinstance(split, dict):
+            continue
+        new_dir = tmp_dir / Path(split["src"]).name
+        if new_dir.exists():
+            print(
+                f"Data already copied to {str(new_dir)} for split",
+                f"{s} with source path {split['src']}",
+            )
+            trainer_config["dataset"][s]["src"] = str(new_dir)
+            continue
+        new_dir.mkdir()
+        command = ["rsync", "-av", f'{split["src"]}/', str(new_dir)]
+        print("Copying data: ", " ".join(command))
+        subprocess.run(command)
+        for f in new_dir.glob("*.lmdb-lock"):
+            f.unlink()
+        trainer_config["dataset"][s]["src"] = str(new_dir)
+    print("Done moving data to", str(new_dir))
+    return trainer_config
 
 
 def override_narval_paths(trainer_config):
-    is_narval = "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
+    is_narval = (
+        "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
+        or os.environ.get("HOME") == "/home/vsch"
+        or trainer_config["narval"]
+    )
     if not is_narval:
         return trainer_config
     path_overrides = yaml.safe_load(
         (ROOT / "configs" / "models" / "tasks" / "_narval.yaml").read_text()
     )
-    task = trainer_config["task_name"]
-    split = trainer_config["task_split"]
+    task = trainer_config["task"]["name"]
+    split = trainer_config["task"]["split"]
     assert task in path_overrides, f"Task {task} not found in Narval paths overrides"
 
     assert (
         split in path_overrides[task]
     ), f"Split {split} not found in Narval paths overrides for task {task}"
 
+    print(
+        "Is on Narval. Overriding",
+        trainer_config["dataset"],
+        "with",
+        path_overrides[task][split],
+    )
     trainer_config["dataset"], _ = merge_dicts(
         trainer_config["dataset"], path_overrides[task][split]
     )
@@ -179,24 +220,66 @@ def set_qm7x_target_stats(trainer_config):
             continue
         if not dataset.get("normalize_labels", False):
             continue
-        assert "target" in dataset
+        assert "target" in dataset, "target must be specified."
         mean = target_stats[dataset["target"]]["mean"]
         std = target_stats[dataset["target"]]["std"]
+        std_divider = trainer_config["dataset"][d].get("std_divider", 1.0)
         trainer_config["dataset"][d]["target_mean"] = mean
-        trainer_config["dataset"][d]["target_std"] = std
+        trainer_config["dataset"][d]["target_std"] = std / std_divider
 
         if trainer_config["model"].get("regress_forces"):
+            assert "forces_target" in dataset, "forces_target must be specified."
             mean = target_stats[dataset["forces_target"]]["mean"]
             std = target_stats[dataset["forces_target"]]["std"]
             trainer_config["dataset"][d]["grad_target_mean"] = mean
-            trainer_config["dataset"][d]["grad_target_std"] = std
+            trainer_config["dataset"][d]["grad_target_std"] = std / std_divider
+
+    return trainer_config
+
+
+def auto_note(trainer_config):
+    """
+    Turns a trainer's config note dictionary into a string.
+    Eg: note = {"model": "hidden_channels, num_gaussians", "optim": "lr, decay_steps"}
+       -> note = "hc128 ng20 - lr0.001 ds10000"
+
+    Does nothing if the note is not a dictionary.
+
+    Args:
+        trainer_config (dict): Trainer's full configuration
+
+    Returns:
+        dict: updated (or not) trainer config (identical but for the "note" key
+            if it was a dict)
+    """
+    if not isinstance(trainer_config.get("note"), dict):
+        return trainer_config
+
+    note = ""
+    for k, (key, subkeys) in enumerate(trainer_config["note"].items()):
+        if k > 0:
+            note += " - "
+        for i, subkey in enumerate(subkeys.split(",")):
+            subkey = subkey.strip()
+            if i > 0:
+                note += " "
+            new_subkey = (
+                "".join(s[0] for s in subkey.split("_")) if subkey != "name" else ""
+            )
+            dic = trainer_config[key] if key != "_root_" else trainer_config
+            note += f"{new_subkey}{dic[subkey]}"
+    trainer_config["note"] = note
+
+    if not trainer_config.get("wandb_name"):
+        trainer_config["wandb_name"] = JOB_ID + " - " + note
 
     return trainer_config
 
 
 class Units:
     """
-    Energy converter: https://www.unitsconverters.com/fr/Kcal/Mol-A-Ev/Particle/Utu-7727-6180
+    Energy converter:
+    https://www.unitsconverters.com/fr/Kcal/Mol-A-Ev/Particle/Utu-7727-6180
     """
 
     @staticmethod
@@ -217,11 +300,9 @@ def run_command(command):
 
 def count_gpus():
     gpus = 0
-    if os.environ.get("SLURM_JOB_ID"):
+    if JOB_ID:
         try:
-            slurm_gpus = run_command(
-                f"squeue --job {os.environ['SLURM_JOB_ID']} -o %b"
-            ).split("\n")[1]
+            slurm_gpus = run_command(f"squeue --job {JOB_ID} -o %b").split("\n")[1]
             gpus = re.findall(r".*(\d+)", slurm_gpus) or 0
             gpus = int(gpus[0]) if gpus != 0 else gpus
         except subprocess.CalledProcessError:
@@ -234,11 +315,9 @@ def count_gpus():
 
 def count_cpus():
     cpus = None
-    if os.environ.get("SLURM_JOB_ID"):
+    if JOB_ID:
         try:
-            slurm_cpus = run_command(
-                f"squeue --job {os.environ['SLURM_JOB_ID']} -o %c"
-            ).split("\n")[1]
+            slurm_cpus = run_command(f"squeue --job {JOB_ID} -o %c").split("\n")[1]
             cpus = int(slurm_cpus)
         except subprocess.CalledProcessError:
             cpus = os.cpu_count()
@@ -314,12 +393,26 @@ def warmup_lr_lambda(current_step, optim_config):
             + " epochs and define warmup_steps instead of warmup_epochs"
         )
 
+    # warmup
     if current_step <= optim_config["warmup_steps"]:
         alpha = current_step / float(optim_config["warmup_steps"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
-    else:
-        idx = bisect(lr_milestones, current_step)
-        return pow(optim_config["lr_gamma"], idx)
+
+    # post warm up
+    if "decay_steps" in optim_config:
+        # exponential decay per step
+        assert "decay_rate" in optim_config, "decay_rate must be defined in optim"
+        ds = optim_config["decay_steps"]
+        if ds == "max_steps":
+            assert "max_steps" in optim_config, "max_steps must be defined in optim"
+            ds = optim_config["max_steps"]
+
+        return optim_config["decay_rate"] ** (
+            (current_step - optim_config["warmup_steps"]) / ds
+        )
+    # per-milestones decay
+    idx = bisect(lr_milestones, current_step)
+    return pow(optim_config["lr_gamma"], idx)
 
 
 def print_cuda_usage():
@@ -613,8 +706,8 @@ def load_config(config_str):
     config, _ = merge_dicts(config, model_conf[task][split])
     config, _ = merge_dicts(config, task_conf["default"])
     config, _ = merge_dicts(config, task_conf[split])
-    config["task_name"] = task
-    config["task_split"] = split
+    config["task"]["name"] = task
+    config["task"]["split"] = split
 
     return config
 
@@ -639,7 +732,7 @@ def build_config(args, args_override):
     config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
-    config["job_id"] = os.environ.get("SLURM_JOB_ID", "no-job-id")
+    config["job_id"] = JOB_ID or "no-job-id"
 
     if "regress_forces" in config["model"]:
         if not isinstance(config["model"]["regress_forces"], str):
@@ -665,6 +758,8 @@ def build_config(args, args_override):
     config = set_qm9_target_stats(config)
     config = set_qm7x_target_stats(config)
     config = override_narval_paths(config)
+    config = auto_note(config)
+    config = move_lmdb_data_to_slurm_tmpdir(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
@@ -678,6 +773,7 @@ def build_config(args, args_override):
                 print(
                     f"Overriding num_workers from {config['optim']['num_workers']}",
                     f"to {workers} to match the machine's CPUs.",
+                    "Use --no_cpus_to_workers=true to disable this behavior.",
                 )
             config["optim"]["num_workers"] = workers
     config["world_size"] = args.num_nodes * args.num_gpus
@@ -1196,3 +1292,26 @@ def get_commit_hash():
     except Exception:
         commit_hash = None
     return commit_hash
+
+
+def base_config(config, overrides={}):
+    from argparse import Namespace
+
+    n = Namespace()
+    n.num_gpus = 1
+    n.num_nodes = 1
+    n.config_yml = None
+    n.config = config
+
+    conf = build_config(
+        n,
+        [
+            "run_dir=.",
+            "narval=",
+            "no_qm7x_cp=true",
+            "no_cpus_to_workers=true",
+            "silent=",
+        ],
+    )
+
+    return merge_dicts(conf, overrides)[0]

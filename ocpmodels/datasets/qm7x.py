@@ -763,14 +763,20 @@ class QM7XFromLMDB(Dataset):
         k = key.encode("utf-8")
         for e in self.envs:
             with e.begin() as txn:
+                # g = time.time_ns()
                 v = txn.get(k)
+                # g = time.time_ns() - g
                 if v is not None:
-                    return pickle.loads(v)
+                    # t = time.time_ns()
+                    d = pickle.loads(v)
+                    # t = time.time_ns() - t
+                    return d  # , t, g
         raise ValueError(f"Could not find key {key}")
 
     def __getitem__(self, i):
         t0 = time.time_ns()
         key = self.keys[i]
+        # data, pkl_load_time, get_time = self.retrieve(key)
         data = self.retrieve(key)
 
         data.y = torch.tensor(data["ePBE0+MBD"])
@@ -792,6 +798,8 @@ class QM7XFromLMDB(Dataset):
         data.load_time = load_time
         data.transform_time = transform_time
         data.total_get_time = total_get_time
+        # data.pkl_load_time = pkl_load_time * 1e-9
+        # data.get_time = get_time * 1e-9
 
         return data
 
