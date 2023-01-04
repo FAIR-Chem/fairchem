@@ -317,9 +317,10 @@ class SingleTrainer(BaseTrainer):
                 # End of batch.
 
             # End of epoch.
+            epoch_times.append(time.time() - start_time)
+            self.metrics["epoch_time"] = {"metric": epoch_times[-1]}
             self.log_train_metrics(end_of_epoch=True)
             torch.cuda.empty_cache()
-            epoch_times.append(time.time() - start_time)
 
         # End of training.
 
