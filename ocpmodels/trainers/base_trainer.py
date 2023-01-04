@@ -44,6 +44,7 @@ from ocpmodels.modules.exponential_moving_average import (
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
+from ocpmodels.common.timer import Times
 
 
 @registry.register_trainer("base")
@@ -534,6 +535,7 @@ class BaseTrainer(ABC):
         disable_tqdm=True,
         debug_batches=-1,
         is_final=False,
+        is_first=False,
     ):
         if distutils.is_master() and not self.silent:
             print()
@@ -554,30 +556,34 @@ class BaseTrainer(ABC):
         desc = "device {}".format(distutils.get_rank())
 
         loader = self.loaders[split]
-        val_time = time.time()
+        times = Times(gpu=True)
 
-        for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
+        with times.next("validation_loop"):
 
-            if self.sigterm:
-                return "SIGTERM"
+            for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
 
-            if debug_batches > 0 and i == debug_batches:
-                break
+                if self.sigterm:
+                    return "SIGTERM"
 
-            # Forward.
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                preds = self.model_forward(batch)
+                if debug_batches > 0 and i == debug_batches:
+                    break
 
-            loss = self.compute_loss(preds, batch)
-            if preds.get("pooling_loss") is not None:
-                loss["total_loss"] += preds["pooling_loss"]
+                # Forward.
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    with times.next("model_forward", ignore=not is_first):
+                        preds = self.model_forward(batch)
+                    loss = self.compute_loss(preds, batch)
 
-            # Compute metrics.
-            metrics = self.compute_metrics(preds, batch, evaluator, metrics)
-            for k, v in loss.items():
-                metrics = evaluator.update(k, v.item(), metrics)
+                if preds.get("pooling_loss") is not None:
+                    loss["total_loss"] += preds["pooling_loss"]
 
-        val_time = time.time() - val_time
+                # Compute metrics.
+                metrics = self.compute_metrics(preds, batch, evaluator, metrics)
+                for k, v in loss.items():
+                    metrics = evaluator.update(k, v.item(), metrics)
+
+        mean_val_times, std_val_times = times.prepare_for_logging()
+
         aggregated_metrics = {}
         for k in metrics:
             aggregated_metrics[k] = {
@@ -594,9 +600,11 @@ class BaseTrainer(ABC):
         metrics = aggregated_metrics
 
         log_dict = {k: metrics[k]["metric"] for k in metrics}
-        log_dict.update({"epoch": self.epoch})
-        log_dict.update({f"{split}_time": val_time})
-        log_dict.update({f"{split}_n_samples": i + 1})
+        log_dict["epoch"] = self.epoch
+        log_dict[f"{split}_time"] = mean_val_times["validation_loop"]
+        if is_first:
+            log_dict["model_forward_time_mean"] = mean_val_times["model_forward"]
+            log_dict["model_forward_time_std"] = std_val_times["model_forward"]
 
         if distutils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
