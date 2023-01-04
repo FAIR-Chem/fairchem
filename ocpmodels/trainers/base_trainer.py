@@ -232,9 +232,11 @@ class BaseTrainer(ABC):
                             "WARNING: Both max_steps and max_epochs are set.",
                             "Using max_steps.",
                         )
-                    self.config["optim"]["max_epochs"] = np.ceil(
-                        self.config["optim"]["max_steps"]
-                        / np.ceil(len(self.datasets[split]) / batch_size)
+                    self.config["optim"]["max_epochs"] = int(
+                        np.ceil(
+                            self.config["optim"]["max_steps"]
+                            / np.ceil(len(self.datasets[split]) / batch_size)
+                        )
                     )
                     print(
                         "Setting max_epochs to",
