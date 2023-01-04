@@ -583,14 +583,14 @@ class SingleTrainer(BaseTrainer):
             and distutils.is_master()
             and not self.is_hpo
         ) or (distutils.is_master() and end_of_epoch):
-            log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
             if not self.silent:
+                log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
                 print(
                     f"Train metrics at step {self.step}:\n  > " + "\n  > ".join(log_str)
                 )
             self.metrics = {}
 
-        if self.logger is not None and not end_of_epoch:
+        if self.logger is not None:  # and not end_of_epoch:
             self.logger.log(
                 log_dict,
                 step=self.step,

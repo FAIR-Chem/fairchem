@@ -91,7 +91,9 @@ class WandBLogger(Logger):
     def __init__(self, trainer_config):
         super().__init__(trainer_config)
 
-        wandb_id = ""
+        wandb_id = str(self.trainer_config.get("wandb_id", ""))
+        if wandb_id:
+            wandb_id += " - "
         slurm_jobid = os.environ.get("SLURM_JOB_ID")
         if slurm_jobid:
             wandb_id += f"{slurm_jobid}-"
