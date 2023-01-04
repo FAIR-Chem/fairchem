@@ -76,6 +76,28 @@ s2ef:
   default:
     model:
       regress_forces: "from_energy"
+      hidden_channels: 1024
+      num_filters: 256
+      num_interactions: 5
+      num_gaussians: 200
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 8.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      batch_size: 24
+      eval_batch_size: 24
+      num_workers: 16
+      lr_initial: 0.0001
+      lr_gamma: 0.1
+      lr_milestones:
+        - 52083
+        - 83333
+        - 104166
+      warmup_steps: 31250
+      max_epochs: 30
+      force_coefficient: 100
+
   200k:
     model:
       hidden_channels: 1024
@@ -100,29 +122,7 @@ s2ef:
       max_epochs: 30
       force_coefficient: 100
 
-  2M:
-    model:
-      hidden_channels: 1024
-      num_filters: 256
-      num_interactions: 5
-      num_gaussians: 200
-    optim:
-      # *** Important note ***
-      #   The total number of gpus used for this run was 8.
-      #   If the global batch size (num_gpus * batch_size) is modified
-      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
-      batch_size: 24
-      eval_batch_size: 24
-      num_workers: 16
-      lr_initial: 0.0001
-      lr_gamma: 0.1
-      lr_milestones:
-        - 52083
-        - 83333
-        - 104166
-      warmup_steps: 31250
-      max_epochs: 30
-      force_coefficient: 100
+  2M: {}
 
   20M:
     model:
@@ -176,13 +176,17 @@ qm9:
   default:
     model:
       hidden_channels: 128
-      num_gaussians: 20
+      num_gaussians: 100
       num_filters: 128
-      num_interactions: 3
+      num_interactions: 6
       cutoff: 5.0
     optim:
+      batch_size: 1024
       lr_initial: 0.001
-      max_epochs: 100
+      max_epochs: 1000
+      decay_steps: 125000
+      decay_rate: 0.01
+      ema_decay: 0.999
       lr_gamma: 0.25
       lr_milestones:
         - 17981
@@ -190,7 +194,7 @@ qm9:
         - 35963
         - 52000
         - 100000
-      warmup_steps: 5394
+      warmup_steps: 1000
 
   10k: {}
   all: {}

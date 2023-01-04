@@ -1,10 +1,12 @@
 import os
 import re
-from pathlib import Path
+import subprocess
 import sys
+from pathlib import Path
+
 from minydra import resolved_args
 from yaml import safe_load
-import subprocess
+
 from sbatch import now
 import copy
 
@@ -70,9 +72,6 @@ def get_commit():
 
 def find_exp(name):
     exp_dir = Path(__file__).parent / "configs" / "exps"
-    exp_file = exp_dir / f"{name}.yml"
-    if exp_file.exists():
-        return exp_file
     exp_file = exp_dir / f"{name}.yaml"
     if exp_file.exists():
         return exp_file

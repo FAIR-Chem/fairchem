@@ -1,0 +1,90 @@
+# more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
+job:
+  mem: 48GB
+  cpus: 8
+  gres: gpu:rtx8000:1
+  time: 8:00:00
+  partition: long
+
+default:
+  wandb_project: ocp-qm9
+  mode: train
+  test_ri: true
+  wandb_tags: qm9-check-prop
+  phys_hidden_channels: 0
+  phys_embeds: True
+  energy_head: False
+  pg_hidden_channels: 0
+  tag_hidden_channels: 64
+
+runs:
+  # - config: dpp-qm9-all
+  #   note: DimeNet++ qm9 baseline
+  #   # https://github.com/gasteigerjo/dimenet/blob/fd36d381a2b31721da0cbf879b2d0c0a166fa76b/config.yaml
+
+  #   # TODO: num GPUs/batch_size, epochs, lr decay, emb_size, num_dense_output
+  #   model:
+  #     cutoff: 5.0
+  #     num_before_skip: 1
+  #     num_after_skip: 2
+  #     num_blocks: 6
+  #     int_emb_size: 128
+
+  - config: sfarinet-qm9-all
+    model:
+      hidden_channels: 128
+      num_gaussians: 20
+      num_filters: 128
+      num_interactions: 3
+      cutoff: 5.0
+    note: Sfarinet qm9 baseline -- small model
+    frame_averaging: "3D"
+    fa_frames: "random"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet Baseline
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet DA
+    frame_averaging: "DA"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet DA
+    frame_averaging: "DA"
+    optim:
+      max_epochs: 1200
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 3D random
+    frame_averaging: "3D"
+    fa_frames: "random"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 3D det
+    frame_averaging: "3D"
+    fa_frames: "det"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 3D all
+    frame_averaging: "3D"
+    fa_frames: "all"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 3D se3-all
+    frame_averaging: "3D"
+    fa_frames: "se3-all"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 3D se3-random
+    frame_averaging: "3D"
+    fa_frames: "se3-random"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 2D all
+    frame_averaging: "2D"
+    fa_frames: "all"
+
+  - config: sfarinet-qm9-all
+    note: Sfarinet 2D random
+    frame_averaging: "2D"
+    fa_frames: "random"

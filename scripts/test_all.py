@@ -6,8 +6,8 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from time import time
-import numpy as np
 
+import numpy as np
 from minydra import resolved_args
 
 args = resolved_args(
@@ -158,12 +158,10 @@ if __name__ == "__main__":
         "--frame_averaging=2D --fa_frames=random",
         "--frame_averaging=2D --fa_frames=det --test_ri=True",
         "--frame_averaging=2D --fa_frames=all",
-        "--frame_averaging=2D --fa_frames=se3-all",
+        "--frame_averaging=2D --fa_frames=se3-all --test_ri=True",
         "--frame_averaging=2D --fa_frames=se3-random",
         "--frame_averaging=3D --fa_frames=random",
         "--frame_averaging=3D --fa_frames=all --test_ri=True",
-        "--frame_averaging=DA --test_ri=True",
-        "--graph_rewiring=remove-tag-0",
         "--graph_rewiring=remove-tag-0 --frame_averaging=DA",
         "--frame_averaging=2D --fa_frames=random --graph_rewiring=remove-tag-0",
     ]
@@ -183,6 +181,12 @@ if __name__ == "__main__":
         "--config=sfarinet-qm7x-1k --regress_forces=direct",
         "--config=sfarinet-qm7x-1k --regress_forces=direct_with_gradient_target",
         "--config=sfarinet-qm7x-1k --regress_forces=from_energy",
+        "--config=fanet-is2re-10k --model.edge_embed_type=rij --model.mp_type=base",
+        "--config=fanet-is2re-10k --model.edge_embed_type=all --model.mp_type=simple",
+        "--config=fanet-is2re-10k --model.edge_embed_type=sh --model.mp_type=updownscale",
+        # "--config=fanet-is2re-10k --model.edge_embed_type=all_rij --model.mp_type=local_env",
+        # "--config=fanet-is2re-10k --model.mp_type=att",
+        # "--config=fanet-is2re-10k --model.mp_type=base_with_att",
     ]
     singles = [s.split() for s in singles]
 

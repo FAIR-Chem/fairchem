@@ -1,0 +1,50 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:4
+  partition: long
+  time: 48:00:00
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  model:
+    phys_embeds: True
+    tag_hidden_channels: 64
+    pg_hidden_channels: 0  # shall have been 32
+    energy_head: False # False ?
+  optim:
+    max_epochs: 5
+  wandb_tags: 'prop-check-ICLM'
+
+runs:
+  - config: sfarinet-s2ef-2M
+    note: 'Energy Conservation -- from energy'
+    regress_forces: from_energy
+  - config: sfarinet-s2ef-2M
+    note: 'Energy Conservation -- direct'
+    model:
+      regress_forces: direct
+  - config: sfarinet-s2ef-2M
+    note: 'Energy Conservation -- direct'
+    model:
+      regress_forces: direct
+    frame_averaging: 2D
+    fa_frames: random
+  - config: sfarinet-s2ef-2M
+    note: 'Energy Conservation -- direct with gradient loss'
+    model:
+      regress_forces: direct_with_gradient_target
+  - config: sfarinet-s2ef-2M
+    note: 'Test Forces direct with gradient_target'
+    model:
+      note: 'Energy Conservation -- direct with gradient loss'
+    frame_averaging: 2D
+    fa_frames: all
+  - config: sfarinet-s2ef-2M
+    note: 'Energy Conservation -- direct with gradient loss'
+    model:
+      regress_forces: direct_with_gradient_target
+    frame_averaging: 2D
+    fa_frames: random
