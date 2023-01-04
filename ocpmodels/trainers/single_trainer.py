@@ -199,6 +199,8 @@ class SingleTrainer(BaseTrainer):
         if not self.silent:
             print("---Beginning of Training---")
 
+        breakpoint()
+
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
 
             start_time = time.time()

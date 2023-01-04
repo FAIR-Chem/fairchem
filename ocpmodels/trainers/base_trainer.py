@@ -232,15 +232,15 @@ class BaseTrainer(ABC):
                             "WARNING: Both max_steps and max_epochs are set.",
                             "Using max_steps.",
                         )
-                    self.config["max_epochs"] = np.ceil(
+                    self.config["optim"]["max_epochs"] = np.ceil(
                         self.config["optim"]["max_steps"]
                         / np.ceil(len(self.datasets[split]) / batch_size)
                     )
                     print(
                         "Setting max_epochs to",
-                        self.config["max_epochs"],
+                        self.config["optim"]["max_epochs"],
                         f"from max_steps ({self.config['optim']['max_steps']})",
-                        f"and batch_size ({self.config['optim']['batch_size']})",
+                        f"and batch_size ({self.config['optim']['batch_size']})\n",
                     )
 
             self.samplers[split] = self.get_sampler(
@@ -802,7 +802,7 @@ class BaseTrainer(ABC):
             for c, col in enumerate(["Metric / Split"] + all_splits):
                 table.add_column(col, justify="left" if c == 0 else "right")
 
-            highlights = {"energy_mae", "forces_mae", "total_loss"}
+            highlights = set()  # {"energy_mae", "forces_mae", "total_loss"}
             smn = sorted([m if "loss" not in m else f"z_{m}" for m in metrics_names])
             for metric in smn:
                 metric = metric[2:] if metric.startswith("z_") else metric
