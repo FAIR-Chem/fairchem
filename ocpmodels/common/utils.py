@@ -343,6 +343,7 @@ def save_checkpoint(
     state, checkpoint_dir="checkpoints/", checkpoint_file="checkpoint.pt"
 ):
     filename = os.path.join(checkpoint_dir, checkpoint_file)
+    print(f"Saving checkpoint to {filename}")
     torch.save(state, filename)
 
 
