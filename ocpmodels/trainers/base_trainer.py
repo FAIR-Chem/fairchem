@@ -239,7 +239,7 @@ class BaseTrainer(ABC):
                     print(
                         "Setting max_epochs to",
                         self.config["max_epochs"],
-                        f"from max_steps ({self.config['max_steps']})",
+                        f"from max_steps ({self.config['optim']['max_steps']})",
                         f"and batch_size ({self.config['batch_size']})",
                     )
 
