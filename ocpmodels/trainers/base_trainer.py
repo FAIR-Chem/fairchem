@@ -240,7 +240,7 @@ class BaseTrainer(ABC):
                         "Setting max_epochs to",
                         self.config["max_epochs"],
                         f"from max_steps ({self.config['optim']['max_steps']})",
-                        f"and batch_size ({self.config['batch_size']})",
+                        f"and batch_size ({self.config['optim']['batch_size']})",
                     )
 
             self.samplers[split] = self.get_sampler(
