@@ -25,6 +25,7 @@ from ocpmodels.common.utils import OCP_TASKS, check_traj_files
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from ocpmodels.common.timer import Times
 
 is_test_env = os.environ.get("ocp_test_env", False)
 
@@ -190,10 +191,12 @@ class SingleTrainer(BaseTrainer):
         )
         self.best_val_metric = np.inf
         current_val_metric = None
+        first_eval = True
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // n_train
+        loader_times = Times()
         epoch_times = []
 
         if not self.silent:
@@ -211,6 +214,7 @@ class SingleTrainer(BaseTrainer):
             train_loader_iter = iter(self.loaders["train"])
             self.model.train()
             i_for_epoch = 0
+            log_train_every = self.config["log_train_every"]
 
             for i in range(skip_steps, n_train):
                 if self.sigterm:
@@ -220,7 +224,8 @@ class SingleTrainer(BaseTrainer):
                 self.step = epoch_int * n_train + i + 1
 
                 # Get a batch.
-                batch = next(train_loader_iter)
+                with loader_times.time("get_batch"):
+                    batch = next(train_loader_iter)
 
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
@@ -229,10 +234,12 @@ class SingleTrainer(BaseTrainer):
                     if preds.get("pooling_loss") is not None:
                         coeff = self.config["optim"].get("pooling_coefficient", 1)
                         loss["total_loss"] += preds["pooling_loss"] * coeff
+
                 loss = {
                     k: self.scaler.scale(v) if self.scaler else v
                     for k, v in loss.items()
                 }
+
                 if torch.isnan(loss["total_loss"]):
                     print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
                     self.logger.add_tags(["nan_loss"])
@@ -254,8 +261,12 @@ class SingleTrainer(BaseTrainer):
                             k, v.item() / scale, self.metrics
                         )
 
-                # Log metrics.
-                self.log_train_metrics()
+                    # Log metrics.
+                    gbm, gbs = loader_times.prepare_for_logging()
+                    self.metrics["get_batch_time_mean"] = {"metric": gbm["get_batch"]}
+                    self.metrics["get_batch_time_std"] = {"metric": gbs["get_batch"]}
+                    loader_times.reset()
+                    self.log_train_metrics()
 
                 is_final_epoch = epoch_int == self.config["optim"]["max_epochs"] - 1
                 is_final_batch = (i == n_train - 1) or (
@@ -283,7 +294,9 @@ class SingleTrainer(BaseTrainer):
                         split=self.config["dataset"]["default_val"],
                         disable_tqdm=disable_eval_tqdm,
                         debug_batches=debug_batches,
+                        is_first=first_eval,
                     )
+                    first_eval = False
                     if val_metrics == "SIGTERM":
                         return "SIGTERM"
                     current_val_metric = val_metrics[primary_metric]["metric"]
