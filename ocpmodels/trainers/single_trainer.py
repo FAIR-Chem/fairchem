@@ -224,7 +224,7 @@ class SingleTrainer(BaseTrainer):
                 self.step = epoch_int * n_train + i + 1
 
                 # Get a batch.
-                with loader_times.time("get_batch"):
+                with loader_times.next("get_batch"):
                     batch = next(train_loader_iter)
 
                 # Forward, loss, backward.
