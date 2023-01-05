@@ -215,6 +215,7 @@ class BaseTrainer(ABC):
 
         transform = get_transforms(self.config)  # TODO: train/val/test behavior
         batch_size = self.config["optim"]["batch_size"]
+        max_steps = self.config["optim"].get("max_steps", -1)
 
         for split, ds_conf in self.config["dataset"].items():
             if split == "default_val":
@@ -227,23 +228,21 @@ class BaseTrainer(ABC):
             shuffle = False
             if split == "train":
                 shuffle = True
-                if self.config["optim"].get("max_steps"):
+                if max_steps > 0:
                     if self.config["optim"].get("max_epochs", -1) > 0:
                         print(
                             "WARNING: Both max_steps and max_epochs are set.",
                             "Using max_steps.",
                         )
                     self.config["optim"]["max_epochs"] = int(
-                        np.ceil(
-                            self.config["optim"]["max_steps"]
-                            / np.ceil(len(self.datasets[split]) / batch_size)
-                        )
+                        np.ceil(max_steps / (len(self.datasets[split]) / batch_size))
                     )
                     print(
                         "Setting max_epochs to",
                         self.config["optim"]["max_epochs"],
-                        f"from max_steps ({self.config['optim']['max_steps']})",
-                        f"and batch_size ({self.config['optim']['batch_size']})\n",
+                        f"from max_steps ({max_steps}),",
+                        f"dataset length ({len(self.datasets[split])}),",
+                        f"and batch_size ({batch_size})\n",
                     )
 
             self.samplers[split] = self.get_sampler(
