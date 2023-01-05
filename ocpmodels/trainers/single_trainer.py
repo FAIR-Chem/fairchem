@@ -269,6 +269,7 @@ class SingleTrainer(BaseTrainer):
                     self.metrics["get_batch_time_mean"] = {"metric": gbm["get_batch"]}
                     self.metrics["get_batch_time_std"] = {"metric": gbs["get_batch"]}
                     loader_times.reset()
+                    # logging.info(f"Step: {self.step}")
                     self.log_train_metrics()
 
                 is_final_epoch = epoch_int == self.config["optim"]["max_epochs"] - 1
