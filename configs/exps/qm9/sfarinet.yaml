@@ -1,7 +1,7 @@
 job:
   mem: 48GB
   cpus: 4
-  gres: gpu:1
+  gres: gpu:16gb:1
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
   env: ocp-a100
