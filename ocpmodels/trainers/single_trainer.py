@@ -192,6 +192,9 @@ class SingleTrainer(BaseTrainer):
         self.best_val_metric = np.inf
         current_val_metric = None
         first_eval = True
+        log_train_every = self.config["log_train_every"]
+
+        print("Logging train metrics every {} steps".format(log_train_every))
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
@@ -214,7 +217,6 @@ class SingleTrainer(BaseTrainer):
             train_loader_iter = iter(self.loaders["train"])
             self.model.train()
             i_for_epoch = 0
-            log_train_every = self.config["log_train_every"]
 
             for i in range(skip_steps, n_train):
                 if self.sigterm:
