@@ -58,6 +58,28 @@ def merge_dicts(dict1: dict, dict2: dict):
     return return_dict
 
 
+def write_exp_yaml_and_jobs(exp_file, outfile, jobs):
+    """
+    Reads the exp_file, adds the jobs as comments in each run line and writes the
+    resulting yaml file in the same directory as the outfile.
+
+    Args:
+        exp_file (Path): Path to the experimental yaml file
+        outfile (Path): Path to the output txt file
+        jobs (list[str]): List of jobs, one per run line in the yaml exp_file
+    """
+    lines = exp_file.read_text().splitlines()
+    run_line = lines.index("runs:")
+    j = 0
+    for i, line in enumerate(lines[run_line:]):
+        if line.strip().startswith("- "):
+            lines[run_line + i] = f"{line}  # {jobs[j]}"
+            j += 1
+    yml_out = outfile.with_suffix(".yaml")
+    yml_out.write_text("\n".join(lines))
+    return yml_out
+
+
 def get_commit():
     try:
         commit = (
@@ -173,5 +195,9 @@ if __name__ == "__main__":
             f.write(text)
         print(f"Output written to {str(outfile)}")
         print("All job launched:", " ".join(jobs))
+        yml_out = write_exp_yaml_and_jobs(exp_file, outfile, jobs)
+        print(
+            "Experiment summary YAML in ", f"./{str(yml_out.relative_to(Path.cwd()))}"
+        )
     else:
         print("Aborting")
