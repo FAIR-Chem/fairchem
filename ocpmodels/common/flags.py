@@ -64,9 +64,9 @@ class Flags:
         )
         self.parser.add_argument(
             "--print-every",
-            default=1000,
+            default=-1,
             type=int,
-            help="Log every N iterations (default: 10)",
+            help="Log every N iterations (default: -1 = end of epoch)",
         )
         self.parser.add_argument(
             "--seed", default=0, type=int, help="Seed for torch, cuda, numpy"
@@ -157,7 +157,6 @@ class Flags:
         self.parser.add_argument(
             "--note",
             type=str,
-            default="",
             help="Note describing this run to be added to the logger",
         )
         self.parser.add_argument(
@@ -172,12 +171,6 @@ class Flags:
             type=str,
             default="",
             help="Comma-separated tags for wandb",
-        )
-        self.parser.add_argument(
-            "--print_every",
-            type=int,
-            default=100,
-            help="Printing frequency (in steps)",
         )
         self.parser.add_argument(
             "--wandb_project",
@@ -228,6 +221,24 @@ class Flags:
             action="store_true",
             default=False,
             help="Evaluate on test set",
+        )
+        self.parser.add_argument(
+            "--narval",
+            action="store_true",
+            default=False,
+            help="is on Narval DRAC cluster",
+        )
+        self.parser.add_argument(
+            "--cp_data_to_tmpdir",
+            type=bool,
+            default=False,
+            help="Don't copy LMDB data to $SLURM_TMPDIR and work from there",
+        )
+        self.parser.add_argument(
+            "--log_train_every",
+            type=int,
+            default=100,
+            help="Log training loss every n steps",
         )
 
 

@@ -35,7 +35,7 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_commit_hash, save_checkpoint
+from ocpmodels.common.utils import get_commit_hash, save_checkpoint, JOB_ID
 from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -44,6 +44,7 @@ from ocpmodels.modules.exponential_moving_average import (
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
+from ocpmodels.common.timer import Times
 
 
 @registry.register_trainer("base")
@@ -64,10 +65,11 @@ class BaseTrainer(ABC):
             "logs_dir": str(Path(run_dir) / "logs"),
         }
 
+        self.sigterm = False
         self.epoch = 0
         self.step = 0
         self.cpu = self.config["cpu"]
-        self.task_name = self.config.get("task_name", self.config.get("name"))
+        self.task_name = self.config["task"].get("name", self.config.get("name"))
         assert self.task_name, "Specify task name (got {})".format(self.task_name)
         self.test_ri = self.config["test_ri"]
         self.is_debug = self.config["is_debug"]
@@ -98,8 +100,8 @@ class BaseTrainer(ABC):
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if self.config["amp"] else None
 
-        if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
-            self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
+        if JOB_ID and "folder" in self.config["slurm"]:
+            self.config["slurm"]["job_id"] = JOB_ID
             self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
                 "%j", self.config["slurm"]["job_id"]
             )
@@ -159,9 +161,10 @@ class BaseTrainer(ABC):
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+        if "cpu" not in str(self.device):
+            torch.cuda.manual_seed_all(seed)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
     def load_logger(self):
         self.logger = None
@@ -217,13 +220,32 @@ class BaseTrainer(ABC):
             if split == "default_val":
                 continue
 
-            shuffle = False
-            if split == "train":
-                shuffle = True
-
             self.datasets[split] = registry.get_dataset_class(
                 self.config["task"]["dataset"]
             )(ds_conf, transform=transform)
+
+            shuffle = False
+            if split == "train":
+                shuffle = True
+                if self.config["optim"].get("max_steps"):
+                    if self.config["optim"].get("max_epochs", -1) > 0:
+                        print(
+                            "WARNING: Both max_steps and max_epochs are set.",
+                            "Using max_steps.",
+                        )
+                    self.config["optim"]["max_epochs"] = int(
+                        np.ceil(
+                            self.config["optim"]["max_steps"]
+                            / np.ceil(len(self.datasets[split]) / batch_size)
+                        )
+                    )
+                    print(
+                        "Setting max_epochs to",
+                        self.config["optim"]["max_epochs"],
+                        f"from max_steps ({self.config['optim']['max_steps']})",
+                        f"and batch_size ({self.config['optim']['batch_size']})\n",
+                    )
+
             self.samplers[split] = self.get_sampler(
                 self.datasets[split], batch_size, shuffle=shuffle
             )
@@ -278,6 +300,7 @@ class BaseTrainer(ABC):
             num_atoms=num_atoms,
             bond_feat_dim=bond_feat_dim,
             num_targets=self.num_targets,
+            task_name=self.task_name,
             **self.config["model"],
         ).to(self.device)
 
@@ -512,6 +535,7 @@ class BaseTrainer(ABC):
         disable_tqdm=True,
         debug_batches=-1,
         is_final=False,
+        is_first=False,
     ):
         if distutils.is_master() and not self.silent:
             print()
@@ -532,27 +556,34 @@ class BaseTrainer(ABC):
         desc = "device {}".format(distutils.get_rank())
 
         loader = self.loaders[split]
-        val_time = time.time()
+        times = Times(gpu=True)
 
-        for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
+        with times.next("validation_loop"):
 
-            if debug_batches > 0 and i == debug_batches:
-                break
+            for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
 
-            # Forward.
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                preds = self.model_forward(batch)
+                if self.sigterm:
+                    return "SIGTERM"
 
-            loss = self.compute_loss(preds, batch)
-            if preds.get("pooling_loss") is not None:
-                loss["total_loss"] += preds["pooling_loss"]
+                if debug_batches > 0 and i == debug_batches:
+                    break
 
-            # Compute metrics.
-            metrics = self.compute_metrics(preds, batch, evaluator, metrics)
-            for k, v in loss.items():
-                metrics = evaluator.update(k, v.item(), metrics)
+                # Forward.
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    with times.next("model_forward", ignore=not is_first):
+                        preds = self.model_forward(batch)
+                    loss = self.compute_loss(preds, batch)
 
-        val_time = time.time() - val_time
+                if preds.get("pooling_loss") is not None:
+                    loss["total_loss"] += preds["pooling_loss"]
+
+                # Compute metrics.
+                metrics = self.compute_metrics(preds, batch, evaluator, metrics)
+                for k, v in loss.items():
+                    metrics = evaluator.update(k, v.item(), metrics)
+
+        mean_val_times, std_val_times = times.prepare_for_logging()
+
         aggregated_metrics = {}
         for k in metrics:
             aggregated_metrics[k] = {
@@ -569,9 +600,12 @@ class BaseTrainer(ABC):
         metrics = aggregated_metrics
 
         log_dict = {k: metrics[k]["metric"] for k in metrics}
-        log_dict.update({"epoch": self.epoch})
-        log_dict.update({f"{split}_time": val_time})
-        log_dict.update({f"{split}_n_samples": i + 1})
+        log_dict["epoch"] = self.epoch
+        log_dict[f"{split}_time"] = mean_val_times["validation_loop"]
+        if is_first:
+            log_dict["model_forward_time_mean"] = mean_val_times["model_forward"]
+            log_dict["model_forward_time_std"] = std_val_times["model_forward"]
+
         if distutils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
             print("\n  > ".join([""] + log_str))
@@ -720,6 +754,10 @@ class BaseTrainer(ABC):
                 debug_batches=debug_batches,
                 is_final=final,
             )
+
+            if self.metrics == "SIGTERM":
+                return "SIGTERM"
+
             metrics_dict[split] = self.metrics
             cumulated_mae += self.metrics["energy_mae"]["metric"]
             cumulated_time += time.time() - start_time
@@ -740,22 +778,27 @@ class BaseTrainer(ABC):
         # Log specific metrics
         if final and self.config["logger"] == "wandb" and distutils.is_master():
             overall_mae = cumulated_mae / len(all_splits)
-            sid = os.getenv("SLURM_JOB_ID")
             self.logger.log({"Eval time": cumulated_time})
             self.logger.log({"Overall MAE": overall_mae})
             if self.logger.ntfy:
                 self.logger.ntfy(
-                    message=f"{sid} - Overall MAE: {overall_mae}", click=self.logger.url
+                    message=f"{JOB_ID} - Overall MAE: {overall_mae}",
+                    click=self.logger.url,
                 )
 
         # Run on test split
         if final and "test" in self.config["dataset"] and self.eval_on_test:
-            metrics_dict["test"] = self.validate(
+            test_metrics = self.validate(
                 split="test",
                 disable_tqdm=disable_tqdm,
                 debug_batches=debug_batches,
                 is_final=final,
             )
+
+            if test_metrics == "SIGTERM":
+                return "SIGTERM"
+
+            metrics_dict["test"] = test_metrics
             all_splits += ["test"]
 
         # Print results
@@ -769,7 +812,7 @@ class BaseTrainer(ABC):
             for c, col in enumerate(["Metric / Split"] + all_splits):
                 table.add_column(col, justify="left" if c == 0 else "right")
 
-            highlights = {"energy_mae", "forces_mae", "total_loss"}
+            highlights = set()  # {"energy_mae", "forces_mae", "total_loss"}
             smn = sorted([m if "loss" not in m else f"z_{m}" for m in metrics_names])
             for metric in smn:
                 metric = metric[2:] if metric.startswith("z_") else metric
@@ -875,3 +918,14 @@ class BaseTrainer(ABC):
                 )
         else:
             self.scheduler.step()
+
+    def handle_sigterm(self, signum, _):
+        """
+        Handle SIGTERM signal received.
+
+        Args:
+            signum (int): Signal number
+        """
+        if signum == 15 and not self.sigterm:
+            print("\nHandling SIGTERM signal received.\n")
+            self.sigterm = True

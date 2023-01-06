@@ -25,6 +25,7 @@ from ocpmodels.common.utils import OCP_TASKS, check_traj_files
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from ocpmodels.common.timer import Times
 
 is_test_env = os.environ.get("ocp_test_env", False)
 
@@ -183,16 +184,23 @@ class SingleTrainer(BaseTrainer):
         n_train = len(self.loaders["train"])
         epoch_int = 0
         eval_every = self.config["optim"].get("eval_every", n_train)
-        self.config["print_every"] = eval_every  # Can comment out for better debug
+        if self.config["print_every"] < 0:
+            self.config["print_every"] = n_train
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )
         self.best_val_metric = np.inf
         current_val_metric = None
+        first_eval = True
+        log_train_every = self.config["log_train_every"]
+
+        print(f"Logging  train metrics every {log_train_every} steps")
+        print(f"Printing train metrics every {self.config['print_every']} steps")
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // n_train
+        loader_times = Times()
         epoch_times = []
 
         if not self.silent:
@@ -212,12 +220,15 @@ class SingleTrainer(BaseTrainer):
             i_for_epoch = 0
 
             for i in range(skip_steps, n_train):
+                if self.sigterm:
+                    return "SIGTERM"
                 i_for_epoch += 1
                 self.epoch = epoch_int + (i + 1) / n_train
                 self.step = epoch_int * n_train + i + 1
 
                 # Get a batch.
-                batch = next(train_loader_iter)
+                with loader_times.next("get_batch"):
+                    batch = next(train_loader_iter)
 
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
@@ -226,10 +237,12 @@ class SingleTrainer(BaseTrainer):
                     if preds.get("pooling_loss") is not None:
                         coeff = self.config["optim"].get("pooling_coefficient", 1)
                         loss["total_loss"] += preds["pooling_loss"] * coeff
+
                 loss = {
                     k: self.scaler.scale(v) if self.scaler else v
                     for k, v in loss.items()
                 }
+
                 if torch.isnan(loss["total_loss"]):
                     print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
                     self.logger.add_tags(["nan_loss"])
@@ -244,13 +257,20 @@ class SingleTrainer(BaseTrainer):
                     metrics={},
                 )
                 scale = self.scaler.get_scale() if self.scaler else 1.0
-                for k, v in loss.items():
-                    self.metrics = self.evaluator.update(
-                        k, v.item() / scale, self.metrics
-                    )
 
-                # Log metrics.
-                self.log_train_metrics()
+                if i_for_epoch % log_train_every == 0:
+                    for k, v in loss.items():
+                        self.metrics = self.evaluator.update(
+                            k, v.item() / scale, self.metrics
+                        )
+
+                    # Log metrics.
+                    gbm, gbs = loader_times.prepare_for_logging()
+                    self.metrics["get_batch_time_mean"] = {"metric": gbm["get_batch"]}
+                    self.metrics["get_batch_time_std"] = {"metric": gbs["get_batch"]}
+                    loader_times.reset()
+                    # logging.info(f"Step: {self.step}")
+                    self.log_train_metrics()
 
                 is_final_epoch = epoch_int == self.config["optim"]["max_epochs"] - 1
                 is_final_batch = (i == n_train - 1) or (
@@ -278,7 +298,11 @@ class SingleTrainer(BaseTrainer):
                         split=self.config["dataset"]["default_val"],
                         disable_tqdm=disable_eval_tqdm,
                         debug_batches=debug_batches,
+                        is_first=first_eval,
                     )
+                    first_eval = False
+                    if val_metrics == "SIGTERM":
+                        return "SIGTERM"
                     current_val_metric = val_metrics[primary_metric]["metric"]
                     if current_val_metric < self.best_val_metric:
                         self.best_val_metric = current_val_metric
@@ -297,16 +321,19 @@ class SingleTrainer(BaseTrainer):
                 # End of batch.
 
             # End of epoch.
+            epoch_times.append(time.time() - start_time)
+            self.metrics["epoch_time"] = {"metric": epoch_times[-1]}
             self.log_train_metrics(end_of_epoch=True)
             torch.cuda.empty_cache()
-            epoch_times.append(time.time() - start_time)
 
         # End of training.
 
         if is_test_env:
             return
 
-        self.eval_all_splits(True, epoch=epoch_int, debug_batches=debug_batches)
+        eas = self.eval_all_splits(True, epoch=epoch_int, debug_batches=debug_batches)
+        if eas == "SIGTERM":
+            return "SIGTERM"
 
         if "test" in self.loaders:
             # TODO: update predict function
@@ -329,6 +356,8 @@ class SingleTrainer(BaseTrainer):
         # Check respect of symmetries
         if self.test_ri and not is_test_env:
             symmetry = self.test_model_symmetries(debug_batches=debug_batches)
+            if symmetry == "SIGTERM":
+                return "SIGTERM"
             if self.logger:
                 self.logger.log(symmetry)
 
@@ -558,14 +587,14 @@ class SingleTrainer(BaseTrainer):
             and distutils.is_master()
             and not self.is_hpo
         ) or (distutils.is_master() and end_of_epoch):
-            log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
             if not self.silent:
+                log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
                 print(
                     f"Train metrics at step {self.step}:\n  > " + "\n  > ".join(log_str)
                 )
             self.metrics = {}
 
-        if self.logger is not None and not end_of_epoch:
+        if self.logger is not None:  # and not end_of_epoch:
             self.logger.log(
                 log_dict,
                 step=self.step,
@@ -595,8 +624,11 @@ class SingleTrainer(BaseTrainer):
         forces_diff_refl = torch.zeros(1, device=self.device)
 
         for i, batch in enumerate(self.loaders[self.config["dataset"]["default_val"]]):
+            if self.sigterm:
+                return "SIGTERM"
             if debug_batches > 0 and i == debug_batches:
                 break
+
             # Compute model prediction
             preds1 = self.model_forward(deepcopy(batch))
 

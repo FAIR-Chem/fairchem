@@ -8,6 +8,76 @@ from minydra import resolved_args
 from yaml import safe_load
 
 from sbatch import now
+import copy
+
+
+def merge_dicts(dict1: dict, dict2: dict):
+    """Recursively merge two dictionaries.
+    Values in dict2 override values in dict1. If dict1 and dict2 contain a dictionary
+    as a value, this will call itself recursively to merge these dictionaries.
+    This does not modify the input dictionaries (creates an internal copy).
+    Additionally returns a list of detected duplicates.
+    Adapted from https://github.com/TUM-DAML/seml/blob/master/seml/utils.py
+
+    Parameters
+    ----------
+    dict1: dict
+        First dict.
+    dict2: dict
+        Second dict. Values in dict2 will override values from dict1 in case they share
+        the same key.
+
+    Returns
+    -------
+    return_dict_and_duplicates: tuple(dict, list(str))
+        Merged dictionaries.
+    """
+    if not isinstance(dict1, dict):
+        raise ValueError(f"Expecting dict1 to be dict, found {type(dict1)}.")
+    if not isinstance(dict2, dict):
+        raise ValueError(f"Expecting dict2 to be dict, found {type(dict2)}.")
+
+    return_dict = copy.deepcopy(dict1)
+
+    for k, v in dict2.items():
+        if k not in dict1:
+            return_dict[k] = v
+        else:
+            if isinstance(v, dict) and isinstance(dict1[k], dict):
+                return_dict[k] = merge_dicts(dict1[k], dict2[k])
+            elif isinstance(v, list) and isinstance(dict1[k], list):
+                if len(dict1[k]) != len(dict2[k]):
+                    raise ValueError(
+                        f"List for key {k} has different length in dict1 and dict2."
+                        + " Use an empty dict {} to pad for items in the shorter list."
+                    )
+                return_dict[k] = [merge_dicts(d1, d2)[0] for d1, d2 in zip(dict1[k], v)]
+            else:
+                return_dict[k] = dict2[k]
+
+    return return_dict
+
+
+def write_exp_yaml_and_jobs(exp_file, outfile, jobs):
+    """
+    Reads the exp_file, adds the jobs as comments in each run line and writes the
+    resulting yaml file in the same directory as the outfile.
+
+    Args:
+        exp_file (Path): Path to the experimental yaml file
+        outfile (Path): Path to the output txt file
+        jobs (list[str]): List of jobs, one per run line in the yaml exp_file
+    """
+    lines = exp_file.read_text().splitlines()
+    run_line = lines.index("runs:")
+    j = 0
+    for i, line in enumerate(lines[run_line:]):
+        if line.strip().startswith("- "):
+            lines[run_line + i] = f"{line}  # {jobs[j]}"
+            j += 1
+    yml_out = outfile.with_suffix(".yaml")
+    yml_out.write_text("\n".join(lines))
+    return yml_out
 
 
 def get_commit():
@@ -74,12 +144,10 @@ if __name__ == "__main__":
 
     for run in runs:
         params = exp["default"].copy()
-        job = exp["job"].copy()
-
-        job.update(run.pop("job", {}))
+        job = merge_dicts(exp["job"].copy(), run.pop("job", {}))
         if run.pop("_no_exp_default_", False):
             params = {}
-        params.update(run)
+        params = merge_dicts(params, run)
         if "time" in job:
             job["time"] = seconds_to_time_str(job["time"])
 
@@ -127,5 +195,9 @@ if __name__ == "__main__":
             f.write(text)
         print(f"Output written to {str(outfile)}")
         print("All job launched:", " ".join(jobs))
+        yml_out = write_exp_yaml_and_jobs(exp_file, outfile, jobs)
+        print(
+            "Experiment summary YAML in ", f"./{str(yml_out.relative_to(Path.cwd()))}"
+        )
     else:
         print("Aborting")

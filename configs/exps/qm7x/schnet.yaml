@@ -1,0 +1,73 @@
+# trainset has 4068193 samples
+job:
+  mem: 48GB
+  cpus: 8
+  gres: gpu:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
+  env: ocp-a100
+
+default:
+  config: schnet-qm7x-all
+  wandb_project: ocp-qm
+  mode: train
+  test_ri: true
+  wandb_tags: qm7x, std/10
+  phys_hidden_channels: 0
+  phys_embeds: False
+  energy_head: False
+  pg_hidden_channels: 0
+  tag_hidden_channels: 0
+  frame_averaging: ""
+  cp_data_to_tmpdir: true
+  note:
+    task: name
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions
+    optim: batch_size, lr_initial
+  dataset:
+    train:
+      std_divider: 10.0
+    val_id:
+      std_divider: 10.0
+    val_ood:
+      std_divider: 10.0
+  optim:
+    batch_size: 1024
+    warmup_steps: 3000
+    lr_initial: 0.0005
+    # parameters EMA
+    ema_decay: 0.999
+    decay_steps: 750000
+    decay_rate: 0.05
+    max_steps: 1000000
+  model:
+    hidden_channels: 256
+    num_filters: 256
+    num_gaussians: 100
+    num_interactions: 6
+    cutoff: 5.0
+
+runs:
+  - {}
+  - optim:
+      batch_size: 2048
+  - optim:
+      batch_size: 4096
+  - optim:
+      lr_initial: 0.001
+  - optim:
+      lr_initial: 0.001
+      batch_size: 2048
+  - model:
+      num_gaussians: 200
+  - model:
+      hidden_channels: 1024
+  - model:
+      num_filters: 1024
+  - model:
+      num_interactions: 8
+  - model:
+      num_interactions: 6
+      num_gaussians: 20
+      num_filters: 64
+      hidden_channels: 1024

@@ -15,10 +15,13 @@ import traceback
 import warnings
 from pathlib import Path
 
+import torch
+
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
+    JOB_ID,
     build_config,
     resolve,
     setup_imports,
@@ -27,7 +30,8 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.trainers import BaseTrainer
 
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+torch.multiprocessing.set_sharing_strategy("file_system")
 
 try:
     import ipdb  # noqa: F401
@@ -54,7 +58,7 @@ def read_slurm_env(config):
     if not config.get("slurm"):
         return config
 
-    command = f"scontrol show job {os.environ.get('SLURM_JOB_ID')}"
+    command = f"scontrol show job {JOB_ID}"
     scontrol = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
     params = re.findall(r"TRES=(.+)\n", scontrol)
     try:
@@ -130,10 +134,9 @@ def print_warnings():
 
 
 if __name__ == "__main__":
-    ntfy = trainer = error = None
+    ntfy = trainer = error = signal = None
 
     setup_logging()
-    slurm_job_id = os.environ.get("SLURM_JOB_ID")
 
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
@@ -173,14 +176,23 @@ if __name__ == "__main__":
         task.setup(trainer)
         start_time = time.time()
         if trainer.logger is not None:
-            message = f"{slurm_job_id} - Training started 🚀"
+            message = f"{JOB_ID} - Training started 🚀"
             if trainer_config.get("note"):
                 message += f" - {trainer_config.get('note')}"
             if trainer_config.get("wandb_tags"):
                 message += f" - {trainer_config.get('wandb_tags')}"
             trainer.logger.ntfy(message, click=trainer.logger.url)
         print_warnings()
-        task.run()
+
+        signal = task.run()
+
+        # handle job preemption / time limit
+        if signal == "SIGTERM":
+            print("\nJob was preempted. Wrapping up...\n")
+            for ds in trainer.datasets.values():
+                if hasattr(ds, "close_db") and callable(ds.close_db):
+                    ds.close_db()
+
         # -----------------
         # -----  End  -----
         # -----------------
@@ -193,7 +205,7 @@ if __name__ == "__main__":
         if trainer and trainer.logger:
             e_name = e.__class__.__name__
             trainer.logger.ntfy(
-                f"{slurm_job_id} - Training failed 😭" + f"{e_name} - {str(e)}",
+                f"{JOB_ID} - Training failed 😭" + f"{e_name} - {str(e)}",
                 click=trainer.logger.url or None,
             )
         error = True
@@ -209,8 +221,8 @@ if __name__ == "__main__":
             print("Done!")
 
         if trainer and trainer.logger:
-            trainer.logger.finish(error)
+            trainer.logger.finish(error or signal)
 
-        if "interactive" not in os.popen(f"squeue -hj {slurm_job_id}").read():
-            print("Self-canceling SLURM job", os.getenv("SLURM_JOB_ID"))
-            os.system(f"scancel {os.getenv('SLURM_JOB_ID')}")
+        if "interactive" not in os.popen(f"squeue -hj {JOB_ID}").read():
+            print("Self-canceling SLURM job", JOB_ID)
+            os.system(f"scancel {JOB_ID}")
