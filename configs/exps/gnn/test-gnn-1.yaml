@@ -15,9 +15,10 @@ default:
     pg_hidden_channels: 0  # shall have been 32
     energy_head: 'weighted-av-initial-embeds' # False ?
   optim:
-    lr_initial: 0.002
+    lr_initial: 0.0035
     lr_gamma: 0.07
     warmup_steps: 500
+    max_epochs: 25
   wandb_tags: 'test-fanet'
 
 runs:
