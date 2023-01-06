@@ -114,22 +114,21 @@ class EmbeddingBlock(nn.Module):
         # TODO: change some num_filters to edge_embed_hidden
         if self.edge_embed_type == "rij":
             self.lin_e1 = Linear(3, num_filters)
-            self.lin_e2 = Linear(num_filters, num_filters)
         elif self.edge_embed_type == "all_rij":
             self.lin_e1 = Linear(3, num_filters // 3)  # r_ij
             self.lin_e12 = Linear(3, num_filters // 3)  # norm r_ij
             self.lin_e13 = Linear(
                 num_gaussians, num_filters - 2 * (num_filters // 3)
             )  # d_ij
-            self.lin_e2 = Linear(num_filters, num_filters)  # mlp of concat
         elif self.edge_embed_type == "sh":
             self.lin_e1 = Linear(15, num_filters)
-            self.lin_e2 = Linear(num_filters, num_filters)
         elif self.edge_embed_type == "all":
             self.lin_e1 = Linear(18, num_filters)
-            self.lin_e2 = Linear(num_filters, num_filters)
         else:
             raise ValueError("edge_embedding_type does not exist")
+
+        if self.second_layer_MLP:
+            self.lin_e2 = Linear(num_filters, num_filters)
 
         self.reset_parameters()
 
@@ -144,13 +143,13 @@ class EmbeddingBlock(nn.Module):
             self.group_embedding.reset_parameters()
         nn.init.xavier_uniform_(self.lin.weight)
         self.lin.bias.data.fill_(0)
+        nn.init.xavier_uniform_(self.lin_e1.weight)
+        self.lin_e1.bias.data.fill_(0)
         if self.second_layer_MLP:
             nn.init.xavier_uniform_(self.lin_2.weight)
             self.lin_2.bias.data.fill_(0)
-        nn.init.xavier_uniform_(self.lin_e1.weight)
-        self.lin_e1.bias.data.fill_(0)
-        nn.init.xavier_uniform_(self.lin_e2.weight)
-        self.lin_e2.bias.data.fill_(0)
+            nn.init.xavier_uniform_(self.lin_e2.weight)
+            self.lin_e2.bias.data.fill_(0)
         if self.edge_embed_type == "all_rij":
             nn.init.xavier_uniform_(self.lin_e12.weight)
             self.lin_e12.bias.data.fill_(0)
@@ -408,7 +407,7 @@ class FANet(BaseModel):
             of the edge embedding block.
         edge_embed_hidden (int): size of edge representation.
             could be num_filters or hidden_channels.
-        mp_type (str, in {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env}):
+        mp_type (str, in {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'}):
             specificies the MP of the interaction block.
     """
 

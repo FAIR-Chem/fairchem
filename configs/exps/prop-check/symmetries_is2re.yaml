@@ -1,5 +1,5 @@
 job:
-  mem: 32GB
+  mem: 48GB
   cpus: 4
   gres: gpu:rtx8000:4
   partition: long
@@ -18,35 +18,34 @@ default:
 
 runs:
   - config: sfarinet-is2re-all
-    note: 'Baseline'
-  - config: sfarinet-is2re-all
-    note: 'Test 2D all symmetries IS2RE + FA correctness'
-    frame_averaging: 2D
-    fa_frames: all
-  - config: sfarinet-is2re-all
     note: 'Test 3D all symmetries IS2RE + FA correctness'
-    frame_averaging: 3D
+    frame_averaging: DA
     fa_frames: all
   - config: sfarinet-is2re-all
     note: 'Test 3D se3-all symmetries IS2RE + FA correctness'
     frame_averaging: 3D
     fa_frames: se3-all
   - config: sfarinet-is2re-all
-    note: 'Test 2D random symmetries IS2RE + FA correctness'
+    note: '2D det symmetries IS2RE + FA correctness'
     frame_averaging: 2D
-    fa_frames: random
+    fa_frames: det
   - config: sfarinet-is2re-all
-    note: 'Test 2D se3-random symmetries IS2RE + FA correctness'
+    note: '3D det symmetries IS2RE + FA correctness'
+    frame_averaging: 3D
+    fa_frames: det
+  - config: sfarinet-is2re-all
+    note: '2D se3-random 30 epochs symmetries IS2RE + FA correctness'
     frame_averaging: 2D
     fa_frames: se3-random
+    optim: 
+      max_epochs: 30
   - config: sfarinet-is2re-all
-    note: 'Test 2D random symmetries IS2RE + FA correctness more epochs'
+    note: 'Baseline 30 epochs symmetries IS2RE + FA correctness'
+    optim: 
+      max_epochs: 30
+  - config: sfarinet-is2re-all
+    note: '2D all 30 epochs symmetries IS2RE + FA correctness'
     frame_averaging: 2D
-    fa_frames: random
-    optim:
+    fa_frames: all
+    optim: 
       max_epochs: 30
-  - config: sfarinet-is2re-all
-    note: 'Test invariance of DA more epochs'
-    optim:
-      max_epochs: 30
-    frame_averaging: 'DA'

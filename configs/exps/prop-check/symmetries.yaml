@@ -3,7 +3,7 @@ job:
   cpus: 4
   gres: gpu:rtx8000:4
   partition: long
-  time: 48:00:00
+  time: 40:00:00
 
 default:
   test_ri: True
@@ -14,33 +14,76 @@ default:
     tag_hidden_channels: 64
     pg_hidden_channels: 0  # shall have been 32
     energy_head: False # False ?
-    regress_forces: from_energy
   optim:
     max_epochs: 5
   wandb_tags: 'prop-check-ICLM'
 
 runs:
   - config: sfarinet-s2ef-2M
+    note: 'Baseline 5 epochs'
+    model: 
+      regress_forces: from_energy
+  - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 2D
     fa_frames: all
+    model: 
+      regress_forces: from_energy
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 3D
     fa_frames: all
+    model: 
+      regress_forces: from_energy
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
-    frame_averaging: 3D
-    fa_frames: random
+    frame_averaging: DA
+    model: 
+      regress_forces: from_energy
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 2D
-    fa_frames: random
+    fa_frames: det
+    model: 
+      regress_forces: from_energy
   - config: sfarinet-s2ef-2M
-    note: 'Test Forces SE(3)-Equivariance'
+    note: 'Test Force Equivariance'
     frame_averaging: 2D
-    fa_frames: se3-all
+    fa_frames: se3-det
+    model: 
+      regress_forces: from_energy
   - config: sfarinet-s2ef-2M
-    note: 'Test Forces SE(3)-Equivariance'
+    note: 'Test Force Equivariance'
+    frame_averaging: 2D
+    fa_frames: all
+    model: 
+      regress_forces: direct
+  - config: sfarinet-s2ef-2M
+    note: 'Test Force Equivariance'
     frame_averaging: 2D
     fa_frames: se3-random
+    model: 
+      regress_forces: direct
+  - config: sfarinet-s2ef-2M
+    note: 'Test Force Equivariance'
+    frame_averaging: 2D
+    fa_frames: all
+    model: 
+      regress_forces: direct_with_gradient_target
+  - config: sfarinet-s2ef-2M
+    note: 'Test Force Equivariance'
+    frame_averaging: DA
+    model: 
+      regress_forces: direct_with_gradient_target
+  - config: sfarinet-s2ef-2M
+    note: 'No forces coefficient ! Only energy'
+    model: 
+      regress_forces: direct
+      force_coefficient: 0
+      energy_grad_coefficient: 10
+  - config: sfarinet-s2ef-2M
+    note: 'Large energy grad coef'
+    frame_averaging: DA
+    model: 
+      regress_forces: direct_with_gradient_target
+      energy_grad_coefficient: 50
