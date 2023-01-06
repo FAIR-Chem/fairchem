@@ -1,0 +1,44 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  time: 20:00:00
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  model:
+    phys_embeds: True
+    tag_hidden_channels: 64
+    pg_hidden_channels: 0  # shall have been 32
+    energy_head: 'weighted-av-initial-embeds' # False ?
+  optim:
+    lr_initial: 0.002
+    lr_gamma: 0.07
+    warmup_steps: 500
+  wandb_tags: 'test-fanet'
+
+runs:
+  - config: fanet-is2re-10k
+    note: 'Base rij FANet GNNs'
+    model:
+      mp_type: base
+      edge_embed_type: rij
+  - config: fanet-is2re-10k
+    note: 'Updownscale all-embeds FANet GNNs'
+    model:
+      mp_type: updownscale
+      edge_embed_type: all
+  - config: fanet-is2re-10k
+    note: 'Simple SH FANet GNNs'
+    model:
+      mp_type: simple
+      edge_embed_type: sh
+  - config: fanet-is2re-10k
+    note: 'Simple skip-co 2-layers FANet GNNs'
+    model:
+      skip_co: True
+      second_layer_MLP: True
+      edge_embed_type: all_rij

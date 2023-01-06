@@ -408,7 +408,7 @@ class FANet(BaseModel):
             of the edge embedding block.
         edge_embed_hidden (int): size of edge representation.
             could be num_filters or hidden_channels.
-        mp_type (str, in {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env}):
+        mp_type (str, in {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'}):
             specificies the MP of the interaction block.
     """
 
