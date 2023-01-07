@@ -9,6 +9,7 @@ import math
 import torch
 from torch_scatter import scatter
 
+from ocpmodels.common.utils import scatter_det
 from ocpmodels.modules.scaling import ScaleFactor
 
 from ..initializers import get_initializer
@@ -77,7 +78,7 @@ class AtomUpdateBlock(torch.nn.Module):
         bases_emb = self.dense_rbf(basis_rad)  # (nEdges, emb_size_edge)
         x = m * bases_emb
 
-        x2 = scatter(
+        x2 = scatter_det(
             x, idx_atom, dim=0, dim_size=nAtoms, reduce="sum"
         )  # (nAtoms, emb_size_edge)
         x = self.scale_sum(x2, ref=m)
@@ -164,7 +165,7 @@ class OutputBlock(AtomUpdateBlock):
         basis_emb_E = self.dense_rbf(basis_rad)  # (nEdges, emb_size_edge)
         x = m * basis_emb_E
 
-        x_E = scatter(
+        x_E = scatter_det(
             x, idx_atom, dim=0, dim_size=nAtoms, reduce="sum"
         )  # (nAtoms, emb_size_edge)
         x_E = self.scale_sum(x_E, ref=m)
