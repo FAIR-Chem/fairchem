@@ -12,23 +12,23 @@ default:
   wandb_project: ocp-qm
   mode: train
   test_ri: true
-  wandb_tags: qm7x, std/10
+  wandb_tags: qm7x #, std/10
   frame_averaging: ""
   cp_data_to_tmpdir: true
   note:
     task: name
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, mp_type, edge_embed_type
     optim: batch_size, lr_initial
-  dataset:
-    train:
-      std_divider: 10.0
-    val_id:
-      std_divider: 10.0
-    val_ood:
-      std_divider: 10.0
+  # dataset:
+  #   train:
+  #     std_divider: 10.0
+  #   val_id:
+  #     std_divider: 10.0
+  #   val_ood:
+  #     std_divider: 10.0
   optim:
-    batch_size: 1024
-    warmup_steps: 3000
+    batch_size: 2048
+    warmup_steps: 1000
     lr_initial: 0.0005
     # parameters EMA
     ema_decay: 0.999
@@ -45,8 +45,8 @@ default:
     # archi
     hidden_channels: 256
     num_filters: 256
-    num_gaussians: 32
-    num_interactions: 4
+    num_gaussians: 100
+    num_interactions: 6
     cutoff: 6.0
     regress_forces: False
     # fanet
