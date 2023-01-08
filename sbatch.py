@@ -232,7 +232,9 @@ if __name__ == "__main__":
             sbatch_py_vars["num-nodes"] = args.nodes
             sbatch_py_vars["num-gpus"] = args.ntasks_per_node
         else:
-            args.py_args += f" --distributed --num-nodes {args.nodes} --num-gpus {args.ntasks_per_node}"
+            args.py_args += " --distributed --num-nodes {} --num-gpus {}".format(
+                args.nodes, args.ntasks_per_node
+            )
 
     # add logdir to main.py's command-line arguments
     if "--logdir" not in args.py_args and args.logdir:
