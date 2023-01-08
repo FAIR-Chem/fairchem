@@ -783,14 +783,10 @@ class BaseTrainer(ABC):
             overall_energy_mae = cumulated_energy_mae / len(all_splits)
             self.logger.log({"Eval time": cumulated_time})
             self.logger.log({"Overall MAE": overall_energy_mae})
+            self.objective = overall_energy_mae
             if self.config["model"].get("regress_forces", False):
                 overall_forces_mae = cumulated_forces_mae / len(all_splits)
                 self.logger.log({"Overall Forces MAE": overall_forces_mae})
-            if self.logger.ntfy:
-                self.logger.ntfy(
-                    message=f"{JOB_ID} - Overall MAE: {overall_energy_mae}",
-                    click=self.logger.url,
-                )
 
         # Run on test split
         if final and "test" in self.config["dataset"] and self.eval_on_test:
@@ -935,3 +931,11 @@ class BaseTrainer(ABC):
         if signum == 15 and not self.sigterm:
             print("\nHandling SIGTERM signal received.\n")
             self.sigterm = True
+
+    def close_datasets(self):
+        try:
+            for ds in self.datasets.values():
+                if hasattr(ds, "close_db") and callable(ds.close_db):
+                    ds.close_db()
+        except Exception as e:
+            print("Error closing datasets: ", str(e))
