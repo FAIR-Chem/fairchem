@@ -16,6 +16,8 @@ import warnings
 from pathlib import Path
 
 import torch
+from orion.client import build_experiment
+from yaml import safe_load
 
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
@@ -23,6 +25,7 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     JOB_ID,
     build_config,
+    merge_dicts,
     resolve,
     setup_imports,
     setup_logging,
@@ -133,8 +136,53 @@ def print_warnings():
     print("-" * 80 + "\n")
 
 
+class Runner:
+    def __init__(self, trainer_config):
+        self.trainer_config = trainer_config
+        self.trainer = None
+
+    def run(self, **hparams):
+        self.original_config = copy.deepcopy(self.trainer_config)
+        self.hparams = hparams
+
+        should_be_0 = distutils.get_rank()
+        hp_list = [hparams, should_be_0]
+        distutils.broadcast_object_list(hp_list)
+        hparams, should_be_0 = hp_list
+        print("hparams: ", hparams)
+        print("should_be_0: ", should_be_0)
+        assert should_be_0 == 0
+        if hparams:
+            print("Received hyper-parameters from Orion:")
+            print(hparams)
+
+        self.trainer_config = merge_dicts(self.trainer_config, hparams)
+        cls = registry.get_trainer_class(self.trainer_config["trainer"])
+        self.trainer: BaseTrainer = cls(**self.trainer_config)
+        task = registry.get_task_class(self.trainer_config["mode"])(self.trainer_config)
+        task.setup(self.trainer)
+        start_time = time.time()
+        print_warnings()
+
+        signal = task.run()
+
+        # handle job preemption / time limit
+        if signal == "SIGTERM":
+            print("\nJob was preempted. Wrapping up...\n")
+            self.trainer.close_datasets()
+
+        distutils.synchronize()
+        logging.info(f"Total time taken: {time.time() - start_time}")
+        if self.trainer.logger is not None:
+            self.trainer.logger.log({"Total time": time.time() - start_time})
+
+        return [
+            {"name": "energy_mae", "type": "objective", "value": self.trainer.objective}
+        ]
+
+
 if __name__ == "__main__":
-    ntfy = trainer = error = signal = None
+    runner = error = signal = None
 
     setup_logging()
 
@@ -166,48 +214,29 @@ if __name__ == "__main__":
         setup_imports()
         trainer_config = should_continue(trainer_config)
         trainer_config = read_slurm_env(trainer_config)
+        runner = Runner(trainer_config)
         # -------------------
         # -----  Train  -----
         # -------------------
-        trainer: BaseTrainer = registry.get_trainer_class(trainer_config["trainer"])(
-            **trainer_config
-        )
-        task = registry.get_task_class(trainer_config["mode"])(trainer_config)
-        task.setup(trainer)
-        start_time = time.time()
-        if trainer.logger is not None:
-            message = f"{JOB_ID} - Training started 🚀"
-            if trainer_config.get("note"):
-                message += f" - {trainer_config.get('note')}"
-            if trainer_config.get("wandb_tags"):
-                message += f" - {trainer_config.get('wandb_tags')}"
-            trainer.logger.ntfy(message, click=trainer.logger.url)
-        print_warnings()
-
-        signal = task.run()
-
-        # handle job preemption / time limit
-        if signal == "SIGTERM":
-            print("\nJob was preempted. Wrapping up...\n")
-            for ds in trainer.datasets.values():
-                if hasattr(ds, "close_db") and callable(ds.close_db):
-                    ds.close_db()
-
-        # -----------------
-        # -----  End  -----
-        # -----------------
-        distutils.synchronize()
-        logging.info(f"Total time taken: {time.time() - start_time}")
-        if trainer.logger is not None:
-            trainer.logger.log({"Total time": time.time() - start_time})
-
-    except Exception as e:
-        if trainer and trainer.logger:
-            e_name = e.__class__.__name__
-            trainer.logger.ntfy(
-                f"{JOB_ID} - Training failed 😭" + f"{e_name} - {str(e)}",
-                click=trainer.logger.url or None,
+        if args.orion_search and distutils.is_master():
+            assert args.unique_exp_name
+            space = safe_load(Path(args.orion_search).read_text())
+            print("Search Space: ", space)
+            experiment = build_experiment(
+                name=args.unique_exp_name,
+                space=space,
+                algorithms={"mofa": {"seed": 123}},
             )
+            experiment.workon(
+                runner.run,
+                max_trials_per_worker=1,
+                n_workers=1,
+                idle_timeout=3600 * 24 * 4,
+            )
+        else:
+            runner.run()
+
+    except Exception:
         error = True
         print(traceback.format_exc())
 
@@ -220,8 +249,8 @@ if __name__ == "__main__":
             distutils.cleanup()
             print("Done!")
 
-        if trainer and trainer.logger:
-            trainer.logger.finish(error or signal)
+        if runner and runner.trainer and runner.trainer.logger:
+            runner.trainer.logger.finish(error or signal)
 
         if "interactive" not in os.popen(f"squeue -hj {JOB_ID}").read():
             print("Self-canceling SLURM job", JOB_ID)
