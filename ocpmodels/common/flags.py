@@ -240,6 +240,20 @@ class Flags:
             default=100,
             help="Log training loss every n steps",
         )
+        self.parser.add_argument(
+            "--orion_search",
+            "-o",
+            type=str,
+            help="Path to an orion search space yaml file",
+        )
+        self.parser.add_argument(
+            "--unique_exp_name",
+            "-u",
+            type=str,
+            help="Name for this experiment. If the experiment name already exists,"
+            + " the search space MUST be the same. If it is not, the job will crash."
+            + " If you change the search space, you must change the experiment name.",
+        )
 
 
 flags = Flags()
