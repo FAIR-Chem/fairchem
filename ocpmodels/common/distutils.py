@@ -95,6 +95,12 @@ def broadcast(tensor, src, group=dist.group.WORLD, async_op=False):
     dist.broadcast(tensor, src, group, async_op)
 
 
+def broadcast_object_list(obj_list, src=0):
+    if get_world_size() == 1:
+        return
+    dist.broadcast_object_list(obj_list, src=src)
+
+
 def all_reduce(data, group=dist.group.WORLD, average=False, device=None):
     if get_world_size() == 1:
         return data
