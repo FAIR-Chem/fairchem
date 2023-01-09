@@ -1,0 +1,106 @@
+# trainset has 4068193 samples
+job:
+  mem: 48GB
+  cpus: 8
+  gres: gpu:16gb:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
+  env: ocp-a100
+
+default:
+  config: fanet-qm7x-all
+  wandb_project: ocp-qm
+  mode: train
+  test_ri: true
+  wandb_tags: qm7x #, std/10
+  frame_averaging: ""
+  cp_data_to_tmpdir: true
+  note:
+    task: name
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, mp_type, edge_embed_type
+    optim: batch_size, lr_initial
+  # dataset:
+  #   train:
+  #     std_divider: 10.0
+  #   val_id:
+  #     std_divider: 10.0
+  #   val_ood:
+  #     std_divider: 10.0
+  optim:
+    batch_size: 2048
+    warmup_steps: 1000
+    lr_initial: 0.0005
+    # parameters EMA
+    ema_decay: 0.999
+    decay_steps: 750000
+    decay_rate: 0.05
+    max_steps: 1000000
+  model:
+    # PhAST
+    phys_embeds: False
+    phys_hidden_channels: 0
+    energy_head: False # "weighted-av-init-embeds", "weighted-av-final-embeds"
+    pg_hidden_channels: 0
+    tag_hidden_channels: 0
+    # archi
+    hidden_channels: 256
+    num_filters: 256
+    num_gaussians: 100
+    num_interactions: 6
+    cutoff: 6.0
+    regress_forces: False
+    # fanet
+    skip_co: False # output skip connections
+    second_layer_MLP: False # in EmbeddingBlock
+    edge_embed_type: rij # {'rij','all_rij','sh', 'all'})
+    mp_type: base # {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'}
+    force_decoder_type: "simple" # can be {"" or "simple"} | only used if regress_forces is True
+    force_decoder_model_config:
+      simple:
+        hidden_channels: 128
+
+runs:
+  - {}
+  - model:
+      pg_hidden_channels: 64
+  - model:
+      energy_head: "weighted-av-init-embeds"
+  - model:
+      phys_embeds: True
+  - model:
+      pg_hidden_channels: 64
+      phys_embeds: True
+      energy_head: "weighted-av-init-embeds"
+  - model:
+      mp_type: base
+      edge_embed_type: all_rij
+  - model:
+      mp_type: base
+      edge_embed_type: sh
+  - model:
+      mp_type: base
+      edge_embed_type: all
+  - model:
+      mp_type: simple
+      edge_embed_type: rij
+  - model:
+      mp_type: simple
+      edge_embed_type: all_rij
+  - model:
+      mp_type: simple
+      edge_embed_type: sh
+  - model:
+      mp_type: simple
+      edge_embed_type: all
+  - model:
+      mp_type: updownscale
+      edge_embed_type: rij
+  - model:
+      mp_type: updownscale
+      edge_embed_type: all_rij
+  - model:
+      mp_type: updownscale
+      edge_embed_type: sh
+  - model:
+      mp_type: updownscale
+      edge_embed_type: all

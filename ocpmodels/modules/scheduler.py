@@ -3,6 +3,7 @@ import inspect
 import torch.optim.lr_scheduler as lr_scheduler
 
 from ocpmodels.common.utils import warmup_lr_lambda
+import pytorch_warmup as warmup
 
 
 class LRScheduler:
@@ -20,20 +21,31 @@ class LRScheduler:
         optimizer (obj): torch optim object
     """
 
-    def __init__(self, optimizer, config):
+    def __init__(self, optimizer, optim_config):
         self.optimizer = optimizer
-        self.config = config.copy()
-        if "scheduler" in self.config:
-            self.scheduler_type = self.config["scheduler"]
+        self.optim_config = optim_config.copy()
+        self.warmup_scheduler = None
+        if "scheduler" in self.optim_config:
+            self.scheduler_type = self.optim_config["scheduler"]
         else:
             self.scheduler_type = "LambdaLR"
-            scheduler_lambda_fn = lambda x: warmup_lr_lambda(x, self.config)
-            self.config["lr_lambda"] = scheduler_lambda_fn
+            scheduler_lambda_fn = lambda x: warmup_lr_lambda(x, self.optim_config)
+            self.optim_config["lr_lambda"] = scheduler_lambda_fn
 
-        if self.scheduler_type != "Null":
+        if (
+            self.scheduler_type != "Null"
+            and self.scheduler_type != "LinearWarmupCosineAnnealingLR"
+        ):
             self.scheduler = getattr(lr_scheduler, self.scheduler_type)
-            scheduler_args = self.filter_kwargs(config)
+            scheduler_args = self.filter_kwargs(optim_config)
             self.scheduler = self.scheduler(optimizer, **scheduler_args)
+        elif self.scheduler_type == "WarmupCosineAnnealingLR":
+            self.warmup_scheduler = warmup.ExponentialWarmup(
+                self.optimizer, warmup_period=optim_config["warmup_steps"]
+            )
+            self.scheduler = lr_scheduler.CosineAnnealingLR(
+                self.optimizer, T_max=optim_config["max_steps"], eta_min=1e-7
+            )
 
     def step(self, metrics=None, epoch=None):
         if self.scheduler_type == "Null":
@@ -43,9 +55,13 @@ class LRScheduler:
                 raise Exception("Validation set required for ReduceLROnPlateau.")
             self.scheduler.step(metrics)
         else:
-            self.scheduler.step()
+            if self.warmup_scheduler:
+                with self.warmup_scheduler.dampening():
+                    self.scheduler.step(epoch)
+            else:
+                self.scheduler.step()
 
-    def filter_kwargs(self, config):
+    def filter_kwargs(self, optim_config):
         # adapted from https://stackoverflow.com/questions/26515595/
         sig = inspect.signature(self.scheduler)
         filter_keys = [
@@ -55,7 +71,7 @@ class LRScheduler:
         ]
         filter_keys.remove("optimizer")
         scheduler_args = {
-            arg: self.config[arg] for arg in self.config if arg in filter_keys
+            arg: optim_config[arg] for arg in optim_config if arg in filter_keys
         }
         return scheduler_args
 
