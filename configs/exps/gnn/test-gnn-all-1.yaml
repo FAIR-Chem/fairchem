@@ -17,7 +17,7 @@ default:
     energy_head: 'weighted-av-initial-embeds' # False ?
   wandb_tags: 'test-fanet'
   optim:
-    lr_initial: 0.0008
+    lr_initial: 0.0005
 
 runs:
   - config: fanet-is2re-all
@@ -61,7 +61,7 @@ runs:
       mp_type: updownscale
       edge_embed_type: all
     optim:
-      lr_initial: 0.0007
+      lr_initial: 0.0004
       max_epochs: 25
 
   - config: fanet-is2re-all
@@ -75,7 +75,7 @@ runs:
     frame_averaging: 2D
     fa_fames: random
     optim:
-      lr_initial: 0.0005
+      lr_initial: 0.0004
       max_epochs: 25
 
   - config: fanet-is2re-all

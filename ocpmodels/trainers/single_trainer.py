@@ -684,7 +684,7 @@ class SingleTrainer(BaseTrainer):
                 # Compute total difference across frames
                 for pos1, pos2 in zip(batch[0].fa_pos, rotated["batch_list"][0].fa_pos):
                     pos_diff += pos1 - pos2
-                # Manhanttan distance of pos matrix wrt 0 matrix.
+                # Manhattan distance of pos matrix wrt 0 matrix.
                 pos_diff_total += torch.abs(pos_diff).sum()
 
             # Reflect graph and compute diff in prediction

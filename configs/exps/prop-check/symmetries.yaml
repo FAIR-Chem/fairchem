@@ -21,69 +21,69 @@ default:
 runs:
   - config: sfarinet-s2ef-2M
     note: 'Baseline 5 epochs'
-    model: 
+    model:
       regress_forces: from_energy
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 2D
     fa_frames: all
-    model: 
+    model:
       regress_forces: from_energy
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 3D
     fa_frames: all
-    model: 
+    model:
       regress_forces: from_energy
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: DA
-    model: 
+    model:
       regress_forces: from_energy
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 2D
     fa_frames: det
-    model: 
+    model:
       regress_forces: from_energy
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 2D
     fa_frames: se3-det
-    model: 
+    model:
       regress_forces: from_energy
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 2D
     fa_frames: all
-    model: 
+    model:
       regress_forces: direct
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 2D
     fa_frames: se3-random
-    model: 
+    model:
       regress_forces: direct
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: 2D
     fa_frames: all
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
   - config: sfarinet-s2ef-2M
     note: 'Test Force Equivariance'
     frame_averaging: DA
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
   - config: sfarinet-s2ef-2M
     note: 'No forces coefficient ! Only energy'
-    model: 
+    model:
       regress_forces: direct
       force_coefficient: 0
       energy_grad_coefficient: 10
   - config: sfarinet-s2ef-2M
     note: 'Large energy grad coef'
     frame_averaging: DA
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       energy_grad_coefficient: 50

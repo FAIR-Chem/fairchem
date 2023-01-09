@@ -85,7 +85,7 @@ is2re:
 # -----  S2EF  -----
 # ------------------
 
-# For 4 GPUs 
+# For 4 GPUs
 
 s2ef:
   default:
@@ -115,7 +115,7 @@ s2ef:
 
   # 2 gpus
   2M:
-    model: 
+    model:
       num_interactions: 5
       hidden_channels: 1024
       num_gaussians: 200
