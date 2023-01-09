@@ -30,6 +30,7 @@ from ocpmodels.common.utils import (
     setup_imports,
     setup_logging,
     update_from_sbatch_py_vars,
+    move_lmdb_data_to_slurm_tmpdir,
 )
 from ocpmodels.trainers import BaseTrainer
 
@@ -147,10 +148,10 @@ class Runner:
 
         should_be_0 = distutils.get_rank()
         hp_list = [hparams, should_be_0]
+        # print("hparams pre-broadcast: ", hparams)
         distutils.broadcast_object_list(hp_list)
         hparams, should_be_0 = hp_list
-        print("hparams: ", hparams)
-        print("should_be_0: ", should_be_0)
+        # print("hparams post-broadcast: ", hparams)
         assert should_be_0 == 0
         if hparams:
             print("Received hyper-parameters from Orion:")
@@ -176,9 +177,14 @@ class Runner:
         if self.trainer.logger is not None:
             self.trainer.logger.log({"Total time": time.time() - start_time})
 
-        return [
-            {"name": "energy_mae", "type": "objective", "value": self.trainer.objective}
-        ]
+        objective = self.trainer.objective
+        # print("objective pre-broadcast: ", objective)
+        o_list = [objective]
+        distutils.broadcast_object_list(o_list)
+        objective = o_list[0]
+        # print("objective post-broadcast: ", objective)
+
+        return [{"name": "energy_mae", "type": "objective", "value": objective}]
 
 
 if __name__ == "__main__":
@@ -206,15 +212,22 @@ if __name__ == "__main__":
 
     if args.distributed:
         distutils.setup(trainer_config)
+        print("Distributed backend setup.")
+
+    if distutils.is_master():
+        trainer_config = move_lmdb_data_to_slurm_tmpdir(trainer_config)
+        # distutils.synchronize()
 
     try:
         # -------------------
         # -----  Setup  -----
         # -------------------
         setup_imports()
+        print("All things imported.")
         trainer_config = should_continue(trainer_config)
         trainer_config = read_slurm_env(trainer_config)
         runner = Runner(trainer_config)
+        print("Runner ready.")
         # -------------------
         # -----  Train  -----
         # -------------------
@@ -234,6 +247,7 @@ if __name__ == "__main__":
                 idle_timeout=3600 * 24 * 4,
             )
         else:
+            print("Starting runner.")
             runner.run()
 
     except Exception:
@@ -243,7 +257,7 @@ if __name__ == "__main__":
     finally:
         if args.distributed:
             print(
-                "Waiting for all processes to finish with distutils.cleanup()...",
+                "\nWaiting for all processes to finish with distutils.cleanup()...",
                 end="",
             )
             distutils.cleanup()
@@ -253,5 +267,5 @@ if __name__ == "__main__":
             runner.trainer.logger.finish(error or signal)
 
         if "interactive" not in os.popen(f"squeue -hj {JOB_ID}").read():
-            print("Self-canceling SLURM job", JOB_ID)
+            print("\nSelf-canceling SLURM job", JOB_ID)
             os.system(f"scancel {JOB_ID}")
