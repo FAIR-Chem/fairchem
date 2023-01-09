@@ -66,6 +66,7 @@ class BaseTrainer(ABC):
         }
 
         self.sigterm = False
+        self.objective = None
         self.epoch = 0
         self.step = 0
         self.cpu = self.config["cpu"]
