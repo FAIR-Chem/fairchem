@@ -74,7 +74,8 @@ is2re:
     model:
       hidden_channels: 384
       num_interactions: 4
-
+      num_filters: 128
+      num_gaussians: 100
     optim:
       lr_initial: 0.001
       lr_milestones:
@@ -87,6 +88,8 @@ is2re:
 # ------------------
 # -----  S2EF  -----
 # ------------------
+
+# For 4 GPUs 
 
 s2ef:
   default:

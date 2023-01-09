@@ -227,7 +227,7 @@ class SingleTrainer(BaseTrainer):
                 self.epoch = epoch_int + (i + 1) / n_train
                 self.step = epoch_int * n_train + i + 1
 
-                # Get a batch.
+                # Get a batch
                 with loader_times.next("get_batch"):
                     batch = next(train_loader_iter)
 
@@ -357,7 +357,7 @@ class SingleTrainer(BaseTrainer):
                 log_epoch_times = True
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
-            self.logger.log({"Model run time": model_run_time / len(self.train_loader)})
+            self.logger.log({"Model run time": model_run_time / n_train})
             if log_epoch_times:
                 self.logger.log({"Epoch time": sum(epoch_times) / len(epoch_times)})
 
