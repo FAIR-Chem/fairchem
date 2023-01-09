@@ -5,10 +5,12 @@ import sys
 from pathlib import Path
 
 from minydra import resolved_args
-from yaml import safe_load
+from yaml import safe_load, dump
 
 from sbatch import now
 import copy
+
+ROOT = Path(__file__).resolve().parent
 
 
 def util_strings(jobs, yaml_comments=False):
@@ -103,7 +105,7 @@ def get_commit():
 
 
 def find_exp(name):
-    exp_dir = Path(__file__).parent / "configs" / "exps"
+    exp_dir = ROOT / "configs" / "exps"
     exp_file = exp_dir / f"{name}.yaml"
     if exp_file.exists():
         return exp_file
@@ -139,16 +141,51 @@ def cli_arg(args, key=""):
 
 
 if __name__ == "__main__":
+    orion_conf = ROOT / "data" / "orion" / "orion_config.yaml"
     args = resolved_args()
     assert "exp" in args
     regex = args.get("match", ".*")
+    ts = now()
 
     exp_name = args.exp.replace(".yml", "").replace(".yaml", "")
     exp_file = find_exp(exp_name)
 
     exp = safe_load(exp_file.open("r"))
 
-    runs = exp["runs"]
+    if "orion" in exp:
+        assert "runs" not in exp, "Cannot use both Orion and runs"
+        assert (
+            "orion_unique_exp_name" in exp
+        ), "Must specify 'orion_unique_exp_name' in exp file"
+        if not orion_conf.exists():
+            orion_conf.write_text(
+                dump(
+                    {
+                        "storage": {
+                            "database": {
+                                "host": str(orion_conf.parent / "orion_db.pkl"),
+                                "type": "pickleddb",
+                            }
+                        }
+                    }
+                )
+            )
+        search_path = (
+            orion_conf.parent
+            / "search-spaces"
+            / f"{ts}-{exp['orion_unique_exp_name']}.yaml"
+        )
+        search_path.parent.mkdir(exist_ok=True, parents=True)
+        assert not search_path.exists()
+        search_path.write_text(dump(exp["orion"]))
+        runs = [
+            {
+                "orion_search_path": str(search_path),
+                "orion_unique_exp_name": exp["orion_unique_exp_name"],
+            }
+        ]
+    else:
+        runs = exp["runs"]
 
     commands = []
 
@@ -191,8 +228,8 @@ if __name__ == "__main__":
             print(f"Launching job {c:3}", end="\r") or os.popen(command).read().strip()
             for c, command in enumerate(commands)
         ]
-        outdir = Path(__file__).resolve().parent / "data" / "exp_outputs" / exp_name
-        outfile = outdir / f"{exp_name.split('/')[-1]}_{now()}.txt"
+        outdir = ROOT / "data" / "exp_outputs" / exp_name
+        outfile = outdir / f"{exp_name.split('/')[-1]}_{ts}.txt"
         outfile.parent.mkdir(exist_ok=True, parents=True)
         text += separator.join(outputs)
         jobs = [
