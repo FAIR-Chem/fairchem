@@ -29,7 +29,7 @@ def merge_dicts(dict1: dict, dict2: dict):
 
     Returns
     -------
-    return_dict_and_duplicates: tuple(dict, list(str))
+    return_dict: dict
         Merged dictionaries.
     """
     if not isinstance(dict1, dict):
@@ -51,7 +51,7 @@ def merge_dicts(dict1: dict, dict2: dict):
                         f"List for key {k} has different length in dict1 and dict2."
                         + " Use an empty dict {} to pad for items in the shorter list."
                     )
-                return_dict[k] = [merge_dicts(d1, d2)[0] for d1, d2 in zip(dict1[k], v)]
+                return_dict[k] = [merge_dicts(d1, d2) for d1, d2 in zip(dict1[k], v)]
             else:
                 return_dict[k] = dict2[k]
 

@@ -1,3 +1,5 @@
+"""scheduler.py
+"""
 import inspect
 
 import torch.optim.lr_scheduler as lr_scheduler
@@ -29,7 +31,10 @@ class LRScheduler:
             self.scheduler_type = self.optim_config["scheduler"]
         else:
             self.scheduler_type = "LambdaLR"
-            scheduler_lambda_fn = lambda x: warmup_lr_lambda(x, self.optim_config)
+
+            def scheduler_lambda_fn(x):
+                return warmup_lr_lambda(x, self.optim_config)
+
             self.optim_config["lr_lambda"] = scheduler_lambda_fn
 
         if (
@@ -37,14 +42,14 @@ class LRScheduler:
             and self.scheduler_type != "LinearWarmupCosineAnnealingLR"
         ):
             self.scheduler = getattr(lr_scheduler, self.scheduler_type)
-            scheduler_args = self.filter_kwargs(optim_config)
+            scheduler_args = self.filter_kwargs(self.optim_config)
             self.scheduler = self.scheduler(optimizer, **scheduler_args)
         elif self.scheduler_type == "WarmupCosineAnnealingLR":
             self.warmup_scheduler = warmup.ExponentialWarmup(
-                self.optimizer, warmup_period=optim_config["warmup_steps"]
+                self.optimizer, warmup_period=self.optim_config["warmup_steps"]
             )
             self.scheduler = lr_scheduler.CosineAnnealingLR(
-                self.optimizer, T_max=optim_config["max_steps"], eta_min=1e-7
+                self.optimizer, T_max=self.optim_config["max_steps"], eta_min=1e-7
             )
 
     def step(self, metrics=None, epoch=None):
