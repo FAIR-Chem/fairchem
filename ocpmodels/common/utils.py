@@ -43,6 +43,139 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
 
 
+def continue_orion_exp(trainer_config):
+    if not trainer_config.get("orion_search_path") or not trainer_config.get(
+        "orion_unique_exp_name"
+    ):
+        return trainer_config
+
+    if "orion_hash_params" not in trainer_config:
+        faulty_path = Path(trainer_config["run_dir"]) / "faulty_trainer_config.yaml"
+        print(
+            "\n\nWARNING: trainer_config has 'orion_search_path' and 'orion_unique_exp_name'",
+            "but no 'orion_trial'. This can lead to inconsistencies.",
+            f"You should investigate the faulty config in:\n{str(faulty_path)}\n\n",
+        )
+        faulty_path.write_text(yaml.dump(trainer_config))
+        return trainer_config
+
+    hash_params = trainer_config["orion_hash_params"]
+    exp_name = trainer_config["orion_unique_exp_name"]
+    id_file = f"{exp_name}--{hash_params}.unique"
+    (Path(trainer_config["run_dir"]) / id_file).touch()
+    base_dir = Path(trainer_config["run_dir"]).parent
+    existing_id_files = list(base_dir.glob(f"*/{id_file}"))
+
+    if not existing_id_files:
+        return trainer_config
+
+    latest_dirs = sorted(
+        [
+            f.parent
+            for f in existing_id_files
+            if float(f.parent.name) != float(trainer_config["job_id"])
+        ],
+        key=lambda f: float(f.name),
+    )
+
+    if not latest_dirs:
+        return trainer_config
+
+    latest_ckpts = sorted(
+        [f for f in (latest_dirs[-1] / "checkpoints").glob("checkpoint-*")],
+        key=lambda f: float(f.stem.split("-")[-1]),
+    )
+
+    if not latest_ckpts:
+        raise ValueError(f"No checkpoint found in {str(latest_dirs[-1])}")
+    trainer_config["checkpoint"] = str(latest_ckpts[-1])
+    print(
+        f"\nFound {len(latest_ckpts)} existing Orion runs.",
+        "Resuming from latest:",
+        str(latest_dirs[-1]),
+    )
+    print("Based on unique file id:", id_file)
+    print("Continuing from checkpoint:", trainer_config["checkpoint"], end="\n\n")
+    return trainer_config
+
+
+def read_slurm_env(config):
+    """
+    Parses the output of `scontrol show` in order to store the slurm
+    config (mem, cpu, node, gres) as a `"slurm"` key in the `config` object.
+
+    Args:
+        config (dict): Run configuration
+
+    Returns:
+        dict: Updated run config if no "slurm" key exists or it's empty
+    """
+    if not config.get("slurm"):
+        return config
+
+    command = f"scontrol show job {JOB_ID}"
+    scontrol = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
+    params = re.findall(r"TRES=(.+)\n", scontrol)
+    try:
+        if params:
+            params = params[0]
+            for kv in params.split(","):
+                k, v = kv.split("=")
+                config["slurm"][k] = v
+    except Exception as e:
+        print("Slurm config creation exception", e)
+    finally:
+        return config
+
+
+def continue_from_slurm_job_id(config):
+    """
+    Assuming runs are consistently executed in a `run_dir` with the
+    `run_dir/$SLURM_JOBID` pattern, this functions looks for an existing
+    directory with the same $SLURM_JOBID as the current job that contains
+    a checkpoint.
+
+    If there is one, it tries to find `best_checkpoint.ckpt`.
+    If the latter does not exist, it looks for the latest checkpoint,
+    assuming a naming convention like `checkpoint-{step}.pt`.
+
+    If a checkpoint is found, its path is set in `config["checkpoint"]`.
+    Otherwise, returns the original config.
+
+    Args:
+        config (dict): The original config to overwrite
+
+    Returns:
+        dict: The updated config if a checkpoint has been found
+    """
+    if config.get("checkpoint"):
+        return config
+
+    job_id = os.environ.get("SLURM_JOBID")
+    if job_id is None:
+        return config
+
+    base_dir = Path(config["run_dir"]).resolve().parent
+    ckpt_dir = base_dir / job_id / "checkpoints"
+    if not ckpt_dir.exists() or not ckpt_dir.is_dir():
+        return config
+
+    best_ckp = ckpt_dir / "best_checkpoint.pt"
+    if best_ckp.exists():
+        config["checkpoint"] = str(best_ckp)
+    else:
+        ckpts = list(ckpt_dir.glob("checkpoint-*.pt"))
+        if not ckpts:
+            return config
+        latest_ckpt = sorted(
+            ckpts, key=lambda f: float(f.stem.split("checkpoint-")[-1])
+        )[-1]
+        if latest_ckpt.exists() and latest_ckpt.is_file():
+            config["checkpoint"] = str(latest_ckpt)
+
+    return config
+
+
 def move_lmdb_data_to_slurm_tmpdir(trainer_config):
     if (
         not trainer_config.get("cp_data_to_tmpdir")
