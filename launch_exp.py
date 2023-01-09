@@ -11,6 +11,15 @@ from sbatch import now
 import copy
 
 
+def util_strings(jobs, yaml_comments=False):
+    s = "All jobs launched: " + ", ".join(jobs)
+    s += "\nCancel experiment: scancel " + " ".join(jobs)
+    s += "\nWandB query for dashboard: (" + "|".join(jobs) + ")"
+    if yaml_comments:
+        s = "\n".join(["# " + line for line in s.splitlines()])
+    return s
+
+
 def merge_dicts(dict1: dict, dict2: dict):
     """Recursively merge two dictionaries.
     Values in dict2 override values in dict1. If dict1 and dict2 contain a dictionary
@@ -29,7 +38,7 @@ def merge_dicts(dict1: dict, dict2: dict):
 
     Returns
     -------
-    return_dict_and_duplicates: tuple(dict, list(str))
+    return_dict: dict
         Merged dictionaries.
     """
     if not isinstance(dict1, dict):
@@ -51,7 +60,7 @@ def merge_dicts(dict1: dict, dict2: dict):
                         f"List for key {k} has different length in dict1 and dict2."
                         + " Use an empty dict {} to pad for items in the shorter list."
                     )
-                return_dict[k] = [merge_dicts(d1, d2)[0] for d1, d2 in zip(dict1[k], v)]
+                return_dict[k] = [merge_dicts(d1, d2) for d1, d2 in zip(dict1[k], v)]
             else:
                 return_dict[k] = dict2[k]
 
@@ -75,6 +84,7 @@ def write_exp_yaml_and_jobs(exp_file, outfile, jobs):
         if line.strip().startswith("- "):
             lines[run_line + i] = f"{line}  # {jobs[j]}"
             j += 1
+    lines += [""] + util_strings(jobs, True).splitlines()
     yml_out = outfile.with_suffix(".yaml")
     yml_out.write_text("\n".join(lines))
     return yml_out
@@ -194,7 +204,7 @@ if __name__ == "__main__":
         with outfile.open("w") as f:
             f.write(text)
         print(f"Output written to {str(outfile)}")
-        print("All job launched:", " ".join(jobs))
+        print(util_strings(jobs))
         yml_out = write_exp_yaml_and_jobs(exp_file, outfile, jobs)
         print(
             "Experiment summary YAML in ", f"./{str(yml_out.relative_to(Path.cwd()))}"
