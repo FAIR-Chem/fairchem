@@ -119,7 +119,7 @@ s2ef:
         - 41666
       warmup_steps: 10416
       warmup_factor: 0.2
-      max_epochs: 15
+      max_epochs: 5
       force_coefficient: 50
     model:
       hidden_channels: 192

@@ -372,7 +372,9 @@ class SingleTrainer(BaseTrainer):
             batch = next(iter(self.loaders[self.config["dataset"]["default_val"]]))
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
-            self.logger.log({"Model run time": model_run_time / n_train})
+            self.logger.log(
+                {"Model run time": model_run_time / len(self.loaders["train"])}
+            )
             if log_epoch_times:
                 self.logger.log({"Epoch time": np.mean(epoch_times)})
 
@@ -697,7 +699,7 @@ class SingleTrainer(BaseTrainer):
                 # assert torch.allclose(
                 #     torch.abs(
                 #         batch[0].force @ reflected["rot"].to(batch[0].force.device)
-                #         - reflected["batch_list"][0].force # .to(batch[0].force.device)
+                #         - reflected["batch_list"][0].force #.to(batch[0].force.device)
                 #     ).sum(),
                 #     torch.tensor([0.0]),   # .to(batch[0].force.device)
                 #     atol=1e-05,

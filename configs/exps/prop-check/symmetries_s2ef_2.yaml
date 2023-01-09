@@ -1,9 +1,9 @@
 job:
   mem: 48GB
   cpus: 4
-  gres: gpu:rtx8000:1
+  gres: gpu:rtx8000:4
   partition: long
-  time: 20:00:00
+  time: 40:00:00
 
 default:
   test_ri: True
@@ -16,19 +16,17 @@ default:
     energy_head: False # False ?
   optim:
     max_epochs: 5
-    batch_size: 196
-    eval_batch_size: 196
-  wandb_tags: 's2ef-sym-prop'
+  wandb_tags: 'prop-check-ICLM'
 
 runs:
   - config: sfarinet-s2ef-2M
-    note: 'Baseline 5 epochs 1 Gpu'
+    note: 'Baseline 5 epochs'
     frame_averaging: 2D
     fa_frames: all
     model:
       regress_forces: from_energy
   - config: sfarinet-s2ef-2M
-    note: 'Baseline 5 epochs 1 Gpu'
+    note: 'Baseline 5 epochs'
     frame_averaging: 3D
     fa_frames: all
     model:
@@ -77,12 +75,3 @@ runs:
       energy_grad_coefficient: 100
       force_coefficient: 30
       energy_coefficient: 0
-  - config: sfarinet-s2ef-2M
-    note: 'Large force coef'
-    frame_averaging: 2D
-    fa_frames: random
-    model:
-      regress_forces: direct_with_gradient_target
-    optim:
-      force_coefficient: 75
-      energy_coefficient: 1

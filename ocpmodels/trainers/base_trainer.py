@@ -783,8 +783,9 @@ class BaseTrainer(ABC):
         if final and self.config["logger"] == "wandb" and distutils.is_master():
             overall_energy_mae = cumulated_energy_mae / len(all_splits)
             self.logger.log({"Eval time": cumulated_time})
-            self.logger.log({"Overall MAE": overall_energy_mae})
             self.objective = overall_energy_mae
+            self.logger.log({"Eval time": cumulated_time})
+            self.logger.log({"Overall MAE": overall_energy_mae})
             if self.config["model"].get("regress_forces", False):
                 overall_forces_mae = cumulated_forces_mae / len(all_splits)
                 self.logger.log({"Overall Forces MAE": overall_forces_mae})
