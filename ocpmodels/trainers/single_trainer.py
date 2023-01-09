@@ -202,6 +202,7 @@ class SingleTrainer(BaseTrainer):
         start_epoch = self.step // n_train
         loader_times = Times()
         epoch_times = []
+        model_run_time = 0
 
         if not self.silent:
             print("---Beginning of Training---")
@@ -231,12 +232,18 @@ class SingleTrainer(BaseTrainer):
                     batch = next(train_loader_iter)
 
                 # Forward, loss, backward.
+                if epoch_int == 1:
+                    s = time.time()
+
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     preds = self.model_forward(batch)
                     loss = self.compute_loss(preds, batch)
                     if preds.get("pooling_loss") is not None:
                         coeff = self.config["optim"].get("pooling_coefficient", 1)
                         loss["total_loss"] += preds["pooling_loss"] * coeff
+
+                if epoch_int == 1:
+                    model_run_time += time.time() - s
 
                 loss = {
                     k: self.scaler.scale(v) if self.scaler else v
@@ -350,6 +357,7 @@ class SingleTrainer(BaseTrainer):
                 log_epoch_times = True
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
+            self.logger.log({"Model run time": model_run_time / len(self.train_loader)})
             if log_epoch_times:
                 self.logger.log({"Epoch time": sum(epoch_times) / len(epoch_times)})
 
@@ -666,8 +674,19 @@ class SingleTrainer(BaseTrainer):
             reflected = self.reflect_graph(batch)
             preds3 = self.model_forward(reflected["batch_list"])
             energy_diff_refl += torch.abs(preds1["energy"] - preds3["energy"]).sum()
-            if self.task_name == "s2ef":
-                forces_diff_refl += torch.abs(preds1["forces"] - preds3["forces"]).sum()
+            if self.task_name == "s2ef":            
+                forces_diff_refl += torch.abs(
+                    preds1["forces"] @ reflected["rot"].to(preds1["forces"].device)
+                    - preds3["forces"]
+                ).sum()
+                # assert torch.allclose(
+                #     torch.abs(
+                #         batch[0].force @ reflected["rot"].to(batch[0].force.device)
+                #         - reflected["batch_list"][0].force # .to(batch[0].force.device)
+                #     ).sum(),
+                #     torch.tensor([0.0]),   # .to(batch[0].force.device)
+                #     atol=1e-05,
+                # )
 
             # 3D Rotation and compute diff in prediction
             rotated = self.rotate_graph(batch)

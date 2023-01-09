@@ -82,11 +82,11 @@ s2ef:
       num_gaussians: 200
     optim:
       # *** Important note ***
-      #   The total number of gpus used for this run was 8.
+      #   The total number of gpus used for this run was 4.
       #   If the global batch size (num_gpus * batch_size) is modified
       #   the lr_milestones and warmup_steps need to be adjusted accordingly.
-      batch_size: 24
-      eval_batch_size: 24
+      batch_size: 48
+      eval_batch_size: 48
       num_workers: 16
       lr_initial: 0.0001
       lr_gamma: 0.1
@@ -95,7 +95,7 @@ s2ef:
         - 83333
         - 104166
       warmup_steps: 31250
-      max_epochs: 30
+      max_epochs: 20
       force_coefficient: 100
 
   200k:

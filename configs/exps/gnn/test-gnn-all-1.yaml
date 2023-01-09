@@ -4,6 +4,7 @@ job:
   gres: gpu:rtx8000:4
   partition: long
   time: 20:00:00
+  code_loc: /home/mila/a/alexandre.duval/ocp/ocp-test/ocp
 
 default:
   test_ri: True
@@ -15,6 +16,8 @@ default:
     pg_hidden_channels: 0  # shall have been 32
     energy_head: 'weighted-av-initial-embeds' # False ?
   wandb_tags: 'test-fanet'
+  optim:
+    lr_initial: 0.0008
 
 runs:
   - config: fanet-is2re-all
@@ -22,10 +25,83 @@ runs:
     model:
       mp_type: simple
       edge_embed_type: rij
-    optim:
-      lr_initial: 0.0007
+    frame_averaging: 2D
+    fa_fames: random
+  - config: fanet-is2re-all
+    model:
+      mp_type: base
+      edge_embed_type: rij
+    frame_averaging: 2D
+    fa_fames: random
+  - config: fanet-is2re-all
+    model:
+      mp_type: base
+      edge_embed_type: all_rij
+  - config: fanet-is2re-all
+    model:
+      mp_type: base
+      edge_embed_type: all
+  - config: fanet-is2re-all
+    model:
+      mp_type: base
+      edge_embed_type: sh
   - config: fanet-is2re-all
     note: 'Simple rij baseline'
     model:
-      mp_type: simple
+      mp_type: updownscale
       edge_embed_type: rij
+  - config: fanet-is2re-all
+    note: 'Simple rij baseline'
+    model:
+      mp_type: updownscale
+      edge_embed_type: rij
+  - config: fanet-is2re-all
+    note: 'Simple rij baseline'
+    model:
+      mp_type: updownscale
+      edge_embed_type: all
+    optim:
+      lr_initial: 0.0007
+      max_epochs: 25
+
+  - config: fanet-is2re-all
+    model:
+      mp_type: base
+      edge_embed_type: all
+      hidden_channels: 500
+      num_interactions: 6
+      num_filters: 200
+      num_gaussians: 200
+    frame_averaging: 2D
+    fa_fames: random
+    optim:
+      lr_initial: 0.0005
+      max_epochs: 25
+
+  - config: fanet-is2re-all
+    model:
+      mp_type: base
+      edge_embed_type: all
+      hidden_channels: 500
+      num_interactions: 6
+      num_filters: 200
+      num_gaussians: 200
+    frame_averaging: 2D
+    fa_fames: random
+    optim:
+      lr_initial: 0.0002
+      max_epochs: 25
+
+  - config: fanet-is2re-all
+    model:
+      mp_type: base
+      edge_embed_type: all
+      hidden_channels: 500
+      num_interactions: 6
+      num_filters: 200
+      num_gaussians: 200
+    frame_averaging: 2D
+    fa_fames: random
+    optim:
+      lr_initial: 0.0007
+      max_epochs: 25

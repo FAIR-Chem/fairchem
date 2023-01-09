@@ -20,12 +20,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
+from rich.console import Console
+from rich.table import Table
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch
 from tqdm import tqdm
-from rich.table import Table
-from rich.console import Console
 
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import (
@@ -35,7 +35,8 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_commit_hash, save_checkpoint, JOB_ID
+from ocpmodels.common.timer import Times
+from ocpmodels.common.utils import JOB_ID, get_commit_hash, save_checkpoint
 from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -44,7 +45,6 @@ from ocpmodels.modules.exponential_moving_average import (
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scheduler import LRScheduler
-from ocpmodels.common.timer import Times
 
 
 @registry.register_trainer("base")
@@ -725,7 +725,8 @@ class BaseTrainer(ABC):
         """Evaluate model on all four validation splits"""
 
         cumulated_time = 0
-        cumulated_mae = 0
+        cumulated_energy_mae = 0
+        cumulated_forces_mae = 0
         metrics_dict = {}
         # store all non-train splits: all vals and test
         all_splits = [s for s in self.config["dataset"] if s.startswith("val")]
@@ -759,7 +760,9 @@ class BaseTrainer(ABC):
                 return "SIGTERM"
 
             metrics_dict[split] = self.metrics
-            cumulated_mae += self.metrics["energy_mae"]["metric"]
+            cumulated_energy_mae += self.metrics["energy_mae"]["metric"]
+            if self.config["model"].get("regress_forces", False):
+                cumulated_forces_mae += self.metrics["forces_mae"]["metric"]
             cumulated_time += time.time() - start_time
             if metrics_names is None:
                 metrics_names = list(self.metrics.keys())
@@ -777,12 +780,15 @@ class BaseTrainer(ABC):
 
         # Log specific metrics
         if final and self.config["logger"] == "wandb" and distutils.is_master():
-            overall_mae = cumulated_mae / len(all_splits)
+            overall_energy_mae = cumulated_energy_mae / len(all_splits)
             self.logger.log({"Eval time": cumulated_time})
-            self.logger.log({"Overall MAE": overall_mae})
+            self.logger.log({"Overall MAE": overall_energy_mae})
+            if self.config["model"].get("regress_forces", False):
+                overall_forces_mae = cumulated_forces_mae / len(all_splits)
+                self.logger.log({"Overall Forces MAE": overall_forces_mae})
             if self.logger.ntfy:
                 self.logger.ntfy(
-                    message=f"{JOB_ID} - Overall MAE: {overall_mae}",
+                    message=f"{JOB_ID} - Overall MAE: {overall_energy_mae}",
                     click=self.logger.url,
                 )
 
