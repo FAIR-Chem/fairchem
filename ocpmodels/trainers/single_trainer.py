@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import datetime
 import logging
 import os
 import time
@@ -40,6 +41,10 @@ class SingleTrainer(BaseTrainer):
         Examples of configurations for task, model, dataset and optimizer
         can be found in `configs/ocp_is2re <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_. # noqa: E501
     """
+
+    @property
+    def now(self):
+        return str(datetime.datetime.now()).split(".")[0]
 
     def load_task(self):
         if not self.silent:
@@ -200,7 +205,7 @@ class SingleTrainer(BaseTrainer):
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // n_train
-        loader_times = Times()
+        timer = Times()
         epoch_times = []
         model_run_time = 0
 
@@ -224,11 +229,12 @@ class SingleTrainer(BaseTrainer):
                 if self.sigterm:
                     return "SIGTERM"
                 i_for_epoch += 1
+                print(self.now, "i_for_epoch: ", i_for_epoch, flush=True)
                 self.epoch = epoch_int + (i + 1) / n_train
                 self.step = epoch_int * n_train + i + 1
 
-                # Get a batch
-                with loader_times.next("get_batch"):
+                # Get a batch.
+                with timer.next("get_batch"):
                     batch = next(train_loader_iter)
 
                 # Forward, loss, backward.
@@ -272,10 +278,10 @@ class SingleTrainer(BaseTrainer):
                         )
 
                     # Log metrics.
-                    gbm, gbs = loader_times.prepare_for_logging()
+                    gbm, gbs = timer.prepare_for_logging()
                     self.metrics["get_batch_time_mean"] = {"metric": gbm["get_batch"]}
                     self.metrics["get_batch_time_std"] = {"metric": gbs["get_batch"]}
-                    loader_times.reset()
+                    timer.reset()
                     # logging.info(f"Step: {self.step}")
                     self.log_train_metrics()
 
