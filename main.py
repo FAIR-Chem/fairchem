@@ -119,7 +119,10 @@ class Runner:
         # print("objective post-broadcast: ", objective)
 
         if orion_exp is not None:
-            orion_exp.observe(orion_trial, objective, name="energy_mae")
+            orion_exp.observe(
+                orion_trial,
+                {"type": "objective", "name": "energy_mae", "value": objective},
+            )
 
 
 if __name__ == "__main__":
