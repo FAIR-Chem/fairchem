@@ -218,8 +218,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--eval_on_test",
-            action="store_true",
-            default=False,
+            type=bool,
             help="Evaluate on test set",
         )
         self.parser.add_argument(
