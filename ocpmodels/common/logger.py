@@ -149,6 +149,7 @@ class WandBLogger(Logger):
     def add_tags(self, tags):
         if not isinstance(tags, list):
             tags = [tags]
+        tags = tuple(tags)
         self.run.tags = self.run.tags + tags
 
     def collect_output_files(self, policy="now"):
