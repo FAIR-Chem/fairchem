@@ -143,6 +143,7 @@ def cli_arg(args, key=""):
 
 
 if __name__ == "__main__":
+    is_interrupted = False
     args = resolved_args()
     assert "exp" in args
     regex = args.get("match", ".*")
@@ -215,10 +216,13 @@ if __name__ == "__main__":
     confirm = input("\n🚦 Confirm? [y/n]")
 
     if confirm == "y":
-        outputs = [
-            print(f"Launching job {c:3}", end="\r") or os.popen(command).read().strip()
-            for c, command in enumerate(commands)
-        ]
+        try:
+            outputs = []
+            for c, command in enumerate(commands):
+                print(f"Launching job {c:3}", end="\r")
+                outputs.append(os.popen(command).read().strip())
+        except KeyboardInterrupt:
+            is_interrupted = True
         outdir = ROOT / "data" / "exp_outputs" / exp_name
         outfile = outdir / f"{exp_name.split('/')[-1]}_{ts}.txt"
         outfile.parent.mkdir(exist_ok=True, parents=True)
@@ -228,14 +232,19 @@ if __name__ == "__main__":
             for line in text.splitlines()
             if (sep := "Submitted batch job ") in line
         ]
-        text += f"{separator}All jobs launched: {' '.join(jobs)}"
-        with outfile.open("w") as f:
-            f.write(text)
-        print(f"Output written to {str(outfile)}")
-        print(util_strings(jobs))
-        yml_out = write_exp_yaml_and_jobs(exp_file, outfile, jobs)
-        print(
-            "Experiment summary YAML in ", f"./{str(yml_out.relative_to(Path.cwd()))}"
-        )
+
+        if is_interrupted:
+            print("\n💀 Interrupted. Kill jobs with:\n$ scancel" + " ".join(jobs))
+        else:
+            text += f"{separator}All jobs launched: {' '.join(jobs)}"
+            with outfile.open("w") as f:
+                f.write(text)
+            print(f"Output written to {str(outfile)}")
+            print(util_strings(jobs))
+            yml_out = write_exp_yaml_and_jobs(exp_file, outfile, jobs)
+            print(
+                "Experiment summary YAML in ",
+                f"./{str(yml_out.relative_to(Path.cwd()))}",
+            )
     else:
         print("Aborting")
