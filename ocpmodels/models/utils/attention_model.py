@@ -1,13 +1,14 @@
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import torch
+import torch.nn.functional as F
 from torch import Tensor
 from torch.nn import Parameter
 from torch_geometric.nn.conv import MessagePassing
+from torch_geometric.nn.inits import glorot, zeros
 from torch_geometric.typing import Adj, OptPairTensor, OptTensor, Size
+from torch_geometric.utils import softmax
 from torch_sparse import SparseTensor
-
-from ..inits import glorot, zeros
 
 
 class AttConv(MessagePassing):
@@ -103,12 +104,11 @@ class AttConv(MessagePassing):
         # and target nodes (if present):
         alpha = (x * self.att_src).sum(dim=-1)
 
-        # edge_updater_type: (alpha: OptPairTensor, edge_attr: OptTensor)
-        alpha = self.edge_updater(edge_index, alpha=alpha, edge_attr=edge_attr)
+        alpha = self.edge_updater(edge_index, alpha=(alpha, None))
 
         # propagate_type: (x: OptPairTensor, alpha: Tensor)
         out = self.propagate(
-            edge_index, x=x, alpha=alpha, edge_attr=edge_attr, size=size
+            edge_index, x=x, alpha=alpha, size=size, edge_attr=edge_attr
         )
 
         if self.concat:
@@ -126,6 +126,11 @@ class AttConv(MessagePassing):
                 return out, edge_index.set_value(alpha, layout="coo")
         else:
             return out
+
+    def edge_update(self, alpha_j: Tensor, alpha_i: OptTensor, index: Tensor) -> Tensor:
+        alpha_j = F.leaky_relu(alpha_j)
+        alpha_j = softmax(alpha_j, index)
+        return alpha_j
 
     def message(self, x_j: Tensor, alpha: Tensor, edge_attr: Tensor) -> Tensor:
         return alpha.unsqueeze(-1) * x_j * edge_attr
