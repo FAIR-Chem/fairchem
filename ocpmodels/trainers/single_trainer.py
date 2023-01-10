@@ -331,7 +331,9 @@ class SingleTrainer(BaseTrainer):
                         print(f"\n\n >>> 🛑 {self.early_stopper.reason}\n\n")
                         if self.logger:
                             self.logger.add_tags(["E-S"])
-                        return self.end_of_training()
+                        return self.end_of_training(
+                            epoch_int, debug_batches, model_run_time, epoch_times
+                        )
 
                     self.model.train()
 
@@ -350,7 +352,9 @@ class SingleTrainer(BaseTrainer):
 
         # End of training.
         if not is_test_env:
-            return self.end_of_training()
+            return self.end_of_training(
+                epoch_int, debug_batches, model_run_time, epoch_times
+            )
 
     def end_of_training(self, epoch_int, debug_batches, model_run_time, epoch_times):
 
