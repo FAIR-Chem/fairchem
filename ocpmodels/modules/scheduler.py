@@ -26,7 +26,7 @@ class LRScheduler:
         self.optimizer = optimizer
         self.optim_config = optim_config.copy()
         self.warmup_scheduler = None
-        if "scheduler" in self.optim_config:
+        if self.optim_config.get("scheduler"):
             self.scheduler_type = self.optim_config["scheduler"]
         else:
             self.scheduler_type = "LambdaLR"
