@@ -1,7 +1,5 @@
 """ Code of the Scalable Frame Averaging (Rotation Invariant) GNN
 """
-import math
-
 import torch
 from e3nn.o3 import spherical_harmonics
 from torch import nn
@@ -13,6 +11,7 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import conditional_grad, get_pbc_distances
 from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.force_decoder import ForceDecoder
+from ocpmodels.models.utils.attention_model import AttConv
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
@@ -237,21 +236,25 @@ class InteractionBlock(MessagePassing):
         super(InteractionBlock, self).__init__()
         self.act = act
         self.mp_type = mp_type
+        self.hidden_channels = hidden_channels
 
         if self.mp_type == "simple":
             self.lin_geom = nn.Linear(num_filters, hidden_channels)
             self.lin_h = nn.Linear(hidden_channels, hidden_channels)
 
+        elif self.mp_type == "sfarinet":
+            self.lin_h = nn.Linear(hidden_channels, hidden_channels)
+
         elif self.mp_type == "updownscale":
-            self.lin_geom = nn.Linear(num_filters + 2 * hidden_channels, num_filters)
-            # self.lin_geom = nn.Linear(num_filters, num_filters)  # like 'simple'
+            # self.lin_geom = nn.Linear(num_filters + 2 * hidden_channels, num_filters)
+            self.lin_geom = nn.Linear(num_filters, num_filters)  # like 'simple'
             self.lin_down = nn.Linear(hidden_channels, num_filters)
             self.lin_up = nn.Linear(num_filters, hidden_channels)
 
         elif self.mp_type == "base_with_att":
             # --- Compute attention coefficients if required --
-            # Change message function
-            pass
+            self.lin_h = nn.Linear(hidden_channels, hidden_channels)
+            self.lin_geom = AttConv(hidden_channels, heads=1, concat=True, bias=True)
 
         elif self.mp_type == "att":
             # --- Compute attention coefficients if required --
@@ -259,7 +262,12 @@ class InteractionBlock(MessagePassing):
             pass
 
         elif self.mp_type == "local_env":
-            pass
+            self.lin_geom = nn.Linear(num_filters, hidden_channels)
+            self.lin_h = nn.Linear(hidden_channels, hidden_channels)
+
+        elif self.mp_type == "up_down_local_env":
+            self.lin_h = nn.Linear(hidden_channels, num_filters)
+            self.lin_geom = nn.Linear(2 * num_filters, hidden_channels)
 
         else:  # base
             self.lin_geom = nn.Linear(
@@ -268,8 +276,9 @@ class InteractionBlock(MessagePassing):
             self.lin_h = nn.Linear(hidden_channels, hidden_channels)
 
     def reset_parameters(self):
-        nn.init.xavier_uniform_(self.lin_geom.weight)
-        self.lin_geom.bias.data.fill_(0)
+        if self.mp_type != "sfarinet":
+            nn.init.xavier_uniform_(self.lin_geom.weight)
+            self.lin_geom.bias.data.fill_(0)
         nn.init.xavier_uniform_(self.lin_h.weight)
         self.lin_h.bias.data.fill_(0)
         if self.mp_type == "updownscale":
@@ -280,32 +289,54 @@ class InteractionBlock(MessagePassing):
 
     def forward(self, h, edge_index, e):
 
-        if self.mp_type != "simple":
+        if self.mp_type in {"base"}:
             e = torch.cat([e, h[edge_index[0]], h[edge_index[1]]], dim=1)
 
         # W = self.lin_e_2(self.act(self.lin_e_1(e)))  # transform edge rep
-        W = self.lin_geom(e)
+        if self.mp_type in {"up_down_local_env", "sfarinet", "base_with_att"}:
+            W = e
+        else:
+            W = self.lin_geom(e)
 
         if self.mp_type == "updownscale":
             h = self.lin_down(h)  # downscale node rep.
             h = self.propagate(edge_index, x=h, W=W)  # propagate
             h = self.lin_up(self.act(h))  # upscale node rep.
+
         elif self.mp_type == "att":
             # Look at So3krates code
             pass
         elif self.mp_type == "base_with_att":
-            # Combine above and base
-            pass
+            h = self.lin_h(self.act(h))
+            h = self.lin_geom(h, edge_index, W)
+
         elif self.mp_type == "local_env":
-            pass
+            h = self.lin_h(self.act(h))
+            chi = self.propagate(edge_index, x=h, W=W, local_env=True)  # propagate
+            h = self.propagate(edge_index, x=h, W=W)  # propagate
+            h = h + chi
+            # h = h * chi
+        elif self.mp_type == "up_down_local_env":
+            h = self.lin_h(self.act(h))
+            chi = self.propagate(edge_index, x=h, W=W, local_env=True)  # propagate
+            h = self.propagate(edge_index, x=h, W=W)  # propagate
+            h = torch.cat((h, chi), dim=1)
+            h = self.lin_geom(h)
+
         else:  # base, simple
             h = self.lin_h(self.act(h))
             h = self.propagate(edge_index, x=h, W=W)  # propagate
 
         return h
 
-    def message(self, x_j, W):
-        return x_j * W
+    def message(self, x_j, W, local_env=None, att=None):
+        if local_env is not None:
+            return W
+        elif att is not None:
+            # Compute alpha_i
+            return alpha_i * x_j * W
+        else:
+            return x_j * W
 
 
 class OutputBlock(nn.Module):
