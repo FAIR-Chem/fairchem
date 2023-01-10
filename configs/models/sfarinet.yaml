@@ -15,6 +15,7 @@ default:
     phys_embeds: False # True
     phys_hidden_channels: 0
     energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds, pooling, graclus, random}
+    edge_embed_type: ""
     force_decoder_type: "mlp" # can be {"" or "simple"} | only used if regress_forces is True
     force_decoder_model_config:
       simple:
@@ -89,7 +90,7 @@ is2re:
 # -----  S2EF  -----
 # ------------------
 
-# For 4 GPUs 
+# For 4 GPUs
 
 s2ef:
   default:
@@ -122,6 +123,10 @@ s2ef:
   20M: {}
 
   all: {}
+
+# ------------------
+# -----  QM9  -----
+# ------------------
 
 qm9:
   default:
