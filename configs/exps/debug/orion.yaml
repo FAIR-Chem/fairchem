@@ -1,11 +1,11 @@
 # more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
 job:
-  mem: 48GB
+  mem: 32GB
   cpus: 4
-  gres: gpu:16gb:1
+  gres: gpu:1
   time: 1:00:00
-  partition: long
-  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
+  partition: main
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
   env: ocp-a100
 
 default:

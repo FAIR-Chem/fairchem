@@ -247,7 +247,7 @@ class Flags:
             help="Path to an orion search space yaml file",
         )
         self.parser.add_argument(
-            "--unique_exp_name",
+            "--orion_unique_exp_name",
             "-u",
             type=str,
             help="Name for this experiment. If the experiment name already exists,"
