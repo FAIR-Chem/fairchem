@@ -15,7 +15,7 @@ from pathlib import Path
 
 import torch
 from orion.client import build_experiment
-from yaml import safe_load
+from yaml import safe_load, dump
 
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
@@ -87,8 +87,8 @@ class Runner:
         # print("hparams post-broadcast: ", hparams)
         assert should_be_0 == 0
         if self.hparams:
-            print("\n💎 Received hyper-parameters from Orion:")
-            print(self.hparams)
+            print("\n💎💎Received hyper-parameters from Orion:")
+            print(dump(self.hparams), end="\n💎💎\n")
 
         self.trainer_config = merge_dicts(self.trainer_config, self.hparams)
         self.trainer_config = continue_orion_exp(self.trainer_config)

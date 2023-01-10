@@ -210,7 +210,7 @@ class SingleTrainer(BaseTrainer):
         model_run_time = 0
 
         if not self.silent:
-            print("---Beginning of Training---")
+            print(f"--- 🔄 Beginning of Training @ {self.now}---")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
 
