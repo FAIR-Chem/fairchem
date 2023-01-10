@@ -121,7 +121,7 @@ class Runner:
         if orion_exp is not None:
             orion_exp.observe(
                 orion_trial,
-                {"type": "objective", "name": "energy_mae", "value": objective},
+                [{"type": "objective", "name": "energy_mae", "value": objective}],
             )
 
 
