@@ -2,18 +2,19 @@
 """
 
 import torch
+from e3nn.o3 import spherical_harmonics
 from torch import nn
 from torch.nn import Embedding, Linear
 from torch_geometric.nn import MessagePassing, radius_graph
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances, conditional_grad
+from ocpmodels.common.utils import conditional_grad, get_pbc_distances
 from ocpmodels.models.base_model import BaseModel
+from ocpmodels.models.force_decoder import ForceDecoder
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-from ocpmodels.models.force_decoder import ForceDecoder
 
 try:
     from torch_geometric.nn.acts import swish
@@ -47,6 +48,7 @@ class EmbeddingBlock(nn.Module):
         phys_embeds,
         graph_rewiring,
         act,
+        edge_embed_type,
     ):
         super().__init__()
         self.act = act
@@ -58,6 +60,7 @@ class EmbeddingBlock(nn.Module):
             "one-supernode-per-atom-type",
             "one-supernode-per-atom-type-dist",
         }
+        self.edge_embed_type = edge_embed_type
 
         # Phys embeddings
         self.phys_emb = PhysEmbedding(
@@ -97,7 +100,24 @@ class EmbeddingBlock(nn.Module):
 
         # MLP
         self.lin = Linear(hidden_channels, hidden_channels)
-        self.lin_e = Linear(num_gaussians + 3, hidden_channels)
+
+        # --- Edge embedding ---
+        if self.edge_embed_type == "":
+            self.lin_e = Linear(num_gaussians + 3, hidden_channels)
+        elif self.edge_embed_type == "rij":
+            self.lin_e = Linear(3, hidden_channels)
+        elif self.edge_embed_type == "all_rij":
+            self.lin_e = Linear(3, hidden_channels // 3)  # r_ij
+            self.lin_e2 = Linear(3, hidden_channels // 3)  # norm r_ij
+            self.lin_e3 = Linear(
+                num_gaussians, hidden_channels - 2 * (hidden_channels // 3)
+            )  # d_ij
+        elif self.edge_embed_type == "sh":
+            self.lin_e = Linear(15, hidden_channels)
+        elif self.edge_embed_type == "all":
+            self.lin_e = Linear(18, hidden_channels)
+        else:
+            raise ValueError("edge_embedding_type does not exist")
 
         self.reset_parameters()
 
@@ -114,11 +134,47 @@ class EmbeddingBlock(nn.Module):
         self.lin.bias.data.fill_(0)
         nn.init.xavier_uniform_(self.lin_e.weight)
         self.lin_e.bias.data.fill_(0)
+        if self.edge_embed_type == "all_rij":
+            nn.init.xavier_uniform_(self.lin_e2.weight)
+            self.lin_e2.bias.data.fill_(0)
+            nn.init.xavier_uniform_(self.lin_e3.weight)
+            self.lin_e3.bias.data.fill_(0)
 
-    def forward(self, z, rel_pos, edge_attr, tag=None, subnodes=None):
-        # Create edge embeddings from d_ij || r_ij
-        e = torch.cat((rel_pos, edge_attr), dim=1)
-        # Extension: learn a bond feature vector and concat to above
+    def forward(
+        self, z, rel_pos, edge_attr, tag=None, normalised_rel_pos=None, subnodes=None
+    ):
+
+        # --- Edge embedding --
+
+        if self.edge_embed_type == "rij":
+            e = self.lin_e(rel_pos)
+        elif self.edge_embed_type == "all_rij":
+            rel_pos = self.lin_e(rel_pos)  # r_ij
+            normalized_rel_pos = self.lin_e2(normalised_rel_pos)  # norm r_ij
+            edge_attr = self.lin_e3(edge_attr)  # d_ij
+            e = torch.cat((rel_pos, edge_attr, normalized_rel_pos), dim=1)
+        elif self.edge_embed_type == "sh":
+            self.sh = spherical_harmonics(
+                l=[1, 2, 3],
+                x=normalised_rel_pos,
+                normalize=False,
+                normalization="component",
+            )
+            e = self.lin_e(self.sh)
+        elif self.edge_embed_type == "all":
+            self.sh = spherical_harmonics(
+                l=[1, 2, 3],
+                x=normalised_rel_pos,
+                normalize=False,
+                normalization="component",
+            )
+            e = torch.cat((rel_pos, self.sh), dim=1)
+            e = self.lin_e(e)
+        else:
+            e = torch.cat((rel_pos, edge_attr), dim=1)
+            e = self.lin_e(e)
+
+        # --- Atom embedding --
 
         # Create atom embeddings based on its characteristic number
         h = self.emb(z)
@@ -153,7 +209,6 @@ class EmbeddingBlock(nn.Module):
 
         # Apply MLP
         h = self.lin(h)
-        e = self.lin_e(e)
 
         return h, e
 
@@ -269,6 +324,7 @@ class SfariNet(BaseModel):
         force_decoder_type (str): Type of force decoder to use.
         force_decoder_model_config (dict): Dictionary of config parameters
             for the decoder's model
+        edge_embed_type (str): type of edge_embedding
     """
 
     def __init__(self, **kwargs):
@@ -279,6 +335,7 @@ class SfariNet(BaseModel):
         self.max_num_neighbors = kwargs["max_num_neighbors"]
         self.regress_forces = kwargs["regress_forces"]
         self.energy_head = kwargs["energy_head"]
+        self.edge_embed_type = kwargs["edge_embed_type"]
 
         self.distance_expansion = GaussianSmearing(
             0.0, self.cutoff, kwargs["num_gaussians"]
@@ -297,6 +354,7 @@ class SfariNet(BaseModel):
             kwargs["phys_embeds"],
             kwargs["graph_rewiring"],
             self.act,
+            kwargs["edge_embed_type"],
         )
 
         # Interaction block
@@ -382,13 +440,14 @@ class SfariNet(BaseModel):
             edge_attr = self.distance_expansion(edge_weight)
 
         # Normalize and squash to [0,1] for gaussian basis
-        rel_pos_normalized = rel_pos / edge_weight.view(-1, 1)
-        rel_pos_normalized = (rel_pos_normalized + 1) / 2.0
+        rel_pos_normalized = None
+        if self.edge_embed_type in {"sh", "all_rij", "all"}:
+            rel_pos_normalized = (rel_pos / edge_weight.view(-1, 1) + 1) / 2.0
 
         pooling_loss = None  # deal with pooling loss
 
         # Embedding block
-        h, e = self.embed_block(z, rel_pos, edge_attr, data.tags)
+        h, e = self.embed_block(z, rel_pos, edge_attr, data.tags, rel_pos_normalized)
 
         # Compute atom weights for late energy head
         if self.energy_head == "weighted-av-initial-embeds":
