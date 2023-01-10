@@ -4,7 +4,7 @@ import torch
 from e3nn.o3 import spherical_harmonics
 from torch import nn
 from torch.nn import Embedding, Linear
-from torch_geometric.nn import MessagePassing, radius_graph
+from torch_geometric.nn import MessagePassing, TransformerConv, radius_graph
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
@@ -258,8 +258,15 @@ class InteractionBlock(MessagePassing):
 
         elif self.mp_type == "att":
             # --- Compute attention coefficients if required --
-            # Change message function
-            pass
+            self.lin_h = nn.Linear(hidden_channels, hidden_channels)
+            self.lin_geom = TransformerConv(
+                hidden_channels,
+                hidden_channels,
+                heads=1,
+                concat=True,
+                root_weight=False,
+                edge_dim=num_filters,
+            )
 
         elif self.mp_type == "local_env":
             self.lin_geom = nn.Linear(num_filters, hidden_channels)
@@ -293,7 +300,7 @@ class InteractionBlock(MessagePassing):
             e = torch.cat([e, h[edge_index[0]], h[edge_index[1]]], dim=1)
 
         # W = self.lin_e_2(self.act(self.lin_e_1(e)))  # transform edge rep
-        if self.mp_type in {"up_down_local_env", "sfarinet", "base_with_att"}:
+        if self.mp_type in {"up_down_local_env", "sfarinet", "base_with_att", "att"}:
             W = e
         else:
             W = self.lin_geom(e)
@@ -304,12 +311,11 @@ class InteractionBlock(MessagePassing):
             h = self.lin_up(self.act(h))  # upscale node rep.
 
         elif self.mp_type == "att":
-            # Look at So3krates code
-            pass
+            h = self.lin_h(self.act(h))
+            h = self.lin_geom(h, edge_index, edge_attr=W)
         elif self.mp_type == "base_with_att":
             h = self.lin_h(self.act(h))
-            h = self.lin_geom(h, edge_index, W)
-
+            h = self.lin_geom(h, edge_index, W)  # propagate is inside
         elif self.mp_type == "local_env":
             h = self.lin_h(self.act(h))
             chi = self.propagate(edge_index, x=h, W=W, local_env=True)  # propagate
@@ -329,12 +335,9 @@ class InteractionBlock(MessagePassing):
 
         return h
 
-    def message(self, x_j, W, local_env=None, att=None):
+    def message(self, x_j, W, local_env=None):
         if local_env is not None:
             return W
-        elif att is not None:
-            # Compute alpha_i
-            return alpha_i * x_j * W
         else:
             return x_j * W
 

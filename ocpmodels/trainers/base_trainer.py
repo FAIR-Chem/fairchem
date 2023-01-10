@@ -44,7 +44,7 @@ from ocpmodels.modules.exponential_moving_average import (
 )
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
-from ocpmodels.modules.scheduler import LRScheduler, EarlyStopper
+from ocpmodels.modules.scheduler import EarlyStopper, LRScheduler
 
 
 @registry.register_trainer("base")
@@ -75,7 +75,10 @@ class BaseTrainer(ABC):
         self.test_ri = self.config["test_ri"]
         self.is_debug = self.config["is_debug"]
         self.is_hpo = self.config["is_hpo"]
-        self.eval_on_test = self.config["eval_on_test"]
+        if self.task_name == "qm9":
+            self.eval_on_test = self.config["eval_on_test"]
+        else:
+            self.eval_on_test = False
         self.silent = self.config["silent"]
         self.datasets = {}
         self.samplers = {}
