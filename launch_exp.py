@@ -5,10 +5,12 @@ import sys
 from pathlib import Path
 
 from minydra import resolved_args
-from yaml import safe_load
+from yaml import safe_load, dump
 
 from sbatch import now
 import copy
+
+ROOT = Path(__file__).resolve().parent
 
 
 def util_strings(jobs, yaml_comments=False):
@@ -78,12 +80,14 @@ def write_exp_yaml_and_jobs(exp_file, outfile, jobs):
         jobs (list[str]): List of jobs, one per run line in the yaml exp_file
     """
     lines = exp_file.read_text().splitlines()
-    run_line = lines.index("runs:")
-    j = 0
-    for i, line in enumerate(lines[run_line:]):
-        if line.strip().startswith("- "):
-            lines[run_line + i] = f"{line}  # {jobs[j]}"
-            j += 1
+    if "runs:" in lines:
+        run_line = lines.index("runs:")
+        j = 0
+        for i, line in enumerate(lines[run_line:]):
+            if line.strip().startswith("- "):
+                lines[run_line + i] = f"{line}  # {jobs[j]}"
+                j += 1
+
     lines += [""] + util_strings(jobs, True).splitlines()
     yml_out = outfile.with_suffix(".yaml")
     yml_out.write_text("\n".join(lines))
@@ -103,7 +107,7 @@ def get_commit():
 
 
 def find_exp(name):
-    exp_dir = Path(__file__).parent / "configs" / "exps"
+    exp_dir = ROOT / "configs" / "exps"
     exp_file = exp_dir / f"{name}.yaml"
     if exp_file.exists():
         return exp_file
@@ -142,13 +146,37 @@ if __name__ == "__main__":
     args = resolved_args()
     assert "exp" in args
     regex = args.get("match", ".*")
+    ts = now()
 
     exp_name = args.exp.replace(".yml", "").replace(".yaml", "")
     exp_file = find_exp(exp_name)
 
     exp = safe_load(exp_file.open("r"))
 
-    runs = exp["runs"]
+    if "orion" in exp:
+        orion_base = ROOT / "data" / "orion"
+        assert "runs" not in exp, "Cannot use both Orion and runs"
+        meta = exp["orion"].pop("_meta_", {})
+        assert (
+            "unique_exp_name" in meta
+        ), "Must specify 'orion._meta_.unique_exp_name' in exp file"
+        assert "n_runs" in meta, "Must specify 'orion._meta_.n_runs' in exp file"
+
+        search_path = (
+            orion_base / "search-spaces" / f"{ts}-{meta['unique_exp_name']}.yaml"
+        )
+        search_path.parent.mkdir(exist_ok=True, parents=True)
+        assert not search_path.exists()
+        search_path.write_text(dump(exp["orion"]))
+        runs = [
+            {
+                "orion_search_path": str(search_path),
+                "orion_unique_exp_name": meta["unique_exp_name"],
+            }
+            for _ in range(meta["n_runs"])
+        ]
+    else:
+        runs = exp["runs"]
 
     commands = []
 
@@ -191,8 +219,8 @@ if __name__ == "__main__":
             print(f"Launching job {c:3}", end="\r") or os.popen(command).read().strip()
             for c, command in enumerate(commands)
         ]
-        outdir = Path(__file__).resolve().parent / "data" / "exp_outputs" / exp_name
-        outfile = outdir / f"{exp_name.split('/')[-1]}_{now()}.txt"
+        outdir = ROOT / "data" / "exp_outputs" / exp_name
+        outfile = outdir / f"{exp_name.split('/')[-1]}_{ts}.txt"
         outfile.parent.mkdir(exist_ok=True, parents=True)
         text += separator.join(outputs)
         jobs = [

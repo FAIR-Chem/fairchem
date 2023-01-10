@@ -1,0 +1,51 @@
+# trainset has 4068193 samples
+job:
+  mem: 32GB
+  cpus: 8
+  gres: gpu:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
+  env: ocp-a100
+
+default:
+  config: schnet-qm7x-all
+  wandb_project: ocp-qm
+  mode: train
+  test_ri: true
+  wandb_tags: qm7x
+  phys_hidden_channels: 0
+  phys_embeds: False
+  energy_head: False
+  pg_hidden_channels: 0
+  tag_hidden_channels: 0
+  frame_averaging: ""
+  cp_data_to_tmpdir: true
+  note:
+    task: name
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions
+    optim: batch_size, lr_initial
+  optim:
+    batch_size: 10
+    warmup_steps: 1000
+    lr_initial: 0.0001
+    # parameters EMA
+    # ema_decay: 0.999
+    decay_steps: 750000
+    scheduler:
+    decay_rate: 0.01
+    max_steps: 1000000
+  model:
+    hidden_channels: 128
+    num_filters: 128
+    num_gaussians: 20
+    num_interactions: 6
+    cutoff: 5.0
+
+runs:
+  - optim:
+      ema_decay: 0.999
+  - optim:
+      scheduler: LinearWarmupCosineAnnealingLR
+  - optim:
+      ema_decay: 0.999
+      scheduler: LinearWarmupCosineAnnealingLR

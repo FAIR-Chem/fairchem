@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import datetime
 import logging
 import os
 import time
@@ -40,6 +41,10 @@ class SingleTrainer(BaseTrainer):
         Examples of configurations for task, model, dataset and optimizer
         can be found in `configs/ocp_is2re <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_. # noqa: E501
     """
+
+    @property
+    def now(self):
+        return str(datetime.datetime.now()).split(".")[0]
 
     def load_task(self):
         if not self.silent:
@@ -200,7 +205,7 @@ class SingleTrainer(BaseTrainer):
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // n_train
-        loader_times = Times()
+        timer = Times()
         epoch_times = []
         model_run_time = 0
 
@@ -224,11 +229,12 @@ class SingleTrainer(BaseTrainer):
                 if self.sigterm:
                     return "SIGTERM"
                 i_for_epoch += 1
+                # print(self.now, "i_for_epoch: ", i_for_epoch, flush=True)
                 self.epoch = epoch_int + (i + 1) / n_train
                 self.step = epoch_int * n_train + i + 1
 
-                # Get a batch
-                with loader_times.next("get_batch"):
+                # Get a batch.
+                with timer.next("get_batch"):
                     batch = next(train_loader_iter)
 
                 # Forward, loss, backward.
@@ -272,10 +278,10 @@ class SingleTrainer(BaseTrainer):
                         )
 
                     # Log metrics.
-                    gbm, gbs = loader_times.prepare_for_logging()
+                    gbm, gbs = timer.prepare_for_logging()
                     self.metrics["get_batch_time_mean"] = {"metric": gbm["get_batch"]}
                     self.metrics["get_batch_time_std"] = {"metric": gbs["get_batch"]}
-                    loader_times.reset()
+                    timer.reset()
                     # logging.info(f"Step: {self.step}")
                     self.log_train_metrics()
 
@@ -297,7 +303,7 @@ class SingleTrainer(BaseTrainer):
                 # Evaluate on val set after every `eval_every` iterations.
                 if should_validate:
                     self.save(
-                        checkpoint_file=f"checkpoint-{str(self.step).zfill(6)}.pt",
+                        checkpoint_file=f"checkpoint-{str(self.step).zfill(7)}.pt",
                         training_state=True,
                     )
 
@@ -307,10 +313,13 @@ class SingleTrainer(BaseTrainer):
                         debug_batches=debug_batches,
                         is_first=first_eval,
                     )
+
                     first_eval = False
                     if val_metrics == "SIGTERM":
                         return "SIGTERM"
+
                     current_val_metric = val_metrics[primary_metric]["metric"]
+
                     if current_val_metric < self.best_val_metric:
                         self.best_val_metric = current_val_metric
                         self.save(
@@ -318,6 +327,14 @@ class SingleTrainer(BaseTrainer):
                             checkpoint_file="best_checkpoint.pt",
                             training_state=False,
                         )
+                    if self.early_stopper.should_stop(current_val_metric):
+                        print(f"\n\n >>> 🛑 {self.early_stopper.reason}\n\n")
+                        if self.logger:
+                            self.logger.add_tags(["E-S"])
+                        return self.end_of_training(
+                            epoch_int, debug_batches, model_run_time, epoch_times
+                        )
+
                     self.model.train()
 
                 self.scheduler_step(eval_every, current_val_metric)
@@ -334,9 +351,12 @@ class SingleTrainer(BaseTrainer):
             torch.cuda.empty_cache()
 
         # End of training.
+        if not is_test_env:
+            return self.end_of_training(
+                epoch_int, debug_batches, model_run_time, epoch_times
+            )
 
-        if is_test_env:
-            return
+    def end_of_training(self, epoch_int, debug_batches, model_run_time, epoch_times):
 
         eas = self.eval_all_splits(True, epoch=epoch_int, debug_batches=debug_batches)
         if eas == "SIGTERM":
@@ -349,17 +369,18 @@ class SingleTrainer(BaseTrainer):
 
         # Time model
         if self.logger is not None:
-            log_epoch_times = False
+            log_epoch_times = self.config["optim"]["max_epochs"] > 0
             start_time = time.time()
-            if self.config["optim"]["max_epochs"] == 0:
-                batch = next(iter(self.loaders["train"]))
-            else:
-                log_epoch_times = True
+
+            # deterministic batch because shuffle=False for validation
+            batch = next(iter(self.loaders[self.config["dataset"]["default_val"]]))
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
-            self.logger.log({"Model run time": model_run_time / n_train})
+            self.logger.log(
+                {"Model run time": model_run_time / len(self.loaders["train"])}
+            )
             if log_epoch_times:
-                self.logger.log({"Epoch time": sum(epoch_times) / len(epoch_times)})
+                self.logger.log({"Epoch time": np.mean(epoch_times)})
 
         # Check respect of symmetries
         if self.test_ri and not is_test_env:
@@ -667,14 +688,14 @@ class SingleTrainer(BaseTrainer):
                 # Compute total difference across frames
                 for pos1, pos2 in zip(batch[0].fa_pos, rotated["batch_list"][0].fa_pos):
                     pos_diff += pos1 - pos2
-                # Manhanttan distance of pos matrix wrt 0 matrix.
+                # Manhattan distance of pos matrix wrt 0 matrix.
                 pos_diff_total += torch.abs(pos_diff).sum()
 
             # Reflect graph and compute diff in prediction
             reflected = self.reflect_graph(batch)
             preds3 = self.model_forward(reflected["batch_list"])
             energy_diff_refl += torch.abs(preds1["energy"] - preds3["energy"]).sum()
-            if self.task_name == "s2ef":            
+            if self.task_name == "s2ef":
                 forces_diff_refl += torch.abs(
                     preds1["forces"] @ reflected["rot"].to(preds1["forces"].device)
                     - preds3["forces"]
@@ -682,7 +703,7 @@ class SingleTrainer(BaseTrainer):
                 # assert torch.allclose(
                 #     torch.abs(
                 #         batch[0].force @ reflected["rot"].to(batch[0].force.device)
-                #         - reflected["batch_list"][0].force # .to(batch[0].force.device)
+                #         - reflected["batch_list"][0].force #.to(batch[0].force.device)
                 #     ).sum(),
                 #     torch.tensor([0.0]),   # .to(batch[0].force.device)
                 #     atol=1e-05,

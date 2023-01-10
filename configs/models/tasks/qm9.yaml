@@ -1,6 +1,7 @@
 default:
   trainer: single
   logger: wandb
+  eval_on_test: True
 
   model:
     otf_graph: False

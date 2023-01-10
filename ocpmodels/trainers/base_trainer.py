@@ -44,7 +44,7 @@ from ocpmodels.modules.exponential_moving_average import (
 )
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
-from ocpmodels.modules.scheduler import LRScheduler
+from ocpmodels.modules.scheduler import LRScheduler, EarlyStopper
 
 
 @registry.register_trainer("base")
@@ -66,6 +66,7 @@ class BaseTrainer(ABC):
         }
 
         self.sigterm = False
+        self.objective = None
         self.epoch = 0
         self.step = 0
         self.cpu = self.config["cpu"]
@@ -79,6 +80,7 @@ class BaseTrainer(ABC):
         self.datasets = {}
         self.samplers = {}
         self.loaders = {}
+        self.early_stopper = EarlyStopper(patience=10, min_abs_change=1e-5)
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{self.config['local_rank']}")
@@ -781,15 +783,12 @@ class BaseTrainer(ABC):
         if final and self.config["logger"] == "wandb" and distutils.is_master():
             overall_energy_mae = cumulated_energy_mae / len(all_splits)
             self.logger.log({"Eval time": cumulated_time})
+            self.objective = overall_energy_mae
+            self.logger.log({"Eval time": cumulated_time})
             self.logger.log({"Overall MAE": overall_energy_mae})
             if self.config["model"].get("regress_forces", False):
                 overall_forces_mae = cumulated_forces_mae / len(all_splits)
                 self.logger.log({"Overall Forces MAE": overall_forces_mae})
-            if self.logger.ntfy:
-                self.logger.ntfy(
-                    message=f"{JOB_ID} - Overall MAE: {overall_energy_mae}",
-                    click=self.logger.url,
-                )
 
         # Run on test split
         if final and "test" in self.config["dataset"] and self.eval_on_test:
@@ -934,3 +933,11 @@ class BaseTrainer(ABC):
         if signum == 15 and not self.sigterm:
             print("\nHandling SIGTERM signal received.\n")
             self.sigterm = True
+
+    def close_datasets(self):
+        try:
+            for ds in self.datasets.values():
+                if hasattr(ds, "close_db") and callable(ds.close_db):
+                    ds.close_db()
+        except Exception as e:
+            print("Error closing datasets: ", str(e))
