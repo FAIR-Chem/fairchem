@@ -82,18 +82,25 @@ def continue_orion_exp(trainer_config):
     if not latest_dirs:
         return trainer_config
 
-    latest_ckpts = sorted(
-        [f for f in (latest_dirs[-1] / "checkpoints").glob("checkpoint-*")],
+    resume_dir = latest_dirs[-1]
+
+    resume_ckpts = sorted(
+        [f for f in (resume_dir / "checkpoints").glob("checkpoint-*")],
         key=lambda f: float(f.stem.split("-")[-1]),
     )
 
-    if not latest_ckpts:
-        raise ValueError(f"No checkpoint found in {str(latest_dirs[-1])}")
-    trainer_config["checkpoint"] = str(latest_ckpts[-1])
+    if not resume_ckpts:
+        raise ValueError(f"No checkpoint found in {str(resume_dir)}")
+    trainer_config["checkpoint"] = str(resume_ckpts[-1])
+    resume_url = (resume_dir / "wandb_url.txt").read_text()
+    trainer_config["wandb_resume_id"] = resume_url.split("/runs/")[-1]
+
     print(
-        f"\nFound {len(latest_ckpts)} existing Orion runs.",
+        f"\n🎁 Found {len(resume_ckpts)} existing Orion runs.",
         "Resuming from latest:",
-        str(latest_dirs[-1]),
+        str(resume_dir),
+        "\nOn wandb run:",
+        resume_url,
     )
     print("Based on unique file id:", id_file)
     print("Continuing from checkpoint:", trainer_config["checkpoint"], end="\n\n")

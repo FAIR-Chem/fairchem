@@ -87,7 +87,7 @@ class Runner:
         # print("hparams post-broadcast: ", hparams)
         assert should_be_0 == 0
         if self.hparams:
-            print("Received hyper-parameters from Orion:")
+            print("\n💎 Received hyper-parameters from Orion:")
             print(self.hparams)
 
         self.trainer_config = merge_dicts(self.trainer_config, self.hparams)

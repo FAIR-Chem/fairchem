@@ -90,27 +90,33 @@ class Logger(ABC):
 class WandBLogger(Logger):
     def __init__(self, trainer_config):
         super().__init__(trainer_config)
+        wandb_tags = note = name = None
 
-        wandb_id = str(self.trainer_config.get("wandb_id", ""))
-        if wandb_id:
-            wandb_id += " - "
-        slurm_jobid = os.environ.get("SLURM_JOB_ID")
-        if slurm_jobid:
-            wandb_id += f"{slurm_jobid}-"
-        wandb_id += self.trainer_config["config"]
+        if trainer_config.get("wandb_resume_id"):
+            wandb_id = trainer_config["wandb_resume_id"]
+        else:
+            wandb_id = str(self.trainer_config.get("wandb_id", ""))
+            if wandb_id:
+                wandb_id += " - "
+            slurm_jobid = os.environ.get("SLURM_JOB_ID")
+            if slurm_jobid:
+                wandb_id += f"{slurm_jobid}-"
+            wandb_id += self.trainer_config["config"]
 
-        wandb_tags = trainer_config.get("wandb_tags", "")
-        if wandb_tags:
-            wandb_tags = [t.strip() for t in wandb_tags[:63].split(",")]
+            wandb_tags = trainer_config.get("wandb_tags", "")
+            if wandb_tags:
+                wandb_tags = [t.strip() for t in wandb_tags[:63].split(",")]
+            note = self.trainer_config.get("note", "")
+            name = self.trainer_config["wandb_name"] or wandb_id
 
         self.run = wandb.init(
             config=self.trainer_config,
             id=wandb_id,
-            name=self.trainer_config["wandb_name"] or wandb_id,
+            name=name,
             dir=self.trainer_config["logs_dir"],
             project=self.trainer_config["wandb_project"],
             resume="allow",
-            notes=self.trainer_config.get("note", ""),
+            notes=note,
             tags=wandb_tags,
             entity="mila-ocp",
         )
