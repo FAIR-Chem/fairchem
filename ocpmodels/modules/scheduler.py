@@ -1,7 +1,6 @@
 """scheduler.py
 """
 import inspect
-
 import torch.optim.lr_scheduler as lr_scheduler
 
 from ocpmodels.common.utils import warmup_lr_lambda
@@ -83,3 +82,73 @@ class LRScheduler:
     def get_lr(self):
         for group in self.optimizer.param_groups:
             return group["lr"]
+
+
+class EarlyStopper:
+    """
+    Class that stores the current best metric score and monitors whether
+    it's improving or not. If it does not decrease for a certain number
+    of validation calls (with some minimal improvement) then it tells the trainer
+    to stop.
+    """
+
+    def __init__(
+        self, patience=7, mode="min", min_abs_change=1e-5, store_all_steps=True
+    ):
+        self.patience = patience
+        self.mode = mode
+        self.counter = 0
+        self.min_abs_change = min_abs_change
+        self.store_all_steps = store_all_steps
+        self.metrics = []
+
+        if self.mode == "min":
+            self.best_score = float("inf")
+        elif self.mode == "max":
+            self.best_score = float("-inf")
+        else:
+            raise ValueError("mode must be either min or max")
+
+        self.early_stop = False
+
+    def should_stop(self, metric):
+        """
+        Returns True if the metric has not improved for a certain number of
+        steps. False otherwise. Stores the metric in `self.metrics`: all the steps if
+        `self.store_all_steps` is `True`, otherwise only the last `n=self.patience`.
+
+        Args:
+            metric (Number): Metric to track.
+
+        Returns:
+            bool: Wether to stop training or not
+        """
+        metric = float(metric)
+        self.metrics.append(metric)
+        if not self.store_all_steps:
+            self.metrics = self.metrics[-self.patience :]
+
+        if self.mode == "min":
+            if metric < self.best_score - self.min_abs_change:
+                self.best_score = metric
+                self.counter = 0
+            else:
+                self.counter += 1
+        elif self.mode == "max":
+            if metric > self.best_score + self.min_abs_change:
+                self.best_score = metric
+                self.counter = 0
+            else:
+                self.counter += 1
+
+        if self.counter >= self.patience:
+            self.early_stop = True
+
+        return self.early_stop
+
+    @property
+    def reason(self):
+        return (
+            f"Early stopping after {self.counter} steps with no improvement:\n"
+            + " -> ".join([f"{m:.6f}" for m in self.metrics[-self.patience :]])
+        )

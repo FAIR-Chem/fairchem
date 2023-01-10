@@ -44,7 +44,7 @@ from ocpmodels.modules.exponential_moving_average import (
 )
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
-from ocpmodels.modules.scheduler import LRScheduler
+from ocpmodels.modules.scheduler import LRScheduler, EarlyStopper
 
 
 @registry.register_trainer("base")
@@ -79,6 +79,7 @@ class BaseTrainer(ABC):
         self.datasets = {}
         self.samplers = {}
         self.loaders = {}
+        self.early_stopper = EarlyStopper(patience=10, min_abs_change=1e-5)
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{self.config['local_rank']}")

@@ -297,7 +297,7 @@ class SingleTrainer(BaseTrainer):
                 # Evaluate on val set after every `eval_every` iterations.
                 if should_validate:
                     self.save(
-                        checkpoint_file=f"checkpoint-{str(self.step).zfill(6)}.pt",
+                        checkpoint_file=f"checkpoint-{str(self.step).zfill(7)}.pt",
                         training_state=True,
                     )
 
@@ -307,10 +307,13 @@ class SingleTrainer(BaseTrainer):
                         debug_batches=debug_batches,
                         is_first=first_eval,
                     )
+
                     first_eval = False
                     if val_metrics == "SIGTERM":
                         return "SIGTERM"
+
                     current_val_metric = val_metrics[primary_metric]["metric"]
+
                     if current_val_metric < self.best_val_metric:
                         self.best_val_metric = current_val_metric
                         self.save(
@@ -318,6 +321,12 @@ class SingleTrainer(BaseTrainer):
                             checkpoint_file="best_checkpoint.pt",
                             training_state=False,
                         )
+                    if self.early_stopper.should_stop(current_val_metric):
+                        print(f"\n\n >>> 🛑 {self.early_stopper.reason}\n\n")
+                        if self.logger:
+                            self.logger.add_tags(["E-S"])
+                        return self.end_of_training()
+
                     self.model.train()
 
                 self.scheduler_step(eval_every, current_val_metric)
@@ -334,9 +343,10 @@ class SingleTrainer(BaseTrainer):
             torch.cuda.empty_cache()
 
         # End of training.
+        if not is_test_env:
+            return self.end_of_training()
 
-        if is_test_env:
-            return
+    def end_of_training(self, epoch_int, debug_batches, model_run_time, epoch_times):
 
         eas = self.eval_all_splits(True, epoch=epoch_int, debug_batches=debug_batches)
         if eas == "SIGTERM":
@@ -349,17 +359,16 @@ class SingleTrainer(BaseTrainer):
 
         # Time model
         if self.logger is not None:
-            log_epoch_times = False
+            log_epoch_times = self.config["optim"]["max_epochs"] > 0
             start_time = time.time()
-            if self.config["optim"]["max_epochs"] == 0:
-                batch = next(iter(self.loaders["train"]))
-            else:
-                log_epoch_times = True
+
+            # deterministic batch because shuffle=False for validation
+            batch = next(iter(self.loaders[self.config["dataset"]["default_val"]]))
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
             self.logger.log({"Model run time": model_run_time / n_train})
             if log_epoch_times:
-                self.logger.log({"Epoch time": sum(epoch_times) / len(epoch_times)})
+                self.logger.log({"Epoch time": np.mean(epoch_times)})
 
         # Check respect of symmetries
         if self.test_ri and not is_test_env:
@@ -674,7 +683,7 @@ class SingleTrainer(BaseTrainer):
             reflected = self.reflect_graph(batch)
             preds3 = self.model_forward(reflected["batch_list"])
             energy_diff_refl += torch.abs(preds1["energy"] - preds3["energy"]).sum()
-            if self.task_name == "s2ef":            
+            if self.task_name == "s2ef":
                 forces_diff_refl += torch.abs(
                     preds1["forces"] @ reflected["rot"].to(preds1["forces"].device)
                     - preds3["forces"]
