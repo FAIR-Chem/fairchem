@@ -90,7 +90,9 @@ def continue_orion_exp(trainer_config):
     )
 
     if not resume_ckpts:
-        raise ValueError(f"No checkpoint found in {str(resume_dir)}")
+        print(f"🥶 Warning: No checkpoint found in {str(resume_dir)}. Not resuming.")
+        return trainer_config
+
     trainer_config["checkpoint"] = str(resume_ckpts[-1])
     resume_url = (resume_dir / "wandb_url.txt").read_text()
     trainer_config["wandb_resume_id"] = resume_url.split("/runs/")[-1]
