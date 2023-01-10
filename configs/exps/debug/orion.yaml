@@ -5,7 +5,7 @@ job:
   gres: gpu:1
   time: 1:00:00
   partition: main
-  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
+  code_loc: /home/mila/s/schmidtv/ocp-project/ocp-drlab
   env: ocp-a100
 
 default:
@@ -42,13 +42,13 @@ orion:
   # Remember to change the experiment name if you change anything in the search space
   _meta_:
     n_runs: 2
-    unique_exp_name: ocp-qm9-orion-debug
+    unique_exp_name: ocp-qm9-orion-debug-v0.0.2
   optim:
     batch_size: uniform(32, 1024, discrete=True)
     lr_initial: loguniform(1e-5, 5e-3, precision=2)
     max_steps: fidelity(1e4, 1e6, base=5e5)
   model:
-    num_gaussians: uniform(16, 200, base=20, discrete=True)
+    num_gaussians: uniform(16, 200, discrete=True)
     hidden_channels: uniform(32, 512, discrete=True)
     num_filters: uniform(32, 512, discrete=True)
     num_interactions: uniform(1, 7, discrete=True)

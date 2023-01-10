@@ -8,8 +8,6 @@ LICENSE file in the root directory of this source tree.
 import copy
 import logging
 import os
-import re
-import subprocess
 import time
 import traceback
 import warnings
@@ -70,27 +68,29 @@ class Runner:
     def __init__(self, trainer_config):
         self.trainer_config = trainer_config
         self.trainer = None
+        self.hparams = {}
 
-    def run(self, **hparams):
+    def run(self, orion_exp=None):
+        orion_trial = None
         self.original_config = copy.deepcopy(self.trainer_config)
         if distutils.is_master():
-            orion_trial = hparams.pop("orion_trial", None)
-            if orion_trial:
-                hparams["orion_hash_params"] = orion_trial.hash_params
-        self.hparams = hparams
+            if orion_exp:
+                orion_trial = orion_exp.suggest(1)
+                self.hparams = orion_trial.params
+                self.hparams["orion_hash_params"] = orion_trial.hash_params
 
         should_be_0 = distutils.get_rank()
-        hp_list = [hparams, should_be_0]
+        hp_list = [self.hparams, should_be_0]
         # print("hparams pre-broadcast: ", hparams)
         distutils.broadcast_object_list(hp_list)
-        hparams, should_be_0 = hp_list
+        self.hparams, should_be_0 = hp_list
         # print("hparams post-broadcast: ", hparams)
         assert should_be_0 == 0
-        if hparams:
+        if self.hparams:
             print("Received hyper-parameters from Orion:")
-            print(hparams)
+            print(self.hparams)
 
-        self.trainer_config = merge_dicts(self.trainer_config, hparams)
+        self.trainer_config = merge_dicts(self.trainer_config, self.hparams)
         self.trainer_config = continue_orion_exp(self.trainer_config)
         cls = registry.get_trainer_class(self.trainer_config["trainer"])
         self.trainer: BaseTrainer = cls(**self.trainer_config)
@@ -118,7 +118,8 @@ class Runner:
         objective = o_list[0]
         # print("objective post-broadcast: ", objective)
 
-        return [{"name": "energy_mae", "type": "objective", "value": objective}]
+        if orion_exp is not None:
+            orion_exp.observe(orion_trial, objective, name="energy_mae")
 
 
 if __name__ == "__main__":
@@ -141,7 +142,6 @@ if __name__ == "__main__":
     trainer_config = build_config(args, override_args)
     trainer_config["optim"]["eval_batch_size"] = trainer_config["optim"]["batch_size"]
 
-    setup_logging()
     original_trainer_config = copy.deepcopy(trainer_config)
 
     if args.distributed:
@@ -152,16 +152,17 @@ if __name__ == "__main__":
         trainer_config = move_lmdb_data_to_slurm_tmpdir(trainer_config)
         # distutils.synchronize()
 
+    # -------------------
+    # -----  Setup  -----
+    # -------------------
+    setup_imports()
+    print("All things imported.")
+    trainer_config = continue_from_slurm_job_id(trainer_config)
+    trainer_config = read_slurm_env(trainer_config)
+    runner = Runner(trainer_config)
+    print("Runner ready.")
+
     try:
-        # -------------------
-        # -----  Setup  -----
-        # -------------------
-        setup_imports()
-        print("All things imported.")
-        trainer_config = continue_from_slurm_job_id(trainer_config)
-        trainer_config = read_slurm_env(trainer_config)
-        runner = Runner(trainer_config)
-        print("Runner ready.")
         # -------------------
         # -----  Train  -----
         # -------------------
@@ -182,7 +183,7 @@ if __name__ == "__main__":
                 space=space,
                 algorithms={"asha": {"seed": 123}},
             )
-            experiment.workon(runner.run, max_trials_per_worker=1, n_workers=1)
+            runner.run(orion_exp=experiment)
         else:
             print("Starting runner.")
             runner.run()

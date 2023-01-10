@@ -229,7 +229,7 @@ class SingleTrainer(BaseTrainer):
                 if self.sigterm:
                     return "SIGTERM"
                 i_for_epoch += 1
-                print(self.now, "i_for_epoch: ", i_for_epoch, flush=True)
+                # print(self.now, "i_for_epoch: ", i_for_epoch, flush=True)
                 self.epoch = epoch_int + (i + 1) / n_train
                 self.step = epoch_int * n_train + i + 1
 

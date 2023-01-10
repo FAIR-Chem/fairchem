@@ -52,8 +52,9 @@ def continue_orion_exp(trainer_config):
     if "orion_hash_params" not in trainer_config:
         faulty_path = Path(trainer_config["run_dir"]) / "faulty_trainer_config.yaml"
         print(
-            "\n\nWARNING: trainer_config has 'orion_search_path' and 'orion_unique_exp_name'",
-            "but no 'orion_trial'. This can lead to inconsistencies.",
+            "\n\nWARNING: trainer_config has 'orion_search_path' and",
+            "'orion_unique_exp_name' but no 'orion_hash_params'.",
+            "This can lead to inconsistencies.",
             f"You should investigate the faulty config in:\n{str(faulty_path)}\n\n",
         )
         faulty_path.write_text(yaml.dump(trainer_config))
