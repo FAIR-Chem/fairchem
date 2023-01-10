@@ -24,6 +24,7 @@ from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     JOB_ID,
+    ROOT,
     build_config,
     continue_from_slurm_job_id,
     continue_orion_exp,
@@ -169,9 +170,17 @@ if __name__ == "__main__":
             space = safe_load(Path(args.orion_search_path).read_text())
             print("Search Space: ", space)
             experiment = build_experiment(
+                storage={
+                    "database": {
+                        "host": str(
+                            ROOT / "data" / "orion" / "storage" / "orion_db.pkl"
+                        ),
+                        "type": "pickleddb",
+                    }
+                },
                 name=args.orion_unique_exp_name,
                 space=space,
-                algorithms={"mofa": {"seed": 123}},
+                algorithms={"asha": {"seed": 123}},
             )
             experiment.workon(runner.run, max_trials_per_worker=1, n_workers=1)
         else:

@@ -80,12 +80,14 @@ def write_exp_yaml_and_jobs(exp_file, outfile, jobs):
         jobs (list[str]): List of jobs, one per run line in the yaml exp_file
     """
     lines = exp_file.read_text().splitlines()
-    run_line = lines.index("runs:")
-    j = 0
-    for i, line in enumerate(lines[run_line:]):
-        if line.strip().startswith("- "):
-            lines[run_line + i] = f"{line}  # {jobs[j]}"
-            j += 1
+    if "runs:" in lines:
+        run_line = lines.index("runs:")
+        j = 0
+        for i, line in enumerate(lines[run_line:]):
+            if line.strip().startswith("- "):
+                lines[run_line + i] = f"{line}  # {jobs[j]}"
+                j += 1
+
     lines += [""] + util_strings(jobs, True).splitlines()
     yml_out = outfile.with_suffix(".yaml")
     yml_out.write_text("\n".join(lines))
@@ -141,7 +143,6 @@ def cli_arg(args, key=""):
 
 
 if __name__ == "__main__":
-    orion_conf = ROOT / "data" / "orion" / "orion_config.yaml"
     args = resolved_args()
     assert "exp" in args
     regex = args.get("match", ".*")
@@ -153,27 +154,16 @@ if __name__ == "__main__":
     exp = safe_load(exp_file.open("r"))
 
     if "orion" in exp:
+        orion_base = ROOT / "data" / "orion"
         assert "runs" not in exp, "Cannot use both Orion and runs"
+        meta = exp["orion"].pop("_meta_", {})
         assert (
-            "orion_unique_exp_name" in exp
-        ), "Must specify 'orion_unique_exp_name' in exp file"
-        if not orion_conf.exists():
-            orion_conf.write_text(
-                dump(
-                    {
-                        "storage": {
-                            "database": {
-                                "host": str(orion_conf.parent / "orion_db.pkl"),
-                                "type": "pickleddb",
-                            }
-                        }
-                    }
-                )
-            )
+            "unique_exp_name" in meta
+        ), "Must specify 'orion._meta_.unique_exp_name' in exp file"
+        assert "n_runs" in meta, "Must specify 'orion._meta_.n_runs' in exp file"
+
         search_path = (
-            orion_conf.parent
-            / "search-spaces"
-            / f"{ts}-{exp['orion_unique_exp_name']}.yaml"
+            orion_base / "search-spaces" / f"{ts}-{meta['unique_exp_name']}.yaml"
         )
         search_path.parent.mkdir(exist_ok=True, parents=True)
         assert not search_path.exists()
@@ -181,8 +171,9 @@ if __name__ == "__main__":
         runs = [
             {
                 "orion_search_path": str(search_path),
-                "orion_unique_exp_name": exp["orion_unique_exp_name"],
+                "orion_unique_exp_name": meta["unique_exp_name"],
             }
+            for _ in range(meta["n_runs"])
         ]
     else:
         runs = exp["runs"]
