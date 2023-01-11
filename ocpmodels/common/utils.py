@@ -30,6 +30,7 @@ import torch_geometric
 import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+from orion.client import build_experiment
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import segment_coo, segment_csr
@@ -41,6 +42,28 @@ from ocpmodels.common.registry import registry
 OCP_TASKS = {"s2ef", "is2re", "is2es"}
 ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
+
+
+def load_orion_exp(args):
+    exp_config = yaml.safe_load(Path(args.orion_exp_config_path).read_text())
+
+    assert args.orion_unique_exp_name or exp_config.get(
+        "unique_exp_name"
+    ), "Must provide orion_unique_exp_name in the command-line or the config file."
+
+    print(f"🔎 Orion Experiment Config:\n{yaml.dump(exp_config)}")
+    experiment = build_experiment(
+        storage={
+            "database": {
+                "host": str(ROOT / "data" / "orion" / "storage" / "orion_db.pkl"),
+                "type": "pickleddb",
+            }
+        },
+        name=args.orion_unique_exp_name or exp_config["unique_exp_name"],
+        space=exp_config["space"],
+        algorithms=exp_config["algorithms"],
+    )
+    return experiment
 
 
 def continue_orion_exp(trainer_config):
@@ -791,6 +814,17 @@ def create_dict_from_args(args: list, sep: str = "."):
         key_sequence = keys_concat.split(sep)
         dict_set_recursively(return_dict, key_sequence, val)
     return return_dict
+
+
+def unflatten_dict(source, sep="."):
+    """
+    >>> d = {"a.b": 4, "a.c": 5, "r.y": 1}
+    >>> unflatten_dict(d)
+    {'a': {'b': 4, 'c': 5}, 'r': {'y': 1}}
+    """
+    target = {}
+    [dict_set_recursively(target, k.split(sep), v) for k, v in source.items()]
+    return target
 
 
 def load_config_legacy(path: str, previous_includes: list = []):

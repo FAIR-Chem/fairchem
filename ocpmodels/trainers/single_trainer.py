@@ -48,7 +48,7 @@ class SingleTrainer(BaseTrainer):
 
     def load_task(self):
         if not self.silent:
-            logging.info(f"Loading dataset: {self.config['task']['dataset']}")
+            print(f"Loading dataset: {self.config['task']['dataset']}")
         self.num_targets = 1
 
         # start imports from
@@ -80,6 +80,10 @@ class SingleTrainer(BaseTrainer):
                         device=self.device,
                     )
                 else:
+                    print(
+                        "Warning: grad_target_mean not found in normalizer but",
+                        "regress_forces and normalize_labels are true.",
+                    )
                     self.normalizers["grad_target"] = Normalizer(
                         tensor=self.datasets["train"].data.y[
                             self.datasets["train"].__indices__

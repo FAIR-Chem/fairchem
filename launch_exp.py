@@ -142,6 +142,22 @@ def cli_arg(args, key=""):
     return s
 
 
+def get_args_or_exp(key, args, exp):
+    value = None
+    if key in args:
+        if key in exp:
+            print(f"Overriding orion.{key} from the command-line")
+        value = args[key]
+    elif key in exp:
+        value = exp[key]
+    else:
+        raise ValueError(
+            f"Must specify 'orion.{key}' "
+            + f"in exp file or from the command-line `{key}=value`"
+        )
+    return value
+
+
 if __name__ == "__main__":
     is_interrupted = False
     args = resolved_args()
@@ -157,24 +173,21 @@ if __name__ == "__main__":
     if "orion" in exp:
         orion_base = ROOT / "data" / "orion"
         assert "runs" not in exp, "Cannot use both Orion and runs"
-        meta = exp["orion"].pop("_meta_", {})
-        assert (
-            "unique_exp_name" in meta
-        ), "Must specify 'orion._meta_.unique_exp_name' in exp file"
-        assert "n_runs" in meta, "Must specify 'orion._meta_.n_runs' in exp file"
 
-        search_path = (
-            orion_base / "search-spaces" / f"{ts}-{meta['unique_exp_name']}.yaml"
-        )
+        n_jobs = get_args_or_exp("n_jobs", args, exp["orion"])
+        unique_exp_name = get_args_or_exp("unique_exp_name", args, exp["orion"])
+        if "unique_exp_name" not in exp:
+            exp["unique_exp_name"] = unique_exp_name
+
+        search_path = orion_base / "search-spaces" / f"{ts}-{unique_exp_name}.yaml"
         search_path.parent.mkdir(exist_ok=True, parents=True)
         assert not search_path.exists()
         search_path.write_text(dump(exp["orion"]))
         runs = [
             {
-                "orion_search_path": str(search_path),
-                "orion_unique_exp_name": meta["unique_exp_name"],
+                "orion_exp_config_path": str(search_path),
             }
-            for _ in range(meta["n_runs"])
+            for _ in range(n_jobs)
         ]
     else:
         runs = exp["runs"]

@@ -11,27 +11,26 @@ import os
 import time
 import traceback
 import warnings
-from pathlib import Path
 
 import torch
-from orion.client import build_experiment
-from yaml import safe_load, dump
+from yaml import dump
 
 from ocpmodels.common import distutils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     JOB_ID,
-    ROOT,
     build_config,
     continue_from_slurm_job_id,
     continue_orion_exp,
+    load_orion_exp,
     merge_dicts,
     move_lmdb_data_to_slurm_tmpdir,
     read_slurm_env,
     resolve,
     setup_imports,
     setup_logging,
+    unflatten_dict,
     update_from_sbatch_py_vars,
 )
 from ocpmodels.trainers import BaseTrainer
@@ -76,7 +75,7 @@ class Runner:
         if distutils.is_master():
             if orion_exp:
                 orion_trial = orion_exp.suggest(1)
-                self.hparams = orion_trial.params
+                self.hparams = unflatten_dict(orion_trial.params, sep="/")
                 self.hparams["orion_hash_params"] = orion_trial.hash_params
 
         should_be_0 = distutils.get_rank()
@@ -87,8 +86,8 @@ class Runner:
         # print("hparams post-broadcast: ", hparams)
         assert should_be_0 == 0
         if self.hparams:
-            print("\n💎💎Received hyper-parameters from Orion:")
-            print(dump(self.hparams), end="\n💎💎\n")
+            print("\n💎 Received hyper-parameters from Orion:")
+            print(dump(self.hparams), end="\n")
 
         self.trainer_config = merge_dicts(self.trainer_config, self.hparams)
         self.trainer_config = continue_orion_exp(self.trainer_config)
@@ -169,23 +168,9 @@ if __name__ == "__main__":
         # -------------------
         # -----  Train  -----
         # -------------------
-        if args.orion_search_path and distutils.is_master():
-            assert args.orion_unique_exp_name
-            space = safe_load(Path(args.orion_search_path).read_text())
-            print("Search Space: ", space)
-            experiment = build_experiment(
-                storage={
-                    "database": {
-                        "host": str(
-                            ROOT / "data" / "orion" / "storage" / "orion_db.pkl"
-                        ),
-                        "type": "pickleddb",
-                    }
-                },
-                name=args.orion_unique_exp_name,
-                space=space,
-                algorithms={"asha": {"seed": 123}},
-            )
+        if args.orion_exp_config_path and distutils.is_master():
+            experiment = load_orion_exp(args)
+            print("\nStarting runner.")
             runner.run(orion_exp=experiment)
         else:
             print("Starting runner.")

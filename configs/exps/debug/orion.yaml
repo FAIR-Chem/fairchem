@@ -1,8 +1,8 @@
 # more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
 job:
-  mem: 32GB
+  mem: 24GB
   cpus: 4
-  gres: gpu:1
+  gres: gpu:16gb:1
   time: 1:00:00
   partition: main
   code_loc: /home/mila/s/schmidtv/ocp-project/ocp-drlab
@@ -32,7 +32,6 @@ default:
     decay_rate: 0.05 # at the end of training, lr is decay_rate*lr_initial
     # max_epochs = ref_steps[3e6] / (n_train[110 000] / ref_batch_size[32])
     max_epochs: -1
-    max_steps: 3000000
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels
     optim: batch_size, lr_initial
@@ -40,16 +39,22 @@ default:
 
 orion:
   # Remember to change the experiment name if you change anything in the search space
-  _meta_:
-    n_runs: 2
-    unique_exp_name: ocp-qm9-orion-debug-v0.0.2
-  optim:
-    batch_size: uniform(32, 1024, discrete=True)
-    lr_initial: loguniform(1e-5, 5e-3, precision=2)
-    max_steps: fidelity(1e4, 1e6, base=5e5)
-  model:
-    num_gaussians: uniform(16, 200, discrete=True)
-    hidden_channels: uniform(32, 512, discrete=True)
-    num_filters: uniform(32, 512, discrete=True)
-    num_interactions: uniform(1, 7, discrete=True)
-    phys_embeds: choices([True, False])
+  n_jobs: 20
+
+  unique_exp_name: ocp-qm9-orion-debug-v1.0.0
+
+  space:
+    optim/max_steps: fidelity(1e5, 1e6, base=3)
+    optim/batch_size: uniform(32, 128, discrete=True)
+    optim/lr_initial: loguniform(1e-5, 5e-3, precision=2)
+    model/num_gaussians: uniform(16, 200, discrete=True)
+    model/hidden_channels: uniform(32, 512, discrete=True)
+    model/num_filters: uniform(32, 512, discrete=True)
+    model/num_interactions: uniform(1, 7, discrete=True)
+    model/phys_embeds: choices([True, False])
+
+  algorithms:
+    asha:
+      seed: 123
+      num_rungs: 5
+      num_brackets: 1

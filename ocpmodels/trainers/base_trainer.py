@@ -286,9 +286,9 @@ class BaseTrainer(ABC):
 
     def load_model(self):
         # Build model
-        if distutils.is_master() and not self.silent:
-            logging.info(
-                f"Loading model {self.config['model_name']}:"
+        if not self.silent:
+            print(
+                f"🧠 Loading model {self.config['model_name']}:\n"
                 + f" {yaml.dump(self.config['model'])}"
             )
 
