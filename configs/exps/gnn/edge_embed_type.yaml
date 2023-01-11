@@ -16,33 +16,16 @@ default:
     energy_head: 'weighted-av-initial-embeds' # False ?
   wandb_tags: 'edge-embed-test'
   optim:
-    max_epochs: 5
+    max_epochs: 15
     batch_size: 256
     eval_batch_size: 256
+  cp_data_to_tmpdir: true
 
 runs:
   - config: sfarinet-is2re-all
-    note: 'Sfarinet no sym'
-  - config: sfarinet-is2re-all
     note: 'Sfarinet baseline sym'
     frame_averaging: 2D
     fa_frames: se3-random
-  - config: sfarinet-is2re-all
-    note: 'Sfarinet baseline sym'
-    frame_averaging: 2D
-    fa_frames: se3-random
-  - config: sfarinet-is2re-all
-    note: 'rij'
-    frame_averaging: 2D
-    fa_frames: se3-random
-    model:
-      edge_embed_type: rij
-  - config: sfarinet-is2re-all
-    note: 'sh'
-    frame_averaging: 2D
-    fa_frames: se3-random
-    model:
-      edge_embed_type: sh
   - config: sfarinet-is2re-all
     note: 'all rij'
     frame_averaging: 2D
@@ -55,11 +38,3 @@ runs:
     fa_frames: se3-random
     model:
       edge_embed_type: all
-  - config: sfarinet-is2re-all
-    note: 'all'
-    frame_averaging: 2D
-    fa_frames: se3-random
-    model:
-      edge_embed_type: all
-    optim:
-      lr_initial: 0.0007

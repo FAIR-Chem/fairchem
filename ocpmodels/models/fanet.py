@@ -114,15 +114,14 @@ class EmbeddingBlock(nn.Module):
         if self.edge_embed_type == "rij":
             self.lin_e1 = Linear(3, num_filters)
         elif self.edge_embed_type == "all_rij":
-            self.lin_e1 = Linear(3, num_filters // 3)  # r_ij
-            self.lin_e12 = Linear(3, num_filters // 3)  # norm r_ij
-            self.lin_e13 = Linear(
-                num_gaussians, num_filters - 2 * (num_filters // 3)
+            self.lin_e1 = Linear(3, num_filters // 2)  # r_ij
+            self.lin_e12 = Linear(
+                num_gaussians, num_filters - (num_filters // 2)
             )  # d_ij
         elif self.edge_embed_type == "sh":
             self.lin_e1 = Linear(15, num_filters)
         elif self.edge_embed_type == "all":
-            self.lin_e1 = Linear(18, num_filters)
+            self.lin_e1 = Linear(15, num_filters)
         else:
             raise ValueError("edge_embedding_type does not exist")
 
@@ -152,8 +151,6 @@ class EmbeddingBlock(nn.Module):
         if self.edge_embed_type == "all_rij":
             nn.init.xavier_uniform_(self.lin_e12.weight)
             self.lin_e12.bias.data.fill_(0)
-            nn.init.xavier_uniform_(self.lin_e13.weight)
-            self.lin_e13.bias.data.fill_(0)
 
     def forward(
         self, z, rel_pos, edge_attr, tag=None, normalised_rel_pos=None, subnodes=None
@@ -165,9 +162,8 @@ class EmbeddingBlock(nn.Module):
             e = self.lin_e1(rel_pos)
         elif self.edge_embed_type == "all_rij":
             rel_pos = self.lin_e1(rel_pos)  # r_ij
-            normalized_rel_pos = self.lin_e12(normalised_rel_pos)  # norm r_ij
-            edge_attr = self.lin_e13(edge_attr)  # d_ij
-            e = torch.cat((rel_pos, edge_attr, normalized_rel_pos), dim=1)
+            edge_attr = self.lin_e12(edge_attr)  # d_ij
+            e = torch.cat((rel_pos, edge_attr), dim=1)
         elif self.edge_embed_type == "sh":
             self.sh = spherical_harmonics(
                 l=[1, 2, 3],
@@ -187,8 +183,8 @@ class EmbeddingBlock(nn.Module):
             e = self.lin_e1(e)
 
         if self.second_layer_MLP:
-            e = self.lin_e2(e)
-            # e = self.lin_e2(self.act(e))
+            # e = self.lin_e2(e)
+            e = self.lin_e2(self.act(e))
 
         # --- Node embedding --
 
@@ -254,7 +250,14 @@ class InteractionBlock(MessagePassing):
         elif self.mp_type == "base_with_att":
             # --- Compute attention coefficients if required --
             self.lin_h = nn.Linear(hidden_channels, hidden_channels)
-            self.lin_geom = AttConv(hidden_channels, heads=1, concat=True, bias=True)
+            # self.lin_geom = AttConv(hidden_channels, heads=1, concat=True, bias=True)
+            self.lin_geom = TransformerConv(
+                hidden_channels,
+                hidden_channels,
+                heads=1,
+                concat=True,
+                root_weight=False,
+            )
 
         elif self.mp_type == "att":
             # --- Compute attention coefficients if required --
@@ -296,7 +299,7 @@ class InteractionBlock(MessagePassing):
 
     def forward(self, h, edge_index, e):
 
-        if self.mp_type in {"base"}:
+        if self.mp_type == "base":
             e = torch.cat([e, h[edge_index[0]], h[edge_index[1]]], dim=1)
 
         # W = self.lin_e_2(self.act(self.lin_e_1(e)))  # transform edge rep
@@ -316,6 +319,7 @@ class InteractionBlock(MessagePassing):
         elif self.mp_type == "base_with_att":
             h = self.lin_h(self.act(h))
             h = self.lin_geom(h, edge_index, W)  # propagate is inside
+
         elif self.mp_type == "local_env":
             h = self.lin_h(self.act(h))
             chi = self.propagate(edge_index, x=h, W=W, local_env=True)  # propagate
@@ -329,7 +333,7 @@ class InteractionBlock(MessagePassing):
             h = torch.cat((h, chi), dim=1)
             h = self.lin_geom(h)
 
-        else:  # base, simple
+        else:  # base, simple, sfarinet
             h = self.lin_h(self.act(h))
             h = self.propagate(edge_index, x=h, W=W)  # propagate
 

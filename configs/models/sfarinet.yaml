@@ -83,14 +83,14 @@ is2re:
         - 17981
         - 26972
         - 35963
-      warmup_steps: 5394
+      warmup_steps: 6000
       max_epochs: 20
 
 # ------------------
 # -----  S2EF  -----
 # ------------------
 
-# For 4 GPUs
+# For 1 GPUs
 
 s2ef:
   default:
@@ -103,18 +103,17 @@ s2ef:
       force_coefficient: 30
       energy_grad_coefficient: 10
     optim:
-      batch_size: 48
-      eval_batch_size: 48
-      warmup_steps: 25000
+      batch_size: 192
+      eval_batch_size: 192
+      warmup_steps: 30000
       warmup_factor: 0.2
       lr_gamma: 0.1
       lr_initial: 0.0002
       max_epochs: 20
-      warmup_steps: 20000
       lr_milestones:
-        - 50000
-        - 70000
-        - 90000
+        - 55000
+        - 80000
+        - 105000
 
   200k: {}
 

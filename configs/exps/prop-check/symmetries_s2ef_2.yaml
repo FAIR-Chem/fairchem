@@ -33,56 +33,15 @@ runs:
     fa_frames: all
     model:
       regress_forces: from_energy
-
-  - config: sfarinet-s2ef-2M
+  - config: sfarinet-s2ef-2M  # 2659788
     note: '2D all gradient'
     frame_averaging: 2D
     fa_frames: all
     model:
       regress_forces: direct_with_gradient_target
-  - config: sfarinet-s2ef-2M
+  - config: sfarinet-s2ef-2M  # 2659789
     note: '2d all no gradient'
     frame_averaging: 2D
     fa_frames: all
     model:
       regress_forces: direct
-
-  - config: sfarinet-s2ef-2M
-    note: 'Big energy grad coef'
-    frame_averaging: 2D
-    fa_frames: all
-    model:
-      regress_forces: direct_with_gradient_target
-    optim:
-      energy_grad_coefficient: 100
-      force_coefficient: 30
-      energy_coefficient: 1
-  - config: sfarinet-s2ef-2M
-    note: 'Big energy grad coef'
-    frame_averaging: 2D
-    fa_frames: random
-    model:
-      regress_forces: direct_with_gradient_target
-    optim:
-      energy_grad_coefficient: 100
-      force_coefficient: 30
-      energy_coefficient: 1
-  - config: sfarinet-s2ef-2M
-    note: 'No energy coef'
-    frame_averaging: 2D
-    fa_frames: random
-    model:
-      regress_forces: direct_with_gradient_target
-    optim:
-      energy_grad_coefficient: 100
-      force_coefficient: 30
-      energy_coefficient: 0
-  - config: sfarinet-s2ef-2M
-    note: 'Large force coef'
-    frame_averaging: 2D
-    fa_frames: random
-    model:
-      regress_forces: direct_with_gradient_target
-    optim:
-      force_coefficient: 75
-      energy_coefficient: 1
