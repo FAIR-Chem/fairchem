@@ -601,9 +601,13 @@ class ForcesTrainer(BaseTrainer):
     def run_relaxations(self, split="val"):
         ensure_fitted(self._unwrapped_model)
 
-        # When set to trie, uses deterministic CUDA scatter ops, if available.
+        # When set to true, uses deterministic CUDA scatter ops, if available.
         # https://pytorch.org/docs/stable/generated/torch.use_deterministic_algorithms.html#torch.use_deterministic_algorithms
-        registry.register("set_deterministic_scatter", False)
+        # Only implemented for GemNet-OC currently.
+        registry.register(
+            "set_deterministic_scatter",
+            self.config["task"].get("set_deterministic_scatter", False),
+        )
 
         logging.info("Running ML-relaxations")
         self.model.eval()
