@@ -430,12 +430,13 @@ class SingleTrainer(BaseTrainer):
                         .view(-1, 3)
                     )
                     f_all.append(g_forces)
+                breakpoint()
             batch_list[0].pos = original_pos
             if self.task_name in OCP_TASKS:
                 batch_list[0].cell = original_cell
 
             # Average predictions over frames
-            preds = {"energy": sum(e_all) / len(e_all)}
+            preds["energy"] = sum(e_all) / len(e_all)
             if len(p_all) > 0 and all(y is not None for y in p_all):
                 preds["pooling_loss"] = sum(p_all) / len(p_all)
             if len(f_all) > 0 and all(y is not None for y in f_all):
