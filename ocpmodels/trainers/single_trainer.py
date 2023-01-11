@@ -430,7 +430,6 @@ class SingleTrainer(BaseTrainer):
                         .view(-1, 3)
                     )
                     f_all.append(g_forces)
-                breakpoint()
             batch_list[0].pos = original_pos
             if self.task_name in OCP_TASKS:
                 batch_list[0].cell = original_cell
