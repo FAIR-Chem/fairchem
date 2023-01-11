@@ -20,6 +20,7 @@ from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     JOB_ID,
+    auto_note,
     build_config,
     continue_from_slurm_job_id,
     continue_orion_exp,
@@ -92,6 +93,7 @@ class Runner:
 
         self.trainer_config = merge_dicts(self.trainer_config, self.hparams)
         self.trainer_config = continue_orion_exp(self.trainer_config)
+        self.trainer_config = auto_note(self.trainer_config)
         cls = registry.get_trainer_class(self.trainer_config["trainer"])
         self.trainer: BaseTrainer = cls(**self.trainer_config)
         task = registry.get_task_class(self.trainer_config["mode"])(self.trainer_config)

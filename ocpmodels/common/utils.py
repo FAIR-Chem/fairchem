@@ -941,7 +941,6 @@ def build_config(args, args_override):
     config = set_qm9_target_stats(config)
     config = set_qm7x_target_stats(config)
     config = override_narval_paths(config)
-    config = auto_note(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
