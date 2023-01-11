@@ -53,6 +53,10 @@ task:
     alpha: 70.0
     # Directory to save out trajectories (.traj files) in.
     traj_dir: path/to/traj/directory
+  # When set to true, uses "deterministic" CUDA scatter ops if available,
+  # i.e. given the same input, leads to the same results. Default is false
+  # since this can be significantly slower.
+  set_deterministic_scatter: False                                              # True or False
 
 dataset:
   train:
