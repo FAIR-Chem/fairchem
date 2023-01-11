@@ -77,6 +77,7 @@ class Runner:
                 orion_trial = orion_exp.suggest(1)
                 self.hparams = unflatten_dict(orion_trial.params, sep="/")
                 self.hparams["orion_hash_params"] = orion_trial.hash_params
+                self.hparams["orion_unique_exp_name"] = orion_exp.name
 
         should_be_0 = distutils.get_rank()
         hp_list = [self.hparams, should_be_0]
