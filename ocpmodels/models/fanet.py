@@ -460,6 +460,8 @@ class FANet(BaseModel):
         self.max_num_neighbors = kwargs["max_num_neighbors"]
         self.edge_embed_type = kwargs["edge_embed_type"]
         self.skip_co = kwargs["skip_co"]
+        if kwargs["mp_type"] == 'sfarinet':
+            kwargs["num_filters"] = kwargs["hidden_channels"]
 
         self.act = (
             getattr(nn.functional, kwargs["act"]) if kwargs["act"] != "swish" else swish
