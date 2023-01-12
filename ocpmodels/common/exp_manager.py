@@ -57,7 +57,9 @@ class Manager:
         for t in self.trials:
             self.hash_to_trials[t.hash_params].append(t)
         self.discover_run_dirs()
-        print(Manager.help())
+        self.job_ids = sorted(
+            [p.name for runs in self.trial_hparams_to_rundirs.values() for p in runs]
+        )
         print("\n")
         print("{:31} : {:4} ".format("Trials in experiment", len(self.trials)))
         print("{:31} : {:4}".format("Total expected trials", self.total_budgets))
@@ -87,7 +89,7 @@ class Manager:
         )
         print(
             "{:31} : {:4}".format(
-                "Existing unique trials executed", len(self.trial_hparams_to_rundirs)
+                "Existing unique HP sets executed", len(self.trial_hparams_to_rundirs)
             )
         )
         print(
@@ -98,9 +100,33 @@ class Manager:
         )
         print("{:31} : {:4}".format("Existing wandb runs", len(self.wandb_runs)))
         print("{:31} : {}".format("Algorithm's budgets", str(self.budgets)))
+        sq = set(
+            [
+                j.strip()
+                for j in os.popen("/opt/slurm/bin/squeue -u $USER -o '%12i'")
+                .read()
+                .splitlines()[1:]
+            ]
+        )
+        running = set(self.job_ids) & sq
+        waiting = (
+            set([j.parent.name for j in rundir.glob(f"*/{self.name}.exp")]) & sq
+        ) - running
+        print(
+            "{:31} : {}".format(
+                "Jobs currently running:",
+                f"{len(running)} " + " ".join(running),
+            )
+        )
+        print(
+            "{:31} : {}".format(
+                "Jobs currently waiting:",
+                f"{len(waiting)} " + " ".join(waiting),
+            )
+        )
 
     def discover_run_dirs(self):
-        for unique in rundir.glob("*/*.unique"):
+        for unique in rundir.glob(f"*/{self.name}--*.unique"):
             self.trial_hparams_to_rundirs[unique.stem.split("--")[-1]].append(
                 unique.parent
             )
@@ -125,24 +151,11 @@ class Manager:
         for trial_id, wandb_runs in self.id_to_wandb_runs.items():
             trial = self.get_trial_for_id(trial_id)
             if trial.status == "reserved":
-                reserved[trial_id] = {"wandb_run": wandb_runs, "trial": trial}
+                reserved[trial_id] = {"wandb_runs": wandb_runs, "trial": trial}
         return reserved
 
     def print_wandb_query(self):
-        print(
-            "WandB runs query:\n"
-            + "("
-            + "|".join(
-                sorted(
-                    [
-                        p.name
-                        for runs in self.trial_hparams_to_rundirs.values()
-                        for p in runs
-                    ]
-                )
-            )
-            + ")"
-        )
+        print("WandB runs query:\n" + "(" + "|".join(self.job_ids) + ")")
 
     @classmethod
     def help(self):
@@ -176,7 +189,7 @@ class Manager:
         manager.get_dirs_for_trial(trial_obj: orion.Trial) -> list of run dirs for this trial
         manager.get_trial_for_id(trial_id: str)            -> trial object for this trial_id (wrapper around manager.id_to_trial[trial_id])
         manager.get_dirs_for_id(trial_id: str)             -> list of run dirs for this trial_id
-        manager.get_reserved_wandb_runs()                  -> dict {trial_id: {"wandb_run": [list of wandb Run objects], "trial": trial}}
+        manager.get_reserved_wandb_runs()                  -> dict {trial_id: {"wandb_runs": [list of wandb Run objects], "trial": trial}}
                                                               get the currently reserved trials and their wandb runs
 
         --------
@@ -186,7 +199,7 @@ class Manager:
         m = Manager(orion_db_path="./data/orion/storage/orion_db.pkl", name="ocp-qm9-orion-debug-v1.0.0", wandb_path="mila-ocp/ocp-qm")
         exp_df = m.exp.to_pandas()
         reserved_wandbs = m.get_reserved_wandb_runs()
-        print(list(reserved_wandbs.values())[0]["wandb_run"][0].config["run_dir"])
+        print(list(reserved_wandbs.values())[0]["wandb_runs"][0].config["run_dir"])
         """
         )
 
@@ -215,10 +228,20 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if not args.name:
-        raise ValueError("Please provide a name for the experiment.")
+        raise ValueError(
+            "Please provide `name=` for the experiment."
+            + " See `$ python exp_manager.py help`"
+        )
     if not args.wandb_path:
-        raise ValueError("Please provide a wandb_path.")
+        raise ValueError(
+            "Please provide `wandb_path='{entity}/{project}}'`."
+            + " See `$ python exp_manager.py help`"
+        )
 
+    print(
+        "💃 Status of experiment",
+        f"'{args.name}' and wandb entity/project '{args.wandb_path}':",
+    )
     m = Manager(
         name=args.name,
         wandb_path=args.wandb_path,

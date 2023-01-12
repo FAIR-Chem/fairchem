@@ -6,6 +6,7 @@ import subprocess
 from shutil import copyfile
 import sys
 import re
+import yaml
 
 template = """\
 #!/bin/bash
@@ -192,6 +193,21 @@ def add_jobid_to_log(j, command_line, exp_name=None):
     logfile.write_text("\n".join(lines))
 
 
+def write_orion_config(args, outdir):
+    if "--orion_exp_config_path=" not in args.get("py_args", ""):
+        return
+    orion_yaml_path = (
+        args.py_args.split("--orion_exp_config_path=")[-1]
+        .split(" --")[0]
+        .replace("'", "")
+    )
+    copyfile(orion_yaml_path, outdir / "orion_exp_config.yaml")
+    config = yaml.safe_load(Path(orion_yaml_path).read_text())
+    if "unique_exp_name" in config:
+        unique_exp_name = config["unique_exp_name"]
+        (outdir / f"{unique_exp_name}.exp").touch()
+
+
 if __name__ == "__main__":
     # has the submission been successful?
     success = False
@@ -348,6 +364,7 @@ if __name__ == "__main__":
                     print("Creating directory", str(output_parent))
                 output_parent.mkdir(parents=True, exist_ok=True)
             copyfile(script_path, output_parent / script_path.name)
+            write_orion_config(args, output_parent)
         if not args.verbose:
             print("Submitted batch job", jobid)
         add_jobid_to_log(jobid, sbatch_command_line, args.exp_name)
