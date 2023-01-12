@@ -122,7 +122,7 @@ class EmbeddingBlock(nn.Module):
         elif self.edge_embed_type == "sh":
             self.lin_e1 = Linear(15, num_filters)
         elif self.edge_embed_type == "all":
-            self.lin_e1 = Linear(15, num_filters)
+            self.lin_e1 = Linear(15 + num_gaussians, num_filters)
         else:
             raise ValueError("edge_embedding_type does not exist")
 
@@ -180,7 +180,7 @@ class EmbeddingBlock(nn.Module):
                 normalize=False,
                 normalization="component",
             )
-            e = torch.cat((rel_pos, self.sh), dim=1)
+            e = torch.cat((rel_pos, self.sh, edge_attr), dim=1)
             e = self.lin_e1(e)
 
         e = self.act(e)  # can comment out
@@ -232,7 +232,7 @@ class EmbeddingBlock(nn.Module):
 
 class InteractionBlock(MessagePassing):
     def __init__(
-        self, hidden_channels, num_filters, act, mp_type, complex_mp, att_heads=1
+        self, hidden_channels, num_filters, act, mp_type, complex_mp, att_heads, batch_norm
     ):
         super(InteractionBlock, self).__init__()
         self.act = act
@@ -536,6 +536,7 @@ class FANet(BaseModel):
                     kwargs["mp_type"],
                     kwargs["complex_mp"],
                     kwargs["att_heads"],
+                    kwargs["batch_norm"]
                 )
                 for _ in range(kwargs["num_interactions"])
             ]
