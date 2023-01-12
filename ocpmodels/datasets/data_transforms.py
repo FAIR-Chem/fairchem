@@ -47,9 +47,11 @@ class FrameAveraging(Transform):
             "random",
             "det",
             "all",
+            "multiple"
             "se3-random",
             "se3-det",
             "se3-all",
+            "se3-multiple"
         }
 
         if self.fa_type:
