@@ -4,7 +4,7 @@ job:
   cpus: 4
   gres: gpu:1
   time: 30:00
-  partition: unkillable
+  partition: main
 
 default:
   wandb_project: ocp-debug
