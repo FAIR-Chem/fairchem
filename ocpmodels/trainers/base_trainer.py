@@ -139,7 +139,8 @@ class BaseTrainer(ABC):
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
         if distutils.is_master() and not self.silent:
-            print(yaml.dump(self.config, default_flow_style=False))
+            print("🧰 Trainer config:")
+            print(yaml.dump(self.config), end="\n\n")
         self.load()
 
         self.evaluator = Evaluator(
@@ -285,9 +286,10 @@ class BaseTrainer(ABC):
 
     def load_model(self):
         # Build model
-        if distutils.is_master() and not self.silent:
-            logging.info(
-                f"Loading model {self.config['model_name']}: {self.config['model']}"
+        if not self.silent:
+            print(
+                f"🧠 Loading model {self.config['model_name']}:\n"
+                + f" {yaml.dump(self.config['model'])}"
             )
 
         bond_feat_dim = None
@@ -314,8 +316,8 @@ class BaseTrainer(ABC):
                 f"{self.model.num_params} parameters."
             )
 
-        if self.logger is not None:
-            self.logger.watch(self.model)
+        # if self.logger is not None:
+        #     self.logger.watch(self.model)
 
         self.model = OCPDataParallel(
             self.model,
@@ -543,7 +545,7 @@ class BaseTrainer(ABC):
     ):
         if distutils.is_master() and not self.silent:
             print()
-            logging.info(f"Evaluating on {split}.")
+            logging.info(f"🧐 Evaluating on {split}.")
         if self.is_hpo:
             disable_tqdm = True
 

@@ -48,7 +48,7 @@ class SingleTrainer(BaseTrainer):
 
     def load_task(self):
         if not self.silent:
-            logging.info(f"Loading dataset: {self.config['task']['dataset']}")
+            print(f"Loading dataset: {self.config['task']['dataset']}")
         self.num_targets = 1
 
         # start imports from
@@ -80,6 +80,10 @@ class SingleTrainer(BaseTrainer):
                         device=self.device,
                     )
                 else:
+                    print(
+                        "Warning: grad_target_mean not found in normalizer but",
+                        "regress_forces and normalize_labels are true.",
+                    )
                     self.normalizers["grad_target"] = Normalizer(
                         tensor=self.datasets["train"].data.y[
                             self.datasets["train"].__indices__
@@ -210,7 +214,7 @@ class SingleTrainer(BaseTrainer):
         model_run_time = 0
 
         if not self.silent:
-            print("---Beginning of Training---")
+            print(f"--- 🔄 Beginning of Training @ {self.now}---")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
 
@@ -431,7 +435,7 @@ class SingleTrainer(BaseTrainer):
                 batch_list[0].cell = original_cell
 
             # Average predictions over frames
-            preds = {"energy": sum(e_all) / len(e_all)}
+            preds["energy"] = sum(e_all) / len(e_all)
             if len(p_all) > 0 and all(y is not None for y in p_all):
                 preds["pooling_loss"] = sum(p_all) / len(p_all)
             if len(f_all) > 0 and all(y is not None for y in f_all):

@@ -240,7 +240,7 @@ class Flags:
             help="Log training loss every n steps",
         )
         self.parser.add_argument(
-            "--orion_search_path",
+            "--orion_exp_config_path",
             "-o",
             type=str,
             help="Path to an orion search space yaml file",

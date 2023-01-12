@@ -30,6 +30,7 @@ import torch_geometric
 import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+from orion.client import build_experiment
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import segment_coo, segment_csr
@@ -43,17 +44,37 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
 
 
+def load_orion_exp(args):
+    exp_config = yaml.safe_load(Path(args.orion_exp_config_path).read_text())
+
+    assert args.orion_unique_exp_name or exp_config.get(
+        "unique_exp_name"
+    ), "Must provide orion_unique_exp_name in the command-line or the config file."
+
+    print(f"🔎 Orion Experiment Config:\n{yaml.dump(exp_config)}")
+    experiment = build_experiment(
+        storage={
+            "database": {
+                "host": str(ROOT / "data" / "orion" / "storage" / "orion_db.pkl"),
+                "type": "pickleddb",
+            }
+        },
+        name=args.orion_unique_exp_name or exp_config["unique_exp_name"],
+        space=exp_config["space"],
+        algorithms=exp_config["algorithms"],
+    )
+    return experiment
+
+
 def continue_orion_exp(trainer_config):
-    if not trainer_config.get("orion_search_path") or not trainer_config.get(
-        "orion_unique_exp_name"
-    ):
+    if not trainer_config.get("orion_exp_config_path"):
         return trainer_config
 
     if "orion_hash_params" not in trainer_config:
         faulty_path = Path(trainer_config["run_dir"]) / "faulty_trainer_config.yaml"
         print(
-            "\n\nWARNING: trainer_config has 'orion_search_path' and",
-            "'orion_unique_exp_name' but no 'orion_hash_params'.",
+            "\n\nWARNING: trainer_config has 'orion_exp_config_path'",
+            "but no 'orion_hash_params'.",
             "This can lead to inconsistencies.",
             f"You should investigate the faulty config in:\n{str(faulty_path)}\n\n",
         )
@@ -90,7 +111,9 @@ def continue_orion_exp(trainer_config):
     )
 
     if not resume_ckpts:
-        raise ValueError(f"No checkpoint found in {str(resume_dir)}")
+        print(f"🥶 Warning: No checkpoint found in {str(resume_dir)}. Not resuming.")
+        return trainer_config
+
     trainer_config["checkpoint"] = str(resume_ckpts[-1])
     resume_url = (resume_dir / "wandb_url.txt").read_text()
     trainer_config["wandb_resume_id"] = resume_url.split("/runs/")[-1]
@@ -791,6 +814,17 @@ def create_dict_from_args(args: list, sep: str = "."):
     return return_dict
 
 
+def unflatten_dict(source, sep="."):
+    """
+    >>> d = {"a.b": 4, "a.c": 5, "r.y": 1}
+    >>> unflatten_dict(d)
+    {'a': {'b': 4, 'c': 5}, 'r': {'y': 1}}
+    """
+    target = {}
+    [dict_set_recursively(target, k.split(sep), v) for k, v in source.items()]
+    return target
+
+
 def load_config_legacy(path: str, previous_includes: list = []):
     path = Path(path)
     if path in previous_includes:
@@ -905,7 +939,6 @@ def build_config(args, args_override):
     config = set_qm9_target_stats(config)
     config = set_qm7x_target_stats(config)
     config = override_narval_paths(config)
-    config = auto_note(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
