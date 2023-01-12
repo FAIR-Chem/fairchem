@@ -52,10 +52,12 @@ def load_orion_exp(args):
     ), "Must provide orion_unique_exp_name in the command-line or the config file."
 
     print(f"🔎 Orion Experiment Config:\n{yaml.dump(exp_config)}")
+    db_path = ROOT / "data" / "orion" / "storage" / "orion_db.pkl"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
     experiment = build_experiment(
         storage={
             "database": {
-                "host": str(ROOT / "data" / "orion" / "storage" / "orion_db.pkl"),
+                "host": str(db_path),
                 "type": "pickleddb",
             }
         },
