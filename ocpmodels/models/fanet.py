@@ -5,13 +5,14 @@ from e3nn.o3 import spherical_harmonics
 from torch import nn
 from torch.nn import Embedding, Linear
 from torch_geometric.nn import MessagePassing, TransformerConv, radius_graph
+from torch_geometric.nn.norm import BatchNorm, GraphNorm
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import conditional_grad, get_pbc_distances
 from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.force_decoder import ForceDecoder
-from ocpmodels.models.utils.attention_model import AttConv
+from ocpmodels.models.utils.attention_model import TransfoAttConv
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
@@ -114,15 +115,14 @@ class EmbeddingBlock(nn.Module):
         if self.edge_embed_type == "rij":
             self.lin_e1 = Linear(3, num_filters)
         elif self.edge_embed_type == "all_rij":
-            self.lin_e1 = Linear(3, num_filters // 3)  # r_ij
-            self.lin_e12 = Linear(3, num_filters // 3)  # norm r_ij
-            self.lin_e13 = Linear(
-                num_gaussians, num_filters - 2 * (num_filters // 3)
+            self.lin_e1 = Linear(3, num_filters // 2)  # r_ij
+            self.lin_e12 = Linear(
+                num_gaussians, num_filters - (num_filters // 2)
             )  # d_ij
         elif self.edge_embed_type == "sh":
             self.lin_e1 = Linear(15, num_filters)
         elif self.edge_embed_type == "all":
-            self.lin_e1 = Linear(18, num_filters)
+            self.lin_e1 = Linear(15 + num_gaussians, num_filters)
         else:
             raise ValueError("edge_embedding_type does not exist")
 
@@ -152,8 +152,6 @@ class EmbeddingBlock(nn.Module):
         if self.edge_embed_type == "all_rij":
             nn.init.xavier_uniform_(self.lin_e12.weight)
             self.lin_e12.bias.data.fill_(0)
-            nn.init.xavier_uniform_(self.lin_e13.weight)
-            self.lin_e13.bias.data.fill_(0)
 
     def forward(
         self, z, rel_pos, edge_attr, tag=None, normalised_rel_pos=None, subnodes=None
@@ -165,9 +163,8 @@ class EmbeddingBlock(nn.Module):
             e = self.lin_e1(rel_pos)
         elif self.edge_embed_type == "all_rij":
             rel_pos = self.lin_e1(rel_pos)  # r_ij
-            normalized_rel_pos = self.lin_e12(normalised_rel_pos)  # norm r_ij
-            edge_attr = self.lin_e13(edge_attr)  # d_ij
-            e = torch.cat((rel_pos, edge_attr, normalized_rel_pos), dim=1)
+            edge_attr = self.lin_e12(edge_attr)  # d_ij
+            e = torch.cat((rel_pos, edge_attr), dim=1)
         elif self.edge_embed_type == "sh":
             self.sh = spherical_harmonics(
                 l=[1, 2, 3],
@@ -183,12 +180,14 @@ class EmbeddingBlock(nn.Module):
                 normalize=False,
                 normalization="component",
             )
-            e = torch.cat((rel_pos, self.sh), dim=1)
+            e = torch.cat((rel_pos, self.sh, edge_attr), dim=1)
             e = self.lin_e1(e)
 
+        e = self.act(e)  # can comment out
+
         if self.second_layer_MLP:
-            e = self.lin_e2(e)
-            # e = self.lin_e2(self.act(e))
+            # e = self.lin_e2(e)
+            e = self.act(self.lin_e2(e))
 
         # --- Node embedding --
 
@@ -224,19 +223,22 @@ class EmbeddingBlock(nn.Module):
             h += h_pos
 
         # MLP
-        h = self.lin(h)
+        h = self.act(self.lin(h))
         if self.second_layer_MLP:
-            h = self.lin_2(self.act(h))
+            h = self.act(self.lin_2(h))
 
         return h, e
 
 
 class InteractionBlock(MessagePassing):
-    def __init__(self, hidden_channels, num_filters, act, mp_type):
+    def __init__(
+        self, hidden_channels, num_filters, act, mp_type, complex_mp, att_heads, batch_norm
+    ):
         super(InteractionBlock, self).__init__()
         self.act = act
         self.mp_type = mp_type
         self.hidden_channels = hidden_channels
+        self.complex_mp = complex_mp
 
         if self.mp_type == "simple":
             self.lin_geom = nn.Linear(num_filters, hidden_channels)
@@ -246,23 +248,32 @@ class InteractionBlock(MessagePassing):
             self.lin_h = nn.Linear(hidden_channels, hidden_channels)
 
         elif self.mp_type == "updownscale":
-            # self.lin_geom = nn.Linear(num_filters + 2 * hidden_channels, num_filters)
             self.lin_geom = nn.Linear(num_filters, num_filters)  # like 'simple'
             self.lin_down = nn.Linear(hidden_channels, num_filters)
             self.lin_up = nn.Linear(num_filters, hidden_channels)
 
-        elif self.mp_type == "base_with_att":
-            # --- Compute attention coefficients if required --
-            self.lin_h = nn.Linear(hidden_channels, hidden_channels)
-            self.lin_geom = AttConv(hidden_channels, heads=1, concat=True, bias=True)
+        elif self.mp_type == "updownscale_base":
+            self.lin_geom = nn.Linear(num_filters + 2 * hidden_channels, num_filters)
+            self.lin_down = nn.Linear(hidden_channels, num_filters)
+            self.lin_up = nn.Linear(num_filters, hidden_channels)
 
+        elif self.mp_type == "base_with_att":
+            self.lin_h = nn.Linear(hidden_channels, hidden_channels)
+            # self.lin_geom = AttConv(hidden_channels, heads=1, concat=True, bias=True)
+            self.lin_geom = TransfoAttConv(
+                hidden_channels,
+                hidden_channels,
+                heads=att_heads,
+                concat=True,
+                root_weight=False,
+                edge_dim=num_filters,
+            )
         elif self.mp_type == "att":
-            # --- Compute attention coefficients if required --
             self.lin_h = nn.Linear(hidden_channels, hidden_channels)
             self.lin_geom = TransformerConv(
                 hidden_channels,
                 hidden_channels,
-                heads=1,
+                heads=att_heads,
                 concat=True,
                 root_weight=False,
                 edge_dim=num_filters,
@@ -272,9 +283,10 @@ class InteractionBlock(MessagePassing):
             self.lin_geom = nn.Linear(num_filters, hidden_channels)
             self.lin_h = nn.Linear(hidden_channels, hidden_channels)
 
-        elif self.mp_type == "up_down_local_env":
-            self.lin_h = nn.Linear(hidden_channels, num_filters)
-            self.lin_geom = nn.Linear(2 * num_filters, hidden_channels)
+        elif self.mp_type == "updown_local_env":
+            self.lin_down = nn.Linear(hidden_channels, num_filters)
+            self.lin_geom = nn.Linear(num_filters, num_filters)
+            self.lin_up = nn.Linear(2 * num_filters, hidden_channels)
 
         else:  # base
             self.lin_geom = nn.Linear(
@@ -282,56 +294,80 @@ class InteractionBlock(MessagePassing):
             )
             self.lin_h = nn.Linear(hidden_channels, hidden_channels)
 
+        if self.complex_mp:
+            self.other_mlp = nn.Linear(hidden_channels, hidden_channels)
+
+        self.reset_parameters()
+
     def reset_parameters(self):
-        if self.mp_type != "sfarinet":
+        if self.mp_type not in {"sfarinet", "att", "base_with_att"}:
             nn.init.xavier_uniform_(self.lin_geom.weight)
             self.lin_geom.bias.data.fill_(0)
-        nn.init.xavier_uniform_(self.lin_h.weight)
-        self.lin_h.bias.data.fill_(0)
-        if self.mp_type == "updownscale":
+        if self.complex_mp:
+            nn.init.xavier_uniform_(self.other_mlp.weight)
+            self.other_mlp.bias.data.fill_(0)
+        if self.mp_type in {"updownscale", "base_updownscale", "updown_local_env"}:
             nn.init.xavier_uniform_(self.lin_up.weight)
             self.lin_up.bias.data.fill_(0)
             nn.init.xavier_uniform_(self.lin_down.weight)
             self.lin_down.bias.data.fill_(0)
+        else:
+            nn.init.xavier_uniform_(self.lin_h.weight)
+            self.lin_h.bias.data.fill_(0)
 
     def forward(self, h, edge_index, e):
 
-        if self.mp_type in {"base"}:
+        # Define edge embedding
+        if self.mp_type in {"base", "updownscale_base"}:
             e = torch.cat([e, h[edge_index[0]], h[edge_index[1]]], dim=1)
 
-        # W = self.lin_e_2(self.act(self.lin_e_1(e)))  # transform edge rep
-        if self.mp_type in {"up_down_local_env", "sfarinet", "base_with_att", "att"}:
-            W = e
-        else:
-            W = self.lin_geom(e)
+        if self.mp_type in {
+            "simple",
+            "updownscale",
+            "base",
+            "updownscale_base",
+            "local_env",
+        }:
+            e = self.act(self.lin_geom(e))  # TODO: remove act() ?
 
-        if self.mp_type == "updownscale":
-            h = self.lin_down(h)  # downscale node rep.
-            h = self.propagate(edge_index, x=h, W=W)  # propagate
-            h = self.lin_up(self.act(h))  # upscale node rep.
+        # --- Message Passing block --
+
+        if self.mp_type == "updownscale" or self.mp_type == "updownscale_base":
+            h = self.act(self.lin_down(h))  # downscale node rep.
+            h = self.propagate(edge_index, x=h, W=e)  # propagate
+            h = self.act(self.lin_up(h))  # upscale node rep.
 
         elif self.mp_type == "att":
-            h = self.lin_h(self.act(h))
-            h = self.lin_geom(h, edge_index, edge_attr=W)
-        elif self.mp_type == "base_with_att":
-            h = self.lin_h(self.act(h))
-            h = self.lin_geom(h, edge_index, W)  # propagate is inside
-        elif self.mp_type == "local_env":
-            h = self.lin_h(self.act(h))
-            chi = self.propagate(edge_index, x=h, W=W, local_env=True)  # propagate
-            h = self.propagate(edge_index, x=h, W=W)  # propagate
-            h = h + chi
-            # h = h * chi
-        elif self.mp_type == "up_down_local_env":
-            h = self.lin_h(self.act(h))
-            chi = self.propagate(edge_index, x=h, W=W, local_env=True)  # propagate
-            h = self.propagate(edge_index, x=h, W=W)  # propagate
-            h = torch.cat((h, chi), dim=1)
-            h = self.lin_geom(h)
+            h = self.lin_geom(h, edge_index, edge_attr=e)
+            h = self.act(self.lin_h(h))
 
-        else:  # base, simple
-            h = self.lin_h(self.act(h))
-            h = self.propagate(edge_index, x=h, W=W)  # propagate
+        elif self.mp_type == "base_with_att":
+            h = self.lin_geom(h, edge_index, edge_attr=e)  # propagate is inside
+            h = self.act(self.lin_h(h))
+
+        elif self.mp_type == "local_env":
+            chi = self.propagate(edge_index, x=h, W=e, local_env=True)
+            h = self.propagate(edge_index, x=h, W=e)  # propagate
+            h = h + chi
+            h = h = self.act(self.lin_h(h))
+
+        elif self.mp_type == "updown_local_env":
+            h = self.act(self.lin_down(h))
+            chi = self.propagate(edge_index, x=h, W=e, local_env=True)
+            e = self.lin_geom(e)
+            h = self.propagate(edge_index, x=h, W=e)  # propagate
+            h = torch.cat((h, chi), dim=1)
+            h = self.lin_up(h)
+
+        elif self.mp_type in {"base", "simple", "sfarinet"}:
+            h = self.propagate(edge_index, x=h, W=e)  # propagate
+            h = self.act(self.lin_h(h))
+
+        else:
+            raise ValueError("mp_type provided does not exist")
+
+        if self.complex_mp:
+            h = self.act(self.other_mlp(h))
 
         return h
 
@@ -434,15 +470,18 @@ class FANet(BaseModel):
             (default: :obj:`4`)
         num_gaussians (int): The number of gaussians :math:`\mu`.
             (default: :obj:`50`)
-        second_layer_MLP (bool): use 2-layers MLP at the end of embedding block.
-        skip_co (bool): add a skip connection between interaction blocks and
+        second_layer_MLP (bool): use 2-layers MLP at the end of the Embedding block.
+        skip_co (str): add a skip connection between each interaction block and
             energy-head.
         edge_embed_type (str, in {'rij','all_rij','sh', 'all'}): input feature
             of the edge embedding block.
         edge_embed_hidden (int): size of edge representation.
             could be num_filters or hidden_channels.
-        mp_type (str, in {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'}):
+        mp_type (str, in {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'
+            'updownscale_base', 'updownscale', 'updown_local_env', 'sfarinet'}}):
             specificies the MP of the interaction block.
+        batch_norm (bool): whether to apply batch norm after every linear layer.
+        complex_mp (bool); whether to add a second layer MLP at the end of each Interaction
     """
 
     def __init__(self, **kwargs):
@@ -456,6 +495,8 @@ class FANet(BaseModel):
         self.max_num_neighbors = kwargs["max_num_neighbors"]
         self.edge_embed_type = kwargs["edge_embed_type"]
         self.skip_co = kwargs["skip_co"]
+        if kwargs["mp_type"] == "sfarinet":
+            kwargs["num_filters"] = kwargs["hidden_channels"]
 
         self.act = (
             getattr(nn.functional, kwargs["act"]) if kwargs["act"] != "swish" else swish
@@ -493,6 +534,9 @@ class FANet(BaseModel):
                     kwargs["num_filters"],
                     self.act,
                     kwargs["mp_type"],
+                    kwargs["complex_mp"],
+                    kwargs["att_heads"],
+                    kwargs["batch_norm"]
                 )
                 for _ in range(kwargs["num_interactions"])
             ]
@@ -518,6 +562,10 @@ class FANet(BaseModel):
             if "direct" in self.regress_forces
             else None
         )
+
+        # Skip co
+        if self.skip_co == "concat":
+            self.mlp_skip_co = Linear((kwargs["num_interactions"] + 1), 1)
 
     @conditional_grad(torch.enable_grad())
     def forces_forward(self, preds):
@@ -575,21 +623,25 @@ class FANet(BaseModel):
             alpha = self.w_lin(h)
         else:
             alpha = None
-        energy_skip_co = torch.zeros(max(batch) + 1, device=h.device).unsqueeze(1)
 
         # Interaction blocks
+        energy_skip_co = []
         for interaction in self.interaction_blocks:
             if self.skip_co:
-                energy_skip_co += self.output_block(
-                    h, edge_index, edge_weight, batch, alpha
+                energy_skip_co.append(
+                    self.output_block(h, edge_index, edge_weight, batch, alpha)
                 )
             h = h + interaction(h, edge_index, e)
 
         # Output block
         energy = self.output_block(h, edge_index, edge_weight, batch, alpha)
-        # skip-connection
-        if self.skip_co:
-            energy += energy_skip_co
+
+        # Skip-connection
+        energy_skip_co.append(energy)
+        if self.skip_co == "concat":
+            energy = self.mlp_skip_co(torch.cat(energy_skip_co, dim=1))
+        else:
+            energy = energy_skip_co.sum()
 
         preds = {"energy": energy, "pooling_loss": pooling_loss, "hidden_state": h}
 
