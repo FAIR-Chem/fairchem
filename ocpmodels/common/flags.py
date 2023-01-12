@@ -202,7 +202,17 @@ class Flags:
             type=str,
             default="",
             help="Frame averaging method to use",
-            choices=["", "random", "det", "all", "se3-all", "se3-random", "se3-det"],
+            choices=[
+                "",
+                "random",
+                "det",
+                "all",
+                "se3-all",
+                "se3-random",
+                "se3-det",
+                "multiple",
+                "se3-multiple",
+            ],
         )
         self.parser.add_argument(
             "--graph_rewiring",

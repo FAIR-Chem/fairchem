@@ -5,6 +5,7 @@ from e3nn.o3 import spherical_harmonics
 from torch import nn
 from torch.nn import Embedding, Linear
 from torch_geometric.nn import MessagePassing, TransformerConv, radius_graph
+from torch_geometric.nn.norm import BatchNorm, GraphNorm
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
@@ -230,11 +231,14 @@ class EmbeddingBlock(nn.Module):
 
 
 class InteractionBlock(MessagePassing):
-    def __init__(self, hidden_channels, num_filters, act, mp_type):
+    def __init__(
+        self, hidden_channels, num_filters, act, mp_type, complex_mp, att_heads=1
+    ):
         super(InteractionBlock, self).__init__()
         self.act = act
         self.mp_type = mp_type
         self.hidden_channels = hidden_channels
+        self.complex_mp = complex_mp
 
         if self.mp_type == "simple":
             self.lin_geom = nn.Linear(num_filters, hidden_channels)
@@ -259,7 +263,7 @@ class InteractionBlock(MessagePassing):
             self.lin_geom = TransfoAttConv(
                 hidden_channels,
                 hidden_channels,
-                heads=1,
+                heads=att_heads,
                 concat=True,
                 root_weight=False,
                 edge_dim=num_filters,
@@ -269,7 +273,7 @@ class InteractionBlock(MessagePassing):
             self.lin_geom = TransformerConv(
                 hidden_channels,
                 hidden_channels,
-                heads=1,
+                heads=att_heads,
                 concat=True,
                 root_weight=False,
                 edge_dim=num_filters,
@@ -290,17 +294,26 @@ class InteractionBlock(MessagePassing):
             )
             self.lin_h = nn.Linear(hidden_channels, hidden_channels)
 
+        if self.complex_mp:
+            self.other_mlp = nn.Linear(hidden_channels, hidden_channels)
+
+        self.reset_parameters()
+
     def reset_parameters(self):
-        if self.mp_type != "sfarinet":
+        if self.mp_type not in {"sfarinet", "att", "base_with_att"}:
             nn.init.xavier_uniform_(self.lin_geom.weight)
             self.lin_geom.bias.data.fill_(0)
-        nn.init.xavier_uniform_(self.lin_h.weight)
-        self.lin_h.bias.data.fill_(0)
-        if self.mp_type == "updownscale":
+        if self.complex_mp:
+            nn.init.xavier_uniform_(self.other_mlp.weight)
+            self.other_mlp.bias.data.fill_(0)
+        if self.mp_type in {"updownscale", "base_updownscale", "updown_local_env"}:
             nn.init.xavier_uniform_(self.lin_up.weight)
             self.lin_up.bias.data.fill_(0)
             nn.init.xavier_uniform_(self.lin_down.weight)
             self.lin_down.bias.data.fill_(0)
+        else:
+            nn.init.xavier_uniform_(self.lin_h.weight)
+            self.lin_h.bias.data.fill_(0)
 
     def forward(self, h, edge_index, e):
 
@@ -352,6 +365,9 @@ class InteractionBlock(MessagePassing):
 
         else:
             raise ValueError("mp_type provided does not exist")
+
+        if self.complex_mp:
+            h = self.act(self.other_mlp(h))
 
         return h
 
@@ -454,16 +470,18 @@ class FANet(BaseModel):
             (default: :obj:`4`)
         num_gaussians (int): The number of gaussians :math:`\mu`.
             (default: :obj:`50`)
-        second_layer_MLP (bool): use 2-layers MLP at the end of embedding block.
-        skip_co (bool): add a skip connection between interaction blocks and
+        second_layer_MLP (bool): use 2-layers MLP at the end of the Embedding block.
+        skip_co (str): add a skip connection between each interaction block and
             energy-head.
         edge_embed_type (str, in {'rij','all_rij','sh', 'all'}): input feature
             of the edge embedding block.
         edge_embed_hidden (int): size of edge representation.
             could be num_filters or hidden_channels.
-        mp_type (str, in {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'}):
+        mp_type (str, in {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'
+            'updownscale_base', 'updownscale', 'updown_local_env', 'sfarinet'}}):
             specificies the MP of the interaction block.
         batch_norm (bool): whether to apply batch norm after every linear layer.
+        complex_mp (bool); whether to add a second layer MLP at the end of each Interaction
     """
 
     def __init__(self, **kwargs):
@@ -516,6 +534,8 @@ class FANet(BaseModel):
                     kwargs["num_filters"],
                     self.act,
                     kwargs["mp_type"],
+                    kwargs["complex_mp"],
+                    kwargs["att_heads"],
                 )
                 for _ in range(kwargs["num_interactions"])
             ]
@@ -541,6 +561,10 @@ class FANet(BaseModel):
             if "direct" in self.regress_forces
             else None
         )
+
+        # Skip co
+        if self.skip_co == "concat":
+            self.mlp_skip_co = Linear((kwargs["num_interactions"] + 1), 1)
 
     @conditional_grad(torch.enable_grad())
     def forces_forward(self, preds):
@@ -598,21 +622,25 @@ class FANet(BaseModel):
             alpha = self.w_lin(h)
         else:
             alpha = None
-        energy_skip_co = torch.zeros(max(batch) + 1, device=h.device).unsqueeze(1)
 
         # Interaction blocks
+        energy_skip_co = []
         for interaction in self.interaction_blocks:
             if self.skip_co:
-                energy_skip_co += self.output_block(
-                    h, edge_index, edge_weight, batch, alpha
+                energy_skip_co.append(
+                    self.output_block(h, edge_index, edge_weight, batch, alpha)
                 )
             h = h + interaction(h, edge_index, e)
 
         # Output block
         energy = self.output_block(h, edge_index, edge_weight, batch, alpha)
-        # skip-connection
-        if self.skip_co:
-            energy += energy_skip_co
+
+        # Skip-connection
+        energy_skip_co.append(energy)
+        if self.skip_co == "concat":
+            energy = self.mlp_skip_co(torch.cat(energy_skip_co, dim=1))
+        else:
+            energy = energy_skip_co.sum()
 
         preds = {"energy": energy, "pooling_loss": pooling_loss, "hidden_state": h}
 

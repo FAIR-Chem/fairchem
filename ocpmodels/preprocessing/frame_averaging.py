@@ -77,13 +77,19 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
     # Return frame(s) depending on method fa_frames
     if fa_frames == "all" or fa_frames == "se3-all":
         return all_fa_pos, all_cell, all_rots
-    
+
     if fa_frames == "multiple" or fa_frames == "se3-multiple":
-        indexes = torch.bernoulli(torch.tensor([0.5] * len(all_fa_pos)))
-        all_fa_pos = [a for a, b in zip(all_fa_pos, indexes) if b]
-        all_cell = [a for a, b in zip(all_cell, indexes) if b]
-        all_rots = [a for a, b in zip(all_rots, indexes) if b]
-        return all_fa_pos, all_cell, all_rots
+        index = torch.bernoulli(torch.tensor([0.5] * len(all_fa_pos)))
+        if index.sum() == 0:
+            index = random.randint(0, len(all_fa_pos) - 1)
+            return [all_fa_pos[index]], [all_cell[index]], [all_rots[index]]
+        if index.sum() == 1:
+            return [all_fa_pos[index]], [all_cell[index]], [all_rots[index]]
+        else:
+            all_fa_pos = [a for a, b in zip(all_fa_pos, index) if b]
+            all_cell = [a for a, b in zip(all_cell, index) if b]
+            all_rots = [a for a, b in zip(all_rots, index) if b]
+            return all_fa_pos, all_cell, all_rots
 
     elif fa_frames == "det" or fa_frames == "se3-det":
         return [all_fa_pos[det_index]], [all_cell[det_index]], [all_rots[det_index]]
