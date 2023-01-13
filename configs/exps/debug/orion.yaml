@@ -4,7 +4,7 @@ job:
   cpus: 4
   gres: gpu:16gb:1
   time: 1:00:00
-  partition: main
+  partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/ocp-drlab
   env: ocp-a100
 
@@ -41,10 +41,10 @@ orion:
   # Remember to change the experiment name if you change anything in the search space
   n_jobs: 20
 
-  unique_exp_name: ocp-qm9-orion-debug-v1.0.0
+  unique_exp_name: ocp-qm9-orion-debug-v1.0.1
 
   space:
-    optim/max_steps: fidelity(1e5, 1e6, base=3)
+    optim/max_steps: fidelity(1e3, 1e4, base=3)
     optim/batch_size: uniform(32, 128, discrete=True)
     optim/lr_initial: loguniform(1e-5, 5e-3, precision=2)
     model/num_gaussians: uniform(16, 200, discrete=True)
@@ -56,5 +56,5 @@ orion:
   algorithms:
     asha:
       seed: 123
-      num_rungs: 5
+      num_rungs: 4
       num_brackets: 1
