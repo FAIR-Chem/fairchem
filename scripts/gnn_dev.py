@@ -19,14 +19,16 @@ if __name__ == "__main__":
     # Customize args
     config["graph_rewiring"] = "remove-tag-0"
     config["frame_averaging"] = "2D"
-    config["fa_frames"] = "all"  # "random"
+    config["fa_frames"] = "random"  # "random"
     config["test_ri"] = True
     config["optim"] = {"max_epochs": 1}
     config["model"] = {"use_pbc": True}
     config["model"]["edge_embed_type"] = "all_rij"
-    config["model"]["mp_type"] = "att"
-    config["model"]["skip_co"] = "add"
+    config["model"]["mp_type"] = "base"
+    config["model"]["skip_co"] = False
+    config["model"]["att_heads"] = 3
     config["model"]["complex_mp"] = True
+    config["model"]["batch_norm"] = True
     # config["model"]["regress_forces"] = "direct_with_gradient_target"
 
     checkpoint_path = None

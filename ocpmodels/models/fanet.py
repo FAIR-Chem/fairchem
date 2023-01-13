@@ -345,20 +345,28 @@ class InteractionBlock(MessagePassing):
         if self.mp_type == "updownscale" or self.mp_type == "updownscale_base":
             h = self.act(self.lin_down(h))  # downscale node rep.
             h = self.propagate(edge_index, x=h, W=e)  # propagate
+            if self.batch_norm:
+                h = self.act(self.graph_norm(h))
             h = self.act(self.lin_up(h))  # upscale node rep.
 
         elif self.mp_type == "att":
             h = self.lin_geom(h, edge_index, edge_attr=e)
+            if self.batch_norm:
+                h = self.act(self.graph_norm(h))
             h = self.act(self.lin_h(h))
 
         elif self.mp_type == "base_with_att":
             h = self.lin_geom(h, edge_index, edge_attr=e)  # propagate is inside
+            if self.batch_norm:
+                h = self.act(self.graph_norm(h))
             h = self.act(self.lin_h(h))
 
         elif self.mp_type == "local_env":
             chi = self.propagate(edge_index, x=h, W=e, local_env=True)
             h = self.propagate(edge_index, x=h, W=e)  # propagate
             h = h + chi
+            if self.batch_norm:
+                h = self.act(self.graph_norm(h))
             h = h = self.act(self.lin_h(h))
 
         elif self.mp_type == "updown_local_env":
@@ -366,13 +374,15 @@ class InteractionBlock(MessagePassing):
             chi = self.propagate(edge_index, x=h, W=e, local_env=True)
             e = self.lin_geom(e)
             h = self.propagate(edge_index, x=h, W=e)  # propagate
+            if self.batch_norm:
+                h = self.act(self.graph_norm(h))
             h = torch.cat((h, chi), dim=1)
             h = self.lin_up(h)
 
         elif self.mp_type in {"base", "simple", "sfarinet"}:
-            if self.batch_norm:
-                h = self.graph_norm(h)
             h = self.propagate(edge_index, x=h, W=e)  # propagate
+            if self.batch_norm:
+                h = self.act(self.graph_norm(h))
             h = self.act(self.lin_h(h))
 
         else:
