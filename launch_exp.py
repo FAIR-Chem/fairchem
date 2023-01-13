@@ -180,9 +180,6 @@ if __name__ == "__main__":
             exp["unique_exp_name"] = unique_exp_name
 
         search_path = orion_base / "search-spaces" / f"{ts}-{unique_exp_name}.yaml"
-        search_path.parent.mkdir(exist_ok=True, parents=True)
-        assert not search_path.exists()
-        search_path.write_text(dump(exp["orion"]))
         runs = [
             {
                 "orion_exp_config_path": str(search_path),
@@ -230,6 +227,11 @@ if __name__ == "__main__":
 
     if confirm == "y":
         try:
+            if "orion" in exp:
+                search_path.parent.mkdir(exist_ok=True, parents=True)
+                assert not search_path.exists()
+                search_path.write_text(dump(exp["orion"]))
+
             outputs = []
             for c, command in enumerate(commands):
                 print(f"Launching job {c:3}", end="\r")
