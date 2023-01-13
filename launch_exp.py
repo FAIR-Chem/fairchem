@@ -17,6 +17,12 @@ def util_strings(jobs, yaml_comments=False):
     s = "All jobs launched: " + ", ".join(jobs)
     s += "\nCancel experiment: scancel " + " ".join(jobs)
     s += "\nWandB query for dashboard: (" + "|".join(jobs) + ")"
+    s += (
+        "\n Delete experiment run dirs: "
+        + 'ocp_run_dirs="$SCRATCH/ocp/runs; for jid in '
+        + " ".join(jobs)
+        + '; do rm -rf "$ocp_run_dirs/$jid" && echo "Deleted $ocp_run_dirs/$jid"; done"'
+    )
     if yaml_comments:
         s = "\n".join(["# " + line for line in s.splitlines()])
     return s
@@ -173,6 +179,8 @@ if __name__ == "__main__":
     if "orion" in exp:
         orion_base = ROOT / "data" / "orion"
         assert "runs" not in exp, "Cannot use both Orion and runs"
+        assert "space" in exp["orion"], "Must specify orion.space"
+        assert "algorithms" in exp["orion"], "Must specify orion.algorithms"
 
         n_jobs = get_args_or_exp("n_jobs", args, exp["orion"])
         unique_exp_name = get_args_or_exp("unique_exp_name", args, exp["orion"])
