@@ -44,6 +44,60 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
 
 
+def apply_mult_factor(orion_hparams, mult_factor_dict, sep="."):
+    """
+    Multiplies all values of orion_hparams listed in mult_factor_dict["targets"]
+    by mult_factor_dict["value"].
+
+    eg:
+    >>> orion_hparams = {
+        "model/hidden_channels": 4,
+        "model/num_layers": 4,
+        "optim/batch_size": 4,
+        "optim/initial_lr": 0.001,
+        "frame_averaging": "",
+    }
+
+    >>> mult_factor_dict = {"value": 32, "targets": "hidden_channels, batch_size"}
+
+    >>> apply_mult_factor(orion_hparams, mult_factor_dict, sep="/")
+    {
+        "model/hidden_channels": 128,
+        "model/num_layers": 4,
+        "optim/batch_size": 128,
+        "optim/initial_lr": 0.001,
+        "frame_averaging": ""
+    }
+
+    Args:
+        orion_hparams (_type_): _description_
+        mult_factor_dict (_type_): _description_
+        sep (str, optional): _description_. Defaults to ".".
+
+    Returns:
+        _type_: _description_
+    """
+    if not mult_factor_dict:
+        return orion_hparams
+    if not isinstance(mult_factor_dict, dict):
+        print(
+            f">>> Warning: ignoring apply_mult_factor, not a dict: {mult_factor_dict}."
+        )
+    if "value" not in mult_factor_dict or "targets" not in mult_factor_dict:
+        print(
+            ">>> Warning: ignoring apply_mult_factor, "
+            + " missing 'value' or 'targets' keys: {}.".format(mult_factor_dict)
+        )
+    value, targets = mult_factor_dict["value"], mult_factor_dict["targets"]
+    targets = set([t.strip() for t in targets.split(",")])
+    updated_hparams = copy.deepcopy(orion_hparams)
+    for k, v in orion_hparams.items():
+        target = k.split(sep)[-1]
+        if target in targets:
+            updated_hparams[k] = v * value
+    return updated_hparams
+
+
 def load_orion_exp(args):
     exp_config = yaml.safe_load(Path(args.orion_exp_config_path).read_text())
 

@@ -21,6 +21,7 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     JOB_ID,
     auto_note,
+    apply_mult_factor,
     build_config,
     continue_from_slurm_job_id,
     continue_orion_exp,
@@ -76,8 +77,15 @@ class Runner:
         if distutils.is_master():
             if orion_exp:
                 orion_trial = orion_exp.suggest(1)
-                self.hparams = unflatten_dict(orion_trial.params, sep="/")
-                self.hparams["orion_hash_params"] = orion_trial.hash_params
+                self.hparams = unflatten_dict(
+                    apply_mult_factor(
+                        orion_trial.hash_params,
+                        self.trainer_config.get("orion_mult_factor"),
+                        sep="/",
+                    ),
+                    sep="/",
+                )
+                self.hparams["orion_hash_params"] = orion_trial.params
                 self.hparams["orion_unique_exp_name"] = orion_exp.name
 
         should_be_0 = distutils.get_rank()
