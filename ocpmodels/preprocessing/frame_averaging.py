@@ -84,6 +84,7 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
             index = random.randint(0, len(all_fa_pos) - 1)
             return [all_fa_pos[index]], [all_cell[index]], [all_rots[index]]
         if index.sum() == 1:
+            _, index = torch.max(index, dim=0)
             return [all_fa_pos[index]], [all_cell[index]], [all_rots[index]]
         else:
             all_fa_pos = [a for a, b in zip(all_fa_pos, index) if b]
