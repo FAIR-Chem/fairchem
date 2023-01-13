@@ -61,10 +61,13 @@ class Manager:
             [p.name for runs in self.trial_hparams_to_rundirs.values() for p in runs]
         )
         print("\n")
-        print("{:31} : {:4} ".format("Trials in experiment", len(self.trials)))
-        print("{:31} : {:4}".format("Total expected trials", self.total_budgets))
+        self.print_status()
+
+    def print_status(self):
+        print("{:32} : {:4} ".format("Trials in experiment", len(self.trials)))
+        print("{:32} : {:4}".format("Total expected trials", self.total_budgets))
         print(
-            "{:31} : {:4} ".format(
+            "{:32} : {:4} ".format(
                 "Trials status",
                 " ".join(
                     [
@@ -75,7 +78,7 @@ class Manager:
             )
         )
         print(
-            "{:31} : {}".format(
+            "{:32} : {}".format(
                 "Trial level(=rung) distribution",
                 " ".join(
                     [
@@ -88,18 +91,18 @@ class Manager:
             )
         )
         print(
-            "{:31} : {:4}".format(
+            "{:32} : {:4}".format(
                 "Existing unique HP sets executed", len(self.trial_hparams_to_rundirs)
             )
         )
         print(
-            "{:31} : {:4}".format(
+            "{:32} : {:4}".format(
                 "Total existing trial run dirs",
                 sum(len(v) for v in self.trial_hparams_to_rundirs.values()),
             )
         )
-        print("{:31} : {:4}".format("Existing wandb runs", len(self.wandb_runs)))
-        print("{:31} : {}".format("Algorithm's budgets", str(self.budgets)))
+        print("{:32} : {:4}".format("Existing wandb runs", len(self.wandb_runs)))
+        print("{:32} : {}".format("Algorithm's budgets", str(self.budgets)))
         sq = set(
             [
                 j.strip()
@@ -113,13 +116,13 @@ class Manager:
             set([j.parent.name for j in rundir.glob(f"*/{self.name}.exp")]) & sq
         ) - running
         print(
-            "{:31} : {}".format(
+            "{:32} : {}".format(
                 "Jobs currently running:",
                 f"{len(running)} " + " ".join(running),
             )
         )
         print(
-            "{:31} : {}".format(
+            "{:32} : {}".format(
                 "Jobs currently waiting:",
                 f"{len(waiting)} " + " ".join(waiting),
             )
@@ -155,7 +158,7 @@ class Manager:
         return reserved
 
     def print_wandb_query(self):
-        print("WandB runs query:\n" + "(" + "|".join(self.job_ids) + ")")
+        print(f"{'WandB runs query:':32}\n" + "(" + "|".join(self.job_ids) + ")")
 
     @classmethod
     def help(self):
