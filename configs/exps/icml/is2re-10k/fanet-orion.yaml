@@ -1,8 +1,8 @@
 # more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
 job:
-  mem: 24GB
+  mem: 8GB
   cpus: 4
-  gres: gpu:16gb:1
+  gres: gpu:1
   time: 30:00
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/ocp-drlab
@@ -36,7 +36,7 @@ orion:
   # Remember to change the experiment name if you change anything in the search space
   n_jobs: 20
 
-  unique_exp_name: fanet-is2re-10k-v1.1.1
+  unique_exp_name: fanet-is2re-10k-v1.2.0
 
   space:
     optim/max_epochs: fidelity(20, 100, base=4)
@@ -44,15 +44,15 @@ orion:
     model/graph_norm: choices([True, False])
     model/edge_embed_type: choices(["rij", "all_rij", "sh", "all"])
     model/energy_head: choices(["", "weighted-av-final-embeds", "weighted-av-initial-embeds"])
-    model/hidden_channels: uniform(1, 16, discrete=True)
+    model/hidden_channels: uniform(4, 16, discrete=True)
     model/mp_type: choices(["simple", "base", "sfarinet", "updownscale", "updownscale_base", "base_with_att", "att", "local_env", "updown_local_env"])
     model/num_filters: uniform(1, 16, discrete=True)
     model/num_gaussians: uniform(20, 150, discrete=True)
     model/num_interactions: uniform(1, 7, discrete=True)
-    model/pg_hidden_channels: uniform(0, 3, discrete=True)
+    model/pg_hidden_channels: uniform(0, 2, discrete=True)
     model/phys_embeds: choices([True, False])
-    model/phys_hidden_channels: uniform(0, 3, discrete=True)
-    model/tag_hidden_channels: uniform(0, 3, discrete=True)
+    model/phys_hidden_channels: uniform(0, 2, discrete=True)
+    model/tag_hidden_channels: uniform(0, 2, discrete=True)
     frame_averaging: choices(["", "2D", "3D", "DA"])
     fa_frames: choices(["", "random", "det", "all", "se3-all", "se3-random", "se3-det", "multiple", "se3-multiple"])
   algorithms:
