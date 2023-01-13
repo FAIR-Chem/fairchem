@@ -250,6 +250,11 @@ class BaseTrainer(ABC):
                         f"dataset length ({len(self.datasets[split])}),",
                         f"and batch_size ({batch_size})\n",
                     )
+                else:
+                    self.config["optim"]["max_steps"] = int(
+                        self.config["optim"]["max_epochs"]
+                        * (len(self.datasets[split]) / batch_size)
+                    )
 
             self.samplers[split] = self.get_sampler(
                 self.datasets[split], batch_size, shuffle=shuffle
