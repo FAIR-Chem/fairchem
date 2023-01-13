@@ -29,25 +29,25 @@ runs:
     fa_frames: se3-random
     model:
       mp_type: base
-      batch_norm: True
+      graph_norm: True
   - config: fanet-is2re-all
     note: 'batch norm after propagate Interaction'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: att
-      batch_norm: True
+      graph_norm: True
   - config: fanet-is2re-all
     note: 'batch norm after propagate Interaction'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: local_env
-      batch_norm: True
+      graph_norm: True
   - config: fanet-is2re-all
     note: 'batch norm after propagate Interaction'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: sfarinet
-      batch_norm: True
+      graph_norm: True

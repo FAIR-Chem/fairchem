@@ -21,7 +21,7 @@ default:
     complex_mp: False
     edge_embed_type: rij # {'rij','all_rij','sh', 'all'})
     mp_type: base # {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'}
-    batch_norm: False  # bool
+    graph_norm: False  # bool
     att_heads: 1  # int
     force_decoder_type: "mlp" # can be {"" or "simple"} | only used if regress_forces is True
     force_decoder_model_config:

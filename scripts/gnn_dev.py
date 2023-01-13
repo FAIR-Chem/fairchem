@@ -28,7 +28,7 @@ if __name__ == "__main__":
     config["model"]["skip_co"] = False
     config["model"]["att_heads"] = 3
     config["model"]["complex_mp"] = True
-    config["model"]["batch_norm"] = True
+    config["model"]["graph_norm"] = True
     # config["model"]["regress_forces"] = "direct_with_gradient_target"
 
     checkpoint_path = None

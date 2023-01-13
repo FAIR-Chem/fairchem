@@ -15,13 +15,14 @@ ROOT = Path(__file__).resolve().parent
 
 def util_strings(jobs, yaml_comments=False):
     s = "All jobs launched: " + ", ".join(jobs)
-    s += "\nCancel experiment: scancel " + " ".join(jobs)
-    s += "\nWandB query for dashboard: (" + "|".join(jobs) + ")"
+    s += "\nCancel experiment:\n  $ scancel " + " ".join(jobs)
+    s += "\nWandB query for dashboard:\n  (" + "|".join(jobs) + ")"
     s += (
-        "\n Delete experiment run dirs: "
+        "\nDelete experiment run dirs:\n  $ "
         + 'ocp_run_dirs="$SCRATCH/ocp/runs"; for jid in '
         + " ".join(jobs)
-        + '; do rm -rf "$ocp_run_dirs/$jid" && echo "Deleted $ocp_run_dirs/$jid"; done'
+        + '; do rm -rf "$ocp_run_dirs/$jid" && echo "Deleted $ocp_run_dirs/$jid";'
+        + " done; unset $ocp_run_dirs; unset $jid"
     )
     if yaml_comments:
         s = "\n".join(["# " + line for line in s.splitlines()])

@@ -239,16 +239,18 @@ class InteractionBlock(MessagePassing):
         mp_type,
         complex_mp,
         att_heads,
-        batch_norm,
+        graph_norm,
     ):
         super(InteractionBlock, self).__init__()
         self.act = act
         self.mp_type = mp_type
         self.hidden_channels = hidden_channels
         self.complex_mp = complex_mp
-        self.batch_norm = batch_norm
-        if batch_norm:
-            self.graph_norm = GraphNorm(hidden_channels)
+        self.graph_norm = graph_norm
+        if graph_norm:
+            self.graph_norm = GraphNorm(
+                hidden_channels if "updown" not in self.mp_type else num_filters
+            )
 
         if self.mp_type == "simple":
             self.lin_geom = nn.Linear(num_filters, hidden_channels)
@@ -345,19 +347,19 @@ class InteractionBlock(MessagePassing):
         if self.mp_type == "updownscale" or self.mp_type == "updownscale_base":
             h = self.act(self.lin_down(h))  # downscale node rep.
             h = self.propagate(edge_index, x=h, W=e)  # propagate
-            if self.batch_norm:
+            if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = self.act(self.lin_up(h))  # upscale node rep.
 
         elif self.mp_type == "att":
             h = self.lin_geom(h, edge_index, edge_attr=e)
-            if self.batch_norm:
+            if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = self.act(self.lin_h(h))
 
         elif self.mp_type == "base_with_att":
             h = self.lin_geom(h, edge_index, edge_attr=e)  # propagate is inside
-            if self.batch_norm:
+            if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = self.act(self.lin_h(h))
 
@@ -365,7 +367,7 @@ class InteractionBlock(MessagePassing):
             chi = self.propagate(edge_index, x=h, W=e, local_env=True)
             h = self.propagate(edge_index, x=h, W=e)  # propagate
             h = h + chi
-            if self.batch_norm:
+            if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = h = self.act(self.lin_h(h))
 
@@ -374,14 +376,14 @@ class InteractionBlock(MessagePassing):
             chi = self.propagate(edge_index, x=h, W=e, local_env=True)
             e = self.lin_geom(e)
             h = self.propagate(edge_index, x=h, W=e)  # propagate
-            if self.batch_norm:
+            if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = torch.cat((h, chi), dim=1)
             h = self.lin_up(h)
 
         elif self.mp_type in {"base", "simple", "sfarinet"}:
             h = self.propagate(edge_index, x=h, W=e)  # propagate
-            if self.batch_norm:
+            if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = self.act(self.lin_h(h))
 
@@ -502,7 +504,7 @@ class FANet(BaseModel):
         mp_type (str, in {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'
             'updownscale_base', 'updownscale', 'updown_local_env', 'sfarinet'}}):
             specificies the MP of the interaction block.
-        batch_norm (bool): whether to apply batch norm after every linear layer.
+        graph_norm (bool): whether to apply batch norm after every linear layer.
         complex_mp (bool); whether to add a second layer MLP at the end of each Interaction
     """
 
@@ -558,7 +560,7 @@ class FANet(BaseModel):
                     kwargs["mp_type"],
                     kwargs["complex_mp"],
                     kwargs["att_heads"],
-                    kwargs["batch_norm"],
+                    kwargs["graph_norm"],
                 )
                 for _ in range(kwargs["num_interactions"])
             ]

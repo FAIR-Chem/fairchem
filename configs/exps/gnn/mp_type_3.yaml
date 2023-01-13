@@ -133,14 +133,14 @@ runs:
     fa_frames: se3-random
     model:
       mp_type: sfarinet
-      batch_norm: true
+      graph_norm: true
   - config: fanet-is2re-all
     note: 'base_updownscale'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: base_updownscale
-      batch_norm: true
+      graph_norm: true
   - config: fanet-is2re-all
     note: 'simple bigger layers'
     frame_averaging: 2D
