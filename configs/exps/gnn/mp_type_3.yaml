@@ -135,11 +135,11 @@ runs:
       mp_type: sfarinet
       graph_norm: true
   - config: fanet-is2re-all
-    note: 'base_updownscale'
+    note: 'updownscale_base'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
-      mp_type: base_updownscale
+      mp_type: updownscale_base
       graph_norm: true
   - config: fanet-is2re-all
     note: 'simple bigger layers'

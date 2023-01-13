@@ -318,7 +318,7 @@ class InteractionBlock(MessagePassing):
         if self.complex_mp:
             nn.init.xavier_uniform_(self.other_mlp.weight)
             self.other_mlp.bias.data.fill_(0)
-        if self.mp_type in {"updownscale", "base_updownscale", "updown_local_env"}:
+        if self.mp_type in {"updownscale", "updownscale_base", "updown_local_env"}:
             nn.init.xavier_uniform_(self.lin_up.weight)
             self.lin_up.bias.data.fill_(0)
             nn.init.xavier_uniform_(self.lin_down.weight)
