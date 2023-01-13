@@ -19,9 +19,9 @@ def util_strings(jobs, yaml_comments=False):
     s += "\nWandB query for dashboard: (" + "|".join(jobs) + ")"
     s += (
         "\n Delete experiment run dirs: "
-        + 'ocp_run_dirs="$SCRATCH/ocp/runs; for jid in '
+        + 'ocp_run_dirs="$SCRATCH/ocp/runs"; for jid in '
         + " ".join(jobs)
-        + '; do rm -rf "$ocp_run_dirs/$jid" && echo "Deleted $ocp_run_dirs/$jid"; done"'
+        + '; do rm -rf "$ocp_run_dirs/$jid" && echo "Deleted $ocp_run_dirs/$jid"; done'
     )
     if yaml_comments:
         s = "\n".join(["# " + line for line in s.splitlines()])
