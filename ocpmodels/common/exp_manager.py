@@ -120,13 +120,13 @@ class Manager:
         print(
             "{:32} : {}".format(
                 "Jobs currently running:",
-                f"{len(running)} " + " ".join(running),
+                f"{len(running)} " + " ".join(sorted(running)),
             )
         )
         print(
             "{:32} : {}".format(
                 "Jobs currently waiting:",
-                f"{len(waiting)} " + " ".join(waiting),
+                f"{len(waiting)} " + " ".join(sorted(waiting)),
             )
         )
 
