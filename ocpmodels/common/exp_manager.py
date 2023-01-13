@@ -6,6 +6,8 @@ from textwrap import dedent
 from minydra import resolved_args
 import os
 import sys
+import time
+from datetime import datetime
 
 rundir = Path(os.environ["SCRATCH"]) / "ocp" / "runs"
 
@@ -216,6 +218,7 @@ if __name__ == "__main__":
             Path(__file__).resolve().parent.parent.parent
             / "data/orion/storage/orion_db.pkl"
         ),
+        "watch": -1,
     }
     args = resolved_args(defaults=defaults)
     if args.help:
@@ -254,3 +257,30 @@ if __name__ == "__main__":
     m.print_wandb_query()
     exp_df = m.exp.to_pandas()
     reserved_wandbs = m.get_reserved_wandb_runs()
+
+    if args.watch and args.watch > 0:
+        if args.watch < 15:
+            print("Cannot watch to often, setting to 15 seconds.")
+            args.watch = 15
+        try:
+            print("👀 Watching for exp status every every", args.watch, "seconds.")
+            while True:
+                time.sleep(args.watch)
+                print()
+                print("=" * 30)
+                print("=" * 30)
+                print()
+                print(
+                    "💃 Status of experiment",
+                    f"'{args.name}' and wandb entity/project '{args.wandb_path}' @",
+                    str(datetime.now()).split(".")[0],
+                )
+                print()
+                m = Manager(
+                    name=args.name,
+                    wandb_path=args.wandb_path,
+                    orion_db_path=args.orion_db_path,
+                )
+        except KeyboardInterrupt:
+            print("👋 Exiting.")
+            sys.exit(0)
