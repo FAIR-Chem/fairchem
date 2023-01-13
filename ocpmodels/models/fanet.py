@@ -122,7 +122,7 @@ class EmbeddingBlock(nn.Module):
         elif self.edge_embed_type == "sh":
             self.lin_e1 = Linear(15, num_filters)
         elif self.edge_embed_type == "all":
-            self.lin_e1 = Linear(15 + num_gaussians, num_filters)
+            self.lin_e1 = Linear(18 + num_gaussians, num_filters)
         else:
             raise ValueError("edge_embedding_type does not exist")
 
@@ -276,7 +276,7 @@ class InteractionBlock(MessagePassing):
                 hidden_channels,
                 hidden_channels,
                 heads=att_heads,
-                concat=True,
+                concat=False,
                 root_weight=False,
                 edge_dim=num_filters,
             )
@@ -286,7 +286,7 @@ class InteractionBlock(MessagePassing):
                 hidden_channels,
                 hidden_channels,
                 heads=att_heads,
-                concat=True,
+                concat=False,
                 root_weight=False,
                 edge_dim=num_filters,
             )
