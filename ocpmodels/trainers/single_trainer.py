@@ -203,9 +203,6 @@ class SingleTrainer(BaseTrainer):
         first_eval = True
         log_train_every = self.config["log_train_every"]
 
-        print(f"Logging  train metrics every {log_train_every} steps")
-        print(f"Printing train metrics every {self.config['print_every']} steps")
-
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // n_train
@@ -214,7 +211,9 @@ class SingleTrainer(BaseTrainer):
         model_run_time = 0
 
         if not self.silent:
-            print(f"--- 🔄 Beginning of Training @ {self.now}---")
+            print(f"--- 🔄 Beginning of Training @ {self.now}---\n")
+            print(f"Logging  train metrics every {log_train_every} steps")
+            print(f"Printing train metrics every {self.config['print_every']} steps")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
 
