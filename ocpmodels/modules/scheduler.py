@@ -43,7 +43,7 @@ class LRScheduler:
             self.scheduler = getattr(lr_scheduler, self.scheduler_type)
             scheduler_args = self.filter_kwargs(self.optim_config)
             self.scheduler = self.scheduler(optimizer, **scheduler_args)
-        elif self.scheduler_type == "WarmupCosineAnnealingLR":
+        elif self.scheduler_type == "LinearWarmupCosineAnnealingLR":
             self.warmup_scheduler = warmup.ExponentialWarmup(
                 self.optimizer, warmup_period=self.optim_config["warmup_steps"]
             )

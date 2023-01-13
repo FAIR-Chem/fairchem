@@ -1,0 +1,27 @@
+# more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
+job:
+  mem: 24GB
+  cpus: 4
+  gres: gpu:1
+  time: 30:00
+  partition: main
+
+default:
+  wandb_project: ocp-debug
+  config: schnet-qm9-all
+  mode: train
+  wandb_tags: qm9, debug
+  optim:
+    batch_size: 64
+    max_epochs: -1
+    max_steps: 1e3
+  note:
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels
+    optim: batch_size, lr_initial
+    _root_: frame_averaging, fa_frames
+
+runs:
+  - model:
+    hidden_channels: 128
+  - model:
+    hidden_channels: 64
