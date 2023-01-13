@@ -22,19 +22,42 @@ default:
   cp_data_to_tmpdir: true
 
 runs:
-  - config: sfarinet-is2re-all
-    note: 'Sfarinet baseline sym'
-    frame_averaging: 2D
-    fa_frames: se3-random
-  - config: sfarinet-is2re-all
+  - config: fanet-is2re-all  # 2678275
     note: 'all rij'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       edge_embed_type: all_rij
-  - config: sfarinet-is2re-all
+      mp_type: base
+  - config: fanet-is2re-all  # 2678276
     note: 'all'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       edge_embed_type: all
+      mp_type: base
+  - config: sfarinet-is2re-all  # 2678277
+    note: 'all rij sfarinet'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      edge_embed_type: all_rij
+      mp_type: sfarinet
+  - config: sfarinet-is2re-all  # 2678278
+    note: 'sfarinet all'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      edge_embed_type: all
+      mp_type: sfarinet
+  - config: sfarinet-is2re-all  # 2678279
+    note: 'sfarinet all'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      edge_embed_type: all
+      mp_type: base
+      skip_co: "concat"
+      complex_mp: true
+      batch_norm: true
+      second_layer_mlp: true

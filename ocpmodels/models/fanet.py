@@ -232,13 +232,23 @@ class EmbeddingBlock(nn.Module):
 
 class InteractionBlock(MessagePassing):
     def __init__(
-        self, hidden_channels, num_filters, act, mp_type, complex_mp, att_heads, batch_norm
+        self,
+        hidden_channels,
+        num_filters,
+        act,
+        mp_type,
+        complex_mp,
+        att_heads,
+        batch_norm,
     ):
         super(InteractionBlock, self).__init__()
         self.act = act
         self.mp_type = mp_type
         self.hidden_channels = hidden_channels
         self.complex_mp = complex_mp
+        self.batch_norm = batch_norm
+        if batch_norm:
+            self.graph_norm = GraphNorm(hidden_channels)
 
         if self.mp_type == "simple":
             self.lin_geom = nn.Linear(num_filters, hidden_channels)
@@ -360,6 +370,8 @@ class InteractionBlock(MessagePassing):
             h = self.lin_up(h)
 
         elif self.mp_type in {"base", "simple", "sfarinet"}:
+            if self.batch_norm:
+                h = self.graph_norm(h)
             h = self.propagate(edge_index, x=h, W=e)  # propagate
             h = self.act(self.lin_h(h))
 
@@ -536,7 +548,7 @@ class FANet(BaseModel):
                     kwargs["mp_type"],
                     kwargs["complex_mp"],
                     kwargs["att_heads"],
-                    kwargs["batch_norm"]
+                    kwargs["batch_norm"],
                 )
                 for _ in range(kwargs["num_interactions"])
             ]
@@ -640,8 +652,8 @@ class FANet(BaseModel):
         energy_skip_co.append(energy)
         if self.skip_co == "concat":
             energy = self.mlp_skip_co(torch.cat(energy_skip_co, dim=1))
-        else:
-            energy = energy_skip_co.sum()
+        elif self.skip_co == "add":
+            energy = sum(energy_skip_co)
 
         preds = {"energy": energy, "pooling_loss": pooling_loss, "hidden_state": h}
 

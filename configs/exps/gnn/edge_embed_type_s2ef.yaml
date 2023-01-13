@@ -14,7 +14,7 @@ default:
     phys_embeds: True
     tag_hidden_channels: 64
     pg_hidden_channels: 0  # shall have been 32
-    energy_head: 'weighted-av-initial-embeds' # False ?
+    energy_head: False # False ?
     regress_forces: direct_with_gradient_target
   wandb_tags: 's2ef-archi-tests'
   optim:
