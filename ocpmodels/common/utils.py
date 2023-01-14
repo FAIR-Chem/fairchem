@@ -43,8 +43,8 @@ from ocpmodels.common.registry import registry
 class Cluster:
     def __init__(self):
         self._is = {
-            "narval": "narval.calcul.quebec" in os.environ.get("HOSTNAME", ""),
-            "beluga": "beluga.calcul.quebec" in os.environ.get("HOSTNAME", ""),
+            "narval": os.environ.get("CC_CLUSTER") == "narval",
+            "beluga": os.environ.get("CC_CLUSTER") == "beluga",
             "mila": "/home/mila/" in os.environ.get("HOME", ""),
         }
         self.name = [k for k, v in self._is.items() if v]
