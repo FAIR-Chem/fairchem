@@ -851,6 +851,10 @@ def parse_value(value):
     Parse string as Python literal if possible and fallback to string.
     """
     try:
+        if value.lower() == "true":
+            return True
+        elif value.lower() == "false":
+            return False
         return ast.literal_eval(value)
     except (ValueError, SyntaxError):
         # Use as string if nothing else worked
