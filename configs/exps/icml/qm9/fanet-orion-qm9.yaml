@@ -36,7 +36,7 @@ orion:
   # Remember to change the experiment name if you change anything in the search space
   n_jobs: 20
 
-  unique_exp_name: fanet-qm9-v1.0.0
+  unique_exp_name: fanet-qm9-v1.0.1
 
   space:
     optim/max_epochs: fidelity(30, 300, base=6)
