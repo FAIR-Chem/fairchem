@@ -5,8 +5,8 @@ job:
   gres: gpu:1
   time: 30:00
   partition: long
-  code_loc: /home/mila/s/schmidtv/ocp-project/ocp-drlab
-  env: ocp-a100
+  # code_loc: /home/mila/s/schmidtv/ocp-project/ocp-drlab
+  # env: ocp-a100
 
 default:
   wandb_project: ocp-4
