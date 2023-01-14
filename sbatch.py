@@ -8,6 +8,11 @@ import sys
 import re
 import yaml
 
+IS_NARVAL = (
+    "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
+    or os.environ.get("HOME") == "/home/vsch"
+)
+
 template = """\
 #!/bin/bash
 {sbatch_params}
@@ -212,7 +217,6 @@ if __name__ == "__main__":
     # has the submission been successful?
     success = False
     sbatch_py_vars = {}
-    is_narval = "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
 
     # repository root
     root = Path(__file__).resolve().parent
@@ -292,9 +296,12 @@ if __name__ == "__main__":
     }
     if args.time:
         sbatch_params["time"] = args.time
-    if is_narval:
+    if IS_NARVAL:
         del sbatch_params["partition"]
         sbatch_params["account"] = "rrg-bengioy-ad_gpu"
+        if "time" not in sbatch_params:
+            print("WARNING: no time limit specified, setting to 1 day")
+            sbatch_params["time"] = "1-00:00:00"
 
     if "a100" in args.env:
         modules += ["cuda/11.2"]

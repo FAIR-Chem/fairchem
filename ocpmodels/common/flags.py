@@ -263,6 +263,14 @@ class Flags:
             + " the search space MUST be the same. If it is not, the job will crash."
             + " If you change the search space, you must change the experiment name.",
         )
+        self.parser.add_argument(
+            "--no_metrics_denorm",
+            type=bool,
+            default=False,
+            help="Whether or not to disable prediction denormalization to compute"
+            + " metrics. If True, targets are normalized instead of denormalizing "
+            + "preds.",
+        )
 
 
 flags = Flags()

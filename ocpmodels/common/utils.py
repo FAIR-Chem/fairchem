@@ -42,6 +42,10 @@ from ocpmodels.common.registry import registry
 OCP_TASKS = {"s2ef", "is2re", "is2es"}
 ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
+IS_NARVAL = (
+    "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
+    or os.environ.get("HOME") == "/home/vsch"
+)
 
 
 def apply_mult_factor(orion_hparams, mult_factor_dict, sep="."):
@@ -303,11 +307,7 @@ def move_lmdb_data_to_slurm_tmpdir(trainer_config):
 
 
 def override_narval_paths(trainer_config):
-    is_narval = (
-        "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
-        or os.environ.get("HOME") == "/home/vsch"
-        or trainer_config["narval"]
-    )
+    is_narval = IS_NARVAL or trainer_config.get("narval")
     if not is_narval:
         return trainer_config
     path_overrides = yaml.safe_load(

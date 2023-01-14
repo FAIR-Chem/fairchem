@@ -14,17 +14,19 @@ ROOT = Path(__file__).resolve().parent
 
 
 def util_strings(jobs, yaml_comments=False):
-    s = "All jobs launched: " + ", ".join(jobs)
-    s += "\nCancel experiment:\n  $ scancel " + " ".join(jobs)
-    s += "\nWandB query for dashboard:\n  (" + "|".join(jobs) + ")"
+    s = "  • All jobs launched: " + ", ".join(jobs)
+    s += "\n  • Cancel experiment:\n    $ scancel " + " ".join(jobs)
+    s += "\n  • WandB query for dashboard:\n  (" + "|".join(jobs) + ")"
     s += (
-        "\nDelete experiment run dirs:\n  $ "
+        "\n  • Delete experiment run dirs:\n    $ "
         + 'ocp_run_dirs="$SCRATCH/ocp/runs"; for jid in '
         + " ".join(jobs)
         + '; do rm -rf "$ocp_run_dirs/$jid" && echo "Deleted $ocp_run_dirs/$jid"; done;'
     )
     if yaml_comments:
         s = "\n".join(["# " + line for line in s.splitlines()])
+    else:
+        s = "\n  │ ".join(s.splitlines())
     return s
 
 
@@ -86,8 +88,9 @@ def write_exp_yaml_and_jobs(exp_file, outfile, jobs):
         jobs (list[str]): List of jobs, one per run line in the yaml exp_file
     """
     lines = exp_file.read_text().splitlines()
-    if "runs:" in lines:
-        run_line = lines.index("runs:")
+    run_lines = [i for i, l in enumerate(lines) if l.strip().startswith("runs:")]
+    if run_lines:
+        run_line = run_lines[0]
         j = 0
         for i, line in enumerate(lines[run_line:]):
             if line.strip().startswith("- "):
@@ -122,7 +125,10 @@ def find_exp(name):
 
 
 def seconds_to_time_str(seconds):
-    seconds = int(seconds)
+    try:
+        seconds = int(seconds)
+    except ValueError:
+        return seconds
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
     seconds = seconds % 60
@@ -231,7 +237,7 @@ if __name__ == "__main__":
     text += "\n<><><> Experiment config:\n\n-----" + exp_file.read_text() + "-----"
     text += "\n<><><> Experiment runs:\n\n • " + "\n\n  • ".join(commands) + separator
 
-    confirm = input("\n🚦 Confirm? [y/n]")
+    confirm = input("\n🚦 Confirm? [y/n] : ")
 
     if confirm == "y":
         try:
@@ -242,7 +248,7 @@ if __name__ == "__main__":
 
             outputs = []
             for c, command in enumerate(commands):
-                print(f"Launching job {c:3}", end="\r")
+                print(f"Launching job {c+1:3}", end="\r")
                 outputs.append(os.popen(command).read().strip())
         except KeyboardInterrupt:
             is_interrupted = True
@@ -262,11 +268,12 @@ if __name__ == "__main__":
             text += f"{separator}All jobs launched: {' '.join(jobs)}"
             with outfile.open("w") as f:
                 f.write(text)
-            print(f"Output written to {str(outfile)}")
+            print("\n\n ✅ Done!")
             print(util_strings(jobs))
+            # print(f"  • Output written to {str(outfile)}")
             yml_out = write_exp_yaml_and_jobs(exp_file, outfile, jobs)
             print(
-                "Experiment summary YAML in ",
+                "  • Experiment summary YAML in ",
                 f"./{str(yml_out.relative_to(Path.cwd()))}",
             )
     else:

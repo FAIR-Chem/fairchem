@@ -594,12 +594,20 @@ class SingleTrainer(BaseTrainer):
                 self.normalizer.get("normalize_labels")
                 and "grad_target" in self.normalizers
             ):
-                preds["forces"] = self.normalizers["grad_target"].denorm(
-                    preds["forces"]
-                )
+                if not self.config.get("no_metrics_denorm"):
+                    preds["forces"] = self.normalizers["grad_target"].denorm(
+                        preds["forces"]
+                    )
+                else:
+                    target["forces"] = self.normalizers["grad_target"].norm(
+                        target["forces"]
+                    )
 
         if self.normalizer.get("normalize_labels") and "target" in self.normalizers:
-            preds["energy"] = self.normalizers["target"].denorm(preds["energy"])
+            if not self.config.get("no_metrics_denorm"):
+                preds["energy"] = self.normalizers["target"].denorm(preds["energy"])
+            else:
+                target["energy"] = self.normalizers["target"].norm(target["energy"])
 
         metrics = evaluator.eval(preds, target, prev_metrics=metrics)
 

@@ -9,7 +9,8 @@ default:
     metric: mae
     labels:
       - relaxed energy
-
+  optim:
+    optimizer: AdamW
   normalizer: null
   model:
     otf_graph: False
