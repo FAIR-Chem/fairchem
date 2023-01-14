@@ -332,7 +332,7 @@ def override_drac_paths(trainer_config):
     path_overrides = yaml.safe_load(
         (ROOT / "configs" / "models" / "tasks" / "_drac.yaml").read_text()
     )
-    base_path = path_overrides["drac_base_path"][CLUSTER.name]
+    base_path = path_overrides.pop("drac_base_path")[CLUSTER.name]
     task = trainer_config["task"]["name"]
     split = trainer_config["task"]["split"]
     assert (
