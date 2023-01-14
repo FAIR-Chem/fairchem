@@ -82,3 +82,12 @@ s2ef:
       src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/all/val_ood_both
     train:
       src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/all/train/
+
+qm9:
+  all:
+    train:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm9
+    val:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm9
+    test:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm9
