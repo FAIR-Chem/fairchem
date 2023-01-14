@@ -343,10 +343,10 @@ def override_drac_paths(trainer_config):
         split in path_overrides[task]
     ), f"Split {split} not found in {CLUSTER.Name} paths overrides for task {task}"
 
-    for t, task in copy.deepcopy(path_overrides).items():
-        for sub, subset in task.items():
-            for spl, split in subset.items():
-                src = split["src"].replace("_base_", base_path).replace("//", "/")
+    for t, task_dict in copy.deepcopy(path_overrides).items():
+        for sub, subset_dict in task_dict.items():
+            for spl, split_dict in subset_dict.items():
+                src = split_dict["src"].replace("_base_", base_path).replace("//", "/")
                 path_overrides[t][sub][spl]["src"] = src
 
     print(

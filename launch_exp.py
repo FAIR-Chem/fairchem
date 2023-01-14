@@ -247,6 +247,7 @@ if __name__ == "__main__":
                 search_path.write_text(dump(exp["orion"]))
 
             outputs = []
+            print()
             for c, command in enumerate(commands):
                 print(f"Launching job {c+1:3}", end="\r")
                 outputs.append(os.popen(command).read().strip())
