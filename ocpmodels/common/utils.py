@@ -47,9 +47,13 @@ class Cluster:
             "beluga": "beluga.calcul.quebec" in os.environ.get("HOSTNAME", ""),
             "mila": "/home/mila/" in os.environ.get("HOME", ""),
         }
-        self.name = [k for k, v in self._is.items() if v][0].capitalize()
+        self.name = [k for k, v in self._is.items() if v]
+        if not self.name:
+            self.name = "unknown"
+        else:
+            self.name = self.name[0]
         self.Name = self.name.capitalize()
-        self._id["drac"] = self._is["narval"] or self._is["beluga"]
+        self._is["drac"] = self._is["narval"] or self._is["beluga"]
 
     def __getattribute__(self, k: str):
         if k in self._is:
@@ -1000,6 +1004,7 @@ def build_config(args, args_override):
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
     config["job_id"] = JOB_ID or "no-job-id"
+    config["cluster_name"] = CLUSTER.name
 
     if "regress_forces" in config["model"]:
         if config["model"]["regress_forces"] == "":
