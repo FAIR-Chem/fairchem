@@ -15,10 +15,10 @@ ROOT = Path(__file__).resolve().parent
 
 def util_strings(jobs, yaml_comments=False):
     s = "  • All jobs launched: " + ", ".join(jobs)
-    s += "\n  • Cancel experiment:\n  $ scancel " + " ".join(jobs)
+    s += "\n  • Cancel experiment:\n    $ scancel " + " ".join(jobs)
     s += "\n  • WandB query for dashboard:\n  (" + "|".join(jobs) + ")"
     s += (
-        "\n  • Delete experiment run dirs:\n  $ "
+        "\n  • Delete experiment run dirs:\n    $ "
         + 'ocp_run_dirs="$SCRATCH/ocp/runs"; for jid in '
         + " ".join(jobs)
         + '; do rm -rf "$ocp_run_dirs/$jid" && echo "Deleted $ocp_run_dirs/$jid"; done;'
