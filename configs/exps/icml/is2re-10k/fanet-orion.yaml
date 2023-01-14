@@ -5,8 +5,6 @@ job:
   gres: gpu:1
   time: 30:00
   partition: long
-  code_loc: /home/mila/s/schmidtv/ocp-project/ocp-drlab
-  env: ocp-a100
 
 default:
   wandb_project: ocp-4
@@ -23,7 +21,7 @@ default:
     ema_decay: 0.999
     decay_steps: max_steps
     scheduler: LinearWarmupCosineAnnealingLR
-    batch_size: 256
+    batch_size: 64
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm
     optim: batch_size, lr_initial
@@ -36,7 +34,7 @@ orion:
   # Remember to change the experiment name if you change anything in the search space
   n_jobs: 20
 
-  unique_exp_name: fanet-is2re-10k-v1.2.0
+  unique_exp_name: fanet-is2re-10k-v1.3.0
 
   space:
     optim/max_epochs: fidelity(20, 100, base=4)
