@@ -21,7 +21,7 @@ def util_strings(jobs, yaml_comments=False):
         "\n  • Delete experiment run dirs:\n    $ "
         + 'exp_run_dirs="$SCRATCH/ocp/runs"; for jid in '
         + " ".join(jobs)
-        + '; do rm -rf "$ocp_run_dirs/$jid" && echo "Deleted $ocp_run_dirs/$jid"; done;'
+        + '; do rm -rf "$exp_run_dirs/$jid" && echo "Deleted $exp_run_dirs/$jid"; done;'
     )
     if yaml_comments:
         s = "\n".join(["# " + line for line in s.splitlines()])
