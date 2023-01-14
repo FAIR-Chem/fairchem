@@ -232,12 +232,6 @@ class Flags:
             help="Evaluate on test set",
         )
         self.parser.add_argument(
-            "--narval",
-            action="store_true",
-            default=False,
-            help="is on Narval DRAC cluster",
-        )
-        self.parser.add_argument(
             "--cp_data_to_tmpdir",
             type=bool,
             default=False,

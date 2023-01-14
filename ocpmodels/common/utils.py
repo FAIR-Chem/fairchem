@@ -39,13 +39,28 @@ import ocpmodels
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 
+
+class Cluster:
+    def __init__(self):
+        self._is = {
+            "narval": "narval.calcul.quebec" in os.environ.get("HOSTNAME", ""),
+            "beluga": "beluga.calcul.quebec" in os.environ.get("HOSTNAME", ""),
+            "mila": "/home/mila/" in os.environ.get("HOME", ""),
+        }
+        self.name = [k for k, v in self._is.items() if v][0].capitalize()
+        self.Name = self.name.capitalize()
+        self._id["drac"] = self._is["narval"] or self._is["beluga"]
+
+    def __getattribute__(self, k: str):
+        if k in self._is:
+            return self._is[k]
+        raise AttributeError("Unknown attribute " + k)
+
+
+CLUSTER = Cluster()
 OCP_TASKS = {"s2ef", "is2re", "is2es"}
 ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
-IS_NARVAL = (
-    "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
-    or os.environ.get("HOME") == "/home/vsch"
-)
 
 
 def apply_mult_factor(orion_hparams, mult_factor_dict, sep="."):
@@ -306,23 +321,32 @@ def move_lmdb_data_to_slurm_tmpdir(trainer_config):
     return trainer_config
 
 
-def override_narval_paths(trainer_config):
-    is_narval = IS_NARVAL or trainer_config.get("narval")
-    if not is_narval:
+def override_drac_paths(trainer_config):
+    if not CLUSTER.drac:
         return trainer_config
+
     path_overrides = yaml.safe_load(
-        (ROOT / "configs" / "models" / "tasks" / "_narval.yaml").read_text()
+        (ROOT / "configs" / "models" / "tasks" / "_drac.yaml").read_text()
     )
+    base_path = path_overrides["drac_base_path"][CLUSTER.name]
     task = trainer_config["task"]["name"]
     split = trainer_config["task"]["split"]
-    assert task in path_overrides, f"Task {task} not found in Narval paths overrides"
+    assert (
+        task in path_overrides
+    ), f"Task {task} not found in {CLUSTER.Name} paths overrides"
 
     assert (
         split in path_overrides[task]
-    ), f"Split {split} not found in Narval paths overrides for task {task}"
+    ), f"Split {split} not found in {CLUSTER.Name} paths overrides for task {task}"
+
+    for t, task in copy.deepcopy(path_overrides).items():
+        for sub, subset in task.items():
+            for spl, split in subset.items():
+                src = split["src"].replace("_base_", base_path).replace("//", "/")
+                path_overrides[t][sub][spl]["src"] = src
 
     print(
-        "Is on Narval. Overriding",
+        f"Is on {CLUSTER.Name}. Overriding",
         trainer_config["dataset"],
         "with",
         path_overrides[task][split],
@@ -1002,7 +1026,7 @@ def build_config(args, args_override):
 
     config = set_qm9_target_stats(config)
     config = set_qm7x_target_stats(config)
-    config = override_narval_paths(config)
+    config = override_drac_paths(config)
 
     if not config["no_cpus_to_workers"]:
         cpus = count_cpus()
@@ -1547,7 +1571,6 @@ def base_config(config, overrides={}):
         n,
         [
             "run_dir=.",
-            "narval=",
             "no_qm7x_cp=true",
             "no_cpus_to_workers=true",
             "silent=",
