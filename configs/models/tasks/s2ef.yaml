@@ -13,6 +13,8 @@ default:
     eval_on_free_atoms: True
   normalizer: null
   mode: train
+  optim:
+    optimizer: AdamW
   model:
     otf_graph: False
     max_num_neighbors: 40

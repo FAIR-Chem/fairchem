@@ -17,6 +17,7 @@ default:
       - total system energy
 
   optim:
+    optimizer: AdamW
     force_coefficient: 30
     energy_coefficient: 1
     energy_grad_coefficient: 10

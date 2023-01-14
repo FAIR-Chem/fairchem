@@ -9,6 +9,9 @@ default:
     use_pbc: False
     force_decoder_type: null
 
+  optim:
+    optimizer: AdamW
+
   task:
     dataset: qm9
     description: "QM9 U0 internal energy at 0K prediction from structure structure."
