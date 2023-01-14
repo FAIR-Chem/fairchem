@@ -974,6 +974,8 @@ def build_config(args, args_override):
     config["job_id"] = JOB_ID or "no-job-id"
 
     if "regress_forces" in config["model"]:
+        if config["model"]["regress_forces"] == "":
+            config["model"]["regress_forces"] = False
         if not isinstance(config["model"]["regress_forces"], str):
             if config["model"]["regress_forces"] is False:
                 config["model"]["regress_forces"] = ""
