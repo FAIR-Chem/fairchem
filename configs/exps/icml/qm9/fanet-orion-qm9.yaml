@@ -3,7 +3,7 @@ job:
   mem: 8GB
   cpus: 4
   gres: gpu:1
-  time: 30:00
+  time: 02:50:00
   partition: long
 
 default:
