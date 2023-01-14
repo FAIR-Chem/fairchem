@@ -55,7 +55,7 @@ class Cluster:
         self.Name = self.name.capitalize()
         self._is["drac"] = self._is["narval"] or self._is["beluga"]
 
-    def __getattribute__(self, k: str):
+    def __getattr__(self, k: str):
         if k in self._is:
             return self._is[k]
         raise AttributeError("Unknown attribute " + k)
