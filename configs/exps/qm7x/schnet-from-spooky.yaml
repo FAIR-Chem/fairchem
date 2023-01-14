@@ -1,7 +1,7 @@
 # trainset has 4068193 samples
 job:
-  mem: 32GB
-  cpus: 8
+  mem: 12GB
+  cpus: 4
   gres: gpu:1
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
@@ -74,6 +74,15 @@ runs: # all above contributed positively to improve eval/val_ood/energy_mae.
       num_gaussians: 100
   - optim:
       batch_size: 32
+      ema_decay: 0.999
+      scheduler: LinearWarmupCosineAnnealingLR
+    model:
+      cutoff: 6.0
+      num_filters: 256
+      num_gaussians: 100
+  - optim:
+      batch_size: 512
+      lr_initial: 0.0005
       ema_decay: 0.999
       scheduler: LinearWarmupCosineAnnealingLR
     model:
