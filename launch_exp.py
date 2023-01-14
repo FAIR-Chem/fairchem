@@ -125,7 +125,10 @@ def find_exp(name):
 
 
 def seconds_to_time_str(seconds):
-    seconds = int(seconds)
+    try:
+        seconds = int(seconds)
+    except ValueError:
+        return seconds
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
     seconds = seconds % 60
