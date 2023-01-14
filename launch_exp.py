@@ -25,6 +25,8 @@ def util_strings(jobs, yaml_comments=False):
     )
     if yaml_comments:
         s = "\n".join(["# " + line for line in s.splitlines()])
+    else:
+        s = "\n  • ".join(s.splitlines())
     return s
 
 
@@ -231,7 +233,7 @@ if __name__ == "__main__":
     text += "\n<><><> Experiment config:\n\n-----" + exp_file.read_text() + "-----"
     text += "\n<><><> Experiment runs:\n\n • " + "\n\n  • ".join(commands) + separator
 
-    confirm = input("\n🚦 Confirm? [y/n]")
+    confirm = input("\n🚦 Confirm? [y/n] : ")
 
     if confirm == "y":
         try:
@@ -262,11 +264,12 @@ if __name__ == "__main__":
             text += f"{separator}All jobs launched: {' '.join(jobs)}"
             with outfile.open("w") as f:
                 f.write(text)
-            print(f"Output written to {str(outfile)}")
+            print("\n🎉 Done!")
+            print(f"  • Output written to {str(outfile)}")
             print(util_strings(jobs))
             yml_out = write_exp_yaml_and_jobs(exp_file, outfile, jobs)
             print(
-                "Experiment summary YAML in ",
+                "  • Experiment summary YAML in ",
                 f"./{str(yml_out.relative_to(Path.cwd()))}",
             )
     else:
