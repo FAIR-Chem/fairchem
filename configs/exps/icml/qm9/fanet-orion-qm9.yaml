@@ -7,7 +7,7 @@ job:
   partition: long
 
 default:
-  wandb_project: ocp-4
+  wandb_project: ocp-qm
   config: fanet-qm9-all
   mode: train
   test_ri: true
