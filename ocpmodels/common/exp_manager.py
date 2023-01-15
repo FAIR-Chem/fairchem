@@ -214,10 +214,6 @@ if __name__ == "__main__":
         "help": False,
         "name": None,
         "wandb_path": None,
-        "orion_db_path": str(
-            Path(__file__).resolve().parent.parent.parent
-            / "data/orion/storage/orion_db.pkl"
-        ),
         "watch": -1,
     }
     args = resolved_args(defaults=defaults)
@@ -248,10 +244,14 @@ if __name__ == "__main__":
         "💃 Status of experiment",
         f"'{args.name}' and wandb entity/project '{args.wandb_path}':",
     )
+    orion_db_path = str(
+        Path(__file__).resolve().parent.parent.parent
+        / f"data/orion/storage/{args.name}_db.pkl"
+    )
     m = Manager(
         name=args.name,
         wandb_path=args.wandb_path,
-        orion_db_path=args.orion_db_path,
+        orion_db_path=orion_db_path,
     )
 
     m.print_wandb_query()
