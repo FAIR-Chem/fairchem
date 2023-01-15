@@ -34,6 +34,7 @@ from ocpmodels.common.utils import (
     setup_logging,
     unflatten_dict,
     update_from_sbatch_py_vars,
+    set_max_fidelity,
 )
 from ocpmodels.trainers import BaseTrainer
 
@@ -77,13 +78,16 @@ class Runner:
         if distutils.is_master():
             if orion_exp:
                 orion_trial = orion_exp.suggest(1)
-                self.hparams = unflatten_dict(
-                    apply_mult_factor(
-                        orion_trial.params,
-                        self.trainer_config.get("orion_mult_factor"),
+                self.hparams = set_max_fidelity(
+                    unflatten_dict(
+                        apply_mult_factor(
+                            orion_trial.params,
+                            self.trainer_config.get("orion_mult_factor"),
+                            sep="/",
+                        ),
                         sep="/",
                     ),
-                    sep="/",
+                    orion_exp,
                 )
                 self.hparams["orion_hash_params"] = orion_trial.hash_params
                 self.hparams["orion_unique_exp_name"] = orion_exp.name

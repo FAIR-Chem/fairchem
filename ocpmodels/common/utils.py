@@ -67,6 +67,13 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
 
 
+def set_max_fidelity(hparams, orion_exp):
+    for p, prior in orion_exp.space.items():
+        if prior.type == "fidelity":
+            hparams[f"fidelity_{p}"] = prior.high
+    return hparams
+
+
 def apply_mult_factor(orion_hparams, mult_factor_dict, sep="."):
     """
     Multiplies all values of orion_hparams listed in mult_factor_dict["targets"]
@@ -169,9 +176,6 @@ def continue_orion_exp(trainer_config):
     base_dir = Path(trainer_config["run_dir"]).parent
     existing_id_files = list(base_dir.glob(f"*/{id_file}"))
 
-    if not existing_id_files:
-        return trainer_config
-
     latest_dirs = sorted(
         [
             f.parent
@@ -182,6 +186,7 @@ def continue_orion_exp(trainer_config):
     )
 
     if not latest_dirs:
+        print("\n😅 No previous Orion trial matched for unique file: ", id_file)
         return trainer_config
 
     resume_dir = latest_dirs[-1]

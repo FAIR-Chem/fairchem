@@ -221,8 +221,29 @@ class BaseTrainer(ABC):
 
         transform = get_transforms(self.config)  # TODO: train/val/test behavior
         batch_size = self.config["optim"]["batch_size"]
-        max_steps = self.config["optim"].get("max_steps", -1)
-        max_samples = self.config["optim"].get("max_samples", -1)
+        epochs_key = (
+            "max_epochs"
+            if "fidelity_max_epochs" not in self.config["optim"]
+            else "fidelity_max_epochs"
+        )
+        steps_key = (
+            "max_steps"
+            if "fidelity_max_steps" not in self.config["optim"]
+            else "fidelity_max_steps"
+        )
+        samples_key = (
+            "max_samples"
+            if "fidelity_max_samples" not in self.config["optim"]
+            else "fidelity_max_samples"
+        )
+        max_epochs = self.config["optim"].get(epochs_key, -1)
+        max_steps = self.config["optim"].get(steps_key, -1)
+        max_samples = self.config["optim"].get(samples_key, -1)
+        print("Optim config auto update:")
+        for k, v in zip(
+            [epochs_key, steps_key, samples_key], [max_epochs, max_steps, max_samples]
+        ):
+            print(f"  • {k}: {v}")
 
         for split, ds_conf in self.config["dataset"].items():
             if split == "default_val":
@@ -235,43 +256,49 @@ class BaseTrainer(ABC):
             shuffle = False
             if split == "train":
                 shuffle = True
+                n_train = len(self.datasets[split])
                 if max_samples > 0:
-                    if self.config["optim"].get("max_epochs", -1) > 0:
+                    if max_epochs > 0:
                         print(
                             "\nWARNING: Both max_samples and max_epochs are set.",
                             "Using max_samples.",
                         )
-                    if self.config["optim"].get("max_steps", -1) > 0:
+                    if max_steps > 0:
                         print(
                             "WARNING: Both max_samples and max_steps are set.",
                             "Using max_samples.\n",
                         )
                     self.config["optim"]["max_epochs"] = int(
-                        np.ceil(max_samples / len(self.datasets[split]))
+                        np.ceil(max_samples / n_train)
                     )
                     self.config["optim"]["max_steps"] = int(
                         np.ceil(max_samples / batch_size)
                     )
                 elif max_steps > 0:
-                    if self.config["optim"].get("max_epochs", -1) > 0:
+                    if max_epochs > 0:
                         print(
                             "\nWARNING: Both max_steps and max_epochs are set.",
                             "Using max_steps.\n",
                         )
                     self.config["optim"]["max_epochs"] = int(
-                        np.ceil(max_steps / (len(self.datasets[split]) / batch_size))
+                        np.ceil(max_steps / (n_train / batch_size))
                     )
                     print(
                         "Setting max_epochs to",
                         self.config["optim"]["max_epochs"],
                         f"from max_steps ({max_steps}),",
-                        f"dataset length ({len(self.datasets[split])}),",
+                        f"dataset length ({n_train}),",
                         f"and batch_size ({batch_size})\n",
                     )
                 else:
                     self.config["optim"]["max_steps"] = int(
-                        self.config["optim"]["max_epochs"]
-                        * (len(self.datasets[split]) / batch_size)
+                        np.ceil(max_epochs * (n_train / batch_size))
+                    )
+                    print(
+                        "Setting max_steps to ",
+                        f"{self.config['optim']['max_steps']} from",
+                        f"max_epochs ({max_epochs}), dataset length",
+                        f"({n_train}), and batch_size ({batch_size})\n",
                     )
 
             self.samplers[split] = self.get_sampler(
@@ -383,6 +410,12 @@ class BaseTrainer(ABC):
             self.optimizer.load_state_dict(checkpoint["optimizer"])
         if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
             self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
+        if checkpoint.get("warmup_scheduler") is not None and hasattr(
+            self.scheduler, "warmup_scheduler"
+        ):
+            self.scheduler.warmup_scheduler.load_state_dict(
+                checkpoint["warmup_scheduler"]
+            )
         if "ema" in checkpoint and checkpoint["ema"] is not None:
             self.ema.load_state_dict(checkpoint["ema"])
         else:
@@ -483,6 +516,9 @@ class BaseTrainer(ABC):
                         "optimizer": self.optimizer.state_dict(),
                         "scheduler": self.scheduler.scheduler.state_dict()
                         if self.scheduler.scheduler_type != "Null"
+                        else None,
+                        "warmup_scheduler": self.scheduler.warmup_scheduler.state_dict()
+                        if hasattr(self.scheduler, "warmup_scheduler")
                         else None,
                         "normalizers": {
                             key: value.state_dict()
