@@ -70,7 +70,7 @@ JOB_ID = os.environ.get("SLURM_JOB_ID")
 def set_max_fidelity(hparams, orion_exp):
     for p, prior in orion_exp.space.items():
         if prior.type == "fidelity":
-            hparams[f"fidelity_{p}"] = prior.high
+            hparams[f"fidelity_{p.split('/')[-1]}"] = prior.high
     return hparams
 
 
