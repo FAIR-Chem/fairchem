@@ -164,6 +164,7 @@ qm7x:
     model:
       hidden_channels: 384
       num_interactions: 4
+      use_pbc: False
 
     optim:
       lr_initial: 0.001
@@ -176,3 +177,10 @@ qm7x:
 
   all: {}
   1k: {}
+
+qm9:
+  default:
+    model:
+      use_pbc: False
+  all: {}
+  10k: {}

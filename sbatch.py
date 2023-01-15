@@ -8,8 +8,9 @@ import sys
 import re
 import yaml
 
-IS_NARVAL = (
+IS_DRAC = (
     "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
+    or "beluga.calcul.quebec" in os.environ.get("HOSTNAME", "")
     or os.environ.get("HOME") == "/home/vsch"
 )
 
@@ -296,7 +297,7 @@ if __name__ == "__main__":
     }
     if args.time:
         sbatch_params["time"] = args.time
-    if IS_NARVAL:
+    if IS_DRAC:
         del sbatch_params["partition"]
         sbatch_params["account"] = "rrg-bengioy-ad_gpu"
         if "time" not in sbatch_params:

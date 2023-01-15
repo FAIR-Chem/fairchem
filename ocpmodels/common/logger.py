@@ -14,7 +14,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 import wandb
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import IS_NARVAL
+from ocpmodels.common.utils import CLUSTER
 
 NTFY_OK = False
 try:
@@ -125,13 +125,13 @@ class WandBLogger(Logger):
         sbatch_files = list(
             Path(self.trainer_config["run_dir"]).glob("sbatch_script*.sh")
         )
-        if len(sbatch_files) == 1 and not IS_NARVAL:
+        if len(sbatch_files) == 1 and not CLUSTER.drac:
             wandb.save(str(sbatch_files[0]))
 
         self.url = wandb.run.get_url()
         with open(Path(self.trainer_config["run_dir"] / "wandb_url.txt"), "w") as f:
             f.write(self.url)
-        if not IS_NARVAL:
+        if not CLUSTER.drac:
             self.collect_output_files(policy="live")
             self.collect_output_files(policy="end")
 
@@ -171,7 +171,7 @@ class WandBLogger(Logger):
             self.add_tags("Preempted")
         if error_or_signal is True:
             exit_code = 1
-        if not IS_NARVAL:
+        if not CLUSTER.drac:
             self.collect_output_files(policy="now")
         wandb.finish(exit_code=exit_code)
 

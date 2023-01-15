@@ -16,12 +16,12 @@ ROOT = Path(__file__).resolve().parent
 def util_strings(jobs, yaml_comments=False):
     s = "  • All jobs launched: " + ", ".join(jobs)
     s += "\n  • Cancel experiment:\n    $ scancel " + " ".join(jobs)
-    s += "\n  • WandB query for dashboard:\n  (" + "|".join(jobs) + ")"
+    s += "\n  • WandB query for dashboard:\n    (" + "|".join(jobs) + ")"
     s += (
         "\n  • Delete experiment run dirs:\n    $ "
-        + 'ocp_run_dirs="$SCRATCH/ocp/runs"; for jid in '
+        + 'exp_run_dirs="$SCRATCH/ocp/runs"; for jid in '
         + " ".join(jobs)
-        + '; do rm -rf "$ocp_run_dirs/$jid" && echo "Deleted $ocp_run_dirs/$jid"; done;'
+        + '; do rm -rf "$exp_run_dirs/$jid" && echo "Deleted $exp_run_dirs/$jid"; done;'
     )
     if yaml_comments:
         s = "\n".join(["# " + line for line in s.splitlines()])
@@ -247,6 +247,7 @@ if __name__ == "__main__":
                 search_path.write_text(dump(exp["orion"]))
 
             outputs = []
+            print()
             for c, command in enumerate(commands):
                 print(f"Launching job {c+1:3}", end="\r")
                 outputs.append(os.popen(command).read().strip())
