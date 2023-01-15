@@ -1,7 +1,7 @@
+import wandb
 from orion.client import get_experiment
 from pathlib import Path
 from collections import defaultdict, Counter
-import wandb
 from textwrap import dedent
 from minydra import resolved_args
 import os
