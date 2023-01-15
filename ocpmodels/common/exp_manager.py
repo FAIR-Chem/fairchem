@@ -254,9 +254,9 @@ if __name__ == "__main__":
         orion_db_path=orion_db_path,
     )
 
-    m.print_wandb_query()
-    exp_df = m.exp.to_pandas()
-    reserved_wandbs = m.get_reserved_wandb_runs()
+    # m.print_wandb_query()
+    # exp_df = m.exp.to_pandas()
+    # reserved_wandbs = m.get_reserved_wandb_runs()
 
     if args.watch and args.watch > 0:
         if args.watch < 15:
