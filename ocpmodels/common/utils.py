@@ -70,7 +70,15 @@ JOB_ID = os.environ.get("SLURM_JOB_ID")
 def set_max_fidelity(hparams, orion_exp):
     for p, prior in orion_exp.space.items():
         if prior.type == "fidelity":
-            hparams[f"fidelity_{p.split('/')[-1]}"] = prior.high
+            keys = p.split("/")
+            if len(keys) == 1:
+                hparams[f"fidelity_{p}"] = prior.high
+            elif len(keys) == 2:
+                if keys[0] not in hparams:
+                    hparams[keys[0]] = {}
+                hparams[keys[0]][f"fidelity_{keys[1]}"] = prior.high
+            else:
+                print("Error: fidelity parameters must be at most 2 levels deep.")
     return hparams
 
 
