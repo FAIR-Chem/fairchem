@@ -200,9 +200,9 @@ if __name__ == "__main__":
             distutils.cleanup()
             print("Done!")
 
+        if "interactive" not in os.popen(f"squeue -hj {JOB_ID}").read():
+            print("\nSelf-canceling SLURM job in 32s", JOB_ID)
+            os.popen(f"sleep 32 && scancel {JOB_ID}")
+
         if runner and runner.trainer and runner.trainer.logger:
             runner.trainer.logger.finish(error or signal)
-
-        if "interactive" not in os.popen(f"squeue -hj {JOB_ID}").read():
-            print("\nSelf-canceling SLURM job", JOB_ID)
-            os.system(f"scancel {JOB_ID}")
