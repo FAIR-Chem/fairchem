@@ -666,9 +666,11 @@ def warmup_lr_lambda(current_step, optim_config):
         # exponential decay per step
         assert "decay_rate" in optim_config, "decay_rate must be defined in optim"
         ds = optim_config["decay_steps"]
-        if ds == "max_steps":
-            assert "max_steps" in optim_config, "max_steps must be defined in optim"
-            ds = optim_config["max_steps"]
+        if isinstance(ds, str):
+            assert (
+                ds in optim_config
+            ), f"ds is {ds}, it must be defined in optim ({optim_config})"
+            ds = optim_config[ds]
 
         return optim_config["decay_rate"] ** (
             (current_step - optim_config["warmup_steps"]) / ds

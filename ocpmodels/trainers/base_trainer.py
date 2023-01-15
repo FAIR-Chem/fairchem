@@ -221,29 +221,10 @@ class BaseTrainer(ABC):
 
         transform = get_transforms(self.config)  # TODO: train/val/test behavior
         batch_size = self.config["optim"]["batch_size"]
-        epochs_key = (
-            "max_epochs"
-            if "fidelity_max_epochs" not in self.config["optim"]
-            else "fidelity_max_epochs"
-        )
-        steps_key = (
-            "max_steps"
-            if "fidelity_max_steps" not in self.config["optim"]
-            else "fidelity_max_steps"
-        )
-        samples_key = (
-            "max_samples"
-            if "fidelity_max_samples" not in self.config["optim"]
-            else "fidelity_max_samples"
-        )
-        max_epochs = self.config["optim"].get(epochs_key, -1)
-        max_steps = self.config["optim"].get(steps_key, -1)
-        max_samples = self.config["optim"].get(samples_key, -1)
-        print("Optim config auto update:")
-        for k, v in zip(
-            [epochs_key, steps_key, samples_key], [max_epochs, max_steps, max_samples]
-        ):
-            print(f"  • {k}: {v}")
+
+        max_epochs = self.config["optim"].get("max_epochs", -1)
+        max_steps = self.config["optim"].get("max_steps", -1)
+        max_samples = self.config["optim"].get("max_samples", -1)
 
         for split, ds_conf in self.config["dataset"].items():
             if split == "default_val":
@@ -257,6 +238,20 @@ class BaseTrainer(ABC):
             if split == "train":
                 shuffle = True
                 n_train = len(self.datasets[split])
+
+                if "fidelity_max_epochs" in self.config["optim"]:
+                    self.config["optim"]["fidelity_max_steps"] = int(
+                        np.ceil(
+                            self.config["optim"]["fidelity_max_epochs"]
+                            * (n_train / batch_size)
+                        )
+                    )
+                    print(
+                        "Setting fidelity_max_steps to {}".format(
+                            self.config["optim"]["fidelity_max_steps"]
+                        )
+                    )
+
                 if max_samples > 0:
                     if max_epochs > 0:
                         print(
