@@ -422,6 +422,10 @@ class BaseTrainer(ABC):
             if self.scaler and checkpoint["amp"]:
                 self.scaler.load_state_dict(checkpoint["amp"])
 
+        if "config" in checkpoint:
+            if "job_ids" in checkpoint["config"]:
+                self.config["job_ids"] = checkpoint["config"]["job_ids"] + f", {JOB_ID}"
+
     def load_loss(self):
         self.loss_fn = {}
         self.loss_fn["energy"] = self.config["optim"].get("loss_energy", "mae")

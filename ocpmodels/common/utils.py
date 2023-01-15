@@ -1011,6 +1011,7 @@ def build_config(args, args_override):
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
     config["job_id"] = JOB_ID or "no-job-id"
+    config["job_ids"] = JOB_ID or "no-job-id"
     config["cluster_name"] = CLUSTER.name
 
     if "regress_forces" in config["model"]:

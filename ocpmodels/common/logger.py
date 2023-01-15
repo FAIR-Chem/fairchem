@@ -95,6 +95,7 @@ class WandBLogger(Logger):
 
         if trainer_config.get("wandb_resume_id"):
             wandb_id = trainer_config["wandb_resume_id"]
+            print("⛑ Resuming wandb run: ", wandb_id)
         else:
             wandb_id = str(self.trainer_config.get("wandb_id", ""))
             if wandb_id:
@@ -109,6 +110,8 @@ class WandBLogger(Logger):
                 wandb_tags = [t.strip() for t in wandb_tags[:63].split(",")]
             note = self.trainer_config.get("note", "")
             name = self.trainer_config["wandb_name"] or wandb_id
+
+        print("Initializing wandb run: ", wandb_id, "with name: ", name)
 
         self.run = wandb.init(
             config=self.trainer_config,
