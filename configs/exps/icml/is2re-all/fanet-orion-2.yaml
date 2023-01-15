@@ -20,7 +20,6 @@ default:
     weighted-av-final-embeds: True
   frame_averaging: 2D
   fa_frames: random
-  max_epochs_fidelity: 30
   optim:
     scheduler: LinearWarmupCosineAnnealingLR
   note:
