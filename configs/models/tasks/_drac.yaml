@@ -1,7 +1,7 @@
 # this file overrides paths for data on drac clusters
 drac_base_path:
   narval: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data
-  beluga: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data
+  beluga: /scratch/vsch/ocp-data
 
 is2re:
   10k:
