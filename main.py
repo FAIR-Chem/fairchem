@@ -109,13 +109,9 @@ class Runner:
                         else:
                             wandb.run.tags = ("RaceCondition",)
 
-        should_be_0 = dist_utils.get_rank()
-        hp_list = [self.hparams, should_be_0, orion_race_condition]
-        # print("hparams pre-broadcast: ", hparams)
-        dist_utils.broadcast_object_list(hp_list)
-        self.hparams, should_be_0, orion_race_condition = hp_list
-        # print("hparams post-broadcast: ", hparams)
-        assert should_be_0 == 0
+        self.hparams, orion_race_condition = dist_utils.broadcast_from_master(
+            self.hparams, orion_race_condition
+        )
         if orion_race_condition:
             if dist_utils.is_master():
                 shutil.rmtree(self.trainer_config["run_dir"])
@@ -146,20 +142,20 @@ class Runner:
         if self.trainer.logger is not None:
             self.trainer.logger.log({"Total time": time.time() - start_time})
 
-        objective = self.trainer.objective
-        # print("objective pre-broadcast: ", objective)
-        o_list = [objective]
-        dist_utils.broadcast_object_list(o_list)
-        objective = o_list[0]
-        # print("objective post-broadcast: ", objective)
+        objective = dist_utils.broadcast_from_master(self.trainer.objective)
 
         if orion_exp is not None:
+            if objective is None:
+                if signal == "loss_is_nan":
+                    objective = 1e12
+                    print("Received NaN objective from worker. Setting to 1e12.")
+                else:
+                    print("Received None objective from worker. Skipping observation.")
             if objective is not None:
                 orion_exp.observe(
                     orion_trial,
                     [{"type": "objective", "name": "energy_mae", "value": objective}],
                 )
-            print("Received None objective from worker. Skipping observation.")
 
 
 if __name__ == "__main__":
