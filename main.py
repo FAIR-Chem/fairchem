@@ -8,20 +8,22 @@ LICENSE file in the root directory of this source tree.
 import copy
 import logging
 import os
+import shutil
 import time
 import traceback
 import warnings
 
 import torch
+from orion.core.utils.exceptions import ReservationRaceCondition
 from yaml import dump
 
-from ocpmodels.common import distutils
+from ocpmodels.common import dist_utils
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     JOB_ID,
-    auto_note,
     apply_mult_factor,
+    auto_note,
     build_config,
     continue_from_slurm_job_id,
     continue_orion_exp,
@@ -30,11 +32,11 @@ from ocpmodels.common.utils import (
     move_lmdb_data_to_slurm_tmpdir,
     read_slurm_env,
     resolve,
+    set_max_fidelity,
     setup_imports,
     setup_logging,
     unflatten_dict,
     update_from_sbatch_py_vars,
-    set_max_fidelity,
 )
 from ocpmodels.trainers import BaseTrainer
 
@@ -75,30 +77,42 @@ class Runner:
     def run(self, orion_exp=None):
         orion_trial = None
         self.original_config = copy.deepcopy(self.trainer_config)
-        if distutils.is_master():
+        orion_race_condition = False
+        if dist_utils.is_master():
             if orion_exp:
-                orion_trial = orion_exp.suggest(1)
-                self.hparams = set_max_fidelity(
-                    unflatten_dict(
-                        apply_mult_factor(
-                            orion_trial.params,
-                            self.trainer_config.get("orion_mult_factor"),
+                try:
+                    orion_trial = orion_exp.suggest(1)
+                    print(
+                        "\n🚨  Orion reservation race condition detected. Exiting",
+                        "and deleting run dir",
+                    )
+                    self.hparams = set_max_fidelity(
+                        unflatten_dict(
+                            apply_mult_factor(
+                                orion_trial.params,
+                                self.trainer_config.get("orion_mult_factor"),
+                                sep="/",
+                            ),
                             sep="/",
                         ),
-                        sep="/",
-                    ),
-                    orion_exp,
-                )
-                self.hparams["orion_hash_params"] = orion_trial.hash_params
-                self.hparams["orion_unique_exp_name"] = orion_exp.name
+                        orion_exp,
+                    )
+                    self.hparams["orion_hash_params"] = orion_trial.hash_params
+                    self.hparams["orion_unique_exp_name"] = orion_exp.name
+                except ReservationRaceCondition:
+                    orion_race_condition = True
 
-        should_be_0 = distutils.get_rank()
-        hp_list = [self.hparams, should_be_0]
+        should_be_0 = dist_utils.get_rank()
+        hp_list = [self.hparams, should_be_0, orion_race_condition]
         # print("hparams pre-broadcast: ", hparams)
-        distutils.broadcast_object_list(hp_list)
-        self.hparams, should_be_0 = hp_list
+        dist_utils.broadcast_object_list(hp_list)
+        self.hparams, should_be_0, orion_race_condition = hp_list
         # print("hparams post-broadcast: ", hparams)
         assert should_be_0 == 0
+        if orion_race_condition:
+            if dist_utils.is_master():
+                shutil.rmtree(self.trainer_config["run_dir"])
+            return
         if self.hparams:
             print("\n💎 Received hyper-parameters from Orion:")
             print(dump(self.hparams), end="\n")
@@ -120,7 +134,7 @@ class Runner:
             print("\nJob was preempted. Wrapping up...\n")
             self.trainer.close_datasets()
 
-        distutils.synchronize()
+        dist_utils.synchronize()
         logging.info(f"Total time taken: {time.time() - start_time}")
         if self.trainer.logger is not None:
             self.trainer.logger.log({"Total time": time.time() - start_time})
@@ -128,7 +142,7 @@ class Runner:
         objective = self.trainer.objective
         # print("objective pre-broadcast: ", objective)
         o_list = [objective]
-        distutils.broadcast_object_list(o_list)
+        dist_utils.broadcast_object_list(o_list)
         objective = o_list[0]
         # print("objective post-broadcast: ", objective)
 
@@ -162,12 +176,12 @@ if __name__ == "__main__":
     original_trainer_config = copy.deepcopy(trainer_config)
 
     if args.distributed:
-        distutils.setup(trainer_config)
+        dist_utils.setup(trainer_config)
         print("Distributed backend setup.")
 
-    if distutils.is_master():
+    if dist_utils.is_master():
         trainer_config = move_lmdb_data_to_slurm_tmpdir(trainer_config)
-        # distutils.synchronize()
+        # dist_utils.synchronize()
 
     # -------------------
     # -----  Setup  -----
@@ -183,7 +197,7 @@ if __name__ == "__main__":
         # -------------------
         # -----  Train  -----
         # -------------------
-        if args.orion_exp_config_path and distutils.is_master():
+        if args.orion_exp_config_path and dist_utils.is_master():
             experiment = load_orion_exp(args)
             print("\nStarting runner.")
             runner.run(orion_exp=experiment)
@@ -198,10 +212,10 @@ if __name__ == "__main__":
     finally:
         if args.distributed:
             print(
-                "\nWaiting for all processes to finish with distutils.cleanup()...",
+                "\nWaiting for all processes to finish with dist_utils.cleanup()...",
                 end="",
             )
-            distutils.cleanup()
+            dist_utils.cleanup()
             print("Done!")
 
         if "interactive" not in os.popen(f"squeue -hj {JOB_ID}").read():
