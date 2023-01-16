@@ -83,7 +83,11 @@ class BaseTrainer(ABC):
         self.datasets = {}
         self.samplers = {}
         self.loaders = {}
-        self.early_stopper = EarlyStopper(patience=10, min_abs_change=1e-5)
+        self.early_stopper = EarlyStopper(
+            patience=10,
+            min_abs_change=1e-5,
+            min_lr=self.config["optim"].get("min_lr", -1),
+        )
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{self.config['local_rank']}")
