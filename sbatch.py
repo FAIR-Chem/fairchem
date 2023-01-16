@@ -38,7 +38,7 @@ then
 else
     conda activate {env}
 fi
-
+{wandb_offline}
 srun --output={output} {python_command}
 """
 
@@ -217,6 +217,7 @@ def write_orion_config(args, outdir):
 if __name__ == "__main__":
     # has the submission been successful?
     success = False
+    wandb_offline = ""
     sbatch_py_vars = {}
 
     # repository root
@@ -307,6 +308,9 @@ if __name__ == "__main__":
     if "a100" in args.env:
         modules += ["cuda/11.2"]
 
+    if os.environ.get("CC_CLUSTER") == "beluga":
+        wandb_offline = "wandb offline\necho 'wandb offline'"
+
     # format string template with defaults + command-line args
     script = template.format(
         code_loc=(str(resolve(args.code_loc)) if args.code_loc else str(root)),
@@ -322,6 +326,7 @@ if __name__ == "__main__":
         sbatch_params=make_sbatch_params(sbatch_params),
         sbatch_py_vars=make_sbatch_py_vars(sbatch_py_vars),
         virtualenv=virtualenv,
+        wandb_offline=wandb_offline,
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
