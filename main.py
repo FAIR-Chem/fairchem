@@ -101,6 +101,13 @@ class Runner:
                     self.hparams["orion_unique_exp_name"] = orion_exp.name
                 except ReservationRaceCondition:
                     orion_race_condition = True
+                    import wandb
+
+                    if wandb.run is not None:
+                        if wandb.run.tags:
+                            wandb.run.tags = wandb.run.tags + ("RaceCondition",)
+                        else:
+                            wandb.run.tags = ("RaceCondition",)
 
         should_be_0 = dist_utils.get_rank()
         hp_list = [self.hparams, should_be_0, orion_race_condition]
@@ -147,10 +154,12 @@ class Runner:
         # print("objective post-broadcast: ", objective)
 
         if orion_exp is not None:
-            orion_exp.observe(
-                orion_trial,
-                [{"type": "objective", "name": "energy_mae", "value": objective}],
-            )
+            if objective is not None:
+                orion_exp.observe(
+                    orion_trial,
+                    [{"type": "objective", "name": "energy_mae", "value": objective}],
+                )
+            print("Received None objective from worker. Skipping observation.")
 
 
 if __name__ == "__main__":
