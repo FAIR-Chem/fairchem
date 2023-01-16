@@ -107,7 +107,7 @@ class Manager:
         print("{:32} : {}".format("Algorithm's budgets", str(self.budgets)))
         sq_cmd = (
             "/opt/slurm/bin/squeue"
-            if "CC_CUSTER" not in os.environ
+            if "CC_CLUSTER" not in os.environ
             else "/opt/software/slurm/bin/squeue"
         )
         sq = set(
