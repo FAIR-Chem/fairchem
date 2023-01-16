@@ -133,7 +133,7 @@ class WandBLogger(Logger):
 
         self.url = wandb.run.get_url()
         with open(Path(self.trainer_config["run_dir"] / "wandb_url.txt"), "w") as f:
-            f.write(self.url)
+            f.write(self.url + "\n")
         if not CLUSTER.drac:
             self.collect_output_files(policy="live")
             self.collect_output_files(policy="end")

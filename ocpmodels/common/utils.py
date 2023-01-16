@@ -209,7 +209,7 @@ def continue_orion_exp(trainer_config):
         return trainer_config
 
     trainer_config["checkpoint"] = str(resume_ckpts[-1])
-    resume_url = (resume_dir / "wandb_url.txt").read_text()
+    resume_url = (resume_dir / "wandb_url.txt").read_text().strip()
     trainer_config["wandb_resume_id"] = resume_url.split("/runs/")[-1]
 
     print(
