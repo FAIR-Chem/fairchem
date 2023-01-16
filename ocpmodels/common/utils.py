@@ -310,7 +310,8 @@ def move_lmdb_data_to_slurm_tmpdir(trainer_config):
 
     print("\nMoving data to slurm tmpdir", flush=True)
 
-    tmp_dir = os.environ.get("SLURM_TMPDIR") or Path(f"/Tmp/slurm.{JOB_ID}.0")
+    tmp_dir = os.environ.get("SLURM_TMPDIR") or f"/Tmp/slurm.{JOB_ID}.0"
+    tmp_dir = Path(tmp_dir)
     for s, split in trainer_config["dataset"].items():
         if not isinstance(split, dict):
             continue
