@@ -193,6 +193,8 @@ class SingleTrainer(BaseTrainer):
         n_train = len(self.loaders["train"])
         epoch_int = 0
         eval_every = self.config["optim"].get("eval_every", n_train)
+        if eval_every < 1:
+            eval_every = int(n_train * eval_every)
         if self.config["print_every"] < 0:
             self.config["print_every"] = n_train
         primary_metric = self.config["task"].get(
@@ -211,9 +213,10 @@ class SingleTrainer(BaseTrainer):
         model_run_time = 0
 
         if not self.silent:
-            print(f"--- 🔄 Beginning of Training @ {self.now}---\n")
-            print(f"Logging  train metrics every {log_train_every} steps")
+            print(f"\n--- 🔄 Beginning of Training @ {self.now}---\n")
+            print(f"\nLogging  train metrics every {log_train_every} steps")
             print(f"Printing train metrics every {self.config['print_every']} steps")
+            print(f"\nEvaluating every {eval_every} steps\n")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
 

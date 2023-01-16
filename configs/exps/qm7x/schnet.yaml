@@ -28,6 +28,7 @@ default:
     batch_size: 512
     warmup_steps: 1000
     lr_initial: 0.0005
+    eval_every: 0.34
     # parameters EMA
     ema_decay: 0.999
     energy_coefficient: 1
@@ -35,6 +36,7 @@ default:
     force_coefficient: 100
     loss_energy: mse
     loss_force: mse
+    eval_every:
     # all below is for the scheduler
     scheduler: ReduceLROnPlateau
     mode: min
