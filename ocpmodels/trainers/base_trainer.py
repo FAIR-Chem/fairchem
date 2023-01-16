@@ -894,6 +894,7 @@ class BaseTrainer(ABC):
             console = Console()
             console.print(table)
             print()
+            print("\n• Trainer objective set to:", self.objective, end="\n\n")
 
     def rotate_graph(self, batch, rotation=None):
         """Rotate all graphs in a batch
