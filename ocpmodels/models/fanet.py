@@ -496,7 +496,7 @@ class FANet(BaseModel):
             (default: :obj:`50`)
         second_layer_MLP (bool): use 2-layers MLP at the end of the Embedding block.
         skip_co (str): add a skip connection between each interaction block and
-            energy-head.
+            energy-head. ("add", False, "concat", "concat_atom")
         edge_embed_type (str, in {'rij','all_rij','sh', 'all'}): input feature
             of the edge embedding block.
         edge_embed_hidden (int): size of edge representation.
@@ -590,6 +590,11 @@ class FANet(BaseModel):
         # Skip co
         if self.skip_co == "concat":
             self.mlp_skip_co = Linear((kwargs["num_interactions"] + 1), 1)
+        elif self.skip_co == "concat_atom":
+            self.mlp_skip_co = Linear(
+                ((kwargs["num_interactions"] + 1) * kwargs["hidden_channels"]),
+                kwargs["hidden_channels"],
+            )
 
     @conditional_grad(torch.enable_grad())
     def forces_forward(self, preds):
@@ -651,13 +656,19 @@ class FANet(BaseModel):
         # Interaction blocks
         energy_skip_co = []
         for interaction in self.interaction_blocks:
-            if self.skip_co:
+            if self.skip_co == "concat_atom":
+                energy_skip_co.append(h)
+            elif self.skip_co:
                 energy_skip_co.append(
                     self.output_block(h, edge_index, edge_weight, batch, alpha)
                 )
             h = h + interaction(h, edge_index, e)
 
-        # Output block
+        # Atom skip-co
+        if self.skip_co == "concat_atom":
+            energy_skip_co.append(h)
+            h = self.act(self.mlp_skip_co(torch.cat(energy_skip_co, dim=1)))
+
         energy = self.output_block(h, edge_index, edge_weight, batch, alpha)
 
         # Skip-connection

@@ -20,6 +20,7 @@ default:
   fa_frames: random
   optim:
     scheduler: LinearWarmupCosineAnnealingLR
+    eval_every: 0.5
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm, complex_mp, att_heads, second_layer_MLP, skip_co
     optim: lr_initial, warmup_steps
