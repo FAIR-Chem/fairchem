@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import ast
+import argparse
 import collections
 import copy
 import glob
@@ -973,6 +974,50 @@ def load_config_legacy(path: str, previous_includes: list = []):
     return config, duplicates_warning, duplicates_error
 
 
+def set_cpus_to_workers(config):
+    if not config.get("no_cpus_to_workers"):
+        cpus = count_cpus()
+        gpus = count_gpus()
+        if cpus is not None:
+            if gpus == 0:
+                workers = cpus - 1
+            else:
+                workers = cpus // gpus
+            if not config["silent"]:
+                print(
+                    f"Overriding num_workers from {config['optim']['num_workers']}",
+                    f"to {workers} to match the machine's CPUs.",
+                    "Use --no_cpus_to_workers=true to disable this behavior.",
+                )
+            config["optim"]["num_workers"] = workers
+    return config
+
+
+def check_regress_forces(config):
+    if "regress_forces" in config["model"]:
+        if config["model"]["regress_forces"] == "":
+            config["model"]["regress_forces"] = False
+        if not isinstance(config["model"]["regress_forces"], str):
+            if config["model"]["regress_forces"] is False:
+                config["model"]["regress_forces"] = ""
+            else:
+                raise ValueError(
+                    "regress_forces must be False or a string: "
+                    + "'from_energy' or 'direct' or 'direct_with_gradient_target'"
+                    + f". Received: `{str(config['model']['regress_forces'])}`"
+                )
+        elif config["model"]["regress_forces"] not in {
+            "from_energy",
+            "direct",
+            "direct_with_gradient_target",
+        }:
+            raise ValueError(
+                "regress_forces must be False or a string: "
+                + "'from_energy' or 'direct' or 'direct_with_gradient_target'"
+                + f". Received: `{str(config['model']['regress_forces'])}`"
+            )
+
+
 def load_config(config_str):
     model, task, split = config_str.split("-")
     conf_path = ROOT / "configs" / "models"
@@ -1002,72 +1047,74 @@ def load_config(config_str):
 
 
 def build_config(args, args_override):
+    config = overrides = continue_config = {}
 
     if args.config_yml:
         raise ValueError(
             "Using LEGACY config format. Please update your config to the new format."
         )
 
-    config = load_config(args.config)
-
-    # Check for overridden parameters.
+    args_dict_with_defaults = {k: v for k, v in vars(args).items() if v is not None}
     if args_override != []:
         overrides = create_dict_from_args(args_override)
-        config = merge_dicts(config, overrides)
 
-    config = merge_dicts(config, {k: v for k, v in vars(args).items() if v is not None})
+    if args.continue_from_dir:
+        cont_dir = Path(args.continue_from_dir)
+        best_ckpt = cont_dir / "checkpoints/best_checkpoint.pt"
+        if not best_ckpt.exists():
+            print(
+                f"💥 Could not find best checkpoint at {str(best_ckpt)}. "
+                + "Please make sure the directory is correct."
+            )
+        else:
+            continue_config = torch.load(str(best_ckpt), map_location="cpu")["config"]
+            continue_config["checkpoint"] = str(
+                sorted(
+                    cont_dir.glob("checkpoints/checkpoint-*.pt"),
+                    key=lambda c: float(c.stem.split("-")[-1]),
+                )[-1]
+            )
+            print(
+                "✅ Loading config from continuing dir and latest checkpoint:",
+                continue_config["checkpoint"],
+            )
+            args.config = continue_config["config"]
+
+    config = load_config(args.config)
+    config = merge_dicts(config, args_dict_with_defaults)
+    config = merge_dicts(config, overrides)
     config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
     config["job_id"] = JOB_ID or "no-job-id"
     config["job_ids"] = JOB_ID or "no-job-id"
     config["cluster_name"] = CLUSTER.name
+    config["world_size"] = args.num_nodes * args.num_gpus
 
-    if "regress_forces" in config["model"]:
-        if config["model"]["regress_forces"] == "":
-            config["model"]["regress_forces"] = False
-        if not isinstance(config["model"]["regress_forces"], str):
-            if config["model"]["regress_forces"] is False:
-                config["model"]["regress_forces"] = ""
-            else:
-                raise ValueError(
-                    "regress_forces must be False or a string: "
-                    + "'from_energy' or 'direct' or 'direct_with_gradient_target'"
-                    + f". Received: `{str(config['model']['regress_forces'])}`"
-                )
-        elif config["model"]["regress_forces"] not in {
-            "from_energy",
-            "direct",
-            "direct_with_gradient_target",
-        }:
-            raise ValueError(
-                "regress_forces must be False or a string: "
-                + "'from_energy' or 'direct' or 'direct_with_gradient_target'"
-                + f". Received: `{str(config['model']['regress_forces'])}`"
-            )
+    if continue_config:
+        dirs_k_v = [(k, v) for k, v in config.items() if "dir" in k]
+        dataset_config = copy.deepcopy(config["dataset"])
+        config = merge_dicts(
+            continue_config,
+            {k: resolve(v) if isinstance(v, str) else v for k, v in dirs_k_v},
+        )
+        config["dataset"] = dataset_config
+        config = merge_dicts(config, cli_args_dict())
+        config = merge_dicts(config, overrides)
 
+    check_regress_forces(config)
+    config = set_cpus_to_workers(config)
     config = set_qm9_target_stats(config)
     config = set_qm7x_target_stats(config)
     config = override_drac_paths(config)
 
-    if not config["no_cpus_to_workers"]:
-        cpus = count_cpus()
-        gpus = count_gpus()
-        if cpus is not None:
-            if gpus == 0:
-                workers = cpus - 1
-            else:
-                workers = cpus // gpus
-            if not config["silent"]:
-                print(
-                    f"Overriding num_workers from {config['optim']['num_workers']}",
-                    f"to {workers} to match the machine's CPUs.",
-                    "Use --no_cpus_to_workers=true to disable this behavior.",
-                )
-            config["optim"]["num_workers"] = workers
-    config["world_size"] = args.num_nodes * args.num_gpus
-
     return config
+
+
+def cli_args_dict():
+    dummy = argparse.ArgumentParser()
+    _, cli_args = dummy.parse_known_args()
+    return create_dict_from_args(cli_args)
 
 
 def create_grid(base_config, sweep_file):

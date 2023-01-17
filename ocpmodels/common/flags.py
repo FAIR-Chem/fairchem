@@ -87,6 +87,9 @@ class Flags:
             "--checkpoint", type=str, help="Model checkpoint to load"
         )
         self.parser.add_argument(
+            "--continue_from_dir", type=str, help="Run to continue, loading its config"
+        )
+        self.parser.add_argument(
             "--timestamp-id",
             default=None,
             type=str,
@@ -109,7 +112,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--logdir",
-            default="$SCRATCH/ocp/runs/$SLURM_JOB_ID",
+            default=Path("$SCRATCH/ocp/runs/$SLURM_JOB_ID"),
             type=Path,
             help="Where to store logs",
         )

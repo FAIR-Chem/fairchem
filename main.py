@@ -166,12 +166,6 @@ if __name__ == "__main__":
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     args = update_from_sbatch_py_vars(args)
-    if not args.config:
-        args.config = "sfarinet-is2re-10k"
-        # args.checkpoint = "checkpoints/2022-04-26-12-23-28-schnet/checkpoint.pt"
-        warnings.warn(
-            f"\n>>>> No config is provided. Defaulting to {args.config} chosen\n"
-        )
     if args.logdir:
         args.logdir = resolve(args.logdir)
 
