@@ -35,7 +35,7 @@ default:
     energy_coefficient: 0.001
     energy_grad_coefficient: 0
     force_coefficient: 0.999
-    loss_energy: mse
+    loss_energy: mae
     loss_force: mse
     # all below is for the scheduler
     scheduler: ReduceLROnPlateau

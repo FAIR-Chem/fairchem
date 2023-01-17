@@ -52,7 +52,9 @@ class BaseTrainer(ABC):
     def __init__(self, **kwargs):
 
         run_dir = kwargs["run_dir"]
-        model_name = kwargs["model"].pop("name", kwargs["model_name"])
+        model_name = kwargs["model"].pop(
+            "name", kwargs.get("model_name", "Unknown - base_trainer issue")
+        )
         kwargs["model"]["graph_rewiring"] = kwargs.get("graph_rewiring")
 
         self.config = {
