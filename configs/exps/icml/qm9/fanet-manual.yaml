@@ -1,0 +1,78 @@
+# scheduler reduce lr on plateau
+job:
+  mem: 12GB
+  cpus: 4
+  gres: gpu:16gb:1
+  partition: long
+
+default:
+  wandb_project: ocp-qm
+  config: fanet-qm9-all
+  mode: train
+  test_ri: true
+  wandb_tags: qm9, fanet-qm9-v1.0.2-continued
+  log_train_every: 100
+  note:
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm
+    optim: batch_size, lr_initial
+    _root_: frame_averaging, fa_frames
+  orion_mult_factor:
+    value: 32
+    targets: hidden_channels, num_filters, pg_hidden_channels, phys_hidden_channels
+  frame_averaging: 3D
+  fa_frames: random
+  optim:
+    warmup_steps: 3000
+    # parameters EMA
+    ema_decay: 0.999
+    decay_steps: max_steps
+    scheduler: LinearWarmupCosineAnnealingLR
+    batch_size: 64
+    initial_lr: 0.001
+    max_epochs: 1500
+    loss_energy: mse
+    loss_force: mse
+    # all below is for the scheduler
+    scheduler: ReduceLROnPlateau
+    mode: min
+    factor: 0.5
+    threshold: 0.001
+    threshold_mode: abs
+    min_lr: 0.00001
+    verbose: true
+  model:
+    cutoff: 5.0
+    edge_embed_type: all_rij
+    energy_head: weighted-av-final-embeds
+    graph_norm: True
+    hidden_channels: 350
+    max_num_neighbors: 40
+    mp_type: updownscale
+    num_filters: 256
+    num_gaussians: 50
+    num_interactions: 5
+    otf_graph: false
+    pg_hidden_channels: 32
+    phys_embeds: true
+    phys_hidden_channels: 0
+    second_layer_MLP: false
+    skip_co: false
+    tag_hidden_channels: 0
+    use_pbc: false
+    regress_forces: ""
+
+
+runs:
+  - {}
+  - model:
+      mp_type: base_with_att
+  - model:
+      cutoff: 6.0
+  - optim:
+      batch_size: 128
+  - optim:
+      batch_size: 512
+  - model:
+      energy_head: ""
+  - model:
+      energy_head: "weighted-av-initial-embeds"

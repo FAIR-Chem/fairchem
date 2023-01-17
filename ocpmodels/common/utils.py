@@ -209,7 +209,7 @@ def continue_orion_exp(trainer_config):
         return trainer_config
 
     trainer_config["checkpoint"] = str(resume_ckpts[-1])
-    resume_url = (resume_dir / "wandb_url.txt").read_text()
+    resume_url = (resume_dir / "wandb_url.txt").read_text().strip()
     trainer_config["wandb_resume_id"] = resume_url.split("/runs/")[-1]
 
     print(
@@ -310,7 +310,8 @@ def move_lmdb_data_to_slurm_tmpdir(trainer_config):
 
     print("\nMoving data to slurm tmpdir", flush=True)
 
-    tmp_dir = Path(f"/Tmp/slurm.{JOB_ID}.0")
+    tmp_dir = os.environ.get("SLURM_TMPDIR") or f"/Tmp/slurm.{JOB_ID}.0"
+    tmp_dir = Path(tmp_dir)
     for s, split in trainer_config["dataset"].items():
         if not isinstance(split, dict):
             continue

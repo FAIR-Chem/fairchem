@@ -100,13 +100,36 @@ class EarlyStopper:
     """
 
     def __init__(
-        self, patience=7, mode="min", min_abs_change=1e-5, store_all_steps=True
+        self,
+        patience=7,
+        mode="min",
+        min_abs_change=1e-5,
+        store_all_steps=True,
+        min_lr=-1,
     ):
+        """
+        Whether train should stop or not.
+
+        Args:
+            patience (int, optional): How many calls to `should_stop` with no
+                improvement before stopping training. Defaults to 7.
+            mode (str, optional): "min" or "max". Defaults to "min".
+            min_abs_change (float, optional): Minimum metric change to be considered an
+                improvement. Defaults to 1e-5.
+            store_all_steps (bool, optional): Whether to store all metrics passed to
+                `should_stop` or only the last `patience` ones. Defaults to True.
+            min_lr (bool, optional): Whether to stop when the current learning rate
+                reaches the . Defaults to -1.
+
+        Raises:
+            ValueError: Unknown mode (neither min nor max)
+        """
         self.patience = patience
         self.mode = mode
         self.counter = 0
         self.min_abs_change = min_abs_change
         self.store_all_steps = store_all_steps
+        self.min_lr = min_lr
         self.metrics = []
 
         if self.mode == "min":
@@ -116,12 +139,17 @@ class EarlyStopper:
         else:
             raise ValueError("mode must be either min or max")
 
-        self.early_stop = False
+        self.early_stop = ""
 
-    def should_stop(self, metric):
+    def should_stop(self, metric, lr=None):
         """
-        Returns True if the metric has not improved for a certain number of
-        steps. False otherwise. Stores the metric in `self.metrics`: all the steps if
+        Returns why the training should stop:
+        • Empty string if the training shouldn't stop
+        • "metric" if the metric has not improved for a certain number of
+          steps.
+        • "lr" if the learning rate has reached the minimum value.
+
+        Stores the metric in `self.metrics`: all the steps if
         `self.store_all_steps` is `True`, otherwise only the last `n=self.patience`.
 
         Args:
@@ -149,6 +177,9 @@ class EarlyStopper:
                 self.counter += 1
 
         if self.counter >= self.patience:
+            self.early_stop = True
+
+        if lr is not None and lr <= self.min_lr:
             self.early_stop = True
 
         return self.early_stop

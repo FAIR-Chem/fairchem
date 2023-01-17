@@ -95,15 +95,21 @@ def broadcast(tensor, src, group=dist.group.WORLD, async_op=False):
     dist.broadcast(tensor, src, group, async_op)
 
 
-def broadcast_object_list(obj_list, src=0):
+def broadcast_from_master(*obj_list):
     if get_world_size() == 1:
-        return
+        if len(obj_list) == 1:
+            return obj_list[0]
+        return obj_list
+    obj_list = list(obj_list)
     dist.broadcast_object_list(
         obj_list,
-        src=src,
+        src=0,
         group=dist.group.WORLD,
         device=torch.device(f"cuda:{get_rank()}"),
     )
+    if len(obj_list) == 1:
+        return obj_list[0]
+    return obj_list
 
 
 def all_reduce(data, group=dist.group.WORLD, average=False, device=None):

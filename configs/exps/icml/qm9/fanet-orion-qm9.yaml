@@ -36,10 +36,10 @@ orion:
   # Remember to change the experiment name if you change anything in the search space
   n_jobs: 20
 
-  unique_exp_name: fanet-qm9-v1.0.1
+  unique_exp_name: fanet-qm9-v2.0.0
 
   space:
-    optim/max_epochs: fidelity(30, 300, base=6)
+    optim/max_epochs: fidelity(100, 2000, base=5)
     optim/lr_initial: loguniform(1e-4, 5e-3, precision=2)
     model/graph_norm: choices([True, False])
     model/energy_head: choices(["", "weighted-av-final-embeds", "weighted-av-initial-embeds"])
@@ -47,8 +47,8 @@ orion:
     model/mp_type: choices(["simple", "base", "sfarinet", "updownscale", "updownscale_base", "base_with_att", "att", "local_env", "updown_local_env"])
     model/num_filters: uniform(3, 16, discrete=True)
     model/num_gaussians: uniform(20, 150, discrete=True)
-    model/num_interactions: uniform(1, 7, discrete=True)
-    model/pg_hidden_channels: uniform(0, 2, discrete=True)
+    model/num_interactions: uniform(2, 7, discrete=True)
+    model/pg_hidden_channels: uniform(0, 1, discrete=True)
     model/phys_embeds: choices([True, False])
   algorithms:
     asha:

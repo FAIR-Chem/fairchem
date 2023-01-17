@@ -34,7 +34,7 @@ orion:
   # Remember to change the experiment name if you change anything in the search space
   n_jobs: 50
 
-  unique_exp_name: fanet-s2ef-2M-v1
+  unique_exp_name: fanet-s2ef-2M-v1.1
 
   space:
     model/att_heads: choices([1,2,3,4])

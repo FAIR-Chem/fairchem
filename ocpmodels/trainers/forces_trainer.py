@@ -14,7 +14,7 @@ import torch
 import torch_geometric
 from tqdm import tqdm
 
-from ocpmodels.common import distutils
+from ocpmodels.common import dist_utils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
 from ocpmodels.common.utils import check_traj_files
@@ -89,7 +89,7 @@ class ForcesTrainer(BaseTrainer):
         results_file=None,
         disable_tqdm=False,
     ):
-        if distutils.is_master() and not disable_tqdm:
+        if dist_utils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
         assert isinstance(
             data_loader,
@@ -98,7 +98,7 @@ class ForcesTrainer(BaseTrainer):
                 torch_geometric.data.Batch,
             ),
         )
-        rank = distutils.get_rank()
+        rank = dist_utils.get_rank()
 
         if isinstance(data_loader, torch_geometric.data.Batch):
             data_loader = [[data_loader]]
@@ -251,7 +251,7 @@ class ForcesTrainer(BaseTrainer):
                 )
                 if (
                     self.step % self.config["print_every"] == 0
-                    and distutils.is_master()
+                    and dist_utils.is_master()
                     and not self.is_hpo
                 ):
                     log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
@@ -376,11 +376,11 @@ class ForcesTrainer(BaseTrainer):
                 train_loss_force_normalizer = 3.0 * weight.sum()
 
                 # add up normalizer to obtain global normalizer
-                distutils.all_reduce(train_loss_force_normalizer)
+                dist_utils.all_reduce(train_loss_force_normalizer)
 
                 # perform loss normalization before backprop
                 train_loss_force_normalized = train_loss_force_unnormalized * (
-                    distutils.get_world_size() / train_loss_force_normalizer
+                    dist_utils.get_world_size() / train_loss_force_normalizer
                 )
                 loss.append(train_loss_force_normalized)
 
@@ -534,7 +534,7 @@ class ForcesTrainer(BaseTrainer):
                 )
 
         if self.config["task"].get("write_pos", False):
-            rank = distutils.get_rank()
+            rank = dist_utils.get_rank()
             pos_filename = os.path.join(
                 self.config["results_dir"], f"relaxed_pos_{rank}.npz"
             )
@@ -545,15 +545,15 @@ class ForcesTrainer(BaseTrainer):
                 chunk_idx=chunk_idx,
             )
 
-            distutils.synchronize()
-            if distutils.is_master():
+            dist_utils.synchronize()
+            if dist_utils.is_master():
                 gather_results = defaultdict(list)
                 full_path = os.path.join(
                     self.config["results_dir"],
                     "relaxed_positions.npz",
                 )
 
-                for i in range(distutils.get_world_size()):
+                for i in range(dist_utils.get_world_size()):
                     rank_path = os.path.join(
                         self.config["results_dir"],
                         f"relaxed_pos_{i}.npz",
@@ -586,12 +586,12 @@ class ForcesTrainer(BaseTrainer):
                 aggregated_metrics = {}
                 for k in metrics:
                     aggregated_metrics[k] = {
-                        "total": distutils.all_reduce(
+                        "total": dist_utils.all_reduce(
                             metrics[k]["total"],
                             average=False,
                             device=self.device,
                         ),
-                        "numel": distutils.all_reduce(
+                        "numel": dist_utils.all_reduce(
                             metrics[k]["numel"],
                             average=False,
                             device=self.device,
@@ -611,7 +611,7 @@ class ForcesTrainer(BaseTrainer):
                         split=split,
                     )
 
-                if distutils.is_master():
+                if dist_utils.is_master():
                     logging.info(metrics)
 
         if self.ema:

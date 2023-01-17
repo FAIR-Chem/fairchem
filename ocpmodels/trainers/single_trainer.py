@@ -19,7 +19,7 @@ import torch_geometric
 from torch_geometric.data import Data
 from tqdm import tqdm
 
-from ocpmodels.common import distutils
+from ocpmodels.common import dist_utils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
 from ocpmodels.common.utils import OCP_TASKS, check_traj_files
@@ -94,7 +94,7 @@ class SingleTrainer(BaseTrainer):
 
     @torch.no_grad()
     def predict(self, loader, per_image=True, results_file=None, disable_tqdm=False):
-        if distutils.is_master() and not disable_tqdm:
+        if dist_utils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
         assert isinstance(
             loader,
@@ -103,7 +103,7 @@ class SingleTrainer(BaseTrainer):
                 torch_geometric.data.Batch,
             ),
         )
-        rank = distutils.get_rank()
+        rank = dist_utils.get_rank()
 
         if isinstance(loader, torch_geometric.data.Batch):
             loader = [[loader]]
@@ -192,7 +192,9 @@ class SingleTrainer(BaseTrainer):
     def train(self, disable_eval_tqdm=True, debug_batches=-1):
         n_train = len(self.loaders["train"])
         epoch_int = 0
-        eval_every = self.config["optim"].get("eval_every", n_train)
+        eval_every = self.config["optim"].get("eval_every", n_train) or n_train
+        if eval_every < 1:
+            eval_every = int(n_train * eval_every)
         if self.config["print_every"] < 0:
             self.config["print_every"] = n_train
         primary_metric = self.config["task"].get(
@@ -211,9 +213,10 @@ class SingleTrainer(BaseTrainer):
         model_run_time = 0
 
         if not self.silent:
-            print(f"--- 🔄 Beginning of Training @ {self.now}---\n")
-            print(f"Logging  train metrics every {log_train_every} steps")
+            print(f"\n--- 🔄 Beginning of Training @ {self.now}---\n")
+            print(f"\nLogging  train metrics every {log_train_every} steps")
             print(f"Printing train metrics every {self.config['print_every']} steps")
+            print(f"\nEvaluating every {eval_every} steps\n")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
 
@@ -262,7 +265,7 @@ class SingleTrainer(BaseTrainer):
                 if torch.isnan(loss["total_loss"]):
                     print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
                     self.logger.add_tags(["nan_loss"])
-                    return True
+                    return "loss_is_nan"
                 self._backward(loss)
 
                 # Compute metrics.
@@ -330,7 +333,9 @@ class SingleTrainer(BaseTrainer):
                             checkpoint_file="best_checkpoint.pt",
                             training_state=False,
                         )
-                    if self.early_stopper.should_stop(current_val_metric):
+                    if self.early_stopper.should_stop(
+                        current_val_metric, self.scheduler.get_lr()
+                    ):
                         print(f"\n\n >>> 🛑 {self.early_stopper.reason}\n\n")
                         if self.logger:
                             self.logger.add_tags(["E-S"])
@@ -503,11 +508,11 @@ class SingleTrainer(BaseTrainer):
                 train_loss_force_normalizer = 3.0 * weight.sum()
 
                 # add up normalizer to obtain global normalizer
-                distutils.all_reduce(train_loss_force_normalizer)
+                dist_utils.all_reduce(train_loss_force_normalizer)
 
                 # perform loss normalization before backprop
                 train_loss_force_normalized = train_loss_force_unnormalized * (
-                    distutils.get_world_size() / train_loss_force_normalizer
+                    dist_utils.get_world_size() / train_loss_force_normalizer
                 )
                 loss.append(train_loss_force_normalized)
 
@@ -624,9 +629,9 @@ class SingleTrainer(BaseTrainer):
         )
         if (
             self.step % self.config["print_every"] == 0
-            and distutils.is_master()
+            and dist_utils.is_master()
             and not self.is_hpo
-        ) or (distutils.is_master() and end_of_epoch):
+        ) or (dist_utils.is_master() and end_of_epoch):
             if not self.silent:
                 log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
                 print(
@@ -859,7 +864,7 @@ class SingleTrainer(BaseTrainer):
                 )
 
         if self.config["task"].get("write_pos", False):
-            rank = distutils.get_rank()
+            rank = dist_utils.get_rank()
             pos_filename = os.path.join(
                 self.config["results_dir"], f"relaxed_pos_{rank}.npz"
             )
@@ -870,15 +875,15 @@ class SingleTrainer(BaseTrainer):
                 chunk_idx=chunk_idx,
             )
 
-            distutils.synchronize()
-            if distutils.is_master():
+            dist_utils.synchronize()
+            if dist_utils.is_master():
                 gather_results = defaultdict(list)
                 full_path = os.path.join(
                     self.config["results_dir"],
                     "relaxed_positions.npz",
                 )
 
-                for i in range(distutils.get_world_size()):
+                for i in range(dist_utils.get_world_size()):
                     rank_path = os.path.join(
                         self.config["results_dir"],
                         f"relaxed_pos_{i}.npz",
@@ -911,12 +916,12 @@ class SingleTrainer(BaseTrainer):
                 aggregated_metrics = {}
                 for k in metrics:
                     aggregated_metrics[k] = {
-                        "total": distutils.all_reduce(
+                        "total": dist_utils.all_reduce(
                             metrics[k]["total"],
                             average=False,
                             device=self.device,
                         ),
-                        "numel": distutils.all_reduce(
+                        "numel": dist_utils.all_reduce(
                             metrics[k]["numel"],
                             average=False,
                             device=self.device,
@@ -936,7 +941,7 @@ class SingleTrainer(BaseTrainer):
                         split=split,
                     )
 
-                if distutils.is_master():
+                if dist_utils.is_master():
                     logging.info(metrics)
 
         if self.ema:

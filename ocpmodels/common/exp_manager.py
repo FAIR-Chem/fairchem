@@ -1,7 +1,7 @@
+import wandb
 from orion.client import get_experiment
 from pathlib import Path
 from collections import defaultdict, Counter
-import wandb
 from textwrap import dedent
 from minydra import resolved_args
 import os
@@ -105,10 +105,15 @@ class Manager:
         )
         print("{:32} : {:4}".format("Existing wandb runs", len(self.wandb_runs)))
         print("{:32} : {}".format("Algorithm's budgets", str(self.budgets)))
+        sq_cmd = (
+            "/opt/slurm/bin/squeue"
+            if "CC_CLUSTER" not in os.environ
+            else "/opt/software/slurm/bin/squeue"
+        )
         sq = set(
             [
                 j.strip()
-                for j in os.popen("/opt/slurm/bin/squeue -u $USER -o '%12i'")
+                for j in os.popen(f"{sq_cmd} -u $USER -o '%12i'")
                 .read()
                 .splitlines()[1:]
             ]
