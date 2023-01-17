@@ -1060,24 +1060,19 @@ def build_config(args, args_override):
 
     if args.continue_from_dir:
         cont_dir = resolve(args.continue_from_dir)
-        best_ckpt = cont_dir / "checkpoints/best_checkpoint.pt"
-        if not best_ckpt.exists():
+        ckpts = list(cont_dir.glob("checkpoints/checkpoint-*.pt"))
+        if not ckpts:
             print(
-                f"💥 Could not find best checkpoint at {str(best_ckpt)}. "
+                f"💥 Could not find checkpoints in {str(cont_dir)}. "
                 + "Please make sure the directory is correct."
             )
         else:
-            continue_config = torch.load(str(best_ckpt), map_location="cpu")["config"]
-            continue_config["checkpoint"] = str(
-                sorted(
-                    cont_dir.glob("checkpoints/checkpoint-*.pt"),
-                    key=lambda c: float(c.stem.split("-")[-1]),
-                )[-1]
+            latest_ckpt = str(
+                sorted(ckpts, key=lambda c: float(c.stem.split("-")[-1]))[-1]
             )
-            print(
-                "✅ Loading config from continuing dir and latest checkpoint:",
-                continue_config["checkpoint"],
-            )
+            continue_config["checkpoint"] = str(latest_ckpt)
+            continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
+            print("✅ Loading config from cont dir and latest checkpoint:", latest_ckpt)
             args.config = continue_config["config"]
 
     config = load_config(args.config)
