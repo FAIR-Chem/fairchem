@@ -409,8 +409,9 @@ class BaseTrainer(ABC):
             self.optimizer.load_state_dict(checkpoint["optimizer"])
         if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
             self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
-        if checkpoint.get("warmup_scheduler") is not None and hasattr(
-            self.scheduler, "warmup_scheduler"
+        if (
+            checkpoint.get("warmup_scheduler") is not None
+            and self.scheduler.warmup_scheduler is not None
         ):
             self.scheduler.warmup_scheduler.load_state_dict(
                 checkpoint["warmup_scheduler"]
