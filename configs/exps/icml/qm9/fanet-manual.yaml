@@ -43,9 +43,9 @@ default:
   model:
     cutoff: 5.0
     edge_embed_type: all_rij
-    energy_head: weighted-av-initial-embeds
+    energy_head: weighted-av-final-embeds
     graph_norm: True
-    hidden_channels: 416
+    hidden_channels: 350
     max_num_neighbors: 40
     mp_type: updownscale
     num_filters: 256
@@ -69,10 +69,10 @@ runs:
   - model:
       cutoff: 6.0
   - optim:
-      initial_lr: 0.0005
-  - optim:
       batch_size: 128
   - optim:
       batch_size: 512
   - model:
       energy_head: ""
+  - model:
+      energy_head: "weighted-av-initial-embeds"

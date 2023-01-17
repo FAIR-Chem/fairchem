@@ -511,27 +511,30 @@ class BaseTrainer(ABC):
     ):
         if not self.is_debug and dist_utils.is_master():
             if training_state:
-                save_checkpoint(
-                    {
-                        "epoch": self.epoch,
-                        "step": self.step,
-                        "state_dict": self.model.state_dict(),
-                        "optimizer": self.optimizer.state_dict(),
-                        "scheduler": self.scheduler.scheduler.state_dict()
-                        if self.scheduler.scheduler_type != "Null"
-                        else None,
-                        "warmup_scheduler": self.scheduler.warmup_scheduler.state_dict()
-                        if hasattr(self.scheduler, "warmup_scheduler")
-                        else None,
-                        "normalizers": {
-                            key: value.state_dict()
-                            for key, value in self.normalizers.items()
-                        },
-                        "config": self.config,
-                        "val_metrics": metrics,
-                        "ema": self.ema.state_dict() if self.ema else None,
-                        "amp": self.scaler.state_dict() if self.scaler else None,
+                ckpt_dict = {
+                    "epoch": self.epoch,
+                    "step": self.step,
+                    "state_dict": self.model.state_dict(),
+                    "optimizer": self.optimizer.state_dict(),
+                    "scheduler": self.scheduler.scheduler.state_dict()
+                    if self.scheduler.scheduler_type != "Null"
+                    else None,
+                    "normalizers": {
+                        key: value.state_dict()
+                        for key, value in self.normalizers.items()
                     },
+                    "config": self.config,
+                    "val_metrics": metrics,
+                    "ema": self.ema.state_dict() if self.ema else None,
+                    "amp": self.scaler.state_dict() if self.scaler else None,
+                }
+                if self.scheduler.warmup_scheduler is not None:
+                    ckpt_dict[
+                        "warmup_scheduler"
+                    ] = self.scheduler.warmup_scheduler.state_dict()
+
+                save_checkpoint(
+                    ckpt_dict,
                     checkpoint_dir=self.config["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
