@@ -32,7 +32,7 @@ default:
     loss_force: mse
     # early stopping
     es_patience: 20
-    es_es_min_abs_change: 0.000001
+    es_min_abs_change: 0.000001
     es_warmup_epochs: 500
     # all below is for the scheduler
     scheduler: ReduceLROnPlateau
