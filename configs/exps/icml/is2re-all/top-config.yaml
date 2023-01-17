@@ -1,0 +1,107 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  time: 15:00:00
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  model:
+    edge_embed_type: all_rij
+  wandb_tags: 'best-config'
+  optim:
+    batch_size: 256
+    eval_batch_size: 256
+  cp_data_to_tmpdir: true
+
+runs:
+  - config: fanet-is2re-all
+    note: 'top-1-FA'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      mp_type: updownscale
+      phys_embeds: False
+      tag_hidden_channels: 32
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: False
+      graph_norm: True
+      hidden_channels: 352
+      num_filters: 448
+      num_gaussians: 99
+      num_interactions: 6
+      second_layer_MLP: True
+      skip_co: concat
+    optim:
+      lr_initial: 0.0019
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 9
+  - config: fanet-is2re-all
+    note: 'top-1-FA'
+    frame_averaging: 2D
+    fa_frames: all
+    model:
+      mp_type: updownscale
+      phys_embeds: False
+      tag_hidden_channels: 32
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: False
+      graph_norm: True
+      hidden_channels: 352
+      num_filters: 448
+      num_gaussians: 99
+      num_interactions: 6
+      second_layer_MLP: True
+      skip_co: concat
+    optim:
+      lr_initial: 0.0019
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 9
+  - config: fanet-is2re-all
+    note: 'top-1-FA'
+    frame_averaging: DA
+    model:
+      mp_type: updownscale
+      phys_embeds: False
+      tag_hidden_channels: 32
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: False
+      graph_norm: True
+      hidden_channels: 352
+      num_filters: 448
+      num_gaussians: 99
+      num_interactions: 6
+      second_layer_MLP: True
+      skip_co: concat
+    optim:
+      lr_initial: 0.0019
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 9
+  - config: fanet-is2re-all
+    note: 'top-1-FA'
+    frame_averaging: 3D
+    fa_frames: random
+    model:
+      mp_type: updownscale
+      phys_embeds: False
+      tag_hidden_channels: 32
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: False
+      graph_norm: True
+      hidden_channels: 352
+      num_filters: 448
+      num_gaussians: 99
+      num_interactions: 6
+      second_layer_MLP: True
+      skip_co: concat
+    optim:
+      lr_initial: 0.0019
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 9
