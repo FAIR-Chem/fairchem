@@ -36,7 +36,7 @@ from ocpmodels.common.data_parallel import (
 from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
 from ocpmodels.common.registry import registry
 from ocpmodels.common.timer import Times
-from ocpmodels.common.utils import JOB_ID, get_commit_hash, save_checkpoint
+from ocpmodels.common.utils import JOB_ID, get_commit_hash, save_checkpoint, resolve
 from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -52,7 +52,7 @@ class BaseTrainer(ABC):
     def __init__(self, **kwargs):
 
         run_dir = kwargs["run_dir"]
-        model_name = kwargs["model"].pop("name")
+        model_name = kwargs["model"].pop("name", kwargs["model_name"])
         kwargs["model"]["graph_rewiring"] = kwargs.get("graph_rewiring")
 
         self.config = {
@@ -60,9 +60,9 @@ class BaseTrainer(ABC):
             "model_name": model_name,
             "gpus": dist_utils.get_world_size() if not kwargs["cpu"] else 0,
             "commit": get_commit_hash(),
-            "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
-            "results_dir": str(Path(run_dir) / "results"),
-            "logs_dir": str(Path(run_dir) / "logs"),
+            "checkpoint_dir": str(resolve(run_dir) / "checkpoints"),
+            "results_dir": str(resolve(run_dir) / "results"),
+            "logs_dir": str(resolve(run_dir) / "logs"),
         }
 
         self.sigterm = False
@@ -84,9 +84,10 @@ class BaseTrainer(ABC):
         self.samplers = {}
         self.loaders = {}
         self.early_stopper = EarlyStopper(
-            patience=15,
-            min_abs_change=1e-5,
+            patience=self.config["optim"].get("es_patience") or 15,
+            min_abs_change=self.config["optim"].get("es_min_abs_change") or 1e-5,
             min_lr=self.config["optim"].get("min_lr", -1),
+            warmup_epochs=self.config["optim"].get("es_warmup_epochs") or -1,
         )
 
         if torch.cuda.is_available() and not self.cpu:

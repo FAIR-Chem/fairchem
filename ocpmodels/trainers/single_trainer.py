@@ -334,7 +334,7 @@ class SingleTrainer(BaseTrainer):
                             training_state=False,
                         )
                     if self.early_stopper.should_stop(
-                        current_val_metric, self.scheduler.get_lr()
+                        current_val_metric, self.scheduler.get_lr(), self.epoch
                     ):
                         print(f"\n\n >>> 🛑 {self.early_stopper.reason}\n\n")
                         if self.logger:

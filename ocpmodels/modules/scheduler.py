@@ -106,6 +106,7 @@ class EarlyStopper:
         min_abs_change=1e-5,
         store_all_steps=True,
         min_lr=-1,
+        warmup_epochs=-1,
     ):
         """
         Whether train should stop or not.
@@ -130,6 +131,7 @@ class EarlyStopper:
         self.min_abs_change = min_abs_change
         self.store_all_steps = store_all_steps
         self.min_lr = min_lr
+        self.warmup_epochs = warmup_epochs
         self.metrics = []
 
         if self.mode == "min":
@@ -141,7 +143,7 @@ class EarlyStopper:
 
         self.early_stop = ""
 
-    def should_stop(self, metric, lr=None):
+    def should_stop(self, metric, lr=None, epoch=None):
         """
         Returns why the training should stop:
         • Empty string if the training shouldn't stop
@@ -175,6 +177,9 @@ class EarlyStopper:
                 self.counter = 0
             else:
                 self.counter += 1
+
+        if self.warmup_epochs > 0 and epoch is not None and epoch < self.warmup_epochs:
+            self.counter = 0
 
         if self.counter >= self.patience:
             self.early_stop = "metric"
