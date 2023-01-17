@@ -1059,7 +1059,7 @@ def build_config(args, args_override):
         overrides = create_dict_from_args(args_override)
 
     if args.continue_from_dir:
-        cont_dir = Path(args.continue_from_dir)
+        cont_dir = resolve(args.continue_from_dir)
         best_ckpt = cont_dir / "checkpoints/best_checkpoint.pt"
         if not best_ckpt.exists():
             print(
