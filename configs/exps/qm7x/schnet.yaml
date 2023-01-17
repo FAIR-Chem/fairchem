@@ -1,6 +1,6 @@
 # trainset has 4068193 samples
 job:
-  mem: 48GB
+  mem: 32GB
   cpus: 8
   gres: gpu:16gb:1
   partition: long
@@ -36,7 +36,6 @@ default:
     force_coefficient: 100
     loss_energy: mse
     loss_force: mse
-    eval_every:
     # all below is for the scheduler
     scheduler: ReduceLROnPlateau
     mode: min

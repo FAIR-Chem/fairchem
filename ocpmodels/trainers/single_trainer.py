@@ -192,7 +192,7 @@ class SingleTrainer(BaseTrainer):
     def train(self, disable_eval_tqdm=True, debug_batches=-1):
         n_train = len(self.loaders["train"])
         epoch_int = 0
-        eval_every = self.config["optim"].get("eval_every", n_train)
+        eval_every = self.config["optim"].get("eval_every", n_train) or n_train
         if eval_every < 1:
             eval_every = int(n_train * eval_every)
         if self.config["print_every"] < 0:

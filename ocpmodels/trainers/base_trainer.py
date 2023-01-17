@@ -84,7 +84,7 @@ class BaseTrainer(ABC):
         self.samplers = {}
         self.loaders = {}
         self.early_stopper = EarlyStopper(
-            patience=10,
+            patience=15,
             min_abs_change=1e-5,
             min_lr=self.config["optim"].get("min_lr", -1),
         )

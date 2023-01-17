@@ -1,4 +1,4 @@
-# more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
+# scheduler reduce lr on plateau
 job:
   mem: 12GB
   cpus: 4
@@ -30,6 +30,16 @@ default:
     batch_size: 64
     initial_lr: 0.001
     max_epochs: 1500
+    loss_energy: mse
+    loss_force: mse
+    # all below is for the scheduler
+    scheduler: ReduceLROnPlateau
+    mode: min
+    factor: 0.5
+    threshold: 0.001
+    threshold_mode: abs
+    min_lr: 0.00001
+    verbose: true
   model:
     cutoff: 5.0
     edge_embed_type: all_rij
