@@ -17,7 +17,6 @@ default:
   model:
     graph_norm: True
   frame_averaging: 2D
-  fa_frames: random
   optim:
     scheduler: LinearWarmupCosineAnnealingLR
     eval_every: 0.5
@@ -36,22 +35,24 @@ orion:
   unique_exp_name: fanet-is2re-all-v2
 
   space:
-    optim/max_epochs: fidelity(7, 15, base=6)
-    optim/lr_initial: loguniform(9e-4, 5e-3, precision=2)
-    model/hidden_channels: uniform(8, 16, discrete=True)
+    model/complex_mp: choices([True, False])
+    model/cutoff: choices([4.0, 6.0, 8.0])
+    model/edge_embed_type: choices(["all_rij", "all"])
     model/energy_head: choices(["weighted-av-final-embeds", False])
+    model/fa_frames: choices(["random", "se3-random"])
+    model/hidden_channels: uniform(8, 16, discrete=True)
+    model/max_num_neighbors: choices([30, 40, 50])
     model/mp_type: choices(["base", "updownscale", "updownscale_base", "updown_local_env"])
     model/num_filters: uniform(4, 18, discrete=True)
     model/num_gaussians: uniform(30, 120, discrete=True)
     model/num_interactions: uniform(4, 8, discrete=True)
     model/pg_hidden_channels: uniform(1, 2, discrete=True)
     model/phys_embeds: choices([True, False])
-    model/tag_hidden_channels: uniform(1, 2, discrete=True)
-    model/complex_mp: choices([True, False])
     model/second_layer_MLP: choices([True, False])
     model/skip_co: choices(["concat", False])
-    model/cutoff: choices([4.0, 6.0, 8.0])
-    model/edge_embed_type: choices([all_rij, all])
+    model/tag_hidden_channels: uniform(1, 2, discrete=True)
+    optim/lr_initial: loguniform(9e-4, 5e-3, precision=2)
+    optim/max_epochs: fidelity(7, 15, base=6)
   algorithms:
     asha:
       seed: 123
