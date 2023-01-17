@@ -42,7 +42,7 @@ default:
     factor: 0.5
     threshold: 0.001
     threshold_mode: abs
-    min_lr: 0.00001
+    min_lr: 0.000001
     verbose: true
   model:
     hidden_channels: 256
@@ -70,3 +70,14 @@ runs:
       num_interactions: 6
       num_gaussians: 20
       hidden_channels: 512
+  - config: fanet-qm7x-all
+    model:
+      force_decoder_type: mlp
+      edge_embed_type: all_rij
+      regress_forces: direct_with_gradient_target
+  - config: fanet-qm7x-all
+    model:
+      force_decoder_type: mlp
+      edge_embed_type: all_rij
+      mp_type: updownscale_base
+      regress_forces: direct_with_gradient_target

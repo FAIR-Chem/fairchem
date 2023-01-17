@@ -177,16 +177,21 @@ class EarlyStopper:
                 self.counter += 1
 
         if self.counter >= self.patience:
-            self.early_stop = True
+            self.early_stop = "metric"
 
         if lr is not None and lr <= self.min_lr:
-            self.early_stop = True
+            self.early_stop = "lr"
 
         return self.early_stop
 
     @property
     def reason(self):
-        return (
-            f"Early stopping after {self.counter} steps with no improvement:\n"
-            + " -> ".join([f"{m:.6f}" for m in self.metrics[-self.patience :]])
-        )
+        if self.early_stop == "metric":
+            return (
+                f"Early stopping after {self.counter} steps with no improvement:\n"
+                + " -> ".join([f"{m:.6f}" for m in self.metrics[-self.patience :]])
+            )
+        elif self.early_stop == "lr":
+            return f"Early stopping because learning rate reached {self.min_lr}"
+
+        return ""
