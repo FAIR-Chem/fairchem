@@ -25,18 +25,20 @@ default:
     warmup_steps: 3000
     # parameters EMA
     ema_decay: 0.999
-    decay_steps: max_steps
-    scheduler: LinearWarmupCosineAnnealingLR
     batch_size: 64
-    initial_lr: 0.001
+    initial_lr: 0.0005
     max_epochs: 1500
     loss_energy: mse
     loss_force: mse
+    # early stopping
+    es_patience: 20
+    es_es_min_abs_change: 0.000001
+    es_warmup_epochs: 500
     # all below is for the scheduler
     scheduler: ReduceLROnPlateau
     mode: min
     factor: 0.5
-    threshold: 0.001
+    threshold: 0.0001
     threshold_mode: abs
     min_lr: 0.00001
     verbose: true
@@ -70,8 +72,6 @@ runs:
       cutoff: 6.0
   - optim:
       batch_size: 128
-  - optim:
-      batch_size: 512
   - model:
       energy_head: ""
   - model:

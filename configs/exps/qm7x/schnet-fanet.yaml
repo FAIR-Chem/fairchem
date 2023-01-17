@@ -1,7 +1,7 @@
 # trainset has 4068193 samples
 job:
   mem: 32GB
-  cpus: 8
+  cpus: 4
   gres: gpu:16gb:1
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
@@ -25,15 +25,16 @@ default:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions
     optim: batch_size, lr_initial
   optim:
-    batch_size: 512
-    warmup_steps: 1000
+    batch_size: 32
+    max_epochs: 100
+    warmup_steps: 3000
     lr_initial: 0.0005
     eval_every: 0.34
     # parameters EMA
     ema_decay: 0.999
-    energy_coefficient: 1
-    energy_grad_coefficient: 10
-    force_coefficient: 100
+    energy_coefficient: 0.001
+    energy_grad_coefficient: 0
+    force_coefficient: 0.999
     loss_energy: mse
     loss_force: mse
     # all below is for the scheduler
@@ -58,26 +59,56 @@ runs:
       lr_initial: 0.001
       batch_size: 1024
   - optim:
-      batch_size: 256
-  - optim:
-      lr_initial: 0.001
-  - optim:
-      lr_initial: 0.001
-      batch_size: 2048
+      batch_size: 128
   - model:
       hidden_channels: 512
   - model:
       num_interactions: 6
-      num_gaussians: 20
+      num_gaussians: 50
       hidden_channels: 512
+
   - config: fanet-qm7x-all
+    optim:
+      initial_lr: 0.0005
+      energy_coefficient: 0.001
+      energy_grad_coefficient: 0.01
+      force_coefficient: 0.989
     model:
+      graph_norm: true
       force_decoder_type: mlp
       edge_embed_type: all_rij
       regress_forces: direct_with_gradient_target
   - config: fanet-qm7x-all
+    optim:
+      initial_lr: 0.0001
+      energy_coefficient: 0.001
+      energy_grad_coefficient: 0.01
+      force_coefficient: 0.989
     model:
+      graph_norm: true
       force_decoder_type: mlp
       edge_embed_type: all_rij
+      regress_forces: direct_with_gradient_target
+  - config: fanet-qm7x-all
+    optim:
+      initial_lr: 0.0001
+      energy_coefficient: 0.001
+      energy_grad_coefficient: 0.01
+      force_coefficient: 0.989
+    model:
+      graph_norm: false
+      force_decoder_type: mlp
+      edge_embed_type: all_rij
+      regress_forces: direct_with_gradient_target
+  - config: fanet-qm7x-all
+    optim:
+      initial_lr: 0.0001
+      energy_coefficient: 0.001
+      energy_grad_coefficient: 0.01
+      force_coefficient: 0.989
+    model:
+      graph_norm: true
+      force_decoder_type: mlp
       mp_type: updownscale_base
+      edge_embed_type: all_rij
       regress_forces: direct_with_gradient_target
