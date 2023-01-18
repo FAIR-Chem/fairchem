@@ -112,10 +112,6 @@ class Runner:
         self.hparams, orion_race_condition = dist_utils.broadcast_from_master(
             self.hparams, orion_race_condition
         )
-        if orion_race_condition:
-            if dist_utils.is_master():
-                shutil.rmtree(self.trainer_config["run_dir"])
-            return
         if self.hparams:
             print("\n💎 Received hyper-parameters from Orion:")
             print(dump(self.hparams), end="\n")

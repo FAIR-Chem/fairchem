@@ -8,8 +8,13 @@ import os
 import sys
 import time
 from datetime import datetime
+import yaml
+from tqdm import tqdm
 
-rundir = Path(os.environ["SCRATCH"]) / "ocp" / "runs"
+RUN_DIR = Path(os.environ["SCRATCH"]) / "ocp" / "runs"
+ROOT = Path(__file__).resolve().parent.parent.parent
+EXP_OUT_DIR = ROOT / "data" / "exp_outputs"
+MANAGER_CACHE = ROOT / "data" / "exp_manager_cache"
 
 
 class Manager:
@@ -18,9 +23,13 @@ class Manager:
         orion_db_path="",
         name="",
         wandb_path="mila-ocp/ocp-qm",
+        rebuild_cache=False,
+        print_tracebacks=True,
     ):
         self.api = wandb.Api()
         self.wandb_path = wandb_path
+        self.rebuild_cache = rebuild_cache
+        self.print_tracebacks = print_tracebacks
         self.wandb_runs = [
             r
             for r in self.api.runs(wandb_path)
@@ -28,6 +37,12 @@ class Manager:
             and name in r.config.get("orion_exp_config_path", "")
         ]
         self.name = name
+        self.cache_path = MANAGER_CACHE / f"{self.name}.yaml"
+        self.cache = (
+            yaml.safe_load(self.cache_path.read_text())
+            if self.cache_path.exists()
+            else {}
+        )
         self.trial_hparams_to_rundirs = defaultdict(list)
         self.exp = get_experiment(
             name=name,
@@ -63,7 +78,12 @@ class Manager:
             [p.name for runs in self.trial_hparams_to_rundirs.values() for p in runs]
         )
         print("\n")
+        self.discover_yamls()
+        self.discover_job_ids_from_yaml()
+        self.parse_output_files()
         self.print_status()
+        print("\n")
+        self.print_output_files_stats()
 
     def print_status(self):
         print("{:32} : {:4} ".format("Trials in experiment", len(self.trials)))
@@ -120,7 +140,7 @@ class Manager:
         )
         running = set(self.job_ids) & sq
         waiting = (
-            set([j.parent.name for j in rundir.glob(f"*/{self.name}.exp")]) & sq
+            set([j.parent.name for j in RUN_DIR.glob(f"*/{self.name}.exp")]) & sq
         ) - running
         print(
             "{:32} : {}".format(
@@ -136,7 +156,7 @@ class Manager:
         )
 
     def discover_run_dirs(self):
-        for unique in rundir.glob(f"*/{self.name}--*.unique"):
+        for unique in RUN_DIR.glob(f"*/{self.name}--*.unique"):
             self.trial_hparams_to_rundirs[unique.stem.split("--")[-1]].append(
                 unique.parent
             )
@@ -167,6 +187,100 @@ class Manager:
     def print_wandb_query(self):
         print(f"{'WandB runs query:':32}\n" + "(" + "|".join(self.job_ids) + ")")
 
+    def parse_output_files(self):
+        if "job_state" not in self.cache:
+            self.cache["job_state"] = {}
+        for j in tqdm(self.cache["all_job_ids"], desc="Parsing output files"):
+            if j in self.cache["job_state"] and not self.rebuild_cache:
+                continue
+            out_file = RUN_DIR / j / "output-0.txt"
+
+            if not out_file.exists():
+                self.cache["job_state"][j] = "No output file (RaceCondition)"
+                continue
+
+            out_txt = out_file.read_text()
+            if "RaceCondition" in out_txt:
+                self.cache["job_state"][j] = "RaceCondition"
+            elif "Traceback" in out_txt:
+                self.cache["job_state"][j] = (
+                    "Traceback: " + out_txt.split("Traceback")[1]
+                )
+            elif "srun: Job step aborted" in out_txt:
+                if "slurmstepd" in out_txt and " CANCELLED AT " in out_txt:
+                    self.cache["job_state"][j] = "Cancelled"
+            elif "eval_all_splits" in out_txt and "Final results" in out_txt:
+                self.cache["job_state"][j] = "Finished"
+            elif "nan_loss" in out_txt:
+                self.cache["job_state"][j] = "NaN loss"
+            else:
+                self.cache["job_state"][j] = "Unknown"
+        self.commit_cache()
+
+    def print_output_files_stats(self):
+        print("Job status from output files:\n" + "-" * 29 + "\n")
+        stats = {}
+        for j, o in self.cache["job_state"].items():
+            if "Traceback" in o:
+                if "Traceback" not in stats:
+                    stats["Traceback"] = {"n": 0, "ids": [], "contents": []}
+                stats["Traceback"]["n"] += 1
+                stats["Traceback"]["ids"].append(j)
+                stats["Traceback"]["contents"].append(o)
+            else:
+                if o not in stats:
+                    stats[o] = {"n": 0, "ids": []}
+                stats[o]["n"] += 1
+                stats[o]["ids"].append(j)
+        for s, v in stats.items():
+            print(f"• {s:31}" + f": {v['n']} (" + " ".join(v["ids"]) + ")")
+        if stats["Traceback"]["n"] > 0 and self.print_tracebacks:
+            print("\nTraceback contents:\n" + "-" * 19 + "\n")
+            print(
+                f"\n\n{'|' * 50}\n{'|' * 50}\n{'|' * 50}\n".join(
+                    f"{j}:\n{o}"
+                    for j, o in zip(
+                        stats["Traceback"]["ids"], stats["Traceback"]["contents"]
+                    )
+                )
+            )
+
+    def discover_job_ids_from_yaml(self):
+        all_jobs = (
+            set(self.cache.get("all_job_ids", [])) if not self.rebuild_cache else set()
+        )
+        for yaml_path in self.cache["exp_yamls"]:
+            lines = Path(yaml_path).read_text().splitlines()
+            jobs_line = [line for line in lines if "All jobs launched" in line][0]
+            jobs = [
+                j.strip()
+                for j in jobs_line.split("All jobs launched: ")[-1].strip().split(", ")
+            ]
+            all_jobs |= set(jobs)
+        self.cache["all_job_ids"] = sorted(all_jobs)
+        self.commit_cache()
+
+    def discover_yamls(self):
+        yamls = set()
+        if self.cache and not self.rebuild_cache:
+            cache_yamls = self.cache.get("exp_yamls") or []
+            yamls |= set(cache_yamls)
+        for yaml_conf in EXP_OUT_DIR.glob("**/*.yaml"):
+            if str(yaml_conf) not in yamls:
+                yaml_txt = yaml_conf.read_text()
+                if self.name in yaml_txt:
+                    y = yaml.safe_load(yaml_txt)
+                    if y.get("orion", {}).get("unique_exp_name") == self.name:
+                        yamls.add(str(yaml_conf))
+        yamls = sorted(yamls)
+        self.cache["exp_yamls"] = yamls
+        self.commit_cache()
+
+    def commit_cache(self):
+        if not self.cache_path.parent.exists():
+            self.cache_path.parent.mkdir(parents=True)
+        self.cache_path.write_text(yaml.safe_dump(self.cache))
+
     @classmethod
     def help(self):
         return dedent(
@@ -175,9 +289,11 @@ class Manager:
         Manager init()
         --------------
 
-        orion_db_path -> (str or pathlib.Path) pointing to the orion db pickle file
-        name          -> (str) unique orion experiment name in the db
-        wandb_path    -> (str) path to the wandb project like "{entity}/{project}"
+        orion_db_path    -> (str or pathlib.Path) pointing to the orion db pickle file
+        name             -> (str) unique orion experiment name in the db
+        wandb_path       -> (str) path to the wandb project like "{entity}/{project}"
+        rebuild_cache    -> (bool, default: False) if True, will rebuild the output file cache from scratch
+        print_tracebacks -> (bool, default: False) if True, will print the Traceback contents in the output files
 
         ----------
         Attributes
@@ -220,6 +336,8 @@ if __name__ == "__main__":
         "name": None,
         "wandb_path": None,
         "watch": -1,
+        "rebuild_cache": False,
+        "print_tracebacks": False,
     }
     args = resolved_args(defaults=defaults)
     if args.help:
@@ -229,6 +347,11 @@ if __name__ == "__main__":
         print(
             "In [1]: run ocpmodels/common/exp_manager.py",
             "name='ocp-qm9-orion-debug-v1.0.0' wandb_path='mila-ocp/ocp-3'",
+        )
+        print(
+            "In [1]: run ocpmodels/common/exp_manager.py",
+            "name='ocp-qm9-orion-debug-v1.0.0' wandb_path='mila-ocp/ocp-3'",
+            "print_tracebacks",
         )
         print("\n\n🧞 Manager help:")
         print(Manager.help())
@@ -257,6 +380,8 @@ if __name__ == "__main__":
         name=args.name,
         wandb_path=args.wandb_path,
         orion_db_path=orion_db_path,
+        rebuild_cache=args.rebuild_cache,
+        print_tracebacks=args.print_tracebacks,
     )
 
     # m.print_wandb_query()

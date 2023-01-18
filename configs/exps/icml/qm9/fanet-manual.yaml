@@ -13,12 +13,9 @@ default:
   wandb_tags: qm9, fanet-qm9-v1.0.2-continued
   log_train_every: 100
   note:
-    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm
-    optim: batch_size, lr_initial
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, energy_head, mp_type
+    optim: batch_size
     _root_: frame_averaging, fa_frames
-  orion_mult_factor:
-    value: 32
-    targets: hidden_channels, num_filters, pg_hidden_channels, phys_hidden_channels
   frame_averaging: 3D
   fa_frames: random
   optim:
@@ -31,17 +28,18 @@ default:
     loss_energy: mse
     loss_force: mse
     # early stopping
-    es_patience: 20
+    es_patience: 50
     es_min_abs_change: 0.000001
     es_warmup_epochs: 500
-    # all below is for the scheduler
+    # all below is for the ReduceLROnPlateau scheduler
     scheduler: ReduceLROnPlateau
     mode: min
-    factor: 0.5
+    factor: 0.75
     threshold: 0.0001
     threshold_mode: abs
-    min_lr: 0.00001
+    min_lr: 0.000001
     verbose: true
+    patience: 10
   model:
     cutoff: 5.0
     edge_embed_type: all_rij
@@ -54,7 +52,7 @@ default:
     num_gaussians: 50
     num_interactions: 5
     otf_graph: false
-    pg_hidden_channels: 32
+    pg_hidden_channels: 16
     phys_embeds: true
     phys_hidden_channels: 0
     second_layer_MLP: false
@@ -76,3 +74,14 @@ runs:
       energy_head: ""
   - model:
       energy_head: "weighted-av-initial-embeds"
+  - model:
+      num_interactions: 4
+      num_gaussians: 20
+      hidden_channels: 512
+      num_filters: 512
+  - model:
+      mp_type: updownscale_base
+      num_interactions: 4
+      num_gaussians: 20
+      hidden_channels: 512
+      num_filters: 512

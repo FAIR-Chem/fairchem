@@ -25,16 +25,16 @@ default:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions
     optim: batch_size, lr_initial
   optim:
-    batch_size: 32
+    batch_size: 10
     max_epochs: 100
     warmup_steps: 3000
-    lr_initial: 0.0005
+    lr_initial: 0.0001
     eval_every: 0.34
     # parameters EMA
     ema_decay: 0.999
-    energy_coefficient: 0.001
+    energy_coefficient: 0.01
     energy_grad_coefficient: 0
-    force_coefficient: 0.999
+    force_coefficient: 0.99
     loss_energy: mae
     loss_force: mse
     # all below is for the scheduler
@@ -46,69 +46,102 @@ default:
     min_lr: 0.000001
     verbose: true
   model:
-    hidden_channels: 256
+    hidden_channels: 128
     num_filters: 128
-    num_gaussians: 100
+    num_gaussians: 20
     num_interactions: 6
     cutoff: 5.0
-    regress_forces: "from_energy"
+    regress_forces: from_energy
 
 runs:
-  - {}
-  - optim:
-      lr_initial: 0.001
-      batch_size: 1024
-  - optim:
-      batch_size: 128
-  - model:
-      hidden_channels: 512
-  - model:
-      num_interactions: 6
-      num_gaussians: 50
-      hidden_channels: 512
+  - config: schnet-qm7x-all
+    dataset:
+      train:
+        normalize_labels: True
 
-  - config: fanet-qm7x-all
+  - config: schnet-qm7x-all
+    dataset:
+      train:
+        normalize_labels: True
     optim:
-      initial_lr: 0.0005
-      energy_coefficient: 0.001
-      energy_grad_coefficient: 0.01
-      force_coefficient: 0.989
-    model:
-      graph_norm: true
-      force_decoder_type: mlp
-      edge_embed_type: all_rij
-      regress_forces: direct_with_gradient_target
-  - config: fanet-qm7x-all
+      lr_initial: 0.001
+      batch_size: 100
+
+  - config: schnet-qm7x-all
+    dataset:
+      train:
+        normalize_labels: True
     optim:
-      initial_lr: 0.0001
-      energy_coefficient: 0.001
-      energy_grad_coefficient: 0.01
-      force_coefficient: 0.989
-    model:
-      graph_norm: true
-      force_decoder_type: mlp
-      edge_embed_type: all_rij
-      regress_forces: direct_with_gradient_target
-  - config: fanet-qm7x-all
+      lr_initial: 0.001
+      batch_size: 256
+  - config: schnet-qm7x-all
+    dataset:
+      train:
+        normalize_labels: False
+
+  - config: schnet-qm7x-all
+    dataset:
+      train:
+        normalize_labels: False
     optim:
-      initial_lr: 0.0001
-      energy_coefficient: 0.001
-      energy_grad_coefficient: 0.01
-      force_coefficient: 0.989
-    model:
-      graph_norm: false
-      force_decoder_type: mlp
-      edge_embed_type: all_rij
-      regress_forces: direct_with_gradient_target
-  - config: fanet-qm7x-all
+      lr_initial: 0.001
+      batch_size: 100
+
+  - config: schnet-qm7x-all
+    dataset:
+      train:
+        normalize_labels: False
     optim:
-      initial_lr: 0.0001
-      energy_coefficient: 0.001
-      energy_grad_coefficient: 0.01
-      force_coefficient: 0.989
-    model:
-      graph_norm: true
-      force_decoder_type: mlp
-      mp_type: updownscale_base
-      edge_embed_type: all_rij
-      regress_forces: direct_with_gradient_target
+      lr_initial: 0.001
+      batch_size: 256
+
+  # - config: fanet-qm7x-all
+  #   model:
+  #     graph_norm: true
+  #     edge_embed_type: all_rij
+  #     mp_type: updownscale_base
+
+  # - config: fanet-qm7x-all
+  #   optim:
+  #     energy_coefficient: 0.01
+  #     energy_grad_coefficient: 0.1
+  #     force_coefficient: 0.89
+  #     lr_initial: 0.001
+  #     batch_size: 100
+  #   model:
+  #     graph_norm: true
+  #     edge_embed_type: all_rij
+  #     mp_type: updownscale_base
+  #     force_decoder_type: mlp
+  #     regress_forces: direct_with_gradient_target
+
+  # - config: fanet-qm7x-all
+  #   optim:
+  #     energy_coefficient: 0.01
+  #     energy_grad_coefficient: 0.1
+  #     force_coefficient: 0.89
+  #     lr_initial: 0.001
+  #     batch_size: 100
+  #   model:
+  #     graph_norm: false
+  #     force_decoder_type: mlp
+  #     edge_embed_type: all_rij
+  #     regress_forces: direct_with_gradient_target
+  #     num_interactions: 4
+
+  # - config: fanet-qm7x-all
+  #   optim:
+  #     energy_coefficient: 0.01
+  #     energy_grad_coefficient: 0.1
+  #     force_coefficient: 0.89
+  #     lr_initial: 0.001
+  #     batch_size: 100
+  #   model:
+  #     graph_norm: true
+  #     force_decoder_type: mlp
+  #     mp_type: updownscale_base
+  #     edge_embed_type: all_rij
+  #     regress_forces: direct_with_gradient_target
+  #     num_interactions: 3
+  #     num_filters: 256
+  #     hidden_channels: 256
