@@ -29,7 +29,7 @@ The following files are also provided to be used for evaluation and general info
   * `shift`: C-direction shift used to determine cutoff for the surface (c-direction is following the nomenclature from Pymatgen).
   * `top`: Boolean indicating whether the chosen surface was at the top or bottom of the originally enumerated surface.
   * `adsorbate`: Chemical composition of the adsorbate.
-  * `adsorption site`: A tuple of 3-tuples containing the Cartesian coordinates of each binding adsorbate atom
+  * `adsorption_site`: A tuple of 3-tuples containing the Cartesian coordinates of each binding adsorbate atom
 * `oc20dense_targets.pkl` :  DFT adsorption energies across different system and placement ids.
 * `oc20dense_compute.pkl` :  DFT compute as measured in the number of ionic and scf steps for each evaluated relaxation.
 * `oc20dense_ref_energies.pkl` : Reference energy used for a specified `system_id`. This energy includes the relaxed clean surface and the gas phase adsorbate energy to ensure consistency across calculations.
