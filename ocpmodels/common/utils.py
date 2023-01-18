@@ -150,7 +150,7 @@ def get_and_move_orion_db_path(exp_name):
         if not home_db.exists():
             return scratch_db
 
-        lock_file = home_db.parent / f"{db_file}.lock"
+        lock_file = home_db.parent / f"{db_file}.cp_lock"
         if not lock_file.exists():
             lock_file.touch()
             copyfile(home_db, scratch_db)
