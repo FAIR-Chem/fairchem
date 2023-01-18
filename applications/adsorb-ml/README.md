@@ -40,7 +40,7 @@ All mappings can be obtained at the following downloadable link: https://dl.fbai
 MD5 checksums:
 ```
 c18735c405ce6ce5761432b07287d8d9  oc20_dense_mappings.tar.gz
-8664a0fdac77c78d77415afdae5f61b7  oc20dense_mapping.pkl
+3e26c3bcef01ccfc9b001931065ea6e6  oc20dense_mapping.pkl
 fd589b013b72e62e11a6b2a5bd1d323c  oc20dense_targets.pkl
 78d25997e0aaf754df526ab37276bb89  oc20dense_compute.pkl
 b07c64158e4bfa5f7b9bf6263753ecc5  oc20dense_ref_energies.pkl
