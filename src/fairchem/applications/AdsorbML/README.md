@@ -21,7 +21,15 @@ NOTE - ASE trajectories exclude systems that were not converged or had invalid c
 |ASE Trajectories    |29G    |112G   | [ee937e5290f8f720c914dc9a56e0281f](https://dl.fbaipublicfiles.com/opencatalystproject/data/adsorbml/oc20_dense_trajectories.tar.gz)   |
 
 The following files are also provided to be used for evaluation and general information:
-* `oc20dense_mapping.pkl` : Mapping of the LMDB `sid` to general metadata information `(system_id, placement_id, mpid, miller_idx, shift, top, adsorbate, adsorption site)`. 
+* `oc20dense_mapping.pkl` : Mapping of the LMDB `sid` to general metadata information -
+  * `system_id`: Unique system identifier for an adsorbate, bulk, surface combination.
+  * `config_id`: Unique configuration identifier, where `rand` and `heur` correspond to random and heuristic initial configurations, respectively.
+  * `mpid`: Materials Project bulk identifier.
+  * `miller_idx`: 3-tuple of integers indicating the Miller indices of the surface.
+  * `shift`: C-direction shift used to determine cutoff for the surface (c-direction is following the nomenclature from Pymatgen).
+  * `top`: Boolean indicating whether the chosen surface was at the top or bottom of the originally enumerated surface.
+  * `adsorbate`: Chemical composition of the adsorbate.
+  * `adsorption site`: A tuple of 3-tuples containing the Cartesian coordinates of each binding adsorbate atom
 * `oc20dense_targets.pkl` :  DFT adsorption energies across different system and placement ids.
 * `oc20dense_compute.pkl` :  DFT compute as measured in the number of ionic and scf steps for each evaluated relaxation.
 * `oc20dense_ref_energies.pkl` : Reference energy used for a specified `system_id`. This energy includes the relaxed clean surface and the gas phase adsorbate energy to ensure consistency across calculations.
