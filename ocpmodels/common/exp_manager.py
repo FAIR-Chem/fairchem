@@ -10,9 +10,8 @@ import time
 from datetime import datetime
 import yaml
 from tqdm import tqdm
+from ocpmodels.common.utils import ROOT, RUN_DIR, get_and_move_orion_db_path
 
-RUN_DIR = Path(os.environ["SCRATCH"]) / "ocp" / "runs"
-ROOT = Path(__file__).resolve().parent.parent.parent
 EXP_OUT_DIR = ROOT / "data" / "exp_outputs"
 MANAGER_CACHE = ROOT / "data" / "exp_manager_cache"
 
@@ -372,10 +371,7 @@ if __name__ == "__main__":
         "💃 Status of experiment",
         f"'{args.name}' and wandb entity/project '{args.wandb_path}':",
     )
-    orion_db_path = str(
-        Path(__file__).resolve().parent.parent.parent
-        / f"data/orion/storage/{args.name}_db.pkl"
-    )
+    orion_db_path = get_and_move_orion_db_path(args.name)
     m = Manager(
         name=args.name,
         wandb_path=args.wandb_path,

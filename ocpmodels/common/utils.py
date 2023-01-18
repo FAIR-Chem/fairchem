@@ -5,8 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import ast
 import argparse
+import ast
 import collections
 import copy
 import glob
@@ -24,6 +24,7 @@ from copy import deepcopy
 from functools import wraps
 from itertools import product
 from pathlib import Path
+from shutil import copyfile
 
 import numpy as np
 import torch
@@ -66,6 +67,7 @@ CLUSTER = Cluster()
 OCP_TASKS = {"s2ef", "is2re", "is2es"}
 ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
+RUN_DIR = Path(os.environ["SCRATCH"]) / "ocp" / "runs"
 
 
 def set_max_fidelity(hparams, orion_exp):
@@ -137,6 +139,31 @@ def apply_mult_factor(orion_hparams, mult_factor_dict, sep="."):
     return updated_hparams
 
 
+def get_and_move_orion_db_path(exp_name):
+    db_id = "".join([c for c in exp_name if c.isalnum() or c in "_-."])
+    db_file = f"{db_id}_db.pkl" if not db_id.endswith("_db.pkl") else db_id
+    scratch_db = RUN_DIR.parent / "orion" / "storage" / db_file
+    scratch_db.parent.mkdir(parents=True, exist_ok=True)
+    if not scratch_db.exists():
+        home_db = ROOT / f"data/orion/storage/{db_file}"
+
+        if not home_db.exists():
+            return scratch_db
+
+        lock_file = home_db.parent / f"{db_file}.lock"
+        if not lock_file.exists():
+            lock_file.touch()
+            copyfile(home_db, scratch_db)
+            print("Copied db from home to scratch.")
+            lock_file.unlink()
+
+        while lock_file.exists():
+            print("Waiting for lock to be released...")
+            time.sleep(1)
+
+    return scratch_db
+
+
 def load_orion_exp(args):
     exp_config = yaml.safe_load(Path(args.orion_exp_config_path).read_text())
 
@@ -147,8 +174,7 @@ def load_orion_exp(args):
     print(f"🔎 Orion Experiment Config:\n{yaml.dump(exp_config)}")
     exp_name = args.orion_unique_exp_name or exp_config["unique_exp_name"]
     db_id = "".join([c for c in exp_name if c.isalnum() or c in "_-."])
-    db_path = ROOT / "data" / "orion" / "storage" / f"{db_id}_db.pkl"
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path = get_and_move_orion_db_path(db_id)
     experiment = build_experiment(
         storage={
             "database": {
