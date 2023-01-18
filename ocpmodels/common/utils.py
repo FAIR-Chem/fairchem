@@ -24,7 +24,7 @@ from copy import deepcopy
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from shutil import copyfile
+from shutil import copyfile, move
 
 import numpy as np
 import torch
@@ -154,7 +154,9 @@ def get_and_move_orion_db_path(exp_name):
         if not lock_file.exists():
             lock_file.touch()
             copyfile(home_db, scratch_db)
-            print("Copied db from home to scratch.")
+            move(home_db, home_db.parent / f"{db_file}.bak")
+            os.symlink(str(scratch_db), str(home_db))
+            print("Copied and symlinked db from home to scratch.")
             lock_file.unlink()
 
         while lock_file.exists():
