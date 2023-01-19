@@ -197,7 +197,9 @@ if __name__ == "__main__":
         runs = [
             {
                 "orion_exp_config_path": str(search_path),
-                "job_name": unique_exp_name,
+                "job": {
+                    "job_name": unique_exp_name,
+                },
             }
             for _ in range(n_jobs)
         ]
@@ -214,6 +216,9 @@ if __name__ == "__main__":
         params = merge_dicts(params, run)
         if "time" in job:
             job["time"] = seconds_to_time_str(job["time"])
+
+        if "job_name" not in job:
+            job["job_name"] = exp_name
 
         if "wandb_tags" in params:
             params["wandb_tags"] += "," + exp_name
