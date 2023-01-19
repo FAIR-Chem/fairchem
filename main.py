@@ -10,9 +10,8 @@ import logging
 import os
 import time
 import traceback
-
+import sys
 import torch
-from orion.core.utils.exceptions import ReservationRaceCondition
 from yaml import dump
 
 from ocpmodels.common import dist_utils
@@ -20,21 +19,20 @@ from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     JOB_ID,
-    apply_mult_factor,
     auto_note,
     build_config,
-    continue_from_slurm_job_id,
-    continue_orion_exp,
-    load_orion_exp,
     merge_dicts,
     move_lmdb_data_to_slurm_tmpdir,
-    read_slurm_env,
     resolve,
-    set_max_fidelity,
     setup_imports,
     setup_logging,
-    unflatten_dict,
     update_from_sbatch_py_vars,
+    set_hidden_channels,
+)
+from ocpmodels.common.orion_utils import (
+    continue_orion_exp,
+    load_orion_exp,
+    sample_orion_hparams,
 )
 from ocpmodels.trainers import BaseTrainer
 
@@ -56,89 +54,119 @@ def print_warnings():
     print("-" * 80 + "\n")
 
 
-class Runner:
-    def __init__(self, trainer_config):
-        self.trainer_config = trainer_config
-        self.trainer = None
-        self.hparams = {}
+def wrap_up(args, start_time, trainer=None, error=None, signal=None):
 
-    def run(self, orion_exp=None):
-        orion_trial = signal = None
-        self.original_config = copy.deepcopy(self.trainer_config)
-        orion_race_condition = False
+    total_time = time.time() - start_time
+    logging.info(f"Total time taken: {total_time}")
+    if trainer and trainer.logger is not None:
+        trainer.logger.log({"Total time": total_time})
+
+    if args.distributed:
+        print(
+            "\nWaiting for all processes to finish with dist_utils.cleanup()...",
+            end="",
+        )
+        dist_utils.cleanup()
+        print("Done!")
+
+    if "interactive" not in os.popen(f"squeue -hj {JOB_ID}").read():
+        print("\nSelf-canceling SLURM job in 32s", JOB_ID)
+        os.popen(f"sleep 32 && scancel {JOB_ID}")
+
+    if trainer and trainer.logger:
+        trainer.logger.finish(error or signal)
+
+
+if __name__ == "__main__":
+    error = signal = orion_exp = orion_trial = None
+    orion_race_condition = False
+    hparams = {}
+
+    setup_logging()
+
+    parser = flags.get_parser()
+    args, override_args = parser.parse_known_args()
+    args = update_from_sbatch_py_vars(args)
+    if args.logdir:
+        args.logdir = resolve(args.logdir)
+
+    trainer_config = build_config(args, override_args)
+    original_trainer_config = copy.deepcopy(trainer_config)
+
+    if args.distributed:
+        dist_utils.setup(trainer_config)
+        print("Distributed backend setup.")
+
+    if dist_utils.is_master():
+        trainer_config = move_lmdb_data_to_slurm_tmpdir(trainer_config)
+    dist_utils.synchronize()
+
+    trainer_config["dataset"] = dist_utils.broadcast_from_master(
+        trainer_config["dataset"]
+    )
+
+    # -- Initial setup
+
+    setup_imports()
+    print("All things imported.\n")
+    start_time = time.time()
+
+    try:
+
+        # -- Orion
+
+        if args.orion_exp_config_path and dist_utils.is_master():
+            orion_exp = load_orion_exp(args)
+
         if dist_utils.is_master():
             if orion_exp:
-                try:
-                    orion_trial = orion_exp.suggest(1)
-                    print(
-                        "\n🚨  Orion reservation race condition detected. Exiting",
-                        "and deleting run dir",
-                    )
-                    self.hparams = set_max_fidelity(
-                        unflatten_dict(
-                            apply_mult_factor(
-                                orion_trial.params,
-                                self.trainer_config.get("orion_mult_factor"),
-                                sep="/",
-                            ),
-                            sep="/",
-                        ),
-                        orion_exp,
-                    )
-                    self.hparams["orion_hash_params"] = orion_trial.hash_params
-                    self.hparams["orion_unique_exp_name"] = orion_exp.name
-                except ReservationRaceCondition:
-                    orion_race_condition = True
-                    import wandb
+                hparams = sample_orion_hparams(orion_exp, trainer_config)
+                if hparams.get("orion_race_condition"):
+                    logging.warning("\n\n ⛔️ Orion race condition. Stopping here.\n\n")
+                    wrap_up(args, start_time, error, signal)
+                    sys.exit()
 
-                    if wandb.run is not None:
-                        if wandb.run.tags:
-                            wandb.run.tags = wandb.run.tags + ("RaceCondition",)
-                        else:
-                            wandb.run.tags = ("RaceCondition",)
-
-        self.hparams, orion_race_condition = dist_utils.broadcast_from_master(
-            self.hparams, orion_race_condition
-        )
-        if self.hparams:
+        hparams = dist_utils.broadcast_from_master(hparams)
+        if hparams:
             print("\n💎 Received hyper-parameters from Orion:")
-            print(dump(self.hparams), end="\n")
+            print(dump(hparams), end="\n")
+            trainer_config = merge_dicts(trainer_config, hparams)
 
-        self.trainer_config = merge_dicts(self.trainer_config, self.hparams)
-        self.trainer_config = continue_orion_exp(self.trainer_config)
-        self.trainer_config = auto_note(self.trainer_config)
-        cls = registry.get_trainer_class(self.trainer_config["trainer"])
+        # -- Setup trainer
+
+        trainer_config = continue_orion_exp(trainer_config)
+        trainer_config = auto_note(trainer_config)
+        trainer_config = set_hidden_channels(trainer_config)
+
         try:
-            self.trainer: BaseTrainer = cls(**self.trainer_config)
+            cls = registry.get_trainer_class(trainer_config["trainer"])
+            trainer: BaseTrainer = cls(**trainer_config)
         except Exception as e:
-            print(f"Error in trainer initialization: {e}")
             traceback.print_exc()
+            logging.warning(f"\n💀 Error in trainer initialization: {e}\n")
             signal = "trainer_init_error"
 
-        start_time = time.time()
         if signal is None:
-            task = registry.get_task_class(self.trainer_config["mode"])(
-                self.trainer_config
-            )
-            task.setup(self.trainer)
+            task = registry.get_task_class(trainer_config["mode"])(trainer_config)
+            task.setup(trainer)
             print_warnings()
 
+            # -- Start Training
+
             signal = task.run()
+
+        # -- End of training
 
         # handle job preemption / time limit
         if signal == "SIGTERM":
             print("\nJob was preempted. Wrapping up...\n")
-            if self.trainer:
-                self.trainer.close_datasets()
+            if trainer:
+                trainer.close_datasets()
 
         dist_utils.synchronize()
-        total_time = time.time() - start_time
-        logging.info(f"Total time taken: {total_time}")
-        if self.trainer and self.trainer.logger is not None:
-            self.trainer.logger.log({"Total time": total_time})
 
         objective = dist_utils.broadcast_from_master(
-            self.trainer.objective if self.trainer else None
+            trainer.objective if trainer else None
         )
 
         if orion_exp is not None:
@@ -160,69 +188,9 @@ class Runner:
                     [{"type": "objective", "name": "energy_mae", "value": objective}],
                 )
 
-
-if __name__ == "__main__":
-    runner = error = signal = None
-
-    setup_logging()
-
-    parser = flags.get_parser()
-    args, override_args = parser.parse_known_args()
-    args = update_from_sbatch_py_vars(args)
-    if args.logdir:
-        args.logdir = resolve(args.logdir)
-
-    trainer_config = build_config(args, override_args)
-    trainer_config["optim"]["eval_batch_size"] = trainer_config["optim"]["batch_size"]
-
-    original_trainer_config = copy.deepcopy(trainer_config)
-
-    if args.distributed:
-        dist_utils.setup(trainer_config)
-        print("Distributed backend setup.")
-
-    if dist_utils.is_master():
-        trainer_config = move_lmdb_data_to_slurm_tmpdir(trainer_config)
-        # dist_utils.synchronize()
-
-    # -------------------
-    # -----  Setup  -----
-    # -------------------
-    setup_imports()
-    print("All things imported.")
-    trainer_config = continue_from_slurm_job_id(trainer_config)
-    trainer_config = read_slurm_env(trainer_config)
-    runner = Runner(trainer_config)
-    print("Runner ready.")
-
-    try:
-        # -------------------
-        # -----  Train  -----
-        # -------------------
-        if args.orion_exp_config_path and dist_utils.is_master():
-            experiment = load_orion_exp(args)
-            print("\nStarting runner.")
-            runner.run(orion_exp=experiment)
-        else:
-            print("Starting runner.")
-            runner.run()
-
     except Exception:
         error = True
         print(traceback.format_exc())
 
     finally:
-        if args.distributed:
-            print(
-                "\nWaiting for all processes to finish with dist_utils.cleanup()...",
-                end="",
-            )
-            dist_utils.cleanup()
-            print("Done!")
-
-        if "interactive" not in os.popen(f"squeue -hj {JOB_ID}").read():
-            print("\nSelf-canceling SLURM job in 32s", JOB_ID)
-            os.popen(f"sleep 32 && scancel {JOB_ID}")
-
-        if runner and runner.trainer and runner.trainer.logger:
-            runner.trainer.logger.finish(error or signal)
+        wrap_up(args, start_time, error, signal, trainer=trainer)

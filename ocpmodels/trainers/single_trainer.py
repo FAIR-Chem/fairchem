@@ -47,8 +47,6 @@ class SingleTrainer(BaseTrainer):
         return str(datetime.datetime.now()).split(".")[0]
 
     def load_task(self):
-        if not self.silent:
-            print(f"Loading dataset: {self.config['task']['dataset']}")
         self.num_targets = 1
 
         # start imports from
@@ -220,7 +218,7 @@ class SingleTrainer(BaseTrainer):
         model_run_time = 0
 
         if not self.silent:
-            print(f"\n--- 🔄 Beginning of Training @ {self.now}---\n")
+            print(f"\n--- 🔄 Beginning of Training @ {self.now} ---\n")
             print(f"\nLogging  train metrics every {log_train_every} steps")
             print(f"Printing train metrics every {self.config['print_every']} steps")
             print(f"\nEvaluating every {eval_every} steps\n")

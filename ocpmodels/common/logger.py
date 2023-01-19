@@ -138,6 +138,7 @@ class WandBLogger(Logger):
         if not CLUSTER.drac:
             self.collect_output_files(policy="live")
             self.collect_output_files(policy="end")
+        print(f"\n{'-'*80}\n")
 
     def watch(self, model):
         wandb.watch(model)
