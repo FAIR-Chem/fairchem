@@ -46,12 +46,12 @@ def print_warnings():
         "`tag_specific_weights` is not handled for "
         + "`regress_forces: direct_with_gradient_target` in compute_loss()",
     ]
-    print("\n" + "-" * 80)
+    print("\n" + "-" * 80 + "\n")
     print("🛑  OCP-DR-Lab Warnings (nota benes):")
     for warning in warnings:
         print(f"  • {warning}")
     print("Remove warnings when they are fixed in the code/configs.")
-    print("-" * 80 + "\n")
+    print("\n" + "-" * 80 + "\n")
 
 
 def wrap_up(args, start_time, trainer=None, error=None, signal=None):

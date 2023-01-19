@@ -145,7 +145,7 @@ class BaseTrainer(ABC):
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
         if dist_utils.is_master() and not self.silent:
-            print(f"\n🧰 Trainer config:\n{'-'*17}\n")
+            print(f"\n🧰 Trainer config:\n{'-'*18}\n")
             print(yaml.dump(self.config), end="\n\n")
         self.load()
 
