@@ -32,6 +32,7 @@ class Normalizer(object):
 
         self.hof_mean = None
         self.hof_std = None
+        self.rescale_with_hof = False
 
     def to(self, device):
         self.mean = self.mean.to(device)
@@ -43,19 +44,19 @@ class Normalizer(object):
         self.device = device
 
     def norm(self, tensor, hofs=None):
-        if hofs is not None:
+        if hofs is not None and self.rescale_with_hof:
             return tensor / hofs - self.hof_mean
         return (tensor - self.mean) / self.std
 
     def denorm(self, normed_tensor, hofs=None):
-        if hofs is not None:
+        if hofs is not None and self.rescale_with_hof:
             return (normed_tensor + self.hof_mean) * hofs
         return normed_tensor * self.std + self.mean
 
     def state_dict(self):
         sd = {"mean": self.mean, "std": self.std}
-        if self.hof_mean is not None:
-            sd["hof_rescales"] = {
+        if self.rescale_with_hof:
+            sd["hof_stats"] = {
                 "mean": self.hof_mean,
                 "std": self.hof_std,
             }
@@ -64,9 +65,10 @@ class Normalizer(object):
     def load_state_dict(self, state_dict):
         self.mean = state_dict["mean"].to(self.mean.device)
         self.std = state_dict["std"].to(self.mean.device)
-        if "hof_rescales" in state_dict:
-            self.set_hof_rescales(state_dict["hof_rescales"])
+        if "hof_stats" in state_dict:
+            self.set_hof_rescales(state_dict["hof_stats"])
 
-    def set_hof_rescales(self, hof_rescales):
-        self.hof_mean = torch.tensor(hof_rescales["mean"], device=self.device)
-        self.hof_std = torch.tensor(hof_rescales["std"], device=self.device)
+    def set_hof_rescales(self, hof_stats):
+        self.hof_mean = torch.tensor(hof_stats["mean"], device=self.device)
+        self.hof_std = torch.tensor(hof_stats["std"], device=self.device)
+        self.rescale_with_hof = True

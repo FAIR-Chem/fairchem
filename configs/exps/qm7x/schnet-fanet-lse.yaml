@@ -63,22 +63,13 @@ default:
 
 runs:
   - config: schnet-qm7x-all
-    dataset:
-      train:
-        normalize_labels: True
 
   - config: schnet-qm7x-all
-    dataset:
-      train:
-        normalize_labels: True
     optim:
       lr_initial: 0.001
       batch_size: 100
 
   - config: schnet-qm7x-all
-    dataset:
-      train:
-        normalize_labels: True
     optim:
       lr_initial: 0.001
       batch_size: 256

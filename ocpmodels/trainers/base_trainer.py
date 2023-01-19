@@ -319,9 +319,9 @@ class BaseTrainer(ABC):
                     std=self.normalizer["target_std"],
                     device=self.device,
                 )
-                if "hof_rescales" in self.normalizer:
+                if "hof_stats" in self.normalizer:
                     self.normalizers["target"].set_hof_rescales(
-                        self.normalizer["hof_rescales"]
+                        self.normalizer["hof_stats"]
                     )
             else:
                 self.normalizers["target"] = Normalizer(

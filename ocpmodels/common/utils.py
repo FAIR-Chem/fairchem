@@ -380,7 +380,7 @@ def set_qm7x_target_stats(trainer_config):
     if "train" in trainer_config["dataset"] and trainer_config["dataset"]["train"].get(
         "rescale_with_hof"
     ):
-        trainer_config["dataset"]["train"]["hof_rescales"] = hof_stats
+        trainer_config["dataset"]["train"]["hof_stats"] = hof_stats
 
     return trainer_config
 
