@@ -10,6 +10,9 @@ import time
 from datetime import datetime
 import yaml
 from tqdm import tqdm
+
+os.path.append(Path(__file__).resolve().parent.parent.parent)
+
 from ocpmodels.common.utils import ROOT, RUN_DIR, get_and_move_orion_db_path
 
 EXP_OUT_DIR = ROOT / "data" / "exp_outputs"
