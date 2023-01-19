@@ -1142,11 +1142,18 @@ def build_config(args, args_override):
             continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
             print(
                 f"✅ Loading config from directory {str(cont_dir)}"
-                + f" and latest checkpoint: {latest_ckpt}"
-                if args.continue_from_dir
-                else ""
+                + (
+                    f" and latest checkpoint: {latest_ckpt}"
+                    if args.continue_from_dir
+                    else " (restarting from scratch)"
+                )
             )
             args.config = continue_config["config"]
+
+    if args.config is None:
+        raise ValueError(
+            "Must specify a config file with " + f"--config. Received args: {args}"
+        )
 
     config = load_config(args.config)
     config = merge_dicts(config, args_dict_with_defaults)
