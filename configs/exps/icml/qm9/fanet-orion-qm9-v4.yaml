@@ -1,0 +1,68 @@
+# more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
+job:
+  mem: 8GB
+  cpus: 4
+  gres: gpu:1
+  time: 02:50:00
+  partition: long
+
+default:
+  wandb_project: ocp-qm
+  config: fanet-qm9-all
+  mode: train
+  test_ri: true
+  wandb_tags: qm9, orion
+  log_train_every: 100
+  optim:
+    batch_size: 32
+    warmup_steps: 3000
+    # parameters EMA
+    ema_decay: 0.999
+    loss_energy: mse
+    # early stopping
+    es_patience: 20
+    es_min_abs_change: 0.000001
+    es_warmup_epochs: 800
+    # all below is for the scheduler
+    scheduler: ReduceLROnPlateau
+    mode: min
+    factor: 0.75
+    threshold: 0.0001
+    threshold_mode: abs
+    min_lr: 0.000001
+    verbose: true
+  note:
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm
+    optim: batch_size, lr_initial
+    _root_: frame_averaging, fa_frames
+  orion_mult_factor:
+    value: 32
+    targets: num_filters, pg_hidden_channels, phys_hidden_channels, num_gaussians
+  frame_averaging: 3D
+  fa_frames: random
+  model:
+    edge_embed_type: all_rij
+    energy_head: ""
+
+orion:
+  # Remember to change the experiment name if you change anything in the search space
+  n_jobs: 20
+
+  unique_exp_name: fanet-qm9-v4.0.0
+
+  space:
+    optim/max_epochs: fidelity(200, 2000, base=5)
+    optim/lr_initial: loguniform(1e-4, 6e-4, precision=3)
+    model/graph_norm: choices([True, False])
+    model/hidden_channels: uniform(5, 15, discrete=True)
+    model/mp_type: choices(["simple", "base", "updownscale", "updownscale_base"])
+    model/num_filters: uniform(4, 16, discrete=True)
+    model/num_gaussians: uniform(1, 4, discrete=True)
+    model/num_interactions: uniform(3, 5, discrete=True)
+    model/pg_hidden_channels: uniform(0, 1, discrete=True)
+    model/phys_embeds: choices([True, False])
+  algorithms:
+    asha:
+      seed: 123
+      num_rungs: 4
+      num_brackets: 2
