@@ -515,6 +515,13 @@ def set_qm7x_target_stats(trainer_config):
         (ROOT / "configs" / "models" / "qm7x-metadata" / "stats.json").read_text()
     )
 
+    hof_stats = json.loads(
+        (
+            ROOT / "configs" / "models" / "qm7x-metadata" / "hof_rescales.json"
+        ).read_text()
+    )
+    hof_stats.pop("about", None)
+
     for d, dataset in deepcopy(trainer_config["dataset"]).items():
         if d == "default_val":
             continue
@@ -533,6 +540,11 @@ def set_qm7x_target_stats(trainer_config):
             std = target_stats[dataset["forces_target"]]["std"]
             trainer_config["dataset"][d]["grad_target_mean"] = mean
             trainer_config["dataset"][d]["grad_target_std"] = std / std_divider
+
+    if "train" in trainer_config["dataset"] and trainer_config["dataset"]["train"].get(
+        "rescale_with_hof"
+    ):
+        trainer_config["dataset"]["train"]["hof_rescales"] = hof_stats
 
     return trainer_config
 
@@ -844,6 +856,16 @@ def add_edge_distance_to_graph(
 # Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
 def setup_imports():
     from ocpmodels.common.registry import registry
+
+    try:
+        import ipdb  # noqa: F401
+
+        os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
+    except:  # noqa: E722
+        print(
+            "`ipdb` is not installed. ",
+            "Consider `pip install ipdb` to improve your debugging experience.",
+        )
 
     # First, check if imports are already setup
     has_already_setup = registry.get("imports_setup", no_warning=True)
@@ -1651,22 +1673,18 @@ def get_commit_hash():
 
 
 def base_config(config, overrides={}):
-    from argparse import Namespace
+    from ocpmodels.common.flags import flags
 
-    n = Namespace()
-    n.num_gpus = 1
-    n.num_nodes = 1
-    n.config_yml = None
-    n.config = config
+    setup_imports()
 
     conf = build_config(
-        n,
-        [
-            "run_dir=.",
-            "no_qm7x_cp=true",
-            "no_cpus_to_workers=true",
-            "silent=",
-        ],
+        *flags.get_parser().parse_known_args(
+            [
+                f"--config={config}",
+                "--logger=dummy",
+            ]
+        )
     )
+    conf["cpu"] = not torch.cuda.is_available()
 
     return merge_dicts(conf, overrides)

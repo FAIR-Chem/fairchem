@@ -320,6 +320,10 @@ class BaseTrainer(ABC):
                     std=self.normalizer["target_std"],
                     device=self.device,
                 )
+            if "hof_rescales" in self.normalizer:
+                self.normalizers["target"].set_hof_rescales(
+                    self.normalizer["hof_rescales"]
+                )
             else:
                 self.normalizers["target"] = Normalizer(
                     tensor=self.datasets["train"].data.y[

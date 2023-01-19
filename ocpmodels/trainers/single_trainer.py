@@ -134,7 +134,14 @@ class SingleTrainer(BaseTrainer):
                 preds = self.model_forward(batch_list)
 
             if self.normalizers is not None and "target" in self.normalizers:
-                preds["energy"] = self.normalizers["target"].denorm(preds["energy"])
+                hofs = None
+                if self.task_name == "qm7x":
+                    hofs = torch.cat(
+                        [batch.hofs.to(self.device) for batch in batch_list], dim=0
+                    )
+                preds["energy"] = self.normalizers["target"].denorm(
+                    preds["energy"], hofs=hofs
+                )
             if self.normalizers is not None and "grad_target" in self.normalizers:
                 self.normalizers["grad_target"].to(self.device)
 
@@ -467,7 +474,12 @@ class SingleTrainer(BaseTrainer):
         )
 
         if self.normalizer.get("normalize_labels", False):
-            target_normed = self.normalizers["target"].norm(energy_target)
+            hofs = None
+            if self.task_name == "qm7x":
+                hofs = torch.cat(
+                    [batch.hofs.to(self.device) for batch in batch_list], dim=0
+                )
+            target_normed = self.normalizers["target"].norm(energy_target, hofs=hofs)
         else:
             target_normed = energy_target
         energy_mult = self.config["optim"].get("energy_coefficient", 1)
@@ -609,10 +621,19 @@ class SingleTrainer(BaseTrainer):
                     )
 
         if self.normalizer.get("normalize_labels") and "target" in self.normalizers:
+            hofs = None
+            if self.task_name == "qm7x":
+                hofs = torch.cat(
+                    [batch.hofs.to(self.device) for batch in batch_list], dim=0
+                )
             if not self.config.get("no_metrics_denorm"):
-                preds["energy"] = self.normalizers["target"].denorm(preds["energy"])
+                preds["energy"] = self.normalizers["target"].denorm(
+                    preds["energy"], hofs=hofs
+                )
             else:
-                target["energy"] = self.normalizers["target"].norm(target["energy"])
+                target["energy"] = self.normalizers["target"].norm(
+                    target["energy"], hofs=hofs
+                )
 
         metrics = evaluator.eval(preds, target, prev_metrics=metrics)
 

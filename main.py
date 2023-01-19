@@ -43,16 +43,6 @@ from ocpmodels.trainers import BaseTrainer
 # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 torch.multiprocessing.set_sharing_strategy("file_system")
 
-try:
-    import ipdb  # noqa: F401
-
-    os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
-except:  # noqa: E722
-    print(
-        "`ipdb` is not installed. ",
-        "Consider `pip install ipdb` to improve your debugging experience.",
-    )
-
 
 def print_warnings():
     warnings = [

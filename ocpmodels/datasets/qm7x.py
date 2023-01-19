@@ -1,24 +1,28 @@
-import time
-from torch.utils.data import Dataset
+import pickle
 import random
 import re
+import time
 from abc import abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable
 from pathlib import Path
-import pickle
+
 import h5py
+import lmdb
 import numpy as np
 import torch
+from mendeleev.fetch import fetch_table
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from scipy import spatial as sp
 from torch import as_tensor
+from torch.utils.data import Dataset
 from torch_geometric.data import Data
-from cosmosis.dataset import CDataset
 from tqdm import tqdm
-import lmdb
+
+from cosmosis.dataset import CDataset
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import ROOT
 
 try:
     import orjson as json  # noqa: F401
@@ -754,6 +758,10 @@ class QM7XFromLMDB(Dataset):
             for i in all_samples["splits"][split]
         ]
 
+        self.hofs = fetch_table("elements")["heat_of_formation"].values
+        self.hofs[np.isnan(self.hofs)] = self.hofs[~np.isnan(self.hofs)].mean()
+        self.hofs = torch.from_numpy(self.hofs).float()
+
         self.transform = transform
 
     def __len__(self):
@@ -785,6 +793,9 @@ class QM7XFromLMDB(Dataset):
         data.natoms = len(data.pos)
         data.tags = torch.full((data.natoms,), -1, dtype=torch.long)
         data.atomic_numbers = torch.tensor(data.atNUM, dtype=torch.long)
+        data.hofs = self.hofs[
+            data.atomic_numbers.numpy().astype(int) - 1  # element 1 is at row 0
+        ].sum()
 
         t1 = time.time_ns()
         if self.transform is not None:
@@ -809,12 +820,14 @@ class QM7XFromLMDB(Dataset):
 
 
 if __name__ == "__main__":
-    from ocpmodels.datasets.qm7x import QM7XFromLMDB as QM7X
-    from pathlib import Path
-    from tqdm import tqdm
-    import numpy as np
     import json
+    from pathlib import Path
+
+    import numpy as np
+    from tqdm import tqdm
+
     from ocpmodels.common.data_parallel import ParallelCollater
+    from ocpmodels.datasets.qm7x import QM7XFromLMDB as QM7X
 
     src = Path("/network/projects/ocp/qm7x/processed")
     smp = Path("configs/models/qm7x-metadata/samples.json")
