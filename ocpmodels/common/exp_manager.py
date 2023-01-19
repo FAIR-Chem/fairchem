@@ -222,6 +222,11 @@ class Manager:
                 in out_txt
             ):
                 self.cache["job_state"][j] = "WaitingForTrials"
+            elif (
+                "RuntimeError: Trying to create tensor with negative dimension"
+                in out_txt
+            ):
+                self.cache["job_state"][j] = "NegativeEmbeddingDimension"
             elif "Traceback" in out_txt:
                 self.cache["job_state"][j] = (
                     "Traceback: " + out_txt.split("Traceback")[1]
