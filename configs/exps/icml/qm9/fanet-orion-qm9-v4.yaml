@@ -48,13 +48,13 @@ orion:
   # Remember to change the experiment name if you change anything in the search space
   n_jobs: 20
 
-  unique_exp_name: fanet-qm9-v4.0.0
+  unique_exp_name: fanet-qm9-v4.0.1
 
   space:
     optim/max_epochs: fidelity(200, 2000, base=5)
     optim/lr_initial: loguniform(1e-4, 6e-4, precision=3)
     model/graph_norm: choices([True, False])
-    model/hidden_channels: uniform(5, 15, discrete=True)
+    model/hidden_channels: uniform(6, 15, discrete=True)
     model/mp_type: choices(["simple", "base", "updownscale", "updownscale_base"])
     model/num_filters: uniform(4, 16, discrete=True)
     model/num_gaussians: uniform(1, 4, discrete=True)
