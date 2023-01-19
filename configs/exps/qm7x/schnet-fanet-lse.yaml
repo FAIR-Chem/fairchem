@@ -32,9 +32,9 @@ default:
     eval_every: 0.34
     # parameters EMA
     ema_decay: 0.999
-    energy_coefficient: 0.01
+    energy_coefficient: 0.
     energy_grad_coefficient: 0
-    force_coefficient: 0.99
+    force_coefficient: 1.
     loss_energy: mae
     loss_force: mse
     # all below is for the scheduler
@@ -54,12 +54,12 @@ default:
     regress_forces: from_energy
   dataset:
     train:
-      rescale_with_hof: True
-      lse_shift: False
+      rescale_with_hof: False
+      lse_shift: True
     val_id:
-      lse_shift: False
+      lse_shift: True
     val_ood:
-      lse_shift: False
+      lse_shift: True
 
 runs:
   - config: schnet-qm7x-all
@@ -82,26 +82,6 @@ runs:
     optim:
       lr_initial: 0.001
       batch_size: 256
-  - config: schnet-qm7x-all
-    dataset:
-      train:
-        normalize_labels: False
-
-  - config: schnet-qm7x-all
-    dataset:
-      train:
-        normalize_labels: False
-    optim:
-      lr_initial: 0.001
-      batch_size: 100
-
-  - config: schnet-qm7x-all
-    dataset:
-      train:
-        normalize_labels: False
-    optim:
-      lr_initial: 0.001
-      batch_size: 256
 
   - config: fanet-qm7x-all
     model:
@@ -111,9 +91,6 @@ runs:
 
   - config: fanet-qm7x-all
     optim:
-      energy_coefficient: 0.01
-      energy_grad_coefficient: 0.1
-      force_coefficient: 0.89
       lr_initial: 0.001
       batch_size: 100
     model:
@@ -125,31 +102,12 @@ runs:
 
   - config: fanet-qm7x-all
     optim:
-      energy_coefficient: 0.01
-      energy_grad_coefficient: 0.1
-      force_coefficient: 0.89
       lr_initial: 0.001
       batch_size: 100
     model:
       graph_norm: false
       force_decoder_type: mlp
       edge_embed_type: all_rij
-      regress_forces: direct_with_gradient_target
-      num_interactions: 4
-
-  - config: fanet-qm7x-all
-    optim:
-      energy_coefficient: 0.01
-      energy_grad_coefficient: 0.1
-      force_coefficient: 0.89
-      lr_initial: 0.001
-      batch_size: 100
-    model:
-      graph_norm: true
-      force_decoder_type: mlp
+      regress_forces: direct
       mp_type: updownscale_base
-      edge_embed_type: all_rij
-      regress_forces: direct_with_gradient_target
-      num_interactions: 3
-      num_filters: 256
-      hidden_channels: 256
+      num_interactions: 4

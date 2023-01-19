@@ -710,6 +710,7 @@ class QM7XFromLMDB(Dataset):
         },
         transform=None,
     ):
+        self.config = config
         lmdb_path = Path(config["src"]).expanduser().resolve()
         self.lmdb_path = str(lmdb_path)
         if not lmdb_path.exists():
@@ -762,6 +763,20 @@ class QM7XFromLMDB(Dataset):
         self.hofs[np.isnan(self.hofs)] = self.hofs[~np.isnan(self.hofs)].mean()
         self.hofs = torch.from_numpy(self.hofs).float()
 
+        self.lse_shifts = None
+        if self.config.get("lse_shift"):
+            self.lse_shifts = torch.tensor(
+                json.loads(
+                    (
+                        ROOT
+                        / "configs"
+                        / "models"
+                        / "qm7x-metadata"
+                        / "lse-shifts.json"
+                    ).read_text()
+                )
+            )
+
         self.transform = transform
 
     def __len__(self):
@@ -793,9 +808,11 @@ class QM7XFromLMDB(Dataset):
         data.natoms = len(data.pos)
         data.tags = torch.full((data.natoms,), -1, dtype=torch.long)
         data.atomic_numbers = torch.tensor(data.atNUM, dtype=torch.long)
-        data.hofs = self.hofs[
-            data.atomic_numbers.numpy().astype(int) - 1  # element 1 is at row 0
-        ].sum()
+        data.hofs = self.hofs[data.atomic_numbers - 1].sum()  # element 1 is at row 0
+        if self.lse_shifts is not None:
+            data.lse_shift = self.lse_shifts[data.atomic_numbers].sum()
+            data.y_unshifted = data.y
+            data.y = data.y - data.lse_shift
 
         t1 = time.time_ns()
         if self.transform is not None:

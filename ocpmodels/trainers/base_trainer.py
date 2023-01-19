@@ -13,7 +13,6 @@ import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from copy import deepcopy
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -341,13 +340,6 @@ class BaseTrainer(ABC):
         pass
 
     def load_model(self):
-        # Build model
-        if not self.silent:
-            print(
-                f"🧠 Loading model {self.config['model_name']}:\n"
-                + f" {yaml.dump(self.config['model'])}"
-            )
-
         bond_feat_dim = None
         bond_feat_dim = self.config["model"].get("num_gaussians", 50)
 

@@ -307,6 +307,9 @@ def continue_from_slurm_job_id(config, from_best=False):
     if config.get("checkpoint"):
         return config
 
+    if config.get("no-resume"):
+        return config
+
     job_id = os.environ.get("SLURM_JOBID")
     if job_id is None:
         return config
@@ -536,6 +539,15 @@ def set_qm7x_target_stats(trainer_config):
             continue
         if not dataset.get("normalize_labels", False):
             continue
+        else:
+            if dataset.get("lse_shift"):
+                print(
+                    "Setting normalize_labels to False because of lse_shift for split",
+                    f"{d}.",
+                )
+                trainer_config["dataset"][d]["normalize_labels"] = False
+                continue
+
         assert "target" in dataset, "target must be specified."
         mean = target_stats[dataset["target"]]["mean"]
         std = target_stats[dataset["target"]]["std"]

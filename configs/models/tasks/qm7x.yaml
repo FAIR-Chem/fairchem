@@ -36,7 +36,8 @@ default:
       target: ePBE0+MBD
       forces_target: totFOR
       std_divider: 1.0
-      rescale_with_hof: True
+      rescale_with_hof: False
+      lse_shift: True
     val_id:
       src: /network/projects/ocp/qm7x/processed
       normalize_labels: True # mean and std of target will be set by utils.py if this is True
@@ -44,6 +45,7 @@ default:
       target: ePBE0+MBD
       forces_target: totFOR
       std_divider: 1.0
+      lse_shift: True
     val_ood:
       src: /network/projects/ocp/qm7x/processed
       normalize_labels: True # mean and std of target will be set by utils.py if this is True
@@ -51,6 +53,7 @@ default:
       target: ePBE0+MBD
       forces_target: totFOR
       std_divider: 1.0
+      lse_shift: True
 
     # TEST SET DO NOT ENABLE
     # - src: /network/projects/ocp/qm9
