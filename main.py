@@ -115,12 +115,12 @@ class Runner:
             traceback.print_exc()
             signal = "trainer_init_error"
 
+        start_time = time.time()
         if signal is None:
             task = registry.get_task_class(self.trainer_config["mode"])(
                 self.trainer_config
             )
             task.setup(self.trainer)
-            start_time = time.time()
             print_warnings()
 
             signal = task.run()
@@ -132,9 +132,10 @@ class Runner:
                 self.trainer.close_datasets()
 
         dist_utils.synchronize()
-        logging.info(f"Total time taken: {time.time() - start_time}")
+        total_time = time.time() - start_time
+        logging.info(f"Total time taken: {total_time}")
         if self.trainer and self.trainer.logger is not None:
-            self.trainer.logger.log({"Total time": time.time() - start_time})
+            self.trainer.logger.log({"Total time": total_time})
 
         objective = dist_utils.broadcast_from_master(
             self.trainer.objective if self.trainer else None
