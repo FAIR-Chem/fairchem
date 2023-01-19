@@ -211,6 +211,8 @@ class Manager:
             out_txt = out_file.read_text()
             if "eval_all_splits" in out_txt and "Final results" in out_txt:
                 self.cache["job_state"][j] = "Finished"
+            elif "DUE TO TIME LIMIT" in out_txt:
+                self.cache["job_state"][j] = "TimeLimit"
             elif "RaceCondition" in out_txt:
                 self.cache["job_state"][j] = "RaceCondition"
             elif "Traceback" in out_txt:
