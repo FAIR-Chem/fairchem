@@ -79,6 +79,23 @@ class Manager:
         self.job_ids = sorted(
             [p.name for runs in self.trial_hparams_to_rundirs.values() for p in runs]
         )
+        sq_cmd = (
+            "/opt/slurm/bin/squeue"
+            if "CC_CLUSTER" not in os.environ
+            else "/opt/software/slurm/bin/squeue"
+        )
+        sq = set(
+            [
+                j.strip()
+                for j in os.popen(f"{sq_cmd} -u $USER -o '%12i'")
+                .read()
+                .splitlines()[1:]
+            ]
+        )
+        self.running_jobs = set(self.job_ids) & sq
+        self.waiting_jobs = (
+            set([j.parent.name for j in RUN_DIR.glob(f"*/{self.name}.exp")]) & sq
+        ) - self.running_jobs
         print("\n")
         self.discover_yamls()
         self.discover_job_ids_from_yaml()
@@ -127,33 +144,17 @@ class Manager:
         )
         print("{:32} : {:4}".format("Existing wandb runs", len(self.wandb_runs)))
         print("{:32} : {}".format("Algorithm's budgets", str(self.budgets)))
-        sq_cmd = (
-            "/opt/slurm/bin/squeue"
-            if "CC_CLUSTER" not in os.environ
-            else "/opt/software/slurm/bin/squeue"
-        )
-        sq = set(
-            [
-                j.strip()
-                for j in os.popen(f"{sq_cmd} -u $USER -o '%12i'")
-                .read()
-                .splitlines()[1:]
-            ]
-        )
-        running = set(self.job_ids) & sq
-        waiting = (
-            set([j.parent.name for j in RUN_DIR.glob(f"*/{self.name}.exp")]) & sq
-        ) - running
+
         print(
             "{:32} : {}".format(
                 "Jobs currently running:",
-                f"{len(running)} " + " ".join(sorted(running)),
+                f"{len(self.running_jobs)} " + " ".join(sorted(self.running_jobs)),
             )
         )
         print(
             "{:32} : {}".format(
                 "Jobs currently waiting:",
-                f"{len(waiting)} " + " ".join(sorted(waiting)),
+                f"{len(self.waiting_jobs)} " + " ".join(sorted(self.waiting_jobs)),
             )
         )
 
@@ -216,7 +217,12 @@ class Manager:
             elif "nan_loss" in out_txt:
                 self.cache["job_state"][j] = "NaN loss"
             else:
-                self.cache["job_state"][j] = "Unknown"
+                if j in self.waiting_jobs:
+                    self.cache["job_state"][j] = "Waiting"
+                if j in self.running_jobs:
+                    self.cache["job_state"][j] = "Running"
+                else:
+                    self.cache["job_state"][j] = "Unknown"
         self.commit_cache()
 
     def print_output_files_stats(self):
