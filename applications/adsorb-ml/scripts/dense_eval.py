@@ -1,3 +1,72 @@
+"""
+AdsorbML evaluation script. This script expects the results-file to be
+organized in a very specific structure in order to evaluate successfully.
+
+Results are to be saved out in a dictionary pickle file, where keys are the
+`system_id` and the values are energies and compute information for a
+specified `config_id`. For each `config_id` that successfully passes the
+physical constraints defined in the manuscript, the following information must
+be provided:
+
+    ml_energy: The ML predicted adsorption energy on that particular `config_id`.
+
+    ml+dft_energy: The DFT adsorption energy (SP or RX) as evaluated on
+    the predicted ML `config_id` structure. Do note use raw DFT energies,
+    ensure these are referenced correctly. None if not available.
+
+    scf_steps: Total number of SCF steps involved in determining the DFT
+    adsorption energy on the predicted ML `config_id`. For relaxation
+    methods (ML+RX), sum all SCF steps across all frames. 0 if not
+    available.
+
+    ionic_steps: Total number of ionic steps in determining the DFT
+    adsorption energy on the predicted ML `config_id`. This will be 1 for
+    single-point methods (ML+SP). 0 if not available.
+
+NOTE - It is possible that due to the required filtering of physical
+constraints, no configurations are valid for a particular `system_id`. In
+this case the  system or config id can be excluded entirely from the
+results file and will be treated as a failure point at evaluation time.
+
+e.g.
+    {
+        "6_1134_23":
+            {
+                "rand11": {
+                    "ml_energy": -1.234,
+                    "ml+dft_energy": -1.456,
+                    "scf_steps": 33,
+                    "ionic_steps": 1,
+                },
+                "rand5": {
+                    "ml_energy": -2.489,
+                    "ml+dft_energy": -2.109,
+                    "scf_steps": 16,
+                    "ionic_steps": 1,
+                },
+                .
+                .
+                .
+            },
+        "7_6566_62" :
+            {
+                "rand79": {
+                    "ml_energy": -1.234,
+                    "ml+dft_energy": -1.456,
+                    "scf_steps": 33,
+                    "ionic_steps": 1,
+                },
+                .
+                .
+                .
+
+            },
+        .
+        .
+        .
+    }
+"""
+
 import argparse
 import pickle
 from collections import defaultdict
@@ -164,74 +233,6 @@ def filter_ml_data(ml_data, dft_data):
 
 
 if __name__ == "__main__":
-    """
-    AdsorbML evaluation script. This script expects the results-file to be
-    organized in a very specific structure in order to evaluate successfully.
-
-    Results are to be saved out in a dictionary pickle file, where keys are the
-    `system_id` and the values are energies and compute information for a
-    specified `config_id`. For each `config_id` that successfully passes the
-    physical constraints defined in the manuscript, the following information must
-    be provided:
-
-        ml_energy: The ML predicted adsorption energy on that particular `config_id`.
-
-        ml+dft_energy: The DFT adsorption energy (SP or RX) as evaluated on
-        the predicted ML `config_id` structure. Do note use raw DFT energies,
-        ensure these are referenced correctly. None if not available.
-
-        scf_steps: Total number of SCF steps involved in determining the DFT
-        adsorption energy on the predicted ML `config_id`. For relaxation
-        methods (ML+RX), sum all SCF steps across all frames. 0 if not
-        available.
-
-        ionic_steps: Total number of ionic steps in determining the DFT
-        adsorption energy on the predicted ML `config_id`. This will be 1 for
-        single-point methods (ML+SP). 0 if not available.
-
-    NOTE - It is possible that due to the required filtering of physical
-    constraints, no configurations are valid for a particular `system_id`. In
-    this case the  system or config id can be excluded entirely from the
-    results file and will be treated as a failure point at evaluation time.
-
-    e.g.
-        {
-            "6_1134_23":
-                {
-                    "rand11": {
-                        "ml_energy": -1.234,
-                        "ml+dft_energy": -1.456,
-                        "scf_steps": 33,
-                        "ionic_steps": 1,
-                    },
-                    "rand5": {
-                        "ml_energy": -2.489,
-                        "ml+dft_energy": -2.109,
-                        "scf_steps": 16,
-                        "ionic_steps": 1,
-                    },
-                    .
-                    .
-                    .
-                },
-            "7_6566_62" :
-                {
-                    "rand79": {
-                        "ml_energy": -1.234,
-                        "ml+dft_energy": -1.456,
-                        "scf_steps": 33,
-                        "ionic_steps": 1,
-                    },
-                    .
-                    .
-                    .
-
-                },
-            .
-            .
-            .
-        }
-    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--results-file", required=True, help="Path to results-file to evaluate."
