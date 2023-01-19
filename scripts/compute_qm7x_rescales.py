@@ -1,12 +1,12 @@
 import json
-import os
+import sys
 from pathlib import Path
 
 import numpy as np
 from mendeleev.fetch import fetch_table
 from tqdm import tqdm
 
-os.path.append(Path(__file__).resolve().parent.parent)
+sys.path.append(Path(__file__).resolve().parent.parent)
 
 from ocpmodels.common.utils import (
     ROOT,
