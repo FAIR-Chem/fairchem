@@ -215,6 +215,8 @@ class Manager:
                 self.cache["job_state"][j] = "TimeLimit"
             elif "RaceCondition" in out_txt:
                 self.cache["job_state"][j] = "RaceCondition"
+            elif "DatabaseTimeout: Could not acquire lock for PickledDB" in out_txt:
+                self.cache["job_state"][j] = "DatabaseTimeout"
             elif "Traceback" in out_txt:
                 self.cache["job_state"][j] = (
                     "Traceback: " + out_txt.split("Traceback")[1]
