@@ -21,7 +21,7 @@ default:
     # early stopping
     es_patience: 20
     es_min_abs_change: 0.000001
-    es_warmup_epochs: 500
+    es_warmup_epochs: 800
     # all below is for the scheduler
     scheduler: ReduceLROnPlateau
     mode: min
