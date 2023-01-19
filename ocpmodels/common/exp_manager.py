@@ -202,7 +202,9 @@ class Manager:
                 continue
 
             out_txt = out_file.read_text()
-            if "RaceCondition" in out_txt:
+            if "eval_all_splits" in out_txt and "Final results" in out_txt:
+                self.cache["job_state"][j] = "Finished"
+            elif "RaceCondition" in out_txt:
                 self.cache["job_state"][j] = "RaceCondition"
             elif "Traceback" in out_txt:
                 self.cache["job_state"][j] = (
@@ -211,8 +213,6 @@ class Manager:
             elif "srun: Job step aborted" in out_txt:
                 if "slurmstepd" in out_txt and " CANCELLED AT " in out_txt:
                     self.cache["job_state"][j] = "Cancelled"
-            elif "eval_all_splits" in out_txt and "Final results" in out_txt:
-                self.cache["job_state"][j] = "Finished"
             elif "nan_loss" in out_txt:
                 self.cache["job_state"][j] = "NaN loss"
             else:
