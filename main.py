@@ -90,6 +90,8 @@ if __name__ == "__main__":
     if args.logdir:
         args.logdir = resolve(args.logdir)
 
+    # -- Build config
+
     trainer_config = build_config(args, override_args)
     original_trainer_config = copy.deepcopy(trainer_config)
 

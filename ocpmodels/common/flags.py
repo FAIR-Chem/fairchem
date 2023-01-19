@@ -96,6 +96,12 @@ class Flags:
             + "from the command-line",
         )
         self.parser.add_argument(
+            "--keep_orion_config",
+            type=bool,
+            help="If not True, any key in the continued/restarted config that contains"
+            + " ``orion`` will be set to ``None``",
+        )
+        self.parser.add_argument(
             "--timestamp-id",
             default=None,
             type=str,

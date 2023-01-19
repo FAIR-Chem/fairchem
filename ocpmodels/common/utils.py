@@ -990,6 +990,10 @@ def build_config(args, args_override):
             if args.continue_from_dir:
                 continue_config["checkpoint"] = str(latest_ckpt)
             continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
+            if not args.keep_orion_config:
+                for k in continue_config:
+                    if "orion" in k:
+                        continue_config[k] = None
             print(
                 f"✅ Loading config from directory {str(cont_dir)}"
                 + (
