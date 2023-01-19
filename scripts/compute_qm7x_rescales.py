@@ -6,7 +6,7 @@ import numpy as np
 from mendeleev.fetch import fetch_table
 from tqdm import tqdm
 
-sys.path.append(Path(__file__).resolve().parent.parent)
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from ocpmodels.common.utils import (
     ROOT,
