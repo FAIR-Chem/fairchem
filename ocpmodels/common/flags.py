@@ -90,6 +90,12 @@ class Flags:
             "--continue_from_dir", type=str, help="Run to continue, loading its config"
         )
         self.parser.add_argument(
+            "--restart_from_dir",
+            type=str,
+            help="Run to restart, loading its config and overwriting "
+            + "from the command-line",
+        )
+        self.parser.add_argument(
             "--timestamp-id",
             default=None,
             type=str,

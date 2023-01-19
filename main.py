@@ -8,10 +8,8 @@ LICENSE file in the root directory of this source tree.
 import copy
 import logging
 import os
-import shutil
 import time
 import traceback
-import warnings
 
 import torch
 from orion.core.utils.exceptions import ReservationRaceCondition
@@ -43,16 +41,6 @@ from ocpmodels.trainers import BaseTrainer
 # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 torch.multiprocessing.set_sharing_strategy("file_system")
 
-try:
-    import ipdb  # noqa: F401
-
-    os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
-except:  # noqa: E722
-    print(
-        "`ipdb` is not installed. ",
-        "Consider `pip install ipdb` to improve your debugging experience.",
-    )
-
 
 def print_warnings():
     warnings = [
@@ -75,7 +63,7 @@ class Runner:
         self.hparams = {}
 
     def run(self, orion_exp=None):
-        orion_trial = None
+        orion_trial = signal = None
         self.original_config = copy.deepcopy(self.trainer_config)
         orion_race_condition = False
         if dist_utils.is_master():
@@ -120,31 +108,50 @@ class Runner:
         self.trainer_config = continue_orion_exp(self.trainer_config)
         self.trainer_config = auto_note(self.trainer_config)
         cls = registry.get_trainer_class(self.trainer_config["trainer"])
-        self.trainer: BaseTrainer = cls(**self.trainer_config)
-        task = registry.get_task_class(self.trainer_config["mode"])(self.trainer_config)
-        task.setup(self.trainer)
-        start_time = time.time()
-        print_warnings()
+        try:
+            self.trainer: BaseTrainer = cls(**self.trainer_config)
+        except Exception as e:
+            print(f"Error in trainer initialization: {e}")
+            traceback.print_exc()
+            signal = "trainer_init_error"
 
-        signal = task.run()
+        start_time = time.time()
+        if signal is None:
+            task = registry.get_task_class(self.trainer_config["mode"])(
+                self.trainer_config
+            )
+            task.setup(self.trainer)
+            print_warnings()
+
+            signal = task.run()
 
         # handle job preemption / time limit
         if signal == "SIGTERM":
             print("\nJob was preempted. Wrapping up...\n")
-            self.trainer.close_datasets()
+            if self.trainer:
+                self.trainer.close_datasets()
 
         dist_utils.synchronize()
-        logging.info(f"Total time taken: {time.time() - start_time}")
-        if self.trainer.logger is not None:
-            self.trainer.logger.log({"Total time": time.time() - start_time})
+        total_time = time.time() - start_time
+        logging.info(f"Total time taken: {total_time}")
+        if self.trainer and self.trainer.logger is not None:
+            self.trainer.logger.log({"Total time": total_time})
 
-        objective = dist_utils.broadcast_from_master(self.trainer.objective)
+        objective = dist_utils.broadcast_from_master(
+            self.trainer.objective if self.trainer else None
+        )
 
         if orion_exp is not None:
             if objective is None:
                 if signal == "loss_is_nan":
                     objective = 1e12
                     print("Received NaN objective from worker. Setting to 1e12.")
+                if signal == "trainer_init_error":
+                    objective = 1e12
+                    print(
+                        "Received trainer_init_error from worker.",
+                        "Setting objective to 1e12.",
+                    )
                 else:
                     print("Received None objective from worker. Skipping observation.")
             if objective is not None:

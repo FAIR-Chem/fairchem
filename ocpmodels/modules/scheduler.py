@@ -178,14 +178,15 @@ class EarlyStopper:
             else:
                 self.counter += 1
 
-        if self.warmup_epochs > 0 and epoch is not None and epoch < self.warmup_epochs:
-            self.counter = 0
-
         if self.counter >= self.patience:
             self.early_stop = "metric"
 
         if lr is not None and lr <= self.min_lr:
             self.early_stop = "lr"
+
+        if self.warmup_epochs > 0 and epoch is not None and epoch < self.warmup_epochs:
+            self.early_stop = ""
+            self.counter = 0
 
         return self.early_stop
 

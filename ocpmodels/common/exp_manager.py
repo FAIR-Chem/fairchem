@@ -10,6 +10,9 @@ import time
 from datetime import datetime
 import yaml
 from tqdm import tqdm
+
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
+
 from ocpmodels.common.utils import ROOT, RUN_DIR, get_and_move_orion_db_path
 
 EXP_OUT_DIR = ROOT / "data" / "exp_outputs"
@@ -76,6 +79,23 @@ class Manager:
         self.job_ids = sorted(
             [p.name for runs in self.trial_hparams_to_rundirs.values() for p in runs]
         )
+        sq_cmd = (
+            "/opt/slurm/bin/squeue"
+            if "CC_CLUSTER" not in os.environ
+            else "/opt/software/slurm/bin/squeue"
+        )
+        sq = set(
+            [
+                j.strip()
+                for j in os.popen(f"{sq_cmd} -u $USER -o '%12i'")
+                .read()
+                .splitlines()[1:]
+            ]
+        )
+        self.running_jobs = set(self.job_ids) & sq
+        self.waiting_jobs = (
+            set([j.parent.name for j in RUN_DIR.glob(f"*/{self.name}.exp")]) & sq
+        ) - self.running_jobs
         print("\n")
         self.discover_yamls()
         self.discover_job_ids_from_yaml()
@@ -124,33 +144,17 @@ class Manager:
         )
         print("{:32} : {:4}".format("Existing wandb runs", len(self.wandb_runs)))
         print("{:32} : {}".format("Algorithm's budgets", str(self.budgets)))
-        sq_cmd = (
-            "/opt/slurm/bin/squeue"
-            if "CC_CLUSTER" not in os.environ
-            else "/opt/software/slurm/bin/squeue"
-        )
-        sq = set(
-            [
-                j.strip()
-                for j in os.popen(f"{sq_cmd} -u $USER -o '%12i'")
-                .read()
-                .splitlines()[1:]
-            ]
-        )
-        running = set(self.job_ids) & sq
-        waiting = (
-            set([j.parent.name for j in RUN_DIR.glob(f"*/{self.name}.exp")]) & sq
-        ) - running
+
         print(
             "{:32} : {}".format(
                 "Jobs currently running:",
-                f"{len(running)} " + " ".join(sorted(running)),
+                f"{len(self.running_jobs)} " + " ".join(sorted(self.running_jobs)),
             )
         )
         print(
             "{:32} : {}".format(
                 "Jobs currently waiting:",
-                f"{len(waiting)} " + " ".join(sorted(waiting)),
+                f"{len(self.waiting_jobs)} " + " ".join(sorted(self.waiting_jobs)),
             )
         )
 
@@ -192,6 +196,12 @@ class Manager:
         for j in tqdm(self.cache["all_job_ids"], desc="Parsing output files"):
             if j in self.cache["job_state"] and not self.rebuild_cache:
                 continue
+            if j in self.waiting_jobs:
+                self.cache["job_state"][j] = "Waiting"
+                continue
+            if j in self.running_jobs:
+                self.cache["job_state"][j] = "Running"
+                continue
             out_file = RUN_DIR / j / "output-0.txt"
 
             if not out_file.exists():
@@ -199,8 +209,24 @@ class Manager:
                 continue
 
             out_txt = out_file.read_text()
-            if "RaceCondition" in out_txt:
+            if "eval_all_splits" in out_txt and "Final results" in out_txt:
+                self.cache["job_state"][j] = "Finished"
+            elif "DUE TO TIME LIMIT" in out_txt:
+                self.cache["job_state"][j] = "TimeLimit"
+            elif "RaceCondition" in out_txt:
                 self.cache["job_state"][j] = "RaceCondition"
+            elif "DatabaseTimeout: Could not acquire lock for PickledDB" in out_txt:
+                self.cache["job_state"][j] = "DatabaseTimeout"
+            elif (
+                "Algo does not have more trials to sample.Waiting for current trials to finish"  # noqa: E501
+                in out_txt
+            ):
+                self.cache["job_state"][j] = "WaitingForTrials"
+            elif (
+                "RuntimeError: Trying to create tensor with negative dimension"
+                in out_txt
+            ):
+                self.cache["job_state"][j] = "NegativeEmbeddingDimension"
             elif "Traceback" in out_txt:
                 self.cache["job_state"][j] = (
                     "Traceback: " + out_txt.split("Traceback")[1]
@@ -208,8 +234,6 @@ class Manager:
             elif "srun: Job step aborted" in out_txt:
                 if "slurmstepd" in out_txt and " CANCELLED AT " in out_txt:
                     self.cache["job_state"][j] = "Cancelled"
-            elif "eval_all_splits" in out_txt and "Final results" in out_txt:
-                self.cache["job_state"][j] = "Finished"
             elif "nan_loss" in out_txt:
                 self.cache["job_state"][j] = "NaN loss"
             else:
@@ -232,7 +256,7 @@ class Manager:
                 stats[o]["n"] += 1
                 stats[o]["ids"].append(j)
         for s, v in stats.items():
-            print(f"• {s:31}" + f": {v['n']} (" + " ".join(v["ids"]) + ")")
+            print(f"\n• {s:31}" + f": {v['n']}\n    " + " ".join(v["ids"]))
         if stats["Traceback"]["n"] > 0 and self.print_tracebacks:
             print("\nTraceback contents:\n" + "-" * 19 + "\n")
             print(

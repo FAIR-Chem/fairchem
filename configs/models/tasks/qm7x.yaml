@@ -36,6 +36,7 @@ default:
       target: ePBE0+MBD
       forces_target: totFOR
       std_divider: 1.0
+      rescale_with_hof: True
     val_id:
       src: /network/projects/ocp/qm7x/processed
       normalize_labels: True # mean and std of target will be set by utils.py if this is True

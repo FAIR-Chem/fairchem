@@ -282,7 +282,7 @@ def read_slurm_env(config):
         return config
 
 
-def continue_from_slurm_job_id(config):
+def continue_from_slurm_job_id(config, from_best=False):
     """
     Assuming runs are consistently executed in a `run_dir` with the
     `run_dir/$SLURM_JOBID` pattern, this functions looks for an existing
@@ -298,6 +298,8 @@ def continue_from_slurm_job_id(config):
 
     Args:
         config (dict): The original config to overwrite
+        from_best (bool, optional): If True, only looks for `best_checkpoint.pt`.
+            otherwise, looks for the latest checkpoint. Defaults to False.
 
     Returns:
         dict: The updated config if a checkpoint has been found
@@ -314,9 +316,12 @@ def continue_from_slurm_job_id(config):
     if not ckpt_dir.exists() or not ckpt_dir.is_dir():
         return config
 
-    best_ckp = ckpt_dir / "best_checkpoint.pt"
-    if best_ckp.exists():
-        config["checkpoint"] = str(best_ckp)
+    if from_best:
+        best_ckp = ckpt_dir / "best_checkpoint.pt"
+        if best_ckp.exists():
+            ckpt = str(best_ckp)
+        else:
+            raise FileNotFoundError(f"No best checkpoint found in {str(ckpt_dir)}")
     else:
         ckpts = list(ckpt_dir.glob("checkpoint-*.pt"))
         if not ckpts:
@@ -325,7 +330,11 @@ def continue_from_slurm_job_id(config):
             ckpts, key=lambda f: float(f.stem.split("checkpoint-")[-1])
         )[-1]
         if latest_ckpt.exists() and latest_ckpt.is_file():
-            config["checkpoint"] = str(latest_ckpt)
+            ckpt = str(latest_ckpt)
+
+    if ckpt:
+        config["checkpoint"] = ckpt
+        print(f"\n🎁 Resuming based on $SLURM_JOB_ID {JOB_ID} from {ckpt}\n")
 
     return config
 
@@ -515,6 +524,13 @@ def set_qm7x_target_stats(trainer_config):
         (ROOT / "configs" / "models" / "qm7x-metadata" / "stats.json").read_text()
     )
 
+    hof_stats = json.loads(
+        (
+            ROOT / "configs" / "models" / "qm7x-metadata" / "hof_rescales.json"
+        ).read_text()
+    )
+    hof_stats.pop("about", None)
+
     for d, dataset in deepcopy(trainer_config["dataset"]).items():
         if d == "default_val":
             continue
@@ -533,6 +549,11 @@ def set_qm7x_target_stats(trainer_config):
             std = target_stats[dataset["forces_target"]]["std"]
             trainer_config["dataset"][d]["grad_target_mean"] = mean
             trainer_config["dataset"][d]["grad_target_std"] = std / std_divider
+
+    if "train" in trainer_config["dataset"] and trainer_config["dataset"]["train"].get(
+        "rescale_with_hof"
+    ):
+        trainer_config["dataset"]["train"]["hof_rescales"] = hof_stats
 
     return trainer_config
 
@@ -845,6 +866,16 @@ def add_edge_distance_to_graph(
 def setup_imports():
     from ocpmodels.common.registry import registry
 
+    try:
+        import ipdb  # noqa: F401
+
+        os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
+    except:  # noqa: E722
+        print(
+            "`ipdb` is not installed. ",
+            "Consider `pip install ipdb` to improve your debugging experience.",
+        )
+
     # First, check if imports are already setup
     has_already_setup = registry.get("imports_setup", no_warning=True)
     if has_already_setup:
@@ -1086,8 +1117,16 @@ def build_config(args, args_override):
     if args_override != []:
         overrides = create_dict_from_args(args_override)
 
-    if args.continue_from_dir:
-        cont_dir = resolve(args.continue_from_dir)
+    if args.continue_from_dir or args.restart_from_dir:
+        if args.continue_from_dir and args.restart_from_dir:
+            raise ValueError(
+                "Cannot specify both --continue_from_dir and --restart_from_dir."
+            )
+        cont_dir = (
+            resolve(args.continue_from_dir)
+            if args.continue_from_dir
+            else resolve(args.restart_from_dir)
+        )
         ckpts = list(cont_dir.glob("checkpoints/checkpoint-*.pt"))
         if not ckpts:
             print(
@@ -1098,10 +1137,23 @@ def build_config(args, args_override):
             latest_ckpt = str(
                 sorted(ckpts, key=lambda c: float(c.stem.split("-")[-1]))[-1]
             )
-            continue_config["checkpoint"] = str(latest_ckpt)
+            if args.continue_from_dir:
+                continue_config["checkpoint"] = str(latest_ckpt)
             continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
-            print("✅ Loading config from cont dir and latest checkpoint:", latest_ckpt)
+            print(
+                f"✅ Loading config from directory {str(cont_dir)}"
+                + (
+                    f" and latest checkpoint: {latest_ckpt}"
+                    if args.continue_from_dir
+                    else " (restarting from scratch)"
+                )
+            )
             args.config = continue_config["config"]
+
+    if args.config is None:
+        raise ValueError(
+            "Must specify a config file with " + f"--config. Received args: {args}"
+        )
 
     config = load_config(args.config)
     config = merge_dicts(config, args_dict_with_defaults)
@@ -1115,13 +1167,13 @@ def build_config(args, args_override):
     config["world_size"] = args.num_nodes * args.num_gpus
 
     if continue_config:
-        dirs_k_v = [(k, v) for k, v in config.items() if "dir" in k]
-        dataset_config = copy.deepcopy(config["dataset"])
+        new_dirs = [(k, v) for k, v in config.items() if "dir" in k]
+        # dataset_config = copy.deepcopy(config["dataset"])
         config = merge_dicts(
             continue_config,
-            {k: resolve(v) if isinstance(v, str) else v for k, v in dirs_k_v},
+            {k: resolve(v) if isinstance(v, str) else v for k, v in new_dirs},
         )
-        config["dataset"] = dataset_config
+        # config["dataset"] = dataset_config
         config = merge_dicts(config, cli_args_dict())
         config = merge_dicts(config, overrides)
 
@@ -1651,22 +1703,18 @@ def get_commit_hash():
 
 
 def base_config(config, overrides={}):
-    from argparse import Namespace
+    from ocpmodels.common.flags import flags
 
-    n = Namespace()
-    n.num_gpus = 1
-    n.num_nodes = 1
-    n.config_yml = None
-    n.config = config
+    setup_imports()
 
     conf = build_config(
-        n,
-        [
-            "run_dir=.",
-            "no_qm7x_cp=true",
-            "no_cpus_to_workers=true",
-            "silent=",
-        ],
+        *flags.get_parser().parse_known_args(
+            [
+                f"--config={config}",
+                "--logger=dummy",
+            ]
+        )
     )
+    conf["cpu"] = not torch.cuda.is_available()
 
     return merge_dicts(conf, overrides)
