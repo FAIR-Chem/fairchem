@@ -251,7 +251,7 @@ class Manager:
                 stats[o]["n"] += 1
                 stats[o]["ids"].append(j)
         for s, v in stats.items():
-            print(f"• {s:31}" + f": {v['n']} (" + " ".join(v["ids"]) + ")")
+            print(f"\n• {s:31}" + f": {v['n']}\n    " + " ".join(v["ids"]))
         if stats["Traceback"]["n"] > 0 and self.print_tracebacks:
             print("\nTraceback contents:\n" + "-" * 19 + "\n")
             print(
