@@ -196,6 +196,12 @@ class Manager:
         for j in tqdm(self.cache["all_job_ids"], desc="Parsing output files"):
             if j in self.cache["job_state"] and not self.rebuild_cache:
                 continue
+            if j in self.waiting_jobs:
+                self.cache["job_state"][j] = "Waiting"
+                continue
+            if j in self.running_jobs:
+                self.cache["job_state"][j] = "Running"
+                continue
             out_file = RUN_DIR / j / "output-0.txt"
 
             if not out_file.exists():
@@ -217,12 +223,7 @@ class Manager:
             elif "nan_loss" in out_txt:
                 self.cache["job_state"][j] = "NaN loss"
             else:
-                if j in self.waiting_jobs:
-                    self.cache["job_state"][j] = "Waiting"
-                if j in self.running_jobs:
-                    self.cache["job_state"][j] = "Running"
-                else:
-                    self.cache["job_state"][j] = "Unknown"
+                self.cache["job_state"][j] = "Unknown"
         self.commit_cache()
 
     def print_output_files_stats(self):
