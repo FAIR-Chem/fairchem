@@ -25,10 +25,10 @@ default:
     # all below is for the scheduler
     scheduler: ReduceLROnPlateau
     mode: min
-    factor: 0.5
+    factor: 0.75
     threshold: 0.0001
     threshold_mode: abs
-    min_lr: 0.00001
+    min_lr: 0.000001
     verbose: true
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm
