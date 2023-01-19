@@ -914,9 +914,8 @@ def set_hidden_channels(config):
     #     )
     hc = config["model"].get("hidden_channels", 0)
     thc = config["model"].get("tag_hidden_channels", 0)
-    phc = config["model"].get("phys_hidden_channels", 0) * int(
-        config["model"].get("phys_embeds", 0)
-    )
+    phc = config["model"].get("phys_hidden_channels", 0) or 14
+    phc *= int(config["model"].get("phys_embeds", 0))
     pghc = config["model"].get("pg_hidden_channels", 0)
 
     if hc - thc - phc - 2 * pghc < 0:

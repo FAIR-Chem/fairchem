@@ -54,7 +54,7 @@ def print_warnings():
     print("\n" + "-" * 80 + "\n")
 
 
-def wrap_up(args, start_time, trainer=None, error=None, signal=None):
+def wrap_up(args, start_time, error=None, signal=None, trainer=None):
 
     total_time = time.time() - start_time
     logging.info(f"Total time taken: {total_time}")
@@ -78,7 +78,7 @@ def wrap_up(args, start_time, trainer=None, error=None, signal=None):
 
 
 if __name__ == "__main__":
-    error = signal = orion_exp = orion_trial = None
+    error = signal = orion_exp = orion_trial = trainer = None
     orion_race_condition = False
     hparams = {}
 
