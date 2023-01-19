@@ -39,29 +39,8 @@ runs:
     optim:
       lr_initial: 0.0019
       scheduler: LinearWarmupCosineAnnealingLR
-      max_epochs: 9
-  - config: fanet-is2re-all
-    note: 'top-1-FA'
-    frame_averaging: 2D
-    fa_frames: all
-    model:
-      mp_type: updownscale
-      phys_embeds: False
-      tag_hidden_channels: 32
-      pg_hidden_channels: 64
-      energy_head: weighted-av-final-embeds
-      complex_mp: False
-      graph_norm: True
-      hidden_channels: 352
-      num_filters: 448
-      num_gaussians: 99
-      num_interactions: 6
-      second_layer_MLP: True
-      skip_co: concat
-    optim:
-      lr_initial: 0.0019
-      scheduler: LinearWarmupCosineAnnealingLR
-      max_epochs: 9
+      max_epochs: 20
+      eval_every: 0.4
   - config: fanet-is2re-all
     note: 'top-1-FA'
     frame_averaging: DA
@@ -82,26 +61,279 @@ runs:
     optim:
       lr_initial: 0.0019
       scheduler: LinearWarmupCosineAnnealingLR
-      max_epochs: 9
-  - config: fanet-is2re-all
-    note: 'top-1-FA'
-    frame_averaging: 3D
+      max_epochs: 20
+      eval_every: 0.4
+
+  - config: fanet-is2re-all  # 2700539
+    note: 'top-3-modif'
+    frame_averaging: 2D
     fa_frames: random
     model:
-      mp_type: updownscale
+      mp_type: updown_local_env
+      phys_embeds: False
+      tag_hidden_channels: 32
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 300
+      num_filters: 480
+      num_gaussians: 90
+      num_interactions: 5
+      second_layer_MLP: True
+      skip_co: concat
+      cutoff: 6.0
+    optim: 
+      lr_initial: 0.003
+      scheduler: LinearWarmupCosineAnnealingLR
+      eval_every: 0.4
+      max_epochs: 18
+
+  - config: fanet-is2re-all  # 2700540
+    note: 'top-4-modif'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      mp_type: base
+      phys_embeds: False
+      tag_hidden_channels: 0
+      pg_hidden_channels: 32
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 384
+      num_filters: 384
+      num_gaussians: 77
+      num_interactions: 4
+      second_layer_MLP: True
+      skip_co: concat-atom
+      cutoff: 8.0
+    optim: 
+      lr_initial: 0.0025
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 20
+      eval_every: 0.4
+
+  - config: fanet-is2re-all  # 2700541
+    note: 'top-4-DA'
+    frame_averaging: DA
+    model:
+      mp_type: base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 384
+      num_filters: 384
+      num_gaussians: 90
+      num_interactions: 4
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 6.0
+    optim: 
+      lr_initial: 0.0025
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 20
+      eval_every: 0.4
+
+  - config: fanet-is2re-all  # 2700542
+    note: 'top-5'
+    frame_averaging: 2D
+    fa_frames: random
+    model:
+      mp_type: base
+      phys_embeds: True
+      tag_hidden_channels: 64
+      pg_hidden_channels: 32
+      energy_head: False
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 320
+      num_filters: 416
+      num_gaussians: 36
+      num_interactions: 6
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 4.0
+    optim: 
+      lr_initial: 0.0034
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 20
+      eval_every: 0.4
+
+  - config: fanet-is2re-all  # 2700543
+    note: 'top-5-modif'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      mp_type: base
+      phys_embeds: True
+      tag_hidden_channels: 64
+      pg_hidden_channels: 32
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 350
+      num_filters: 416
+      num_gaussians: 80
+      num_interactions: 6
+      second_layer_MLP: False
+      skip_co: concat-atom
+      cutoff: 6.0
+    optim: 
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 20
+      eval_every: 0.4
+      
+  - config: fanet-is2re-all  # 2700544
+    note: 'top-6'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      mp_type: base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 480
+      num_filters: 352
+      num_gaussians: 72
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 6.0
+    optim: 
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 20
+      eval_every: 0.4
+
+  - config: fanet-is2re-all  # 2700544
+    note: 'top-01'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      mp_type: base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 512
+      num_filters: 200
+      num_gaussians: 150
+      num_interactions: 4
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 6.0
+    optim: 
+      lr_initial: 0.0023
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 20
+      eval_every: 0.4
+  
+  - config: fanet-is2re-all  # 2700544
+    note: 'top-01-modif'
+    frame_averaging: 2D
+    fa_frames: DA
+    model:
+      mp_type: base
+      phys_embeds: False
+      tag_hidden_channels: 32
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 512
+      num_filters: 250
+      num_gaussians: 130
+      num_interactions: 4
+      second_layer_MLP: True
+      skip_co: False
+      cutoff: 6.0
+    optim: 
+      lr_initial: 0.0023
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 20
+      eval_every: 0.4
+
+  - config: fanet-is2re-all  # 2700544
+    note: 'top-01-modif'
+    frame_averaging: 2D
+    fa_frames: random
+    model:
+      mp_type: base
       phys_embeds: False
       tag_hidden_channels: 32
       pg_hidden_channels: 64
       energy_head: weighted-av-final-embeds
       complex_mp: False
       graph_norm: True
-      hidden_channels: 352
-      num_filters: 448
-      num_gaussians: 99
-      num_interactions: 6
-      second_layer_MLP: True
+      hidden_channels: 512
+      num_filters: 300
+      num_gaussians: 130
+      num_interactions: 4
+      second_layer_MLP: False
       skip_co: concat
-    optim:
-      lr_initial: 0.0019
+      cutoff: 6.0
+    optim: 
+      lr_initial: 0.0023
       scheduler: LinearWarmupCosineAnnealingLR
-      max_epochs: 9
+      max_epochs: 20
+      eval_every: 0.4
+
+  - config: fanet-is2re-all  # 2700544
+    note: 'top-02-modif'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      mp_type: base
+      phys_embeds: False
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+      energy_head: weighted-av-final-embeds
+      complex_mp: False
+      graph_norm: True
+      hidden_channels: 275
+      num_filters: 288
+      num_gaussians: 60
+      num_interactions: 6
+      second_layer_MLP: False
+      skip_co: add
+      cutoff: 6.0
+    optim: 
+      lr_initial: 0.0022
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 20
+      eval_every: 0.4
+
+  - config: fanet-is2re-all  # 2700544
+    note: 'top-02-modif'
+    frame_averaging: 2D
+    fa_frames: random
+    model:
+      mp_type: base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 300
+      num_filters: 300
+      num_gaussians: 70
+      num_interactions: 6
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 6.0
+    optim: 
+      lr_initial: 0.0022
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 20
+      eval_every: 0.4

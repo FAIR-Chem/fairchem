@@ -3,7 +3,7 @@ job:
   mem: 32GB
   cpus: 4
   gres: gpu:rtx8000:1
-  time: 14:00:00
+  time: 12:00:00
   partition: long
 
 default:
@@ -30,9 +30,9 @@ default:
 
 orion:
   # Remember to change the experiment name if you change anything in the search space
-  n_jobs: 72
+  n_jobs: 216
 
-  unique_exp_name: fanet-is2re-all-v2
+  unique_exp_name: fanet-is2re-all-v3
 
   space:
     model/complex_mp: choices([True, False])
@@ -49,7 +49,7 @@ orion:
     model/pg_hidden_channels: uniform(1, 2, discrete=True)
     model/phys_embeds: choices([True, False])
     model/second_layer_MLP: choices([True, False])
-    model/skip_co: choices(["concat", False])
+    model/skip_co: choices(["concat", False, "concat-atom"])
     model/tag_hidden_channels: uniform(1, 2, discrete=True)
     optim/lr_initial: loguniform(9e-4, 5e-3, precision=2)
     optim/max_epochs: fidelity(7, 15, base=6)

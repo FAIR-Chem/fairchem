@@ -25,10 +25,11 @@ if __name__ == "__main__":
     config["model"] = {"use_pbc": True}
     config["model"]["edge_embed_type"] = "all_rij"
     config["model"]["mp_type"] = "base"
-    config["model"]["skip_co"] = False
+    config["model"]["skip_co"] = "concat-atom"  # add, concat, 
     config["model"]["att_heads"] = 3
     config["model"]["complex_mp"] = True
     config["model"]["graph_norm"] = True
+    config["optim"]["eval_every"] = 0.5
     # config["model"]["regress_forces"] = "direct_with_gradient_target"
 
     checkpoint_path = None
