@@ -54,7 +54,7 @@ class Normalizer(object):
 
     def state_dict(self):
         sd = {"mean": self.mean, "std": self.std}
-        if self.hof_rescales:
+        if self.hof_mean is not None:
             sd["hof_rescales"] = {
                 "mean": self.hof_mean,
                 "std": self.hof_std,
