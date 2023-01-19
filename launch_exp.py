@@ -197,6 +197,7 @@ if __name__ == "__main__":
         runs = [
             {
                 "orion_exp_config_path": str(search_path),
+                "job_name": unique_exp_name,
             }
             for _ in range(n_jobs)
         ]
