@@ -82,6 +82,7 @@ def set_max_fidelity(hparams, orion_exp):
 
 def sample_orion_hparams(orion_exp, trainer_config):
     hparams = {}
+    orion_trial = None
     try:
         orion_trial = orion_exp.suggest(1)
         print(
@@ -110,7 +111,7 @@ def sample_orion_hparams(orion_exp, trainer_config):
                 wandb.run.tags = wandb.run.tags + ("RaceCondition",)
             else:
                 wandb.run.tags = ("RaceCondition",)
-    return hparams
+    return hparams, orion_trial
 
 
 def get_and_move_orion_db_path(exp_name):

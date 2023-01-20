@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
         if dist_utils.is_master():
             if orion_exp:
-                hparams = sample_orion_hparams(orion_exp, trainer_config)
+                hparams, orion_trial = sample_orion_hparams(orion_exp, trainer_config)
                 if hparams.get("orion_race_condition"):
                     logging.warning("\n\n ⛔️ Orion race condition. Stopping here.\n\n")
                     wrap_up(args, start_time, error, signal)
@@ -182,13 +182,13 @@ if __name__ == "__main__":
                         "Received trainer_init_error from worker.",
                         "Setting objective to 1e12.",
                     )
-                else:
-                    print("Received None objective from worker. Skipping observation.")
             if objective is not None:
                 orion_exp.observe(
                     orion_trial,
                     [{"type": "objective", "name": "energy_mae", "value": objective}],
                 )
+            else:
+                print("Received None objective from worker. Skipping observation.")
 
     except Exception:
         error = True
