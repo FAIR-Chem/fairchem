@@ -243,7 +243,7 @@ if __name__ == "__main__":
     text += "\n<><><> Experiment config:\n\n-----" + exp_file.read_text() + "-----"
     text += "\n<><><> Experiment runs:\n\n • " + "\n\n  • ".join(commands) + separator
 
-    confirm = input("\n🚦 Confirm? [y/n] : ")
+    confirm = args.no_confirm or input("\n🚦 Confirm? [y/n] : ")
 
     if confirm == "y":
         try:
