@@ -754,9 +754,13 @@ class QM7XFromLMDB(Dataset):
             split in all_samples["splits"]
         ), f"split {split} not found in sample mapping"
 
+        sample_ids = all_samples["splits"][split]
+        if self.config.get("include_val_ood"):
+            sample_ids = sorted(sample_ids + all_samples["splits"]["val_ood"])
+
         self.keys = [
             f'{all_samples["structures"][i][0]}-{all_samples["structures"][i][1]}'
-            for i in all_samples["splits"][split]
+            for i in sample_ids
         ]
 
         self.hofs = fetch_table("elements")["heat_of_formation"].values

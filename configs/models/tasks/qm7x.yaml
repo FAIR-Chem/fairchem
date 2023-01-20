@@ -38,6 +38,7 @@ default:
       std_divider: 1.0
       rescale_with_hof: False
       lse_shift: True
+      include_val_ood: True
     val_id:
       src: /network/projects/ocp/qm7x/processed
       normalize_labels: True # mean and std of target will be set by utils.py if this is True
@@ -46,22 +47,22 @@ default:
       forces_target: totFOR
       std_divider: 1.0
       lse_shift: True
-    val_ood:
+    # val_ood:
+    #   src: /network/projects/ocp/qm7x/processed
+    #   normalize_labels: True # mean and std of target will be set by utils.py if this is True
+    #   split: val_ood
+    #   target: ePBE0+MBD
+    #   forces_target: totFOR
+    #   std_divider: 1.0
+    #   lse_shift: True
+    test:
       src: /network/projects/ocp/qm7x/processed
       normalize_labels: True # mean and std of target will be set by utils.py if this is True
-      split: val_ood
+      split: test
       target: ePBE0+MBD
       forces_target: totFOR
       std_divider: 1.0
       lse_shift: True
-
-    # TEST SET DO NOT ENABLE
-    # - src: /network/projects/ocp/qm9
-    #   target: 7 # predict internal energy at 0K at index 7
-    #   seed: 123
-    #   ratio:
-    #     start: 0.85
-    #     end: 1.0
 
 # ^`target` is a string to select the target to predict as per
 # https://arxiv.org/abs/2006.15139 Table 2
