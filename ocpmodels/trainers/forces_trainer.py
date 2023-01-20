@@ -489,21 +489,28 @@ class ForcesTrainer(BaseTrainer):
                 weight[batch_tags == 1] = tag_specific_weights[1]
                 weight[batch_tags == 2] = tag_specific_weights[2]
 
-                loss_force_list = torch.abs(out["forces"] - force_target)
-                train_loss_force_unnormalized = torch.sum(
-                    loss_force_list * weight.view(-1, 1)
-                )
-                train_loss_force_normalizer = 3.0 * weight.sum()
+                if self.config["optim"].get("loss_force", "l2mae") == "l2mae":
+                    dists = torch.norm(
+                        out["forces"] - force_target, p=2, dim=-1
+                    )
+                    weighted_dists_sum = (dists * weight).sum()
 
-                # add up normalizer to obtain global normalizer
-                distutils.all_reduce(train_loss_force_normalizer)
+                    num_samples = out["forces"].shape[0]
+                    num_samples = distutils.all_reduce(
+                        num_samples, device=self.device
+                    )
+                    weighted_dists_sum = (
+                        weighted_dists_sum
+                        * distutils.get_world_size()
+                        / num_samples
+                    )
 
-                # perform loss normalization before backprop
-                train_loss_force_normalized = train_loss_force_unnormalized * (
-                    distutils.get_world_size() / train_loss_force_normalizer
-                )
-                loss.append(train_loss_force_normalized)
-
+                    force_mult = self.config["optim"].get(
+                        "force_coefficient", 30
+                    )
+                    loss.append(force_mult * weighted_dists_sum)
+                else:
+                    raise NotImplementedError
             else:
                 # Force coefficient = 30 has been working well for us.
                 force_mult = self.config["optim"].get("force_coefficient", 30)
