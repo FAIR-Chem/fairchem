@@ -610,7 +610,7 @@ class BaseTrainer(ABC):
     ):
         if dist_utils.is_master() and not self.silent:
             print()
-            logging.info(f"🧐 Evaluating on {split}.")
+            logging.info(f"\n >>> 🧐 Evaluating on {split}.")
         if self.is_hpo:
             disable_tqdm = True
 
@@ -679,7 +679,7 @@ class BaseTrainer(ABC):
 
         if dist_utils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
-            print("\n  > ".join([""] + log_str))
+            print(("\n  > ".join([""] + log_str))[1:])
             print()
 
         # Make plots.

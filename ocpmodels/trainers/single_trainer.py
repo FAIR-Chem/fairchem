@@ -545,7 +545,7 @@ class SingleTrainer(BaseTrainer):
                     loss["energy_grad_loss"] = self.loss_fn["force"](
                         preds["forces"][mask], grad_target[mask]
                     )
-                    if self.model.regress_forces == "direct_with_energy_grad":
+                    if self.model.module.regress_forces == "direct_with_energy_grad":
                         energy_grad_mult = self.config["optim"].get(
                             "energy_grad_coefficient", 10
                         )
@@ -655,7 +655,8 @@ class SingleTrainer(BaseTrainer):
             if not self.silent:
                 log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
                 print(
-                    f"Train metrics at step {self.step}:\n  > " + "\n  > ".join(log_str)
+                    f"\nTrain metrics at step {self.step}:\n  > "
+                    + "\n  > ".join(log_str)
                 )
             self.metrics = {}
 

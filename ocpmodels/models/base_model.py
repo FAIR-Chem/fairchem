@@ -34,9 +34,8 @@ class BaseModel(nn.Module):
     def forward(self, data):
         grad_forces = forces = None
 
-        if self.regress_forces in {"from_energy", "direct_with_gradient_target"}:
-            # energy gradient w.r.t. positions will be computed
-            data.pos.requires_grad_(True)
+        # energy gradient w.r.t. positions will be computed
+        data.pos.requires_grad_(True)
 
         # predict energy
         preds = self.energy_forward(data)
@@ -47,13 +46,12 @@ class BaseModel(nn.Module):
                 # predict forces
                 forces = self.forces_forward(preds)
 
-            if self.regress_forces in {"from_energy", "direct_with_gradient_target"}:
-                if "gemnet" in self.__class__.__name__.lower():
-                    # gemnet forces are already computed
-                    grad_forces = forces
-                else:
-                    # compute forces from energy gradient
-                    grad_forces = self.forces_as_energy_grad(data.pos, preds["energy"])
+            if "gemnet" in self.__class__.__name__.lower():
+                # gemnet forces are already computed
+                grad_forces = forces
+            else:
+                # compute forces from energy gradient
+                grad_forces = self.forces_as_energy_grad(data.pos, preds["energy"])
 
             if self.regress_forces == "from_energy":
                 # predicted forces are the energy gradient
