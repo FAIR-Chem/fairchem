@@ -31,4 +31,4 @@ python write_top_k_vasp.py \
 Be sure to filter for convergence, see `utils.py` for example code.
 
 **Step 5**: evaluate
-Run dense_eval.py with the specified format of predictions to get the success rate and DFT speedup. See `write_sample_results.py` for an example of how to format the predictions.
+Run dense_eval.py with the specified format of predictions to get the success rate and DFT speedup.
