@@ -29,12 +29,12 @@ default:
     max_epochs: 100
     warmup_steps: 3000
     lr_initial: 0.0001
-    eval_every: 0.34
+    eval_every: 0.251
+    energy_coefficient: 0.01
+    energy_grad_coefficient: 0
+    force_coefficient: 0.99
     # parameters EMA
     ema_decay: 0.999
-    energy_coefficient: 0.
-    energy_grad_coefficient: 0
-    force_coefficient: 1.
     loss_energy: mae
     loss_force: mse
     # all below is for the scheduler
@@ -66,13 +66,7 @@ runs:
 
   - config: schnet-qm7x-all
     optim:
-      lr_initial: 0.001
       batch_size: 100
-
-  - config: schnet-qm7x-all
-    optim:
-      lr_initial: 0.001
-      batch_size: 256
 
   - config: fanet-qm7x-all
     model:
@@ -82,9 +76,13 @@ runs:
 
   - config: fanet-qm7x-all
     optim:
-      lr_initial: 0.001
       batch_size: 100
+      energy_coefficient: 0.01
+      energy_grad_coefficient: 0.1
+      force_coefficient: 0.89
     model:
+      hidden_channels: 256
+      num_filters: 256
       graph_norm: true
       edge_embed_type: all_rij
       mp_type: updownscale_base
@@ -93,8 +91,10 @@ runs:
 
   - config: fanet-qm7x-all
     optim:
-      lr_initial: 0.001
       batch_size: 100
+      energy_coefficient: 0.01
+      energy_grad_coefficient: 0
+      force_coefficient: 0.99
     model:
       graph_norm: false
       force_decoder_type: mlp
@@ -102,3 +102,34 @@ runs:
       regress_forces: direct
       mp_type: updownscale_base
       num_interactions: 4
+      regress_forces: direct
+
+  - config: fanet-qm7x-all
+    optim:
+      batch_size: 100
+      energy_coefficient: 0.01
+      energy_grad_coefficient: 0
+      force_coefficient: 0.99
+    model:
+      hidden_channels: 256
+      num_filters: 256
+      graph_norm: true
+      edge_embed_type: all_rij
+      mp_type: updownscale_base
+      force_decoder_type: mlp
+      regress_forces: from_energy
+
+  - config: fanet-qm7x-all
+    optim:
+      batch_size: 100
+      energy_coefficient: 1
+      energy_grad_coefficient: 0
+      force_coefficient: 0
+    model:
+      graph_norm: false
+      force_decoder_type: mlp
+      edge_embed_type: all_rij
+      regress_forces: direct
+      mp_type: updownscale_base
+      num_interactions: 4
+      regress_forces: ""
