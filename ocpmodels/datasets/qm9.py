@@ -1,11 +1,12 @@
 from pathlib import Path
 
 import time
-
+import json
 import torch
 from torch_geometric.datasets import QM9
 
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import ROOT
 
 
 @registry.register_dataset("qm9")
@@ -61,6 +62,20 @@ class QM9Dataset(QM9):
         else:
             self.samples = self.perm[start:end]
 
+        self.lse_shifts = None
+        if self.config.get("lse_shift"):
+            self.lse_shifts = torch.tensor(
+                json.loads(
+                    (
+                        ROOT
+                        / "configs"
+                        / "models"
+                        / "qm9-metadata"
+                        / "lse-shifts-pre-attr.json"
+                    ).read_text()
+                )
+            )
+
     def close_db(self):
         pass
 
@@ -76,6 +91,12 @@ class QM9Dataset(QM9):
         data.cell_offsets = torch.zeros((data.edge_index.shape[1], 3))
         del data.z
         data.tags = torch.full((data.natoms,), -1, dtype=torch.long)
+
+        if self.lse_shifts is not None:
+            data.lse_shift = self.lse_shifts[self.target][data.atomic_numbers].sum()
+            data.y_unshifted = data.y
+            data.y = data.y - data.lse_shift
+
         t1 = time.time_ns()
         if self._transform is not None:
             data = self._transform(data)
