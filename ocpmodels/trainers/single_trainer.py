@@ -541,16 +541,17 @@ class SingleTrainer(BaseTrainer):
                 )
                 loss["total_loss"].append(force_mult * loss["force_loss"])
                 if "forces_grad_target" in preds:
-                    energy_grad_mult = self.config["optim"].get(
-                        "energy_grad_coefficient", 10
-                    )
                     grad_target = preds["forces_grad_target"]
                     loss["energy_grad_loss"] = self.loss_fn["force"](
                         preds["forces"][mask], grad_target[mask]
                     )
-                    loss["total_loss"].append(
-                        energy_grad_mult * loss["energy_grad_loss"]
-                    )
+                    if self.model.regress_forces == "direct_with_energy_grad":
+                        energy_grad_mult = self.config["optim"].get(
+                            "energy_grad_coefficient", 10
+                        )
+                        loss["total_loss"].append(
+                            energy_grad_mult * loss["energy_grad_loss"]
+                        )
         # Sanity check to make sure the compute graph is correct.
         for lc in loss["total_loss"]:
             assert hasattr(lc, "grad_fn")

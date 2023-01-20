@@ -61,9 +61,9 @@ class BaseModel(nn.Module):
             elif self.regress_forces in {"direct", "direct_with_gradient_target"}:
                 # predicted forces are the model's direct forces
                 preds["forces"] = forces
-                if self.regress_forces == "direct_with_gradient_target":
-                    # store the energy gradient as the target
-                    preds["forces_grad_target"] = grad_forces.detach()
+                # store the energy gradient as the target. Used for metrics
+                # only in "direct" mode.
+                preds["forces_grad_target"] = grad_forces.detach()
             else:
                 raise ValueError(
                     f"Unknown forces regression mode {self.regress_forces}"
