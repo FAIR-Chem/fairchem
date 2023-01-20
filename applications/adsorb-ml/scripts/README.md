@@ -34,4 +34,4 @@ Be sure to filter for convergence, see `utils.py` for example code.
 
 A sample submission file can be downloaded here: https://dl.fbaipublicfiles.com/opencatalystproject/data/adsorbml/gemnet_oc_ml_sp_sample_results.tar. Note - configurations failing the physical constraints were excluded from the submission file, do NOT rely on matching each entry. This is intended to provide you with an idea to the format. 
 
-**Step 5**: Evaluate results with `dense_eval.py` with the specified format of predictions to get the success rate and DFT speedup.
+**Step 6**: Evaluate results with `dense_eval.py` with the specified format of predictions to get the success rate and DFT speedup.
