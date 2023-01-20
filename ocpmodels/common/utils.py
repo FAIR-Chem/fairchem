@@ -904,7 +904,7 @@ def check_regress_forces(config):
             )
 
 
-def set_hidden_channels(config):
+def set_min_hidden_channels(config):
     # Embedding(
     #         85,
     #         hidden_channels
@@ -990,9 +990,15 @@ def build_config(args, args_override):
                 continue_config["checkpoint"] = str(latest_ckpt)
             continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
             if not args.keep_orion_config:
+                dels = {}
                 for k in continue_config:
-                    if "orion" in k:
+                    if "orion" in k or "fidelity" in k:
+                        dels[k] = copy.deepcopy(continue_config[k])
                         continue_config[k] = None
+                print(
+                    "Removing orion config from continue config. Set to None:",
+                    "{" + ", ".join([f"{k}: {v}->None" for k, v in dels.items()]) + "}",
+                )
             print(
                 f"✅ Loading config from directory {str(cont_dir)}"
                 + (
@@ -1021,14 +1027,34 @@ def build_config(args, args_override):
 
     if continue_config:
         new_dirs = [(k, v) for k, v in config.items() if "dir" in k]
-        # dataset_config = copy.deepcopy(config["dataset"])
         config = merge_dicts(
             continue_config,
             {k: resolve(v) if isinstance(v, str) else v for k, v in new_dirs},
         )
-        # config["dataset"] = dataset_config
-        config = merge_dicts(config, cli_args_dict())
-        config = merge_dicts(config, overrides)
+        cli = cli_args_dict()
+        if "max_steps" in cli.get("optim", {}):
+            if "max_epochs" in cli.get("optim", {}):
+                print(
+                    "Cannot set both `max_steps` and `max_epochs` from CLI.",
+                    " Using `max_steps`.",
+                )
+                del cli["optim"]["max_epochs"]
+            if "max_epochs" in config["optim"]:
+                print(
+                    f"Deleting max_epochs ({config['optim']['max_epochs']})",
+                    " because of `max_steps` from CLI.",
+                    "It will be reset by the Trainer.",
+                )
+                del config["optim"]["max_epochs"]
+        elif "max_epochs" in cli.get("optim", {}):
+            if "max_steps" in config["optim"]:
+                print(
+                    f"Deleting max_steps ({config['optim']['max_steps']})",
+                    " because of `max_epochs` from CLI.",
+                    "It will be reset by the Trainer.",
+                )
+                del config["optim"]["max_steps"]
+        config = merge_dicts(config, cli)
 
     check_regress_forces(config)
     config = set_cpus_to_workers(config)

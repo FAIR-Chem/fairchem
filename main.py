@@ -27,7 +27,7 @@ from ocpmodels.common.utils import (
     setup_imports,
     setup_logging,
     update_from_sbatch_py_vars,
-    set_hidden_channels,
+    set_min_hidden_channels,
 )
 from ocpmodels.common.orion_utils import (
     continue_orion_exp,
@@ -93,7 +93,6 @@ if __name__ == "__main__":
     # -- Build config
 
     trainer_config = build_config(args, override_args)
-    original_trainer_config = copy.deepcopy(trainer_config)
 
     if args.distributed:
         dist_utils.setup(trainer_config)
@@ -119,14 +118,12 @@ if __name__ == "__main__":
 
         if args.orion_exp_config_path and dist_utils.is_master():
             orion_exp = load_orion_exp(args)
+            hparams, orion_trial = sample_orion_hparams(orion_exp, trainer_config)
 
-        if dist_utils.is_master():
-            if orion_exp:
-                hparams, orion_trial = sample_orion_hparams(orion_exp, trainer_config)
-                if hparams.get("orion_race_condition"):
-                    logging.warning("\n\n ⛔️ Orion race condition. Stopping here.\n\n")
-                    wrap_up(args, start_time, error, signal)
-                    sys.exit()
+            if hparams.get("orion_race_condition"):
+                logging.warning("\n\n ⛔️ Orion race condition. Stopping here.\n\n")
+                wrap_up(args, start_time, error, signal)
+                sys.exit()
 
         hparams = dist_utils.broadcast_from_master(hparams)
         if hparams:
@@ -138,7 +135,7 @@ if __name__ == "__main__":
 
         trainer_config = continue_orion_exp(trainer_config)
         trainer_config = auto_note(trainer_config)
-        trainer_config = set_hidden_channels(trainer_config)
+        trainer_config = set_min_hidden_channels(trainer_config)
 
         try:
             cls = registry.get_trainer_class(trainer_config["trainer"])
