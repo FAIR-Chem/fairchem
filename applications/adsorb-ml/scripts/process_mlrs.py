@@ -1,3 +1,20 @@
+"""
+This script processes ML relaxations and sets it up for the next step.
+- Reads final energy and structure for each relaxation
+- Filters out anomalies
+- Groups together all configurations for one adsorbate-surface system
+- Sorts configs by lowest energy first
+
+The following files are saved out:
+- cache_sorted_byE.pkl: dict going from the system ID (bulk, surface, adsorbate)
+    to a list of configs and their relaxed structures, sorted by lowest energy first.
+    This is later used by write_top_k_vasp.py.
+- anomalies_by_sid.pkl: dict going from integer sid to boolean representing 
+    whether it was an anomaly. Anomalies are already excluded from cache_sorted_byE.pkl
+    and this file is only used for extra analyses.
+- errors_by_sid.pkl: any errors that occurred
+"""
+
 import argparse
 import multiprocessing as mp
 import os
@@ -15,22 +32,19 @@ from tqdm import tqdm
 SURFACE_CHANGE_CUTOFF_MULTIPLIER = 1.5
 DESORPTION_CUTOFF_MULTIPLIER = 1.5
 
-'''
-
-'''
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="process ml relaxations and group them by adsorbate-surface system"
+        description="Process ml relaxations and group them by adsorbate-surface system"
     )
     parser.add_argument(
         "--ml-trajs-path",
         type=str,
         required=True,
-        help="ml relaxation trajectories folder path",
+        help="ML relaxation trajectories folder path",
     )
     parser.add_argument(
-        "--outdir", type=str, default="cache", help="output directory path"
+        "--outdir", type=str, default="cache", help="Output directory path"
     )
     parser.add_argument(
         "--workers", type=int, default=80, help="Number of workers for multiprocessing"
@@ -133,6 +147,7 @@ if __name__ == "__main__":
     print("Processing ML trajectories...")
     results = list(tqdm(pool.imap(process_mlrs, mp_args), total=len(mp_args)))
 
+    # process each individual trajectory
     grouped_configs = defaultdict(list)
     anomalies = {}
     errored_sysids = {}
@@ -145,6 +160,7 @@ if __name__ == "__main__":
         if not anomaly:
             grouped_configs[system].append(tuple([adslab_idx, predE, mlrs]))
 
+    # group configs by system and sort
     sorted_grouped_configs = {}
     for system, lst in grouped_configs.items():
         sorted_lst = sorted(lst, key=lambda x: x[1])
