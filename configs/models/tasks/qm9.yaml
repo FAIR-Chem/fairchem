@@ -30,7 +30,7 @@ default:
       target: 12 # predict atomization energy at 0K at index 12
       seed: 123
       normalize_labels: True # mean and std of target will be set by qm9.py if this is True
-      lse_shift: false
+      lse_shift: true
       indices:
         start: 0
         end: 110000
@@ -38,7 +38,7 @@ default:
       src: /network/projects/ocp/qm9
       target: 12 # predict atomization energy at 0K at index 12
       seed: 123
-      lse_shift: false
+      lse_shift: true
       indices:
         start: 110000
         end: 120000
@@ -46,7 +46,7 @@ default:
       src: /network/projects/ocp/qm9
       target: 12 # predict atomization energy at 0K at index 12
       seed: 123
-      lse_shift: false
+      lse_shift: true
       indices:
         start: 120000
         end: -1
