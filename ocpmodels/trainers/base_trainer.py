@@ -599,7 +599,6 @@ class BaseTrainer(ABC):
         """Derived classes should implement this function."""
         pass
 
-    @torch.no_grad()
     def validate(
         self,
         split="val",
@@ -608,6 +607,7 @@ class BaseTrainer(ABC):
         is_final=False,
         is_first=False,
     ):
+        torch.set_grad_enabled(bool(self.config["model"].get("regress_forces", "")))
         if dist_utils.is_master() and not self.silent:
             print()
             logging.info(f"\n >>> 🧐 Evaluating on {split}.")
