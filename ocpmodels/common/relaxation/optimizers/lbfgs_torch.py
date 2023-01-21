@@ -40,6 +40,7 @@ class LBFGS:
         self.memory = memory
         self.damping = damping
         self.alpha = alpha
+        self.H0 = 1.0 / self.alpha
         self.force_consistent = force_consistent
         self.device = device
         self.traj_dir = traj_dir
@@ -50,48 +51,46 @@ class LBFGS:
         ), "Trajectory names should be specified to save trajectories"
         logging.info("Step   Fmax(eV/A)")
 
-        self.model.update_graph(self.batch)
-
-    def get_forces(self, apply_constraint=True):
-        energy, forces = self.model.get_forces(self.batch, apply_constraint)
+    def get_energy_and_forces(self, apply_constraint=True):
+        energy, forces = self.model.get_energy_and_forces(
+            self.batch, apply_constraint
+        )
         return energy, forces
 
-    def get_positions(self):
-        return self.batch.pos
-
     def set_positions(self, update, update_mask):
-        r = self.get_positions()
         if not self.early_stop_batch:
             update = torch.where(update_mask.unsqueeze(1), update, 0.0)
-        self.batch.pos = r + update.to(dtype=torch.float32)
-        self.model.update_graph(self.batch)
+        self.batch.pos += update.to(dtype=torch.float32)
 
-    def check_convergence(
-        self, iteration, update_mask, forces, force_threshold
-    ):
-        if forces is None:
-            # return False
-            return torch.zeros_like(update_mask, dtype=torch.bool)
+        # Comment(@abhshkdz): for otf_graph = True, this is not needed, right?
+        # self.model.update_graph(self.batch)
+
+    def check_convergence(self, iteration, forces=None, energy=None):
+        if forces is None or energy is None:
+            energy, forces = self.get_energy_and_forces()
+            forces = forces.to(dtype=torch.float64)
+
         max_forces_ = scatter(
             (forces**2).sum(axis=1).sqrt(), self.batch.batch, reduce="max"
-        )
-        max_forces = max_forces_[self.batch.batch]
-        update_mask = torch.logical_and(
-            update_mask, max_forces.ge(force_threshold)
         )
         logging.info(
             f"{iteration} "
             + " ".join(f"{x:0.3f}" for x in max_forces_.tolist())
         )
-        return update_mask
+
+        # (batch_size, 3) -> (nAtoms, 3)
+        max_forces = max_forces_[self.batch.batch]
+
+        return max_forces.ge(self.fmax), energy, forces
 
     def run(self, fmax, steps):
-        s = deque(maxlen=self.memory)
-        y = deque(maxlen=self.memory)
-        rho = deque(maxlen=self.memory)
-        r0 = f0 = e0 = None
-        H0 = 1.0 / self.alpha
-        update_mask = torch.ones_like(self.batch.batch).bool().to(self.device)
+        self.fmax = fmax
+        self.steps = steps
+
+        self.s = deque(maxlen=self.memory)
+        self.y = deque(maxlen=self.memory)
+        self.rho = deque(maxlen=self.memory)
+        self.r0 = self.f0 = None
 
         trajectories = None
         if self.traj_dir:
@@ -104,32 +103,19 @@ class LBFGS:
         iteration = 0
         converged = False
         while iteration < steps and not converged:
-            r0, f0, e0 = self.step(
-                iteration,
-                r0,
-                f0,
-                H0,
-                rho,
-                s,
-                y,
-                update_mask,
-            )
-            iteration += 1
+            update_mask, energy, forces = self.check_convergence(iteration)
+
             if trajectories is not None:
-                self.batch.y, self.batch.force = e0, f0
+                self.batch.y, self.batch.force = energy, forces
                 atoms_objects = batch_to_atoms(self.batch)
-                update_mask_ = torch.split(
-                    update_mask, self.batch.natoms.tolist()
-                )
-                for atm, traj, mask in zip(
-                    atoms_objects, trajectories, update_mask_
-                ):
-                    if mask[0]:
-                        traj.write(atm)
-            update_mask = self.check_convergence(
-                iteration, update_mask, f0, fmax
-            )
+                for atm, traj in zip(atoms_objects, trajectories):
+                    traj.write(atm)
+
+            self.step(iteration, forces, update_mask)
+
+            iteration += 1
             converged = torch.all(torch.logical_not(update_mask))
+
         # GPU memory usage as per nvidia-smi seems to gradually build up as
         # batches are processed. This releases unoccupied cached memory.
         torch.cuda.empty_cache()
@@ -141,7 +127,7 @@ class LBFGS:
                 traj_fl = Path(self.traj_dir / f"{name}.traj_tmp", mode="w")
                 traj_fl.rename(traj_fl.with_suffix(".traj"))
 
-        self.batch.y, self.batch.force = self.get_forces(
+        self.batch.y, self.batch.force = self.get_energy_and_forces(
             apply_constraint=False
         )
         return self.batch
@@ -149,12 +135,7 @@ class LBFGS:
     def step(
         self,
         iteration: int,
-        r0: Optional[torch.Tensor],
-        f0: Optional[torch.Tensor],
-        H0: float,
-        rho: Deque[torch.Tensor],
-        s: Deque[torch.Tensor],
-        y: Deque[torch.Tensor],
+        forces: Optional[torch.Tensor],
         update_mask: torch.Tensor,
     ):
         def _batched_dot(x: torch.Tensor, y: torch.Tensor):
@@ -173,30 +154,33 @@ class LBFGS:
             dr *= scale.unsqueeze(1)
             return dr * self.damping
 
-        e, f = self.get_forces()
-        f = f.to(self.device, dtype=torch.float64)
-        r = self.batch.pos.to(self.device, dtype=torch.float64)
+        if forces is None:
+            _, forces = self.get_energy_and_forces()
 
-        # Update s, y and rho
+        r = self.batch.pos.clone().to(dtype=torch.float64)
+
+        # Update s, y, rho
         if iteration > 0:
-            s0 = r - r0
-            y0 = -(f - f0)
-            s.append(s0)
-            y.append(y0)
-            rho.append(1.0 / _batched_dot(y0, s0))
+            s0 = r - self.r0
+            self.s.append(s0)
+
+            y0 = -(forces - self.f0)
+            self.y.append(y0)
+
+            self.rho.append(1.0 / _batched_dot(y0, s0))
 
         loopmax = min(self.memory, iteration)
-        alpha = f.new_empty(loopmax)
-        q = -f
+        alpha = forces.new_empty(loopmax, self.batch.natoms.shape[0])
+        q = -forces
 
         for i in range(loopmax - 1, -1, -1):
-            alpha[i] = rho[i] * _batched_dot(s[i], q)  # b
-            q -= alpha[i][self.batch.batch, ..., None] * y[i]
+            alpha[i] = self.rho[i] * _batched_dot(self.s[i], q)  # b
+            q -= alpha[i][self.batch.batch, ..., None] * self.y[i]
 
-        z = H0 * q
+        z = self.H0 * q
         for i in range(loopmax):
-            beta = rho[i] * _batched_dot(y[i], z)
-            z += s[i] * (
+            beta = self.rho[i] * _batched_dot(self.y[i], z)
+            z += self.s[i] * (
                 alpha[i][self.batch.batch, ..., None]
                 - beta[self.batch.batch, ..., None]
             )
@@ -208,7 +192,9 @@ class LBFGS:
             # Same configuration again (maybe a restart):
             return
         self.set_positions(dr, update_mask)
-        return r, f, e
+
+        self.r0 = r
+        self.f0 = forces
 
 
 class TorchCalc:
@@ -216,7 +202,7 @@ class TorchCalc:
         self.model = model
         self.transform = transform
 
-    def get_forces(self, atoms, apply_constraint=True):
+    def get_energy_and_forces(self, atoms, apply_constraint=True):
         predictions = self.model.predict(
             atoms, per_image=False, disable_tqdm=True
         )
@@ -226,14 +212,3 @@ class TorchCalc:
             fixed_idx = torch.where(atoms.fixed == 1)[0]
             forces[fixed_idx] = 0
         return energy, forces
-
-    def update_graph(self, batch: Batch):
-        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
-            batch, 6, 50
-        )
-        batch.edge_index = edge_index
-        batch.cell_offsets = cell_offsets
-        batch.neighbors = num_neighbors
-        if self.transform is not None:
-            batch = self.transform(batch)
-        return batch
