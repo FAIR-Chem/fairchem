@@ -109,7 +109,7 @@ if __name__ == "__main__":
     # -- Initial setup
 
     setup_imports()
-    print("All things imported.\n")
+    print("\n🚩 All things imported.\n")
     start_time = time.time()
 
     try:

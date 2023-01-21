@@ -235,7 +235,7 @@ class Manager:
             elif "srun: Job step aborted" in out_txt:
                 if "slurmstepd" in out_txt and " CANCELLED AT " in out_txt:
                     self.cache["job_state"][j] = "Cancelled"
-            elif "nan_loss" in out_txt:
+            elif "Loss is NaN. Stopping training." in out_txt:
                 self.cache["job_state"][j] = "NaN loss"
             else:
                 self.cache["job_state"][j] = "Unknown"

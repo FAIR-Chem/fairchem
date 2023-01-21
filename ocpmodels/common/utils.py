@@ -164,7 +164,7 @@ def move_lmdb_data_to_slurm_tmpdir(trainer_config):
     ):
         return trainer_config
 
-    print("\nMoving data to slurm tmpdir", flush=True)
+    print("\n🚉 Copying data to slurm tmpdir", flush=True)
 
     tmp_dir = os.environ.get("SLURM_TMPDIR") or f"/Tmp/slurm.{JOB_ID}.0"
     tmp_dir = Path(tmp_dir)
@@ -177,21 +177,21 @@ def move_lmdb_data_to_slurm_tmpdir(trainer_config):
         new_dir = tmp_dir / original.name
         if new_dir.exists():
             print(
-                f"Data already copied to {str(new_dir)} for split",
+                f"   Data already copied to {str(new_dir)} for split",
                 f"{s} with source path {split['src']}",
                 flush=True,
             )
             trainer_config["dataset"][s]["src"] = str(new_dir)
             continue
-        print("Making new_dir: ", str(new_dir), flush=True)
+        print("   Making new_dir: ", str(new_dir), flush=True)
         new_dir.mkdir()
         command = ["cp", "-r", f"{str(original)}", str(new_dir.parent)]
-        print("Copying data: ", " ".join(command), flush=True)
+        print("   Copying data: ", " ".join(command), flush=True)
         subprocess.run(command)
         for f in new_dir.glob("*.lmdb-lock"):
             f.unlink()
         trainer_config["dataset"][s]["src"] = str(new_dir)
-        print("Done moving data to", str(new_dir), flush=True)
+        print("   Done moving data to", str(new_dir), flush=True)
     return trainer_config
 
 
@@ -877,7 +877,7 @@ def set_cpus_to_workers(config):
                 workers = cpus // gpus
             if not config["silent"]:
                 print(
-                    f"Overriding num_workers from {config['optim']['num_workers']}",
+                    f"🏭 Overriding num_workers from {config['optim']['num_workers']}",
                     f"to {workers} to match the machine's CPUs.",
                     "Use --no_cpus_to_workers=true to disable this behavior.",
                 )
@@ -1002,7 +1002,7 @@ def build_config(args, args_override):
                         dels[k] = copy.deepcopy(continue_config[k])
                         continue_config[k] = None
                 print(
-                    "Removing orion config from continue config. Set to None:",
+                    "🅾️  Removing orion config from continue config. Set to None:",
                     "{" + ", ".join([f"{k}: {v}->None" for k, v in dels.items()]) + "}",
                 )
             print(
@@ -1032,11 +1032,23 @@ def build_config(args, args_override):
     config["world_size"] = args.num_nodes * args.num_gpus
 
     if continue_config:
-        new_dirs = [(k, v) for k, v in config.items() if "dir" in k]
+        new_dirs = [
+            (k, v) for k, v in config.items() if "dir" in k and k != "cp_data_to_tmpdir"
+        ]
+        data_srcs = copy.deepcopy(
+            {
+                k: {
+                    "src": v["src"]
+                }  # keep original src, if data was moved in the resumed exp
+                for k, v in config["dataset"].items()
+                if isinstance(v, dict) and "src" in v
+            }
+        )
         config = merge_dicts(
             continue_config,
             {k: resolve(v) if isinstance(v, str) else v for k, v in new_dirs},
         )
+        config["dataset"] = merge_dicts(config["dataset"], data_srcs)
         cli = cli_args_dict()
         if "max_steps" in cli.get("optim", {}):
             if "max_epochs" in cli.get("optim", {}):
