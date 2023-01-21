@@ -52,7 +52,7 @@ orion:
   # Remember to change the experiment name if you change anything in the search space
   n_jobs: 150
 
-  unique_exp_name: fanet-qm9-v6.0.0
+  unique_exp_name: fanet-qm9-v6.0.1
 
   space:
     optim/max_epochs: fidelity(600, 1000, base=12)
@@ -60,7 +60,7 @@ orion:
     model/cutoff: uniform(5, 6, precision=1)
     model/graph_norm: choices([True, False])
     model/hidden_channels: choices([100, 200, 300, 400, 500, 1000])
-    model/max_num_neighbours: choices([30, 40, 50])
+    model/max_num_neighbors: choices([30, 40, 50])
     model/num_filters: uniform(7, 16, discrete=True)
     model/num_interactions: uniform(3, 5, discrete=True)
     model/phys_embeds: choices([True, False])
