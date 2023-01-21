@@ -58,7 +58,7 @@ default:
       lse_shift: True
     val_id:
       lse_shift: True
-    val_ood:
+    test:
       lse_shift: True
 
 runs:
@@ -181,10 +181,4 @@ runs:
       mp_type: updownscale_base
       force_decoder_type: mlp
       regress_forces: direct
-
-
-
-
-
-
 

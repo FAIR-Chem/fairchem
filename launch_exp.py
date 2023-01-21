@@ -257,6 +257,8 @@ if __name__ == "__main__":
             for c, command in enumerate(commands):
                 print(f"Launching job {c+1:3}", end="\r")
                 outputs.append(os.popen(command).read().strip())
+                if " verbose=true" in command.lower():
+                    print(outputs[-1])
         except KeyboardInterrupt:
             is_interrupted = True
         outdir = ROOT / "data" / "exp_outputs" / exp_name
@@ -276,12 +278,12 @@ if __name__ == "__main__":
             with outfile.open("w") as f:
                 f.write(text)
             print("\n\n ✅ Done!")
-            print(util_strings(jobs))
-            # print(f"  • Output written to {str(outfile)}")
-            yml_out = write_exp_yaml_and_jobs(exp_file, outfile, jobs)
-            print(
-                "  • Experiment summary YAML in ",
-                f"./{str(yml_out.relative_to(Path.cwd()))}",
-            )
+            if jobs:
+                print(util_strings(jobs))
+                yml_out = write_exp_yaml_and_jobs(exp_file, outfile, jobs)
+                print(
+                    "  • Experiment summary YAML in ",
+                    f"./{str(yml_out.relative_to(Path.cwd()))}",
+                )
     else:
         print("Aborting")

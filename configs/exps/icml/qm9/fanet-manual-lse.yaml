@@ -55,7 +55,7 @@ default:
     hidden_channels: 160
     num_filters: 160
     max_num_neighbors: 30
-    mp_type: updownscale_bae
+    mp_type: updownscale_base
     num_gaussians: 50
     num_interactions: 4
     otf_graph: false
@@ -78,7 +78,7 @@ runs:
       graph_norm: false
       hidden_channels: 96
       max_num_neighbors: 30
-      mp_type: updownscale_bae
+      mp_type: updownscale_base
       num_filters: 224
       num_gaussians: 128
       num_interactions: 4
@@ -92,7 +92,7 @@ runs:
       graph_norm: true
       hidden_channels: 110
       max_num_neighbors: 40
-      mp_type: updownscale_bae
+      mp_type: updownscale_base
       num_filters: 384
       num_gaussians: 64
       num_interactions: 4
