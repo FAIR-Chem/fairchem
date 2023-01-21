@@ -49,6 +49,10 @@ b07c64158e4bfa5f7b9bf6263753ecc5  oc20dense_ref_energies.pkl
 
 ### Citing `AdsorbML`
 
+Please see the README inside the `scripts` directory for instructions.
+
+### Citing `AdsorbML`
+
 If you use this codebase in your work, please consider citing:
 
 ```bibtex
