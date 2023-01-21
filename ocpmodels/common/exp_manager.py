@@ -13,7 +13,8 @@ from tqdm import tqdm
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
-from ocpmodels.common.utils import ROOT, RUN_DIR, get_and_move_orion_db_path
+from ocpmodels.common.utils import ROOT, RUN_DIR
+from ocpmodels.common.orion_utils import get_and_move_orion_db_path
 
 EXP_OUT_DIR = ROOT / "data" / "exp_outputs"
 MANAGER_CACHE = ROOT / "data" / "exp_manager_cache"
