@@ -47,7 +47,7 @@ b07c64158e4bfa5f7b9bf6263753ecc5  oc20dense_ref_energies.pkl
 1ba0bc266130f186850f5faa547b6a02  oc20dense_tags.pkl
 ```
 
-### Citing `AdsorbML`
+### Running `AdsorbML`
 
 Please see the README inside the `scripts` directory for instructions.
 
