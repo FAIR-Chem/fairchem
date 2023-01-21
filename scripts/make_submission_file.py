@@ -17,14 +17,14 @@ SPLITS = {
 }
 
 
-def write_is2re_relaxations(args, dataset):
+def write_is2re_relaxations(args):
     import ase.io
     from tqdm import tqdm
 
     submission_file = {}
 
     if not args.hybrid:
-        for split in SPLITS[dataset]:
+        for split in SPLITS[args.dataset]:
             ids = []
             energies = []
             systems = glob.glob(os.path.join(vars(args)[split], "*.traj"))
@@ -39,7 +39,7 @@ def write_is2re_relaxations(args, dataset):
             submission_file[f"{split}_energy"] = np.array(energies)
 
     else:
-        for split in SPLITS[dataset]:
+        for split in SPLITS[args.dataset]:
             preds = np.load(vars(args)[split])
             ids = []
             energies = []
@@ -54,13 +54,13 @@ def write_is2re_relaxations(args, dataset):
     np.savez_compressed(args.out_path, **submission_file)
 
 
-def write_predictions(args, dataset):
+def write_predictions(args):
     if args.is2re_relaxations:
-        write_is2re_relaxations(args, dataset=dataset)
+        write_is2re_relaxations(args)
     else:
         submission_file = {}
 
-        for split in SPLITS[dataset]:
+        for split in SPLITS[args.dataset]:
             res = np.load(vars(args)[split], allow_pickle=True)
             contents = res.files
             for i in contents:
@@ -71,19 +71,15 @@ def write_predictions(args, dataset):
 
 
 def main(args):
-    if args.oc22:
-        for split in SPLITS["OC22"]:
-            assert vars(args).get(split), f"Missing {split} split for OC22"
-        dataset = "OC22"
-    else:
-        for split in SPLITS["OC20"]:
-            assert vars(args).get(split), f"Missing {split} split for OC20"
-        dataset = "OC20"
+    for split in SPLITS[args.dataset]:
+        assert vars(args).get(
+            split
+        ), f"Missing {split} split for {args.dataset}"
 
     if not args.out_path.endswith(".npz"):
         args.out_path = args.out_path + ".npz"
 
-    write_predictions(args, dataset=dataset)
+    write_predictions(args)
     print(f"Results saved to {args.out_path} successfully.")
 
 
@@ -141,7 +137,11 @@ if __name__ == "__main__":
         help="Write IS2RE results from S2EF prediction files. Paths specified correspond to S2EF NPZ files.",
     )
     parser.add_argument(
-        "--oc22", action="store_true", help="Write OC22 prediction files."
+        "--dataset",
+        type=str,
+        default="OC20",
+        choices=["OC20", "OC22"],
+        help="Which dataset to write a prediction file for, OC20 or OC22.",
     )
 
     args = parser.parse_args()
