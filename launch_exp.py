@@ -172,6 +172,7 @@ def get_args_or_exp(key, args, exp):
 
 if __name__ == "__main__":
     is_interrupted = False
+    n_jobs = None
     args = resolved_args()
     assert "exp" in args
     regex = args.get("match", ".*")
@@ -235,7 +236,10 @@ if __name__ == "__main__":
 
     commands = [c for c in commands if re.findall(regex, c)]
 
-    print(f"🔥 About to run {len(commands)} jobs:\n\n • " + "\n\n  • ".join(commands))
+    print(
+        f"🔥 About to run {len(commands)} jobs:\n\n • "
+        + "\n\n  • ".join(commands if n_jobs is None else commands[:1])
+    )
 
     separator = "\n" * 4 + f"{'#' * 80}\n" * 4 + "\n" * 4
     text = "<><><> Experiment command: $ " + " ".join(["python"] + sys.argv)

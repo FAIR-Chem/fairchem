@@ -4,7 +4,7 @@ job:
   cpus: 5
   gres: gpu:16gb:1
   partition: long
-  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-3
   env: ocp-a100
 
 default:
@@ -77,7 +77,7 @@ default:
 
 orion:
   # Remember to change the experiment name if you change anything in the search space
-  n_jobs: 150
+  n_jobs: 50
 
   unique_exp_name: fanet-qm7x-v1.0.0
 
