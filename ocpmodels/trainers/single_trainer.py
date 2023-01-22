@@ -355,9 +355,10 @@ class SingleTrainer(BaseTrainer):
                     ):
                         if self.early_stopping_file.exists():
                             print("\n\n >>> 🛑 Early stopping file found.\n\n")
+                            now = self.now.replace(" ", "_").replace(":", "-")
                             self.early_stopping_file.rename(
                                 self.early_stopping_file.parent
-                                / f"{self.early_stopping_file.stem}_{self.now}.txt"
+                                / f"{self.early_stopping_file.stem}_{now}.stopped"
                             )
                         else:
                             print(f"\n\n >>> 🛑 {self.early_stopper.reason}\n\n")
