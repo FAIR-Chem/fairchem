@@ -866,6 +866,8 @@ class BaseTrainer(ABC):
             if self.config["model"].get("regress_forces", False):
                 overall_forces_mae = cumulated_forces_mae / len(all_splits)
                 self.logger.log({"Overall Forces MAE": overall_forces_mae})
+                self.objective = (overall_energy_mae + overall_forces_mae) / 2
+            self.logger.log({"Objective": self.objective})
 
         # Run on test split
         if final and "test" in self.config["dataset"] and self.eval_on_test:
