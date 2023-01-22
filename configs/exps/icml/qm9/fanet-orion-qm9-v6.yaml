@@ -66,6 +66,7 @@ orion:
     model/phys_embeds: choices([True, False])
     model/second_layer_MLP: choices([True, False])
     model/skip_co: choices([True, False])
+    model/complex_mp: choices([True, False])
   algorithms:
     asha:
       seed: 123

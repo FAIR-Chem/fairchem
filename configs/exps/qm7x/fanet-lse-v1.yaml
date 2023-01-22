@@ -116,7 +116,16 @@ runs:
       regress_forces: direct_with_gradient_target
       graph_norm: true
       skip_co: true
-      complex_mlp: true
+
+  - model:
+      num_interactions: 6
+      num_filters: 256
+      hidden_channels: 512
+      num_gaussians: 100
+      regress_forces: direct_with_gradient_target
+      graph_norm: true
+      skip_co: true
+      complex_mp: true
 
   - model:
       num_interactions: 4
@@ -126,7 +135,6 @@ runs:
       regress_forces: direct_with_gradient_target
       graph_norm: true
       skip_co: true
-      complex_mlp: true
 
   - model:
       num_interactions: 4
@@ -136,7 +144,6 @@ runs:
       regress_forces: direct_with_gradient_target
       graph_norm: true
       skip_co: true
-      complex_mlp: true
 
   - model:
       num_interactions: 4
@@ -146,5 +153,13 @@ runs:
       regress_forces: direct_with_gradient_target
       graph_norm: true
       skip_co: true
-      complex_mlp: true
 
+  - model:
+      num_interactions: 4
+      num_filters: 256
+      hidden_channels: 256
+      num_gaussians: 20
+      regress_forces: direct_with_gradient_target
+      graph_norm: true
+      skip_co: true
+      complex_mp: true
