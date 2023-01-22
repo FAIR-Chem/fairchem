@@ -25,7 +25,7 @@ from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch
 from tqdm import tqdm
-
+from uuid import uuid4
 from ocpmodels.common import dist_utils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
@@ -54,6 +54,7 @@ class BaseTrainer(ABC):
         model_name = kwargs["model"].pop(
             "name", kwargs.get("model_name", "Unknown - base_trainer issue")
         )
+        self.early_stopping_file = resolve(run_dir) / f"{str(uuid4())}.stop"
         kwargs["model"]["graph_rewiring"] = kwargs.get("graph_rewiring")
 
         self.config = {
@@ -64,6 +65,7 @@ class BaseTrainer(ABC):
             "checkpoint_dir": str(resolve(run_dir) / "checkpoints"),
             "results_dir": str(resolve(run_dir) / "results"),
             "logs_dir": str(resolve(run_dir) / "logs"),
+            "early_stopping_file": str(self.early_stopping_file),
         }
 
         self.sigterm = False
@@ -147,6 +149,10 @@ class BaseTrainer(ABC):
         if dist_utils.is_master() and not self.silent:
             print(f"\n🧰 Trainer config:\n{'-'*18}\n")
             print(yaml.dump(self.config), end="\n\n")
+            print(
+                f"\n\n🚦  Create {str(self.early_stopping_file)}",
+                "to stop the training after the next validation\n",
+            )
         self.load()
 
         self.evaluator = Evaluator(

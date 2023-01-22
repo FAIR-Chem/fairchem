@@ -346,10 +346,21 @@ class SingleTrainer(BaseTrainer):
                             checkpoint_file="best_checkpoint.pt",
                             training_state=False,
                         )
-                    if self.early_stopper.should_stop(
-                        current_val_metric, self.scheduler.get_lr(), self.epoch
+                    if (
+                        self.early_stopper.should_stop(
+                            current_val_metric, self.scheduler.get_lr(), self.epoch
+                        )
+                        or self.early_stopping_file.exists()
                     ):
-                        print(f"\n\n >>> 🛑 {self.early_stopper.reason}\n\n")
+                        if self.early_stopping_file.exists():
+                            print("\n\n >>> 🛑 Early stopping file found.\n\n")
+                            self.early_stopping_file.rename(
+                                self.early_stopping_file.parent
+                                / f"{self.early_stopping_file.stem}_{self.now}.txt"
+                            )
+                        else:
+                            print(f"\n\n >>> 🛑 {self.early_stopper.reason}\n\n")
+
                         if self.logger:
                             self.logger.add_tags(["E-S"])
                         return self.end_of_training(
