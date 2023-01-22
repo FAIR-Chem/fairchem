@@ -52,7 +52,7 @@ orion:
   # Remember to change the experiment name if you change anything in the search space
   n_jobs: 150
 
-  unique_exp_name: fanet-qm9-v6.0.1
+  unique_exp_name: fanet-qm9-v6.0.2
 
   space:
     optim/max_epochs: fidelity(600, 1000, base=12)
@@ -64,7 +64,7 @@ orion:
     model/num_filters: uniform(7, 16, discrete=True)
     model/num_interactions: uniform(3, 5, discrete=True)
     model/phys_embeds: choices([True, False])
-    model/second_layer_mlp: choices([True, False])
+    model/second_layer_MLP: choices([True, False])
     model/skip_co: choices([True, False])
   algorithms:
     asha:
