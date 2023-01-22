@@ -705,6 +705,7 @@ class BaseTrainer(ABC):
         if self.ema:
             self.ema.restore()
 
+        torch.set_grad_enabled(True)
         return metrics
 
     @abstractmethod

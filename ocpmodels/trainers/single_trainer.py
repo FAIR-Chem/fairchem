@@ -271,6 +271,7 @@ class SingleTrainer(BaseTrainer):
                     print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
                     self.logger.add_tags(["nan_loss"])
                     return "loss_is_nan"
+
                 try:
                     self._backward(loss)
                 except RuntimeError:
@@ -278,7 +279,7 @@ class SingleTrainer(BaseTrainer):
                     print(loss)
                     print(
                         "Requires grad:",
-                        {k: v.requires_grad for k, v in self.loss.items()},
+                        {k: v.requires_grad for k, v in loss.items()},
                     )
                     print()
                 # Compute metrics.
