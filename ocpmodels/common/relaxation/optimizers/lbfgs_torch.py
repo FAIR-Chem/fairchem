@@ -78,7 +78,7 @@ class LBFGS:
             + " ".join(f"{x:0.3f}" for x in max_forces_.tolist())
         )
 
-        # (batch_size, 3) -> (nAtoms, 3)
+        # (batch_size) -> (nAtoms)
         max_forces = max_forces_[self.batch.batch]
 
         return max_forces.ge(self.fmax), energy, forces
