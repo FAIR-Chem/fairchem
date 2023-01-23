@@ -992,9 +992,9 @@ def build_config(args, args_override, silent=False):
             latest_ckpt = str(
                 sorted(ckpts, key=lambda c: float(c.stem.split("-")[-1]))[-1]
             )
+            continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
             if args.continue_from_dir:
                 continue_config["checkpoint"] = str(latest_ckpt)
-            continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
             if not args.keep_orion_config:
                 dels = {}
                 for k in continue_config:
