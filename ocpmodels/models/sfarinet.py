@@ -329,7 +329,6 @@ class SfariNet(BaseModel):
 
     def __init__(self, **kwargs):
         super().__init__()
-        torch.autograd.set_detect_anomaly(True)
         self.cutoff = kwargs["cutoff"]
         self.use_pbc = kwargs["use_pbc"]
         self.max_num_neighbors = kwargs["max_num_neighbors"]
