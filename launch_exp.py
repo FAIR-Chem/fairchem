@@ -247,9 +247,9 @@ if __name__ == "__main__":
     text += "\n<><><> Experiment config:\n\n-----" + exp_file.read_text() + "-----"
     text += "\n<><><> Experiment runs:\n\n • " + "\n\n  • ".join(commands) + separator
 
-    confirm = args.no_confirm or input("\n🚦 Confirm? [y/n] : ")
+    confirm = args.no_confirm or "y" in input("\n🚦 Confirm? [y/n] : ")
 
-    if confirm == "y":
+    if confirm:
         try:
             if "orion" in exp:
                 search_path.parent.mkdir(exist_ok=True, parents=True)
