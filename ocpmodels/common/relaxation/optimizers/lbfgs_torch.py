@@ -212,3 +212,14 @@ class TorchCalc:
             fixed_idx = torch.where(atoms.fixed == 1)[0]
             forces[fixed_idx] = 0
         return energy, forces
+
+    def update_graph(self, atoms):
+        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
+            atoms, 6, 50
+        )
+        atoms.edge_index = edge_index
+        atoms.cell_offsets = cell_offsets
+        atoms.neighbors = num_neighbors
+        if self.transform is not None:
+            atoms = self.transform(atoms)
+        return atoms
