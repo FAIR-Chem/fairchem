@@ -172,6 +172,7 @@ def get_args_or_exp(key, args, exp):
 
 if __name__ == "__main__":
     is_interrupted = False
+    n_jobs = None
     args = resolved_args()
     assert "exp" in args
     regex = args.get("match", ".*")
@@ -194,12 +195,17 @@ if __name__ == "__main__":
             exp["unique_exp_name"] = unique_exp_name
 
         search_path = orion_base / "search-spaces" / f"{ts}-{unique_exp_name}.yaml"
+        job_dict = {
+            "job_name": unique_exp_name,
+        }
+
+        if (exp["job"].get("partition") or "long") == "long":
+            job_dict["partition"] = "long-grace"
+
         runs = [
             {
                 "orion_exp_config_path": str(search_path),
-                "job": {
-                    "job_name": unique_exp_name,
-                },
+                "job": job_dict,
             }
             for _ in range(n_jobs)
         ]
@@ -235,7 +241,10 @@ if __name__ == "__main__":
 
     commands = [c for c in commands if re.findall(regex, c)]
 
-    print(f"🔥 About to run {len(commands)} jobs:\n\n • " + "\n\n  • ".join(commands))
+    print(
+        f"🔥 About to run {len(commands)} jobs:\n\n • "
+        + "\n\n  • ".join(commands if n_jobs is None else commands[:1])
+    )
 
     separator = "\n" * 4 + f"{'#' * 80}\n" * 4 + "\n" * 4
     text = "<><><> Experiment command: $ " + " ".join(["python"] + sys.argv)
@@ -243,9 +252,9 @@ if __name__ == "__main__":
     text += "\n<><><> Experiment config:\n\n-----" + exp_file.read_text() + "-----"
     text += "\n<><><> Experiment runs:\n\n • " + "\n\n  • ".join(commands) + separator
 
-    confirm = args.no_confirm or input("\n🚦 Confirm? [y/n] : ")
+    confirm = args.no_confirm or "y" in input("\n🚦 Confirm? [y/n] : ")
 
-    if confirm == "y":
+    if confirm:
         try:
             if "orion" in exp:
                 search_path.parent.mkdir(exist_ok=True, parents=True)

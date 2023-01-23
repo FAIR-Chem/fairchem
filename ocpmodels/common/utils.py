@@ -866,7 +866,7 @@ def load_config_legacy(path: str, previous_includes: list = []):
     return config, duplicates_warning, duplicates_error
 
 
-def set_cpus_to_workers(config):
+def set_cpus_to_workers(config, silent=False):
     if not config.get("no_cpus_to_workers"):
         cpus = count_cpus()
         gpus = count_gpus()
@@ -875,7 +875,7 @@ def set_cpus_to_workers(config):
                 workers = cpus - 1
             else:
                 workers = cpus // gpus
-            if not config["silent"]:
+            if not config["silent"] and not silent:
                 print(
                     f"🏭 Overriding num_workers from {config['optim']['num_workers']}",
                     f"to {workers} to match the machine's CPUs.",
@@ -960,10 +960,10 @@ def load_config(config_str):
     return config
 
 
-def build_config(args, args_override):
+def build_config(args, args_override, silent=False):
     config = overrides = continue_config = {}
 
-    if args.config_yml:
+    if hasattr(args, "config_yml") and args.config_yml:
         raise ValueError(
             "Using LEGACY config format. Please update your config to the new format."
         )
@@ -992,27 +992,31 @@ def build_config(args, args_override):
             latest_ckpt = str(
                 sorted(ckpts, key=lambda c: float(c.stem.split("-")[-1]))[-1]
             )
+            continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
             if args.continue_from_dir:
                 continue_config["checkpoint"] = str(latest_ckpt)
-            continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
             if not args.keep_orion_config:
                 dels = {}
                 for k in continue_config:
                     if "orion" in k or "fidelity" in k:
                         dels[k] = copy.deepcopy(continue_config[k])
                         continue_config[k] = None
+                if not silent:
+                    print(
+                        "🅾️  Removing orion config from continue config. Set to None:",
+                        "{"
+                        + ", ".join([f"{k}: {v}->None" for k, v in dels.items()])
+                        + "}",
+                    )
+            if not silent:
                 print(
-                    "🅾️  Removing orion config from continue config. Set to None:",
-                    "{" + ", ".join([f"{k}: {v}->None" for k, v in dels.items()]) + "}",
+                    f"✅ Loading config from directory {str(cont_dir)}"
+                    + (
+                        f" and latest checkpoint: {latest_ckpt}"
+                        if args.continue_from_dir
+                        else " (restarting from scratch)"
+                    )
                 )
-            print(
-                f"✅ Loading config from directory {str(cont_dir)}"
-                + (
-                    f" and latest checkpoint: {latest_ckpt}"
-                    if args.continue_from_dir
-                    else " (restarting from scratch)"
-                )
-            )
             args.config = continue_config["config"]
 
     if args.config is None:
@@ -1075,7 +1079,7 @@ def build_config(args, args_override):
         config = merge_dicts(config, cli)
 
     check_regress_forces(config)
-    config = set_cpus_to_workers(config)
+    config = set_cpus_to_workers(config, silent)
     config = set_qm9_target_stats(config)
     config = set_qm7x_target_stats(config)
     config = override_drac_paths(config)

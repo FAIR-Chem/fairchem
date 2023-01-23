@@ -78,10 +78,11 @@ class SingleTrainer(BaseTrainer):
                         device=self.device,
                     )
                 else:
-                    print(
-                        "Warning: grad_target_mean not found in normalizer but",
-                        "regress_forces and normalize_labels are true.",
-                    )
+                    if not self.silent:
+                        print(
+                            "Warning: grad_target_mean not found in normalizer but",
+                            "regress_forces and normalize_labels are true.",
+                        )
                     self.normalizers["grad_target"] = Normalizer(
                         tensor=self.datasets["train"].data.y[
                             self.datasets["train"].__indices__
@@ -355,9 +356,10 @@ class SingleTrainer(BaseTrainer):
                     ):
                         if self.early_stopping_file.exists():
                             print("\n\n >>> 🛑 Early stopping file found.\n\n")
+                            now = self.now.replace(" ", "_").replace(":", "-")
                             self.early_stopping_file.rename(
                                 self.early_stopping_file.parent
-                                / f"{self.early_stopping_file.stem}_{self.now}.txt"
+                                / f"{self.early_stopping_file.stem}_{now}.stopped"
                             )
                         else:
                             print(f"\n\n >>> 🛑 {self.early_stopper.reason}\n\n")
@@ -430,7 +432,7 @@ class SingleTrainer(BaseTrainer):
             for ds in self.datasets.values():
                 ds.close_db()
 
-    def model_forward(self, batch_list):
+    def model_forward(self, batch_list, mode="train"):
         # Distinguish frame averaging from base case.
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
@@ -443,7 +445,10 @@ class SingleTrainer(BaseTrainer):
                 batch_list[0].pos = batch_list[0].fa_pos[i]
                 if self.task_name in OCP_TASKS:
                     batch_list[0].cell = batch_list[0].fa_cell[i]
-                preds = self.model(deepcopy(batch_list))
+
+                # forward pass
+                preds = self.model(deepcopy(batch_list), mode=mode)
+
                 e_all.append(preds["energy"])
                 if preds.get("pooling_loss") is not None:
                     p_all.append(preds["pooling_loss"])
@@ -459,6 +464,7 @@ class SingleTrainer(BaseTrainer):
                         .view(-1, 3)
                     )
                     f_all.append(g_forces)
+
             batch_list[0].pos = original_pos
             if self.task_name in OCP_TASKS:
                 batch_list[0].cell = original_cell

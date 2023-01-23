@@ -78,10 +78,7 @@ class BaseTrainer(ABC):
         self.test_ri = self.config["test_ri"]
         self.is_debug = self.config["is_debug"]
         self.is_hpo = self.config["is_hpo"]
-        if self.task_name == "qm9":
-            self.eval_on_test = self.config["eval_on_test"]
-        else:
-            self.eval_on_test = False
+        self.eval_on_test = bool(self.config.get("eval_on_test"))
         self.silent = self.config["silent"]
         self.datasets = {}
         self.samplers = {}
@@ -258,19 +255,20 @@ class BaseTrainer(ABC):
                             * (n_train / batch_size)
                         )
                     )
-                    print(
-                        "Setting fidelity_max_steps to {}".format(
-                            self.config["optim"]["fidelity_max_steps"]
+                    if not self.silent:
+                        print(
+                            "Setting fidelity_max_steps to {}".format(
+                                self.config["optim"]["fidelity_max_steps"]
+                            )
                         )
-                    )
 
                 if max_samples > 0:
-                    if max_epochs > 0:
+                    if max_epochs > 0 and not self.silent:
                         print(
                             "\nWARNING: Both max_samples and max_epochs are set.",
                             "Using max_samples.",
                         )
-                    if max_steps > 0:
+                    if max_steps > 0 and not self.silent:
                         print(
                             "WARNING: Both max_samples and max_steps are set.",
                             "Using max_samples.\n",
@@ -282,7 +280,7 @@ class BaseTrainer(ABC):
                         np.ceil(max_samples / batch_size)
                     )
                 elif max_steps > 0:
-                    if max_epochs > 0:
+                    if max_epochs > 0 and not self.silent:
                         print(
                             "\nWARNING: Both max_steps and max_epochs are set.",
                             "Using max_steps.\n",
@@ -290,23 +288,25 @@ class BaseTrainer(ABC):
                     self.config["optim"]["max_epochs"] = int(
                         np.ceil(max_steps / (n_train / batch_size))
                     )
-                    print(
-                        "Setting max_epochs to",
-                        self.config["optim"]["max_epochs"],
-                        f"from max_steps ({max_steps}),",
-                        f"dataset length ({n_train}),",
-                        f"and batch_size ({batch_size})\n",
-                    )
+                    if not self.silent:
+                        print(
+                            "Setting max_epochs to",
+                            self.config["optim"]["max_epochs"],
+                            f"from max_steps ({max_steps}),",
+                            f"dataset length ({n_train}),",
+                            f"and batch_size ({batch_size})\n",
+                        )
                 else:
                     self.config["optim"]["max_steps"] = int(
                         np.ceil(max_epochs * (n_train / batch_size))
                     )
-                    print(
-                        "Setting max_steps to ",
-                        f"{self.config['optim']['max_steps']} from",
-                        f"max_epochs ({max_epochs}), dataset length",
-                        f"({n_train}), and batch_size ({batch_size})\n",
-                    )
+                    if not self.silent:
+                        print(
+                            "Setting max_steps to ",
+                            f"{self.config['optim']['max_steps']} from",
+                            f"max_epochs ({max_epochs}), dataset length",
+                            f"({n_train}), and batch_size ({batch_size})\n",
+                        )
 
             self.samplers[split] = self.get_sampler(
                 self.datasets[split], batch_size, shuffle=shuffle
@@ -498,7 +498,11 @@ class BaseTrainer(ABC):
             )
 
     def load_extras(self):
-        self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
+        self.scheduler = LRScheduler(
+            self.optimizer,
+            self.config["optim"],
+            silent=self.silent,
+        )
         self.clip_grad_norm = self.config["optim"].get("clip_grad_norm")
         self.ema_decay = self.config["optim"].get("ema_decay")
         if self.ema_decay:
@@ -866,6 +870,8 @@ class BaseTrainer(ABC):
             if self.config["model"].get("regress_forces", False):
                 overall_forces_mae = cumulated_forces_mae / len(all_splits)
                 self.logger.log({"Overall Forces MAE": overall_forces_mae})
+                self.objective = (overall_energy_mae + overall_forces_mae) / 2
+            self.logger.log({"Objective": self.objective})
 
         # Run on test split
         if final and "test" in self.config["dataset"] and self.eval_on_test:

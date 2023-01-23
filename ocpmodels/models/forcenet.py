@@ -250,7 +250,6 @@ class ForceNet(BaseModel):
     def __init__(self, **kwargs):
 
         super(ForceNet, self).__init__()
-        torch.autograd.set_detect_anomaly(True)
         self.ablation = kwargs["ablation"]
         self.basis = kwargs["basis"]
         self.cutoff = kwargs["cutoff"]

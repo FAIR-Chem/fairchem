@@ -22,10 +22,11 @@ class LRScheduler:
         optimizer (obj): torch optim object
     """
 
-    def __init__(self, optimizer, optim_config):
+    def __init__(self, optimizer, optim_config, silent=False):
         self.optimizer = optimizer
         self.optim_config = optim_config.copy()
         self.warmup_scheduler = None
+        self.silent = silent
         if self.optim_config.get("scheduler"):
             self.scheduler_type = self.optim_config["scheduler"]
         else:
@@ -47,9 +48,11 @@ class LRScheduler:
             T_max = self.optim_config.get("fidelity_max_steps")
             if T_max is None:
                 T_max = self.optim_config["max_steps"]
-                print(f"Using max_steps for scheduler -> {T_max}")
+                if not self.silent:
+                    print(f"Using max_steps for scheduler -> {T_max}")
             else:
-                print(f"Using fidelity_max_steps for scheduler -> {T_max}")
+                if not self.silent:
+                    print(f"Using fidelity_max_steps for scheduler -> {T_max}")
 
             self.warmup_scheduler = warmup.ExponentialWarmup(
                 self.optimizer, warmup_period=self.optim_config["warmup_steps"]
