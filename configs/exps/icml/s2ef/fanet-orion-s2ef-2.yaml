@@ -3,24 +3,26 @@ job:
   mem: 32GB
   cpus: 4
   gres: gpu:rtx8000:1
-  time: 12:00:00
   partition: long
 
 default:
   wandb_project: ocp-3
-  config: fanet-is2re-all
+  config: fanet-s2ef-2M
   mode: train
-  test_ri: True
-  wandb_tags: is2re-all, orion-3
+  test_ri: true
+  wandb_tags: s2ef-2M, orion, v2
   cp_data_to_tmpdir: true
   graph_rewiring: remove-tag-0
   model:
+    edge_embed_type: all_rij
     graph_norm: True
   frame_averaging: 2D
+  fa_frames: random
   optim:
     scheduler: LinearWarmupCosineAnnealingLR
-    eval_every: 0.5
-    lr_initial: 0.002
+    force_coefficient: 100
+    energy_coefficient: 1
+    energy_grad_coefficient: 5
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm, complex_mp, att_heads, second_layer_MLP, skip_co
     optim: lr_initial, warmup_steps
@@ -31,30 +33,33 @@ default:
 
 orion:
   # Remember to change the experiment name if you change anything in the search space
-  n_jobs: 25
+  n_jobs: 40
 
-  unique_exp_name: fanet-is2re-all-v4
+  unique_exp_name: fanet-s2ef-2M-v2
 
   space:
+    model/att_heads: choices([1,2,3,4])
     model/complex_mp: choices([True, False])
-    model/cutoff: choices([4.0, 6.0])
-    model/edge_embed_type: choices(["all_rij"])
+    model/cutoff: choices([4.0, 6.0, 8.0])
     model/energy_head: choices(["weighted-av-final-embeds"])
-    model/fa_frames: choices(["random", "se3-random"])
-    model/hidden_channels: uniform(9, 17, discrete=True)
-    model/max_num_neighbors: choices([30, 40, 50])
-    model/mp_type: choices(["base", "updownscale", "updownscale_base", "updown_local_env"])
-    model/num_filters: uniform(4, 15, discrete=True)
-    model/num_gaussians: uniform(40, 140, discrete=True)
-    model/num_interactions: uniform(4, 8, discrete=True)
-    model/pg_hidden_channels: uniform(1, 3, discrete=True)
+    model/graph_norm: choices([True, False])
+    model/hidden_channels: uniform(6, 21, discrete=True)
+    model/mp_type: choices(["simple", "base", "updownscale", "updownscale_base", "base_with_att", "updown_local_env"])
+    model/num_filters: uniform(3, 18, discrete=True)
+    model/num_gaussians: uniform(40, 160, discrete=True)
+    model/num_interactions: uniform(3, 7, discrete=True)
+    model/pg_hidden_channels: uniform(0, 3, discrete=True)
     model/phys_embeds: choices([True, False])
+    model/regress_forces: choices(["direct_with_gradient_target", "direct"])
     model/second_layer_MLP: choices([True, False])
-    model/skip_co: choices(["concat", False, "concat-atom"])
-    model/tag_hidden_channels: uniform(1, 2, discrete=True)
-    optim/max_epochs: fidelity(6, 12, base=6)
+    model/skip_co: choices(["concat", False])
+    model/tag_hidden_channels: uniform(0, 2, discrete=True)
+    model/max_num_neighbors: choices([30,40,50])
+    optim/lr_initial: loguniform(9e-5, 5e-4, precision=2)
+    optim/max_epochs: fidelity(8, 22, base=6)
+
   algorithms:
     asha:
       seed: 123
       num_rungs: 4
-      num_brackets: 1
+      num_brackets: 2
