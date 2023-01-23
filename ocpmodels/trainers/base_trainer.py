@@ -78,10 +78,7 @@ class BaseTrainer(ABC):
         self.test_ri = self.config["test_ri"]
         self.is_debug = self.config["is_debug"]
         self.is_hpo = self.config["is_hpo"]
-        if self.task_name == "qm9":
-            self.eval_on_test = self.config["eval_on_test"]
-        else:
-            self.eval_on_test = False
+        self.eval_on_test = bool(self.config.get("eval_on_test"))
         self.silent = self.config["silent"]
         self.datasets = {}
         self.samplers = {}
