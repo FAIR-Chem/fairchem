@@ -195,12 +195,17 @@ if __name__ == "__main__":
             exp["unique_exp_name"] = unique_exp_name
 
         search_path = orion_base / "search-spaces" / f"{ts}-{unique_exp_name}.yaml"
+        job_dict = {
+            "job_name": unique_exp_name,
+        }
+
+        if (exp["job"].get("partition") or "long") == "long":
+            job_dict["partition"] = "long-grace"
+
         runs = [
             {
                 "orion_exp_config_path": str(search_path),
-                "job": {
-                    "job_name": unique_exp_name,
-                },
+                "job": job_dict,
             }
             for _ in range(n_jobs)
         ]
