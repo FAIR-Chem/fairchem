@@ -79,17 +79,16 @@ orion:
   # Remember to change the experiment name if you change anything in the search space
   n_jobs: 50
 
-  unique_exp_name: fanet-qm7x-v1.0.0
+  unique_exp_name: fanet-qm7x-v1.0.1
 
   space:
     optim/max_steps: fidelity(100000, 2000000, base=2)
     optim/lr_initial: loguniform(1e-4, 1e-3, precision=3)
     optim/energy_grad_coefficient: uniform(1, 25, discrete=True)
-    optim/force_coefficient: gaussian(4, 0.5, discrete=True)
+    optim/force_coefficient: uniform(3, 5, discrete=True)
 
     model/complex_mp: choices([True, False])
     model/cutoff: uniform(4.5, 6.5, precision=1)
-    model/edge_embed_type: all_rij
     model/graph_norm: choices([True, False])
     model/hidden_channels: choices([100, 200, 300, 400, 500, 1000])
     model/max_num_neighbors: choices([30, 40, 50])
