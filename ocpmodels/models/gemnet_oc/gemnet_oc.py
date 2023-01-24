@@ -10,6 +10,7 @@ from typing import Optional
 
 import numpy as np
 import torch
+from torch.cuda import nvtx
 from torch_geometric.nn import radius_graph
 from torch_scatter import scatter, segment_coo
 
@@ -1226,6 +1227,7 @@ class GemNetOC(BaseModel):
         if self.regress_forces and not self.direct_forces:
             pos.requires_grad_(True)
 
+        nvtx.range_push("get graphs")
         (
             main_graph,
             a2a_graph,
@@ -1237,6 +1239,7 @@ class GemNetOC(BaseModel):
             trip_idx_e2a,
             quad_idx,
         ) = self.get_graphs_and_indices(data)
+        nvtx.range_pop()  # get graphs
         _, idx_t = main_graph["edge_index"]
 
         (
@@ -1270,6 +1273,7 @@ class GemNetOC(BaseModel):
         # (nAtoms, emb_size_atom), (nEdges, emb_size_edge)
         xs_E, xs_F = [x_E], [x_F]
 
+        nvtx.range_push("intblocks")
         for i in range(self.num_blocks):
             # Interaction block
             h, m = self.int_blocks[i](
@@ -1295,7 +1299,9 @@ class GemNetOC(BaseModel):
             # (nAtoms, emb_size_atom), (nEdges, emb_size_edge)
             xs_E.append(x_E)
             xs_F.append(x_F)
+        nvtx.range_pop()  # intblocks
 
+        nvtx.range_push("outblocks")
         # Global output block for final predictions
         x_E = self.out_mlp_E(torch.cat(xs_E, dim=-1))
         if self.direct_forces:
@@ -1304,6 +1310,7 @@ class GemNetOC(BaseModel):
             E_t = self.out_energy(x_E.float())
             if self.direct_forces:
                 F_st = self.out_forces(x_F.float())
+        nvtx.range_pop()  # outblocks
 
         nMolecules = torch.max(batch) + 1
         if self.extensive:

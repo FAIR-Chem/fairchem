@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch_geometric
+from torch.cuda import nvtx
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
@@ -22,8 +23,8 @@ from ocpmodels.common.relaxation.ml_relaxation import ml_relax
 from ocpmodels.common.utils import check_traj_files
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
-from ocpmodels.trainers.base_trainer import BaseTrainer
 from ocpmodels.modules.scaling.util import ensure_fitted
+from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
 @registry.register_trainer("forces")
@@ -639,6 +640,7 @@ class ForcesTrainer(BaseTrainer):
                 logging.info(f"Skipping batch: {batch[0].sid.tolist()}")
                 continue
 
+            nvtx.range_push("ml_relax")
             relaxed_batch = ml_relax(
                 batch=batch,
                 model=self,
@@ -648,6 +650,9 @@ class ForcesTrainer(BaseTrainer):
                 device=self.device,
                 transform=None,
             )
+            nvtx.range_pop()  # ml_relax
+            if relaxed_batch is None:
+                continue
 
             if self.config["task"].get("write_pos", False):
                 systemids = [str(i) for i in relaxed_batch.sid.tolist()]
