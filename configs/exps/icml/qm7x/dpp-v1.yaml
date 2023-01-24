@@ -18,14 +18,14 @@ default:
     optim: batch_size, lr_initial, energy_coefficient, force_coefficient, energy_grad_coefficient
   log_train_every: 250
   energy_head: False
-  frame_averaging: 3D
-  fa_frames: random
+  frame_averaging: ""
+  fa_frames: ""
   optim:
     batch_size: 100
     max_steps: 2000000
     warmup_steps: 3000
     lr_initial: 0.00025
-    eval_every: 0.201
+    eval_every: 1
     energy_coefficient: 1
     energy_grad_coefficient: 0
     force_coefficient: 100
