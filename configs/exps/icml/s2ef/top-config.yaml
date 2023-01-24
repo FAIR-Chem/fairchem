@@ -1,0 +1,300 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  cp_data_to_tmp: true
+  model:
+    energy_head: 'weighted-av-final-embeds' # False ?  frame_averaging: 2D
+  fa_frames: random
+  frame_averaging: 2D
+  wandb_tags: 's2ef-top-config'
+  optim:
+    batch_size: 192
+    eval_batch_size: 192
+    scheduler: LinearWarmupCosineAnnealingLR
+    force_coefficient: 100
+    energy_coefficient: 1
+    energy_grad_coefficient: 5
+
+runs:
+  - config: sfarinet-s2ef-2M
+    note: 'top-config'
+    fa_fames: random
+    optim:
+      lr_initial: 0.00022
+      max_epochs: 22
+      force_coefficient: 100
+    model: 
+      regress_forces: direct_with_gradient_target
+      cutoff: 6
+      max_num_neighbors: 40
+      graph_norm: False
+      mp_type: updownscale
+      hidden_channels: 480
+      num_gaussians: 145
+      num_filters: 384
+      num_interactions: 4
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: False
+      skip_co: "concat"
+      second_layer_mlp: False
+      complex_mp: True
+      second_layer_MLP: True
+
+  - config: sfarinet-s2ef-2M
+    note: 'DA'
+    frame_averaging: DA
+    optim:
+      lr_initial: 0.00022
+      max_epochs: 22
+      force_coefficient: 100
+    model: 
+      regress_forces: direct_with_gradient_target
+      cutoff: 6
+      max_num_neighbors: 40
+      graph_norm: False
+      mp_type: updownscale
+      hidden_channels: 480
+      num_gaussians: 145
+      num_filters: 384
+      num_interactions: 4
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: False
+      skip_co: "concat"
+      complex_mp: False
+      second_layer_MLP: True
+
+  - config: sfarinet-s2ef-2M
+    note: 'bigger se3-random'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    optim:
+      lr_initial: 0.00022
+      max_epochs: 22
+      force_coefficient: 100
+    model: 
+      regress_forces: direct_with_gradient_target
+      cutoff: 6
+      max_num_neighbors: 40
+      graph_norm: True
+      mp_type: updownscale
+      hidden_channels: 480
+      num_gaussians: 145
+      num_filters: 420
+      num_interactions: 4
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: True
+      skip_co: "concat"
+      complex_mp: True
+      second_layer_MLP: True
+
+  - config: sfarinet-s2ef-2M
+    note: 'force only'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    optim:
+      lr_initial: 0.00022
+      max_epochs: 22
+      force_coefficient: 100
+      energy_coefficient: 0
+    model: 
+      regress_forces: direct_with_gradient_target
+      cutoff: 6
+      max_num_neighbors: 40
+      graph_norm: False
+      mp_type: updownscale
+      hidden_channels: 480
+      num_gaussians: 145
+      num_filters: 420
+      num_interactions: 4
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: True
+      skip_co: "concat"
+      complex_mp: True
+      second_layer_MLP: True
+
+  - config: sfarinet-s2ef-2M
+    note: 'top-config'
+    frame_averaging: 2D
+    fa_frames: random
+    optim:
+      lr_initial: 0.00022
+      max_epochs: 22
+      force_coefficient: 100
+    model: 
+      regress_forces: direct_with_gradient_target
+      cutoff: 6
+      max_num_neighbors: 30
+      graph_norm: True
+      mp_type: updownscale_base
+      hidden_channels: 256
+      num_gaussians: 128
+      num_filters: 480
+      num_interactions: 7
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: True
+      skip_co: "concat"
+      complex_mp: True
+      second_layer_MLP: False
+
+  - config: sfarinet-s2ef-2M
+    note: 'top-config'
+    frame_averaging: 2D
+    fa_frames: random
+    optim:
+      lr_initial: 0.00027
+      max_epochs: 22
+      force_coefficient: 100
+    model: 
+      regress_forces: direct_with_gradient_target
+      cutoff: 6
+      max_num_neighbors: 30
+      graph_norm: True
+      mp_type: updownscale_base
+      hidden_channels: 456
+      num_gaussians: 128
+      num_filters: 600
+      num_interactions: 7
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: True
+      skip_co: "concat"
+      complex_mp: True
+      second_layer_MLP: False
+
+  - config: sfarinet-s2ef-2M
+    note: 'top-config'
+    frame_averaging: 2D
+    fa_frames: random
+    optim:
+      lr_initial: 0.00027
+      max_epochs: 22
+      force_coefficient: 100
+    model: 
+      regress_forces: direct_with_gradient_target
+      cutoff: 6
+      max_num_neighbors: 30
+      graph_norm: True
+      mp_type: updownscale_base
+      hidden_channels: 456
+      num_gaussians: 128
+      num_filters: 600
+      num_interactions: 7
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: True
+      skip_co: "concat"
+      complex_mp: True
+      second_layer_MLP: False
+
+
+  - config: sfarinet-s2ef-2M
+    note: 'top-config'
+    frame_averaging: 2D
+    fa_frames: random
+    optim:
+      lr_initial: 0.00023
+      max_epochs: 22
+      force_coefficient: 100
+    model: 
+      regress_forces: direct_with_gradient_target
+      cutoff: 6
+      max_num_neighbors: 50
+      graph_norm: True
+      mp_type: base
+      hidden_channels: 352
+      num_gaussians: 99
+      num_filters: 480
+      num_interactions: 4
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: False
+      skip_co: "concat"
+      complex_mp: False
+      second_layer_MLP: False
+
+  - config: sfarinet-s2ef-2M
+    note: ''
+    frame_averaging: 2D
+    fa_frames: random
+    optim:
+      lr_initial: 0.00023
+      max_epochs: 22
+      force_coefficient: 100
+    model: 
+      regress_forces: direct
+      cutoff: 6
+      max_num_neighbors: 50
+      graph_norm: True
+      mp_type: base
+      hidden_channels: 352
+      num_gaussians: 99
+      num_filters: 480
+      num_interactions: 4
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: False
+      skip_co: "concat"
+      complex_mp: False
+      second_layer_MLP: False
+
+  - config: sfarinet-s2ef-2M
+    note: 'all'
+    frame_averaging: 2D
+    fa_frames: all
+    optim:
+      lr_initial: 0.00023
+      max_epochs: 22
+      force_coefficient: 100
+    model: 
+      regress_forces: direct_with_gradient_target
+      cutoff: 6
+      max_num_neighbors: 50
+      graph_norm: True
+      mp_type: base
+      hidden_channels: 352
+      num_gaussians: 99
+      num_filters: 480
+      num_interactions: 4
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: False
+      skip_co: "concat"
+      complex_mp: True
+      second_layer_MLP: True
+
+  - config: sfarinet-s2ef-2M
+    note: 'from_energy'
+    frame_averaging: 2D
+    fa_frames: random
+    optim:
+      lr_initial: 0.00023
+      max_epochs: 22
+      force_coefficient: 100
+    model: 
+      regress_forces: from_energy
+      cutoff: 6
+      max_num_neighbors: 30
+      graph_norm: True
+      mp_type: base
+      hidden_channels: 352
+      num_gaussians: 99
+      num_filters: 480
+      num_interactions: 4
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: False
+      skip_co: "concat"
+      complex_mp: False
+      second_layer_MLP: True

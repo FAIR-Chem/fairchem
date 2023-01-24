@@ -31,7 +31,7 @@ default:
 
 orion:
   # Remember to change the experiment name if you change anything in the search space
-  n_jobs: 150
+  n_jobs: 25
 
   unique_exp_name: fanet-is2re-all-v4
 
