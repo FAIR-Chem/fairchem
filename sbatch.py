@@ -58,6 +58,7 @@ def make_sbatch_params(params):
     for k, v in params.items():
         if v:
             sps.append(f"#SBATCH --{k}={v}")
+    sps.append("#SBATCH --tmp=800GB")
     return "\n".join(sps) + "\n"
 
 
