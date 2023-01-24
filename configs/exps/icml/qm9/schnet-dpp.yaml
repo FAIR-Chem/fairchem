@@ -51,18 +51,18 @@ default:
 
 runs:
   - config: dpp-qm9-all
-      model:
-        cutoff: 5
-        num_spherical: 7
-        num_radial: 6
-        envelope_exponent: 5
-        num_before_skip: 1
-        num_after_skip: 2
-        num_dense_output: 3
-      optim:
-        batch_size: 32
-        lr_initial: 0.001
-        warmup_steps: 3000
+    model:
+      cutoff: 5
+      num_spherical: 7
+      num_radial: 6
+      envelope_exponent: 5
+      num_before_skip: 1
+      num_after_skip: 2
+      num_dense_output: 3
+    optim:
+      batch_size: 32
+      lr_initial: 0.001
+      warmup_steps: 3000
 
   - config: schnet-qm9-all
     model:
