@@ -95,3 +95,12 @@ qm9:
       src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm9
     test:
       src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm9
+
+qm7x:
+  all:
+    train:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm7x/processed
+    val:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm7x/processed
+    test:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm7x/processed
