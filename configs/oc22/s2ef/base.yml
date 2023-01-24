@@ -4,8 +4,10 @@ dataset:
   train:
     src: data/oc22/s2ef/train
     normalize_labels: False
+    total_energy: True
   val:
     src: data/oc22/s2ef/val_id
+    total_energy: True
 
 logger: wandb
 
@@ -20,6 +22,7 @@ task:
   grad_input: atomic forces
   train_on_free_atoms: True
   eval_on_free_atoms: True
+  prediction_dtype: float32
 
 optim:
   loss_energy: mae

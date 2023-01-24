@@ -208,14 +208,26 @@ class ForcesTrainer(BaseTrainer):
                     )
                 ]
                 predictions["id"].extend(systemids)
-                predictions["energy"].extend(
-                    out["energy"].to(torch.float16).tolist()
-                )
                 batch_natoms = torch.cat(
                     [batch.natoms for batch in batch_list]
                 )
                 batch_fixed = torch.cat([batch.fixed for batch in batch_list])
-                forces = out["forces"].cpu().detach().to(torch.float16)
+                # total energy target requires predictions to be saved in float32
+                # default is float16
+                if (
+                    self.config["task"].get("prediction_dtype", "float16")
+                    == "float32"
+                    or self.config["task"]["dataset"] == "oc22_lmdb"
+                ):
+                    predictions["energy"].extend(
+                        out["energy"].cpu().detach().to(torch.float32).numpy()
+                    )
+                    forces = out["forces"].cpu().detach().to(torch.float32)
+                else:
+                    predictions["energy"].extend(
+                        out["energy"].cpu().detach().to(torch.float16).numpy()
+                    )
+                    forces = out["forces"].cpu().detach().to(torch.float16)
                 per_image_forces = torch.split(forces, batch_natoms.tolist())
                 per_image_forces = [
                     force.numpy() for force in per_image_forces
