@@ -2,8 +2,8 @@
 job:
   mem: 32GB
   cpus: 4
-  gres: gpu:1
-  time: "12:00:00"
+  gres: gpu:16gb:1
+  # time: "12:00:00"
 
 default:
   wandb_project: ocp-qm
@@ -44,7 +44,7 @@ default:
     train:
       rescale_with_hof: False
       lse_shift: True
-    val_id:
+    val:
       lse_shift: True
     test:
       lse_shift: True
