@@ -490,6 +490,16 @@ class ForcesTrainer(BaseTrainer):
                 weight[batch_tags == 2] = tag_specific_weights[2]
 
                 if self.config["optim"].get("loss_force", "l2mae") == "l2mae":
+                    # zero out nans, if any
+                    found_nans_or_infs = not torch.all(
+                        out["forces"].isfinite()
+                    )
+                    if found_nans_or_infs is True:
+                        logging.warning("Found nans while computing loss")
+                        out["forces"] = torch.nan_to_num(
+                            out["forces"], nan=0.0
+                        )
+
                     dists = torch.norm(
                         out["forces"] - force_target, p=2, dim=-1
                     )
