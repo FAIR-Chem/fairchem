@@ -995,6 +995,8 @@ def build_config(args, args_override, silent=False):
             continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
             if args.continue_from_dir:
                 continue_config["checkpoint"] = str(latest_ckpt)
+            else:
+                continue_config.pop("checkpoint", None)
             if not args.keep_orion_config:
                 dels = {}
                 for k in continue_config:
