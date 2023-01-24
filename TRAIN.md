@@ -1,13 +1,20 @@
-# Training and evaluating models on the OC20 dataset
+# Training and evaluating models on OCP datasets
 
 - [Getting Started](#getting-started)
-- [Initial Structure to Relaxed Energy (IS2RE)](#initial-structure-to-relaxed-energy-prediction-is2re)
-  - [IS2RE Relaxations](#is2re-relaxations)
-- [Structure to Energy and Forces (S2EF)](#structure-to-energy-and-forces-s2ef)
-- [Initial Structure to Relaxed Structure (IS2RS)](#initial-structure-to-relaxed-structure-is2rs)
-- [Create EvalAI submission files](#create-evalai-submission-files)
-  - [S2EF/IS2RE](#s2efis2re)
-  - [IS2RS](#is2rs)
+- [OC20](#oc20)
+  - [Initial Structure to Relaxed Energy (IS2RE)](#initial-structure-to-relaxed-energy-prediction-is2re)
+    - [IS2RE Relaxations](#is2re-relaxations)
+  - [Structure to Energy and Forces (S2EF)](#structure-to-energy-and-forces-s2ef)
+  - [Initial Structure to Relaxed Structure (IS2RS)](#initial-structure-to-relaxed-structure-is2rs)
+  - [Create EvalAI submission files](#create-evalai-oc20-submission-files)
+    - [S2EF/IS2RE](#s2efis2re)
+    - [IS2RS](#is2rs)
+- [OC22](#oc22)
+  - [Initial Structure to Total Relaxed Energy (IS2RE-Total)](#initial-structure-to-total-relaxed-energy-is2re-total)
+  - [Structure to Total Energy and Forces (S2EF-Total)](#structure-to-total-energy-and-forces-s2ef-total)
+  - [Joint Training](#joint-training)
+  - [Create EvalAI submission files](#create-evalai-oc22-submission-files)
+    - [S2EF-Total/IS2RE-Total](#s2ef-totalis2re-total)
 
 ## Getting Started
 
@@ -58,9 +65,11 @@ python main.py --distributed --num-gpus 8 --num-nodes 6 --submit [...]
 
 In the rest of this tutorial, we explain how to train models for each task.
 
+# OC20
+
 ## Initial Structure to Relaxed Energy prediction (IS2RE)
 
-In the IS2RE tasks, the model takes the initial structure as an input and predicts the structure’s energy
+In the IS2RE tasks, the model takes the initial structure as an input and predicts the structure’s adsorption energy
 in the relaxed state. To train a model for the IS2RE task, you can use the `EnergyTrainer`
 Trainer and `SinglePointLmdb` dataset by specifying the following in your configuration file:
 ```
@@ -133,7 +142,7 @@ Alternatively, the IS2RE task may be approached by 2 methods as described in our
         ```
 ## Structure to Energy and Forces (S2EF)
 
-In the S2EF task, the model takes the positions of the atoms as input and predicts the energy and per-atom
+In the S2EF task, the model takes the positions of the atoms as input and predicts the adsorption energy and per-atom
 forces as calculated by DFT. To train a model for the S2EF task, you can use the `ForcesTrainer` Trainer
 and `TrajectoryLmdb` dataset by specifying the following in your configuration file:
 ```
@@ -199,7 +208,7 @@ python main.py --mode run-relaxations --config-yml configs/s2ef/2M/schnet/schnet
 ```
 The relaxed structure positions are stored in `[RESULTS_DIR]/relaxed_positions.npz` and later used to create a submission file to be uploaded to EvalAI. Predicted trajectories are stored in `trajectories` directory for those interested in analyzing the complete relaxation trajectory.
 
-## Create EvalAI submission files
+## Create EvalAI OC20 submission files
 
 EvalAI expects results to be structured in a specific format for a submission to be successful. A submission must contain results from the 4 different splits - in distribution (id), out of distribution adsorbate (ood ads), out of distribution catalyst (ood cat), and out of distribution adsorbate and catalyst (ood both). Constructing the submission file for each of the above tasks is as follows:
 
@@ -223,3 +232,68 @@ EvalAI expects results to be structured in a specific format for a submission to
     ```
    The final submission file will be written to `is2rs_submission.npz` (rename accordingly).
 3. Upload `is2rs_submission.npz` to EvalAI.
+
+# OC22
+
+## Initial Structure to Total Relaxed Energy (IS2RE-Total)
+
+For the IS2RE-Total task, the model takes the initial structure as input and predicts the total DFT energy of the relaxed structure. This task is more general and more challenging than the original OC20 IS2RE task that predicts adsorption energy. To train an OC22 IS2RE-Total model use the `EnergyTrainer` with the `OC22LmdbDataset` by including these lines in your configuration file:
+
+```
+trainer: energy # Use the EnergyTrainer
+
+task:
+  dataset: oc22_lmdb # Use the OC22LmdbDataset
+  ...
+```
+You can find examples configuration files in [`configs/oc22/is2re`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/oc22/is2re).
+
+## Structure to Total Energy and Forces (S2EF-Total)
+
+The S2EF-Total task takes a structure and predicts the total DFT energy and per-atom forces. This differs from the original OC20 S2EF task because it predicts total energy instead of adsorption energy. To train an OC22 S2EF-Total model use the ForcesTrainer with the OC22LmdbDataset by including these lines in your configuration file:
+
+```
+trainer: forces  # Use the ForcesTrainer
+
+task:
+  dataset: oc22_lmdb # Use the OC22LmdbDataset
+  ...
+```
+You can find examples configuration files in [`configs/oc22/s2ef`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/oc22/s2ef).
+
+## Joint Training
+
+Training on OC20 total energies whether independently or jointly with OC22 requires `total_energy: True` and a path to the `oc20_ref` (download link provided below) to be specified in the configuration file. These are necessary to convert OC20 adsorption energies into their corresponding total energies. The following changes in the configuration file capture these changes:
+
+```
+task:
+  dataset: oc22_lmdb
+  ...
+  
+dataset:
+  train:
+    src: data/oc20+oc22/s2ef/train
+    normalize_labels: False
+    total_energy: True
+    #download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
+    oc20_ref: path/to/oc22_ref.pkl
+  val:
+    src: data/oc22/s2ef/val_id
+    total_energy: True
+    oc20_ref: path/to/oc22_ref.pkl
+```
+
+You can find an example configuration file at [configs/oc22/s2ef/base_joint.yml](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/base_joint.yml)
+
+## Create EvalAI OC22 submission files
+
+EvalAI expects results to be structured in a specific format for a submission to be successful. A submission must contain results from the 2 different splits - in distribution (id) and out of distribution (ood). Construct submission files for the OC22 S2EF-Total/IS2RE-Total tasks as follows:
+
+### S2EF-Total/IS2RE-Total:
+1. Run predictions `--mode predict` on both the id and ood splits, generating `[s2ef/is2re]_predictions.npz` files for each split.
+2. Run the following command:
+    ```
+    python make_submission_file.py --dataset OC22 --id path/to/id/file.npz --ood path/to/ood_ads/file.npz --out-path submission_file.npz
+    ```
+   Where `file.npz` corresponds to the respective `[s2ef/is2re]_predictions.npz` files generated for the corresponding task. The final submission file will be written to `submission_file.npz` (rename accordingly). The `dataset` argument specifies which dataset is being considered — this only needs to be set for OC22 predictions because OC20 is the default.
+3. Upload `submission_file.npz` to EvalAI.
