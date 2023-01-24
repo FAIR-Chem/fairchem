@@ -50,27 +50,27 @@ default:
       lse_shift: True
 
 runs:
-- config: dpp-qm9-all
+  - config: dpp-qm9-all
+      model:
+        cutoff: 5
+        num_spherical: 7
+        num_radial: 6
+        envelope_exponent: 5
+        num_before_skip: 1
+        num_after_skip: 2
+        num_dense_output: 3
+      optim:
+        batch_size: 32
+        lr_initial: 0.001
+        warmup_steps: 3000
+
+  - config: schnet-qm9-all
     model:
       cutoff: 5
-      num_spherical: 7
-      num_radial: 6
-      envelope_exponent: 5
-      num_before_skip: 1
-      num_after_skip: 2
-      num_dense_output: 3
-    optim:
-      batch_size: 32
-      lr_initial: 0.001
-      warmup_steps: 3000
-
-- config: schnet-qm9-all
-  model:
-    cutoff: 5
-    hidden_channels: 128
-    max_num_neighbors: 40
-    num_filters: 128
-    num_gaussians: 100
-    num_interactions: 6
-    pg_hidden_channels: 0
-    phys_embeds: false
+      hidden_channels: 128
+      max_num_neighbors: 40
+      num_filters: 128
+      num_gaussians: 100
+      num_interactions: 6
+      pg_hidden_channels: 0
+      phys_embeds: false
