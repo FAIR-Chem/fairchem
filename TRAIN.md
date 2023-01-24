@@ -12,6 +12,7 @@
 - [OC22](#oc22)
   - [Initial Structure to Total Relaxed Energy (IS2RE-Total)](#initial-structure-to-total-relaxed-energy-is2re-total)
   - [Structure to Total Energy and Forces (S2EF-Total)](#structure-to-total-energy-and-forces-s2ef-total)
+  - [Joint Training](#joint-training)
   - [Create EvalAI submission files](#create-evalai-oc22-submission-files)
     - [S2EF-Total/IS2RE-Total](#s2ef-totalis2re-total)
 
@@ -259,6 +260,30 @@ task:
   ...
 ```
 You can find examples configuration files in [`configs/oc22/s2ef`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/oc22/s2ef).
+
+## Joint Training
+
+Training on OC20 total energies whether independently or jointly with OC22 requires `total_energy: True` and a path to the `oc20_ref` (download link provided below) to be specified in the configuration file. These are necessary to convert OC20 adsorption energies into their corresponding total energies. The following changes in the configuration file capture these changes:
+
+```
+task:
+  dataset: oc22_lmdb
+  ...
+  
+dataset:
+  train:
+    src: data/oc20+oc22/s2ef/train
+    normalize_labels: False
+    total_energy: True
+    #download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
+    oc20_ref: path/to/oc22_ref.pkl
+  val:
+    src: data/oc22/s2ef/val_id
+    total_energy: True
+    oc20_ref: path/to/oc22_ref.pkl
+```
+
+You can find an example configuration file at [configs/oc22/s2ef/base_joint.yml](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/base_joint.yml)
 
 ## Create EvalAI OC22 submission files
 
