@@ -9,7 +9,7 @@ default:
   wandb_project: ocp-qm
   mode: train
   test_ri: true
-  wandb_tags: qm7x
+  wandb_tags: qm9
   cp_data_to_tmpdir: true
   note:
     task: name
