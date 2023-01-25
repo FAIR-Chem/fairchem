@@ -1,8 +1,8 @@
 # trainset has 4068193 samples
 job:
   mem: 32GB
-  cpus: 4
-  gres: gpu:16gb:1
+  cpus: 6
+  gres: gpu:rtx8000:1
   # time: "12:00:00"
 
 default:
@@ -11,10 +11,7 @@ default:
   test_ri: true
   wandb_tags: qm9
   cp_data_to_tmpdir: true
-  note:
-    task: name
-    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, regress_forces
-    optim: batch_size, lr_initial, energy_coefficient, force_coefficient, energy_grad_coefficient
+  note: "qm9 dpp schnet baselines"
   log_train_every: 250
   energy_head: False
   frame_averaging: ""
@@ -24,7 +21,7 @@ default:
     max_steps: 2000000
     warmup_steps: 3000
     lr_initial: 0.00025
-    eval_every: 1
+    eval_every: 0 # 0 is n_train
     energy_coefficient: 1
     energy_grad_coefficient: 0
     force_coefficient: 100
@@ -50,6 +47,7 @@ default:
       lse_shift: True
 
 runs:
+  # # https://github.com/gasteigerjo/dimenet/blob/master/config.yaml
   - config: dpp-qm9-all
     model:
       cutoff: 5
@@ -64,13 +62,39 @@ runs:
       lr_initial: 0.001
       warmup_steps: 3000
 
-  - config: schnet-qm9-all
-    model:
-      cutoff: 5
-      hidden_channels: 128
-      max_num_neighbors: 40
-      num_filters: 128
-      num_gaussians: 100
-      num_interactions: 6
-      pg_hidden_channels: 0
-      phys_embeds: false
+  # #
+  # - config: schnet-qm9-all
+  #   model:
+  #     cutoff: 5
+  #     hidden_channels: 128
+  #     max_num_neighbors: 40
+  #     num_filters: 128
+  #     num_gaussians: 100
+  #     num_interactions: 6
+  #     pg_hidden_channels: 0
+  #     phys_embeds: false
+  # https://github.com/atomistic-machine-learning/SchNet/blob/master/scripts/train_energy_force.py#L149
+  # - config: schnet-qm9-all
+  #   optim:
+  #     batch_size: 32
+  #   model:
+  #     cutoff: 20
+  #     num_interactions: 6
+  #     num_gaussians: 64
+  #     num_filters: 64
+  #     hidden_channels: 128
+  #     pg_hidden_channels: 0
+  #     phys_embeds: false
+  # # https://pytorch-geometric.readthedocs.io/en/latest/_modules/torch_geometric/nn/models/schnet.html#SchNet
+  # - config: schnet-qm9-all
+  #   optim:
+  #     batch_size: 32
+  #   model:
+  #     max_num_neighbors: 32
+  #     cutoff: 10
+  #     num_gaussians: 50
+  #     num_interactions: 6
+  #     num_filters: 128
+  #     hidden_channels: 128
+  #     pg_hidden_channels: 0
+  #     phys_embeds: false

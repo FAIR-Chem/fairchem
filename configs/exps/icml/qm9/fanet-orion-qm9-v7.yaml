@@ -1,0 +1,75 @@
+# more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
+job:
+  mem: 8GB
+  cpus: 4
+  gres: gpu:1
+  time: 02:55:00
+  partition: long
+
+default:
+  wandb_project: ocp-qm
+  config: fanet-qm9-all
+  mode: train
+  test_ri: true
+  wandb_tags: qm9, orion
+  log_train_every: 200
+  optim:
+    batch_size: 64
+    warmup_steps: 3000
+    # parameters EMA
+    ema_decay: 0.999
+    loss_energy: mse
+    # early stopping
+    es_patience: 20
+    es_min_abs_change: 0.000001
+    es_warmup_epochs: 650
+    # all below is for the scheduler
+    scheduler: ReduceLROnPlateau
+    mode: min
+    factor: 0.95
+    threshold: 0.0001
+    threshold_mode: abs
+    min_lr: 0.000001
+    verbose: true
+    patience: 10
+  note:
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm
+    optim: batch_size, lr_initial
+    _root_: frame_averaging, fa_frames
+  orion_mult_factor:
+    value: 25
+    targets: num_filters, hidden_channels, num_gaussians
+  frame_averaging: 3D
+  fa_frames: random
+  model:
+    mp_type: updownscale_base
+    edge_embed_type: all_rij
+    energy_head: ""
+    num_gaussians: 100
+    pg_hidden_channels: 32
+    phys_embeds: True
+    second_layer_MLP: True
+    skip_co: True
+    complex_mp: True
+    graph_norm: True
+
+orion:
+  # Remember to change the experiment name if you change anything in the search space
+  n_jobs: 30
+
+  unique_exp_name: fanet-qm9-v7.0.0
+
+  space:
+    optim/max_epochs: fidelity(650, 1000, base=8)
+    optim/lr_initial: loguniform(1e-4, 1e-3, precision=3)
+    model/cutoff: uniform(4.5, 6.5, precision=1)
+    model/hidden_channels: uniform(10, 20, discrete=True)
+    model/max_num_neighbors: choices([30, 40, 50])
+    model/num_gaussians: choices([50, 100, 150])
+    model/num_filters: uniform(10, 20, discrete=True)
+    model/num_interactions: uniform(3, 6, discrete=True)
+  algorithms:
+    asha:
+      seed: 123
+      num_rungs: 3
+      num_brackets: 2
