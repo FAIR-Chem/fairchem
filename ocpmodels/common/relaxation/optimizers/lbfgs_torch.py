@@ -12,7 +12,6 @@ from pathlib import Path
 import ase
 import torch
 from ase import Atoms
-from torch.cuda import nvtx
 from torch_scatter import scatter
 
 from ocpmodels.common.relaxation.ase_utils import batch_to_atoms
@@ -152,9 +151,7 @@ class LBFGS:
             dr *= scale.unsqueeze(1)
             return dr * self.damping
 
-        nvtx.range_push("get forces")
         e, f = self.get_forces()
-        nvtx.range_pop()  # get forces
         f = f.to(self.device, dtype=torch.float64)
         r = self.atoms.pos.to(self.device, dtype=torch.float64)
 
@@ -203,12 +200,12 @@ class TorchCalc:
         return energy, forces
 
     def update_graph(self, atoms):
-        # edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
-        #     atoms, 6, 50
-        # )
-        # atoms.edge_index = edge_index
-        # atoms.cell_offsets = cell_offsets
-        # atoms.neighbors = num_neighbors
-        # if self.transform is not None:
-        #     atoms = self.transform(atoms)
+        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
+            atoms, 6, 50
+        )
+        atoms.edge_index = edge_index
+        atoms.cell_offsets = cell_offsets
+        atoms.neighbors = num_neighbors
+        if self.transform is not None:
+            atoms = self.transform(atoms)
         return atoms
