@@ -14,7 +14,6 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch_geometric
-from torch.cuda import nvtx
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
@@ -640,7 +639,6 @@ class ForcesTrainer(BaseTrainer):
                 logging.info(f"Skipping batch: {batch[0].sid.tolist()}")
                 continue
 
-            nvtx.range_push("ml_relax")
             relaxed_batch = ml_relax(
                 batch=batch,
                 model=self,
@@ -650,7 +648,6 @@ class ForcesTrainer(BaseTrainer):
                 device=self.device,
                 transform=None,
             )
-            nvtx.range_pop()  # ml_relax
             if relaxed_batch is None:
                 continue
 
