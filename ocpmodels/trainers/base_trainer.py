@@ -433,7 +433,7 @@ class BaseTrainer(ABC):
                 self.scaler.load_state_dict(checkpoint["amp"])
 
         if "config" in checkpoint:
-            if "job_ids" in checkpoint["config"]:
+            if "job_ids" in checkpoint["config"] and JOB_ID not in checkpoint["config"]:
                 self.config["job_ids"] = checkpoint["config"]["job_ids"] + f", {JOB_ID}"
 
     def load_loss(self):
