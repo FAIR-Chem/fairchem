@@ -278,5 +278,5 @@ if __name__ == "__main__":
             f"DFT Speedup (SCF): {total_ground_truth_scf_calls/ml_dft_calls[kk]['scf']}"
         )
         print(
-            f"DFT Speedup (Ionic): {total_ground_truth_ionic_calls/ml_dft_calls[kk]['scf']}\n"
+            f"DFT Speedup (Ionic): {total_ground_truth_ionic_calls/ml_dft_calls[kk]['ionic']}\n"
         )
