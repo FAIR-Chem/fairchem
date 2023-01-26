@@ -3,15 +3,14 @@ import os
 import pickle
 from collections import defaultdict
 
-import numpy as np
 from ocdata.vasp import write_vasp_input_files
 from tqdm import tqdm
 
-'''
+"""
 Given a cache from process_mlrs.py, generate VASP input files
 for the best k (either single points or relaxations), and write
 list of paths of systems to be run.
-'''
+"""
 
 VASP_FLAGS = {
     "ibrion": 2,
@@ -33,17 +32,30 @@ VASP_FLAGS = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cache", type=str,
-        help="cache_sorted_byE.pkl from process_mlrs.py")
+    parser.add_argument(
+        "--cache", type=str, help="cache_sorted_byE.pkl from process_mlrs.py"
+    )
     parser.add_argument("--outdir", type=str)
-    parser.add_argument("--k", type=int,
-        help="Number of best configs per system to run")
-    parser.add_argument("--sp", action="store_true",
-        help="Write for single point runs instead of relaxations")
-    parser.add_argument("--nsw", default=0, type=int,
-        help="Should be 0 for single points, 2000 for relaxations")
-    parser.add_argument("--nelm", default=60, type=int,
-        help="Should be 300 for single points, 60 for relaxations")
+    parser.add_argument(
+        "--k", type=int, help="Number of best configs per system to run"
+    )
+    parser.add_argument(
+        "--sp",
+        action="store_true",
+        help="Write for single point runs instead of relaxations",
+    )
+    parser.add_argument(
+        "--nsw",
+        default=0,
+        type=int,
+        help="Should be 0 for single points, 2000 for relaxations",
+    )
+    parser.add_argument(
+        "--nelm",
+        default=60,
+        type=int,
+        help="Should be 300 for single points, 60 for relaxations",
+    )
     args = parser.parse_args()
 
     VASP_FLAGS["nsw"] = args.nsw

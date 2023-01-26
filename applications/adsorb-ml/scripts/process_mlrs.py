@@ -9,7 +9,7 @@ The following files are saved out:
 - cache_sorted_byE.pkl: dict going from the system ID (bulk, surface, adsorbate)
     to a list of configs and their relaxed structures, sorted by lowest energy first.
     This is later used by write_top_k_vasp.py.
-- anomalies_by_sid.pkl: dict going from integer sid to boolean representing 
+- anomalies_by_sid.pkl: dict going from integer sid to boolean representing
     whether it was an anomaly. Anomalies are already excluded from cache_sorted_byE.pkl
     and this file is only used for extra analyses.
 - errors_by_sid.pkl: any errors that occurred
@@ -19,13 +19,10 @@ import argparse
 import multiprocessing as mp
 import os
 import pickle
-import sys
 from collections import defaultdict
-from glob import glob
 
 import numpy as np
-from ase.calculators.singlepoint import SinglePointCalculator as SPCalc
-from ase.io import read, write
+from ase.io import read
 from ocdata.test.flag_anomaly import DetectTrajAnomaly
 from tqdm import tqdm
 
@@ -50,7 +47,9 @@ def parse_args():
         "--workers", type=int, default=80, help="Number of workers for multiprocessing"
     )
     parser.add_argument("--fmax", type=float, default=0.02)
-    parser.add_argument("--metadata", type=str, help="Path to mapping of sid to metadata")
+    parser.add_argument(
+        "--metadata", type=str, help="Path to mapping of sid to metadata"
+    )
     parser.add_argument("--surface-dir", type=str, help="Path to surface DFT outputs")
 
     args = parser.parse_args()
@@ -91,7 +90,6 @@ def process_mlrs(arg):
                     break
 
         final_energy = final_atoms.get_potential_energy()
-        final_forces = final_atoms.get_forces()
     except:
         error_msg = f"Error parsing traj: {sid}.traj"
         return [sid, system_id, adslab_idx, None, None, True, error_msg]
@@ -170,9 +168,5 @@ if __name__ == "__main__":
         sorted_grouped_configs,
         open(f"{args.outdir}/cache_sorted_byE.pkl", "wb"),
     )
-    pickle.dump(
-        anomalies, open(f"{args.outdir}/anomalies_by_sid.pkl", "wb")
-    )
-    pickle.dump(
-        errored_sysids, open(f"{args.outdir}/errors_by_sid.pkl", "wb")
-    )
+    pickle.dump(anomalies, open(f"{args.outdir}/anomalies_by_sid.pkl", "wb"))
+    pickle.dump(errored_sysids, open(f"{args.outdir}/errors_by_sid.pkl", "wb"))
