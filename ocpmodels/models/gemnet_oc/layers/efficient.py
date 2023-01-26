@@ -4,7 +4,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional
+from typing import Optional, Tuple
 
 import torch
 from torch_scatter import scatter
@@ -32,7 +32,7 @@ class BasisEmbedding(torch.nn.Module):
         self,
         num_radial: int,
         emb_size_interm: int,
-        num_spherical: Optional[int] = None,
+        num_spherical=None,
     ):
         super().__init__()
         self.num_radial = num_radial
@@ -190,13 +190,13 @@ class EfficientInteractionBilinear(torch.nn.Module):
 
     def forward(
         self,
-        basis,
+        basis: Tuple[torch.Tensor, torch.Tensor],
         m,
         idx_agg_outer,
         idx_agg_inner,
-        idx_agg2_outer=None,
-        idx_agg2_inner=None,
-        agg2_out_size=None,
+        idx_agg2_outer: Optional[torch.Tensor] = None,
+        idx_agg2_inner: Optional[torch.Tensor] = None,
+        agg2_out_size: Optional[int] = None,
     ):
         """
 
@@ -242,6 +242,9 @@ class EfficientInteractionBilinear(torch.nn.Module):
         # (num_edges, num_spherical, emb_size_in)
 
         if idx_agg2_outer is not None:
+            assert idx_agg2_inner is not None
+            assert idx_agg2_outer is not None
+            assert agg2_out_size is not None
             Kmax2 = torch.max(idx_agg2_inner) + 1
             sph_m_padded = sph_m.new_zeros(
                 agg2_out_size, Kmax2, sph_m.shape[1], sph_m.shape[2]
@@ -261,9 +264,8 @@ class EfficientInteractionBilinear(torch.nn.Module):
             # (num_edges, emb_size_interm, emb_size_in)
 
         # Bilinear: Sum over emb_size_interm and emb_size_in
-        m_ca = self.bilinear(
-            rad_W1_sph_m.reshape(-1, rad_W1_sph_m.shape[1:].numel())
-        )
+        numel = rad_W1_sph_m.shape[1:][0] * rad_W1_sph_m.shape[1:][1]
+        m_ca = self.bilinear(rad_W1_sph_m.reshape(-1, numel))
         # (num_edges/num_atoms, emb_size_out)
 
         return m_ca
