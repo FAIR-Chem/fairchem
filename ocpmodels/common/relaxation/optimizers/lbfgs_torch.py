@@ -29,6 +29,7 @@ class LBFGS:
         alpha=100.0,
         force_consistent=None,
         device="cuda:0",
+        save_full_traj=True,
         traj_dir: Path = None,
         traj_names=None,
         early_stop_batch: bool = False,
@@ -41,6 +42,7 @@ class LBFGS:
         self.alpha = alpha
         self.force_consistent = force_consistent
         self.device = device
+        self.save_full = save_full_traj
         self.traj_dir = traj_dir
         self.traj_names = traj_names
         self.early_stop_batch = early_stop_batch
@@ -87,7 +89,8 @@ class LBFGS:
         s = deque(maxlen=self.memory)
         y = deque(maxlen=self.memory)
         rho = deque(maxlen=self.memory)
-        r0 = f0 = e0 = None
+        r0 = None
+        e0, f0 = self.get_forces()
         H0 = 1.0 / self.alpha
         update_mask = torch.ones_like(self.atoms.batch).bool().to(self.device)
 
@@ -102,25 +105,40 @@ class LBFGS:
         iteration = 0
         converged = False
         while iteration < steps and not converged:
-            r0, f0, e0 = self.step(
-                iteration, r0, f0, H0, rho, s, y, update_mask
-            )
-            iteration += 1
-            if trajectories is not None:
-                self.atoms.y, self.atoms.force = e0, f0
-                atoms_objects = batch_to_atoms(self.atoms)
-                update_mask_ = torch.split(
-                    update_mask, self.atoms.natoms.tolist()
-                )
-                for atm, traj, mask in zip(
-                    atoms_objects, trajectories, update_mask_
-                ):
-                    if mask[0]:
-                        traj.write(atm)
             update_mask = self.check_convergence(
                 iteration, update_mask, f0, fmax
             )
             converged = torch.all(torch.logical_not(update_mask))
+
+            if trajectories is not None:
+                # Save out ASE atoms objects only if:
+                # - save_full=True, saving out all frames else,
+                # - iteration==0, saving out the initial frame
+                # - iteration==steps-1 or converged=True, saves out the converged/final frame, whichever comes first.
+                if (
+                    self.save_full
+                    or iteration == 0
+                    or converged
+                    or iteration == steps - 1
+                ):
+                    self.atoms.y, self.atoms.force = e0, f0
+                    atoms_objects = batch_to_atoms(self.atoms)
+                    update_mask_ = torch.split(
+                        update_mask, self.atoms.natoms.tolist()
+                    )
+                    for atm, traj, mask in zip(
+                        atoms_objects, trajectories, update_mask_
+                    ):
+                        if mask[0]:
+                            traj.write(atm)
+
+            # Only take an optimization step if not converged and not at the
+            # final frame.
+            if not converged and iteration < steps - 1:
+                r0, f0, e0 = self.step(
+                    iteration, r0, f0, H0, rho, s, y, update_mask
+                )
+            iteration += 1
         # GPU memory usage as per nvidia-smi seems to gradually build up as
         # batches are processed. This releases unoccupied cached memory.
         torch.cuda.empty_cache()
