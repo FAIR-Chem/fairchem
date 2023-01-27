@@ -7,7 +7,7 @@ import pickle
 from ase import neighborlist
 from ase.constraints import FixAtoms
 from collections import defaultdict
-from pymatgen import Composition
+from pymatgen.core import Composition
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.analysis.local_env import VoronoiNN
