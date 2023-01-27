@@ -4,11 +4,11 @@ This repository hosts the input generation workflow used in the Open Catalyst Pr
 
 ## Setup
 
-The easiest way to install prerequisites is via [conda](https://conda.io/docs/index.html). After installing [conda](http://conda.pydata.org/), run the following commands: 
+The easiest way to install prerequisites is via [conda](https://conda.io/docs/index.html). After installing [conda](http://conda.pydata.org/), run the following commands:
 
-* Create a new environment, `vaspenv`, `conda create -n vaspenv python=3.7`
+* Create a new environment, `vaspenv`, `conda create -n vaspenv python=3.9`
 * Activate the newly created environment to install the required dependencies: `conda activate vaspenv`
-* Install specific versions of Pymatgen and ASE: `pip install pymatgen==2022.01.09 ase==3.22.1`
+* Install specific versions of Pymatgen and ASE: `pip install pymatgen==2023.1.20 ase==3.22.1`
 * Install Catkit from Github: `pip install git+https://github.com/ulissigroup/CatKit.git catkit`
 * Clone this repo and install with: `pip install -e .`
 
@@ -46,8 +46,8 @@ python sample_structure.py --bulk_db bulk_db_flat.pkl \
 
 ```
 python sample_structure.py --bulk_db bulk_db_flat.pkl \
-  --adsorbate_db adsorbate_db.pkl --output_dir outputs/ 
-  --enumerate_all_structures --adsorbate_index 10 
+  --adsorbate_db adsorbate_db.pkl --output_dir outputs/
+  --enumerate_all_structures --adsorbate_index 10
   --bulk_indices 20 --surface_index 0
 ```
 
@@ -63,7 +63,7 @@ We employed the workflow as described above to create the OC20 dataset. We consi
 We generated around 2.5M adsorbate+catalyst inputs which were then deduplicated before running DFT calculations.  Each input system was generated on a single CPU core with a timeout of 200 minutes.
 
 
-### Databases for bulk, adsorbate and precomputed surfaces 
+### Databases for bulk, adsorbate and precomputed surfaces
 
 **Bulks**
 
@@ -77,7 +77,7 @@ Flat bulk database (all ~11k bulks in one list), for use cases #2 and #3 above, 
 
 **Adsorbates**
 
-The latest version is https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/adsorbate_db_2021apr28.pkl (MD5 checksum: `975e00a62c7b634b245102e42167b3fb`). 
+The latest version is https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/adsorbate_db_2021apr28.pkl (MD5 checksum: `975e00a62c7b634b245102e42167b3fb`).
 * Corresponding mapping between indices and adsorbates (SMILES): https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/mapping_adsorbates_2020may12.txt
 
 
@@ -125,4 +125,3 @@ The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attr
     archivePrefix={arXiv}
 }
 ```
-
