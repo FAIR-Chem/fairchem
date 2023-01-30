@@ -34,7 +34,8 @@ commands:
               conda install -c conda-forge conda-merge
               conda-merge env.common.yml env.cpu.yml > env.yml
               conda env create -f env.yml
-              pip install pytest-cov==3.0.0
+              conda activate ocp-models
+              pip install pytest-cov==4.0.0
             fi
       - save_cache:
           paths:
@@ -90,7 +91,7 @@ jobs:
             conda activate ocp-models
             pip install -e .
             pre-commit install
-            pytest --cov-report=xml --cov=ocpmodels/ /home/circleci/project/tests
+            pytest --cov=ocpmodels/ /home/circleci/project/tests
       - codecov/upload:
           file: coverage.xml
 
