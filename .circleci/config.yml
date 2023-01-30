@@ -1,9 +1,5 @@
 version: 2.1
 
-orbs:
-  win: circleci/windows@2.4.0
-  codecov: codecov/codecov@3.1.1
-
 workflows:
   version: 2
   install_and_test:
@@ -11,7 +7,6 @@ workflows:
       - python_lint
       - test_ubuntu
       - test_macos
-      - test_windows
 
 commands:
   install_deps_ubuntu:
@@ -65,32 +60,6 @@ commands:
           paths:
             - /Users/distiller/miniconda3
           key: conda-macos-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
-  install_deps_windows:
-    steps:
-      - checkout
-      - restore_cache:
-          key: conda-windows-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
-      - run:
-          name: Install conda and environment
-          command: |
-            if (Test-Path -Path "C:\tools\miniconda3\envs\ocp-models"){
-              Write-Host "miniconda installed already."
-              C:\tools\miniconda3\Scripts\conda.exe init powershell
-            }
-            else {
-              choco install -y --no-progress miniconda3
-              C:\tools\miniconda3\Scripts\conda.exe init powershell
-              conda config --set always_yes yes --set auto_update_conda false
-              conda update -n base -c defaults conda
-              conda install -c conda-forge conda-merge
-              conda-merge env.common.yml env.cpu.yml | out-file env.yml -Encoding utf8
-              conda env create -f env.yml
-            }
-      - save_cache:
-          paths:
-            - C:\tools\miniconda3
-          key: conda-windows-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
-
 
 jobs:
   python_lint:
@@ -132,21 +101,6 @@ jobs:
           name: install ocp and run tests
           command: |
             source $HOME/miniconda3/bin/activate
-            conda activate ocp-models
-            pip install -e .
-            pre-commit install
-            pytest tests
-
-  test_windows:
-    executor:
-      name: win/default
-      size: large
-    steps:
-      - install_deps_windows
-      - run:
-          name: install ocp and run tests
-          command: |
-            C:\tools\miniconda3\Scripts\conda.exe activate
             conda activate ocp-models
             pip install -e .
             pre-commit install
