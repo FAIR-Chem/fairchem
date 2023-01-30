@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  codecov: codecov/codecov@3.1.1
+
 workflows:
   version: 2
   install_and_test:
