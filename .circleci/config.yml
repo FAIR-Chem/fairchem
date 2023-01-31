@@ -21,7 +21,7 @@ commands:
           name: Install conda and environment
           command: |
             if [ ! -d "/home/circleci/miniconda" ]; then
-              wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+              wget https://repo.anaconda.com/miniconda/Miniconda3-py39_22.11.1-1-Linux-x86_64.sh -O miniconda.sh
               bash miniconda.sh -b -p "$HOME"/miniconda
               source /home/circleci/miniconda/etc/profile.d/conda.sh
               conda activate base
@@ -29,12 +29,14 @@ commands:
               conda config --set always_yes yes --set auto_update_conda false
               # Update conda
               conda update conda
+              conda install mamba -n base -c conda-forge
               # Install ocp conda env
+              conda create --name ocp-models --clone base
               source /home/circleci/miniconda/etc/profile.d/conda.sh
+              conda activate ocp-models
               conda install -c conda-forge conda-merge
               conda-merge env.common.yml env.cpu.yml > env.yml
-              conda env create -f env.yml
-              conda activate ocp-models
+              mamba env update -n ocp-models --file env.yml
               pip install pytest-cov==4.0.0
             fi
       - save_cache:
@@ -52,13 +54,16 @@ commands:
             if [[ -d $HOME/miniconda3 ]] ; then
               echo "miniconda installed already."
             else
-              curl -o miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+              curl -o miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-py39_22.11.1-1-MacOSX-x86_64.sh
               bash ./miniconda.sh -b
               source $HOME/miniconda3/bin/activate
               conda config --set always_yes yes --set auto_update_conda false
+              conda install mamba -n base -c conda-forge
+              conda create --name ocp-models --clone base
+              conda activate ocp-models
               conda install -c conda-forge conda-merge
               conda-merge env.common.yml env.cpu.yml > env.yml
-              conda env create -f env.yml
+              mamba env update -n ocp-models --file env.yml
             fi
       - save_cache:
           paths:
@@ -91,7 +96,7 @@ jobs:
             conda activate ocp-models
             pip install -e .
             pre-commit install
-            pytest --cov=ocpmodels/ /home/circleci/project/tests
+            pytest --cov-report=xml --cov=ocpmodels/ /home/circleci/project/tests
       - codecov/upload:
           file: coverage.xml
 
