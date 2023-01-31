@@ -123,14 +123,8 @@ class LBFGS:
                 ):
                     self.atoms.y, self.atoms.force = e0, f0
                     atoms_objects = batch_to_atoms(self.atoms)
-                    update_mask_ = torch.split(
-                        update_mask, self.atoms.natoms.tolist()
-                    )
-                    for atm, traj, mask in zip(
-                        atoms_objects, trajectories, update_mask_
-                    ):
-                        if mask[0]:
-                            traj.write(atm)
+                    for atm, traj in zip(atoms_objects, trajectories):
+                        traj.write(atm)
 
             # Only take an optimization step if not converged and not at the
             # final frame.
