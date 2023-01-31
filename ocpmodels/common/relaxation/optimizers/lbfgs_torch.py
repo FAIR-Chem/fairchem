@@ -101,6 +101,7 @@ class LBFGS:
                 ase.io.Trajectory(self.traj_dir / f"{name}.traj_tmp", mode="w")
                 for name in self.traj_names
             ]
+            # saves out the initial frame
             self.write(e0, f0, update_mask, trajectories)
 
         iteration = 0
@@ -118,11 +119,12 @@ class LBFGS:
             if trajectories is not None:
                 # Save out ASE atoms objects only if:
                 # - save_full=True, saving out all frames else,
-                # - iteration==0, saving out the initial frame
                 # - iteration==steps-1 or converged=True, saves out the converged/final frame, whichever comes first.
                 if self.save_full or converged or iteration == steps - 1:
                     self.write(e0, f0, update_mask, trajectories)
 
+            # update the mask only after the previous mask was used to
+            # determine whether to write.
             update_mask = _update_mask
 
         # GPU memory usage as per nvidia-smi seems to gradually build up as
