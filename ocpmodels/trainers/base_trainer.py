@@ -444,7 +444,7 @@ class BaseTrainer(ABC):
             logging.info("Expanding atomic embeddings from the checkpoint!")
             for base_key in registry.get_model_class(
                 self.config["model"]
-            ).all_atomic_embedding_keys:
+            ).all_atomic_embeddings_keys():
                 key = mod_key_count * "module." + base_key
                 self.model.state_dict()[key][
                     : new_dict[key].shape[0]
@@ -467,7 +467,7 @@ class BaseTrainer(ABC):
 
             for base_key in registry.get_model_class(
                 self.config["model"]
-            ).all_atomic_embedding_keys:
+            ).all_atomic_embeddings_keys():
                 key = mod_key_count * "module." + base_key
                 new_dict[key][:] = torch.tensor(
                     interpolate_embeddings(
