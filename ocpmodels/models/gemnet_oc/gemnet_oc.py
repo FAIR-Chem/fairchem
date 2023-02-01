@@ -1358,4 +1358,6 @@ class GemNetOC(BaseModel):
     def num_params(self):
         return sum(p.numel() for p in self.parameters())
 
-    all_atomic_embedding_keys = ["atom_emb.embeddings.weight"]
+    @property
+    def all_atomic_embeddings_keys(self):
+        return ["atom_emb.embeddings.weight"]
