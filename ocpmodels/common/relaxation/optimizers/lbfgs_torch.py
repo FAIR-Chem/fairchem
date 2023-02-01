@@ -97,7 +97,6 @@ class LBFGS:
         self.y = deque(maxlen=self.memory)
         self.rho = deque(maxlen=self.memory)
         self.r0 = self.f0 = None
-        # update_mask = torch.ones_like(self.batch.batch, device=self.device).bool()
 
         self.trajectories = None
         if self.traj_dir:
