@@ -49,6 +49,10 @@ task:
   # Path to initial structures to run relaxations on. Same as the IS2RE set.
   relax_dataset:
     src: data/is2re/all/test_id/data.lmdb
+    # To shard a dataset into smaller subsets, define the total_shards desired
+    # and the shard a particular process to see.
+    total_shards: 1                                                             # int (optional)
+    shard: 0                                                                    # int (optional)
   relax_opt:
     name: lbfgs
     maxstep: 0.04
