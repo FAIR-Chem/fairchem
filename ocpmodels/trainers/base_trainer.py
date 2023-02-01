@@ -31,7 +31,9 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import load_state_dict, save_checkpoint
-from ocpmodels.datasets.interpolate_embeddings import interpolate_embeddings
+from ocpmodels.datasets.embeddings.interpolate_embeddings import (
+    interpolate_embeddings,
+)
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
@@ -440,7 +442,9 @@ class BaseTrainer(ABC):
             "expand_atomic_embeddings_from_checkpoint", False
         ):
             logging.info("Expanding atomic embeddings from the checkpoint!")
-            for base_key in self.model.all_atomic_embedding_keys:
+            for base_key in registry.get_model_class(
+                self.config["model"]
+            ).all_atomic_embedding_keys:
                 key = mod_key_count * "module." + base_key
                 self.model.state_dict()[key][
                     : new_dict[key].shape[0]
@@ -461,7 +465,9 @@ class BaseTrainer(ABC):
                 f"Interpolating atomic embeddings from an RBF kernel using datasets {fitted_datasets} and additional elements {additional_fitted_elements}!"
             )
 
-            for base_key in self.model.all_atomic_embedding_keys:
+            for base_key in registry.get_model_class(
+                self.config["model"]
+            ).all_atomic_embedding_keys:
                 key = mod_key_count * "module." + base_key
                 new_dict[key][:] = torch.tensor(
                     interpolate_embeddings(
