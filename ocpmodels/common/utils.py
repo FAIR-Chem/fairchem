@@ -33,7 +33,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
-from torch_scatter import segment_coo, segment_csr
+from torch_scatter import scatter, segment_coo, segment_csr
 
 if TYPE_CHECKING:
     from torch.nn.modules.module import _IncompatibleKeys
@@ -526,7 +526,9 @@ def get_pbc_distances(
     distances = distance_vectors.norm(dim=-1)
 
     # redundancy: remove zero distances
-    nonzero_idx = torch.arange(len(distances))[distances != 0]
+    nonzero_idx = torch.arange(len(distances), device=distances.device)[
+        distances != 0
+    ]
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
 
@@ -545,10 +547,22 @@ def get_pbc_distances(
 
 
 def radius_graph_pbc(
-    data, radius, max_num_neighbors_threshold, pbc=[True, True, False]
+    data, radius, max_num_neighbors_threshold, pbc=[True, True, True]
 ):
     device = data.pos.device
     batch_size = len(data.natoms)
+
+    if hasattr(data, "pbc"):
+        data.pbc = torch.atleast_2d(data.pbc)
+        for i in range(3):
+            if not torch.any(data.pbc[:, i]).item():
+                pbc[i] = False
+            elif torch.all(data.pbc[:, i]).item():
+                pbc[i] = True
+            else:
+                raise RuntimeError(
+                    "Different structures in the batch have different PBC configurations. This is not currently supported."
+                )
 
     # position of the atoms
     atom_pos = data.pos
@@ -1042,3 +1056,17 @@ def load_state_dict(
 ):
     incompat_keys = module.load_state_dict(state_dict, strict=False)  # type: ignore
     return _report_incompat_keys(module, incompat_keys, strict=strict)
+
+
+def scatter_det(*args, **kwargs):
+    from ocpmodels.common.registry import registry
+
+    if registry.get("set_deterministic_scatter", no_warning=True):
+        torch.use_deterministic_algorithms(mode=True)
+
+    out = scatter(*args, **kwargs)
+
+    if registry.get("set_deterministic_scatter", no_warning=True):
+        torch.use_deterministic_algorithms(mode=False)
+
+    return out

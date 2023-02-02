@@ -24,6 +24,7 @@ def ml_relax(
     steps,
     fmax,
     relax_opt,
+    save_full_traj,
     device="cuda:0",
     transform=None,
     early_stop_batch=False,
@@ -40,6 +41,8 @@ def ml_relax(
             of the system is no bigger than fmax.
         relax_opt: str
             Optimizer and corresponding parameters to be used for structure relaxations.
+        save_full_traj: bool
+            Whether to save out the full ASE trajectory. If False, only save out initial and final frames.
     """
     batches = deque([batch[0]])
     relaxed_batches = []

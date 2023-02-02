@@ -72,7 +72,7 @@ class OCPCalculator(Calculator):
         trainer=None,
         cutoff=6,
         max_neighbors=50,
-        device="cpu",
+        cpu=True,
     ):
         """
         OCP-ASE Calculator
@@ -88,6 +88,8 @@ class OCPCalculator(Calculator):
                 Cutoff radius to be used for data preprocessing.
             max_neighbors (int):
                 Maximum amount of neighbors to store for a given atom.
+            cpu (bool):
+                Whether to load and run the model on CPU. Set `False` for GPU.
         """
         setup_imports()
         setup_logging()
@@ -116,8 +118,8 @@ class OCPCalculator(Calculator):
             elif isinstance(config["dataset"], dict):
                 config["dataset"] = config["dataset"].get("train", None)
         else:
-            # Loads the config from the checkpoint directly
-            config = torch.load(checkpoint, map_location=torch.device(device))[
+            # Loads the config from the checkpoint directly (always on CPU).
+            config = torch.load(checkpoint, map_location=torch.device("cpu"))[
                 "config"
             ]
         if trainer is not None:  # passing the arg overrides everything else
@@ -164,9 +166,9 @@ class OCPCalculator(Calculator):
             optimizer=config["optim"],
             identifier="",
             slurm=config.get("slurm", {}),
-            local_rank=config.get("local_rank", device),
+            local_rank=config.get("local_rank", 0),
             is_debug=config.get("is_debug", True),
-            cpu=True if device == "cpu" else False,
+            cpu=cpu,
         )
 
         if checkpoint is not None:
@@ -179,6 +181,7 @@ class OCPCalculator(Calculator):
             r_forces=False,
             r_distances=False,
             r_edges=False,
+            r_pbc=True,
         )
 
     def load_checkpoint(self, checkpoint_path):
