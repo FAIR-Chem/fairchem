@@ -27,7 +27,8 @@ python write_top_k_vasp.py \
     --k 5 $SP
 ```
 
-**Step 4**: Run DFT single points or relaxations on best k
+**Step 4**: Run DFT single points or relaxations on best k.
+
 Be sure to filter for convergence, see `utils.py` for example code.
 
 **Step 5**: Organize ML and DFT results in the required format outlined [here](https://github.com/Open-Catalyst-Project/AdsorbML/blob/d03b35133e3d21b4a88f44618549bf87a83237a6/scripts/dense_eval.py#L31-L67).
