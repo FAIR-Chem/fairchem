@@ -20,6 +20,7 @@ def ml_relax(
     steps,
     fmax,
     relax_opt,
+    save_full_traj,
     device="cuda:0",
     transform=None,
     early_stop_batch=False,
@@ -36,6 +37,8 @@ def ml_relax(
             of the system is no bigger than fmax.
         relax_opt: str
             Optimizer and corresponding parameters to be used for structure relaxations.
+        save_full_traj: bool
+            Whether to save out the full ASE trajectory. If False, only save out initial and final frames.
     """
     batch = batch[0]
     ids = batch.sid
@@ -51,6 +54,7 @@ def ml_relax(
         damping=relax_opt.get("damping", 1.0),
         alpha=relax_opt.get("alpha", 70.0),
         device=device,
+        save_full_traj=save_full_traj,
         traj_dir=Path(traj_dir) if traj_dir is not None else None,
         traj_names=ids,
         early_stop_batch=early_stop_batch,
