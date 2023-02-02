@@ -71,12 +71,30 @@ class LmdbDataset(Dataset):
             ]
             self.num_samples = len(self._keys)
 
+        # If specified, limit dataset to only a portion of the entire dataset
+        # total_shards: defines total chunks to partition dataset
+        # shard: defines dataset shard to make visible
+        self.sharded = False
+        if "shard" in self.config and "total_shards" in self.config:
+            self.sharded = True
+            self.indices = range(self.num_samples)
+            # split all available indices into 'total_shards' bins
+            self.shards = np.array_split(
+                self.indices, self.config.get("total_shards", 1)
+            )
+            # limit each process to see a subset of data based off defined shard
+            self.available_indices = self.shards[self.config.get("shard", 0)]
+            self.num_samples = len(self.available_indices)
+
         self.transform = transform
 
     def __len__(self):
         return self.num_samples
 
     def __getitem__(self, idx):
+        # if sharding, remap idx to appropriate idx of the sharded set
+        if self.sharded:
+            idx = self.available_indices[idx]
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
             db_idx = bisect.bisect(self._keylen_cumulative, idx)
