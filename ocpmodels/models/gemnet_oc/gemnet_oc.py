@@ -20,6 +20,7 @@ from ocpmodels.common.utils import (
     get_max_neighbors_mask,
     get_pbc_distances,
     radius_graph_pbc,
+    scatter_det,
 )
 from ocpmodels.models.base import BaseModel
 from ocpmodels.modules.scaling.compat import load_scales_compat
@@ -1307,11 +1308,11 @@ class GemNetOC(BaseModel):
 
         nMolecules = torch.max(batch) + 1
         if self.extensive:
-            E_t = scatter(
+            E_t = scatter_det(
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
             )  # (nMolecules, num_targets)
         else:
-            E_t = scatter(
+            E_t = scatter_det(
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
             )  # (nMolecules, num_targets)
 
@@ -1324,7 +1325,7 @@ class GemNetOC(BaseModel):
                         repeats=2,
                         continuous_indexing=True,
                     )
-                    F_st = scatter(
+                    F_st = scatter_det(
                         F_st,
                         id_undir,
                         dim=0,
@@ -1336,7 +1337,7 @@ class GemNetOC(BaseModel):
                 # map forces in edge directions
                 F_st_vec = F_st[:, :, None] * main_graph["vector"][:, None, :]
                 # (nEdges, num_targets, 3)
-                F_t = scatter(
+                F_t = scatter_det(
                     F_st_vec,
                     idx_t,
                     dim=0,
