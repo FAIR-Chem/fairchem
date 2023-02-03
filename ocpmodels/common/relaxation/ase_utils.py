@@ -211,3 +211,32 @@ class OCPCalculator(Calculator):
 
         elif self.trainer.name == "is2re":
             self.results["energy"] = predictions["energy"].item()
+
+    def embed(self, atoms):
+        data_object = self.a2g.convert(atoms)
+        batch_list = data_list_collater([data_object], otf_graph=True)
+
+        self.trainer.model.eval()
+        if self.trainer.ema:
+            self.trainer.ema.store()
+            self.trainer.ema.copy_to()
+
+        with torch.cuda.amp.autocast(enabled=self.trainer.scaler is not None):
+            with torch.no_grad():
+                out = self.trainer.model([batch_list])
+
+        if (
+            self.trainer.normalizers is not None
+            and "target" in self.trainer.normalizers
+        ):
+            out["energy"] = self.trainer.normalizers["target"].denorm(
+                out["energy"]
+            )
+            out["forces"] = self.trainer.normalizers["grad_target"].denorm(
+                out["forces"]
+            )
+
+        if self.trainer.ema:
+            self.trainer.ema.restore()
+
+        return out
