@@ -95,7 +95,7 @@ class Flags:
             help="Name of partition",
         )
         self.parser.add_argument(
-            "--slurm-mem", default=400, type=int, help="Memory (in gigabytes)"
+            "--slurm-mem", default=80, type=int, help="Memory (in gigabytes)"
         )
         self.parser.add_argument(
             "--slurm-timeout", default=72, type=int, help="Time (in hours)"
