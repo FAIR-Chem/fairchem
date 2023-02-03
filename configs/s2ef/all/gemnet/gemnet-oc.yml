@@ -57,6 +57,9 @@ model:
   num_global_out_layers: 2
   qint_tags: [1, 2]
 
+  # Setting to True returns atom and structure embeddings.
+  return_embedding: False
+
 optim:
   batch_size: 16
   eval_batch_size: 16

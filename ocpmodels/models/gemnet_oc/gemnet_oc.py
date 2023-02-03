@@ -239,6 +239,7 @@ class GemNetOC(BaseModel):
         num_elements: int = 83,
         otf_graph: bool = False,
         scale_file: Optional[str] = None,
+        return_embedding: bool = False,
         **kwargs,  # backwards compatibility with deprecated arguments
     ):
         super().__init__()
@@ -270,6 +271,7 @@ class GemNetOC(BaseModel):
         self.direct_forces = direct_forces
         self.forces_coupled = forces_coupled
         self.regress_forces = regress_forces
+        self.return_embedding = return_embedding
         self.force_scaler = ForceScaler(enabled=scale_backprop_forces)
 
         self.init_basis_functions(
@@ -1316,6 +1318,8 @@ class GemNetOC(BaseModel):
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
             )  # (nMolecules, num_targets)
 
+        out = {}
+
         if self.regress_forces:
             if self.direct_forces:
                 if self.forces_coupled:  # enforce F_st = F_ts
@@ -1347,12 +1351,30 @@ class GemNetOC(BaseModel):
             else:
                 F_t = self.force_scaler.calc_forces_and_update(E_t, pos)
 
-            E_t = E_t.squeeze(1)  # (num_molecules)
-            F_t = F_t.squeeze(1)  # (num_atoms, 3)
-            return E_t, F_t
+            out["energy"] = E_t.squeeze(1)  # (num_molecules)
+            out["forces"] = F_t.squeeze(1)  # (num_atoms, 3)
         else:
-            E_t = E_t.squeeze(1)  # (num_molecules)
-            return E_t
+            out["energy"] = E_t.squeeze(1)  # (num_molecules)
+
+        if self.return_embedding:
+            nMolecules = (torch.max(batch) + 1).item()
+            out["h1"] = scatter_det(
+                x_E, batch, dim=0, dim_size=nMolecules, reduce="add"
+            )
+            out["h2"] = scatter_det(
+                h, batch, dim=0, dim_size=nMolecules, reduce="add"
+            )
+
+            # tuples with nMolecules tensors of size nAtoms x embedding_size.
+            out["h1_atom"] = x_E.split(data.natoms.tolist(), dim=0)
+            out["h2_atom"] = h.split(data.natoms.tolist(), dim=0)
+
+            return out
+        else:
+            if self.regress_forces:
+                return out["energy"], out["forces"]
+            else:
+                return out["energy"]
 
     @property
     def num_params(self):
