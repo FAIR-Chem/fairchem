@@ -49,28 +49,29 @@ def ml_relax(
     while batches:
         batch = batches.popleft()
         oom = False
-        try:
-            ids = batch.sid
-            calc = TorchCalc(model, transform)
+        ids = batch.sid
+        calc = TorchCalc(model, transform)
 
-            # Run ML-based relaxation
-            traj_dir = relax_opt.get("traj_dir", None)
-            optimizer = LBFGS(
-                batch,
-                calc,
-                maxstep=relax_opt.get("maxstep", 0.04),
-                memory=relax_opt["memory"],
-                damping=relax_opt.get("damping", 1.0),
-                alpha=relax_opt.get("alpha", 70.0),
-                device=device,
-                traj_dir=Path(traj_dir) if traj_dir is not None else None,
-                traj_names=ids,
-                early_stop_batch=early_stop_batch,
-            )
+        # Run ML-based relaxation
+        traj_dir = relax_opt.get("traj_dir", None)
+        optimizer = LBFGS(
+            batch,
+            calc,
+            maxstep=relax_opt.get("maxstep", 0.04),
+            memory=relax_opt["memory"],
+            damping=relax_opt.get("damping", 1.0),
+            alpha=relax_opt.get("alpha", 70.0),
+            device=device,
+            traj_dir=Path(traj_dir) if traj_dir is not None else None,
+            traj_names=ids,
+            early_stop_batch=early_stop_batch,
+        )
+        try:
             relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
             relaxed_batches.append(relaxed_batch)
         except RuntimeError as e:
             oom = True
+            torch.cuda.empty_cache()
 
         if oom:
             # move OOM recovery code outside of except clause to allow tensors to be freed.
