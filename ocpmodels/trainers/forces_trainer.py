@@ -686,8 +686,6 @@ class ForcesTrainer(BaseTrainer):
                 device=self.device,
                 transform=None,
             )
-            if relaxed_batch is None:
-                continue
 
             if self.config["task"].get("write_pos", False):
                 systemids = [str(i) for i in relaxed_batch.sid.tolist()]
