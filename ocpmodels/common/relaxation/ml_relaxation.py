@@ -51,7 +51,6 @@ def ml_relax(
         oom = False
         try:
             ids = batch.sid
-            # logging.info(f"Starting relaxation with batch size = {len(ids)} [{ids.cpu().tolist()}]")
             calc = TorchCalc(model, transform)
 
             # Run ML-based relaxation
