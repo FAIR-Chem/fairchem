@@ -48,6 +48,7 @@ def ml_relax(
     relaxed_batches = []
     while batches:
         batch = batches.popleft()
+        oom = False
         try:
             ids = batch.sid
             # logging.info(f"Starting relaxation with batch size = {len(ids)} [{ids.cpu().tolist()}]")
@@ -70,6 +71,10 @@ def ml_relax(
             relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
             relaxed_batches.append(relaxed_batch)
         except RuntimeError as e:
+            oom = True
+
+        if oom:
+            # move OOM recovery code outside of except clause to allow tensors to be freed.
             data_list = batch.to_data_list()
             if len(data_list) == 1:
                 raise e
@@ -79,5 +84,6 @@ def ml_relax(
             mid = len(data_list) // 2
             batches.appendleft(data_list_collater(data_list[:mid]))
             batches.appendleft(data_list_collater(data_list[mid:]))
+
     relaxed_batch = Batch.from_data_list(relaxed_batches)
     return relaxed_batch
