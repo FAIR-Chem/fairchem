@@ -438,6 +438,8 @@ class SingleTrainer(BaseTrainer):
                 return "SIGTERM"
             if self.logger:
                 self.logger.log(symmetry)
+            if not self.silent:
+                print(symmetry)
 
         # TODO: Test equivariance
 
