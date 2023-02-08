@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 import bisect
 import logging
 import math
+import os
 import pickle
 import random
 import warnings
@@ -77,13 +78,21 @@ class LmdbDataset(Dataset):
         self.sharded = False
         if "shard" in self.config and "total_shards" in self.config:
             self.sharded = True
-            self.indices = range(self.num_samples)
-            # split all available indices into 'total_shards' bins
-            self.shards = np.array_split(
-                self.indices, self.config.get("total_shards", 1)
-            )
-            # limit each process to see a subset of data based off defined shard
-            self.available_indices = self.shards[self.config.get("shard", 0)]
+
+            if "shard_file" in self.config and os.path.exists(self.config.get("shard_file")):
+                # Read indices from a pkl file, containing a list of (start, end) index tuples
+                ranges = pickle.load(open(self.config.get("shard_file"), "rb"))
+                cur_range = ranges[self.config.get("shard", 0)]
+                self.available_indices = range(cur_range[0], cur_range[1])
+                logging.info(f"Running lmdb indices: {cur_range[0]}, {cur_range[1]}")
+            else:
+                self.indices = range(self.num_samples)
+                # split all available indices into 'total_shards' bins
+                self.shards = np.array_split(
+                    self.indices, self.config.get("total_shards", 1)
+                )
+                # limit each process to see a subset of data based off defined shard
+                self.available_indices = self.shards[self.config.get("shard", 0)]
             self.num_samples = len(self.available_indices)
 
         self.transform = transform
