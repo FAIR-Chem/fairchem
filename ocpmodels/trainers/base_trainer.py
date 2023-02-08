@@ -356,12 +356,18 @@ class BaseTrainer(ABC):
             if hasattr(sample, "x") and hasattr(sample.x, "shape"):
                 num_atoms = sample.x.shape[-1]
 
-        self.model = registry.get_model_class(self.config["model_name"])(
-            num_atoms=num_atoms,
-            bond_feat_dim=bond_feat_dim,
-            num_targets=self.num_targets,
-            task_name=self.task_name,
+        model_config = {
+            **{
+                "num_atoms": num_atoms,
+                "bond_feat_dim": bond_feat_dim,
+                "num_targets": self.num_targets,
+                "task_name": self.task_name,
+            },
             **self.config["model"],
+        }
+
+        self.model = registry.get_model_class(self.config["model_name"])(
+            **model_config
         ).to(self.device)
 
         if dist_utils.is_master() and not self.silent:
