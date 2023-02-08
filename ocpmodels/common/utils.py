@@ -1459,9 +1459,9 @@ def merge_dicts(dict1: dict, dict2: dict) -> dict:
         Merged dictionaries.
     """
     if not isinstance(dict1, dict):
-        raise ValueError(f"Expecting dict1 to be dict, found {type(dict1)}.")
+        raise ValueError(f"Expecting dict1 to be dict, found {type(dict1)} {dict1}.")
     if not isinstance(dict2, dict):
-        raise ValueError(f"Expecting dict2 to be dict, found {type(dict2)}.")
+        raise ValueError(f"Expecting dict2 to be dict, found {type(dict2)} {dict2}.")
 
     return_dict = copy.deepcopy(dict1)
 
@@ -1477,7 +1477,21 @@ def merge_dicts(dict1: dict, dict2: dict) -> dict:
                         f"List for key {k} has different length in dict1 and dict2."
                         + " Use an empty dict {} to pad for items in the shorter list."
                     )
-                return_dict[k] = [merge_dicts(d1, d2) for d1, d2 in zip(dict1[k], v)]
+                if isinstance(dict1[k][0], dict):
+                    if not isinstance(dict2[k][0], dict):
+                        raise ValueError(
+                            f"Expecting dict for key {k} in dict2. ({dict1}, {dict2})"
+                        )
+                    return_dict[k] = [
+                        merge_dicts(d1, d2) for d1, d2 in zip(dict1[k], v)
+                    ]
+                else:
+                    if isinstance(dict2[k][0], dict):
+                        raise ValueError(
+                            f"Expecting dict for key {k} in dict1. ({dict1}, {dict2})"
+                        )
+                    return_dict[k] = v
+
             else:
                 return_dict[k] = dict2[k]
 
