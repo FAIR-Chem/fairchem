@@ -391,9 +391,23 @@ class SingleTrainer(BaseTrainer):
                 epoch_int, debug_batches, model_run_time, epoch_times
             )
 
-    def end_of_training(self, epoch_int, debug_batches, model_run_time, epoch_times):
+    def end_of_training(
+        self,
+        epoch_int,
+        debug_batches,
+        model_run_time,
+        epoch_times,
+        from_ckpt=None,
+        disable_tqdm=True,
+    ):
 
-        eas = self.eval_all_splits(True, epoch=epoch_int, debug_batches=debug_batches)
+        eas = self.eval_all_splits(
+            True,
+            epoch=epoch_int,
+            debug_batches=debug_batches,
+            from_ckpt=from_ckpt,
+            disable_tqdm=disable_tqdm,
+        )
         if eas == "SIGTERM":
             return "SIGTERM"
 
