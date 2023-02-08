@@ -1041,6 +1041,18 @@ def build_config(args, args_override, silent=False):
     config["world_size"] = args.num_nodes * args.num_gpus
 
     if continue_config:
+        continue_config.pop("timestamp_id", None)
+        continue_config.pop("commit", None)
+        continue_config.pop("early_stopping_file", None)
+        continue_config.pop("timestamp_id", None)
+        continue_config.pop("distributed_port", None)
+        continue_config.pop("continue_from_dir", None)
+        continue_config.pop("restart_from_dir", None)
+
+        continue_config["run_dir"] = resolve(continue_config["run_dir"])
+        continue_config["job_id"] = JOB_ID
+        continue_config["local_rank"] = config["local_rank"]
+
         new_dirs = [
             (k, v) for k, v in config.items() if "dir" in k and k != "cp_data_to_tmpdir"
         ]
