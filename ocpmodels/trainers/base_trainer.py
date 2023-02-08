@@ -808,7 +808,7 @@ class BaseTrainer(ABC):
             np.savez_compressed(full_path, **gather_results)
 
     def eval_all_splits(
-        self, final=True, disable_tqdm=True, debug_batches=-1, epoch=-1
+        self, final=True, disable_tqdm=True, debug_batches=-1, epoch=-1, from_ckpt=None
     ):
         """Evaluate model on all four validation splits"""
 
@@ -824,7 +824,9 @@ class BaseTrainer(ABC):
             logging.info(f"Evaluating on {len(all_splits)} val splits.")
 
         # Load current best checkpoint for final evaluation
-        if final and epoch != 0:
+        if from_ckpt:
+            self.load_checkpoint(checkpoint_path=from_ckpt)
+        elif final and epoch != 0:
             checkpoint_path = os.path.join(
                 self.config["checkpoint_dir"], "best_checkpoint.pt"
             )
