@@ -94,10 +94,6 @@ if __name__ == "__main__":
 
     trainer_config = build_config(args, override_args)
 
-    if args.distributed:
-        dist_utils.setup(trainer_config)
-        print("Distributed backend setup.")
-
     if dist_utils.is_master():
         trainer_config = move_lmdb_data_to_slurm_tmpdir(trainer_config)
     dist_utils.synchronize()

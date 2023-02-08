@@ -38,6 +38,7 @@ from torch_scatter import segment_coo, segment_csr
 import ocpmodels
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
+import ocpmodels.common.dist_utils as dist_utils
 
 
 class Cluster:
@@ -1090,6 +1091,7 @@ def build_config(args, args_override, silent=False):
     config = continue_from_slurm_job_id(config)
     config = read_slurm_env(config)
     config["optim"]["eval_batch_size"] = config["optim"]["batch_size"]
+    dist_utils.setup(config)
 
     return config
 
