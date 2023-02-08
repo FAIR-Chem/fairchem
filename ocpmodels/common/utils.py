@@ -1537,7 +1537,9 @@ def compute_neighbors(data, edge_index):
     # Get number of neighbors
     # segment_coo assumes sorted index
     ones = edge_index[1].new_ones(1).expand_as(edge_index[1])
-    num_neighbors = segment_coo(ones, edge_index[1], dim_size=data.natoms.sum())
+    # CUDA error, changing (victor 2023-01-25)
+    # num_neighbors = segment_coo(ones, edge_index[1], dim_size=data.natoms.sum())
+    _, num_neighbors = torch.unique(edge_index[1], return_counts=True)
 
     # Get number of neighbors per image
     image_indptr = torch.zeros(
