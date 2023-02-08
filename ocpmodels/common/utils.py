@@ -8,7 +8,6 @@ LICENSE file in the root directory of this source tree.
 import ast
 import collections
 import copy
-import glob
 import importlib
 import itertools
 import json
@@ -16,21 +15,28 @@ import logging
 import os
 import sys
 import time
+from argparse import Namespace
 from bisect import bisect
+from contextlib import contextmanager
+from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
 
 import numpy as np
 import torch
+import torch.nn as nn
 import torch_geometric
 import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
-from torch_scatter import segment_coo, segment_csr
+from torch_scatter import scatter, segment_coo, segment_csr
+
+if TYPE_CHECKING:
+    from torch.nn.modules.module import _IncompatibleKeys
 
 
 def pyg2_data_transform(data: Data):
@@ -51,6 +57,7 @@ def save_checkpoint(
 ):
     filename = os.path.join(checkpoint_dir, checkpoint_file)
     torch.save(state, filename)
+    return filename
 
 
 class Complete(object):
@@ -519,7 +526,9 @@ def get_pbc_distances(
     distances = distance_vectors.norm(dim=-1)
 
     # redundancy: remove zero distances
-    nonzero_idx = torch.arange(len(distances))[distances != 0]
+    nonzero_idx = torch.arange(len(distances), device=distances.device)[
+        distances != 0
+    ]
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
 
@@ -538,10 +547,22 @@ def get_pbc_distances(
 
 
 def radius_graph_pbc(
-    data, radius, max_num_neighbors_threshold, pbc=[True, True, False]
+    data, radius, max_num_neighbors_threshold, pbc=[True, True, True]
 ):
     device = data.pos.device
     batch_size = len(data.natoms)
+
+    if hasattr(data, "pbc"):
+        data.pbc = torch.atleast_2d(data.pbc)
+        for i in range(3):
+            if not torch.any(data.pbc[:, i]).item():
+                pbc[i] = False
+            elif torch.all(data.pbc[:, i]).item():
+                pbc[i] = True
+            else:
+                raise RuntimeError(
+                    "Different structures in the batch have different PBC configurations. This is not currently supported."
+                )
 
     # position of the atoms
     atom_pos = data.pos
@@ -895,3 +916,157 @@ def check_traj_files(batch, traj_dir):
     traj_dir = Path(traj_dir)
     traj_files = [traj_dir / f"{id}.traj" for id in batch[0].sid.tolist()]
     return all(fl.exists() for fl in traj_files)
+
+
+@contextmanager
+def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
+    from ocpmodels.common import distutils, gp_utils
+    from ocpmodels.common.registry import registry
+
+    if TYPE_CHECKING:
+        from ocpmodels.tasks.task import BaseTask
+        from ocpmodels.trainers import BaseTrainer
+
+    @dataclass
+    class _TrainingContext:
+        config: Dict[str, Any]
+        task: "BaseTask"
+        trainer: "BaseTrainer"
+
+    setup_logging()
+    original_config = config
+    config = copy.deepcopy(original_config)
+
+    if args.distributed:
+        distutils.setup(config)
+        if config["gp_gpus"] is not None:
+            gp_utils.setup_gp(config)
+    try:
+        setup_imports(config)
+        trainer_cls = registry.get_trainer_class(
+            config.get("trainer", "energy")
+        )
+        assert trainer_cls is not None, "Trainer not found"
+        trainer = trainer_cls(
+            task=config["task"],
+            model=config["model"],
+            dataset=config["dataset"],
+            optimizer=config["optim"],
+            identifier=config["identifier"],
+            timestamp_id=config.get("timestamp_id", None),
+            run_dir=config.get("run_dir", "./"),
+            is_debug=config.get("is_debug", False),
+            print_every=config.get("print_every", 10),
+            seed=config.get("seed", 0),
+            logger=config.get("logger", "tensorboard"),
+            local_rank=config["local_rank"],
+            amp=config.get("amp", False),
+            cpu=config.get("cpu", False),
+            slurm=config.get("slurm", {}),
+            noddp=config.get("noddp", False),
+        )
+
+        task_cls = registry.get_task_class(config["mode"])
+        assert task_cls is not None, "Task not found"
+        task = task_cls(config)
+        start_time = time.time()
+        ctx = _TrainingContext(
+            config=original_config, task=task, trainer=trainer
+        )
+        yield ctx
+        distutils.synchronize()
+        if distutils.is_master():
+            logging.info(f"Total time taken: {time.time() - start_time}")
+    finally:
+        if args.distributed:
+            distutils.cleanup()
+
+
+def _resolve_scale_factor_submodule(model: nn.Module, name: str):
+    from ocpmodels.modules.scaling.scale_factor import ScaleFactor
+
+    try:
+        scale = model.get_submodule(name)
+        if not isinstance(scale, ScaleFactor):
+            return None
+        return scale
+    except AttributeError:
+        return None
+
+
+def _report_incompat_keys(
+    model: nn.Module,
+    keys: "_IncompatibleKeys",
+    strict: bool = False,
+):
+    # filter out the missing scale factor keys for the new scaling factor module
+    missing_keys: List[str] = []
+    for full_key_name in keys.missing_keys:
+        parent_module_name, _ = full_key_name.rsplit(".", 1)
+        scale_factor = _resolve_scale_factor_submodule(
+            model, parent_module_name
+        )
+        if scale_factor is not None:
+            continue
+        missing_keys.append(full_key_name)
+
+    # filter out unexpected scale factor keys that remain from the old scaling modules
+    unexpected_keys: List[str] = []
+    for full_key_name in keys.unexpected_keys:
+        parent_module_name, _ = full_key_name.rsplit(".", 1)
+        scale_factor = _resolve_scale_factor_submodule(
+            model, parent_module_name
+        )
+        if scale_factor is not None:
+            continue
+        unexpected_keys.append(full_key_name)
+
+    error_msgs = []
+    if len(unexpected_keys) > 0:
+        error_msgs.insert(
+            0,
+            "Unexpected key(s) in state_dict: {}. ".format(
+                ", ".join('"{}"'.format(k) for k in unexpected_keys)
+            ),
+        )
+    if len(missing_keys) > 0:
+        error_msgs.insert(
+            0,
+            "Missing key(s) in state_dict: {}. ".format(
+                ", ".join('"{}"'.format(k) for k in missing_keys)
+            ),
+        )
+
+    if len(error_msgs) > 0:
+        error_msg = "Error(s) in loading state_dict for {}:\n\t{}".format(
+            model.__class__.__name__, "\n\t".join(error_msgs)
+        )
+        if strict:
+            raise RuntimeError(error_msg)
+        else:
+            logging.warning(error_msg)
+
+    return missing_keys, unexpected_keys
+
+
+def load_state_dict(
+    module: nn.Module,
+    state_dict: Mapping[str, torch.Tensor],
+    strict: bool = True,
+):
+    incompat_keys = module.load_state_dict(state_dict, strict=False)  # type: ignore
+    return _report_incompat_keys(module, incompat_keys, strict=strict)
+
+
+def scatter_det(*args, **kwargs):
+    from ocpmodels.common.registry import registry
+
+    if registry.get("set_deterministic_scatter", no_warning=True):
+        torch.use_deterministic_algorithms(mode=True)
+
+    out = scatter(*args, **kwargs)
+
+    if registry.get("set_deterministic_scatter", no_warning=True):
+        torch.use_deterministic_algorithms(mode=False)
+
+    return out

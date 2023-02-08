@@ -6,17 +6,14 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
-import os
-from collections import defaultdict
 
-import numpy as np
 import torch
 import torch_geometric
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
-from ocpmodels.modules.normalizer import Normalizer
+from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
@@ -108,6 +105,8 @@ class EnergyTrainer(BaseTrainer):
     def predict(
         self, loader, per_image=True, results_file=None, disable_tqdm=False
     ):
+        ensure_fitted(self._unwrapped_model)
+
         if distutils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
         assert isinstance(
@@ -150,7 +149,9 @@ class EnergyTrainer(BaseTrainer):
                 predictions["id"].extend(
                     [str(i) for i in batch[0].sid.tolist()]
                 )
-                predictions["energy"].extend(out["energy"].tolist())
+                predictions["energy"].extend(
+                    out["energy"].cpu().detach().numpy()
+                )
             else:
                 predictions["energy"] = out["energy"].detach()
                 return predictions
@@ -163,6 +164,8 @@ class EnergyTrainer(BaseTrainer):
         return predictions
 
     def train(self, disable_eval_tqdm=False):
+        ensure_fitted(self._unwrapped_model, warn=True)
+
         eval_every = self.config["optim"].get(
             "eval_every", len(self.train_loader)
         )

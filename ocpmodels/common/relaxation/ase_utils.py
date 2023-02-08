@@ -69,9 +69,10 @@ class OCPCalculator(Calculator):
         self,
         config_yml=None,
         checkpoint=None,
+        trainer=None,
         cutoff=6,
         max_neighbors=50,
-        device="cpu",
+        cpu=True,
     ):
         """
         OCP-ASE Calculator
@@ -81,10 +82,14 @@ class OCPCalculator(Calculator):
                 Path to yaml config or could be a dictionary.
             checkpoint (str):
                 Path to trained checkpoint.
+            trainer (str):
+                OCP trainer to be used. "forces" for S2EF, "energy" for IS2RE.
             cutoff (int):
                 Cutoff radius to be used for data preprocessing.
             max_neighbors (int):
                 Maximum amount of neighbors to store for a given atom.
+            cpu (bool):
+                Whether to load and run the model on CPU. Set `False` for GPU.
         """
         setup_imports()
         setup_logging()
@@ -113,19 +118,32 @@ class OCPCalculator(Calculator):
             elif isinstance(config["dataset"], dict):
                 config["dataset"] = config["dataset"].get("train", None)
         else:
-            # Loads the config from the checkpoint directly
-            config = torch.load(checkpoint, map_location=torch.device(device))[
+            # Loads the config from the checkpoint directly (always on CPU).
+            config = torch.load(checkpoint, map_location=torch.device("cpu"))[
                 "config"
             ]
+        if trainer is not None:  # passing the arg overrides everything else
+            config["trainer"] = trainer
+        else:
+            if "trainer" not in config:  # older checkpoint
+                if config["task"]["dataset"] == "trajectory_lmdb":
+                    config["trainer"] = "forces"
+                elif config["task"]["dataset"] == "single_point_lmdb":
+                    config["trainer"] = "energy"
+                else:
+                    logging.warning(
+                        "Unable to identify OCP trainer, defaulting to `forces`. Specify the `trainer` argument into OCPCalculator if otherwise."
+                    )
+                    config["trainer"] = "forces"
 
-            # Load the trainer based on the dataset used
-            if config["task"]["dataset"] == "trajectory_lmdb":
-                config["trainer"] = "forces"
-            else:
-                config["trainer"] = "energy"
-
+        if "model_attributes" in config:
             config["model_attributes"]["name"] = config.pop("model")
             config["model"] = config["model_attributes"]
+
+        # for checkpoints with relaxation datasets defined, remove to avoid
+        # unnecesarily trying to load that dataset
+        if "relax_dataset" in config["task"]:
+            del config["task"]["relax_dataset"]
 
         # Calculate the edge indices on the fly
         config["model"]["otf_graph"] = True
@@ -148,9 +166,9 @@ class OCPCalculator(Calculator):
             optimizer=config["optim"],
             identifier="",
             slurm=config.get("slurm", {}),
-            local_rank=config.get("local_rank", device),
+            local_rank=config.get("local_rank", 0),
             is_debug=config.get("is_debug", True),
-            cpu=True if device == "cpu" else False,
+            cpu=cpu,
         )
 
         if checkpoint is not None:
@@ -163,6 +181,7 @@ class OCPCalculator(Calculator):
             r_forces=False,
             r_distances=False,
             r_edges=False,
+            r_pbc=True,
         )
 
     def load_checkpoint(self, checkpoint_path):

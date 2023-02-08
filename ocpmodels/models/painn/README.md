@@ -24,3 +24,16 @@ Trained only using IS2RE data, no auxiliary losses and/or S2EF data.
 | Model | Val ID 30k Force MAE | Val ID 30k Energy MAE | Val ID 30k Force cos | Test metrics | Download |
 | ----- | -------------------- | --------------------- | -------------------- | ------------ | -------- |
 | painn_h512 | 0.02945 | 0.2459 | 0.5143 | [S2EF](https://evalai.s3.amazonaws.com/media/submission_files/submission_200711/2f487981-051d-445e-a7cd-6eb00ebe0735.json) \| [IS2RE](https://evalai.s3.amazonaws.com/media/submission_files/submission_200710/7fe29c4c-c203-434d-a6d4-9ea992d3bb5c.json) \| [IS2RS](https://evalai.s3.amazonaws.com/media/submission_files/submission_200700/8fd419e6-bab3-49be-a936-ae31979b4866.json) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/s2ef/all/painn/painn_h512.yml) \| [checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_05/s2ef/painn_h512_s2ef_all.pt) |
+
+## Citing
+
+If you use PaiNN in your work, please consider citing the original paper:
+
+```bibtex
+@inproceedings{schutt_painn_2021,
+  title = {Equivariant message passing for the prediction of tensorial properties and molecular spectra},
+  author = {Sch{\"u}tt, Kristof and Unke, Oliver and Gastegger, Michael},
+  booktitle = {Proceedings of the International Conference on Machine Learning (ICML)},
+  year = {2021},
+}
+```
