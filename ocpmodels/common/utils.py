@@ -1067,7 +1067,7 @@ def build_config(args, args_override, silent=False):
         )
         config = merge_dicts(
             continue_config,
-            {k: resolve(v) if isinstance(v, str) else v for k, v in new_dirs},
+            {k: resolve(v) if isinstance(v, (str, Path)) else v for k, v in new_dirs},
         )
         config["dataset"] = merge_dicts(config["dataset"], data_srcs)
         cli = cli_args_dict()
