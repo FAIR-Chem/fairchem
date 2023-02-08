@@ -807,7 +807,7 @@ def create_dict_from_args(args: list, sep: str = "."):
     return_dict = {}
     for arg in args:
         arg = arg.strip("--")
-        keys_concat, val = arg.split("=")
+        keys_concat, val = arg.split("=") if "=" in arg else (arg, "True")
         val = parse_value(val)
         key_sequence = keys_concat.split(sep)
         dict_set_recursively(return_dict, key_sequence, val)
