@@ -6,10 +6,12 @@ from ocpmodels.common.utils import conditional_grad
 from copy import deepcopy
 
 
+@registry.register_model("spherenet")
 class SphereNet(BaseModel):
     def __init__(self, **kwargs):
         super().__init__()
         self.energy_and_force = kwargs.get("energy_and_force", False)
+        self.regress_forces = "from_energy" if self.energy_and_force else False
         self.cutoff = kwargs.get("cutoff", 5.0)
         self.num_layers = kwargs.get("num_layers", 4)
         self.hidden_channels = kwargs.get("hidden_channels", 128)
@@ -55,4 +57,4 @@ class SphereNet(BaseModel):
         batch_data = deepcopy(data)
         batch_data.z = z
 
-        return self.spherenet.forward(batch_data)
+        return {"energy": self.spherenet.forward(batch_data)}
