@@ -1,0 +1,29 @@
+includes:
+- configs/is2re/all/base.yml
+
+model:
+  name: comenet
+  hidden_channels: 256
+  num_blocks: 4
+  cutoff: 6.0
+  num_radial: 3
+  num_spherical: 2
+  hetero: False
+  num_output_layers: 3
+  use_pbc: True
+  otf_graph: False
+
+optim:
+  batch_size: 32
+  eval_batch_size: 32
+  num_workers: 4
+  scheduler: CyclicLR
+  lr_initial: 0.001
+  base_lr: 0.000005
+  max_lr: 0.001
+  step_size_up: 57500
+  mode: triangular2
+  cycle_momentum: False
+  amsgrad: True
+  max_epochs: 60
+  loss_energy: mae
