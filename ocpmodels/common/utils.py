@@ -38,6 +38,7 @@ from torch_scatter import segment_coo, segment_csr
 import ocpmodels
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
+import ocpmodels.common.dist_utils as dist_utils
 
 
 class Cluster:
@@ -806,7 +807,7 @@ def create_dict_from_args(args: list, sep: str = "."):
     return_dict = {}
     for arg in args:
         arg = arg.strip("--")
-        keys_concat, val = arg.split("=")
+        keys_concat, val = arg.split("=") if "=" in arg else (arg, "True")
         val = parse_value(val)
         key_sequence = keys_concat.split(sep)
         dict_set_recursively(return_dict, key_sequence, val)
@@ -1040,6 +1041,18 @@ def build_config(args, args_override, silent=False):
     config["world_size"] = args.num_nodes * args.num_gpus
 
     if continue_config:
+        continue_config.pop("timestamp_id", None)
+        continue_config.pop("commit", None)
+        continue_config.pop("early_stopping_file", None)
+        continue_config.pop("timestamp_id", None)
+        continue_config.pop("distributed_port", None)
+        continue_config.pop("continue_from_dir", None)
+        continue_config.pop("restart_from_dir", None)
+
+        continue_config["run_dir"] = resolve(continue_config["run_dir"])
+        continue_config["job_id"] = JOB_ID
+        continue_config["local_rank"] = config["local_rank"]
+
         new_dirs = [
             (k, v) for k, v in config.items() if "dir" in k and k != "cp_data_to_tmpdir"
         ]
@@ -1054,7 +1067,7 @@ def build_config(args, args_override, silent=False):
         )
         config = merge_dicts(
             continue_config,
-            {k: resolve(v) if isinstance(v, str) else v for k, v in new_dirs},
+            {k: resolve(v) if isinstance(v, (str, Path)) else v for k, v in new_dirs},
         )
         config["dataset"] = merge_dicts(config["dataset"], data_srcs)
         cli = cli_args_dict()
@@ -1090,6 +1103,7 @@ def build_config(args, args_override, silent=False):
     config = continue_from_slurm_job_id(config)
     config = read_slurm_env(config)
     config["optim"]["eval_batch_size"] = config["optim"]["batch_size"]
+    dist_utils.setup(config)
 
     return config
 
@@ -1445,9 +1459,9 @@ def merge_dicts(dict1: dict, dict2: dict) -> dict:
         Merged dictionaries.
     """
     if not isinstance(dict1, dict):
-        raise ValueError(f"Expecting dict1 to be dict, found {type(dict1)}.")
+        raise ValueError(f"Expecting dict1 to be dict, found {type(dict1)} {dict1}.")
     if not isinstance(dict2, dict):
-        raise ValueError(f"Expecting dict2 to be dict, found {type(dict2)}.")
+        raise ValueError(f"Expecting dict2 to be dict, found {type(dict2)} {dict2}.")
 
     return_dict = copy.deepcopy(dict1)
 
@@ -1463,7 +1477,21 @@ def merge_dicts(dict1: dict, dict2: dict) -> dict:
                         f"List for key {k} has different length in dict1 and dict2."
                         + " Use an empty dict {} to pad for items in the shorter list."
                     )
-                return_dict[k] = [merge_dicts(d1, d2) for d1, d2 in zip(dict1[k], v)]
+                if isinstance(dict1[k][0], dict):
+                    if not isinstance(dict2[k][0], dict):
+                        raise ValueError(
+                            f"Expecting dict for key {k} in dict2. ({dict1}, {dict2})"
+                        )
+                    return_dict[k] = [
+                        merge_dicts(d1, d2) for d1, d2 in zip(dict1[k], v)
+                    ]
+                else:
+                    if isinstance(dict2[k][0], dict):
+                        raise ValueError(
+                            f"Expecting dict for key {k} in dict1. ({dict1}, {dict2})"
+                        )
+                    return_dict[k] = v
+
             else:
                 return_dict[k] = dict2[k]
 
@@ -1509,7 +1537,9 @@ def compute_neighbors(data, edge_index):
     # Get number of neighbors
     # segment_coo assumes sorted index
     ones = edge_index[1].new_ones(1).expand_as(edge_index[1])
-    num_neighbors = segment_coo(ones, edge_index[1], dim_size=data.natoms.sum())
+    # CUDA error, changing (victor 2023-01-25)
+    # num_neighbors = segment_coo(ones, edge_index[1], dim_size=data.natoms.sum())
+    _, num_neighbors = torch.unique(edge_index[1], return_counts=True)
 
     # Get number of neighbors per image
     image_indptr = torch.zeros(

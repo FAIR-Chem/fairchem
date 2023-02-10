@@ -14,7 +14,8 @@ import torch.distributed as dist
 
 
 def setup(config):
-    assert config["distributed"]
+    if not config["distributed"]:
+        return
     node_list = os.environ.get("SLURM_STEP_NODELIST")
     if node_list is None:
         node_list = os.environ.get("SLURM_JOB_NODELIST")

@@ -1,0 +1,71 @@
+default:
+  model:
+    name: spherenet
+    use_pbc: True
+
+# -------------------
+# -----  IS2RE  -----
+# -------------------
+
+is2re:
+  10k: {}
+  100k: {}
+  all: {}
+
+# ------------------
+# -----  S2EF  -----
+# ------------------
+
+s2ef:
+  default: {}
+  200k: {}
+  2M: {}
+  20M: {}
+  all: {}
+
+qm9:
+  default:
+    model:
+      basis_emb_size_angle: 8
+      basis_emb_size_dist: 8
+      basis_emb_size_torsion: 8
+      cutoff: 5.0
+      energy_and_force: False
+      envelope_exponent: 5
+      hidden_channels: 128
+      int_emb_size: 64
+      num_after_skip: 2
+      num_before_skip: 1
+      num_layers: 4
+      num_output_layers: 3
+      num_radial: 6
+      num_spherical: 3
+      out_channels: 1
+      out_emb_channels: 256
+    optim:
+      batch_size: 32
+      num_workers: 4
+      lr_initial: 0.001
+      max_epochs: 1000
+      decay_steps: 125000
+      decay_rate: 0.01
+      ema_decay: 0.999
+      # all below is for the scheduler
+      scheduler: ReduceLROnPlateau
+      mode: min
+      factor: 0.95
+      threshold: 0.0001
+      threshold_mode: abs
+      min_lr: 0.000001
+      verbose: true
+      patience: 10
+
+  10k: {}
+  all: {}
+
+qm7x:
+  default: {}
+  all: {}
+  1k: {}
+
+

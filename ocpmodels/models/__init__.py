@@ -5,7 +5,7 @@
 
 from .base_model import BaseModel  # noqa: F401
 from .cgcnn import CGCNN  # noqa: F401
-from .dimenet import DimeNetWrap as DimeNet  # noqa: F401
+from .dimenet import DimeNet  # noqa: F401
 from .old_dimenet_plus_plus import (  # noqa: F401
     DimeNetPlusPlusWrap as OldDimeNetPlusPlus,
 )

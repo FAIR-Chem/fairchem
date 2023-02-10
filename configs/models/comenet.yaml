@@ -1,0 +1,62 @@
+default:
+  model:
+    name: comenet
+    use_pbc: True
+
+# -------------------
+# -----  IS2RE  -----
+# -------------------
+
+is2re:
+  10k: {}
+  100k: {}
+  all: {}
+
+# ------------------
+# -----  S2EF  -----
+# ------------------
+
+s2ef:
+  default: {}
+  200k: {}
+  2M: {}
+  20M: {}
+  all: {}
+
+qm9:
+  default:
+    model:
+      cutoff: 5.0
+      num_layers: 5
+      hidden_channels: 256
+      out_channels: 1
+      num_radial: 3
+      num_spherical: 2
+      num_output_layers: 3
+    optim:
+      batch_size: 32
+      num_workers: 4
+      lr_initial: 0.001
+      max_epochs: 1000
+      decay_steps: 125000
+      decay_rate: 0.01
+      ema_decay: 0.999
+      # all below is for the scheduler
+      scheduler: ReduceLROnPlateau
+      mode: min
+      factor: 0.95
+      threshold: 0.0001
+      threshold_mode: abs
+      min_lr: 0.000001
+      verbose: true
+      patience: 10
+
+  10k: {}
+  all: {}
+
+qm7x:
+  default: {}
+  all: {}
+  1k: {}
+
+

@@ -356,12 +356,18 @@ class BaseTrainer(ABC):
             if hasattr(sample, "x") and hasattr(sample.x, "shape"):
                 num_atoms = sample.x.shape[-1]
 
-        self.model = registry.get_model_class(self.config["model_name"])(
-            num_atoms=num_atoms,
-            bond_feat_dim=bond_feat_dim,
-            num_targets=self.num_targets,
-            task_name=self.task_name,
+        model_config = {
+            **{
+                "num_atoms": num_atoms,
+                "bond_feat_dim": bond_feat_dim,
+                "num_targets": self.num_targets,
+                "task_name": self.task_name,
+            },
             **self.config["model"],
+        }
+
+        self.model = registry.get_model_class(self.config["model_name"])(
+            **model_config
         ).to(self.device)
 
         if dist_utils.is_master() and not self.silent:
@@ -802,7 +808,7 @@ class BaseTrainer(ABC):
             np.savez_compressed(full_path, **gather_results)
 
     def eval_all_splits(
-        self, final=True, disable_tqdm=True, debug_batches=-1, epoch=-1
+        self, final=True, disable_tqdm=True, debug_batches=-1, epoch=-1, from_ckpt=None
     ):
         """Evaluate model on all four validation splits"""
 
@@ -818,7 +824,9 @@ class BaseTrainer(ABC):
             logging.info(f"Evaluating on {len(all_splits)} val splits.")
 
         # Load current best checkpoint for final evaluation
-        if final and epoch != 0:
+        if from_ckpt:
+            self.load_checkpoint(checkpoint_path=from_ckpt)
+        elif final and epoch != 0:
             checkpoint_path = os.path.join(
                 self.config["checkpoint_dir"], "best_checkpoint.pt"
             )
