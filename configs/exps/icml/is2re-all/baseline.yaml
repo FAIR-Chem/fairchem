@@ -1,0 +1,18 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:4
+  partition: long
+  time: 20:00:00
+
+default:
+  test_ri: True
+  mode: train
+  wandb_tags: 'baseline'
+  cp_data_to_tmpdir: true
+
+runs:
+  - config: dpp-is2re-all
+    note: 'Baseline 4 gpus'
+  - config: schnet-is2re-all
+    note: 'Baseline 4 gpus'

@@ -1,0 +1,118 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  time: 30:00:00
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  model:
+    phys_embeds: True
+    tag_hidden_channels: 64
+    pg_hidden_channels: 0  # shall have been 32
+    energy_head: 'weighted-av-initial-embeds' # False ?
+  wandb_tags: 'is2re-archi-tests'
+  optim:
+    max_epochs: 5
+    batch_size: 256
+    eval_batch_size: 256
+
+runs:
+  - config: schnet-is2re-all
+    note: 'Schnet'
+  - config: sfarinet-is2re-all
+    note: 'Sfarinet test'
+    frame_averaging: 2D
+    fa_fames: se3-random
+  - config: sfarinet-is2re-all
+    note: 'Smaller lr'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    optim:
+      lr_initial: 0.0005
+  - config: sfarinet-is2re-all
+    note: 'Sfarinet test smaller lr'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    optim:
+      lr_initial: 0.003
+  - config: sfarinet-is2re-all
+    note: 'Bigger size'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    optim:
+      lr_initial: 0.001
+    model:
+      hidden_channels: 500
+      num_interactions: 4
+      num_filters: 200
+      num_gaussians: 200
+  - config: sfarinet-is2re-all
+    note: 'Bigger size'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    optim:
+      lr_initial: 0.0007
+    model:
+      hidden_channels: 500
+      num_interactions: 4
+      num_filters: 200
+      num_gaussians: 200
+  - config: sfarinet-is2re-all
+    note: 'Bigger size'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    optim:
+      lr_initial: 0.001
+    model:
+      num_interactions: 6
+  - config: sfarinet-is2re-all
+    note: 'Bigger size and smaller lr'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    optim:
+      lr_initial: 0.0007
+    model:
+      num_interactions: 6
+  - config: sfarinet-is2re-all
+    note: 'Bigger size and change warmup steps'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    optim:
+      lr_initial: 0.001
+      lr_milestones:
+        - 20981
+        - 26972
+        - 35963
+      warmup_steps: 10094
+    model:
+      hidden_channels: 500
+      num_interactions: 4
+      num_filters: 200
+      num_gaussians: 200
+  - config: sfarinet-is2re-all
+    note: 'Much Bigger size'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    optim:
+      lr_initial: 0.0007
+    model:
+      hidden_channels: 800
+      num_interactions: 4
+      num_filters: 284
+      num_gaussians: 284
+  - config: sfarinet-is2re-all
+    note: 'Smaller size more interactions'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    optim:
+      lr_initial: 0.001
+    model:
+      hidden_channels: 128
+      num_interactions: 6
+      num_filters: 100
+      num_gaussians: 100
+

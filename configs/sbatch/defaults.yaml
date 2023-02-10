@@ -28,6 +28,9 @@ code_loc: null # code location. Defaults to the current repository path
 output: "$SCRATCH/ocp/runs/%j/output-%t.txt" # slurm output file per task (%t)
 logdir: "$SCRATCH/ocp/runs/$SLURM_JOB_ID" # --logdir value for main.py, appended to py_args if not already present
 
+continue_from_dir: null
+restart_from_dir: null
+
 env: "ocp" # env name for `conda activate {env}`
 py_args: "" # arguments for main.py
 note: "" # wandb run note

@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import datetime
 import logging
 import os
 import time
@@ -18,13 +19,14 @@ import torch_geometric
 from torch_geometric.data import Data
 from tqdm import tqdm
 
-from ocpmodels.common import distutils
+from ocpmodels.common import dist_utils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
 from ocpmodels.common.utils import OCP_TASKS, check_traj_files
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
+from ocpmodels.common.timer import Times
 
 is_test_env = os.environ.get("ocp_test_env", False)
 
@@ -40,9 +42,11 @@ class SingleTrainer(BaseTrainer):
         can be found in `configs/ocp_is2re <https://github.com/Open-Catalyst-Project/baselines/tree/master/configs/ocp_is2re/>`_. # noqa: E501
     """
 
+    @property
+    def now(self):
+        return str(datetime.datetime.now()).split(".")[0]
+
     def load_task(self):
-        if not self.silent:
-            logging.info(f"Loading dataset: {self.config['task']['dataset']}")
         self.num_targets = 1
 
         # start imports from
@@ -74,6 +78,11 @@ class SingleTrainer(BaseTrainer):
                         device=self.device,
                     )
                 else:
+                    if not self.silent:
+                        print(
+                            "Warning: grad_target_mean not found in normalizer but",
+                            "regress_forces and normalize_labels are true.",
+                        )
                     self.normalizers["grad_target"] = Normalizer(
                         tensor=self.datasets["train"].data.y[
                             self.datasets["train"].__indices__
@@ -84,7 +93,7 @@ class SingleTrainer(BaseTrainer):
 
     @torch.no_grad()
     def predict(self, loader, per_image=True, results_file=None, disable_tqdm=False):
-        if distutils.is_master() and not disable_tqdm:
+        if dist_utils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
         assert isinstance(
             loader,
@@ -93,7 +102,7 @@ class SingleTrainer(BaseTrainer):
                 torch_geometric.data.Batch,
             ),
         )
-        rank = distutils.get_rank()
+        rank = dist_utils.get_rank()
 
         if isinstance(loader, torch_geometric.data.Batch):
             loader = [[loader]]
@@ -124,7 +133,14 @@ class SingleTrainer(BaseTrainer):
                 preds = self.model_forward(batch_list)
 
             if self.normalizers is not None and "target" in self.normalizers:
-                preds["energy"] = self.normalizers["target"].denorm(preds["energy"])
+                hofs = None
+                if self.task_name == "qm7x":
+                    hofs = torch.cat(
+                        [batch.hofs.to(self.device) for batch in batch_list], dim=0
+                    )
+                preds["energy"] = self.normalizers["target"].denorm(
+                    preds["energy"], hofs=hofs
+                )
             if self.normalizers is not None and "grad_target" in self.normalizers:
                 self.normalizers["grad_target"].to(self.device)
 
@@ -182,7 +198,9 @@ class SingleTrainer(BaseTrainer):
     def train(self, disable_eval_tqdm=True, debug_batches=-1):
         n_train = len(self.loaders["train"])
         epoch_int = 0
-        eval_every = self.config["optim"].get("eval_every", n_train)
+        eval_every = self.config["optim"].get("eval_every", n_train) or n_train
+        if eval_every < 1:
+            eval_every = int(n_train * eval_every)
         if self.config["print_every"] < 0:
             self.config["print_every"] = n_train
         primary_metric = self.config["task"].get(
@@ -190,14 +208,21 @@ class SingleTrainer(BaseTrainer):
         )
         self.best_val_metric = np.inf
         current_val_metric = None
+        first_eval = True
+        log_train_every = self.config["log_train_every"]
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // n_train
+        timer = Times()
         epoch_times = []
+        model_run_time = 0
 
         if not self.silent:
-            print("---Beginning of Training---")
+            print(f"\n--- 🔄 Beginning of Training @ {self.now} ---\n")
+            print(f"\nLogging  train metrics every {log_train_every} steps")
+            print(f"Printing train metrics every {self.config['print_every']} steps")
+            print(f"\nEvaluating every {eval_every} steps\n")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
 
@@ -216,29 +241,48 @@ class SingleTrainer(BaseTrainer):
                 if self.sigterm:
                     return "SIGTERM"
                 i_for_epoch += 1
+                # print(self.now, "i_for_epoch: ", i_for_epoch, flush=True)
                 self.epoch = epoch_int + (i + 1) / n_train
                 self.step = epoch_int * n_train + i + 1
 
                 # Get a batch.
-                batch = next(train_loader_iter)
+                with timer.next("get_batch"):
+                    batch = next(train_loader_iter)
 
                 # Forward, loss, backward.
+                if epoch_int == 1:
+                    s = time.time()
+
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     preds = self.model_forward(batch)
                     loss = self.compute_loss(preds, batch)
                     if preds.get("pooling_loss") is not None:
                         coeff = self.config["optim"].get("pooling_coefficient", 1)
                         loss["total_loss"] += preds["pooling_loss"] * coeff
+
+                if epoch_int == 1:
+                    model_run_time += time.time() - s
+
                 loss = {
                     k: self.scaler.scale(v) if self.scaler else v
                     for k, v in loss.items()
                 }
+
                 if torch.isnan(loss["total_loss"]):
                     print("\n\n >>> 🛑 Loss is NaN. Stopping training.\n\n")
                     self.logger.add_tags(["nan_loss"])
-                    return True
-                self._backward(loss)
+                    return "loss_is_nan"
 
+                try:
+                    self._backward(loss)
+                except RuntimeError:
+                    print("\nBackward loss issue")
+                    print(loss)
+                    print(
+                        "Requires grad:",
+                        {k: v.requires_grad for k, v in loss.items()},
+                    )
+                    print()
                 # Compute metrics.
                 self.metrics = self.compute_metrics(
                     preds,
@@ -247,13 +291,20 @@ class SingleTrainer(BaseTrainer):
                     metrics={},
                 )
                 scale = self.scaler.get_scale() if self.scaler else 1.0
-                for k, v in loss.items():
-                    self.metrics = self.evaluator.update(
-                        k, v.item() / scale, self.metrics
-                    )
 
-                # Log metrics.
-                self.log_train_metrics()
+                if i_for_epoch % log_train_every == 0:
+                    for k, v in loss.items():
+                        self.metrics = self.evaluator.update(
+                            k, v.item() / scale, self.metrics
+                        )
+
+                    # Log metrics.
+                    gbm, gbs = timer.prepare_for_logging()
+                    self.metrics["get_batch_time_mean"] = {"metric": gbm["get_batch"]}
+                    self.metrics["get_batch_time_std"] = {"metric": gbs["get_batch"]}
+                    timer.reset()
+                    # logging.info(f"Step: {self.step}")
+                    self.log_train_metrics()
 
                 is_final_epoch = epoch_int == self.config["optim"]["max_epochs"] - 1
                 is_final_batch = (i == n_train - 1) or (
@@ -273,7 +324,7 @@ class SingleTrainer(BaseTrainer):
                 # Evaluate on val set after every `eval_every` iterations.
                 if should_validate:
                     self.save(
-                        checkpoint_file=f"checkpoint-{str(self.step).zfill(6)}.pt",
+                        checkpoint_file=f"checkpoint-{str(self.step).zfill(7)}.pt",
                         training_state=True,
                     )
 
@@ -281,10 +332,15 @@ class SingleTrainer(BaseTrainer):
                         split=self.config["dataset"]["default_val"],
                         disable_tqdm=disable_eval_tqdm,
                         debug_batches=debug_batches,
+                        is_first=first_eval,
                     )
+
+                    first_eval = False
                     if val_metrics == "SIGTERM":
                         return "SIGTERM"
+
                     current_val_metric = val_metrics[primary_metric]["metric"]
+
                     if current_val_metric < self.best_val_metric:
                         self.best_val_metric = current_val_metric
                         self.save(
@@ -292,6 +348,28 @@ class SingleTrainer(BaseTrainer):
                             checkpoint_file="best_checkpoint.pt",
                             training_state=False,
                         )
+                    if (
+                        self.early_stopper.should_stop(
+                            current_val_metric, self.scheduler.get_lr(), self.epoch
+                        )
+                        or self.early_stopping_file.exists()
+                    ):
+                        if self.early_stopping_file.exists():
+                            print("\n\n >>> 🛑 Early stopping file found.\n\n")
+                            now = self.now.replace(" ", "_").replace(":", "-")
+                            self.early_stopping_file.rename(
+                                self.early_stopping_file.parent
+                                / f"{self.early_stopping_file.stem}_{now}.stopped"
+                            )
+                        else:
+                            print(f"\n\n >>> 🛑 {self.early_stopper.reason}\n\n")
+
+                        if self.logger:
+                            self.logger.add_tags(["E-S"])
+                        return self.end_of_training(
+                            epoch_int, debug_batches, model_run_time, epoch_times
+                        )
+
                     self.model.train()
 
                 self.scheduler_step(eval_every, current_val_metric)
@@ -302,16 +380,34 @@ class SingleTrainer(BaseTrainer):
                 # End of batch.
 
             # End of epoch.
+            epoch_times.append(time.time() - start_time)
+            self.metrics["epoch_time"] = {"metric": epoch_times[-1]}
             self.log_train_metrics(end_of_epoch=True)
             torch.cuda.empty_cache()
-            epoch_times.append(time.time() - start_time)
 
         # End of training.
+        if not is_test_env:
+            return self.end_of_training(
+                epoch_int, debug_batches, model_run_time, epoch_times
+            )
 
-        if is_test_env:
-            return
+    def end_of_training(
+        self,
+        epoch_int,
+        debug_batches,
+        model_run_time,
+        epoch_times,
+        from_ckpt=None,
+        disable_tqdm=True,
+    ):
 
-        eas = self.eval_all_splits(True, epoch=epoch_int, debug_batches=debug_batches)
+        eas = self.eval_all_splits(
+            True,
+            epoch=epoch_int,
+            debug_batches=debug_batches,
+            from_ckpt=from_ckpt,
+            disable_tqdm=disable_tqdm,
+        )
         if eas == "SIGTERM":
             return "SIGTERM"
 
@@ -322,16 +418,18 @@ class SingleTrainer(BaseTrainer):
 
         # Time model
         if self.logger is not None:
-            log_epoch_times = False
+            log_epoch_times = self.config["optim"]["max_epochs"] > 0
             start_time = time.time()
-            if self.config["optim"]["max_epochs"] == 0:
-                batch = next(iter(self.loaders["train"]))
-            else:
-                log_epoch_times = True
+
+            # deterministic batch because shuffle=False for validation
+            batch = next(iter(self.loaders[self.config["dataset"]["default_val"]]))
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
+            self.logger.log(
+                {"Model run time": model_run_time / len(self.loaders["train"])}
+            )
             if log_epoch_times:
-                self.logger.log({"Epoch time": sum(epoch_times) / len(epoch_times)})
+                self.logger.log({"Epoch time": np.mean(epoch_times)})
 
         # Check respect of symmetries
         if self.test_ri and not is_test_env:
@@ -340,6 +438,8 @@ class SingleTrainer(BaseTrainer):
                 return "SIGTERM"
             if self.logger:
                 self.logger.log(symmetry)
+            if not self.silent:
+                print(symmetry)
 
         # TODO: Test equivariance
 
@@ -348,7 +448,7 @@ class SingleTrainer(BaseTrainer):
             for ds in self.datasets.values():
                 ds.close_db()
 
-    def model_forward(self, batch_list):
+    def model_forward(self, batch_list, mode="train"):
         # Distinguish frame averaging from base case.
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
@@ -361,7 +461,10 @@ class SingleTrainer(BaseTrainer):
                 batch_list[0].pos = batch_list[0].fa_pos[i]
                 if self.task_name in OCP_TASKS:
                     batch_list[0].cell = batch_list[0].fa_cell[i]
-                preds = self.model(deepcopy(batch_list))
+
+                # forward pass
+                preds = self.model(deepcopy(batch_list), mode=mode)
+
                 e_all.append(preds["energy"])
                 if preds.get("pooling_loss") is not None:
                     p_all.append(preds["pooling_loss"])
@@ -377,12 +480,13 @@ class SingleTrainer(BaseTrainer):
                         .view(-1, 3)
                     )
                     f_all.append(g_forces)
+
             batch_list[0].pos = original_pos
             if self.task_name in OCP_TASKS:
                 batch_list[0].cell = original_cell
 
             # Average predictions over frames
-            preds = {"energy": sum(e_all) / len(e_all)}
+            preds["energy"] = sum(e_all) / len(e_all)
             if len(p_all) > 0 and all(y is not None for y in p_all):
                 preds["pooling_loss"] = sum(p_all) / len(p_all)
             if len(f_all) > 0 and all(y is not None for y in f_all):
@@ -410,7 +514,12 @@ class SingleTrainer(BaseTrainer):
         )
 
         if self.normalizer.get("normalize_labels", False):
-            target_normed = self.normalizers["target"].norm(energy_target)
+            hofs = None
+            if self.task_name == "qm7x":
+                hofs = torch.cat(
+                    [batch.hofs.to(self.device) for batch in batch_list], dim=0
+                )
+            target_normed = self.normalizers["target"].norm(energy_target, hofs=hofs)
         else:
             target_normed = energy_target
         energy_mult = self.config["optim"].get("energy_coefficient", 1)
@@ -451,11 +560,11 @@ class SingleTrainer(BaseTrainer):
                 train_loss_force_normalizer = 3.0 * weight.sum()
 
                 # add up normalizer to obtain global normalizer
-                distutils.all_reduce(train_loss_force_normalizer)
+                dist_utils.all_reduce(train_loss_force_normalizer)
 
                 # perform loss normalization before backprop
                 train_loss_force_normalized = train_loss_force_unnormalized * (
-                    distutils.get_world_size() / train_loss_force_normalizer
+                    dist_utils.get_world_size() / train_loss_force_normalizer
                 )
                 loss.append(train_loss_force_normalized)
 
@@ -474,16 +583,17 @@ class SingleTrainer(BaseTrainer):
                 )
                 loss["total_loss"].append(force_mult * loss["force_loss"])
                 if "forces_grad_target" in preds:
-                    energy_grad_mult = self.config["optim"].get(
-                        "energy_grad_coefficient", 10
-                    )
                     grad_target = preds["forces_grad_target"]
                     loss["energy_grad_loss"] = self.loss_fn["force"](
                         preds["forces"][mask], grad_target[mask]
                     )
-                    loss["total_loss"].append(
-                        energy_grad_mult * loss["energy_grad_loss"]
-                    )
+                    if self.model.module.regress_forces == "direct_with_energy_grad":
+                        energy_grad_mult = self.config["optim"].get(
+                            "energy_grad_coefficient", 10
+                        )
+                        loss["total_loss"].append(
+                            energy_grad_mult * loss["energy_grad_loss"]
+                        )
         # Sanity check to make sure the compute graph is correct.
         for lc in loss["total_loss"]:
             assert hasattr(lc, "grad_fn")
@@ -542,12 +652,29 @@ class SingleTrainer(BaseTrainer):
                 self.normalizer.get("normalize_labels")
                 and "grad_target" in self.normalizers
             ):
-                preds["forces"] = self.normalizers["grad_target"].denorm(
-                    preds["forces"]
-                )
+                if not self.config.get("no_metrics_denorm"):
+                    preds["forces"] = self.normalizers["grad_target"].denorm(
+                        preds["forces"]
+                    )
+                else:
+                    target["forces"] = self.normalizers["grad_target"].norm(
+                        target["forces"]
+                    )
 
         if self.normalizer.get("normalize_labels") and "target" in self.normalizers:
-            preds["energy"] = self.normalizers["target"].denorm(preds["energy"])
+            hofs = None
+            if self.task_name == "qm7x":
+                hofs = torch.cat(
+                    [batch.hofs.to(self.device) for batch in batch_list], dim=0
+                )
+            if not self.config.get("no_metrics_denorm"):
+                preds["energy"] = self.normalizers["target"].denorm(
+                    preds["energy"], hofs=hofs
+                )
+            else:
+                target["energy"] = self.normalizers["target"].norm(
+                    target["energy"], hofs=hofs
+                )
 
         metrics = evaluator.eval(preds, target, prev_metrics=metrics)
 
@@ -564,17 +691,18 @@ class SingleTrainer(BaseTrainer):
         )
         if (
             self.step % self.config["print_every"] == 0
-            and distutils.is_master()
+            and dist_utils.is_master()
             and not self.is_hpo
-        ) or (distutils.is_master() and end_of_epoch):
-            log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
+        ) or (dist_utils.is_master() and end_of_epoch):
             if not self.silent:
+                log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
                 print(
-                    f"Train metrics at step {self.step}:\n  > " + "\n  > ".join(log_str)
+                    f"\nTrain metrics at step {self.step}:\n  > "
+                    + "\n  > ".join(log_str)
                 )
             self.metrics = {}
 
-        if self.logger is not None and not end_of_epoch:
+        if self.logger is not None:  # and not end_of_epoch:
             self.logger.log(
                 log_dict,
                 step=self.step,
@@ -639,7 +767,7 @@ class SingleTrainer(BaseTrainer):
                 # Compute total difference across frames
                 for pos1, pos2 in zip(batch[0].fa_pos, rotated["batch_list"][0].fa_pos):
                     pos_diff += pos1 - pos2
-                # Manhanttan distance of pos matrix wrt 0 matrix.
+                # Manhattan distance of pos matrix wrt 0 matrix.
                 pos_diff_total += torch.abs(pos_diff).sum()
 
             # Reflect graph and compute diff in prediction
@@ -647,7 +775,18 @@ class SingleTrainer(BaseTrainer):
             preds3 = self.model_forward(reflected["batch_list"])
             energy_diff_refl += torch.abs(preds1["energy"] - preds3["energy"]).sum()
             if self.task_name == "s2ef":
-                forces_diff_refl += torch.abs(preds1["forces"] - preds3["forces"]).sum()
+                forces_diff_refl += torch.abs(
+                    preds1["forces"] @ reflected["rot"].to(preds1["forces"].device)
+                    - preds3["forces"]
+                ).sum()
+                # assert torch.allclose(
+                #     torch.abs(
+                #         batch[0].force @ reflected["rot"].to(batch[0].force.device)
+                #         - reflected["batch_list"][0].force #.to(batch[0].force.device)
+                #     ).sum(),
+                #     torch.tensor([0.0]),   # .to(batch[0].force.device)
+                #     atol=1e-05,
+                # )
 
             # 3D Rotation and compute diff in prediction
             rotated = self.rotate_graph(batch)
@@ -788,7 +927,7 @@ class SingleTrainer(BaseTrainer):
                 )
 
         if self.config["task"].get("write_pos", False):
-            rank = distutils.get_rank()
+            rank = dist_utils.get_rank()
             pos_filename = os.path.join(
                 self.config["results_dir"], f"relaxed_pos_{rank}.npz"
             )
@@ -799,15 +938,15 @@ class SingleTrainer(BaseTrainer):
                 chunk_idx=chunk_idx,
             )
 
-            distutils.synchronize()
-            if distutils.is_master():
+            dist_utils.synchronize()
+            if dist_utils.is_master():
                 gather_results = defaultdict(list)
                 full_path = os.path.join(
                     self.config["results_dir"],
                     "relaxed_positions.npz",
                 )
 
-                for i in range(distutils.get_world_size()):
+                for i in range(dist_utils.get_world_size()):
                     rank_path = os.path.join(
                         self.config["results_dir"],
                         f"relaxed_pos_{i}.npz",
@@ -840,12 +979,12 @@ class SingleTrainer(BaseTrainer):
                 aggregated_metrics = {}
                 for k in metrics:
                     aggregated_metrics[k] = {
-                        "total": distutils.all_reduce(
+                        "total": dist_utils.all_reduce(
                             metrics[k]["total"],
                             average=False,
                             device=self.device,
                         ),
-                        "numel": distutils.all_reduce(
+                        "numel": dist_utils.all_reduce(
                             metrics[k]["numel"],
                             average=False,
                             device=self.device,
@@ -865,7 +1004,7 @@ class SingleTrainer(BaseTrainer):
                         split=split,
                     )
 
-                if distutils.is_master():
+                if dist_utils.is_master():
                     logging.info(metrics)
 
         if self.ema:

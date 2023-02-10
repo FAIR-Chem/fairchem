@@ -1,0 +1,70 @@
+default:
+  model:
+    name: painn
+    use_pbc: True
+
+# -------------------
+# -----  IS2RE  -----
+# -------------------
+
+is2re:
+  10k: {}
+  100k: {}
+  all: {}
+
+# ------------------
+# -----  S2EF  -----
+# ------------------
+
+s2ef:
+  default: {}
+  200k: {}
+  2M: {}
+  20M: {}
+  all: {}
+
+qm9:
+  default:
+    model:
+        num_atoms: null # useless
+        bond_feat_dim: null # useless
+        num_targets: null # useless
+        hidden_channels: 512
+        num_layers: 6
+        num_rbf: 128
+        cutoff: 12.0
+        max_neighbors: 50
+        rbf: {"name": "gaussian"}
+        envelope: {"name": "polynomial", "exponent": 5}
+        regress_forces: False
+        direct_forces: True
+        use_pbc: False
+        otf_graph: False
+        num_elements: 83
+    optim:
+      batch_size: 100
+      num_workers: 4
+      lr_initial: 0.001
+      max_epochs: 1000
+      decay_steps: 125000
+      decay_rate: 0.01
+      ema_decay: 0.999
+      # all below is for the scheduler
+      scheduler: ReduceLROnPlateau
+      mode: min
+      factor: 0.95
+      threshold: 0.0001
+      threshold_mode: abs
+      min_lr: 0.000001
+      verbose: true
+      patience: 10
+
+  10k: {}
+  all: {}
+
+qm7x:
+  default: {}
+  all: {}
+  1k: {}
+
+

@@ -31,11 +31,11 @@ class BaseModel(nn.Module):
     def forces_forward(self, preds):
         raise NotImplementedError
 
-    def forward(self, data):
+    def forward(self, data, mode="train"):
         grad_forces = forces = None
 
-        if self.regress_forces in {"from_energy", "direct_with_gradient_target"}:
-            # energy gradient w.r.t. positions will be computed
+        # energy gradient w.r.t. positions will be computed
+        if mode == "train" or self.regress_forces == "from_energy":
             data.pos.requires_grad_(True)
 
         # predict energy
@@ -47,7 +47,7 @@ class BaseModel(nn.Module):
                 # predict forces
                 forces = self.forces_forward(preds)
 
-            if self.regress_forces in {"from_energy", "direct_with_gradient_target"}:
+            if mode == "train" or self.regress_forces == "from_energy":
                 if "gemnet" in self.__class__.__name__.lower():
                     # gemnet forces are already computed
                     grad_forces = forces
@@ -61,8 +61,9 @@ class BaseModel(nn.Module):
             elif self.regress_forces in {"direct", "direct_with_gradient_target"}:
                 # predicted forces are the model's direct forces
                 preds["forces"] = forces
-                if self.regress_forces == "direct_with_gradient_target":
-                    # store the energy gradient as the target
+                if mode == "train":
+                    # store the energy gradient as the target. Used for metrics
+                    # only in "direct" mode.
                     preds["forces_grad_target"] = grad_forces.detach()
             else:
                 raise ValueError(

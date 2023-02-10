@@ -1,0 +1,184 @@
+# trainset has 4068193 samples
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:16gb:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
+  env: ocp-a100
+
+default:
+  config: schnet-qm7x-all
+  wandb_project: ocp-qm
+  mode: train
+  test_ri: true
+  wandb_tags: qm7x
+  phys_hidden_channels: 0
+  phys_embeds: False
+  energy_head: False
+  pg_hidden_channels: 0
+  tag_hidden_channels: 0
+  frame_averaging: ""
+  cp_data_to_tmpdir: true
+  note:
+    task: name
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, regress_forces
+    optim: batch_size, lr_initial, energy_coefficient, force_coefficient, energy_grad_coefficient
+  optim:
+    batch_size: 10
+    max_steps: 2000000
+    warmup_steps: 3000
+    lr_initial: 0.0001
+    eval_every: 0.251
+    energy_coefficient: 1
+    energy_grad_coefficient: 0
+    force_coefficient: 100
+    # parameters EMA
+    ema_decay: 0.999
+    loss_energy: mae
+    loss_force: mse
+    # all below is for the scheduler
+    scheduler: ReduceLROnPlateau
+    mode: min
+    factor: 0.5
+    threshold: 0.001
+    threshold_mode: abs
+    min_lr: 0.000001
+    verbose: true
+  model:
+    hidden_channels: 128
+    num_filters: 128
+    num_gaussians: 20
+    num_interactions: 6
+    cutoff: 5.0
+    regress_forces: from_energy
+  dataset:
+    train:
+      rescale_with_hof: False
+      lse_shift: True
+    val_id:
+      lse_shift: True
+    test:
+      lse_shift: True
+
+runs:
+  - config: schnet-qm7x-all
+  - config: schnet-qm7x-all
+    model:
+      regress_forces: ""
+  - config: schnet-qm7x-all
+    optim:
+      energy_coefficient: 0
+  - config: schnet-qm7x-all
+    optim:
+      batch_size: 100
+      max_steps: 1000000
+      lr_initial: 0.0003
+
+  - config: fanet-qm7x-all
+    optim:
+      energy_coefficient: 1
+      energy_grad_coefficient: 10
+      force_coefficient: 100
+    model:
+      num_interactions: 4
+      hidden_channels: 160
+      num_filters: 160
+      graph_norm: true
+      edge_embed_type: all_rij
+      mp_type: updownscale_base
+      force_decoder_type: mlp
+      regress_forces: direct_with_gradient_target
+
+  - config: fanet-qm7x-all
+    optim:
+      batch_size: 50
+      max_steps: 1000000
+      initial_lr: 0.0005
+      energy_coefficient: 1
+      energy_grad_coefficient: 10
+      force_coefficient: 100
+    model:
+      num_interactions: 4
+      hidden_channels: 160
+      num_filters: 160
+      graph_norm: true
+      edge_embed_type: all_rij
+      mp_type: updownscale_base
+      force_decoder_type: mlp
+      regress_forces: direct_with_gradient_target
+
+  - config: fanet-qm7x-all
+    optim:
+      batch_size: 100
+      initial_lr: 0.001
+      max_steps: 1000000
+      energy_coefficient: 1
+      energy_grad_coefficient: 10
+      force_coefficient: 100
+    model:
+      num_interactions: 4
+      hidden_channels: 160
+      num_filters: 160
+      graph_norm: true
+      edge_embed_type: all_rij
+      mp_type: updownscale_base
+      force_decoder_type: mlp
+      regress_forces: direct_with_gradient_target
+
+  - config: fanet-qm7x-all
+    optim:
+      batch_size: 50
+      initial_lr: 0.0005
+      max_steps: 1000000
+      energy_coefficient: 1
+      energy_grad_coefficient: 0
+      force_coefficient: 100
+    model:
+      num_interactions: 4
+      hidden_channels: 160
+      num_filters: 160
+      graph_norm: true
+      edge_embed_type: all_rij
+      mp_type: updownscale_base
+      force_decoder_type: mlp
+      regress_forces: direct
+
+  - config: fanet-qm7x-all
+    optim:
+      batch_size: 50
+      initial_lr: 0.0005
+      max_steps: 1000000
+      energy_coefficient: 1
+      energy_grad_coefficient: 0
+      force_coefficient: 100
+    model:
+      num_interactions: 4
+      hidden_channels: 160
+      num_filters: 160
+      graph_norm: true
+      edge_embed_type: all_rij
+      mp_type: simple
+      complex_mp: true
+      second_layer_mlp: true
+      force_decoder_type: mlp
+      regress_forces: direct
+
+  - config: fanet-qm7x-all
+    optim:
+      batch_size: 50
+      initial_lr: 0.0005
+      max_steps: 1000000
+      energy_coefficient: 0
+      energy_grad_coefficient: 0
+      force_coefficient: 1
+    model:
+      num_interactions: 4
+      hidden_channels: 160
+      num_filters: 160
+      graph_norm: true
+      edge_embed_type: all_rij
+      mp_type: updownscale_base
+      force_decoder_type: mlp
+      regress_forces: direct
+

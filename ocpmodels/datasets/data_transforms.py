@@ -44,12 +44,15 @@ class FrameAveraging(Transform):
             "DA",
         }
         assert self.fa_frames in {
+            "",  # equivalent to random, necessary still for sweeps
             "random",
             "det",
             "all",
+            "multiple",
             "se3-random",
             "se3-det",
             "se3-all",
+            "se3-multiple",
         }
 
         if self.fa_type:

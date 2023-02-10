@@ -1,0 +1,47 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  time: 30:00:00
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  cp_data_to_tmp: true
+  model:
+    phys_embeds: True
+    tag_hidden_channels: 64
+    pg_hidden_channels: 0  # shall have been 32
+    energy_head: 'weighted-av-initial-embeds' # False ?
+    regress_forces: direct_with_gradient_target
+  wandb_tags: 's2ef-archi-tests'
+  optim:
+    max_epochs: 10
+    batch_size: 192
+    eval_batch_size: 192
+
+runs:
+  - config: sfarinet-s2ef-2M
+    note: 'Bigger forces coef'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    optim:
+      force_coefficient: 75
+  - config: sfarinet-s2ef-2M
+    note: 'Bigger forces coef'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    model:
+      regress_forces: direct
+    optim:
+      force_coefficient: 75
+  - config: sfarinet-s2ef-2M
+    note: 'Bigger forces coef'
+    frame_averaging: 2D
+    fa_fames: se3-random
+    model:
+      regress_forces: direct
+    optim:
+      force_coefficient: 75

@@ -1,10 +1,11 @@
-"""
+"""utils.py
 Copyright (c) Facebook, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import argparse
 import ast
 import collections
 import copy
@@ -37,10 +38,124 @@ from torch_scatter import segment_coo, segment_csr
 import ocpmodels
 from ocpmodels.common.flags import flags
 from ocpmodels.common.registry import registry
+import ocpmodels.common.dist_utils as dist_utils
 
+
+class Cluster:
+    def __init__(self):
+        self._is = {
+            "narval": os.environ.get("CC_CLUSTER") == "narval",
+            "beluga": os.environ.get("CC_CLUSTER") == "beluga",
+            "mila": "/home/mila/" in os.environ.get("HOME", ""),
+        }
+        self.name = [k for k, v in self._is.items() if v]
+        if not self.name:
+            self.name = "unknown"
+        else:
+            self.name = self.name[0]
+        self.Name = self.name.capitalize()
+        self._is["drac"] = self._is["narval"] or self._is["beluga"]
+
+    def __getattr__(self, k: str):
+        if k in self._is:
+            return self._is[k]
+        raise AttributeError("Unknown attribute " + k)
+
+
+CLUSTER = Cluster()
 OCP_TASKS = {"s2ef", "is2re", "is2es"}
 ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
+RUN_DIR = Path(os.environ["SCRATCH"]) / "ocp" / "runs"
+
+
+def read_slurm_env(config):
+    """
+    Parses the output of `scontrol show` in order to store the slurm
+    config (mem, cpu, node, gres) as a `"slurm"` key in the `config` object.
+
+    Args:
+        config (dict): Run configuration
+
+    Returns:
+        dict: Updated run config if no "slurm" key exists or it's empty
+    """
+    if not config.get("slurm"):
+        return config
+
+    command = f"scontrol show job {JOB_ID}"
+    scontrol = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
+    params = re.findall(r"TRES=(.+)\n", scontrol)
+    try:
+        if params:
+            params = params[0]
+            for kv in params.split(","):
+                k, v = kv.split("=")
+                config["slurm"][k] = v
+    except Exception as e:
+        print("Slurm config creation exception", e)
+    finally:
+        return config
+
+
+def continue_from_slurm_job_id(config, from_best=False):
+    """
+    Assuming runs are consistently executed in a `run_dir` with the
+    `run_dir/$SLURM_JOBID` pattern, this functions looks for an existing
+    directory with the same $SLURM_JOBID as the current job that contains
+    a checkpoint.
+
+    If there is one, it tries to find `best_checkpoint.ckpt`.
+    If the latter does not exist, it looks for the latest checkpoint,
+    assuming a naming convention like `checkpoint-{step}.pt`.
+
+    If a checkpoint is found, its path is set in `config["checkpoint"]`.
+    Otherwise, returns the original config.
+
+    Args:
+        config (dict): The original config to overwrite
+        from_best (bool, optional): If True, only looks for `best_checkpoint.pt`.
+            otherwise, looks for the latest checkpoint. Defaults to False.
+
+    Returns:
+        dict: The updated config if a checkpoint has been found
+    """
+    if config.get("checkpoint"):
+        return config
+
+    if config.get("no-resume"):
+        return config
+
+    job_id = os.environ.get("SLURM_JOBID")
+    if job_id is None:
+        return config
+
+    base_dir = Path(config["run_dir"]).resolve().parent
+    ckpt_dir = base_dir / job_id / "checkpoints"
+    if not ckpt_dir.exists() or not ckpt_dir.is_dir():
+        return config
+
+    if from_best:
+        best_ckp = ckpt_dir / "best_checkpoint.pt"
+        if best_ckp.exists():
+            ckpt = str(best_ckp)
+        else:
+            raise FileNotFoundError(f"No best checkpoint found in {str(ckpt_dir)}")
+    else:
+        ckpts = list(ckpt_dir.glob("checkpoint-*.pt"))
+        if not ckpts:
+            return config
+        latest_ckpt = sorted(
+            ckpts, key=lambda f: float(f.stem.split("checkpoint-")[-1])
+        )[-1]
+        if latest_ckpt.exists() and latest_ckpt.is_file():
+            ckpt = str(latest_ckpt)
+
+    if ckpt:
+        config["checkpoint"] = ckpt
+        print(f"\n🎁 Resuming based on $SLURM_JOB_ID {JOB_ID} from {ckpt}\n")
+
+    return config
 
 
 def move_lmdb_data_to_slurm_tmpdir(trainer_config):
@@ -50,55 +165,68 @@ def move_lmdb_data_to_slurm_tmpdir(trainer_config):
     ):
         return trainer_config
 
-    tmp_dir = Path(f"/Tmp/slurm.{JOB_ID}.0")
+    print("\n🚉 Copying data to slurm tmpdir", flush=True)
+
+    tmp_dir = os.environ.get("SLURM_TMPDIR") or f"/Tmp/slurm.{JOB_ID}.0"
+    tmp_dir = Path(tmp_dir)
     for s, split in trainer_config["dataset"].items():
         if not isinstance(split, dict):
             continue
-        new_dir = tmp_dir / Path(split["src"]).name
+        original = Path(split["src"])
+        if original.is_file():
+            original = original.parent
+        new_dir = tmp_dir / original.name
         if new_dir.exists():
             print(
-                f"Data already copied to {str(new_dir)} for split",
+                f"   Data already copied to {str(new_dir)} for split",
                 f"{s} with source path {split['src']}",
+                flush=True,
             )
             trainer_config["dataset"][s]["src"] = str(new_dir)
             continue
+        print("   Making new_dir: ", str(new_dir), flush=True)
         new_dir.mkdir()
-        command = ["rsync", "-av", f'{split["src"]}/', str(new_dir)]
-        print("Copying data: ", " ".join(command))
+        command = ["cp", "-r", f"{str(original)}", str(new_dir.parent)]
+        print("   Copying data: ", " ".join(command), flush=True)
         subprocess.run(command)
         for f in new_dir.glob("*.lmdb-lock"):
             f.unlink()
         trainer_config["dataset"][s]["src"] = str(new_dir)
-    print("Done moving data to", str(new_dir))
+        print("   Done moving data to", str(new_dir), flush=True)
     return trainer_config
 
 
-def override_narval_paths(trainer_config):
-    is_narval = (
-        "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")
-        or os.environ.get("HOME") == "/home/vsch"
-        or trainer_config["narval"]
-    )
-    if not is_narval:
+def override_drac_paths(trainer_config):
+    if not CLUSTER.drac:
         return trainer_config
+
     path_overrides = yaml.safe_load(
-        (ROOT / "configs" / "models" / "tasks" / "_narval.yaml").read_text()
+        (ROOT / "configs" / "models" / "tasks" / "_drac.yaml").read_text()
     )
+    base_path = path_overrides.pop("drac_base_path")[CLUSTER.name]
     task = trainer_config["task"]["name"]
     split = trainer_config["task"]["split"]
-    assert task in path_overrides, f"Task {task} not found in Narval paths overrides"
+    assert (
+        task in path_overrides
+    ), f"Task {task} not found in {CLUSTER.Name} paths overrides"
 
     assert (
         split in path_overrides[task]
-    ), f"Split {split} not found in Narval paths overrides for task {task}"
+    ), f"Split {split} not found in {CLUSTER.Name} paths overrides for task {task}"
+
+    for t, task_dict in copy.deepcopy(path_overrides).items():
+        for sub, subset_dict in task_dict.items():
+            for spl, split_dict in subset_dict.items():
+                src = split_dict["src"].replace("_base_", base_path).replace("//", "/")
+                path_overrides[t][sub][spl]["src"] = src
 
     print(
-        "Is on Narval. Overriding",
+        f"Is on {CLUSTER.Name}. Overriding",
         trainer_config["dataset"],
         "with",
         path_overrides[task][split],
     )
-    trainer_config["dataset"], _ = merge_dicts(
+    trainer_config["dataset"] = merge_dicts(
         trainer_config["dataset"], path_overrides[task][split]
     )
 
@@ -179,6 +307,13 @@ def set_qm9_target_stats(trainer_config):
             continue
         if not dataset.get("normalize_labels", False):
             continue
+        elif dataset.get("lse_shift"):
+            print(
+                "Setting normalize_labels to False because of lse_shift for split",
+                f"{d}.",
+            )
+            trainer_config["dataset"][d]["normalize_labels"] = False
+            continue
         assert "target" in dataset
         mean = target_means[dataset["target"]]
         std = target_stds[dataset["target"]]
@@ -215,11 +350,26 @@ def set_qm7x_target_stats(trainer_config):
         (ROOT / "configs" / "models" / "qm7x-metadata" / "stats.json").read_text()
     )
 
+    hof_stats = json.loads(
+        (
+            ROOT / "configs" / "models" / "qm7x-metadata" / "hof_rescales.json"
+        ).read_text()
+    )
+    hof_stats.pop("about", None)
+
     for d, dataset in deepcopy(trainer_config["dataset"]).items():
         if d == "default_val":
             continue
         if not dataset.get("normalize_labels", False):
             continue
+        elif dataset.get("lse_shift"):
+            print(
+                "Setting normalize_labels to False because of lse_shift for split",
+                f"{d}.",
+            )
+            trainer_config["dataset"][d]["normalize_labels"] = False
+            continue
+
         assert "target" in dataset, "target must be specified."
         mean = target_stats[dataset["target"]]["mean"]
         std = target_stats[dataset["target"]]["std"]
@@ -233,6 +383,11 @@ def set_qm7x_target_stats(trainer_config):
             std = target_stats[dataset["forces_target"]]["std"]
             trainer_config["dataset"][d]["grad_target_mean"] = mean
             trainer_config["dataset"][d]["grad_target_std"] = std / std_divider
+
+    if "train" in trainer_config["dataset"] and trainer_config["dataset"]["train"].get(
+        "rescale_with_hof"
+    ):
+        trainer_config["dataset"]["train"]["hof_stats"] = hof_stats
 
     return trainer_config
 
@@ -343,6 +498,7 @@ def save_checkpoint(
     state, checkpoint_dir="checkpoints/", checkpoint_file="checkpoint.pt"
 ):
     filename = os.path.join(checkpoint_dir, checkpoint_file)
+    print(f"Saving checkpoint to {filename}")
     torch.save(state, filename)
 
 
@@ -403,9 +559,11 @@ def warmup_lr_lambda(current_step, optim_config):
         # exponential decay per step
         assert "decay_rate" in optim_config, "decay_rate must be defined in optim"
         ds = optim_config["decay_steps"]
-        if ds == "max_steps":
-            assert "max_steps" in optim_config, "max_steps must be defined in optim"
-            ds = optim_config["max_steps"]
+        if isinstance(ds, str):
+            assert (
+                ds in optim_config
+            ), f"ds is {ds}, it must be defined in optim ({optim_config})"
+            ds = optim_config[ds]
 
         return optim_config["decay_rate"] ** (
             (current_step - optim_config["warmup_steps"]) / ds
@@ -542,6 +700,16 @@ def add_edge_distance_to_graph(
 def setup_imports():
     from ocpmodels.common.registry import registry
 
+    try:
+        import ipdb  # noqa: F401
+
+        os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
+    except:  # noqa: E722
+        print(
+            "`ipdb` is not installed. ",
+            "Consider `pip install ipdb` to improve your debugging experience.",
+        )
+
     # First, check if imports are already setup
     has_already_setup = registry.get("imports_setup", no_warning=True)
     if has_already_setup:
@@ -621,6 +789,10 @@ def parse_value(value):
     Parse string as Python literal if possible and fallback to string.
     """
     try:
+        if value.lower() == "true":
+            return True
+        elif value.lower() == "false":
+            return False
         return ast.literal_eval(value)
     except (ValueError, SyntaxError):
         # Use as string if nothing else worked
@@ -635,11 +807,22 @@ def create_dict_from_args(args: list, sep: str = "."):
     return_dict = {}
     for arg in args:
         arg = arg.strip("--")
-        keys_concat, val = arg.split("=")
+        keys_concat, val = arg.split("=") if "=" in arg else (arg, "True")
         val = parse_value(val)
         key_sequence = keys_concat.split(sep)
         dict_set_recursively(return_dict, key_sequence, val)
     return return_dict
+
+
+def unflatten_dict(source, sep="."):
+    """
+    >>> d = {"a.b": 4, "a.c": 5, "r.y": 1}
+    >>> unflatten_dict(d)
+    {'a': {'b': 4, 'c': 5}, 'r': {'y': 1}}
+    """
+    target = {}
+    [dict_set_recursively(target, k.split(sep), v) for k, v in source.items()]
+    return target
 
 
 def load_config_legacy(path: str, previous_includes: list = []):
@@ -684,57 +867,29 @@ def load_config_legacy(path: str, previous_includes: list = []):
     return config, duplicates_warning, duplicates_error
 
 
-def load_config(config_str):
-    model, task, split = config_str.split("-")
-    conf_path = ROOT / "configs" / "models"
-
-    model_conf_path = list(conf_path.glob(f"{model}.y*ml"))[0]
-    task_conf_path = list(conf_path.glob(f"tasks/{task}.y*ml"))[0]
-
-    model_conf = yaml.safe_load(model_conf_path.read_text())
-    task_conf = yaml.safe_load(task_conf_path.read_text())
-
-    assert "default" in model_conf
-    assert task in model_conf
-    assert split in model_conf[task]
-
-    assert "default" in task_conf
-    assert split in task_conf
-
-    config, _ = merge_dicts({}, model_conf["default"])
-    config, _ = merge_dicts(config, model_conf[task].get("default", {}))
-    config, _ = merge_dicts(config, model_conf[task][split])
-    config, _ = merge_dicts(config, task_conf["default"])
-    config, _ = merge_dicts(config, task_conf[split])
-    config["task"]["name"] = task
-    config["task"]["split"] = split
-
+def set_cpus_to_workers(config, silent=False):
+    if not config.get("no_cpus_to_workers"):
+        cpus = count_cpus()
+        gpus = count_gpus()
+        if cpus is not None:
+            if gpus == 0:
+                workers = cpus - 1
+            else:
+                workers = cpus // gpus
+            if not config["silent"] and not silent:
+                print(
+                    f"🏭 Overriding num_workers from {config['optim']['num_workers']}",
+                    f"to {workers} to match the machine's CPUs.",
+                    "Use --no_cpus_to_workers=true to disable this behavior.",
+                )
+            config["optim"]["num_workers"] = workers
     return config
 
 
-def build_config(args, args_override):
-
-    if args.config_yml:
-        raise ValueError(
-            "Using LEGACY config format. Please update your config to the new format."
-        )
-
-    config = load_config(args.config)
-
-    # Check for overridden parameters.
-    if args_override != []:
-        overrides = create_dict_from_args(args_override)
-        config, _ = merge_dicts(config, overrides)
-
-    config, _ = merge_dicts(
-        config, {k: v for k, v in vars(args).items() if v is not None}
-    )
-    config["data_split"] = args.config.split("-")[-1]
-    config["run_dir"] = resolve(config["run_dir"])
-    config["slurm"] = {}
-    config["job_id"] = JOB_ID or "no-job-id"
-
+def check_regress_forces(config):
     if "regress_forces" in config["model"]:
+        if config["model"]["regress_forces"] == "":
+            config["model"]["regress_forces"] = False
         if not isinstance(config["model"]["regress_forces"], str):
             if config["model"]["regress_forces"] is False:
                 config["model"]["regress_forces"] = ""
@@ -755,30 +910,208 @@ def build_config(args, args_override):
                 + f". Received: `{str(config['model']['regress_forces'])}`"
             )
 
-    config = set_qm9_target_stats(config)
-    config = set_qm7x_target_stats(config)
-    config = override_narval_paths(config)
-    config = auto_note(config)
-    config = move_lmdb_data_to_slurm_tmpdir(config)
 
-    if not config["no_cpus_to_workers"]:
-        cpus = count_cpus()
-        gpus = count_gpus()
-        if cpus is not None:
-            if gpus == 0:
-                workers = cpus - 1
-            else:
-                workers = cpus // gpus
-            if not config["silent"]:
-                print(
-                    f"Overriding num_workers from {config['optim']['num_workers']}",
-                    f"to {workers} to match the machine's CPUs.",
-                    "Use --no_cpus_to_workers=true to disable this behavior.",
-                )
-            config["optim"]["num_workers"] = workers
-    config["world_size"] = args.num_nodes * args.num_gpus
+def set_min_hidden_channels(config):
+    # Embedding(
+    #         85,
+    #         hidden_channels
+    #         - tag_hidden_channels
+    #         - phys_hidden_channels
+    #         - 2 * pg_hidden_channels,
+    #     )
+    hc = config["model"].get("hidden_channels", 0)
+    thc = config["model"].get("tag_hidden_channels", 0)
+    phc = config["model"].get("phys_hidden_channels", 0) or 14
+    phc *= int(config["model"].get("phys_embeds", 0))
+    pghc = config["model"].get("pg_hidden_channels", 0)
+
+    if hc - thc - phc - 2 * pghc < 0:
+        hc = thc + phc + 2 * pghc + 32
+        print(f"WARNING: hidden_channels is too small. Setting it to {hc}")
+        config["model"]["hidden_channels"] = hc
 
     return config
+
+
+def load_config(config_str):
+    model, task, split = config_str.split("-")
+    conf_path = ROOT / "configs" / "models"
+
+    model_conf_path = list(conf_path.glob(f"{model}.y*ml"))[0]
+    task_conf_path = list(conf_path.glob(f"tasks/{task}.y*ml"))[0]
+
+    model_conf = yaml.safe_load(model_conf_path.read_text())
+    task_conf = yaml.safe_load(task_conf_path.read_text())
+
+    assert "default" in model_conf
+    assert task in model_conf
+    assert split in model_conf[task]
+
+    assert "default" in task_conf
+    assert split in task_conf
+
+    config = merge_dicts({}, model_conf["default"])
+    config = merge_dicts(config, model_conf[task].get("default", {}))
+    config = merge_dicts(config, model_conf[task][split])
+    config = merge_dicts(config, task_conf["default"])
+    config = merge_dicts(config, task_conf[split])
+    config["task"]["name"] = task
+    config["task"]["split"] = split
+
+    return config
+
+
+def build_config(args, args_override, silent=False):
+    config = overrides = continue_config = {}
+
+    if hasattr(args, "config_yml") and args.config_yml:
+        raise ValueError(
+            "Using LEGACY config format. Please update your config to the new format."
+        )
+
+    args_dict_with_defaults = {k: v for k, v in vars(args).items() if v is not None}
+    if args_override != []:
+        overrides = create_dict_from_args(args_override)
+
+    if args.continue_from_dir or args.restart_from_dir:
+        if args.continue_from_dir and args.restart_from_dir:
+            raise ValueError(
+                "Cannot specify both --continue_from_dir and --restart_from_dir."
+            )
+        cont_dir = (
+            resolve(args.continue_from_dir)
+            if args.continue_from_dir
+            else resolve(args.restart_from_dir)
+        )
+        ckpts = list(cont_dir.glob("checkpoints/checkpoint-*.pt"))
+        if not ckpts:
+            print(
+                f"💥 Could not find checkpoints in {str(cont_dir)}. "
+                + "Please make sure the directory is correct."
+            )
+        else:
+            latest_ckpt = str(
+                sorted(ckpts, key=lambda c: float(c.stem.split("-")[-1]))[-1]
+            )
+            continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
+            if args.continue_from_dir:
+                continue_config["checkpoint"] = str(latest_ckpt)
+                continue_config["job_ids"] = continue_config["job_ids"] + f", {JOB_ID}"
+            else:
+                continue_config.pop("checkpoint", None)
+                continue_config.pop("wandb_resume_id", None)
+            if not args.keep_orion_config:
+                dels = {}
+                for k in continue_config:
+                    if "orion" in k or "fidelity" in k:
+                        dels[k] = copy.deepcopy(continue_config[k])
+                        continue_config[k] = None
+                if not silent:
+                    print(
+                        "🅾️  Removing orion config from continue config. Set to None:",
+                        "{"
+                        + ", ".join([f"{k}: {v}->None" for k, v in dels.items()])
+                        + "}",
+                    )
+            if not silent:
+                print(
+                    f"✅ Loading config from directory {str(cont_dir)}"
+                    + (
+                        f" and latest checkpoint: {latest_ckpt}"
+                        if args.continue_from_dir
+                        else " (restarting from scratch)"
+                    )
+                )
+            args.config = continue_config["config"]
+
+    if args.config is None:
+        raise ValueError(
+            "Must specify a config file with " + f"--config. Received args: {args}"
+        )
+
+    config = load_config(args.config)
+    config = merge_dicts(config, args_dict_with_defaults)
+    config = merge_dicts(config, overrides)
+    config["data_split"] = args.config.split("-")[-1]
+    config["run_dir"] = resolve(config["run_dir"])
+    config["slurm"] = {}
+    config["job_id"] = JOB_ID or "no-job-id"
+    config["job_ids"] = JOB_ID or "no-job-id"
+    config["cluster_name"] = CLUSTER.name
+    config["world_size"] = args.num_nodes * args.num_gpus
+
+    if continue_config:
+        continue_config.pop("timestamp_id", None)
+        continue_config.pop("commit", None)
+        continue_config.pop("early_stopping_file", None)
+        continue_config.pop("timestamp_id", None)
+        continue_config.pop("distributed_port", None)
+        continue_config.pop("continue_from_dir", None)
+        continue_config.pop("restart_from_dir", None)
+
+        continue_config["run_dir"] = resolve(continue_config["run_dir"])
+        continue_config["job_id"] = JOB_ID
+        continue_config["local_rank"] = config["local_rank"]
+
+        new_dirs = [
+            (k, v) for k, v in config.items() if "dir" in k and k != "cp_data_to_tmpdir"
+        ]
+        data_srcs = copy.deepcopy(
+            {
+                k: {
+                    "src": v["src"]
+                }  # keep original src, if data was moved in the resumed exp
+                for k, v in config["dataset"].items()
+                if isinstance(v, dict) and "src" in v
+            }
+        )
+        config = merge_dicts(
+            continue_config,
+            {k: resolve(v) if isinstance(v, (str, Path)) else v for k, v in new_dirs},
+        )
+        config["dataset"] = merge_dicts(config["dataset"], data_srcs)
+        cli = cli_args_dict()
+        if "max_steps" in cli.get("optim", {}):
+            if "max_epochs" in cli.get("optim", {}):
+                print(
+                    "Cannot set both `max_steps` and `max_epochs` from CLI.",
+                    " Using `max_steps`.",
+                )
+                del cli["optim"]["max_epochs"]
+            if "max_epochs" in config["optim"]:
+                print(
+                    f"Deleting max_epochs ({config['optim']['max_epochs']})",
+                    " because of `max_steps` from CLI.",
+                    "It will be reset by the Trainer.",
+                )
+                del config["optim"]["max_epochs"]
+        elif "max_epochs" in cli.get("optim", {}):
+            if "max_steps" in config["optim"]:
+                print(
+                    f"Deleting max_steps ({config['optim']['max_steps']})",
+                    " because of `max_epochs` from CLI.",
+                    "It will be reset by the Trainer.",
+                )
+                del config["optim"]["max_steps"]
+        config = merge_dicts(config, cli)
+
+    check_regress_forces(config)
+    config = set_cpus_to_workers(config, silent)
+    config = set_qm9_target_stats(config)
+    config = set_qm7x_target_stats(config)
+    config = override_drac_paths(config)
+    config = continue_from_slurm_job_id(config)
+    config = read_slurm_env(config)
+    config["optim"]["eval_batch_size"] = config["optim"]["batch_size"]
+    dist_utils.setup(config)
+
+    return config
+
+
+def cli_args_dict():
+    dummy = argparse.ArgumentParser()
+    _, cli_args = dummy.parse_known_args()
+    return create_dict_from_args(cli_args)
 
 
 def create_grid(base_config, sweep_file):
@@ -1104,7 +1437,7 @@ def get_pruned_edge_idx(edge_index, num_atoms=None, max_neigh=1e9):
     return _nonmax_idx
 
 
-def merge_dicts(dict1: dict, dict2: dict):
+def merge_dicts(dict1: dict, dict2: dict) -> dict:
     """Recursively merge two dictionaries.
     Values in dict2 override values in dict1. If dict1 and dict2 contain a dictionary
     as a value, this will call itself recursively to merge these dictionaries.
@@ -1122,36 +1455,47 @@ def merge_dicts(dict1: dict, dict2: dict):
 
     Returns
     -------
-    return_dict_and_duplicates: tuple(dict, list(str))
+    return_dict: dict
         Merged dictionaries.
     """
     if not isinstance(dict1, dict):
-        raise ValueError(f"Expecting dict1 to be dict, found {type(dict1)}.")
+        raise ValueError(f"Expecting dict1 to be dict, found {type(dict1)} {dict1}.")
     if not isinstance(dict2, dict):
-        raise ValueError(f"Expecting dict2 to be dict, found {type(dict2)}.")
+        raise ValueError(f"Expecting dict2 to be dict, found {type(dict2)} {dict2}.")
 
     return_dict = copy.deepcopy(dict1)
-    duplicates = []
 
     for k, v in dict2.items():
         if k not in dict1:
             return_dict[k] = v
         else:
             if isinstance(v, dict) and isinstance(dict1[k], dict):
-                return_dict[k], duplicates_k = merge_dicts(dict1[k], dict2[k])
-                duplicates += [f"{k}.{dup}" for dup in duplicates_k]
+                return_dict[k] = merge_dicts(dict1[k], dict2[k])
             elif isinstance(v, list) and isinstance(dict1[k], list):
                 if len(dict1[k]) != len(dict2[k]):
                     raise ValueError(
                         f"List for key {k} has different length in dict1 and dict2."
                         + " Use an empty dict {} to pad for items in the shorter list."
                     )
-                return_dict[k] = [merge_dicts(d1, d2)[0] for d1, d2 in zip(dict1[k], v)]
+                if isinstance(dict1[k][0], dict):
+                    if not isinstance(dict2[k][0], dict):
+                        raise ValueError(
+                            f"Expecting dict for key {k} in dict2. ({dict1}, {dict2})"
+                        )
+                    return_dict[k] = [
+                        merge_dicts(d1, d2) for d1, d2 in zip(dict1[k], v)
+                    ]
+                else:
+                    if isinstance(dict2[k][0], dict):
+                        raise ValueError(
+                            f"Expecting dict for key {k} in dict1. ({dict1}, {dict2})"
+                        )
+                    return_dict[k] = v
+
             else:
                 return_dict[k] = dict2[k]
-                duplicates.append(k)
 
-    return return_dict, duplicates
+    return return_dict
 
 
 class SeverityLevelBetween(logging.Filter):
@@ -1193,7 +1537,9 @@ def compute_neighbors(data, edge_index):
     # Get number of neighbors
     # segment_coo assumes sorted index
     ones = edge_index[1].new_ones(1).expand_as(edge_index[1])
-    num_neighbors = segment_coo(ones, edge_index[1], dim_size=data.natoms.sum())
+    # CUDA error, changing (victor 2023-01-25)
+    # num_neighbors = segment_coo(ones, edge_index[1], dim_size=data.natoms.sum())
+    _, num_neighbors = torch.unique(edge_index[1], return_counts=True)
 
     # Get number of neighbors per image
     image_indptr = torch.zeros(
@@ -1295,23 +1641,18 @@ def get_commit_hash():
 
 
 def base_config(config, overrides={}):
-    from argparse import Namespace
+    from ocpmodels.common.flags import flags
 
-    n = Namespace()
-    n.num_gpus = 1
-    n.num_nodes = 1
-    n.config_yml = None
-    n.config = config
+    setup_imports()
 
     conf = build_config(
-        n,
-        [
-            "run_dir=.",
-            "narval=",
-            "no_qm7x_cp=true",
-            "no_cpus_to_workers=true",
-            "silent=",
-        ],
+        *flags.get_parser().parse_known_args(
+            [
+                f"--config={config}",
+                "--logger=dummy",
+            ]
+        )
     )
+    conf["cpu"] = not torch.cuda.is_available()
 
-    return merge_dicts(conf, overrides)[0]
+    return merge_dicts(conf, overrides)

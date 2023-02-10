@@ -1,12 +1,12 @@
 default:
   trainer: single
   logger: wandb
+  eval_on_test: True
 
   model:
     otf_graph: False
     max_num_neighbors: 40
     use_pbc: False
-    force_decoder_type: null
 
   task:
     dataset: qm7x
@@ -17,9 +17,12 @@ default:
       - total system energy
 
   optim:
-    force_coefficient: 30
+    optimizer: AdamW
     energy_coefficient: 1
     energy_grad_coefficient: 10
+    force_coefficient: 100
+    loss_energy: mse
+    loss_force: mse
 
   normalizer: null
   graph_rewiring: ""
@@ -34,6 +37,9 @@ default:
       target: ePBE0+MBD
       forces_target: totFOR
       std_divider: 1.0
+      rescale_with_hof: False
+      lse_shift: True
+      include_val_ood: True
     val_id:
       src: /network/projects/ocp/qm7x/processed
       normalize_labels: True # mean and std of target will be set by utils.py if this is True
@@ -41,21 +47,23 @@ default:
       target: ePBE0+MBD
       forces_target: totFOR
       std_divider: 1.0
-    val_ood:
+      lse_shift: True
+    # val_ood:
+    #   src: /network/projects/ocp/qm7x/processed
+    #   normalize_labels: True # mean and std of target will be set by utils.py if this is True
+    #   split: val_ood
+    #   target: ePBE0+MBD
+    #   forces_target: totFOR
+    #   std_divider: 1.0
+    #   lse_shift: True
+    test:
       src: /network/projects/ocp/qm7x/processed
       normalize_labels: True # mean and std of target will be set by utils.py if this is True
-      split: val_ood
+      split: test
       target: ePBE0+MBD
       forces_target: totFOR
       std_divider: 1.0
-
-    # TEST SET DO NOT ENABLE
-    # - src: /network/projects/ocp/qm9
-    #   target: 7 # predict internal energy at 0K at index 7
-    #   seed: 123
-    #   ratio:
-    #     start: 0.85
-    #     end: 1.0
+      lse_shift: True
 
 # ^`target` is a string to select the target to predict as per
 # https://arxiv.org/abs/2006.15139 Table 2

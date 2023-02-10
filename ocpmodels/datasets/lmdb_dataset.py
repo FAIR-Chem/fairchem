@@ -1,4 +1,4 @@
-"""
+"""lmdb_dataset.py
 Copyright (c) Facebook, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
@@ -52,9 +52,12 @@ class LmdbDataset(Dataset):
             self._keys, self.envs = [], []
             for db_path in db_paths:
                 self.envs.append(self.connect_db(db_path))
-                length = pickle.loads(
-                    self.envs[-1].begin().get("length".encode("ascii"))
-                )
+                length = self.envs[-1].begin().get("length".encode("ascii"))
+                if length is not None:
+                    length = pickle.loads(length)
+                else:
+                    length = self.envs[-1].stat()["entries"]
+                assert length is not None, f"Could not find length of LMDB {db_path}"
                 self._keys.append(list(range(length)))
 
             keylens = [len(k) for k in self._keys]

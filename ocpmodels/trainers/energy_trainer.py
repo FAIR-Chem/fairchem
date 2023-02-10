@@ -13,7 +13,7 @@ import torch
 import torch_geometric
 from tqdm import tqdm
 
-from ocpmodels.common import distutils
+from ocpmodels.common import dist_utils
 from ocpmodels.common.registry import registry
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
@@ -39,7 +39,7 @@ class EnergyTrainer(BaseTrainer):
 
     @torch.no_grad()
     def predict(self, loader, per_image=True, results_file=None, disable_tqdm=False):
-        if distutils.is_master() and not disable_tqdm:
+        if dist_utils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
         assert isinstance(
             loader,
@@ -48,7 +48,7 @@ class EnergyTrainer(BaseTrainer):
                 torch_geometric.data.Batch,
             ),
         )
-        rank = distutils.get_rank()
+        rank = dist_utils.get_rank()
 
         if isinstance(loader, torch_geometric.data.Batch):
             loader = [[loader]]
@@ -320,9 +320,9 @@ class EnergyTrainer(BaseTrainer):
         )
         if (
             self.step % self.config["print_every"] == 0
-            and distutils.is_master()
+            and dist_utils.is_master()
             and not self.is_hpo
-        ) or (distutils.is_master() and end_of_epoch):
+        ) or (dist_utils.is_master() and end_of_epoch):
             log_str = ["{}: {:.2e}".format(k, v) for k, v in log_dict.items()]
             if not self.silent:
                 print(", ".join(log_str))

@@ -64,9 +64,9 @@ class Flags:
         )
         self.parser.add_argument(
             "--print-every",
-            default=1000,
+            default=-1,
             type=int,
-            help="Log every N iterations (default: 10)",
+            help="Log every N iterations (default: -1 = end of epoch)",
         )
         self.parser.add_argument(
             "--seed", default=0, type=int, help="Seed for torch, cuda, numpy"
@@ -85,6 +85,21 @@ class Flags:
         )
         self.parser.add_argument(
             "--checkpoint", type=str, help="Model checkpoint to load"
+        )
+        self.parser.add_argument(
+            "--continue_from_dir", type=str, help="Run to continue, loading its config"
+        )
+        self.parser.add_argument(
+            "--restart_from_dir",
+            type=str,
+            help="Run to restart, loading its config and overwriting "
+            + "from the command-line",
+        )
+        self.parser.add_argument(
+            "--keep_orion_config",
+            type=bool,
+            help="If not True, any key in the continued/restarted config that contains"
+            + " ``orion`` or ``fidelity`` will be set to ``None``",
         )
         self.parser.add_argument(
             "--timestamp-id",
@@ -109,7 +124,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--logdir",
-            default="$SCRATCH/ocp/runs/$SLURM_JOB_ID",
+            default=Path("$SCRATCH/ocp/runs/$SLURM_JOB_ID"),
             type=Path,
             help="Where to store logs",
         )
@@ -173,13 +188,6 @@ class Flags:
             help="Comma-separated tags for wandb",
         )
         self.parser.add_argument(
-            "--print_every",
-            type=int,
-            default=-1,
-            help="Printing frequency (in steps). "
-            + "Default (-1) prints at the end of the epoch.",
-        )
-        self.parser.add_argument(
             "--wandb_project",
             type=str,
             default="ocp-3",
@@ -209,7 +217,17 @@ class Flags:
             type=str,
             default="",
             help="Frame averaging method to use",
-            choices=["", "random", "det", "all", "se3-all", "se3-random", "se3-det"],
+            choices=[
+                "",
+                "random",
+                "det",
+                "all",
+                "se3-all",
+                "se3-random",
+                "se3-det",
+                "multiple",
+                "se3-multiple",
+            ],
         )
         self.parser.add_argument(
             "--graph_rewiring",
@@ -225,21 +243,42 @@ class Flags:
         )
         self.parser.add_argument(
             "--eval_on_test",
-            action="store_true",
-            default=False,
+            type=bool,
             help="Evaluate on test set",
-        )
-        self.parser.add_argument(
-            "--narval",
-            action="store_true",
-            default=False,
-            help="is on Narval DRAC cluster",
         )
         self.parser.add_argument(
             "--cp_data_to_tmpdir",
             type=bool,
             default=False,
             help="Don't copy LMDB data to $SLURM_TMPDIR and work from there",
+        )
+        self.parser.add_argument(
+            "--log_train_every",
+            type=int,
+            default=100,
+            help="Log training loss every n steps",
+        )
+        self.parser.add_argument(
+            "--orion_exp_config_path",
+            "-o",
+            type=str,
+            help="Path to an orion search space yaml file",
+        )
+        self.parser.add_argument(
+            "--orion_unique_exp_name",
+            "-u",
+            type=str,
+            help="Name for this experiment. If the experiment name already exists,"
+            + " the search space MUST be the same. If it is not, the job will crash."
+            + " If you change the search space, you must change the experiment name.",
+        )
+        self.parser.add_argument(
+            "--no_metrics_denorm",
+            type=bool,
+            default=False,
+            help="Whether or not to disable prediction denormalization to compute"
+            + " metrics. If True, targets are normalized instead of denormalizing "
+            + "preds.",
         )
 
 

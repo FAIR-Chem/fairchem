@@ -1,0 +1,53 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  time: 20:00:00
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  model:
+    phys_embeds: True
+    tag_hidden_channels: 64
+    pg_hidden_channels: 0
+    energy_head: False
+    edge_embed_type: all_rij
+  wandb_tags: 'mp-type'
+  optim:
+    max_epochs: 10
+    batch_size: 256
+    eval_batch_size: 256
+  cp_data_to_tmpdir: true
+
+runs:
+  - config: fanet-is2re-all
+    note: 'batch norm after propagate Interaction'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      mp_type: base
+      graph_norm: True
+  - config: fanet-is2re-all
+    note: 'batch norm after propagate Interaction'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      mp_type: att
+      graph_norm: True
+  - config: fanet-is2re-all
+    note: 'batch norm after propagate Interaction'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      mp_type: local_env
+      graph_norm: True
+  - config: fanet-is2re-all
+    note: 'batch norm after propagate Interaction'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      mp_type: sfarinet
+      graph_norm: True

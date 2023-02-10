@@ -13,21 +13,20 @@ import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from copy import deepcopy
-from pathlib import Path
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
+from rich.console import Console
+from rich.table import Table
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch
 from tqdm import tqdm
-from rich.table import Table
-from rich.console import Console
-
-from ocpmodels.common import distutils
+from uuid import uuid4
+from ocpmodels.common import dist_utils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
     OCPDataParallel,
@@ -35,7 +34,8 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_commit_hash, save_checkpoint, JOB_ID
+from ocpmodels.common.timer import Times
+from ocpmodels.common.utils import JOB_ID, get_commit_hash, save_checkpoint, resolve
 from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -43,7 +43,7 @@ from ocpmodels.modules.exponential_moving_average import (
 )
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
-from ocpmodels.modules.scheduler import LRScheduler
+from ocpmodels.modules.scheduler import EarlyStopper, LRScheduler
 
 
 @registry.register_trainer("base")
@@ -51,20 +51,25 @@ class BaseTrainer(ABC):
     def __init__(self, **kwargs):
 
         run_dir = kwargs["run_dir"]
-        model_name = kwargs["model"].pop("name")
+        model_name = kwargs["model"].pop(
+            "name", kwargs.get("model_name", "Unknown - base_trainer issue")
+        )
+        self.early_stopping_file = resolve(run_dir) / f"{str(uuid4())}.stop"
         kwargs["model"]["graph_rewiring"] = kwargs.get("graph_rewiring")
 
         self.config = {
             **kwargs,
             "model_name": model_name,
-            "gpus": distutils.get_world_size() if not kwargs["cpu"] else 0,
+            "gpus": dist_utils.get_world_size() if not kwargs["cpu"] else 0,
             "commit": get_commit_hash(),
-            "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
-            "results_dir": str(Path(run_dir) / "results"),
-            "logs_dir": str(Path(run_dir) / "logs"),
+            "checkpoint_dir": str(resolve(run_dir) / "checkpoints"),
+            "results_dir": str(resolve(run_dir) / "results"),
+            "logs_dir": str(resolve(run_dir) / "logs"),
+            "early_stopping_file": str(self.early_stopping_file),
         }
 
         self.sigterm = False
+        self.objective = None
         self.epoch = 0
         self.step = 0
         self.cpu = self.config["cpu"]
@@ -73,11 +78,17 @@ class BaseTrainer(ABC):
         self.test_ri = self.config["test_ri"]
         self.is_debug = self.config["is_debug"]
         self.is_hpo = self.config["is_hpo"]
-        self.eval_on_test = self.config["eval_on_test"]
+        self.eval_on_test = bool(self.config.get("eval_on_test"))
         self.silent = self.config["silent"]
         self.datasets = {}
         self.samplers = {}
         self.loaders = {}
+        self.early_stopper = EarlyStopper(
+            patience=self.config["optim"].get("es_patience") or 15,
+            min_abs_change=self.config["optim"].get("es_min_abs_change") or 1e-5,
+            min_lr=self.config["optim"].get("min_lr", -1),
+            warmup_epochs=self.config["optim"].get("es_warmup_epochs") or -1,
+        )
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{self.config['local_rank']}")
@@ -88,7 +99,7 @@ class BaseTrainer(ABC):
 
         timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(self.device)
         # create directories from master rank only
-        distutils.broadcast(timestamp, 0)
+        dist_utils.broadcast(timestamp, 0)
         timestamp = datetime.datetime.fromtimestamp(timestamp.int()).strftime(
             "%Y-%m-%d-%H-%M-%S"
         )
@@ -115,7 +126,7 @@ class BaseTrainer(ABC):
         ):
             self.normalizer = self.config["dataset"]["train"]
 
-        if not self.is_debug and distutils.is_master() and not self.is_hpo:
+        if not self.is_debug and dist_utils.is_master() and not self.is_hpo:
             os.makedirs(self.config["checkpoint_dir"], exist_ok=True)
             os.makedirs(self.config["results_dir"], exist_ok=True)
             os.makedirs(self.config["logs_dir"], exist_ok=True)
@@ -132,8 +143,13 @@ class BaseTrainer(ABC):
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
-        if distutils.is_master() and not self.silent:
-            print(yaml.dump(self.config, default_flow_style=False))
+        if dist_utils.is_master() and not self.silent:
+            print(f"\n🧰 Trainer config:\n{'-'*18}\n")
+            print(yaml.dump(self.config), end="\n\n")
+            print(
+                f"\n\n🚦  Create {str(self.early_stopping_file)}",
+                "to stop the training after the next validation\n",
+            )
         self.load()
 
         self.evaluator = Evaluator(
@@ -167,7 +183,7 @@ class BaseTrainer(ABC):
 
     def load_logger(self):
         self.logger = None
-        if not self.is_debug and distutils.is_master() and not self.is_hpo:
+        if not self.is_debug and dist_utils.is_master() and not self.is_hpo:
             assert self.config["logger"] is not None, "Specify logger in config"
 
             logger = self.config["logger"]
@@ -187,8 +203,8 @@ class BaseTrainer(ABC):
         sampler = BalancedBatchSampler(
             dataset,
             batch_size=batch_size,
-            num_replicas=distutils.get_world_size(),
-            rank=distutils.get_rank(),
+            num_replicas=dist_utils.get_world_size(),
+            rank=dist_utils.get_rank(),
             device=self.device,
             mode=balancing_mode,
             shuffle=shuffle,
@@ -215,6 +231,10 @@ class BaseTrainer(ABC):
         transform = get_transforms(self.config)  # TODO: train/val/test behavior
         batch_size = self.config["optim"]["batch_size"]
 
+        max_epochs = self.config["optim"].get("max_epochs", -1)
+        max_steps = self.config["optim"].get("max_steps", -1)
+        max_samples = self.config["optim"].get("max_samples", -1)
+
         for split, ds_conf in self.config["dataset"].items():
             if split == "default_val":
                 continue
@@ -226,24 +246,67 @@ class BaseTrainer(ABC):
             shuffle = False
             if split == "train":
                 shuffle = True
-                if self.config["optim"].get("max_steps"):
-                    if self.config["optim"].get("max_epochs", -1) > 0:
+                n_train = len(self.datasets[split])
+
+                if "fidelity_max_epochs" in self.config["optim"]:
+                    self.config["optim"]["fidelity_max_steps"] = int(
+                        np.ceil(
+                            self.config["optim"]["fidelity_max_epochs"]
+                            * (n_train / batch_size)
+                        )
+                    )
+                    if not self.silent:
                         print(
-                            "WARNING: Both max_steps and max_epochs are set.",
-                            "Using max_steps.",
+                            "Setting fidelity_max_steps to {}".format(
+                                self.config["optim"]["fidelity_max_steps"]
+                            )
+                        )
+
+                if max_samples > 0:
+                    if max_epochs > 0 and not self.silent:
+                        print(
+                            "\nWARNING: Both max_samples and max_epochs are set.",
+                            "Using max_samples.",
+                        )
+                    if max_steps > 0 and not self.silent:
+                        print(
+                            "WARNING: Both max_samples and max_steps are set.",
+                            "Using max_samples.\n",
                         )
                     self.config["optim"]["max_epochs"] = int(
-                        np.ceil(
-                            self.config["optim"]["max_steps"]
-                            / np.ceil(len(self.datasets[split]) / batch_size)
+                        np.ceil(max_samples / n_train)
+                    )
+                    self.config["optim"]["max_steps"] = int(
+                        np.ceil(max_samples / batch_size)
+                    )
+                elif max_steps > 0:
+                    if max_epochs > 0 and not self.silent:
+                        print(
+                            "\nWARNING: Both max_steps and max_epochs are set.",
+                            "Using max_steps.\n",
                         )
+                    self.config["optim"]["max_epochs"] = int(
+                        np.ceil(max_steps / (n_train / batch_size))
                     )
-                    print(
-                        "Setting max_epochs to",
-                        self.config["optim"]["max_epochs"],
-                        f"from max_steps ({self.config['optim']['max_steps']})",
-                        f"and batch_size ({self.config['optim']['batch_size']})\n",
+                    if not self.silent:
+                        print(
+                            "Setting max_epochs to",
+                            self.config["optim"]["max_epochs"],
+                            f"from max_steps ({max_steps}),",
+                            f"dataset length ({n_train}),",
+                            f"and batch_size ({batch_size})\n",
+                        )
+                else:
+                    self.config["optim"]["max_steps"] = int(
+                        np.ceil(max_epochs * (n_train / batch_size))
                     )
+                    if not self.silent:
+                        print(
+                            "Setting max_steps to ",
+                            f"{self.config['optim']['max_steps']} from",
+                            f"max_epochs ({max_epochs}), dataset length",
+                            f"({n_train}), and batch_size ({batch_size})\n",
+                        )
 
             self.samplers[split] = self.get_sampler(
                 self.datasets[split], batch_size, shuffle=shuffle
@@ -262,6 +325,10 @@ class BaseTrainer(ABC):
                     std=self.normalizer["target_std"],
                     device=self.device,
                 )
+                if "hof_stats" in self.normalizer:
+                    self.normalizers["target"].set_hof_rescales(
+                        self.normalizer["hof_stats"]
+                    )
             else:
                 self.normalizers["target"] = Normalizer(
                     tensor=self.datasets["train"].data.y[
@@ -279,12 +346,6 @@ class BaseTrainer(ABC):
         pass
 
     def load_model(self):
-        # Build model
-        if distutils.is_master() and not self.silent:
-            logging.info(
-                f"Loading model {self.config['model_name']}: {self.config['model']}"
-            )
-
         bond_feat_dim = None
         bond_feat_dim = self.config["model"].get("num_gaussians", 50)
 
@@ -295,29 +356,35 @@ class BaseTrainer(ABC):
             if hasattr(sample, "x") and hasattr(sample.x, "shape"):
                 num_atoms = sample.x.shape[-1]
 
-        self.model = registry.get_model_class(self.config["model_name"])(
-            num_atoms=num_atoms,
-            bond_feat_dim=bond_feat_dim,
-            num_targets=self.num_targets,
-            task_name=self.task_name,
+        model_config = {
+            **{
+                "num_atoms": num_atoms,
+                "bond_feat_dim": bond_feat_dim,
+                "num_targets": self.num_targets,
+                "task_name": self.task_name,
+            },
             **self.config["model"],
+        }
+
+        self.model = registry.get_model_class(self.config["model_name"])(
+            **model_config
         ).to(self.device)
 
-        if distutils.is_master() and not self.silent:
+        if dist_utils.is_master() and not self.silent:
             logging.info(
                 f"Loaded {self.model.__class__.__name__} with "
                 f"{self.model.num_params} parameters."
             )
 
-        if self.logger is not None:
-            self.logger.watch(self.model)
+        # if self.logger is not None:
+        #     self.logger.watch(self.model)
 
         self.model = OCPDataParallel(
             self.model,
             output_device=self.device,
             num_gpus=1 if not self.cpu else 0,
         )
-        if distutils.initialized():
+        if dist_utils.initialized():
             self.model = DistributedDataParallel(
                 self.model, device_ids=[self.device], output_device=self.device
             )
@@ -338,12 +405,12 @@ class BaseTrainer(ABC):
         # if trained with ddp and want to load in non-ddp, modify keys from
         # module.module.. -> module..
         first_key = next(iter(checkpoint["state_dict"]))
-        if not distutils.initialized() and first_key.split(".")[1] == "module":
+        if not dist_utils.initialized() and first_key.split(".")[1] == "module":
             # No need for OrderedDict since dictionaries are technically ordered
             # since Python 3.6 and officially ordered since Python 3.7
             new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
             self.model.load_state_dict(new_dict)
-        elif distutils.initialized() and first_key.split(".")[1] != "module":
+        elif dist_utils.initialized() and first_key.split(".")[1] != "module":
             new_dict = {f"module.{k}": v for k, v in checkpoint["state_dict"].items()}
             self.model.load_state_dict(new_dict)
         else:
@@ -353,6 +420,13 @@ class BaseTrainer(ABC):
             self.optimizer.load_state_dict(checkpoint["optimizer"])
         if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
             self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
+        if (
+            checkpoint.get("warmup_scheduler") is not None
+            and self.scheduler.warmup_scheduler is not None
+        ):
+            self.scheduler.warmup_scheduler.load_state_dict(
+                checkpoint["warmup_scheduler"]
+            )
         if "ema" in checkpoint and checkpoint["ema"] is not None:
             self.ema.load_state_dict(checkpoint["ema"])
         else:
@@ -363,6 +437,10 @@ class BaseTrainer(ABC):
                 self.normalizers[key].load_state_dict(checkpoint["normalizers"][key])
             if self.scaler and checkpoint["amp"]:
                 self.scaler.load_state_dict(checkpoint["amp"])
+
+        if "config" in checkpoint:
+            if "job_ids" in checkpoint["config"] and JOB_ID not in checkpoint["config"]:
+                self.config["job_ids"] = checkpoint["config"]["job_ids"] + f", {JOB_ID}"
 
     def load_loss(self):
         self.loss_fn = {}
@@ -377,7 +455,7 @@ class BaseTrainer(ABC):
                 self.loss_fn[loss] = L2MAELoss()
             else:
                 raise NotImplementedError(f"Unknown loss function name: {loss_name}")
-            if distutils.initialized():
+            if dist_utils.initialized():
                 self.loss_fn[loss] = DDPLoss(self.loss_fn[loss])
 
     def load_optimizer(self):
@@ -426,7 +504,11 @@ class BaseTrainer(ABC):
             )
 
     def load_extras(self):
-        self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
+        self.scheduler = LRScheduler(
+            self.optimizer,
+            self.config["optim"],
+            silent=self.silent,
+        )
         self.clip_grad_norm = self.config["optim"].get("clip_grad_norm")
         self.ema_decay = self.config["optim"].get("ema_decay")
         if self.ema_decay:
@@ -443,26 +525,32 @@ class BaseTrainer(ABC):
         checkpoint_file="checkpoint.pt",
         training_state=True,
     ):
-        if not self.is_debug and distutils.is_master():
+        if not self.is_debug and dist_utils.is_master():
             if training_state:
-                save_checkpoint(
-                    {
-                        "epoch": self.epoch,
-                        "step": self.step,
-                        "state_dict": self.model.state_dict(),
-                        "optimizer": self.optimizer.state_dict(),
-                        "scheduler": self.scheduler.scheduler.state_dict()
-                        if self.scheduler.scheduler_type != "Null"
-                        else None,
-                        "normalizers": {
-                            key: value.state_dict()
-                            for key, value in self.normalizers.items()
-                        },
-                        "config": self.config,
-                        "val_metrics": metrics,
-                        "ema": self.ema.state_dict() if self.ema else None,
-                        "amp": self.scaler.state_dict() if self.scaler else None,
+                ckpt_dict = {
+                    "epoch": self.epoch,
+                    "step": self.step,
+                    "state_dict": self.model.state_dict(),
+                    "optimizer": self.optimizer.state_dict(),
+                    "scheduler": self.scheduler.scheduler.state_dict()
+                    if self.scheduler.scheduler_type != "Null"
+                    else None,
+                    "normalizers": {
+                        key: value.state_dict()
+                        for key, value in self.normalizers.items()
                     },
+                    "config": self.config,
+                    "val_metrics": metrics,
+                    "ema": self.ema.state_dict() if self.ema else None,
+                    "amp": self.scaler.state_dict() if self.scaler else None,
+                }
+                if self.scheduler.warmup_scheduler is not None:
+                    ckpt_dict[
+                        "warmup_scheduler"
+                    ] = self.scheduler.warmup_scheduler.state_dict()
+
+                save_checkpoint(
+                    ckpt_dict,
                     checkpoint_dir=self.config["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
@@ -486,7 +574,7 @@ class BaseTrainer(ABC):
                 )
                 if self.ema:
                     self.ema.restore()
-        distutils.synchronize()
+        dist_utils.synchronize()
 
     def save_hpo(self, epoch, step, metrics, checkpoint_every):
         # default is no checkpointing
@@ -527,17 +615,18 @@ class BaseTrainer(ABC):
         """Derived classes should implement this function."""
         pass
 
-    @torch.no_grad()
     def validate(
         self,
         split="val",
         disable_tqdm=True,
         debug_batches=-1,
         is_final=False,
+        is_first=False,
     ):
-        if distutils.is_master() and not self.silent:
+        torch.set_grad_enabled(bool(self.config["model"].get("regress_forces", "")))
+        if dist_utils.is_master() and not self.silent:
             print()
-            logging.info(f"Evaluating on {split}.")
+            logging.info(f"\n >>> 🧐 Evaluating on {split}.")
         if self.is_hpo:
             disable_tqdm = True
 
@@ -551,40 +640,44 @@ class BaseTrainer(ABC):
             model_regresses_forces=self.config["model"].get("regress_forces", ""),
         )
         metrics = {}
-        desc = "device {}".format(distutils.get_rank())
+        desc = "device {}".format(dist_utils.get_rank())
 
         loader = self.loaders[split]
-        val_time = time.time()
+        times = Times(gpu=True)
 
-        for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
+        with times.next("validation_loop"):
 
-            if self.sigterm:
-                return "SIGTERM"
+            for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
 
-            if debug_batches > 0 and i == debug_batches:
-                break
+                if self.sigterm:
+                    return "SIGTERM"
 
-            # Forward.
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                preds = self.model_forward(batch)
+                if debug_batches > 0 and i == debug_batches:
+                    break
 
-            loss = self.compute_loss(preds, batch)
-            if preds.get("pooling_loss") is not None:
-                loss["total_loss"] += preds["pooling_loss"]
+                # Forward.
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    with times.next("model_forward", ignore=not is_first):
+                        preds = self.model_forward(batch)
+                    loss = self.compute_loss(preds, batch)
 
-            # Compute metrics.
-            metrics = self.compute_metrics(preds, batch, evaluator, metrics)
-            for k, v in loss.items():
-                metrics = evaluator.update(k, v.item(), metrics)
+                if preds.get("pooling_loss") is not None:
+                    loss["total_loss"] += preds["pooling_loss"]
 
-        val_time = time.time() - val_time
+                # Compute metrics.
+                metrics = self.compute_metrics(preds, batch, evaluator, metrics)
+                for k, v in loss.items():
+                    metrics = evaluator.update(k, v.item(), metrics)
+
+        mean_val_times, std_val_times = times.prepare_for_logging()
+
         aggregated_metrics = {}
         for k in metrics:
             aggregated_metrics[k] = {
-                "total": distutils.all_reduce(
+                "total": dist_utils.all_reduce(
                     metrics[k]["total"], average=False, device=self.device
                 ),
-                "numel": distutils.all_reduce(
+                "numel": dist_utils.all_reduce(
                     metrics[k]["numel"], average=False, device=self.device
                 ),
             }
@@ -594,13 +687,15 @@ class BaseTrainer(ABC):
         metrics = aggregated_metrics
 
         log_dict = {k: metrics[k]["metric"] for k in metrics}
-        log_dict.update({"epoch": self.epoch})
-        log_dict.update({f"{split}_time": val_time})
-        log_dict.update({f"{split}_n_samples": i + 1})
+        log_dict["epoch"] = self.epoch
+        log_dict[f"{split}_time"] = mean_val_times["validation_loop"]
+        if is_first:
+            log_dict["model_forward_time_mean"] = mean_val_times["model_forward"]
+            log_dict["model_forward_time_std"] = std_val_times["model_forward"]
 
-        if distutils.is_master() and not self.silent:
+        if dist_utils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
-            print("\n  > ".join([""] + log_str))
+            print(("\n  > ".join([""] + log_str))[1:])
             print()
 
         # Make plots.
@@ -620,6 +715,7 @@ class BaseTrainer(ABC):
         if self.ema:
             self.ema.restore()
 
+        torch.set_grad_enabled(True)
         return metrics
 
     @abstractmethod
@@ -669,7 +765,7 @@ class BaseTrainer(ABC):
 
         results_file_path = os.path.join(
             self.config["results_dir"],
-            f"{self.task_name}_{results_file}_{distutils.get_rank()}.npz",
+            f"{self.task_name}_{results_file}_{dist_utils.get_rank()}.npz",
         )
         np.savez_compressed(
             results_file_path,
@@ -677,15 +773,15 @@ class BaseTrainer(ABC):
             **{key: predictions[key] for key in keys},
         )
 
-        distutils.synchronize()
-        if distutils.is_master():
+        dist_utils.synchronize()
+        if dist_utils.is_master():
             gather_results = defaultdict(list)
             full_path = os.path.join(
                 self.config["results_dir"],
                 f"{self.task_name}_{results_file}.npz",
             )
 
-            for i in range(distutils.get_world_size()):
+            for i in range(dist_utils.get_world_size()):
                 rank_path = os.path.join(
                     self.config["results_dir"],
                     f"{self.task_name}_{results_file}_{i}.npz",
@@ -712,12 +808,13 @@ class BaseTrainer(ABC):
             np.savez_compressed(full_path, **gather_results)
 
     def eval_all_splits(
-        self, final=True, disable_tqdm=True, debug_batches=-1, epoch=-1
+        self, final=True, disable_tqdm=True, debug_batches=-1, epoch=-1, from_ckpt=None
     ):
         """Evaluate model on all four validation splits"""
 
         cumulated_time = 0
-        cumulated_mae = 0
+        cumulated_energy_mae = 0
+        cumulated_forces_mae = 0
         metrics_dict = {}
         # store all non-train splits: all vals and test
         all_splits = [s for s in self.config["dataset"] if s.startswith("val")]
@@ -727,7 +824,9 @@ class BaseTrainer(ABC):
             logging.info(f"Evaluating on {len(all_splits)} val splits.")
 
         # Load current best checkpoint for final evaluation
-        if final and epoch != 0:
+        if from_ckpt:
+            self.load_checkpoint(checkpoint_path=from_ckpt)
+        elif final and epoch != 0:
             checkpoint_path = os.path.join(
                 self.config["checkpoint_dir"], "best_checkpoint.pt"
             )
@@ -751,7 +850,9 @@ class BaseTrainer(ABC):
                 return "SIGTERM"
 
             metrics_dict[split] = self.metrics
-            cumulated_mae += self.metrics["energy_mae"]["metric"]
+            cumulated_energy_mae += self.metrics["energy_mae"]["metric"]
+            if self.config["model"].get("regress_forces", False):
+                cumulated_forces_mae += self.metrics["forces_mae"]["metric"]
             cumulated_time += time.time() - start_time
             if metrics_names is None:
                 metrics_names = list(self.metrics.keys())
@@ -768,15 +869,17 @@ class BaseTrainer(ABC):
         }
 
         # Log specific metrics
-        if final and self.config["logger"] == "wandb" and distutils.is_master():
-            overall_mae = cumulated_mae / len(all_splits)
+        if final and self.config["logger"] == "wandb" and dist_utils.is_master():
+            overall_energy_mae = cumulated_energy_mae / len(all_splits)
             self.logger.log({"Eval time": cumulated_time})
-            self.logger.log({"Overall MAE": overall_mae})
-            if self.logger.ntfy:
-                self.logger.ntfy(
-                    message=f"{JOB_ID} - Overall MAE: {overall_mae}",
-                    click=self.logger.url,
-                )
+            self.objective = overall_energy_mae
+            self.logger.log({"Eval time": cumulated_time})
+            self.logger.log({"Overall MAE": overall_energy_mae})
+            if self.config["model"].get("regress_forces", False):
+                overall_forces_mae = cumulated_forces_mae / len(all_splits)
+                self.logger.log({"Overall Forces MAE": overall_forces_mae})
+                self.objective = (overall_energy_mae + overall_forces_mae) / 2
+            self.logger.log({"Objective": self.objective})
 
         # Run on test split
         if final and "test" in self.config["dataset"] and self.eval_on_test:
@@ -819,6 +922,7 @@ class BaseTrainer(ABC):
             console = Console()
             console.print(table)
             print()
+            print("\n• Trainer objective set to:", self.objective, end="\n\n")
 
     def rotate_graph(self, batch, rotation=None):
         """Rotate all graphs in a batch
@@ -921,3 +1025,11 @@ class BaseTrainer(ABC):
         if signum == 15 and not self.sigterm:
             print("\nHandling SIGTERM signal received.\n")
             self.sigterm = True
+
+    def close_datasets(self):
+        try:
+            for ds in self.datasets.values():
+                if hasattr(ds, "close_db") and callable(ds.close_db):
+                    ds.close_db()
+        except Exception as e:
+            print("Error closing datasets: ", str(e))

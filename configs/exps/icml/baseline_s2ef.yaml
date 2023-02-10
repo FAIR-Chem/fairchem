@@ -1,18 +1,27 @@
 job:
-  mem: 32GB
+  mem: 48GB
   cpus: 4
-  gres: gpu:rtx8000:4
+  gres: gpu:rtx8000:2
   partition: long
-  time: 36:00:00
+  time: 42:00:00
 
 default:
   test_ri: True
   mode: train
-  wandb_tags: 'Baseline 2 gpus'
+  wandb_tags: 'baseline-schnet'
 
 runs:
   - config: schnet-s2ef-2M
-    note: 'Baseline Schnet S2EF'
+    note: 'Baseline Schnet S2EF 2 GPU'
     optim:
       max_epochs: 15
       force_coefficient: 50
+      batch_size: 96
+      eval_batch_size: 96
+  - config: schnet-is2re-2M
+    note: 'Baseline Schnet IS2RE 2 GPU'
+    optim:
+      max_epochs: 15
+      force_coefficient: 50
+      batch_size: 128
+      eval_batch_size: 128

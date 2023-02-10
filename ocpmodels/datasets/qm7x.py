@@ -1,24 +1,28 @@
-import time
-from torch.utils.data import Dataset
+import pickle
 import random
 import re
+import time
 from abc import abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable
 from pathlib import Path
-import pickle
+
 import h5py
+import lmdb
 import numpy as np
 import torch
+from mendeleev.fetch import fetch_table
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from scipy import spatial as sp
 from torch import as_tensor
+from torch.utils.data import Dataset
 from torch_geometric.data import Data
-from cosmosis.dataset import CDataset
 from tqdm import tqdm
-import lmdb
+
+from cosmosis.dataset import CDataset
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import ROOT
 
 try:
     import orjson as json  # noqa: F401
@@ -706,6 +710,7 @@ class QM7XFromLMDB(Dataset):
         },
         transform=None,
     ):
+        self.config = config
         lmdb_path = Path(config["src"]).expanduser().resolve()
         self.lmdb_path = str(lmdb_path)
         if not lmdb_path.exists():
@@ -749,10 +754,32 @@ class QM7XFromLMDB(Dataset):
             split in all_samples["splits"]
         ), f"split {split} not found in sample mapping"
 
+        sample_ids = all_samples["splits"][split]
+        if self.config.get("include_val_ood"):
+            sample_ids = sorted(sample_ids + all_samples["splits"]["val_ood"])
+
         self.keys = [
             f'{all_samples["structures"][i][0]}-{all_samples["structures"][i][1]}'
-            for i in all_samples["splits"][split]
+            for i in sample_ids
         ]
+
+        self.hofs = fetch_table("elements")["heat_of_formation"].values
+        self.hofs[np.isnan(self.hofs)] = self.hofs[~np.isnan(self.hofs)].mean()
+        self.hofs = torch.from_numpy(self.hofs).float()
+
+        self.lse_shifts = None
+        if self.config.get("lse_shift"):
+            self.lse_shifts = torch.tensor(
+                json.loads(
+                    (
+                        ROOT
+                        / "configs"
+                        / "models"
+                        / "qm7x-metadata"
+                        / "lse-shifts.json"
+                    ).read_text()
+                )
+            )
 
         self.transform = transform
 
@@ -785,6 +812,11 @@ class QM7XFromLMDB(Dataset):
         data.natoms = len(data.pos)
         data.tags = torch.full((data.natoms,), -1, dtype=torch.long)
         data.atomic_numbers = torch.tensor(data.atNUM, dtype=torch.long)
+        data.hofs = self.hofs[data.atomic_numbers - 1].sum()  # element 1 is at row 0
+        if self.lse_shifts is not None:
+            data.lse_shift = self.lse_shifts[data.atomic_numbers].sum()
+            data.y_unshifted = data.y
+            data.y = data.y - data.lse_shift
 
         t1 = time.time_ns()
         if self.transform is not None:
@@ -809,12 +841,14 @@ class QM7XFromLMDB(Dataset):
 
 
 if __name__ == "__main__":
-    from ocpmodels.datasets.qm7x import QM7XFromLMDB as QM7X
-    from pathlib import Path
-    from tqdm import tqdm
-    import numpy as np
     import json
+    from pathlib import Path
+
+    import numpy as np
+    from tqdm import tqdm
+
     from ocpmodels.common.data_parallel import ParallelCollater
+    from ocpmodels.datasets.qm7x import QM7XFromLMDB as QM7X
 
     src = Path("/network/projects/ocp/qm7x/processed")
     smp = Path("configs/models/qm7x-metadata/samples.json")
