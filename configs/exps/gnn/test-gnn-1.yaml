@@ -19,26 +19,26 @@ default:
     lr_gamma: 0.07
     warmup_steps: 500
     max_epochs: 25
-  wandb_tags: 'test-fanet'
+  wandb_tags: 'test-faenet'
 
 runs:
-  - config: fanet-is2re-10k
-    note: 'Base rij FANet GNNs'
+  - config: faenet-is2re-10k
+    note: 'Base rij FAENet GNNs'
     model:
       mp_type: base
       edge_embed_type: rij
-  - config: fanet-is2re-10k
-    note: 'Updownscale all-embeds FANet GNNs'
+  - config: faenet-is2re-10k
+    note: 'Updownscale all-embeds FAENet GNNs'
     model:
       mp_type: updownscale
       edge_embed_type: all
-  - config: fanet-is2re-10k
-    note: 'Simple SH FANet GNNs'
+  - config: faenet-is2re-10k
+    note: 'Simple SH FAENet GNNs'
     model:
       mp_type: simple
       edge_embed_type: sh
-  - config: fanet-is2re-10k
-    note: 'Simple skip-co 2-layers FANet GNNs'
+  - config: faenet-is2re-10k
+    note: 'Simple skip-co 2-layers FAENet GNNs'
     model:
       skip_co: True
       second_layer_MLP: True

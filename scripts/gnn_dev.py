@@ -25,7 +25,7 @@ if __name__ == "__main__":
     config["model"] = {"use_pbc": True}
     config["model"]["edge_embed_type"] = "all_rij"
     config["model"]["mp_type"] = "base"
-    config["model"]["skip_co"] = "concat-atom"  # add, concat, 
+    config["model"]["skip_co"] = "concat-atom"  # add, concat,
     config["model"]["att_heads"] = 3
     config["model"]["complex_mp"] = True
     config["model"]["graph_norm"] = True
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     str_args = sys.argv[1:]
     if all("config" not in arg for arg in str_args):
         str_args.append("--is_debug")
-        str_args.append("--config=fanet-is2re-10k")
+        str_args.append("--config=faenet-is2re-10k")
         # str_args.append("--config=sfarinet-s2ef-2M")
         warnings.warn(
             "No model / mode is given; chosen as default" + f"Using: {str_args[-1]}"

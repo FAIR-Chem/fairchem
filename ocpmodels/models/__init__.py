@@ -9,7 +9,7 @@ from .dimenet import DimeNet  # noqa: F401
 from .old_dimenet_plus_plus import (  # noqa: F401
     DimeNetPlusPlusWrap as OldDimeNetPlusPlus,
 )
-from .fanet import FANet  # noqa: F401
+from .faenet import FAENet  # noqa: F401
 from .old_forcenet import ForceNet as OldForcenet  # noqa: F401
 from .gemnet.gemnet import GemNetT  # noqa: F401
 from .dimenet_plus_plus import DimeNetPlusPlus  # noqa: F401

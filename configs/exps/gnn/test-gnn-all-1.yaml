@@ -15,47 +15,47 @@ default:
     tag_hidden_channels: 64
     pg_hidden_channels: 0  # shall have been 32
     energy_head: 'weighted-av-initial-embeds' # False ?
-  wandb_tags: 'test-fanet'
+  wandb_tags: 'test-faenet'
   optim:
     lr_initial: 0.0005
 
 runs:
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'Simple rij baseline'
     model:
       mp_type: simple
       edge_embed_type: rij
     frame_averaging: 2D
     fa_fames: random
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     model:
       mp_type: base
       edge_embed_type: rij
     frame_averaging: 2D
     fa_fames: random
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     model:
       mp_type: base
       edge_embed_type: all_rij
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     model:
       mp_type: base
       edge_embed_type: all
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     model:
       mp_type: base
       edge_embed_type: sh
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'Simple rij baseline'
     model:
       mp_type: updownscale
       edge_embed_type: rij
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'Simple rij baseline'
     model:
       mp_type: updownscale
       edge_embed_type: rij
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'Simple rij baseline'
     model:
       mp_type: updownscale
@@ -64,7 +64,7 @@ runs:
       lr_initial: 0.0004
       max_epochs: 25
 
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     model:
       mp_type: base
       edge_embed_type: all
@@ -78,7 +78,7 @@ runs:
       lr_initial: 0.0004
       max_epochs: 25
 
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     model:
       mp_type: base
       edge_embed_type: all
@@ -92,7 +92,7 @@ runs:
       lr_initial: 0.0002
       max_epochs: 25
 
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     model:
       mp_type: base
       edge_embed_type: all

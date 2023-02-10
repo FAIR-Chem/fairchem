@@ -1,0 +1,207 @@
+# scheduler reduce lr on plateau
+job:
+  mem: 12GB
+  cpus: 4
+  gres: gpu:16gb:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
+  # dev: true
+  # verbose: true
+
+default:
+  wandb_project: ocp-qm
+  config: faenet-qm9-all
+  mode: train
+  test_ri: true
+  wandb_tags: qm9, faenet-qm9-lse
+  log_train_every: 200
+  note:
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, energy_head, mp_type
+    optim: batch_size, lr_initial
+  frame_averaging: 3D
+  fa_frames: random
+  dataset:
+    train:
+      lse_shift: true
+    val:
+      lse_shift: true
+    test:
+      lse_shift: true
+  optim:
+    warmup_steps: 3000
+    # parameters EMA
+    ema_decay: 0.999
+    batch_size: 64
+    initial_lr: 0.0005
+    max_epochs: 1500
+    loss_energy: mse
+    loss_force: mse
+    # early stopping
+    es_patience: 20
+    es_min_abs_change: 0.000001
+    es_warmup_epochs: 500
+    # all below is for the ReduceLROnPlateau scheduler
+    scheduler: ReduceLROnPlateau
+    mode: min
+    factor: 0.75
+    threshold: 0.0001
+    threshold_mode: abs
+    min_lr: 0.000001
+    verbose: true
+    patience: 15
+  model:
+    cutoff: 5.0
+    edge_embed_type: all_rij
+    energy_head: ""
+    graph_norm: True
+    hidden_channels: 110
+    max_num_neighbors: 40
+    mp_type: updownscale_base
+    num_filters: 384
+    num_gaussians: 64
+    num_interactions: 4
+    otf_graph: false
+    pg_hidden_channels: 32
+    phys_embeds: true
+    phys_hidden_channels: 0
+    regress_forces: ""
+    second_layer_MLP: true
+    skip_co: true
+    tag_hidden_channels: 0
+    use_pbc: false
+
+
+runs:
+  - dataset:
+      train:
+        target: 0
+      val:
+        target: 0
+      test:
+        target: 0
+  - dataset:
+      train:
+        target: 1
+      val:
+        target: 1
+      test:
+        target: 1
+  - dataset:
+      train:
+        target: 2
+      val:
+        target: 2
+      test:
+        target: 2
+  - dataset:
+      train:
+        target: 3
+      val:
+        target: 3
+      test:
+        target: 3
+  - dataset:
+      train:
+        target: 4
+      val:
+        target: 4
+      test:
+        target: 4
+  - dataset:
+      train:
+        target: 5
+      val:
+        target: 5
+      test:
+        target: 5
+  - dataset:
+      train:
+        target: 6
+      val:
+        target: 6
+      test:
+        target: 6
+  - dataset:
+      train:
+        target: 7
+      val:
+        target: 7
+      test:
+        target: 7
+  - dataset:
+      train:
+        target: 8
+      val:
+        target: 8
+      test:
+        target: 8
+  - dataset:
+      train:
+        target: 9
+      val:
+        target: 9
+      test:
+        target: 9
+  - dataset:
+      train:
+        target: 10
+      val:
+        target: 10
+      test:
+        target: 10
+  - dataset:
+      train:
+        target: 11
+      val:
+        target: 11
+      test:
+        target: 11
+  - dataset:
+      train:
+        target: 12
+      val:
+        target: 12
+      test:
+        target: 12
+  - dataset:
+      train:
+        target: 13
+      val:
+        target: 13
+      test:
+        target: 13
+  - dataset:
+      train:
+        target: 14
+      val:
+        target: 14
+      test:
+        target: 14
+  - dataset:
+      train:
+        target: 15
+      val:
+        target: 15
+      test:
+        target: 15
+  - dataset:
+      train:
+        target: 16
+      val:
+        target: 16
+      test:
+        target: 16
+  - dataset:
+      train:
+        target: 17
+      val:
+        target: 17
+      test:
+        target: 17
+  - dataset:
+      train:
+        target: 18
+      val:
+        target: 18
+      test:
+        target: 18
