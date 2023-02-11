@@ -96,7 +96,7 @@ class NequipWrap(nn.Module):
         use_pbc=False,
         max_neighbors=50,
         ave_num_neighbors=None,
-        reduce_energy="sum",
+        add_per_species_rescale=False,  # per species/atom scaling
         **convolution_args,
     ):
         super().__init__()
@@ -107,7 +107,7 @@ class NequipWrap(nn.Module):
         self.cutoff = cutoff
         self.max_neighbors = max_neighbors
         self.ave_num_neighbors = ave_num_neighbors
-        self.reduce_energy = reduce_energy
+        self.add_per_species_rescale = add_per_species_rescale
         config = {
             "BesselBasis_trainable": BesselBasis_trainable,
             "PolynomialCutoff_p": PolynomialCutoff_p,
@@ -165,26 +165,24 @@ class NequipWrap(nn.Module):
                 ),
             )
 
-        if self.reduce_energy == "normalized_sum":
-            layers["total_energy_sum"] = (
-                AtomwiseReduce,
+        if add_per_species_rescale:
+            # type_names must be set in the config
+            layers["per_species_rescale"] = (
+                PerSpeciesScaleShift,
                 dict(
-                    reduce="normalized_sum",
-                    avg_num_atoms=self.ave_num_neighbors,
                     field=AtomicDataDict.PER_ATOM_ENERGY_KEY,
-                    out_field=AtomicDataDict.TOTAL_ENERGY_KEY,
+                    out_field=AtomicDataDict.PER_ATOM_ENERGY_KEY,
                 ),
             )
 
-        else:
-            layers["total_energy_sum"] = (
-                AtomwiseReduce,
-                dict(
-                    reduce="sum",
-                    field=AtomicDataDict.PER_ATOM_ENERGY_KEY,
-                    out_field=AtomicDataDict.TOTAL_ENERGY_KEY,
-                ),
-            )
+        layers["total_energy_sum"] = (
+            AtomwiseReduce,
+            dict(
+                reduce="sum",
+                field=AtomicDataDict.PER_ATOM_ENERGY_KEY,
+                out_field=AtomicDataDict.TOTAL_ENERGY_KEY,
+            ),
+        )
 
         self.model = SequentialGraphNetwork.from_parameters(
             shared_params=config, layers=layers
