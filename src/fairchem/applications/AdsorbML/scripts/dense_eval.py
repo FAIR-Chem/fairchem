@@ -74,7 +74,7 @@ from collections import defaultdict
 SUCCESS_THRESHOLD = 0.1
 
 
-def is_successful(best_ml_energy, best_dft_energy):
+def is_successful(best_ml_dft_energy, best_dft_energy):
     """
     Computes the success rate given the best ML+DFT energy and the best ground
     truth DFT energy.
@@ -89,7 +89,7 @@ def is_successful(best_ml_energy, best_dft_energy):
     # Given best ML and DFT energy, compute various success metrics:
     # success_parity: base success metric (ML - DFT <= SUCCESS_THRESHOLD)
     # success_mu: much better than ground truth (ML < DFT - SUCCESS_THRESHOLD)
-    diff = best_ml_energy - best_dft_energy
+    diff = best_ml_dft_energy - best_dft_energy
     success_parity = diff <= SUCCESS_THRESHOLD
     success_much_better = diff < -SUCCESS_THRESHOLD
 
