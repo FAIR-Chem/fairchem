@@ -79,12 +79,16 @@ class LmdbDataset(Dataset):
         if "shard" in self.config and "total_shards" in self.config:
             self.sharded = True
 
-            if "shard_file" in self.config and os.path.exists(self.config.get("shard_file")):
+            if "shard_file" in self.config and os.path.exists(
+                self.config.get("shard_file")
+            ):
                 # Read indices from a pkl file, containing a list of (start, end) index tuples
                 ranges = pickle.load(open(self.config.get("shard_file"), "rb"))
                 cur_range = ranges[self.config.get("shard", 0)]
                 self.available_indices = range(cur_range[0], cur_range[1])
-                logging.info(f"Running lmdb indices: {cur_range[0]}, {cur_range[1]}")
+                logging.info(
+                    f"Running lmdb indices: {cur_range[0]}, {cur_range[1]}"
+                )
             else:
                 self.indices = range(self.num_samples)
                 # split all available indices into 'total_shards' bins
@@ -92,7 +96,9 @@ class LmdbDataset(Dataset):
                     self.indices, self.config.get("total_shards", 1)
                 )
                 # limit each process to see a subset of data based off defined shard
-                self.available_indices = self.shards[self.config.get("shard", 0)]
+                self.available_indices = self.shards[
+                    self.config.get("shard", 0)
+                ]
             self.num_samples = len(self.available_indices)
 
         self.transform = transform
