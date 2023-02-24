@@ -1,5 +1,5 @@
 includes:
-  - configs/s2ef/all/base.yml
+  - configs/s2ef/2M/base.yml
 
 model:
   name: scn
