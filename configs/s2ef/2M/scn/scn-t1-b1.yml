@@ -31,7 +31,7 @@ optim:
   optimizer_params: {"amsgrad": True}
   eval_every: 5000
   lr_gamma: 0.3
-  lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+  lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
     - 156250
     - 218750
     - 281250
