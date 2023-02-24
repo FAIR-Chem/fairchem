@@ -244,8 +244,6 @@ class SphericalHarmonicsHelper:
                             offset - 2 + y * self.sphere_basis_reduce, offset
                         ] = (-math.sin(y_rotations[y]) / num_y_rotations)
 
-            mapping_y_rot = mapping_y_rot / num_y_rotations
-
         return mapping_y_rot.detach(), y_rotations
 
     # Simplified version of function from e3nn
