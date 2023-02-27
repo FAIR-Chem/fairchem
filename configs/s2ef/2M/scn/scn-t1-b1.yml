@@ -1,3 +1,5 @@
+# A total of 16 32GB GPUs were used for training.
+
 includes:
   - configs/s2ef/2M/base.yml
 
