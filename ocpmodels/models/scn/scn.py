@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
+import sys
 import time
 
 import numpy as np
@@ -96,12 +97,10 @@ class SphericalChannelNetwork(BaseModel):
         distance_function="gaussian",
         basis_width_scalar=1.0,
         distance_resolution=0.02,
-        show_timing_info=True,
+        show_timing_info=False,
         direct_forces=True,
     ):
         super().__init__()
-
-        import sys
 
         if "e3nn" not in sys.modules:
             logging.error(
