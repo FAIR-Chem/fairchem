@@ -157,6 +157,8 @@ class GemNetOC(BaseModel):
         Name and hyperparameters of the spherical basis function.
     extensive: bool
         Whether the output should be extensive (proportional to the number of atoms)
+    intensive_max: bool
+        Whether the output should be a max or mean pooling if intensive
     forces_coupled: bool
         If True, enforce that |F_st| = |F_ts|. No effect if direct_forces is False.
     output_init: str
@@ -227,6 +229,7 @@ class GemNetOC(BaseModel):
         cbf: dict = {"name": "spherical_harmonics"},
         sbf: dict = {"name": "spherical_harmonics"},
         extensive: bool = True,
+        intensive_max: bool = False,
         forces_coupled: bool = False,
         output_init: str = "HeOrthogonal",
         activation: str = "silu",
@@ -248,6 +251,7 @@ class GemNetOC(BaseModel):
         assert num_blocks > 0
         self.num_blocks = num_blocks
         self.extensive = extensive
+        self.intensive_max = intensive_max
 
         self.atom_edge_interaction = atom_edge_interaction
         self.edge_atom_interaction = edge_atom_interaction
@@ -1312,9 +1316,14 @@ class GemNetOC(BaseModel):
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
             )  # (nMolecules, num_targets)
         else:
-            E_t = scatter_det(
-                E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
-            )  # (nMolecules, num_targets)
+            if self.intensive_max:
+                E_t = scatter_det(
+                    E_t, batch, dim=0, dim_size=nMolecules, reduce="max"
+                )  # (nMolecules, num_targets)
+            else:
+                E_t = scatter_det(
+                    E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
+                )  # (nMolecules, num_targets)
 
         if self.regress_forces:
             if self.direct_forces:
