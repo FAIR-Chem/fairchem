@@ -730,12 +730,17 @@ class SingleTrainer(BaseTrainer):
         forces_diff = torch.zeros(1, device=self.device)
         forces_diff_z = torch.zeros(1, device=self.device)
         forces_diff_refl = torch.zeros(1, device=self.device)
+        n_batches = 0
+        n_atoms = 0
 
         for i, batch in enumerate(self.loaders[self.config["dataset"]["default_val"]]):
             if self.sigterm:
                 return "SIGTERM"
             if debug_batches > 0 and i == debug_batches:
                 break
+                
+            n_batches += len(batch[0].natoms)
+            n_atoms += batch[0].natoms.sum()
 
             # Compute model prediction
             preds1 = self.model_forward(deepcopy(batch))
@@ -796,11 +801,10 @@ class SingleTrainer(BaseTrainer):
                 forces_diff += torch.abs(preds1["forces"] - preds4["forces"]).sum()
 
         # Aggregate the results
-        batch_size = len(batch[0].natoms)
-        energy_diff_z = energy_diff_z / (i * batch_size)
-        energy_diff = energy_diff / (i * batch_size)
-        energy_diff_refl = energy_diff_refl / (i * batch_size)
-        pos_diff_total = pos_diff_total / (i * batch_size)
+        energy_diff_z = energy_diff_z / n_batches
+        energy_diff = energy_diff / n_batches
+        energy_diff_refl = energy_diff_refl / n_batches
+        pos_diff_total = pos_diff_total / n_batches
 
         symmetry = {
             "2D_E_ri": float(energy_diff_z),
@@ -811,9 +815,9 @@ class SingleTrainer(BaseTrainer):
 
         # Test equivariance of forces
         if self.task_name == "s2ef":
-            forces_diff_z = forces_diff_z / (i * batch_size)
-            forces_diff = forces_diff / (i * batch_size)
-            forces_diff_refl = forces_diff_refl / (i * batch_size)
+            forces_diff_z = forces_diff_z / n_atoms
+            forces_diff = forces_diff / n_atoms
+            forces_diff_refl = forces_diff_refl / n_atoms
             symmetry.update(
                 {
                     "2D_F_ri": float(forces_diff_z),
