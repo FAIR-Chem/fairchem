@@ -507,7 +507,7 @@ class CombinedRandomly:
             if self.rotate_adsorbate:
                 adsorbate_idx = [idx for idx, tag in enumerate(final_tags) if tag == 2]
                 struct = AseAtomsAdaptor.get_structure(adslab)
-                rotation = np.random.choice(np.arange(0, 360, 10))
+                rotation = np.random.uniform(0, 2 * np.pi)
                 struct.rotate_sites(adsorbate_idx, rotation, (0, 0, 1), site)
                 adslab = AseAtomsAdaptor.get_atoms(struct)
                 adslab.set_tags(final_tags)
