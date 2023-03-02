@@ -452,6 +452,7 @@ class CombinedRandomly:
                 triangle_positions, equal_distr, self.added_z
             )
             all_sites += sites
+        np.random.shuffle(all_sites)
         return all_sites[:num_sites]
 
     def _random_sites_on_triangle(self, surfsite_pos, k, added_z):
