@@ -444,7 +444,7 @@ class CombinedRandomly:
         """
         dt = scipy.spatial.Delaunay(surface_atoms_pos[:, :2])
         simplices = dt.simplices
-        equal_distr = int(num_sites / len(simplices))
+        equal_distr = int(np.ceil(num_sites / len(simplices)))
         all_sites = []
         for tri in simplices:
             triangle_positions = surface_atoms_pos[tri]
@@ -452,7 +452,8 @@ class CombinedRandomly:
                 triangle_positions, equal_distr, self.added_z
             )
             all_sites += sites
-        return all_sites
+        np.random.shuffle(all_sites)
+        return all_sites[:num_sites]
 
     def _random_sites_on_triangle(self, surfsite_pos, k, added_z):
         """
@@ -507,7 +508,7 @@ class CombinedRandomly:
             if self.rotate_adsorbate:
                 adsorbate_idx = [idx for idx, tag in enumerate(final_tags) if tag == 2]
                 struct = AseAtomsAdaptor.get_structure(adslab)
-                rotation = np.random.choice(np.arange(0, 360, 10))
+                rotation = np.random.uniform(0, 2 * np.pi)
                 struct.rotate_sites(adsorbate_idx, rotation, (0, 0, 1), site)
                 adslab = AseAtomsAdaptor.get_atoms(struct)
                 adslab.set_tags(final_tags)
