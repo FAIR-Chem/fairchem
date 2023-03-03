@@ -444,7 +444,7 @@ class CombinedRandomly:
         """
         dt = scipy.spatial.Delaunay(surface_atoms_pos[:, :2])
         simplices = dt.simplices
-        equal_distr = max(1, int(num_sites / len(simplices)))
+        equal_distr = int(np.ceil(num_sites / len(simplices)))
         all_sites = []
         for tri in simplices:
             triangle_positions = surface_atoms_pos[tri]
