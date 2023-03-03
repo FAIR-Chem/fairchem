@@ -38,7 +38,6 @@ dataset:
     # If we want to train OC20 on total energy, a path to OC20 reference
     # energies `oc20_ref` must be specificed to unreference existing OC20 data.
     # OC22 by default trains on total energy, so this flag is not necessary.
-    total_energy: False                                                         # True or False
     oc20_ref: False                                                             # True or False
     # If we want to train on total energies and use a linear reference
     # normalization scheme, we must specify the path to the per-element

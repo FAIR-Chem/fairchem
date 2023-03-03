@@ -263,23 +263,21 @@ You can find examples configuration files in [`configs/oc22/s2ef`](https://githu
 
 ## Joint Training
 
-Training on OC20 total energies whether independently or jointly with OC22 requires `total_energy: True` and a path to the `oc20_ref` (download link provided below) to be specified in the configuration file. These are necessary to convert OC20 adsorption energies into their corresponding total energies. The following changes in the configuration file capture these changes:
+Training on OC20 total energies whether independently or jointly with OC22 requires a path to the `oc20_ref` (download link provided below) to be specified in the configuration file. These are necessary to convert OC20 adsorption energies into their corresponding total energies. The following changes in the configuration file capture these changes:
 
 ```
 task:
   dataset: oc22_lmdb
   ...
-  
+
 dataset:
   train:
     src: data/oc20+oc22/s2ef/train
     normalize_labels: False
-    total_energy: True
     #download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
     oc20_ref: path/to/oc22_ref.pkl
   val:
     src: data/oc22/s2ef/val_id
-    total_energy: True
     oc20_ref: path/to/oc22_ref.pkl
 ```
 

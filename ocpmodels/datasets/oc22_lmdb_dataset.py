@@ -91,9 +91,8 @@ class OC22LmdbDataset(Dataset):
 
         self.transform = transform
         self.lin_ref = self.oc20_ref = False
-        self.train_total = self.config.get("total_energy", False)
         # only needed for oc20 datasets, oc22 is total by default
-        if self.train_total:
+        if self.config.get("oc20_ref", False):
             self.oc20_ref = pickle.load(open(config["oc20_ref"], "rb"))
         if self.config.get("lin_ref", False):
             coeff = np.load(self.config["lin_ref"], allow_pickle=True)["coeff"]
@@ -155,7 +154,7 @@ class OC22LmdbDataset(Dataset):
         # convert s2ef energies to raw energies
         if attr == "y":
             # OC20 data
-            if "oc22" not in data_object and self.train_total:
+            if "oc22" not in data_object and self.oc20_ref:
                 randomid = f"random{sid}"
                 data_object[attr] += self.oc20_ref[randomid]
                 data_object.nads = 1
@@ -163,7 +162,7 @@ class OC22LmdbDataset(Dataset):
 
         # convert is2re energies to raw energies
         else:
-            if "oc22" not in data_object and self.train_total:
+            if "oc22" not in data_object and self.oc20_ref:
                 randomid = f"random{sid}"
                 data_object[attr] += self.oc20_ref[randomid]
                 del data_object.force
