@@ -1,0 +1,45 @@
+job:
+  mem: 32GB
+  cpus: 8
+  gres: gpu:16gb:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
+  env: ocp-a100
+
+default:
+  restart_from_dir: /network/scratch/s/schmidtv/ocp/runs/2750065
+  optim:
+    eval_every: 0.34
+    max_steps: 2500000
+  model:
+    regress_forces: direct_with_gradient_target
+
+runs:
+- {}
+- model:
+    regress_forces: direct
+- model:
+    force_decoder_type: res
+- model:
+    force_decoder_type: res_updown
+- model:
+    force_decoder_type: res
+    force_decoder_model_config:
+      res:
+        norm: batch1d # batch1d, layer or null
+- model:
+    force_decoder_type: res_updown
+    force_decoder_model_config:
+      res_updown:
+        norm: batch1d # batch1d, layer or null
+
+- optim:
+    batch_size: 256
+
+- optim:
+    batch_size: 32
+
+- model:
+    force_decoder_type: res_updown
+    hidden_channels: 128
+
