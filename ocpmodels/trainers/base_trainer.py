@@ -150,6 +150,7 @@ class BaseTrainer(ABC):
                 f"\n\n🚦  Create {str(self.early_stopping_file)}",
                 "to stop the training after the next validation\n",
             )
+            (run_dir / f"config-{JOB_ID}.yaml").write_text(yaml.dump(self.config))
         self.load()
 
         self.evaluator = Evaluator(
