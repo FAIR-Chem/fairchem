@@ -163,7 +163,7 @@ def add_jobid_to_log(j, command_line, exp_name=None):
         exp_name (str, optional): Optional experiment the job submission is part of.
             Defaults to None.
     """
-    logfile = Path(__file__).resolve().parent / "data" / "sbatch_job_ids.txt"
+    logfile = ROOT / "data" / "sbatch_job_ids.txt"
     if not logfile.exists():
         logfile.touch()
     n = now()
