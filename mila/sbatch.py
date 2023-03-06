@@ -13,6 +13,8 @@ IS_DRAC = (
     or "beluga.calcul.quebec" in os.environ.get("HOSTNAME", "")
     or os.environ.get("HOME") == "/home/vsch"
 )
+ROOT = Path(__file__).resolve().parent.parent
+
 
 template = """\
 #!/bin/bash
@@ -73,9 +75,8 @@ def discover_minydra_defaults():
         list[pathlib.Path]: Path to the shared defaults and optionnally
             to a user-specific one if it exists
     """
-    root = Path(__file__).resolve().parent
-    defaults = [root / "configs" / "sbatch" / "defaults.yaml"]
-    user_config = root / "configs" / "sbatch" / f"{os.environ['USER']}.yaml"
+    defaults = [ROOT / "configs" / "sbatch" / "defaults.yaml"]
+    user_config = ROOT / "configs" / "sbatch" / f"{os.environ['USER']}.yaml"
     if user_config.exists() and user_config.is_file():
         defaults.append(user_config)
     return MinyDict(
@@ -258,8 +259,6 @@ if __name__ == "__main__":
     sbatch_py_vars = {}
     minydra_defaults = discover_minydra_defaults()
 
-    # repository root
-    root = Path(__file__).resolve().parent
     # parse and resolve args.
     # defaults are loaded and overwritten from the command-line as `arg=value`
     args = resolved_args(defaults=minydra_defaults)
@@ -367,7 +366,7 @@ if __name__ == "__main__":
 
     # format string template with defaults + command-line args
     script = template.format(
-        code_loc=(str(resolve(args.code_loc)) if args.code_loc else str(root)),
+        code_loc=(str(resolve(args.code_loc)) if args.code_loc else str(ROOT)),
         cwd=str(Path.cwd()),
         debug_dir="$SCRATCH/ocp/runs/$SLURM_JOBID",
         env=args.env,
@@ -384,7 +383,7 @@ if __name__ == "__main__":
     )
 
     # default script path to execute `sbatch {script_path}/script_{now()}.sh`
-    data_path = root / "data" / "sbatch_scripts"
+    data_path = ROOT / "data" / "sbatch_scripts"
     data_path.mkdir(parents=True, exist_ok=True)
     # write script in data_path or args.script_path if it has been provided
     script_path = args.script_path or data_path

@@ -10,7 +10,7 @@ from yaml import safe_load, dump
 from sbatch import now
 import copy
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 
 
 def util_strings(jobs, yaml_comments=False):
@@ -236,7 +236,8 @@ if __name__ == "__main__":
         sbatch_args = " ".join(
             [f"{k}={v}" for k, v in job.items()] + [f"exp_name={exp_name}"]
         )
-        command = f"python sbatch.py {sbatch_args} {py_args}"
+        sbatch_path = str(ROOT / "mila" / "sbatch.py")
+        command = f"python {sbatch_path} {sbatch_args} {py_args}"
         commands.append(command)
 
     commands = [c for c in commands if re.findall(regex, c)]
