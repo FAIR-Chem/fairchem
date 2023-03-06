@@ -14,7 +14,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 import wandb
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import CLUSTER
+from ocpmodels.common.utils import CLUSTER, JOB_ID
 
 NTFY_OK = False
 try:
@@ -100,9 +100,8 @@ class WandBLogger(Logger):
             wandb_id = str(self.trainer_config.get("wandb_id", ""))
             if wandb_id:
                 wandb_id += " - "
-            slurm_jobid = os.environ.get("SLURM_JOB_ID")
-            if slurm_jobid:
-                wandb_id += f"{slurm_jobid}-"
+            if JOB_ID:
+                wandb_id += f"{JOB_ID}-"
             wandb_id += self.trainer_config["config"]
 
             wandb_tags = trainer_config.get("wandb_tags", "")
@@ -123,6 +122,17 @@ class WandBLogger(Logger):
             notes=note,
             tags=wandb_tags,
             entity="mila-ocp",
+        )
+
+        if "slurm_job_ids" not in self.run.config:
+            self.run.config["slurm_job_ids"] = ""
+        self.run.config["slurm_job_ids"] = ", ".join(
+            sorted(
+                set(
+                    [j.strip() for j in self.run.config["slurm_job_ids"].split(",")]
+                    + [JOB_ID]
+                )
+            )
         )
 
         sbatch_files = list(
