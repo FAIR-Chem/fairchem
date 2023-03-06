@@ -4,11 +4,13 @@ dataset:
   train:
     src: data/oc20+oc22/is2re/train
     normalize_labels: False
+    train_on_oc20_total_energies: True
     #download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
-    oc20_ref: path/to/oc22_ref.pkl
+    oc20_ref: path/to/oc20_ref.pkl
   val:
     src: data/oc22/is2re/val_id
-    oc20_ref: path/to/oc22_ref.pkl
+    train_on_oc20_total_energies: True
+    oc20_ref: path/to/oc20_ref.pkl
 
 logger: wandb
 
