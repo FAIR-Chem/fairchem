@@ -58,11 +58,7 @@ from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-
-try:
-    from torch_geometric.nn.acts import swish
-except ImportError:
-    from torch_geometric.nn.resolver import swish
+from ocpmodels.models.utils.activations import swish
 
 try:
     import sympy as sym
