@@ -1,0 +1,68 @@
+job:
+  mem: 48GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  wandb_tags: 'rebuttal'
+  model:
+    mp_type: base
+    edge_embed_type: all_rij
+    phys_embeds: True
+    tag_hidden_channels: 64
+    pg_hidden_channels: 64
+    energy_head: weighted-av-final-embeds
+    complex_mp: True
+    graph_norm: True
+    hidden_channels: 384
+    num_filters: 480
+    num_gaussians: 104
+    num_interactions: 5
+    second_layer_MLP: False
+    skip_co: concat
+  optim:  
+    lr_initial: 0.002
+    scheduler: LinearWarmupCosineAnnealingLR
+    max_epochs: 14
+    batch_size: 256
+    eval_batch_size: 256
+
+runs:
+  - config: faenet-is2re-all
+    note: '2D all'
+    frame_averaging: 2D
+    fa_frames: all
+  - config: faenet-is2re-all
+    note: '2D stocha'
+    frame_averaging: 2D
+    fa_frames: random
+  - config: faenet-is2re-all
+    note: 'No train 2D stocha'
+    frame_averaging: 2D
+    fa_frames: random
+    optim:
+      max_epochs: 0
+  - config: faenet-is2re-all
+    note: 'No DA/FA'
+    frame_averaging: ""
+  - config: faenet-is2re-all
+    note: 'No train nor FA'
+    model:
+      max_epochs: 0
+    frame_averaging: ""
+  - config: faenet-is2re-all
+    note: 'se3-random'
+    frame_averaging: 2D
+    fa_frames: se3-random
+  - config: faenet-is2re-all
+    note: 'DA'
+    frame_averaging: DA
+  - config: sfarinet-is2re-all
+    note: 'sfarinet 2D all'
+    frame_averaging: 2D
+    fa_frames: random

@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from ocpmodels.common.utils import make_script_trainer
-from ocpmodels.trainers import EnergyTrainer
+from ocpmodels.trainers import SingleTrainer
 
 if __name__ == "__main__":
 
@@ -21,15 +21,14 @@ if __name__ == "__main__":
     config["frame_averaging"] = "2D"
     config["fa_frames"] = "random"  # "random"
     config["test_ri"] = True
-    config["optim"] = {"max_epochs": 1}
+    config["optim"] = {"max_epochs": 0}
     config["model"] = {"use_pbc": True}
     config["model"]["edge_embed_type"] = "all_rij"
     config["model"]["mp_type"] = "base"
-    config["model"]["skip_co"] = "concat-atom"  # add, concat,
-    config["model"]["att_heads"] = 3
+    config["model"]["skip_co"] = "concat"  # add, concat,
     config["model"]["complex_mp"] = True
     config["model"]["graph_norm"] = True
-    config["optim"]["eval_every"] = 0.5
+    config["optim"]["eval_every"] = 1
     # config["model"]["regress_forces"] = "direct_with_gradient_target"
 
     checkpoint_path = None
@@ -38,13 +37,13 @@ if __name__ == "__main__":
     str_args = sys.argv[1:]
     if all("config" not in arg for arg in str_args):
         str_args.append("--is_debug")
-        str_args.append("--config=faenet-is2re-10k")
+        str_args.append("--config=faenet-s2ef-2M")
         # str_args.append("--config=sfarinet-s2ef-2M")
         warnings.warn(
             "No model / mode is given; chosen as default" + f"Using: {str_args[-1]}"
         )
 
-    trainer: EnergyTrainer = make_script_trainer(str_args=str_args, overrides=config)
+    trainer: SingleTrainer = make_script_trainer(str_args=str_args, overrides=config)
 
     trainer.train()
 

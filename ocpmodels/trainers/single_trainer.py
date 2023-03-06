@@ -441,8 +441,6 @@ class SingleTrainer(BaseTrainer):
             if not self.silent:
                 print(symmetry)
 
-        # TODO: Test equivariance
-
         # Close datasets
         if debug_batches < 0:
             for ds in self.datasets.values():
@@ -725,10 +723,12 @@ class SingleTrainer(BaseTrainer):
 
         energy_diff = torch.zeros(1, device=self.device)
         energy_diff_z = torch.zeros(1, device=self.device)
+        energy_diff_z_percentage = torch.zeros(1, device=self.device)
         energy_diff_refl = torch.zeros(1, device=self.device)
         pos_diff_total = torch.zeros(1, device=self.device)
         forces_diff = torch.zeros(1, device=self.device)
         forces_diff_z = torch.zeros(1, device=self.device)
+        forces_diff_z_graph = torch.zeros(1, device=self.device)
         forces_diff_refl = torch.zeros(1, device=self.device)
         n_batches = 0
         n_atoms = 0
@@ -751,7 +751,9 @@ class SingleTrainer(BaseTrainer):
 
             # Difference in predictions, for energy and forces
             energy_diff_z += torch.abs(preds1["energy"] - preds2["energy"]).sum()
+            
             if self.task_name == "s2ef":
+                energy_diff_z_percentage += (torch.abs(preds1["energy"] - preds2["energy"]) / torch.abs(batch[0].y).to(preds1["energy"].device)).sum()
                 forces_diff_z += torch.abs(
                     preds1["forces"] @ rotated["rot"].to(preds1["forces"].device)
                     - preds2["forces"]
@@ -764,6 +766,8 @@ class SingleTrainer(BaseTrainer):
                     torch.tensor([0.0]),
                     atol=1e-05,
                 )
+            else: 
+                energy_diff_z_percentage += (torch.abs(preds1["energy"] - preds2["energy"]) / torch.abs(batch[0].y_relaxed).to(preds1["energy"].device)).sum()
 
             # Diff in positions
             pos_diff = -1
@@ -802,12 +806,14 @@ class SingleTrainer(BaseTrainer):
 
         # Aggregate the results
         energy_diff_z = energy_diff_z / n_batches
+        energy_diff_z_percentage = energy_diff_z_percentage / n_batches
         energy_diff = energy_diff / n_batches
         energy_diff_refl = energy_diff_refl / n_batches
         pos_diff_total = pos_diff_total / n_batches
 
         symmetry = {
             "2D_E_ri": float(energy_diff_z),
+            "2D_E_ri_percentage": float(energy_diff_z_percentage),
             "3D_E_ri": float(energy_diff),
             "2D_pos_ri": float(pos_diff_total),
             "2D_E_refl_i": float(energy_diff_refl),
@@ -816,10 +822,12 @@ class SingleTrainer(BaseTrainer):
         # Test equivariance of forces
         if self.task_name == "s2ef":
             forces_diff_z = forces_diff_z / n_atoms
+            forces_diff_z_graph = forces_diff_z / n_batches
             forces_diff = forces_diff / n_atoms
             forces_diff_refl = forces_diff_refl / n_atoms
             symmetry.update(
                 {
+                    "2D_F_ri_graph": float(forces_diff_z_graph),
                     "2D_F_ri": float(forces_diff_z),
                     "3D_F_ri": float(forces_diff),
                     "2D_F_refl_i": float(forces_diff_refl),
