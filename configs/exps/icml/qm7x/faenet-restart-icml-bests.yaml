@@ -8,6 +8,8 @@ job:
 
 default:
   restart_from_dir: /network/scratch/s/schmidtv/ocp/runs/2750065
+  config: faenet-qm7x-all
+  model_name: faenet
   optim:
     eval_every: 0.34
     max_steps: 2500000

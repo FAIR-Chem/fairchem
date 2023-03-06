@@ -126,13 +126,21 @@ class WandBLogger(Logger):
 
         if "slurm_job_ids" not in self.run.config:
             self.run.config["slurm_job_ids"] = ""
-        self.run.config["slurm_job_ids"] = ", ".join(
-            sorted(
-                set(
-                    [j.strip() for j in self.run.config["slurm_job_ids"].split(",")]
-                    + [JOB_ID]
+        self.run.config.update(
+            {
+                "slurm_job_ids": ", ".join(
+                    sorted(
+                        set(
+                            [
+                                j.strip()
+                                for j in self.run.config["slurm_job_ids"].split(",")
+                            ]
+                            + [JOB_ID]
+                        )
+                    )
                 )
-            )
+            },
+            allow_val_change=True,
         )
 
         sbatch_files = list(
