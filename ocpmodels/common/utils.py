@@ -1083,8 +1083,9 @@ def build_config(args, args_override, silent=False):
                 if isinstance(v, dict) and "src" in v
             }
         )
+        config = merge_dicts(config, continue_config)
         config = merge_dicts(
-            continue_config,
+            config,
             {k: resolve(v) if isinstance(v, (str, Path)) else v for k, v in new_dirs},
         )
         config["dataset"] = merge_dicts(config["dataset"], data_srcs)
