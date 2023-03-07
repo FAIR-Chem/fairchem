@@ -585,7 +585,7 @@ class SingleTrainer(BaseTrainer):
                     loss["energy_grad_loss"] = self.loss_fn["force"](
                         preds["forces"][mask], grad_target[mask]
                     )
-                    if self.model.module.regress_forces == "direct_with_energy_grad":
+                    if self.model.module.regress_forces == "direct_with_gradient_target":
                         energy_grad_mult = self.config["optim"].get(
                             "energy_grad_coefficient", 10
                         )

@@ -1,5 +1,5 @@
 job:
-  mem: 48GB
+  mem: 64GB
   cpus: 4
   gres: gpu:rtx8000:1
   partition: long
@@ -25,43 +25,61 @@ default:
     second_layer_MLP: False
     max_num_neighbors: 30
     skip_co: concat
-    regress_forces: direct_with_gradient_target
   optim:
-    max_epochs: 10
-    batch_size: 196
-    eval_batch_size: 196
     lr_initial: 0.00025
 
 runs:
   - config: faenet-s2ef-2M
-    note: '2D all'
+    note: '2D all small batch'
     frame_averaging: 2D
     fa_frames: all
+    optim:
+      max_epochs: 2
+      batch_size: 64
+      eval_batch_size: 64
+    model: 
+      regress_forces: direct_with_gradient_target
   - config: faenet-s2ef-2M
-    note: '2D stocha'
+    note: '2D all small batch'
     frame_averaging: 2D
-    fa_frames: random
+    fa_frames: all
+    optim:
+      max_epochs: 2
+      batch_size: 64
+      eval_batch_size: 64
+    model: 
+      regress_forces: direct
   - config: faenet-s2ef-2M
     note: 'No train 2D stocha'
     frame_averaging: 2D
     fa_frames: random
     optim:
-      max_epochs: 0
+      max_epochs: 1
+      batch_size: 160
+      eval_batch_size: 160
+    model: 
+      regress_forces: direct_with_gradient_target
   - config: faenet-s2ef-2M
-    note: 'No DA/FA'
+    note: 'No train nor FA Direct'
+    optim:
+      max_epochs: 0
+      batch_size: 196
+      eval_batch_size: 196
     frame_averaging: ""
+    model: 
+      regress_forces: direct
   - config: faenet-s2ef-2M
     note: 'No train nor FA'
-    model:
+    optim:
       max_epochs: 0
+      batch_size: 196
+      eval_batch_size: 196
     frame_averaging: ""
   - config: faenet-s2ef-2M
-    note: 'se3-random'
+    note: 'Test Smaller batch'
+    optim:
+      max_epochs: 1
+      batch_size: 128
+      eval_batch_size: 128
     frame_averaging: 2D
     fa_frames: se3-random
-  - config: faenet-s2ef-2M
-    note: 'DA'
-    frame_averaging: DA
-  - config: sfarinet-s2ef-2M
-    note: 'sfarinet 2D all'
-    frame_averaging: 2D

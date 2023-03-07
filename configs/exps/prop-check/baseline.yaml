@@ -1,0 +1,39 @@
+job:
+  mem: 48GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  wandb_tags: 'rebuttal'
+
+runs:
+  # - config: schnet-s2ef-2M
+  #   note: 'schnet'
+  # - config: forcenet-s2ef-2M
+  #   note: 'forcenet'
+  - config: forcenet-s2ef-2M
+    note: 'forcenet DA'
+    frame_averaging: DA
+    optim: 
+      max_epochs: 3
+  # - config: forcenet-s2ef-2M
+  #   note: 'forcenet 2D random'
+  #   frame_averaging: 2D
+  #   fa_frames: random
+
+  # - config: schnet-is2re-all
+  #   note: 'schnet'
+  # - config: forcenet-is2re-all
+  #   note: 'forcenet'
+  # - config: forcenet-is2re-all
+  #   note: 'forcenet DA'
+  #   frame_averaging: DA
+  # - config: forcenet-is2re-all
+  #   note: 'forcenet 2D random'
+  #   frame_averaging: 2D
+  #   fa_frames: random
