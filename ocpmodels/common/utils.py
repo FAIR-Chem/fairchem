@@ -995,11 +995,26 @@ def build_config(args, args_override, silent=False):
             )
             continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
             if args.continue_from_dir:
+                # continuing
                 continue_config["checkpoint"] = str(latest_ckpt)
                 continue_config["job_ids"] = continue_config["job_ids"] + f", {JOB_ID}"
             else:
-                continue_config.pop("checkpoint", None)
-                continue_config.pop("wandb_resume_id", None)
+                # restarting from scratch
+                keep_keys = [
+                    "config",
+                    "dataset",
+                    "energy_head",
+                    "fa_frames",
+                    "frame_averaging",
+                    "graph_rewiring",
+                    "model",
+                    "optim",
+                    "seed",
+                    "task",
+                    "test_ri",
+                    "use_pbc",
+                ]
+                continue_config = {k: continue_config[k] for k in keep_keys}
             if not args.keep_orion_config:
                 dels = {}
                 for k in continue_config:
