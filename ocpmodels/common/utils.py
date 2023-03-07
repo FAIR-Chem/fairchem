@@ -1068,7 +1068,6 @@ def build_config(args, args_override, silent=False):
         continue_config.pop("continue_from_dir", None)
         continue_config.pop("restart_from_dir", None)
 
-        continue_config["run_dir"] = resolve(continue_config["run_dir"])
         continue_config["job_id"] = JOB_ID
         continue_config["local_rank"] = config["local_rank"]
 
