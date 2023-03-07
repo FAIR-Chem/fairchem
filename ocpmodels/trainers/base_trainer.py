@@ -143,7 +143,7 @@ class BaseTrainer(ABC):
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
-        if dist_utils.is_master() and not self.silent:
+        if dist_utils.is_master() and not self.silent and not self.is_debug:
             print(f"\n🧰 Trainer config:\n{'-'*18}\n")
             print(yaml.dump(self.config), end="\n\n")
             print(
@@ -624,7 +624,9 @@ class BaseTrainer(ABC):
         is_final=False,
         is_first=False,
     ):
+        # Compute energy gradient (just for a metric)
         torch.set_grad_enabled(bool(self.config["model"].get("regress_forces", "")))
+
         if dist_utils.is_master() and not self.silent:
             print()
             logging.info(f"\n >>> 🧐 Evaluating on {split}.")
