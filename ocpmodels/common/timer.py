@@ -46,7 +46,7 @@ class Times:
         self.times = defaultdict(list)
         self.timers = {}
 
-    def prepare_for_logging(self, map_func=lambda x: x):
+    def prepare_for_logging(self, map_func=None, map_funcs=None):
         """
         Computes mean and standard deviation of all timers.
         Returns a tuple: (mean_times_dict, std_times_dict)
@@ -57,7 +57,12 @@ class Times:
         mean_times = {}
         std_times = {}
         for k, v in self.times.items():
-            data = list(map(map_func, v))
+            if map_funcs is not None:
+                data = list(map(map_funcs.get(k, lambda x: x), v))
+            elif map_func is not None:
+                data = list(map(map_func, v))
+            else:
+                data = v
             mean_times[k] = np.mean(data)
             std_times[k] = np.std(data)
         return mean_times, std_times

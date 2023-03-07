@@ -1037,22 +1037,26 @@ class BaseTrainer(ABC):
 
     def measure_inference_time(self, loops=1):
         # keep grads if the model computes forces from energy
+        enabled = torch.grad_enabled()
         torch.set_grad_enabled(self.model.module.regress_forces == "from_energy")
         self.model.eval()
         timer = Times(gpu=True)
 
         # average inference over multiple loops
         for _ in range(loops):
-            # iterate over default val set batches
-            for b in self.loaders[self.config["dataset"]["default_val"]]:
-                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    # time forward pass
-                    with timer.next("forward"):
-                        _ = self.model_forward(b, mode="inference")
+            with timer.next("val_loop"):
+                # iterate over default val set batches
+                for b in self.loaders[self.config["dataset"]["default_val"]]:
+                    with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                        # time forward pass
+                        with timer.next("forward"):
+                            _ = self.model_forward(b, mode="inference")
 
         # divide times by batch size
         mean, std = timer.prepare_for_logging(
-            map_func=lambda t: self.config["optim"]["eval_batch_size"] / t
+            map_funcs={
+                "forward": lambda t: self.config["optim"]["eval_batch_size"] / t,
+            }
         )
 
         # log throughput to wandb as a summary metric
@@ -1060,10 +1064,17 @@ class BaseTrainer(ABC):
             if hasattr(self.logger, "run"):
                 self.logger.run.summary["throughput_mean"] = mean["forward"]
                 self.logger.run.summary["throughput_std"] = std["forward"]
+                self.logger.run.summary["val_loop_time_mean"] = mean["val_loop"]
+                self.logger.run.summary["val_loop_time_std"] = std["val_loop"]
 
         # print throughput to console
         if not self.silent:
             print(
                 "Mean throughput:",
-                f"{mean['forward']:.5f} +- {std['forward']:.5f} samples/s",
+                f"{mean['forward']:.1f} +- {std['forward']:.1f} samples/s",
             )
+            print(
+                "Val loop time (around data-loader):",
+                f"{mean['val_loop']:.3f} +- {std['val_loop']:.3f} s",
+            )
+        torch.set_grad_enabled(enabled)

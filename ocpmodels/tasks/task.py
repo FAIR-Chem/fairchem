@@ -50,7 +50,7 @@ class TrainTask(BaseTask):
         try:
             print("----------------------------------------")
             print("⏱️  Measuring inference time.")
-            self.trainer.measure_inference_time()
+            self.trainer.measure_inference_time(loops=5)
             print("----------------------------------------\n")
             return self.trainer.train(
                 disable_eval_tqdm=self.config.get("show_eval_progressbar", True),
