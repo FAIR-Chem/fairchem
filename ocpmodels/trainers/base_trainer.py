@@ -1037,7 +1037,7 @@ class BaseTrainer(ABC):
 
     def measure_inference_time(self, loops=1):
         # keep grads if the model computes forces from energy
-        enabled = torch.grad_enabled()
+        enabled = torch.is_grad_enabled()
         torch.set_grad_enabled(self.model.module.regress_forces == "from_energy")
         self.model.eval()
         timer = Times(gpu=True)
