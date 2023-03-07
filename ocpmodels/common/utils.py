@@ -1038,7 +1038,9 @@ def build_config(args, args_override, silent=False):
                     )
                 )
             args.config = (
-                continue_config["config"] if "config" not in vars(args) else args.config
+                continue_config["config"]
+                if ("config" not in vars(args) or not args.config)
+                else args.config
             )
 
     if args.config is None:
