@@ -1034,3 +1034,36 @@ class BaseTrainer(ABC):
                     ds.close_db()
         except Exception as e:
             print("Error closing datasets: ", str(e))
+
+    def measure_inference_time(self, loops=1):
+        # keep grads if the model computes forces from energy
+        torch.set_grad_enabled(self.model.regress_forces == "from_energy")
+        self.model.eval()
+        timer = Times(gpu=True)
+
+        # average inference over multiple loops
+        for _ in range(loops):
+            # iterate over default val set batches
+            for b in self.loaders[self.config["dataset"]["default_val"]]:
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    # time forward pass
+                    with timer.next("forward"):
+                        _ = self.model_forward(b, mode="inference")
+
+        # divide times by batch size
+        mean, std = timer.prepare_for_logging(
+            map_func=lambda t: t / self.config["optim"]["eval_batch_size"]
+        )
+
+        # log throughput to wandb as a summary metric
+        if self.logger:
+            if hasattr(self.logger, "run"):
+                self.logger.run.summary["throughput_mean"] = mean["forward"]
+                self.logger.run.summary["throughput_std"] = std["forward"]
+
+        # print throughput to console
+        if not self.silent:
+            print(
+                "Mean throughput:",
+                f"{mean['forward']:.3f} +- {std['forward']:.3f} samples/s",
+            )

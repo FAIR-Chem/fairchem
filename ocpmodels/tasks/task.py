@@ -48,6 +48,10 @@ class TrainTask(BaseTask):
 
     def run(self):
         try:
+            print("----------------------------------------")
+            print("⏱️  Measuring inference time.")
+            self.trainer.measure_inference_time()
+            print("----------------------------------------\n")
             return self.trainer.train(
                 disable_eval_tqdm=self.config.get("show_eval_progressbar", True),
                 debug_batches=self.config.get("debug_batches", -1),
