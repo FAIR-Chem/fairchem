@@ -27,8 +27,16 @@ default:
     force_decoder_model_config:
       simple:
         hidden_channels: 128
+        norm: batch1d # batch1d, layer or null
       mlp:
         hidden_channels: 256
+        norm: batch1d # batch1d, layer or null
+      res:
+        hidden_channels: 128
+        norm: batch1d # batch1d, layer or null
+      res_updown:
+        hidden_channels: 128
+        norm: batch1d # batch1d, layer or null
   optim:
     batch_size: 64
     eval_batch_size: 64

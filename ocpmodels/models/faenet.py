@@ -16,11 +16,7 @@ from ocpmodels.models.utils.attention_model import TransfoAttConv
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-
-try:
-    from torch_geometric.nn.acts import swish
-except ImportError:
-    from torch_geometric.nn.resolver import swish
+from ocpmodels.models.utils.activations import swish
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1

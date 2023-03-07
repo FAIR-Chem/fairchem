@@ -1022,7 +1022,9 @@ def build_config(args, args_override, silent=False):
                         else " (restarting from scratch)"
                     )
                 )
-            args.config = continue_config["config"]
+            args.config = (
+                continue_config["config"] if "config" not in vars(args) else args.config
+            )
 
     if args.config is None:
         raise ValueError(
