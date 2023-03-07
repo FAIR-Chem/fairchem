@@ -1001,6 +1001,7 @@ def build_config(args, args_override, silent=False):
             else:
                 # restarting from scratch
                 keep_keys = [
+                    "cp_data_to_tmpdir",
                     "config",
                     "dataset",
                     "energy_head",

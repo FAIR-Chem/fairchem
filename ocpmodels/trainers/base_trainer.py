@@ -1052,7 +1052,7 @@ class BaseTrainer(ABC):
 
         # divide times by batch size
         mean, std = timer.prepare_for_logging(
-            map_func=lambda t: t / self.config["optim"]["eval_batch_size"]
+            map_func=lambda t: self.config["optim"]["eval_batch_size"] / t
         )
 
         # log throughput to wandb as a summary metric
@@ -1065,5 +1065,5 @@ class BaseTrainer(ABC):
         if not self.silent:
             print(
                 "Mean throughput:",
-                f"{mean['forward']:.3f} +- {std['forward']:.3f} samples/s",
+                f"{mean['forward']:.5f} +- {std['forward']:.5f} samples/s",
             )
