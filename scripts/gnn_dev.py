@@ -29,7 +29,8 @@ if __name__ == "__main__":
     config["model"]["complex_mp"] = True
     config["model"]["graph_norm"] = True
     config["optim"]["eval_every"] = 1
-    # config["model"]["regress_forces"] = "direct_with_gradient_target"
+    config["optim"]["batch_size"] = 120
+    config["model"]["regress_forces"] = "direct"
 
     checkpoint_path = None
     # "checkpoints/2022-04-28-11-42-56-dimenetplusplus/" + "best_checkpoint.pt"
@@ -37,8 +38,9 @@ if __name__ == "__main__":
     str_args = sys.argv[1:]
     if all("config" not in arg for arg in str_args):
         str_args.append("--is_debug")
+        # str_args.append("--config=faenet-is2re-all")
         str_args.append("--config=faenet-s2ef-2M")
-        # str_args.append("--config=sfarinet-s2ef-2M")
+        # str_args.append("--silent=0")
         warnings.warn(
             "No model / mode is given; chosen as default" + f"Using: {str_args[-1]}"
         )

@@ -21,7 +21,7 @@ default:
     max_epochs: 10
 
 runs:
-  - config: sfarinet-s2ef-2M
+  - config: faenet-s2ef-2M
     note: 'Rebuttal test direct'
     optim:
       lr_initial: 0.00028
@@ -46,7 +46,7 @@ runs:
       second_layer_mlp: False
       complex_mp: False
 
-  - config: sfarinet-s2ef-2M
+  - config: faenet-s2ef-2M
     note: 'Rebuttal test'
     optim:
       lr_initial: 0.00028
@@ -71,7 +71,7 @@ runs:
       second_layer_mlp: False
       complex_mp: False
 
-  - config: sfarinet-s2ef-2M
+  - config: faenet-s2ef-2M
     note: 'Rebuttal test'
     optim:
       lr_initial: 0.00028
@@ -96,7 +96,7 @@ runs:
       second_layer_mlp: False
       complex_mp: False
 
-  - config: sfarinet-s2ef-2M
+  - config: faenet-s2ef-2M
     note: 'Rebuttal test high grad and force coef'
     optim:
       lr_initial: 0.00028
@@ -123,80 +123,3 @@ runs:
 
 
 
-
-  - config: sfarinet-s2ef-2M
-    note: 'Rebuttal test 2'
-    optim:
-      lr_initial: 0.00027
-      max_epochs: 10
-      fidelity_max_epochs: 22
-      force_coefficient: 30
-      energy_coefficient: 1
-      energy_grad_coefficient: 10
-    model: 
-      regress_forces: direct_with_gradient_target
-      cutoff: 6
-      max_num_neighbors: 40
-      graph_norm: True
-      mp_type: updownscale_base
-      hidden_channels: 256
-      num_gaussians: 136
-      num_filters: 480
-      num_interactions: 7
-      pg_hidden_channels: 64
-      tag_hidden_channels: 32
-      phys_embeds: True
-      skip_co: concat
-      second_layer_mlp: False
-      complex_mp: True
-
-  - config: sfarinet-s2ef-2M
-    note: 'Rebuttal test 2'
-    optim:
-      lr_initial: 0.00027
-      max_epochs: 10
-      fidelity_max_epochs: 22
-      force_coefficient: 30
-      energy_coefficient: 1
-      energy_grad_coefficient: 10
-    model: 
-      regress_forces: direct_with_gradient_target
-      cutoff: 6
-      max_num_neighbors: 40
-      graph_norm: True
-      mp_type: updownscale_base
-      hidden_channels: 256
-      num_gaussians: 136
-      num_filters: 480
-      num_interactions: 7
-      pg_hidden_channels: 64
-      tag_hidden_channels: 32
-      phys_embeds: True
-      skip_co: concat
-      second_layer_mlp: False
-      complex_mp: True
-
-  - config: sfarinet-s2ef-2M
-    note: 'Rebuttal test 3'
-    optim:
-      lr_initial: 0.00019
-      max_epochs: 20
-      force_coefficient: 30
-      energy_coefficient: 1
-      energy_grad_coefficient: 10
-    model: 
-      regress_forces: direct_with_gradient_target
-      cutoff: 6
-      max_num_neighbors: 40
-      graph_norm: False
-      mp_type: updownscale_base
-      hidden_channels: 544
-      num_gaussians: 124
-      num_filters: 576
-      num_interactions: 5
-      pg_hidden_channels: 64
-      tag_hidden_channels: 32
-      phys_embeds: True
-      skip_co: concat
-      second_layer_mlp: True
-      complex_mp: True
