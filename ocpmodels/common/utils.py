@@ -1014,6 +1014,7 @@ def build_config(args, args_override, silent=False):
                     "task",
                     "test_ri",
                     "use_pbc",
+                    "wandb_project",
                 ]
                 continue_config = {k: continue_config[k] for k in keep_keys}
             if not args.keep_orion_config:
