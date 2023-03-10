@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
-
+import torch
 from ocpmodels.common.registry import registry
 
 
@@ -48,6 +48,11 @@ class TrainTask(BaseTask):
 
     def run(self):
         try:
+            print("----------------------------------------")
+            print("⏱️  Measuring inference time.")
+            self.trainer.measure_inference_time(loops=5)
+            print("----------------------------------------\n")
+            torch.set_grad_enabled(True)
             return self.trainer.train(
                 disable_eval_tqdm=self.config.get("show_eval_progressbar", True),
                 debug_batches=self.config.get("debug_batches", -1),

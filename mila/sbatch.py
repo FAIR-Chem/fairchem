@@ -240,7 +240,7 @@ def load_sbatch_args_from_dir(dir):
         ).split("=")
         sbatch_args[k] = v
     args = {
-        "job_name": sbatch_args["job-name"],
+        "job_name": sbatch_args["job-name"][-25:],
         "nodes": int(sbatch_args["nodes"]),
         "ntasks_per_node": int(sbatch_args["ntasks-per-node"]),
         "partition": sbatch_args["partition"],
@@ -340,7 +340,7 @@ if __name__ == "__main__":
     # create sbatch job submission parameters dictionary
     # to use with make_sbatch_params()
     sbatch_params = {
-        "job-name": args.job_name,
+        "job-name": args.job_name[-25:],
         "nodes": args.nodes or 1,
         "ntasks-per-node": args.ntasks_per_node,
         "partition": args.partition,

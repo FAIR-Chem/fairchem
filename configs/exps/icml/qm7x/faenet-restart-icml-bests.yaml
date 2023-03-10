@@ -15,6 +15,19 @@ default:
     max_steps: 2500000
   model:
     regress_forces: direct_with_gradient_target
+    force_decoder_model_config:
+      simple:
+        hidden_channels: 128
+        norm: batch1d
+      mlp:
+        hidden_channels: 256
+        norm: batch1d
+      res:
+        hidden_channels: 128
+        norm: batch1d
+      res_updown:
+        hidden_channels: 128
+        norm: batch1d
 
 runs:
 - {}
@@ -28,12 +41,12 @@ runs:
     force_decoder_type: res
     force_decoder_model_config:
       res:
-        norm: batch1d # batch1d, layer or null
+        norm: layer # batch1d, layer or null
 - model:
     force_decoder_type: res_updown
     force_decoder_model_config:
       res_updown:
-        norm: batch1d # batch1d, layer or null
+        norm: layer # batch1d, layer or null
 
 - optim:
     batch_size: 256

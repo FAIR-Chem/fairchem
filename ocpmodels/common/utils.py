@@ -995,11 +995,27 @@ def build_config(args, args_override, silent=False):
             )
             continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
             if args.continue_from_dir:
+                # continuing
                 continue_config["checkpoint"] = str(latest_ckpt)
                 continue_config["job_ids"] = continue_config["job_ids"] + f", {JOB_ID}"
             else:
-                continue_config.pop("checkpoint", None)
-                continue_config.pop("wandb_resume_id", None)
+                # restarting from scratch
+                keep_keys = [
+                    "cp_data_to_tmpdir",
+                    "config",
+                    "dataset",
+                    "energy_head",
+                    "fa_frames",
+                    "frame_averaging",
+                    "graph_rewiring",
+                    "model",
+                    "optim",
+                    "seed",
+                    "task",
+                    "test_ri",
+                    "use_pbc",
+                ]
+                continue_config = {k: continue_config[k] for k in keep_keys}
             if not args.keep_orion_config:
                 dels = {}
                 for k in continue_config:
@@ -1023,7 +1039,9 @@ def build_config(args, args_override, silent=False):
                     )
                 )
             args.config = (
-                continue_config["config"] if "config" not in vars(args) else args.config
+                continue_config["config"]
+                if ("config" not in vars(args) or not args.config)
+                else args.config
             )
 
     if args.config is None:
@@ -1051,7 +1069,6 @@ def build_config(args, args_override, silent=False):
         continue_config.pop("continue_from_dir", None)
         continue_config.pop("restart_from_dir", None)
 
-        continue_config["run_dir"] = resolve(continue_config["run_dir"])
         continue_config["job_id"] = JOB_ID
         continue_config["local_rank"] = config["local_rank"]
 
@@ -1067,8 +1084,9 @@ def build_config(args, args_override, silent=False):
                 if isinstance(v, dict) and "src" in v
             }
         )
+        config = merge_dicts(config, continue_config)
         config = merge_dicts(
-            continue_config,
+            config,
             {k: resolve(v) if isinstance(v, (str, Path)) else v for k, v in new_dirs},
         )
         config["dataset"] = merge_dicts(config["dataset"], data_srcs)
