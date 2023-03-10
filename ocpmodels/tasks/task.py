@@ -48,10 +48,12 @@ class TrainTask(BaseTask):
 
     def run(self):
         try:
-            print("----------------------------------------")
-            print("⏱️  Measuring inference time.")
-            self.trainer.measure_inference_time(loops=5)
-            print("----------------------------------------\n")
+            loops = self.config.get("inference_time_loops", 5)
+            if loops > 0:
+                print("----------------------------------------")
+                print("⏱️  Measuring inference time.")
+                self.trainer.measure_inference_time(loops=loops)
+                print("----------------------------------------\n")
             torch.set_grad_enabled(True)
             return self.trainer.train(
                 disable_eval_tqdm=self.config.get("show_eval_progressbar", True),
