@@ -499,6 +499,8 @@ class CombinedRandomly:
             # Add adsorbate to a site
             adsorbate_c = adsorbate.copy()
             surface_c = surface.copy()
+            # Set adsorbate center of mass to (0,0,0)
+            adsorbate_c = self.set_center_of_mass(adsorbate_c, (0, 0, 0))
             adsorbate_c.translate(site)
             adslab = surface_c + adsorbate_c
             tags = [2] * len(adsorbate)
@@ -587,3 +589,16 @@ class CombinedRandomly:
             + "_"
             + ads_sampling_str,
         }
+
+    def set_center_of_mass(self, atoms, com):
+        """
+        ASE's public releases have a bug in setting the center of mass. This
+        implements those fixes directly.
+
+        https://gitlab.com/ase/ase/-/commit/e60e804eff0a82a5c13a56297321953983a06cf3
+        """
+        old_com = atoms.get_center_of_mass()
+        difference = com - old_com
+
+        atoms.set_positions(atoms.get_positions() + difference)
+        return atoms
