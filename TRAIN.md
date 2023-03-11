@@ -183,7 +183,7 @@ The predictions are stored in `[RESULTS_DIR]/s2ef_predictions.npz` and later use
 
 ## Training OC20 models with total energies (IS2RE/S2EF)
 
-To train an OC20 IS2RE/S2EF model on total energies targets instead of adsorption energies there are a number of required changes to the config. They include setting: `dataset: oc22_lmdb`, `prediction_dtype: float32`, `train_on_oc20_total_energies: True`, and `oc20_ref: path/to/oc20_ref.pkl` (see example below).
+To train and validate an OC20 IS2RE/S2EF model on total energies targets instead of adsorption energies there are a number of required changes to the config. They include setting: `dataset: oc22_lmdb`, `prediction_dtype: float32`, `train_on_oc20_total_energies: True`, and `oc20_ref: path/to/oc20_ref.pkl` (see example below). Also, please note that our evaluation server does not currently support OC20 total energy models.
 
 ```
 task:

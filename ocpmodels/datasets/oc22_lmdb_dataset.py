@@ -157,7 +157,10 @@ class OC22LmdbDataset(Dataset):
         # convert s2ef energies to raw energies
         if attr == "y":
             # OC20 data
-            if "oc22" not in data_object and self.train_on_oc20_total_energies:
+            if "oc22" not in data_object:
+                assert self.config.get(
+                    "train_on_oc20_total_energies", False
+                ), "To train OC20 or OC22+OC20 on total energies set train_on_oc20_total_energies=True"
                 randomid = f"random{sid}"
                 data_object[attr] += self.oc20_ref[randomid]
                 data_object.nads = 1
@@ -165,7 +168,10 @@ class OC22LmdbDataset(Dataset):
 
         # convert is2re energies to raw energies
         else:
-            if "oc22" not in data_object and self.train_on_oc20_total_energies:
+            if "oc22" not in data_object:
+                assert self.config.get(
+                    "train_on_oc20_total_energies", False
+                ), "To train OC20 or OC22+OC20 on total energies set train_on_oc20_total_energies=True"
                 randomid = f"random{sid}"
                 data_object[attr] += self.oc20_ref[randomid]
                 del data_object.force
