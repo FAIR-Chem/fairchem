@@ -52,8 +52,6 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 |eSCN-L6-M2-Lay12  |All+MD     |[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l6_m2_lay12_all_md_s2ef.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/escn/eSCN-L6-M2-Lay12-All-MD.yml)  |0.0161 |4.28%  |
 |eSCN-L6-M3-Lay20  |All+MD     |[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l6_m3_lay20_all_md_s2ef.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/escn/eSCN-L6-M3-Lay20-All-MD.yml)  |0.0139 |6.64%  |
 
-
-
 ## S2EF models: optimized for force only
 
 |Model	|Split	|Download	|val ID force MAE	|
