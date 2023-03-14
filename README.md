@@ -29,6 +29,7 @@ Projects developed on `ocp`:
 - Graph Parallelism [[`arXiv`](https://arxiv.org/abs/2203.09697)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/gemnet_gp)]
 - GemNet-OC [[`arXiv`](https://arxiv.org/abs/2204.02782)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/gemnet_oc)]
 - SCN [[`arXiv`](https://arxiv.org/abs/2206.14331)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/scn)]
+- eSCN [[`arXiv`](https://arxiv.org/abs/2302.03655)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/escn)]
 
 ## Installation
 
