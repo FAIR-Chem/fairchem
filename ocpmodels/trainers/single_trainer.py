@@ -738,7 +738,7 @@ class SingleTrainer(BaseTrainer):
                 return "SIGTERM"
             if debug_batches > 0 and i == debug_batches:
                 break
-                
+
             n_batches += len(batch[0].natoms)
             n_atoms += batch[0].natoms.sum()
 
@@ -751,9 +751,12 @@ class SingleTrainer(BaseTrainer):
 
             # Difference in predictions, for energy and forces
             energy_diff_z += torch.abs(preds1["energy"] - preds2["energy"]).sum()
-            
+
             if self.task_name == "s2ef":
-                energy_diff_z_percentage += (torch.abs(preds1["energy"] - preds2["energy"]) / torch.abs(batch[0].y).to(preds1["energy"].device)).sum()
+                energy_diff_z_percentage += (
+                    torch.abs(preds1["energy"] - preds2["energy"])
+                    / torch.abs(batch[0].y).to(preds1["energy"].device)
+                ).sum()
                 forces_diff_z += torch.abs(
                     preds1["forces"] @ rotated["rot"].to(preds1["forces"].device)
                     - preds2["forces"]
@@ -766,8 +769,11 @@ class SingleTrainer(BaseTrainer):
                     torch.tensor([0.0]),
                     atol=1e-05,
                 )
-            else: 
-                energy_diff_z_percentage += (torch.abs(preds1["energy"] - preds2["energy"]) / torch.abs(batch[0].y_relaxed).to(preds1["energy"].device)).sum()
+            else:
+                energy_diff_z_percentage += (
+                    torch.abs(preds1["energy"] - preds2["energy"])
+                    / torch.abs(batch[0].y_relaxed).to(preds1["energy"].device)
+                ).sum()
 
             # Diff in positions
             pos_diff = -1
