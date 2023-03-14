@@ -67,11 +67,13 @@ class Times:
             std_times[k] = np.std(data)
         return mean_times, std_times
 
-    def next(self, name, ignore=None):
+    def next(self, name, ignore=None, gpu=None):
         if "name" not in self.timers:
             if ignore is None:
                 ignore = self.ignore
-            self.timers[name] = Timer(name, self.times, self.gpu, ignore)
+            self.timers[name] = Timer(
+                name, self.times, self.gpu if gpu is None else gpu, ignore
+            )
         return self.timers[name]
 
 

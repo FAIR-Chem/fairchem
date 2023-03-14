@@ -1016,7 +1016,9 @@ def build_config(args, args_override, silent=False):
                     "use_pbc",
                     "wandb_project",
                 ]
-                continue_config = {k: continue_config[k] for k in keep_keys}
+                continue_config = {
+                    k: continue_config[k] for k in keep_keys if k in continue_config
+                }
             if not args.keep_orion_config:
                 dels = {}
                 for k in continue_config:
