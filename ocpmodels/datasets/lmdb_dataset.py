@@ -44,6 +44,10 @@ class LmdbDataset(Dataset):
         super(LmdbDataset, self).__init__()
         self.config = config
 
+        assert not self.config.get(
+            "train_on_oc20_total_energies", False
+        ), "For training on total energies set dataset=oc22_lmdb"
+
         self.path = Path(self.config["src"])
         if not self.path.is_file():
             db_paths = sorted(self.path.glob("*.lmdb"))
