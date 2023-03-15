@@ -33,6 +33,6 @@ Be sure to filter for convergence, see `utils.py` for example code.
 
 **Step 5**: Organize ML and DFT results in the required format outlined [here](https://github.com/Open-Catalyst-Project/AdsorbML/blob/d03b35133e3d21b4a88f44618549bf87a83237a6/scripts/dense_eval.py#L31-L67).
 
-A sample submission file can be downloaded here: https://dl.fbaipublicfiles.com/opencatalystproject/data/adsorbml/gemnet_oc_ml_sp_sample_results.tar. Note - configurations failing the physical constraints were excluded from the submission file, do NOT rely on matching each entry. This is intended to provide you with an idea to the format. 
+A sample submission file can be downloaded here: https://dl.fbaipublicfiles.com/opencatalystproject/data/adsorbml/gemnet_oc_ml_sp_sample_results.tar. Note - configurations failing the physical constraints were excluded from the submission file, do NOT rely on matching each entry. This is intended to provide you with an idea to the format.
 
 **Step 6**: Evaluate results with `dense_eval.py` with the specified format of predictions to get the success rate and DFT speedup.
