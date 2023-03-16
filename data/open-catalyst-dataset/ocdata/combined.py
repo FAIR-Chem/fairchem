@@ -608,6 +608,12 @@ class CombinedRandomly:
         implements those fixes directly.
 
         https://gitlab.com/ase/ase/-/commit/e60e804eff0a82a5c13a56297321953983a06cf3
+
+        Args:
+            atoms: ASE atoms object.
+            com: Center of mass to transform provided atoms object to, tuple.
+        Returns:
+            Atoms object transformed to the COM provided.
         """
         old_com = atoms.get_center_of_mass()
         difference = com - old_com
