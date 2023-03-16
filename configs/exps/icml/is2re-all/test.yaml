@@ -1,0 +1,41 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+
+default:
+  test_ri: True
+  cp_data_to_tmpdir: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  wandb_tags: 'rebuttal'
+  optim:
+    batch_size: 256
+    eval_batch_size: 256
+    max_epochs: 14
+    cutoff: 6.0
+    lr_initial: 0.002
+    scheduler: LinearWarmupCosineAnnealingLR
+
+runs:
+
+  - config: faenet-is2re-all
+    note: 'Test inf. time of BASELINE'
+    frame_averaging: 2D
+    fa_frames: random
+    model:
+      mp_type: base
+      edge_embed_type: all_rij
+      phys_embeds: True
+      tag_hidden_channels: 64
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 384
+      num_filters: 480
+      num_gaussians: 104
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concat

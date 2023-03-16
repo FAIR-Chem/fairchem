@@ -594,7 +594,7 @@ def conditional_grad(dec):
         @wraps(func)
         def cls_method(self, *args, **kwargs):
             f = func
-            if self.regress_forces in {"from_energy", "direct_with_gradient_target"}:
+            if self.regress_forces in {"from_energy", "direct_with_gradient_target", "direct"}:
                 f = dec(func)
             return f(self, *args, **kwargs)
 
