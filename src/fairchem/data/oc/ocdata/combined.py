@@ -361,7 +361,10 @@ class CombinedRandomly:
         self.random_seed = random_seed
         np.random.seed(self.random_seed)
         self.add_adsorbate_onto_surface_randomly(
-            self.adsorbate.atoms, self.surface.surface_atoms, self.random_sites
+            self.adsorbate.atoms,
+            self.surface.surface_atoms,
+            self.adsorbate.bond_indices,
+            self.random_sites,
         )
 
         self.constrained_adsorbed_surfaces = []
@@ -373,13 +376,16 @@ class CombinedRandomly:
             # Do the hashing
             self.all_sites.append(site)
 
-    def add_adsorbate_onto_surface_randomly(self, adsorbate, surface, num_sites):
+    def add_adsorbate_onto_surface_randomly(
+        self, adsorbate, surface, bond_indices, num_sites
+    ):
         """
         This function will add adsorbate onto the surface for you randomly.
 
         Args:
             adsorbate: An `ase.Atoms` object of the adsorbate
             surface: An `ase.Atoms` object of the surface
+            bond_indices: An array containing the indices of the atoms in the adsorbate that are expected to bind to the surface.
             num_sites: Number of total random placements. The final number may be less because
                        we also check for if adsorbate configuration is reasonable
         Sets these values:
@@ -397,7 +403,7 @@ class CombinedRandomly:
         ################################################
         random_sites = self.generate_random_sites(surface_atoms_pos, num_sites)
         adsorbed_surfaces = self.place_adsorbate_on_sites(
-            adsorbate, surface, random_sites
+            adsorbate, surface, bond_indices, random_sites
         )
         #################################################
 
@@ -482,12 +488,13 @@ class CombinedRandomly:
         sites = list(np.c_[rand_x, rand_y, rand_z])
         return sites
 
-    def place_adsorbate_on_sites(self, adsorbate, surface, random_sites):
+    def place_adsorbate_on_sites(self, adsorbate, surface, bond_indices, random_sites):
         """
         Place an adsorbates at a list of adsorption sites.
         Args:
             adsorbate : An `ase.Atoms` object of the adsorbate
             surface : An `ase.Atoms` object of the surface
+            bond_indices: An array containing the indices of the atoms in the adsorbate that are expected to bind to the surface.
             random_sites : A list of cartesian coordinates representing the random sites
 
         Returns:
@@ -499,7 +506,14 @@ class CombinedRandomly:
             # Add adsorbate to a site
             adsorbate_c = adsorbate.copy()
             surface_c = surface.copy()
-            adsorbate_c.translate(site)
+            if len(bond_indices) > 1:
+                warnings.warn(
+                    "Bidentate random placement not currently supported, randomly selecting one from provided bond indices."
+                )
+            bond_index = np.random.choice(bond_indices, 1)[0]
+            binding_atom = adsorbate_c.positions[bond_index]
+            translation_vector = site - binding_atom
+            adsorbate_c.translate(translation_vector)
             adslab = surface_c + adsorbate_c
             tags = [2] * len(adsorbate)
             final_tags = list(surface.get_tags()) + tags
@@ -587,3 +601,22 @@ class CombinedRandomly:
             + "_"
             + ads_sampling_str,
         }
+
+    def set_center_of_mass(self, atoms, com):
+        """
+        ASE's public releases have a bug in setting the center of mass. This
+        implements those fixes directly.
+
+        https://gitlab.com/ase/ase/-/commit/e60e804eff0a82a5c13a56297321953983a06cf3
+
+        Args:
+            atoms: ASE atoms object.
+            com: Center of mass to transform provided atoms object to, tuple.
+        Returns:
+            Atoms object transformed to the COM provided.
+        """
+        old_com = atoms.get_center_of_mass()
+        difference = com - old_com
+
+        atoms.set_positions(atoms.get_positions() + difference)
+        return atoms
