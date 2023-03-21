@@ -459,7 +459,7 @@ class SingleTrainer(BaseTrainer):
             original_pos = batch_list[0].pos
             if self.task_name in OCP_TASKS:
                 original_cell = batch_list[0].cell
-            e_all, p_all, f_all = [], [], []
+            e_all, p_all, f_all, gt_all = [], [], [], []
 
             # Compute model prediction for each frame
             for i in range(len(batch_list[0].fa_pos)):
@@ -469,8 +469,10 @@ class SingleTrainer(BaseTrainer):
 
                 # forward pass
                 preds = self.model(deepcopy(batch_list), mode=mode)
-
                 e_all.append(preds["energy"])
+
+                fa_rot = None
+
                 if preds.get("pooling_loss") is not None:
                     p_all.append(preds["pooling_loss"])
                 if preds.get("forces") is not None:
@@ -485,6 +487,19 @@ class SingleTrainer(BaseTrainer):
                         .view(-1, 3)
                     )
                     f_all.append(g_forces)
+                if preds.get("forces_grad_target") is not None:
+                    # Transform forces to guarantee equivariance of FA method
+                    if fa_rot is None:
+                        fa_rot = torch.repeat_interleave(
+                            batch_list[0].fa_rot[i], batch_list[0].natoms, dim=0
+                        )
+                    g_grad_target = (
+                        preds["forces_grad_target"]
+                        .view(-1, 1, 3)
+                        .bmm(fa_rot.transpose(1, 2).to(preds["forces_grad_target"].device))
+                        .view(-1, 3)
+                    )
+                    gt_all.append(g_grad_target)
 
             batch_list[0].pos = original_pos
             if self.task_name in OCP_TASKS:
@@ -496,6 +511,8 @@ class SingleTrainer(BaseTrainer):
                 preds["pooling_loss"] = sum(p_all) / len(p_all)
             if len(f_all) > 0 and all(y is not None for y in f_all):
                 preds["forces"] = sum(f_all) / len(f_all)
+            if len(gt_all) > 0 and all(y is not None for y in gt_all):
+                preds["forces_grad_target"] = sum(gt_all) / len(gt_all)
         else:
             preds = self.model(batch_list)
 
@@ -592,7 +609,10 @@ class SingleTrainer(BaseTrainer):
                     loss["energy_grad_loss"] = self.loss_fn["force"](
                         preds["forces"][mask], grad_target[mask]
                     )
-                    if self.model.module.regress_forces == "direct_with_gradient_target":
+                    if (
+                        self.model.module.regress_forces
+                        == "direct_with_gradient_target"
+                    ):
                         energy_grad_mult = self.config["optim"].get(
                             "energy_grad_coefficient", 10
                         )
