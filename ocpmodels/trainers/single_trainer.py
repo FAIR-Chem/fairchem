@@ -496,7 +496,11 @@ class SingleTrainer(BaseTrainer):
                     g_grad_target = (
                         preds["forces_grad_target"]
                         .view(-1, 1, 3)
-                        .bmm(fa_rot.transpose(1, 2).to(preds["forces_grad_target"].device))
+                        .bmm(
+                            fa_rot.transpose(1, 2).to(
+                                preds["forces_grad_target"].device
+                            )
+                        )
                         .view(-1, 3)
                     )
                     gt_all.append(g_grad_target)
