@@ -414,6 +414,11 @@ def auto_note(trainer_config):
     for k, (key, subkeys) in enumerate(trainer_config["note"].items()):
         if k > 0:
             note += " - "
+
+        if key == "prefix":
+            note += subkeys
+            continue
+
         for i, subkey in enumerate(subkeys.split(",")):
             subkey = subkey.strip()
             if i > 0:
@@ -594,7 +599,11 @@ def conditional_grad(dec):
         @wraps(func)
         def cls_method(self, *args, **kwargs):
             f = func
-            if self.regress_forces in {"from_energy", "direct_with_gradient_target", "direct"}:
+            if self.regress_forces in {
+                "from_energy",
+                "direct_with_gradient_target",
+                "direct",
+            }:
                 f = dec(func)
             return f(self, *args, **kwargs)
 
