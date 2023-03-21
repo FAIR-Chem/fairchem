@@ -57,6 +57,10 @@ default:
 # -------------------
 
 is2re:
+  # *** Important note ***
+  #   The total number of gpus used for this run was 1.
+  #   If the global batch size (num_gpus * batch_size) is modified
+  #   the lr_milestones and warmup_steps need to be adjusted accordingly.
   10k:
     optim:
       lr_initial: 0.005

@@ -501,7 +501,11 @@ class FAENet(BaseModel):
             'updownscale_base', 'updownscale', 'updown_local_env', 'sfarinet'}}):
             specificies the MP of the interaction block.
         graph_norm (bool): whether to apply batch norm after every linear layer.
-        complex_mp (bool); whether to add a second layer MLP at the end of each Interaction
+        complex_mp (bool): whether to add a second layer MLP at the end of each Interaction
+        force_decoder_model_config (dict): config of the force decoder model.
+            keys: "model_type", "hidden_channels", "num_layers", "num_heads",
+        force_decoder_type (str): type of the force decoder model.
+            (options: "mlp", "simple", "res", "res_updown")
     """
 
     def __init__(self, **kwargs):

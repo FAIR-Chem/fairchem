@@ -28,41 +28,12 @@ default:
   optim:  
     lr_initial: 0.002
     scheduler: LinearWarmupCosineAnnealingLR
-    max_epochs: 14
     batch_size: 256
     eval_batch_size: 256
 
 runs:
   - config: faenet-is2re-all
-    note: '2D all'
-    frame_averaging: 2D
-    fa_frames: all
-  - config: faenet-is2re-all
-    note: '2D stocha'
-    frame_averaging: 2D
-    fa_frames: random
-  - config: faenet-is2re-all
-    note: 'No train 2D stocha'
-    frame_averaging: 2D
-    fa_frames: random
-    optim:
-      max_epochs: 0
-  - config: faenet-is2re-all
-    note: 'No DA/FA'
+    note: 'Little training no FA'
     frame_averaging: ""
-  - config: faenet-is2re-all
-    note: 'No train nor FA'
-    model:
-      max_epochs: 0
-    frame_averaging: ""
-  - config: faenet-is2re-all
-    note: 'se3-random'
-    frame_averaging: 2D
-    fa_frames: se3-random
-  - config: faenet-is2re-all
-    note: 'DA'
-    frame_averaging: DA
-  - config: sfarinet-is2re-all
-    note: 'sfarinet 2D all'
-    frame_averaging: 2D
-    fa_frames: random
+    optim: 
+      max_epochs: 1

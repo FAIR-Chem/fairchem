@@ -44,21 +44,28 @@ default:
 # -------------------
 
 is2re:
+  # *** Important note ***
+  #   The total number of gpus used for this run was 1.
+  #   If the global batch size (num_gpus * batch_size) is modified
+  #   the lr_milestones and warmup_steps need to be adjusted accordingly.
   10k:
     optim:
-      # *** Important note ***
-      #   The total number of gpus used for this run was 8.
-      #   If the global batch size (num_gpus * batch_size) is modified
-      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
       max_epochs: 20
   100k:
     optim:
       max_epochs: 20
   all:
     model:
-      num_interactions: 4
+      num_interactions: 5
+      hidden_channels: 512
+      decoder_hidden_channels: 512
+      pg_hidden_channels: 32 
+      phys_embeds: True 
     optim:
-      max_epochs: 8 # 20
+      max_epochs: 8  #15
+      batch_size: 32
+      eval_batch_size: 32
+      lr_initial: 0.0005
 
 
 # ------------------
@@ -66,6 +73,10 @@ is2re:
 # ------------------
 
 s2ef:
+  # *** Important note ***
+  #   The total number of gpus used for this run was 1.
+  #   If the global batch size (num_gpus * batch_size) is modified
+  #   the lr_milestones and warmup_steps need to be adjusted accordingly.
   default:
     model:
       regress_forces: "direct"
@@ -73,7 +84,10 @@ s2ef:
       energy_grad_coefficient: 10
   200k: {}
 
-  2M: {}
+  2M:
+    optim:
+      batch_size: 32
+      eval_batch_size: 32
 
   20M: {}
 
