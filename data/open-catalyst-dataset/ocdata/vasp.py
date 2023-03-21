@@ -179,7 +179,7 @@ def write_vasp_input_files(atoms, outdir='.', vasp_flags=None):
     if vasp_flags is None:  # Immutable default
         vasp_flags = VASP_FLAGS.copy()
 
-    atoms, vasp_flags = _clean_up_inputs(atoms, vasp_flags)
+    atoms, vasp_flags = _clean_up_inputs(atoms, vasp_flags.copy())
     calc = Vasp(directory=outdir, **vasp_flags)
     calc.write_input(atoms)
 
