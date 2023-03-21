@@ -341,7 +341,14 @@ class SingleTrainer(BaseTrainer):
 
                     current_val_metric = val_metrics[primary_metric]["metric"]
 
-                    if current_val_metric < self.best_val_metric:
+                    if (
+                        "energy_mae" in primary_metric
+                        and current_val_metric < self.best_val_metric
+                    ) or (
+                        "energy_force_within_threshold" in primary_metric
+                        and current_val_metric > self.best_val_metric
+                    ):
+                        # if current_val_metric < self.best_val_metric:
                         self.best_val_metric = current_val_metric
                         self.save(
                             metrics=val_metrics,
@@ -769,10 +776,15 @@ class SingleTrainer(BaseTrainer):
                     torch.tensor([0.0]),
                     atol=1e-05,
                 )
-            else:
+            elif self.task_name == "is2re":
                 energy_diff_z_percentage += (
                     torch.abs(preds1["energy"] - preds2["energy"])
                     / torch.abs(batch[0].y_relaxed).to(preds1["energy"].device)
+                ).sum()
+            else:
+                energy_diff_z_percentage += (
+                    torch.abs(preds1["energy"] - preds2["energy"])
+                    / torch.abs(batch[0].y).to(preds1["energy"].device)
                 ).sum()
 
             # Diff in positions

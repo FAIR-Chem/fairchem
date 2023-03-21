@@ -14,9 +14,10 @@ if __name__ == "__main__":
 
     args = resolved_args(
         defaults={
-            "job_id": None,
+            "job_id": 2953293,
             "dir": None,
             "config": {},
+            "checkpoint_ref": "best_checkpoint.pt",
         },
         strict=False,
     )
@@ -38,7 +39,7 @@ if __name__ == "__main__":
     trainer_args.continue_from_dir = str(path)
     config = build_config(trainer_args, [])
     config["logger"] = "dummy"
-    config["checkpoint"] = str(path / "checkpoints" / "best_checkpoint.pt")
+    config["checkpoint"] = str(path / "checkpoints" / args.checkpoint_ref)
     config = merge_dicts(config, args.config)
 
     trainer = SingleTrainer(**config)
