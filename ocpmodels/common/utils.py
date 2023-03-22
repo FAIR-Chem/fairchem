@@ -1055,6 +1055,8 @@ def build_config(args, args_override, silent=False):
                 if ("config" not in vars(args) or not args.config)
                 else args.config
             )
+            if args.config.startswith("fanet"):
+                args.config = args.config.replace("fanet", "faenet")
 
     if args.config is None:
         raise ValueError(
