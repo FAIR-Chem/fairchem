@@ -207,10 +207,10 @@ class SingleTrainer(BaseTrainer):
             "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )
         if "energy_force_within_threshold" in primary_metric:
-            self.best_val_metric = - np.inf
-        else: 
+            self.best_val_metric = -np.inf
+        else:
             self.best_val_metric = np.inf
-            
+
         current_val_metric = None
         first_eval = True
         log_train_every = self.config["log_train_every"]
@@ -782,7 +782,9 @@ class SingleTrainer(BaseTrainer):
 
             # Compute prediction on rotated graph
             rotated = self.rotate_graph(batch, rotation="z")
-            preds2 = self.model_forward(deepcopy(rotated["batch_list"]))
+            preds2 = self.model_forward(
+                deepcopy(rotated["batch_list"]), mode="inference"
+            )
 
             # Difference in predictions, for energy and forces
             energy_diff_z += torch.abs(preds1["energy"] - preds2["energy"]).sum()
