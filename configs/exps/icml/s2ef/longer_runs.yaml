@@ -1,0 +1,70 @@
+job:
+  mem: 48GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  mode: train
+  graph_rewiring: remove-tag-0  
+
+runs:
+  - config: faenet-s2ef-2M
+    note: 'S2EF optimising forces_mae only'
+    frame_averaging: 2D
+    fa_frames: random
+    model:
+      mp_type: updownscale_base
+      edge_embed_type: all_rij
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 256
+      num_filters: 480
+      num_gaussians: 136
+      num_interactions: 7
+      second_layer_MLP: False
+      max_num_neighbors: 30
+      skip_co: concat
+      regress_forces: direct_with_gradient_target
+    optim:
+      max_epochs: 30
+      batch_size: 196
+      eval_batch_size: 196
+      lr_initial: 0.00025
+      energy_coefficient: 0
+  - config: faenet-s2ef-2M
+    note: 'S2EF optimising forces_mae only 2'
+    frame_averaging: 2D
+    fa_frames: random
+    model:
+      mp_type: base
+      edge_embed_type: all_rij
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 288
+      num_filters: 544
+      num_gaussians: 135
+      num_interactions: 7
+      second_layer_MLP: True
+      max_num_neighbors: 50
+      skip_co: concat
+      regress_forces: direct
+    optim:
+      max_epochs: 22
+      batch_size: 192
+      eval_batch_size: 192
+      lr_initial: 0.00039
+      energy_grad_coefficient: 5
+      force_coefficient: 100
+      energy_coefficient: 0
+      scheduler: LinearWarmupCosineAnnealingLR
