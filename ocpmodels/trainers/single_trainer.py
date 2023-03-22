@@ -346,7 +346,7 @@ class SingleTrainer(BaseTrainer):
                     current_val_metric = val_metrics[primary_metric]["metric"]
 
                     if (
-                        "energy_mae" in primary_metric
+                        primary_metric in {"energy_mae", "forces_mae"}
                         and current_val_metric < self.best_val_metric
                     ) or (
                         "energy_force_within_threshold" in primary_metric
