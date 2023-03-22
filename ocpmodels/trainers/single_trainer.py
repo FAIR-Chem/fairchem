@@ -206,7 +206,11 @@ class SingleTrainer(BaseTrainer):
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )
-        self.best_val_metric = np.inf
+        if "energy_force_within_threshold" in primary_metric:
+            self.best_val_metric = - np.inf
+        else: 
+            self.best_val_metric = np.inf
+            
         current_val_metric = None
         first_eval = True
         log_train_every = self.config["log_train_every"]
@@ -488,7 +492,7 @@ class SingleTrainer(BaseTrainer):
                     )
                     f_all.append(g_forces)
                 if preds.get("forces_grad_target") is not None:
-                    # Transform forces to guarantee equivariance of FA method
+                    # Transform gradients to stay consistent with FA
                     if fa_rot is None:
                         fa_rot = torch.repeat_interleave(
                             batch_list[0].fa_rot[i], batch_list[0].natoms, dim=0
