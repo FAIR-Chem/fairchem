@@ -20,7 +20,6 @@ from .activations import Act
 
 class Sine(nn.Module):
     def __init__(self, w0: float = 30.0):
-
         super(Sine, self).__init__()
         self.w0 = w0
 
@@ -38,7 +37,6 @@ class SIREN(nn.Module):
         initializer: str = "siren",
         c: float = 6,
     ):
-
         super(SIREN, self).__init__()
         self.layers = [nn.Linear(in_features, layers[0]), Sine(w0=w0)]
 
@@ -66,7 +64,6 @@ class SIREN(nn.Module):
 
 class SINESmearing(nn.Module):
     def __init__(self, in_features, num_freqs=40, use_cosine=False):
-
         super(SINESmearing, self).__init__()
 
         self.num_freqs = num_freqs
@@ -109,7 +106,6 @@ class GaussianSmearing(nn.Module):
 
 class FourierSmearing(nn.Module):
     def __init__(self, in_features, num_freqs=40, use_cosine=False):
-
         super(FourierSmearing, self).__init__()
 
         self.num_freqs = num_freqs

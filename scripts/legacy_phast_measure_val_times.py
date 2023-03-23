@@ -589,7 +589,6 @@ ALL_CONFIGS = [
 
 
 if __name__ == "__main__":
-
     # parse command-line arguments
     args = resolved_args(
         defaults={
@@ -662,7 +661,6 @@ if __name__ == "__main__":
 
         # for each run (to have stats)
         for r in range(args.n_runs):
-
             # print status
             print(
                 f"\n\n🔄 Timing {note} ({c+1}/{len(configs)})",

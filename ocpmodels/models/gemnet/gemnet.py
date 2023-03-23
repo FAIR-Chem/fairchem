@@ -133,7 +133,7 @@ class GemNetT(BaseModel):
         self.scale_file = kwargs["scale_file"]
         self.use_pbc = kwargs["use_pbc"]
 
-        self.direct_forces = "direct" in self.regress_forces # kwargs["direct_forces"]
+        self.direct_forces = "direct" in self.regress_forces  # kwargs["direct_forces"]
 
         assert self.num_blocks > 0
         assert self.cutoff <= 6 or self.otf_graph
@@ -462,7 +462,13 @@ class GemNetT(BaseModel):
             select_cutoff = None
         else:
             select_cutoff = self.cutoff
-        (edge_index, cell_offsets, neighbors, D_st, V_st,) = self.select_edges(
+        (
+            edge_index,
+            cell_offsets,
+            neighbors,
+            D_st,
+            V_st,
+        ) = self.select_edges(
             data=data,
             edge_index=edge_index,
             cell_offsets=cell_offsets,

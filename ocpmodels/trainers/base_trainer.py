@@ -49,7 +49,6 @@ from ocpmodels.modules.scheduler import EarlyStopper, LRScheduler
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
     def __init__(self, **kwargs):
-
         run_dir = kwargs["run_dir"]
         model_name = kwargs["model"].pop(
             "name", kwargs.get("model_name", "Unknown - base_trainer issue")
@@ -471,7 +470,6 @@ class BaseTrainer(ABC):
         optimizer = getattr(optim, optimizer)
 
         if self.config["optim"].get("weight_decay", 0) > 0:
-
             # Do not regularize bias etc.
             params_decay = []
             params_no_decay = []
@@ -649,9 +647,7 @@ class BaseTrainer(ABC):
         times = Times(gpu=True)
 
         with times.next("validation_loop"):
-
             for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
-
                 if self.sigterm:
                     return "SIGTERM"
 

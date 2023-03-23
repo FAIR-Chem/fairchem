@@ -14,7 +14,6 @@ from ocpmodels.common.utils import make_script_trainer
 from ocpmodels.trainers import SingleTrainer
 
 if __name__ == "__main__":
-
     config = {}
     # Customize args
     config["graph_rewiring"] = "remove-tag-0"
@@ -50,7 +49,6 @@ if __name__ == "__main__":
     trainer.train()
 
     if checkpoint_path:
-
         trainer.load_checkpoint(
             checkpoint_path="checkpoints/2022-04-28-11-42-56-dimenetplusplus/"
             + "best_checkpoint.pt"

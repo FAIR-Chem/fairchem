@@ -54,7 +54,6 @@ def print_warnings():
 
 
 def wrap_up(args, start_time, error=None, signal=None, trainer=None):
-
     total_time = time.time() - start_time
     logging.info(f"Total time taken: {total_time}")
     if trainer and trainer.logger is not None:
@@ -108,7 +107,6 @@ if __name__ == "__main__":
     start_time = time.time()
 
     try:
-
         # -- Orion
 
         if args.orion_exp_config_path and dist_utils.is_master():
@@ -135,6 +133,7 @@ if __name__ == "__main__":
         try:
             cls = registry.get_trainer_class(trainer_config["trainer"])
             trainer: BaseTrainer = cls(**trainer_config)
+            breakpoint()
         except Exception as e:
             traceback.print_exc()
             logging.warning(f"\n💀 Error in trainer initialization: {e}\n")

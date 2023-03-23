@@ -41,7 +41,6 @@ TRAINER_CONF_OVERRIDES = {
 }
 
 if __name__ == "__main__":
-
     args = resolved_args(
         defaults={
             "base_dir": "$SCRATCH/ocp/runs",

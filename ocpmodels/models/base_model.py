@@ -42,7 +42,6 @@ class BaseModel(nn.Module):
         preds = self.energy_forward(data)
 
         if self.regress_forces:
-
             if self.regress_forces in {"direct", "direct_with_gradient_target"}:
                 # predict forces
                 forces = self.forces_forward(preds)

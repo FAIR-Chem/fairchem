@@ -78,7 +78,6 @@ class Times:
 
 
 if __name__ == "__main__":
-
     times = Times(gpu=True)
     with times.next("a"):
         sleep(0.1)

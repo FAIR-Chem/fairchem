@@ -229,7 +229,6 @@ class SingleTrainer(BaseTrainer):
             print(f"\nEvaluating every {eval_every} steps\n")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
-
             start_time = time.time()
             if not self.silent:
                 print()
@@ -411,7 +410,6 @@ class SingleTrainer(BaseTrainer):
         from_ckpt=None,
         disable_tqdm=True,
     ):
-
         eas = self.eval_all_splits(
             True,
             epoch=epoch_int,

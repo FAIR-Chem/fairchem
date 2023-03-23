@@ -593,6 +593,7 @@ def conditional_grad(dec):
     Decorator to enable/disable grad depending on whether force/energy
     predictions are being made
     """
+
     # Adapted from
     # https://stackoverflow.com/questions/60907323/accessing-class-property-as-decorator-argument
     def decorator(func):

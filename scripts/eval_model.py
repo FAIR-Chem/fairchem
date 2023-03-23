@@ -11,7 +11,6 @@ from ocpmodels.common.utils import build_config, resolve, setup_imports, merge_d
 from ocpmodels.trainers.single_trainer import SingleTrainer
 
 if __name__ == "__main__":
-
     args = resolved_args(
         defaults={
             "job_id": 2953293,
