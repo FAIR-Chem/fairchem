@@ -1,0 +1,83 @@
+job:
+  mem: 48GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  time: 20:00:00
+
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  mode: train
+  graph_rewiring: remove-tag-0 
+  wandb_tags: force-grad
+
+runs:
+  - config: schnet-s2ef-2M
+    note: 'Baseline Schnet 1 gpu'
+    model:
+      regress_forces: "from_energy"
+    optim:
+      max_epochs: 10
+  - config: schnet-s2ef-2M
+    note: 'Schnet direct'
+    model:
+      regress_forces: "direct"
+    optim:
+      max_epochs: 10
+  - config: schnet-s2ef-2M
+    note: 'Schnet direct grad'
+    model:
+      regress_forces: "direct_with_gradient_target"
+    optim:
+      max_epochs: 10
+  - config: schnet-s2ef-2M
+    note: 'Schnet direct grad low coef'
+    model:
+      regress_forces: "direct_with_gradient_target"
+    optim:
+      max_epochs: 10
+      force_coefficient: 30
+      energy_grad_coefficient: 1
+  - config: schnet-s2ef-2M
+    note: 'Schnet direct grad high coef'
+    model:
+      regress_forces: "direct_with_gradient_target"
+    optim:
+      max_epochs: 10
+      force_coefficient: 30
+      energy_grad_coefficient: 20
+  - config: dpp-s2ef-2M
+    note: 'Dpp 1 gpu'
+    model:
+      regress_forces: "from_energy"
+    optim:
+      max_epochs: 1
+      batch_size: 6
+      eval_batch_size: 6
+  - config: dpp-s2ef-2M
+    note: 'Dpp direct'
+    model:
+      regress_forces: "direct"
+    optim:
+      max_epochs: 1
+      batch_size: 6
+      eval_batch_size: 6
+  - config: dpp-s2ef-2M
+    note: 'Dpp direct grad'
+    model:
+      regress_forces: "direct_with_gradient_target"
+    optim:
+      max_epochs: 1
+      batch_size: 6
+      eval_batch_size: 6
+  - config: dpp-s2ef-2M
+    note: 'Dpp direct grad low coef'
+    model:
+      regress_forces: "direct_with_gradient_target"
+    optim:
+      max_epochs: 1
+      batch_size: 6
+      eval_batch_size: 6
+      force_coefficient: 30
+      energy_grad_coefficient: 1

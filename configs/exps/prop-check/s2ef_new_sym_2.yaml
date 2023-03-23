@@ -25,7 +25,7 @@ default:
     second_layer_MLP: False
     max_num_neighbors: 30
     skip_co: concat
-    regress_forces: direct_with_gradient_target
+    regress_forces: direct
   optim:
     max_epochs: 10
     batch_size: 196
@@ -52,7 +52,7 @@ runs:
     frame_averaging: ""
   - config: faenet-s2ef-2M
     note: 'No train nor FA'
-    model:
+    optim:
       max_epochs: 0
     frame_averaging: ""
   - config: faenet-s2ef-2M

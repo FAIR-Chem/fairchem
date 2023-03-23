@@ -82,6 +82,20 @@ s2ef:
   default:
     model:
       regress_forces: "from_energy"
+      force_decoder_type: "mlp" # can be {"" or "simple"} | only used if regress_forces is True
+      force_decoder_model_config:
+        simple:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        mlp:
+          hidden_channels: 256
+          norm: batch1d # batch1d, layer or null
+        res:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        res_updown:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
     optim:
       num_workers: 8
       eval_every: 10000

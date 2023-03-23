@@ -55,6 +55,7 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.models.base_model import BaseModel
+from ocpmodels.models.force_decoder import ForceDecoder
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
@@ -470,6 +471,10 @@ class DimeNetPlusPlus(BaseModel):
             (default: :obj:`swish`)
         regress_forces: (bool, optional): Compute atom forces from energy.
             (default: false).
+        force_decoder_model_config (dict): config of the force decoder model.
+            keys: "model_type", "hidden_channels", "num_layers", "num_heads",
+        force_decoder_type (str): type of the force decoder model.
+            (options: "mlp", "simple", "res", "res_updown")
     """
 
     url = "https://github.com/klicperajo/dimenet/raw/master/pretrained"
@@ -571,6 +576,18 @@ class DimeNetPlusPlus(BaseModel):
             self.w_lin = Linear(kwargs["hidden_channels"], 1)
 
         self.task = kwargs["task_name"]
+
+        # Force head
+        self.decoder = (
+            ForceDecoder(
+                kwargs["force_decoder_type"],
+                kwargs["hidden_channels"],
+                kwargs["force_decoder_model_config"],
+                act,
+            )
+            if "direct" in self.regress_forces
+            else None
+        )
 
         self.reset_parameters()
 
@@ -734,11 +751,12 @@ class DimeNetPlusPlus(BaseModel):
         return {
             "energy": energy,
             "pooling_loss": pooling_loss,
+            "hidden_state": scatter(x, i, dim=0, dim_size=pos.size(0)),
         }
 
     @conditional_grad(torch.enable_grad())
     def forces_forward(self, preds):
-        return
+        return self.decoder(preds["hidden_state"])
 
     @property
     def num_params(self):
