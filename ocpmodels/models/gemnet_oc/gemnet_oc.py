@@ -234,6 +234,10 @@ class GemNetOC(BaseModel):
         num_elements: int = 83,
         otf_graph: bool = False,
         scale_file: Optional[str] = None,
+        tag_hidden_channels: int = 0,
+        pg_hidden_channels: int = 0,
+        phys_embeds: bool = False,
+        phys_hidden_channels: int = 0,
         **kwargs,  # backwards compatibility with deprecated arguments
     ):
         super().__init__()
@@ -282,7 +286,14 @@ class GemNetOC(BaseModel):
         )
 
         # Embedding blocks
-        self.atom_emb = AtomEmbedding(emb_size_atom, num_elements)
+        self.atom_emb = AtomEmbedding(
+            emb_size_atom,
+            num_elements,
+            tag_hidden_channels=tag_hidden_channels,
+            pg_hidden_channels=pg_hidden_channels,
+            phys_hidden_channels=phys_hidden_channels,
+            phys_embeds=phys_embeds,
+        )
         self.edge_emb = EdgeEmbedding(
             emb_size_atom, num_radial, emb_size_edge, activation=activation
         )
@@ -1237,7 +1248,7 @@ class GemNetOC(BaseModel):
         )
 
         # Embedding block
-        h = self.atom_emb(atomic_numbers)
+        h = self.atom_emb(atomic_numbers, data.tags if hasattr(data, "tags") else None)
         # (nAtoms, emb_size_atom)
         m = self.edge_emb(h, basis_rad_raw, main_graph["edge_index"])
         # (nEdges, emb_size_edge)
