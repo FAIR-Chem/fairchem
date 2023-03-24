@@ -133,7 +133,6 @@ if __name__ == "__main__":
         try:
             cls = registry.get_trainer_class(trainer_config["trainer"])
             trainer: BaseTrainer = cls(**trainer_config)
-            breakpoint()
         except Exception as e:
             traceback.print_exc()
             logging.warning(f"\n💀 Error in trainer initialization: {e}\n")
