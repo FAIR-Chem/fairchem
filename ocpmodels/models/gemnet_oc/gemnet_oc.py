@@ -1203,8 +1203,7 @@ class GemNetOC(BaseModel):
             basis_a2a_rad,
         )
 
-    @conditional_grad(torch.enable_grad())
-    def forward(self, data):
+    def energy_forward(self, data):
         pos = data.pos
         batch = data.batch
         atomic_numbers = data.atomic_numbers.long()
@@ -1302,43 +1301,58 @@ class GemNetOC(BaseModel):
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
             )  # (nMolecules, num_targets)
 
-        if self.regress_forces:
-            if self.direct_forces:
-                if self.forces_coupled:  # enforce F_st = F_ts
-                    nEdges = idx_t.shape[0]
-                    id_undir = repeat_blocks(
-                        main_graph["num_neighbors"] // 2,
-                        repeats=2,
-                        continuous_indexing=True,
-                    )
-                    F_st = scatter_det(
-                        F_st,
-                        id_undir,
-                        dim=0,
-                        dim_size=int(nEdges / 2),
-                        reduce="mean",
-                    )  # (nEdges/2, num_targets)
-                    F_st = F_st[id_undir]  # (nEdges, num_targets)
+        return {
+            "energy": E_t.squeeze(1),  # (num_molecules)
+            "E_t": E_t,
+            "idx_t": idx_t,
+            "main_graph": main_graph,
+            "num_atoms": num_atoms,
+            "pos": pos,
+            "F_st": F_st,
+        }
 
-                # map forces in edge directions
-                F_st_vec = F_st[:, :, None] * main_graph["vector"][:, None, :]
-                # (nEdges, num_targets, 3)
-                F_t = scatter_det(
-                    F_st_vec,
-                    idx_t,
+    @conditional_grad(torch.enable_grad())
+    def forces_forward(self, preds):
+
+        idx_t = preds["idx_t"]
+        main_graph = preds["main_graph"]
+        num_atoms = preds["num_atoms"]
+        pos = preds["pos"]
+        F_st = preds["F_st"]
+        E_t = preds["E_t"]
+
+        if self.direct_forces:
+            if self.forces_coupled:  # enforce F_st = F_ts
+                nEdges = idx_t.shape[0]
+                id_undir = repeat_blocks(
+                    main_graph["num_neighbors"] // 2,
+                    repeats=2,
+                    continuous_indexing=True,
+                )
+                F_st = scatter_det(
+                    F_st,
+                    id_undir,
                     dim=0,
-                    dim_size=num_atoms,
-                    reduce="add",
-                )  # (nAtoms, num_targets, 3)
-            else:
-                F_t = self.force_scaler.calc_forces_and_update(E_t, pos)
+                    dim_size=int(nEdges / 2),
+                    reduce="mean",
+                )  # (nEdges/2, num_targets)
+                F_st = F_st[id_undir]  # (nEdges, num_targets)
 
-            E_t = E_t.squeeze(1)  # (num_molecules)
-            F_t = F_t.squeeze(1)  # (num_atoms, 3)
-            return E_t, F_t
+            # map forces in edge directions
+            F_st_vec = F_st[:, :, None] * main_graph["vector"][:, None, :]
+            # (nEdges, num_targets, 3)
+            F_t = scatter_det(
+                F_st_vec,
+                idx_t,
+                dim=0,
+                dim_size=num_atoms,
+                reduce="add",
+            )  # (nAtoms, num_targets, 3)
         else:
-            E_t = E_t.squeeze(1)  # (num_molecules)
-            return E_t
+            F_t = self.force_scaler.calc_forces_and_update(E_t, pos)
+
+        F_t = F_t.squeeze(1)  # (num_atoms, 3)
+        return F_t
 
     @property
     def num_params(self):
