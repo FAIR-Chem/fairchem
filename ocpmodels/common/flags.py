@@ -283,7 +283,7 @@ class Flags:
         self.parser.add_argument(
             "--inference_time_loops",
             type=int,
-            default=5,
+            default=3,
             help="Number of validation loops to run in order to collect inference"
             + " timing stats",
         )
