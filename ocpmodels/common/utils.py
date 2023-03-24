@@ -758,6 +758,9 @@ def setup_imports():
                 module_name = file_name[: file_name.find(".py")]
                 importlib.import_module("ocpmodels.%s.%s" % (key[1:], module_name))
 
+    # manual model imports
+    importlib.import_module("ocpmodels.models.gemnet_oc.gemnet_oc")
+
     experimental_folder = os.path.join(root_folder, "../experimental/")
     if os.path.exists(experimental_folder):
         experimental_files = glob.glob(
