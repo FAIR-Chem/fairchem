@@ -5,29 +5,23 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
-import os
 from typing import Optional
 
 import numpy as np
 import torch
-from torch_geometric.nn import radius_graph
-from torch_scatter import scatter, segment_coo
+from torch_scatter import segment_coo
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
-    compute_neighbors,
     conditional_grad,
     get_max_neighbors_mask,
-    get_pbc_distances,
-    radius_graph_pbc,
     scatter_det,
 )
-from ocpmodels.models.base import BaseModel
-from ocpmodels.modules.scaling.compat import load_scales_compat
+from ocpmodels.models.base_model import BaseModel
+from ocpmodels.common.scaling.compat import load_scales_compat
 
 from .initializers import get_initializer
 from .interaction_indices import (
-    get_mixed_triplets,
     get_quadruplets,
     get_triplets,
 )
@@ -47,6 +41,7 @@ from .utils import (
     mask_neighbors,
     repeat_blocks,
 )
+from .interaction_indices import get_mixed_triplets
 
 
 @registry.register_model("gemnet_oc")
@@ -585,7 +580,8 @@ class GemNetOC(BaseModel):
         )
         self.mlp_cbf_tint = BasisEmbedding(num_radial, emb_size_cbf, num_spherical)
 
-        # Share the dense Layer of the atom embedding block accross the interaction blocks
+        # Share the dense Layer of the atom embedding block across
+        # the interaction blocks
         self.mlp_rbf_h = Dense(
             num_radial,
             emb_size_rbf,
@@ -654,7 +650,7 @@ class GemNetOC(BaseModel):
         angle_cabd: Tensor, shape = (num_quadruplets,)
             Dihedral angle between atoms c <- a-b -> d.
         """
-        # ---------------------------------- d -> b -> a ---------------------------------- #
+        # ---------------------------------- d -> b -> a ----------------------------- #
         V_ba = V_qint_st[quad_idx["triplet_in"]["out"]]
         # (num_triplets_qint, 3)
         V_db = V_st[quad_idx["triplet_in"]["in"]]
@@ -668,7 +664,7 @@ class GemNetOC(BaseModel):
         V_db_cross = V_db_cross[quad_idx["trip_in_to_quad"]]
         # (num_quadruplets,)
 
-        # --------------------------------- c -> a <- b ---------------------------------- #
+        # ----------------------------- c -> a <- b ---------------------------------- #
         V_ca = V_st[quad_idx["triplet_out"]["out"]]  # (num_triplets_in, 3)
         V_ba = V_qint_st[quad_idx["triplet_out"]["in"]]  # (num_triplets_in, 3)
         cosφ_cab = inner_product_clamped(V_ca, V_ba)  # (n4Triplets,)
@@ -679,7 +675,7 @@ class GemNetOC(BaseModel):
         V_ca_cross = V_ca_cross[quad_idx["trip_out_to_quad"]]
         # (num_quadruplets,)
 
-        # -------------------------------- c -> a - b <- d -------------------------------- #
+        # --------------------------- c -> a - b <- d -------------------------------- #
         half_angle_cabd = get_angle(V_ca_cross, V_db_cross)
         # (num_quadruplets,)
         angle_cabd = half_angle_cabd
