@@ -33,7 +33,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
-from torch_scatter import segment_coo, segment_csr
+from torch_scatter import segment_coo, segment_csr, scatter
 
 import ocpmodels
 from ocpmodels.common.flags import flags
@@ -749,7 +749,6 @@ def setup_imports():
         + glob.glob(trainer_pattern, recursive=True)
         + glob.glob(task_pattern, recursive=True)
     )
-
     for f in files:
         for key in ["/trainers", "/datasets", "/models", "/tasks"]:
             if f.find(key) != -1:
@@ -1363,7 +1362,9 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     cells_per_dim = [
         torch.arange(-rep, rep + 1, device=device, dtype=torch.float) for rep in max_rep
     ]
-    unit_cell = torch.cat(torch.meshgrid(cells_per_dim), dim=-1).reshape(-1, 3)
+    unit_cell = torch.cat(torch.meshgrid(cells_per_dim, indexing="ij"), dim=-1).reshape(
+        -1, 3
+    )
     num_cells = len(unit_cell)
     unit_cell_per_atom = unit_cell.view(1, num_cells, 3).repeat(len(index2), 1, 1)
     unit_cell = torch.transpose(unit_cell, 0, 1)
@@ -1729,3 +1730,17 @@ def base_config(config, overrides={}):
     conf["cpu"] = not torch.cuda.is_available()
 
     return merge_dicts(conf, overrides)
+
+
+def scatter_det(*args, **kwargs):
+    from ocpmodels.common.registry import registry
+
+    if registry.get("set_deterministic_scatter", no_warning=True):
+        torch.use_deterministic_algorithms(mode=True)
+
+    out = scatter(*args, **kwargs)
+
+    if registry.get("set_deterministic_scatter", no_warning=True):
+        torch.use_deterministic_algorithms(mode=False)
+
+    return out
