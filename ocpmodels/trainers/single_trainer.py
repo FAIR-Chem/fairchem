@@ -776,7 +776,7 @@ class SingleTrainer(BaseTrainer):
             n_atoms += batch[0].natoms.sum()
 
             # Compute model prediction
-            preds1 = self.model_forward(deepcopy(batch))
+            preds1 = self.model_forward(deepcopy(batch), mode="inference")
 
             # Compute prediction on rotated graph
             rotated = self.rotate_graph(batch, rotation="z")
@@ -827,7 +827,7 @@ class SingleTrainer(BaseTrainer):
 
             # Reflect graph and compute diff in prediction
             reflected = self.reflect_graph(batch)
-            preds3 = self.model_forward(reflected["batch_list"])
+            preds3 = self.model_forward(reflected["batch_list"], mode="inference")
             energy_diff_refl += torch.abs(preds1["energy"] - preds3["energy"]).sum()
             if self.task_name == "s2ef":
                 forces_diff_refl += torch.abs(
@@ -845,7 +845,7 @@ class SingleTrainer(BaseTrainer):
 
             # 3D Rotation and compute diff in prediction
             rotated = self.rotate_graph(batch)
-            preds4 = self.model_forward(rotated["batch_list"])
+            preds4 = self.model_forward(rotated["batch_list"], mode="inference")
             energy_diff += torch.abs(preds1["energy"] - preds4["energy"]).sum()
             if self.task_name == "s2ef":
                 forces_diff += torch.abs(preds1["forces"] - preds4["forces"]).sum()
