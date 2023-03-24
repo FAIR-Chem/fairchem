@@ -7,13 +7,10 @@ LICENSE file in the root directory of this source tree.
 import math
 
 import numpy as np
-import sympy as sym
 import torch
 from scipy.special import binom
 
-from ocpmodels.modules.scaling import ScaleFactor
-
-from .basis_utils import bessel_basis
+from ocpmodels.common.scaling import ScaleFactor
 
 
 class PolynomialEnvelope(torch.nn.Module):
