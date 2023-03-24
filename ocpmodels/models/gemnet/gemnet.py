@@ -462,13 +462,7 @@ class GemNetT(BaseModel):
             select_cutoff = None
         else:
             select_cutoff = self.cutoff
-        (
-            edge_index,
-            cell_offsets,
-            neighbors,
-            D_st,
-            V_st,
-        ) = self.select_edges(
+        (edge_index, cell_offsets, neighbors, D_st, V_st,) = self.select_edges(
             data=data,
             edge_index=edge_index,
             cell_offsets=cell_offsets,
@@ -514,7 +508,6 @@ class GemNetT(BaseModel):
             id3_ragged_idx,
         )
 
-    @conditional_grad(torch.enable_grad())
     def energy_forward(self, data):
         pos = data.pos
         batch = data.batch
