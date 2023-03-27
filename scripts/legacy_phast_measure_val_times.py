@@ -17,15 +17,16 @@ from copy import deepcopy
 import numpy as np
 import torch
 
-if Path.cwd().name == "scripts":
-    sys.path.append("..")
 
 from time import time
 
 from minydra import resolved_args
 from tqdm import tqdm
 
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from ocpmodels.common.utils import make_script_trainer
+from ocpmodels.common.timer import Times
 
 try:
     import ipdb  # noqa: F401
@@ -151,8 +152,29 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
+            "--config=faenet-is2re-all",
+        ],
+        "overrides": {**TRAINER_CONF_OVERRIDES, "note": "faenet Baseline"},
+    },
+    {
+        "str_args": [
+            "--mode=train",
+            "--config=gemnet_t-is2re-all",
+        ],
+        "overrides": {**TRAINER_CONF_OVERRIDES, "note": "gemnet_t Baseline"},
+    },
+    {
+        "str_args": [
+            "--mode=train",
+            "--config=gemnet_oc-is2re-all",
+        ],
+        "overrides": {**TRAINER_CONF_OVERRIDES, "note": "gemnet_oc Baseline"},
+    },
+    {
+        "str_args": [
+            "--mode=train",
             "--config=schnet-is2re-all",
-            "--model.graph_rewiring=remove-tag-0",
+            "--graph_rewiring=remove-tag-0",
         ],
         "overrides": {
             **TRAINER_CONF_OVERRIDES,
@@ -163,7 +185,7 @@ ALL_CONFIGS = [
         "str_args": [
             "--mode=train",
             "--config=dpp-is2re-all",
-            "--model.graph_rewiring=remove-tag-0",
+            "--graph_rewiring=remove-tag-0",
         ],
         "overrides": {
             **TRAINER_CONF_OVERRIDES,
@@ -174,7 +196,7 @@ ALL_CONFIGS = [
         "str_args": [
             "--mode=train",
             "--config=forcenet-is2re-all",
-            "--model.graph_rewiring=remove-tag-0",
+            "--graph_rewiring=remove-tag-0",
         ],
         "overrides": {
             **TRAINER_CONF_OVERRIDES,
@@ -184,8 +206,41 @@ ALL_CONFIGS = [
     {
         "str_args": [
             "--mode=train",
+            "--config=faenet-is2re-all",
+            "--graph_rewiring=remove-tag-0",
+        ],
+        "overrides": {
+            **TRAINER_CONF_OVERRIDES,
+            "note": "faenet Rewiring: Remove Tag-0",
+        },
+    },
+    {
+        "str_args": [
+            "--mode=train",
+            "--config=gemnet_t-is2re-all",
+            "--graph_rewiring=remove-tag-0",
+        ],
+        "overrides": {
+            **TRAINER_CONF_OVERRIDES,
+            "note": "gemnet_t Rewiring: Remove Tag-0",
+        },
+    },
+    {
+        "str_args": [
+            "--mode=train",
+            "--config=gemnet_oc-is2re-all",
+            "--graph_rewiring=remove-tag-0",
+        ],
+        "overrides": {
+            **TRAINER_CONF_OVERRIDES,
+            "note": "gemnet_oc Rewiring: Remove Tag-0",
+        },
+    },
+    {
+        "str_args": [
+            "--mode=train",
             "--config=schnet-is2re-all",
-            "--model.graph_rewiring=one-supernode-per-graph",
+            "--graph_rewiring=one-supernode-per-graph",
         ],
         "overrides": {
             **TRAINER_CONF_OVERRIDES,
@@ -196,7 +251,7 @@ ALL_CONFIGS = [
         "str_args": [
             "--mode=train",
             "--config=dpp-is2re-all",
-            "--model.graph_rewiring=one-supernode-per-graph",
+            "--graph_rewiring=one-supernode-per-graph",
         ],
         "overrides": {
             **TRAINER_CONF_OVERRIDES,
@@ -207,7 +262,7 @@ ALL_CONFIGS = [
         "str_args": [
             "--mode=train",
             "--config=forcenet-is2re-all",
-            "--model.graph_rewiring=one-supernode-per-graph",
+            "--graph_rewiring=one-supernode-per-graph",
         ],
         "overrides": {
             **TRAINER_CONF_OVERRIDES,
@@ -218,7 +273,7 @@ ALL_CONFIGS = [
         "str_args": [
             "--mode=train",
             "--config=schnet-is2re-all",
-            "--model.graph_rewiring=one-supernode-per-atom-type",
+            "--graph_rewiring=one-supernode-per-atom-type",
         ],
         "overrides": {
             **TRAINER_CONF_OVERRIDES,
@@ -229,7 +284,7 @@ ALL_CONFIGS = [
         "str_args": [
             "--mode=train",
             "--config=dpp-is2re-all",
-            "--model.graph_rewiring=one-supernode-per-atom-type",
+            "--graph_rewiring=one-supernode-per-atom-type",
         ],
         "overrides": {
             **TRAINER_CONF_OVERRIDES,
@@ -240,7 +295,7 @@ ALL_CONFIGS = [
         "str_args": [
             "--mode=train",
             "--config=forcenet-is2re-all",
-            "--model.graph_rewiring=one-supernode-per-atom-type",
+            "--graph_rewiring=one-supernode-per-atom-type",
         ],
         "overrides": {
             **TRAINER_CONF_OVERRIDES,
@@ -251,7 +306,7 @@ ALL_CONFIGS = [
         "str_args": [
             "--mode=train",
             "--config=schnet-is2re-all",
-            "--model.graph_rewiring=one-supernode-per-atom-type-dist",
+            "--graph_rewiring=one-supernode-per-atom-type-dist",
         ],
         "overrides": {
             **TRAINER_CONF_OVERRIDES,
@@ -668,14 +723,21 @@ if __name__ == "__main__":
             )
 
             # for each batch in the val-id dataset
-            for b, batch in enumerate(tqdm(trainer.val_loader, desc=note)):
+            loader = (
+                trainer.val_loader
+                if hasattr(trainer, "val_loader")
+                else trainer.loaders[trainer.config["dataset"]["default_val"]]
+            )
+            timer = Times(gpu=True)
+            for b, batch in enumerate(tqdm(loader, desc=note)):
                 # time the forward pass
-                t = time()
                 with torch.cuda.amp.autocast(enabled=trainer.scaler is not None):
-                    _ = trainer.model_forward(batch)
-                forward_duration = time() - t
-
-                if trainer.model.module.graph_rewiring:
+                    with timer.next("forward") as t:
+                        _ = trainer.model_forward(batch)
+                forward_duration = t.times["forward"][-1]
+                if (
+                    False and trainer.model.module.graph_rewiring
+                ):  # False to ignore this part, for JMLR
                     # remove the rewiring time which really should be done in
                     # the data loader
                     forward_duration -= trainer.model.module.rewiring_time
