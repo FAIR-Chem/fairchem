@@ -99,6 +99,9 @@ s2ef:
     optim:
       num_workers: 8
       eval_every: 10000
+      force_coefficient: 50
+      energy_coefficient: 1
+      energy_grad_coefficient: 5
 
   200k:
     optim:
