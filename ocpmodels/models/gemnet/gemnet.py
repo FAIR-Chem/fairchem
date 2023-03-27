@@ -132,6 +132,10 @@ class GemNetT(BaseModel):
         self.regress_forces = kwargs["regress_forces"]
         self.scale_file = kwargs["scale_file"]
         self.use_pbc = kwargs["use_pbc"]
+        self.tag_hidden_channels = kwargs["tag_hidden_channels"]
+        self.pg_hidden_channels = kwargs["pg_hidden_channels"]
+        self.phys_hidden_channels = kwargs["phys_hidden_channels"]
+        self.phys_embeds = kwargs["phys_embeds"]
 
         self.direct_forces = "direct" in self.regress_forces  # kwargs["direct_forces"]
 
@@ -193,7 +197,14 @@ class GemNetT(BaseModel):
         ### ------------------------------------------------------------------------------------- ###
 
         # Embedding block
-        self.atom_emb = AtomEmbedding(self.emb_size_atom)
+        self.atom_emb = AtomEmbedding(
+            self.emb_size_atom,
+            num_elements=85,
+            tag_hidden_channels=self.tag_hidden_channels,
+            pg_hidden_channels=self.pg_hidden_channels,
+            phys_hidden_channels=self.phys_hidden_channels,
+            phys_embeds=self.phys_embeds,
+        )
         self.edge_emb = EdgeEmbedding(
             self.emb_size_atom,
             self.num_radial,
@@ -535,7 +546,7 @@ class GemNetT(BaseModel):
         rbf = self.radial_basis(D_st)
 
         # Embedding block
-        h = self.atom_emb(atomic_numbers)
+        h = self.atom_emb(atomic_numbers, data.tags if hasattr(data, "tags") else None)
         # (nAtoms, emb_size_atom)
         m = self.edge_emb(h, rbf, idx_s, idx_t)  # (nEdges, emb_size_edge)
 
