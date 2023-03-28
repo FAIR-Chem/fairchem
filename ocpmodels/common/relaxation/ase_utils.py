@@ -31,7 +31,7 @@ from ocpmodels.preprocessing import AtomsToGraphs
 
 
 def batch_to_atoms(batch):
-    n_systems = batch.neighbors.shape[0]
+    n_systems = batch.natoms.shape[0]
     natoms = batch.natoms.tolist()
     numbers = torch.split(batch.atomic_numbers, natoms)
     fixed = torch.split(batch.fixed, natoms)

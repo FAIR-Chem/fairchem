@@ -156,7 +156,7 @@ class ForcesTrainer(BaseTrainer):
         results_file=None,
         disable_tqdm=False,
     ):
-        ensure_fitted(self._unwrapped_model)
+        ensure_fitted(self._unwrapped_model, warn=True)
 
         if distutils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
@@ -682,6 +682,7 @@ class ForcesTrainer(BaseTrainer):
                 steps=self.config["task"].get("relaxation_steps", 200),
                 fmax=self.config["task"].get("relaxation_fmax", 0.0),
                 relax_opt=self.config["task"]["relax_opt"],
+                save_full_traj=self.config["task"].get("save_full_traj", True),
                 device=self.device,
                 transform=None,
             )

@@ -1,0 +1,49 @@
+# A total of 16 32GB GPUs were used for training.
+
+includes:
+  - configs/s2ef/2M/base.yml
+
+model:
+  name: scn
+  num_interactions: 12
+  hidden_channels: 1024
+  sphere_channels: 128
+  sphere_channels_reduce: 128
+  num_sphere_samples: 128
+  num_basis_functions: 128
+  distance_function: "gaussian"
+  max_num_neighbors: 40
+  cutoff: 8.0
+  lmax: 6
+  mmax: 1
+  use_grid: True
+  num_bands: 1
+  num_taps: 1
+  regress_forces: True
+  use_pbc: True
+  basis_width_scalar: 2.0
+  otf_graph: True
+
+optim:
+  batch_size: 4
+  eval_batch_size: 4
+  num_workers: 8
+  lr_initial: 0.0004
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True}
+  eval_every: 5000
+  lr_gamma: 0.3
+  lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+    - 156250
+    - 218750
+    - 281250
+    - 343750
+  warmup_steps: 100
+  warmup_factor: 0.2
+  max_epochs: 12
+  force_coefficient: 100
+  energy_coefficient: 2
+  clip_grad_norm: 100
+  ema_decay: 0.999
+  loss_energy: mae
+  loss_force: l2mae
