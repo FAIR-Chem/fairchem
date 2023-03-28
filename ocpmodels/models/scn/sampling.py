@@ -11,7 +11,7 @@ import torch
 ### Methods for sample points on a sphere
 
 
-def CalcSpherePoints(num_points, device):
+def CalcSpherePoints(num_points, device="cpu"):
     goldenRatio = (1 + 5**0.5) / 2
     i = torch.arange(num_points, device=device).view(-1, 1)
     theta = 2 * math.pi * i / goldenRatio
