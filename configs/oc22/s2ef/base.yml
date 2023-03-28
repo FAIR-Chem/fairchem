@@ -4,10 +4,8 @@ dataset:
   train:
     src: data/oc22/s2ef/train
     normalize_labels: False
-    total_energy: True
   val:
     src: data/oc22/s2ef/val_id
-    total_energy: True
 
 logger: wandb
 
