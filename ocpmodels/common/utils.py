@@ -723,7 +723,7 @@ def get_max_neighbors_mask(
     index,
     atom_distance,
     max_num_neighbors_threshold,
-    break_ties_heuristically = True,
+    break_ties_heuristically = False,
 ):
     """
     Give a mask that filters out edges so that each atom has at most
@@ -789,7 +789,7 @@ def get_max_neighbors_mask(
         num_included = max_num_neighbors_threshold
         
     else:
-        effective_cutoff = distance_sort[:, max_num_neighbors_threshold]
+        effective_cutoff = distance_sort[:, max_num_neighbors_threshold] + 0.01
         is_included = torch.le(distance_sort.T, effective_cutoff)
         num_included = torch.max(torch.sum(is_included, dim=0))
 
