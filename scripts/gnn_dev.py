@@ -21,16 +21,17 @@ if __name__ == "__main__":
     config["frame_averaging"] = "2D"
     config["fa_frames"] = "random"  # "random"
     config["test_ri"] = True
-    config["optim"] = {"max_epochs": 0}
+    config["optim"] = {"max_epochs": 1}
     config["model"] = {"use_pbc": True}
     config["model"]["edge_embed_type"] = "all_rij"
     config["model"]["mp_type"] = "base"
     config["model"]["skip_co"] = "concat"  # add, concat,
     config["model"]["complex_mp"] = True
     config["model"]["graph_norm"] = True
-    config["optim"]["eval_every"] = 1
-    config["optim"]["batch_size"] = 120
-    config["model"]["regress_forces"] = "direct"
+    # config["optim"]["eval_every"] = 1
+    config["optim"]["batch_size"] = 6
+    config["optim"]["eval_batch_size"] = 6
+    config["model"]["regress_forces"] = "direct_with_gradient_target"
 
     checkpoint_path = None
     # "checkpoints/2022-04-28-11-42-56-dimenetplusplus/" + "best_checkpoint.pt"
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     if all("config" not in arg for arg in str_args):
         str_args.append("--is_debug")
         # str_args.append("--config=faenet-is2re-all")
-        str_args.append("--config=faenet-s2ef-2M")
+        str_args.append("--config=dpp-s2ef-2M")
         # str_args.append("--silent=0")
         warnings.warn(
             "No model / mode is given; chosen as default" + f"Using: {str_args[-1]}"

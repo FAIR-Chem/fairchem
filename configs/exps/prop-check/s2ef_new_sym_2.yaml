@@ -27,14 +27,14 @@ default:
     skip_co: concat
     regress_forces: direct
   optim:
-    max_epochs: 10
-    batch_size: 196
-    eval_batch_size: 196
+    max_epochs: 8
+    batch_size: 120
+    eval_batch_size: 120
     lr_initial: 0.00025
 
-runs:
+runs:  
   - config: faenet-s2ef-2M
-    note: '2D all'
+    note: 'faenet 2D all'
     frame_averaging: 2D
     fa_frames: all
   - config: faenet-s2ef-2M
@@ -65,3 +65,10 @@ runs:
   - config: sfarinet-s2ef-2M
     note: 'sfarinet 2D all'
     frame_averaging: 2D
+  - config: faenet-s2ef-2M
+    note: 'se3 2D all small batch'
+    frame_averaging: 2D
+    fa_frames: se3-all
+    optim: 
+      batch_size: 80
+      eval_batch_size: 80
