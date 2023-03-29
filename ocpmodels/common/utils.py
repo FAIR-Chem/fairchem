@@ -719,7 +719,11 @@ def radius_graph_pbc(
 
 
 def get_max_neighbors_mask(
-    natoms, index, atom_distance, max_num_neighbors_threshold
+    natoms,
+    index,
+    atom_distance,
+    max_num_neighbors_threshold,
+    break_ties_heuristically = True,
 ):
     """
     Give a mask that filters out edges so that each atom has at most
@@ -777,13 +781,30 @@ def get_max_neighbors_mask(
 
     # Sort neighboring atoms based on distance
     distance_sort, index_sort = torch.sort(distance_sort, dim=1)
+    
     # Select the max_num_neighbors_threshold neighbors that are closest
-    distance_sort = distance_sort[:, :max_num_neighbors_threshold]
-    index_sort = index_sort[:, :max_num_neighbors_threshold]
+    if break_ties_heuristically:
+        distance_sort = distance_sort[:, :max_num_neighbors_threshold]
+        index_sort = index_sort[:, :max_num_neighbors_threshold]
+        num_included = max_num_neighbors_threshold
+        
+    else:
+        effective_cutoff = distance_sort[:, max_num_neighbors_threshold]
+        is_included = torch.le(distance_sort.T, effective_cutoff)
+        num_included = torch.max(torch.sum(is_included, dim=0))
+
+        distance_sort = distance_sort[:, :num_included]
+        index_sort = index_sort[:, :num_included]
+        
+        num_neighbors_thresholded = num_neighbors.clamp(
+            max=num_included
+        )
+        
+        num_neighbors_image = segment_csr(num_neighbors_thresholded, image_indptr)
 
     # Offset index_sort so that it indexes into index
     index_sort = index_sort + index_neighbor_offset.view(-1, 1).expand(
-        -1, max_num_neighbors_threshold
+        -1, num_included
     )
     # Remove "unused pairs" with infinite distances
     mask_finite = torch.isfinite(distance_sort)
