@@ -119,6 +119,7 @@ TRAINER_CONF_OVERRIDES = {
     "optim": {
         "num_workers": 6,
         "eval_batch_size": 64,
+        "batch_size": 64,
     },
     "logger": "dummy",
 }
