@@ -42,9 +42,26 @@ class Times:
         self.gpu = gpu
         self.ignore = ignore
 
-    def reset(self):
-        self.times = defaultdict(list)
-        self.timers = {}
+    def reset(self, keys=None):
+        """
+        Resets timers as per ``keys``.
+        If ``keys`` is None, resets all timers.
+
+        Args:
+            keys (Union[str, List[str]], optional): Specific named timers to reset,
+            or all of them if ``keys`` is ``None`` . Defaults to ``None``.
+        """
+        if isinstance(keys, str):
+            keys = [keys]
+
+        if keys is None:
+            self.times = defaultdict(list)
+            self.timers = {}
+        else:
+            for k in keys:
+                if k in self.times:
+                    self.times[k] = []
+                self.timers.pop(k, None)
 
     def prepare_for_logging(self, map_func=None, map_funcs=None):
         """
@@ -74,6 +91,8 @@ class Times:
             self.timers[name] = Timer(
                 name, self.times, self.gpu if gpu is None else gpu, ignore
             )
+        if ignore != self.timers[name].ignore:
+            self.timers[name].ignore = ignore
         return self.timers[name]
 
 
