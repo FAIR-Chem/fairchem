@@ -724,8 +724,8 @@ def get_max_neighbors_mask(
     atom_distance,
     max_num_neighbors_threshold,
     enforce_max_strictly = False,
-    enforce_symmetry = True,
-    enforce_symmetry_pooling_func: Callable = torch.max,
+    global_cutoff = True,
+    global_cutoff_pooling_func: Callable = torch.max,
 ):
     """
     Give a mask that filters out edges so that each atom has at most
@@ -737,9 +737,10 @@ def get_max_neighbors_mask(
     example, bulk formation energies which are not invariant to
     unit cell choice.
     
-    Enforcing symmetry will set a global cutoff that will lead to each 
-    atom having approximately the desired number of edges. This ensures 
-    that for all returned edges i->j, j->i is also returned.
+    If enabled, a global cutoff that leads to each atom having 
+    approximately the desired number of edges will be chosen. The 
+    primary purpose is to ensure  that for all returned 
+    edges i->j, j->i is also returned (symmetry enforcement).
     You can supply a callable that specifies how the list of effective
     cutoffs for each atom will be turned into one global cutoff.
     Reasonable callables may include: torch.min, torch.max, torch.mean
@@ -809,8 +810,8 @@ def get_max_neighbors_mask(
         
     else:
         effective_cutoff = distance_sort[:, max_num_neighbors_threshold] + 0.01
-        if enforce_symmetry:
-            effective_cutoff = enforce_symmetry_pooling_func(effective_cutoff)
+        if global_cutoff:
+            effective_cutoff = global_cutoff_pooling_func(effective_cutoff)
         is_included = torch.le(distance_sort.T, effective_cutoff)
         
         # Set all undesired edges to infinite length to be removed later
