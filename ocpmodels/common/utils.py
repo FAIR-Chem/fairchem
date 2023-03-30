@@ -786,25 +786,31 @@ def get_max_neighbors_mask(
     if break_ties_heuristically:
         distance_sort = distance_sort[:, :max_num_neighbors_threshold]
         index_sort = index_sort[:, :max_num_neighbors_threshold]
-        num_included = max_num_neighbors_threshold
+        max_num_included = max_num_neighbors_threshold
         
     else:
         effective_cutoff = distance_sort[:, max_num_neighbors_threshold] + 0.01
         is_included = torch.le(distance_sort.T, effective_cutoff)
-        num_included = torch.max(torch.sum(is_included, dim=0))
-
-        distance_sort = distance_sort[:, :num_included]
-        index_sort = index_sort[:, :num_included]
         
+        # Set all undesired edges to infinite length to be removed later
+        distance_sort[~is_included.T] = np.inf
+        
+        # Subselect tensors for efficiency
+        num_included_per_atom = torch.sum(is_included, dim=0)
+        max_num_included = torch.max(num_included_per_atom)
+        distance_sort = distance_sort[:, :max_num_included]
+        index_sort = index_sort[:, :max_num_included]
+        
+        # Recompute the number of neighbors
         num_neighbors_thresholded = num_neighbors.clamp(
-            max=num_included
+            max=num_included_per_atom
         )
         
         num_neighbors_image = segment_csr(num_neighbors_thresholded, image_indptr)
 
     # Offset index_sort so that it indexes into index
     index_sort = index_sort + index_neighbor_offset.view(-1, 1).expand(
-        -1, num_included
+        -1, max_num_included
     )
     # Remove "unused pairs" with infinite distances
     mask_finite = torch.isfinite(distance_sort)
