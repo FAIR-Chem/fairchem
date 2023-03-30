@@ -94,20 +94,3 @@ class Times:
         if ignore != self.timers[name].ignore:
             self.timers[name].ignore = ignore
         return self.timers[name]
-
-
-if __name__ == "__main__":
-    times = Times(gpu=True)
-    with times.next("a"):
-        sleep(0.1)
-    with times.next("b"):
-        sleep(0.2)
-    with times.next("a"):
-        sleep(0.3)
-    with times.next("b"):
-        sleep(0.4)
-    with times.next("a"):
-        sleep(0.5)
-    with times.next("b"):
-        sleep(0.6)
-    print(times.prepare_for_logging())
