@@ -723,13 +723,28 @@ def get_max_neighbors_mask(
     index,
     atom_distance,
     max_num_neighbors_threshold,
-    break_ties_heuristically = False,
+    enforce_max_strictly = False,
+    enforce_symmetry = False,
 ):
     """
     Give a mask that filters out edges so that each atom has at most
     `max_num_neighbors_threshold` neighbors.
     Assumes that `index` is sorted.
+    
+    Enforcing the max strictly can force the arbitrary choice between
+    degenerate edges. This can lead to undesired behaviors; for 
+    example, bulk formation energies which are not invariant to
+    unit cell choice.
+    
+    Enforcing symmetry will set a global cutoff that will lead to each 
+    atom having approximately the desired number of edges. This ensures 
+    that for all returned edges i->j, j->i is also returned.
+    
+    Strictly enforcing the maximum and symmetry together is unsupported.
     """
+    
+    assert not (enforce_max_strictly and enforce_symmetry)
+    
     device = natoms.device
     num_atoms = natoms.sum()
 
@@ -783,13 +798,15 @@ def get_max_neighbors_mask(
     distance_sort, index_sort = torch.sort(distance_sort, dim=1)
     
     # Select the max_num_neighbors_threshold neighbors that are closest
-    if break_ties_heuristically:
+    if enforce_max_strictly:
         distance_sort = distance_sort[:, :max_num_neighbors_threshold]
         index_sort = index_sort[:, :max_num_neighbors_threshold]
         max_num_included = max_num_neighbors_threshold
         
     else:
         effective_cutoff = distance_sort[:, max_num_neighbors_threshold] + 0.01
+        if enforce_symmetry:
+            effective_cutoff = torch.min(effective_cutoff)
         is_included = torch.le(distance_sort.T, effective_cutoff)
         
         # Set all undesired edges to infinite length to be removed later
