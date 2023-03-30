@@ -748,7 +748,7 @@ def get_max_neighbors_mask(
     Strictly enforcing the maximum and symmetry together is unsupported.
     """
     
-    assert not (enforce_max_strictly and enforce_symmetry)
+    assert not (enforce_max_strictly and global_cutoff)
     
     device = natoms.device
     num_atoms = natoms.sum()
