@@ -1,0 +1,35 @@
+job:
+  mem: 32GB
+  cpus: 12
+  gres: gpu:32gb:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
+  env: ocp-a100
+
+default:
+  restart_from_dir: /network/scratch/s/schmidtv/ocp/runs/2927470
+  config: faenet-qm7x-all
+  model_name: faenet
+  note:
+    task: name
+    model: num_gaussians, hidden_channels, num_filters, num_interactions, graph_norm
+    optim: batch_size, lr_initial, energy_grad_coefficient
+  optim:
+    max_steps: 3500000
+
+runs:
+- job:
+    cpus: 20
+  optim:
+    batch_size: 256
+
+- optim:
+    energy_grad_coefficient: 40
+
+- model:
+    hidden_channels: 256
+    num_filters: 128
+    num_interactions: 3
+
+- model:
+    graph_norm: true

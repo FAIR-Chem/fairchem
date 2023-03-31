@@ -1,0 +1,81 @@
+default:
+  trainer: single
+  logger: wandb
+  eval_on_test: True
+
+  model:
+    otf_graph: False
+    max_num_neighbors: 40
+    use_pbc: False
+
+  task:
+    dataset: qm7x
+    description: "QM7-X"
+    type: regression
+    metric: mae
+    labels:
+      - total system energy
+
+  optim:
+    optimizer: AdamW
+    energy_coefficient: 1
+    energy_grad_coefficient: 10
+    force_coefficient: 100
+    loss_energy: mse
+    loss_force: mse
+
+  normalizer: null
+  graph_rewiring: ""
+
+  mode: train
+  dataset:
+    default_val: val_id
+    train:
+      src: /network/projects/ocp/qm7x/processed
+      normalize_labels: True # mean and std of target will be set by utils.py if this is True
+      split: train
+      target: ePBE0+MBD
+      forces_target: totFOR
+      std_divider: 1.0
+      rescale_with_hof: False
+      lse_shift: True
+      include_val_ood: True
+    val_id:
+      src: /network/projects/ocp/qm7x/processed
+      normalize_labels: True # mean and std of target will be set by utils.py if this is True
+      split: val_id
+      target: ePBE0+MBD
+      forces_target: totFOR
+      std_divider: 1.0
+      lse_shift: True
+    # val_ood:
+    #   src: /network/projects/ocp/qm7x/processed
+    #   normalize_labels: True # mean and std of target will be set by utils.py if this is True
+    #   split: val_ood
+    #   target: ePBE0+MBD
+    #   forces_target: totFOR
+    #   std_divider: 1.0
+    #   lse_shift: True
+    test:
+      src: /network/projects/ocp/qm7x/processed
+      normalize_labels: True # mean and std of target will be set by utils.py if this is True
+      split: test
+      target: ePBE0+MBD
+      forces_target: totFOR
+      std_divider: 1.0
+      lse_shift: True
+
+# ^`target` is a string to select the target to predict as per
+# https://arxiv.org/abs/2006.15139 Table 2
+
+
+all: {}
+
+1k:
+  dataset:
+    train:
+      1k: true
+    val_id:
+      1k: true
+    val_ood:
+      1k: true

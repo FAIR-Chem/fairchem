@@ -1,0 +1,65 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  time: 30:00:00
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  cp_data_to_tmpdir: true
+  model:
+    phys_embeds: True
+    tag_hidden_channels: 64
+    pg_hidden_channels: 0  # shall have been 32
+    energy_head: False # False ?
+    regress_forces: direct_with_gradient_target
+  wandb_tags: 's2ef-archi-tests'
+  optim:
+    max_epochs: 5
+    batch_size: 192
+    eval_batch_size: 192
+
+runs:
+  - config: sfarinet-s2ef-2M
+    note: 'Sfarinet no sym'
+  - config: sfarinet-s2ef-2M
+    note: 'Sfarinet baseline sym'
+    frame_averaging: 2D
+    fa_frames: se3-random
+  - config: sfarinet-s2ef-2M
+    note: 'Sfarinet baseline sym'
+    frame_averaging: 2D
+    fa_frames: se3-random
+  - config: sfarinet-s2ef-2M
+    note: 'rij'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      edge_embed_type: rij
+  - config: sfarinet-s2ef-2M
+    note: 'sh'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      edge_embed_type: sh
+  - config: sfarinet-s2ef-2M
+    note: 'all rij'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      edge_embed_type: all_rij
+  - config: sfarinet-s2ef-2M
+    note: 'all'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      edge_embed_type: all
+  - config: sfarinet-s2ef-2M
+    note: 'all'
+    frame_averaging: 2D
+    fa_frames: se3-random
+    model:
+      edge_embed_type: all

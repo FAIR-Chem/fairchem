@@ -1,6 +1,6 @@
 # Default arguments for /sbatch.py
 #
-# Overwerite them from the command-line with `$ python sbatch.py arg=value`
+# Overwrite them from the command-line with `$ python sbatch.py arg=value`
 #
 # `py_args` should be a string, it will be passed down to main.py as:
 #   $ python main.py py_args
@@ -23,9 +23,13 @@ mem: "32GB" # slurm TOTAL memory
 partition: "long" # slurm partition
 time: "" # slurm job exec time as HH:MM:SS
 job_name: "ocp-script" # slurm job name
+code_loc: null # code location. Defaults to the current repository path
 
 output: "$SCRATCH/ocp/runs/%j/output-%t.txt" # slurm output file per task (%t)
 logdir: "$SCRATCH/ocp/runs/$SLURM_JOB_ID" # --logdir value for main.py, appended to py_args if not already present
+
+continue_from_dir: null
+restart_from_dir: null
 
 env: "ocp" # env name for `conda activate {env}`
 py_args: "" # arguments for main.py
@@ -35,5 +39,7 @@ git_checkout: null # if null, no checkout. Use as `git_checkout=some-branch` or 
 sweep: false
 count: 0
 array: 0
+exp_name: null
 
 dev: false
+verbose: false

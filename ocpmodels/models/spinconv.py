@@ -17,13 +17,13 @@ from torch_geometric.nn import MessagePassing, SchNet, radius_graph
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.transforms import RandomRotate
+from ocpmodels.common.graph_transforms import RandomRotate
 from ocpmodels.common.utils import (
     conditional_grad,
     get_pbc_distances,
     radius_graph_pbc,
 )
-from ocpmodels.models.base import BaseModel
+from ocpmodels.models.base_model import BaseModel
 
 try:
     from e3nn import o3
@@ -371,7 +371,6 @@ class spinconv(BaseModel):
         forces = torch.zeros(self.num_atoms, 3, device=device)
 
         for rot_index in range(num_random_rotations):
-
             rot_mat_x_perturb = torch.bmm(rot_mat_x, atom_rot_mat[rot_index])
             rot_mat_y_perturb = torch.bmm(rot_mat_y, atom_rot_mat[rot_index])
             rot_mat_z_perturb = torch.bmm(rot_mat_z, atom_rot_mat[rot_index])

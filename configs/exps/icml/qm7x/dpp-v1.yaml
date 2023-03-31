@@ -1,0 +1,77 @@
+# trainset has 4068193 samples
+job:
+  mem: 24GB
+  cpus: 5
+  gres: gpu:24gb:1
+
+default:
+  config: dpp-qm7x-all
+  wandb_project: ocp-qm
+  mode: train
+  test_ri: true
+  wandb_tags: qm7x
+  cp_data_to_tmpdir: true
+  log_train_every: 250
+  energy_head: False
+  frame_averaging: ""
+  fa_frames: ""
+  optim:
+    batch_size: 100
+    max_steps: 2000000
+    warmup_steps: 3000
+    lr_initial: 0.00025
+    eval_every: 0
+    energy_coefficient: 1
+    energy_grad_coefficient: 0
+    force_coefficient: 100
+    # parameters EMA
+    ema_decay: 0.999
+    loss_energy: mae
+    loss_force: mse
+    # all below is for the scheduler
+    scheduler: ReduceLROnPlateau
+    mode: min
+    factor: 0.75
+    threshold: 0.001
+    threshold_mode: abs
+    min_lr: 0.000001
+    verbose: true
+  model:
+    act: swish
+    basis_emb_size: 8
+    cutoff: 6.0
+    energy_head: false
+    envelope_exponent: 5
+    graph_rewiring: ''
+    hidden_channels: 256
+    int_emb_size: 64
+    max_num_neighbors: 40
+    num_after_skip: 2
+    num_before_skip: 1
+    num_blocks: 3
+    num_output_layers: 3
+    num_radial: 6
+    num_spherical: 7
+    otf_graph: false
+    out_emb_channels: 192
+    pg_hidden_channels: 32
+    phys_embeds: false
+    phys_hidden_channels: 0
+    regress_forces: 'from_energy'
+    tag_hidden_channels: 0
+    use_pbc: false
+  dataset:
+    train:
+      rescale_with_hof: False
+      lse_shift: True
+    val_id:
+      lse_shift: True
+    test:
+      lse_shift: True
+
+runs:
+ - {}
+ - model:
+    optim:
+      batch_size: 32
+    num_blocks: 4

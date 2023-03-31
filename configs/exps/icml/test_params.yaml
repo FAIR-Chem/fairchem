@@ -1,0 +1,35 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  time: 20:00:00
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  model:
+    phys_embeds: True
+    tag_hidden_channels: 64
+    pg_hidden_channels: 0  # shall have been 32
+    energy_head: False # False ?
+  optim:
+    max_epochs: 5
+  wandb_tags: 'test-extension'
+  cp_data_to_tmpdir: true
+
+runs:
+  - config: sfarinet-s2ef-2M
+    note: 'Multiple FA with direct_with_gradient_target'
+    model:
+      regress_forces: direct_with_gradient_target
+      mp_type: base_with_att
+      skip_co: add
+      complex_mp: true
+      att_heads: 3
+    optim:
+      batch_size: 192
+      eval_batch_size: 192
+    frame_averaging: 2D
+    fa_frames: all

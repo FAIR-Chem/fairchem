@@ -1,0 +1,37 @@
+job:
+  mem: 32GB
+  cpus: 12
+  gres: gpu:32gb:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
+  env: ocp-a100
+
+default:
+  restart_from_dir: /network/scratch/s/schmidtv/ocp/runs/2927470
+  config: faenet-qm7x-all
+  model_name: faenet
+  note:
+    prefix: grad_coeff_search
+    task: name
+    model: num_gaussians, hidden_channels, num_filters, num_interactions, graph_norm
+    optim: batch_size, lr_initial, energy_grad_coefficient
+  optim:
+    max_steps: 4000000
+
+runs:
+- optim:
+    energy_grad_coefficient: 0
+- optim:
+    energy_grad_coefficient: 5
+- optim:
+    energy_grad_coefficient: 25
+- optim:
+    energy_grad_coefficient: 50
+- optim:
+    energy_grad_coefficient: 75
+- optim:
+    energy_grad_coefficient: 100
+- optim:
+    energy_grad_coefficient: 125
+- optim:
+    energy_grad_coefficient: 150

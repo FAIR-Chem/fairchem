@@ -2,7 +2,6 @@
 """
 
 from copy import deepcopy
-from time import time
 
 import torch
 from torch import cat, isin, tensor, where
@@ -30,10 +29,13 @@ def remove_tag0_nodes(data):
     data.pos = data.pos[non_sub, :]
     data.atomic_numbers = data.atomic_numbers[non_sub]
     data.batch = data.batch[non_sub]
-    data.force = data.force[non_sub, :]
-    data.fixed = data.fixed[non_sub]
+    if hasattr(data, "force"):
+        data.force = data.force[non_sub, :]
+    if hasattr(data, "fixed"):
+        data.fixed = data.fixed[non_sub]
     data.tags = data.tags[non_sub]
-    data.pos_relaxed = data.pos_relaxed[non_sub, :]
+    if hasattr(data, "pos_relaxed"):
+        data.pos_relaxed = data.pos_relaxed[non_sub, :]
 
     # per-edge tensors
     data.edge_index = data.edge_index[:, neither_is_sub]
@@ -49,14 +51,14 @@ def remove_tag0_nodes(data):
 
     # per-graph tensors
     batch_size = max(data.batch).item() + 1
-    data.ptr = torch.tensor(
-        [0] + [data.natoms[:i].sum() for i in range(1, batch_size + 1)],
-        dtype=data.ptr.dtype,
-        device=device,
-    )
     data.natoms = torch.tensor(
         [(data.batch == i).sum() for i in range(batch_size)],
         dtype=data.natoms.dtype,
+        device=device,
+    )
+    data.ptr = torch.tensor(
+        [0] + [data.natoms[:i].sum() for i in range(1, batch_size + 1)],
+        dtype=data.ptr.dtype,
         device=device,
     )
     _, data.neighbors = torch.unique(
@@ -86,7 +88,8 @@ def one_supernode_per_graph(data, cutoff=6.0, verbose=False):
         where((data.tags != 0) * (data.batch == i))[0] for i in range(batch_size)
     ]
 
-    # super node index per batch: they are last in their batch (after removal of tag0 nodes)
+    # super node index per batch: they are last in their batch
+    # (after removal of tag0 nodes)
     new_sn_ids = [
         sum([len(nsn) for nsn in non_sub_nodes[: i + 1]]) + i for i in range(batch_size)
     ]
@@ -113,7 +116,14 @@ def one_supernode_per_graph(data, cutoff=6.0, verbose=False):
         for i in range(batch_size)
     ]
     # the super node force is the mean of the force applied to its aggregates
-    sn_force = [data.force[sub_nodes[i]].mean(0) for i in range(batch_size)]
+    if hasattr(data, "force"):
+        sn_force = [data.force[sub_nodes[i]].mean(0) for i in range(batch_size)]
+        data.force = cat(
+            [
+                cat([data.force[non_sub_nodes[i]], sn_force[i][None, :]])
+                for i in range(batch_size)
+            ]
+        )
 
     # learn a new embedding to each supernode
     data.atomic_numbers = cat(
@@ -131,31 +141,27 @@ def one_supernode_per_graph(data, cutoff=6.0, verbose=False):
         ]
     )
     # relaxed position for supernode is the same as initial position
-    data.pos_relaxed = cat(
-        [
-            cat([data.pos_relaxed[non_sub_nodes[i]], sn_pos[i][None, :]])
-            for i in range(batch_size)
-        ]
-    )
-    # idem
-    data.force = cat(
-        [
-            cat([data.force[non_sub_nodes[i]], sn_force[i][None, :]])
-            for i in range(batch_size)
-        ]
-    )
+    if hasattr(data, "pos_relaxed"):
+        data.pos_relaxed = cat(
+            [
+                cat([data.pos_relaxed[non_sub_nodes[i]], sn_pos[i][None, :]])
+                for i in range(batch_size)
+            ]
+        )
+
     # idem, sn position is fixed
-    data.fixed = cat(
-        [
-            cat(
-                [
-                    data.fixed[non_sub_nodes[i]],
-                    tensor([1.0], dtype=data.fixed.dtype, device=device),
-                ]
-            )
-            for i in range(batch_size)
-        ]
-    )
+    if hasattr(data, "fixed"):
+        data.fixed = cat(
+            [
+                cat(
+                    [
+                        data.fixed[non_sub_nodes[i]],
+                        tensor([1.0], dtype=data.fixed.dtype, device=device),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
     # idem, sn have tag0
     data.tags = cat(
         [
@@ -220,7 +226,9 @@ def one_supernode_per_graph(data, cutoff=6.0, verbose=False):
     ei_sn, new_cell_offsets = sort_edge_index(ei_sn, edge_attr=new_cell_offsets)
 
     # Remove duplicate entries
-    # ei_sn, new_cell_offsets = coalesce(ei_sn, edge_attr=new_cell_offsets, reduce="min")
+    # ei_sn, new_cell_offsets = coalesce(
+    #   ei_sn, edge_attr=new_cell_offsets, reduce="min",
+    # )
 
     # ensure correct type
     data.edge_index = ei_sn.to(dtype=data.edge_index.dtype)
@@ -282,12 +290,8 @@ def one_supernode_per_atom_type(data, cutoff=6.0):
         [len(sub) for sub in supernodes_composition], dtype=torch.long, device=device
     )
 
-    # super node index per batch: they are last in their batch (after removal of tag0 nodes)
-    # new_sn_ids = []
-    # count = 0
-    # for i in range(batch_size):
-    #     new_sn_ids.append([(count + len(non_sub_nodes[i]) + j) for j in range((num_supernodes[i]))])
-    #     count += len(non_sub_nodes[i]) + num_supernodes[i]
+    # super node index per batch: they are last in their batch
+    # (after removal of tag0 nodes)
     new_sn_ids = [
         [
             sum([len(nsn) for nsn in non_sub_nodes[: i + 1]]) + j
@@ -299,7 +303,6 @@ def one_supernode_per_atom_type(data, cutoff=6.0):
     new_sn_ids_cat = [s for sn in new_sn_ids for s in sn]
 
     # supernode positions
-    # supernodes_pos = [data.pos[sn, :].mean(0)[None, :] for sn in supernodes_composition]
     supernodes_pos = [
         torch.cat(
             [data.pos[sn, :2].mean(0), data.pos[sn, 2].max().unsqueeze(0)], dim=0
@@ -392,10 +395,6 @@ def one_supernode_per_atom_type(data, cutoff=6.0):
         data.edge_index, edge_attr=data.cell_offsets
     )
 
-    # data.edge_index, data.cell_offsets = coalesce(
-    #     data.edge_index, edge_attr=data.cell_offsets, reduce="min"
-    # )
-
     # SNs are last in their batch
     data.atomic_numbers = cat(
         [
@@ -423,54 +422,59 @@ def one_supernode_per_atom_type(data, cutoff=6.0):
     )
 
     # pos relaxed
-    data.pos_relaxed = cat(
-        [
-            cat(
-                [
-                    data.pos_relaxed[non_sub_nodes[i]],
-                    cat(
-                        supernodes_pos[
-                            acc_num_supernodes[i] : acc_num_supernodes[i + 1]
-                        ]
-                    ),
-                ]
-            )
-            for i in range(batch_size)
-        ]
-    )
+    if hasattr(data, "pos_relaxed"):
+        data.pos_relaxed = cat(
+            [
+                cat(
+                    [
+                        data.pos_relaxed[non_sub_nodes[i]],
+                        cat(
+                            supernodes_pos[
+                                acc_num_supernodes[i] : acc_num_supernodes[i + 1]
+                            ]
+                        ),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
 
     # the force applied on the super node is the mean of the force applied
     # to its aggregates (per batch)
-    sn_force = [
-        data.force[supernodes_composition[i]].mean(0)[None, :]
-        for i in range(total_num_supernodes)
-    ]
-    data.force = cat(
-        [
-            cat(
-                [
-                    data.force[non_sub_nodes[i]],
-                    cat(sn_force[acc_num_supernodes[i] : acc_num_supernodes[i + 1]]),
-                ]
-            )
-            for i in range(batch_size)
+    if hasattr(data, "force"):
+        sn_force = [
+            data.force[supernodes_composition[i]].mean(0)[None, :]
+            for i in range(total_num_supernodes)
         ]
-    )
+        data.force = cat(
+            [
+                cat(
+                    [
+                        data.force[non_sub_nodes[i]],
+                        cat(
+                            sn_force[acc_num_supernodes[i] : acc_num_supernodes[i + 1]]
+                        ),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
 
     # fixed atoms
-    data.fixed = cat(
-        [
-            cat(
-                [
-                    data.fixed[non_sub_nodes[i]],
-                    tensor([1.0], dtype=data.fixed.dtype, device=device).expand(
-                        num_supernodes[i]
-                    ),
-                ]
-            )
-            for i in range(batch_size)
-        ]
-    )
+    if hasattr(data, "fixed"):
+        data.fixed = cat(
+            [
+                cat(
+                    [
+                        data.fixed[non_sub_nodes[i]],
+                        tensor([1.0], dtype=data.fixed.dtype, device=device).expand(
+                            num_supernodes[i]
+                        ),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
 
     # distances
     # TODO: compute with cell_offsets
@@ -524,7 +528,8 @@ def one_supernode_per_atom_type_dist(data, cutoff=6.0):
         [len(sub) for sub in supernodes_composition], dtype=torch.long, device=device
     )
 
-    # super node index per batch: they are last in their batch (after removal of tag0 nodes)
+    # super node index per batch: they are last in their batch
+    # (after removal of tag0 nodes)
     new_sn_ids = [
         [
             sum([len(nsn) for nsn in non_sub_nodes[: i + 1]]) + j
@@ -536,7 +541,8 @@ def one_supernode_per_atom_type_dist(data, cutoff=6.0):
     new_sn_ids_cat = [s for sn in new_sn_ids for s in sn]
 
     # supernode positions
-    # supernodes_pos = [data.pos[sn, :].mean(0)[None, :] for sn in supernodes_composition]
+    # supernodes_pos = [data.pos[sn, :].mean(0)[None, :]
+    #   for sn in supernodes_composition]
     supernodes_pos = [
         torch.cat(
             [data.pos[sn, :2].mean(0), data.pos[sn, 2].max().unsqueeze(0)], dim=0
@@ -667,54 +673,59 @@ def one_supernode_per_atom_type_dist(data, cutoff=6.0):
     )
 
     # pos relaxed
-    data.pos_relaxed = cat(
-        [
-            cat(
-                [
-                    data.pos_relaxed[non_sub_nodes[i]],
-                    cat(
-                        supernodes_pos[
-                            acc_num_supernodes[i] : acc_num_supernodes[i + 1]
-                        ]
-                    ),
-                ]
-            )
-            for i in range(batch_size)
-        ]
-    )
+    if hasattr(data, "pos_relaxed"):
+        data.pos_relaxed = cat(
+            [
+                cat(
+                    [
+                        data.pos_relaxed[non_sub_nodes[i]],
+                        cat(
+                            supernodes_pos[
+                                acc_num_supernodes[i] : acc_num_supernodes[i + 1]
+                            ]
+                        ),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
 
     # the force applied on the super node is the mean of the force applied
     # to its aggregates (per batch)
-    sn_force = [
-        data.force[supernodes_composition[i]].mean(0)[None, :]
-        for i in range(total_num_supernodes)
-    ]
-    data.force = cat(
-        [
-            cat(
-                [
-                    data.force[non_sub_nodes[i]],
-                    cat(sn_force[acc_num_supernodes[i] : acc_num_supernodes[i + 1]]),
-                ]
-            )
-            for i in range(batch_size)
+    if hasattr(data, "force"):
+        sn_force = [
+            data.force[supernodes_composition[i]].mean(0)[None, :]
+            for i in range(total_num_supernodes)
         ]
-    )
+        data.force = cat(
+            [
+                cat(
+                    [
+                        data.force[non_sub_nodes[i]],
+                        cat(
+                            sn_force[acc_num_supernodes[i] : acc_num_supernodes[i + 1]]
+                        ),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
 
     # fixed atoms
-    data.fixed = cat(
-        [
-            cat(
-                [
-                    data.fixed[non_sub_nodes[i]],
-                    tensor([1.0], dtype=data.fixed.dtype, device=device).expand(
-                        num_supernodes[i]
-                    ),
-                ]
-            )
-            for i in range(batch_size)
-        ]
-    )
+    if hasattr(data, "fixed"):
+        data.fixed = cat(
+            [
+                cat(
+                    [
+                        data.fixed[non_sub_nodes[i]],
+                        tensor([1.0], dtype=data.fixed.dtype, device=device).expand(
+                            num_supernodes[i]
+                        ),
+                    ]
+                )
+                for i in range(batch_size)
+            ]
+        )
 
     return adjust_cutoff_distances(data, new_sn_ids_cat, cutoff)
 

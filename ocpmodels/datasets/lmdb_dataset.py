@@ -1,4 +1,4 @@
-"""
+"""lmdb_dataset.py
 Copyright (c) Facebook, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
@@ -7,12 +7,9 @@ LICENSE file in the root directory of this source tree.
 
 import bisect
 import logging
-import math
 import pickle
-import random
 import time
 import warnings
-from datetime import datetime
 from pathlib import Path
 
 import lmdb
@@ -21,7 +18,6 @@ import torch
 from torch.utils.data import Dataset
 from torch_geometric.data import Batch
 
-from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import pyg2_data_transform
 
@@ -42,7 +38,7 @@ class LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None, choice_fa=None):
+    def __init__(self, config, transform=None, fa_frames=None):
         super(LmdbDataset, self).__init__()
         self.config = config
 
@@ -56,9 +52,12 @@ class LmdbDataset(Dataset):
             self._keys, self.envs = [], []
             for db_path in db_paths:
                 self.envs.append(self.connect_db(db_path))
-                length = pickle.loads(
-                    self.envs[-1].begin().get("length".encode("ascii"))
-                )
+                length = self.envs[-1].begin().get("length".encode("ascii"))
+                if length is not None:
+                    length = pickle.loads(length)
+                else:
+                    length = self.envs[-1].stat()["entries"]
+                assert length is not None, f"Could not find length of LMDB {db_path}"
                 self._keys.append(list(range(length)))
 
             keylens = [len(k) for k in self._keys]
@@ -73,7 +72,7 @@ class LmdbDataset(Dataset):
             self.num_samples = len(self._keys)
 
         self.transform = transform
-        self.choice_fa = choice_fa
+        self.fa_frames = fa_frames
 
     def __len__(self):
         return self.num_samples
@@ -100,9 +99,10 @@ class LmdbDataset(Dataset):
         else:
             datapoint_pickled = self.env.begin().get(self._keys[idx])
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
+
         t1 = time.time_ns()
         if self.transform is not None:
-            data_object = self.transform(data_object, self.choice_fa)
+            data_object = self.transform(data_object)
         t2 = time.time_ns()
 
         load_time = (t1 - t0) * 1e-9  # time in s
@@ -129,6 +129,7 @@ class LmdbDataset(Dataset):
         return env
 
     def close_db(self):
+        print("Closing", str(self.path))
         if not self.path.is_file():
             for env in self.envs:
                 env.close()
@@ -159,7 +160,11 @@ class TrajectoryLmdbDataset(LmdbDataset):
 def data_list_collater(data_list, otf_graph=False):
     batch = Batch.from_data_list(data_list)
 
-    if not otf_graph:
+    if (
+        not otf_graph
+        and hasattr(data_list[0], "edge_index")
+        and data_list[0].edge_index is not None
+    ):
         try:
             n_neighbors = []
             for i, data in enumerate(data_list):

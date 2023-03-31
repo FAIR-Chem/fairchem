@@ -1,0 +1,47 @@
+# IS2RE
+
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:4
+  partition: long
+  env: ocp-a100
+default:
+  test_ri: True
+
+runs:
+  - job:
+      time: 10:00:00
+    config: sfarinet-is2re-all
+    mode: train
+    optim:
+      lr_initial: 0.001
+      max_epochs: 5
+    model:
+      phys_embeds: False
+      tag_hidden_channels: 64
+      hidden_channels: 256
+      graph_rewiring: 'remove-tag-0'
+      energy_head: 'weighted-av-initial-embeds' # False ?
+    wandb_tags: 'test-icml-1'
+    note: 'Test Energy SE(3)-Invariance'
+    frame_averaging: 2D
+    fa_frames: se3-all
+
+  # Rotation and Pos
+  - config: sfarinet-is2re-all
+    frame_averaging: 2D
+    fa_frames: se3-random
+
+
+  # S2EF
+
+  - config: sfarinet-s2ef-2M
+    note: 'Test Forces SE(3)-Equivariance'
+    frame_averaging: 2D
+    fa_frames: se3-all
+
+  - config: sfarinet-s2ef-2M
+    note: 'Test Forces SE(3)-Equivariance'
+    frame_averaging: 2D
+    fa_frames: se3-random

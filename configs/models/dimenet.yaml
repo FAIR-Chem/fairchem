@@ -1,0 +1,69 @@
+default:
+  model:
+    name: dimenet
+    use_pbc: False
+
+# -------------------
+# -----  IS2RE  -----
+# -------------------
+
+is2re:
+  10k: {}
+  100k: {}
+  all: {}
+
+# ------------------
+# -----  S2EF  -----
+# ------------------
+
+s2ef:
+  default: {}
+  200k: {}
+  2M: {}
+  20M: {}
+  all: {}
+
+qm9:
+  default:
+    model:
+      hidden_channels: 128
+      out_channels: 1
+      num_blocks: 6
+      num_bilinear: 8
+      num_spherical: 6
+      num_radial: 6
+      cutoff: 5.0
+      max_num_neighbors: 40
+      envelope_exponent: 5
+      num_before_skip: 1
+      num_after_skip:  2
+      num_output_layers: 3
+      act: swish
+      regress_forces: False
+    optim:
+      batch_size: 32
+      num_workers: 4
+      lr_initial: 0.001
+      max_epochs: 1000
+      decay_steps: 125000
+      decay_rate: 0.01
+      ema_decay: 0.999
+      # all below is for the scheduler
+      scheduler: ReduceLROnPlateau
+      mode: min
+      factor: 0.95
+      threshold: 0.0001
+      threshold_mode: abs
+      min_lr: 0.000001
+      verbose: true
+      patience: 10
+
+  10k: {}
+  all: {}
+
+qm7x:
+  default: {}
+  all: {}
+  1k: {}
+
+
