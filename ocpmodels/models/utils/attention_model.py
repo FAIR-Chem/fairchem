@@ -299,7 +299,6 @@ class TransfoAttConv(MessagePassing):
         ptr: OptTensor,
         size_i: Optional[int],
     ) -> Tensor:
-
         # Compute edge embed
         if self.lin_edge is not None:
             assert edge_attr is not None

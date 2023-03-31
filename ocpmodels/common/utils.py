@@ -33,7 +33,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
-from torch_scatter import segment_coo, segment_csr
+from torch_scatter import segment_coo, segment_csr, scatter
 
 import ocpmodels
 from ocpmodels.common.flags import flags
@@ -414,6 +414,11 @@ def auto_note(trainer_config):
     for k, (key, subkeys) in enumerate(trainer_config["note"].items()):
         if k > 0:
             note += " - "
+
+        if key == "prefix":
+            note += subkeys
+            continue
+
         for i, subkey in enumerate(subkeys.split(",")):
             subkey = subkey.strip()
             if i > 0:
@@ -588,13 +593,18 @@ def conditional_grad(dec):
     Decorator to enable/disable grad depending on whether force/energy
     predictions are being made
     """
+
     # Adapted from
     # https://stackoverflow.com/questions/60907323/accessing-class-property-as-decorator-argument
     def decorator(func):
         @wraps(func)
         def cls_method(self, *args, **kwargs):
             f = func
-            if self.regress_forces in {"from_energy", "direct_with_gradient_target"}:
+            if self.regress_forces in {
+                "from_energy",
+                "direct_with_gradient_target",
+                "direct",
+            }:
                 f = dec(func)
             return f(self, *args, **kwargs)
 
@@ -739,7 +749,6 @@ def setup_imports():
         + glob.glob(trainer_pattern, recursive=True)
         + glob.glob(task_pattern, recursive=True)
     )
-
     for f in files:
         for key in ["/trainers", "/datasets", "/models", "/tasks"]:
             if f.find(key) != -1:
@@ -747,6 +756,9 @@ def setup_imports():
                 file_name = splits[-1]
                 module_name = file_name[: file_name.find(".py")]
                 importlib.import_module("ocpmodels.%s.%s" % (key[1:], module_name))
+
+    # manual model imports
+    importlib.import_module("ocpmodels.models.gemnet_oc.gemnet_oc")
 
     experimental_folder = os.path.join(root_folder, "../experimental/")
     if os.path.exists(experimental_folder):
@@ -962,7 +974,7 @@ def load_config(config_str):
 
 
 def build_config(args, args_override, silent=False):
-    config = overrides = continue_config = {}
+    config, overrides, loaded_config = {}, {}, {}
 
     if hasattr(args, "config_yml") and args.config_yml:
         raise ValueError(
@@ -974,64 +986,125 @@ def build_config(args, args_override, silent=False):
         overrides = create_dict_from_args(args_override)
 
     if args.continue_from_dir or args.restart_from_dir:
+        # make sure it's either continue xor restart
         if args.continue_from_dir and args.restart_from_dir:
             raise ValueError(
                 "Cannot specify both --continue_from_dir and --restart_from_dir."
             )
-        cont_dir = (
+        # directory to load from
+        load_dir = (
             resolve(args.continue_from_dir)
             if args.continue_from_dir
             else resolve(args.restart_from_dir)
         )
-        ckpts = list(cont_dir.glob("checkpoints/checkpoint-*.pt"))
+        # find configs: from checkpoints first, from the dropped config file
+        # otherwise
+        ckpts = list(load_dir.glob("checkpoints/checkpoint-*.pt"))
         if not ckpts:
-            print(
-                f"💥 Could not find checkpoints in {str(cont_dir)}. "
-                + "Please make sure the directory is correct."
-            )
+            print(f"💥 Could not find checkpoints in {str(load_dir)}.")
+            configs = list(load_dir.glob("config-*.y*ml"))
+            if not configs:
+                print(f"💥 Could not find configs in {str(load_dir)}.")
+                raise ValueError(
+                    f"Could not find checkpoints or configs in {str(load_dir)}."
+                )
+            loaded_config = yaml.safe_load(configs[0].read_text())
+            load_path = str(configs[0])
         else:
             latest_ckpt = str(
                 sorted(ckpts, key=lambda c: float(c.stem.split("-")[-1]))[-1]
             )
-            continue_config = torch.load((latest_ckpt), map_location="cpu")["config"]
-            if args.continue_from_dir:
-                continue_config["checkpoint"] = str(latest_ckpt)
-                continue_config["job_ids"] = continue_config["job_ids"] + f", {JOB_ID}"
-            else:
-                continue_config.pop("checkpoint", None)
-                continue_config.pop("wandb_resume_id", None)
-            if not args.keep_orion_config:
-                dels = {}
-                for k in continue_config:
-                    if "orion" in k or "fidelity" in k:
-                        dels[k] = copy.deepcopy(continue_config[k])
-                        continue_config[k] = None
-                if not silent:
-                    print(
-                        "🅾️  Removing orion config from continue config. Set to None:",
-                        "{"
-                        + ", ".join([f"{k}: {v}->None" for k, v in dels.items()])
-                        + "}",
-                    )
+            load_path = latest_ckpt
+            loaded_config = torch.load((latest_ckpt), map_location="cpu")["config"]
+
+        # config has been found. We need to prune/modify it depending on whether
+        # we're restarting or continuing.
+        if args.continue_from_dir:
+            # continuing
+            remove_keys = {
+                "timestamp_id",
+                "commit",
+                "early_stopping_file",
+                "timestamp_id",
+                "distributed_port",
+                "continue_from_dir",
+                "restart_from_dir",
+            }
+            loaded_config = {
+                k: v for k, v in loaded_config.items() if k not in remove_keys
+            }
+            loaded_config["checkpoint"] = str(latest_ckpt)
+            loaded_config["job_ids"] = loaded_config["job_ids"] + f", {JOB_ID}"
+            loaded_config["job_id"] = JOB_ID
+            loaded_config["local_rank"] = config["local_rank"]
+        else:
+            # restarting from scratch
+            keep_keys = [
+                "cp_data_to_tmpdir",
+                "config",
+                "dataset",
+                "energy_head",
+                "fa_frames",
+                "frame_averaging",
+                "graph_rewiring",
+                "model",
+                "optim",
+                "seed",
+                "task",
+                "test_ri",
+                "use_pbc",
+                "wandb_project",
+            ]
+            loaded_config = {
+                k: loaded_config[k] for k in keep_keys if k in loaded_config
+            }
+
+        # clean orion config away, if not specified otherwise
+        if not args.keep_orion_config:
+            dels = {}
+            for k in loaded_config:
+                if "orion" in k or "fidelity" in k:
+                    dels[k] = copy.deepcopy(loaded_config[k])
+                    loaded_config[k] = None
             if not silent:
                 print(
-                    f"✅ Loading config from directory {str(cont_dir)}"
-                    + (
-                        f" and latest checkpoint: {latest_ckpt}"
-                        if args.continue_from_dir
-                        else " (restarting from scratch)"
-                    )
+                    "🅾️  Removing orion config from continue config. Set to None:",
+                    "{" + ", ".join([f"{k}: {v}->None" for k, v in dels.items()]) + "}",
                 )
-            args.config = continue_config["config"]
+        # print status
+        if not silent:
+            print(
+                f"✅ Loading config from {load_path}"
+                + (
+                    " (and loading latest checkpoint)"
+                    if args.continue_from_dir
+                    else " (and restarting from scratch)"
+                )
+            )
 
+        # setup config arg from the loaded config or the command-line
+        args.config = (
+            loaded_config["config"]
+            if ("config" not in vars(args) or not args.config)
+            else args.config
+        )
+        # fix legacy "fanet" model name
+        if args.config.startswith("fanet"):
+            args.config = args.config.replace("fanet", "faenet")
+
+    # at this point a config string must be specified
     if args.config is None:
         raise ValueError(
             "Must specify a config file with " + f"--config. Received args: {args}"
         )
 
+    # load config from `model-task-split` pattern
     config = load_config(args.config)
+    # overwride with command-line args, including default values
     config = merge_dicts(config, args_dict_with_defaults)
+    # override with build_config()'s overrides
     config = merge_dicts(config, overrides)
+    # set some defaults
     config["data_split"] = args.config.split("-")[-1]
     config["run_dir"] = resolve(config["run_dir"])
     config["slurm"] = {}
@@ -1040,22 +1113,13 @@ def build_config(args, args_override, silent=False):
     config["cluster_name"] = CLUSTER.name
     config["world_size"] = args.num_nodes * args.num_gpus
 
-    if continue_config:
-        continue_config.pop("timestamp_id", None)
-        continue_config.pop("commit", None)
-        continue_config.pop("early_stopping_file", None)
-        continue_config.pop("timestamp_id", None)
-        continue_config.pop("distributed_port", None)
-        continue_config.pop("continue_from_dir", None)
-        continue_config.pop("restart_from_dir", None)
-
-        continue_config["run_dir"] = resolve(continue_config["run_dir"])
-        continue_config["job_id"] = JOB_ID
-        continue_config["local_rank"] = config["local_rank"]
-
+    if loaded_config:
+        # update dirs
         new_dirs = [
             (k, v) for k, v in config.items() if "dir" in k and k != "cp_data_to_tmpdir"
         ]
+        # keep new config data src paths (if data is copied to the tmp dir then it's
+        # a new path and should not be kept from loaded config)
         data_srcs = copy.deepcopy(
             {
                 k: {
@@ -1065,12 +1129,18 @@ def build_config(args, args_override, silent=False):
                 if isinstance(v, dict) and "src" in v
             }
         )
+        # override new config with loaded config
+        config = merge_dicts(config, loaded_config)
+        # set new dirs back
         config = merge_dicts(
-            continue_config,
+            config,
             {k: resolve(v) if isinstance(v, (str, Path)) else v for k, v in new_dirs},
         )
+        # set new data sources back
         config["dataset"] = merge_dicts(config["dataset"], data_srcs)
+        # parse overriding command-line args
         cli = cli_args_dict()
+        # check max steps/epochs
         if "max_steps" in cli.get("optim", {}):
             if "max_epochs" in cli.get("optim", {}):
                 print(
@@ -1093,8 +1163,10 @@ def build_config(args, args_override, silent=False):
                     "It will be reset by the Trainer.",
                 )
                 del config["optim"]["max_steps"]
+        # update config with overriding command-line args
         config = merge_dicts(config, cli)
 
+    # final config setups
     check_regress_forces(config)
     config = set_cpus_to_workers(config, silent)
     config = set_qm9_target_stats(config)
@@ -1290,7 +1362,9 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     cells_per_dim = [
         torch.arange(-rep, rep + 1, device=device, dtype=torch.float) for rep in max_rep
     ]
-    unit_cell = torch.cat(torch.meshgrid(cells_per_dim), dim=-1).reshape(-1, 3)
+    unit_cell = torch.cat(torch.meshgrid(cells_per_dim, indexing="ij"), dim=-1).reshape(
+        -1, 3
+    )
     num_cells = len(unit_cell)
     unit_cell_per_atom = unit_cell.view(1, num_cells, 3).repeat(len(index2), 1, 1)
     unit_cell = torch.transpose(unit_cell, 0, 1)
@@ -1656,3 +1730,17 @@ def base_config(config, overrides={}):
     conf["cpu"] = not torch.cuda.is_available()
 
     return merge_dicts(conf, overrides)
+
+
+def scatter_det(*args, **kwargs):
+    from ocpmodels.common.registry import registry
+
+    if registry.get("set_deterministic_scatter", no_warning=True):
+        torch.use_deterministic_algorithms(mode=True)
+
+    out = scatter(*args, **kwargs)
+
+    if registry.get("set_deterministic_scatter", no_warning=True):
+        torch.use_deterministic_algorithms(mode=False)
+
+    return out

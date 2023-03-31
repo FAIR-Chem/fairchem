@@ -15,11 +15,7 @@ from ocpmodels.models.force_decoder import ForceDecoder
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-
-try:
-    from torch_geometric.nn.acts import swish
-except ImportError:
-    from torch_geometric.nn.resolver import swish
+from ocpmodels.models.utils.activations import swish
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1
@@ -143,7 +139,6 @@ class EmbeddingBlock(nn.Module):
     def forward(
         self, z, rel_pos, edge_attr, tag=None, normalised_rel_pos=None, subnodes=None
     ):
-
         # --- Edge embedding --
 
         if self.edge_embed_type == "rij":

@@ -49,9 +49,7 @@ def _load_scale_dict(scale_file: Optional[Union[str, ScaleDict]]):
     return scale_dict
 
 
-def load_scales_compat(
-    module: nn.Module, scale_file: Optional[Union[str, ScaleDict]]
-):
+def load_scales_compat(module: nn.Module, scale_file: Optional[Union[str, ScaleDict]]):
     scale_dict = _load_scale_dict(scale_file)
     if not scale_dict:
         return
@@ -70,7 +68,5 @@ def load_scales_compat(
             continue
 
         scale_module, module_name = scale_factors[name]
-        logging.debug(
-            f"Loading scale factor {scale} for ({name} => {module_name})"
-        )
+        logging.debug(f"Loading scale factor {scale} for ({name} => {module_name})")
         scale_module.set_(scale)

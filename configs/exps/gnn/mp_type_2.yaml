@@ -23,14 +23,14 @@ default:
   cp_data_to_tmpdir: true
 
 runs:
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'simple'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       second_layer_mlp: true
       mp_type: simple
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'simple'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -39,7 +39,7 @@ runs:
       mp_type: simple
 
 
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'sfarinet'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -47,7 +47,7 @@ runs:
       mp_type: sfarinet
     optim:
       max_epochs: 20
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'sfarinet'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -55,7 +55,7 @@ runs:
       mp_type: sfarinet
     optim:
       max_epochs: 20
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'base'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -65,7 +65,7 @@ runs:
       warmup_factor: 0.5
       lr_initial: 0.003
       max_epochs: 10
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'base'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -75,7 +75,7 @@ runs:
       warmup_factor: 0.1
       lr_initial: 0.0005
       max_epochs: 10
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'base'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -85,7 +85,7 @@ runs:
       batch_size: 64
       eval_batch_size: 64
       max_epochs: 10
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'att'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -95,39 +95,39 @@ runs:
       lr_initial: 0.0005
 
 
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'local_env'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: local_env
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'up_down_local_env'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: up_down_local_env
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'up_down_local_env 2 layer'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: up_down_local_env
       second_layer_mlp: true
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'sfarinet 2 layer'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: sfarinet
       second_layer_mlp: true
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'base_with_att'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: base_with_att
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'updownscale'
     frame_averaging: 2D
     fa_frames: se3-random

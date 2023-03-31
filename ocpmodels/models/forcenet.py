@@ -248,7 +248,6 @@ class ForceNet(BaseModel):
     """
 
     def __init__(self, **kwargs):
-
         super(ForceNet, self).__init__()
         self.ablation = kwargs["ablation"]
         self.basis = kwargs["basis"]
@@ -495,7 +494,6 @@ class ForceNet(BaseModel):
 
     @conditional_grad(torch.enable_grad())
     def energy_forward(self, data):
-
         # Rewire the graph
         z = data.atomic_numbers.long()
         pos = data.pos

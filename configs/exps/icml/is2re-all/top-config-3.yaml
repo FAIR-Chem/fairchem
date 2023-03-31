@@ -19,7 +19,7 @@ default:
 
 runs:
 
-  - config: fanet-is2re-all  # 2700544
+  - config: faenet-is2re-all  # 2700544
     note: 'top-run'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -44,7 +44,7 @@ runs:
       max_epochs: 10
       eval_every: 0.25
 
-  - config: fanet-is2re-all  # 2700544
+  - config: faenet-is2re-all  # 2700544
     note: 'top-run eval every epoch'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -69,7 +69,7 @@ runs:
       max_epochs: 12
       eval_every: 1
 
-  - config: fanet-is2re-all  # 2700544
+  - config: faenet-is2re-all  # 2700544
     note: 'top-run eval every epoch'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -94,7 +94,7 @@ runs:
       max_epochs: 12
       eval_every: 1
 
-  - config: fanet-is2re-all  # 2700544
+  - config: faenet-is2re-all  # 2700544
     note: 'top-run'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -119,7 +119,7 @@ runs:
       max_epochs: 14
       eval_every: 0.4
 
-  - config: fanet-is2re-all  # 2700544
+  - config: faenet-is2re-all  # 2700544
     note: 'top-run'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -144,7 +144,7 @@ runs:
       max_epochs: 12
       eval_every: 0.25
 
-  - config: fanet-is2re-all  # 2700544
+  - config: faenet-is2re-all  # 2700544
     note: 'top-run'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -169,7 +169,7 @@ runs:
       max_epochs: 10
       eval_every: 0.4
 
-  - config: fanet-is2re-all  # 2700544
+  - config: faenet-is2re-all  # 2700544
     note: 'top-run'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -194,7 +194,7 @@ runs:
       max_epochs: 11
       eval_every: 0.4
 
-  - config: fanet-is2re-all  # 2700544
+  - config: faenet-is2re-all  # 2700544
     note: 'top-run'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -220,7 +220,7 @@ runs:
       eval_every: 0.4
 
 
-  - config: fanet-is2re-all  # 2700544
+  - config: faenet-is2re-all  # 2700544
     note: 'top-run'
     frame_averaging: 2D
     fa_frames: se3-random

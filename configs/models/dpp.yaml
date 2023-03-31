@@ -34,11 +34,11 @@ default:
 # -------------------
 
 is2re:
+  # *** Important note ***
+  #   The total number of gpus used for this run was 1.
+  #   If the global batch size (num_gpus * batch_size) is modified
+  #   the lr_milestones and warmup_steps need to be adjusted accordingly.
   10k:
-    # *** Important note ***
-    #   The total number of gpus used for this run was 1.
-    #   If the global batch size (num_gpus * batch_size) is modified
-    #   the lr_milestones and warmup_steps need to be adjusted accordingly.
     optim:
       lr_initial: 0.0001
       lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
@@ -47,13 +47,11 @@ is2re:
         - 60000
       warmup_steps: 10000
       max_epochs: 20
+      batch_size: 16
+      eval_batch_size: 16
 
   100k:
     optim:
-      # *** Important note ***
-      #   The total number of gpus used for this run was 1.
-      #   If the global batch size (num_gpus * batch_size) is modified
-      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
       lr_initial: 0.0001
       lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
         - 200000
@@ -61,13 +59,11 @@ is2re:
         - 600000
       warmup_steps: 100000
       max_epochs: 15
+      batch_size: 16
+      eval_batch_size: 16
 
   all:
     optim:
-      # *** Important note ***
-      #   The total number of gpus used for this run was 4.
-      #   If the global batch size (num_gpus * batch_size) is modified
-      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
       lr_initial: 0.0001
       lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
         - 115082
@@ -75,6 +71,8 @@ is2re:
         - 345246
       warmup_steps: 57541
       max_epochs: 8
+      batch_size: 16
+      eval_batch_size: 16
 
 # ------------------
 # -----  S2EF  -----

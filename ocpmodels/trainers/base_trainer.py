@@ -49,7 +49,6 @@ from ocpmodels.modules.scheduler import EarlyStopper, LRScheduler
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
     def __init__(self, **kwargs):
-
         run_dir = kwargs["run_dir"]
         model_name = kwargs["model"].pop(
             "name", kwargs.get("model_name", "Unknown - base_trainer issue")
@@ -143,13 +142,14 @@ class BaseTrainer(ABC):
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
-        if dist_utils.is_master() and not self.silent:
+        if dist_utils.is_master() and not self.silent and not self.is_debug:
             print(f"\n🧰 Trainer config:\n{'-'*18}\n")
             print(yaml.dump(self.config), end="\n\n")
             print(
                 f"\n\n🚦  Create {str(self.early_stopping_file)}",
                 "to stop the training after the next validation\n",
             )
+            (run_dir / f"config-{JOB_ID}.yaml").write_text(yaml.dump(self.config))
         self.load()
 
         self.evaluator = Evaluator(
@@ -470,7 +470,6 @@ class BaseTrainer(ABC):
         optimizer = getattr(optim, optimizer)
 
         if self.config["optim"].get("weight_decay", 0) > 0:
-
             # Do not regularize bias etc.
             params_decay = []
             params_no_decay = []
@@ -623,7 +622,9 @@ class BaseTrainer(ABC):
         is_final=False,
         is_first=False,
     ):
+        # Compute energy gradient (just for a metric)
         torch.set_grad_enabled(bool(self.config["model"].get("regress_forces", "")))
+
         if dist_utils.is_master() and not self.silent:
             print()
             logging.info(f"\n >>> 🧐 Evaluating on {split}.")
@@ -646,9 +647,7 @@ class BaseTrainer(ABC):
         times = Times(gpu=True)
 
         with times.next("validation_loop"):
-
             for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
-
                 if self.sigterm:
                     return "SIGTERM"
 
@@ -657,7 +656,7 @@ class BaseTrainer(ABC):
 
                 # Forward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    with times.next("model_forward", ignore=not is_first):
+                    with times.next("val_forward", ignore=not is_first):
                         preds = self.model_forward(batch)
                     loss = self.compute_loss(preds, batch)
 
@@ -669,7 +668,9 @@ class BaseTrainer(ABC):
                 for k, v in loss.items():
                     metrics = evaluator.update(k, v.item(), metrics)
 
-        mean_val_times, std_val_times = times.prepare_for_logging()
+        mean_val_times, std_val_times = times.prepare_for_logging(map_funcs={
+            "val_forward": lambda x: x / self.config["optim"]["batch_size"],
+        })
 
         aggregated_metrics = {}
         for k in metrics:
@@ -690,8 +691,8 @@ class BaseTrainer(ABC):
         log_dict["epoch"] = self.epoch
         log_dict[f"{split}_time"] = mean_val_times["validation_loop"]
         if is_first:
-            log_dict["model_forward_time_mean"] = mean_val_times["model_forward"]
-            log_dict["model_forward_time_std"] = std_val_times["model_forward"]
+            log_dict["val_forward_time_mean"] = mean_val_times["val_forward"]
+            log_dict["val_forward_time_std"] = std_val_times["val_forward"]
 
         if dist_utils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
@@ -1033,3 +1034,47 @@ class BaseTrainer(ABC):
                     ds.close_db()
         except Exception as e:
             print("Error closing datasets: ", str(e))
+
+    def measure_inference_time(self, loops=1):
+        # keep grads if the model computes forces from energy
+        enabled = torch.is_grad_enabled()
+        torch.set_grad_enabled(self.model.module.regress_forces == "from_energy")
+        self.model.eval()
+        timer = Times(gpu=True)
+
+        # average inference over multiple loops
+        for _ in range(loops):
+            with timer.next("val_loop"):
+                # iterate over default val set batches
+                for b in self.loaders[self.config["dataset"]["default_val"]]:
+                    with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                        # time forward pass
+                        with timer.next("forward"):
+                            _ = self.model_forward(b, mode="inference")
+
+        # divide times by batch size
+        mean, std = timer.prepare_for_logging(
+            map_funcs={
+                "forward": lambda t: self.config["optim"]["eval_batch_size"] / t,
+            }
+        )
+
+        # log throughput to wandb as a summary metric
+        if self.logger:
+            if hasattr(self.logger, "run"):
+                self.logger.run.summary["throughput_mean"] = mean["forward"]
+                self.logger.run.summary["throughput_std"] = std["forward"]
+                self.logger.run.summary["val_loop_time_mean"] = mean["val_loop"]
+                self.logger.run.summary["val_loop_time_std"] = std["val_loop"]
+
+        # print throughput to console
+        if not self.silent:
+            print(
+                "Mean throughput:",
+                f"{mean['forward']:.1f} +- {std['forward']:.1f} samples/s",
+            )
+            print(
+                "Val loop time (around data-loader):",
+                f"{mean['val_loop']:.3f} +- {std['val_loop']:.3f} s",
+            )
+        torch.set_grad_enabled(enabled)

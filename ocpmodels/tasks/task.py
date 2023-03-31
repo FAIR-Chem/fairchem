@@ -7,9 +7,8 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
-
+import torch
 from ocpmodels.common.registry import registry
-from ocpmodels.trainers.forces_trainer import ForcesTrainer
 
 
 class BaseTask:
@@ -49,6 +48,13 @@ class TrainTask(BaseTask):
 
     def run(self):
         try:
+            loops = self.config.get("inference_time_loops", 5)
+            if loops > 0:
+                print("----------------------------------------")
+                print("⏱️  Measuring inference time.")
+                self.trainer.measure_inference_time(loops=loops)
+                print("----------------------------------------\n")
+            torch.set_grad_enabled(True)
             return self.trainer.train(
                 disable_eval_tqdm=self.config.get("show_eval_progressbar", True),
                 debug_batches=self.config.get("debug_batches", -1),
@@ -56,47 +62,3 @@ class TrainTask(BaseTask):
         except RuntimeError as e:
             self._process_error(e)
             raise e
-
-
-@registry.register_task("predict")
-class PredictTask(BaseTask):
-    def run(self):
-        assert (
-            self.trainer.test_loader is not None
-        ), "Test dataset is required for making predictions"
-        assert self.config["checkpoint"]
-        results_file = "predictions"
-        self.trainer.predict(
-            self.trainer.test_loader,
-            results_file=results_file,
-            disable_tqdm=self.config.get("show_eval_progressbar", True),
-        )
-
-
-@registry.register_task("validate")
-class ValidateTask(BaseTask):
-    def run(self):
-        # Note that the results won't be precise on multi GPUs due to
-        # padding of extra images (although the difference should be minor)
-        assert (
-            "default_val" in self.trainer.config["dataset"]
-            and self.trainer.config["dataset"]["default_val"] in self.trainer.loaders
-        ), "Val dataset is required for making predictions"
-        assert self.config["checkpoint"]
-        self.trainer.validate(
-            split=self.trainer.config["dataset"]["default_val"],
-            disable_tqdm=self.config.get("show_eval_progressbar", True),
-        )
-
-
-@registry.register_task("run-relaxations")
-class RelaxationTask(BaseTask):
-    def run(self):
-        assert isinstance(
-            self.trainer, ForcesTrainer
-        ), "Relaxations are only possible for ForcesTrainer"
-        assert (
-            self.trainer.relax_dataset is not None
-        ), "Relax dataset is required for making predictions"
-        assert self.config["checkpoint"]
-        self.trainer.run_relaxations()

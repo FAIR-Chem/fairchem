@@ -1,4 +1,4 @@
-# more epochs, larger batch size, explore fanet: larger model & skip-co & mlp_rij
+# more epochs, larger batch size, explore faenet: larger model & skip-co & mlp_rij
 job:
   mem: 24GB
   cpus: 4

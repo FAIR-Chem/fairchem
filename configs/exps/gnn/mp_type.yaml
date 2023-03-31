@@ -22,35 +22,35 @@ default:
     eval_batch_size: 256
 
 runs:
-  - config: fanet-is2re-all
-    note: 'fanet no sym'
-  - config: fanet-is2re-all
-    note: 'fanet baseline sym'
+  - config: faenet-is2re-all
+    note: 'faenet no sym'
+  - config: faenet-is2re-all
+    note: 'faenet baseline sym'
     frame_averaging: 2D
     fa_frames: se3-random
-  - config: fanet-is2re-all
-    note: 'fanet baseline sym'
+  - config: faenet-is2re-all
+    note: 'faenet baseline sym'
     frame_averaging: 2D
     fa_frames: se3-random
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'simple'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: simple
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'base'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: base
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'updownscale'
     frame_averaging: 2D
     fa_frames: se3-random
     model:
       mp_type: updownscale
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'base'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -58,7 +58,7 @@ runs:
       mp_type: base
     optim:
       lr_initial: 0.0005
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'all'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -67,7 +67,7 @@ runs:
     optim:
       lr_initial: 0.0001
     mp_type: base
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'smaller lr'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -75,7 +75,7 @@ runs:
       mp_type: updownscale
     optim:
       lr_initial: 0.0005
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'small warmup factor and lr'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -84,7 +84,7 @@ runs:
     optim:
       lr_initial: 0.0005
       warmup_factor: 0.01
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'warmup factor + lr'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -93,7 +93,7 @@ runs:
     optim:
       lr_initial: 0.0005
       warmup_factor: 0.5
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'big batch size'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -102,7 +102,7 @@ runs:
     optim:
       batch_size: 328
       eval_batch_size: 328
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'smaller batch'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -111,7 +111,7 @@ runs:
     optim:
       batch_size: 180
       eval_batch_size: 180
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'smaller hidden smaller lr'
     frame_averaging: 2D
     fa_frames: se3-random

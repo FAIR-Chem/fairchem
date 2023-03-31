@@ -20,7 +20,7 @@ default:
 
 runs:
 
-  - config: fanet-is2re-all  # 2700544
+  - config: faenet-is2re-all  # 2700544
     note: 'top-02-modif'
     frame_averaging: 2D
     fa_frames: random
@@ -45,7 +45,7 @@ runs:
       max_epochs: 8
       eval_every: 0.4
 
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'top-1-modif'
     frame_averaging: 2D
     fa_frames: random
@@ -66,7 +66,7 @@ runs:
     optim: 
       lr_initial: 0.0019
       scheduler: LinearWarmupCosineAnnealingLR
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'top-1-modif'
     frame_averaging: 2D
     fa_frames: se3-random
@@ -86,7 +86,7 @@ runs:
     optim: 
       lr_initial: 0.0025
       scheduler: LinearWarmupCosineAnnealingLR
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'top-2-modif'
     frame_averaging: 2D
     fa_frames: random
@@ -107,7 +107,7 @@ runs:
     optim: 
       lr_initial: 0.0027
       scheduler: LinearWarmupCosineAnnealingLR
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'top-3'
     frame_averaging: 2D
     fa_frames: random
@@ -129,7 +129,7 @@ runs:
     optim: 
       lr_initial: 0.003
       scheduler: LinearWarmupCosineAnnealingLR
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'top-3-modif'
     frame_averaging: 2D
     fa_frames: random
@@ -151,7 +151,7 @@ runs:
     optim: 
       lr_initial: 0.003
       scheduler: LinearWarmupCosineAnnealingLR
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'top-4'
     frame_averaging: 2D
     fa_frames: random
@@ -173,7 +173,7 @@ runs:
     optim: 
       lr_initial: 0.0025
       scheduler: LinearWarmupCosineAnnealingLR
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'top-4-modif'
     frame_averaging: 2D
     fa_frames: random
@@ -195,7 +195,7 @@ runs:
     optim: 
       lr_initial: 0.0025
       scheduler: LinearWarmupCosineAnnealingLR
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'top-5'
     frame_averaging: 2D
     fa_frames: random
@@ -217,7 +217,7 @@ runs:
     optim: 
       lr_initial: 0.0034
       scheduler: LinearWarmupCosineAnnealingLR
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'top-5-modif'
     frame_averaging: 2D
     fa_frames: random
@@ -239,7 +239,7 @@ runs:
     optim: 
       lr_initial: 0.0034
       scheduler: LinearWarmupCosineAnnealingLR
-  - config: fanet-is2re-all
+  - config: faenet-is2re-all
     note: 'top-6'
     frame_averaging: 2D
     fa_frames: random

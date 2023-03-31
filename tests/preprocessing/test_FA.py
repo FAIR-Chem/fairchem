@@ -57,7 +57,6 @@ def distance_preservation_test(g, method, distances):
 
 
 if __name__ == "__main__":
-
     config = {}
     config["graph_rewiring"] = "remove-tag-0"
     config["test_ri"] = True
@@ -79,7 +78,6 @@ if __name__ == "__main__":
     # Set up
 
     for i in range(len(batch[0].sid)):
-
         # FA pos
         g = deepcopy(batch[0][i])
         d = deepcopy(g.distances)

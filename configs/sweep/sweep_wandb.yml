@@ -68,7 +68,7 @@ command:
   - ${interpreter}
   - ${program}
   - "--config-yml"
-  - "configs/is2re/all/fanet/fanet.yml"
+  - "configs/is2re/all/faenet/faenet.yml"
   - "--mode"
   - "train"
   - ${args}

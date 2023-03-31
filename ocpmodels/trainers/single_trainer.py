@@ -206,7 +206,11 @@ class SingleTrainer(BaseTrainer):
         primary_metric = self.config["task"].get(
             "primary_metric", self.evaluator.task_primary_metric[self.task_name]
         )
-        self.best_val_metric = np.inf
+        if "energy_force_within_threshold" in primary_metric:
+            self.best_val_metric = -np.inf
+        else:
+            self.best_val_metric = np.inf
+
         current_val_metric = None
         first_eval = True
         log_train_every = self.config["log_train_every"]
@@ -225,7 +229,6 @@ class SingleTrainer(BaseTrainer):
             print(f"\nEvaluating every {eval_every} steps\n")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
-
             start_time = time.time()
             if not self.silent:
                 print()
@@ -254,7 +257,8 @@ class SingleTrainer(BaseTrainer):
                     s = time.time()
 
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    preds = self.model_forward(batch)
+                    with timer.next("train_forward", ignore=epoch_int > 0):
+                        preds = self.model_forward(batch)
                     loss = self.compute_loss(preds, batch)
                     if preds.get("pooling_loss") is not None:
                         coeff = self.config["optim"].get("pooling_coefficient", 1)
@@ -274,7 +278,8 @@ class SingleTrainer(BaseTrainer):
                     return "loss_is_nan"
 
                 try:
-                    self._backward(loss)
+                    with timer.next("train_backward", ignore=epoch_int > 0):
+                        self._backward(loss)
                 except RuntimeError:
                     print("\nBackward loss issue")
                     print(loss)
@@ -302,7 +307,7 @@ class SingleTrainer(BaseTrainer):
                     gbm, gbs = timer.prepare_for_logging()
                     self.metrics["get_batch_time_mean"] = {"metric": gbm["get_batch"]}
                     self.metrics["get_batch_time_std"] = {"metric": gbs["get_batch"]}
-                    timer.reset()
+                    timer.reset("get_batch")
                     # logging.info(f"Step: {self.step}")
                     self.log_train_metrics()
 
@@ -341,7 +346,14 @@ class SingleTrainer(BaseTrainer):
 
                     current_val_metric = val_metrics[primary_metric]["metric"]
 
-                    if current_val_metric < self.best_val_metric:
+                    if (
+                        primary_metric in {"energy_mae", "forces_mae"}
+                        and current_val_metric < self.best_val_metric
+                    ) or (
+                        "energy_force_within_threshold" in primary_metric
+                        and current_val_metric > self.best_val_metric
+                    ):
+                        # if current_val_metric < self.best_val_metric:
                         self.best_val_metric = current_val_metric
                         self.save(
                             metrics=val_metrics,
@@ -382,6 +394,19 @@ class SingleTrainer(BaseTrainer):
             # End of epoch.
             epoch_times.append(time.time() - start_time)
             self.metrics["epoch_time"] = {"metric": epoch_times[-1]}
+            if epoch_int == 0:
+                tm, ts = timer.prepare_for_logging(
+                    map_funcs={
+                        "train_backward": lambda x: x
+                        / self.config["optim"]["batch_size"],
+                        "train_forward": lambda x: x
+                        / self.config["optim"]["batch_size"],
+                    }
+                )
+                self.metrics["train_backward_mean"] = {"metric": tm["train_backward"]}
+                self.metrics["train_backward_std"] = {"metric": ts["train_backward"]}
+                self.metrics["train_forward_mean"] = {"metric": tm["train_forward"]}
+                self.metrics["train_forward_std"] = {"metric": ts["train_forward"]}
             self.log_train_metrics(end_of_epoch=True)
             torch.cuda.empty_cache()
 
@@ -400,7 +425,6 @@ class SingleTrainer(BaseTrainer):
         from_ckpt=None,
         disable_tqdm=True,
     ):
-
         eas = self.eval_all_splits(
             True,
             epoch=epoch_int,
@@ -441,8 +465,6 @@ class SingleTrainer(BaseTrainer):
             if not self.silent:
                 print(symmetry)
 
-        # TODO: Test equivariance
-
         # Close datasets
         if debug_batches < 0:
             for ds in self.datasets.values():
@@ -454,7 +476,7 @@ class SingleTrainer(BaseTrainer):
             original_pos = batch_list[0].pos
             if self.task_name in OCP_TASKS:
                 original_cell = batch_list[0].cell
-            e_all, p_all, f_all = [], [], []
+            e_all, p_all, f_all, gt_all = [], [], [], []
 
             # Compute model prediction for each frame
             for i in range(len(batch_list[0].fa_pos)):
@@ -464,8 +486,10 @@ class SingleTrainer(BaseTrainer):
 
                 # forward pass
                 preds = self.model(deepcopy(batch_list), mode=mode)
-
                 e_all.append(preds["energy"])
+
+                fa_rot = None
+
                 if preds.get("pooling_loss") is not None:
                     p_all.append(preds["pooling_loss"])
                 if preds.get("forces") is not None:
@@ -480,6 +504,23 @@ class SingleTrainer(BaseTrainer):
                         .view(-1, 3)
                     )
                     f_all.append(g_forces)
+                if preds.get("forces_grad_target") is not None:
+                    # Transform gradients to stay consistent with FA
+                    if fa_rot is None:
+                        fa_rot = torch.repeat_interleave(
+                            batch_list[0].fa_rot[i], batch_list[0].natoms, dim=0
+                        )
+                    g_grad_target = (
+                        preds["forces_grad_target"]
+                        .view(-1, 1, 3)
+                        .bmm(
+                            fa_rot.transpose(1, 2).to(
+                                preds["forces_grad_target"].device
+                            )
+                        )
+                        .view(-1, 3)
+                    )
+                    gt_all.append(g_grad_target)
 
             batch_list[0].pos = original_pos
             if self.task_name in OCP_TASKS:
@@ -491,6 +532,8 @@ class SingleTrainer(BaseTrainer):
                 preds["pooling_loss"] = sum(p_all) / len(p_all)
             if len(f_all) > 0 and all(y is not None for y in f_all):
                 preds["forces"] = sum(f_all) / len(f_all)
+            if len(gt_all) > 0 and all(y is not None for y in gt_all):
+                preds["forces_grad_target"] = sum(gt_all) / len(gt_all)
         else:
             preds = self.model(batch_list)
 
@@ -587,7 +630,10 @@ class SingleTrainer(BaseTrainer):
                     loss["energy_grad_loss"] = self.loss_fn["force"](
                         preds["forces"][mask], grad_target[mask]
                     )
-                    if self.model.module.regress_forces == "direct_with_energy_grad":
+                    if (
+                        self.model.module.regress_forces
+                        == "direct_with_gradient_target"
+                    ):
                         energy_grad_mult = self.config["optim"].get(
                             "energy_grad_coefficient", 10
                         )
@@ -725,11 +771,15 @@ class SingleTrainer(BaseTrainer):
 
         energy_diff = torch.zeros(1, device=self.device)
         energy_diff_z = torch.zeros(1, device=self.device)
+        energy_diff_z_percentage = torch.zeros(1, device=self.device)
         energy_diff_refl = torch.zeros(1, device=self.device)
         pos_diff_total = torch.zeros(1, device=self.device)
         forces_diff = torch.zeros(1, device=self.device)
         forces_diff_z = torch.zeros(1, device=self.device)
+        forces_diff_z_graph = torch.zeros(1, device=self.device)
         forces_diff_refl = torch.zeros(1, device=self.device)
+        n_batches = 0
+        n_atoms = 0
 
         for i, batch in enumerate(self.loaders[self.config["dataset"]["default_val"]]):
             if self.sigterm:
@@ -737,16 +787,26 @@ class SingleTrainer(BaseTrainer):
             if debug_batches > 0 and i == debug_batches:
                 break
 
+            n_batches += len(batch[0].natoms)
+            n_atoms += batch[0].natoms.sum()
+
             # Compute model prediction
-            preds1 = self.model_forward(deepcopy(batch))
+            preds1 = self.model_forward(deepcopy(batch), mode="inference")
 
             # Compute prediction on rotated graph
             rotated = self.rotate_graph(batch, rotation="z")
-            preds2 = self.model_forward(deepcopy(rotated["batch_list"]))
+            preds2 = self.model_forward(
+                deepcopy(rotated["batch_list"]), mode="inference"
+            )
 
             # Difference in predictions, for energy and forces
             energy_diff_z += torch.abs(preds1["energy"] - preds2["energy"]).sum()
+
             if self.task_name == "s2ef":
+                energy_diff_z_percentage += (
+                    torch.abs(preds1["energy"] - preds2["energy"])
+                    / torch.abs(batch[0].y).to(preds1["energy"].device)
+                ).sum()
                 forces_diff_z += torch.abs(
                     preds1["forces"] @ rotated["rot"].to(preds1["forces"].device)
                     - preds2["forces"]
@@ -759,6 +819,16 @@ class SingleTrainer(BaseTrainer):
                     torch.tensor([0.0]),
                     atol=1e-05,
                 )
+            elif self.task_name == "is2re":
+                energy_diff_z_percentage += (
+                    torch.abs(preds1["energy"] - preds2["energy"])
+                    / torch.abs(batch[0].y_relaxed).to(preds1["energy"].device)
+                ).sum()
+            else:
+                energy_diff_z_percentage += (
+                    torch.abs(preds1["energy"] - preds2["energy"])
+                    / torch.abs(batch[0].y).to(preds1["energy"].device)
+                ).sum()
 
             # Diff in positions
             pos_diff = -1
@@ -772,7 +842,7 @@ class SingleTrainer(BaseTrainer):
 
             # Reflect graph and compute diff in prediction
             reflected = self.reflect_graph(batch)
-            preds3 = self.model_forward(reflected["batch_list"])
+            preds3 = self.model_forward(reflected["batch_list"], mode="inference")
             energy_diff_refl += torch.abs(preds1["energy"] - preds3["energy"]).sum()
             if self.task_name == "s2ef":
                 forces_diff_refl += torch.abs(
@@ -790,20 +860,21 @@ class SingleTrainer(BaseTrainer):
 
             # 3D Rotation and compute diff in prediction
             rotated = self.rotate_graph(batch)
-            preds4 = self.model_forward(rotated["batch_list"])
+            preds4 = self.model_forward(rotated["batch_list"], mode="inference")
             energy_diff += torch.abs(preds1["energy"] - preds4["energy"]).sum()
             if self.task_name == "s2ef":
                 forces_diff += torch.abs(preds1["forces"] - preds4["forces"]).sum()
 
         # Aggregate the results
-        batch_size = len(batch[0].natoms)
-        energy_diff_z = energy_diff_z / (i * batch_size)
-        energy_diff = energy_diff / (i * batch_size)
-        energy_diff_refl = energy_diff_refl / (i * batch_size)
-        pos_diff_total = pos_diff_total / (i * batch_size)
+        energy_diff_z = energy_diff_z / n_batches
+        energy_diff_z_percentage = energy_diff_z_percentage / n_batches
+        energy_diff = energy_diff / n_batches
+        energy_diff_refl = energy_diff_refl / n_batches
+        pos_diff_total = pos_diff_total / n_batches
 
         symmetry = {
             "2D_E_ri": float(energy_diff_z),
+            "2D_E_ri_percentage": float(energy_diff_z_percentage),
             "3D_E_ri": float(energy_diff),
             "2D_pos_ri": float(pos_diff_total),
             "2D_E_refl_i": float(energy_diff_refl),
@@ -811,11 +882,13 @@ class SingleTrainer(BaseTrainer):
 
         # Test equivariance of forces
         if self.task_name == "s2ef":
-            forces_diff_z = forces_diff_z / (i * batch_size)
-            forces_diff = forces_diff / (i * batch_size)
-            forces_diff_refl = forces_diff_refl / (i * batch_size)
+            forces_diff_z = forces_diff_z / n_atoms
+            forces_diff_z_graph = forces_diff_z / n_batches
+            forces_diff = forces_diff / n_atoms
+            forces_diff_refl = forces_diff_refl / n_atoms
             symmetry.update(
                 {
+                    "2D_F_ri_graph": float(forces_diff_z_graph),
                     "2D_F_ri": float(forces_diff_z),
                     "3D_F_ri": float(forces_diff),
                     "2D_F_refl_i": float(forces_diff_refl),
