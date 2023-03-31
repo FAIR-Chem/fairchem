@@ -656,7 +656,7 @@ class BaseTrainer(ABC):
 
                 # Forward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    with times.next("model_forward", ignore=not is_first):
+                    with times.next("val_forward", ignore=not is_first):
                         preds = self.model_forward(batch)
                     loss = self.compute_loss(preds, batch)
 
@@ -668,7 +668,9 @@ class BaseTrainer(ABC):
                 for k, v in loss.items():
                     metrics = evaluator.update(k, v.item(), metrics)
 
-        mean_val_times, std_val_times = times.prepare_for_logging()
+        mean_val_times, std_val_times = times.prepare_for_logging(map_funcs={
+            "val_forward": lambda x: x / self.config["optim"]["batch_size"],
+        })
 
         aggregated_metrics = {}
         for k in metrics:
@@ -689,8 +691,8 @@ class BaseTrainer(ABC):
         log_dict["epoch"] = self.epoch
         log_dict[f"{split}_time"] = mean_val_times["validation_loop"]
         if is_first:
-            log_dict["model_forward_time_mean"] = mean_val_times["model_forward"]
-            log_dict["model_forward_time_std"] = std_val_times["model_forward"]
+            log_dict["val_forward_time_mean"] = mean_val_times["val_forward"]
+            log_dict["val_forward_time_std"] = std_val_times["val_forward"]
 
         if dist_utils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
