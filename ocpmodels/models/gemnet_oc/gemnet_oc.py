@@ -862,7 +862,7 @@ class GemNetOC(BaseModel):
                 index=subgraph["edge_index"][1],
                 atom_distance=subgraph["distance"],
                 max_num_neighbors_threshold=max_neighbors,
-                enforce_max_strictly = self.enforce_max_neighbors_strictly,
+                enforce_max_strictly=self.enforce_max_neighbors_strictly,
             )
             if not torch.all(edge_mask):
                 subgraph["edge_index"] = subgraph["edge_index"][:, edge_mask]

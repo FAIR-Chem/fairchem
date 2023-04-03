@@ -547,10 +547,10 @@ def get_pbc_distances(
 
 
 def radius_graph_pbc(
-    data, 
+    data,
     radius,
     max_num_neighbors_threshold,
-    enforce_max_neighbors_strictly = False,
+    enforce_max_neighbors_strictly=False,
     pbc=[True, True, True],
 ):
     device = data.pos.device
@@ -706,7 +706,7 @@ def radius_graph_pbc(
         index=index1,
         atom_distance=atom_distance_sqr,
         max_num_neighbors_threshold=max_num_neighbors_threshold,
-        enforce_max_strictly = enforce_max_neighbors_strictly,
+        enforce_max_strictly=enforce_max_neighbors_strictly,
     )
 
     if not torch.all(mask_num_neighbors):
@@ -728,24 +728,24 @@ def get_max_neighbors_mask(
     index,
     atom_distance,
     max_num_neighbors_threshold,
-    degeneracy_tolerance = 0.01,
-    enforce_max_strictly = False,
+    degeneracy_tolerance=0.01,
+    enforce_max_strictly=False,
 ):
     """
     Give a mask that filters out edges so that each atom has at most
     `max_num_neighbors_threshold` neighbors.
     Assumes that `index` is sorted.
-    
+
     Enforcing the max strictly can force the arbitrary choice between
-    degenerate edges. This can lead to undesired behaviors; for 
+    degenerate edges. This can lead to undesired behaviors; for
     example, bulk formation energies which are not invariant to
     unit cell choice.
-    
+
     A degeneracy tolerance can help prevent sudden changes in edge
     existence from small changes in atom position, for example,
     rounding errors, slab relaxation, temperature, etc.
     """
-    
+
     device = natoms.device
     num_atoms = natoms.sum()
 
@@ -797,32 +797,37 @@ def get_max_neighbors_mask(
 
     # Sort neighboring atoms based on distance
     distance_sort, index_sort = torch.sort(distance_sort, dim=1)
-    
+
     # Select the max_num_neighbors_threshold neighbors that are closest
     if enforce_max_strictly:
         distance_sort = distance_sort[:, :max_num_neighbors_threshold]
         index_sort = index_sort[:, :max_num_neighbors_threshold]
         max_num_included = max_num_neighbors_threshold
-        
+
     else:
-        effective_cutoff = distance_sort[:, max_num_neighbors_threshold] + degeneracy_tolerance
+        effective_cutoff = (
+            distance_sort[:, max_num_neighbors_threshold]
+            + degeneracy_tolerance
+        )
         is_included = torch.le(distance_sort.T, effective_cutoff)
-        
+
         # Set all undesired edges to infinite length to be removed later
         distance_sort[~is_included.T] = np.inf
-        
+
         # Subselect tensors for efficiency
         num_included_per_atom = torch.sum(is_included, dim=0)
         max_num_included = torch.max(num_included_per_atom)
         distance_sort = distance_sort[:, :max_num_included]
         index_sort = index_sort[:, :max_num_included]
-        
+
         # Recompute the number of neighbors
         num_neighbors_thresholded = num_neighbors.clamp(
             max=num_included_per_atom
         )
-        
-        num_neighbors_image = segment_csr(num_neighbors_thresholded, image_indptr)
+
+        num_neighbors_image = segment_csr(
+            num_neighbors_thresholded, image_indptr
+        )
 
     # Offset index_sort so that it indexes into index
     index_sort = index_sort + index_neighbor_offset.view(-1, 1).expand(
