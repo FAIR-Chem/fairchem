@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Callable
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional,
 
 import numpy as np
 import torch
