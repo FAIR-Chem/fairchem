@@ -547,7 +547,11 @@ def get_pbc_distances(
 
 
 def radius_graph_pbc(
-    data, radius, max_num_neighbors_threshold, pbc=[True, True, True]
+    data, 
+    radius,
+    max_num_neighbors_threshold,
+    enforce_max_neighbors_strictly = False,
+    pbc=[True, True, True],
 ):
     device = data.pos.device
     batch_size = len(data.natoms)
@@ -702,6 +706,7 @@ def radius_graph_pbc(
         index=index1,
         atom_distance=atom_distance_sqr,
         max_num_neighbors_threshold=max_num_neighbors_threshold,
+        enforce_max_strictly = enforce_max_neighbors_strictly,
     )
 
     if not torch.all(mask_num_neighbors):
@@ -723,9 +728,8 @@ def get_max_neighbors_mask(
     index,
     atom_distance,
     max_num_neighbors_threshold,
+    degeneracy_tolerance = 0.01,
     enforce_max_strictly = False,
-    global_cutoff = True,
-    global_cutoff_pooling_func: Callable = torch.max,
 ):
     """
     Give a mask that filters out edges so that each atom has at most
@@ -737,18 +741,10 @@ def get_max_neighbors_mask(
     example, bulk formation energies which are not invariant to
     unit cell choice.
     
-    If enabled, a global cutoff that leads to each atom having 
-    approximately the desired number of edges will be chosen. The 
-    primary purpose is to ensure  that for all returned 
-    edges i->j, j->i is also returned (symmetry enforcement).
-    You can supply a callable that specifies how the list of effective
-    cutoffs for each atom will be turned into one global cutoff.
-    Reasonable callables may include: torch.min, torch.max, torch.mean
-    
-    Strictly enforcing the maximum and symmetry together is unsupported.
+    A degeneracy tolerance can help prevent sudden changes in edge
+    existence from small changes in atom position, for example,
+    rounding errors, slab relaxation, temperature, etc.
     """
-    
-    assert not (enforce_max_strictly and global_cutoff)
     
     device = natoms.device
     num_atoms = natoms.sum()
@@ -809,9 +805,7 @@ def get_max_neighbors_mask(
         max_num_included = max_num_neighbors_threshold
         
     else:
-        effective_cutoff = distance_sort[:, max_num_neighbors_threshold] + 0.01
-        if global_cutoff:
-            effective_cutoff = global_cutoff_pooling_func(effective_cutoff)
+        effective_cutoff = distance_sort[:, max_num_neighbors_threshold] + degeneracy_tolerance
         is_included = torch.le(distance_sort.T, effective_cutoff)
         
         # Set all undesired edges to infinite length to be removed later
