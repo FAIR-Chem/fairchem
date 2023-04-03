@@ -621,11 +621,13 @@ class SingleTrainer(BaseTrainer):
                 loss["total_loss"].append(force_mult * loss["force_loss"])
                 if "forces_grad_target" in preds:
                     grad_target = preds["forces_grad_target"]
-                    # loss["energy_grad_loss"] = self.loss_fn["force"](
-                    #     preds["forces"][mask], grad_target[mask]
-                    # )
-                    cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
-                    loss["energy_grad_loss"] = - torch.mean(cos(preds["forces"][mask], grad_target[mask]))
+                    if self.config["model"].get("cosine_sim", False): 
+                        cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
+                        loss["energy_grad_loss"] = - torch.mean(cos(preds["forces"][mask], grad_target[mask]))
+                    else: 
+                        loss["energy_grad_loss"] = self.loss_fn["force"](
+                            preds["forces"][mask], grad_target[mask]
+                        )
                     if (
                         self.model.module.regress_forces
                         == "direct_with_gradient_target"
