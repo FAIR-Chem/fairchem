@@ -42,12 +42,14 @@ class BaseModel(nn.Module):
         max_neighbors = max_neighbors or self.max_neighbors
         use_pbc = use_pbc or self.use_pbc
         otf_graph = otf_graph or self.otf_graph
-        
+
         if enforce_max_neighbors_strictly is not None:
             pass
-        elif hasattr(self, 'enforce_max_neighbors_strictly'):
+        elif hasattr(self, "enforce_max_neighbors_strictly"):
             # Not all models will have this attribute
-            enforce_max_neighbors_strictly = enforce_max_neighbors_strictly or self.enforce_max_neighbors_strictly
+            enforce_max_neighbors_strictly = (
+                self.enforce_max_neighbors_strictly
+            )
         else:
             # Default to old behavior
             enforce_max_neighbors_strictly = True
