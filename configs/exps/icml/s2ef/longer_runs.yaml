@@ -9,12 +9,15 @@ default:
   cp_data_to_tmp_dir: True
   mode: train
   graph_rewiring: remove-tag-0  
+  optim: 
+    batch_size: 120
+    eval_batch_size: 120
 
 runs:
   - config: faenet-s2ef-2M
-    note: 'S2EF optimising forces_mae only'
+    note: 'Longer runs smaller batch size'
     frame_averaging: 2D
-    fa_frames: random
+    fa_frames: se3-random
     model:
       mp_type: updownscale_base
       edge_embed_type: all_rij
@@ -32,14 +35,106 @@ runs:
       max_num_neighbors: 30
       skip_co: concat
       regress_forces: direct_with_gradient_target
+      force_decoder_type: res
     optim:
-      max_epochs: 30
-      batch_size: 196
-      eval_batch_size: 196
+      max_epochs: 20
+      batch_size: 120
+      eval_batch_size: 120
       lr_initial: 0.00025
       energy_coefficient: 0
+
   - config: faenet-s2ef-2M
-    note: 'S2EF optimising forces_mae only 2'
+    note: 'Longer runs 3'
+    frame_averaging: 2D
+    fa_frames: random
+    model:
+      mp_type: updownscale_base
+      edge_embed_type: all_rij
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 576
+      num_filters: 512
+      num_gaussians: 81
+      num_interactions: 6
+      second_layer_MLP: False
+      max_num_neighbors: 30
+      skip_co: concat
+      regress_forces: direct
+      force_decoder_type: res
+    optim:
+      max_epochs: 20
+      batch_size: 192
+      eval_batch_size: 192
+      lr_initial: 0.00025
+      energy_coefficient: 1
+      energy_grad_coefficient: 10
+
+  - config: faenet-s2ef-2M
+    note: 'Longer runs 3 bis'
+    frame_averaging: 2D
+    fa_frames: random
+    model:
+      mp_type: updownscale_base
+      edge_embed_type: all_rij
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 576
+      num_filters: 480
+      num_gaussians: 81
+      num_interactions: 6
+      second_layer_MLP: False
+      max_num_neighbors: 30
+      skip_co: concat
+      regress_forces: direct_with_gradient_target
+      force_decoder_type: res
+    optim:
+      max_epochs: 14
+      batch_size: 192
+      eval_batch_size: 192
+      lr_initial: 0.00025
+      energy_coefficient: 1
+      energy_grad_coefficient: 10
+
+  - config: faenet-s2ef-2M
+    note: 'Longer runs 3 bis'
+    frame_averaging: 2D
+    fa_frames: random
+    model:
+      mp_type: updownscale_base
+      edge_embed_type: all_rij
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 576
+      num_filters: 480
+      num_gaussians: 81
+      num_interactions: 6
+      second_layer_MLP: False
+      max_num_neighbors: 30
+      skip_co: concat
+      regress_forces: direct_with_gradient_target
+      force_decoder_type: res
+    optim:
+      max_epochs: 14
+      batch_size: 120
+      eval_batch_size: 120
+      lr_initial: 0.00025
+      energy_coefficient: 1
+      energy_grad_coefficient: 10
+
+  - config: faenet-s2ef-2M
+    note: 'Longer runs'
     frame_averaging: 2D
     fa_frames: random
     model:
@@ -51,20 +146,20 @@ runs:
       energy_head: weighted-av-final-embeds
       complex_mp: True
       graph_norm: True
-      hidden_channels: 288
+      hidden_channels: 388
       num_filters: 544
-      num_gaussians: 135
-      num_interactions: 7
+      num_gaussians: 100
+      num_interactions: 6
       second_layer_MLP: True
       max_num_neighbors: 50
       skip_co: concat
       regress_forces: direct
     optim:
-      max_epochs: 22
-      batch_size: 192
-      eval_batch_size: 192
-      lr_initial: 0.00039
+      max_epochs: 20
+      batch_size: 120
+      eval_batch_size: 120
+      lr_initial: 0.00030
       energy_grad_coefficient: 5
       force_coefficient: 100
-      energy_coefficient: 0
+      energy_coefficient: 1
       scheduler: LinearWarmupCosineAnnealingLR

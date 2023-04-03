@@ -25,50 +25,60 @@ default:
     second_layer_MLP: False
     max_num_neighbors: 30
     skip_co: concat
-    regress_forces: direct
+    regress_forces: from_energy
   optim:
-    max_epochs: 8
-    batch_size: 120
-    eval_batch_size: 120
+    max_epochs: 5
+    batch_size: 80
+    eval_batch_size: 80
     lr_initial: 0.00025
 
 runs:  
   - config: faenet-s2ef-2M
-    note: 'faenet 2D all'
+    note: 'from energy 2D all'
     frame_averaging: 2D
     fa_frames: all
   - config: faenet-s2ef-2M
-    note: '2D stocha'
+    note: 'from energy 2D all'
+    frame_averaging: 3D
+    fa_frames: all
+  - config: faenet-s2ef-2M
+    note: 'from energy  2D all'
+    frame_averaging: 2D
+    fa_frames: se3-all
+  - config: faenet-s2ef-2M
+    note: 'from energy  2D all'
+    frame_averaging: 3D
+    fa_frames: se3-all
+  - config: faenet-s2ef-2M
+    note: 'from energy 2D stocha'
     frame_averaging: 2D
     fa_frames: random
   - config: faenet-s2ef-2M
-    note: 'No train 2D stocha'
+    note: 'from energy No train 2D stocha'
     frame_averaging: 2D
     fa_frames: random
     optim:
       max_epochs: 0
   - config: faenet-s2ef-2M
-    note: 'No DA/FA'
+    note: 'from energy No DA/FA'
     frame_averaging: ""
   - config: faenet-s2ef-2M
-    note: 'No train nor FA'
+    note: 'from energy No train nor FA'
     optim:
       max_epochs: 0
     frame_averaging: ""
   - config: faenet-s2ef-2M
-    note: 'se3-random'
+    note: 'from energy se3-random'
     frame_averaging: 2D
     fa_frames: se3-random
   - config: faenet-s2ef-2M
-    note: 'DA'
+    note: from energy 'DA'
     frame_averaging: DA
   - config: sfarinet-s2ef-2M
-    note: 'sfarinet 2D all'
-    frame_averaging: 2D
-  - config: faenet-s2ef-2M
-    note: 'se3 2D all small batch'
-    frame_averaging: 2D
-    fa_frames: se3-all
+    note: 'from energy sfarinet 3D all'
+    frame_averaging: 3D
+    fa_frames: all
     optim: 
       batch_size: 80
       eval_batch_size: 80
+      max_epochs: 0

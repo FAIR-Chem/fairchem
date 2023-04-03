@@ -33,7 +33,28 @@ default:
 
 runs:
   - config: faenet-is2re-all
-    note: 'Little training no FA'
+    note: '2D all'
+    frame_averaging: "2D"
+    fa_frames: all
+  - config: faenet-is2re-all
+    note: '3D all'
+    frame_averaging: "3D"
+    fa_frames: all
+  - config: faenet-is2re-all
+    note: '3D se3-all'
+    frame_averaging: "3D"
+    fa_frames: se3-all
+  - config: faenet-is2re-all
+    note: '2D se3-all'
+    frame_averaging: "2D"
+    fa_frames: se3-all
+  - config: faenet-is2re-all
+    note: '2D random'
+    frame_averaging: "2D"
+    fa_frames: random
+  - config: faenet-is2re-all
+    note: '2D random'
+    frame_averaging: "DA"
+  - config: faenet-is2re-all
+    note: 'No FA/DA'
     frame_averaging: ""
-    optim: 
-      max_epochs: 1

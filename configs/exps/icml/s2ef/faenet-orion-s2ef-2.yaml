@@ -33,7 +33,7 @@ default:
 
 orion:
   # Remember to change the experiment name if you change anything in the search space
-  n_jobs: 150
+  n_jobs: 50
 
   unique_exp_name: faenet-s2ef-2M-rebuttal
 

@@ -1,0 +1,57 @@
+job:
+  mem: 48GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  mode: train
+  graph_rewiring: remove-tag-0  
+  grad_fine_tune: True
+  model:
+    mp_type: updownscale_base
+    edge_embed_type: all_rij
+    phys_embeds: True
+    tag_hidden_channels: 32
+    pg_hidden_channels: 64
+    energy_head: weighted-av-final-embeds
+    complex_mp: True
+    graph_norm: True
+    hidden_channels: 256
+    num_filters: 480
+    num_gaussians: 136
+    num_interactions: 7
+    second_layer_MLP: False
+    max_num_neighbors: 30
+    skip_co: concat
+    regress_forces: direct_with_gradient_target
+  optim:
+    max_epochs: 5
+    batch_size: 120
+    eval_batch_size: 120
+    lr_initial: 0.00025
+
+runs:  
+  - config: faenet-s2ef-2M
+    note: 'Fine tune grad from epoch 4 in E-head 2D all'
+    frame_averaging: 2D
+    fa_frames: se3-all
+    optim: 
+        batch_size: 80
+        eval_batch_size: 80
+  - config: faenet-s2ef-2M
+    note: 'Fine tune grad from epoch 4 in E-head 2D stocha'
+    frame_averaging: 2D
+    fa_frames: random
+  - config: faenet-s2ef-2M
+    note: 'Fine tune grad from epoch 4 in E-head No DA/FA'
+    frame_averaging: ""
+  - config: faenet-s2ef-2M
+    note: 'Fine tune grad from epoch 4 in E-head se3-random'
+    frame_averaging: 2D
+    fa_frames: se3-random
+  - config: faenet-s2ef-2M
+    note: 'DA'
+    frame_averaging: DA
