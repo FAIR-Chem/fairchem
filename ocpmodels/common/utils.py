@@ -1051,6 +1051,7 @@ def build_config(args, args_override, silent=False):
                 "test_ri",
                 "use_pbc",
                 "wandb_project",
+                "grad_fine_tune",
             ]
             loaded_config = {
                 k: loaded_config[k] for k in keep_keys if k in loaded_config

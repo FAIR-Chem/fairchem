@@ -35,23 +35,23 @@ default:
 
 runs:  
   - config: faenet-s2ef-2M
-    note: 'Fine tune grad from epoch 4 in E-head 2D all'
+    note: 'Fine tune grad from epoch 4, 0 force coef, in E-head 2D all'
     frame_averaging: 2D
     fa_frames: se3-all
     optim: 
         batch_size: 80
         eval_batch_size: 80
   - config: faenet-s2ef-2M
-    note: 'Fine tune grad from epoch 4 in E-head 2D stocha'
+    note: 'Fine tune grad from epoch 4, 0 force coef, in E-head 2D stocha'
     frame_averaging: 2D
     fa_frames: random
   - config: faenet-s2ef-2M
-    note: 'Fine tune grad from epoch 4 in E-head No DA/FA'
+    note: 'Fine tune grad from epoch 4, 0 force coef, in E-head No DA/FA'
     frame_averaging: ""
   - config: faenet-s2ef-2M
-    note: 'Fine tune grad from epoch 4 in E-head se3-random'
+    note: 'Fine tune grad from epoch 4, 0 force coef, in E-head se3-random'
     frame_averaging: 2D
     fa_frames: se3-random
   - config: faenet-s2ef-2M
-    note: 'DA'
+    note: 'fine tune grad DA, 0 force coef'
     frame_averaging: DA

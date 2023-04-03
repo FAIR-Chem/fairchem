@@ -230,6 +230,13 @@ class SingleTrainer(BaseTrainer):
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
 
+            if self.config["grad_fine_tune"]: 
+                if epoch_int < 3:
+                    self.config["model"]["regress_forces"] = "direct"
+                else: 
+                    self.config["model"]["regress_forces"] = "direct_with_gradient_target"
+                    self.config["optim"]["force_coefficient"] = 0
+
             start_time = time.time()
             if not self.silent:
                 print()
@@ -472,7 +479,7 @@ class SingleTrainer(BaseTrainer):
                     batch_list[0].cell = batch_list[0].fa_cell[i]
 
                 # forward pass
-                preds = self.model(deepcopy(batch_list), mode=mode)
+                preds = self.model(deepcopy(batch_list), mode=mode, regress_forces=self.config["model"]["regress_forces"])
                 e_all.append(preds["energy"])
 
                 fa_rot = None

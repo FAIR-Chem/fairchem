@@ -31,8 +31,12 @@ class BaseModel(nn.Module):
     def forces_forward(self, preds):
         raise NotImplementedError
 
-    def forward(self, data, mode="train"):
+    def forward(self, data, mode="train", regress_forces=None):
         grad_forces = forces = None
+
+        # Fine tune on gradients
+        if regress_forces:
+            self.regress_forces = regress_forces
 
         # energy gradient w.r.t. positions will be computed
         if mode == "train" or self.regress_forces == "from_energy":
