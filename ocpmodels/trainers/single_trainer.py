@@ -230,11 +230,13 @@ class SingleTrainer(BaseTrainer):
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
 
-            if self.config["grad_fine_tune"]: 
+            if self.config["grad_fine_tune"]:
                 if epoch_int < 3:
                     self.config["model"]["regress_forces"] = "direct"
-                else: 
-                    self.config["model"]["regress_forces"] = "direct_with_gradient_target"
+                else:
+                    self.config["model"][
+                        "regress_forces"
+                    ] = "direct_with_gradient_target"
                     self.config["optim"]["force_coefficient"] = 0
 
             start_time = time.time()
@@ -479,7 +481,11 @@ class SingleTrainer(BaseTrainer):
                     batch_list[0].cell = batch_list[0].fa_cell[i]
 
                 # forward pass
-                preds = self.model(deepcopy(batch_list), mode=mode, regress_forces=self.config["model"]["regress_forces"])
+                preds = self.model(
+                    deepcopy(batch_list),
+                    mode=mode,
+                    regress_forces=self.config["model"]["regress_forces"],
+                )
                 e_all.append(preds["energy"])
 
                 fa_rot = None
@@ -615,16 +621,20 @@ class SingleTrainer(BaseTrainer):
                     )
                     mask = fixed == 0
 
+                breakpoint()
+
                 loss["force_loss"] = self.loss_fn["force"](
                     preds["forces"][mask], force_target[mask]
                 )
                 loss["total_loss"].append(force_mult * loss["force_loss"])
                 if "forces_grad_target" in preds:
                     grad_target = preds["forces_grad_target"]
-                    if self.config["model"].get("cosine_sim", False): 
+                    if self.config["model"].get("cosine_sim", False):
                         cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
-                        loss["energy_grad_loss"] = - torch.mean(cos(preds["forces"][mask], grad_target[mask]))
-                    else: 
+                        loss["energy_grad_loss"] = -torch.mean(
+                            cos(preds["forces"][mask], grad_target[mask])
+                        )
+                    else:
                         loss["energy_grad_loss"] = self.loss_fn["force"](
                             preds["forces"][mask], grad_target[mask]
                         )
