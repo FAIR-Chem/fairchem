@@ -52,12 +52,7 @@ class BaseModel(nn.Module):
                 forces = self.forces_forward(preds)
 
             if mode == "train" or self.regress_forces == "from_energy":
-                if "gemnet" in self.__class__.__name__.lower():
-                    # gemnet forces are already computed
-                    grad_forces = forces
-                else:
-                    # compute forces from energy gradient
-                    grad_forces = self.forces_as_energy_grad(data.pos, preds["energy"])
+                grad_forces = self.forces_as_energy_grad(data.pos, preds["energy"])
 
             if self.regress_forces == "from_energy":
                 # predicted forces are the energy gradient
