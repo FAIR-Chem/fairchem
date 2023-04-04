@@ -621,8 +621,6 @@ class SingleTrainer(BaseTrainer):
                     )
                     mask = fixed == 0
 
-                breakpoint()
-
                 loss["force_loss"] = self.loss_fn["force"](
                     preds["forces"][mask], force_target[mask]
                 )
