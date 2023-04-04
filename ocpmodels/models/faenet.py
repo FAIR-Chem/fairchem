@@ -152,7 +152,6 @@ class EmbeddingBlock(nn.Module):
     def forward(
         self, z, rel_pos, edge_attr, tag=None, normalised_rel_pos=None, subnodes=None
     ):
-
         # --- Edge embedding --
 
         if self.edge_embed_type == "rij":
@@ -324,7 +323,6 @@ class InteractionBlock(MessagePassing):
             self.lin_h.bias.data.fill_(0)
 
     def forward(self, h, edge_index, e):
-
         # Define edge embedding
         if self.mp_type in {"base", "updownscale_base"}:
             e = torch.cat([e, h[edge_index[0]], h[edge_index[1]]], dim=1)
@@ -509,7 +507,6 @@ class FAENet(BaseModel):
     """
 
     def __init__(self, **kwargs):
-
         super(FAENet, self).__init__()
 
         self.cutoff = kwargs["cutoff"]

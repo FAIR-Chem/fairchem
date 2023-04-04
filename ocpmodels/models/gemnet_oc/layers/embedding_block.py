@@ -120,14 +120,19 @@ class AtomEmbedding(torch.nn.Module):
 
 class EdgeEmbedding(torch.nn.Module):
     """
-    Edge embedding based on the concatenation of atom embeddings and subsequent dense layer.
+    Edge embedding based on the concatenation of atom embeddings
+    and a subsequent dense layer.
 
-    Parameters
-    ----------
-        emb_size: int
-            Embedding size after the dense layer.
-        activation: str
-            Activation function used in the dense layer.
+    Arguments
+    ---------
+    atom_features: int
+        Embedding size of the atom embedding.
+    edge_features: int
+        Embedding size of the input edge embedding.
+    out_features: int
+        Embedding size after the dense layer.
+    activation: str
+        Activation function used in the dense layer.
     """
 
     def __init__(
@@ -144,28 +149,26 @@ class EdgeEmbedding(torch.nn.Module):
     def forward(
         self,
         h,
-        m_rbf,
-        idx_s,
-        idx_t,
+        m,
+        edge_index,
     ):
         """
-
         Arguments
         ---------
-        h
-        m_rbf: shape (nEdges, nFeatures)
-            in embedding block: m_rbf = rbf ; In interaction block: m_rbf = m_st
-        idx_s
-        idx_t
+        h: torch.Tensor, shape (num_atoms, atom_features)
+            Atom embeddings.
+        m: torch.Tensor, shape (num_edges, edge_features)
+            Radial basis in embedding block,
+            edge embedding in interaction block.
 
         Returns
         -------
             m_st: torch.Tensor, shape=(nEdges, emb_size)
                 Edge embeddings.
         """
-        h_s = h[idx_s]  # shape=(nEdges, emb_size)
-        h_t = h[idx_t]  # shape=(nEdges, emb_size)
+        h_s = h[edge_index[0]]  # shape=(nEdges, emb_size)
+        h_t = h[edge_index[1]]  # shape=(nEdges, emb_size)
 
-        m_st = torch.cat([h_s, h_t, m_rbf], dim=-1)  # (nEdges, 2*emb_size+nFeatures)
+        m_st = torch.cat([h_s, h_t, m], dim=-1)  # (nEdges, 2*emb_size+nFeatures)
         m_st = self.dense(m_st)  # (nEdges, emb_size)
         return m_st

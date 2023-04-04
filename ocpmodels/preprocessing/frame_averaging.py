@@ -42,7 +42,6 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
         plus_minus_list = [torch.where(sum_eigenvec >= 0, 1.0, -1.0)]
 
     for pm in plus_minus_list:
-
         # Append new graph positions to list
         new_eigenvec = pm * eigenvec
 

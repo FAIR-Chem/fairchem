@@ -101,7 +101,6 @@ def summary_fa(g):
 
 
 if __name__ == "__main__":
-
     opts = resolved_args()
     checkpoint_path = None
     config = {}

@@ -18,7 +18,7 @@ default:
     num_after_skip: 2
     num_concat: 1
     num_atom: 3
-    cutoff: 12.0 # @AlexDuvalinho ??
+    cutoff: 6.0
     max_neighbors: 50
     rbf:
       name: gaussian
@@ -28,11 +28,16 @@ default:
     cbf:
       name: spherical_harmonics
     extensive: True
-    otf_graph: True # @AlexDuvalinho ??
+    otf_graph: False
     output_init: HeOrthogonal
     activation: silu
     scale_file: configs/models/scaling_factors/gemnet-dT_c12.json
     regress_forces: False
+    # PhAST
+    tag_hidden_channels: 0 # 64
+    pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
+    phys_hidden_channels: 0 # 32 -> physical properties embedding hidden channels
+    phys_embeds: False # True
   optim:
     batch_size: 8
     eval_batch_size: 8

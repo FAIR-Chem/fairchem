@@ -49,7 +49,6 @@ def original_test_rotation_invariance(batch, model, rotation=None):
 
 
 if __name__ == "__main__":
-
     checkpoint = False  # whether to load from a checkpoint
 
     opts = resolved_args()

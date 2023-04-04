@@ -267,7 +267,8 @@ class SingleTrainer(BaseTrainer):
                     s = time.time()
 
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    preds = self.model_forward(batch)
+                    with timer.next("train_forward", ignore=epoch_int > 0):
+                        preds = self.model_forward(batch)
                     loss = self.compute_loss(preds, batch)
                     if preds.get("pooling_loss") is not None:
                         coeff = self.config["optim"].get("pooling_coefficient", 1)
@@ -287,7 +288,8 @@ class SingleTrainer(BaseTrainer):
                     return "loss_is_nan"
 
                 try:
-                    self._backward(loss)
+                    with timer.next("train_backward", ignore=epoch_int > 0):
+                        self._backward(loss)
                 except RuntimeError:
                     print("\nBackward loss issue")
                     print(loss)
@@ -315,7 +317,7 @@ class SingleTrainer(BaseTrainer):
                     gbm, gbs = timer.prepare_for_logging()
                     self.metrics["get_batch_time_mean"] = {"metric": gbm["get_batch"]}
                     self.metrics["get_batch_time_std"] = {"metric": gbs["get_batch"]}
-                    timer.reset()
+                    timer.reset("get_batch")
                     # logging.info(f"Step: {self.step}")
                     self.log_train_metrics()
 
@@ -402,6 +404,19 @@ class SingleTrainer(BaseTrainer):
             # End of epoch.
             epoch_times.append(time.time() - start_time)
             self.metrics["epoch_time"] = {"metric": epoch_times[-1]}
+            if epoch_int == 0:
+                tm, ts = timer.prepare_for_logging(
+                    map_funcs={
+                        "train_backward": lambda x: x
+                        / self.config["optim"]["batch_size"],
+                        "train_forward": lambda x: x
+                        / self.config["optim"]["batch_size"],
+                    }
+                )
+                self.metrics["train_backward_mean"] = {"metric": tm["train_backward"]}
+                self.metrics["train_backward_std"] = {"metric": ts["train_backward"]}
+                self.metrics["train_forward_mean"] = {"metric": tm["train_forward"]}
+                self.metrics["train_forward_std"] = {"metric": ts["train_forward"]}
             self.log_train_metrics(end_of_epoch=True)
             torch.cuda.empty_cache()
 
@@ -420,7 +435,6 @@ class SingleTrainer(BaseTrainer):
         from_ckpt=None,
         disable_tqdm=True,
     ):
-
         eas = self.eval_all_splits(
             True,
             epoch=epoch_int,

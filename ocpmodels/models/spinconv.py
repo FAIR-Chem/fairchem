@@ -371,7 +371,6 @@ class spinconv(BaseModel):
         forces = torch.zeros(self.num_atoms, 3, device=device)
 
         for rot_index in range(num_random_rotations):
-
             rot_mat_x_perturb = torch.bmm(rot_mat_x, atom_rot_mat[rot_index])
             rot_mat_y_perturb = torch.bmm(rot_mat_y, atom_rot_mat[rot_index])
             rot_mat_z_perturb = torch.bmm(rot_mat_z, atom_rot_mat[rot_index])
