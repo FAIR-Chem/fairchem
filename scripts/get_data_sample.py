@@ -35,7 +35,6 @@ from ocpmodels.preprocessing.frame_averaging import (
 )
 
 if __name__ == "__main__":
-
     opts = resolved_args()
 
     trainer_config = {
@@ -63,7 +62,6 @@ if __name__ == "__main__":
     print("The `batch` variable from `trainer.val_loader` is ready.")
 
     if opts.frame_averaging:
-
         i = 0
         for batch in trainer.val_loader:
             g_list = batch[0].to_data_list()
@@ -98,7 +96,6 @@ if __name__ == "__main__":
         # g_normalize_rotation = NormalizeR(g)
 
     if opts.no_single_super_node is None:
-
         for batch in trainer.loaders["train"]:
             break
         b = batch[0]
@@ -343,7 +340,6 @@ if __name__ == "__main__":
 
     # check conditionno_several_super_node
     if opts.no_several_super_node is None:
-
         for batch in trainer.loaders["train"]:
             break
         b = batch[0]

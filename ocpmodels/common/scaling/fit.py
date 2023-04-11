@@ -61,15 +61,11 @@ def main(*, num_batches: int = 16):
         ), "Checkpoint file not specified. Please specify --checkpoint <path>"
         ckpt_file = Path(ckpt_file)
 
-        logging.info(
-            f"Input checkpoint path: {ckpt_file}, {ckpt_file.exists()=}"
-        )
+        logging.info(f"Input checkpoint path: {ckpt_file}, {ckpt_file.exists()=}")
 
         model: nn.Module = trainer.model
         val_loader = trainer.val_loader
-        assert (
-            val_loader is not None
-        ), "Val dataset is required for making predictions"
+        assert val_loader is not None, "Val dataset is required for making predictions"
 
         if ckpt_file.exists():
             trainer.load_checkpoint(str(ckpt_file))
@@ -77,13 +73,9 @@ def main(*, num_batches: int = 16):
         # region reoad scale file contents if necessary
         # unwrap module from DP/DDP
         unwrapped_model = model
-        while isinstance(
-            unwrapped_model, (DistributedDataParallel, OCPDataParallel)
-        ):
+        while isinstance(unwrapped_model, (DistributedDataParallel, OCPDataParallel)):
             unwrapped_model = unwrapped_model.module
-        assert isinstance(
-            unwrapped_model, nn.Module
-        ), "Model is not a nn.Module"
+        assert isinstance(unwrapped_model, nn.Module), "Model is not a nn.Module"
         load_scales_compat(unwrapped_model, config.get("scale_file", None))
         # endregion
 

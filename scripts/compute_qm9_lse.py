@@ -19,7 +19,6 @@ if __name__ == "__main__":
     shifts_per_attr = []
 
     for attr in tqdm(range(ds[0].y.shape[-1])):
-
         data = [(d.y[0, attr].numpy(), d.z) for d in ds]
         q = np.array([d[0] for d in data])
         max_n_atoms = max([len(d[1]) for d in data])

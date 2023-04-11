@@ -185,7 +185,6 @@ class AdvancedEmbeddingBlock(torch.nn.Module):
         self.lin.reset_parameters()
 
     def forward(self, x, rbf, i, j, tag=None, subnodes=None):
-
         x_ = self.emb(x)
         rbf = self.act(self.lin_rbf(rbf))
 
@@ -633,7 +632,6 @@ class DimeNetPlusPlus(BaseModel):
 
     @conditional_grad(torch.enable_grad())
     def energy_forward(self, data):
-
         if self.otf_graph:
             edge_index, cell_offsets, neighbors = radius_graph_pbc(
                 data, self.cutoff, 50

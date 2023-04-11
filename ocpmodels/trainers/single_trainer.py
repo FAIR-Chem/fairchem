@@ -230,11 +230,13 @@ class SingleTrainer(BaseTrainer):
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
 
-            if self.config["grad_fine_tune"]: 
+            if self.config["grad_fine_tune"]:
                 if epoch_int < 3:
                     self.config["model"]["regress_forces"] = "direct"
-                else: 
-                    self.config["model"]["regress_forces"] = "direct_with_gradient_target"
+                else:
+                    self.config["model"][
+                        "regress_forces"
+                    ] = "direct_with_gradient_target"
                     self.config["optim"]["force_coefficient"] = 0
 
             start_time = time.time()
@@ -265,7 +267,8 @@ class SingleTrainer(BaseTrainer):
                     s = time.time()
 
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    preds = self.model_forward(batch)
+                    with timer.next("train_forward", ignore=epoch_int > 0):
+                        preds = self.model_forward(batch)
                     loss = self.compute_loss(preds, batch)
                     if preds.get("pooling_loss") is not None:
                         coeff = self.config["optim"].get("pooling_coefficient", 1)
@@ -285,7 +288,8 @@ class SingleTrainer(BaseTrainer):
                     return "loss_is_nan"
 
                 try:
-                    self._backward(loss)
+                    with timer.next("train_backward", ignore=epoch_int > 0):
+                        self._backward(loss)
                 except RuntimeError:
                     print("\nBackward loss issue")
                     print(loss)
@@ -313,7 +317,7 @@ class SingleTrainer(BaseTrainer):
                     gbm, gbs = timer.prepare_for_logging()
                     self.metrics["get_batch_time_mean"] = {"metric": gbm["get_batch"]}
                     self.metrics["get_batch_time_std"] = {"metric": gbs["get_batch"]}
-                    timer.reset()
+                    timer.reset("get_batch")
                     # logging.info(f"Step: {self.step}")
                     self.log_train_metrics()
 
@@ -400,6 +404,19 @@ class SingleTrainer(BaseTrainer):
             # End of epoch.
             epoch_times.append(time.time() - start_time)
             self.metrics["epoch_time"] = {"metric": epoch_times[-1]}
+            if epoch_int == 0:
+                tm, ts = timer.prepare_for_logging(
+                    map_funcs={
+                        "train_backward": lambda x: x
+                        / self.config["optim"]["batch_size"],
+                        "train_forward": lambda x: x
+                        / self.config["optim"]["batch_size"],
+                    }
+                )
+                self.metrics["train_backward_mean"] = {"metric": tm["train_backward"]}
+                self.metrics["train_backward_std"] = {"metric": ts["train_backward"]}
+                self.metrics["train_forward_mean"] = {"metric": tm["train_forward"]}
+                self.metrics["train_forward_std"] = {"metric": ts["train_forward"]}
             self.log_train_metrics(end_of_epoch=True)
             torch.cuda.empty_cache()
 
@@ -418,7 +435,6 @@ class SingleTrainer(BaseTrainer):
         from_ckpt=None,
         disable_tqdm=True,
     ):
-
         eas = self.eval_all_splits(
             True,
             epoch=epoch_int,
@@ -479,7 +495,11 @@ class SingleTrainer(BaseTrainer):
                     batch_list[0].cell = batch_list[0].fa_cell[i]
 
                 # forward pass
-                preds = self.model(deepcopy(batch_list), mode=mode, regress_forces=self.config["model"]["regress_forces"])
+                preds = self.model(
+                    deepcopy(batch_list),
+                    mode=mode,
+                    regress_forces=self.config["model"]["regress_forces"],
+                )
                 e_all.append(preds["energy"])
 
                 fa_rot = None
@@ -621,10 +641,12 @@ class SingleTrainer(BaseTrainer):
                 loss["total_loss"].append(force_mult * loss["force_loss"])
                 if "forces_grad_target" in preds:
                     grad_target = preds["forces_grad_target"]
-                    if self.config["model"].get("cosine_sim", False): 
+                    if self.config["model"].get("cosine_sim", False):
                         cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
-                        loss["energy_grad_loss"] = - torch.mean(cos(preds["forces"][mask], grad_target[mask]))
-                    else: 
+                        loss["energy_grad_loss"] = -torch.mean(
+                            cos(preds["forces"][mask], grad_target[mask])
+                        )
+                    else:
                         loss["energy_grad_loss"] = self.loss_fn["force"](
                             preds["forces"][mask], grad_target[mask]
                         )

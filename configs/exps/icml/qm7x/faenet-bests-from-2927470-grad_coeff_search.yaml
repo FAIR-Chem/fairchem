@@ -20,6 +20,8 @@ default:
 
 runs:
 - optim:
+    energy_grad_coefficient: 0
+- optim:
     energy_grad_coefficient: 5
 - optim:
     energy_grad_coefficient: 25

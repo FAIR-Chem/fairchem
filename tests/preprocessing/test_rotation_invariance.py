@@ -81,7 +81,6 @@ def all_frames_deprecated(eigenvec, pos):
     all_fa = []
 
     for pm in plus_minus_list:
-
         # Append new graph positions to list
         new_eigenvec = pm * eigenvec
 
@@ -222,7 +221,6 @@ def frame_averaging_2D(g, random_sign=False):
 
 
 if __name__ == "__main__":
-
     opts = resolved_args()
 
     trainer_config = {

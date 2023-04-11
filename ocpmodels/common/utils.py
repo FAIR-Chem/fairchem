@@ -33,10 +33,10 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
-from torch_scatter import segment_coo, segment_csr
+from torch_scatter import segment_coo, segment_csr, scatter
 
 import ocpmodels
-from ocpmodels.common.flags import flags
+from ocpmodels.common.flags import flags, Flags
 from ocpmodels.common.registry import registry
 import ocpmodels.common.dist_utils as dist_utils
 
@@ -593,6 +593,7 @@ def conditional_grad(dec):
     Decorator to enable/disable grad depending on whether force/energy
     predictions are being made
     """
+
     # Adapted from
     # https://stackoverflow.com/questions/60907323/accessing-class-property-as-decorator-argument
     def decorator(func):
@@ -748,7 +749,6 @@ def setup_imports():
         + glob.glob(trainer_pattern, recursive=True)
         + glob.glob(task_pattern, recursive=True)
     )
-
     for f in files:
         for key in ["/trainers", "/datasets", "/models", "/tasks"]:
             if f.find(key) != -1:
@@ -756,6 +756,9 @@ def setup_imports():
                 file_name = splits[-1]
                 module_name = file_name[: file_name.find(".py")]
                 importlib.import_module("ocpmodels.%s.%s" % (key[1:], module_name))
+
+    # manual model imports
+    importlib.import_module("ocpmodels.models.gemnet_oc.gemnet_oc")
 
     experimental_folder = os.path.join(root_folder, "../experimental/")
     if os.path.exists(experimental_folder):
@@ -970,7 +973,7 @@ def load_config(config_str):
     return config
 
 
-def build_config(args, args_override, silent=False):
+def build_config(args, args_override=[], silent=False):
     config, overrides, loaded_config = {}, {}, {}
 
     if hasattr(args, "config_yml") and args.config_yml:
@@ -1033,7 +1036,7 @@ def build_config(args, args_override, silent=False):
             loaded_config["checkpoint"] = str(latest_ckpt)
             loaded_config["job_ids"] = loaded_config["job_ids"] + f", {JOB_ID}"
             loaded_config["job_id"] = JOB_ID
-            loaded_config["local_rank"] = config["local_rank"]
+            loaded_config["local_rank"] = config.get("local_rank", 0)
         else:
             # restarting from scratch
             keep_keys = [
@@ -1360,7 +1363,9 @@ def radius_graph_pbc(data, radius, max_num_neighbors_threshold):
     cells_per_dim = [
         torch.arange(-rep, rep + 1, device=device, dtype=torch.float) for rep in max_rep
     ]
-    unit_cell = torch.cat(torch.meshgrid(cells_per_dim), dim=-1).reshape(-1, 3)
+    unit_cell = torch.cat(torch.meshgrid(cells_per_dim, indexing="ij"), dim=-1).reshape(
+        -1, 3
+    )
     num_cells = len(unit_cell)
     unit_cell_per_atom = unit_cell.view(1, num_cells, 3).repeat(len(index2), 1, 1)
     unit_cell = torch.transpose(unit_cell, 0, 1)
@@ -1689,6 +1694,34 @@ def make_script_trainer(str_args=[], overrides={}, silent=False, mode="train"):
     return trainer
 
 
+def make_trainer_from_dir(path, mode, overrides={}):
+    path = resolve(path)
+    assert path.exists()
+    assert mode in {
+        "continue",
+        "restart",
+    }, f"Invalid mode: {mode}. Expected 'continue' or 'restart'."
+    assert isinstance(
+        overrides, dict
+    ), f"Overrides must be a dict. Received {overrides}"
+
+    argv = deepcopy(sys.argv)
+    sys.argv[1:] = []
+    default_args = Flags().get_parser().parse_args()
+    sys.argv = argv
+
+    if mode == "continue":
+        default_args.continue_from_dir = str(path)
+    else:
+        default_args.restart_from_dir = str(path)
+
+    config = build_config(default_args)
+    config = merge_dicts(config, overrides)
+
+    setup_imports()
+    return registry.get_trainer_class(config["trainer"])(**config)
+
+
 def get_commit_hash():
     try:
         commit_hash = (
@@ -1726,3 +1759,17 @@ def base_config(config, overrides={}):
     conf["cpu"] = not torch.cuda.is_available()
 
     return merge_dicts(conf, overrides)
+
+
+def scatter_det(*args, **kwargs):
+    from ocpmodels.common.registry import registry
+
+    if registry.get("set_deterministic_scatter", no_warning=True):
+        torch.use_deterministic_algorithms(mode=True)
+
+    out = scatter(*args, **kwargs)
+
+    if registry.get("set_deterministic_scatter", no_warning=True):
+        torch.use_deterministic_algorithms(mode=False)
+
+    return out
