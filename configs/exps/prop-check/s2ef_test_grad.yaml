@@ -9,7 +9,7 @@ default:
   cp_data_to_tmp_dir: True
   mode: train
   graph_rewiring: remove-tag-0  
-  grad_fine_tune: True
+  # grad_fine_tune: False
   model:
     mp_type: updownscale_base
     edge_embed_type: all_rij
@@ -24,6 +24,7 @@ default:
     num_gaussians: 136
     num_interactions: 7
     second_layer_MLP: False
+    cosine_sim: True
     max_num_neighbors: 30
     skip_co: concat
     regress_forces: direct_with_gradient_target
