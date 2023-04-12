@@ -179,7 +179,7 @@ qm9:
       es_warmup_epochs: 600
       eval_batch_size: 64
       factor: 0.9
-      initial_lr: 0.0003
+      lr_initial: 0.0003
       loss_energy: mse
       lr_gamma: 0.1
       lr_initial: 0.001
