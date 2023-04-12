@@ -3,6 +3,7 @@ job:
   cpus: 3
   gres: gpu:rtx8000:1
   partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
 
 default:
   test_ri: True
@@ -28,27 +29,16 @@ runs:
   #     eval_batch_size: 12
 
   - config: gemnet_t-is2re-all
-    note: 'Gemnet-T IS2RE baseline 2 GPUs'
+    note: 'Gemnet-T IS2RE baseline 4 GPUs'
     optim:
       batch_size: 12
       eval_batch_size: 12
     job:
-      gres: gpu:rtx8000:2
+      gres: gpu:rtx8000:4
       partition: main
 
-  # # - config: gemnet_t-is2re-all
-  # #   note: 'Gemnet-T IS2RE PhAST 1 GPU'
-  # #   graph_rewiring: remove-tag-0
-  # #   model:
-  # #     phys_embeds: True
-  # #     tag_hidden_channels: 32
-  # #     pg_hidden_channels: 32
-  # #   optim:
-  # #     batch_size: 32
-  # #     eval_batch_size: 32
-
   # - config: gemnet_t-is2re-all
-  #   note: 'Gemnet-T IS2RE PhAST 4 GPUs'
+  #   note: 'Gemnet-T IS2RE PhAST 1 GPU'
   #   graph_rewiring: remove-tag-0
   #   model:
   #     phys_embeds: True
@@ -57,40 +47,40 @@ runs:
   #   optim:
   #     batch_size: 32
   #     eval_batch_size: 32
-  #   job:
-  #     gres: gpu:rtx8000:4
 
-  # # -----------------------
-  # # -----  Gemnet-OC  -----
-  # # -----------------------
+  - config: gemnet_t-is2re-all
+    note: 'Gemnet-T IS2RE PhAST 4 GPUs'
+    graph_rewiring: remove-tag-0
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+    optim:
+      batch_size: 32
+      eval_batch_size: 32
+    job:
+      gres: gpu:rtx8000:4
 
-  # # - config: gemnet_oc-is2re-all
-  # #   note: 'Gemnet-OC IS2RE baseline 1 GPU'
-  # #   optim:
-  # #     batch_size: 6
-  # #     eval_batch_size: 6
+  # -----------------------
+  # -----  Gemnet-OC  -----
+  # -----------------------
 
   # - config: gemnet_oc-is2re-all
-  #   note: 'Gemnet-OC IS2RE baseline 4 GPUs'
+  #   note: 'Gemnet-OC IS2RE baseline 1 GPU'
   #   optim:
   #     batch_size: 6
   #     eval_batch_size: 6
-  #   job:
-  #     gres: gpu:rtx8000:4
 
-  # # - config: gemnet_oc-is2re-all
-  # #   note: 'Gemnet-OC IS2RE PhAST 1 GPU'
-  # #   model:
-  # #     phys_embeds: True
-  # #     tag_hidden_channels: 32
-  # #     pg_hidden_channels: 32
-  # #   graph_rewiring: remove-tag-0
-  # #   optim:
-  # #     batch_size: 32
-  # #     eval_batch_size: 32
+  - config: gemnet_oc-is2re-all
+    note: 'Gemnet-OC IS2RE baseline 4 GPUs'
+    optim:
+      batch_size: 6
+      eval_batch_size: 6
+    job:
+      gres: gpu:rtx8000:4
 
   # - config: gemnet_oc-is2re-all
-  #   note: 'Gemnet-OC IS2RE PhAST 4 GPUs'
+  #   note: 'Gemnet-OC IS2RE PhAST 1 GPU'
   #   model:
   #     phys_embeds: True
   #     tag_hidden_channels: 32
@@ -99,5 +89,16 @@ runs:
   #   optim:
   #     batch_size: 32
   #     eval_batch_size: 32
-  #   job:
-  #     gres: gpu:rtx8000:4
+
+  - config: gemnet_oc-is2re-all
+    note: 'Gemnet-OC IS2RE PhAST 4 GPUs'
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+    graph_rewiring: remove-tag-0
+    optim:
+      batch_size: 32
+      eval_batch_size: 32
+    job:
+      gres: gpu:rtx8000:4
