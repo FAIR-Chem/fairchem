@@ -90,7 +90,7 @@ class BaseTrainer(ABC):
         )
 
         if torch.cuda.is_available() and not self.cpu:
-            self.device = torch.device(f"cuda:{self.config['local_rank']}")
+            self.device = torch.device("cuda:0")
         else:
             self.device = torch.device("cpu")
             self.cpu = True  # handle case when `--cpu` isn't specified
@@ -641,7 +641,7 @@ class BaseTrainer(ABC):
             model_regresses_forces=self.config["model"].get("regress_forces", ""),
         )
         metrics = {}
-        desc = "device {}".format(dist_utils.get_rank())
+        desc = "device[rank={}]".format(dist_utils.get_rank())
 
         loader = self.loaders[split]
         times = Times(gpu=True)
@@ -752,7 +752,9 @@ class BaseTrainer(ABC):
                 self.model.parameters(),
                 max_norm=self.clip_grad_norm,
             )
-            if self.logger is not None:
+            if self.logger is not None and (
+                self.step % self.config.get("log_train_every", 1) == 0
+            ):
                 self.logger.log({"grad_norm": grad_norm}, step=self.step, split="train")
         if self.scaler:
             self.scaler.step(self.optimizer)
@@ -1044,7 +1046,8 @@ class BaseTrainer(ABC):
             self.config["model"].get("regress_forces") == "from_energy"
         )
         self.model.eval()
-        timer = Times(gpu=True)
+        timer = Times(gpu=torch.cuda.is_available())
+
 
         # average inference over multiple loops
         for _ in range(loops):
