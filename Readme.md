@@ -40,8 +40,9 @@ $ git clone https://github.com/icanswim/cosmosis.git cosmosis # For the QM7X dat
 ### TL;DR
 
 1. Update the data paths in `configs/models/tasks/${task}.yaml`
-2. Run `python main.py --config=${model}-${task}-${split}`
-3. Have a look at the example `scripts/submit.sh` to run multi-GPU SLURM jobs
+2. Check out flags in `ocpmodels/common/flags.py`, especially those related to Weights and Biases
+3. Run `python main.py --config=${model}-${task}-${split}`
+4. Have a look at the example `scripts/submit.sh` to run multi-GPU SLURM jobs
 
 ### Configuration
 
@@ -62,7 +63,8 @@ $ git clone https://github.com/icanswim/cosmosis.git cosmosis # For the QM7X dat
   6. `${model}.yaml -> ${task}:${split}:`
   7. Lastly, any command-line arg will override the configuration.
 
-* The default parameters for a given `${model}-${task}-${split}` reflect the results in the papers. Override any hyperparameter from the command-line (including nested keys) `--nested.key=value`
+* The default parameters for a given `${model}-${task}-${split}` reflect the results in the papers.
+* **Override any hyperparameter from the command-line** (including nested keys) `--nested.key=value`
 * The main namespaces for hyperparameters are:
   * `--model.*` to define the model specific HPs (`num_gaussians`, `num_interactions` etc.)
   * `--optim.*` to define the optimization's HPs (`batch_size`, `lr_initial` `max_epochs` etc.)
