@@ -1,7 +1,7 @@
 job:
   mem: 48GB
   cpus: 3
-  gres: gpu:rtx8000:1
+  gres: gpu:rtx8000:4
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
 
@@ -30,9 +30,6 @@ runs:
     optim:
       batch_size: 12
       eval_batch_size: 12
-    job:
-      gres: gpu:rtx8000:4
-      partition: main
 
   - config: gemnet_t-is2re-all
     note: 'Gemnet-T IS2RE PhAST 4 GPUs'
@@ -44,8 +41,6 @@ runs:
     optim:
       batch_size: 32
       eval_batch_size: 32
-    job:
-      gres: gpu:rtx8000:4
 
   # -----------------------
   # -----  Gemnet-OC  -----
@@ -56,8 +51,7 @@ runs:
     optim:
       batch_size: 6
       eval_batch_size: 6
-    job:
-      gres: gpu:rtx8000:4
+
 
   - config: gemnet_oc-is2re-all
     note: 'Gemnet-OC IS2RE PhAST 4 GPUs'
@@ -69,5 +63,3 @@ runs:
     optim:
       batch_size: 32
       eval_batch_size: 32
-    job:
-      gres: gpu:rtx8000:4
