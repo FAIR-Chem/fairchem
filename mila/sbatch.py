@@ -417,7 +417,17 @@ if __name__ == "__main__":
         print("\nDev mode: not actually executing the command 🤓\n")
     else:
         # not dev mode: run the command, make directories
-        out = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
+        try:
+            out = (
+                subprocess.check_output(command.split(" "), stderr=subprocess.STDOUT)
+                .decode("utf-8")
+                .strip()
+            )
+        except subprocess.CalledProcessError as error:
+            print("Error while launching job:\n```")
+            print(error.output.decode("utf-8").strip())
+            print("```\nAborting...")
+            sys.exit(1)
         jobid = out.split(" job ")[-1].strip()
         success = out.startswith("Submitted batch job")
 
