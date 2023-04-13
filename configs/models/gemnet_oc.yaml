@@ -89,6 +89,7 @@ is2re:
     model:
       regress_forces: False
       num_targets: 1
+      direct_forces: False
   10k: {}
   all: {}
 
