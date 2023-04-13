@@ -666,7 +666,7 @@ class SingleTrainer(BaseTrainer):
                             preds["forces"][mask], grad_target[mask]
                         )
                     if (
-                        self.model.module.regress_forces
+                        self.config["model"].get("regress_forces")
                         == "direct_with_gradient_target"
                     ):
                         energy_grad_mult = self.config["optim"].get(
