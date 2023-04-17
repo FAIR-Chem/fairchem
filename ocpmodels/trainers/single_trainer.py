@@ -1102,3 +1102,47 @@ class SingleTrainer(BaseTrainer):
 
         if self.ema:
             self.ema.restore()
+
+    def create_deup_dataset(
+        self: BaseTrainer,
+        checkpoints: List[str],
+        dataset_strs: List[str],
+        n: int = 10,
+        output_path: str = None,
+    ):
+        """
+        Checkpoints  : ["/network/.../"]
+        dataset_strs : ["train", "val_id", "val_ood_cat"]
+
+        Args:
+            checkpoints (List[str]): _description_
+            dataset_strs (List[str]): _description_
+        """
+        assert len(checkpoints) >= 1
+        assert output_path is not None
+        assert Path(output_path).exists()
+
+        ensemble = Ensemble(checkpoints)  # dropout = len(checkpoints) == 1
+        ensemble = ensemble.to(self.device)
+
+        deup_samples = []
+        dataset_attrs = {"samples": n}
+
+        for d in dataset_strs:
+            for b in self.loaders[d]:
+                preds = ensemble.forward(b, n=10)  # Batch x n
+                pred_mean = preds.mean(dim=1)  # Batch
+                pred_std = preds.std(dim=1)  # Batch
+                loss = self.loss_fn["energy"](pred_mean, b.y_relaxed)
+                deup_samples += [
+                    {
+                        "energy": b.y_relaxed,
+                        "energy_pred": pred_mean,
+                        "energy_std": pred_std,
+                        "loss":"" loss,
+                        "s": bool(d == "train"),
+                    }
+                ]
+        # TODO:
+        # reshape deup_samples to be flat
+        # write to disk deup_samples and dataset_attrs (lmbdb dataset)  -> see make_qm7x_lmdbs.py
