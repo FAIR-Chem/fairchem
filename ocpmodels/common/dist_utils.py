@@ -106,7 +106,7 @@ def broadcast_from_master(*obj_list):
         obj_list,
         src=0,
         group=dist.group.WORLD,
-        device=torch.device(f"cuda:{get_rank()}"),
+        device=torch.device("cuda:0"),  # was get_rank()
     )
     if len(obj_list) == 1:
         return obj_list[0]

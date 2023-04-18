@@ -267,6 +267,10 @@ if __name__ == "__main__":
             for c, command in enumerate(commands):
                 print(f"Launching job {c+1:3}", end="\r")
                 outputs.append(os.popen(command).read().strip())
+                if "Aborting" in outputs[-1]:
+                    print("\nError submitting job", c + 1, ":", command)
+                    print(outputs[-1].replace("Error while launching job:\n", ""))
+                    print("\n")
                 if " verbose=true" in command.lower():
                     print(outputs[-1])
         except KeyboardInterrupt:
@@ -283,6 +287,8 @@ if __name__ == "__main__":
 
         if is_interrupted:
             print("\n💀 Interrupted. Kill jobs with:\n$ scancel" + " ".join(jobs))
+        elif not jobs:
+            print("\n❌ No jobs launched")
         else:
             text += f"{separator}All jobs launched: {' '.join(jobs)}"
             with outfile.open("w") as f:
