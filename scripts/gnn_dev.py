@@ -30,6 +30,9 @@ if __name__ == "__main__":
     # config["optim"]["eval_every"] = 1
     config["optim"]["batch_size"] = 6
     config["optim"]["eval_batch_size"] = 6
+    #config["model"]["cosine_sim"] = 3
+    #config["optim"]["epoch_fine_tune"] = 3
+    #config["grad_fine_tune"] = True
     config["model"]["regress_forces"] = "direct_with_gradient_target"
 
     checkpoint_path = None
@@ -39,7 +42,7 @@ if __name__ == "__main__":
     if all("config" not in arg for arg in str_args):
         str_args.append("--is_debug")
         # str_args.append("--config=faenet-is2re-all")
-        str_args.append("--config=dpp-s2ef-2M")
+        str_args.append("--config=forcenet-s2ef-2M")
         # str_args.append("--silent=0")
         warnings.warn(
             "No model / mode is given; chosen as default" + f"Using: {str_args[-1]}"

@@ -231,7 +231,7 @@ class SingleTrainer(BaseTrainer):
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
 
             if self.config["grad_fine_tune"]:
-                if epoch_int < 3:
+                if epoch_int < self.config["optim"].get("epoch_fine_tune", 1):
                     self.config["model"]["regress_forces"] = "direct"
                 else:
                     self.config["model"][
