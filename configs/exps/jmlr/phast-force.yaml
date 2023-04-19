@@ -79,19 +79,19 @@ runs:
     note: 'PhAST Direct cos-sim tune Schnet'
     model:
       regress_forces: "direct_with_gradient_target"
-      cos_sim: True
+      cosine_sim: True
     grad_fine_tune: True
 
   - config: dpp-s2ef-2M
     note: 'PhASt Direct cos-sim fine tune D++'
     model:
       regress_forces: "direct_with_gradient_target"
-      cos_sim: True
+      cosine_sim: True
     grad_fine_tune: True
 
   - config: forcenet-s2ef-2M
     note: 'PhAST Direct cos-sim fine tune Direct'
     model:
       regress_forces: "direct_with_gradient_target"
-      cos_sim: True
+      cosine_sim: True
     grad_fine_tune: True

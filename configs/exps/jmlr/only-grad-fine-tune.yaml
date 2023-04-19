@@ -22,32 +22,33 @@ default:
 
 runs:
   - config: schnet-s2ef-2M
-    note: 'PhAST Direct Schnet bigger force coef'
+    note: 'Only grad  PhAST Direct Schnet bigger force coef'
     model:
       regress_forces: "direct"
-    optim: 
-      force_coefficient: 100
 
   - config: schnet-s2ef-2M
-    note: 'PhAST Direct Grad Schnet bigger energy grad coef'
+    note: 'Only grad  PhAST Direct Grad Schnet bigger energy grad coef'
     model:
       regress_forces: "direct_with_gradient_target"
-    optim: 
-      energy_grad_coefficient: 15
 
   - config: schnet-s2ef-2M
-    note: 'PhAST Direct Grad fine tune Schnet bigger energy grad coef'
+    note: 'Only grad PhAST Direct Grad Schnet'
     model:
       regress_forces: "direct_with_gradient_target"
+      epoch_fine_tune: 7
     grad_fine_tune: True
-    optim: 
-      energy_grad_coefficient: 15
 
   - config: schnet-s2ef-2M
-    note: 'PhAST Direct cos-sim tune Schnet smaller energy grad coef'
+    note: 'Only grad  PhAST Direct Grad fine tune Schnet bigger energy grad coef'
     model:
       regress_forces: "direct_with_gradient_target"
+      epoch_fine_tune: 6
+    grad_fine_tune: True
+
+  - config: schnet-s2ef-2M
+    note: 'Only grad  PhAST Direct cos-sim tune Schnet smaller energy grad coef'
+    model:
+      regress_forces: "direct_with_gradient_target"
+      epoch_fine_tune: 6
       cosine_sim: True
     grad_fine_tune: True
-    optim: 
-      energy_grad_coefficient: 1
