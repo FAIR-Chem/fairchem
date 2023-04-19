@@ -229,7 +229,6 @@ class SingleTrainer(BaseTrainer):
             print(f"\nEvaluating every {eval_every} steps\n")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
-
             if self.config["grad_fine_tune"]:
                 if epoch_int < 3:
                     self.config["model"]["regress_forces"] = "direct"
@@ -1139,7 +1138,7 @@ class SingleTrainer(BaseTrainer):
                         "energy": b.y_relaxed,
                         "energy_pred": pred_mean,
                         "energy_std": pred_std,
-                        "loss":"" loss,
+                        "loss": loss,
                         "s": bool(d == "train"),
                     }
                 ]
