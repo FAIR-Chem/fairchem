@@ -1722,6 +1722,25 @@ def make_trainer_from_dir(path, mode, overrides={}):
     return registry.get_trainer_class(config["trainer"])(**config)
 
 
+def make_trainer_from_conf_str(conf_str, overrides={}):
+    assert isinstance(
+        overrides, dict
+    ), f"Overrides must be a dict. Received {overrides}"
+
+    argv = deepcopy(sys.argv)
+    sys.argv[1:] = []
+    default_args = Flags().get_parser().parse_args()
+    sys.argv = argv
+
+    default_args.config = conf_str
+
+    config = build_config(default_args)
+    config = merge_dicts(config, overrides)
+
+    setup_imports()
+    return registry.get_trainer_class(config["trainer"])(**config)
+
+
 def get_commit_hash():
     try:
         commit_hash = (
