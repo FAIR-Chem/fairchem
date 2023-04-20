@@ -37,6 +37,7 @@ class UncertaintyEnsemble:
         if load:
             self.load_checkpoints()
 
+    @classmethod
     def find_checkpoint(ckpt):
         """
         Discover the best checkpoint from a run directory.
