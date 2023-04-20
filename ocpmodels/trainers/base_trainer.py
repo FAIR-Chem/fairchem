@@ -633,7 +633,7 @@ class BaseTrainer(ABC):
 
     @torch.no_grad()
     def validate(self, split="val", disable_tqdm=False):
-        ensure_fitted(self._unwrapped_model)
+        ensure_fitted(self._unwrapped_model, warn=True)
 
         if distutils.is_master():
             logging.info(f"Evaluating on {split}.")

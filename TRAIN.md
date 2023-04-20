@@ -5,6 +5,7 @@
   - [Initial Structure to Relaxed Energy (IS2RE)](#initial-structure-to-relaxed-energy-prediction-is2re)
     - [IS2RE Relaxations](#is2re-relaxations)
   - [Structure to Energy and Forces (S2EF)](#structure-to-energy-and-forces-s2ef)
+  - [Training OC20 models with total energies (IS2RE/S2EF)](#training-oc20-models-with-total-energies-is2res2ef)
   - [Initial Structure to Relaxed Structure (IS2RS)](#initial-structure-to-relaxed-structure-is2rs)
   - [Create EvalAI submission files](#create-evalai-oc20-submission-files)
     - [S2EF/IS2RE](#s2efis2re)
@@ -180,6 +181,31 @@ python main.py --mode predict --config-yml configs/s2ef/2M/schnet/schnet.yml \
 ```
 The predictions are stored in `[RESULTS_DIR]/s2ef_predictions.npz` and later used to create a submission file to be uploaded to EvalAI.
 
+## Training OC20 models with total energies (IS2RE/S2EF)
+
+To train and validate an OC20 IS2RE/S2EF model on total energies targets instead of adsorption energies there are a number of required changes to the config. They include setting: `dataset: oc22_lmdb`, `prediction_dtype: float32`, `train_on_oc20_total_energies: True`, and `oc20_ref: path/to/oc20_ref.pkl` (see example below). Also, please note that our evaluation server does not currently support OC20 total energy models.
+
+```
+task:
+  dataset: oc22_lmdb
+  prediction_dtype: float32
+  ...
+
+dataset:
+  train:
+    src: data/oc20/s2ef/train
+    normalize_labels: False
+    train_on_oc20_total_energies: True
+    #download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
+    oc20_ref: path/to/oc20_ref.pkl
+  val:
+    src: data/oc20/s2ef/val_id
+    train_on_oc20_total_energies: True
+    oc20_ref: path/to/oc20_ref.pkl
+```
+
+
+
 ## Initial Structure to Relaxed Structure (IS2RS)
 
 In the IS2RS task the model takes as input an initial structure and predicts the atomic positions in their
@@ -263,24 +289,24 @@ You can find examples configuration files in [`configs/oc22/s2ef`](https://githu
 
 ## Joint Training
 
-Training on OC20 total energies whether independently or jointly with OC22 requires `total_energy: True` and a path to the `oc20_ref` (download link provided below) to be specified in the configuration file. These are necessary to convert OC20 adsorption energies into their corresponding total energies. The following changes in the configuration file capture these changes:
+Training on OC20 total energies whether independently or jointly with OC22 requires a path to the `oc20_ref` (download link provided below) to be specified in the configuration file. These are necessary to convert OC20 adsorption energies into their corresponding total energies. The following changes in the configuration file capture these changes:
 
 ```
 task:
   dataset: oc22_lmdb
   ...
-  
+
 dataset:
   train:
     src: data/oc20+oc22/s2ef/train
     normalize_labels: False
-    total_energy: True
+    train_on_oc20_total_energies: True
     #download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
-    oc20_ref: path/to/oc22_ref.pkl
+    oc20_ref: path/to/oc20_ref.pkl
   val:
     src: data/oc22/s2ef/val_id
-    total_energy: True
-    oc20_ref: path/to/oc22_ref.pkl
+    train_on_oc20_total_energies: True
+    oc20_ref: path/to/oc20_ref.pkl
 ```
 
 You can find an example configuration file at [configs/oc22/s2ef/base_joint.yml](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/base_joint.yml)
