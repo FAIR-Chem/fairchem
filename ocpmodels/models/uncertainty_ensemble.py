@@ -131,17 +131,6 @@ class UncertaintyEnsemble:
             model.to(device)
         self.device = device
 
-    @property
-    def device(self):
-        """
-        Returns the device of the first parameter in the first model in the ensemble.
-        Assumes they all have the same device.
-
-        Returns:
-            torch.device
-        """
-        return next(self.models[0].parameters()).device
-
     def forward(self, batch, n=-1):
         """
         Passes a batch through the ensemble.
