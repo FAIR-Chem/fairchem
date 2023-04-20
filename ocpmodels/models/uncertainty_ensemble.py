@@ -78,7 +78,7 @@ class UncertaintyEnsemble:
             return best
 
         # returns the last checkpoint because no best checkpoint was found
-        print("\nWarning: no best checkpoint found, using last checkpoint.")
+        print("  >> ⁉️ Warning: no best checkpoint found, using last checkpoint.")
         return sorted(ckpts, key=lambda x: x.stat().st_mtime)[-1]
 
     def load_checkpoints(self):
@@ -87,7 +87,7 @@ class UncertaintyEnsemble:
             # find actual checkpoint if a directory is provided
             ckpt = self.find_checkpoint(ckpt)
 
-            print(f"  Loading checkpoint from: {str(ckpt)} onto {self.device}")
+            print(f"  🚜 Loading checkpoint from: {str(ckpt)} onto {self.device}")
 
             # load checkpoint
             checkpoint = torch.load(ckpt)
