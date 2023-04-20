@@ -31,7 +31,7 @@ class UncertaintyEnsemble:
 
         self.mc_dropout = len(checkpoints) == 1
         self.checkpoints = checkpoints
-        self.device = device
+        self.device = torch.device(device)
         self.models = []
 
         if load:
@@ -97,7 +97,7 @@ class UncertaintyEnsemble:
             model = OCPDataParallel(
                 model,
                 output_device=self.device,
-                num_gpus=1 if not self.cpu else 0,
+                num_gpus=1 if "cpu" not in str(self.device) else 0,
             )
             if dist_utils.initialized():
                 model = DistributedDataParallel(
