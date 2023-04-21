@@ -1,6 +1,7 @@
 import torch
 from torch.nn.parallel.distributed import DistributedDataParallel
-
+from yaml import safe_load
+from pathlib import Path
 from ocpmodels.common import dist_utils
 from ocpmodels.common.utils import resolve
 from ocpmodels.common.data_parallel import OCPDataParallel
@@ -8,9 +9,16 @@ from ocpmodels.common.registry import registry
 
 
 class UncertaintyEnsemble:
-    def __init__(self, checkpoints, device=None, load=True):
+    def __init__(self, config, device=None, load=True):
         """
-        Create an ensemble of models from a list of checkpoint paths.
+        Create an ensemble of models from a config dict.
+
+        config:
+        {
+            "checkpoints": Single run dir or list of run dirs, or path to specific ckpts
+                and it will be assumed that chekpoints are in run_dir/checkpoints/*.pt.
+            "dropout": float, optional, otherwise 0.75
+        }
 
         If the provided ``checkpoints`` are not a list, or if they are
         a list with a single item, it is assumed that this should be
@@ -18,27 +26,38 @@ class UncertaintyEnsemble:
 
 
         Args:
-            checkpoints (pathlike | List[pathlike]): Checkpoints to load. Can
-                be a list of run directories, and it will be assumed that chekpoints
-                are in run_dir/checkpoints/*.pt.
+            config (dict): Ensemble config as a dict.
+                Must contain the checkpoints to load.
             device (str|torch.device, optional): Where to put the models. Will be on
                 ``cpu`` or ``cuda:0`` if not provided.
             load (bool, optional): Whether to load checkpoints immediately
                 or let the user call ``.load_checkpoints()``.
                 Defaults to True.
         """
-        if not isinstance(checkpoints, list):
-            checkpoints = [checkpoints]
+        assert isinstance(config, dict), "Ensemble config must be a dict"
+        self.config = config
 
-        self.mc_dropout = len(checkpoints) == 1
-        self.checkpoints = checkpoints
+        assert (
+            "checkpoints" in self.config
+        ), "Ensemble config must have a 'checkpoints' key."
+
+        self.checkpoints = self.config["checkpoints"]
+
+        if not isinstance(self.checkpoints, list):
+            self.checkpoints = [self.checkpoints]
+
+        self.mc_dropout = len(self.checkpoints) == 1
+        if self.mc_dropout:
+            self.dropout = self.config.get("dropout", 0.75)
+
         if device is None:
             device = "cuda:0" if torch.cuda.is_available() else "cpu"
         self.device = torch.device(device)
-        self.models = []
 
+        self.models = []
         if load:
             self.load_checkpoints()
+            self.to(self.device)
 
     @classmethod
     def find_checkpoint(cls, ckpt):
@@ -96,7 +115,12 @@ class UncertaintyEnsemble:
             checkpoint = torch.load(ckpt)
             config = checkpoint["config"]
             # make model
+            model_config = config["model"]
+            if self.mc_dropout:
+                print("    Setting model dropout to: ", self.dropout)
+                model_config["dropout"] = self.dropout
             model = registry.get_model_class(config["model_name"])(**config["model"])
+            model.set_deup_inference(True)
             model = OCPDataParallel(
                 model,
                 output_device=self.device,

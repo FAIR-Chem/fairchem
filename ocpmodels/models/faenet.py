@@ -1,22 +1,24 @@
 """ Code of the Scalable Frame Averaging (Rotation Invariant) GNN
 """
 import torch
+import torch.nn.functional as F
 from e3nn.o3 import spherical_harmonics
 from torch import nn
 from torch.nn import Embedding, Linear
 from torch_geometric.nn import MessagePassing, TransformerConv, radius_graph
 from torch_geometric.nn.norm import BatchNorm, GraphNorm
+from torch_geometric.utils import dropout_edge
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import conditional_grad, get_pbc_distances
 from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.force_decoder import ForceDecoder
+from ocpmodels.models.utils.activations import swish
 from ocpmodels.models.utils.attention_model import TransfoAttConv
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-from ocpmodels.models.utils.activations import swish
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1
@@ -235,6 +237,7 @@ class InteractionBlock(MessagePassing):
         complex_mp,
         att_heads,
         graph_norm,
+        dropout,
     ):
         super(InteractionBlock, self).__init__()
         self.act = act
@@ -242,6 +245,7 @@ class InteractionBlock(MessagePassing):
         self.hidden_channels = hidden_channels
         self.complex_mp = complex_mp
         self.graph_norm = graph_norm
+        self.dropout = float(dropout)
         if graph_norm:
             self.graph_norm = GraphNorm(
                 hidden_channels if "updown" not in self.mp_type else num_filters
@@ -324,6 +328,12 @@ class InteractionBlock(MessagePassing):
 
     def forward(self, h, edge_index, e):
         # Define edge embedding
+
+        if self.droupout > 0:
+            h = F.dropout(
+                h, p=self.dropout, training=self.training or self.deup_inference
+            )
+
         if self.mp_type in {"base", "updownscale_base"}:
             e = torch.cat([e, h[edge_index[0]], h[edge_index[1]]], dim=1)
 
@@ -343,18 +353,27 @@ class InteractionBlock(MessagePassing):
             h = self.propagate(edge_index, x=h, W=e)  # propagate
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
+            h = F.dropout(
+                h, p=self.dropout, training=self.training or self.deup_inference
+            )
             h = self.act(self.lin_up(h))  # upscale node rep.
 
         elif self.mp_type == "att":
             h = self.lin_geom(h, edge_index, edge_attr=e)
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
+            h = F.dropout(
+                h, p=self.dropout, training=self.training or self.deup_inference
+            )
             h = self.act(self.lin_h(h))
 
         elif self.mp_type == "base_with_att":
             h = self.lin_geom(h, edge_index, edge_attr=e)  # propagate is inside
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
+            h = F.dropout(
+                h, p=self.dropout, training=self.training or self.deup_inference
+            )
             h = self.act(self.lin_h(h))
 
         elif self.mp_type == "local_env":
@@ -363,28 +382,43 @@ class InteractionBlock(MessagePassing):
             h = h + chi
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
+            h = F.dropout(
+                h, p=self.dropout, training=self.training or self.deup_inference
+            )
             h = h = self.act(self.lin_h(h))
 
         elif self.mp_type == "updown_local_env":
             h = self.act(self.lin_down(h))
             chi = self.propagate(edge_index, x=h, W=e, local_env=True)
+            e = F.dropout(
+                e, p=self.dropout, training=self.training or self.deup_inference
+            )
             e = self.lin_geom(e)
             h = self.propagate(edge_index, x=h, W=e)  # propagate
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = torch.cat((h, chi), dim=1)
+            h = F.dropout(
+                h, p=self.dropout, training=self.training or self.deup_inference
+            )
             h = self.lin_up(h)
 
         elif self.mp_type in {"base", "simple", "sfarinet"}:
             h = self.propagate(edge_index, x=h, W=e)  # propagate
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
+            h = F.dropout(
+                h, p=self.dropout, training=self.training or self.deup_inference
+            )
             h = self.act(self.lin_h(h))
 
         else:
             raise ValueError("mp_type provided does not exist")
 
         if self.complex_mp:
+            h = F.dropout(
+                h, p=self.dropout, training=self.training or self.deup_inference
+            )
             h = self.act(self.other_mlp(h))
 
         return h
@@ -397,10 +431,11 @@ class InteractionBlock(MessagePassing):
 
 
 class OutputBlock(nn.Module):
-    def __init__(self, energy_head, hidden_channels, act):
+    def __init__(self, energy_head, hidden_channels, act, dropout):
         super().__init__()
         self.energy_head = energy_head
         self.act = act
+        self.dropout = float(dropout)
 
         self.lin1 = Linear(hidden_channels, hidden_channels // 2)
         self.lin2 = Linear(hidden_channels // 2, 1)
@@ -504,6 +539,8 @@ class FAENet(BaseModel):
             keys: "model_type", "hidden_channels", "num_layers", "num_heads",
         force_decoder_type (str): type of the force decoder model.
             (options: "mlp", "simple", "res", "res_updown")
+        droupout (float): dropout rate for linear layers.
+        dropout_edge (float): dropout rate for edges.
     """
 
     def __init__(self, **kwargs):
@@ -516,6 +553,9 @@ class FAENet(BaseModel):
         self.max_num_neighbors = kwargs["max_num_neighbors"]
         self.edge_embed_type = kwargs["edge_embed_type"]
         self.skip_co = kwargs["skip_co"]
+        self.dropout_edge = float(kwargs["dropout_edge"] or 0)
+        self.droupout = kwargs["droupout"]
+
         if kwargs["mp_type"] == "sfarinet":
             kwargs["num_filters"] = kwargs["hidden_channels"]
 
@@ -558,6 +598,7 @@ class FAENet(BaseModel):
                     kwargs["complex_mp"],
                     kwargs["att_heads"],
                     kwargs["graph_norm"],
+                    kwargs["dropout"],
                 )
                 for _ in range(kwargs["num_interactions"])
             ]
@@ -603,6 +644,14 @@ class FAENet(BaseModel):
         z = data.atomic_numbers.long()
         pos = data.pos
         batch = data.batch
+
+        if self.dropout_edge > 0:
+            edge_index, edge_mask = dropout_edge(
+                data.edge_index,
+                p=self.dropout_edge,
+                force_undirected=True,
+                training=self.training or self.deup_inference,
+            )
 
         # Use periodic boundary conditions
         if self.use_pbc:

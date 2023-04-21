@@ -21,6 +21,15 @@ class BaseModel(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
 
+    def set_deup_inference(self, deup_inference):
+        self.deup_inference = deup_inference
+
+        def _sdi(module):
+            if isinstance(module, nn.Module):
+                module.deup_inference = deup_inference
+
+        self.apply(_sdi)
+
     def reset_parameters(self):
         for child in self.children():
             if hasattr(child, "reset_parameters"):

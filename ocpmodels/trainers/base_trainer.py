@@ -369,6 +369,7 @@ class BaseTrainer(ABC):
         self.model = registry.get_model_class(self.config["model_name"])(
             **model_config
         ).to(self.device)
+        self.model.set_deup_inference(False)
 
         if dist_utils.is_master() and not self.silent:
             logging.info(
@@ -1047,7 +1048,6 @@ class BaseTrainer(ABC):
         )
         self.model.eval()
         timer = Times(gpu=torch.cuda.is_available())
-
 
         # average inference over multiple loops
         for _ in range(loops):
