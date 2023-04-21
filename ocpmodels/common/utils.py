@@ -997,10 +997,11 @@ def build_config(args, args_override=[], silent=False):
             if args.continue_from_dir
             else resolve(args.restart_from_dir)
         )
+        already_ckpt = load_dir.exists() and load_dir.is_file()
         # find configs: from checkpoints first, from the dropped config file
         # otherwise
         ckpts = list(load_dir.glob("checkpoints/checkpoint-*.pt"))
-        if not ckpts:
+        if not ckpts and not already_ckpt:
             print(f"💥 Could not find checkpoints in {str(load_dir)}.")
             configs = list(load_dir.glob("config-*.y*ml"))
             if not configs:
@@ -1011,11 +1012,14 @@ def build_config(args, args_override=[], silent=False):
             loaded_config = yaml.safe_load(configs[0].read_text())
             load_path = str(configs[0])
         else:
-            latest_ckpt = str(
-                sorted(ckpts, key=lambda c: float(c.stem.split("-")[-1]))[-1]
-            )
+            if already_ckpt:
+                latest_ckpt = load_dir
+            else:
+                latest_ckpt = str(
+                    sorted(ckpts, key=lambda c: float(c.stem.split("-")[-1]))[-1]
+                )
             load_path = latest_ckpt
-            loaded_config = torch.load((latest_ckpt), map_location="cpu")["config"]
+            loaded_config = torch.load(latest_ckpt, map_location="cpu")["config"]
 
         # config has been found. We need to prune/modify it depending on whether
         # we're restarting or continuing.
@@ -1694,7 +1698,7 @@ def make_script_trainer(str_args=[], overrides={}, silent=False, mode="train"):
     return trainer
 
 
-def make_trainer_from_dir(path, mode, overrides={}):
+def make_trainer_from_dir(path, mode, overrides={}, silent=False):
     path = resolve(path)
     assert path.exists()
     assert mode in {
@@ -1715,7 +1719,7 @@ def make_trainer_from_dir(path, mode, overrides={}):
     else:
         default_args.restart_from_dir = str(path)
 
-    config = build_config(default_args)
+    config = build_config(default_args, silent=silent)
     config = merge_dicts(config, overrides)
 
     setup_imports()

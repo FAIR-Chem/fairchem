@@ -329,7 +329,7 @@ class InteractionBlock(MessagePassing):
     def forward(self, h, edge_index, e):
         # Define edge embedding
 
-        if self.droupout > 0:
+        if self.dropout_lin > 0:
             h = F.dropout(
                 h, p=self.dropout_lin, training=self.training or self.deup_inference
             )
@@ -559,8 +559,8 @@ class FAENet(BaseModel):
         self.max_num_neighbors = kwargs["max_num_neighbors"]
         self.edge_embed_type = kwargs["edge_embed_type"]
         self.skip_co = kwargs["skip_co"]
-        self.dropout_edge = float(kwargs["dropout_edge"] or 0)
-        self.dropout_lin = kwargs["dropout_lin"]
+        self.dropout_edge = float(kwargs.get("dropout_edge") or 0)
+        self.dropout_lin = float(kwargs.get("dropout_edge") or 0)
 
         if kwargs["mp_type"] == "sfarinet":
             kwargs["num_filters"] = kwargs["hidden_channels"]

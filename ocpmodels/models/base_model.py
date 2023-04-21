@@ -30,6 +30,15 @@ class BaseModel(nn.Module):
 
         self.apply(_sdi)
 
+    def set_dropouts(self, dropout):
+        def _sds(module):
+            if hasattr(module, "dropout_lin"):
+                module.dropout_lin = dropout
+            if hasattr(module, "dropout_edge"):
+                module.dropout_edge = dropout
+
+        self.apply(_sds)
+
     def reset_parameters(self):
         for child in self.children():
             if hasattr(child, "reset_parameters"):

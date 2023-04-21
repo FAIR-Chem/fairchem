@@ -48,7 +48,7 @@ from ocpmodels.modules.scheduler import EarlyStopper, LRScheduler
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
-    def __init__(self, **kwargs):
+    def __init__(self, load=True, **kwargs):
         run_dir = kwargs["run_dir"]
         model_name = kwargs["model"].pop(
             "name", kwargs.get("model_name", "Unknown - base_trainer issue")
@@ -150,7 +150,9 @@ class BaseTrainer(ABC):
                 "to stop the training after the next validation\n",
             )
             (run_dir / f"config-{JOB_ID}.yaml").write_text(yaml.dump(self.config))
-        self.load()
+
+        if load:
+            self.load()
 
         self.evaluator = Evaluator(
             task=self.task_name,
