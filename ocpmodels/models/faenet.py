@@ -651,17 +651,17 @@ class FAENet(BaseModel):
         pos = data.pos
         batch = data.batch
 
-        if self.dropout_edge > 0:
-            edge_index, edge_mask = dropout_edge(
-                data.edge_index,
-                p=self.dropout_edge,
-                force_undirected=True,
-                training=self.training or self.deup_inference,
-            )
-
         # Use periodic boundary conditions
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
+
+            if self.dropout_edge > 0:
+                edge_index, edge_mask = dropout_edge(
+                    data.edge_index,
+                    p=self.dropout_edge,
+                    force_undirected=True,
+                    training=self.training or self.deup_inference,
+                )
 
             out = get_pbc_distances(
                 pos,
@@ -688,6 +688,16 @@ class FAENet(BaseModel):
             rel_pos = pos[row] - pos[col]
             edge_weight = rel_pos.norm(dim=-1)
             edge_attr = self.distance_expansion(edge_weight)
+            if self.dropout_edge > 0:
+                edge_index, edge_mask = dropout_edge(
+                    edge_index,
+                    p=self.dropout_edge,
+                    force_undirected=True,
+                    training=self.training or self.deup_inference,
+                )
+                edge_weight = edge_weight[edge_mask]
+                edge_attr = edge_attr[edge_mask]
+                rel_pos = rel_pos[edge_mask]
 
         # Normalize and squash to [0,1] for gaussian basis
         rel_pos_normalized = None
