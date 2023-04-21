@@ -1,18 +1,25 @@
 from pathlib import Path
 from typing import List
-
+import pickle
+import lmdb
 import torch
 from yaml import dump
+from tqdm import tqdm
+from ocpmodels.common.utils import (
+    make_trainer_from_dir,
+    resolve,
+    merge_dicts,
+    make_config_from_conf_str,
+)
+from ocpmodels.trainers.single_trainer import SingleTrainer
 
-from ocpmodels.common.utils import make_trainer_from_dir, resolve
 
-
-class EnsembleTrainer:
-    def __init__(self, config, load=True):
+class EnsembleTrainer(SingleTrainer):
+    def __init__(self, ensemble_config, overrides={}):
         """
-        Create an ensemble of trainers from a config dict.
+        Create an ensemble of trainers from an ensemble_config dict.
 
-        config:
+        ensemble_config:
         {
             "checkpoints": Single run dir or list of run dirs, or path to specific ckpts
                 and it will be assumed that chekpoints are in run_dir/checkpoints/*.pt.
@@ -25,31 +32,37 @@ class EnsembleTrainer:
 
 
         Args:
-            config (dict): Ensemble config as a dict.
+            ensemble_config (dict): Ensemble config as a dict.
                 Must contain the checkpoints to load.
-            load (bool, optional): Whether to load checkpoints immediately
-                or let the user call ``.load_checkpoints()``.
-                Defaults to True.
+            overrides: dict of overrides for this trainer
         """
-        assert isinstance(config, dict), "Ensemble config must be a dict"
-        self.config = config
+        assert isinstance(
+            ensemble_config, dict
+        ), "Ensemble ensemble_config must be a dict"
+        self.ensemble_config = ensemble_config
 
         assert (
-            "checkpoints" in self.config
+            "checkpoints" in self.ensemble_config
         ), "Ensemble config must have a 'checkpoints' key."
 
-        self.checkpoints = self.config["checkpoints"]
+        self.checkpoints = self.ensemble_config["checkpoints"]
 
         if not isinstance(self.checkpoints, list):
             self.checkpoints = [self.checkpoints]
 
         self.mc_dropout = len(self.checkpoints) == 1
         if self.mc_dropout:
-            self.dropout = self.config.get("dropout", 0.75)
+            self.dropout = self.ensemble_config.get("dropout", 0.75)
 
         self.trainers = []
-        if load:
-            self.load_trainers()
+        self.load_trainers()
+        print("Loading self...")
+        config = make_config_from_conf_str(self.trainers[0].config["config"])
+        config = merge_dicts(config, overrides)
+        if "silent" not in overrides:
+            config["silent"] = True
+        super().__init__(**config)
+        print("Ready.")
 
     @classmethod
     def find_checkpoint(cls, ckpt):
@@ -95,7 +108,7 @@ class EnsembleTrainer:
         print("  >> ⁉️ Warning: no best checkpoint found, using last checkpoint.")
         return sorted(ckpts, key=lambda x: x.stat().st_mtime)[-1]
 
-    def load_checkpoints(self):
+    def load_trainers(self):
         print("Loading checkpoints...")
         for c, ckpt in enumerate(self.checkpoints):
             # find actual checkpoint if a directory is provided
@@ -104,22 +117,22 @@ class EnsembleTrainer:
             print(f"  🚜 Loading trainer from: {str(ckpt)}")
 
             trainer = make_trainer_from_dir(
-                ckpt, "continue", overrides={"load": False}, silent=True
+                ckpt, "continue", overrides={"load": False, "silent": True}, silent=True
             )
-            trainer.load_seed_from_config()
-            trainer.load_logger()
+            # trainer.load_seed_from_config()
+            # trainer.load_logger()
             trainer.load_datasets()
             trainer.load_task()
             trainer.load_model()
             # trainer.load_loss()
             # trainer.load_optimizer()
             # trainer.load_extras()
-            trainer.load_checkpoint(ckpt)
+            trainer.load_checkpoint(ckpt, silent=True)
 
             # load checkpoint
             if self.mc_dropout:
                 print("    Setting model dropouts to: ", self.dropout)
-                trainer.model.module.set_dropout(self.dropout)
+                trainer.model.module.set_dropouts(self.dropout)
             # store model in ``self.models`` list
             self.trainers.append(trainer)
 
@@ -225,27 +238,74 @@ class EnsembleTrainer:
             )
         )
 
+        self.load_loss(reduction="none")
+
         deup_samples = []
 
-        for d in dataset_strs:
-            for batch_list in self.loaders[d]:
-                b = batch_list[0]
-                preds = self.forward(b, n=10)  # Batch x n
+        deup_ds_size = 0
+
+        for dataset_name in dataset_strs:
+            print("\nInferring over dataset", dataset_name)
+            for b, batch_list in enumerate(self.trainers[0].loaders[dataset_name]):
+                batch = batch_list[0]
+                preds = self.forward(batch_list, n_samples=10)  # Batch x n
                 pred_mean = preds.mean(dim=1)  # Batch
                 pred_std = preds.std(dim=1)  # Batch
-                loss = self.loss_fn["energy"](pred_mean, b.y_relaxed)
+                loss = self.loss_fn["energy"](
+                    pred_mean, batch.y_relaxed.to(pred_mean.device)
+                )
                 deup_samples += [
                     {
-                        "energy": b.y_relaxed,
-                        "energy_pred": pred_mean,
-                        "energy_std": pred_std,
+                        "energy_target": batch.y_relaxed,
+                        "energy_pred_mean": pred_mean,
+                        "energy_pred_std": pred_std,
                         "loss": loss,
-                        "s": bool(d == "train"),
-                        "ds": d,
+                        "s": torch.full_like(
+                            loss, bool(dataset_name == "train")
+                        ).bool(),
+                        "ds": [dataset_name for _ in range(len(loss))],
+                        "index_in_dataset": batch.idx_in_dataset,
                     }
                 ]
-                breakpoint()
-        # TODO:
-        # reshape deup_samples to be flat
-        # write to disk deup_samples and dataset_attrs (lmbdb dataset)
-        #   -> see make_qm7x_lmdbs.py
+                deup_ds_size += len(loss)
+
+        self.write_lmdb(deup_samples, output_path / "deup_samples.lmdb", deup_ds_size)
+
+    def write_lmdb(self, samples, path, total_size=-1):
+        env = lmdb.open(
+            str(path),
+            map_size=1099511627776 * 2,
+            subdir=False,
+            readonly=False,
+            meminit=False,
+            map_async=True,
+            writemap=True,
+            max_readers=100,
+            max_dbs=1,
+        )
+        txn = env.begin(write=True)
+        k = 0
+        pbar = tqdm(
+            total=total_size,
+            desc="Writing LMDB DB in {}".format("/".join(path.parts[-3:])),
+        )
+        for i, sample in enumerate(samples):
+            n = len(sample["energy"])
+            sample = {
+                k: v.cpu() if isinstance(v, torch.Tensor) else v
+                for k, v in sample.items()
+            }
+            for s in range(n):
+                deup_sample = {
+                    k: v[s].item() if isinstance(v, torch.Tensor) else v[s]
+                    for k, v in sample.items()
+                }
+                txn.put(
+                    key=str(k).encode("ascii"),
+                    value=pickle.dumps(deup_sample, protocol=pickle.HIGHEST_PROTOCOL),
+                )
+                pbar.update(1)
+                k += 1
+        txn.commit()
+        env.sync()
+        env.close()
