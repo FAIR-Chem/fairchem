@@ -39,7 +39,7 @@ class LmdbDataset(Dataset):
     """
 
     def __init__(self, config, transform=None, fa_frames=None):
-        super(LmdbDataset, self).__init__()
+        super().__init__()
         self.config = config
 
         self.path = Path(self.config["src"])
@@ -112,6 +112,7 @@ class LmdbDataset(Dataset):
         data_object.load_time = load_time
         data_object.transform_time = transform_time
         data_object.total_get_time = total_get_time
+        data_object.idx_in_dataset = idx
 
         return data_object
 
@@ -135,6 +136,25 @@ class LmdbDataset(Dataset):
                 env.close()
         else:
             self.env.close()
+
+
+class DeupDataset(LmdbDataset):
+    def __init__(self, configs, transform=None):
+        assert "deup" in configs
+        deup_config = configs.pop("deup")
+        super().__init__(deup_config)
+        self.ocp_datasets = {d: LmdbDataset(c, transform) for d, c in configs.items()}
+
+    def __getitem__(self, idx):
+        datapoint_pickled = self.env.begin().get(self._keys[idx])
+        deup_sample = pickle.loads(datapoint_pickled)
+        ocp_sample = self.ocp_datasets[deup_sample["ds"]][
+            deup_sample["index_in_dataset"]
+        ]
+        return {
+            "deup": deup_sample,
+            "data": ocp_sample,
+        }
 
 
 class SinglePointLmdbDataset(LmdbDataset):
