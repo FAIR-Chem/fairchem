@@ -8,7 +8,7 @@ from ocpmodels.common.registry import registry
 
 
 class UncertaintyEnsemble:
-    def __init__(self, checkpoints, device, load=True):
+    def __init__(self, checkpoints, device=None, load=True):
         """
         Create an ensemble of models from a list of checkpoint paths.
 
@@ -21,7 +21,8 @@ class UncertaintyEnsemble:
             checkpoints (pathlike | List[pathlike]): Checkpoints to load. Can
                 be a list of run directories, and it will be assumed that chekpoints
                 are in run_dir/checkpoints/*.pt.
-            device (str|torch.device): Where to mut the models
+            device (str|torch.device, optional): Where to put the models. Will be on
+                ``cpu`` or ``cuda:0`` if not provided.
             load (bool, optional): Whether to load checkpoints immediately
                 or let the user call ``.load_checkpoints()``.
                 Defaults to True.
@@ -31,6 +32,8 @@ class UncertaintyEnsemble:
 
         self.mc_dropout = len(checkpoints) == 1
         self.checkpoints = checkpoints
+        if device is None:
+            device = "cuda:0" if torch.cuda.is_available() else "cpu"
         self.device = torch.device(device)
         self.models = []
 
