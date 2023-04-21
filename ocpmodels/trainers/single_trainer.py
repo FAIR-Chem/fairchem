@@ -11,6 +11,7 @@ import os
 import time
 from collections import defaultdict
 from copy import deepcopy
+from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
@@ -18,15 +19,17 @@ import torch
 import torch_geometric
 from torch_geometric.data import Data
 from tqdm import tqdm
+from yaml import dump
 
 from ocpmodels.common import dist_utils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
+from ocpmodels.common.timer import Times
 from ocpmodels.common.utils import OCP_TASKS, check_traj_files
+from ocpmodels.models.uncertainty_ensemble import UncertaintyEnsemble
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
-from ocpmodels.common.timer import Times
 
 is_test_env = os.environ.get("ocp_test_env", False)
 
@@ -1104,9 +1107,9 @@ class SingleTrainer(BaseTrainer):
 
     def create_deup_dataset(
         self: BaseTrainer,
-        checkpoints: List[str],
+        ensemble_config: dict,
         dataset_strs: List[str],
-        n: int = 10,
+        n_samples: int = 10,
         output_path: str = None,
     ):
         """
@@ -1117,15 +1120,23 @@ class SingleTrainer(BaseTrainer):
             checkpoints (List[str]): _description_
             dataset_strs (List[str]): _description_
         """
-        assert len(checkpoints) >= 1
-        assert output_path is not None
-        assert Path(output_path).exists()
 
-        ensemble = Ensemble(checkpoints)  # dropout = len(checkpoints) == 1
-        ensemble = ensemble.to(self.device)
+        if output_path is None:
+            output_path = Path(self.config["run_dir"]) / "deup_dataset"
+
+        (output_path / "deup_config.yaml").write_text(
+            dump(
+                {
+                    "ensemble_config": ensemble_config,
+                    "n_samples": n_samples,
+                    "datasets": dataset_strs,
+                }
+            )
+        )
+
+        ensemble = UncertaintyEnsemble(ensemble_config, self.device)
 
         deup_samples = []
-        dataset_attrs = {"samples": n}
 
         for d in dataset_strs:
             for b in self.loaders[d]:
@@ -1140,6 +1151,7 @@ class SingleTrainer(BaseTrainer):
                         "energy_std": pred_std,
                         "loss": loss,
                         "s": bool(d == "train"),
+                        "ds": d,
                     }
                 ]
         # TODO:
