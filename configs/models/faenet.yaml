@@ -2,6 +2,8 @@ default:
   model:
     name: faenet
     act: swish
+    dropout_lin: 0.0
+    dropout_edge: 0.0
     hidden_channels: 128
     num_filters: 100
     num_interactions: 3

@@ -6,7 +6,7 @@ from e3nn.o3 import spherical_harmonics
 from torch import nn
 from torch.nn import Embedding, Linear
 from torch_geometric.nn import MessagePassing, TransformerConv, radius_graph
-from torch_geometric.nn.norm import BatchNorm, GraphNorm
+from torch_geometric.nn.norm import GraphNorm
 from torch_geometric.utils import dropout_edge
 from torch_scatter import scatter
 
@@ -237,7 +237,7 @@ class InteractionBlock(MessagePassing):
         complex_mp,
         att_heads,
         graph_norm,
-        dropout,
+        dropout_lin,
     ):
         super(InteractionBlock, self).__init__()
         self.act = act
@@ -245,7 +245,7 @@ class InteractionBlock(MessagePassing):
         self.hidden_channels = hidden_channels
         self.complex_mp = complex_mp
         self.graph_norm = graph_norm
-        self.dropout = float(dropout)
+        self.dropout_lin = float(dropout_lin)
         if graph_norm:
             self.graph_norm = GraphNorm(
                 hidden_channels if "updown" not in self.mp_type else num_filters
@@ -331,7 +331,7 @@ class InteractionBlock(MessagePassing):
 
         if self.droupout > 0:
             h = F.dropout(
-                h, p=self.dropout, training=self.training or self.deup_inference
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
             )
 
         if self.mp_type in {"base", "updownscale_base"}:
@@ -354,7 +354,7 @@ class InteractionBlock(MessagePassing):
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = F.dropout(
-                h, p=self.dropout, training=self.training or self.deup_inference
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
             )
             h = self.act(self.lin_up(h))  # upscale node rep.
 
@@ -363,7 +363,7 @@ class InteractionBlock(MessagePassing):
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = F.dropout(
-                h, p=self.dropout, training=self.training or self.deup_inference
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
             )
             h = self.act(self.lin_h(h))
 
@@ -372,7 +372,7 @@ class InteractionBlock(MessagePassing):
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = F.dropout(
-                h, p=self.dropout, training=self.training or self.deup_inference
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
             )
             h = self.act(self.lin_h(h))
 
@@ -383,7 +383,7 @@ class InteractionBlock(MessagePassing):
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = F.dropout(
-                h, p=self.dropout, training=self.training or self.deup_inference
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
             )
             h = h = self.act(self.lin_h(h))
 
@@ -391,7 +391,7 @@ class InteractionBlock(MessagePassing):
             h = self.act(self.lin_down(h))
             chi = self.propagate(edge_index, x=h, W=e, local_env=True)
             e = F.dropout(
-                e, p=self.dropout, training=self.training or self.deup_inference
+                e, p=self.dropout_lin, training=self.training or self.deup_inference
             )
             e = self.lin_geom(e)
             h = self.propagate(edge_index, x=h, W=e)  # propagate
@@ -399,7 +399,7 @@ class InteractionBlock(MessagePassing):
                 h = self.act(self.graph_norm(h))
             h = torch.cat((h, chi), dim=1)
             h = F.dropout(
-                h, p=self.dropout, training=self.training or self.deup_inference
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
             )
             h = self.lin_up(h)
 
@@ -408,7 +408,7 @@ class InteractionBlock(MessagePassing):
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = F.dropout(
-                h, p=self.dropout, training=self.training or self.deup_inference
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
             )
             h = self.act(self.lin_h(h))
 
@@ -417,7 +417,7 @@ class InteractionBlock(MessagePassing):
 
         if self.complex_mp:
             h = F.dropout(
-                h, p=self.dropout, training=self.training or self.deup_inference
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
             )
             h = self.act(self.other_mlp(h))
 
@@ -431,11 +431,11 @@ class InteractionBlock(MessagePassing):
 
 
 class OutputBlock(nn.Module):
-    def __init__(self, energy_head, hidden_channels, act, dropout):
+    def __init__(self, energy_head, hidden_channels, act, dropout_lin):
         super().__init__()
         self.energy_head = energy_head
         self.act = act
-        self.dropout = float(dropout)
+        self.dropout_lin = float(dropout_lin)
 
         self.lin1 = Linear(hidden_channels, hidden_channels // 2)
         self.lin2 = Linear(hidden_channels // 2, 1)
@@ -476,8 +476,14 @@ class OutputBlock(nn.Module):
             )
 
         # MLP
+        h = F.dropout(
+            h, p=self.dropout_lin, training=self.training or self.deup_inference
+        )
         h = self.lin1(h)
         h = self.act(h)
+        h = F.dropout(
+            h, p=self.dropout_lin, training=self.training or self.deup_inference
+        )
         h = self.lin2(h)
 
         if self.energy_head in {
@@ -539,7 +545,7 @@ class FAENet(BaseModel):
             keys: "model_type", "hidden_channels", "num_layers", "num_heads",
         force_decoder_type (str): type of the force decoder model.
             (options: "mlp", "simple", "res", "res_updown")
-        droupout (float): dropout rate for linear layers.
+        dropout_lin (float): dropout rate for linear layers.
         dropout_edge (float): dropout rate for edges.
     """
 
@@ -554,7 +560,7 @@ class FAENet(BaseModel):
         self.edge_embed_type = kwargs["edge_embed_type"]
         self.skip_co = kwargs["skip_co"]
         self.dropout_edge = float(kwargs["dropout_edge"] or 0)
-        self.droupout = kwargs["droupout"]
+        self.dropout_lin = kwargs["dropout_lin"]
 
         if kwargs["mp_type"] == "sfarinet":
             kwargs["num_filters"] = kwargs["hidden_channels"]
@@ -598,7 +604,7 @@ class FAENet(BaseModel):
                     kwargs["complex_mp"],
                     kwargs["att_heads"],
                     kwargs["graph_norm"],
-                    kwargs["dropout"],
+                    self.dropout_lin,
                 )
                 for _ in range(kwargs["num_interactions"])
             ]
@@ -606,7 +612,7 @@ class FAENet(BaseModel):
 
         # Output block
         self.output_block = OutputBlock(
-            self.energy_head, kwargs["hidden_channels"], self.act
+            self.energy_head, kwargs["hidden_channels"], self.act, self.dropout_lin
         )
 
         # Energy head
