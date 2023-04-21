@@ -1731,6 +1731,12 @@ def make_trainer_from_conf_str(conf_str, overrides={}):
         overrides, dict
     ), f"Overrides must be a dict. Received {overrides}"
 
+    config = make_config_from_conf_str(conf_str)
+    config = merge_dicts(config, overrides)
+    return registry.get_trainer_class(config["trainer"])(**config)
+
+
+def make_config_from_conf_str(conf_str):
     argv = deepcopy(sys.argv)
     sys.argv[1:] = []
     default_args = Flags().get_parser().parse_args()
@@ -1739,10 +1745,9 @@ def make_trainer_from_conf_str(conf_str, overrides={}):
     default_args.config = conf_str
 
     config = build_config(default_args)
-    config = merge_dicts(config, overrides)
 
     setup_imports()
-    return registry.get_trainer_class(config["trainer"])(**config)
+    return config
 
 
 def get_commit_hash():
