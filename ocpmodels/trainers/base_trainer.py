@@ -392,14 +392,15 @@ class BaseTrainer(ABC):
                 self.model, device_ids=[self.device], output_device=self.device
             )
 
-    def load_checkpoint(self, checkpoint_path):
+    def load_checkpoint(self, checkpoint_path, silent=False):
         if not os.path.isfile(checkpoint_path):
             raise FileNotFoundError(
                 errno.ENOENT, "Checkpoint file not found", checkpoint_path
             )
 
         map_location = torch.device("cpu") if self.cpu else self.device
-        print(f"Loading checkpoint from: {checkpoint_path} onto {map_location}")
+        if not silent:
+            print(f"Loading checkpoint from: {checkpoint_path} onto {map_location}")
         checkpoint = torch.load(checkpoint_path, map_location=map_location)
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
@@ -419,9 +420,13 @@ class BaseTrainer(ABC):
         else:
             self.model.load_state_dict(checkpoint["state_dict"])
 
-        if "optimizer" in checkpoint:
+        if "optimizer" in checkpoint and hasattr(self, "optimizer"):
             self.optimizer.load_state_dict(checkpoint["optimizer"])
-        if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
+        if (
+            "scheduler" in checkpoint
+            and checkpoint["scheduler"] is not None
+            and hasattr(self, "scheduler")
+        ):
             self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
         if (
             checkpoint.get("warmup_scheduler") is not None
@@ -430,7 +435,11 @@ class BaseTrainer(ABC):
             self.scheduler.warmup_scheduler.load_state_dict(
                 checkpoint["warmup_scheduler"]
             )
-        if "ema" in checkpoint and checkpoint["ema"] is not None:
+        if (
+            "ema" in checkpoint
+            and checkpoint["ema"] is not None
+            and hasattr(self, "ema")
+        ):
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
@@ -445,17 +454,17 @@ class BaseTrainer(ABC):
             if "job_ids" in checkpoint["config"] and JOB_ID not in checkpoint["config"]:
                 self.config["job_ids"] = checkpoint["config"]["job_ids"] + f", {JOB_ID}"
 
-    def load_loss(self):
+    def load_loss(self, reduction="mean"):
         self.loss_fn = {}
         self.loss_fn["energy"] = self.config["optim"].get("loss_energy", "mae")
         self.loss_fn["force"] = self.config["optim"].get("loss_force", "mae")
         for loss, loss_name in self.loss_fn.items():
             if loss_name in ["l1", "mae"]:
-                self.loss_fn[loss] = nn.L1Loss()
+                self.loss_fn[loss] = nn.L1Loss(reduction=reduction)
             elif loss_name == "mse":
-                self.loss_fn[loss] = nn.MSELoss()
+                self.loss_fn[loss] = nn.MSELoss(reduction=reduction)
             elif loss_name == "l2mae":
-                self.loss_fn[loss] = L2MAELoss()
+                self.loss_fn[loss] = L2MAELoss(reduction=reduction)
             else:
                 raise NotImplementedError(f"Unknown loss function name: {loss_name}")
             if dist_utils.initialized():
