@@ -11,7 +11,6 @@ import os
 import time
 from collections import defaultdict
 from copy import deepcopy
-from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
@@ -19,14 +18,12 @@ import torch
 import torch_geometric
 from torch_geometric.data import Data
 from tqdm import tqdm
-from yaml import dump
 
 from ocpmodels.common import dist_utils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
 from ocpmodels.common.timer import Times
 from ocpmodels.common.utils import OCP_TASKS, check_traj_files
-from ocpmodels.models.uncertainty_ensemble import UncertaintyEnsemble
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
