@@ -218,6 +218,7 @@ class EnsembleTrainer(SingleTrainer):
         dataset_strs: List[str],
         n_samples: int = 10,
         output_path: str = None,
+        max_samples: int = -1,
     ):
         """
         Checkpoints  : ["/network/.../"]
@@ -237,6 +238,7 @@ class EnsembleTrainer(SingleTrainer):
                     "ensemble_config": self.config,
                     "n_samples": n_samples,
                     "datasets": dataset_strs,
+                    "output_path": str(output_path),
                 }
             )
         )
@@ -246,8 +248,10 @@ class EnsembleTrainer(SingleTrainer):
         for dataset_name in dataset_strs:
             deup_samples = []
             deup_ds_size = 0
-            print("\nInferring over dataset", dataset_name)
-            for b, batch_list in enumerate(self.trainers[0].loaders[dataset_name]):
+            for batch_list in tqdm(
+                self.trainers[0].loaders[dataset_name],
+                desc=f"Infering on dataset: {dataset_name}",
+            ):
                 batch = batch_list[0]
                 preds = self.forward(batch_list, n_samples=10)  # Batch x n
                 pred_mean = preds.mean(dim=1)  # Batch
@@ -270,14 +274,18 @@ class EnsembleTrainer(SingleTrainer):
                 ]
                 deup_ds_size += len(loss)
 
+                if max_samples > 0 and deup_ds_size >= max_samples:
+                    break
+
             self.write_lmdb(
                 deup_samples,
                 output_path / f"{dataset_name}_deup_samples.lmdb",
                 total_size=deup_ds_size,
+                max_samples=max_samples,
             )
         return output_path
 
-    def write_lmdb(self, samples, path, total_size=-1):
+    def write_lmdb(self, samples, path, total_size=-1, max_samples=-1):
         env = lmdb.open(
             str(path),
             map_size=1099511627776 * 2,
@@ -296,7 +304,7 @@ class EnsembleTrainer(SingleTrainer):
             desc="Writing LMDB DB in {}".format("/".join(path.parts[-3:])),
         )
         for i, sample in enumerate(samples):
-            n = len(sample["energy"])
+            n = len(sample["energy_target"])
             sample = {
                 k: v.cpu() if isinstance(v, torch.Tensor) else v
                 for k, v in sample.items()
@@ -312,6 +320,11 @@ class EnsembleTrainer(SingleTrainer):
                 )
                 pbar.update(1)
                 k += 1
+                if max_samples > 0 and k == max_samples - 1:
+                    break
+
+        pbar.close()
+
         txn.commit()
         env.sync()
         env.close()
