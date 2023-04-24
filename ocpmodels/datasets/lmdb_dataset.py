@@ -144,7 +144,7 @@ class DeupDataset(LmdbDataset):
     def __init__(self, all_datasets_configs, deup_split, transform=None):
         super().__init__(
             all_datasets_configs[deup_split],
-            lmdb_glob=deup_split.replace("deup_", "").split("-"),
+            lmdb_glob=deup_split.replace("deup-", "").split("-"),
         )
         self.ocp_datasets = {
             d: LmdbDataset(c, transform)
