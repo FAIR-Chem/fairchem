@@ -57,11 +57,16 @@ class LmdbDataset(Dataset):
 
             self._keys, self.envs = [], []
             for db_path in db_paths:
-                self.envs.append(self.connect_db(db_path))
-                length = pickle.loads(
-                    self.envs[-1].begin().get("length".encode("ascii"))
+                cur_env = self.connect_db(db_path)
+                self.envs.append(cur_env)
+
+                self._keys.append(
+                    [
+                        f"{j}".encode("ascii")
+                        for j in range(cur_env.stat()["entries"])
+                        if j != "length"
+                    ]
                 )
-                self._keys.append(list(range(length)))
 
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
