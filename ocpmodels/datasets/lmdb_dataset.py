@@ -81,8 +81,7 @@ class LmdbDataset(Dataset):
     def __len__(self):
         return self.num_samples
 
-    def __getitem__(self, idx):
-        t0 = time.time_ns()
+    def get_pickled_from_db(self, idx):
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
             db_idx = bisect.bisect(self._keylen_cumulative, idx)
@@ -93,16 +92,22 @@ class LmdbDataset(Dataset):
             assert el_idx >= 0
 
             # Return features.
-            datapoint_pickled = (
+            return (
+                f"{db_idx}_{el_idx}",
                 self.envs[db_idx]
                 .begin()
-                .get(f"{self._keys[db_idx][el_idx]}".encode("ascii"))
+                .get(f"{self._keys[db_idx][el_idx]}".encode("ascii")),
             )
-            data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
-            data_object.id = f"{db_idx}_{el_idx}"
-        else:
-            datapoint_pickled = self.env.begin().get(self._keys[idx])
-            data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
+
+        return None, self.env.begin().get(self._keys[idx])
+
+    def __getitem__(self, idx):
+        t0 = time.time_ns()
+
+        el_id, datapoint_pickled = self.get_pickled_from_db(idx)
+        data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
+        if el_id:
+            data_object.id = el_id
 
         t1 = time.time_ns()
         if self.transform is not None:
