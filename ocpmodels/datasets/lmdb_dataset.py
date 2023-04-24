@@ -147,20 +147,20 @@ class LmdbDataset(Dataset):
             self.env.close()
 
 
+@registry.register_dataset("deup_lmdb")
 class DeupDataset(LmdbDataset):
     def __init__(self, all_datasets_configs, deup_split, transform=None):
         super().__init__(
             all_datasets_configs[deup_split],
             lmdb_glob=deup_split.replace("deup-", "").split("-"),
         )
+        ocp_splits = deup_split.split("-")[1:]
         self.ocp_datasets = {
-            d: LmdbDataset(c, transform)
-            for d, c in all_datasets_configs.items()
-            if "deup" not in d
+            d: LmdbDataset(all_datasets_configs[d], transform) for d in ocp_splits
         }
 
     def __getitem__(self, idx):
-        datapoint_pickled = self.env.begin().get(self._keys[idx])
+        _, datapoint_pickled = self.get_pickled_from_db(idx)
         deup_sample = pickle.loads(datapoint_pickled)
         ocp_sample = self.ocp_datasets[deup_sample["ds"]][deup_sample["idx_in_dataset"]]
         for k, v in deup_sample.items():
