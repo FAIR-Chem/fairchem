@@ -75,6 +75,7 @@ class SchNetWrap(SchNet, BaseModel):
         self.cutoff = cutoff
         self.otf_graph = otf_graph
         self.max_neighbors = 50
+        self.reduce = readout
         super(SchNetWrap, self).__init__(
             hidden_channels=hidden_channels,
             num_filters=num_filters,
@@ -95,6 +96,7 @@ class SchNetWrap(SchNet, BaseModel):
             edge_weight,
             distance_vec,
             cell_offsets,
+            _,  # cell offset distances
             neighbors,
         ) = self.generate_graph(data)
 
@@ -112,7 +114,7 @@ class SchNetWrap(SchNet, BaseModel):
             h = self.lin2(h)
 
             batch = torch.zeros_like(z) if batch is None else batch
-            energy = scatter(h, batch, dim=0, reduce=self.readout)
+            energy = scatter(h, batch, dim=0, reduce=self.reduce)
         else:
             energy = super(SchNetWrap, self).forward(z, pos, batch)
         return energy

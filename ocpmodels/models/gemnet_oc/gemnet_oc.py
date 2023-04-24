@@ -20,8 +20,10 @@ from ocpmodels.common.utils import (
     get_max_neighbors_mask,
     get_pbc_distances,
     radius_graph_pbc,
+    scatter_det,
 )
 from ocpmodels.models.base import BaseModel
+from ocpmodels.modules.scaling.compat import load_scales_compat
 
 from .initializers import get_initializer
 from .interaction_indices import (
@@ -36,7 +38,6 @@ from .layers.embedding_block import AtomEmbedding, EdgeEmbedding
 from .layers.force_scaler import ForceScaler
 from .layers.interaction_block import InteractionBlock
 from .layers.radial_basis import RadialBasis
-from .layers.scaling import ScaledModule
 from .layers.spherical_basis import CircularBasisLayer, SphericalBasisLayer
 from .utils import (
     get_angle,
@@ -49,7 +50,7 @@ from .utils import (
 
 
 @registry.register_model("gemnet_oc")
-class GemNetOC(ScaledModule, BaseModel):
+class GemNetOC(BaseModel):
     """
     Arguments
     ---------
@@ -229,7 +230,6 @@ class GemNetOC(ScaledModule, BaseModel):
         forces_coupled: bool = False,
         output_init: str = "HeOrthogonal",
         activation: str = "silu",
-        scale_file: Optional[str] = None,
         quad_interaction: bool = False,
         atom_edge_interaction: bool = False,
         edge_atom_interaction: bool = False,
@@ -238,6 +238,7 @@ class GemNetOC(ScaledModule, BaseModel):
         qint_tags: list = [0, 1, 2],
         num_elements: int = 83,
         otf_graph: bool = False,
+        scale_file: Optional[str] = None,
         **kwargs,  # backwards compatibility with deprecated arguments
     ):
         super().__init__()
@@ -379,31 +380,7 @@ class GemNetOC(ScaledModule, BaseModel):
         if direct_forces:
             self.out_forces.reset_parameters(out_initializer)
 
-        # Load scaling factors
-        if scale_file is not None:
-            if isinstance(scale_file, str) and os.path.isfile(scale_file):
-                scales = torch.load(scale_file, map_location="cpu")
-                self.load_scales(scales)
-            elif isinstance(scale_file, dict):
-                scales = scale_file
-                self.load_scales(scales)
-            else:
-                logging.error(
-                    f"Scale file '{scale_file}' does not exist. "
-                    f"If you're running a pretrained checkpoint, "
-                    f"predictions will be inaccurate without the "
-                    f"scale file used during training. "
-                    f"If you do not want to use a scale file, remove "
-                    f"the `scale_file` line from the config yaml."
-                )
-                raise FileNotFoundError
-        else:
-            logging.warning(
-                "`scale_file` is set to `None`. "
-                "The model will use unit scaling factors. "
-                "If you're running a pretrained checkpoint, "
-                "this will likely lead to inaccurate predictions."
-            )
+        load_scales_compat(self, scale_file)
 
     def set_cutoffs(self, cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint):
         self.cutoff = cutoff
@@ -905,6 +882,7 @@ class GemNetOC(ScaledModule, BaseModel):
             edge_dist,
             distance_vec,
             cell_offsets,
+            _,  # cell offset distances
             num_neighbors,
         ) = self.generate_graph(
             data,
@@ -1330,11 +1308,11 @@ class GemNetOC(ScaledModule, BaseModel):
 
         nMolecules = torch.max(batch) + 1
         if self.extensive:
-            E_t = scatter(
+            E_t = scatter_det(
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
             )  # (nMolecules, num_targets)
         else:
-            E_t = scatter(
+            E_t = scatter_det(
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
             )  # (nMolecules, num_targets)
 
@@ -1347,7 +1325,7 @@ class GemNetOC(ScaledModule, BaseModel):
                         repeats=2,
                         continuous_indexing=True,
                     )
-                    F_st = scatter(
+                    F_st = scatter_det(
                         F_st,
                         id_undir,
                         dim=0,
@@ -1359,7 +1337,7 @@ class GemNetOC(ScaledModule, BaseModel):
                 # map forces in edge directions
                 F_st_vec = F_st[:, :, None] * main_graph["vector"][:, None, :]
                 # (nEdges, num_targets, 3)
-                F_t = scatter(
+                F_t = scatter_det(
                     F_st_vec,
                     idx_t,
                     dim=0,

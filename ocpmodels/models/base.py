@@ -74,6 +74,7 @@ class BaseModel(nn.Module):
 
             edge_index = out["edge_index"]
             edge_dist = out["distances"]
+            cell_offset_distances = out["offsets"]
             distance_vec = out["distance_vec"]
         else:
             if otf_graph:
@@ -91,9 +92,19 @@ class BaseModel(nn.Module):
             cell_offsets = torch.zeros(
                 edge_index.shape[1], 3, device=data.pos.device
             )
+            cell_offset_distances = torch.zeros_like(
+                cell_offsets, device=data.pos.device
+            )
             neighbors = compute_neighbors(data, edge_index)
 
-        return edge_index, edge_dist, distance_vec, cell_offsets, neighbors
+        return (
+            edge_index,
+            edge_dist,
+            distance_vec,
+            cell_offsets,
+            cell_offset_distances,
+            neighbors,
+        )
 
     @property
     def num_params(self):

@@ -11,6 +11,7 @@ task:
   # Can use 'single_point_lmdb' or 'trajectory_lmdb' for backward compatibility.
   # 'single_point_lmdb' was for training IS2RE models, and 'trajectory_lmdb' was
   # for training S2EF models.
+  # To train an oc20 model on total energy use 'oc22_lmdb'
   dataset: lmdb                                                                 # 'lmdb' or 'oc22_lmdb'
   # This is an optional parameter specifying the val metric to watch for
   # improvement to decide when to save checkpoints.
@@ -25,6 +26,10 @@ task:
   # These args specify whether to train/eval forces on only free atoms or all.
   train_on_free_atoms: True                                                     # True or False
   eval_on_free_atoms: True                                                      # True or False
+  # By default OC20 s2ef predictions are written in float16 to reduce file size
+  # By default OC22 s2ef predictions are written in float32
+  # If training on total energy use float32
+  prediction_dtype: float16                                                     # 'float16' or 'float32'
   # This is an argument used for checkpoint loading. By default it is True and loads
   # checkpoint as it is. If False, it could partially load the checkpoint without giving
   # any errors
@@ -45,6 +50,10 @@ task:
   # Path to initial structures to run relaxations on. Same as the IS2RE set.
   relax_dataset:
     src: data/is2re/all/test_id/data.lmdb
+    # To shard a dataset into smaller subsets, define the total_shards desired
+    # and the shard a particular process to see.
+    total_shards: 1                                                             # int (optional)
+    shard: 0                                                                    # int (optional)
   relax_opt:
     name: lbfgs
     maxstep: 0.04
@@ -53,6 +62,12 @@ task:
     alpha: 70.0
     # Directory to save out trajectories (.traj files) in.
     traj_dir: path/to/traj/directory
+  # Whether to save out the full trajectory or just the initial+final frames
+  save_full_traj: True                                                          # True or False
+  # When set to true, uses "deterministic" CUDA scatter ops if available,
+  # i.e. given the same input, leads to the same results. Default is false
+  # since this can be significantly slower.
+  set_deterministic_scatter: False                                              # True or False
 
 dataset:
   train:
@@ -70,10 +85,12 @@ dataset:
     grad_target_std: 2.887317180633545
 
     # If we want to train OC20 on total energy, a path to OC20 reference
-    # energies `oc20_ref` must be specificed to unreference existing OC20 data.
-    # OC22 by default trains on total energy, so this flag is not necessary.
-    total_energy: False                                                         # True or False
-    oc20_ref: False                                                             # True or False
+    # energies `oc20_ref` must be specified to unreference existing OC20 data.
+    # download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
+    # Also, train_on_oc20_total_energies must be set to True
+    # OC22 defaults to total energy, so these flags are not necessary.
+    train_on_oc20_total_energies: False                                         # True or False
+    oc20_ref: None                                                              # path to oc20_ref
     # If we want to train on total energies and use a linear reference
     # normalization scheme, we must specify the path to the per-element
     # coefficients in a `.npz` format.
@@ -81,6 +98,11 @@ dataset:
   val:
     # Directory containing val set LMDBs
     src: data/s2ef/all/val_id/
+    # If we want to run validation with OC20 total energy val set, `oc20_ref` must be specified and
+    # train_on_oc20_total_energies set to True
+    # OC22 defaults to total energy, so these flags are not necessary.
+    train_on_oc20_total_energies: False                                         # True or False
+    oc20_ref: None                                                              # path to oc20_ref
   test:
     # Directory containing test set LMDBs
     src: data/s2ef/all/test_id/

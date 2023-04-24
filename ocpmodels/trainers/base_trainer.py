@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 """
 import datetime
 import errno
-import json
 import logging
 import os
 import random
@@ -31,23 +30,27 @@ from ocpmodels.common.data_parallel import (
     ParallelCollater,
 )
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    build_config,
-    plot_histogram,
-    save_checkpoint,
-    warmup_lr_lambda,
-)
+from ocpmodels.common.utils import load_state_dict, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
 )
 from ocpmodels.modules.loss import AtomwiseL2Loss, DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
+from ocpmodels.modules.scaling.compat import load_scales_compat
+from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.modules.scheduler import LRScheduler
 
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
+    @property
+    def _unwrapped_model(self):
+        module = self.model
+        while isinstance(module, (OCPDataParallel, DistributedDataParallel)):
+            module = module.module
+        return module
+
     def __init__(
         self,
         task,
@@ -121,6 +124,7 @@ class BaseTrainer(ABC):
         logger_name = logger if isinstance(logger, str) else logger["name"]
         self.config = {
             "task": task,
+            "trainer": "forces" if name == "s2ef" else "energy",
             "model": model.pop("name"),
             "model_attributes": model,
             "optim": optimizer,
@@ -189,9 +193,6 @@ class BaseTrainer(ABC):
 
         if self.is_hpo:
             # conditional import is necessary for checkpointing
-            from ray import tune
-
-            from ocpmodels.common.hpo_utils import tune_reporter
 
             # sets the hpo checkpoint frequency
             # default is no checkpointing
@@ -431,7 +432,7 @@ class BaseTrainer(ABC):
             new_dict = checkpoint["state_dict"]
 
         strict = self.config["task"].get("strict_load", True)
-        self.model.load_state_dict(new_dict, strict=strict)
+        load_state_dict(self.model, new_dict, strict=strict)
 
         if "optimizer" in checkpoint:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
@@ -441,6 +442,15 @@ class BaseTrainer(ABC):
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
+
+        scale_dict = checkpoint.get("scale_dict", None)
+        if scale_dict:
+            logging.info(
+                "Overwriting scaling factors with those loaded from checkpoint. "
+                "If you're generating predictions with a pretrained checkpoint, this is the correct behavior. "
+                "To disable this, delete `scale_dict` from the checkpoint. "
+            )
+            load_scales_compat(self._unwrapped_model, scale_dict)
 
         for key in checkpoint["normalizers"]:
             if key in self.normalizers:
@@ -527,7 +537,7 @@ class BaseTrainer(ABC):
     ):
         if not self.is_debug and distutils.is_master():
             if training_state:
-                save_checkpoint(
+                return save_checkpoint(
                     {
                         "epoch": self.epoch,
                         "step": self.step,
@@ -559,7 +569,7 @@ class BaseTrainer(ABC):
                 if self.ema:
                     self.ema.store()
                     self.ema.copy_to()
-                save_checkpoint(
+                ckpt_path = save_checkpoint(
                     {
                         "state_dict": self.model.state_dict(),
                         "normalizers": {
@@ -577,6 +587,8 @@ class BaseTrainer(ABC):
                 )
                 if self.ema:
                     self.ema.restore()
+                return ckpt_path
+        return None
 
     def save_hpo(self, epoch, step, metrics, checkpoint_every):
         # default is no checkpointing
@@ -621,6 +633,8 @@ class BaseTrainer(ABC):
 
     @torch.no_grad()
     def validate(self, split="val", disable_tqdm=False):
+        ensure_fitted(self._unwrapped_model, warn=True)
+
         if distutils.is_master():
             logging.info(f"Evaluating on {split}.")
         if self.is_hpo:
