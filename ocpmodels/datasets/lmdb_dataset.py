@@ -60,13 +60,18 @@ class LmdbDataset(Dataset):
                 cur_env = self.connect_db(db_path)
                 self.envs.append(cur_env)
 
-                self._keys.append(
-                    [
-                        f"{j}".encode("ascii")
-                        for j in range(cur_env.stat()["entries"])
-                        if j != "length"
-                    ]
-                )
+                # Load and encode all keys in the LMDB
+                cur_keys = [
+                    f"{j}".encode("ascii")
+                    for j in range(cur_env.stat()["entries"])
+                ]
+
+                # Discard any key called "length" which was included for
+                # legacy reasons in older OCP models
+                cur_keys = [key for key in cur_keys if key != "length"]
+
+                # Append the keys as a list
+                self._keys.append(cur_keys)
 
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
