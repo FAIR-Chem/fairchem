@@ -38,13 +38,15 @@ class LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None, fa_frames=None):
+    def __init__(self, config, transform=None, fa_frames=None, lmdb_glob=None):
         super().__init__()
         self.config = config
 
         self.path = Path(self.config["src"])
         if not self.path.is_file():
             db_paths = sorted(self.path.glob("*.lmdb"))
+            if lmdb_glob:
+                db_paths = [p for p in db_paths if p.stem in lmdb_glob]
             assert len(db_paths) > 0, f"No LMDBs found in '{self.path}'"
 
             self.metadata_path = self.path / "metadata.npz"
@@ -139,18 +141,21 @@ class LmdbDataset(Dataset):
 
 
 class DeupDataset(LmdbDataset):
-    def __init__(self, configs, transform=None):
-        assert "deup" in configs
-        deup_config = configs.pop("deup")
-        super().__init__(deup_config)
-        self.ocp_datasets = {d: LmdbDataset(c, transform) for d, c in configs.items()}
+    def __init__(self, all_datasets_configs, deup_split, transform=None):
+        super().__init__(
+            all_datasets_configs[deup_split],
+            lmdb_glob=deup_split.replace("deup_", "").split("-"),
+        )
+        self.ocp_datasets = {
+            d: LmdbDataset(c, transform)
+            for d, c in all_datasets_configs.items()
+            if "deup" not in d
+        }
 
     def __getitem__(self, idx):
         datapoint_pickled = self.env.begin().get(self._keys[idx])
         deup_sample = pickle.loads(datapoint_pickled)
-        ocp_sample = self.ocp_datasets[deup_sample["ds"]][
-            deup_sample["idx_in_dataset"]
-        ]
+        ocp_sample = self.ocp_datasets[deup_sample["ds"]][deup_sample["idx_in_dataset"]]
         for k, v in deup_sample.items():
             setattr(ocp_sample, f"deup_{k}", v)
         return ocp_sample

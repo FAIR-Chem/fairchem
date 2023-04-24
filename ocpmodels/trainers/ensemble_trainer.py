@@ -108,6 +108,9 @@ class EnsembleTrainer(SingleTrainer):
         print("  >> ⁉️ Warning: no best checkpoint found, using last checkpoint.")
         return sorted(ckpts, key=lambda x: x.stat().st_mtime)[-1]
 
+    def load_datasets(self):
+        super().load_datasets()
+
     def load_trainers(self):
         print("Loading checkpoints...")
         for c, ckpt in enumerate(self.checkpoints):
@@ -240,11 +243,9 @@ class EnsembleTrainer(SingleTrainer):
 
         self.load_loss(reduction="none")
 
-        deup_samples = []
-
-        deup_ds_size = 0
-
         for dataset_name in dataset_strs:
+            deup_samples = []
+            deup_ds_size = 0
             print("\nInferring over dataset", dataset_name)
             for b, batch_list in enumerate(self.trainers[0].loaders[dataset_name]):
                 batch = batch_list[0]
@@ -269,7 +270,11 @@ class EnsembleTrainer(SingleTrainer):
                 ]
                 deup_ds_size += len(loss)
 
-        self.write_lmdb(deup_samples, output_path / "deup_samples.lmdb", deup_ds_size)
+            self.write_lmdb(
+                deup_samples,
+                output_path / f"{dataset_name}_deup_samples.lmdb",
+                total_size=deup_ds_size,
+            )
 
     def write_lmdb(self, samples, path, total_size=-1):
         env = lmdb.open(
