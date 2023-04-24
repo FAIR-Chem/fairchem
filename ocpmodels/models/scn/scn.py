@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
+import sys
 import time
 
 import numpy as np
@@ -30,6 +31,7 @@ from ocpmodels.models.scn.smearing import (
 from ocpmodels.models.scn.spherical_harmonics import SphericalHarmonicsHelper
 
 try:
+    import e3nn
     from e3nn import o3
 except ImportError:
     pass
@@ -95,18 +97,18 @@ class SphericalChannelNetwork(BaseModel):
         distance_function="gaussian",
         basis_width_scalar=1.0,
         distance_resolution=0.02,
-        show_timing_info=True,
+        show_timing_info=False,
         direct_forces=True,
     ):
         super().__init__()
 
-        import sys
-
         if "e3nn" not in sys.modules:
             logging.error(
-                "You need to install the e3nn library to use the SCN model"
+                "You need to install e3nn v0.2.6 to use the SCN model"
             )
             raise ImportError
+
+        assert e3nn.__version__ == "0.2.6"
 
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
@@ -281,6 +283,7 @@ class SphericalChannelNetwork(BaseModel):
             edge_distance,
             edge_distance_vec,
             cell_offsets,
+            _,  # cell offset distances
             neighbors,
         ) = self.generate_graph(data)
 

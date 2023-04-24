@@ -8,14 +8,15 @@ import math
 
 import torch
 
+from ocpmodels.modules.scaling import ScaleFactor
+
 from .atom_update_block import AtomUpdateBlock
 from .base_layers import Dense, ResidualLayer
 from .efficient import EfficientInteractionBilinear
 from .embedding_block import EdgeEmbedding
-from .scaling import ScaledModule, ScalingFactor
 
 
-class InteractionBlock(ScaledModule):
+class InteractionBlock(torch.nn.Module):
     """
     Interaction block for GemNet-Q/dQ.
 
@@ -355,7 +356,7 @@ class InteractionBlock(ScaledModule):
         return h, m
 
 
-class QuadrupletInteraction(ScaledModule):
+class QuadrupletInteraction(torch.nn.Module):
     """
     Quadruplet-based message passing block.
 
@@ -412,7 +413,7 @@ class QuadrupletInteraction(ScaledModule):
             activation=None,
             bias=False,
         )
-        self.scale_rbf = ScalingFactor()
+        self.scale_rbf = ScaleFactor()
 
         self.mlp_cbf = Dense(
             emb_size_cbf,
@@ -420,12 +421,12 @@ class QuadrupletInteraction(ScaledModule):
             activation=None,
             bias=False,
         )
-        self.scale_cbf = ScalingFactor()
+        self.scale_cbf = ScaleFactor()
 
         self.mlp_sbf = EfficientInteractionBilinear(
             emb_size_quad_in, emb_size_sbf, emb_size_quad_out
         )
-        self.scale_sbf_sum = ScalingFactor()
+        self.scale_sbf_sum = ScaleFactor()
         # combines scaling for bilinear layer and summation
 
         # Down and up projections
@@ -469,7 +470,7 @@ class QuadrupletInteraction(ScaledModule):
 
         # Transform via radial basis
         x_db2 = x_db * self.mlp_rbf(bases["rad"])  # (nEdges, emb_size_edge)
-        x_db = self.scale_rbf(x_db2, x_ref=x_db)
+        x_db = self.scale_rbf(x_db2, ref=x_db)
 
         # Down project embeddings
         x_db = self.down_projection(x_db)  # (nEdges, emb_size_quad_in)
@@ -480,14 +481,14 @@ class QuadrupletInteraction(ScaledModule):
 
         x_db2 = x_db * self.mlp_cbf(bases["cir"])
         # (num_triplets_int, emb_size_quad_in)
-        x_db = self.scale_cbf(x_db2, x_ref=x_db)
+        x_db = self.scale_cbf(x_db2, ref=x_db)
 
         # Transform via spherical basis
         x_db = x_db[idx["trip_in_to_quad"]]
         # (num_quadruplets, emb_size_quad_in)
         x = self.mlp_sbf(bases["sph"], x_db, idx["out"], idx["out_agg"])
         # (nEdges, emb_size_quad_out)
-        x = self.scale_sbf_sum(x, x_ref=x_db)
+        x = self.scale_sbf_sum(x, ref=x_db)
 
         # =>
         # rbf(d_db)
@@ -509,7 +510,7 @@ class QuadrupletInteraction(ScaledModule):
             return x_res
 
 
-class TripletInteraction(ScaledModule):
+class TripletInteraction(torch.nn.Module):
     """
     Triplet-based message passing block.
 
@@ -570,12 +571,12 @@ class TripletInteraction(ScaledModule):
             activation=None,
             bias=False,
         )
-        self.scale_rbf = ScalingFactor()
+        self.scale_rbf = ScaleFactor()
 
         self.mlp_cbf = EfficientInteractionBilinear(
             emb_size_trip_in, emb_size_cbf, emb_size_trip_out
         )
-        self.scale_cbf_sum = ScalingFactor()
+        self.scale_cbf_sum = ScaleFactor()
         # combines scaling for bilinear layer and summation
 
         # Down and up projections
@@ -628,7 +629,7 @@ class TripletInteraction(ScaledModule):
         # Transform via radial basis
         rad_emb = self.mlp_rbf(bases["rad"])  # (nEdges, emb_size_edge)
         x_ba2 = x_ba * rad_emb
-        x_ba = self.scale_rbf(x_ba2, x_ref=x_ba)
+        x_ba = self.scale_rbf(x_ba2, ref=x_ba)
 
         x_ba = self.down_projection(x_ba)  # (nEdges, emb_size_trip_in)
 
@@ -646,7 +647,7 @@ class TripletInteraction(ScaledModule):
             agg2_out_size=agg2_out_size,
         )
         # (num_atoms, emb_size_trip_out)
-        x = self.scale_cbf_sum(x, x_ref=x_ba)
+        x = self.scale_cbf_sum(x, ref=x_ba)
 
         # =>
         # rbf(d_ba)
@@ -669,7 +670,7 @@ class TripletInteraction(ScaledModule):
             return x_res
 
 
-class PairInteraction(ScaledModule):
+class PairInteraction(torch.nn.Module):
     """
     Pair-based message passing block.
 
@@ -704,7 +705,7 @@ class PairInteraction(ScaledModule):
             activation=None,
             bias=False,
         )
-        self.scale_rbf_sum = ScalingFactor()
+        self.scale_rbf_sum = ScaleFactor()
 
         # Down and up projections
         self.down_projection = Dense(
@@ -749,7 +750,7 @@ class PairInteraction(ScaledModule):
         # (num_atoms, emb_size_interm, emb_size_edge)
         h_out = self.bilinear(x_ba2.reshape(num_atoms, -1))
 
-        h_out = self.scale_rbf_sum(h_out, x_ref=x_ba)
+        h_out = self.scale_rbf_sum(h_out, ref=x_ba)
         # (num_atoms, emb_size_edge)
 
         h_out = self.up_projection(h_out)  # (num_atoms, emb_size_atom)
