@@ -242,16 +242,16 @@ class BaseTrainer(ABC):
                 continue
 
             if "deup" in split:
-                self.datasets[split] = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["dataset"], split, transform=transform)
+                self.datasets[split] = registry.get_dataset_class("deup_lmdb")(
+                    self.config["dataset"], split, transform=transform
+                )
             else:
                 self.datasets[split] = registry.get_dataset_class(
                     self.config["task"]["dataset"]
                 )(ds_conf, transform=transform)
 
             shuffle = False
-            if split == "train":
+            if "train" in split:
                 shuffle = True
                 n_train = len(self.datasets[split])
 
