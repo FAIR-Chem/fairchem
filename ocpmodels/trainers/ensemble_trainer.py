@@ -275,6 +275,7 @@ class EnsembleTrainer(SingleTrainer):
                 output_path / f"{dataset_name}_deup_samples.lmdb",
                 total_size=deup_ds_size,
             )
+        return output_path
 
     def write_lmdb(self, samples, path, total_size=-1):
         env = lmdb.open(
