@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch.nn import Linear
 from torch_scatter import scatter
+from ocpmodels.common.registry import registry
 from ocpmodels.models.faenet import FAENet, OutputBlock
 
 
@@ -53,6 +54,7 @@ class DeupOutputBlock(OutputBlock):
         return out
 
 
+@registry.register_model("deup_faenet")
 class DeupFAENet(FAENet):
     def __init__(self, *args, **kwargs):
         kwargs["dropout_edge"] = 0
@@ -65,3 +67,32 @@ class DeupFAENet(FAENet):
             self.dropout_lin,
             kwargs.get("deup_features", {}),
         )
+
+
+if __name__ == "__main__":
+    from ocpmodels.trainers.ensemble_trainer import EnsembleTrainer
+    from pathlib import Path
+    from ocpmodels.datasets.lmdb_dataset import DeupDataset
+
+    base_model_path = Path("/network/scratch/a/alexandre.duval/ocp/runs/2935198")
+
+    ensemble = EnsembleTrainer(
+        {"checkpoints": base_model_path, "dropout": 0.75},
+        overrides={"logger": "dummy", "config": "deup_faenet-is2re-all"},
+    )
+
+    deup_ds_path = ensemble.create_deup_dataset(
+        ["train", "val_id", "val_ood_cat", "val_ood_ads"], n_samples=10
+    )
+
+    ensemble.config["datasets"] = {
+        **ensemble.config["datasets"],
+        "deup-train-val_id": {
+            "src": deup_ds_path,
+        },
+        "deup-val_ood_cat-val_ood_ads": {
+            "src": deup_ds_path,
+        },
+    }
+
+    ensemble.load_datasets()
