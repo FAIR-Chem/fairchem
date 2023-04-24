@@ -46,7 +46,9 @@ class LmdbDataset(Dataset):
         if not self.path.is_file():
             db_paths = sorted(self.path.glob("*.lmdb"))
             if lmdb_glob:
-                db_paths = [p for p in db_paths if p.stem in lmdb_glob]
+                db_paths = [
+                    p for p in db_paths if any(lg in p.stem for lg in lmdb_glob)
+                ]
             assert len(db_paths) > 0, f"No LMDBs found in '{self.path}'"
 
             self.metadata_path = self.path / "metadata.npz"
