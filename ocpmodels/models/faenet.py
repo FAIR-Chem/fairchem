@@ -463,7 +463,7 @@ class OutputBlock(nn.Module):
             nn.init.xavier_uniform_(self.w_lin.weight)
             self.w_lin.bias.data.fill_(0)
 
-    def forward(self, h, edge_index, edge_weight, batch, alpha):
+    def forward(self, h, edge_index, edge_weight, batch, alpha, data=None):
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
 
@@ -560,7 +560,7 @@ class FAENet(BaseModel):
         self.edge_embed_type = kwargs["edge_embed_type"]
         self.skip_co = kwargs["skip_co"]
         self.dropout_edge = float(kwargs.get("dropout_edge") or 0)
-        self.dropout_lin = float(kwargs.get("dropout_edge") or 0)
+        self.dropout_lin = float(kwargs.get("dropout_lin") or 0)
 
         if kwargs["mp_type"] == "sfarinet":
             kwargs["num_filters"] = kwargs["hidden_channels"]
@@ -731,7 +731,7 @@ class FAENet(BaseModel):
             energy_skip_co.append(h)
             h = self.act(self.mlp_skip_co(torch.cat(energy_skip_co, dim=1)))
 
-        energy = self.output_block(h, edge_index, edge_weight, batch, alpha)
+        energy = self.output_block(h, edge_index, edge_weight, batch, alpha, data=data)
 
         # Skip-connection
         energy_skip_co.append(energy)
