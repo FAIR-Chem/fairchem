@@ -72,7 +72,6 @@ class DeupFAENet(FAENet):
 if __name__ == "__main__":
     from ocpmodels.trainers.ensemble_trainer import EnsembleTrainer
     from pathlib import Path
-    from ocpmodels.datasets.lmdb_dataset import DeupDataset
 
     base_model_path = Path("/network/scratch/a/alexandre.duval/ocp/runs/2935198")
 
@@ -85,14 +84,33 @@ if __name__ == "__main__":
         ["train", "val_id", "val_ood_cat", "val_ood_ads"], n_samples=10
     )
 
-    ensemble.config["datasets"] = {
-        **ensemble.config["datasets"],
+    ensemble.config["dataset"] = {
+        **ensemble.config["dataset"],
         "deup-train-val_id": {
-            "src": deup_ds_path,
+            "src": str(deup_ds_path),
         },
         "deup-val_ood_cat-val_ood_ads": {
-            "src": deup_ds_path,
+            "src": str(deup_ds_path),
         },
     }
 
     ensemble.load_datasets()
+
+    # if deup_ds_path is already known:
+    ensemble = EnsembleTrainer(
+        {"checkpoints": base_model_path, "dropout": 0.75},
+        overrides={
+            "logger": "dummy",
+            "config": "deup_faenet-is2re-all",
+            "dataset": {
+                "deup-train-val_id": {
+                    "src": deup_ds_path,
+                },
+                "deup-val_ood_cat-val_ood_ads": {
+                    "src": deup_ds_path,
+                },
+            },
+        },
+    )
+
+    data = next(iter(ensemble.loaders["deup-train-val_id"]))[0]
