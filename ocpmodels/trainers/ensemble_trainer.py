@@ -264,7 +264,7 @@ class EnsembleTrainer(SingleTrainer):
                             loss, bool(dataset_name == "train")
                         ).bool(),
                         "ds": [dataset_name for _ in range(len(loss))],
-                        "index_in_dataset": batch.idx_in_dataset,
+                        "idx_in_dataset": batch.idx_in_dataset,
                     }
                 ]
                 deup_ds_size += len(loss)

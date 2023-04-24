@@ -149,12 +149,11 @@ class DeupDataset(LmdbDataset):
         datapoint_pickled = self.env.begin().get(self._keys[idx])
         deup_sample = pickle.loads(datapoint_pickled)
         ocp_sample = self.ocp_datasets[deup_sample["ds"]][
-            deup_sample["index_in_dataset"]
+            deup_sample["idx_in_dataset"]
         ]
-        return {
-            "deup": deup_sample,
-            "data": ocp_sample,
-        }
+        for k, v in deup_sample.items():
+            setattr(ocp_sample, f"deup_{k}", v)
+        return ocp_sample
 
 
 class SinglePointLmdbDataset(LmdbDataset):
