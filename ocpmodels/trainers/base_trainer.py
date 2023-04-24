@@ -244,11 +244,11 @@ class BaseTrainer(ABC):
             if "deup" in split:
                 self.datasets[split] = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(self.config["dataset"], split, transformm=transform)
+                )(self.config["dataset"], split, transform=transform)
             else:
                 self.datasets[split] = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(ds_conf, transformm=transform)
+                )(ds_conf, transform=transform)
 
             shuffle = False
             if split == "train":
