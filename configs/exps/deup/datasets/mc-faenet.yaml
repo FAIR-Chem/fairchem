@@ -3,7 +3,7 @@ job:
   cpus: 4
   gres: gpu:rtx8000:1
   partition: long
-  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
 
 default:
   config: faenet-is2re-all
