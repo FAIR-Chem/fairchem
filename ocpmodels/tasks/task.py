@@ -62,10 +62,7 @@ class TrainTask(BaseTask):
 
     def run(self):
         try:
-            if (
-                self.config.get("deup", {}).get("deup_dataset", {}).get("create", False)
-                == "before"
-            ):
+            if self.config.get("deup_dataset", {}).get("create") == "before":
                 self.create_deup_dataset()
 
             loops = self.config.get("inference_time_loops", 5)
@@ -82,10 +79,7 @@ class TrainTask(BaseTask):
             if training_signal == "SIGTERM":
                 return
 
-            if (
-                self.config.get("deup", {}).get("deup_dataset", {}).get("create", False)
-                == "after"
-            ):
+            if self.config.get("deup_dataset", {}).get("create") == "after":
                 self.create_deup_dataset()
 
         except RuntimeError as e:
