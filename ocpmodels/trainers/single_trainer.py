@@ -84,8 +84,8 @@ class SingleTrainer(BaseTrainer):
                             "regress_forces and normalize_labels are true.",
                         )
                     self.normalizers["grad_target"] = Normalizer(
-                        tensor=self.datasets["train"].data.y[
-                            self.datasets["train"].__indices__
+                        tensor=self.datasets[self.train_dataset_name].data.y[
+                            self.datasets[self.train_dataset_name].__indices__
                         ],
                         device=self.device,
                     )
@@ -196,7 +196,7 @@ class SingleTrainer(BaseTrainer):
         return predictions
 
     def train(self, disable_eval_tqdm=True, debug_batches=-1):
-        n_train = len(self.loaders["train"])
+        n_train = len(self.loaders[self.train_dataset_name])
         epoch_int = 0
         eval_every = self.config["optim"].get("eval_every", n_train) or n_train
         if eval_every < 1:
@@ -243,9 +243,9 @@ class SingleTrainer(BaseTrainer):
                 print()
                 logging.info(f"Epoch: {epoch_int}")
 
-            self.samplers["train"].set_epoch(epoch_int)
+            self.samplers[self.train_dataset_name].set_epoch(epoch_int)
             skip_steps = self.step % n_train
-            train_loader_iter = iter(self.loaders["train"])
+            train_loader_iter = iter(self.loaders[self.train_dataset_name])
             self.model.train()
             i_for_epoch = 0
 
@@ -459,7 +459,7 @@ class SingleTrainer(BaseTrainer):
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
             self.logger.log(
-                {"Model run time": model_run_time / len(self.loaders["train"])}
+                {"Model run time": model_run_time / len(self.loaders[self.train_dataset_name])}
             )
             if log_epoch_times:
                 self.logger.log({"Epoch time": np.mean(epoch_times)})

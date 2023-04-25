@@ -116,6 +116,13 @@ class BaseTrainer(ABC):
             )
 
         self.config["dataset"] = kwargs["dataset"]
+        deup_norm_key = [
+            k for k in self.config["dataset"] if "deup" in k and "train" in k
+        ]
+        if deup_norm_key:
+            self.train_dataset_name = deup_norm_key[0]
+        else:
+            self.train_dataset_name = "train"
 
         self.normalizer = kwargs["normalizer"]
         # This supports the legacy way of providing norm parameters in dataset
@@ -123,14 +130,7 @@ class BaseTrainer(ABC):
             self.config.get("dataset", None) is not None
             and kwargs["normalizer"] is None
         ):
-            deup_norm_key = [
-                k for k in self.config["dataset"] if "deup" in k and "train" in k
-            ]
-            if deup_norm_key:
-                norm_key = deup_norm_key[0]
-            else:
-                norm_key = "train"
-            self.normalizer = self.config["dataset"][norm_key]
+            self.normalizer = self.config["dataset"][self.train_dataset_name]
 
         if not self.is_debug and dist_utils.is_master() and not self.is_hpo:
             os.makedirs(self.config["checkpoint_dir"], exist_ok=True)
