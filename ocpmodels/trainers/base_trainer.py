@@ -383,6 +383,7 @@ class BaseTrainer(ABC):
         self.model = registry.get_model_class(self.config["model_name"])(
             **model_config
         ).to(self.device)
+        self.model.reset_parameters()
         self.model.set_deup_inference(False)
 
         if dist_utils.is_master() and not self.silent:

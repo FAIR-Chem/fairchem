@@ -42,7 +42,12 @@ class DeupOutputBlock(OutputBlock):
             h = h * alpha
 
         # Global pooling
-        out = scatter(h, batch, dim=0, reduce="add")
+        out = scatter(
+            h,
+            batch,
+            dim=0,
+            reduce="mean" if self.deup_extra_dim > 0 else "add",
+        )
 
         if self.deup_extra_dim > 0:
             assert data is not None
@@ -52,7 +57,8 @@ class DeupOutputBlock(OutputBlock):
                 + f" from the data dict ({data_keys})"
             )
             out = torch.cat(
-                [out] + [data[f"deup_{k}"][:, None] for k in self.deup_features],
+                [out]
+                + [data[f"deup_{k}"][:, None].float() for k in self.deup_features],
                 dim=-1,
             )
             out = self.deup_lin(out)

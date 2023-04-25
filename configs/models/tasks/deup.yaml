@@ -15,7 +15,7 @@ default:
     max_num_neighbors: 40
   mode: train
   dataset:
-    default_val: val_id
+    default_val: deup-val_ood_cat-val_ood_ads
     deup-train-val_id:
       src: /network/scratch/s/schmidtv/ocp/runs/3115149/deup_dataset
       normalize_labels: True

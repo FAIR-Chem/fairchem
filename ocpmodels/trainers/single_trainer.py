@@ -23,7 +23,7 @@ from ocpmodels.common import dist_utils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
 from ocpmodels.common.timer import Times
-from ocpmodels.common.utils import OCP_TASKS, check_traj_files
+from ocpmodels.common.utils import OCP_AND_DEUP_TASKS, check_traj_files
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -195,7 +195,12 @@ class SingleTrainer(BaseTrainer):
 
         return predictions
 
-    def train(self, disable_eval_tqdm=True, debug_batches=-1):
+    def train(
+        self, disable_eval_tqdm=True, debug_batches=-1, save_best_ckpt_only=False
+    ):
+        if not torch.is_grad_enabled():
+            print("\nWarning: torch grad is disabled. Enabling.\n")
+            torch.set_grad_enabled(True)
         n_train = len(self.loaders[self.train_dataset_name])
         epoch_int = 0
         eval_every = self.config["optim"].get("eval_every", n_train) or n_train
@@ -214,19 +219,24 @@ class SingleTrainer(BaseTrainer):
         current_val_metric = None
         first_eval = True
         log_train_every = self.config["log_train_every"]
+        if log_train_every < 0:
+            log_train_every = n_train
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // n_train
+        max_epochs = self.config["optim"]["max_epochs"]
         timer = Times()
         epoch_times = []
         model_run_time = 0
 
         if not self.silent:
             print(f"\n--- 🔄 Beginning of Training @ {self.now} ---\n")
-            print(f"\nLogging  train metrics every {log_train_every} steps")
+            print(f"Staring from epoch {start_epoch} and step {self.step}")
+            print(f"Will train for {max_epochs} epochs of {n_train} steps each")
+            print(f"Logging  train metrics every {log_train_every} steps")
             print(f"Printing train metrics every {self.config['print_every']} steps")
-            print(f"\nEvaluating every {eval_every} steps\n")
+            print(f"Evaluating every {eval_every} steps\n")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
             if self.config["grad_fine_tune"]:
@@ -337,10 +347,11 @@ class SingleTrainer(BaseTrainer):
 
                 # Evaluate on val set after every `eval_every` iterations.
                 if should_validate:
-                    self.save(
-                        checkpoint_file=f"checkpoint-{str(self.step).zfill(7)}.pt",
-                        training_state=True,
-                    )
+                    if not save_best_ckpt_only:
+                        self.save(
+                            checkpoint_file=f"checkpoint-{str(self.step).zfill(7)}.pt",
+                            training_state=True,
+                        )
 
                     val_metrics = self.validate(
                         split=self.config["dataset"]["default_val"],
@@ -356,7 +367,7 @@ class SingleTrainer(BaseTrainer):
                     current_val_metric = val_metrics[primary_metric]["metric"]
 
                     if (
-                        primary_metric in {"energy_mae", "forces_mae"}
+                        primary_metric in {"energy_mae", "forces_mae", "energy_mse"}
                         and current_val_metric < self.best_val_metric
                     ) or (
                         "energy_force_within_threshold" in primary_metric
@@ -459,7 +470,10 @@ class SingleTrainer(BaseTrainer):
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
             self.logger.log(
-                {"Model run time": model_run_time / len(self.loaders[self.train_dataset_name])}
+                {
+                    "Model run time": model_run_time
+                    / len(self.loaders[self.train_dataset_name])
+                }
             )
             if log_epoch_times:
                 self.logger.log({"Epoch time": np.mean(epoch_times)})
@@ -483,14 +497,14 @@ class SingleTrainer(BaseTrainer):
         # Distinguish frame averaging from base case.
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
-            if self.task_name in OCP_TASKS:
+            if self.task_name in OCP_AND_DEUP_TASKS:
                 original_cell = batch_list[0].cell
             e_all, p_all, f_all, gt_all = [], [], [], []
 
             # Compute model prediction for each frame
             for i in range(len(batch_list[0].fa_pos)):
                 batch_list[0].pos = batch_list[0].fa_pos[i]
-                if self.task_name in OCP_TASKS:
+                if self.task_name in OCP_AND_DEUP_TASKS:
                     batch_list[0].cell = batch_list[0].fa_cell[i]
 
                 # forward pass
@@ -536,7 +550,7 @@ class SingleTrainer(BaseTrainer):
                     gt_all.append(g_grad_target)
 
             batch_list[0].pos = original_pos
-            if self.task_name in OCP_TASKS:
+            if self.task_name in OCP_AND_DEUP_TASKS:
                 batch_list[0].cell = original_cell
 
             # Average predictions over frames
@@ -563,6 +577,8 @@ class SingleTrainer(BaseTrainer):
             [
                 batch.y_relaxed.to(self.device)
                 if self.task_name == "is2re"
+                else batch.deup_loss.to(self.device)
+                if self.task_name == "deup"
                 else batch.y.to(self.device)
                 for batch in batch_list
             ],
@@ -678,6 +694,8 @@ class SingleTrainer(BaseTrainer):
                 [
                     batch.y_relaxed.to(self.device)
                     if self.task_name == "is2re"
+                    else batch.deup_loss.to(self.device)
+                    if self.task_name == "deup"
                     else batch.y.to(self.device)
                     for batch in batch_list
                 ],
@@ -697,7 +715,7 @@ class SingleTrainer(BaseTrainer):
 
             if (
                 self.config["task"].get("eval_on_free_atoms", False)
-                and self.task_name in OCP_TASKS
+                and self.task_name in OCP_AND_DEUP_TASKS
             ):
                 fixed = torch.cat([batch.fixed.to(self.device) for batch in batch_list])
                 mask = fixed == 0

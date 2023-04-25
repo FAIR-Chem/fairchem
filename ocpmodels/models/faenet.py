@@ -462,6 +462,9 @@ class OutputBlock(nn.Module):
         if self.energy_head == "weighted-av-final-embeds":
             nn.init.xavier_uniform_(self.w_lin.weight)
             self.w_lin.bias.data.fill_(0)
+        if hasattr(self, "deup_lin"):
+            nn.init.xavier_uniform_(self.deup_lin.weight)
+            self.deup_lin.bias.data.fill_(0)
 
     def forward(self, h, edge_index, edge_weight, batch, alpha, data=None):
         if self.energy_head == "weighted-av-final-embeds":
@@ -550,7 +553,7 @@ class FAENet(BaseModel):
     """
 
     def __init__(self, **kwargs):
-        super(FAENet, self).__init__()
+        super().__init__()
 
         self.cutoff = kwargs["cutoff"]
         self.energy_head = kwargs["energy_head"]

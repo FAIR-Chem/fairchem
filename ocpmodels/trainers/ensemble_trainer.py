@@ -154,6 +154,8 @@ class EnsembleTrainer(SingleTrainer):
 
         shared_config = {}
         shared_config["graph_rewiring"] = self.trainers[0].config["graph_rewiring"]
+        shared_config["fa_frames"] = self.trainers[0].config["fa_frames"]
+        shared_config["frame_averaging"] = self.trainers[0].config["frame_averaging"]
 
         # Done!
         print("Loaded all checkpoints.")
