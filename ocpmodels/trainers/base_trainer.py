@@ -123,7 +123,14 @@ class BaseTrainer(ABC):
             self.config.get("dataset", None) is not None
             and kwargs["normalizer"] is None
         ):
-            self.normalizer = self.config["dataset"]["train"]
+            deup_norm_key = [
+                k for k in self.config["dataset"] if "deup" in k and "train" in k
+            ]
+            if deup_norm_key:
+                norm_key = deup_norm_key[0]
+            else:
+                norm_key = "train"
+            self.normalizer = self.config["dataset"][norm_key]
 
         if not self.is_debug and dist_utils.is_master() and not self.is_hpo:
             os.makedirs(self.config["checkpoint_dir"], exist_ok=True)

@@ -12,10 +12,12 @@ from ocpmodels.common.utils import (
     make_config_from_conf_str,
 )
 from ocpmodels.trainers.single_trainer import SingleTrainer
+from ocpmodels.common.registry import registry
 
 
+@registry.register_trainer("ensemble")
 class EnsembleTrainer(SingleTrainer):
-    def __init__(self, ensemble_config, overrides={}):
+    def __init__(self, conf_str=None, **kwargs):
         """
         Create an ensemble of trainers from an ensemble_config dict.
 
@@ -36,32 +38,36 @@ class EnsembleTrainer(SingleTrainer):
                 Must contain the checkpoints to load.
             overrides: dict of overrides for this trainer
         """
-        assert isinstance(
-            ensemble_config, dict
-        ), "Ensemble ensemble_config must be a dict"
-        self.ensemble_config = ensemble_config
-
+        if conf_str is not None:
+            assert isinstance(conf_str, str), "conf_str must be a string"
+            self.config = make_config_from_conf_str(conf_str)
+        else:
+            self.config = {}
+        self.checkpoints = self.config.get("ensemble_checkpoints") or kwargs.get(
+            "ensemble_checkpoints"
+        )
         assert (
-            "checkpoints" in self.ensemble_config
-        ), "Ensemble config must have a 'checkpoints' key."
-
-        self.checkpoints = self.ensemble_config["checkpoints"]
+            self.checkpoints is not None
+        ), "ensemble_checkpoints must be provided in the yaml config or the kwargs"
 
         if not isinstance(self.checkpoints, list):
             self.checkpoints = [self.checkpoints]
 
         self.mc_dropout = len(self.checkpoints) == 1
         if self.mc_dropout:
-            self.dropout = self.ensemble_config.get("dropout", 0.75)
+            if "ensemble_dropout" not in self.config:
+                print("WARNING: using MC-Dropout without specifying dropout rate")
+                print("Using `ensemble_dropout: 0.75`")
+            self.dropout = self.config.get("ensemble_dropout", 0.75)
 
         self.trainers = []
-        self.load_trainers()
-        print("Loading self...")
-        config = make_config_from_conf_str(self.trainers[0].config["config"])
-        config = merge_dicts(config, overrides)
-        if "silent" not in overrides:
-            config["silent"] = True
-        super().__init__(**config)
+        shared_config = self.load_trainers()
+        print("Loading self with shared config", shared_config, "...")
+        self.config = merge_dicts(self.config, shared_config)
+        self.config = merge_dicts(self.config, kwargs)
+        if "silent" not in self.config:
+            self.config["silent"] = True
+        super().__init__(**self.config)
         print("Ready.")
 
     @classmethod
@@ -139,8 +145,19 @@ class EnsembleTrainer(SingleTrainer):
             # store model in ``self.models`` list
             self.trainers.append(trainer)
 
+        assert all(
+            [
+                t.config["graph_rewiring"] == self.trainers[0].config["graph_rewiring"]
+                for t in self.trainers
+            ]
+        ), "All models must have the same graph rewiring setting."
+
+        shared_config = {}
+        shared_config["graph_rewiring"] = self.trainers[0].config["graph_rewiring"]
+
         # Done!
         print("Loaded all checkpoints.")
+        return shared_config
 
     def forward(self, batch_list, n_samples=-1):
         """
@@ -244,6 +261,7 @@ class EnsembleTrainer(SingleTrainer):
         )
 
         self.load_loss(reduction="none")
+        stats = {d: {} for d in dataset_strs}
 
         for dataset_name in dataset_strs:
             deup_samples = []
@@ -276,6 +294,21 @@ class EnsembleTrainer(SingleTrainer):
 
                 if max_samples > 0 and deup_ds_size >= max_samples:
                     break
+
+            epm = torch.cat([s["energy_pred_mean"] for s in deup_samples], dim=0)
+            stats[dataset_name]["mean"] = epm.mean().cpu().item()
+            stats[dataset_name]["std"] = epm.std().cpu().item()
+            (output_path / "deup_config.yaml").write_text(
+                dump(
+                    {
+                        "ensemble_config": self.config,
+                        "n_samples": n_samples,
+                        "datasets": dataset_strs,
+                        "output_path": str(output_path),
+                        "stats": stats,
+                    }
+                )
+            )
 
             self.write_lmdb(
                 deup_samples,
