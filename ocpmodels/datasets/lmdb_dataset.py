@@ -34,6 +34,12 @@ class LmdbDataset(Dataset):
     Useful for Structure to Energy & Force (S2EF), Initial State to
     Relaxed State (IS2RS), and Initial State to Relaxed Energy (IS2RE) tasks.
 
+    The keys in the LMDB can be any ascii-decodable object; for historical
+    reasons they are often integers from 0 to len(lmdb_file) but that doesn't
+    have to be the case. Also for historical reasons any key names "length"
+    is ignored since that was used to infer length of many lmdbs in the same
+    folder, but lmdb lengths are now calculated directly from the number of keys.
+
     Args:
             config (dict): Dataset configuration
             transform (callable, optional): Data transform function.
@@ -57,11 +63,21 @@ class LmdbDataset(Dataset):
 
             self._keys, self.envs = [], []
             for db_path in db_paths:
-                self.envs.append(self.connect_db(db_path))
-                length = pickle.loads(
-                    self.envs[-1].begin().get("length".encode("ascii"))
-                )
-                self._keys.append(list(range(length)))
+                cur_env = self.connect_db(db_path)
+                self.envs.append(cur_env)
+
+                # Load and encode all keys in the LMDB
+                cur_keys = [
+                    f"{j}".encode("ascii")
+                    for j in range(cur_env.stat()["entries"])
+                ]
+
+                # Discard any key called "length" which was included for
+                # legacy reasons in older OCP models
+                cur_keys = [key for key in cur_keys if key != "length"]
+
+                # Append the keys as a list
+                self._keys.append(cur_keys)
 
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
@@ -131,7 +147,7 @@ class LmdbDataset(Dataset):
             subdir=False,
             readonly=True,
             lock=False,
-            readahead=False,
+            readahead=True,
             meminit=False,
             max_readers=1,
         )
