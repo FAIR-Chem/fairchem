@@ -61,15 +61,17 @@ class OC22LmdbDataset(Dataset):
                 cur_env = self.connect_db(db_path)
                 self.envs.append(cur_env)
 
-                # Load and encode all keys in the LMDB
-                cur_keys = [
-                    f"{j}".encode("ascii")
-                    for j in range(cur_env.stat()["entries"])
-                ]
+                # Get the number of stores data from the number of entries
+                # in the LMDB
+                num_entries = cur_env.stat()["entries"]
 
-                # Discard any key called "length" which was included for
-                # legacy reasons in older OCP models
-                cur_keys = [key for key in cur_keys if key != "length"]
+                # If "length" encoded as ascii is present, we have one fewer
+                # data than the stats suggest
+                if cur_env.begin().get("length".encode("ascii")) is not None:
+                    num_entries -= 1
+
+                # Get all of the valid keys [0, len(lmdb)] encoded as ascii
+                cur_keys = [f"{j}".encode("ascii") for j in range(num_entries)]
 
                 # Append the keys as a list
                 self._keys.append(cur_keys)
@@ -136,9 +138,7 @@ class OC22LmdbDataset(Dataset):
 
             # Return features.
             datapoint_pickled = (
-                self.envs[db_idx]
-                .begin()
-                .get(f"{self._keys[db_idx][el_idx]}".encode("ascii"))
+                self.envs[db_idx].begin().get(self._keys[db_idx][el_idx])
             )
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
             data_object.id = f"{db_idx}_{el_idx}"
