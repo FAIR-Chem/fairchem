@@ -34,6 +34,12 @@ class LmdbDataset(Dataset):
     Useful for Structure to Energy & Force (S2EF), Initial State to
     Relaxed State (IS2RS), and Initial State to Relaxed Energy (IS2RE) tasks.
 
+    The keys in the LMDB can be any ascii-decodable object; for historical
+    reasons they are often integers from 0 to len(lmdb_file) but that doesn't
+    have to be the case. Also for historical reasons any key names "length"
+    is ignored since that was used to infer length of many lmdbs in the same
+    folder, but lmdb lengths are now calculated directly from the number of keys.
+
     Args:
             config (dict): Dataset configuration
             transform (callable, optional): Data transform function.
@@ -141,7 +147,7 @@ class LmdbDataset(Dataset):
             subdir=False,
             readonly=True,
             lock=False,
-            readahead=False,
+            readahead=True,
             meminit=False,
             max_readers=1,
         )
