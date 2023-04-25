@@ -31,6 +31,11 @@ default:
       src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/all/val_ood_ads/
     val_ood_both:
       src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/all/val_ood_both/
+  # DEUP
+  deup_dataset:
+    create: False # "before" -> created before training (for deup) "after" -> created after training (for is2re) "" - not created
+    dataset_strs: ["train", "val_id", "val_ood_cat", "val_ood_ads"]
+    n_samples: 7
 
 10k:
   dataset:

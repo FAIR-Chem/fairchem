@@ -9,6 +9,7 @@ import logging
 import os
 import torch
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import set_deup_samples_path
 
 
 class BaseTask:
@@ -46,8 +47,27 @@ class TrainTask(BaseTask):
                         + "Consider removing it from the model."
                     )
 
+    def create_deup_dataset(self):
+        cds = self.config["deup"]["create_deup_dataset"]
+        output_path = self.trainer.create_deup_dataset(
+            cds["dataset_strs"],
+            cds["n_samples"],
+            cds.get("output_path"),
+            -1,
+        )
+        print("Dataset created in:", str(output_path))
+        self.trainer.config["deup_samples_path"] = str(output_path)
+        self.trainer.config = set_deup_samples_path(self.trainer.config)
+        self.trainer.load()
+
     def run(self):
         try:
+            if (
+                self.config.get("deup", {}).get("deup_dataset", {}).get("create", False)
+                == "before"
+            ):
+                self.create_deup_dataset()
+
             loops = self.config.get("inference_time_loops", 5)
             if loops > 0:
                 print("----------------------------------------")
@@ -55,10 +75,19 @@ class TrainTask(BaseTask):
                 self.trainer.measure_inference_time(loops=loops)
                 print("----------------------------------------\n")
             torch.set_grad_enabled(True)
-            return self.trainer.train(
+            training_signal = self.trainer.train(
                 disable_eval_tqdm=self.config.get("show_eval_progressbar", True),
                 debug_batches=self.config.get("debug_batches", -1),
             )
+            if training_signal == "SIGTERM":
+                return
+
+            if (
+                self.config.get("deup", {}).get("deup_dataset", {}).get("create", False)
+                == "after"
+            ):
+                self.create_deup_dataset()
+
         except RuntimeError as e:
             self._process_error(e)
             raise e

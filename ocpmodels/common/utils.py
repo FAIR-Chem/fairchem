@@ -233,6 +233,35 @@ def override_drac_paths(trainer_config):
     return trainer_config
 
 
+def set_deup_samples_path(trainer_config):
+    if not trainer_config.get("deup_samples_path"):
+        return trainer_config
+
+    dsp = resolve(trainer_config["deup_samples_path"])
+    if not dsp.exists() or not dsp.is_dir():
+        raise FileNotFoundError(f"deup_samples_path {str(dsp)} not found")
+
+    if dsp.name != "deup_dataset":
+        if (dsp / "deup_dataset").exists() and (dsp / "deup_dataset").is_dir():
+            dsp = dsp / "deup_dataset"
+
+    assert len(list(dsp.glob("*.lmdb"))) > 0, f"No lmdb files found in {str(dsp)}"
+    assert (
+        dsp / "deup_config.yaml"
+    ).exists(), f"No deup_config.yaml found in {str(dsp)}"
+
+    for split in trainer_config["dataset"]:
+        if "deup-" in split:
+            trainer_config[split]["src"] = str(dsp)
+
+    stats = yaml.safe_load((dsp / "deup_config.yaml").read_text())["stats"]["train"]
+    deup_train_key = [k for k in trainer_config["dataset"] if "deup-train" in k][0]
+    trainer_config["dataset"][deup_train_key]["target_mean"] = stats["mean"]
+    trainer_config["dataset"][deup_train_key]["target_std"] = stats["std"]
+
+    return trainer_config
+
+
 def set_qm9_target_stats(trainer_config):
     """
     Set target stats for QM9 dataset if the trainer config specifies the
@@ -1176,6 +1205,7 @@ def build_config(args, args_override=[], silent=False):
     config = set_cpus_to_workers(config, silent)
     config = set_qm9_target_stats(config)
     config = set_qm7x_target_stats(config)
+    config = set_deup_samples_path(config)
     config = override_drac_paths(config)
     config = continue_from_slurm_job_id(config)
     config = read_slurm_env(config)

@@ -19,8 +19,8 @@ default:
     deup-train-val_id:
       src: /network/scratch/s/schmidtv/ocp/runs/3115149/deup_dataset
       normalize_labels: True
-      target_mean: -1.525913953781128 # TODO: change to correct value from DeupDataset
-      target_std: 2.279365062713623 # TODO: change to correct value from DeupDataset
+      target_mean: -1.525913953781128 # Automatically changed if deup dataset is created
+      target_std: 2.279365062713623 # Automatically changed if deup dataset is created
     deup-val_ood_cat-val_ood_ads:
       src: /network/scratch/s/schmidtv/ocp/runs/3115149/deup_dataset
     train:
@@ -33,6 +33,13 @@ default:
       src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/all/val_ood_ads/
     val_ood_both:
       src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/all/val_ood_both/
+
+  # DEUP
+  deup_dataset:
+    create: False # "before" -> created before training (for deup) "after" -> created after training (for is2re) "" - not created
+    dataset_strs: ["train", "val_id", "val_ood_cat", "val_ood_ads"]
+    n_samples: 7
+
   ensemble_checkpoints: /network/scratch/a/alexandre.duval/ocp/runs/2935198
   ensemble_dropout: 0.7
 

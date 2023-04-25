@@ -1,0 +1,25 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-1
+
+default:
+  config: faenet-is2re-all
+  wandb_project: ocp-deup
+  wandb_tags: base-model, MC-D
+  test_ri: True
+  mode: train
+  graph_rewiring: "remove-tag-0"
+  model:
+    dropout_lin: 0.7
+  cp_data_to_tmpdir: true
+  inference_time_loops: 1
+  deup_dataset:
+    create: after
+
+runs:
+  - {}
+  - optim:
+      max_epochs: 30
