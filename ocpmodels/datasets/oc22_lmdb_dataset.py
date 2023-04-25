@@ -32,10 +32,9 @@ class OC22LmdbDataset(Dataset):
     Useful for Structure to Energy & Force (S2EF), Initial State to
     Relaxed State (IS2RS), and Initial State to Relaxed Energy (IS2RE) tasks.
 
-    The keys in the LMDB can be any ascii-decodable object; for historical
-    reasons they are often integers from 0 to len(lmdb_file) but that doesn't
-    have to be the case. Also for historical reasons any key names "length"
-    is ignored since that was used to infer length of many lmdbs in the same
+    The keys in the LMDB must be integers (stored as ascii objects) starting
+    from 0 through the length of the LMDB. For historical reasons any key names
+    "length" is ignored since that was used to infer length of many lmdbs in the same
     folder, but lmdb lengths are now calculated directly from the number of keys.
 
     Args:
