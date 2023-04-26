@@ -138,6 +138,36 @@ class LmdbDataset(Dataset):
         if self.transform is not None:
             data_object = self.transform(data_object)
 
+        if "augment" in self.config:
+            if "positions" in self.config["augment"]:
+                # randomly rattle the positions
+                data_object.pos += torch.Tensor(
+                    np.random.normal(
+                        loc=0,
+                        scale=self.config["augment"]["positions"],
+                        size=data_object.pos.shape,
+                    )
+                )
+            if "isotropic_strain" in self.config["augment"]:
+                # isotropic strain by percentage
+                data_object.cell *= torch.Tensor(
+                    [
+                        np.random.normal(
+                            loc=1,
+                            scale=self.config["augment"]["isotropic_strain"],
+                        )
+                    ]
+                )
+            if "anisotropic_strain" in self.config["augment"]:
+                # isotropic strain by percentage
+                data_object.cell *= torch.Tensor(
+                    np.random.normal(
+                        loc=1,
+                        scale=self.config["augment"]["anisotropic_strain"],
+                        size=data_object.cell.shape,
+                    )
+                )
+
         return data_object
 
     def connect_db(self, lmdb_path=None):
