@@ -339,14 +339,18 @@ def plot(df_orig, df_mae, df_time, config):
         height_alpha = 0.9
         height = height_alpha * 1.0 / len(config.data.methods)
         margin = (1.0 - height_alpha) / (len(config.data.methods) - 1)
-        for idx in range(len(config.data.methods)):
+        for idx, method in enumerate(config.data.methods[::-1]):
+            if method.final:
+                lw = 3.0
+            else:
+                lw = 0.0
             rect = mpatches.Rectangle(
                 xy=(x0, height * idx + margin * idx),
                 width=width,
                 height=height,
                 transform=trans,
-                linewidth=0.0,
-                edgecolor="none",
+                linewidth=lw,
+                edgecolor="k",
                 facecolor=shade_palette[idx],
                 alpha=config.plot.shade_alpha,
                 zorder=0,

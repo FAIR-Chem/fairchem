@@ -60,28 +60,40 @@ data:
     methods:
         - key: "tag-embed"
           name: "tag-embed"
+          final: False
         - key: "phys-embed"
           name: "phys-embed"
+          final: False
         - key: "l-phys-embed"
           name: "l-phys-embed"
+          final: False
         - key: "pg"
           name: "pg"
+          final: False
         - key: "All"
           name: "all"
+          final: True
         - key: "remove-tag-0"
           name: "remove-tag-0"
+          final: True
         - key: "sn-graph"
           name: "sn-graph"
+          final: False
         - key: "sn-atom-type"
           name: "sn-atom-type"
+          final: False
         - key: "w-init"
           name: "w-init"
+          final: True
         - key: "w-final"
           name: "w-final"
+          final: False
 #         - key: "graclus"
 #           name: "graclus"
+#           final: False
         - key: "hoscpool"
           name: "hoscpool"
+          final: False
     methods_family:
         - key: "tag-embed"
           name: "atom-embeddings"
