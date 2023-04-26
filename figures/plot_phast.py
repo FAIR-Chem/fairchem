@@ -3,19 +3,19 @@ This script plots the difference between the performance of models with and with
 PhAST.
 """
 import sys
+from pathlib import Path
+
 import hydra
-from hydra.utils import get_original_cwd, to_absolute_path
-import yaml
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import matplotlib.transforms as transforms
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import yaml
+from hydra.utils import get_original_cwd, to_absolute_path
 from tqdm import tqdm
-from pathlib import Path
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import matplotlib.transforms as transforms
-from utils import plot_setup
-from utils import get_palette_val, get_palette_models
+from utils import get_palette_models, get_palette_val, plot_setup
 
 
 def preprocess_df(df, config):
@@ -220,11 +220,17 @@ def plot(df_orig, df_mae, df_time, config):
         offset = 0.05
         height = 0.3
         y_coord = height * idx + height / 1.5 + offset * idx
-        ax.annotate(f"{time_impr}x", xy=(0.0, idx),  xycoords='axes fraction',
-                xytext=(0.0, y_coord), textcoords='axes fraction',
-                horizontalalignment='right', verticalalignment='top', fontsize="small",
-                bbox=dict(boxstyle="round", fc="w", ec="k"),
-                )
+        ax.annotate(
+            f"{time_impr}x",
+            xy=(0.0, idx),
+            xycoords="axes fraction",
+            xytext=(0.0, y_coord),
+            textcoords="axes fraction",
+            horizontalalignment="right",
+            verticalalignment="top",
+            fontsize="small",
+            bbox=dict(boxstyle="round", fc="w", ec="k"),
+        )
     # Legend
     leg_handles, _ = ax.get_legend_handles_labels()
     leg_labels = [el.name for el in config.data.models]
@@ -245,7 +251,6 @@ def plot(df_orig, df_mae, df_time, config):
     ax.set_xlim(left=0.0, right=ax.get_xlim()[1])
 
     for ax in axes:
-
         # Change spines
         sns.despine(ax=ax, left=True, bottom=True)
 
@@ -305,7 +310,7 @@ def plot(df_orig, df_mae, df_time, config):
     return fig
 
 
-@hydra.main(config_path="./config", config_name="main")
+@hydra.main(config_path="./config", config_name="main", version_base=None)
 def main(config):
     # Determine output dir
     if config.io.output_dir.upper() == "SLURM_TMPDIR":

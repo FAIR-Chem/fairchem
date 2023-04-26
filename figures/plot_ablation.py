@@ -2,19 +2,24 @@
 This script plots the results of the ablation study.
 """
 import sys
+from pathlib import Path
+
 import hydra
-from hydra.utils import get_original_cwd, to_absolute_path
-import yaml
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import matplotlib.transforms as transforms
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import yaml
+from hydra.utils import get_original_cwd, to_absolute_path
 from tqdm import tqdm
-from pathlib import Path
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import matplotlib.transforms as transforms
-from utils import get_palette_methods_family, get_palette_val, get_palette_models
-from utils import plot_setup
+from utils import (
+    get_palette_methods_family,
+    get_palette_models,
+    get_palette_val,
+    plot_setup,
+)
 
 
 def min_max_errorbar(a):
@@ -288,7 +293,6 @@ def plot(df_orig, df_mae, df_time, config):
     ax.set_xlim(left=0.0, right=ax.get_xlim()[1])
 
     for ax in axes:
-
         # Change spines
         sns.despine(ax=ax, left=True, bottom=True)
 
@@ -370,7 +374,9 @@ def plot(df_orig, df_mae, df_time, config):
         methods_family,
         palette_methodsfam,
     ):
-        leg_handles.append(mpatches.Patch(color=color, label=methodfam, alpha=config.plot.shade_alpha))
+        leg_handles.append(
+            mpatches.Patch(color=color, label=methodfam, alpha=config.plot.shade_alpha)
+        )
     leg2 = ax.legend(
         handles=leg_handles,
         loc="center",
@@ -385,7 +391,7 @@ def plot(df_orig, df_mae, df_time, config):
     return fig
 
 
-@hydra.main(config_path="./config", config_name="main")
+@hydra.main(config_path="./config", config_name="main", version_base=None)
 def main(config):
     # Determine output dir
     if config.io.output_dir.upper() == "SLURM_TMPDIR":
