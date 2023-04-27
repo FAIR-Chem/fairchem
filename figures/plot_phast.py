@@ -172,9 +172,9 @@ def plot(df_orig, df_mae, df_time, config):
         leg_handles.append(mpatches.Patch(color=color, label=val_split.name))
     leg2 = ax.legend(
         handles=leg_handles,
-        loc="center",
+        loc="left",
         title="",
-        bbox_to_anchor=(-0.2, 1.09, 1.0, 0.0),
+        bbox_to_anchor=(0.0, 1.09, 1.0, 0.0),
         framealpha=1.0,
         frameon=False,
         handletextpad=0.4,
@@ -237,9 +237,9 @@ def plot(df_orig, df_mae, df_time, config):
     leg = ax.legend(
         handles=leg_handles,
         labels=leg_labels,
-        loc="center",
+        loc="right",
         title="",
-        bbox_to_anchor=(-0.2, 1.1, 1.0, 0.0),
+        bbox_to_anchor=(0.0, 1.1, 1.0, 0.0),
         framealpha=1.0,
         frameon=False,
         handletextpad=-0.4,
