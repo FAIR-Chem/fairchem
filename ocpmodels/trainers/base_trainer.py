@@ -76,7 +76,7 @@ class BaseTrainer(ABC):
         slurm={},
         noddp=False,
     ):
-        self.name = name
+        self.name = task["name"]
         self.cpu = cpu
         self.epoch = 0
         self.step = 0
@@ -127,7 +127,7 @@ class BaseTrainer(ABC):
         logger_name = logger if isinstance(logger, str) else logger["name"]
         self.config = {
             "task": task,
-            "trainer": "forces" if name == "s2ef" else "energy",
+            "trainer": "forces" if self.name == "s2ef" else "energy",
             "model": model.pop("name"),
             "model_attributes": model,
             "optim": optimizer,
@@ -207,7 +207,7 @@ class BaseTrainer(ABC):
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
-        self.evaluator = Evaluator(task=name)
+        self.evaluator = Evaluator(task=self.name)
 
     def load(self):
         self.load_seed_from_config()
@@ -338,20 +338,15 @@ class BaseTrainer(ABC):
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
-        if self.normalizer.get("normalize_labels", False):
-            if "target_mean" in self.normalizer:
-                self.normalizers["target"] = Normalizer(
-                    mean=self.normalizer["target_mean"],
-                    std=self.normalizer["target_std"],
-                    device=self.device,
-                )
-            else:
-                self.normalizers["target"] = Normalizer(
-                    tensor=self.train_loader.dataset.data.y[
-                        self.train_loader.dataset.__indices__
-                    ],
-                    device=self.device,
-                )
+        if (
+            self.normalizer.get("normalize_labels", False)
+            and "target_mean" in self.normalizer
+        ):
+            self.normalizers["target"] = Normalizer(
+                mean=self.normalizer["target_mean"],
+                std=self.normalizer["target_std"],
+                device=self.device,
+            )
 
     @abstractmethod
     def load_task(self):
@@ -415,6 +410,7 @@ class BaseTrainer(ABC):
         logging.info(f"Loading checkpoint from: {checkpoint_path}")
         map_location = torch.device("cpu") if self.cpu else self.device
         checkpoint = torch.load(checkpoint_path, map_location=map_location)
+
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
         self.best_val_metric = checkpoint.get("best_val_metric", None)
@@ -449,68 +445,57 @@ class BaseTrainer(ABC):
             "expand_atomic_embeddings_from_checkpoint", False
         ):
             logging.info("Expanding atomic embeddings from the checkpoint!")
+            if "optimizer" in checkpoint:
+                del checkpoint["optimizer"]
+            if "scheduler" in checkpoint:
+                del checkpoint["scheduler"]
+            if "ema" in checkpoint:
+                del checkpoint["ema"]
+            if "best_val_metric" in checkpoint:
+                del checkpoint["best_val_metric"]
+            if "primary_metric" in checkpoint:
+                del checkpoint["primary_metric"]
+            if "epoch" in checkpoint:
+                del checkpoint["epoch"]
+            if "step" in checkpoint:
+                del checkpoint["step"]
+
             for base_key in registry.get_model_class(
                 self.config["model"]
             ).all_atomic_embeddings_keys():
                 key = mod_key_count * "module." + base_key
-                if (
-                    new_dict[key].shape[0]
-                    != self.model.state_dict()[key].shape[0]
-                ):
-                    self.model.state_dict()[key][
-                        : new_dict[key].shape[0]
-                    ] = new_dict[key]
-                    new_dict[key] = self.model.state_dict()[key]
-                else:
-                    logging.info(
-                        f"Skipping expansion of {key} since the shape already matches!"
-                    )
-
+                self.model.state_dict()[key][
+                    : new_dict[key].shape[0]
+                ] = new_dict[key]
+                new_dict[key] = self.model.state_dict()[key]
         if "interpolate_atomic_embeddings" in self.config["task"]:
-            if "interpolate_atomic_embeddings" in checkpoint["config"][
-                "task"
-            ] and checkpoint["config"]["task"][
+            fitted_datasets = self.config["task"][
                 "interpolate_atomic_embeddings"
-            ].get(
-                "already_interpolated", False
-            ):
-                logging.info(
-                    "Skipping the embedding interpolation because the checkpoint config claims it was already interpolated!"
-                )
-            else:
-                fitted_datasets = self.config["task"][
-                    "interpolate_atomic_embeddings"
-                ].get("fitted_datasets", ["OC20", "OC22"])
-                additional_fitted_elements = self.config["task"][
-                    "interpolate_atomic_embeddings"
-                ].get("additional_fitted_elements", None)
-                smoothing = self.config["task"][
-                    "interpolate_atomic_embeddings"
-                ].get("smoothing", 0.0)
-                logging.info(
-                    f"Interpolating atomic embeddings from an RBF kernel using datasets {fitted_datasets} and additional elements {additional_fitted_elements}!"
-                )
+            ].get("fitted_datasets", ["OC20", "OC22"])
+            additional_fitted_elements = self.config["task"][
+                "interpolate_atomic_embeddings"
+            ].get("additional_fitted_elements", None)
+            smoothing = self.config["task"][
+                "interpolate_atomic_embeddings"
+            ].get("smoothing", 0.0)
+            logging.info(
+                f"Interpolating atomic embeddings from an RBF kernel using datasets {fitted_datasets} and additional elements {additional_fitted_elements}!"
+            )
 
-                for base_key in registry.get_model_class(
-                    self.config["model"]
-                ).all_atomic_embeddings_keys():
-                    key = mod_key_count * "module." + base_key
-                    new_dict[key][:] = torch.tensor(
-                        interpolate_embeddings(
-                            new_dict[key],
-                            fitted_datasets,
-                            additional_fitted_elements,
-                            smoothing,
-                        )
-                    ).to(self.device)
-
-                self.config["task"]["interpolate_atomic_embeddings"][
-                    "already_interpolated"
-                ] = True
-
+            for base_key in registry.get_model_class(
+                self.config["model"]
+            ).all_atomic_embeddings_keys():
+                key = mod_key_count * "module." + base_key
+                new_dict[key][:] = torch.tensor(
+                    interpolate_embeddings(
+                        new_dict[key],
+                        fitted_datasets,
+                        additional_fitted_elements,
+                        smoothing,
+                    )
+                ).to(self.device)
         strict = self.config["task"].get("strict_load", True)
         load_state_dict(self.model, new_dict, strict=strict)
-
         if "optimizer" in checkpoint:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
         if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
@@ -542,6 +527,7 @@ class BaseTrainer(ABC):
         self.loss_fn["energy"] = self.config["optim"].get("loss_energy", "mae")
         self.loss_fn["force"] = self.config["optim"].get("loss_force", "mae")
         self.loss_fn["stress"] = self.config["optim"].get("loss_stress", "mae")
+
         for loss, loss_name in self.loss_fn.items():
             if loss_name in ["l1", "mae"]:
                 self.loss_fn[loss] = nn.L1Loss()
@@ -549,6 +535,8 @@ class BaseTrainer(ABC):
                 self.loss_fn[loss] = nn.MSELoss()
             elif loss_name == "l2mae":
                 self.loss_fn[loss] = L2MAELoss()
+            elif loss_name == "huber":
+                self.loss_fn[loss] = nn.HuberLoss(delta=1.0)
             elif loss_name == "atomwisel2":
                 self.loss_fn[loss] = AtomwiseL2Loss()
             else:
