@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 """
 
 import os
-
 import torch
 import torch.nn as nn
 
@@ -417,13 +416,13 @@ class SO3_Rotation(torch.nn.Module):
     # Rotate the embedding
     def rotate(self, embedding, out_lmax, out_mmax):
         out_mask = self.mapping.coefficient_idx(out_lmax, out_mmax)
-        wigner = self.wigner[:, out_mask, :]
+        wigner = self.wigner[:, out_mask, :].to(embedding.device)
         return torch.bmm(wigner, embedding)
 
     # Rotate the embedding by the inverse of the rotation matrix
     def rotate_inv(self, embedding, in_lmax, in_mmax):
         in_mask = self.mapping.coefficient_idx(in_lmax, in_mmax)
-        wigner_inv = self.wigner_inv[:, :, in_mask]
+        wigner_inv = self.wigner_inv[:, :, in_mask].to(embedding.device)
 
         return torch.bmm(wigner_inv, embedding)
 
@@ -505,7 +504,7 @@ class SO3_Grid(torch.nn.Module):
         self.initialized = False
 
     def _initialize(self, device):
-        if self.initialized is True:
+        if self.initialized == True:
             return
         self.mapping = CoefficientMapping([self.lmax], [self.lmax], device)
 
