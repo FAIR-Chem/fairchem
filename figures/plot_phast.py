@@ -172,7 +172,7 @@ def plot(df_orig, df_mae, df_time, config):
         leg_handles.append(mpatches.Patch(color=color, label=val_split.name))
     leg2 = ax.legend(
         handles=leg_handles,
-        loc="left",
+        loc="center",
         title="",
         bbox_to_anchor=(0.0, 1.09, 1.0, 0.0),
         framealpha=1.0,
