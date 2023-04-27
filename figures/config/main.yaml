@@ -6,7 +6,7 @@ plot:
     bs_n: 1000
     bs_seed: 17
     plot_baseline: False
-    shade_alpha: 0.15
+    shade_alpha: 0.1
     markers:
         val_splits:
             id: "o"
@@ -58,6 +58,15 @@ data:
         - key: phast
           name: PhAST
     methods:
+        - key: "remove-tag-0"
+          name: "remove-tag-0"
+          final: True
+        - key: "sn-graph"
+          name: "sn-graph"
+          final: False
+        - key: "sn-atom-type"
+          name: "sn-atom-type"
+          final: False
         - key: "tag-embed"
           name: "tag-embed"
           final: False
@@ -73,15 +82,6 @@ data:
         - key: "All"
           name: "all"
           final: True
-        - key: "remove-tag-0"
-          name: "remove-tag-0"
-          final: True
-        - key: "sn-graph"
-          name: "sn-graph"
-          final: False
-        - key: "sn-atom-type"
-          name: "sn-atom-type"
-          final: False
         - key: "w-init"
           name: "w-init"
           final: True
@@ -95,6 +95,15 @@ data:
           name: "hoscpool"
           final: False
     methods_family:
+        - key: "remove-tag-0"
+          name: "graph-creation"
+          short: "Graph creation"
+        - key: "sn-graph"
+          name: "graph-creation"
+          short: "Graph creation"
+        - key: "sn-atom-type"
+          name: "graph-creation"
+          short: "Graph creation"
         - key: "tag-embed"
           name: "atom-embeddings"
           short: "Atom embed."
@@ -110,15 +119,6 @@ data:
         - key: "All"
           name: "atom-embeddings"
           short: "Atom embed."
-        - key: "remove-tag-0"
-          name: "graph-creation"
-          short: "Graph creation"
-        - key: "sn-graph"
-          name: "graph-creation"
-          short: "Graph creation"
-        - key: "sn-atom-type"
-          name: "graph-creation"
-          short: "Graph creation"
         - key: "w-init"
           name: "energy-head"
           short: "Energy head"
