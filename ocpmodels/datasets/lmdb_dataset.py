@@ -65,14 +65,14 @@ class LmdbDataset(Dataset):
                 cur_env = self.connect_db(db_path)
                 self.envs.append(cur_env)
 
-                # Get the number of stores data from the number of entries
-                # in the LMDB
-                num_entries = cur_env.stat()["entries"]
-
-                # If "length" encoded as ascii is present, we have one fewer
-                # data than the stats suggest
-                if cur_env.begin().get("length".encode("ascii")) is not None:
-                    num_entries -= 1
+                # If "length" encoded as ascii is present, use that
+                length_entry = cur_env.begin().get("length".encode("ascii"))
+                if length_entry is not None:
+                    num_entries = pickle.loads(length_entry)
+                else:
+                    # Get the number of stores data from the number of entries
+                    # in the LMDB
+                    num_entries = cur_env.stat()["entries"]
 
                 # Append the keys (0->num_entries) as a list
                 self._keys.append(list(range(num_entries)))
@@ -84,12 +84,14 @@ class LmdbDataset(Dataset):
             self.metadata_path = self.path.parent / "metadata.npz"
             self.env = self.connect_db(self.path)
 
-            num_entries = self.env.stat()["entries"]
-
-            # If "length" encoded as ascii is present, we have one fewer
-            # data than the stats suggest
-            if self.env.begin().get("length".encode("ascii")) is not None:
-                num_entries -= 1
+            # If "length" encoded as ascii is present, use that
+            length_entry = cur_env.begin().get("length".encode("ascii"))
+            if length_entry is not None:
+                num_entries = pickle.loads(length_entry)
+            else:
+                # Get the number of stores data from the number of entries
+                # in the LMDB
+                num_entries = cur_env.stat()["entries"]
 
             self._keys = list(range(num_entries))
             self.num_samples = num_entries
