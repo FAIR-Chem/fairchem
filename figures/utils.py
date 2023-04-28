@@ -1,10 +1,15 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.colors import hsv_to_rgb
 
-family_hue_start = {"atom-embeddings": 0.7, "energy-head": 0.3, "graph-creation": 0.0, "s2ef": 0.5}
+family_hue_start = {
+    "atom-embeddings": 0.7,
+    "energy-head": 0.3,
+    "graph-creation": 0.0,
+    "s2ef": 0.5,
+}
 hue_dist = 0.05
 sat = 0.3
 val = 0.8
