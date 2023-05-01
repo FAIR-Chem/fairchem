@@ -41,7 +41,7 @@ except ImportError:
     pass
 
 
-@registry.register_model("escn_stress")
+@registry.register_model("escn")
 class eSCN(BaseModel):
     """Equivariant Spherical Channel Network
     Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
@@ -105,6 +105,7 @@ class eSCN(BaseModel):
         basis_width_scalar=1.0,
         distance_resolution=0.02,
         show_timing_info=True,
+        enforce_max_neighbors_strictly=True,
     ):
         super().__init__()
 
@@ -144,6 +145,7 @@ class eSCN(BaseModel):
         self.sphere_channels_all = self.num_resolutions * self.sphere_channels
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
+        self.enforce_max_neighbors_strictly = enforce_max_neighbors_strictly
         self.device = (
             torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
         )
