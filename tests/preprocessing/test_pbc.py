@@ -7,11 +7,9 @@ LICENSE file in the root directory of this source tree.
 
 import os
 
-import ase
 import numpy as np
 import pytest
 from ase.io import read
-from pymatgen.io.ase import AseAtomsAdaptor
 
 from ocpmodels.common.utils import get_pbc_distances
 from ocpmodels.datasets import data_list_collater

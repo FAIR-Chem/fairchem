@@ -34,6 +34,11 @@ class LmdbDataset(Dataset):
     Useful for Structure to Energy & Force (S2EF), Initial State to
     Relaxed State (IS2RS), and Initial State to Relaxed Energy (IS2RE) tasks.
 
+    The keys in the LMDB must be integers (stored as ascii objects) starting
+    from 0 through the length of the LMDB. For historical reasons any key names
+    "length" is ignored since that was used to infer length of many lmdbs in the same
+    folder, but lmdb lengths are now calculated directly from the number of keys.
+
     Args:
             config (dict): Dataset configuration
             transform (callable, optional): Data transform function.
@@ -44,6 +49,10 @@ class LmdbDataset(Dataset):
         super(LmdbDataset, self).__init__()
         self.config = config
 
+        assert not self.config.get(
+            "train_on_oc20_total_energies", False
+        ), "For training on total energies set dataset=oc22_lmdb"
+
         self.path = Path(self.config["src"])
         if not self.path.is_file():
             db_paths = sorted(self.path.glob("*.lmdb"))
@@ -53,11 +62,20 @@ class LmdbDataset(Dataset):
 
             self._keys, self.envs = [], []
             for db_path in db_paths:
-                self.envs.append(self.connect_db(db_path))
-                length = pickle.loads(
-                    self.envs[-1].begin().get("length".encode("ascii"))
-                )
-                self._keys.append(list(range(length)))
+                cur_env = self.connect_db(db_path)
+                self.envs.append(cur_env)
+
+                # If "length" encoded as ascii is present, use that
+                length_entry = cur_env.begin().get("length".encode("ascii"))
+                if length_entry is not None:
+                    num_entries = pickle.loads(length_entry)
+                else:
+                    # Get the number of stores data from the number of entries
+                    # in the LMDB
+                    num_entries = cur_env.stat()["entries"]
+
+                # Append the keys (0->num_entries) as a list
+                self._keys.append(list(range(num_entries)))
 
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
@@ -65,11 +83,33 @@ class LmdbDataset(Dataset):
         else:
             self.metadata_path = self.path.parent / "metadata.npz"
             self.env = self.connect_db(self.path)
-            self._keys = [
-                f"{j}".encode("ascii")
-                for j in range(self.env.stat()["entries"])
-            ]
-            self.num_samples = len(self._keys)
+
+            # If "length" encoded as ascii is present, use that
+            length_entry = cur_env.begin().get("length".encode("ascii"))
+            if length_entry is not None:
+                num_entries = pickle.loads(length_entry)
+            else:
+                # Get the number of stores data from the number of entries
+                # in the LMDB
+                num_entries = cur_env.stat()["entries"]
+
+            self._keys = list(range(num_entries))
+            self.num_samples = num_entries
+
+        # If specified, limit dataset to only a portion of the entire dataset
+        # total_shards: defines total chunks to partition dataset
+        # shard: defines dataset shard to make visible
+        self.sharded = False
+        if "shard" in self.config and "total_shards" in self.config:
+            self.sharded = True
+            self.indices = range(self.num_samples)
+            # split all available indices into 'total_shards' bins
+            self.shards = np.array_split(
+                self.indices, self.config.get("total_shards", 1)
+            )
+            # limit each process to see a subset of data based off defined shard
+            self.available_indices = self.shards[self.config.get("shard", 0)]
+            self.num_samples = len(self.available_indices)
 
         self.transform = transform
 
@@ -77,6 +117,9 @@ class LmdbDataset(Dataset):
         return self.num_samples
 
     def __getitem__(self, idx):
+        # if sharding, remap idx to appropriate idx of the sharded set
+        if self.sharded:
+            idx = self.available_indices[idx]
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
             db_idx = bisect.bisect(self._keylen_cumulative, idx)
@@ -95,11 +138,43 @@ class LmdbDataset(Dataset):
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
             data_object.id = f"{db_idx}_{el_idx}"
         else:
-            datapoint_pickled = self.env.begin().get(self._keys[idx])
+            datapoint_pickled = self.env.begin().get(
+                f"{self._keys[idx]}".encode("ascii")
+            )
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
 
         if self.transform is not None:
             data_object = self.transform(data_object)
+
+        if "augment" in self.config:
+            if "positions" in self.config["augment"]:
+                # randomly rattle the positions
+                data_object.pos += torch.Tensor(
+                    np.random.normal(
+                        loc=0,
+                        scale=self.config["augment"]["positions"],
+                        size=data_object.pos.shape,
+                    )
+                )
+            if "isotropic_strain" in self.config["augment"]:
+                # isotropic strain by percentage
+                data_object.cell *= torch.Tensor(
+                    [
+                        np.random.normal(
+                            loc=1,
+                            scale=self.config["augment"]["isotropic_strain"],
+                        )
+                    ]
+                )
+            if "anisotropic_strain" in self.config["augment"]:
+                # isotropic strain by percentage
+                data_object.cell *= torch.Tensor(
+                    np.random.normal(
+                        loc=1,
+                        scale=self.config["augment"]["anisotropic_strain"],
+                        size=data_object.cell.shape,
+                    )
+                )
 
         return data_object
 
@@ -109,7 +184,7 @@ class LmdbDataset(Dataset):
             subdir=False,
             readonly=True,
             lock=False,
-            readahead=False,
+            readahead=True,
             meminit=False,
             max_readers=1,
         )

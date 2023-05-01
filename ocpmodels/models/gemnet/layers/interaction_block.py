@@ -9,13 +9,12 @@ import math
 
 import torch
 
+from ocpmodels.modules.scaling.scale_factor import ScaleFactor
+
 from .atom_update_block import AtomUpdateBlock
 from .base_layers import Dense, ResidualLayer
-from .efficient import (
-    EfficientInteractionBilinear,
-)
+from .efficient import EfficientInteractionBilinear
 from .embedding_block import EdgeEmbedding
-from .scaling import ScalingFactor
 
 
 class InteractionBlockTripletsOnly(torch.nn.Module):
@@ -48,8 +47,6 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
 
         activation: str
             Name of the activation function to use in the dense layers except for the final dense layer.
-        scale_file: str
-            Path to the json file containing the scaling factors.
     """
 
     def __init__(
@@ -65,7 +62,6 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
         num_concat,
         num_atom,
         activation=None,
-        scale_file=None,
         name="Interaction",
     ):
         super().__init__()
@@ -90,7 +86,6 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
             emb_size_rbf=emb_size_rbf,
             emb_size_cbf=emb_size_cbf,
             activation=activation,
-            scale_file=scale_file,
             name=f"TripInteraction_{block_nr}",
         )
 
@@ -124,7 +119,6 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
             emb_size_rbf=emb_size_rbf,
             nHidden=num_atom,
             activation=activation,
-            scale_file=scale_file,
             name=f"AtomUpdate_{block_nr}",
         )
 
@@ -235,8 +229,6 @@ class TripletInteraction(torch.nn.Module):
 
         activation: str
             Name of the activation function to use in the dense layers except for the final dense layer.
-        scale_file: str
-            Path to the json file containing the scaling factors.
     """
 
     def __init__(
@@ -247,7 +239,6 @@ class TripletInteraction(torch.nn.Module):
         emb_size_rbf,
         emb_size_cbf,
         activation=None,
-        scale_file=None,
         name="TripletInteraction",
         **kwargs,
     ):
@@ -269,16 +260,14 @@ class TripletInteraction(torch.nn.Module):
             activation=None,
             bias=False,
         )
-        self.scale_rbf = ScalingFactor(
-            scale_file=scale_file, name=name + "_had_rbf"
-        )
+        self.scale_rbf = ScaleFactor(name + "_had_rbf")
 
         self.mlp_cbf = EfficientInteractionBilinear(
             emb_size_trip, emb_size_cbf, emb_size_bilinear
         )
-        self.scale_cbf_sum = ScalingFactor(
-            scale_file=scale_file, name=name + "_sum_cbf"
-        )  # combines scaling for bilinear layer and summation
+
+        # combines scaling for bilinear layer and summation
+        self.scale_cbf_sum = ScaleFactor(name + "_sum_cbf")
 
         # Down and up projections
         self.down_projection = Dense(
@@ -325,7 +314,7 @@ class TripletInteraction(torch.nn.Module):
         # Transform via radial bessel basis
         rbf_emb = self.mlp_rbf(rbf3)  # (nEdges, emb_size_edge)
         x_ba2 = x_ba * rbf_emb
-        x_ba = self.scale_rbf(x_ba, x_ba2)
+        x_ba = self.scale_rbf(x_ba2, ref=x_ba)
 
         x_ba = self.down_projection(x_ba)  # (nEdges, emb_size_trip)
 
@@ -335,7 +324,7 @@ class TripletInteraction(torch.nn.Module):
         # Efficient bilinear layer
         x = self.mlp_cbf(cbf3, x_ba, id3_ca, id3_ragged_idx)
         # (nEdges, emb_size_quad)
-        x = self.scale_cbf_sum(x_ba, x)
+        x = self.scale_cbf_sum(x, ref=x_ba)
 
         # =>
         # rbf(d_ba)

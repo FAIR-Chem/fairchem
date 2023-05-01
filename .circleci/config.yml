@@ -1,23 +1,27 @@
 version: 2.1
 
-jobs:
-  build:
-    docker:
-      - image: cimg/python:3.8
-    resource_class: large
+orbs:
+  codecov: codecov/codecov@3.1.1
 
+workflows:
+  version: 2
+  install_and_test:
+    jobs:
+      - python_lint
+      - test_ubuntu
+      - test_macos
+
+commands:
+  install_deps_ubuntu:
     steps:
       - checkout
-
       - restore_cache:
-          keys:
-          - v0.5-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
-
+          key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
       - run:
-          name: Install conda and create env
+          name: Install conda and environment
           command: |
             if [ ! -d "/home/circleci/miniconda" ]; then
-              wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+              wget https://repo.anaconda.com/miniconda/Miniconda3-py39_22.11.1-1-Linux-x86_64.sh -O miniconda.sh
               bash miniconda.sh -b -p "$HOME"/miniconda
               source /home/circleci/miniconda/etc/profile.d/conda.sh
               conda activate base
@@ -33,26 +37,80 @@ jobs:
               conda install -c conda-forge conda-merge
               conda-merge env.common.yml env.cpu.yml > env.yml
               mamba env update -n ocp-models --file env.yml
+              pip install pytest-cov==4.0.0
             fi
-
       - save_cache:
           paths:
             - /home/circleci/miniconda
-          key: v0.5-dependencies-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}-{{ checksum "env.gpu.yml" }}
-
+          key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
+  install_deps_macos:
+    steps:
+      - checkout
+      - restore_cache:
+          key: conda-macos-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
       - run:
-          name: Run tests
+          name: Install conda and environment
+          command: |
+            if [[ -d $HOME/miniconda3 ]] ; then
+              echo "miniconda installed already."
+            else
+              curl -o miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-py39_22.11.1-1-MacOSX-x86_64.sh
+              bash ./miniconda.sh -b
+              source $HOME/miniconda3/bin/activate
+              conda config --set always_yes yes --set auto_update_conda false
+              conda install mamba -n base -c conda-forge
+              conda create --name ocp-models --clone base
+              conda activate ocp-models
+              conda install -c conda-forge conda-merge
+              conda-merge env.common.yml env.cpu.yml > env.yml
+              mamba env update -n ocp-models --file env.yml
+            fi
+      - save_cache:
+          paths:
+            - /Users/distiller/miniconda3
+          key: conda-macos-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
+
+jobs:
+  python_lint:
+    docker:
+      - image: cimg/python:3.9.13
+    steps:
+      - checkout
+      - run:
+          name: setup
+          command: pip install black==22.3.0
+      - run:
+          name: run black
+          command: black . --check
+
+  test_ubuntu:
+    docker:
+      - image: cimg/python:3.9.13
+    resource_class: large
+    steps:
+      - install_deps_ubuntu
+      - run:
+          name: install ocp and run tests
           command: |
             source /home/circleci/miniconda/etc/profile.d/conda.sh
             conda activate ocp-models
             pip install -e .
             pre-commit install
-            pytest /home/circleci/project/tests
+            pytest --cov-report=xml --cov=ocpmodels/ /home/circleci/project/tests
+      - codecov/upload:
+          file: coverage.xml
 
+  test_macos:
+    macos:
+      xcode: "13.4.1"
+    resource_class: medium
+    steps:
+      - install_deps_macos
       - run:
-          name: Run black
+          name: install ocp and run tests
           command: |
-            source /home/circleci/miniconda/etc/profile.d/conda.sh
+            source $HOME/miniconda3/bin/activate
             conda activate ocp-models
-            pip install black==22.3.0
-            black . --check
+            pip install -e .
+            pre-commit install
+            pytest tests

@@ -20,7 +20,7 @@ from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
 from ocpmodels.common.utils import check_traj_files
-from ocpmodels.modules.evaluator_stress import Evaluator
+from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
@@ -125,41 +125,65 @@ class StressTrainer(BaseTrainer):
         # If we're computing gradients wrt input, set mean of normalizer to 0 --
         # since it is lost when compute dy / dx -- and std to forward target std
         if self.config["model_attributes"].get("regress_forces", False):
-            if self.normalizer.get("normalize_labels", False) and "grad_target_mean" in self.normalizer:
+            if (
+                self.normalizer.get("normalize_labels", False)
+                and "grad_target_mean" in self.normalizer
+            ):
                 self.normalizers["grad_target"] = Normalizer(
                     mean=self.normalizer["grad_target_mean"],
                     std=self.normalizer["grad_target_std"],
                     device=self.device,
                 )
-                    
-        # Normalizer for the stress. Remember that we want to keep rotational equivariance 
+
+        # Normalizer for the stress. Remember that we want to keep rotational equivariance
         # while normalizing, so we set mean 0 as in forces
         if self.config["model_attributes"].get("regress_stress", False):
-            if self.normalizer.get("normalize_labels", False) and "stress_isotropic_std" in self.normalizer:
+            if (
+                self.normalizer.get("normalize_labels", False)
+                and "stress_isotropic_std" in self.normalizer
+            ):
                 self.normalizers["stress_isotropic"] = Normalizer(
                     mean=self.normalizer["stress_isotropic_mean"],
                     std=self.normalizer["stress_isotropic_std"],
                     device=self.device,
                 )
-            if self.normalizer.get("normalize_labels", False) and "stress_anisotropic_std" in self.normalizer:
+            if (
+                self.normalizer.get("normalize_labels", False)
+                and "stress_anisotropic_std" in self.normalizer
+            ):
                 self.normalizers["stress_anisotropic"] = Normalizer(
                     mean=0,
                     std=self.normalizer["stress_anisotropic_std"],
                     device=self.device,
                 )
-            
-        self.change_mat = torch.tensor([[3 **(-0.5), 0, 0, 0, 3 **(-0.5), 0, 0, 0, 3 **(-0.5)], 
-                [0, 0, 0, 0, 0, 2 ** (- 0.5), 0, -2 ** (- 0.5), 0], 
-                [0, 0, -2 ** (- 0.5), 0, 0, 0, 2 ** (- 0.5), 0, 0], 
-                [0, 2 ** (- 0.5), 0, -2 ** (- 0.5), 0, 0, 0, 0, 0],
-                [0, 0, 0.5 ** 0.5, 0, 0, 0, 0.5 ** 0.5, 0, 0],
-                [0, 2 ** (- 0.5), 0, 2 ** (- 0.5), 0, 0, 0, 0, 0],
-                [- 6 ** (-0.5), 0, 0, 0, 2 * 6 ** (-0.5), 0, 0, 0, -6 ** (-0.5)],
-                [0, 0, 0, 0, 0, 2 ** (- 0.5), 0, 2 ** (- 0.5), 0],
-                [- 2 ** (- 0.5), 0, 0, 0, 0, 0, 0, 0, 2 ** (- 0.5)]
-                ]).detach().to(self.device)
 
-
+        self.change_mat = (
+            torch.tensor(
+                [
+                    [3 ** (-0.5), 0, 0, 0, 3 ** (-0.5), 0, 0, 0, 3 ** (-0.5)],
+                    [0, 0, 0, 0, 0, 2 ** (-0.5), 0, -(2 ** (-0.5)), 0],
+                    [0, 0, -(2 ** (-0.5)), 0, 0, 0, 2 ** (-0.5), 0, 0],
+                    [0, 2 ** (-0.5), 0, -(2 ** (-0.5)), 0, 0, 0, 0, 0],
+                    [0, 0, 0.5**0.5, 0, 0, 0, 0.5**0.5, 0, 0],
+                    [0, 2 ** (-0.5), 0, 2 ** (-0.5), 0, 0, 0, 0, 0],
+                    [
+                        -(6 ** (-0.5)),
+                        0,
+                        0,
+                        0,
+                        2 * 6 ** (-0.5),
+                        0,
+                        0,
+                        0,
+                        -(6 ** (-0.5)),
+                    ],
+                    [0, 0, 0, 0, 0, 2 ** (-0.5), 0, 2 ** (-0.5), 0],
+                    [-(2 ** (-0.5)), 0, 0, 0, 0, 0, 0, 0, 2 ** (-0.5)],
+                ]
+            )
+            .detach()
+            .to(self.device)
+        )
 
     # Takes in a new data source and generates predictions on it.
     @torch.no_grad()
@@ -170,7 +194,7 @@ class StressTrainer(BaseTrainer):
         results_file=None,
         disable_tqdm=False,
     ):
-    # TODO: I don't get the part of the code with pre_image. I don't know if we need it for inference on EvalAI or what?
+        # TODO: I don't get the part of the code with pre_image. I don't know if we need it for inference on EvalAI or what?
         if distutils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
         assert isinstance(
@@ -192,16 +216,30 @@ class StressTrainer(BaseTrainer):
 
         if self.normalizers is not None and "target" in self.normalizers:
             self.normalizers["target"].to(self.device)
-            
+
         if self.normalizers is not None and "grad_target" in self.normalizers:
             self.normalizers["grad_target"].to(self.device)
-            
-        if self.normalizers is not None and "stress_anisotropic" in self.normalizers:
+
+        if (
+            self.normalizers is not None
+            and "stress_anisotropic" in self.normalizers
+        ):
             self.normalizers["stress_anisotropic"].to(self.device)
-        if self.normalizers is not None and "stress_isotropic" in self.normalizers:
+        if (
+            self.normalizers is not None
+            and "stress_isotropic" in self.normalizers
+        ):
             self.normalizers["stress_isotropic"].to(self.device)
-        
-        predictions = {"id": [], "energy": [], "forces": [], "stress_isotropic": [], "stress_anisotropic": [], "stress": [], "chunk_idx": []}
+
+        predictions = {
+            "id": [],
+            "energy": [],
+            "forces": [],
+            "stress_isotropic": [],
+            "stress_anisotropic": [],
+            "stress": [],
+            "chunk_idx": [],
+        }
 
         for i, batch_list in tqdm(
             enumerate(data_loader),
@@ -217,26 +255,45 @@ class StressTrainer(BaseTrainer):
                 out["energy"] = self.normalizers["target"].denorm(
                     out["energy"]
                 )
-            if self.normalizers is not None and "grad_target" in self.normalizers:
+            if (
+                self.normalizers is not None
+                and "grad_target" in self.normalizers
+            ):
                 out["forces"] = self.normalizers["grad_target"].denorm(
                     out["forces"]
                 )
-            if self.normalizers is not None and "stress_isotropic" in self.normalizers:
-                out["stress_isotropic"] = self.normalizers["stress_isotropic"].denorm(
-                    out["stress_isotropic"]
-                )
-            if self.normalizers is not None and "stress_anisotropic" in self.normalizers:
-                out["stress_anisotropic"] = self.normalizers["stress_anisotropic"].denorm(
-                    out["stress_anisotropic"]
-                )
-            
-            zero_vectors = torch.zeros((out["stress_isotropic"].shape[0], 3), device=out["stress_isotropic"].device)
-            prediction_irreps = torch.concat([out["stress_isotropic"].reshape(-1, 1), 
-                                    zero_vectors, 
-                                    out["stress_anisotropic"].reshape(-1, 5)], dim=1)
-            
-            out["stress"] = torch.einsum("ba, cb->ca", self.change_mat, prediction_irreps)
-    
+            if (
+                self.normalizers is not None
+                and "stress_isotropic" in self.normalizers
+            ):
+                out["stress_isotropic"] = self.normalizers[
+                    "stress_isotropic"
+                ].denorm(out["stress_isotropic"])
+            if (
+                self.normalizers is not None
+                and "stress_anisotropic" in self.normalizers
+            ):
+                out["stress_anisotropic"] = self.normalizers[
+                    "stress_anisotropic"
+                ].denorm(out["stress_anisotropic"])
+
+            zero_vectors = torch.zeros(
+                (out["stress_isotropic"].shape[0], 3),
+                device=out["stress_isotropic"].device,
+            )
+            prediction_irreps = torch.concat(
+                [
+                    out["stress_isotropic"].reshape(-1, 1),
+                    zero_vectors,
+                    out["stress_anisotropic"].reshape(-1, 5),
+                ],
+                dim=1,
+            )
+
+            out["stress"] = torch.einsum(
+                "ba, cb->ca", self.change_mat, prediction_irreps
+            )
+
             if per_image:
                 systemids = [
                     str(i) + "_" + str(j)
@@ -257,7 +314,7 @@ class StressTrainer(BaseTrainer):
                 per_image_forces = [
                     force.numpy() for force in per_image_forces
                 ]
-                
+
                 # evalAI only requires forces on free atoms
                 if results_file is not None:
                     _per_image_fixed = torch.split(
@@ -293,7 +350,9 @@ class StressTrainer(BaseTrainer):
         predictions["stress"] = np.array(predictions["stress"])
 
         self.save_results(
-            predictions, results_file, keys=["energy", "forces", "stress", "chunk_idx"]
+            predictions,
+            results_file,
+            keys=["energy", "forces", "stress", "chunk_idx"],
         )
 
         if self.ema:
@@ -368,7 +427,7 @@ class StressTrainer(BaseTrainer):
                     out = self._forward(batch)
                     loss = self._compute_loss(out, batch)
                 loss = self.scaler.scale(loss) if self.scaler else loss
-                
+
                 self._backward(loss)
                 scale = self.scaler.get_scale() if self.scaler else 1.0
                 # Compute metrics.
@@ -466,34 +525,53 @@ class StressTrainer(BaseTrainer):
 
     def _forward(self, batch_list):
         # forward pass.
-        if self.config["model_attributes"].get("regress_energy", True): 
+        if self.config["model_attributes"].get("regress_energy", True):
             if self.config["model_attributes"].get("regress_stress", False):
-                if self.config["model_attributes"].get("regress_forces", False):
-                    out_energy, out_forces, out_stress_isotropic, out_stress_anisotropic = self.model(batch_list)
+                if self.config["model_attributes"].get(
+                    "regress_forces", False
+                ):
+                    (
+                        out_energy,
+                        out_forces,
+                        out_stress_isotropic,
+                        out_stress_anisotropic,
+                    ) = self.model(batch_list)
                 else:
-                    out_energy, out_stress_isotropic, out_stress_anisotropic = self.model(batch_list)
-            
+                    (
+                        out_energy,
+                        out_stress_isotropic,
+                        out_stress_anisotropic,
+                    ) = self.model(batch_list)
+
             elif self.config["model_attributes"].get("regress_forces", False):
                 out_energy, out_forces = self.model(batch_list)
             else:
                 out_energy = self.model(batch_list)
-                                
+
             if out_energy.shape[-1] == 1:
                 out_energy = out_energy.view(-1)
         else:
             if self.config["model_attributes"].get("regress_stress", False):
-                if self.config["model_attributes"].get("regress_forces", False):
-                    out_forces, out_stress_isotropic, out_stress_anisotropic = self.model(batch_list)
+                if self.config["model_attributes"].get(
+                    "regress_forces", False
+                ):
+                    (
+                        out_forces,
+                        out_stress_isotropic,
+                        out_stress_anisotropic,
+                    ) = self.model(batch_list)
                 else:
-                    out_stress_isotropic, out_stress_anisotropic = self.model(batch_list)
-            
+                    out_stress_isotropic, out_stress_anisotropic = self.model(
+                        batch_list
+                    )
+
             elif self.config["model_attributes"].get("regress_forces", False):
                 out_forces = self.model(batch_list)
             else:
                 assert "No regression loss"
 
         out = {}
-        if self.config["model_attributes"].get("regress_energy", True): 
+        if self.config["model_attributes"].get("regress_energy", True):
             out["energy"] = out_energy
 
         if self.config["model_attributes"].get("regress_forces", False):
@@ -502,60 +580,101 @@ class StressTrainer(BaseTrainer):
         if self.config["model_attributes"].get("regress_stress", False):
             out["stress_isotropic"] = out_stress_isotropic
             out["stress_anisotropic"] = out_stress_anisotropic
-            
+
         return out
 
     def _compute_loss(self, out, batch_list):
         loss = []
         # Energy loss.
-        if self.config["model_attributes"].get("regress_energy", True): 
+        if self.config["model_attributes"].get("regress_energy", True):
             energy_target = torch.cat(
                 [batch.y.to(self.device) for batch in batch_list], dim=0
             )
-            if self.normalizer.get("normalize_labels", False) and "target" in self.normalizers:
+            if (
+                self.normalizer.get("normalize_labels", False)
+                and "target" in self.normalizers
+            ):
                 energy_target = self.normalizers["target"].norm(energy_target)
             energy_mult = self.config["optim"].get("energy_coefficient", 1)
             loss.append(
-                energy_mult * self.loss_fn["energy"](out["energy"], energy_target)
+                energy_mult
+                * self.loss_fn["energy"](out["energy"], energy_target)
             )
         # Stress loss. remove the double computatiom
-        if self.config["model_attributes"].get("regress_stress", False): 
+        if self.config["model_attributes"].get("regress_stress", False):
             stress_label = self.config["task"].get("stress_label", "stress")
-            batch_stress = [getattr(batch, stress_label).to(self.device).reshape(-1, 9) for batch in batch_list]
-            batch_stress_decomposition = [torch.einsum("ab, cb->ca", self.change_mat.to(self.device), batch)  for batch in batch_stress]
+            batch_stress = [
+                getattr(batch, stress_label).to(self.device).reshape(-1, 9)
+                for batch in batch_list
+            ]
+            batch_stress_decomposition = [
+                torch.einsum(
+                    "ab, cb->ca", self.change_mat.to(self.device), batch
+                )
+                for batch in batch_stress
+            ]
             stress_isotropic_target = torch.cat(
                 [batch[:, 0] for batch in batch_stress_decomposition], dim=0
             )
             stress_anisotropic_target = torch.cat(
-                [batch[:, 4:9]  for batch in batch_stress_decomposition], dim=0
+                [batch[:, 4:9] for batch in batch_stress_decomposition], dim=0
             )
-            if self.normalizer.get("normalize_labels", False) and "stress_isotropic" in self.normalizers:
-                stress_isotropic_target = self.normalizers["stress_isotropic"].norm(stress_isotropic_target)
-                
-            if self.normalizer.get("normalize_labels", False) and "stress_anisotropic" in self.normalizers:
-                stress_anisotropic_target = self.normalizers["stress_anisotropic"].norm(stress_anisotropic_target)
-                
-            stress_isotropic_mult = self.config["optim"].get("stress_isotropic_coefficient", 1)
-            stress_anisotropic_mult = self.config["optim"].get("stress_anisotropic_coefficient", 1)
+            if (
+                self.normalizer.get("normalize_labels", False)
+                and "stress_isotropic" in self.normalizers
+            ):
+                stress_isotropic_target = self.normalizers[
+                    "stress_isotropic"
+                ].norm(stress_isotropic_target)
+
+            if (
+                self.normalizer.get("normalize_labels", False)
+                and "stress_anisotropic" in self.normalizers
+            ):
+                stress_anisotropic_target = self.normalizers[
+                    "stress_anisotropic"
+                ].norm(stress_anisotropic_target)
+
+            stress_isotropic_mult = self.config["optim"].get(
+                "stress_isotropic_coefficient", 1
+            )
+            stress_anisotropic_mult = self.config["optim"].get(
+                "stress_anisotropic_coefficient", 1
+            )
 
             loss.append(
-                stress_isotropic_mult * self.loss_fn["stress"](out["stress_isotropic"].reshape(-1), stress_isotropic_target)
+                stress_isotropic_mult
+                * self.loss_fn["stress"](
+                    out["stress_isotropic"].reshape(-1),
+                    stress_isotropic_target,
+                )
             )
-            
+
             loss.append(
-                stress_anisotropic_mult * self.loss_fn["stress"](out["stress_anisotropic"].reshape(-1, 5), stress_anisotropic_target)
+                stress_anisotropic_mult
+                * self.loss_fn["stress"](
+                    out["stress_anisotropic"].reshape(-1, 5),
+                    stress_anisotropic_target,
+                )
             )
 
         # Force loss.
         if self.config["model_attributes"].get("regress_forces", False):
-            
+
             try:
-                batch_force = [batch.force.to(self.device) for batch in batch_list]
+                batch_force = [
+                    batch.force.to(self.device) for batch in batch_list
+                ]
             except:
-                batch_force = [batch.forces.to(self.device) for batch in batch_list]
-                
+                batch_force = [
+                    batch.forces.to(self.device) for batch in batch_list
+                ]
+
             force_target = torch.cat(batch_force, dim=0)
-            if self.normalizer.get("normalize_labels", False) and "grad_target" in self.normalizers:
+            if (
+                self.normalizer.get("normalize_labels", False)
+                and "grad_target" in self.normalizers
+            ):
                 force_target = self.normalizers["grad_target"].norm(
                     force_target
                 )
@@ -655,29 +774,40 @@ class StressTrainer(BaseTrainer):
 
         if self.config["model_attributes"].get("regress_forces", False):
             try:
-                batch_force = [batch.force.to(self.device) for batch in batch_list]
+                batch_force = [
+                    batch.force.to(self.device) for batch in batch_list
+                ]
             except:
-                batch_force = [batch.forces.to(self.device) for batch in batch_list]
-            target["forces"] = torch.cat(
-                batch_force, dim=0
-            )
+                batch_force = [
+                    batch.forces.to(self.device) for batch in batch_list
+                ]
+            target["forces"] = torch.cat(batch_force, dim=0)
         if self.config["model_attributes"].get("regress_stress", False):
             stress_label = self.config["task"].get("stress_label", "stress")
-            batch_stress = [getattr(batch, stress_label).to(self.device).reshape(-1, 9) for batch in batch_list]
-            batch_stress_decomposition = [torch.einsum("ab, cb->ca", self.change_mat.to(self.device), batch)  for batch in batch_stress]
+            batch_stress = [
+                getattr(batch, stress_label).to(self.device).reshape(-1, 9)
+                for batch in batch_list
+            ]
+            batch_stress_decomposition = [
+                torch.einsum(
+                    "ab, cb->ca", self.change_mat.to(self.device), batch
+                )
+                for batch in batch_stress
+            ]
             stress_isotropic_target = torch.cat(
                 [batch[:, 0] for batch in batch_stress_decomposition], dim=0
             )
             stress_anisotropic_target = torch.cat(
-                [batch[:, 4:9]  for batch in batch_stress_decomposition], dim=0
+                [batch[:, 4:9] for batch in batch_stress_decomposition], dim=0
             )
             target["stress_isotropic"] = stress_isotropic_target
             target["stress_anisotropic"] = stress_anisotropic_target
 
-
         out["natoms"] = natoms
 
-        if self.config["task"].get("eval_on_free_atoms", True) and self.config["model_attributes"].get("regress_forces", False):
+        if self.config["task"].get("eval_on_free_atoms", True) and self.config[
+            "model_attributes"
+        ].get("regress_forces", False):
             fixed = torch.cat(
                 [batch.fixed.to(self.device) for batch in batch_list]
             )
@@ -694,20 +824,32 @@ class StressTrainer(BaseTrainer):
                 s_idx += natoms
             target["natoms"] = torch.LongTensor(natoms_free).to(self.device)
             out["natoms"] = torch.LongTensor(natoms_free).to(self.device)
-        if self.normalizer.get("normalize_labels", False) and "target" in self.normalizers:
+        if (
+            self.normalizer.get("normalize_labels", False)
+            and "target" in self.normalizers
+        ):
             out["energy"] = self.normalizers["target"].denorm(out["energy"])
-        if self.normalizer.get("normalize_labels", False) and "grad_target" in self.normalizers:
+        if (
+            self.normalizer.get("normalize_labels", False)
+            and "grad_target" in self.normalizers
+        ):
             out["forces"] = self.normalizers["grad_target"].denorm(
                 out["forces"]
             )
-        if self.normalizer.get("normalize_labels", False) and "stress_isotropic" in self.normalizers:
-            out["stress_isotropic"] = self.normalizers["stress_isotropic"].denorm(
-                out["stress_isotropic"]
-            )
-        if self.normalizer.get("normalize_labels", False) and "stress_anisotropic" in self.normalizers:
-            out["stress_anisotropic"] = self.normalizers["stress_anisotropic"].denorm(
-                out["stress_anisotropic"]
-            )            
+        if (
+            self.normalizer.get("normalize_labels", False)
+            and "stress_isotropic" in self.normalizers
+        ):
+            out["stress_isotropic"] = self.normalizers[
+                "stress_isotropic"
+            ].denorm(out["stress_isotropic"])
+        if (
+            self.normalizer.get("normalize_labels", False)
+            and "stress_anisotropic" in self.normalizers
+        ):
+            out["stress_anisotropic"] = self.normalizers[
+                "stress_anisotropic"
+            ].denorm(out["stress_anisotropic"])
 
         metrics = evaluator.eval(out, target, prev_metrics=metrics)
         return metrics

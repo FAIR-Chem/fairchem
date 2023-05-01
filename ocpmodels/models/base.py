@@ -36,11 +36,23 @@ class BaseModel(nn.Module):
         max_neighbors=None,
         use_pbc=None,
         otf_graph=None,
+        enforce_max_neighbors_strictly=None,
     ):
         cutoff = cutoff or self.cutoff
         max_neighbors = max_neighbors or self.max_neighbors
         use_pbc = use_pbc or self.use_pbc
         otf_graph = otf_graph or self.otf_graph
+
+        if enforce_max_neighbors_strictly is not None:
+            pass
+        elif hasattr(self, "enforce_max_neighbors_strictly"):
+            # Not all models will have this attribute
+            enforce_max_neighbors_strictly = (
+                self.enforce_max_neighbors_strictly
+            )
+        else:
+            # Default to old behavior
+            enforce_max_neighbors_strictly = True
 
         if not otf_graph:
             try:
@@ -59,7 +71,10 @@ class BaseModel(nn.Module):
         if use_pbc:
             if otf_graph:
                 edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                    data, cutoff, max_neighbors
+                    data,
+                    cutoff,
+                    max_neighbors,
+                    enforce_max_neighbors_strictly,
                 )
 
             out = get_pbc_distances(
@@ -74,6 +89,7 @@ class BaseModel(nn.Module):
 
             edge_index = out["edge_index"]
             edge_dist = out["distances"]
+            cell_offset_distances = out["offsets"]
             distance_vec = out["distance_vec"]
         else:
             if otf_graph:
@@ -91,9 +107,19 @@ class BaseModel(nn.Module):
             cell_offsets = torch.zeros(
                 edge_index.shape[1], 3, device=data.pos.device
             )
+            cell_offset_distances = torch.zeros_like(
+                cell_offsets, device=data.pos.device
+            )
             neighbors = compute_neighbors(data, edge_index)
 
-        return edge_index, edge_dist, distance_vec, cell_offsets, neighbors
+        return (
+            edge_index,
+            edge_dist,
+            distance_vec,
+            cell_offsets,
+            cell_offset_distances,
+            neighbors,
+        )
 
     @property
     def num_params(self):

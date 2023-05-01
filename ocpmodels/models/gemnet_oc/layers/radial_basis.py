@@ -11,8 +11,9 @@ import sympy as sym
 import torch
 from scipy.special import binom
 
+from ocpmodels.modules.scaling import ScaleFactor
+
 from .basis_utils import bessel_basis
-from .scaling import ScaledModule, ScalingFactor
 
 
 class PolynomialEnvelope(torch.nn.Module):
@@ -162,7 +163,7 @@ class BernsteinBasis(torch.nn.Module):
         )
 
 
-class RadialBasis(ScaledModule):
+class RadialBasis(torch.nn.Module):
     """
 
     Arguments
@@ -192,7 +193,7 @@ class RadialBasis(ScaledModule):
 
         self.scale_basis = scale_basis
         if self.scale_basis:
-            self.scale_rbf = ScalingFactor()
+            self.scale_rbf = ScaleFactor()
 
         env_name = envelope["name"].lower()
         env_hparams = envelope.copy()
