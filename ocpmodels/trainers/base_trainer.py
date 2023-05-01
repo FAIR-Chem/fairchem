@@ -410,11 +410,6 @@ class BaseTrainer(ABC):
         logging.info(f"Loading checkpoint from: {checkpoint_path}")
         map_location = torch.device("cpu") if self.cpu else self.device
         checkpoint = torch.load(checkpoint_path, map_location=map_location)
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> origin/stress_neighbors
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
         self.best_val_metric = checkpoint.get("best_val_metric", None)
