@@ -338,14 +338,10 @@ class BaseTrainer(ABC):
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
         self.normalizers = {}
-<<<<<<< HEAD
-        if self.normalizer.get("normalize_labels", False) and "target_mean" in self.normalizer:
-=======
         if (
             self.normalizer.get("normalize_labels", False)
             and "target_mean" in self.normalizer
         ):
->>>>>>> origin/stress_neighbors
             self.normalizers["target"] = Normalizer(
                 mean=self.normalizer["target_mean"],
                 std=self.normalizer["target_std"],
@@ -467,8 +463,6 @@ class BaseTrainer(ABC):
                 del checkpoint["epoch"]
             if "step" in checkpoint:
                 del checkpoint["step"]
-<<<<<<< HEAD
-            
             for base_key in registry.get_model_class(
                 self.config["model"]
             ).all_atomic_embeddings_keys():
@@ -490,38 +484,10 @@ class BaseTrainer(ABC):
             logging.info(
                 f"Interpolating atomic embeddings from an RBF kernel using datasets {fitted_datasets} and additional elements {additional_fitted_elements}!"
             )
-=======
->>>>>>> origin/stress_neighbors
-
             for base_key in registry.get_model_class(
                 self.config["model"]
             ).all_atomic_embeddings_keys():
                 key = mod_key_count * "module." + base_key
-<<<<<<< HEAD
-=======
-                self.model.state_dict()[key][
-                    : new_dict[key].shape[0]
-                ] = new_dict[key]
-                new_dict[key] = self.model.state_dict()[key]
-        if "interpolate_atomic_embeddings" in self.config["task"]:
-            fitted_datasets = self.config["task"][
-                "interpolate_atomic_embeddings"
-            ].get("fitted_datasets", ["OC20", "OC22"])
-            additional_fitted_elements = self.config["task"][
-                "interpolate_atomic_embeddings"
-            ].get("additional_fitted_elements", None)
-            smoothing = self.config["task"][
-                "interpolate_atomic_embeddings"
-            ].get("smoothing", 0.0)
-            logging.info(
-                f"Interpolating atomic embeddings from an RBF kernel using datasets {fitted_datasets} and additional elements {additional_fitted_elements}!"
-            )
-
-            for base_key in registry.get_model_class(
-                self.config["model"]
-            ).all_atomic_embeddings_keys():
-                key = mod_key_count * "module." + base_key
->>>>>>> origin/stress_neighbors
                 new_dict[key][:] = torch.tensor(
                     interpolate_embeddings(
                         new_dict[key],
