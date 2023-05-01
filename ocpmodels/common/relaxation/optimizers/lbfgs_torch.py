@@ -150,7 +150,6 @@ class LBFGS:
             )
             dr *= scale.unsqueeze(1)
             return dr * self.damping
-
         e, f = self.get_forces()
         f = f.to(self.device, dtype=torch.float64)
         r = self.atoms.pos.to(self.device, dtype=torch.float64)
