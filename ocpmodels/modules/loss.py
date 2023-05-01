@@ -1,3 +1,5 @@
+import logging
+
 import torch
 from torch import nn
 
@@ -57,6 +59,12 @@ class DDPLoss(nn.Module):
         natoms: torch.Tensor = None,
         batch_size: int = None,
     ):
+        # zero out nans, if any
+        found_nans_or_infs = not torch.all(input.isfinite())
+        if found_nans_or_infs is True:
+            logging.warning("Found nans while computing loss")
+            input = torch.nan_to_num(input, nan=0.0)
+
         if natoms is None:
             loss = self.loss_fn(input, target)
         else:  # atom-wise loss
