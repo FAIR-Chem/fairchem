@@ -160,15 +160,9 @@ class LBFGS:
             )
             dr *= scale.unsqueeze(1)
             return dr * self.damping
-<<<<<<< HEAD
-        e, f = self.get_forces()
-        f = f.to(self.device, dtype=torch.float64)
-        r = self.atoms.pos.to(self.device, dtype=torch.float64)
-=======
 
         if forces is None:
             _, forces = self.get_energy_and_forces()
->>>>>>> origin/stress_neighbors
 
         r = self.batch.pos.clone().to(dtype=torch.float64)
 
