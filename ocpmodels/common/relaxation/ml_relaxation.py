@@ -12,6 +12,8 @@ import torch
 from ocpmodels.common.registry import registry
 
 from .optimizers.lbfgs_torch import LBFGS, TorchCalc
+from .optimizers.lbfgs_stress_review import LBFGS_Stress, TorchCalcStress
+
 
 
 def ml_relax(
@@ -20,6 +22,11 @@ def ml_relax(
     steps,
     fmax,
     relax_opt,
+    isotropic=False,
+    stress=False,
+    opt_forces=True,
+    opt_stress=True,
+    cell_factor=0.1,
     device="cuda:0",
     transform=None,
     early_stop_batch=False,
@@ -39,22 +46,39 @@ def ml_relax(
     """
     batch = batch[0]
     ids = batch.sid
-    calc = TorchCalc(model, transform)
+    if stress:
+        calc = TorchCalcStress(model, isotropic=isotropic, opt_forces=opt_forces, opt_stress=opt_stress, cell_factor=cell_factor, transform=transform)
+    else:
+        calc = TorchCalc(model, transform)
 
     # Run ML-based relaxation
     traj_dir = relax_opt.get("traj_dir", None)
-    optimizer = LBFGS(
-        batch,
-        calc,
-        maxstep=relax_opt.get("maxstep", 0.04),
-        memory=relax_opt["memory"],
-        damping=relax_opt.get("damping", 1.0),
-        alpha=relax_opt.get("alpha", 70.0),
-        device=device,
-        traj_dir=Path(traj_dir) if traj_dir is not None else None,
-        traj_names=ids,
-        early_stop_batch=early_stop_batch,
-    )
+    if stress:
+        optimizer = LBFGS_Stress(
+            batch,
+            calc,
+            maxstep=relax_opt.get("maxstep", 0.04),
+            memory=relax_opt["memory"],
+            damping=relax_opt.get("damping", 1.0),
+            alpha=relax_opt.get("alpha", 70.0),
+            device=device,
+            traj_dir=Path(traj_dir) if traj_dir is not None else None,
+            traj_names=ids,
+            early_stop_batch=early_stop_batch,
+        )
+    else:
+        optimizer = LBFGS(
+            batch,
+            calc,
+            maxstep=relax_opt.get("maxstep", 0.04),
+            memory=relax_opt["memory"],
+            damping=relax_opt.get("damping", 1.0),
+            alpha=relax_opt.get("alpha", 70.0),
+            device=device,
+            traj_dir=Path(traj_dir) if traj_dir is not None else None,
+            traj_names=ids,
+            early_stop_batch=early_stop_batch,
+        )
     relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
 
     return relaxed_batch
