@@ -85,13 +85,13 @@ class LmdbDataset(Dataset):
             self.env = self.connect_db(self.path)
 
             # If "length" encoded as ascii is present, use that
-            length_entry = cur_env.begin().get("length".encode("ascii"))
+            length_entry = self.env.begin().get("length".encode("ascii"))
             if length_entry is not None:
                 num_entries = pickle.loads(length_entry)
             else:
                 # Get the number of stores data from the number of entries
                 # in the LMDB
-                num_entries = cur_env.stat()["entries"]
+                num_entries = self.env.stat()["entries"]
 
             self._keys = list(range(num_entries))
             self.num_samples = num_entries
