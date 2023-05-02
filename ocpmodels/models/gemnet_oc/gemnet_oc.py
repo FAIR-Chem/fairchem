@@ -142,7 +142,9 @@ class GemNetOC(BaseModel):
     max_neighbors_aint: int
         Maximum number of atom-to-atom interactions per atom.
         Optional. Uses maximum of all other neighbors per default.
-
+    enforce_max_neighbors_strictly: bool
+        When subselected edges based on max_neighbors args, arbitrarily
+        select amongst degenerate edges to have exactly the correct number.
     rbf: dict
         Name and hyperparameters of the radial basis function.
     rbf_spherical: dict
@@ -221,6 +223,7 @@ class GemNetOC(BaseModel):
         max_neighbors_qint: Optional[int] = None,
         max_neighbors_aeaint: Optional[int] = None,
         max_neighbors_aint: Optional[int] = None,
+        enforce_max_neighbors_strictly: bool = True,
         rbf: dict = {"name": "gaussian"},
         rbf_spherical: Optional[dict] = None,
         envelope: dict = {"name": "polynomial", "exponent": 5},
@@ -265,6 +268,7 @@ class GemNetOC(BaseModel):
             max_neighbors_aeaint,
             max_neighbors_aint,
         )
+        self.enforce_max_neighbors_strictly = enforce_max_neighbors_strictly
         self.use_pbc = use_pbc
 
         self.direct_forces = direct_forces
@@ -858,6 +862,7 @@ class GemNetOC(BaseModel):
                 index=subgraph["edge_index"][1],
                 atom_distance=subgraph["distance"],
                 max_num_neighbors_threshold=max_neighbors,
+                enforce_max_strictly=self.enforce_max_neighbors_strictly,
             )
             if not torch.all(edge_mask):
                 subgraph["edge_index"] = subgraph["edge_index"][:, edge_mask]
