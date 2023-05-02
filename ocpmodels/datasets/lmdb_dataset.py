@@ -1,6 +1,5 @@
 """
 Copyright (c) Facebook, Inc. and its affiliates.
-
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
@@ -30,15 +29,12 @@ from ocpmodels.common.utils import pyg2_data_transform
 class LmdbDataset(Dataset):
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
-
     Useful for Structure to Energy & Force (S2EF), Initial State to
     Relaxed State (IS2RS), and Initial State to Relaxed Energy (IS2RE) tasks.
-
     The keys in the LMDB must be integers (stored as ascii objects) starting
     from 0 through the length of the LMDB. For historical reasons any key names
     "length" is ignored since that was used to infer length of many lmdbs in the same
     folder, but lmdb lengths are now calculated directly from the number of keys.
-
     Args:
             config (dict): Dataset configuration
             transform (callable, optional): Data transform function.
@@ -85,13 +81,13 @@ class LmdbDataset(Dataset):
             self.env = self.connect_db(self.path)
 
             # If "length" encoded as ascii is present, use that
-            length_entry = cur_env.begin().get("length".encode("ascii"))
+            length_entry = self.env.begin().get("length".encode("ascii"))
             if length_entry is not None:
                 num_entries = pickle.loads(length_entry)
             else:
                 # Get the number of stores data from the number of entries
                 # in the LMDB
-                num_entries = cur_env.stat()["entries"]
+                num_entries = self.env.stat()["entries"]
 
             self._keys = list(range(num_entries))
             self.num_samples = num_entries
