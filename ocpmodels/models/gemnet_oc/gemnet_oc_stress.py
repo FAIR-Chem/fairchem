@@ -238,10 +238,11 @@ class GemNetOC(BaseModel):
         decomposition_stress: bool = True,
         edge_level: bool = True,
         mixing_coordinates: bool = False,
-        direct_forces: bool = False,
+        direct_forces: bool = True,
+        direct_stress: bool = True,
         use_pbc: bool = True,
         scale_backprop_forces: bool = False,
-        break_ties_heuristically: bool = True,
+        enforce_max_neighbors_strictly: bool = True,
         cutoff: float = 6.0,
         cutoff_qint: Optional[float] = None,
         cutoff_aeaint: Optional[float] = None,
@@ -298,9 +299,10 @@ class GemNetOC(BaseModel):
             max_neighbors_aint,
         )
         self.use_pbc = use_pbc
-        self.break_ties_heuristically = break_ties_heuristically
+        self.enforce_max_neighbors_strictly = enforce_max_neighbors_strictly
         self.regress_energy = regress_energy
         self.direct_forces = direct_forces
+        self.direct_stress = direct_stress
         self.forces_coupled = forces_coupled
         self.regress_forces = regress_forces
         self.force_scaler = ForceScaler(enabled=scale_backprop_forces)
@@ -414,7 +416,7 @@ class GemNetOC(BaseModel):
                 emb_size_edge, num_targets, bias=False, activation=None
             )
 
-        if regress_stress:
+        if regress_stress and direct_stress:
             out_mlp_S = [
                 Dense(
                     emb_size_edge * (num_blocks + 1),
@@ -438,7 +440,7 @@ class GemNetOC(BaseModel):
 
         load_scales_compat(self, scale_file)
 
-        if self.regress_stress:
+        if self.regress_stress and direct_stress:
             if self.outer_product_stress:
                 self.stress_head = Rank2Block(
                     edge_level=self.edge_level,
@@ -454,6 +456,17 @@ class GemNetOC(BaseModel):
                     extensive=self.extensive_stress,
                     num_layers=2,
                 )
+        if self.regress_stress:
+            self.change_mat = torch.tensor([[3 **(-0.5), 0, 0, 0, 3 **(-0.5), 0, 0, 0, 3 **(-0.5)], 
+                [0, 0, 0, 0, 0, 2 ** (- 0.5), 0, -2 ** (- 0.5), 0], 
+                [0, 0, -2 ** (- 0.5), 0, 0, 0, 2 ** (- 0.5), 0, 0], 
+                [0, 2 ** (- 0.5), 0, -2 ** (- 0.5), 0, 0, 0, 0, 0],
+                [0, 0, 0.5 ** 0.5, 0, 0, 0, 0.5 ** 0.5, 0, 0],
+                [0, 2 ** (- 0.5), 0, 2 ** (- 0.5), 0, 0, 0, 0, 0],
+                [- 6 ** (-0.5), 0, 0, 0, 2 * 6 ** (-0.5), 0, 0, 0, -6 ** (-0.5)],
+                [0, 0, 0, 0, 0, 2 ** (- 0.5), 0, 2 ** (- 0.5), 0],
+                [- 2 ** (- 0.5), 0, 0, 0, 0, 0, 0, 0, 2 ** (- 0.5)]
+                ]).detach()
 
     def set_cutoffs(self, cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint):
         self.cutoff = cutoff
@@ -910,7 +923,7 @@ class GemNetOC(BaseModel):
         graph,
         cutoff=None,
         max_neighbors=None,
-        break_ties_heuristically=True,
+        enforce_max_neighbors_strictly=True,
     ):
         """Subselect edges using a stricter cutoff and max_neighbors."""
         subgraph = graph.copy()
@@ -932,7 +945,7 @@ class GemNetOC(BaseModel):
                 index=subgraph["edge_index"][1],
                 atom_distance=subgraph["distance"],
                 max_num_neighbors_threshold=max_neighbors,
-                break_ties_heuristically=break_ties_heuristically,
+                enforce_max_strictly=enforce_max_neighbors_strictly,
             )
             if not torch.all(edge_mask):
                 subgraph["edge_index"] = subgraph["edge_index"][:, edge_mask]
@@ -949,7 +962,7 @@ class GemNetOC(BaseModel):
         return subgraph
 
     def generate_graph_dict(
-        self, data, cutoff, max_neighbors, break_ties_heuristically=True
+        self, data, cutoff, max_neighbors, enforce_max_neighbors_strictly=True
     ):
         """Generate a radius/nearest neighbor graph."""
         otf_graph = cutoff > 6 or max_neighbors > 50 or self.otf_graph
@@ -966,7 +979,7 @@ class GemNetOC(BaseModel):
             cutoff=cutoff,
             max_neighbors=max_neighbors,
             otf_graph=otf_graph,
-            break_ties_heuristically=break_ties_heuristically,
+            enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
         )
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
@@ -995,7 +1008,7 @@ class GemNetOC(BaseModel):
             graph=graph,
             cutoff=select_cutoff,
             max_neighbors=select_neighbors,
-            break_ties_heuristically=break_ties_heuristically,
+            enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
         )
 
         return graph
@@ -1008,7 +1021,7 @@ class GemNetOC(BaseModel):
         max_neighbors,
         cutoff_orig,
         max_neighbors_orig,
-        break_ties_heuristically=True,
+        enforce_max_neighbors_strictly=True,
     ):
         """If the new cutoff and max_neighbors is different from the original,
         subselect the edges of a given graph.
@@ -1028,10 +1041,10 @@ class GemNetOC(BaseModel):
             graph=graph,
             cutoff=select_cutoff,
             max_neighbors=select_neighbors,
-            break_ties_heuristically=break_ties_heuristically,
+            enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
         )
 
-    def get_graphs_and_indices(self, data, break_ties_heuristically=True):
+    def get_graphs_and_indices(self, data, enforce_max_neighbors_strictly=True):
         """ "Generate embedding and interaction graphs and indices."""
         num_atoms = data.atomic_numbers.size(0)
 
@@ -1045,7 +1058,7 @@ class GemNetOC(BaseModel):
                 data,
                 self.cutoff_aint,
                 self.max_neighbors_aint,
-                break_ties_heuristically,
+                enforce_max_neighbors_strictly,
             )
             main_graph = self.subselect_graph(
                 data,
@@ -1068,7 +1081,7 @@ class GemNetOC(BaseModel):
                 data,
                 self.cutoff,
                 self.max_neighbors,
-                break_ties_heuristically,
+                enforce_max_neighbors_strictly,
             )
             a2a_graph = {}
             a2ee2a_graph = {}
@@ -1313,6 +1326,18 @@ class GemNetOC(BaseModel):
 
         if self.regress_forces and not self.direct_forces:
             pos.requires_grad_(True)
+        
+        if self.regress_stress and not self.direct_stress:
+            cell = data.cell
+            grad_stress = torch.zeros(
+                (data.natoms.shape[0], 3, 3),
+                dtype=data.pos.dtype,
+                device=data.pos.device,
+            )
+            grad_stress.requires_grad_(True)
+            data.pos = data.pos + torch.bmm(pos.unsqueeze(-2), grad_stress[batch]).squeeze(1)
+            data.cell = data.cell + torch.bmm(data.cell, grad_stress)
+        
 
         (
             main_graph,
@@ -1325,7 +1350,7 @@ class GemNetOC(BaseModel):
             trip_idx_e2a,
             quad_idx,
         ) = self.get_graphs_and_indices(
-            data, break_ties_heuristically=self.break_ties_heuristically
+            data, enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly
         )
         _, idx_t = main_graph["edge_index"]
 
@@ -1390,7 +1415,7 @@ class GemNetOC(BaseModel):
             x_E = self.out_mlp_E(torch.cat(xs_E, dim=-1))
         if self.direct_forces:
             x_F = self.out_mlp_F(torch.cat(xs_F, dim=-1))
-        if self.regress_stress:
+        if self.direct_stress:
             S_st = self.out_mlp_S(torch.cat(xs_F, dim=-1))
         with torch.cuda.amp.autocast(False):
             if self.regress_energy:
@@ -1448,43 +1473,61 @@ class GemNetOC(BaseModel):
                 F_t = self.force_scaler.calc_forces_and_update(E_t, pos)
 
             F_t = F_t.squeeze(1)  # (num_atoms, 3)
-
+                
         # Stress estimation
         if self.regress_stress:
-            if self.outer_product_stress:
-                S_t_scalr, S_t_irrep2 = self.stress_head(
-                    main_graph["vector"], S_st, idx_t, data
-                )  # self.stress_head(V_st, F_st, edge_index, data)
+            if self.direct_stress:
+                if self.outer_product_stress:
+                    S_t_scalar, S_t_irrep2 = self.stress_head(
+                        main_graph["vector"], S_st, idx_t, data
+                    )  # self.stress_head(V_st, F_st, edge_index, data)
 
-            elif self.decomposition_stress:
-                S_t_scalr, S_t_irrep2 = self.stress_head(
-                    S_st, main_graph["vector"], idx_t, data
-                )
-
+                elif self.decomposition_stress:
+                    S_t_scalar, S_t_irrep2 = self.stress_head(
+                        S_st, main_graph["vector"], idx_t, data
+                    )
+                else:
+                    B = E_t.shape[0]
+                    S_t_scalar = torch.rand(B).to(self.device)
+                    S_t_irrep2 = torch.rand(B, 5).to(self.device)
             else:
-                B = E_t.shape[0]
-                S_t_scalr = torch.rand(B).to(self.device)
-                S_t_irrep2 = torch.rand(B, 5).to(self.device)
+                stress = - self.stress_scaler.calc_forces_and_update(
+                    E_t * data.natoms, grad_stress
+                )
+                volume = torch.sum(
+                    cell[:, 0, :] * torch.cross(cell[:, 1, :], cell[:, 2, :], dim=1),
+                    dim=1,
+                    keepdim=True,
+                )[:, :, None]
+                S_t = stress / volume * 1602.18
+                S_t_decomposed = torch.einsum(
+                    "ab, cb->ca", 
+                    self.change_mat.to(stress.device), 
+                    S_t.reshape(-1, 9)
+                )
+                S_t_scalar = S_t_decomposed[:, 0]
+                S_t_irrep2 = S_t_decomposed[:, 4:9]      
+        
         if self.regress_energy:
             if self.regress_forces:
                 if self.regress_stress:
-                    return E_t, F_t, S_t_scalr, S_t_irrep2
+                    return E_t, F_t, S_t_scalar, S_t_irrep2
                 else:
                     return E_t, F_t
             else:
                 if self.regress_stress:
-                    return E_t, S_t_scalr, S_t_irrep2
+                    return E_t, S_t_scalar, S_t_irrep2
                 else:
                     return E_t
         else:
             if self.regress_forces:
                 if self.regress_stress:
-                    return F_t, S_t_scalr, S_t_irrep2
+                    return F_t, S_t_scalar, S_t_irrep2
                 else:
                     return F_t
             else:
                 if self.regress_stress:
-                    return S_t_scalr, S_t_irrep2
+                    return S_t_scalar, S_t_irrep2
                 else:
                     return
 
