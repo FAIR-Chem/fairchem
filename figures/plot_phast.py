@@ -297,7 +297,6 @@ def plot(df_orig, df_mae, df_time, config):
         height = (1.0 / n_archs) * 0.9
         margin = (1.0 - height * n_archs) / (n_archs - 1)
         for idx in range(n_archs):
-            print(idx, x0, height * idx + margin * idx)
             rect = mpatches.Rectangle(
                 xy=(x0, height * idx + margin * idx),
                 width=width,
