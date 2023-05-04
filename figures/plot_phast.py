@@ -116,8 +116,10 @@ def plot(df_orig, df_mae, df_time, config):
     plot_setup()
 
     fig, axes = plt.subplots(
-        nrows=1, ncols=2, sharey=True, dpi=config.plot.dpi, figsize=(8, 2)
+        nrows=1, ncols=2, sharey=True, dpi=config.plot.dpi, figsize=(10, 3)
     )
+
+    n_archs = len(df_mae.architecture.unique())
 
     # MAE PhAST improvement
     ax = sns.pointplot(
@@ -217,9 +219,8 @@ def plot(df_orig, df_mae, df_time, config):
         time_baseline = df_arch.loc[df_arch.model == "baseline", "time"].mean()
         time_phast = df_arch.loc[df_arch.model == "phast", "time"].mean()
         time_impr = round(time_baseline / time_phast, 1)
-        offset = 0.05
-        height = 0.3
-        y_coord = height * idx + height / 1.5 + offset * idx
+        height = 1.0 / n_archs
+        y_coord = height * idx + height - height / 3.0
         ax.annotate(
             f"{time_impr}x",
             xy=(0.0, idx),
@@ -280,7 +281,7 @@ def plot(df_orig, df_mae, df_time, config):
 
         # Draw line at H0
         if ax == axes[0]:
-            y = np.arange(ax.get_ylim()[1], ax.get_ylim()[0], 0.1)
+            y = np.arange(ax.get_ylim()[1] - 0.05, ax.get_ylim()[0], 0.1)
             x = 0.0 * np.ones(y.shape[0])
             ax.plot(x, y, linestyle=":", linewidth=2.0, color="black", zorder=1)
 
@@ -293,9 +294,10 @@ def plot(df_orig, df_mae, df_time, config):
         width = width + 2 * offset * width
         ax.set_xlim(left=x0, right=x0 + width)
         trans = transforms.blended_transform_factory(ax.transData, ax.transAxes)
-        height = 0.3
-        margin = 0.05
-        for idx in range(len(df_mae.architecture.unique())):
+        height = (1.0 / n_archs) * 0.9
+        margin = (1.0 - height * n_archs) / (n_archs - 1)
+        for idx in range(n_archs):
+            print(idx, x0, height * idx + margin * idx)
             rect = mpatches.Rectangle(
                 xy=(x0, height * idx + margin * idx),
                 width=width,
