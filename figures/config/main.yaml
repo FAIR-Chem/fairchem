@@ -21,7 +21,7 @@ plot:
             D++: "s"
             ForceNet: "h"
             GemNet: "^"
-            GemNet-OC: "v"
+            GemNet-OC: "p"
     colors:
         val:
             palette: mako
