@@ -34,7 +34,7 @@ GemNet,False,both,0.648,88
 GemNet-OC,True,id,0.658,858
 GemNet-OC,True,ad,0.701,858
 GemNet-OC,True,cat,0.632,858
-GemNet-OC,True,both,0.328,858
+GemNet-OC,True,both,0.628,858
 GemNet-OC,False,id,0.564,257
 GemNet-OC,False,ad,0.636,257
 GemNet-OC,False,cat,0.587,257
