@@ -1,7 +1,7 @@
 job:
   mem: 48GB
   cpus: 3
-  gres: gpu:rtx8000:4
+  gres: gpu:rtx8000:1
   partition: long
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-3
   git_checkout: d6186f7c6a7443a5cef9a8ffbe066c671bb7412e # as per https://wandb.ai/mila-ocp/ocp-3/runs/3040748-gemnet_oc-is2re-all
