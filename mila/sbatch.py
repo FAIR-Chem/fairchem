@@ -24,13 +24,13 @@ template = """\
 # git commit: {git_commit}
 # cwd: {cwd}
 
-{git_checkout}
 {sbatch_py_vars}
 
 export MASTER_PORT=$(expr 10000 + $(echo -n $SLURM_JOBID | tail -c 4))
 echo "Master port $MASTER_PORT"
 
 cd {code_loc}
+{git_checkout}
 
 {modules}
 
