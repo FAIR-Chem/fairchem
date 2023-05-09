@@ -378,7 +378,7 @@ class eSCN(BaseModel):
         ###############################################################
         node_energy = self.energy_block(x_pt)
         if self.extensive_energy:
-            energy = scatter(node_energy.view(-1), data.batch, dim=0, reduce="sum") * 0.001
+            energy = scatter(node_energy.view(-1), data.batch, dim=0, reduce="sum")
         else:
             energy = scatter(node_energy.view(-1), data.batch, dim=0, reduce="mean")
             
