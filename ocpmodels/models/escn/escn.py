@@ -19,7 +19,7 @@ from ocpmodels.common.utils import (
 )
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.scn.sampling import CalcSpherePoints
-from ocpmodels.models.escn.smearing import (
+from ocpmodels.models.scn.smearing import (
     GaussianSmearing,
     LinearSigmoidSmearing,
     SigmoidSmearing,
