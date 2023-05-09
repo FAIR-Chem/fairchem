@@ -26,6 +26,8 @@ from ocpmodels.models.escn.smearing import (
     SiLUSmearing,
 )
 
+from torch_scatter import scatter
+
 from ocpmodels.models.escn.so3 import SO3_Embedding
 from ocpmodels.models.escn.so3 import SO3_Rotation
 from ocpmodels.models.escn.so3 import SO3_Grid
@@ -87,7 +89,7 @@ class eSCN(BaseModel):
         decomposition_stress=False,
         edge_level=True,
         mixing_coordinates=False,
-        extensive_energy=False,
+        extensive_energy=True,
         extensive_stress=False,
         otf_graph=False,
         max_neighbors=40,
@@ -375,8 +377,11 @@ class eSCN(BaseModel):
         # Energy estimation
         ###############################################################
         node_energy = self.energy_block(x_pt)
-        energy = torch.zeros(len(data.natoms), device=pos.device)
-        energy.index_add_(0, data.batch, node_energy.view(-1))
+        if self.extensive_energy:
+            energy = scatter(node_energy.view(-1), data.batch, dim=0, reduce="sum") * 0.001
+        else:
+            energy = scatter(node_energy.view(-1), data.batch, dim=0, reduce="mean")
+            
         # Scale energy to help balance numerical precision w.r.t. forces
         energy = energy * 0.001
 
