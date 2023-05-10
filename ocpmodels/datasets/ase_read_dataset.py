@@ -13,7 +13,7 @@ class AseReadDataset(Dataset):
     """
     This Dataset uses ase.io.read to load data directly from a folder on disk.
     This is intended for small-scale testing and demonstrations of OCP.
-    Larger datasets are better served by the effeciency of other datasets types
+    Larger datasets are better served by the effeciency of other dataset types
     such as LMDB.
 
     For a full list of ASE-readable filetypes, see
