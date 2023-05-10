@@ -11,7 +11,7 @@ from ocpmodels.preprocessing import AtomsToGraphs
 @registry.register_dataset("ase_read")
 class AseReadDataset(Dataset):
     """
-    This Dataset uses ase.io.read to load data directly from a folder on disk.
+    This Dataset uses ase.io.read to load data from a directory on disk.
     This is intended for small-scale testing and demonstrations of OCP.
     Larger datasets are better served by the effeciency of other dataset types
     such as LMDB.
