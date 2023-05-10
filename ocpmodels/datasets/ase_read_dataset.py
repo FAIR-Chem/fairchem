@@ -33,7 +33,7 @@ class AseReadDataset(Dataset):
     """
 
     def __init__(self, config, transform=None):
-        super(AseReaderDataset, self).__init__()
+        super(AseReadDataset, self).__init__()
         self.config = config
 
         self.path = Path(self.config["src"])
