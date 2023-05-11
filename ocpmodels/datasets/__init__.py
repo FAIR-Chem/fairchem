@@ -12,4 +12,4 @@ from .lmdb_dataset import (
 from .oc22_lmdb_dataset import OC22LmdbDataset
 
 from .ase_datasets import AseReadDataset
-from .ase_datasets import ASEDBDataset
+from .ase_datasets import AseDBDataset
