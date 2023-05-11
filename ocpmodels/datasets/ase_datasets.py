@@ -49,9 +49,9 @@ class AseReadDataset(Dataset):
         self.a2g = AtomsToGraphs(
             max_neigh=a2g_config.get("max_neigh", 1000),
             radius=a2g_config.get("radius", 8),
-            r_edges=a2g_config.get("r_edges", False),
+            r_edges=a2g_config.get("r_edges", True),
             r_energy=a2g_config.get("r_energy", False),
-            r_forces=a2g_config.get("r_forces", True),
+            r_forces=a2g_config.get("r_forces", False),
             r_distances=a2g_config.get("r_distances", True),
             r_fixed=a2g_config.get("r_fixed", True),
             r_pbc=a2g_config.get("r_pbc", True),
