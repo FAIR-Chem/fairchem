@@ -26,9 +26,9 @@ class AseReadDataset(Dataset):
             suffix (str): The ending of the filepath of each file you want to read
                     ex. '/POSCAR', '.cif', '.xyz'
 
-            a2g_config (dict): configuration for ocp.preprocessing.AtomsToGraphs
+            a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs
                     default options will work for most users
-                    
+
                     If you are using this for a training dataset, set
                     "r_energy"=True and/or "r_forces"=True as appropriate
                     In that case, energy/forces must be in the files you read (ex. OUTCAR)
@@ -45,16 +45,16 @@ class AseReadDataset(Dataset):
             raise Exception("The specified src is not a directory")
         self.id = sorted(self.path.glob(f'*{self.config["suffix"]}'))
 
-        a2g_config = config.get("a2g_config", {})
+        a2g_args = config.get("a2g_args", {})
         self.a2g = AtomsToGraphs(
-            max_neigh=a2g_config.get("max_neigh", 1000),
-            radius=a2g_config.get("radius", 8),
-            r_edges=a2g_config.get("r_edges", False),
-            r_energy=a2g_config.get("r_energy", False),
-            r_forces=a2g_config.get("r_forces", True),
-            r_distances=a2g_config.get("r_distances", True),
-            r_fixed=a2g_config.get("r_fixed", True),
-            r_pbc=a2g_config.get("r_pbc", True),
+            max_neigh=a2g_args.get("max_neigh", 1000),
+            radius=a2g_args.get("radius", 8),
+            r_edges=a2g_args.get("r_edges", True),
+            r_energy=a2g_args.get("r_energy", False),
+            r_forces=a2g_args.get("r_forces", False),
+            r_distances=a2g_args.get("r_distances", True),
+            r_fixed=a2g_args.get("r_fixed", True),
+            r_pbc=a2g_args.get("r_pbc", True),
         )
 
         self.transform = transform
@@ -74,15 +74,15 @@ class AseReadDataset(Dataset):
             data_object = self.transform(data_object)
 
         return data_object
-    
+
     # This method is sometimes called by a trainer,
     # but there is nothing necessary to do here
     def close_db(self):
         pass
 
-    
+
 @registry.register_dataset("ase_db")
-    class AseDBDataset(Dataset):
+class AseDBDataset(Dataset):
     """
     This Dataset connects to an ASE Database, allowing the storage of atoms objects
     with a variety of backends including JSON, SQLite, and database server options.
@@ -95,64 +95,61 @@ class AseReadDataset(Dataset):
             src (str): The path to or connection address of your ASE DB
 
             connect_args (dict): Additional arguments for ase.db.connect
-            
+
             select_args (dict): Additional arguments for ase.db.select
                     You can use this to query/filter your database
 
-            a2g_config (dict): configuration for ocp.preprocessing.AtomsToGraphs
+            a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs
                     default options will work for most users
-                    
+
                     If you are using this for a training dataset, set
                     "r_energy"=True and/or "r_forces"=True as appropriate
                     In that case, energy/forces must be in the database
 
         transform (callable, optional): Additional preprocessing function
     """
-    
-        def __init__(self, config, transform=None):
-            super(LmdbDataset, self).__init__()
-            self.config = config
 
-            self.db = self.connect_db(
-                self.config["src"], 
-                self.config.get("connect_args", {})
-            )
-            
-            self.select_args = self.config.get("select_args", {})
-            
-            self.id = [row.id for row in db.select(**self.select_args)]
-            
-            a2g_config = config.get("a2g_config", {})
-            self.a2g = AtomsToGraphs(
-                max_neigh=a2g_config.get("max_neigh", 1000),
-                radius=a2g_config.get("radius", 8),
-                r_edges=a2g_config.get("r_edges", True),
-                r_energy=a2g_config.get("r_energy", False),
-                r_forces=a2g_config.get("r_forces", False),
-                r_distances=a2g_config.get("r_distances", True),
-                r_fixed=a2g_config.get("r_fixed", True),
-                r_pbc=a2g_config.get("r_pbc", True),
-            )
-            
-            self.transform = transform
-            
-            
-        def __getitem__(self, idx):
-            atoms = self.db.get_atoms(self.id[idx])
-            
-            data_object = self.a2g.convert(atoms)
+    def __init__(self, config, transform=None):
+        super(AseDBDataset, self).__init__()
+        self.config = config
 
-            if self.transform is not None:
-                data_object = self.transform(data_object)
+        self.db = self.connect_db(
+            self.config["src"], self.config.get("connect_args", {})
+        )
 
-            return data_object
+        self.select_args = self.config.get("select_args", {})
 
-            
-        def __len__(self):
-            return len(self.id)
-            
-        def connect_db(self, address, connect_args = {}):
-            return ase.db.connect(address, **connect_args)
-            
-        def close_db(self):
-            pass
+        self.id = [row.id for row in self.db.select(**self.select_args)]
+
+        a2g_args = config.get("a2g_args", {})
+        self.a2g = AtomsToGraphs(
+            max_neigh=a2g_args.get("max_neigh", 1000),
+            radius=a2g_args.get("radius", 8),
+            r_edges=a2g_args.get("r_edges", True),
+            r_energy=a2g_args.get("r_energy", False),
+            r_forces=a2g_args.get("r_forces", False),
+            r_distances=a2g_args.get("r_distances", True),
+            r_fixed=a2g_args.get("r_fixed", True),
+            r_pbc=a2g_args.get("r_pbc", True),
+        )
+
+        self.transform = transform
+
+    def __getitem__(self, idx):
+        atoms = self.db.get_atoms(self.id[idx])
+
+        data_object = self.a2g.convert(atoms)
+
+        if self.transform is not None:
+            data_object = self.transform(data_object)
+
+        return data_object
+
+    def __len__(self):
+        return len(self.id)
+
+    def connect_db(self, address, connect_args={}):
+        return ase.db.connect(address, **connect_args)
+
+    def close_db(self):
+        pass
