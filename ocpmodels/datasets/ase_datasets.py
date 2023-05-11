@@ -26,7 +26,7 @@ class AseReadDataset(Dataset):
             suffix (str): The ending of the filepath of each file you want to read
                     ex. '/POSCAR', '.cif', '.xyz'
 
-            a2g_config (dict): configuration for ocp.preprocessing.AtomsToGraphs
+            a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs
                     default options will work for most users
 
                     If you are using this for a training dataset, set
@@ -45,16 +45,16 @@ class AseReadDataset(Dataset):
             raise Exception("The specified src is not a directory")
         self.id = sorted(self.path.glob(f'*{self.config["suffix"]}'))
 
-        a2g_config = config.get("a2g_config", {})
+        a2g_args = config.get("a2g_args", {})
         self.a2g = AtomsToGraphs(
-            max_neigh=a2g_config.get("max_neigh", 1000),
-            radius=a2g_config.get("radius", 8),
-            r_edges=a2g_config.get("r_edges", True),
-            r_energy=a2g_config.get("r_energy", False),
-            r_forces=a2g_config.get("r_forces", False),
-            r_distances=a2g_config.get("r_distances", True),
-            r_fixed=a2g_config.get("r_fixed", True),
-            r_pbc=a2g_config.get("r_pbc", True),
+            max_neigh=a2g_args.get("max_neigh", 1000),
+            radius=a2g_args.get("radius", 8),
+            r_edges=a2g_args.get("r_edges", True),
+            r_energy=a2g_args.get("r_energy", False),
+            r_forces=a2g_args.get("r_forces", False),
+            r_distances=a2g_args.get("r_distances", True),
+            r_fixed=a2g_args.get("r_fixed", True),
+            r_pbc=a2g_args.get("r_pbc", True),
         )
 
         self.transform = transform
@@ -99,7 +99,7 @@ class AseDBDataset(Dataset):
             select_args (dict): Additional arguments for ase.db.select
                     You can use this to query/filter your database
 
-            a2g_config (dict): configuration for ocp.preprocessing.AtomsToGraphs
+            a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs
                     default options will work for most users
 
                     If you are using this for a training dataset, set
@@ -110,7 +110,7 @@ class AseDBDataset(Dataset):
     """
 
     def __init__(self, config, transform=None):
-        super(LmdbDataset, self).__init__()
+        super(AseDBDataset, self).__init__()
         self.config = config
 
         self.db = self.connect_db(
@@ -119,18 +119,18 @@ class AseDBDataset(Dataset):
 
         self.select_args = self.config.get("select_args", {})
 
-        self.id = [row.id for row in db.select(**self.select_args)]
+        self.id = [row.id for row in self.db.select(**self.select_args)]
 
-        a2g_config = config.get("a2g_config", {})
+        a2g_args = config.get("a2g_args", {})
         self.a2g = AtomsToGraphs(
-            max_neigh=a2g_config.get("max_neigh", 1000),
-            radius=a2g_config.get("radius", 8),
-            r_edges=a2g_config.get("r_edges", True),
-            r_energy=a2g_config.get("r_energy", False),
-            r_forces=a2g_config.get("r_forces", False),
-            r_distances=a2g_config.get("r_distances", True),
-            r_fixed=a2g_config.get("r_fixed", True),
-            r_pbc=a2g_config.get("r_pbc", True),
+            max_neigh=a2g_args.get("max_neigh", 1000),
+            radius=a2g_args.get("radius", 8),
+            r_edges=a2g_args.get("r_edges", True),
+            r_energy=a2g_args.get("r_energy", False),
+            r_forces=a2g_args.get("r_forces", False),
+            r_distances=a2g_args.get("r_distances", True),
+            r_fixed=a2g_args.get("r_fixed", True),
+            r_pbc=a2g_args.get("r_pbc", True),
         )
 
         self.transform = transform
