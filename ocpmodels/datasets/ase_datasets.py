@@ -1,6 +1,7 @@
 from pathlib import Path
 import ase
 import warnings
+import numpy as np
 
 from torch.utils.data import Dataset
 
@@ -32,6 +33,10 @@ class AseReadDataset(Dataset):
                     If you are using this for a training dataset, set
                     "r_energy"=True and/or "r_forces"=True as appropriate
                     In that case, energy/forces must be in the files you read (ex. OUTCAR)
+                    
+            apply_tags (bool, optional): Apply a tag of one to each atom, which is
+                    required of some models. A value of None will only tag structures 
+                    that are not already tagged.
 
         transform (callable, optional): Additional preprocessing function
     """
@@ -67,6 +72,14 @@ class AseReadDataset(Dataset):
             atoms = ase.io.read(self.id[idx])
         except Exception as err:
             warnings.warn(f"{err} occured for: {self.id[idx]}")
+            
+        if self.config.get("apply_tags") == False:
+            pass
+        elif self.config.get("apply_tags") == True:
+            atoms = self.apply_tags(atoms)
+        elif sum(atoms.get_tags()) < 1:
+            atoms = self.apply_tags(atoms)
+            
 
         data_object = self.a2g.convert(atoms)
 
@@ -79,6 +92,10 @@ class AseReadDataset(Dataset):
     # but there is nothing necessary to do here
     def close_db(self):
         pass
+    
+    def apply_tags(self, atoms):
+        atoms.set_tags(np.ones(len(atoms)))
+        return atoms
 
 
 @registry.register_dataset("ase_db")
@@ -105,6 +122,10 @@ class AseDBDataset(Dataset):
                     If you are using this for a training dataset, set
                     "r_energy"=True and/or "r_forces"=True as appropriate
                     In that case, energy/forces must be in the database
+                    
+            apply_tags (bool, optional): Apply a tag of one to each atom, which is
+                    required of some models. A value of None will only tag structures 
+                    that are not already tagged.
 
         transform (callable, optional): Additional preprocessing function
     """
@@ -137,6 +158,13 @@ class AseDBDataset(Dataset):
 
     def __getitem__(self, idx):
         atoms = self.db.get_atoms(self.id[idx])
+        
+        if self.config.get("apply_tags") == False:
+            pass
+        elif self.config.get("apply_tags") == True:
+            atoms = self.apply_tags(atoms)
+        elif sum(atoms.get_tags()) < 1:
+            atoms = self.apply_tags(atoms)
 
         data_object = self.a2g.convert(atoms)
 
@@ -153,3 +181,7 @@ class AseDBDataset(Dataset):
 
     def close_db(self):
         pass
+    
+    def apply_tags(self, atoms):
+        atoms.set_tags(np.ones(len(atoms)))
+        return atoms
