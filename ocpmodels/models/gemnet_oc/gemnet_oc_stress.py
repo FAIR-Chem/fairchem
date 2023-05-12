@@ -1067,6 +1067,7 @@ class GemNetOC(BaseModel):
                 self.max_neighbors,
                 self.cutoff_aint,
                 self.max_neighbors_aint,
+                enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
             )
             a2ee2a_graph = self.subselect_graph(
                 data,
@@ -1075,6 +1076,7 @@ class GemNetOC(BaseModel):
                 self.max_neighbors_aeaint,
                 self.cutoff_aint,
                 self.max_neighbors_aint,
+                enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
             )
         else:
             main_graph = self.generate_graph_dict(
@@ -1098,6 +1100,7 @@ class GemNetOC(BaseModel):
                     self.max_neighbors_qint,
                     self.cutoff_aint,
                     self.max_neighbors_aint,
+                    enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
                 )
             else:
                 assert self.cutoff_qint <= self.cutoff
@@ -1109,6 +1112,7 @@ class GemNetOC(BaseModel):
                     self.max_neighbors_qint,
                     self.cutoff,
                     self.max_neighbors,
+                    enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
                 )
 
             # Only use quadruplets for certain tags
