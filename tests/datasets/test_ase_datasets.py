@@ -6,7 +6,7 @@ import os
 from ocpmodels.datasets import AseReadDataset, AseDBDataset
 
 structures = [
-    build.molecule("H2O"),
+    build.molecule("H2O", vacuum=4),
     build.bulk("Cu"),
     build.fcc111("Pt", size=[2, 2, 3], vacuum=8, periodic=True),
 ]
@@ -29,6 +29,7 @@ def test_ase_read_dataset():
     )
 
     assert len(dataset) == len(structures)
+    data = dataset[0]
 
     for i in range(len(structures)):
         os.remove(
@@ -63,6 +64,7 @@ def test_ase_db_dataset():
     )
 
     assert len(dataset) == len(structures)
+    data = dataset[0]
 
     os.remove(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.db")
