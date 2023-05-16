@@ -35,6 +35,8 @@ class AseReadDataset(Dataset):
                     "r_energy"=True and/or "r_forces"=True as appropriate
                     In that case, energy/forces must be in the files you read (ex. OUTCAR)
 
+            ase_read_args (dict): additional arguments for ase.io.read
+
             apply_tags (bool, optional): Apply a tag of one to each atom, which is
                     required of some models. A value of None will only tag structures
                     that are not already tagged.
@@ -45,6 +47,13 @@ class AseReadDataset(Dataset):
     def __init__(self, config, transform=None):
         super(AseReadDataset, self).__init__()
         self.config = config
+
+        self.ase_read_args = config.get("ase_read_args", {})
+
+        if ":" in self.ase_read_args.get("index", ""):
+            raise NotImplementedError(
+                "Multiple structures from one file is not currently supported"
+            )
 
         self.path = Path(self.config["src"])
         if self.path.is_file():
@@ -70,7 +79,7 @@ class AseReadDataset(Dataset):
 
     def __getitem__(self, idx):
         try:
-            atoms = ase.io.read(self.id[idx])
+            atoms = ase.io.read(self.id[idx], **self.ase_read_args)
         except Exception as err:
             warnings.warn(f"{err} occured for: {self.id[idx]}")
 
