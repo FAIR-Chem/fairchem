@@ -444,20 +444,7 @@ class BaseTrainer(ABC):
             "expand_atomic_embeddings_from_checkpoint", False
         ):
             logging.info("Expanding atomic embeddings from the checkpoint!")
-            if "optimizer" in checkpoint:
-                del checkpoint["optimizer"]
-            if "scheduler" in checkpoint:
-                del checkpoint["scheduler"]
-            if "ema" in checkpoint:
-                del checkpoint["ema"]
-            if "best_val_metric" in checkpoint:
-                del checkpoint["best_val_metric"]
-            if "primary_metric" in checkpoint:
-                del checkpoint["primary_metric"]
-            if "epoch" in checkpoint:
-                del checkpoint["epoch"]
-            if "step" in checkpoint:
-                del checkpoint["step"]
+            
             for base_key in registry.get_model_class(
                 self.config["model"]
             ).all_atomic_embeddings_keys():
