@@ -24,7 +24,7 @@ def test_ase_read_dataset():
     dataset = AseReadDataset(
         config={
             "src": os.path.join(os.path.dirname(os.path.abspath(__file__))),
-            "suffix": ".cif",
+            "pattern": "*.cif",
         }
     )
 
