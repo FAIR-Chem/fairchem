@@ -24,8 +24,9 @@ class AseReadDataset(Dataset):
         config (dict):
             src (str): The source folder that contains your ASE-readable files
 
-            suffix (str): The ending of the filepath of each file you want to read
-                    ex. '/POSCAR', '.cif', '.xyz'
+            pattern (str): Filepath matching each file you want to read
+                    ex. "*/POSCAR", "*.cif", "*.xyz"
+                    search recursively with two wildcards: "**/POSCAR" or "**/*.cif"
 
             a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs
                     default options will work for most users
@@ -48,7 +49,7 @@ class AseReadDataset(Dataset):
         self.path = Path(self.config["src"])
         if self.path.is_file():
             raise Exception("The specified src is not a directory")
-        self.id = sorted(self.path.glob(f'*{self.config["suffix"]}'))
+        self.id = sorted(self.path.glob(f'{self.config["pattern"]}'))
 
         a2g_args = config.get("a2g_args", {})
         self.a2g = AtomsToGraphs(
