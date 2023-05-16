@@ -54,10 +54,10 @@ class AseReadDataset(Dataset):
         self.a2g = AtomsToGraphs(
             max_neigh=a2g_args.get("max_neigh", 1000),
             radius=a2g_args.get("radius", 8),
-            r_edges=a2g_args.get("r_edges", True),
+            r_edges=a2g_args.get("r_edges", False),
             r_energy=a2g_args.get("r_energy", False),
             r_forces=a2g_args.get("r_forces", False),
-            r_distances=a2g_args.get("r_distances", True),
+            r_distances=a2g_args.get("r_distances", False),
             r_fixed=a2g_args.get("r_fixed", True),
             r_pbc=a2g_args.get("r_pbc", True),
         )
@@ -110,19 +110,19 @@ class AseDBDataset(Dataset):
         config (dict):
             src (str): The path to or connection address of your ASE DB
 
-            connect_args (dict): Additional arguments for ase.db.connect
+            connect_args (dict): Additional arguments for ase.db.connect()
 
-            select_args (dict): Additional arguments for ase.db.select
+            select_args (dict): Additional arguments for ase.db.select()
                     You can use this to query/filter your database
 
             a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs
                     default options will work for most users
 
                     If you are using this for a training dataset, set
-                    "r_energy"=True and/or "r_forces"=True as appropriate
+                    "r_energy":True and/or "r_forces":True as appropriate
                     In that case, energy/forces must be in the database
 
-            apply_tags (bool, optional): Apply a tag of one to each atom, which is
+            apply_tags (bool, optional): Apply a tag of 1 to each atom, which is
                     required of some models. A value of None will only tag structures
                     that are not already tagged.
 
@@ -145,10 +145,10 @@ class AseDBDataset(Dataset):
         self.a2g = AtomsToGraphs(
             max_neigh=a2g_args.get("max_neigh", 1000),
             radius=a2g_args.get("radius", 8),
-            r_edges=a2g_args.get("r_edges", True),
+            r_edges=a2g_args.get("r_edges", False),
             r_energy=a2g_args.get("r_energy", False),
             r_forces=a2g_args.get("r_forces", False),
-            r_distances=a2g_args.get("r_distances", True),
+            r_distances=a2g_args.get("r_distances", False),
             r_fixed=a2g_args.get("r_fixed", True),
             r_pbc=a2g_args.get("r_pbc", True),
         )
