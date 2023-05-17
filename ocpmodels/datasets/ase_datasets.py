@@ -28,14 +28,14 @@ class AseReadDataset(Dataset):
                     ex. "*/POSCAR", "*.cif", "*.xyz"
                     search recursively with two wildcards: "**/POSCAR" or "**/*.cif"
 
-            a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs
+            a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs()
                     default options will work for most users
 
                     If you are using this for a training dataset, set
-                    "r_energy"=True and/or "r_forces"=True as appropriate
+                    "r_energy":True and/or "r_forces":True as appropriate
                     In that case, energy/forces must be in the files you read (ex. OUTCAR)
 
-            ase_read_args (dict): additional arguments for ase.io.read
+            ase_read_args (dict): additional arguments for ase.io.read()
 
             apply_tags (bool, optional): Apply a tag of one to each atom, which is
                     required of some models. A value of None will only tag structures
@@ -125,7 +125,7 @@ class AseDBDataset(Dataset):
             select_args (dict): Additional arguments for ase.db.select()
                     You can use this to query/filter your database
 
-            a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs
+            a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs()
                     default options will work for most users
 
                     If you are using this for a training dataset, set
@@ -144,7 +144,7 @@ class AseDBDataset(Dataset):
         self.config = config
 
         self.db = self.connect_db(
-            self.config["src"], self.config.get("connect_args", {})
+            self.config["src"], **self.config.get("connect_args", {})
         )
 
         self.select_args = self.config.get("select_args", {})
