@@ -20,8 +20,8 @@ N_READS = 200
 def cleanup_asedb():
     if Path(DB_NAME).is_file():
         Path(DB_NAME).unlink()
-    if Path(f'{DB_NAME}-lock').is_file():
-        Path(f'{DB_NAME}-lock').unlink()
+    if Path(f"{DB_NAME}-lock").is_file():
+        Path(f"{DB_NAME}-lock").unlink()
 
 
 test_structures = [
@@ -131,6 +131,7 @@ def test_aselmdb_randomreads():
 
     cleanup_asedb()
 
+
 def update_keyvalue_pair():
 
     write_random_atoms()
@@ -139,9 +140,10 @@ def update_keyvalue_pair():
 
     with LMDBDatabase(DB_NAME) as db:
         row = db.get_row_by_id(1)
-        assert row.test==5
+        assert row.test == 5
 
     cleanup_asedb()
+
 
 def update_atoms():
 
@@ -151,17 +153,18 @@ def update_atoms():
 
     with LMDBDatabase(DB_NAME) as db:
         row = db.get_row_by_id(40)
-        assert str(row.toatoms())==str(test_structures[-1])
+        assert str(row.toatoms()) == str(test_structures[-1])
 
     cleanup_asedb()
+
 
 def test_metadata():
     write_random_atoms()
 
     with LMDBDatabase(DB_NAME) as db:
-        db.metadata = {'test':True}
+        db.metadata = {"test": True}
 
     with LMDBDatabase(DB_NAME, readonly=True) as db:
-        assert db.metadata['test']==True
+        assert db.metadata["test"] == True
 
     cleanup_asedb()
