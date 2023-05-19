@@ -69,3 +69,35 @@ def test_ase_db_dataset():
     os.remove(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.db")
     )
+
+
+def test_ase_lmdb_dataset():
+    try:
+        os.remove(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb"
+            )
+        )
+    except FileNotFoundError:
+        pass
+
+    database = db.connect(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb")
+    )
+    for i, structure in enumerate(structures):
+        database.write(structure)
+
+    dataset = AseDBDataset(
+        config={
+            "src": os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb"
+            ),
+        }
+    )
+
+    assert len(dataset) == len(structures)
+    data = dataset[0]
+
+    os.remove(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb")
+    )
