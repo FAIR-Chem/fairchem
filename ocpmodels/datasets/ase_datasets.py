@@ -144,7 +144,7 @@ class AseDBDataset(Dataset):
         self.config = config
 
         self.db = self.connect_db(
-            self.config["src"], **self.config.get("connect_args", {})
+            self.config["src"], self.config.get("connect_args", {})
         )
 
         self.select_args = self.config.get("select_args", {})
