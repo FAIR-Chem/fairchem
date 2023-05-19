@@ -187,7 +187,7 @@ class AseDBDataset(Dataset):
         return len(self.id)
 
     def connect_db(self, address, connect_args={}):
-        if address.split('.')[-1] == "lmdb":
+        if address.split(".")[-1] == "lmdb":
             return LMDBDatabase(address, readonly=True, **connect_args)
         else:
             return ase.db.connect(address, **connect_args)
