@@ -167,7 +167,8 @@ class AseDBDataset(Dataset):
         self.transform = transform
 
     def __getitem__(self, idx):
-        atoms = self.db.get_atoms(self.id[idx])
+
+        atoms = self.db._get_row(self.id[idx]).toatoms()
 
         if self.config.get("apply_tags") == False:
             pass
@@ -187,13 +188,17 @@ class AseDBDataset(Dataset):
         return len(self.id)
 
     def connect_db(self, address, connect_args={}):
-        if address.split(".")[-1] == "lmdb":
+        db_type = connect_args.get("type", "extract_from_name")
+        if db_type == "lmdb" or (
+            db_type == "extract_from_name" and address.split(".")[-1] == "lmdb"
+        ):
             return LMDBDatabase(address, readonly=True, **connect_args)
         else:
             return ase.db.connect(address, **connect_args)
 
     def close_db(self):
-        pass
+        if hasattr(self.db, "close"):
+            self.db.close()
 
     def apply_tags(self, atoms):
         atoms.set_tags(np.ones(len(atoms)))
