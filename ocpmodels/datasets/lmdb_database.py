@@ -125,7 +125,7 @@ class LMDBDatabase(Database):
 
         constraints = row.get("constraints")
         if constraints:
-            dct["constraints"] = constraints
+            dct["constraints"] = [constraint.todict() for constraint in constraints]
 
         # json doesn't like Cell objects, so make it a cell
         dct["cell"] = np.asarray(dct["cell"])
