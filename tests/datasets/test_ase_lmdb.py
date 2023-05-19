@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import numpy as np
 from ase.calculators.singlepoint import SinglePointCalculator
+from ase.constraints import FixAtoms
 
 from ocpmodels.datasets.lmdb_database import LMDBDatabase
 
@@ -29,6 +30,8 @@ test_structures = [
     build.bulk("Cu"),
     build.fcc111("Pt", size=[2, 2, 3], vacuum=8, periodic=True),
 ]
+
+    test_structures[2].set_constraints(FixAtoms(indices=[0,1]))
 
 
 def generate_random_structure():
