@@ -31,8 +31,7 @@ test_structures = [
     build.fcc111("Pt", size=[2, 2, 3], vacuum=8, periodic=True),
 ]
 
-    test_structures[2].set_constraints(FixAtoms(indices=[0,1]))
-
+test_structures[2].set_constraint(FixAtoms(indices=[0,1]))
 
 def generate_random_structure():
 
@@ -134,6 +133,16 @@ def test_aselmdb_randomreads():
 
     cleanup_asedb()
 
+def test_aselmdb_constraintread():
+
+    write_random_atoms()
+
+    with LMDBDatabase(DB_NAME, readonly=True) as db:
+        atoms = db._get_row_by_index(2).toatoms()
+
+    assert type(atoms.constraints[0])==FixAtoms
+
+    cleanup_asedb()
 
 def update_keyvalue_pair():
 
