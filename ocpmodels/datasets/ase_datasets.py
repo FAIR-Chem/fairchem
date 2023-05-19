@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 
 from ocpmodels.common.registry import registry
 from ocpmodels.preprocessing import AtomsToGraphs
-from lmdb_database import LMDBDatabase
+from ocpmodels.datasets.lmdb_database import LMDBDatabase
 
 
 @registry.register_dataset("ase_read")
@@ -187,7 +187,7 @@ class AseDBDataset(Dataset):
         return len(self.id)
 
     def connect_db(self, address, connect_args={}):
-        if address[-5:] == ".lmdb":
+        if address.split('.')[-1] == "lmdb":
             return LMDBDatabase(address, readonly=True, **connect_args)
         else:
             return ase.db.connect(address, **connect_args)

@@ -4,6 +4,7 @@ from ase.io import write
 import os
 
 from ocpmodels.datasets import AseReadDataset, AseDBDataset
+from ocpmodels.datasets.lmdb_database import LMDBDatabase
 
 structures = [
     build.molecule("H2O", vacuum=4),
@@ -49,11 +50,11 @@ def test_ase_db_dataset():
     except FileNotFoundError:
         pass
 
-    database = db.connect(
+    with db.connect(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.db")
-    )
-    for i, structure in enumerate(structures):
-        database.write(structure)
+    ) as database:
+        for i, structure in enumerate(structures):
+            database.write(structure)
 
     dataset = AseDBDataset(
         config={
@@ -81,11 +82,11 @@ def test_ase_lmdb_dataset():
     except FileNotFoundError:
         pass
 
-    database = db.connect(
+    with LMDBDatabase(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb")
-    )
-    for i, structure in enumerate(structures):
-        database.write(structure)
+    ) as database:
+        for i, structure in enumerate(structures):
+            database.write(structure)
 
     dataset = AseDBDataset(
         config={
