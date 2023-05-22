@@ -145,7 +145,7 @@ class LmdbDataset(Dataset):
         else:
             self.env.close()
 
-    def get_target_metadata(self, Nsamples=100):
+    def get_metadata(self, Nsamples=100):
         # This will interogate the classic OCP LMDB format to determine
         # which properties are present and attempt to guess their shapes
         # and whether they are intensive or extensive.

@@ -1,3 +1,4 @@
+import copy
 import warnings
 from pathlib import Path
 
@@ -107,6 +108,9 @@ class AseReadDataset(Dataset):
     def apply_tags(self, atoms):
         atoms.set_tags(np.ones(len(atoms)))
         return atoms
+
+    def get_metadata(self):
+        return {}
 
 
 @registry.register_dataset("ase_db")
@@ -234,6 +238,12 @@ class AseDBDataset(Dataset):
             )
 
         return metadata
+
+    def get_metadata(self):
+        if self.db.metadata == {}:
+            return self.guess_target_metadata()
+        else:
+            return copy.deepcopy(self.db.metadata)
 
 
 #         example_atoms = self.__getatoms__(0)
