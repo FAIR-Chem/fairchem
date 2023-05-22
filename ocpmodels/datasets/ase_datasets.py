@@ -1,13 +1,14 @@
-from pathlib import Path
-import ase
 import warnings
-import numpy as np
+from pathlib import Path
 
+import ase
+import numpy as np
 from torch.utils.data import Dataset
 
 from ocpmodels.common.registry import registry
-from ocpmodels.preprocessing import AtomsToGraphs
 from ocpmodels.datasets.lmdb_database import LMDBDatabase
+from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
+from ocpmodels.preprocessing import AtomsToGraphs
 
 
 @registry.register_dataset("ase_read")
@@ -84,9 +85,9 @@ class AseReadDataset(Dataset):
         except Exception as err:
             warnings.warn(f"{err} occured for: {self.id[idx]}")
 
-        if self.config.get("apply_tags") == False:
+        if self.config.get("apply_tags") is False:
             pass
-        elif self.config.get("apply_tags") == True:
+        elif self.config.get("apply_tags") is True:
             atoms = self.apply_tags(atoms)
         elif sum(atoms.get_tags()) < 1:
             atoms = self.apply_tags(atoms)
@@ -166,13 +167,23 @@ class AseDBDataset(Dataset):
 
         self.transform = transform
 
+    def __getatoms__(self, idx):
+
+        atoms_row = self.db._get_row(self.id[idx])
+        atoms = atoms_row.toatoms()
+
+        if isinstance(atoms_row.data, dict):
+            atoms.info.update(atoms_row.data)
+
+        return atoms
+
     def __getitem__(self, idx):
 
-        atoms = self.db._get_row(self.id[idx]).toatoms()
+        atoms = self.__getatoms__(idx)
 
-        if self.config.get("apply_tags") == False:
+        if self.config.get("apply_tags") is False:
             pass
-        elif self.config.get("apply_tags") == True:
+        elif self.config.get("apply_tags") is True:
             atoms = self.apply_tags(atoms)
         elif sum(atoms.get_tags()) < 1:
             atoms = self.apply_tags(atoms)
@@ -203,3 +214,42 @@ class AseDBDataset(Dataset):
     def apply_tags(self, atoms):
         atoms.set_tags(np.ones(len(atoms)))
         return atoms
+
+    def guess_target_metadata(self, Nsamples=100):
+
+        metadata = {}
+
+        if Nsamples < len(self):
+            metadata["targets"] = guess_property_metadata(
+                [
+                    self.__getatoms__(idx)
+                    for idx in np.random.choice(
+                        self.__len__(), size=(Nsamples,)
+                    )
+                ]
+            )
+        else:
+            metadata["targets"] = guess_property_metadata(
+                [self.__getatoms__(idx) for idx in range(len(self))]
+            )
+
+        return metadata
+
+
+#         example_atoms = self.__getatoms__(0)
+
+#         example_pyg_data = self.db._get_row(self.id[0]).toatoms()
+
+#         props = []
+
+#         # Check for all properties we've used for OCP datasets in the past
+#         for potential_prop in ['y','y_relaxed','stress','stresses','force','forces']:
+#             if hasattr(example_pyg_data, potential_prop):
+#                 props.append(potential_prop)
+
+#         sample_pyg = [self[i] for i in np.random.choice(self.__len__(), size=(Nsamples,))]
+#         atoms_lens = [data.natoms for data in sample_pyg]
+
+#         metadata = {prop:guess_target_metadata(atoms_lens, [getattr(data,prop) for data in sample_pyg])}
+
+#         return metadata

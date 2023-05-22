@@ -144,6 +144,36 @@ class LmdbDataset(Dataset):
         else:
             self.env.close()
 
+    def get_target_metadata(self, Nsamples=100):
+        example_pyg_data = self.__getitem__(0)
+
+        props = []
+
+        # Check for all properties we've used for OCP datasets in the past
+        for potential_prop in [
+            "y",
+            "y_relaxed",
+            "stress",
+            "stresses",
+            "force",
+            "forces",
+        ]:
+            if hasattr(example_pyg_data, potential_prop):
+                props.append(potential_prop)
+
+        sample_pyg = [
+            self[i] for i in np.random.choice(self.__len__(), size=(Nsamples,))
+        ]
+        atoms_lens = [data.natoms for data in sample_pyg]
+
+        metadata = {
+            prop: guess_target_metadata(
+                atoms_lens, [getattr(data, prop) for data in sample_pyg]
+            )
+        }
+
+        return metadata
+
 
 class SinglePointLmdbDataset(LmdbDataset):
     def __init__(self, config, transform=None):
