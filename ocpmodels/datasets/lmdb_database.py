@@ -125,7 +125,9 @@ class LMDBDatabase(Database):
 
         constraints = row.get("constraints")
         if constraints:
-            dct["constraints"] = [constraint.todict() for constraint in constraints]
+            dct["constraints"] = [
+                constraint.todict() for constraint in constraints
+            ]
 
         # json doesn't like Cell objects, so make it a cell
         dct["cell"] = np.asarray(dct["cell"])
@@ -147,7 +149,7 @@ class LMDBDatabase(Database):
         )
         self.ids.append(id)
         self.txn.put(
-            f"nextid".encode("ascii"),
+            "nextid".encode("ascii"),
             zlib.compress(
                 orjson.dumps(nextid, option=orjson.OPT_SERIALIZE_NUMPY)
             ),
@@ -162,7 +164,7 @@ class LMDBDatabase(Database):
 
         self.deleted_ids += ids
         self.txn.put(
-            f"deleted_ids".encode("ascii"),
+            "deleted_ids".encode("ascii"),
             zlib.compress(
                 orjson.dumps(
                     self.deleted_ids, option=orjson.OPT_SERIALIZE_NUMPY

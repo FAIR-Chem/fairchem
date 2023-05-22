@@ -1,17 +1,16 @@
-import pytest
-from ase import build, db
-from ase.io import write
 import os
 from pathlib import Path
+
 import numpy as np
+import pytest
+import tqdm
+from ase import build
+
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms
+from ase.io import write
 
 from ocpmodels.datasets.lmdb_database import LMDBDatabase
-
-import numpy as np
-import tqdm
-from ase.build import fcc111
 
 DB_NAME = "ase_lmdb.lmdb"
 N_WRITES = 100
@@ -31,12 +30,13 @@ test_structures = [
     build.fcc111("Pt", size=[2, 2, 3], vacuum=8, periodic=True),
 ]
 
-test_structures[2].set_constraint(FixAtoms(indices=[0,1]))
+test_structures[2].set_constraint(FixAtoms(indices=[0, 1]))
+
 
 def generate_random_structure():
 
     # Make base slab
-    slab = fcc111("Cu", size=(4, 4, 3), vacuum=10.0)
+    slab = build.fcc111("Cu", size=(4, 4, 3), vacuum=10.0)
 
     # Randomly set some elements
     slab.set_chemical_symbols(
@@ -68,7 +68,7 @@ def generate_random_structure():
 
 def write_random_atoms():
 
-    slab = fcc111("Cu", size=(4, 4, 3), vacuum=10.0)
+    slab = build.fcc111("Cu", size=(4, 4, 3), vacuum=10.0)
     with LMDBDatabase(DB_NAME) as db:
 
         for structure in test_structures:
@@ -130,8 +130,9 @@ def test_aselmdb_randomreads():
         for i in tqdm.tqdm(range(N_READS)):
             total_size = db.count()
             row = db._get_row_by_index(np.random.choice(total_size)).toatoms()
-
+            del row
     cleanup_asedb()
+
 
 def test_aselmdb_constraintread():
 
@@ -140,9 +141,10 @@ def test_aselmdb_constraintread():
     with LMDBDatabase(DB_NAME, readonly=True) as db:
         atoms = db._get_row_by_index(2).toatoms()
 
-    assert type(atoms.constraints[0])==FixAtoms
+    assert type(atoms.constraints[0]) == FixAtoms
 
     cleanup_asedb()
+
 
 def update_keyvalue_pair():
 
@@ -177,6 +179,6 @@ def test_metadata():
         db.metadata = {"test": True}
 
     with LMDBDatabase(DB_NAME, readonly=True) as db:
-        assert db.metadata["test"] == True
+        assert db.metadata["test"] is True
 
     cleanup_asedb()
