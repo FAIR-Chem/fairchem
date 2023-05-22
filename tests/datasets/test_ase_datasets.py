@@ -150,7 +150,7 @@ def test_lmdb_metadata_guesser():
     assert metadata["targets"]["energy"]["type"] == "per-image"
 
     # Confirm forces metadata guessed properly
-    assert metadata["targets"]["forces"]["shape"] == ("N", 3)
+    assert metadata["targets"]["forces"]["shape"] == (3,)
     assert metadata["targets"]["forces"]["extensive"] is True
     assert metadata["targets"]["forces"]["type"] == "per-atom"
 
@@ -203,7 +203,7 @@ def test_ase_metadata_guesser():
     assert metadata["targets"]["energy"]["type"] == "per-image"
 
     # Confirm forces metadata guessed properly
-    assert metadata["targets"]["forces"]["shape"] == ("N", 3)
+    assert metadata["targets"]["forces"]["shape"] == (3,)
     assert metadata["targets"]["forces"]["extensive"] is True
     assert metadata["targets"]["forces"]["type"] == "per-atom"
 

@@ -138,8 +138,7 @@ def guess_target_metadata(atoms_len, target_samples):
                 "comment": "Guess property metadata. It appears to be intensive based on a quick correlation with atom sizes.",
             }
     elif target_per_atom(atoms_len, target_samples):
-        target_shape = list(target_samples[0].shape)
-        target_shape[0] = "N"
+        target_shape = list(target_samples[0].shape)[1:]
         return {
             "shape": tuple(target_shape),
             "type": "per-atom",
