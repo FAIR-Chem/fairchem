@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 import tqdm
 from ase import build
-
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms
 from ase.io import write

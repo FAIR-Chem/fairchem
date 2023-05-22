@@ -142,7 +142,7 @@ def test_lmdb_metadata_guesser():
         }
     )
 
-    metadata = dataset.guess_target_metadata()
+    metadata = dataset.get_metadata()
 
     # Confirm energy metadata guessed properly
     assert metadata["targets"]["energy"]["extensive"] is False
@@ -195,7 +195,7 @@ def test_ase_metadata_guesser():
         }
     )
 
-    metadata = dataset.guess_target_metadata()
+    metadata = dataset.get_metadata()
 
     # Confirm energy metadata guessed properly
     assert metadata["targets"]["energy"]["extensive"] is False
