@@ -144,7 +144,7 @@ class AtomsToGraphs:
         # set the atomic numbers, positions, and cell
         atomic_numbers = torch.Tensor(atoms.get_atomic_numbers())
         positions = torch.Tensor(atoms.get_positions())
-        cell = torch.Tensor(atoms.get_cell()).view(1, 3, 3)
+        cell = torch.Tensor(np.array(atoms.get_cell())).view(1, 3, 3)
         natoms = positions.shape[0]
         # initialized to torch.zeros(natoms) if tags missing.
         # https://wiki.fysik.dtu.dk/ase/_modules/ase/atoms.html#Atoms.get_tags
