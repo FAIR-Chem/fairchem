@@ -87,7 +87,7 @@ class AseReadDataset(Dataset):
             pass
         elif self.config.get("apply_tags") == True:
             atoms = self.apply_tags(atoms)
-        elif sum(atoms.get_tags()) < 1:
+        elif np.all(atoms.get_tags() == 0):
             atoms = self.apply_tags(atoms)
 
         data_object = self.a2g.convert(atoms)
@@ -172,7 +172,7 @@ class AseDBDataset(Dataset):
             pass
         elif self.config.get("apply_tags") == True:
             atoms = self.apply_tags(atoms)
-        elif sum(atoms.get_tags()) < 1:
+        elif np.all(atoms.get_tags() == 0):
             atoms = self.apply_tags(atoms)
 
         data_object = self.a2g.convert(atoms)
