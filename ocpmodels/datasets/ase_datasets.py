@@ -219,7 +219,6 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
                             data_object = self.tranform(data_object)
                         self.data_objects[f"{filename} {i}"] = data_object
 
-
     def get_atoms_object(self, identifier):
         try:
             atoms = ase.io.read(
@@ -281,7 +280,6 @@ class AseDBDataset(AseAtomsDataset):
     def get_atoms_object(self, identifier):
         atoms = self.db._get_row(identifier).toatoms()
         return atoms
-
 
     def connect_db(self, address, connect_args={}):
         db_type = connect_args.get("type", "extract_from_name")
