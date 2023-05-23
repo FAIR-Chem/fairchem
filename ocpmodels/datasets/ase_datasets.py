@@ -137,9 +137,6 @@ class AseReadDataset(AseAtomsDataset):
             raise Exception("The specified src is not a directory")
         self.id = sorted(self.path.glob(f'{self.config["pattern"]}'))
 
-    def __len__(self):
-        return len(self.id)
-
     def get_atoms_object(self, identifier):
         try:
             atoms = ase.io.read(identifier, **self.ase_read_args)
@@ -222,8 +219,6 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
                             data_object = self.tranform(data_object)
                         self.data_objects[f"{filename} {i}"] = data_object
 
-    def __len__(self):
-        return len(self.id)
 
     def get_atoms_object(self, identifier):
         try:
@@ -286,6 +281,7 @@ class AseDBDataset(AseAtomsDataset):
     def get_atoms_object(self, identifier):
         atoms = self.db._get_row(identifier).toatoms()
         return atoms
+
 
     def connect_db(self, address, connect_args={}):
         db_type = connect_args.get("type", "extract_from_name")
