@@ -70,7 +70,7 @@ class TestAtomsToGraphs:
             ase_offsets.append(n[1])
         ase_s_index = np.array(ase_s_index)
         ase_n_index = np.array(ase_n_index)
-        ase_offsets = np.concatenate(np.array(ase_offsets))
+        ase_offsets = np.concatenate(ase_offsets)
         # compute ase distance
         cell = self.atoms.cell
         positions = self.atoms.positions
