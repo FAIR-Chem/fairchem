@@ -70,7 +70,37 @@ def test_ase_db_dataset():
 
     assert len(dataset) == len(structures)
     data = dataset[0]
+    
+    dataset = AseDBDataset(
+        config={
+            "src": os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "asedb.db"
+            ),
+        }
+    )
 
+    database.delete([1])
+    
+    new_structures = [build.molecule("CH3COOH", vacuum=4),
+                      build.bulk("Al"),
+                     ]
+    
+    for i, structure in enumerate(new_structures):
+        database.write(structure)
+        
+    dataset = AseDBDataset(
+        config={
+            "src": os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "asedb.db"
+            ),
+        }
+    )
+        
+    assert len(dataset) == len(structures) + len(new_structures) - 1
+    data = dataset[:]
+        
+        
+    
     os.remove(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.db")
     )
@@ -103,7 +133,7 @@ def test_ase_multiread_dataset():
         }
     )
 
-    assert len(dataset) == 10
+    assert len(dataset) == len(atoms_objects)
     [dataset[:]]
 
     os.remove(
