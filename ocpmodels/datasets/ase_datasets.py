@@ -2,6 +2,7 @@ from pathlib import Path
 import ase
 import warnings
 import numpy as np
+from torch import tensor
 
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -89,6 +90,7 @@ class AseAtomsDataset(Dataset):
 
         # Convert to data object
         data_object = self.a2g.convert(atoms)
+        data_object.sid = tensor([idx])
 
         # Transform data object
         if self.transform is not None:
