@@ -1,9 +1,14 @@
 import pytest
 from ase import build, db
-from ase.io import write
+from ase.io import write, Trajectory
 import os
+import numpy as np
 
-from ocpmodels.datasets import AseReadDataset, AseDBDataset
+from ocpmodels.datasets import (
+    AseReadDataset,
+    AseDBDataset,
+    AseReadMultiStructureDataset,
+)
 
 structures = [
     build.molecule("H2O", vacuum=4),
@@ -68,4 +73,39 @@ def test_ase_db_dataset():
 
     os.remove(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.db")
+    )
+
+
+def test_ase_multiread_dataset():
+    try:
+        os.remove(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "test.traj"
+            )
+        )
+    except FileNotFoundError:
+        pass
+
+    atoms_objects = [build.bulk("Cu", a=a) for a in np.linspace(3.5, 3.7, 10)]
+
+    traj = Trajectory("test.traj", mode="w")
+    for atoms in atoms_objects:
+        traj.write(atoms)
+
+    dataset = AseReadMultiStructureDataset(
+        config={
+            "src": os.path.join(os.path.dirname(os.path.abspath(__file__))),
+            "pattern": "*.traj",
+            "keep_in_memory": True,
+            "atoms_transform_args": {
+                "skip_always": True,
+            },
+        }
+    )
+
+    assert len(dataset) == 10
+    [dataset[:]]
+
+    os.remove(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "test.traj")
     )
