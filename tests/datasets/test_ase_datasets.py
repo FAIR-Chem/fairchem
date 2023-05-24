@@ -117,7 +117,10 @@ def test_ase_multiread_dataset():
 
     atoms_objects = [build.bulk("Cu", a=a) for a in np.linspace(3.5, 3.7, 10)]
 
-    traj = Trajectory("test.traj", mode="w")
+    traj = Trajectory(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "test.traj"),
+        mode="w",
+    )
     for atoms in atoms_objects:
         traj.write(atoms)
 
