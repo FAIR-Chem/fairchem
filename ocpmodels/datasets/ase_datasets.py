@@ -10,6 +10,26 @@ from ocpmodels.common.registry import registry
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
+def apply_one_tags(atoms, skip_if_nonzero=True, skip_always=False):
+    """
+    This function will apply tags of 1 to an ASE atoms object.
+    It is used as an atoms_transform in the datasets contained in this file.
+
+    args:
+        skip_if_nonzero (bool): If at least one atom has a nonzero tag, do not tag any atoms
+
+        skip_always (bool): Do not apply any tags. This arg exists so that this function can be disabled
+                without needing to pass a callable (which is currently difficult to do with main.py)
+    """
+    if skip_always:
+        return atoms
+
+    if np.all(atoms.get_tags() == 0) or not skip_if_nonzero:
+        atoms.set_tags(np.ones(len(atoms)))
+
+    return atoms
+
+
 class AseAtomsDataset(Dataset):
     """
     This is a base Dataset that includes helpful utilities for turning
@@ -18,9 +38,10 @@ class AseAtomsDataset(Dataset):
     Derived classes must add at least two things:
         self.get_atoms_object(): a function that takes an identifier and returns a corresponding atoms object
         self.id: a list of all possible identifiers that can be passed into self.get_atoms_object()
+    Identifiers need not be any particular type.
     """
 
-    def __init__(self, config, transform=None):
+    def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
         self.config = config
 
         a2g_args = config.get("a2g_args", {})
@@ -36,6 +57,7 @@ class AseAtomsDataset(Dataset):
         )
 
         self.transform = transform
+        self.atoms_transform = atoms_transform
 
         if self.config.get("keep_in_memory", False):
             self.data_objects = {}
@@ -47,24 +69,34 @@ class AseAtomsDataset(Dataset):
         return len(self.id)
 
     def __getitem__(self, idx):
+        # Handle slicing
+        if isinstance(idx, slice):
+            return [self[i] for i in range(len(self.id))[idx]]
+
+        # Check if data object is already in memory
         if self.config.get("keep_in_memory", False):
             if self.id[idx] in self.data_objects:
                 return self.data_objects[self.id[idx]]
 
+        # Get atoms object via derived class method
         atoms = self.get_atoms_object(self.id[idx])
 
-        if self.config.get("apply_tags") == False:
-            pass
-        elif self.config.get("apply_tags") == True:
-            atoms = self.apply_tags(atoms)
-        elif np.all(atoms.get_tags() == 0):
-            atoms = self.apply_tags(atoms)
+        # Transform atoms object
+        if self.atoms_transform is not None:
+            atoms = self.atoms_transform(
+                atoms, **self.config.get("atoms_transform_args", {})
+            )
 
+        # Convert to data object
         data_object = self.a2g.convert(atoms)
 
+        # Transform data object
         if self.transform is not None:
-            data_object = self.transform(data_object)
+            data_object = self.transform(
+                data_object, **self.config.get("transform_args", {})
+            )
 
+        # Save in memory, if specified
         if self.config.get("keep_in_memory", False):
             self.data_objects[self.id[idx]] = data_object
 
@@ -77,11 +109,6 @@ class AseAtomsDataset(Dataset):
     def close_db(self):
         pass
         # This method is sometimes called by a trainer
-
-    def apply_tags(self, atoms):
-        atoms.set_tags(np.ones(len(atoms)))
-        return atoms
-        # Derived classes may change this method for more complex tagging behavior
 
 
 @registry.register_dataset("ase_read")
@@ -103,28 +130,34 @@ class AseReadDataset(AseAtomsDataset):
                     ex. "*/POSCAR", "*.cif", "*.xyz"
                     search recursively with two wildcards: "**/POSCAR" or "**/*.cif"
 
-            a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs()
+            a2g_args (dict): Keyword arguments for ocp.preprocessing.AtomsToGraphs()
                     default options will work for most users
 
                     If you are using this for a training dataset, set
                     "r_energy":True and/or "r_forces":True as appropriate
                     In that case, energy/forces must be in the files you read (ex. OUTCAR)
 
-            ase_read_args (dict): additional arguments for ase.io.read()
+            ase_read_args (dict): Keyword arguments for ase.io.read()
 
             keep_in_memory (bool): Store data in memory. This helps avoid random reads if you need
                     to iterate over a dataset many times (e.g. training for many epochs).
                     Not recommended for large datasets.
 
-            apply_tags (bool, optional): Apply a tag of one to each atom, which is
-                    required of some models. A value of None will only tag structures
-                    that are not already tagged.
+            atoms_transform_args (dict): Additional keyword arguments for the atoms_transform callable
 
-        transform (callable, optional): Additional preprocessing function
+            transform_args (dict): Additional keyword arguments for the transform callable
+
+        atoms_transform (callable, optional): Additional preprocessing function applied to the Atoms
+                    object. Useful for applying tags.
+
+        transform (callable, optional): Additional preprocessing function for the Data object
+
     """
 
-    def __init__(self, config, transform=None):
-        super(AseReadDataset, self).__init__(config, transform)
+    def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
+        super(AseReadDataset, self).__init__(
+            config, transform, atoms_transform
+        )
         self.ase_read_args = config.get("ase_read_args", {})
 
         if ":" in self.ase_read_args.get("index", ""):
@@ -142,6 +175,7 @@ class AseReadDataset(AseAtomsDataset):
             atoms = ase.io.read(identifier, **self.ase_read_args)
         except Exception as err:
             warnings.warn(f"{err} occured for: {identifier}")
+            raise err
 
         return atoms
 
@@ -168,14 +202,14 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
                     ex. "*.traj", "*.xyz"
                     search recursively with two wildcards: "**/POSCAR" or "**/*.cif"
 
-            a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs()
+            a2g_args (dict): Keyword arguments for ocp.preprocessing.AtomsToGraphs()
                     default options will work for most users
 
                     If you are using this for a training dataset, set
                     "r_energy":True and/or "r_forces":True as appropriate
                     In that case, energy/forces must be in the files you read (ex. OUTCAR)
 
-            ase_read_args (dict): additional arguments for ase.io.read()
+            ase_read_args (dict): Keyword arguments for ase.io.read()
 
             keep_in_memory (bool): Store data in memory. This helps avoid random reads if you need
                     to iterate over a dataset many times (e.g. training for many epochs).
@@ -183,15 +217,20 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
 
             use_tqdm (bool): Use TQDM progress bar when initializing dataset
 
-            apply_tags (bool, optional): Apply a tag of one to each atom, which is
-                    required of some models. A value of None will only tag structures
-                    that are not already tagged.
+            atoms_transform_args (dict): Additional keyword arguments for the atoms_transform callable
 
-        transform (callable, optional): Additional preprocessing function
+            transform_args (dict): Additional keyword arguments for the transform callable
+
+        atoms_transform (callable, optional): Additional preprocessing function applied to the Atoms
+            object. Useful for applying tags.
+
+        transform (callable, optional): Additional preprocessing function for the Data object
     """
 
-    def __init__(self, config, transform=None):
-        super(AseReadMultiStructureDataset, self).__init__(config, transform)
+    def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
+        super(AseReadMultiStructureDataset, self).__init__(
+            config, transform, atoms_transform
+        )
         self.ase_read_args = self.config.get("ase_read_args", {})
         if not hasattr(self.ase_read_args, "index"):
             self.ase_read_args["index"] = ":"
@@ -214,9 +253,23 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
                     self.id.append(f"{filename} {i}")
 
                     if self.config.get("keep_in_memory", False):
-                        data_object = self.a2g(structure)
-                        if self.transform:
-                            data_object = self.tranform(data_object)
+                        # Transform atoms object
+                        if self.atoms_transform is not None:
+                            atoms = self.atoms_transform(
+                                structure,
+                                **self.config.get("atoms_transform_args", {}),
+                            )
+
+                        # Convert to data object
+                        data_object = self.a2g.convert(atoms)
+
+                        # Transform data object
+                        if self.transform is not None:
+                            data_object = self.transform(
+                                data_object,
+                                **self.config.get("transform_args", {}),
+                            )
+
                         self.data_objects[f"{filename} {i}"] = data_object
 
     def get_atoms_object(self, identifier):
@@ -226,6 +279,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             )[int(identifier.split(" ")[-1])]
         except Exception as err:
             warnings.warn(f"{err} occured for: {identifier}")
+            raise err
 
         return atoms
 
@@ -243,12 +297,12 @@ class AseDBDataset(AseAtomsDataset):
         config (dict):
             src (str): The path to or connection address of your ASE DB
 
-            connect_args (dict): Additional arguments for ase.db.connect()
+            connect_args (dict): Keyword arguments for ase.db.connect()
 
-            select_args (dict): Additional arguments for ase.db.select()
+            select_args (dict): Keyword arguments for ase.db.select()
                     You can use this to query/filter your database
 
-            a2g_args (dict): configuration for ocp.preprocessing.AtomsToGraphs()
+            a2g_args (dict): Keyword arguments for ocp.preprocessing.AtomsToGraphs()
                     default options will work for most users
 
                     If you are using this for a training dataset, set
@@ -259,15 +313,18 @@ class AseDBDataset(AseAtomsDataset):
                     to iterate over a dataset many times (e.g. training for many epochs).
                     Not recommended for large datasets.
 
-            apply_tags (bool, optional): Apply a tag of 1 to each atom, which is
-                    required of some models. A value of None will only tag structures
-                    that are not already tagged.
+            atoms_transform_args (dict): Additional keyword arguments for the atoms_transform callable
 
-        transform (callable, optional): Additional preprocessing function
+            transform_args (dict): Additional keyword arguments for the transform callable
+
+        atoms_transform (callable, optional): Additional preprocessing function applied to the Atoms
+                    object. Useful for applying tags.
+
+        transform (callable, optional): Additional preprocessing function for the Data object
     """
 
-    def __init__(self, config, transform=None):
-        super(AseDBDataset, self).__init__(config, transform)
+    def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
+        super(AseDBDataset, self).__init__(config, transform, atoms_transform)
 
         self.db = self.connect_db(
             self.config["src"], self.config.get("connect_args", {})
@@ -278,8 +335,7 @@ class AseDBDataset(AseAtomsDataset):
         self.id = [row.id for row in self.db.select(**self.select_args)]
 
     def get_atoms_object(self, identifier):
-        atoms = self.db._get_row(identifier).toatoms()
-        return atoms
+        return self.db._get_row(identifier).toatoms()
 
     def connect_db(self, address, connect_args={}):
         db_type = connect_args.get("type", "extract_from_name")
