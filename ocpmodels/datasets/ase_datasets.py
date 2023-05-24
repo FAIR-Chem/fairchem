@@ -1,6 +1,8 @@
-from pathlib import Path
-import ase
+import copy
 import warnings
+from pathlib import Path
+
+import ase
 import numpy as np
 from torch import tensor
 
@@ -8,6 +10,8 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from ocpmodels.common.registry import registry
+from ocpmodels.datasets.lmdb_database import LMDBDatabase
+from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -284,6 +288,9 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             raise err
 
         return atoms
+
+    def get_metadata(self):
+        return {}
 
 
 @registry.register_dataset("ase_db")
