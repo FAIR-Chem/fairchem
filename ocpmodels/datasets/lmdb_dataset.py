@@ -22,6 +22,7 @@ from torch_geometric.data import Batch
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import pyg2_data_transform
+from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
 
 
 @registry.register_dataset("lmdb")
@@ -143,6 +144,44 @@ class LmdbDataset(Dataset):
                 env.close()
         else:
             self.env.close()
+
+    def get_metadata(self, Nsamples=100):
+        # This will interogate the classic OCP LMDB format to determine
+        # which properties are present and attempt to guess their shapes
+        # and whether they are intensive or extensive.
+
+        # Grab an example data point
+        example_pyg_data = self.__getitem__(0)
+
+        # Check for all properties we've used for OCP datasets in the past
+        props = []
+        for potential_prop in [
+            "y",
+            "y_relaxed",
+            "stress",
+            "stresses",
+            "force",
+            "forces",
+        ]:
+            if hasattr(example_pyg_data, potential_prop):
+                props.append(potential_prop)
+
+        # Get a bunch of random data samples and the number of atoms
+        sample_pyg = [
+            self[i] for i in np.random.choice(self.__len__(), size=(Nsamples,))
+        ]
+        atoms_lens = [data.natoms for data in sample_pyg]
+
+        # Guess the metadata for targets for each found property
+        metadata = {}
+        metadata["targets"] = {
+            prop: guess_property_metadata(
+                atoms_lens, [getattr(data, prop) for data in sample_pyg]
+            )
+            for prop in props
+        }
+
+        return metadata
 
 
 class SinglePointLmdbDataset(LmdbDataset):
