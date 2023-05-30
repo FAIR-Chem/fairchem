@@ -36,7 +36,7 @@ from torch_geometric.utils import remove_self_loops
 from torch_scatter import segment_coo, segment_csr, scatter
 
 import ocpmodels
-from ocpmodels.common.flags import flags
+from ocpmodels.common.flags import flags, Flags
 from ocpmodels.common.registry import registry
 import ocpmodels.common.dist_utils as dist_utils
 
@@ -973,7 +973,7 @@ def load_config(config_str):
     return config
 
 
-def build_config(args, args_override, silent=False):
+def build_config(args, args_override=[], silent=False):
     config, overrides, loaded_config = {}, {}, {}
 
     if hasattr(args, "config_yml") and args.config_yml:
@@ -1036,7 +1036,7 @@ def build_config(args, args_override, silent=False):
             loaded_config["checkpoint"] = str(latest_ckpt)
             loaded_config["job_ids"] = loaded_config["job_ids"] + f", {JOB_ID}"
             loaded_config["job_id"] = JOB_ID
-            loaded_config["local_rank"] = config["local_rank"]
+            loaded_config["local_rank"] = config.get("local_rank", 0)
         else:
             # restarting from scratch
             keep_keys = [
@@ -1054,6 +1054,7 @@ def build_config(args, args_override, silent=False):
                 "test_ri",
                 "use_pbc",
                 "wandb_project",
+                "grad_fine_tune",
             ]
             loaded_config = {
                 k: loaded_config[k] for k in keep_keys if k in loaded_config
@@ -1691,6 +1692,34 @@ def make_script_trainer(str_args=[], overrides={}, silent=False, mode="train"):
     sys.argv = argv
 
     return trainer
+
+
+def make_trainer_from_dir(path, mode, overrides={}):
+    path = resolve(path)
+    assert path.exists()
+    assert mode in {
+        "continue",
+        "restart",
+    }, f"Invalid mode: {mode}. Expected 'continue' or 'restart'."
+    assert isinstance(
+        overrides, dict
+    ), f"Overrides must be a dict. Received {overrides}"
+
+    argv = deepcopy(sys.argv)
+    sys.argv[1:] = []
+    default_args = Flags().get_parser().parse_args()
+    sys.argv = argv
+
+    if mode == "continue":
+        default_args.continue_from_dir = str(path)
+    else:
+        default_args.restart_from_dir = str(path)
+
+    config = build_config(default_args)
+    config = merge_dicts(config, overrides)
+
+    setup_imports()
+    return registry.get_trainer_class(config["trainer"])(**config)
 
 
 def get_commit_hash():

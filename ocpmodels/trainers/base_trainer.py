@@ -90,7 +90,7 @@ class BaseTrainer(ABC):
         )
 
         if torch.cuda.is_available() and not self.cpu:
-            self.device = torch.device(f"cuda:{self.config['local_rank']}")
+            self.device = torch.device("cuda:0")
         else:
             self.device = torch.device("cpu")
             self.cpu = True  # handle case when `--cpu` isn't specified
@@ -641,7 +641,7 @@ class BaseTrainer(ABC):
             model_regresses_forces=self.config["model"].get("regress_forces", ""),
         )
         metrics = {}
-        desc = "device {}".format(dist_utils.get_rank())
+        desc = "device[rank={}]".format(dist_utils.get_rank())
 
         loader = self.loaders[split]
         times = Times(gpu=True)
@@ -668,9 +668,11 @@ class BaseTrainer(ABC):
                 for k, v in loss.items():
                     metrics = evaluator.update(k, v.item(), metrics)
 
-        mean_val_times, std_val_times = times.prepare_for_logging(map_funcs={
-            "val_forward": lambda x: x / self.config["optim"]["batch_size"],
-        })
+        mean_val_times, std_val_times = times.prepare_for_logging(
+            map_funcs={
+                "val_forward": lambda x: x / self.config["optim"]["batch_size"],
+            }
+        )
 
         aggregated_metrics = {}
         for k in metrics:
@@ -750,7 +752,9 @@ class BaseTrainer(ABC):
                 self.model.parameters(),
                 max_norm=self.clip_grad_norm,
             )
-            if self.logger is not None:
+            if self.logger is not None and (
+                self.step % self.config.get("log_train_every", 1) == 0
+            ):
                 self.logger.log({"grad_norm": grad_norm}, step=self.step, split="train")
         if self.scaler:
             self.scaler.step(self.optimizer)
@@ -1038,9 +1042,12 @@ class BaseTrainer(ABC):
     def measure_inference_time(self, loops=1):
         # keep grads if the model computes forces from energy
         enabled = torch.is_grad_enabled()
-        torch.set_grad_enabled(self.model.module.regress_forces == "from_energy")
+        torch.set_grad_enabled(
+            self.config["model"].get("regress_forces") == "from_energy"
+        )
         self.model.eval()
-        timer = Times(gpu=True)
+        timer = Times(gpu=torch.cuda.is_available())
+
 
         # average inference over multiple loops
         for _ in range(loops):

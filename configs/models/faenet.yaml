@@ -45,9 +45,10 @@ default:
     lr_initial: 0.001
     warmup_factor: 0.2
     max_epochs: 20
-    energy_grad_coefficient: 10
+    energy_grad_coefficient: 5
     force_coefficient: 30
     energy_coefficient: 1
+    epoch_fine_tune: 4
 
   frame_averaging: False # 2D, 3D, da, False
   fa_frames: False # can be {None, full, random, det, e3, e3-random, e3-det}
@@ -113,8 +114,6 @@ s2ef:
       num_gaussians: 200
       num_filters: 256
       regress_forces: "direct"
-      force_coefficient: 30
-      energy_grad_coefficient: 10
     optim:
       batch_size: 96
       eval_batch_size: 96

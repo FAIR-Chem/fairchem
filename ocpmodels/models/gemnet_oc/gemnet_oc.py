@@ -1286,6 +1286,8 @@ class GemNetOC(BaseModel):
         x_E = self.out_mlp_E(torch.cat(xs_E, dim=-1))
         if self.direct_forces:
             x_F = self.out_mlp_F(torch.cat(xs_F, dim=-1))
+
+        F_st = None
         with torch.cuda.amp.autocast(False):
             E_t = self.out_energy(x_E.float())
             if self.direct_forces:
@@ -1313,7 +1315,6 @@ class GemNetOC(BaseModel):
 
     @conditional_grad(torch.enable_grad())
     def forces_forward(self, preds):
-
         idx_t = preds["idx_t"]
         main_graph = preds["main_graph"]
         num_atoms = preds["num_atoms"]

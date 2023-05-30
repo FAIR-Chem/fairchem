@@ -1,27 +1,52 @@
 job:
   mem: 48GB
   cpus: 4
-  gres: gpu:rtx8000:2
+  gres: gpu:rtx8000:1
   partition: long
-  time: 42:00:00
+  time: 20:00:00
 
 default:
   test_ri: True
+  cp_data_to_tmp: true
   mode: train
-  wandb_tags: 'baseline-schnet'
+  wandb_tags: 'rebutall-time'
+  graph_rewiring: ""
 
 runs:
   - config: schnet-s2ef-2M
-    note: 'Baseline Schnet S2EF 2 GPU'
+    note: 'S2EF 1 GPU smaller batch'
     optim:
-      max_epochs: 15
-      force_coefficient: 50
-      batch_size: 96
-      eval_batch_size: 96
+      max_epochs: 1
+      force_coefficient: 100
+      batch_size: 60
+      eval_batch_size: 60
   - config: schnet-is2re-2M
-    note: 'Baseline Schnet IS2RE 2 GPU'
+    note: 'Schnet IS2RE 1 GPU normal batch'
     optim:
-      max_epochs: 15
-      force_coefficient: 50
-      batch_size: 128
-      eval_batch_size: 128
+      max_epochs: 1
+      force_coefficient: 100
+      batch_size: 32
+      eval_batch_size: 32
+  - config: dpp-s2ef-2M
+    note: 'Time Dpp 1 GPU'
+    test_ri: False
+    optim:
+      max_epochs: 1
+      batch_size: 4
+      eval_batch_size: 4
+  - config: forcenet-s2ef-2M
+    note: 'Time Dpp 1 GPU'
+    test_ri: False
+    optim:
+      max_epochs: 1
+      batch_size: 8
+      eval_batch_size: 8
+  - config: forcenet-s2ef-2M
+    note: 'Sym ForceNet'
+    optim:
+      max_epochs: 5
+  - config: forcenet-s2ef-2M
+    note: 'Sym ForceNet DA'
+    optim:
+      max_epochs: 5
+    frame_averaging: DA

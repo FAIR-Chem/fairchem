@@ -1,0 +1,65 @@
+job:
+  mem: 48GB
+  cpus: 3
+  gres: gpu:rtx8000:4
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-2
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: ""
+  model:
+    phys_embeds: False
+    tag_hidden_channels: 0
+    pg_hidden_channels: 0  # shall have been 32
+    num_blocks: 4
+  optim:
+    max_epochs: 30
+    es_patience: 5
+  cp_data_to_tmpdir: false
+  inference_time_loops: 1
+
+runs:
+  # ----------------------
+  # -----  Gemnet-T  -----
+  # ----------------------
+
+  - config: gemnet_t-is2re-all
+    note: 'Gemnet-T IS2RE baseline 4 GPUs'
+    optim:
+      batch_size: 12
+      eval_batch_size: 12
+
+  - config: gemnet_t-is2re-all
+    note: 'Gemnet-T IS2RE PhAST 4 GPUs'
+    graph_rewiring: remove-tag-0
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+    optim:
+      batch_size: 32
+      eval_batch_size: 32
+
+  # -----------------------
+  # -----  Gemnet-OC  -----
+  # -----------------------
+
+  - config: gemnet_oc-is2re-all
+    note: 'Gemnet-OC IS2RE baseline 4 GPUs'
+    optim:
+      batch_size: 6
+      eval_batch_size: 6
+
+
+  - config: gemnet_oc-is2re-all
+    note: 'Gemnet-OC IS2RE PhAST 4 GPUs'
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+    graph_rewiring: remove-tag-0
+    optim:
+      batch_size: 32
+      eval_batch_size: 32

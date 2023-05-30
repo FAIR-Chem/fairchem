@@ -22,6 +22,7 @@ default:
     num_workers: 4
     lr_gamma: 0.1
     warmup_factor: 0.2
+    epoch_fine_tune: 5
 
 # -------------------
 # -----  IS2RE  -----
@@ -90,6 +91,20 @@ s2ef:
       num_filters: 256
       num_interactions: 5
       num_gaussians: 200
+      force_decoder_type: "mlp" # can be {"" or "simple"} | only used if regress_forces is True
+      force_decoder_model_config:
+        simple:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        mlp:
+          hidden_channels: 256
+          norm: batch1d # batch1d, layer or null
+        res:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        res_updown:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
     optim:
       # *** Important note ***
       #   The total number of gpus used for this run was 1.
@@ -105,8 +120,11 @@ s2ef:
         - 83333
         - 104166
       warmup_steps: 31250
-      max_epochs: 15
-      force_coefficient: 100
+      max_epochs: 8
+      force_coefficient: 50
+      energy_coefficient: 1
+      energy_grad_coefficient: 5
+
 
   200k:
     model:

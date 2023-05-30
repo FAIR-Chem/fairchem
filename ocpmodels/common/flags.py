@@ -242,6 +242,12 @@ class Flags:
             ],
         )
         self.parser.add_argument(
+            "--grad_fine_tune",
+            type=bool,
+            default=False,
+            help="Fine tune on gradient",
+        )
+        self.parser.add_argument(
             "--eval_on_test",
             type=bool,
             help="Evaluate on test set",

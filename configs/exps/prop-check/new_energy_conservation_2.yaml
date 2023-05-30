@@ -1,0 +1,104 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  mode: train
+  graph_rewiring: remove-tag-0  
+  model:
+    mp_type: updownscale_base
+    edge_embed_type: all_rij
+    phys_embeds: True
+    tag_hidden_channels: 32
+    pg_hidden_channels: 64
+    energy_head: weighted-av-final-embeds
+    complex_mp: True
+    graph_norm: True
+    hidden_channels: 256
+    num_filters: 480
+    num_gaussians: 136
+    num_interactions: 7
+    second_layer_MLP: False
+    max_num_neighbors: 30
+    skip_co: concat
+  optim:
+    max_epochs: 6
+    batch_size: 120
+    eval_batch_size: 120
+    lr_initial: 0.00025
+
+runs:
+  - config: faenet-s2ef-2M
+    note: 'Energy + Force (=Direct)'q
+    model: 
+      regress_forces: direct
+    optim:
+      force_coefficient: 30
+      energy_coefficient: 1
+
+  - config: faenet-s2ef-2M
+    note: 'Direct_with_grad (all 3)'
+    model: 
+      regress_forces: direct_with_gradient_target
+    optim:
+      force_coefficient: 30
+      energy_coefficient: 1
+      energy_grad_coefficient: 5
+
+  - config: faenet-s2ef-2M
+    note: 'From-energy'
+    model: 
+      regress_forces: from_energy
+    optim:
+      force_coefficient: 30
+      energy_coefficient: 1
+      energy_grad_coefficient: 5
+
+  - config: faenet-s2ef-2M
+    note: 'Energy + EC'
+    model: 
+      regress_forces: direct_with_gradient_target
+    optim:
+      force_coefficient: 0
+      energy_coefficient: 1
+      energy_grad_coefficient: 5
+
+  - config: faenet-s2ef-2M
+    note: 'All 3 -- bigger coeff'
+    model: 
+      regress_forces: direct_with_gradient_target
+    optim:
+      force_coefficient: 30
+      energy_coefficient: 1
+      energy_grad_coefficient: 20
+
+  - config: faenet-s2ef-2M
+    note: 'All 3 -- much bigger coeff'
+    model: 
+      regress_forces: direct_with_gradient_target
+    optim:
+      force_coefficient: 30
+      energy_coefficient: 1
+      energy_grad_coefficient: 50
+
+  - config: faenet-s2ef-2M
+    note: 'Force + EC'
+    model: 
+      regress_forces: direct_with_gradient_target
+    optim:
+      force_coefficient: 30
+      energy_coefficient: 0
+      energy_grad_coefficient: 5
+
+  - config: faenet-s2ef-2M
+    note: 'Force alone'
+    model: 
+      regress_forces: direct_with_gradient_target
+    optim:
+      force_coefficient: 30
+      energy_coefficient: 0
+      energy_grad_coefficient: 0

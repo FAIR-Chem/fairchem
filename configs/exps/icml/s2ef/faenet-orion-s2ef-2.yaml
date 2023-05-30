@@ -1,12 +1,13 @@
-# more epochs, larger batch size, explore faenet: larger model & skip-co & mlp_rij
 job:
-  mem: 32GB
+  mem: 48GB
   cpus: 4
-  gres: gpu:rtx8000:1
+  gres: gpu:1
   partition: long
+  code_loc: /home/mila/a/alexandre.duval/ocp/ocp-test/ocp
+  env: ocp-a100
 
 default:
-  wandb_project: ocp-3
+  wandb_project: ocp-4
   config: faenet-s2ef-2M
   mode: train
   test_ri: true
@@ -16,13 +17,12 @@ default:
   model:
     edge_embed_type: all_rij
     graph_norm: True
+    energy_head: weighted-av-final-embeds
   frame_averaging: 2D
   fa_frames: random
   optim:
     scheduler: LinearWarmupCosineAnnealingLR
-    force_coefficient: 100
     energy_coefficient: 1
-    energy_grad_coefficient: 5
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm, complex_mp, att_heads, second_layer_MLP, skip_co
     optim: lr_initial, warmup_steps
@@ -33,20 +33,18 @@ default:
 
 orion:
   # Remember to change the experiment name if you change anything in the search space
-  n_jobs: 40
+  n_jobs: 50
 
-  unique_exp_name: faenet-s2ef-2M-v2
+  unique_exp_name: faenet-s2ef-2M-rebuttal
 
   space:
-    model/att_heads: choices([1,2,3,4])
     model/complex_mp: choices([True, False])
-    model/cutoff: choices([4.0, 6.0, 8.0])
-    model/energy_head: choices(["weighted-av-final-embeds"])
-    model/graph_norm: choices([True, False])
-    model/hidden_channels: uniform(6, 21, discrete=True)
-    model/mp_type: choices(["simple", "base", "updownscale", "updownscale_base", "base_with_att", "updown_local_env"])
+    model/fa_frames: choices(["random", "se3-random"])
+    model/cutoff: choices([5.0, 6.0, 7.0])
+    model/hidden_channels: uniform(7, 19, discrete=True)
+    model/mp_type: choices(["base", "updownscale", "updownscale_base"])
     model/num_filters: uniform(3, 18, discrete=True)
-    model/num_gaussians: uniform(40, 160, discrete=True)
+    model/num_gaussians: uniform(40, 140, discrete=True)
     model/num_interactions: uniform(3, 7, discrete=True)
     model/pg_hidden_channels: uniform(0, 3, discrete=True)
     model/phys_embeds: choices([True, False])
@@ -55,8 +53,12 @@ orion:
     model/skip_co: choices(["concat", False])
     model/tag_hidden_channels: uniform(0, 2, discrete=True)
     model/max_num_neighbors: choices([30,40,50])
-    optim/lr_initial: loguniform(9e-5, 5e-4, precision=2)
-    optim/max_epochs: fidelity(8, 22, base=6)
+    model/force_decoder_type: choices(["mlp", "res", "res_updown", "simple"])
+    model/force_decoder_model_config/mlp/hidden_channels: uniform(6, 12, discrete=True)
+    optim/lr_initial: loguniform(1e-4, 5e-4, precision=2)
+    optim/force_coefficient: choices([30, 50, 75])
+    optim/energy_grad_coef: choices([1, 5, 10])
+    optim/max_epochs: fidelity(8, 25, base=6)
 
   algorithms:
     asha:

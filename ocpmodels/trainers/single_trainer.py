@@ -229,6 +229,23 @@ class SingleTrainer(BaseTrainer):
             print(f"\nEvaluating every {eval_every} steps\n")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
+
+            if self.config["grad_fine_tune"]:
+                if epoch_int < self.config["optim"].get("epoch_fine_tune", 1):
+                    self.config["model"]["regress_forces"] = "direct"
+                elif self.config["model"].get("exact_ec_pred", False):
+                    self.config["model"][
+                        "regress_forces"
+                    ] = "from_energy"
+#                     self.config["optim"]["force_coefficient"] = 0
+                else:
+                    self.config["model"][
+                        "regress_forces"
+                    ] = "direct_with_gradient_target"
+                    self.config["optim"]["force_coefficient"] = 0
+                    # self.config["optim"]["energy_coefficient"] = 0
+                    # print('Fine tuning gradients: change energy/force coefficients')
+
             start_time = time.time()
             if not self.silent:
                 print()
@@ -412,6 +429,10 @@ class SingleTrainer(BaseTrainer):
 
         # End of training.
         if not is_test_env:
+            if self.config["model"].get("exact_ec_pred", False):
+                self.config["model"][
+                    "regress_forces"
+                ] = "from_energy"
             return self.end_of_training(
                 epoch_int, debug_batches, model_run_time, epoch_times
             )
@@ -485,7 +506,11 @@ class SingleTrainer(BaseTrainer):
                     batch_list[0].cell = batch_list[0].fa_cell[i]
 
                 # forward pass
-                preds = self.model(deepcopy(batch_list), mode=mode)
+                preds = self.model(
+                    deepcopy(batch_list),
+                    mode=mode,
+                    regress_forces=self.config["model"]["regress_forces"],
+                )
                 e_all.append(preds["energy"])
 
                 fa_rot = None
@@ -627,9 +652,15 @@ class SingleTrainer(BaseTrainer):
                 loss["total_loss"].append(force_mult * loss["force_loss"])
                 if "forces_grad_target" in preds:
                     grad_target = preds["forces_grad_target"]
-                    loss["energy_grad_loss"] = self.loss_fn["force"](
-                        preds["forces"][mask], grad_target[mask]
-                    )
+                    if self.config["model"].get("cosine_sim", False):
+                        cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
+                        loss["energy_grad_loss"] = -torch.mean(
+                            cos(preds["forces"][mask], grad_target[mask])
+                        )
+                    else:
+                        loss["energy_grad_loss"] = self.loss_fn["force"](
+                            preds["forces"][mask], grad_target[mask]
+                        )
                     if (
                         self.model.module.regress_forces
                         == "direct_with_gradient_target"
