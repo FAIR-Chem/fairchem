@@ -21,7 +21,7 @@ def apply_mult_factor(orion_hparams, mult_factor_dict, sep="."):
         "model/hidden_channels": 4,
         "model/num_layers": 4,
         "optim/batch_size": 4,
-        "optim/initial_lr": 0.001,
+        "optim/lr_initial": 0.001,
         "frame_averaging": "",
     }
 
@@ -32,7 +32,7 @@ def apply_mult_factor(orion_hparams, mult_factor_dict, sep="."):
         "model/hidden_channels": 128,
         "model/num_layers": 4,
         "optim/batch_size": 128,
-        "optim/initial_lr": 0.001,
+        "optim/lr_initial": 0.001,
         "frame_averaging": ""
     }
 
