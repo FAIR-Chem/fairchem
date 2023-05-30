@@ -1,8 +1,9 @@
-import ase.io
 import os
+
+import ase.io
 import matplotlib
-from matplotlib import pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 def v0_check(full_traj, initial):
@@ -19,6 +20,7 @@ def v0_check(full_traj, initial):
     initial_full = full_traj[0]
     error = np.mean(np.abs(initial_full.positions - initial.positions))
     return error
+
 
 def restart_bug_check(full_traj):
     """
@@ -41,7 +43,6 @@ def restart_bug_check(full_traj):
     return False
 
 
-
 def plot_traj(traj, fname):
     """
     Plots the energy profile of a given trajectory
@@ -50,13 +51,14 @@ def plot_traj(traj, fname):
     traj (list of Atoms objects): Full trajectory to be plotted
     fname (str): Filename to be used as title and save figure as.
     """
-    traj_energies = [image.get_potential_energy(apply_constraint=False) for
-            image in traj]
+    traj_energies = [
+        image.get_potential_energy(apply_constraint=False) for image in traj
+    ]
     steps = range(len(traj))
     plt.figure(figsize=(8, 8))
     plt.plot(steps, traj_energies)
-    plt.xlabel('Step')
-    plt.ylabel('Energy')
+    plt.xlabel("Step")
+    plt.ylabel("Energy")
     plt.title(fname)
     os.makedirs("./plots", exist_ok=True)
     plt.savefig(f"./plots/{fname}.png", dpi=300)
