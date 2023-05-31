@@ -115,6 +115,32 @@ class AseAtomsDataset(Dataset):
         pass
         # This method is sometimes called by a trainer
 
+    def guess_target_metadata(self, Nsamples=100):
+
+        metadata = {}
+
+        if Nsamples < len(self):
+            metadata["targets"] = guess_property_metadata(
+                [
+                    self.get_atoms_object(self.id[idx])
+                    for idx in np.random.choice(
+                        self.__len__(), size=(Nsamples,)
+                    )
+                ]
+            )
+        else:
+            metadata["targets"] = guess_property_metadata(
+                [
+                    self.get_atoms_object(self.id[idx])
+                    for idx in range(len(self))
+                ]
+            )
+
+        return metadata
+
+    def get_metadata(self):
+        return self.guess_target_metadata()
+
 
 @registry.register_dataset("ase_read")
 class AseReadDataset(AseAtomsDataset):
@@ -343,7 +369,13 @@ class AseDBDataset(AseAtomsDataset):
         self.id = [row.id for row in self.db.select(**self.select_args)]
 
     def get_atoms_object(self, identifier):
-        return self.db._get_row(identifier).toatoms()
+        atoms_row = self.db._get_row(identifier)
+        atoms = atoms_row.toatoms()
+
+        if isinstance(atoms_row.data, dict):
+            atoms.info.update(atoms_row.data)
+
+        return atoms
 
     def connect_db(self, address, connect_args={}):
         db_type = connect_args.get("type", "extract_from_name")
