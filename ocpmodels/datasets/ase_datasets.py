@@ -5,7 +5,6 @@ from pathlib import Path
 import ase
 import numpy as np
 from torch import tensor
-
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
@@ -351,8 +350,6 @@ class AseDBDataset(AseAtomsDataset):
         if db_type == "lmdb" or (
             db_type == "extract_from_name" and address.split(".")[-1] == "lmdb"
         ):
-            from ocpmodels.datasets.lmdb_database import LMDBDatabase
-
             return LMDBDatabase(address, readonly=True, **connect_args)
         else:
             return ase.db.connect(address, **connect_args)
@@ -360,3 +357,9 @@ class AseDBDataset(AseAtomsDataset):
     def close_db(self):
         if hasattr(self.db, "close"):
             self.db.close()
+
+    def get_metadata(self):
+        if self.db.metadata == {}:
+            return self.guess_target_metadata()
+        else:
+            return copy.deepcopy(self.db.metadata)
