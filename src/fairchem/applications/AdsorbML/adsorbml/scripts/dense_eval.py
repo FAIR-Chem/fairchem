@@ -196,17 +196,6 @@ def filter_ml_data(ml_data, dft_data):
     constraint checks, set energies to an arbitrarily high value to ensure
     a failure case in evaluation.
     """
-    new_ml_data = defaultdict(dict)
-    for system in ml_data:
-        for config in ml_data[system]:
-            if "rand" in config:
-                newconfig = "rand" + config.split("randpl")[1]
-                new_ml_data[system][newconfig] = ml_data[system][config]
-            else:
-                newconfig = "heur" + config.split("adslab")[1]
-                new_ml_data[system][newconfig] = ml_data[system][config]
-
-    ml_data = new_ml_data
     # set missing systems to high energy
     # set missing systems to 0 DFT compute
     for system in dft_data:
