@@ -3,7 +3,7 @@ import os
 import pickle
 from collections import defaultdict
 
-from ocdata.vasp import write_vasp_input_files
+from ocdata.utils.vasp import write_vasp_input_files
 from tqdm import tqdm
 
 """
