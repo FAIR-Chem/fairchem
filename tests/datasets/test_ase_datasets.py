@@ -1,17 +1,17 @@
 import os
 
+import numpy as np
 import pytest
 from ase import build, db
-from ase.io import write, Trajectory
-import os
-import numpy as np
+from ase.calculators.singlepoint import SinglePointCalculator
+from ase.io import Trajectory, write
 
 from ocpmodels.datasets import (
-    AseReadDataset,
     AseDBDataset,
+    AseReadDataset,
     AseReadMultiStructureDataset,
 )
-
+from ocpmodels.datasets.lmdb_database import LMDBDatabase
 
 structures = [
     build.molecule("H2O", vacuum=4),
@@ -251,6 +251,7 @@ def test_ase_metadata_guesser():
 
     assert len(dataset) == len(structures) + len(new_structures) - 1
     data = dataset[:]
+    assert data
 
     os.remove(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.db")
