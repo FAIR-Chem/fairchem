@@ -1,9 +1,9 @@
-from pathlib import Path
 import ase
 import warnings
 import numpy as np
-from torch import tensor
 
+from pathlib import Path
+from torch import tensor
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
@@ -15,6 +15,11 @@ def apply_one_tags(atoms, skip_if_nonzero=True, skip_always=False):
     """
     This function will apply tags of 1 to an ASE atoms object.
     It is used as an atoms_transform in the datasets contained in this file.
+
+    Certain models will treat atoms differently depending on their tags.
+    For example, GemNet-OC by default will only compute triplet and quadruplet interactions
+    for atoms with non-zero tags. This model throws an error if there are no tagged atoms.
+    For this reason, the default behavior is to tag atoms in structures with no tags.
 
     args:
         skip_if_nonzero (bool): If at least one atom has a nonzero tag, do not tag any atoms
@@ -46,16 +51,7 @@ class AseAtomsDataset(Dataset):
         self.config = config
 
         a2g_args = config.get("a2g_args", {})
-        self.a2g = AtomsToGraphs(
-            max_neigh=a2g_args.get("max_neigh", 1000),
-            radius=a2g_args.get("radius", 8),
-            r_edges=a2g_args.get("r_edges", False),
-            r_energy=a2g_args.get("r_energy", False),
-            r_forces=a2g_args.get("r_forces", False),
-            r_distances=a2g_args.get("r_distances", False),
-            r_fixed=a2g_args.get("r_fixed", True),
-            r_pbc=a2g_args.get("r_pbc", True),
-        )
+        self.a2g = AtomsToGraphs(**a2g_args)
 
         self.transform = transform
         self.atoms_transform = atoms_transform
@@ -91,6 +87,7 @@ class AseAtomsDataset(Dataset):
         # Convert to data object
         data_object = self.a2g.convert(atoms)
         data_object.sid = tensor([idx])
+        data_object.pbc = tensor(atoms.pbc)
 
         # Transform data object
         if self.transform is not None:
@@ -105,8 +102,9 @@ class AseAtomsDataset(Dataset):
         return data_object
 
     def get_atoms_object(self, identifier):
-        raise NotImplementedError
-        # Derived classes should implement this method
+        raise NotImplementedError(
+            "Returns an ASE atoms object. Derived classes should implement this funciton."
+        )
 
     def close_db(self):
         pass
@@ -132,7 +130,7 @@ class AseReadDataset(AseAtomsDataset):
                     ex. "*/POSCAR", "*.cif", "*.xyz"
                     search recursively with two wildcards: "**/POSCAR" or "**/*.cif"
 
-            a2g_args (dict): Keyword arguments for ocp.preprocessing.AtomsToGraphs()
+            a2g_args (dict): Keyword arguments for ocpmodels.preprocessing.AtomsToGraphs()
                     default options will work for most users
 
                     If you are using this for a training dataset, set
@@ -150,7 +148,7 @@ class AseReadDataset(AseAtomsDataset):
             transform_args (dict): Additional keyword arguments for the transform callable
 
         atoms_transform (callable, optional): Additional preprocessing function applied to the Atoms
-                    object. Useful for applying tags.
+                    object. Useful for applying tags, for example.
 
         transform (callable, optional): Additional preprocessing function for the Data object
 
@@ -170,7 +168,7 @@ class AseReadDataset(AseAtomsDataset):
         self.path = Path(self.config["src"])
         if self.path.is_file():
             raise Exception("The specified src is not a directory")
-        self.id = sorted(self.path.glob(f'{self.config["pattern"]}'))
+        self.id = list(self.path.glob(f'{self.config["pattern"]}'))
 
     def get_atoms_object(self, identifier):
         try:
@@ -204,7 +202,15 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
                     ex. "*.traj", "*.xyz"
                     search recursively with two wildcards: "**/POSCAR" or "**/*.cif"
 
-            a2g_args (dict): Keyword arguments for ocp.preprocessing.AtomsToGraphs()
+            index_file (str): Filepath to an indexing file, which contains each filename
+                    and the number of structures contained in each file. For instance:
+
+                    /path/to/relaxation1.traj 200
+                    /path/to/relaxation2.traj 150
+
+                    This will overrule the src and pattern that you specify!
+
+            a2g_args (dict): Keyword arguments for ocpmodels.preprocessing.AtomsToGraphs()
                     default options will work for most users
 
                     If you are using this for a training dataset, set
@@ -224,7 +230,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             transform_args (dict): Additional keyword arguments for the transform callable
 
         atoms_transform (callable, optional): Additional preprocessing function applied to the Atoms
-            object. Useful for applying tags.
+            object. Useful for applying tags, for example.
 
         transform (callable, optional): Additional preprocessing function for the Data object
     """
@@ -237,15 +243,28 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
         if not hasattr(self.ase_read_args, "index"):
             self.ase_read_args["index"] = ":"
 
+        if config.get("index_file", None) is not None:
+            f = open(config["index_file"], "r")
+            index = f.readlines()
+
+            self.id = []
+            for line in index:
+                filename = line.split(" ")[0]
+                for i in range(int(line.split(" ")[1])):
+                    self.id.append(f"{filename} {i}")
+
+            return
+
         self.path = Path(self.config["src"])
         if self.path.is_file():
             raise Exception("The specified src is not a directory")
-        self.filenames = sorted(self.path.glob(f'{self.config["pattern"]}'))
+        filenames = list(self.path.glob(f'{self.config["pattern"]}'))
 
         self.id = []
+
         if self.config.get("use_tqdm", True):
-            self.filenames = tqdm(self.filenames)
-        for filename in self.filenames:
+            filenames = tqdm(filenames)
+        for filename in filenames:
             try:
                 structures = ase.io.read(filename, **self.ase_read_args)
             except Exception as err:
@@ -304,7 +323,7 @@ class AseDBDataset(AseAtomsDataset):
             select_args (dict): Keyword arguments for ase.db.select()
                     You can use this to query/filter your database
 
-            a2g_args (dict): Keyword arguments for ocp.preprocessing.AtomsToGraphs()
+            a2g_args (dict): Keyword arguments for ocpmodels.preprocessing.AtomsToGraphs()
                     default options will work for most users
 
                     If you are using this for a training dataset, set
@@ -320,7 +339,7 @@ class AseDBDataset(AseAtomsDataset):
             transform_args (dict): Additional keyword arguments for the transform callable
 
         atoms_transform (callable, optional): Additional preprocessing function applied to the Atoms
-                    object. Useful for applying tags.
+                    object. Useful for applying tags, for example.
 
         transform (callable, optional): Additional preprocessing function for the Data object
     """
