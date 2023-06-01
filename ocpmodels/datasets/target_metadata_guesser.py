@@ -46,7 +46,6 @@ def target_per_atom(atoms_lens, target_samples):
 
 
 def target_extensive(atoms_lens, target_samples, threshold=0.2):
-
     # Guess whether a property is intensive or extensive.
     # We guess by checking whether standard deviation of the per-atom
     # properties capture >20% of the variation in the property
@@ -60,12 +59,15 @@ def target_extensive(atoms_lens, target_samples, threshold=0.2):
         )
 
     # Get the per-atom normalized properties
-    compiled_target_array = np.array(
-        [
-            sample / atom_len
-            for sample, atom_len in zip(atoms_lens, target_samples)
-        ]
-    )
+    try:
+        compiled_target_array = np.array(
+            [
+                sample / atom_len
+                for sample, atom_len in zip(atoms_lens, target_samples)
+            ]
+        )
+    except TypeError:
+        return False
 
     # Calculate the normalized standard deviation of each element in the property output
     target_samples_mean = np.mean(compiled_target_array, axis=0)
@@ -78,28 +80,26 @@ def target_extensive(atoms_lens, target_samples, threshold=0.2):
     )
     if extensive_guess.shape == ():
         return extensive_guess
-    elif all(
+    elif (
         target_samples_normalized.std(axis=0)
         < (threshold * target_samples_normalized.mean(axis=0))
-    ):
+    ).all():
         return True
     else:
         return False
 
 
 def guess_target_metadata(atoms_len, target_samples):
-
     example_array = np.array(target_samples[0])
-    if example_array.dtype == object:
+    if example_array.dtype == object or example_array.dtype == str:
         return {
             "shape": None,
             "type": "unknown",
             "extensive": None,
             "units": "unknown",
-            "comment": "Guessed property metadata. The property didn't seem to be a numpy array with any simple type, so we dob't know what to do.",
+            "comment": "Guessed property metadata. The property didn't seem to be a numpy array with any numeric type, so we dob't know what to do.",
         }
     elif target_constant_shape(atoms_len, target_samples):
-
         target_shape = np.array(target_samples[0]).shape
 
         if uniform_atoms_lengths(atoms_len):
@@ -157,7 +157,6 @@ def guess_target_metadata(atoms_len, target_samples):
 
 
 def guess_property_metadata(atoms_list):
-
     atoms = atoms_list[0]
     atoms_len = [len(atoms) for atoms in atoms_list]
 
@@ -165,7 +164,6 @@ def guess_property_metadata(atoms_list):
 
     if hasattr(atoms, "info"):
         for key in atoms.info:
-
             # Grab the property samples from the list of atoms
             target_samples = [
                 np.array(atoms.info[key]) for atoms in atoms_list
@@ -182,7 +180,6 @@ def guess_property_metadata(atoms_list):
             )
     if hasattr(atoms, "calc") and atoms.calc is not None:
         for key in atoms.calc.results:
-
             # Grab the property samples from the list of atoms
             target_samples = [
                 np.array(atoms.calc.results[key]) for atoms in atoms_list
