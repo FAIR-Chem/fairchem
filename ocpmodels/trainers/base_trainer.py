@@ -668,9 +668,11 @@ class BaseTrainer(ABC):
                 for k, v in loss.items():
                     metrics = evaluator.update(k, v.item(), metrics)
 
-        mean_val_times, std_val_times = times.prepare_for_logging(map_funcs={
-            "val_forward": lambda x: x / self.config["optim"]["batch_size"],
-        })
+        mean_val_times, std_val_times = times.prepare_for_logging(
+            map_funcs={
+                "val_forward": lambda x: x / self.config["optim"]["batch_size"],
+            }
+        )
 
         aggregated_metrics = {}
         for k in metrics:
@@ -1038,7 +1040,9 @@ class BaseTrainer(ABC):
     def measure_inference_time(self, loops=1):
         # keep grads if the model computes forces from energy
         enabled = torch.is_grad_enabled()
-        torch.set_grad_enabled(self.model.module.regress_forces == "from_energy")
+        torch.set_grad_enabled(
+            self.config["model"].get("regress_forces") == "from_energy"
+        )
         self.model.eval()
         timer = Times(gpu=True)
 

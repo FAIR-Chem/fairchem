@@ -94,7 +94,7 @@ runs:
     optim:
       batch_size: 50
       max_steps: 1000000
-      initial_lr: 0.0005
+      lr_initial: 0.0005
       energy_coefficient: 1
       energy_grad_coefficient: 10
       force_coefficient: 100
@@ -111,7 +111,7 @@ runs:
   - config: faenet-qm7x-all
     optim:
       batch_size: 100
-      initial_lr: 0.001
+      lr_initial: 0.001
       max_steps: 1000000
       energy_coefficient: 1
       energy_grad_coefficient: 10
@@ -129,7 +129,7 @@ runs:
   - config: faenet-qm7x-all
     optim:
       batch_size: 50
-      initial_lr: 0.0005
+      lr_initial: 0.0005
       max_steps: 1000000
       energy_coefficient: 1
       energy_grad_coefficient: 0
@@ -147,7 +147,7 @@ runs:
   - config: faenet-qm7x-all
     optim:
       batch_size: 50
-      initial_lr: 0.0005
+      lr_initial: 0.0005
       max_steps: 1000000
       energy_coefficient: 1
       energy_grad_coefficient: 0
@@ -167,7 +167,7 @@ runs:
   - config: faenet-qm7x-all
     optim:
       batch_size: 50
-      initial_lr: 0.0005
+      lr_initial: 0.0005
       max_steps: 1000000
       energy_coefficient: 0
       energy_grad_coefficient: 0

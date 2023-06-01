@@ -535,7 +535,7 @@ class Complete(object):
 
 def warmup_lr_lambda(current_step, optim_config):
     """Returns a learning rate multiplier.
-    Till `warmup_steps`, learning rate linearly increases to `initial_lr`,
+    Till `warmup_steps`, learning rate linearly increases to `lr_initial`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
     """
 
