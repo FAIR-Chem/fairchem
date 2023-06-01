@@ -90,41 +90,27 @@ if __name__ == "__main__":
     base_model_path = Path("/network/scratch/a/alexandre.duval/ocp/runs/2935198")
 
     ensemble = EnsembleTrainer(
-        {"checkpoints": base_model_path, "dropout": 0.75},
-        overrides={"logger": "dummy", "config": "deup_faenet-is2re-all"},
+        "deup_faenet-deup-all",
+        trainers_conf={"checkpoints": base_model_path, "dropout": 0.75},
+        overrides={"logger": "dummy"},
     )
 
-    deup_ds_path = ensemble.create_deup_dataset(
-        ["train", "val_id", "val_ood_cat", "val_ood_ads"], n_samples=10
-    )
+    create_deup_dataset = False
+    if create_deup_dataset:
+        deup_ds_path = ensemble.create_deup_dataset(
+            ["train", "val_id", "val_ood_cat", "val_ood_ads"], n_samples=10
+        )
 
-    ensemble.config["dataset"] = {
-        **ensemble.config["dataset"],
-        "deup-train-val_id": {
-            "src": str(deup_ds_path),
-        },
-        "deup-val_ood_cat-val_ood_ads": {
-            "src": str(deup_ds_path),
-        },
-    }
-
-    ensemble.load_datasets()
-
-    # if deup_ds_path is already known:
-    ensemble = EnsembleTrainer(
-        {"checkpoints": base_model_path, "dropout": 0.75},
-        overrides={
-            "logger": "dummy",
-            "config": "deup_faenet-is2re-all",
-            "dataset": {
-                "deup-train-val_id": {
-                    "src": deup_ds_path,
-                },
-                "deup-val_ood_cat-val_ood_ads": {
-                    "src": deup_ds_path,
-                },
+        ensemble.config["dataset"] = {
+            **ensemble.config["dataset"],
+            "deup-train-val_id": {
+                "src": str(deup_ds_path),
             },
-        },
-    )
+            "deup-val_ood_cat-val_ood_ads": {
+                "src": str(deup_ds_path),
+            },
+        }
+
+        ensemble.load_datasets()
 
     data = next(iter(ensemble.loaders["deup-train-val_id"]))[0]

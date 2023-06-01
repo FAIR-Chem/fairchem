@@ -17,9 +17,11 @@ from ocpmodels.common.registry import registry
 
 @registry.register_trainer("ensemble")
 class EnsembleTrainer(SingleTrainer):
-    def __init__(self, conf_str=None, **kwargs):
+    def __init__(self, conf_str, trainers_conf={}, overrides={}, **kwargs):
         """
         Create an ensemble of trainers from an ensemble_config dict.
+
+        Use ensemble_config xor conf_str to specify the ensemble.
 
         ensemble_config:
         {
@@ -27,6 +29,8 @@ class EnsembleTrainer(SingleTrainer):
                 and it will be assumed that chekpoints are in run_dir/checkpoints/*.pt.
             "dropout": float, optional, otherwise 0.75
         }
+        overrides (dict): ensemble trainer's arguments that you want to override
+        conf_str: config name, e.g. faenet-is2re-all
 
         If the provided ``checkpoints`` are not a list, or if they are
         a list with a single item, it is assumed that this should be
@@ -41,30 +45,33 @@ class EnsembleTrainer(SingleTrainer):
         if conf_str is not None:
             assert isinstance(conf_str, str), "conf_str must be a string"
             self.config = make_config_from_conf_str(conf_str)
-        else:
-            self.config = {}
-        self.checkpoints = self.config.get("ensemble_checkpoints") or kwargs.get(
-            "ensemble_checkpoints"
+
+        self.trainers_conf = trainers_conf
+
+        self.checkpoints = self.trainers_conf.get("checkpoints") or kwargs.get(
+            "checkpoints"
         )
         assert (
             self.checkpoints is not None
-        ), "ensemble_checkpoints must be provided in the yaml config or the kwargs"
+        ), "checkpoints must be provided in the yaml config or the kwargs"
 
         if not isinstance(self.checkpoints, list):
             self.checkpoints = [self.checkpoints]
 
         self.mc_dropout = len(self.checkpoints) == 1
         if self.mc_dropout:
-            if "ensemble_dropout" not in self.config:
+            if "dropout" not in self.config:
                 print("WARNING: using MC-Dropout without specifying dropout rate")
-                print("Using `ensemble_dropout: 0.75`")
-            self.dropout = self.config.get("ensemble_dropout", 0.75)
+                print("Using `dropout: 0.75`")
+            self.dropout = self.trainers_conf.get("dropout", 0.75)
 
         self.trainers = []
         shared_config = self.load_trainers()
         print("Loading self with shared config", shared_config, "...")
         self.config = merge_dicts(self.config, shared_config)
         self.config = merge_dicts(self.config, kwargs)
+        self.config = merge_dicts(self.config, overrides)
+        self.config["trainers_conf"] = self.trainers_conf
         if "silent" not in self.config:
             self.config["silent"] = True
         super().__init__(**self.config)
