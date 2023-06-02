@@ -201,7 +201,10 @@ class SingleTrainer(BaseTrainer):
         if not torch.is_grad_enabled():
             print("\nWarning: torch grad is disabled. Enabling.\n")
             torch.set_grad_enabled(True)
-        n_train = len(self.loaders[self.train_dataset_name])
+        n_train = min(
+            len(self.loaders[self.train_dataset_name]),
+            self.config["optim"]["max_steps"],
+        )
         epoch_int = 0
         eval_every = self.config["optim"].get("eval_every", n_train) or n_train
         if eval_every < 1:
