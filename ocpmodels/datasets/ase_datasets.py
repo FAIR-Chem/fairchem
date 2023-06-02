@@ -41,7 +41,7 @@ class AseAtomsDataset(Dataset):
 
     Derived classes must add at least two things:
         self.get_atoms_object(): a function that takes an identifier and returns a corresponding atoms object
-        self.id: a list of all possible identifiers that can be passed into self.get_atoms_object()
+        self.ids: a list of all possible identifiers that can be passed into self.get_atoms_object()
     Identifiers need not be any particular type.
     """
 
@@ -66,24 +66,24 @@ class AseAtomsDataset(Dataset):
         if self.config.get("keep_in_memory", False):
             self.data_objects = {}
 
-        # Derived classes should extend this functionality to also create self.id,
+        # Derived classes should extend this functionality to also create self.ids,
         # a list of identifiers that can be passed to get_atoms_object()
 
     def __len__(self):
-        return len(self.id)
+        return len(self.ids)
 
     def __getitem__(self, idx):
         # Handle slicing
         if isinstance(idx, slice):
-            return [self[i] for i in range(len(self.id))[idx]]
+            return [self[i] for i in range(len(self.ids))[idx]]
 
         # Check if data object is already in memory
         if self.config.get("keep_in_memory", False):
-            if self.id[idx] in self.data_objects:
-                return self.data_objects[self.id[idx]]
+            if self.ids[idx] in self.data_objects:
+                return self.data_objects[self.ids[idx]]
 
         # Get atoms object via derived class method
-        atoms = self.get_atoms_object(self.id[idx])
+        atoms = self.get_atoms_object(self.ids[idx])
 
         # Transform atoms object
         if self.atoms_transform is not None:
@@ -103,7 +103,7 @@ class AseAtomsDataset(Dataset):
 
         # Save in memory, if specified
         if self.config.get("keep_in_memory", False):
-            self.data_objects[self.id[idx]] = data_object
+            self.data_objects[self.ids[idx]] = data_object
 
         return data_object
 
@@ -122,7 +122,7 @@ class AseAtomsDataset(Dataset):
         if Nsamples < len(self):
             metadata["targets"] = guess_property_metadata(
                 [
-                    self.get_atoms_object(self.id[idx])
+                    self.get_atoms_object(self.ids[idx])
                     for idx in np.random.choice(
                         self.__len__(), size=(Nsamples,)
                     )
@@ -131,7 +131,7 @@ class AseAtomsDataset(Dataset):
         else:
             metadata["targets"] = guess_property_metadata(
                 [
-                    self.get_atoms_object(self.id[idx])
+                    self.get_atoms_object(self.ids[idx])
                     for idx in range(len(self))
                 ]
             )
@@ -199,7 +199,7 @@ class AseReadDataset(AseAtomsDataset):
         self.path = Path(self.config["src"])
         if self.path.is_file():
             raise Exception("The specified src is not a directory")
-        self.id = sorted(self.path.glob(f'{self.config["pattern"]}'))
+        self.ids = sorted(self.path.glob(f'{self.config["pattern"]}'))
 
     def get_atoms_object(self, identifier):
         try:
@@ -271,7 +271,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             raise Exception("The specified src is not a directory")
         self.filenames = sorted(self.path.glob(f'{self.config["pattern"]}'))
 
-        self.id = []
+        self.ids = []
         if self.config.get("use_tqdm", True):
             self.filenames = tqdm(self.filenames)
         for filename in self.filenames:
@@ -281,7 +281,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
                 warnings.warn(f"{err} occured for: {filename}")
             else:
                 for i, structure in enumerate(structures):
-                    self.id.append(f"{filename} {i}")
+                    self.ids.append(f"{filename} {i}")
 
                     if self.config.get("keep_in_memory", False):
                         # Transform atoms object
@@ -366,7 +366,15 @@ class AseDBDataset(AseAtomsDataset):
 
         self.select_args = self.config.get("select_args", {})
 
-        self.id = [row.id for row in self.db.select(**self.select_args)]
+        # In order to get all of the unique IDs using the default ASE db interface
+        # we have to low all the data and check ids using a select. This is extremely
+        # inefficient for large dataset. If the db we're using already presents a list of
+        # ids and there is no query, we can just use that list instead and save ourselves
+        # a lot of time!
+        if hasattr(self.db, "ids") and self.select_args == {}:
+            self.ids = self.db.ids
+        else:
+            self.ids = [row.id for row in self.db.select(**self.select_args)]
 
     def get_atoms_object(self, identifier):
         atoms_row = self.db._get_row(identifier)
