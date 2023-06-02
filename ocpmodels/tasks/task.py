@@ -10,7 +10,7 @@ import os
 
 from ocpmodels.common.registry import registry
 from ocpmodels.trainers.forces_trainer import ForcesTrainer
-from experimental.saro00.mpf.stress_trainer import StressTrainer
+from ocpmodels.trainers.stress_trainer import StressTrainer
 
 
 class BaseTask:
@@ -100,7 +100,7 @@ class RelxationTask(BaseTask):
         
         
 @registry.register_task("run-relaxations-stress")
-class RelxationTask(BaseTask):
+class RelxationStressTask(BaseTask):
     def run(self):
         assert isinstance(
             self.trainer, StressTrainer
