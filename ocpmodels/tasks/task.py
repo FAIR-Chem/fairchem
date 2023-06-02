@@ -55,7 +55,7 @@ class TrainTask(BaseTask):
             cds.get("output_path"),
             -1,
         )
-        print("Dataset created in:", str(output_path))
+        print("\n🤠 DEUP Dataset created in:", str(output_path))
         self.trainer.config["deup_samples_path"] = str(output_path)
         self.trainer.config = set_deup_samples_path(self.trainer.config)
         self.trainer.load()
