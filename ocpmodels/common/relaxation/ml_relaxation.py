@@ -17,6 +17,7 @@ from ocpmodels.datasets.lmdb_dataset import data_list_collater
 
 from .optimizers.lbfgs_torch import LBFGS, TorchCalc
 from .optimizers.lbfgs_stress import LBFGS_Stress, TorchCalcStress
+from .optimizers.lbfgs_stress_exp import LBFGS_StressExp, TorchCalcStressExp
 
 
 
@@ -27,11 +28,9 @@ def ml_relax(
     fmax,
     relax_opt,
     save_full_traj,
-    isotropic=False,
-    stress=False,
-    opt_forces=True,
-    opt_stress=True,
-    cell_factor=0.1,
+    relax_stress=False,
+    force_weight=1,
+    stress_weight=0.1,
     device="cuda:0",
     transform=None,
     early_stop_batch=False,
@@ -53,15 +52,15 @@ def ml_relax(
     """
     batch = batch[0]
     ids = batch.sid
-    if stress:
-        calc = TorchCalcStress(model, isotropic=isotropic, opt_forces=opt_forces, opt_stress=opt_stress, cell_factor=cell_factor, transform=transform)
+    if relax_stress:
+        calc = TorchCalcStressExp(model, force_weight=force_weight, stress_weight=stress_weight)
     else:
         calc = TorchCalc(model, transform)
 
     # Run ML-based relaxation
     traj_dir = relax_opt.get("traj_dir", None)
-    if stress:
-        optimizer = LBFGS_Stress(
+    if relax_stress:
+        optimizer = LBFGS_StressExp(
             batch,
             calc,
             maxstep=relax_opt.get("maxstep", 0.04),
@@ -72,6 +71,7 @@ def ml_relax(
             traj_dir=Path(traj_dir) if traj_dir is not None else None,
             traj_names=ids,
             early_stop_batch=early_stop_batch,
+            scipy=relax_opt.get("use_scipy", False),
         )
     else:
         optimizer = LBFGS(
@@ -100,12 +100,13 @@ def ml_relax(
         traj_dir = relax_opt.get("traj_dir", None)
         
         relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
-        try:
-            relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
-            relaxed_batches.append(relaxed_batch)
-        except RuntimeError as e:
-            oom = True
-            torch.cuda.empty_cache()
+        #try:
+        #    relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
+        #    relaxed_batches.append(relaxed_batch)
+        relaxed_batches.append(relaxed_batch)
+        #except RuntimeError as e:
+        oom = False
+        torch.cuda.empty_cache()
 
         if oom:
             # move OOM recovery code outside of except clause to allow tensors to be freed.
@@ -118,6 +119,7 @@ def ml_relax(
             mid = len(data_list) // 2
             batches.appendleft(data_list_collater(data_list[:mid]))
             batches.appendleft(data_list_collater(data_list[mid:]))
+    return relaxed_batches[0]
 
-    relaxed_batch = Batch.from_data_list(relaxed_batches)
-    return relaxed_batch
+    #relaxed_batch = Batch.from_data_list(relaxed_batches)
+    #return relaxed_batch

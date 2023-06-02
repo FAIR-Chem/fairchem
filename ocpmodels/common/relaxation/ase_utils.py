@@ -155,7 +155,7 @@ class OCPCalculator(Calculator):
         if "normalizer" not in config:
             del config["dataset"]["src"]
             config["normalizer"] = config["dataset"]
-
+        
         self.trainer = registry.get_trainer_class(
             config.get("trainer", "energy")
         )(
@@ -214,4 +214,4 @@ class OCPCalculator(Calculator):
         elif self.trainer.name == "s2efs":
             self.results["energy"] = predictions["energy"].item()
             self.results["forces"] = predictions["forces"].cpu().numpy()
-            self.results["stress"] = - predictions["stress"].reshape(3, 3).cpu().numpy()
+            self.results["stress"] = - 0.001 * predictions["stress"].reshape(3, 3).cpu().numpy()
