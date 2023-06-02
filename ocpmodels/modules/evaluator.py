@@ -43,8 +43,11 @@ class Evaluator:
         ],
         "is2rs": [
             "average_distance_within_threshold",
+            "average_distance_cell_within_threshold",
             "positions_mae",
             "positions_mse",
+            "cell_mae",
+            "cell_mse",
         ],
         "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
         "s2efs": [
@@ -289,6 +292,14 @@ def positions_mse(prediction, target):
     return squared_error(prediction["positions"], target["positions"])
 
 
+def cell_mae(prediction, target):
+    return absolute_error(prediction["cell"], target["cell"])
+
+
+def cell_mse(prediction, target):
+    return squared_error(prediction["cell"], target["cell"])
+
+
 def energy_force_within_threshold(prediction, target):
     # Note that this natoms should be the count of free atoms we evaluate over.
     assert target["natoms"].sum() == prediction["forces"].size(0)
@@ -337,7 +348,7 @@ def energy_within_threshold(prediction, target):
     }
 
 
-def average_distance_within_threshold(prediction, target):
+def average_distance_cell_within_threshold(prediction, target):
     pred_pos = torch.split(
         prediction["positions"], prediction["natoms"].tolist()
     )
@@ -368,6 +379,37 @@ def average_distance_within_threshold(prediction, target):
 
     return {"metric": success / total, "total": success, "numel": total}
 
+
+def average_distance_within_threshold(prediction, target):
+    pred_pos = torch.split(
+        prediction["positions"], prediction["natoms"].tolist()
+    )
+    target_pos = torch.split(target["positions"], target["natoms"].tolist())
+
+    mean_distance = []
+    for idx, ml_pos in enumerate(pred_pos):
+        mean_distance.append(
+            np.mean(
+                np.linalg.norm(
+                    min_diff(
+                        ml_pos.detach().cpu().numpy(),
+                        target_pos[idx].detach().cpu().numpy(),
+                        target["cell"][idx].detach().cpu().numpy(),
+                        target["pbc"].tolist(),
+                    ),
+                    axis=1,
+                )
+            )
+        )
+
+    success = 0
+    intv = np.arange(0.01, 0.5, 0.001)
+    for i in intv:
+        success += sum(np.array(mean_distance) < i)
+
+    total = len(mean_distance) * len(intv)
+
+    return {"metric": success / total, "total": success, "numel": total}
 
 def min_diff(pred_pos, dft_pos, cell, pbc):
     pos_diff = pred_pos - dft_pos
