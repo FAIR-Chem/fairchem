@@ -30,6 +30,7 @@ class LBFGS:
         alpha=100.0,
         force_consistent=None,
         device="cuda:0",
+        save_full_traj=True,
         traj_dir: Path = None,
         traj_names=None,
         early_stop_batch: bool = False,
@@ -43,13 +44,18 @@ class LBFGS:
         self.H0 = 1.0 / self.alpha
         self.force_consistent = force_consistent
         self.device = device
+        self.save_full = save_full_traj
         self.traj_dir = traj_dir
         self.traj_names = traj_names
         self.early_stop_batch = early_stop_batch
+        self.otf_graph = model.model._unwrapped_model.otf_graph
         assert not self.traj_dir or (
             traj_dir and len(traj_names)
         ), "Trajectory names should be specified to save trajectories"
         logging.info("Step   Fmax(eV/A)")
+
+        if not self.otf_graph and "edge_index" not in batch:
+            self.model.update_graph(self.batch)
 
     def get_energy_and_forces(self, apply_constraint=True):
         energy, forces = self.model.get_energy_and_forces(
@@ -62,8 +68,8 @@ class LBFGS:
             update = torch.where(update_mask.unsqueeze(1), update, 0.0)
         self.batch.pos += update.to(dtype=torch.float32)
 
-        # Comment(@abhshkdz): for otf_graph = True, this is not needed, right?
-        # self.model.update_graph(self.batch)
+        if not self.otf_graph:
+            self.model.update_graph(self.batch)
 
     def check_convergence(self, iteration, forces=None, energy=None):
         if forces is None or energy is None:
@@ -92,10 +98,10 @@ class LBFGS:
         self.rho = deque(maxlen=self.memory)
         self.r0 = self.f0 = None
 
-        trajectories = None
+        self.trajectories = None
         if self.traj_dir:
             self.traj_dir.mkdir(exist_ok=True, parents=True)
-            trajectories = [
+            self.trajectories = [
                 ase.io.Trajectory(self.traj_dir / f"{name}.traj_tmp", mode="w")
                 for name in self.traj_names
             ]
@@ -104,24 +110,28 @@ class LBFGS:
         converged = False
         while iteration < steps and not converged:
             update_mask, energy, forces = self.check_convergence(iteration)
+            converged = torch.all(torch.logical_not(update_mask))
 
-            if trajectories is not None:
-                self.batch.y, self.batch.force = energy, forces
-                atoms_objects = batch_to_atoms(self.batch)
-                for atm, traj in zip(atoms_objects, trajectories):
-                    traj.write(atm)
+            if self.trajectories is not None:
+                if (
+                    self.save_full
+                    or converged
+                    or iteration == steps - 1
+                    or iteration == 0
+                ):
+                    self.write(energy, forces, update_mask)
 
-            self.step(iteration, forces, update_mask)
+            if not converged and iteration < steps - 1:
+                self.step(iteration, forces, update_mask)
 
             iteration += 1
-            converged = torch.all(torch.logical_not(update_mask))
 
         # GPU memory usage as per nvidia-smi seems to gradually build up as
         # batches are processed. This releases unoccupied cached memory.
         torch.cuda.empty_cache()
 
-        if trajectories is not None:
-            for traj in trajectories:
+        if self.trajectories is not None:
+            for traj in self.trajectories:
                 traj.close()
             for name in self.traj_names:
                 traj_fl = Path(self.traj_dir / f"{name}.traj_tmp", mode="w")
@@ -191,10 +201,21 @@ class LBFGS:
         if torch.abs(dr).max() < 1e-7:
             # Same configuration again (maybe a restart):
             return
+
         self.set_positions(dr, update_mask)
 
         self.r0 = r
         self.f0 = forces
+
+    def write(self, energy, forces, update_mask):
+        self.batch.y, self.batch.force = energy, forces
+        atoms_objects = batch_to_atoms(self.batch)
+        update_mask_ = torch.split(update_mask, self.batch.natoms.tolist())
+        for atm, traj, mask in zip(
+            atoms_objects, self.trajectories, update_mask_
+        ):
+            if mask[0] or not self.save_full:
+                traj.write(atm)
 
 
 class TorchCalc:

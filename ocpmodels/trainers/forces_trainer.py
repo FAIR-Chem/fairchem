@@ -156,7 +156,7 @@ class ForcesTrainer(BaseTrainer):
         results_file=None,
         disable_tqdm=False,
     ):
-        ensure_fitted(self._unwrapped_model)
+        ensure_fitted(self._unwrapped_model, warn=True)
 
         if distutils.is_master() and not disable_tqdm:
             logging.info("Predicting on test.")
@@ -208,14 +208,26 @@ class ForcesTrainer(BaseTrainer):
                     )
                 ]
                 predictions["id"].extend(systemids)
-                predictions["energy"].extend(
-                    out["energy"].to(torch.float16).tolist()
-                )
                 batch_natoms = torch.cat(
                     [batch.natoms for batch in batch_list]
                 )
                 batch_fixed = torch.cat([batch.fixed for batch in batch_list])
-                forces = out["forces"].cpu().detach().to(torch.float16)
+                # total energy target requires predictions to be saved in float32
+                # default is float16
+                if (
+                    self.config["task"].get("prediction_dtype", "float16")
+                    == "float32"
+                    or self.config["task"]["dataset"] == "oc22_lmdb"
+                ):
+                    predictions["energy"].extend(
+                        out["energy"].cpu().detach().to(torch.float32).numpy()
+                    )
+                    forces = out["forces"].cpu().detach().to(torch.float32)
+                else:
+                    predictions["energy"].extend(
+                        out["energy"].cpu().detach().to(torch.float16).numpy()
+                    )
+                    forces = out["forces"].cpu().detach().to(torch.float16)
                 per_image_forces = torch.split(forces, batch_natoms.tolist())
                 per_image_forces = [
                     force.numpy() for force in per_image_forces
@@ -490,6 +502,16 @@ class ForcesTrainer(BaseTrainer):
                 weight[batch_tags == 2] = tag_specific_weights[2]
 
                 if self.config["optim"].get("loss_force", "l2mae") == "l2mae":
+                    # zero out nans, if any
+                    found_nans_or_infs = not torch.all(
+                        out["forces"].isfinite()
+                    )
+                    if found_nans_or_infs is True:
+                        logging.warning("Found nans while computing loss")
+                        out["forces"] = torch.nan_to_num(
+                            out["forces"], nan=0.0
+                        )
+
                     dists = torch.norm(
                         out["forces"] - force_target, p=2, dim=-1
                     )
@@ -660,6 +682,7 @@ class ForcesTrainer(BaseTrainer):
                 steps=self.config["task"].get("relaxation_steps", 200),
                 fmax=self.config["task"].get("relaxation_fmax", 0.0),
                 relax_opt=self.config["task"]["relax_opt"],
+                save_full_traj=self.config["task"].get("save_full_traj", True),
                 device=self.device,
                 transform=None,
             )

@@ -149,7 +149,9 @@ class EnergyTrainer(BaseTrainer):
                 predictions["id"].extend(
                     [str(i) for i in batch[0].sid.tolist()]
                 )
-                predictions["energy"].extend(out["energy"].tolist())
+                predictions["energy"].extend(
+                    out["energy"].cpu().detach().numpy()
+                )
             else:
                 predictions["energy"] = out["energy"].detach()
                 return predictions
