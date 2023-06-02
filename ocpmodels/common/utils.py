@@ -1801,18 +1801,13 @@ def get_commit_hash():
     return commit_hash
 
 
-def base_config(config, overrides={}):
+def base_config(config, overrides={}, args_list=["--logger=dummy"]):
     from ocpmodels.common.flags import flags
 
     setup_imports()
 
     conf = build_config(
-        *flags.get_parser().parse_known_args(
-            [
-                f"--config={config}",
-                "--logger=dummy",
-            ]
-        )
+        *flags.get_parser().parse_known_args([f"--config={config}"] + args_list)
     )
     conf["cpu"] = not torch.cuda.is_available()
 
