@@ -55,6 +55,7 @@ class AseAtomsDataset(Dataset):
             r_edges=a2g_args.get("r_edges", False),
             r_energy=a2g_args.get("r_energy", False),
             r_forces=a2g_args.get("r_forces", False),
+            r_stress=a2g_args.get("r_stress", False),
             r_distances=a2g_args.get("r_distances", False),
             r_fixed=a2g_args.get("r_fixed", True),
             r_pbc=a2g_args.get("r_pbc", True),
@@ -359,7 +360,6 @@ class AseDBDataset(AseAtomsDataset):
 
     def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
         super(AseDBDataset, self).__init__(config, transform, atoms_transform)
-
         self.db = self.connect_db(
             self.config["src"], self.config.get("connect_args", {})
         )
