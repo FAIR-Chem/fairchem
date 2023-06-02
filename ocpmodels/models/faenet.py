@@ -550,6 +550,9 @@ class FAENet(BaseModel):
             (options: "mlp", "simple", "res", "res_updown")
         dropout_lin (float): dropout rate for linear layers.
         dropout_edge (float): dropout rate for edges.
+        dropout_lowest_layer (str): The first layer to apply dropout to. All subsequent
+            layers will have the same dropout rate. Can be `inter-{i}` or `output`.
+            Defaults to `output` if none is provided.
     """
 
     def __init__(self, **kwargs):
@@ -564,6 +567,8 @@ class FAENet(BaseModel):
         self.skip_co = kwargs["skip_co"]
         self.dropout_edge = float(kwargs.get("dropout_edge") or 0)
         self.dropout_lin = float(kwargs.get("dropout_lin") or 0)
+        self.dropout_lowest_layer = kwargs.get("dropout_lowest_layer", "output")
+        self.freeze_lowest_layer = kwargs.get("freeze_lowest_layer", "")
 
         if kwargs["mp_type"] == "sfarinet":
             kwargs["num_filters"] = kwargs["hidden_channels"]
@@ -607,15 +612,26 @@ class FAENet(BaseModel):
                     kwargs["complex_mp"],
                     kwargs["att_heads"],
                     kwargs["graph_norm"],
-                    self.dropout_lin,
+                    self.dropout_lin
+                    if "inter" in self.dropout_lowest_layer
+                    and (i >= int(self.dropout_lowest_layer.split("-")[-1]))
+                    else 0,
                 )
-                for _ in range(kwargs["num_interactions"])
+                for i in range(kwargs["num_interactions"])
             ]
         )
 
         # Output block
         self.output_block = OutputBlock(
-            self.energy_head, kwargs["hidden_channels"], self.act, self.dropout_lin
+            self.energy_head,
+            kwargs["hidden_channels"],
+            self.act,
+            self.dropout_lin
+            if (
+                "inter" in self.dropout_lowest_layer
+                or "output" in self.dropout_lowest_layer
+            )
+            else 0,
         )
 
         # Energy head
@@ -642,6 +658,37 @@ class FAENet(BaseModel):
                 ((kwargs["num_interactions"] + 1) * kwargs["hidden_channels"]),
                 kwargs["hidden_channels"],
             )
+
+        self.freeze(kwargs.get("freeze", None))
+
+    def freeze(self, lowest_layer="dropout"):
+        if not lowest_layer:
+            return
+
+        if lowest_layer == "dropout":
+            if self.dropout_lowest_layer == "embed":
+                return
+            if "inter" in self.dropout_lowest_layer:
+                if "0" in self.dropout_lowest_layer:
+                    lowest_layer = "embed"
+                else:
+                    lowest_layer = (
+                        f"inter-{int(self.dropout_lowest_layer.split('-')[-1])-1}"
+                    )
+            if self.dropout_lowest_layer == "output":
+                lowest_layer = f"inter-{self.num_interactions-1}"
+
+        self.freeze_layer(self.embed_block)
+        if lowest_layer == "embed":
+            return
+
+        for i in range(int(lowest_layer.split("-")[-1]) + 1):
+            self.freeze_layer(self.interaction_blocks[i])
+
+        if "inter" in lowest_layer:
+            return
+
+        self.freeze_layer(self.output_block)
 
     @conditional_grad(torch.enable_grad())
     def forces_forward(self, preds):

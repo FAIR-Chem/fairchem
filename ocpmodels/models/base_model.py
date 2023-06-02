@@ -39,6 +39,11 @@ class BaseModel(nn.Module):
 
         self.apply(_sds)
 
+    @staticmethod
+    def freeze_layer(layer):
+        for param in layer.parameters():
+            param.requires_grad = False
+
     def reset_parameters(self):
         for child in self.children():
             if hasattr(child, "reset_parameters"):

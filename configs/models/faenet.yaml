@@ -4,6 +4,10 @@ default:
     act: swish
     dropout_lin: 0.0
     dropout_edge: 0.0
+    dropout_lowest_layer: output # lowest layer where `dropout_lin` is applied. Can be `inter-{i}` or `output`. Defaults to `output`.
+    freeze_lowest_layer: "" # lowest layer to freeze. All previous layers will be frozen. Can be ``, `embed`, `inter-{i}`, `output`, or `dropout`.
+                            # if it is `` then no layer is frozen. If it is `dropout` then it will be set to the layer before `dropout_lowest_layer`.
+                            # Defaults to ``.
     hidden_channels: 128
     num_filters: 100
     num_interactions: 3

@@ -72,7 +72,6 @@ class DeupOutputBlock(OutputBlock):
 class DeupFAENet(FAENet):
     def __init__(self, *args, **kwargs):
         kwargs["dropout_edge"] = 0
-        kwargs["dropout_edge"] = 0
         super().__init__(*args, **kwargs)
         self.output_block = DeupOutputBlock(
             self.energy_head,
