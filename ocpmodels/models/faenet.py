@@ -612,7 +612,13 @@ class FAENet(BaseModel):
                     kwargs["complex_mp"],
                     kwargs["att_heads"],
                     kwargs["graph_norm"],
-                    self.dropout_lin
+                    (
+                        print(
+                            "🗑️ Setting dropout_lin for interaction block ",
+                            f"{i} / {kwargs['num_interactions']}",
+                        )
+                        or self.dropout_lin
+                    )
                     if "inter" in self.dropout_lowest_layer
                     and (i >= int(self.dropout_lowest_layer.split("-")[-1]))
                     else 0,
@@ -626,7 +632,7 @@ class FAENet(BaseModel):
             self.energy_head,
             kwargs["hidden_channels"],
             self.act,
-            self.dropout_lin
+            (print("🗑️ Setting dropout_lin for output block") or self.dropout_lin)
             if (
                 "inter" in self.dropout_lowest_layer
                 or "output" in self.dropout_lowest_layer
@@ -659,14 +665,17 @@ class FAENet(BaseModel):
                 kwargs["hidden_channels"],
             )
 
-        self.freeze(kwargs.get("freeze", None))
+        self.freeze(self.freeze_lowest_layer)
+        print()
 
     def freeze(self, lowest_layer="dropout"):
         if not lowest_layer:
+            print("⛄️ No layer to freeze")
             return
 
         if lowest_layer == "dropout":
             if self.dropout_lowest_layer == "embed":
+                print("⛄️ No layer to freeze")
                 return
             if "inter" in self.dropout_lowest_layer:
                 if "0" in self.dropout_lowest_layer:
@@ -676,18 +685,27 @@ class FAENet(BaseModel):
                         f"inter-{int(self.dropout_lowest_layer.split('-')[-1])-1}"
                     )
             if self.dropout_lowest_layer == "output":
-                lowest_layer = f"inter-{self.num_interactions-1}"
+                lowest_layer = f"inter-{len(self.interaction_blocks)-1}"
 
+        print("⛄️ Freezing embedding layer")
         self.freeze_layer(self.embed_block)
         if lowest_layer == "embed":
             return
 
-        for i in range(int(lowest_layer.split("-")[-1]) + 1):
-            self.freeze_layer(self.interaction_blocks[i])
+        for nb in range(int(lowest_layer.split("-")[-1]) + 1):
+            self.freeze_layer(self.interaction_blocks[nb])
+        if nb > 0:
+            print(
+                "⛄️ Freezing interaction blocks 0 ->",
+                f"{nb} / {len(self.interaction_blocks)}",
+            )
+        else:
+            print(f"⛄️ Freezing interaction block 0 / {len(self.interaction_blocks)}")
 
         if "inter" in lowest_layer:
             return
 
+        print("⛄️ Freezing output block")
         self.freeze_layer(self.output_block)
 
     @conditional_grad(torch.enable_grad())
