@@ -7,7 +7,10 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
+from pathlib import Path
+
 import torch
+
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import set_deup_samples_path
 
@@ -49,21 +52,37 @@ class TrainTask(BaseTask):
 
     def create_deup_dataset(self):
         cds = self.config["deup"]["create_deup_dataset"]
-        output_path = self.trainer.create_deup_dataset(
+        if self.config["trainer"] != "deup":
+            ensemble_trainer = registry.get_trainer_class("deup")(
+                "deup_faenet-deup-all",
+                trainers_conf={
+                    "checkpoints": (
+                        Path(self.config["checkpoint_dir"]) / "best_checkpoint.pt"
+                    ),
+                    "dropout": self.config["model"].get("dropout_lin") or 0.75,
+                },
+                overrides={"logger": "dummy"},
+            )
+        else:
+            ensemble_trainer = self.trainer
+        output_path = ensemble_trainer.create_deup_dataset(
             cds["dataset_strs"],
             cds["n_samples"],
-            cds.get("output_path"),
+            cds.get("output_path") or Path(self.config["run_dir"]) / "deup_dataset",
             -1,
         )
         print("\n🤠 DEUP Dataset created in:", str(output_path))
-        self.trainer.config["deup_samples_path"] = str(output_path)
-        self.trainer.config = set_deup_samples_path(self.trainer.config)
-        self.trainer.load()
+        return output_path
 
     def run(self):
+        self.config = self.trainer.config
         try:
             if self.config.get("deup_dataset", {}).get("create") == "before":
-                self.create_deup_dataset()
+                output_path = self.create_deup_dataset()
+                # self.trainer must be an EnsembleTrainer at this point
+                self.trainer.config["deup_samples_path"] = str(output_path)
+                self.trainer.config = set_deup_samples_path(self.trainer.config)
+                self.trainer.load()
 
             loops = self.config.get("inference_time_loops", 5)
             if loops > 0:
