@@ -277,22 +277,26 @@ class StressTrainer(BaseTrainer):
                     "stress_anisotropic"
                 ].denorm(out["stress_anisotropic"])
 
-            zero_vectors = torch.zeros(
-                (out["stress_isotropic"].shape[0], 3),
-                device=out["stress_isotropic"].device,
-            )
-            prediction_irreps = torch.concat(
-                [
-                    out["stress_isotropic"].reshape(-1, 1),
-                    zero_vectors,
-                    out["stress_anisotropic"].reshape(-1, 5),
-                ],
-                dim=1,
-            )
+            if (
+                self.normalizers is not None
+                and "stress_isotropic" in self.normalizers
+            ):
+                zero_vectors = torch.zeros(
+                    (out["stress_isotropic"].shape[0], 3),
+                    device=out["stress_isotropic"].device,
+                )
+                prediction_irreps = torch.concat(
+                    [
+                        out["stress_isotropic"].reshape(-1, 1),
+                        zero_vectors,
+                        out["stress_anisotropic"].reshape(-1, 5),
+                    ],
+                    dim=1,
+                )
 
-            out["stress"] = torch.einsum(
-                "ba, cb->ca", self.change_mat, prediction_irreps
-            )
+                out["stress"] = torch.einsum(
+                    "ba, cb->ca", self.change_mat, prediction_irreps
+                )
 
             if per_image:
                 systemids = [
