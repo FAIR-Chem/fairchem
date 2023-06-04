@@ -72,6 +72,7 @@ class AtomsToGraphs:
         radius=6,
         r_energy=False,
         r_forces=False,
+        r_stress=False,
         r_distances=False,
         r_edges=True,
         r_fixed=True,
@@ -81,6 +82,7 @@ class AtomsToGraphs:
         self.radius = radius
         self.r_energy = r_energy
         self.r_forces = r_forces
+        self.r_stress = r_stress
         self.r_distances = r_distances
         self.r_fixed = r_fixed
         self.r_edges = r_edges
@@ -175,6 +177,11 @@ class AtomsToGraphs:
         if self.r_forces:
             forces = torch.Tensor(atoms.get_forces(apply_constraint=False))
             data.force = forces
+        if self.r_stress:
+            stress = torch.Tensor(
+                atoms.get_stress(apply_constraint=False, voigt=False)
+            )
+            data.stress = stress
         if self.r_distances and self.r_edges:
             data.distances = edge_distances
         if self.r_fixed:

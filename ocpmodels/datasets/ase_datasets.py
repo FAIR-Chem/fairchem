@@ -1,4 +1,8 @@
+import bisect
 import copy
+import glob
+import logging
+import os
 import warnings
 from pathlib import Path
 
@@ -55,6 +59,7 @@ class AseAtomsDataset(Dataset):
             r_edges=a2g_args.get("r_edges", False),
             r_energy=a2g_args.get("r_energy", False),
             r_forces=a2g_args.get("r_forces", False),
+            r_stress=a2g_args.get("r_stress", False),
             r_distances=a2g_args.get("r_distances", False),
             r_fixed=a2g_args.get("r_fixed", True),
             r_pbc=a2g_args.get("r_pbc", True),
@@ -318,6 +323,21 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
         return {}
 
 
+class dummy_list(object):
+    def __init__(self, max):
+        self.max = max
+        return
+
+    def __len__(self):
+        return self.max
+
+    def __getitem__(self, idx):
+        if (0 <= idx < self.max) and type(idx) is int:
+            return idx
+        else:
+            raise IndexError
+
+
 @registry.register_dataset("ase_db")
 class AseDBDataset(AseAtomsDataset):
     """
@@ -360,9 +380,26 @@ class AseDBDataset(AseAtomsDataset):
     def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
         super(AseDBDataset, self).__init__(config, transform, atoms_transform)
 
-        self.db = self.connect_db(
-            self.config["src"], self.config.get("connect_args", {})
-        )
+        if os.path.isfile(self.config["src"]):
+            self.dbs = [
+                self.connect_db(
+                    self.config["src"], self.config.get("connect_args", {})
+                )
+            ]
+        else:
+            self.dbs = []
+            file_list = glob.glob(f'{self.config["src"]}/*[!lock]')
+            for path in file_list:
+                try:
+                    self.dbs.append(
+                        self.connect_db(
+                            path, self.config.get("connect_args", {})
+                        )
+                    )
+                except ValueError:
+                    logging.warning(
+                        f"Tried to connect to {path} but it's not an ASE database!"
+                    )
 
         self.select_args = self.config.get("select_args", {})
 
@@ -371,13 +408,31 @@ class AseDBDataset(AseAtomsDataset):
         # inefficient for large dataset. If the db we're using already presents a list of
         # ids and there is no query, we can just use that list instead and save ourselves
         # a lot of time!
-        if hasattr(self.db, "ids") and self.select_args == {}:
-            self.ids = self.db.ids
-        else:
-            self.ids = [row.id for row in self.db.select(**self.select_args)]
+        self.db_ids = []
+        for db in self.dbs:
+            if hasattr(db, "ids") and self.select_args == {}:
+                self.db_ids.append(db.ids)
+            else:
+                self.db_ids.append(
+                    [row.id for row in self.db.select(**self.select_args)]
+                )
 
-    def get_atoms_object(self, identifier):
-        atoms_row = self.db._get_row(identifier)
+        idlens = [len(ids) for ids in self.db_ids]
+        self._idlen_cumulative = np.cumsum(idlens).tolist()
+        self.ids = dummy_list(sum(idlens))
+
+    def get_atoms_object(self, idx):
+
+        # Figure out which db this should be indexed from.
+        db_idx = bisect.bisect(self._idlen_cumulative, idx)
+
+        # Extract index of element within that db
+        el_idx = idx
+        if db_idx != 0:
+            el_idx = idx - self._keylen_cumulative[db_idx - 1]
+        assert el_idx >= 0
+
+        atoms_row = self.dbs[db_idx]._get_row(self.db_ids[db_idx][el_idx])
         atoms = atoms_row.toatoms()
 
         if isinstance(atoms_row.data, dict):
@@ -395,11 +450,15 @@ class AseDBDataset(AseAtomsDataset):
             return ase.db.connect(address, **connect_args)
 
     def close_db(self):
-        if hasattr(self.db, "close"):
-            self.db.close()
+        for db in self.dbs:
+            if hasattr(db, "close"):
+                db.close()
 
     def get_metadata(self):
-        if self.db.metadata == {}:
+        logging.warning(
+            "You specific a folder of ASE dbs, so it's impossible to know which metadata to use. Using the first!"
+        )
+        if self.dbs[0].metadata == {}:
             return self.guess_target_metadata()
         else:
-            return copy.deepcopy(self.db.metadata)
+            return copy.deepcopy(self.dbs[0].metadata)
