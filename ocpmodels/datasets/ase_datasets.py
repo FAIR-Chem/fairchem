@@ -1,4 +1,8 @@
+import bisect
 import copy
+import glob
+import logging
+import os
 import warnings
 from pathlib import Path
 
@@ -76,7 +80,7 @@ class AseAtomsDataset(Dataset):
     def __getitem__(self, idx):
         # Handle slicing
         if isinstance(idx, slice):
-            return [self[i] for i in range(len(self.ids))[idx]]
+            return [self[i] for i in range(*idx.indices(len(self.ids)))]
 
         # Check if data object is already in memory
         if self.config.get("keep_in_memory", False):
@@ -319,6 +323,28 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
         return {}
 
 
+class dummy_list(list):
+    def __init__(self, max):
+        self.max = max
+        return
+
+    def __len__(self):
+        return self.max
+
+    def __getitem__(self, idx):
+        # Handle slicing
+        if isinstance(idx, slice):
+            return [self[i] for i in range(*idx.indices(self.max))]
+
+        if idx < 0:
+            idx += self.max
+
+        if (0 <= idx < self.max) and type(idx) is int:
+            return idx
+        else:
+            raise IndexError
+
+
 @registry.register_dataset("ase_db")
 class AseDBDataset(AseAtomsDataset):
     """
@@ -330,7 +356,13 @@ class AseDBDataset(AseAtomsDataset):
 
     args:
         config (dict):
-            src (str): The path to or connection address of your ASE DB
+            src (str): Either
+                    - the path to or connection address of your ASE DB, or
+                    -  a folder with many ASE DBs, or
+                    -  a glob string,
+                    -  a list of ASE db addresses.
+                    If a folder, every file will be attempted as an ASE DB, and warnings
+                    raised for any files that can't connect cleanly
 
             connect_args (dict): Keyword arguments for ase.db.connect()
 
@@ -360,9 +392,27 @@ class AseDBDataset(AseAtomsDataset):
 
     def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
         super(AseDBDataset, self).__init__(config, transform, atoms_transform)
-        self.db = self.connect_db(
-            self.config["src"], self.config.get("connect_args", {})
-        )
+        
+        if isinstance(self.config["src"], list):
+            filepaths = self.config["src"]
+        elif os.path.isfile(self.config["src"]):
+            filepaths = [self.config["src"]]
+        elif os.path.isdir(self.config["src"]):
+            filepaths = glob.glob(f'{self.config["src"]}/*')
+        else:
+            filepaths = glob.glob(self.config["src"])
+
+        self.dbs = []
+
+        for path in filepaths:
+            try:
+                self.dbs.append(
+                    self.connect_db(path, self.config.get("connect_args", {}))
+                )
+            except ValueError:
+                logging.warning(
+                    f"Tried to connect to {path} but it's not an ASE database!"
+                )
 
         self.select_args = self.config.get("select_args", {})
 
@@ -371,13 +421,31 @@ class AseDBDataset(AseAtomsDataset):
         # inefficient for large dataset. If the db we're using already presents a list of
         # ids and there is no query, we can just use that list instead and save ourselves
         # a lot of time!
-        if hasattr(self.db, "ids") and self.select_args == {}:
-            self.ids = self.db.ids
-        else:
-            self.ids = [row.id for row in self.db.select(**self.select_args)]
+        self.db_ids = []
+        for db in self.dbs:
+            if hasattr(db, "ids") and self.select_args == {}:
+                self.db_ids.append(db.ids)
+            else:
+                self.db_ids.append(
+                    [row.id for row in db.select(**self.select_args)]
+                )
 
-    def get_atoms_object(self, identifier):
-        atoms_row = self.db._get_row(identifier)
+        idlens = [len(ids) for ids in self.db_ids]
+        self._idlen_cumulative = np.cumsum(idlens).tolist()
+        self.ids = dummy_list(sum(idlens))
+
+    def get_atoms_object(self, idx):
+
+        # Figure out which db this should be indexed from.
+        db_idx = bisect.bisect(self._idlen_cumulative, idx)
+
+        # Extract index of element within that db
+        el_idx = idx
+        if db_idx != 0:
+            el_idx = idx - self._idlen_cumulative[db_idx - 1]
+        assert el_idx >= 0
+
+        atoms_row = self.dbs[db_idx]._get_row(self.db_ids[db_idx][el_idx])
         atoms = atoms_row.toatoms()
 
         if isinstance(atoms_row.data, dict):
@@ -395,11 +463,15 @@ class AseDBDataset(AseAtomsDataset):
             return ase.db.connect(address, **connect_args)
 
     def close_db(self):
-        if hasattr(self.db, "close"):
-            self.db.close()
+        for db in self.dbs:
+            if hasattr(db, "close"):
+                db.close()
 
     def get_metadata(self):
-        if self.db.metadata == {}:
+        logging.warning(
+            "You specific a folder of ASE dbs, so it's impossible to know which metadata to use. Using the first!"
+        )
+        if self.dbs[0].metadata == {}:
             return self.guess_target_metadata()
         else:
-            return copy.deepcopy(self.db.metadata)
+            return copy.deepcopy(self.dbs[0].metadata)
