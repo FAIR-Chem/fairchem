@@ -51,7 +51,7 @@ class TrainTask(BaseTask):
                     )
 
     def create_deup_dataset(self):
-        cds = self.config["deup"]["create_deup_dataset"]
+        dds = self.config["deup_dataset"]
         if self.config["trainer"] != "deup":
             ensemble_trainer = registry.get_trainer_class("deup")(
                 "deup_faenet-deup-all",
@@ -66,9 +66,9 @@ class TrainTask(BaseTask):
         else:
             ensemble_trainer = self.trainer
         output_path = ensemble_trainer.create_deup_dataset(
-            cds["dataset_strs"],
-            cds["n_samples"],
-            cds.get("output_path") or Path(self.config["run_dir"]) / "deup_dataset",
+            dds["dataset_strs"],
+            dds["n_samples"],
+            dds.get("output_path") or Path(self.config["run_dir"]) / "deup_dataset",
             -1,
         )
         print("\n🤠 DEUP Dataset created in:", str(output_path))
