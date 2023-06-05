@@ -80,7 +80,7 @@ class AseAtomsDataset(Dataset):
     def __getitem__(self, idx):
         # Handle slicing
         if isinstance(idx, slice):
-            return [self[i] for i in range(len(self.ids))[idx]]
+            return [self[i] for i in range(*idx.indices(len(self.ids)))]
 
         # Check if data object is already in memory
         if self.config.get("keep_in_memory", False):
@@ -332,6 +332,13 @@ class dummy_list(object):
         return self.max
 
     def __getitem__(self, idx):
+        # Handle slicing
+        if isinstance(idx, slice):
+            return [self[i] for i in range(*idx.indices(self.max))]
+
+        if idx < 0:
+            idx += self.max
+
         if (0 <= idx < self.max) and type(idx) is int:
             return idx
         else:
@@ -429,7 +436,7 @@ class AseDBDataset(AseAtomsDataset):
         # Extract index of element within that db
         el_idx = idx
         if db_idx != 0:
-            el_idx = idx - self._keylen_cumulative[db_idx - 1]
+            el_idx = idx - self._idlen_cumulative[db_idx - 1]
         assert el_idx >= 0
 
         atoms_row = self.dbs[db_idx]._get_row(self.db_ids[db_idx][el_idx])
