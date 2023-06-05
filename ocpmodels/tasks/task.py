@@ -10,6 +10,7 @@ import os
 
 from ocpmodels.common.registry import registry
 from ocpmodels.trainers.forces_trainer import ForcesTrainer
+from ocpmodels.trainers.stress_trainer import StressTrainer
 
 
 class BaseTask:
@@ -91,6 +92,19 @@ class RelxationTask(BaseTask):
         assert isinstance(
             self.trainer, ForcesTrainer
         ), "Relaxations are only possible for ForcesTrainer"
+        assert (
+            self.trainer.relax_dataset is not None
+        ), "Relax dataset is required for making predictions"
+        assert self.config["checkpoint"]
+        self.trainer.run_relaxations()
+        
+        
+@registry.register_task("run-relaxations-stress")
+class RelxationStressTask(BaseTask):
+    def run(self):
+        assert isinstance(
+            self.trainer, StressTrainer
+        ), "Relaxations are only possible for StressTrainer"
         assert (
             self.trainer.relax_dataset is not None
         ), "Relax dataset is required for making predictions"

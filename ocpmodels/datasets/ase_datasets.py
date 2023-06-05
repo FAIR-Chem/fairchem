@@ -392,7 +392,7 @@ class AseDBDataset(AseAtomsDataset):
 
     def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
         super(AseDBDataset, self).__init__(config, transform, atoms_transform)
-
+        
         if isinstance(self.config["src"], list):
             filepaths = self.config["src"]
         elif os.path.isfile(self.config["src"]):

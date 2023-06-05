@@ -962,7 +962,10 @@ def check_traj_files(batch, traj_dir):
     if traj_dir is None:
         return False
     traj_dir = Path(traj_dir)
-    traj_files = [traj_dir / f"{id}.traj" for id in batch[0].sid.tolist()]
+    try:
+        traj_files = [traj_dir / f"{id}.traj" for id in batch[0].sid.tolist()]
+    except:
+        traj_files = [traj_dir / f"{id}.traj" for id in batch[0].sid]
     return all(fl.exists() for fl in traj_files)
 
 
