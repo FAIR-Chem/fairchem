@@ -323,7 +323,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
         return {}
 
 
-class dummy_list(object):
+class dummy_list(list):
     def __init__(self, max):
         self.max = max
         return
@@ -356,9 +356,13 @@ class AseDBDataset(AseAtomsDataset):
 
     args:
         config (dict):
-            src (str): The path to or connection address of your ASE DB, or a folder with
-                    many ASE DBs, or a glob string. If a folder, every file will be attempted
-                    as an ASE DB, and warnings raised for any files that can't connect cleanly
+            src (str): Either
+                    - the path to or connection address of your ASE DB, or
+                    -  a folder with many ASE DBs, or
+                    -  a glob string,
+                    -  a list of ASE db addresses.
+                    If a folder, every file will be attempted as an ASE DB, and warnings
+                    raised for any files that can't connect cleanly
 
             connect_args (dict): Keyword arguments for ase.db.connect()
 
@@ -389,8 +393,9 @@ class AseDBDataset(AseAtomsDataset):
     def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
         super(AseDBDataset, self).__init__(config, transform, atoms_transform)
 
-        filepaths = []
-        if os.path.isfile(self.config["src"]):
+        if isinstance(self.config["src"], list):
+            filepaths = self.config["src"]
+        elif os.path.isfile(self.config["src"]):
             filepaths = [self.config["src"]]
         elif os.path.isdir(self.config["src"]):
             filepaths = glob.glob(f'{self.config["src"]}/*')
