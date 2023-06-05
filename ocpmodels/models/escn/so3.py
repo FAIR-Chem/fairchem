@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 """
 
 import os
-
 import torch
 import torch.nn as nn
 
@@ -20,7 +19,6 @@ except ImportError:
 # https://github.com/e3nn/e3nn/blob/0.4.0/e3nn/o3/_wigner.py#L10
 # _Jd is a list of tensors of shape (2l+1, 2l+1)
 _Jd = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
-
 
 class CoefficientMapping:
     """
@@ -83,7 +81,6 @@ class CoefficientMapping:
         offset = 0
         for m in range(max(self.mmax_list) + 1):
             idx_r, idx_i = self.complex_idx(m)
-
             for idx_out, idx_in in enumerate(idx_r):
                 self.to_m[idx_out + offset, idx_in] = 1.0
             offset = offset + len(idx_r)
@@ -396,7 +393,6 @@ class SO3_Rotation(torch.nn.Module):
         super().__init__()
         self.device = rot_mat3x3.device
         self.dtype = rot_mat3x3.dtype
-
         length = len(rot_mat3x3)
 
         self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, 0, lmax)
@@ -417,13 +413,13 @@ class SO3_Rotation(torch.nn.Module):
     # Rotate the embedding
     def rotate(self, embedding, out_lmax, out_mmax):
         out_mask = self.mapping.coefficient_idx(out_lmax, out_mmax)
-        wigner = self.wigner[:, out_mask, :]
+        wigner = self.wigner[:, out_mask, :].to(embedding.device)
         return torch.bmm(wigner, embedding)
 
     # Rotate the embedding by the inverse of the rotation matrix
     def rotate_inv(self, embedding, in_lmax, in_mmax):
         in_mask = self.mapping.coefficient_idx(in_lmax, in_mmax)
-        wigner_inv = self.wigner_inv[:, :, in_mask]
+        wigner_inv = self.wigner_inv[:, :, in_mask].to(embedding.device)
 
         return torch.bmm(wigner_inv, embedding)
 
@@ -505,7 +501,7 @@ class SO3_Grid(torch.nn.Module):
         self.initialized = False
 
     def _initialize(self, device):
-        if self.initialized is True:
+        if self.initialized == True:
             return
         self.mapping = CoefficientMapping([self.lmax], [self.lmax], device)
 

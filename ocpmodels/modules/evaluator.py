@@ -43,26 +43,79 @@ class Evaluator:
         ],
         "is2rs": [
             "average_distance_within_threshold",
+            "average_distance_cell_within_threshold",
             "positions_mae",
             "positions_mse",
+            "cell_mae",
+            "cell_mse",
         ],
         "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
+        "s2efs": [
+            "stress_mae",
+            "stress_isotropic_mae",
+            "stress_anisotropic_mae",
+            "forcesx_mae",
+            "forcesy_mae",
+            "forcesz_mae",
+            "forces_mae",
+            "forces_cos",
+            "forces_magnitude",
+            "energy_mae",
+            "energy_force_within_threshold",
+        ],
+        "s2es": [
+            "stress_mae",
+            "stress_isotropic_mae",
+            "stress_anisotropic_mae",
+            "energy_mae",
+        ],
+        "s2e": [
+            "energy_mae",
+            "energy_within_threshold",
+        ],
+        "s2s": [
+            "stress_mae",
+            "stress_isotropic_mae",
+            "stress_anisotropic_mae",
+        ],
     }
 
     task_attributes = {
         "s2ef": ["energy", "forces", "natoms"],
         "is2rs": ["positions", "cell", "pbc", "natoms"],
         "is2re": ["energy"],
+        "s2efs": [
+            "energy",
+            "forces",
+            "stress_isotropic",
+            "stress_anisotropic",
+            "natoms",
+        ],
+        "s2es": ["energy", "stress_isotropic", "stress_anisotropic", "natoms"],
+        "s2e": ["energy", "natoms"],
+        "s2s": ["stress_isotropic", "stress_anisotropic", "natoms"],
     }
 
     task_primary_metric = {
         "s2ef": "energy_force_within_threshold",
         "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
+        "s2efs": "energy_force_within_threshold",
+        "s2es": "energy_mae",
+        "s2e": "energy_mae",
+        "s2s": "stress_mae",
     }
 
     def __init__(self, task=None):
-        assert task in ["s2ef", "is2rs", "is2re"]
+        assert task in [
+            "s2ef",
+            "is2rs",
+            "is2re",
+            "s2efs",
+            "s2es",
+            "s2e",
+            "s2s",
+        ]
         self.task = task
         self.metric_fn = self.task_metrics[task]
 
@@ -106,6 +159,81 @@ class Evaluator:
             raise NotImplementedError
 
         return metrics
+
+
+def stress_mae(prediction, target):
+    # Multiplying by 0.1 to convert the stress to GPa as in M3GNet
+    change_mat = (
+        torch.tensor(
+            [
+                [3 ** (-0.5), 0, 0, 0, 3 ** (-0.5), 0, 0, 0, 3 ** (-0.5)],
+                [0, 0, 0, 0, 0, 2 ** (-0.5), 0, -(2 ** (-0.5)), 0],
+                [0, 0, -(2 ** (-0.5)), 0, 0, 0, 2 ** (-0.5), 0, 0],
+                [0, 2 ** (-0.5), 0, -(2 ** (-0.5)), 0, 0, 0, 0, 0],
+                [0, 0, 0.5**0.5, 0, 0, 0, 0.5**0.5, 0, 0],
+                [0, 2 ** (-0.5), 0, 2 ** (-0.5), 0, 0, 0, 0, 0],
+                [
+                    -(6 ** (-0.5)),
+                    0,
+                    0,
+                    0,
+                    2 * 6 ** (-0.5),
+                    0,
+                    0,
+                    0,
+                    -(6 ** (-0.5)),
+                ],
+                [0, 0, 0, 0, 0, 2 ** (-0.5), 0, 2 ** (-0.5), 0],
+                [-(2 ** (-0.5)), 0, 0, 0, 0, 0, 0, 0, 2 ** (-0.5)],
+            ]
+        )
+        .detach()
+        .to(prediction["stress_isotropic"].device)
+    )
+    zero_vectors = torch.zeros(
+        (prediction["stress_isotropic"].shape[0], 3),
+        device=prediction["stress_isotropic"].device,
+    )
+    prediction_irreps = torch.concat(
+        [
+            prediction["stress_isotropic"].reshape(-1, 1),
+            zero_vectors,
+            prediction["stress_anisotropic"].reshape(-1, 5),
+        ],
+        dim=1,
+    )
+    prediction_stress = torch.einsum(
+        "ba, cb->ca", change_mat, prediction_irreps
+    )
+
+    target_irreps = torch.concat(
+        [
+            target["stress_isotropic"].reshape(-1, 1),
+            zero_vectors,
+            target["stress_anisotropic"].reshape(-1, 5),
+        ],
+        dim=1,
+    )
+    target_stress = torch.einsum("ba, cb->ca", change_mat, target_irreps)
+
+    return absolute_error(
+        prediction_stress.reshape(-1) * 0.1, target_stress.reshape(-1) * 0.1
+    )
+
+
+def stress_isotropic_mae(prediction, target):
+    # Multiplying by 0.1 to convert the stress to GPa as in M3GNet
+    return absolute_error(
+        prediction["stress_isotropic"] * 0.1, target["stress_isotropic"] * 0.1
+    )
+
+
+def stress_anisotropic_mae(prediction, target):
+    # Multiplying by 0.1 to convert the stress to GPa as in M3GNet
+    return absolute_error(
+        prediction["stress_anisotropic"] * 0.1,
+        target["stress_anisotropic"] * 0.1,
+    )
 
 
 def energy_mae(prediction, target):
@@ -164,6 +292,14 @@ def positions_mse(prediction, target):
     return squared_error(prediction["positions"], target["positions"])
 
 
+def cell_mae(prediction, target):
+    return absolute_error(prediction["cell"], target["cell"])
+
+
+def cell_mse(prediction, target):
+    return squared_error(prediction["cell"], target["cell"])
+
+
 def energy_force_within_threshold(prediction, target):
     # Note that this natoms should be the count of free atoms we evaluate over.
     assert target["natoms"].sum() == prediction["forces"].size(0)
@@ -212,7 +348,7 @@ def energy_within_threshold(prediction, target):
     }
 
 
-def average_distance_within_threshold(prediction, target):
+def average_distance_cell_within_threshold(prediction, target):
     pred_pos = torch.split(
         prediction["positions"], prediction["natoms"].tolist()
     )
@@ -243,6 +379,37 @@ def average_distance_within_threshold(prediction, target):
 
     return {"metric": success / total, "total": success, "numel": total}
 
+
+def average_distance_within_threshold(prediction, target):
+    pred_pos = torch.split(
+        prediction["positions"], prediction["natoms"].tolist()
+    )
+    target_pos = torch.split(target["positions"], target["natoms"].tolist())
+
+    mean_distance = []
+    for idx, ml_pos in enumerate(pred_pos):
+        mean_distance.append(
+            np.mean(
+                np.linalg.norm(
+                    min_diff(
+                        ml_pos.detach().cpu().numpy(),
+                        target_pos[idx].detach().cpu().numpy(),
+                        target["cell"][idx].detach().cpu().numpy(),
+                        target["pbc"].tolist(),
+                    ),
+                    axis=1,
+                )
+            )
+        )
+
+    success = 0
+    intv = np.arange(0.01, 0.5, 0.001)
+    for i in intv:
+        success += sum(np.array(mean_distance) < i)
+
+    total = len(mean_distance) * len(intv)
+
+    return {"metric": success / total, "total": success, "numel": total}
 
 def min_diff(pred_pos, dft_pos, cell, pbc):
     pos_diff = pred_pos - dft_pos

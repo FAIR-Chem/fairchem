@@ -47,9 +47,13 @@ from .utils import (
     mask_neighbors,
     repeat_blocks,
 )
+from ocpmodels.models.utils.outer_block import (
+    Rank2Block,
+    Rank2DecompositionEdgeBlock,
+)
 
 
-@registry.register_model("gemnet_oc")
+@registry.register_model("gemnet_oc_stress")
 class GemNetOC(BaseModel):
     """
     Arguments
@@ -108,12 +112,28 @@ class GemNetOC(BaseModel):
         Number of residual blocks for transforming atom embeddings.
     num_global_out_layers: int
         Number of final residual blocks before the output.
+    outer_product_stress: bool
+        Use outer product of edges to regress stress
+    decomposition_stress: bool
+        Predict isotropic and anisotropic separately
+    edge_level: bool
+        With outer_product_stress use MLP on edge messages
+    mixing_coordinates: bool
+        With outer_product_stress use MLP on tensor coordinates (breaks equivariance)
+    extensive_energy: bool
+        Energy pooling is sum (otherwise mean)
+    extensive_stress: bool
+        Stress pooling is sum (otherwise mean)
 
     regress_forces: bool
         Whether to predict forces. Default: True
     direct_forces: bool
         If True predict forces based on aggregation of interatomic directions.
         If False predict forces based on negative gradient of energy potential.
+    regress_energy: bool
+        Whether to predict energy
+    regress_stress: bool
+        Whether to predict stress
     use_pbc: bool
         Whether to use periodic boundary conditions.
     scale_backprop_forces: bool
@@ -142,9 +162,7 @@ class GemNetOC(BaseModel):
     max_neighbors_aint: int
         Maximum number of atom-to-atom interactions per atom.
         Optional. Uses maximum of all other neighbors per default.
-    enforce_max_neighbors_strictly: bool
-        When subselected edges based on max_neighbors args, arbitrarily
-        select amongst degenerate edges to have exactly the correct number.
+
     rbf: dict
         Name and hyperparameters of the radial basis function.
     rbf_spherical: dict
@@ -213,10 +231,18 @@ class GemNetOC(BaseModel):
         num_output_afteratom: int,
         num_atom_emb_layers: int = 0,
         num_global_out_layers: int = 2,
+        regress_energy: bool = True,
         regress_forces: bool = True,
-        direct_forces: bool = False,
+        regress_stress: bool = False,
+        outer_product_stress: bool = False,
+        decomposition_stress: bool = True,
+        edge_level: bool = True,
+        mixing_coordinates: bool = False,
+        direct_forces: bool = True,
+        direct_stress: bool = True,
         use_pbc: bool = True,
         scale_backprop_forces: bool = False,
+        enforce_max_neighbors_strictly: bool = True,
         cutoff: float = 6.0,
         cutoff_qint: Optional[float] = None,
         cutoff_aeaint: Optional[float] = None,
@@ -225,13 +251,13 @@ class GemNetOC(BaseModel):
         max_neighbors_qint: Optional[int] = None,
         max_neighbors_aeaint: Optional[int] = None,
         max_neighbors_aint: Optional[int] = None,
-        enforce_max_neighbors_strictly: bool = True,
         rbf: dict = {"name": "gaussian"},
         rbf_spherical: Optional[dict] = None,
         envelope: dict = {"name": "polynomial", "exponent": 5},
         cbf: dict = {"name": "spherical_harmonics"},
         sbf: dict = {"name": "spherical_harmonics"},
         extensive: bool = True,
+        extensive_stress: bool = False,
         intensive_max: bool = False,
         forces_coupled: bool = False,
         output_init: str = "HeOrthogonal",
@@ -254,8 +280,8 @@ class GemNetOC(BaseModel):
         assert num_blocks > 0
         self.num_blocks = num_blocks
         self.extensive = extensive
+        self.extensive_stress = extensive_stress
         self.intensive_max = intensive_max
-
         self.atom_edge_interaction = atom_edge_interaction
         self.edge_atom_interaction = edge_atom_interaction
         self.atom_interaction = atom_interaction
@@ -272,13 +298,19 @@ class GemNetOC(BaseModel):
             max_neighbors_aeaint,
             max_neighbors_aint,
         )
-        self.enforce_max_neighbors_strictly = enforce_max_neighbors_strictly
         self.use_pbc = use_pbc
-
+        self.enforce_max_neighbors_strictly = enforce_max_neighbors_strictly
+        self.regress_energy = regress_energy
         self.direct_forces = direct_forces
+        self.direct_stress = direct_stress
         self.forces_coupled = forces_coupled
         self.regress_forces = regress_forces
         self.force_scaler = ForceScaler(enabled=scale_backprop_forces)
+        self.regress_stress = regress_stress
+        self.outer_product_stress = outer_product_stress
+        self.decomposition_stress = decomposition_stress
+        self.edge_level = edge_level
+        self.mixing_coordinates = mixing_coordinates
 
         self.init_basis_functions(
             num_radial,
@@ -359,10 +391,11 @@ class GemNetOC(BaseModel):
             )
             for _ in range(num_global_out_layers)
         ]
-        self.out_mlp_E = torch.nn.Sequential(*out_mlp_E)
-        self.out_energy = Dense(
-            emb_size_atom, num_targets, bias=False, activation=None
-        )
+        if self.regress_energy:
+            self.out_mlp_E = torch.nn.Sequential(*out_mlp_E)
+            self.out_energy = Dense(
+                emb_size_atom, num_targets, bias=False, activation=None
+            )
         if direct_forces:
             out_mlp_F = [
                 Dense(
@@ -383,12 +416,57 @@ class GemNetOC(BaseModel):
                 emb_size_edge, num_targets, bias=False, activation=None
             )
 
+        if regress_stress and direct_stress:
+            out_mlp_S = [
+                Dense(
+                    emb_size_edge * (num_blocks + 1),
+                    emb_size_edge,
+                    activation=activation,
+                )
+            ]
+            out_mlp_S += [
+                ResidualLayer(
+                    emb_size_edge,
+                    activation=activation,
+                )
+                for _ in range(num_global_out_layers)
+            ]
+            self.out_mlp_S = torch.nn.Sequential(*out_mlp_S)
         out_initializer = get_initializer(output_init)
-        self.out_energy.reset_parameters(out_initializer)
+        if self.regress_energy:
+            self.out_energy.reset_parameters(out_initializer)
         if direct_forces:
             self.out_forces.reset_parameters(out_initializer)
 
         load_scales_compat(self, scale_file)
+
+        if self.regress_stress and direct_stress:
+            if self.outer_product_stress:
+                self.stress_head = Rank2Block(
+                    edge_level=self.edge_level,
+                    mixing_coordinates=self.mixing_coordinates,
+                    emb_size=emb_size_edge,
+                    extensive=self.extensive_stress,
+                    num_layers=2,
+                )
+            elif self.decomposition_stress:
+                self.stress_head = Rank2DecompositionEdgeBlock(
+                    emb_size=emb_size_edge,
+                    edge_level=self.edge_level,
+                    extensive=self.extensive_stress,
+                    num_layers=2,
+                )
+        if self.regress_stress:
+            self.change_mat = torch.tensor([[3 **(-0.5), 0, 0, 0, 3 **(-0.5), 0, 0, 0, 3 **(-0.5)], 
+                [0, 0, 0, 0, 0, 2 ** (- 0.5), 0, -2 ** (- 0.5), 0], 
+                [0, 0, -2 ** (- 0.5), 0, 0, 0, 2 ** (- 0.5), 0, 0], 
+                [0, 2 ** (- 0.5), 0, -2 ** (- 0.5), 0, 0, 0, 0, 0],
+                [0, 0, 0.5 ** 0.5, 0, 0, 0, 0.5 ** 0.5, 0, 0],
+                [0, 2 ** (- 0.5), 0, 2 ** (- 0.5), 0, 0, 0, 0, 0],
+                [- 6 ** (-0.5), 0, 0, 0, 2 * 6 ** (-0.5), 0, 0, 0, -6 ** (-0.5)],
+                [0, 0, 0, 0, 0, 2 ** (- 0.5), 0, 2 ** (- 0.5), 0],
+                [- 2 ** (- 0.5), 0, 0, 0, 0, 0, 0, 0, 2 ** (- 0.5)]
+                ]).detach()
 
     def set_cutoffs(self, cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint):
         self.cutoff = cutoff
@@ -845,6 +923,7 @@ class GemNetOC(BaseModel):
         graph,
         cutoff=None,
         max_neighbors=None,
+        enforce_max_neighbors_strictly=True,
     ):
         """Subselect edges using a stricter cutoff and max_neighbors."""
         subgraph = graph.copy()
@@ -866,7 +945,7 @@ class GemNetOC(BaseModel):
                 index=subgraph["edge_index"][1],
                 atom_distance=subgraph["distance"],
                 max_num_neighbors_threshold=max_neighbors,
-                enforce_max_strictly=self.enforce_max_neighbors_strictly,
+                enforce_max_strictly=enforce_max_neighbors_strictly,
             )
             if not torch.all(edge_mask):
                 subgraph["edge_index"] = subgraph["edge_index"][:, edge_mask]
@@ -882,7 +961,9 @@ class GemNetOC(BaseModel):
             )
         return subgraph
 
-    def generate_graph_dict(self, data, cutoff, max_neighbors):
+    def generate_graph_dict(
+        self, data, cutoff, max_neighbors, enforce_max_neighbors_strictly=True
+    ):
         """Generate a radius/nearest neighbor graph."""
         otf_graph = cutoff > 6 or max_neighbors > 50 or self.otf_graph
 
@@ -898,6 +979,7 @@ class GemNetOC(BaseModel):
             cutoff=cutoff,
             max_neighbors=max_neighbors,
             otf_graph=otf_graph,
+            enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
         )
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
@@ -926,6 +1008,7 @@ class GemNetOC(BaseModel):
             graph=graph,
             cutoff=select_cutoff,
             max_neighbors=select_neighbors,
+            enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
         )
 
         return graph
@@ -938,6 +1021,7 @@ class GemNetOC(BaseModel):
         max_neighbors,
         cutoff_orig,
         max_neighbors_orig,
+        enforce_max_neighbors_strictly=True,
     ):
         """If the new cutoff and max_neighbors is different from the original,
         subselect the edges of a given graph.
@@ -957,9 +1041,10 @@ class GemNetOC(BaseModel):
             graph=graph,
             cutoff=select_cutoff,
             max_neighbors=select_neighbors,
+            enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
         )
 
-    def get_graphs_and_indices(self, data):
+    def get_graphs_and_indices(self, data, enforce_max_neighbors_strictly=True):
         """ "Generate embedding and interaction graphs and indices."""
         num_atoms = data.atomic_numbers.size(0)
 
@@ -970,7 +1055,10 @@ class GemNetOC(BaseModel):
             or self.atom_interaction
         ):
             a2a_graph = self.generate_graph_dict(
-                data, self.cutoff_aint, self.max_neighbors_aint
+                data,
+                self.cutoff_aint,
+                self.max_neighbors_aint,
+                enforce_max_neighbors_strictly,
             )
             main_graph = self.subselect_graph(
                 data,
@@ -979,6 +1067,7 @@ class GemNetOC(BaseModel):
                 self.max_neighbors,
                 self.cutoff_aint,
                 self.max_neighbors_aint,
+                enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
             )
             a2ee2a_graph = self.subselect_graph(
                 data,
@@ -987,10 +1076,14 @@ class GemNetOC(BaseModel):
                 self.max_neighbors_aeaint,
                 self.cutoff_aint,
                 self.max_neighbors_aint,
+                enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
             )
         else:
             main_graph = self.generate_graph_dict(
-                data, self.cutoff, self.max_neighbors
+                data,
+                self.cutoff,
+                self.max_neighbors,
+                enforce_max_neighbors_strictly,
             )
             a2a_graph = {}
             a2ee2a_graph = {}
@@ -1007,6 +1100,7 @@ class GemNetOC(BaseModel):
                     self.max_neighbors_qint,
                     self.cutoff_aint,
                     self.max_neighbors_aint,
+                    enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
                 )
             else:
                 assert self.cutoff_qint <= self.cutoff
@@ -1018,6 +1112,7 @@ class GemNetOC(BaseModel):
                     self.max_neighbors_qint,
                     self.cutoff,
                     self.max_neighbors,
+                    enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
                 )
 
             # Only use quadruplets for certain tags
@@ -1235,6 +1330,18 @@ class GemNetOC(BaseModel):
 
         if self.regress_forces and not self.direct_forces:
             pos.requires_grad_(True)
+        
+        if self.regress_stress and not self.direct_stress:
+            cell = data.cell
+            grad_stress = torch.zeros(
+                (data.natoms.shape[0], 3, 3),
+                dtype=data.pos.dtype,
+                device=data.pos.device,
+            )
+            grad_stress.requires_grad_(True)
+            data.pos = data.pos + torch.bmm(pos.unsqueeze(-2), grad_stress[batch]).squeeze(1)
+            data.cell = data.cell + torch.bmm(data.cell, grad_stress)
+        
 
         (
             main_graph,
@@ -1246,7 +1353,9 @@ class GemNetOC(BaseModel):
             trip_idx_a2e,
             trip_idx_e2a,
             quad_idx,
-        ) = self.get_graphs_and_indices(data)
+        ) = self.get_graphs_and_indices(
+            data, enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly
+        )
         _, idx_t = main_graph["edge_index"]
 
         (
@@ -1275,7 +1384,6 @@ class GemNetOC(BaseModel):
         # (nAtoms, emb_size_atom)
         m = self.edge_emb(h, basis_rad_raw, main_graph["edge_index"])
         # (nEdges, emb_size_edge)
-
         x_E, x_F = self.out_blocks[0](h, m, basis_output, idx_t)
         # (nAtoms, emb_size_atom), (nEdges, emb_size_edge)
         xs_E, xs_F = [x_E], [x_F]
@@ -1307,28 +1415,35 @@ class GemNetOC(BaseModel):
             xs_F.append(x_F)
 
         # Global output block for final predictions
-        x_E = self.out_mlp_E(torch.cat(xs_E, dim=-1))
+        if self.regress_energy:
+            x_E = self.out_mlp_E(torch.cat(xs_E, dim=-1))
         if self.direct_forces:
             x_F = self.out_mlp_F(torch.cat(xs_F, dim=-1))
+        if self.direct_stress:
+            S_st = self.out_mlp_S(torch.cat(xs_F, dim=-1))
         with torch.cuda.amp.autocast(False):
-            E_t = self.out_energy(x_E.float())
+            if self.regress_energy:
+                E_t = self.out_energy(x_E.float())
             if self.direct_forces:
                 F_st = self.out_forces(x_F.float())
 
         nMolecules = torch.max(batch) + 1
-        if self.extensive:
-            E_t = scatter_det(
-                E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
-            )  # (nMolecules, num_targets)
-        else:
-            if self.intensive_max:
+        if self.regress_energy:
+            if self.extensive:
                 E_t = scatter_det(
-                    E_t, batch, dim=0, dim_size=nMolecules, reduce="max"
+                    E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
                 )  # (nMolecules, num_targets)
             else:
-                E_t = scatter_det(
-                    E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
-                )  # (nMolecules, num_targets)
+                if self.intensive_max:
+                    E_t = scatter_det(
+                        E_t, batch, dim=0, dim_size=nMolecules, reduce="max"
+                    )  # (nMolecules, num_targets)
+                else:
+                    E_t = scatter_det(
+                        E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
+                    )  # (nMolecules, num_targets)
+
+            E_t = E_t.squeeze(1)  # (num_molecules)
 
         if self.regress_forces:
             if self.direct_forces:
@@ -1361,12 +1476,64 @@ class GemNetOC(BaseModel):
             else:
                 F_t = self.force_scaler.calc_forces_and_update(E_t, pos)
 
-            E_t = E_t.squeeze(1)  # (num_molecules)
             F_t = F_t.squeeze(1)  # (num_atoms, 3)
-            return E_t, F_t
+                
+        # Stress estimation
+        if self.regress_stress:
+            if self.direct_stress:
+                if self.outer_product_stress:
+                    S_t_scalar, S_t_irrep2 = self.stress_head(
+                        main_graph["vector"], S_st, idx_t, data
+                    )  # self.stress_head(V_st, F_st, edge_index, data)
+
+                elif self.decomposition_stress:
+                    S_t_scalar, S_t_irrep2 = self.stress_head(
+                        S_st, main_graph["vector"], idx_t, data
+                    )
+                else:
+                    B = E_t.shape[0]
+                    S_t_scalar = torch.rand(B).to(self.device)
+                    S_t_irrep2 = torch.rand(B, 5).to(self.device)
+            else:
+                stress = - self.stress_scaler.calc_forces_and_update(
+                    E_t * data.natoms, grad_stress
+                )
+                volume = torch.sum(
+                    cell[:, 0, :] * torch.cross(cell[:, 1, :], cell[:, 2, :], dim=1),
+                    dim=1,
+                    keepdim=True,
+                )[:, :, None]
+                S_t = stress / volume * 1602.18
+                S_t_decomposed = torch.einsum(
+                    "ab, cb->ca", 
+                    self.change_mat.to(stress.device), 
+                    S_t.reshape(-1, 9)
+                )
+                S_t_scalar = S_t_decomposed[:, 0]
+                S_t_irrep2 = S_t_decomposed[:, 4:9]      
+        
+        if self.regress_energy:
+            if self.regress_forces:
+                if self.regress_stress:
+                    return E_t, F_t, S_t_scalar, S_t_irrep2
+                else:
+                    return E_t, F_t
+            else:
+                if self.regress_stress:
+                    return E_t, S_t_scalar, S_t_irrep2
+                else:
+                    return E_t
         else:
-            E_t = E_t.squeeze(1)  # (num_molecules)
-            return E_t
+            if self.regress_forces:
+                if self.regress_stress:
+                    return F_t, S_t_scalar, S_t_irrep2
+                else:
+                    return F_t
+            else:
+                if self.regress_stress:
+                    return S_t_scalar, S_t_irrep2
+                else:
+                    return
 
     @property
     def num_params(self):
