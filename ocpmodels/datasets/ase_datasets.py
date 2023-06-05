@@ -414,7 +414,7 @@ class AseDBDataset(AseAtomsDataset):
                 self.db_ids.append(db.ids)
             else:
                 self.db_ids.append(
-                    [row.id for row in self.db.select(**self.select_args)]
+                    [row.id for row in db.select(**self.select_args)]
                 )
 
         idlens = [len(ids) for ids in self.db_ids]
