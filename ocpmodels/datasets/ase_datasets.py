@@ -356,7 +356,9 @@ class AseDBDataset(AseAtomsDataset):
 
     args:
         config (dict):
-            src (str): The path to or connection address of your ASE DB
+            src (str): The path to or connection address of your ASE DB, or a folder with
+                    many ASE DBs, or a glob string. If a folder, every file will be attempted
+                    as an ASE DB, and warnings raised for any files that can't connect cleanly
 
             connect_args (dict): Keyword arguments for ase.db.connect()
 
@@ -387,26 +389,25 @@ class AseDBDataset(AseAtomsDataset):
     def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
         super(AseDBDataset, self).__init__(config, transform, atoms_transform)
 
+        filepaths = []
         if os.path.isfile(self.config["src"]):
-            self.dbs = [
-                self.connect_db(
-                    self.config["src"], self.config.get("connect_args", {})
-                )
-            ]
+            filepaths = [self.config["src"]]
+        elif os.path.isdir(self.config["src"]):
+            filepaths = glob.glob(f'{self.config["src"]}/*')
         else:
-            self.dbs = []
-            file_list = glob.glob(f'{self.config["src"]}/*[!lock]')
-            for path in file_list:
-                try:
-                    self.dbs.append(
-                        self.connect_db(
-                            path, self.config.get("connect_args", {})
-                        )
-                    )
-                except ValueError:
-                    logging.warning(
-                        f"Tried to connect to {path} but it's not an ASE database!"
-                    )
+            filepaths = glob.glob(self.config["src"])
+
+        self.dbs = []
+
+        for path in filepaths:
+            try:
+                self.dbs.append(
+                    self.connect_db(path, self.config.get("connect_args", {}))
+                )
+            except ValueError:
+                logging.warning(
+                    f"Tried to connect to {path} but it's not an ASE database!"
+                )
 
         self.select_args = self.config.get("select_args", {})
 
