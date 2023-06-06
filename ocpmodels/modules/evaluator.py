@@ -8,7 +8,6 @@ LICENSE file in the root directory of this source tree.
 import numpy as np
 import torch
 
-
 """
 An evaluation module for use with the OCP dataset and suite of tasks. It should
 be possible to import this independently of the rest of the codebase, e.g:
@@ -410,6 +409,7 @@ def average_distance_within_threshold(prediction, target):
     total = len(mean_distance) * len(intv)
 
     return {"metric": success / total, "total": success, "numel": total}
+
 
 def min_diff(pred_pos, dft_pos, cell, pbc):
     pos_diff = pred_pos - dft_pos

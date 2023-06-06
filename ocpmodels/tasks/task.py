@@ -97,8 +97,8 @@ class RelxationTask(BaseTask):
         ), "Relax dataset is required for making predictions"
         assert self.config["checkpoint"]
         self.trainer.run_relaxations()
-        
-        
+
+
 @registry.register_task("run-relaxations-stress")
 class RelxationStressTask(BaseTask):
     def run(self):

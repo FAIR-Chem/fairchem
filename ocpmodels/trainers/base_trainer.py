@@ -444,7 +444,7 @@ class BaseTrainer(ABC):
             "expand_atomic_embeddings_from_checkpoint", False
         ):
             logging.info("Expanding atomic embeddings from the checkpoint!")
-            
+
             for base_key in registry.get_model_class(
                 self.config["model"]
             ).all_atomic_embeddings_keys():
@@ -453,8 +453,7 @@ class BaseTrainer(ABC):
                     : new_dict[key].shape[0]
                 ] = new_dict[key]
                 new_dict[key] = self.model.state_dict()[key]
-                
-                
+
         if "interpolate_atomic_embeddings" in self.config["task"]:
             if "interpolate_atomic_embeddings" in checkpoint["config"][
                 "task"
@@ -495,14 +494,14 @@ class BaseTrainer(ABC):
 
                 self.config["task"]["interpolate_atomic_embeddings"][
                     "already_interpolated"
-                ] = True         
-                   
+                ] = True
+
         strict = self.config["task"].get("strict_load", True)
         load_state_dict(self.model, new_dict, strict=strict)
         if "optimizer" in checkpoint:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
         if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
-            self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])  
+            self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
         if "ema" in checkpoint and checkpoint["ema"] is not None:
             self.ema.load_state_dict(checkpoint["ema"])
         else:
@@ -553,7 +552,6 @@ class BaseTrainer(ABC):
         optimizer = getattr(optim, optimizer)
 
         if self.config["optim"].get("weight_decay", 0) > 0:
-
             # Do not regularize bias etc.
             params_decay = []
             params_no_decay = []
