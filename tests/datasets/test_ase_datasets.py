@@ -53,6 +53,8 @@ def test_ase_read_dataset():
             )
         )
 
+    dataset.close_db()
+
 
 def test_ase_db_dataset():
     try:
@@ -80,6 +82,7 @@ def test_ase_db_dataset():
 
     assert len(dataset) == len(structures)
     data = dataset[0]
+
     del data
 
     os.remove(
@@ -220,7 +223,6 @@ def test_ase_lmdb_dataset():
 
 
 def test_lmdb_metadata_guesser():
-
     # Cleanup old lmdb in case it's left over from previous tests
     try:
         os.remove(
@@ -275,7 +277,6 @@ def test_lmdb_metadata_guesser():
 
 
 def test_ase_metadata_guesser():
-
     try:
         os.remove(
             os.path.join(
@@ -356,12 +357,23 @@ def test_ase_metadata_guesser():
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.db")
     )
 
+    dataset.close_db()
+
 
 def test_ase_multiread_dataset():
     try:
         os.remove(
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "test.traj"
+            )
+        )
+    except FileNotFoundError:
+        pass
+
+    try:
+        os.remove(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "test_index_file"
             )
         )
     except FileNotFoundError:
@@ -390,6 +402,33 @@ def test_ase_multiread_dataset():
     assert len(dataset) == len(atoms_objects)
     [dataset[:]]
 
+    f = open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "test_index_file"
+        ),
+        "w",
+    )
+    f.write(
+        f"{os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test.traj')} {len(atoms_objects)}"
+    )
+    f.close()
+
+    dataset = AseReadMultiStructureDataset(
+        config={
+            "index_file": os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "test_index_file"
+            )
+        },
+    )
+
+    assert len(dataset) == len(atoms_objects)
+    [dataset[:]]
+
     os.remove(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "test.traj")
+    )
+    os.remove(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "test_index_file"
+        )
     )
