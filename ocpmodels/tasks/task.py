@@ -50,6 +50,7 @@ class TrainTask(BaseTask):
                         + "Consider removing it from the model."
                     )
 
+    @torch.no_grad()
     def create_deup_dataset(self):
         dds = self.config["deup_dataset"]
         if self.config["trainer"] != "deup":
@@ -70,6 +71,7 @@ class TrainTask(BaseTask):
             dds["n_samples"],
             dds.get("output_path") or Path(self.config["run_dir"]) / "deup_dataset",
             -1,
+            128,
         )
         print("\n🤠 DEUP Dataset created in:", str(output_path))
         return output_path

@@ -245,6 +245,7 @@ class EnsembleTrainer(SingleTrainer):
         n_samples: int = 10,
         output_path: str = None,
         max_samples: int = -1,
+        batch_size: int = None,
     ):
         """
         Checkpoints  : ["/network/.../"]
@@ -257,6 +258,14 @@ class EnsembleTrainer(SingleTrainer):
 
         if output_path is None:
             output_path = Path(self.config["run_dir"]) / "deup_dataset"
+        if batch_size is not None:
+            assert isinstance(batch_size, int)
+            self.trainers[0].config["optim"]["batch_size"] = batch_size
+            self.trainers[0].load_datasets()
+            print(
+                "Updated sub-trainer dataset batch_size to",
+                self.trainers[0].loaders["train"].batch_sampler.batch_size,
+            )
         output_path.mkdir(exist_ok=True)
         (output_path / "deup_config.yaml").write_text(
             dump(
@@ -270,6 +279,10 @@ class EnsembleTrainer(SingleTrainer):
         )
 
         self.load_loss(reduction="none")
+
+        for trainer in self.trainers:
+            trainer.model.module.set_deup_inference(True)
+
         stats = {d: {} for d in dataset_strs}
 
         for dataset_name in dataset_strs:
