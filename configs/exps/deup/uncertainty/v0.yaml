@@ -6,7 +6,7 @@ job:
   code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-3
 
 default:
-  config: deup_faenet-is2re-all
+  config: deup_faenet-deup_is2re-all
 
   wandb_project: ocp-deup
   wandb_tags: base-model, MC-D, 3264530
