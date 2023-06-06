@@ -285,11 +285,11 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             f = open(config["index_file"], "r")
             index = f.readlines()
 
-            self.id = []
+            self.ids = []
             for line in index:
                 filename = line.split(" ")[0]
                 for i in range(int(line.split(" ")[1])):
-                    self.id.append(f"{filename} {i}")
+                    self.ids.append(f"{filename} {i}")
 
             return
 
@@ -298,7 +298,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             raise Exception("The specified src is not a directory")
         filenames = list(self.path.glob(f'{self.config["pattern"]}'))
 
-        self.id = []
+        self.ids = []
 
         if self.config.get("use_tqdm", True):
             filenames = tqdm(filenames)
