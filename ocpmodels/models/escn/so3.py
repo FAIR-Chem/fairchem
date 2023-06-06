@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import os
+
 import torch
 import torch.nn as nn
 
@@ -19,6 +20,7 @@ except ImportError:
 # https://github.com/e3nn/e3nn/blob/0.4.0/e3nn/o3/_wigner.py#L10
 # _Jd is a list of tensors of shape (2l+1, 2l+1)
 _Jd = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
+
 
 class CoefficientMapping:
     """
@@ -289,7 +291,6 @@ class SO3_Embedding(torch.nn.Module):
     def _grid_act(self, SO3_grid, act, mappingReduced):
         offset = 0
         for i in range(self.num_resolutions):
-
             num_coefficients = mappingReduced.res_size[i]
 
             x_res = self.embedding[

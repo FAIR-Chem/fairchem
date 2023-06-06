@@ -6,18 +6,23 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
-from pyexpat.model import XML_CQUANT_OPT
 import time
 
 import numpy as np
 import torch
 import torch.nn as nn
+from pyexpat.model import XML_CQUANT_OPT
+from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    conditional_grad,
-)
+from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
+from ocpmodels.models.escn.so3 import (
+    CoefficientMapping,
+    SO3_Embedding,
+    SO3_Grid,
+    SO3_Rotation,
+)
 from ocpmodels.models.scn.sampling import CalcSpherePoints
 from ocpmodels.models.scn.smearing import (
     GaussianSmearing,
@@ -25,17 +30,10 @@ from ocpmodels.models.scn.smearing import (
     SigmoidSmearing,
     SiLUSmearing,
 )
-
-from torch_scatter import scatter
-
-from ocpmodels.models.escn.so3 import SO3_Embedding
-from ocpmodels.models.escn.so3 import SO3_Rotation
-from ocpmodels.models.escn.so3 import SO3_Grid
-from ocpmodels.models.escn.so3 import CoefficientMapping
-
-from ocpmodels.models.utils.outer_block import Rank2Block
-from ocpmodels.models.utils.outer_block import Rank2DecompositionBlock
-
+from ocpmodels.models.utils.outer_block import (
+    Rank2Block,
+    Rank2DecompositionBlock,
+)
 
 try:
     from e3nn import o3
@@ -378,10 +376,14 @@ class eSCN(BaseModel):
         ###############################################################
         node_energy = self.energy_block(x_pt)
         if self.extensive_energy:
-            energy = scatter(node_energy.view(-1), data.batch, dim=0, reduce="sum")
+            energy = scatter(
+                node_energy.view(-1), data.batch, dim=0, reduce="sum"
+            )
         else:
-            energy = scatter(node_energy.view(-1), data.batch, dim=0, reduce="mean")
-            
+            energy = scatter(
+                node_energy.view(-1), data.batch, dim=0, reduce="mean"
+            )
+
         # Scale energy to help balance numerical precision w.r.t. forces
         energy = energy * 0.001
 
@@ -544,6 +546,7 @@ class LayerBlock(torch.nn.Module):
         SO3_grid (SO3_grid):        Class used to convert from grid the spherical harmonic representations
         act (function):             Non-linear activation function
     """
+
     def __init__(
         self,
         layer_idx,
@@ -649,6 +652,7 @@ class MessageBlock(torch.nn.Module):
         SO3_grid (SO3_grid):        Class used to convert from grid the spherical harmonic representations
         act (function):             Non-linear activation function
     """
+
     def __init__(
         self,
         layer_idx,
@@ -758,6 +762,7 @@ class SO2Block(torch.nn.Module):
         mmax_list (list:int):       List of orders (m) for each resolution
         act (function):             Non-linear activation function
     """
+
     def __init__(
         self,
         sphere_channels,
@@ -811,7 +816,6 @@ class SO2Block(torch.nn.Module):
         x_edge,
         mappingReduced,
     ):
-
         num_edges = len(x_edge)
 
         # Reshape the spherical harmonics based on m (order)
@@ -942,6 +946,7 @@ class EdgeBlock(torch.nn.Module):
         max_num_elements (int):     Maximum number of atomic numbers
         act (function):             Non-linear activation function
     """
+
     def __init__(
         self,
         edge_channels,
@@ -974,7 +979,6 @@ class EdgeBlock(torch.nn.Module):
         )
 
     def forward(self, edge_distance, source_element, target_element):
-
         # Compute distance embedding
         x_dist = self.distance_expansion(edge_distance)
         x_dist = self.fc1_dist(x_dist)
@@ -988,6 +992,7 @@ class EdgeBlock(torch.nn.Module):
 
         return x_edge
 
+
 class EnergyBlock(torch.nn.Module):
     """
     Energy Block: Output block computing the energy
@@ -997,6 +1002,7 @@ class EnergyBlock(torch.nn.Module):
         num_sphere_samples (int):   Number of samples used to approximate the integral on the sphere
         act (function):             Non-linear activation function
     """
+
     def __init__(
         self,
         num_channels,
@@ -1021,6 +1027,7 @@ class EnergyBlock(torch.nn.Module):
 
         return node_energy
 
+
 class ForceBlock(torch.nn.Module):
     """
     Force Block: Output block computing the per atom forces
@@ -1030,6 +1037,7 @@ class ForceBlock(torch.nn.Module):
         num_sphere_samples (int):   Number of samples used to approximate the integral on the sphere
         act (function):             Non-linear activation function
     """
+
     def __init__(
         self,
         num_channels,

@@ -23,6 +23,10 @@ from ocpmodels.common.utils import (
     scatter_det,
 )
 from ocpmodels.models.base import BaseModel
+from ocpmodels.models.utils.outer_block import (
+    Rank2Block,
+    Rank2DecompositionEdgeBlock,
+)
 from ocpmodels.modules.scaling.compat import load_scales_compat
 
 from .initializers import get_initializer
@@ -46,10 +50,6 @@ from .utils import (
     inner_product_clamped,
     mask_neighbors,
     repeat_blocks,
-)
-from ocpmodels.models.utils.outer_block import (
-    Rank2Block,
-    Rank2DecompositionEdgeBlock,
 )
 
 
@@ -457,16 +457,29 @@ class GemNetOC(BaseModel):
                     num_layers=2,
                 )
         if self.regress_stress:
-            self.change_mat = torch.tensor([[3 **(-0.5), 0, 0, 0, 3 **(-0.5), 0, 0, 0, 3 **(-0.5)], 
-                [0, 0, 0, 0, 0, 2 ** (- 0.5), 0, -2 ** (- 0.5), 0], 
-                [0, 0, -2 ** (- 0.5), 0, 0, 0, 2 ** (- 0.5), 0, 0], 
-                [0, 2 ** (- 0.5), 0, -2 ** (- 0.5), 0, 0, 0, 0, 0],
-                [0, 0, 0.5 ** 0.5, 0, 0, 0, 0.5 ** 0.5, 0, 0],
-                [0, 2 ** (- 0.5), 0, 2 ** (- 0.5), 0, 0, 0, 0, 0],
-                [- 6 ** (-0.5), 0, 0, 0, 2 * 6 ** (-0.5), 0, 0, 0, -6 ** (-0.5)],
-                [0, 0, 0, 0, 0, 2 ** (- 0.5), 0, 2 ** (- 0.5), 0],
-                [- 2 ** (- 0.5), 0, 0, 0, 0, 0, 0, 0, 2 ** (- 0.5)]
-                ]).detach()
+            self.change_mat = torch.tensor(
+                [
+                    [3 ** (-0.5), 0, 0, 0, 3 ** (-0.5), 0, 0, 0, 3 ** (-0.5)],
+                    [0, 0, 0, 0, 0, 2 ** (-0.5), 0, -(2 ** (-0.5)), 0],
+                    [0, 0, -(2 ** (-0.5)), 0, 0, 0, 2 ** (-0.5), 0, 0],
+                    [0, 2 ** (-0.5), 0, -(2 ** (-0.5)), 0, 0, 0, 0, 0],
+                    [0, 0, 0.5**0.5, 0, 0, 0, 0.5**0.5, 0, 0],
+                    [0, 2 ** (-0.5), 0, 2 ** (-0.5), 0, 0, 0, 0, 0],
+                    [
+                        -(6 ** (-0.5)),
+                        0,
+                        0,
+                        0,
+                        2 * 6 ** (-0.5),
+                        0,
+                        0,
+                        0,
+                        -(6 ** (-0.5)),
+                    ],
+                    [0, 0, 0, 0, 0, 2 ** (-0.5), 0, 2 ** (-0.5), 0],
+                    [-(2 ** (-0.5)), 0, 0, 0, 0, 0, 0, 0, 2 ** (-0.5)],
+                ]
+            ).detach()
 
     def set_cutoffs(self, cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint):
         self.cutoff = cutoff
@@ -1044,7 +1057,9 @@ class GemNetOC(BaseModel):
             enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
         )
 
-    def get_graphs_and_indices(self, data, enforce_max_neighbors_strictly=True):
+    def get_graphs_and_indices(
+        self, data, enforce_max_neighbors_strictly=True
+    ):
         """ "Generate embedding and interaction graphs and indices."""
         num_atoms = data.atomic_numbers.size(0)
 
@@ -1330,7 +1345,7 @@ class GemNetOC(BaseModel):
 
         if self.regress_forces and not self.direct_forces:
             pos.requires_grad_(True)
-        
+
         if self.regress_stress and not self.direct_stress:
             cell = data.cell
             grad_stress = torch.zeros(
@@ -1339,9 +1354,10 @@ class GemNetOC(BaseModel):
                 device=data.pos.device,
             )
             grad_stress.requires_grad_(True)
-            data.pos = data.pos + torch.bmm(pos.unsqueeze(-2), grad_stress[batch]).squeeze(1)
+            data.pos = data.pos + torch.bmm(
+                pos.unsqueeze(-2), grad_stress[batch]
+            ).squeeze(1)
             data.cell = data.cell + torch.bmm(data.cell, grad_stress)
-        
 
         (
             main_graph,
@@ -1354,7 +1370,8 @@ class GemNetOC(BaseModel):
             trip_idx_e2a,
             quad_idx,
         ) = self.get_graphs_and_indices(
-            data, enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly
+            data,
+            enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
         )
         _, idx_t = main_graph["edge_index"]
 
@@ -1477,7 +1494,7 @@ class GemNetOC(BaseModel):
                 F_t = self.force_scaler.calc_forces_and_update(E_t, pos)
 
             F_t = F_t.squeeze(1)  # (num_atoms, 3)
-                
+
         # Stress estimation
         if self.regress_stress:
             if self.direct_stress:
@@ -1495,23 +1512,24 @@ class GemNetOC(BaseModel):
                     S_t_scalar = torch.rand(B).to(self.device)
                     S_t_irrep2 = torch.rand(B, 5).to(self.device)
             else:
-                stress = - self.stress_scaler.calc_forces_and_update(
+                stress = -self.stress_scaler.calc_forces_and_update(
                     E_t * data.natoms, grad_stress
                 )
                 volume = torch.sum(
-                    cell[:, 0, :] * torch.cross(cell[:, 1, :], cell[:, 2, :], dim=1),
+                    cell[:, 0, :]
+                    * torch.cross(cell[:, 1, :], cell[:, 2, :], dim=1),
                     dim=1,
                     keepdim=True,
                 )[:, :, None]
                 S_t = stress / volume * 1602.18
                 S_t_decomposed = torch.einsum(
-                    "ab, cb->ca", 
-                    self.change_mat.to(stress.device), 
-                    S_t.reshape(-1, 9)
+                    "ab, cb->ca",
+                    self.change_mat.to(stress.device),
+                    S_t.reshape(-1, 9),
                 )
                 S_t_scalar = S_t_decomposed[:, 0]
-                S_t_irrep2 = S_t_decomposed[:, 4:9]      
-        
+                S_t_irrep2 = S_t_decomposed[:, 4:9]
+
         if self.regress_energy:
             if self.regress_forces:
                 if self.regress_stress:
