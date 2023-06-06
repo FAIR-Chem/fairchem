@@ -63,7 +63,7 @@ default:
 # -----  IS2RE  -----
 # -------------------
 
-deup: # was: is2re
+deup_is2re: # was: is2re
   10k:
     optim:
       lr_initial: 0.005
