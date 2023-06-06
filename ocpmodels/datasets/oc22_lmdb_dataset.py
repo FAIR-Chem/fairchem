@@ -32,6 +32,11 @@ class OC22LmdbDataset(Dataset):
     Useful for Structure to Energy & Force (S2EF), Initial State to
     Relaxed State (IS2RS), and Initial State to Relaxed Energy (IS2RE) tasks.
 
+    The keys in the LMDB must be integers (stored as ascii objects) starting
+    from 0 through the length of the LMDB. For historical reasons any key names
+    "length" is ignored since that was used to infer length of many lmdbs in the same
+    folder, but lmdb lengths are now calculated directly from the number of keys.
+
     Args:
             config (dict): Dataset configuration
             transform (callable, optional): Data transform function.
@@ -52,14 +57,20 @@ class OC22LmdbDataset(Dataset):
 
             self._keys, self.envs = [], []
             for db_path in db_paths:
-                self.envs.append(self.connect_db(db_path))
-                try:
-                    length = pickle.loads(
-                        self.envs[-1].begin().get("length".encode("ascii"))
-                    )
-                except TypeError:
-                    length = self.envs[-1].stat()["entries"]
-                self._keys.append(list(range(length)))
+                cur_env = self.connect_db(db_path)
+                self.envs.append(cur_env)
+
+                # Get the number of stores data from the number of entries
+                # in the LMDB
+                num_entries = cur_env.stat()["entries"]
+
+                # If "length" encoded as ascii is present, we have one fewer
+                # data than the stats suggest
+                if cur_env.begin().get("length".encode("ascii")) is not None:
+                    num_entries -= 1
+
+                # Append the keys (0->num_entries) as a list
+                self._keys.append(list(range(num_entries)))
 
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
@@ -83,11 +94,16 @@ class OC22LmdbDataset(Dataset):
         else:
             self.metadata_path = self.path.parent / "metadata.npz"
             self.env = self.connect_db(self.path)
-            self._keys = [
-                f"{j}".encode("ascii")
-                for j in range(self.env.stat()["entries"])
-            ]
-            self.num_samples = len(self._keys)
+
+            num_entries = self.env.stat()["entries"]
+
+            # If "length" encoded as ascii is present, we have one fewer
+            # data than the stats suggest
+            if self.env.begin().get("length".encode("ascii")) is not None:
+                num_entries -= 1
+
+            self._keys = list(range(num_entries))
+            self.num_samples = num_entries
 
         self.transform = transform
         self.lin_ref = self.oc20_ref = False
@@ -130,7 +146,9 @@ class OC22LmdbDataset(Dataset):
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
             data_object.id = f"{db_idx}_{el_idx}"
         else:
-            datapoint_pickled = self.env.begin().get(self._keys[idx])
+            datapoint_pickled = self.env.begin().get(
+                f"{self._keys[idx]}".encode("ascii")
+            )
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
 
         if self.transform is not None:
@@ -200,7 +218,7 @@ class OC22LmdbDataset(Dataset):
             subdir=False,
             readonly=True,
             lock=False,
-            readahead=False,
+            readahead=True,
             meminit=False,
             max_readers=1,
         )

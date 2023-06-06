@@ -63,7 +63,7 @@ def batch_to_atoms(batch):
 
 
 class OCPCalculator(Calculator):
-    implemented_properties = ["energy", "forces"]
+    implemented_properties = ["energy", "forces", "stress"]
 
     def __init__(
         self,
@@ -155,7 +155,7 @@ class OCPCalculator(Calculator):
         if "normalizer" not in config:
             del config["dataset"]["src"]
             config["normalizer"] = config["dataset"]
-
+        
         self.trainer = registry.get_trainer_class(
             config.get("trainer", "energy")
         )(
@@ -201,7 +201,6 @@ class OCPCalculator(Calculator):
         Calculator.calculate(self, atoms, properties, system_changes)
         data_object = self.a2g.convert(atoms)
         batch = data_list_collater([data_object], otf_graph=True)
-
         predictions = self.trainer.predict(
             batch, per_image=False, disable_tqdm=True
         )
@@ -211,3 +210,8 @@ class OCPCalculator(Calculator):
 
         elif self.trainer.name == "is2re":
             self.results["energy"] = predictions["energy"].item()
+        
+        elif self.trainer.name == "s2efs":
+            self.results["energy"] = predictions["energy"].item()
+            self.results["forces"] = predictions["forces"].cpu().numpy()
+            self.results["stress"] = - 0.001 * predictions["stress"].reshape(3, 3).cpu().numpy()
