@@ -1000,9 +1000,9 @@ def load_config(config_str):
     model_conf = yaml.safe_load(model_conf_path.read_text())
     task_conf = yaml.safe_load(task_conf_path.read_text())
 
-    assert "default" in model_conf
-    assert task in model_conf
-    assert split in model_conf[task]
+    assert "default" in model_conf, f"Missing 'default' in {model_conf_path}"
+    assert task in model_conf, f"Missing '{task}' in {model_conf_path}"
+    assert split in model_conf[task], f"Missing '{split}' in {model_conf_path}"
 
     assert "default" in task_conf
     assert split in task_conf
