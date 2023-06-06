@@ -98,7 +98,10 @@ class AseAtomsDataset(Dataset):
 
         # Convert to data object
         data_object = self.a2g.convert(atoms)
-        data_object.sid = tensor([idx])
+        if "sid" in atoms.info:
+            data_object.sid = atoms.info["sid"]
+        else:
+            data_object.sid = tensor([idx])
 
         # Transform data object
         if self.transform is not None:
@@ -121,7 +124,6 @@ class AseAtomsDataset(Dataset):
         # This method is sometimes called by a trainer
 
     def guess_target_metadata(self, Nsamples=100):
-
         metadata = {}
 
         if Nsamples < len(self):
@@ -435,7 +437,6 @@ class AseDBDataset(AseAtomsDataset):
         self.ids = dummy_list(sum(idlens))
 
     def get_atoms_object(self, idx):
-
         # Figure out which db this should be indexed from.
         db_idx = bisect.bisect(self._idlen_cumulative, idx)
 
