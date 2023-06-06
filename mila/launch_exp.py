@@ -175,10 +175,15 @@ if __name__ == "__main__":
     n_jobs = None
     args = resolved_args()
     assert "exp" in args
-    regex = args.get("match", ".*")
+
+    regex = args.pop("match", ".*")
+    exp_name = args.pop("exp").replace(".yml", "").replace(".yaml", "")
+    no_confirm = args.pop("no_confirm", False)
+
+    sbatch_overrides = args.to_dict()
+
     ts = now()
 
-    exp_name = args.exp.replace(".yml", "").replace(".yaml", "")
     exp_file = find_exp(exp_name)
 
     exp = safe_load(exp_file.open("r"))
@@ -231,6 +236,8 @@ if __name__ == "__main__":
         else:
             params["wandb_tags"] = exp_name
 
+        job = merge_dicts(job, sbatch_overrides)
+
         py_args = f'py_args="{cli_arg(params).strip()}"'
 
         sbatch_args = " ".join(
@@ -253,7 +260,7 @@ if __name__ == "__main__":
     text += "\n<><><> Experiment config:\n\n-----" + exp_file.read_text() + "-----"
     text += "\n<><><> Experiment runs:\n\n • " + "\n\n  • ".join(commands) + separator
 
-    confirm = args.no_confirm or "y" in input("\n🚦 Confirm? [y/n] : ")
+    confirm = no_confirm or "y" in input("\n🚦 Confirm? [y/n] : ")
 
     if confirm:
         try:
