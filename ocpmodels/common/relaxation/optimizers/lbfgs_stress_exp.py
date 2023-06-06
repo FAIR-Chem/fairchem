@@ -6,34 +6,48 @@ from typing import Optional
 import ase
 import torch
 from ase import Atoms
+from scipy import linalg
 from torch_scatter import scatter
 
 from ocpmodels.common.relaxation.ase_utils import batch_to_atoms
 from ocpmodels.common.utils import radius_graph_pbc
-from scipy import linalg
 
 
 def logm(M):
     L, V = torch.linalg.eig(M)
-    return torch.matmul(torch.matmul(V, torch.diag_embed(torch.log(L))), torch.linalg.inv(V)).real
+    return torch.matmul(
+        torch.matmul(V, torch.diag_embed(torch.log(L))), torch.linalg.inv(V)
+    ).real
+
 
 def expm(M):
     L, V = torch.linalg.eig(M)
-    return torch.matmul(torch.matmul(V, torch.diag_embed(torch.exp(L))), torch.linalg.inv(V)).real
+    return torch.matmul(
+        torch.matmul(V, torch.diag_embed(torch.exp(L))), torch.linalg.inv(V)
+    ).real
+
 
 def logm_scipy(M):
     B, S, _ = M.shape
     M_np = M.cpu().numpy()
-    M_list = [torch.Tensor(linalg.logm(M_np[i, :, :])).reshape(1, S, S) for i in range(B)]
+    M_list = [
+        torch.Tensor(linalg.logm(M_np[i, :, :])).reshape(1, S, S)
+        for i in range(B)
+    ]
     M_log = torch.cat(M_list, dim=0).to(M.device)
     return M_log
+
 
 def expm_scipy(M):
     B, S, _ = M.shape
     M_np = M.cpu().numpy()
-    M_list = [torch.Tensor(linalg.expm(M_np[i, :, :])).reshape(1, S, S) for i in range(B)]
+    M_list = [
+        torch.Tensor(linalg.expm(M_np[i, :, :])).reshape(1, S, S)
+        for i in range(B)
+    ]
     M_exp = torch.cat(M_list, dim=0).to(M.device)
     return M_exp
+
 
 class LBFGS_StressExp:
     def __init__(
@@ -83,75 +97,110 @@ class LBFGS_StressExp:
             self.model.update_graph(self.atoms)
 
     def get_forces(self, apply_constraint=True):
-        energy, atoms_forces, stress = self.model.get_forces(self.atoms, apply_constraint)
-        cell = self.atoms.cell # (nMolecules, 3, 3)
+        energy, atoms_forces, stress = self.model.get_forces(
+            self.atoms, apply_constraint
+        )
+        cell = self.atoms.cell  # (nMolecules, 3, 3)
         volume = torch.sum(
-                    cell[:, 0, :] * torch.cross(cell[:, 1, :], cell[:, 2, :], dim=1),
-                    dim=1,
-                    keepdim=True,
-                )[:, :, None] # (nMolecules, 1)
+            cell[:, 0, :] * torch.cross(cell[:, 1, :], cell[:, 2, :], dim=1),
+            dim=1,
+            keepdim=True,
+        )[
+            :, :, None
+        ]  # (nMolecules, 1)
 
         cur_deform_grad = self.deform_grad()
 
-        #cur_deform_grad_np = cur_deform_grad.reshape(-1, 3, 3).cpu().numpy()
-        #B = cur_deform_grad_np.shape[0]
+        # cur_deform_grad_np = cur_deform_grad.reshape(-1, 3, 3).cpu().numpy()
+        # B = cur_deform_grad_np.shape[0]
 
-        #cur_deform_grad_np_list = [torch.Tensor(linalg.logm(cur_deform_grad_np[i, :, :])).reshape(1, 3, 3) for i in range(B)]
-        #cur_deform_grad_np_log = torch.cat(cur_deform_grad_np_list, dim=0).to(cur_deform_grad.device)
-        #cur_deform_grad_log = cur_deform_grad_np_log
+        # cur_deform_grad_np_list = [torch.Tensor(linalg.logm(cur_deform_grad_np[i, :, :])).reshape(1, 3, 3) for i in range(B)]
+        # cur_deform_grad_np_log = torch.cat(cur_deform_grad_np_list, dim=0).to(cur_deform_grad.device)
+        # cur_deform_grad_log = cur_deform_grad_np_log
         cur_deform_grad_log = self.logm(cur_deform_grad.reshape(-1, 3, 3))
 
-        atoms_forces = torch.bmm(atoms_forces.reshape(-1, 1, 3), cur_deform_grad[self.atoms.batch]).reshape(-1, 3)
+        atoms_forces = torch.bmm(
+            atoms_forces.reshape(-1, 1, 3), cur_deform_grad[self.atoms.batch]
+        ).reshape(-1, 3)
 
-        virial = volume.reshape(-1, 1, 1) * stress  # (nMolecules, 3, 3) check the units and the implementation
-        virial = -torch.transpose(torch.linalg.solve(cur_deform_grad, torch.transpose(virial, 1, 2)), 1, 2)
+        virial = (
+            volume.reshape(-1, 1, 1) * stress
+        )  # (nMolecules, 3, 3) check the units and the implementation
+        virial = -torch.transpose(
+            torch.linalg.solve(cur_deform_grad, torch.transpose(virial, 1, 2)),
+            1,
+            2,
+        )
         B = virial.shape[0]
 
-        Y = torch.zeros((B, 6, 6), device = virial.device)
+        Y = torch.zeros((B, 6, 6), device=virial.device)
         Y[:, 0:3, 0:3] = cur_deform_grad_log
         Y[:, 3:6, 3:6] = cur_deform_grad_log
-        Y[:, 0:3, 3:6] = - torch.bmm(virial, self.expm(-cur_deform_grad_log))
+        Y[:, 0:3, 3:6] = -torch.bmm(virial, self.expm(-cur_deform_grad_log))
         deform_grad_log_force = -self.expm(Y)[:, 0:3, 3:6]
-        for (i1, i2) in [(0, 1), (0, 2), (1, 2)]:
-            ff = 0.5 * (deform_grad_log_force[:, i1, i2] +
-                        deform_grad_log_force[:, i2, i1])
+        for i1, i2 in [(0, 1), (0, 2), (1, 2)]:
+            ff = 0.5 * (
+                deform_grad_log_force[:, i1, i2]
+                + deform_grad_log_force[:, i2, i1]
+            )
             deform_grad_log_force[:, i1, i2] = ff
             deform_grad_log_force[:, i2, i1] = ff
 
         # check for reasonable alignment between naive and
         # exact search directions
-        all_are_equal = torch.all(torch.isclose(deform_grad_log_force,
-                                          virial))
-        torch.sum(deform_grad_log_force * virial) / torch.sqrt(torch.sum(deform_grad_log_force**2) * torch.sum(virial**2)) > 0.8
-        if all_are_equal or \
-            (torch.sum(deform_grad_log_force * virial) /
-             torch.sqrt(torch.sum(deform_grad_log_force**2) *
-                     torch.sum(virial**2)) > 0.8):
+        all_are_equal = torch.all(torch.isclose(deform_grad_log_force, virial))
+        torch.sum(deform_grad_log_force * virial) / torch.sqrt(
+            torch.sum(deform_grad_log_force**2) * torch.sum(virial**2)
+        ) > 0.8
+        if all_are_equal or (
+            torch.sum(deform_grad_log_force * virial)
+            / torch.sqrt(
+                torch.sum(deform_grad_log_force**2) * torch.sum(virial**2)
+            )
+            > 0.8
+        ):
             deform_grad_log_force = virial
-            
-        augmented_forces = torch.concat([atoms_forces.reshape(-1, 3), deform_grad_log_force.reshape(-1, 3)], dim=0) # (nAtoms + nMolecules * 3, 3)
+
+        augmented_forces = torch.concat(
+            [
+                atoms_forces.reshape(-1, 3),
+                deform_grad_log_force.reshape(-1, 3),
+            ],
+            dim=0,
+        )  # (nAtoms + nMolecules * 3, 3)
         return energy, augmented_forces
 
     def get_positions(self):
         cur_deform_grad = self.deform_grad()
-        pos_atoms = torch.linalg.solve(cur_deform_grad[self.atoms.batch, :, :],
-                                       self.atoms.pos.reshape(-1, 3, 1)).reshape(-1, 3)   # TODO: check if it is correct!
-        
-        #cur_deform_grad_np = cur_deform_grad.reshape(-1, 3, 3).cpu().numpy()
-        #B = cur_deform_grad_np.shape[0]
+        pos_atoms = torch.linalg.solve(
+            cur_deform_grad[self.atoms.batch, :, :],
+            self.atoms.pos.reshape(-1, 3, 1),
+        ).reshape(
+            -1, 3
+        )  # TODO: check if it is correct!
 
-        #cur_deform_grad_np_list = [torch.Tensor(linalg.logm(cur_deform_grad_np[i, :, :])).reshape(1, 3, 3) for i in range(B)]
-        #cur_deform_grad_log = torch.cat(cur_deform_grad_np_list, dim=0).to(cur_deform_grad.device)
-        #return torch.cat([pos_atoms, cur_deform_grad_log.reshape(-1, 3)]).to(self.device, dtype=torch.float64)
-        return torch.cat([pos_atoms, self.logm(cur_deform_grad.reshape(-1, 3, 3)).reshape(-1, 3)]).to(self.device, dtype=torch.float64)
+        # cur_deform_grad_np = cur_deform_grad.reshape(-1, 3, 3).cpu().numpy()
+        # B = cur_deform_grad_np.shape[0]
+
+        # cur_deform_grad_np_list = [torch.Tensor(linalg.logm(cur_deform_grad_np[i, :, :])).reshape(1, 3, 3) for i in range(B)]
+        # cur_deform_grad_log = torch.cat(cur_deform_grad_np_list, dim=0).to(cur_deform_grad.device)
+        # return torch.cat([pos_atoms, cur_deform_grad_log.reshape(-1, 3)]).to(self.device, dtype=torch.float64)
+        return torch.cat(
+            [
+                pos_atoms,
+                self.logm(cur_deform_grad.reshape(-1, 3, 3)).reshape(-1, 3),
+            ]
+        ).to(self.device, dtype=torch.float64)
 
     def get_cell(self):
         return self.atoms.cell
-    
-    def deform_grad(self):
-        return torch.transpose(torch.linalg.solve(self.orig_cell, self.atoms.cell), 1, 2)
 
-    def set_positions(self, pos, update, update_mask):        
+    def deform_grad(self):
+        return torch.transpose(
+            torch.linalg.solve(self.orig_cell, self.atoms.cell), 1, 2
+        )
+
+    def set_positions(self, pos, update, update_mask):
         if not self.early_stop_batch:
             update = torch.where(update_mask.unsqueeze(1), update, 0.0)
         new_pos = (pos + update).to(dtype=torch.float32)
@@ -159,11 +208,17 @@ class LBFGS_StressExp:
         new_pos_atom = new_pos[:nAtoms, :]
         new_deform_grad_log = new_pos[nAtoms:, :].reshape(-1, 3, 3)
         new_deform_grad = self.expm(new_deform_grad_log)
-        self.atoms.cell = torch.bmm(self.orig_cell, torch.transpose(new_deform_grad, 1, 2))
-        self.atoms.pos = torch.bmm(new_pos_atom.reshape(-1, 1, 3), torch.transpose(new_deform_grad[self.atoms.batch, :, :].reshape(-1, 3, 3), 1, 2)).reshape(-1, 3)
+        self.atoms.cell = torch.bmm(
+            self.orig_cell, torch.transpose(new_deform_grad, 1, 2)
+        )
+        self.atoms.pos = torch.bmm(
+            new_pos_atom.reshape(-1, 1, 3),
+            torch.transpose(
+                new_deform_grad[self.atoms.batch, :, :].reshape(-1, 3, 3), 1, 2
+            ),
+        ).reshape(-1, 3)
         if not self.otf_graph:
             self.model.update_graph(self.atoms)
-
 
     def check_convergence(self, iteration, forces=None, energy=None):
         if forces is None or energy is None:
@@ -182,12 +237,17 @@ class LBFGS_StressExp:
 
         return max_forces.ge(self.fmax), energy, forces
 
-
     def run(self, fmax, steps):
         list_batch = []
         for i in range(len(self.atoms.natoms)):
             list_batch += [i] * 3
-        self.batch_aug = torch.cat([self.atoms.batch.to(self.device), torch.Tensor(list_batch).to(self.device)], dim=0).to(self.device, self.atoms.batch.dtype)
+        self.batch_aug = torch.cat(
+            [
+                self.atoms.batch.to(self.device),
+                torch.Tensor(list_batch).to(self.device),
+            ],
+            dim=0,
+        ).to(self.device, self.atoms.batch.dtype)
 
         self.fmax = fmax
         self.steps = steps
@@ -209,7 +269,9 @@ class LBFGS_StressExp:
         converged = False
         while iteration < steps and not converged:
             update_mask, energy, forces = self.check_convergence(iteration)
-            update_mask = torch.ones_like(self.batch_aug).bool().to(self.device)
+            update_mask = (
+                torch.ones_like(self.batch_aug).bool().to(self.device)
+            )
             converged = torch.all(torch.logical_not(update_mask))
             if self.trajectories is not None:
                 if (
@@ -218,7 +280,9 @@ class LBFGS_StressExp:
                     or iteration == steps - 1
                     or iteration == 0
                 ):
-                    self.write(energy, forces[:len(self.atoms.batch)], update_mask)
+                    self.write(
+                        energy, forces[: len(self.atoms.batch)], update_mask
+                    )
 
             if not converged and iteration < steps - 1:
                 self.step(iteration, forces, update_mask)
@@ -242,7 +306,6 @@ class LBFGS_StressExp:
         self.atoms.y, self.atoms.force = energy.clone(), forces.clone()
         return self.atoms
 
-
     def step(
         self,
         iteration: int,
@@ -254,9 +317,7 @@ class LBFGS_StressExp:
 
         def determine_step(dr):
             steplengths = torch.norm(dr, dim=1)
-            longest_steps = scatter(
-                steplengths, self.batch_aug, reduce="max"
-            )
+            longest_steps = scatter(steplengths, self.batch_aug, reduce="max")
             longest_steps = longest_steps[self.batch_aug]
             maxstep = longest_steps.new_tensor(self.maxstep)
             scale = (longest_steps + 1e-7).reciprocal() * torch.min(
@@ -306,23 +367,21 @@ class LBFGS_StressExp:
         self.r0 = r
         self.f0 = forces
 
-
-
     def write(self, energy, forces, update_mask):
         self.atoms.y, self.atoms.force = energy.clone(), forces.clone()
         atoms_objects = batch_to_atoms(self.atoms)
-        update_mask_ = [True for _ in range(len(self.atoms.natoms))] # torch.split(update_mask, self.atoms.natoms.tolist())
-        for atm, traj in zip(
-            atoms_objects, self.trajectories
-        ):
-            #if mask[0] or not self.save_full:
+        update_mask_ = [
+            True for _ in range(len(self.atoms.natoms))
+        ]  # torch.split(update_mask, self.atoms.natoms.tolist())
+        for atm, traj in zip(atoms_objects, self.trajectories):
+            # if mask[0] or not self.save_full:
             traj.write(atm)
 
 
-
-
 class TorchCalcStressExp:
-    def __init__(self, model, force_weight=1, stress_weight=0.1, transform=None):
+    def __init__(
+        self, model, force_weight=1, stress_weight=0.1, transform=None
+    ):
         self.model = model
         self.transform = transform
         self.force_weight = force_weight
@@ -332,16 +391,16 @@ class TorchCalcStressExp:
         predictions = self.model.predict(
             atoms, per_image=False, disable_tqdm=True
         )
-        energy = predictions["energy"] # (nMolecules, 1)
-        forces = predictions["forces"] # (nAtoms, 3)
-        stress = predictions["stress"].reshape(-1, 3, 3) # (nMolecules, 3, 3)
-        scaled_stress = stress.reshape(-1, 3, 3) * self.stress_weight # (nMolecules, 3, 3) maybe add scale
+        energy = predictions["energy"]  # (nMolecules, 1)
+        forces = predictions["forces"]  # (nAtoms, 3)
+        stress = predictions["stress"].reshape(-1, 3, 3)  # (nMolecules, 3, 3)
+        scaled_stress = (
+            stress.reshape(-1, 3, 3) * self.stress_weight
+        )  # (nMolecules, 3, 3) maybe add scale
         if apply_constraint:
             fixed_idx = torch.where(atoms.fixed == 1)[0]
             forces[fixed_idx] = 0
         return energy, forces * self.force_weight, -scaled_stress
-    
-
 
     def update_graph(self, atoms):
         edge_index, cell_offsets, num_neighbors = radius_graph_pbc(

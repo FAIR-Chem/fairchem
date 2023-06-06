@@ -15,10 +15,9 @@ from torch_geometric.data import Batch
 from ocpmodels.common.registry import registry
 from ocpmodels.datasets.lmdb_dataset import data_list_collater
 
-from .optimizers.lbfgs_torch import LBFGS, TorchCalc
 from .optimizers.lbfgs_stress import LBFGS_Stress, TorchCalcStress
 from .optimizers.lbfgs_stress_exp import LBFGS_StressExp, TorchCalcStressExp
-
+from .optimizers.lbfgs_torch import LBFGS, TorchCalc
 
 
 def ml_relax(
@@ -53,7 +52,9 @@ def ml_relax(
     batch = batch[0]
     ids = batch.sid
     if relax_stress:
-        calc = TorchCalcStressExp(model, force_weight=force_weight, stress_weight=stress_weight)
+        calc = TorchCalcStressExp(
+            model, force_weight=force_weight, stress_weight=stress_weight
+        )
     else:
         calc = TorchCalc(model, transform)
 
@@ -87,7 +88,7 @@ def ml_relax(
             traj_names=ids,
             early_stop_batch=early_stop_batch,
         )
-        
+
     batches = deque([batch[0]])
     relaxed_batches = []
     while batches:
@@ -98,13 +99,13 @@ def ml_relax(
 
         # Run ML-based relaxation
         traj_dir = relax_opt.get("traj_dir", None)
-        
+
         relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
-        #try:
+        # try:
         #    relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
         #    relaxed_batches.append(relaxed_batch)
         relaxed_batches.append(relaxed_batch)
-        #except RuntimeError as e:
+        # except RuntimeError as e:
         oom = False
         torch.cuda.empty_cache()
 
@@ -121,5 +122,5 @@ def ml_relax(
             batches.appendleft(data_list_collater(data_list[mid:]))
     return relaxed_batches[0]
 
-    #relaxed_batch = Batch.from_data_list(relaxed_batches)
-    #return relaxed_batch
+    # relaxed_batch = Batch.from_data_list(relaxed_batches)
+    # return relaxed_batch

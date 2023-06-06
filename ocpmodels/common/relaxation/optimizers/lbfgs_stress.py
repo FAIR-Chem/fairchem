@@ -11,7 +11,6 @@ from ocpmodels.common.relaxation.ase_utils import batch_to_atoms
 from ocpmodels.common.utils import radius_graph_pbc
 
 
-
 class LBFGS_Stress:
     def __init__(
         self,
@@ -53,19 +52,25 @@ class LBFGS_Stress:
     def get_positions(self):
         return self.atoms.pos
 
-    
     def get_cell(self):
         return self.atoms.cell
 
-    def set_positions_cell(self, pos, update, update_mask):        
+    def set_positions_cell(self, pos, update, update_mask):
         if not self.early_stop_batch:
             update = torch.where(update_mask.unsqueeze(1), update, 0.0)
         new_pos = (pos + update).to(dtype=torch.float32)
         nAtoms = len(self.atoms.batch)
         new_pos_atom = new_pos[:nAtoms, :]
         new_deform_grad = new_pos[nAtoms:, :].reshape(-1, 3, 3)
-        self.atoms.cell = torch.bmm(self.get_cell(), torch.transpose(new_deform_grad, 1, 2))
-        self.atoms.pos = torch.bmm(new_pos_atom.reshape(-1, 1, 3), torch.transpose(new_deform_grad[self.atoms.batch, :, :].reshape(-1, 3, 3), 1, 2)).reshape(-1, 3)
+        self.atoms.cell = torch.bmm(
+            self.get_cell(), torch.transpose(new_deform_grad, 1, 2)
+        )
+        self.atoms.pos = torch.bmm(
+            new_pos_atom.reshape(-1, 1, 3),
+            torch.transpose(
+                new_deform_grad[self.atoms.batch, :, :].reshape(-1, 3, 3), 1, 2
+            ),
+        ).reshape(-1, 3)
         self.model.update_graph(self.atoms)
 
     def check_convergence(
@@ -73,11 +78,17 @@ class LBFGS_Stress:
     ):
         if forces is None:
             return False
-        
+
         list_batch = []
         for i in range(len(self.atoms.natoms)):
             list_batch += [i] * 3
-        torch_batch = torch.cat([self.atoms.batch, torch.Tensor(list_batch).to(self.atoms.batch.device)], dim=0).to(self.atoms.batch.dtype)
+        torch_batch = torch.cat(
+            [
+                self.atoms.batch,
+                torch.Tensor(list_batch).to(self.atoms.batch.device),
+            ],
+            dim=0,
+        ).to(self.atoms.batch.dtype)
 
         max_forces_ = scatter(
             (forces**2).sum(axis=1).sqrt(), torch_batch, reduce="max"
@@ -101,7 +112,13 @@ class LBFGS_Stress:
         list_batch = []
         for i in range(len(self.atoms.natoms)):
             list_batch += [i] * 3
-        torch_batch = torch.cat([self.atoms.batch, torch.Tensor(list_batch).to(self.atoms.batch.device)], dim=0).to(self.atoms.batch.dtype)
+        torch_batch = torch.cat(
+            [
+                self.atoms.batch,
+                torch.Tensor(list_batch).to(self.atoms.batch.device),
+            ],
+            dim=0,
+        ).to(self.atoms.batch.dtype)
 
         update_mask = torch.ones_like(torch_batch).bool().to(self.device)
 
@@ -125,7 +142,10 @@ class LBFGS_Stress:
                 self.atoms.y, self.atoms.force = e0, f0[:nAtoms, :]
                 atoms_objects = batch_to_atoms(self.atoms)
                 update_mask_ = torch.split(
-                    update_mask, (self.atoms.natoms + 3).tolist() # it is garbage, have to modify ittt
+                    update_mask,
+                    (
+                        self.atoms.natoms + 3
+                    ).tolist(),  # it is garbage, have to modify ittt
                 )
                 for atm, traj, mask in zip(
                     atoms_objects, trajectories, update_mask_
@@ -146,9 +166,7 @@ class LBFGS_Stress:
             for name in self.traj_names:
                 traj_fl = Path(self.traj_dir / f"{name}.traj_tmp", mode="w")
                 traj_fl.rename(traj_fl.with_suffix(".traj"))
-        energy, augmented_forces = self.get_forces(
-            apply_constraint=False
-        )
+        energy, augmented_forces = self.get_forces(apply_constraint=False)
         self.atoms.y, self.atoms.force = energy, augmented_forces[:nAtoms, :]
         return self.atoms
 
@@ -158,10 +176,14 @@ class LBFGS_Stress:
             list_batch = []
             for i in range(len(self.atoms.natoms)):
                 list_batch += [i] * 3
-            torch_batch = torch.cat([self.atoms.batch, torch.Tensor(list_batch).to(self.atoms.batch.device)], dim=0).to(self.atoms.batch.dtype)
-            longest_steps = scatter(
-                steplengths, torch_batch, reduce="max"
-            )
+            torch_batch = torch.cat(
+                [
+                    self.atoms.batch,
+                    torch.Tensor(list_batch).to(self.atoms.batch.device),
+                ],
+                dim=0,
+            ).to(self.atoms.batch.dtype)
+            longest_steps = scatter(steplengths, torch_batch, reduce="max")
             longest_steps = longest_steps[torch_batch]
             maxstep = longest_steps.new_tensor(self.maxstep)
             scale = (longest_steps + 1e-7).reciprocal() * torch.min(
@@ -169,10 +191,15 @@ class LBFGS_Stress:
             )
             dr *= scale.unsqueeze(1)
             return dr * self.damping
+
         e, f = self.get_forces()
         f = f.to(self.device, dtype=torch.float64)
-        cell_eye = torch.stack([torch.eye(3).reshape(1, 3, 3) for _ in range(len(e))], dim=0).to(self.device)
-        r = torch.cat([self.get_positions(), cell_eye.reshape(-1, 3)]).to(self.device, dtype=torch.float64)
+        cell_eye = torch.stack(
+            [torch.eye(3).reshape(1, 3, 3) for _ in range(len(e))], dim=0
+        ).to(self.device)
+        r = torch.cat([self.get_positions(), cell_eye.reshape(-1, 3)]).to(
+            self.device, dtype=torch.float64
+        )
         # Update s, y and rho
         if iteration > 0:
             s0 = (r - r0).flatten()
@@ -201,10 +228,16 @@ class LBFGS_Stress:
         return r, f, e
 
 
-
-
 class TorchCalcStress:
-    def __init__(self, model, isotropic=False, opt_forces=True, opt_stress=True, cell_factor=0.1, transform=None):
+    def __init__(
+        self,
+        model,
+        isotropic=False,
+        opt_forces=True,
+        opt_stress=True,
+        cell_factor=0.1,
+        transform=None,
+    ):
         self.model = model
         self.transform = transform
         self.opt_forces = opt_forces
@@ -213,39 +246,62 @@ class TorchCalcStress:
         self.isotropic = isotropic
 
     def get_forces(self, atoms, exp=False, apply_constraint=False):
-            
         predictions = self.model.predict(
             atoms, per_image=False, disable_tqdm=True
         )
-        energy = predictions["energy"] # (nMolecules, 1)
-        forces = predictions["forces"] # (nAtoms, 3)
-        stress = predictions["stress"].reshape(-1, 3, 3) # (nMolecules, 3, 3)
-        scaled_stress = stress.reshape(-1, 3, 3) # (nMolecules, 3, 3) maybe add scale
-        cell = atoms.cell # (nMolecules, 3, 3)
+        energy = predictions["energy"]  # (nMolecules, 1)
+        forces = predictions["forces"]  # (nAtoms, 3)
+        stress = predictions["stress"].reshape(-1, 3, 3)  # (nMolecules, 3, 3)
+        scaled_stress = stress.reshape(
+            -1, 3, 3
+        )  # (nMolecules, 3, 3) maybe add scale
+        cell = atoms.cell  # (nMolecules, 3, 3)
         volume = torch.sum(
-                    cell[:, 0, :] * torch.cross(cell[:, 1, :], cell[:, 2, :], dim=1),
-                    dim=1,
-                    keepdim=True,
-                )[:, :, None] # (nMolecules, 1)
-        scaled_virial = volume.reshape(-1, 1, 1) * scaled_stress * self.cell_factor # (nMolecules, 3, 3) check the units and the implementation
+            cell[:, 0, :] * torch.cross(cell[:, 1, :], cell[:, 2, :], dim=1),
+            dim=1,
+            keepdim=True,
+        )[
+            :, :, None
+        ]  # (nMolecules, 1)
+        scaled_virial = (
+            volume.reshape(-1, 1, 1) * scaled_stress * self.cell_factor
+        )  # (nMolecules, 3, 3) check the units and the implementation
         if self.opt_forces:
             deformed_forces = forces
         else:
-            deformed_forces = torch.zeros(forces.shape).to(device=forces.device, dtype=forces.dtype)
-        
+            deformed_forces = torch.zeros(forces.shape).to(
+                device=forces.device, dtype=forces.dtype
+            )
+
         if self.opt_stress:
-            if self.isotropic: 
-                trace = scaled_virial[:, 0, 0] + scaled_virial[:, 1, 1] + scaled_virial[:, 2, 2]
+            if self.isotropic:
+                trace = (
+                    scaled_virial[:, 0, 0]
+                    + scaled_virial[:, 1, 1]
+                    + scaled_virial[:, 2, 2]
+                )
                 scaled_virial = trace.reshape(-1, 1, 1)
-                scaled_virial[:, 0, 1] = scaled_virial[:, 0, 2] = scaled_virial[:, 1, 0] = scaled_virial[:, 1, 2] = scaled_virial[:, 2, 0] = scaled_virial[:, 2, 1] = 0
-                scaled_virial[:, 0, 0] = scaled_virial[:, 1, 1] = scaled_virial[:, 2, 2] = trace / 3
+                scaled_virial[:, 0, 1] = scaled_virial[
+                    :, 0, 2
+                ] = scaled_virial[:, 1, 0] = scaled_virial[
+                    :, 1, 2
+                ] = scaled_virial[
+                    :, 2, 0
+                ] = scaled_virial[
+                    :, 2, 1
+                ] = 0
+                scaled_virial[:, 0, 0] = scaled_virial[
+                    :, 1, 1
+                ] = scaled_virial[:, 2, 2] = (trace / 3)
             scaled_virial = scaled_virial.reshape(-1, 3)
         else:
-            scaled_virial = torch.zeros(scaled_virial.reshape(-1, 3).shape).to(device=scaled_virial.device, dtype=scaled_virial.dtype)
-        augmented_forces = torch.concat([deformed_forces, scaled_virial.reshape(-1, 3)], dim=0) # (nAtoms + nMolecules * 3, 3)
+            scaled_virial = torch.zeros(scaled_virial.reshape(-1, 3).shape).to(
+                device=scaled_virial.device, dtype=scaled_virial.dtype
+            )
+        augmented_forces = torch.concat(
+            [deformed_forces, scaled_virial.reshape(-1, 3)], dim=0
+        )  # (nAtoms + nMolecules * 3, 3)
         return energy, augmented_forces
-    
-
 
     def update_graph(self, atoms):
         edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
