@@ -234,10 +234,18 @@ def override_drac_paths(trainer_config):
 
 
 def set_deup_samples_path(trainer_config):
-    if not trainer_config.get("deup_samples_path"):
+    if not trainer_config.get("deup_samples_path") or all(
+        "deup-" not in s for s in trainer_config["dataset"]
+    ):
         return trainer_config
 
-    dsp = resolve(trainer_config["deup_samples_path"])
+    deup_train_key = [k for k in trainer_config["dataset"] if "deup-train" in k][0]
+
+    dsp = resolve(
+        trainer_config.get(
+            "deup_samples_path", trainer_config["dataset"][deup_train_key]["src"]
+        )
+    )
     if not dsp.exists() or not dsp.is_dir():
         raise FileNotFoundError(f"deup_samples_path {str(dsp)} not found")
 
@@ -255,9 +263,17 @@ def set_deup_samples_path(trainer_config):
             trainer_config[split]["src"] = str(dsp)
 
     stats = yaml.safe_load((dsp / "deup_config.yaml").read_text())["stats"]["train"]
-    deup_train_key = [k for k in trainer_config["dataset"] if "deup-train" in k][0]
     trainer_config["dataset"][deup_train_key]["target_mean"] = stats["mean"]
     trainer_config["dataset"][deup_train_key]["target_std"] = stats["std"]
+
+    if not trainer_config.get("silent"):
+        print(
+            "📊 Automatically setting target stats to",
+            stats,
+            "for deup dataset",
+            str(dsp),
+            flush=True,
+        )
 
     return trainer_config
 
