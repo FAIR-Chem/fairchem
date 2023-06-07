@@ -99,7 +99,6 @@ class AseAtomsDataset(Dataset):
         else:
             data_object.sid = tensor([idx])
 
-        data_object.sid = tensor([idx])
         data_object.pbc = tensor(atoms.pbc)
 
         # Transform data object
