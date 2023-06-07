@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-def main():
+def parse_args():
     parser = argparse.ArgumentParser()
     _ = parser.add_argument("--config", type=Path, help="Path to config file")
     # Add two actions: local and submit
@@ -43,6 +43,12 @@ def main():
         help="Whether to take a snapshot of the current code and use it for the run.",
     )
     args = parser.parse_args()
+    return args
+
+
+def main():
+    # Parse the arguments
+    args = parse_args()
 
     # Parse the config
     config = S2EFConfig.from_file(args.config)
