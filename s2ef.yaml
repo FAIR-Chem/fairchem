@@ -1,0 +1,168 @@
+data:
+    batch_size: 4
+    num_workers: 8
+    predict: null
+    test: null
+    train:
+        name: lmdb
+        src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/train/2M/
+    val:
+        name: lmdb
+        src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k/
+debug: false
+environment:
+    config: null
+    cwd: null
+    data: null
+    log_dir: null
+    model: null
+    python_executable: null
+    python_path: null
+    python_version: null
+    seed: null
+    seed_workers: null
+    slurm: null
+    sweep_config: null
+    sweep_id: null
+loss:
+    energy:
+        coefficient: 1.0
+        function: mae
+    force:
+        coefficient: 100.0
+        free_atoms_only: true
+        function: mae
+lr_scheduler: null
+meta: {}
+metrics:
+    free_atoms_only: true
+model:
+    activation: silu
+    cbf:
+        name: spherical_harmonics
+    cutoff: 6.0
+    direct_forces: true
+    emb_size_atom: 512
+    emb_size_bil_trip: 64
+    emb_size_cbf: 16
+    emb_size_edge: 512
+    emb_size_rbf: 16
+    emb_size_trip: 64
+    envelope:
+        exponent: 5
+        name: polynomial
+    extensive: true
+    max_neighbors: 50
+    num_after_skip: 2
+    num_atom: 3
+    num_before_skip: 1
+    num_blocks: 3
+    num_concat: 1
+    num_elements: 83
+    num_radial: 128
+    num_spherical: 7
+    otf_graph: false
+    output_init: HeOrthogonal
+    rbf:
+        name: gaussian
+    regress_forces: true
+    scale_file: configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
+    use_pbc: true
+name: null
+normalization:
+    energy:
+        enabled: true
+        mean: -0.7554450631141663
+        std: 2.887317180633545
+    force:
+        enabled: true
+        mean: 0.0
+        std: 2.887317180633545
+notes: null
+optimizer:
+    amsgrad: true
+    betas:
+        - 0.9
+        - 0.999
+    eps: 1.0e-08
+    lr: 0.0002
+    name: AdamW
+    weight_decay: 0.01
+project: null
+tags: null
+trainer:
+    accelerator: auto
+    accumulate_grad_batches: 1
+    additional_env_vars: {}
+    additional_trainer_kwargs: {}
+    auto_add_trainer_finalizer: true
+    auto_set_default_root_dir: true
+    auto_set_loggers: true
+    auto_wrap_trainer: true
+    barebones: false
+    benchmark: null
+    check_val_every_n_epoch: 1
+    checkpoint_last_by_default: true
+    default_ckpt_path: last
+    default_root_dir: null
+    detect_anomaly: false
+    deterministic: null
+    devices: 1
+    enable_checkpointing: null
+    enable_logger_validation: true
+    enable_model_summary: null
+    enable_progress_bar: null
+    fast_dev_run: false
+    grad_finite_checks: false
+    gradient_clip_algorithm: null
+    gradient_clip_val: null
+    inference_mode: true
+    limit_predict_batches: null
+    limit_test_batches: null
+    limit_train_batches: null
+    limit_val_batches: null
+    log_batch_info_on_error: true
+    log_every_n_steps: 50
+    logger: null
+    logging:
+        csv:
+            enabled: true
+        enabled: false
+        log_epoch: true
+        log_grad_norm: true
+        log_grad_norm_per_param: false
+        log_lr: true
+        tensorboard:
+            enabled: false
+        wandb:
+            enabled: true
+            log_model: false
+            watch:
+                enabled: true
+                log: null
+                log_freq: 100
+                log_graph: true
+    max_epochs: null
+    max_steps: -1
+    max_time: null
+    min_epochs: null
+    min_steps: null
+    num_nodes: auto
+    num_sanity_val_steps: null
+    overfit_batches: 0.0
+    patch_hpc_checkpoint_connector: true
+    plugins: null
+    precision: 32-true
+    profiler: null
+    reduce_lr_on_plateau_sanity_checks: error
+    reload_dataloaders_every_n_epochs: 0
+    seed: 0
+    seed_workers: false
+    set_nccl_optimal_params: true
+    strategy: auto
+    supports_parameter_hooks: true
+    supports_shared_parameters: true
+    supports_skip_batch_exception: true
+    sync_batchnorm: false
+    use_distributed_sampler: false
+    val_check_interval: null

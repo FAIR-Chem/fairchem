@@ -9,7 +9,6 @@ from typing import Optional
 
 import numpy as np
 import torch
-from torch_cluster import radius_graph
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
 

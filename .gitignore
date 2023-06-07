@@ -111,3 +111,5 @@ Local
 
 # VS Code
 .vscode/
+
+lightning_logs/

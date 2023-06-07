@@ -1,14 +1,28 @@
 from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from logging import getLogger
-from typing import Any, Generic, Literal, Protocol, final, runtime_checkable
+from typing import (
+    Annotated,
+    Any,
+    Generic,
+    Literal,
+    Protocol,
+    final,
+    runtime_checkable,
+)
 
 import torch
 import torch.func
 import torch.nn.functional as F
 from einops import reduce
 from ll import BaseConfig as LLBaseConfig
-from ll import LightningModuleBase, Normalizer, NormalizerConfig, TypedConfig
+from ll import (
+    Field,
+    LightningModuleBase,
+    Normalizer,
+    NormalizerConfig,
+    TypedConfig,
+)
 from ll.data.balanced_batch_sampler import BalancedBatchSampler
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -25,7 +39,7 @@ log = getLogger(__name__)
 
 
 class ReduceLROnPlateauConfig(TypedConfig):
-    name: Literal["ReduceLROnPlateau"]
+    name: Literal["ReduceLROnPlateau"] = "ReduceLROnPlateau"
 
     monitor: str
     mode: Literal["min", "max"] = "min"
@@ -44,7 +58,7 @@ LRSchedulerConfig = ReduceLROnPlateauConfig
 
 
 class AdamWConfig(TypedConfig):
-    name: Literal["AdamW"]
+    name: Literal["AdamW"] = "AdamW"
 
     lr: float = 2.0e-4
     amsgrad: bool = True
@@ -72,7 +86,9 @@ class LossConfig(TypedConfig):
     force: ForceLossConfig = ForceLossConfig()
 
 
-DatasetConfig = LmdbDatasetConfig | OC22LmdbDatasetConfig
+DatasetConfig = Annotated[
+    LmdbDatasetConfig | OC22LmdbDatasetConfig, Field(discriminator="name")
+]
 
 
 class DataConfig(TypedConfig):
@@ -81,8 +97,8 @@ class DataConfig(TypedConfig):
     test: DatasetConfig | None = None
     predict: DatasetConfig | None = None
 
-    batch_size: int = 4
-    num_workers: int = 8
+    batch_size: int
+    num_workers: int
 
 
 class NormalizationConfig(TypedConfig):
@@ -132,7 +148,7 @@ class S2EFBaseModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
         config = self.config.loss.energy
         # When computing the loss, we compare the model's output
         # to a normalized version of the target.
-        energy_target = self.energy_norm.normalize(data.energy)
+        energy_target = self.energy_norm.normalize(data.y)
 
         if self.dev:
             assert (
@@ -323,6 +339,10 @@ class S2EFBaseModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
 
     def data_transform(self, data: Data):
         # This can be overridden to add per-sample transforms (on the CPU)
+
+        # Set the "fixed" attribute to be of dtype bool (currently, it's of dtype long)
+        data.fixed = data.fixed == 0
+
         return data
 
     def _dataset(self, config: DatasetConfig):
@@ -346,6 +366,9 @@ class S2EFBaseModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
 
     @override
     def train_dataloader(self):
+        if self.config.data.train is None:
+            return None
+
         dataset = self.train_dataset()
         sampler = self.distributed_sampler(dataset, shuffle=True)
         batch_sampler = BalancedBatchSampler(
@@ -370,6 +393,9 @@ class S2EFBaseModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
 
     @override
     def val_dataloader(self):
+        if self.config.data.val is None:
+            return None
+
         dataset = self.val_dataset()
         sampler = self.distributed_sampler(dataset, shuffle=False)
         batch_sampler = BalancedBatchSampler(
@@ -446,5 +472,9 @@ class S2EFModule(S2EFBaseModule[S2EFConfig]):
             )
 
         energy, forces = model_out
+
         # Any additional post-processing of the model output can be done here.
+        # Squeeze the final dimension of the energy tensor.
+        energy = energy.squeeze(dim=-1)  # (B, 1) -> (B,)
+
         return energy, forces

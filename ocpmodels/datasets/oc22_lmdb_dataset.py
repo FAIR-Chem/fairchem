@@ -27,7 +27,7 @@ from ocpmodels.common.utils import pyg2_data_transform
 
 
 class OC22LmdbDatasetConfig(TypedConfig):
-    name: Literal["oc22_lmdb"]
+    name: Literal["oc22_lmdb"] = "oc22_lmdb"
     src: str | Path
     data2train: Literal["all", "adslabs", "slabs"] = "all"
     train_on_oc20_total_energies: bool = False

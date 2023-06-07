@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import bisect
+from functools import cached_property
 import logging
 import math
 import pickle
@@ -27,7 +28,7 @@ from ocpmodels.common.utils import pyg2_data_transform
 
 
 class LmdbDatasetConfig(TypedConfig):
-    name: Literal["lmdb"]
+    name: Literal["lmdb"] = "lmdb"
     src: str | Path
 
 
@@ -46,6 +47,18 @@ class LmdbDataset(Dataset):
             transform (callable, optional): Data transform function.
                     (default: :obj:`None`)
     """
+
+    @cached_property
+    def _loaded_metadata(self) -> np.ndarray | None:
+        if not self.metadata_path or not self.metadata_path.is_file():
+            return None
+        return np.load(self.metadata_path, allow_pickle=True)["natoms"]
+
+    def data_sizes(self, indices: list[int]) -> np.ndarray:
+        if self._loaded_metadata is None:
+            raise ValueError("No metadata found")
+
+        return self._loaded_metadata[indices]
 
     def __init__(
         self,

@@ -38,10 +38,9 @@ class S2EFMetrics(nn.Module):
         energy_prediction: torch.Tensor,
         force_prediction: torch.Tensor,
     ) -> dict[str, torchmetrics.Metric]:
-        # compute all metrics and return a dictionary
+        # Compute all metrics and return a dictionary
         # which maps metric name to metric instance
-
-        energy_target = batch.energy  # (B,)
+        energy_target = batch.y  # (B,)
         forces_target = batch.force  # (N, 3)
         batch_idx = batch.batch  # (N,)
 

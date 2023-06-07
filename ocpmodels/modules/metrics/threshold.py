@@ -76,7 +76,9 @@ class EnergyForcesWithinThreshold(torchmetrics.Metric):
         graph_mask: torch.Tensor | None = None,
         node_mask: torch.Tensor | None = None,
     ):
-        # compute the fmax for each graph
+        B = target["energy"].shape[0]
+
+        # Compute the fmax for each graph
         error_forces = torch.abs(
             target["forces"] - prediction["forces"]
         )  # n 3
@@ -85,7 +87,11 @@ class EnergyForcesWithinThreshold(torchmetrics.Metric):
             error_forces = error_forces[node_mask]
             batch_forces = batch_forces[node_mask]
         max_error_forces = scatter(
-            error_forces, batch_forces, dim=0, reduce="max"
+            error_forces,
+            batch_forces,
+            dim=0,
+            dim_size=B,
+            reduce="max",
         )  # b 3
         max_error_forces = reduce(max_error_forces, "b p -> b", "max")  # b
         if graph_mask is not None:
