@@ -10,18 +10,25 @@ import logging
 import math
 import pickle
 import random
+from typing import Callable, Literal
 import warnings
 from pathlib import Path
 
 import lmdb
 import numpy as np
 import torch
+from ll import TypedConfig
 from torch.utils.data import Dataset
-from torch_geometric.data import Batch
+from torch_geometric.data import Batch, Data
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import pyg2_data_transform
+
+
+class LmdbDatasetConfig(TypedConfig):
+    name: Literal["lmdb"]
+    src: str | Path
 
 
 @registry.register_dataset("lmdb")
@@ -40,15 +47,20 @@ class LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None):
+    def __init__(
+        self,
+        config: LmdbDatasetConfig,
+        transform: Callable[[Data], Data] | None = None,
+    ):
         super(LmdbDataset, self).__init__()
+
         self.config = config
 
-        assert not self.config.get(
-            "train_on_oc20_total_energies", False
-        ), "For training on total energies set dataset=oc22_lmdb"
+        # assert not self.config.get(
+        #     "train_on_oc20_total_energies", False
+        # ), "For training on total energies set dataset=oc22_lmdb"
 
-        self.path = Path(self.config["src"])
+        self.path = Path(self.config.src)
         if not self.path.is_file():
             db_paths = sorted(self.path.glob("*.lmdb"))
             assert len(db_paths) > 0, f"No LMDBs found in '{self.path}'"
@@ -79,16 +91,16 @@ class LmdbDataset(Dataset):
         # total_shards: defines total chunks to partition dataset
         # shard: defines dataset shard to make visible
         self.sharded = False
-        if "shard" in self.config and "total_shards" in self.config:
-            self.sharded = True
-            self.indices = range(self.num_samples)
-            # split all available indices into 'total_shards' bins
-            self.shards = np.array_split(
-                self.indices, self.config.get("total_shards", 1)
-            )
-            # limit each process to see a subset of data based off defined shard
-            self.available_indices = self.shards[self.config.get("shard", 0)]
-            self.num_samples = len(self.available_indices)
+        # if "shard" in self.config and "total_shards" in self.config:
+        #     self.sharded = True
+        #     self.indices = range(self.num_samples)
+        #     # split all available indices into 'total_shards' bins
+        #     self.shards = np.array_split(
+        #         self.indices, self.config.get("total_shards", 1)
+        #     )
+        #     # limit each process to see a subset of data based off defined shard
+        #     self.available_indices = self.shards[self.config.get("shard", 0)]
+        #     self.num_samples = len(self.available_indices)
 
         self.transform = transform
 

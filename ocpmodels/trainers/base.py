@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from logging import getLogger
-from typing import Any, Generic, Literal
+from typing import Any, Generic, Literal, Union
 
 import torch
 import torch.func
@@ -15,6 +15,8 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch_geometric.data import Batch, Data
 from typing_extensions import TypeVar, override
 
+from ..datasets.lmdb_dataset import LmdbDataset, LmdbDatasetConfig
+from ..datasets.oc22_lmdb_dataset import OC22LmdbDataset, OC22LmdbDatasetConfig
 from ..modules.losses import atomwisel2, l2mae
 from ..modules.metrics import S2EFMetrics, S2EFMetricsConfig
 
@@ -60,20 +62,17 @@ class LossConfig(TypedConfig):
     force: ForceLossConfig = ForceLossConfig()
 
 
-class DatasetSplitConfig(TypedConfig):
-    pass
+DatasetConfig = LmdbDatasetConfig | OC22LmdbDatasetConfig
 
 
 class DataConfig(TypedConfig):
-    train: DatasetSplitConfig | None = None
-    val: DatasetSplitConfig | None = None
-    test: DatasetSplitConfig | None = None
-    predict: DatasetSplitConfig | None = None
+    train: DatasetConfig | None = None
+    val: DatasetConfig | None = None
+    test: DatasetConfig | None = None
+    predict: DatasetConfig | None = None
 
     batch_size: int = 4
     num_workers: int = 8
-
-    generate_knn_graph_in_data_transform: bool = False
 
 
 class NormalizationConfig(TypedConfig):
@@ -89,8 +88,6 @@ class NormalizationConfig(TypedConfig):
 class BaseConfig(LLBaseConfig):
     data: DataConfig = DataConfig()
     normalization: NormalizationConfig = NormalizationConfig()
-    graph: KNNGraphConfig = KNNGraphConfig()
-
     optimizer: AdamWConfig = AdamWConfig()
     lr_scheduler: ReduceLROnPlateauConfig | None = None
     loss: LossConfig = LossConfig()
@@ -315,10 +312,23 @@ class S2EFModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
         # This can be overridden to add per-sample transforms (on the CPU)
         return data
 
+    def _dataset(self, config: DatasetConfig):
+        # TODO: Teardown the datasets when we're done with them
+        match config:
+            case LmdbDatasetConfig():
+                dataset = LmdbDataset(config)
+            case OC22LmdbDatasetConfig():
+                dataset = OC22LmdbDataset(config)
+            case _:
+                raise ValueError(f"Unknown dataset: {config}")
+        dataset = self.dataset(dataset, transform=self.data_transform)
+        return dataset
+
     @cache
     def train_dataset(self):
-        dataset = TrajectoryDataset(self.config.data.train_dataset)
-        dataset = self.dataset(dataset, transform=self.data_transform)
+        if (dataset_config := self.config.data.train) is None:
+            raise ValueError("No training dataset specified")
+        dataset = self._dataset(dataset_config)
         return dataset
 
     @override
@@ -340,8 +350,9 @@ class S2EFModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
 
     @cache
     def val_dataset(self):
-        dataset = TrajectoryDataset(self.config.data.val_dataset)
-        dataset = self.dataset(dataset, transform=self.data_transform)
+        if (dataset_config := self.config.data.val) is None:
+            raise ValueError("No validation dataset specified")
+        dataset = self._dataset(dataset_config)
         return dataset
 
     @override

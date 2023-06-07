@@ -12,16 +12,28 @@ import pickle
 import random
 import warnings
 from pathlib import Path
+from typing import Callable, Literal
 
 import lmdb
 import numpy as np
 import torch
+from ll import TypedConfig
 from torch.utils.data import Dataset
-from torch_geometric.data import Batch
+from torch_geometric.data import Batch, Data
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import pyg2_data_transform
+
+
+class OC22LmdbDatasetConfig(TypedConfig):
+    name: Literal["oc22_lmdb"]
+    src: str | Path
+    data2train: Literal["all", "adslabs", "slabs"] = "all"
+    train_on_oc20_total_energies: bool = False
+    oc20_ref: str | Path | None = None
+    lin_ref: str | Path | None = None
+    subsample: int | None = None
 
 
 @registry.register_dataset("oc22_lmdb")
@@ -38,12 +50,15 @@ class OC22LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None):
+    def __init__(
+        self,
+        config: OC22LmdbDatasetConfig,
+        transform: Callable[[Data], Data] | None = None,
+    ):
         super(OC22LmdbDataset, self).__init__()
         self.config = config
 
-        self.path = Path(self.config["src"])
-        self.data2train = self.config.get("data2train", "all")
+        self.path = Path(self.config.src)
         if not self.path.is_file():
             db_paths = sorted(self.path.glob("*.lmdb"))
             assert len(db_paths) > 0, f"No LMDBs found in '{self.path}'"
@@ -65,17 +80,17 @@ class OC22LmdbDataset(Dataset):
             self._keylen_cumulative = np.cumsum(keylens).tolist()
             self.num_samples = sum(keylens)
 
-            if self.data2train != "all":
+            if self.config.data2train != "all":
                 txt_paths = sorted(self.path.glob("*.txt"))
                 index = 0
                 self.indices = []
                 for txt_path in txt_paths:
                     lines = open(txt_path).read().splitlines()
                     for line in lines:
-                        if self.data2train == "adslabs":
+                        if self.config.data2train == "adslabs":
                             if "clean" not in line:
                                 self.indices.append(index)
-                        if self.data2train == "slabs":
+                        if self.config.data2train == "slabs":
                             if "clean" in line:
                                 self.indices.append(index)
                         index += 1
@@ -91,26 +106,27 @@ class OC22LmdbDataset(Dataset):
 
         self.transform = transform
         self.lin_ref = self.oc20_ref = False
+
         # only needed for oc20 datasets, oc22 is total by default
-        self.train_on_oc20_total_energies = self.config.get(
-            "train_on_oc20_total_energies", False
-        )
-        if self.train_on_oc20_total_energies:
-            self.oc20_ref = pickle.load(open(config["oc20_ref"], "rb"))
-        if self.config.get("lin_ref", False):
-            coeff = np.load(self.config["lin_ref"], allow_pickle=True)["coeff"]
+        if self.config.train_on_oc20_total_energies:
+            assert (
+                oc20_ref := self.config.oc20_ref
+            ) is not None, "oc20_ref must be provided if train_on_oc20_total_energies is True"
+            self.oc20_ref = pickle.load(open(oc20_ref, "rb"))
+
+        if self.config.lin_ref:
+            coeff = np.load(self.config.lin_ref, allow_pickle=True)["coeff"]
             self.lin_ref = torch.nn.Parameter(
                 torch.tensor(coeff), requires_grad=False
             )
-        self.subsample = self.config.get("subsample", False)
 
     def __len__(self):
-        if self.subsample:
-            return min(self.subsample, self.num_samples)
+        if self.config.subsample:
+            return min(self.config.subsample, self.num_samples)
         return self.num_samples
 
     def __getitem__(self, idx):
-        if self.data2train != "all":
+        if self.config.data2train != "all":
             idx = self.indices[idx]
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
@@ -158,8 +174,8 @@ class OC22LmdbDataset(Dataset):
         if attr == "y":
             # OC20 data
             if "oc22" not in data_object:
-                assert self.config.get(
-                    "train_on_oc20_total_energies", False
+                assert (
+                    self.config.train_on_oc20_total_energies
                 ), "To train OC20 or OC22+OC20 on total energies set train_on_oc20_total_energies=True"
                 randomid = f"random{sid}"
                 data_object[attr] += self.oc20_ref[randomid]
@@ -169,8 +185,8 @@ class OC22LmdbDataset(Dataset):
         # convert is2re energies to raw energies
         else:
             if "oc22" not in data_object:
-                assert self.config.get(
-                    "train_on_oc20_total_energies", False
+                assert (
+                    self.config.train_on_oc20_total_energies
                 ), "To train OC20 or OC22+OC20 on total energies set train_on_oc20_total_energies=True"
                 randomid = f"random{sid}"
                 data_object[attr] += self.oc20_ref[randomid]
