@@ -122,15 +122,15 @@ class AseAtomsDataset(Dataset):
         pass
         # This method is sometimes called by a trainer
 
-    def guess_target_metadata(self, Nsamples=100):
+    def guess_target_metadata(self, num_samples=100):
         metadata = {}
 
-        if Nsamples < len(self):
+        if num_samples < len(self):
             metadata["targets"] = guess_property_metadata(
                 [
                     self.get_atoms_object(self.ids[idx])
                     for idx in np.random.choice(
-                        self.__len__(), size=(Nsamples,)
+                        self.__len__(), size=(num_samples,), replace=False
                     )
                 ]
             )
@@ -205,7 +205,7 @@ class AseReadDataset(AseAtomsDataset):
         self.path = Path(self.config["src"])
         if self.path.is_file():
             raise Exception("The specified src is not a directory")
-        self.ids = sorted(self.path.glob(f'{self.config["pattern"]}'))
+        self.ids = list(self.path.glob(f'{self.config["pattern"]}'))
 
     def get_atoms_object(self, identifier):
         try:
