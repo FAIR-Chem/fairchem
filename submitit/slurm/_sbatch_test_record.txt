@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Parameters
+#SBATCH --blublu=12
+#SBATCH --error=/tmp/%j_0_log.err
+#SBATCH --exclusive
+#SBATCH --job-name=submitit
+#SBATCH --nodes=1
+#SBATCH --open-mode=append
+#SBATCH --output=/tmp/%j_0_log.out
+#SBATCH --partition=learnfair
+#SBATCH --signal=USR2@90
+#SBATCH --time=5
+#SBATCH --wckey=submitit
+
+# command
+export SUBMITIT_EXECUTOR=slurm
+srun --unbuffered --output /tmp/%j_%t_log.out --error /tmp/%j_%t_log.err -vv --cpu-bind none blublu bar
