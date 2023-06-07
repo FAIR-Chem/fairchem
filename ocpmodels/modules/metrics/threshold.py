@@ -72,9 +72,7 @@ class EnergyForcesWithinThreshold(torchmetrics.Metric):
         self,
         prediction: EnergyForces,
         target: EnergyForces,
-        batch: torch.Tensor,
-        graph_mask: torch.Tensor | None = None,
-        node_mask: torch.Tensor | None = None,
+        batch_idx: torch.Tensor,
     ):
         B = target["energy"].shape[0]
 
@@ -82,25 +80,35 @@ class EnergyForcesWithinThreshold(torchmetrics.Metric):
         error_forces = torch.abs(
             target["forces"] - prediction["forces"]
         )  # n 3
-        batch_forces = batch
-        if node_mask is not None:
-            error_forces = error_forces[node_mask]
-            batch_forces = batch_forces[node_mask]
         max_error_forces = scatter(
             error_forces,
-            batch_forces,
+            batch_idx,
             dim=0,
             dim_size=B,
             reduce="max",
         )  # b 3
-        max_error_forces = reduce(max_error_forces, "b p -> b", "max")  # b
-        if graph_mask is not None:
-            max_error_forces = max_error_forces[graph_mask]  # b
 
-        # compute the energy MAEs
+        # In some circumstances (specifically when free_atoms_only is True for metric computation),
+        # there may not be any free atoms. In these cases, the max_error_forces will be 0.
+        # To deal w/ this, we compute the natoms_per_graph  and set the max_error_forces to inf for graphs w/ no free atoms.
+        natoms_per_graph = scatter(
+            torch.ones_like(batch_idx),
+            batch_idx,
+            dim=0,
+            dim_size=B,
+            reduce="sum",
+        )  # b
+        max_error_forces[natoms_per_graph == 0] = float("inf")
+
+        # Compute fmax per graph
+        max_error_forces = reduce(
+            max_error_forces,
+            "b p -> b",
+            "max",
+        )  # b
+
+        # Compute the energy MAEs
         error_energy = torch.abs(target["energy"] - prediction["energy"])  # b
-        if graph_mask is not None:
-            error_energy = error_energy[graph_mask]  # b
 
         success = (error_energy < self.energy_threshold) & (
             max_error_forces < self.forces_threshold

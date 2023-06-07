@@ -341,7 +341,7 @@ class S2EFBaseModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
         # This can be overridden to add per-sample transforms (on the CPU)
 
         # Set the "fixed" attribute to be of dtype bool (currently, it's of dtype long)
-        data.fixed = data.fixed == 0
+        data.fixed = data.fixed == 1
 
         return data
 
