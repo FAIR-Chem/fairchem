@@ -1,20 +1,17 @@
 from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from logging import getLogger
-from typing import (
-    Annotated,
-    Any,
-    Generic,
-    Literal,
-    Protocol,
-    final,
-    runtime_checkable,
-)
+from typing import Any, Generic, Literal, Protocol, final, runtime_checkable
 
 import torch
 import torch.func
 import torch.nn.functional as F
 from einops import reduce
+from torch.optim import Adam, AdamW
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch_geometric.data import Batch, Data
+from typing_extensions import TypeVar, override
+
 from ll import BaseConfig as LLBaseConfig
 from ll import (
     Field,
@@ -24,14 +21,11 @@ from ll import (
     TypedConfig,
 )
 from ll.data.balanced_batch_sampler import BalancedBatchSampler
-from torch.optim import Adam, AdamW
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torch_geometric.data import Batch, Data
-from typing_extensions import TypeVar, override
 
 from ..datasets.lmdb_dataset import LmdbDataset, LmdbDatasetConfig
 from ..datasets.oc22_lmdb_dataset import OC22LmdbDataset, OC22LmdbDatasetConfig
 from ..models.gemnet.gemnet import GemNetT, GemNetTConfig
+from ..modules.callbacks.ema import EMA, EMAConfig
 from ..modules.losses import atomwisel2, l2mae
 from ..modules.metrics import S2EFMetrics, S2EFMetricsConfig
 
@@ -128,6 +122,8 @@ class BaseConfig(LLBaseConfig):
     loss: LossConfig = LossConfig()
     metrics: S2EFMetricsConfig = S2EFMetricsConfig(free_atoms_only=False)
 
+    ema: EMAConfig | None = None
+
 
 TConfig = TypeVar("TConfig", bound=BaseConfig, infer_variance=True)
 
@@ -136,6 +132,10 @@ class S2EFBaseModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
     @override
     def __init__(self, hparams: TConfig):
         super().__init__(hparams)
+
+        if self.config.ema is not None:
+            log.critical(f"Using EMA callback with config: {self.config.ema}")
+            self.register_callback(EMA(self.config.ema))
 
         self.train_metrics = S2EFMetrics(self.config.metrics)
         self.val_metrics = S2EFMetrics(self.config.metrics)

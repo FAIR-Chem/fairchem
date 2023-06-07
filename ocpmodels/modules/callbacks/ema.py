@@ -9,6 +9,15 @@ from lightning.pytorch import Callback
 from lightning.pytorch.utilities.exceptions import MisconfigurationException
 from typing_extensions import override
 
+from ll import TypedConfig
+
+
+class EMAConfig(TypedConfig):
+    decay: float
+    validate_original_weights: bool = False
+    every_n_steps: int = 1
+    cpu_offload: bool = False
+
 
 class EMA(Callback):
     """
@@ -26,25 +35,23 @@ class EMA(Callback):
     """
 
     @override
-    def __init__(
-        self,
-        decay: float,
-        validate_original_weights: bool = False,
-        every_n_steps: int = 1,
-        cpu_offload: bool = False,
-    ):
-        if not (0 <= decay <= 1):
-            raise MisconfigurationException("EMA decay value must be between 0 and 1")
-        self.decay = decay
-        self.validate_original_weights = validate_original_weights
-        self.every_n_steps = every_n_steps
-        self.cpu_offload = cpu_offload
+    def __init__(self, config: EMAConfig):
+        if not (0 <= config.decay <= 1):
+            raise MisconfigurationException(
+                "EMA decay value must be between 0 and 1"
+            )
+        self.decay = config.decay
+        self.validate_original_weights = config.validate_original_weights
+        self.every_n_steps = config.every_n_steps
+        self.cpu_offload = config.cpu_offload
 
     @override
     def on_fit_start(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
     ) -> None:
-        device = pl_module.device if not self.cpu_offload else torch.device("cpu")
+        device = (
+            pl_module.device if not self.cpu_offload else torch.device("cpu")
+        )
         trainer.optimizers = [
             EMAOptimizer(
                 optim,
@@ -59,47 +66,52 @@ class EMA(Callback):
 
     @override
     def on_validation_start(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
     ) -> None:
         if self._should_validate_ema_weights(trainer):
             self.swap_model_weights(trainer)
 
     @override
     def on_validation_end(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
     ) -> None:
         if self._should_validate_ema_weights(trainer):
             self.swap_model_weights(trainer)
 
     @override
     def on_test_start(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
     ) -> None:
         if self._should_validate_ema_weights(trainer):
             self.swap_model_weights(trainer)
 
     @override
     def on_test_end(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
     ) -> None:
         if self._should_validate_ema_weights(trainer):
             self.swap_model_weights(trainer)
 
-    def _should_validate_ema_weights(self, trainer: "pl.Trainer") -> bool:
-        return not self.validate_original_weights and self._ema_initialized(trainer)
-
-    def _ema_initialized(self, trainer: "pl.Trainer") -> bool:
-        return any(
-            isinstance(optimizer, EMAOptimizer) for optimizer in trainer.optimizers
+    def _should_validate_ema_weights(self, trainer: pl.Trainer) -> bool:
+        return not self.validate_original_weights and self._ema_initialized(
+            trainer
         )
 
-    def swap_model_weights(self, trainer: "pl.Trainer", saving_ema_model: bool = False):
+    def _ema_initialized(self, trainer: pl.Trainer) -> bool:
+        return any(
+            isinstance(optimizer, EMAOptimizer)
+            for optimizer in trainer.optimizers
+        )
+
+    def swap_model_weights(
+        self, trainer: pl.Trainer, saving_ema_model: bool = False
+    ):
         for optimizer in trainer.optimizers:
             assert isinstance(optimizer, EMAOptimizer)
             optimizer.switch_main_parameter_weights(saving_ema_model)
 
     @contextlib.contextmanager
-    def save_ema_model(self, trainer: "pl.Trainer"):
+    def save_ema_model(self, trainer: pl.Trainer):
         """
         Saves an EMA copy of the model + EMA optimizer states for resume.
         """
@@ -110,7 +122,7 @@ class EMA(Callback):
             self.swap_model_weights(trainer, saving_ema_model=False)
 
     @contextlib.contextmanager
-    def save_original_optimizer_state(self, trainer: "pl.Trainer"):
+    def save_original_optimizer_state(self, trainer: pl.Trainer):
         for optimizer in trainer.optimizers:
             assert isinstance(optimizer, EMAOptimizer)
             optimizer.save_original_optimizer_state = True
@@ -206,7 +218,9 @@ class EMAOptimizer(torch.optim.Optimizer):
         self.in_saving_ema_model_context = False
 
     def all_parameters(self) -> Iterable[torch.Tensor]:
-        return (param for group in self.param_groups for param in group["params"])
+        return (
+            param for group in self.param_groups for param in group["params"]
+        )
 
     @override
     def step(self, closure=None, **kwargs):
