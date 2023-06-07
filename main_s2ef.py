@@ -13,7 +13,35 @@ log = logging.getLogger(__name__)
 
 def main():
     parser = argparse.ArgumentParser()
-    _ = parser.add_argument("config", type=Path, help="Path to config file")
+    _ = parser.add_argument("--config", type=Path, help="Path to config file")
+    # Add two actions: local and submit
+    subparsers = parser.add_subparsers(dest="action", required=True)
+    _ = subparsers.add_parser("local")
+    submit = subparsers.add_parser("submit")
+    _ = submit.add_argument(
+        "--gpus", type=int, required=True, help="Number of GPUs"
+    )
+    _ = submit.add_argument(
+        "--nodes", type=int, required=True, help="Number of nodes"
+    )
+    _ = submit.add_argument(
+        "--partition",
+        type=str,
+        required=True,
+        help="SLURM partition to submit to.",
+    )
+    _ = submit.add_argument(
+        "--cpus-per-task",
+        type=int,
+        default=-1,
+        help="Number of CPUs per task, or -1 to infer based on `num_workers` in the config.",
+    )
+    _ = submit.add_argument(
+        "--snapshot",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Whether to take a snapshot of the current code and use it for the run.",
+    )
     args = parser.parse_args()
 
     # Parse the config
@@ -29,7 +57,34 @@ def main():
 
     # Create the runner and run locally
     runner = Runner(run)
-    runner.local(config)
+    match args.action:
+        case "local":
+            # Run locally
+            runner.local(config)
+        case "submit":
+            # If cpus_per_task is not specified, use the number of workers
+            cpus_per_task: int = args.cpus_per_task
+            if cpus_per_task == -1:
+                cpus_per_task = config.data.num_workers
+
+            # Submit to SLURM
+            jobs = runner.submit(
+                [config],
+                gpus=args.gpus,
+                nodes=args.nodes,
+                cpus_per_task=cpus_per_task,
+                partition=args.partition,
+                snapshot=args.snapshot,
+            )
+
+            # Print the job IDs
+            for job in jobs:
+                log.critical(
+                    f"Submitted job {job.job_id} to {args.partition}."
+                )
+
+        case _:
+            raise ValueError(f"Invalid action {args.action}")
 
 
 if __name__ == "__main__":
