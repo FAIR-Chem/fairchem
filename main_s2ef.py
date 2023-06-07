@@ -16,17 +16,8 @@ def main():
     _ = parser.add_argument("config", type=Path, help="Path to config file")
     args = parser.parse_args()
 
-    # Parse the config as yaml or json
-    config_path: Path = args.config
-    match config_path.suffix.lower():
-        case ".yaml":
-            config = S2EFConfig.from_yaml(config_path.read_text())
-            log.info(f"Loaded YAML config from {config_path}")
-        case ".json":
-            config = S2EFConfig.from_json(config_path.read_text())
-            log.info(f"Loaded JSON config from {config_path}")
-        case _:
-            raise ValueError(f"Unknown config file type: {config_path.suffix}")
+    # Parse the config
+    config = S2EFConfig.from_file(args.config)
 
     # Define the runner main function.
     # This is called locally when using runner.local(config)

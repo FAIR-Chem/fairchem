@@ -37,7 +37,7 @@ loss:
 lr_scheduler: null
 meta: {}
 metrics:
-    free_atoms_only: true
+    free_atoms_only: false
 model:
     activation: silu
     cbf:

@@ -126,7 +126,7 @@ class BaseConfig(LLBaseConfig):
     optimizer: AdamWConfig | AdamConfig = Field(discriminator="name")
     lr_scheduler: LRSchedulerConfig | None = None
     loss: LossConfig = LossConfig()
-    metrics: S2EFMetricsConfig = S2EFMetricsConfig(free_atoms_only=True)
+    metrics: S2EFMetricsConfig = S2EFMetricsConfig(free_atoms_only=False)
 
 
 TConfig = TypeVar("TConfig", bound=BaseConfig, infer_variance=True)
