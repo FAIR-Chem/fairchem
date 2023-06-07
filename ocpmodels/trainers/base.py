@@ -24,7 +24,7 @@ from ll import (
     TypedConfig,
 )
 from ll.data.balanced_batch_sampler import BalancedBatchSampler
-from torch.optim import AdamW
+from torch.optim import Adam, AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch_geometric.data import Batch, Data
 from typing_extensions import TypeVar, override
@@ -57,17 +57,24 @@ class ReduceLROnPlateauConfig(TypedConfig):
 LRSchedulerConfig = ReduceLROnPlateauConfig
 
 
-class AdamWConfig(TypedConfig):
-    name: Literal["AdamW"] = "AdamW"
+class AdamConfig(TypedConfig):
+    name: Literal["Adam"] = "Adam"
 
     lr: float = 2.0e-4
-    amsgrad: bool = True
+    amsgrad: bool = False
     weight_decay: float = 0.01
     betas: tuple[float, float] = (0.9, 0.999)
     eps: float = 1e-8
 
 
-OptimizerConfig = AdamWConfig
+class AdamWConfig(TypedConfig):
+    name: Literal["AdamW"] = "AdamW"
+
+    lr: float = 2.0e-4
+    amsgrad: bool = False
+    weight_decay: float = 0.01
+    betas: tuple[float, float] = (0.9, 0.999)
+    eps: float = 1e-8
 
 
 class EnergyLossConfig(TypedConfig):
@@ -86,9 +93,11 @@ class LossConfig(TypedConfig):
     force: ForceLossConfig = ForceLossConfig()
 
 
-DatasetConfig = Annotated[
-    LmdbDatasetConfig | OC22LmdbDatasetConfig, Field(discriminator="name")
-]
+class DatasetConfig(TypedConfig):
+    dataset: LmdbDatasetConfig | OC22LmdbDatasetConfig = Field(
+        discriminator="name"
+    )
+    shuffle: bool | None = None
 
 
 class DataConfig(TypedConfig):
@@ -114,7 +123,7 @@ class NormalizationConfig(TypedConfig):
 class BaseConfig(LLBaseConfig):
     data: DataConfig
     normalization: NormalizationConfig = NormalizationConfig()
-    optimizer: OptimizerConfig
+    optimizer: AdamWConfig | AdamConfig = Field(discriminator="name")
     lr_scheduler: LRSchedulerConfig | None = None
     loss: LossConfig = LossConfig()
     metrics: S2EFMetricsConfig = S2EFMetricsConfig(free_atoms_only=True)
@@ -276,6 +285,13 @@ class S2EFBaseModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
     def configure_optimizers(self):
         # Create optimizer based on config
         match self.config.optimizer:
+            case AdamConfig() as config:
+                optimizer = Adam(
+                    self.parameters(),
+                    lr=config.lr,
+                    amsgrad=config.amsgrad,
+                    weight_decay=config.weight_decay,
+                )
             case AdamWConfig() as config:
                 optimizer = AdamW(
                     self.parameters(),
@@ -347,13 +363,13 @@ class S2EFBaseModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
 
     def _dataset(self, config: DatasetConfig):
         # TODO: Teardown the datasets when we're done with them
-        match config:
+        match config.dataset:
             case LmdbDatasetConfig():
-                dataset = LmdbDataset(config)
+                dataset = LmdbDataset(config.dataset)
             case OC22LmdbDatasetConfig():
-                dataset = OC22LmdbDataset(config)
+                dataset = OC22LmdbDataset(config.dataset)
             case _:
-                raise ValueError(f"Unknown dataset: {config}")
+                raise ValueError(f"Unknown dataset: {config.dataset}")
         dataset = self.dataset(dataset, transform=self.data_transform)
         return dataset
 
@@ -366,11 +382,14 @@ class S2EFBaseModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
 
     @override
     def train_dataloader(self):
-        if self.config.data.train is None:
+        if (config := self.config.data.train) is None:
             return None
 
         dataset = self.train_dataset()
-        sampler = self.distributed_sampler(dataset, shuffle=True)
+        sampler = self.distributed_sampler(
+            dataset,
+            shuffle=True if config.shuffle is None else config.shuffle,
+        )
         batch_sampler = BalancedBatchSampler(
             sampler,
             batch_size=self.config.data.batch_size,
@@ -393,11 +412,14 @@ class S2EFBaseModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
 
     @override
     def val_dataloader(self):
-        if self.config.data.val is None:
+        if (config := self.config.data.val) is None:
             return None
 
         dataset = self.val_dataset()
-        sampler = self.distributed_sampler(dataset, shuffle=False)
+        sampler = self.distributed_sampler(
+            dataset,
+            shuffle=False if config.shuffle is None else config.shuffle,
+        )
         batch_sampler = BalancedBatchSampler(
             sampler,
             batch_size=self.config.data.batch_size,

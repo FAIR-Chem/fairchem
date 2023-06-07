@@ -4,11 +4,13 @@ data:
     predict: null
     test: null
     train:
-        name: lmdb
-        src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/train/2M/
+        dataset:
+            name: lmdb
+            src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/train/2M/
     val:
-        name: lmdb
-        src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k/
+        dataset:
+            name: lmdb
+            src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k/
 debug: false
 environment:
     config: null
@@ -127,7 +129,7 @@ trainer:
     logging:
         csv:
             enabled: true
-        enabled: false
+        enabled: true
         log_epoch: true
         log_grad_norm: true
         log_grad_norm_per_param: false
