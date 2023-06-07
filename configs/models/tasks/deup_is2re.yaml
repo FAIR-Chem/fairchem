@@ -1,5 +1,5 @@
 default:
-  trainer: ensemble
+  trainer: single
   logger: wandb
 
   task:
@@ -17,12 +17,12 @@ default:
   dataset:
     default_val: deup-val_ood_cat-val_ood_ads
     deup-train-val_id:
-      src: /network/scratch/s/schmidtv/ocp/runs/3115149/deup_dataset
+      src: /network/scratch/s/schmidtv/ocp/runs/3264530/deup_dataset
       normalize_labels: True
-      target_mean: -1.525913953781128 # Automatically changed if deup dataset is created
-      target_std: 2.279365062713623 # Automatically changed if deup dataset is created
+      target_mean: auto # Automatically changed if deup dataset is created
+      target_std: auto # Automatically changed if deup dataset is created
     deup-val_ood_cat-val_ood_ads:
-      src: /network/scratch/s/schmidtv/ocp/runs/3115149/deup_dataset
+      src: /network/scratch/s/schmidtv/ocp/runs/3264530/deup_dataset
     train:
       src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/all/train/
     val_id:
