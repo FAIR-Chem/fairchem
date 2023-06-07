@@ -439,7 +439,7 @@ class AseDBDataset(AseAtomsDataset):
         self.select_args = self.config.get("select_args", {})
 
         # In order to get all of the unique IDs using the default ASE db interface
-        # we have to low all the data and check ids using a select. This is extremely
+        # we have to load all the data and check ids using a select. This is extremely
         # inefficient for large dataset. If the db we're using already presents a list of
         # ids and there is no query, we can just use that list instead and save ourselves
         # a lot of time!
