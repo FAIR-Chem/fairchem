@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from logging import getLogger
-from typing import Any, Generic, Literal, Union
+from typing import Any, Generic, Literal, Protocol, final, runtime_checkable
 
 import torch
 import torch.func
@@ -17,6 +17,7 @@ from typing_extensions import TypeVar, override
 
 from ..datasets.lmdb_dataset import LmdbDataset, LmdbDatasetConfig
 from ..datasets.oc22_lmdb_dataset import OC22LmdbDataset, OC22LmdbDatasetConfig
+from ..models.gemnet.gemnet import GemNetT, GemNetTConfig
 from ..modules.losses import atomwisel2, l2mae
 from ..modules.metrics import S2EFMetrics, S2EFMetricsConfig
 
@@ -24,6 +25,8 @@ log = getLogger(__name__)
 
 
 class ReduceLROnPlateauConfig(TypedConfig):
+    name: Literal["ReduceLROnPlateau"]
+
     monitor: str
     mode: Literal["min", "max"] = "min"
     patience: int = 3
@@ -37,13 +40,20 @@ class ReduceLROnPlateauConfig(TypedConfig):
     interval_frequency: tuple[str, int] | None = None
 
 
+LRSchedulerConfig = ReduceLROnPlateauConfig
+
+
 class AdamWConfig(TypedConfig):
-    name: Literal["AdamW"] = "AdamW"
+    name: Literal["AdamW"]
+
     lr: float = 2.0e-4
     amsgrad: bool = True
     weight_decay: float = 0.01
     betas: tuple[float, float] = (0.9, 0.999)
     eps: float = 1e-8
+
+
+OptimizerConfig = AdamWConfig
 
 
 class EnergyLossConfig(TypedConfig):
@@ -86,10 +96,10 @@ class NormalizationConfig(TypedConfig):
 
 
 class BaseConfig(LLBaseConfig):
-    data: DataConfig = DataConfig()
+    data: DataConfig
     normalization: NormalizationConfig = NormalizationConfig()
-    optimizer: AdamWConfig = AdamWConfig()
-    lr_scheduler: ReduceLROnPlateauConfig | None = None
+    optimizer: OptimizerConfig
+    lr_scheduler: LRSchedulerConfig | None = None
     loss: LossConfig = LossConfig()
     metrics: S2EFMetricsConfig = S2EFMetricsConfig(free_atoms_only=True)
 
@@ -97,7 +107,7 @@ class BaseConfig(LLBaseConfig):
 TConfig = TypeVar("TConfig", bound=BaseConfig, infer_variance=True)
 
 
-class S2EFModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
+class S2EFBaseModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
     @override
     def __init__(self, hparams: TConfig):
         super().__init__(hparams)
@@ -248,6 +258,7 @@ class S2EFModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
 
     @override
     def configure_optimizers(self):
+        # Create optimizer based on config
         match self.config.optimizer:
             case AdamWConfig() as config:
                 optimizer = AdamW(
@@ -260,7 +271,11 @@ class S2EFModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
                 raise ValueError(f"Unknown optimizer: {self.config.optimizer}")
 
         return_dict: dict[str, Any] = {"optimizer": optimizer}
+
+        # Create learning rate scheduler based on config
         match self.config.lr_scheduler:
+            case None:
+                pass
             case ReduceLROnPlateauConfig() as config:
                 if config.interval_frequency is not None:
                     interval, frequency = config.interval_frequency
@@ -294,8 +309,6 @@ class S2EFModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
                     "strict": True,
                     "reduce_on_plateau": True,
                 }
-            case None:
-                pass
             case _:
                 raise ValueError(
                     f"Unknown lr_scheduler: {self.config.lr_scheduler}"
@@ -371,3 +384,67 @@ class S2EFModule(LightningModuleBase[TConfig], ABC, Generic[TConfig]):
             num_workers=self.config.data.num_workers,
         )
         return dataloader
+
+
+ModelConfig = GemNetTConfig
+
+
+class S2EFConfig(BaseConfig):
+    model: ModelConfig
+
+
+@runtime_checkable
+class ModelProtocol(Protocol):
+    def forward(self, batch: Batch) -> tuple[torch.Tensor, torch.Tensor]:
+        ...
+
+
+@final
+class S2EFModule(S2EFBaseModule[S2EFConfig]):
+    def construct_model(self):
+        # Create the right model based on the config given.
+        match self.config.model:
+            case GemNetTConfig() as config:
+                model = GemNetT(None, 0, 1, **dict(config))
+            case _:
+                raise ValueError(f"Unknown model: {self.config.model}")
+
+        # Do any additional necessary checks.
+        # Make sure that the model returns a tuple of energy and forces.
+        if not isinstance(model, ModelProtocol):
+            raise ValueError(
+                "Model does not implement the ModelProtocol interface. "
+                "Make sure that the model's `forward` method returns a tuple of energy and forces."
+            )
+
+        return model
+
+    @override
+    def __init__(self, hparams: S2EFConfig):
+        super().__init__(hparams)
+
+        self.model = self.construct_model()
+
+    @override
+    @classmethod
+    def config_cls(cls):
+        return S2EFConfig
+
+    @override
+    def forward(self, data: Batch):
+        model_out = self.model(data)
+        # Make sure that the model returns a tuple of energy and forces.
+        if not isinstance(model_out, tuple):
+            raise ValueError(
+                "Model does not implement the ModelProtocol interface. "
+                "Make sure that the model's `forward` method returns a tuple of energy and forces."
+            )
+        if len(model_out) != 2:
+            raise ValueError(
+                f"Expected model to return a tuple of length 2, but got a tuple of length "
+                f"{len(model_out)}"
+            )
+
+        energy, forces = model_out
+        # Any additional post-processing of the model output can be done here.
+        return energy, forces

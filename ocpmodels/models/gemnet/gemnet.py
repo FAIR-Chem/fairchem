@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 from typing import Optional
+from ll import TypedConfig
 
 import numpy as np
 import torch
@@ -36,6 +37,36 @@ from .utils import (
     ragged_range,
     repeat_blocks,
 )
+
+
+class GemNetTConfig(TypedConfig):
+    num_spherical: int
+    num_radial: int
+    num_blocks: int
+    emb_size_atom: int
+    emb_size_edge: int
+    emb_size_trip: int
+    emb_size_rbf: int
+    emb_size_cbf: int
+    emb_size_bil_trip: int
+    num_before_skip: int
+    num_after_skip: int
+    num_concat: int
+    num_atom: int
+    regress_forces: bool = True
+    direct_forces: bool = False
+    cutoff: float = 6.0
+    max_neighbors: int = 50
+    rbf: dict = {"name": "gaussian"}
+    envelope: dict = {"name": "polynomial", "exponent": 5}
+    cbf: dict = {"name": "spherical_harmonics"}
+    extensive: bool = True
+    otf_graph: bool = False
+    use_pbc: bool = True
+    output_init: str = "HeOrthogonal"
+    activation: str = "swish"
+    num_elements: int = 83
+    scale_file: Optional[str] = None
 
 
 @registry.register_model("gemnet_t")
@@ -443,7 +474,13 @@ class GemNetT(BaseModel):
             select_cutoff = None
         else:
             select_cutoff = self.cutoff
-        (edge_index, cell_offsets, neighbors, D_st, V_st,) = self.select_edges(
+        (
+            edge_index,
+            cell_offsets,
+            neighbors,
+            D_st,
+            V_st,
+        ) = self.select_edges(
             data=data,
             edge_index=edge_index,
             cell_offsets=cell_offsets,
