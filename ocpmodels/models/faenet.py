@@ -567,8 +567,8 @@ class FAENet(BaseModel):
         self.skip_co = kwargs["skip_co"]
         self.dropout_edge = float(kwargs.get("dropout_edge") or 0)
         self.dropout_lin = float(kwargs.get("dropout_lin") or 0)
-        self.dropout_lowest_layer = kwargs.get("dropout_lowest_layer", "output")
-        self.first_trainable_layer = kwargs.get("first_trainable_layer", "")
+        self.dropout_lowest_layer = kwargs.get("dropout_lowest_layer", "output") or ""
+        self.first_trainable_layer = kwargs.get("first_trainable_layer", "") or ""
 
         if kwargs["mp_type"] == "sfarinet":
             kwargs["num_filters"] = kwargs["hidden_channels"]
