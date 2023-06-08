@@ -15,6 +15,24 @@ from ocpmodels.trainers.single_trainer import SingleTrainer
 from ocpmodels.common.registry import registry
 
 
+def clean_conf(config):
+    """
+    Recursively convert Path objects to strings in a config dict.
+
+    Args:
+        config (dict): Config dict to clean.
+
+    Returns:
+        dict: Cleaned config dict.
+    """
+    for k, v in config.items():
+        if isinstance(Path, v):
+            config[k] = str(v)
+        elif isinstance(v, dict):
+            config[k] = clean_conf(v)
+    return config
+
+
 @registry.register_trainer("ensemble")
 class EnsembleTrainer(SingleTrainer):
     def __init__(self, conf_str, trainers_conf={}, overrides={}, **kwargs):
@@ -323,7 +341,7 @@ class EnsembleTrainer(SingleTrainer):
             (output_path / "deup_config.yaml").write_text(
                 dump(
                     {
-                        "ensemble_config": self.config,
+                        "ensemble_config": clean_conf(self.config),
                         "n_samples": n_samples,
                         "datasets": dataset_strs,
                         "output_path": str(output_path),

@@ -581,7 +581,7 @@ class SingleTrainer(BaseTrainer):
                 batch.y_relaxed.to(self.device)
                 if self.task_name == "is2re"
                 else batch.deup_loss.to(self.device)
-                if self.task_name == "deup"
+                if self.task_name == "deup_is2re"
                 else batch.y.to(self.device)
                 for batch in batch_list
             ],
@@ -698,7 +698,7 @@ class SingleTrainer(BaseTrainer):
                     batch.y_relaxed.to(self.device)
                     if self.task_name == "is2re"
                     else batch.deup_loss.to(self.device)
-                    if self.task_name == "deup"
+                    if self.task_name == "deup_is2re"
                     else batch.y.to(self.device)
                     for batch in batch_list
                 ],
