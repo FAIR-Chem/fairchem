@@ -53,10 +53,10 @@ class LRScheduler:
             else:
                 if not self.silent:
                     print(f"Using fidelity_max_steps for scheduler -> {T_max}")
-
-            self.warmup_scheduler = warmup.ExponentialWarmup(
-                self.optimizer, warmup_period=self.optim_config["warmup_steps"]
-            )
+            if self.optim_config["warmup_steps"] > 0:
+                self.warmup_scheduler = warmup.ExponentialWarmup(
+                    self.optimizer, warmup_period=self.optim_config["warmup_steps"]
+                )
             self.scheduler = lr_scheduler.CosineAnnealingLR(
                 self.optimizer, T_max=T_max, eta_min=1e-7
             )
