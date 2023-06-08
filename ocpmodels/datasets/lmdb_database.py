@@ -62,6 +62,7 @@ class LMDBDatabase(Database):
                 meminit=False,
                 map_async=True,
                 readonly=True,
+                lock=False,
             )
 
             # Open a transaction and keep it open for fast read/writes!
@@ -85,7 +86,6 @@ class LMDBDatabase(Database):
         return
 
     def __exit__(self, exc_type, exc_value, tb):
-
         self.close()
 
         pass

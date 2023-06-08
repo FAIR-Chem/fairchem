@@ -194,7 +194,7 @@ class LmdbDataset(Dataset):
         else:
             self.env.close()
 
-    def get_metadata(self, Nsamples=100):
+    def get_metadata(self, num_samples=100):
         # This will interogate the classic OCP LMDB format to determine
         # which properties are present and attempt to guess their shapes
         # and whether they are intensive or extensive.
@@ -217,7 +217,10 @@ class LmdbDataset(Dataset):
 
         # Get a bunch of random data samples and the number of atoms
         sample_pyg = [
-            self[i] for i in np.random.choice(self.__len__(), size=(Nsamples,))
+            self[i]
+            for i in np.random.choice(
+                self.__len__(), size=(num_samples,), replace=False
+            )
         ]
         atoms_lens = [data.natoms for data in sample_pyg]
 
