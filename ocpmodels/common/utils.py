@@ -63,7 +63,7 @@ class Cluster:
 
 
 CLUSTER = Cluster()
-OCP_AND_DEUP_TASKS = {"s2ef", "is2re", "is2es", "deup"}
+OCP_AND_DEUP_TASKS = {"s2ef", "is2re", "is2es", "deup_is2re"}
 ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
 RUN_DIR = Path(os.environ["SCRATCH"]) / "ocp" / "runs"
@@ -234,7 +234,7 @@ def override_drac_paths(trainer_config):
 
 
 def set_deup_samples_path(trainer_config):
-    if not trainer_config.get("deup_samples_path") or all(
+    if not trainer_config.get("deup_samples_path") and all(
         "deup-" not in s for s in trainer_config["dataset"]
     ):
         return trainer_config
@@ -260,7 +260,7 @@ def set_deup_samples_path(trainer_config):
 
     for split in trainer_config["dataset"]:
         if "deup-" in split:
-            trainer_config[split]["src"] = str(dsp)
+            trainer_config["dataset"][split]["src"] = str(dsp)
 
     stats = yaml.safe_load((dsp / "deup_config.yaml").read_text())["stats"]["train"]
     trainer_config["dataset"][deup_train_key]["target_mean"] = stats["mean"]
@@ -600,7 +600,10 @@ def warmup_lr_lambda(current_step, optim_config):
         )
 
     # warmup
-    if current_step <= optim_config["warmup_steps"]:
+    if (
+        optim_config["warmup_steps"] > 0
+        and current_step <= optim_config["warmup_steps"]
+    ):
         alpha = current_step / float(optim_config["warmup_steps"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
 
