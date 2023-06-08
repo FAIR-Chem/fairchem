@@ -13,7 +13,7 @@ import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from copy import deepcopy
-
+from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
@@ -406,7 +406,11 @@ class BaseTrainer(ABC):
             )
 
     def load_checkpoint(self, checkpoint_path, silent=False):
-        if not os.path.isfile(checkpoint_path):
+        if Path(checkpoint_path).is_dir():
+            checkpoint_path = str(
+                Path(checkpoint_path) / "checkpoints" / "best_checkpoint.pt"
+            )
+        if not Path(checkpoint_path).exists():
             raise FileNotFoundError(
                 errno.ENOENT, "Checkpoint file not found", checkpoint_path
             )
@@ -422,16 +426,25 @@ class BaseTrainer(ABC):
         # if trained with ddp and want to load in non-ddp, modify keys from
         # module.module.. -> module..
         first_key = next(iter(checkpoint["state_dict"]))
+        strict = "deup" not in self.config["config"]
+        missing, unexpected = None, None
         if not dist_utils.initialized() and first_key.split(".")[1] == "module":
             # No need for OrderedDict since dictionaries are technically ordered
             # since Python 3.6 and officially ordered since Python 3.7
             new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
-            self.model.load_state_dict(new_dict)
+            missing, unexpected = self.model.load_state_dict(new_dict, strict)
         elif dist_utils.initialized() and first_key.split(".")[1] != "module":
             new_dict = {f"module.{k}": v for k, v in checkpoint["state_dict"].items()}
-            self.model.load_state_dict(new_dict)
+            missing, unexpected = self.model.load_state_dict(new_dict, strict)
         else:
-            self.model.load_state_dict(checkpoint["state_dict"])
+            missing, unexpected = self.model.load_state_dict(
+                checkpoint["state_dict"], strict
+            )
+
+        if missing or unexpected:
+            print("Warning: Model did not load correctly.")
+            print(f"Missing keys: {missing}")
+            print(f"Unexpected keys: {unexpected}")
 
         if "optimizer" in checkpoint and hasattr(self, "optimizer"):
             self.optimizer.load_state_dict(checkpoint["optimizer"])
