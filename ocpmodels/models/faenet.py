@@ -568,7 +568,7 @@ class FAENet(BaseModel):
         self.dropout_edge = float(kwargs.get("dropout_edge") or 0)
         self.dropout_lin = float(kwargs.get("dropout_lin") or 0)
         self.dropout_lowest_layer = kwargs.get("dropout_lowest_layer", "output")
-        self.freeze_lowest_layer = kwargs.get("freeze_lowest_layer", "")
+        self.first_trainable_layer = kwargs.get("first_trainable_layer", "")
 
         if kwargs["mp_type"] == "sfarinet":
             kwargs["num_filters"] = kwargs["hidden_channels"]
@@ -665,44 +665,59 @@ class FAENet(BaseModel):
                 kwargs["hidden_channels"],
             )
 
-        self.freeze(self.freeze_lowest_layer)
+        self.freeze(self.first_trainable_layer)
         print()
 
     def freeze(self, lowest_layer="dropout"):
+        assert (
+            not lowest_layer
+            or "inter_" in lowest_layer
+            or lowest_layer == "output"
+            or lowest_layer == "dropout"
+            or lowest_layer == "none"
+        ), (
+            "first_trainable_layer must be None, '', 'inter_{i}', "
+            + f"'output', 'dropout', or 'none'. Received: {lowest_layer}"
+        )
+        if lowest_layer == "dropout":
+            lowest_layer = self.dropout_lowest_layer
+
         if not lowest_layer:
             print("⛄️ No layer to freeze")
             return
 
-        if lowest_layer == "dropout":
-            if self.dropout_lowest_layer == "embed":
-                print("⛄️ No layer to freeze")
-                return
-            if "inter" in self.dropout_lowest_layer:
-                if "0" in self.dropout_lowest_layer:
-                    lowest_layer = "embed"
-                else:
-                    lowest_layer = (
-                        f"inter-{int(self.dropout_lowest_layer.split('-')[-1])-1}"
-                    )
-            if self.dropout_lowest_layer == "output":
-                lowest_layer = f"inter-{len(self.interaction_blocks)-1}"
+        if lowest_layer == "embed":
+            print("⛄️ No layer to freeze")
+            return
 
         print("⛄️ Freezing embedding layer")
         self.freeze_layer(self.embed_block)
-        if lowest_layer == "embed":
+        if lowest_layer == "inter_0":
             return
 
-        for nb in range(int(lowest_layer.split("-")[-1]) + 1):
-            self.freeze_layer(self.interaction_blocks[nb])
-        if nb > 0:
+        interaction_block_idx = (
+            int(lowest_layer.replace("inter_", ""))
+            if "inter_" in lowest_layer
+            else len(self.interaction_blocks)
+        )
+        if interaction_block_idx < 0:
+            interaction_block_idx = len(self.interaction_blocks) + interaction_block_idx
+
+        for ib in range(interaction_block_idx):
+            if ib >= len(self.interaction_blocks):
+                print("⛄️ Trying to freeze too many interaction blocks")
+                break
+            self.freeze_layer(self.interaction_blocks[ib])
+
+        if ib > 0:
             print(
                 "⛄️ Freezing interaction blocks 0 ->",
-                f"{nb} / {len(self.interaction_blocks)}",
+                f"{ib} / {len(self.interaction_blocks)}",
             )
         else:
             print(f"⛄️ Freezing interaction block 0 / {len(self.interaction_blocks)}")
 
-        if "inter" in lowest_layer:
+        if "output" in lowest_layer:
             return
 
         print("⛄️ Freezing output block")
@@ -776,6 +791,7 @@ class FAENet(BaseModel):
 
         # Embedding block
         h, e = self.embed_block(z, rel_pos, edge_attr, data.tags, rel_pos_normalized)
+        # print("h, e: ", h.mean(), e.mean())
 
         # Compute atom weights for late energy head
         if self.energy_head == "weighted-av-initial-embeds":
@@ -790,9 +806,10 @@ class FAENet(BaseModel):
                 energy_skip_co.append(h)
             elif self.skip_co:
                 energy_skip_co.append(
-                    self.output_block(h, edge_index, edge_weight, batch, alpha)
+                    self.output_block(h, edge_index, edge_weight, batch, alpha, data)
                 )
             h = h + interaction(h, edge_index, e)
+            # print("h: ", h.mean())
 
         # Atom skip-co
         if self.skip_co == "concat_atom":
@@ -800,6 +817,7 @@ class FAENet(BaseModel):
             h = self.act(self.mlp_skip_co(torch.cat(energy_skip_co, dim=1)))
 
         energy = self.output_block(h, edge_index, edge_weight, batch, alpha, data=data)
+        # print("energy: ", energy.mean())
 
         # Skip-connection
         energy_skip_co.append(energy)

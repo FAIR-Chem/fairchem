@@ -16,7 +16,7 @@ default:
   restart_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/2935198
   model:
     dropout_lowest_layer: output
-    freeze_lowest_layer: dropout
+    first_trainable_layer: dropout
     dropout_lin: 0.7
   cp_data_to_tmpdir: true
   inference_time_loops: 1
