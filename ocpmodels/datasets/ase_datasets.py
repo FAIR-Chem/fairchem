@@ -361,8 +361,11 @@ class dummy_list(list):
         if idx < 0:
             idx += self.max
 
-        if (0 <= idx < self.max) and type(idx) is int:
-            return idx
+        if (0 <= idx < self.max):
+            if type(idx) is int:
+                return idx
+            else:
+                return idx.item()
         else:
             raise IndexError
 
