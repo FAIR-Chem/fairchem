@@ -1,5 +1,6 @@
 import bisect
 import copy
+import functools
 import glob
 import logging
 import os
@@ -72,7 +73,7 @@ class AseAtomsDataset(Dataset):
         self.atoms_transform = atoms_transform
 
         if self.config.get("keep_in_memory", False):
-            self.data_objects = {}
+            self.__getitem__ = functools.cache(self.__getitem__)
 
         # Derived classes should extend this functionality to also create self.ids,
         # a list of identifiers that can be passed to get_atoms_object()
@@ -85,11 +86,6 @@ class AseAtomsDataset(Dataset):
         # Handle slicing
         if isinstance(idx, slice):
             return [self[i] for i in range(*idx.indices(len(self.ids)))]
-
-        # Check if data object is already in memory
-        if self.config.get("keep_in_memory", False):
-            if self.ids[idx] in self.data_objects:
-                return self.data_objects[self.ids[idx]]
 
         # Get atoms object via derived class method
         atoms = self.get_atoms_object(self.ids[idx])
@@ -115,10 +111,6 @@ class AseAtomsDataset(Dataset):
             data_object = self.transform(
                 data_object, **self.config.get("transform_args", {})
             )
-
-        # Save in memory, if specified
-        if self.config.get("keep_in_memory", False):
-            self.data_objects[self.ids[idx]] = data_object
 
         return data_object
 
@@ -321,25 +313,6 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
                 for i, structure in enumerate(structures):
                     ids.append(f"{filename} {i}")
 
-                    if config.get("keep_in_memory", False):
-                        # Transform atoms object
-                        if self.atoms_transform is not None:
-                            atoms = self.atoms_transform(
-                                structure,
-                                **config.get("atoms_transform_args", {}),
-                            )
-
-                        # Convert to data object
-                        data_object = self.a2g.convert(atoms)
-
-                        # Transform data object
-                        if self.transform is not None:
-                            data_object = self.transform(
-                                data_object,
-                                **config.get("transform_args", {}),
-                            )
-
-                        self.data_objects[f"{filename} {i}"] = data_object
         return ids
 
     def get_atoms_object(self, identifier):
