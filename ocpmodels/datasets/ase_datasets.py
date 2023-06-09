@@ -51,11 +51,11 @@ class AseAtomsDataset(Dataset):
 
     Derived classes must add at least two things:
         self.get_atoms_object(id): a function that takes an identifier and returns a corresponding atoms object
-        
-        self.load_dataset_get_ids(config: dict): This function is responsible for any initialization/loads 
+
+        self.load_dataset_get_ids(config: dict): This function is responsible for any initialization/loads
             of the dataset and importantly must return a list of all possible identifiers that can be passed into
             self.get_atoms_object(id)
-            
+
     Identifiers need not be any particular type.
     """
 
@@ -63,9 +63,9 @@ class AseAtomsDataset(Dataset):
         self.config = config
 
         a2g_args = config.get("a2g_args", {})
-        
+
         # Make sure we always include PBC info in the resulting atoms objects
-        a2g_args['r_pbc'] = True
+        a2g_args["r_pbc"] = True
         self.a2g = AtomsToGraphs(**a2g_args)
 
         self.transform = transform
@@ -99,7 +99,7 @@ class AseAtomsDataset(Dataset):
             atoms = self.atoms_transform(
                 atoms, **self.config.get("atoms_transform_args", {})
             )
-            
+
         if "sid" in atoms.info:
             sid = atoms.info["sid"]
         else:
@@ -127,7 +127,7 @@ class AseAtomsDataset(Dataset):
         raise NotImplementedError(
             "Returns an ASE atoms object. Derived classes should implement this function."
         )
-        
+
     def load_dataset_get_ids(self, config):
         # This function should return a list of ids that can be used to index into the database
         raise NotImplementedError(
@@ -218,9 +218,9 @@ class AseReadDataset(AseAtomsDataset):
         self.path = Path(config["src"])
         if self.path.is_file():
             raise Exception("The specified src is not a directory")
-            
+
         return list(self.path.glob(f'{config["pattern"]}'))
-        
+
     def get_atoms_object(self, identifier):
         try:
             atoms = ase.io.read(identifier, **self.ase_read_args)
@@ -285,7 +285,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
 
         transform (callable, optional): Additional preprocessing function for the Data object
     """
-        
+
     def load_dataset_get_ids(self, config):
         self.ase_read_args = config.get("ase_read_args", {})
         if not hasattr(self.ase_read_args, "index"):
@@ -373,12 +373,11 @@ class dummy_list(list):
         # Cast idx as int since it could be a tensor index
         idx = int(idx)
 
-
         # Handle negative indices (referenced from end)
         if idx < 0:
             idx += self.max
 
-        if (0 <= idx < self.max):
+        if 0 <= idx < self.max:
             return idx
         else:
             raise IndexError
@@ -436,7 +435,7 @@ class AseDBDataset(AseAtomsDataset):
     """
 
     def load_dataset_get_ids(self, config):
-        
+
         if isinstance(config["src"], list):
             filepaths = config["src"]
         elif os.path.isfile(config["src"]):
@@ -476,7 +475,7 @@ class AseDBDataset(AseAtomsDataset):
 
         idlens = [len(ids) for ids in self.db_ids]
         self._idlen_cumulative = np.cumsum(idlens).tolist()
-        
+
         return dummy_list(sum(idlens))
 
     def get_atoms_object(self, idx):
