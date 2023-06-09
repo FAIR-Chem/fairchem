@@ -403,7 +403,11 @@ class AseDBDataset(AseAtomsDataset):
                     If a folder, every file will be attempted as an ASE DB, and warnings
                     raised for any files that can't connect cleanly
 
-                    Note that for large datasets, ID loading can be slow, 
+                    Note that for large datasets, ID loading can be slow and there can be many
+                    ids, so it's advised to make loading the id list as easy as possible. There is not
+                    an obvious way to get a full list of ids from most ASE dbs besides simply looping
+                    through the entire dataset. See the AseLMDBDataset which was written with this usecase
+                    in mind.
 
             connect_args (dict): Keyword arguments for ase.db.connect()
 
