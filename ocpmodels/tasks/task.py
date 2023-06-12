@@ -13,6 +13,7 @@ import torch
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import set_deup_samples_path
+from ocpmodels.datasets.deup_dataset_creator import DeupDatasetCreator
 
 
 class BaseTask:
@@ -53,25 +54,24 @@ class TrainTask(BaseTask):
     @torch.no_grad()
     def create_deup_dataset(self):
         dds = self.config["deup_dataset"]
-        if self.config["trainer"] != "deup":
-            ensemble_trainer = registry.get_trainer_class("deup")(
-                "deup_faenet-deup-all",
-                trainers_conf={
-                    "checkpoints": (
-                        Path(self.config["checkpoint_dir"]) / "best_checkpoint.pt"
-                    ),
-                    "dropout": self.config["model"].get("dropout_lin") or 0.75,
-                },
-                overrides={"logger": "dummy"},
-            )
-        else:
-            ensemble_trainer = self.trainer
-        output_path = ensemble_trainer.create_deup_dataset(
-            dds["dataset_strs"],
-            dds["n_samples"],
-            dds.get("output_path") or Path(self.config["run_dir"]) / "deup_dataset",
-            -1,
-            128,
+        ddc = DeupDatasetCreator(
+            trainers_conf={
+                "checkpoints": (
+                    Path(self.config["checkpoint_dir"]) / "best_checkpoint.pt"
+                ),
+                "dropout": self.config["model"].get("dropout_lin") or 0.7,
+            },
+            overrides={"logger": "dummy"},
+        )
+
+        output_path = ddc.create_deup_dataset(
+            output_path=(
+                dds.get("output_path") or Path(self.config["run_dir"]) / "deup_dataset"
+            ),
+            dataset_strs=dds["dataset_strs"],
+            n_samples=dds["n_samples"],
+            max_samples=-1,
+            batch_size=128,
         )
         print("\n🤠 DEUP Dataset created in:", str(output_path))
         return output_path
