@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
-from ocpmodels.common.utils import ROOT, RUN_DIR
+from ocpmodels.common.utils import ROOT, RUNS_DIR
 from ocpmodels.common.orion_utils import get_and_move_orion_db_path
 
 EXP_OUT_DIR = ROOT / "data" / "exp_outputs"
@@ -95,7 +95,7 @@ class Manager:
         )
         self.running_jobs = set(self.job_ids) & sq
         self.waiting_jobs = (
-            set([j.parent.name for j in RUN_DIR.glob(f"*/{self.name}.exp")]) & sq
+            set([j.parent.name for j in RUNS_DIR.glob(f"*/{self.name}.exp")]) & sq
         ) - self.running_jobs
         print("\n")
         self.discover_yamls()
@@ -160,7 +160,7 @@ class Manager:
         )
 
     def discover_run_dirs(self):
-        for unique in RUN_DIR.glob(f"*/{self.name}--*.unique"):
+        for unique in RUNS_DIR.glob(f"*/{self.name}--*.unique"):
             self.trial_hparams_to_rundirs[unique.stem.split("--")[-1]].append(
                 unique.parent
             )
@@ -203,7 +203,7 @@ class Manager:
             if j in self.running_jobs:
                 self.cache["job_state"][j] = "Running"
                 continue
-            out_file = RUN_DIR / j / "output-0.txt"
+            out_file = RUNS_DIR / j / "output-0.txt"
 
             if not out_file.exists():
                 self.cache["job_state"][j] = "No output file (RaceCondition)"

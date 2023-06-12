@@ -66,7 +66,7 @@ CLUSTER = Cluster()
 OCP_AND_DEUP_TASKS = {"s2ef", "is2re", "is2es", "deup_is2re"}
 ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
-RUN_DIR = Path(os.environ["SCRATCH"]) / "ocp" / "runs"
+RUNS_DIR = Path(os.environ["SCRATCH"]) / "ocp" / "runs"
 
 
 def read_slurm_env(config):

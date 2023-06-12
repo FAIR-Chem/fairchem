@@ -8,7 +8,7 @@ import yaml
 from orion.client import build_experiment
 from orion.core.utils.exceptions import ReservationRaceCondition
 
-from ocpmodels.common.utils import ROOT, RUN_DIR, unflatten_dict
+from ocpmodels.common.utils import ROOT, RUNS_DIR, unflatten_dict
 
 
 def apply_mult_factor(orion_hparams, mult_factor_dict, sep="."):
@@ -117,7 +117,7 @@ def sample_orion_hparams(orion_exp, trainer_config):
 def get_and_move_orion_db_path(exp_name):
     db_id = "".join([c for c in exp_name if c.isalnum() or c in "_-."])
     db_file = f"{db_id}_db.pkl" if not db_id.endswith("_db.pkl") else db_id
-    scratch_db = RUN_DIR.parent / "orion" / "storage" / db_file
+    scratch_db = RUNS_DIR.parent / "orion" / "storage" / db_file
     scratch_db.parent.mkdir(parents=True, exist_ok=True)
     if not scratch_db.exists():
         home_db = ROOT / f"data/orion/storage/{db_file}"
