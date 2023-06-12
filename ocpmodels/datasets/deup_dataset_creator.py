@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import List
 import pickle
@@ -5,14 +6,14 @@ import lmdb
 import torch
 from yaml import dump
 from tqdm import tqdm
+
 from ocpmodels.common.utils import (
     make_trainer_from_dir,
     resolve,
-    merge_dicts,
-    make_config_from_conf_str,
+    JOB_ID,
+    RUNS_DIR,
 )
-from ocpmodels.trainers.single_trainer import SingleTrainer
-from ocpmodels.common.registry import registry
+from ocpmodels.datasets.lmdb_dataset import DeupDataset
 
 
 def clean_conf(config):
@@ -26,29 +27,25 @@ def clean_conf(config):
         dict: Cleaned config dict.
     """
     for k, v in config.items():
-        if isinstance(Path, v):
+        if isinstance(v, Path):
             config[k] = str(v)
         elif isinstance(v, dict):
             config[k] = clean_conf(v)
     return config
 
 
-@registry.register_trainer("ensemble")
-class EnsembleTrainer(SingleTrainer):
-    def __init__(self, conf_str, trainers_conf={}, overrides={}, **kwargs):
+class DeupDatasetCreator:
+    def __init__(self, trainers_conf={}, overrides={}, **kwargs):
         """
-        Create an ensemble of trainers from an ensemble_config dict.
+        Create an ensemble of trainers to create a dataset from those trainers' models.
 
-        Use ensemble_config xor conf_str to specify the ensemble.
-
-        ensemble_config:
+        trainers_conf:
         {
             "checkpoints": Single run dir or list of run dirs, or path to specific ckpts
                 and it will be assumed that chekpoints are in run_dir/checkpoints/*.pt.
             "dropout": float, optional, otherwise 0.75
         }
-        overrides (dict): ensemble trainer's arguments that you want to override
-        conf_str: config name, e.g. faenet-is2re-all
+        overrides (dict): dict to override all the trainers' configs.
 
         If the provided ``checkpoints`` are not a list, or if they are
         a list with a single item, it is assumed that this should be
@@ -56,19 +53,20 @@ class EnsembleTrainer(SingleTrainer):
 
 
         Args:
-            ensemble_config (dict): Ensemble config as a dict.
+            trainers_conf (dict): Ensemble config as a dict.
                 Must contain the checkpoints to load.
             overrides: dict of overrides for this trainer
         """
-        if conf_str is not None:
-            assert isinstance(conf_str, str), "conf_str must be a string"
-            self.config = make_config_from_conf_str(conf_str)
-
+        self.config = {
+            "trainers_conf": trainers_conf,
+            "overrides": overrides,
+            "kwargs": kwargs,
+        }
         self.trainers_conf = trainers_conf
-
         self.checkpoints = self.trainers_conf.get("checkpoints") or kwargs.get(
             "checkpoints"
         )
+        self.dropout = self.trainers_conf.get("dropout", 0.7)
         assert (
             self.checkpoints is not None
         ), "checkpoints must be provided in the yaml config or the kwargs"
@@ -77,22 +75,10 @@ class EnsembleTrainer(SingleTrainer):
             self.checkpoints = [self.checkpoints]
 
         self.mc_dropout = len(self.checkpoints) == 1
-        if self.mc_dropout:
-            if "dropout" not in self.config:
-                print("WARNING: using MC-Dropout without specifying dropout rate")
-                print("Using `dropout: 0.75`")
-            self.dropout = self.trainers_conf.get("dropout", 0.75)
 
         self.trainers = []
-        shared_config = self.load_trainers()
-        print("Loading self with shared config", shared_config, "...")
-        self.config = merge_dicts(self.config, shared_config)
-        self.config = merge_dicts(self.config, kwargs)
-        self.config = merge_dicts(self.config, overrides)
-        self.config["trainers_conf"] = self.trainers_conf
-        if "silent" not in self.config:
-            self.config["silent"] = True
-        super().__init__(**self.config)
+        self.load_trainers(overrides)
+        # print("Loading self with shared config", shared_config, "...")
         print("Ready.")
 
     @classmethod
@@ -139,29 +125,29 @@ class EnsembleTrainer(SingleTrainer):
         print("  >> ⁉️ Warning: no best checkpoint found, using last checkpoint.")
         return sorted(ckpts, key=lambda x: x.stat().st_mtime)[-1]
 
-    def load_datasets(self):
-        super().load_datasets()
-
-    def load_trainers(self):
+    def load_trainers(self, overrides={}):
         print("Loading checkpoints...")
-        for c, ckpt in enumerate(self.checkpoints):
+        for c, ckpt_path in enumerate(self.checkpoints):
             # find actual checkpoint if a directory is provided
-            ckpt = self.find_checkpoint(ckpt)
+            ckpt_path = self.find_checkpoint(ckpt_path)
 
-            print(f"  🚜 Loading trainer from: {str(ckpt)}")
+            print(f"  🚜 Loading trainer from: {str(ckpt_path)}")
 
             trainer = make_trainer_from_dir(
-                ckpt, "continue", overrides={"load": False, "silent": True}, silent=True
+                ckpt_path,
+                "continue",
+                overrides={**{"load": False, "silent": True}, **overrides},
+                silent=True,
             )
             # trainer.load_seed_from_config()
             # trainer.load_logger()
             trainer.load_datasets()
             trainer.load_task()
             trainer.load_model()
-            # trainer.load_loss()
+            trainer.load_loss()
             # trainer.load_optimizer()
             # trainer.load_extras()
-            trainer.load_checkpoint(ckpt, silent=True)
+            trainer.load_checkpoint(ckpt_path, silent=True)
 
             # load checkpoint
             if self.mc_dropout:
@@ -213,18 +199,21 @@ class EnsembleTrainer(SingleTrainer):
             torch.Tensor: Tensor of shape (batch_size, n_samples) containing
         """
         # MC-Dropout
+
+        def _structure(preds):
+            return {
+                "energies": torch.cat([p["energy"][:, None] for p in preds], dim=-1),
+                "q": preds[0]["q"],
+            }
+
         if self.mc_dropout:
             if n_samples <= 0:
                 raise ValueError("n_samples must be > 0 for MC-Dropout ensembles.")
-            return torch.cat(
-                [
-                    self.trainers[0].model_forward(batch_list, mode="deup")["energy"][
-                        :, None
-                    ]
-                    for _ in range(n_samples)
-                ],
-                dim=-1,
-            )
+            preds = [
+                self.trainers[0].model_forward(batch_list, mode="deup")
+                for _ in range(n_samples)
+            ]
+            return _structure(preds)
 
         # Deep ensemble
         if n_samples > len(self.models):
@@ -236,32 +225,22 @@ class EnsembleTrainer(SingleTrainer):
             models_idx = torch.randperm(len(self.models))[:n_samples].tolist()
 
             # concatenate random models' outputs for the Energy
-            return torch.cat(
-                [
-                    self.models[i](batch_list, mode="deup")["energy"][:, None]
-                    for i in models_idx
-                ],
-                dim=-1,
-            )
+            preds = [self.models[i](batch_list, mode="deup") for i in models_idx]
+            return _structure(preds)
 
         if n_samples != -1:
             print("Warning: n_samples must be -1 to use all models. Using all models.")
 
         # concatenate all model outputs for the Energy
-        return torch.cat(
-            [
-                model(batch_list, mode="deup")["energy"][:, None]
-                for model in self.models
-            ],
-            dim=-1,
-        )
+        preds = [model(batch_list, mode="deup") for model in self.models]
+        return _structure(preds)
 
     @torch.no_grad()
     def create_deup_dataset(
         self,
+        output_path: str,
         dataset_strs: List[str],
         n_samples: int = 10,
-        output_path: str = None,
         max_samples: int = -1,
         batch_size: int = None,
     ):
@@ -270,12 +249,12 @@ class EnsembleTrainer(SingleTrainer):
         dataset_strs : ["train", "val_id", "val_ood_cat"]
 
         Args:
-            checkpoints (List[str]): _description_
-            dataset_strs (List[str]): _description_
+            dataset_strs (List[str]): List of dataset strings to use for creating the
+                deup dataset.
         """
 
-        if output_path is None:
-            output_path = Path(self.config["run_dir"]) / "deup_dataset"
+        assert output_path
+        output_path = resolve(output_path)
         if batch_size is not None:
             assert isinstance(batch_size, int)
             self.trainers[0].config["optim"]["batch_size"] = batch_size
@@ -288,7 +267,7 @@ class EnsembleTrainer(SingleTrainer):
         (output_path / "deup_config.yaml").write_text(
             dump(
                 {
-                    "ensemble_config": self.config,
+                    "dataset_trainer_config": clean_conf(self.config),
                     "n_samples": n_samples,
                     "datasets": dataset_strs,
                     "output_path": str(output_path),
@@ -296,7 +275,7 @@ class EnsembleTrainer(SingleTrainer):
             )
         )
 
-        self.load_loss(reduction="none")
+        self.trainers[0].load_loss(reduction="none")
 
         for trainer in self.trainers:
             trainer.model.module.set_deup_inference(True)
@@ -311,10 +290,13 @@ class EnsembleTrainer(SingleTrainer):
                 desc=f"Infering on dataset: {dataset_name}",
             ):
                 batch = batch_list[0]
-                preds = self.forward(batch_list, n_samples=10)  # Batch x n
-                pred_mean = preds.mean(dim=1)  # Batch
-                pred_std = preds.std(dim=1)  # Batch
-                loss = self.loss_fn["energy"](
+
+                # {"energies": Batch x n, "q": Batch x hidden_dim}
+                preds = self.forward(batch_list, n_samples=10)
+
+                pred_mean = preds["energies"].mean(dim=1)  # Batch
+                pred_std = preds["energies"].std(dim=1)  # Batch
+                loss = self.trainers[0].loss_fn["energy"](
                     pred_mean, batch.y_relaxed.to(pred_mean.device)
                 )
                 deup_samples += [
@@ -328,6 +310,7 @@ class EnsembleTrainer(SingleTrainer):
                         ).bool(),
                         "ds": [dataset_name for _ in range(len(loss))],
                         "idx_in_dataset": batch.idx_in_dataset,
+                        "q": preds["q"],
                     }
                 ]
                 deup_ds_size += len(loss)
@@ -341,7 +324,7 @@ class EnsembleTrainer(SingleTrainer):
             (output_path / "deup_config.yaml").write_text(
                 dump(
                     {
-                        "ensemble_config": clean_conf(self.config),
+                        "dataset_trainer_config": clean_conf(self.config),
                         "n_samples": n_samples,
                         "datasets": dataset_strs,
                         "output_path": str(output_path),
@@ -384,7 +367,11 @@ class EnsembleTrainer(SingleTrainer):
             }
             for s in range(n):
                 deup_sample = {
-                    k: v[s].item() if isinstance(v, torch.Tensor) else v[s]
+                    k: v[s].item()
+                    if isinstance(v, torch.Tensor) and v[s].ndim == 0
+                    else v[s].clone()
+                    if isinstance(v, torch.Tensor)
+                    else v[s]
                     for k, v in sample.items()
                 }
                 txn.put(
@@ -401,3 +388,47 @@ class EnsembleTrainer(SingleTrainer):
         txn.commit()
         env.sync()
         env.close()
+
+
+if __name__ == "__main__":
+    # python -m ocpmodels.datasets.deup_dataset_creator
+
+    from ocpmodels.datasets.data_transforms import get_transforms
+    from ocpmodels.datasets.deup_dataset_creator import DeupDatasetCreator
+    from ocpmodels.datasets.lmdb_dataset import DeupDataset
+    from ocpmodels.common.utils import JOB_ID, RUNS_DIR
+
+    # what models to load for inference
+    trainers_conf = {
+        "checkpoints": ["/network/scratch/a/alexandre.duval/ocp/runs/2935205"],
+        "dropout": 0.7,
+    }
+    # setting first_trainable_layer to output means that the latent space
+    # q will be defined as input to the output layer, even though the model
+    # will not be trained anyway
+    overrides = {"model": {"first_trainable_layer": "output"}}
+    # where to store the lmdb dataset
+    output_path = RUNS_DIR / JOB_ID / "deup_dataset"
+    # main interface
+    ddc = DeupDatasetCreator(trainers_conf=trainers_conf, overrides=overrides)
+    # create the dataset
+    ddc.create_deup_dataset(
+        output_path=output_path,
+        dataset_strs=["train", "val_id", "val_ood_cat", "val_ood_ads"],
+        n_samples=7,
+        max_samples=-1,
+        batch_size=256,
+    )
+
+    base_datasets_config = ddc.trainers[0].config["dataset"]
+
+    deup_dataset = DeupDataset(
+        {
+            **base_datasets_config,
+            **{"deup-train-val_id": {"src": output_path}},
+        },
+        "deup-train-val_id",
+        transform=get_transforms(ddc.trainers[0].config),
+    )
+
+    deup_sample = deup_dataset[0]
