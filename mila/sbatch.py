@@ -247,7 +247,6 @@ def load_sbatch_args_from_dir(dir):
         "cpus": int(sbatch_args["cpus-per-task"]),
         "mem": sbatch_args["mem"],
         "gres": sbatch_args["gres"],
-        "output": sbatch_args["output"],
     }
     return args
 
