@@ -13,17 +13,17 @@ default:
   test_ri: True
   mode: train
   model:
-    dropout_lowest_layer: output
-    freeze_lowest_layer: dropout
+    dropout_lowest_layer: null
+    first_trainable_layer: output
     dropout_lin: 0.7
-  cp_data_to_tmpdir: true
+  cp_data_to_tmpdir: false
   inference_time_loops: 1
-  dataset:
+  restart_from_dir: /network/scratch/s/schmidtv/ocp/runs/3264530
+  checkpoint: /network/scratch/s/schmidtv/ocp/runs/3264530
+  dataset: # mandatory if restart_from_dir is set
+    default_val: deup-val_ood_cat-val_ood_ads
     deup-train-val_id:
       src: /network/scratch/s/schmidtv/ocp/runs/3264530/deup_dataset
-      normalize_labels: True
-      target_mean: auto # Automatically changed if deup dataset is created
-      target_std: auto # Automatically changed if deup dataset is created
     deup-val_ood_cat-val_ood_ads:
       src: /network/scratch/s/schmidtv/ocp/runs/3264530/deup_dataset
   deup_dataset:
