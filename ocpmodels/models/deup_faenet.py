@@ -80,36 +80,3 @@ class DeupFAENet(FAENet):
             self.dropout_lin,
             kwargs.get("deup_features", {}),
         )
-
-
-if __name__ == "__main__":
-    from ocpmodels.trainers.ensemble_trainer import EnsembleTrainer
-    from pathlib import Path
-
-    base_model_path = Path("/network/scratch/a/alexandre.duval/ocp/runs/2935198")
-
-    ensemble = EnsembleTrainer(
-        "deup_faenet-deup-all",
-        trainers_conf={"checkpoints": base_model_path, "dropout": 0.75},
-        overrides={"logger": "dummy"},
-    )
-
-    create_deup_dataset = False
-    if create_deup_dataset:
-        deup_ds_path = ensemble.create_deup_dataset(
-            ["train", "val_id", "val_ood_cat", "val_ood_ads"], n_samples=10
-        )
-
-        ensemble.config["dataset"] = {
-            **ensemble.config["dataset"],
-            "deup-train-val_id": {
-                "src": str(deup_ds_path),
-            },
-            "deup-val_ood_cat-val_ood_ads": {
-                "src": str(deup_ds_path),
-            },
-        }
-
-        ensemble.load_datasets()
-
-    data = next(iter(ensemble.loaders["deup-train-val_id"]))[0]
