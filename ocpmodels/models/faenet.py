@@ -702,6 +702,7 @@ class FAENet(BaseModel):
         )
         if interaction_block_idx < 0:
             interaction_block_idx = len(self.interaction_blocks) + interaction_block_idx
+            self.first_trainable_layer = f"inter_{interaction_block_idx}"
 
         for ib in range(interaction_block_idx):
             if ib >= len(self.interaction_blocks):
@@ -788,9 +789,12 @@ class FAENet(BaseModel):
             rel_pos_normalized = (rel_pos / edge_weight.view(-1, 1) + 1) / 2.0
 
         pooling_loss = None  # deal with pooling loss
+        q = None  # hidden state for deup dataset
 
         # Embedding block
         h, e = self.embed_block(z, rel_pos, edge_attr, data.tags, rel_pos_normalized)
+        if "inter" and "0" in self.first_trainable_layer:
+            q = h.clone().detach()
         # print("h, e: ", h.mean(), e.mean())
 
         # Compute atom weights for late energy head
@@ -801,13 +805,17 @@ class FAENet(BaseModel):
 
         # Interaction blocks
         energy_skip_co = []
-        for interaction in self.interaction_blocks:
+        for ib, interaction in enumerate(self.interaction_blocks):
             if self.skip_co == "concat_atom":
                 energy_skip_co.append(h)
             elif self.skip_co:
                 energy_skip_co.append(
                     self.output_block(h, edge_index, edge_weight, batch, alpha, data)
                 )
+            if "inter" in self.first_trainable_layer and ib == int(
+                self.first_trainable_layer.split("_")[1]
+            ):
+                q = h.clone().detach()
             h = h + interaction(h, edge_index, e)
             # print("h: ", h.mean())
 
@@ -815,6 +823,9 @@ class FAENet(BaseModel):
         if self.skip_co == "concat_atom":
             energy_skip_co.append(h)
             h = self.act(self.mlp_skip_co(torch.cat(energy_skip_co, dim=1)))
+
+        if "output" in self.first_trainable_layer:
+            q = h.clone().detach()
 
         energy = self.output_block(h, edge_index, edge_weight, batch, alpha, data=data)
         # print("energy: ", energy.mean())
@@ -826,6 +837,11 @@ class FAENet(BaseModel):
         elif self.skip_co == "add":
             energy = sum(energy_skip_co)
 
-        preds = {"energy": energy, "pooling_loss": pooling_loss, "hidden_state": h}
+        preds = {
+            "energy": energy,
+            "pooling_loss": pooling_loss,
+            "hidden_state": h,
+            "q": q,
+        }
 
         return preds
