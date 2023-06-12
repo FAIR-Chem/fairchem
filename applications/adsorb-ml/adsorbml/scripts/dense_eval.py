@@ -71,6 +71,8 @@ import argparse
 import pickle
 from collections import defaultdict
 
+import numpy as np
+
 SUCCESS_THRESHOLD = 0.1
 
 
@@ -96,9 +98,12 @@ def is_successful(best_ml_dft_energy, best_dft_energy):
     return success_parity, success_much_better
 
 
-def compute_success(ml_data, dft_data, k):
+def compute_hybrid_success(ml_data, dft_data, k):
     """
-    Driver script to compute success rates at varying top-k values.
+    Computes AdsorbML success rates at varying top-k values.
+    Here, results are generated for the hybrid method, where the top-k ML
+    energies are used to to run DFT on the corresponding ML structures. The
+    resulting energies are then compared to the ground truth DFT energies.
 
     Return success rates and DFT compute usage at varying k.
     """
@@ -144,7 +149,60 @@ def compute_success(ml_data, dft_data, k):
         success_rates[kk][0] /= len(dft_data)
         success_rates[kk][1] /= len(dft_data)
 
+    for kk in success_rates:
+        print(f"Top-k = {kk}")
+        print("=" * 50)
+        print(f"Success Rate (%): {100*success_rates[kk][0]}")
+        print(
+            f"DFT Speedup (SCF): {total_ground_truth_scf_calls/ml_dft_calls[kk]['scf']}"
+        )
+        print(
+            f"DFT Speedup (Ionic): {total_ground_truth_ionic_calls/ml_dft_calls[kk]['ionic']}\n"
+        )
+
     return success_rates, ml_dft_calls
+
+
+def compute_valid_ml_success(ml_data, dft_data):
+    """
+    Computes validated ML success rates.
+    Here, results are generated only from ML. DFT single-points are used to
+    validate whether the ML energy is within 0.1eV of the DFT energy of the
+    predicted structure. If valid, the ML energy is compared to the ground
+    truth DFT energy, otherwise it is discarded.
+
+    Return validated ML success rates.
+    """
+
+    success_rates = [0.0, 0.0]
+
+    for system in dft_data:
+        # For `system`, collect all ML adslabs and their corresponding energies
+        ml_adslabs, ml_energies = [], []
+        for config in ml_data[system]:
+            ml_adslabs.append(config)
+            ml_energies.append(ml_data[system][config]["ml_energy"])
+
+        min_ml_idx = np.argmin(ml_energies)
+        min_adslab = ml_adslabs[min_ml_idx]
+        best_ml_energy = ml_energies[min_ml_idx]
+        # If the best ML energy is not within 0.1eV of its DFT energy evaluation, discard.
+        ml_dft_energy = ml_data[system][min_adslab]["ml+dft_energy"]
+        diff = abs(ml_dft_energy - best_ml_energy)
+        if diff > 0.1:
+            continue
+
+        best_dft_energy = min(list(dft_data[system].values()))
+
+        success, much_better = is_successful(best_ml_energy, best_dft_energy)
+        success_rates[0] += success
+        success_rates[1] += much_better
+
+    success_rates[0] /= len(dft_data)
+    success_rates[1] /= len(dft_data)
+
+    print("=" * 50)
+    print(f"ML Success Rate (%): {100*success_rates[0]}")
 
 
 def get_dft_data(targets):
@@ -239,6 +297,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--maxk", default=5, type=int, help="Max top-k to retrieve results for."
     )
+    parser.add_argument(
+        "--ml-success",
+        action="store_true",
+        help="""
+        Whether to compute an ML-only success rate. Here ML energies are
+        directly use to compute a success rate if the predicted energy is considered
+        valid. An ML prediction is considered valid if its energy is within 0.1
+        eV of the DFT energy of the predicted configuration. This ensures the
+        metric can't be games by predicting arbitrarily low values.'
+        """,
+    )
     args = parser.parse_args()
 
     targets = pickle.load(open(args.dft_targets, "rb"))
@@ -255,17 +324,10 @@ if __name__ == "__main__":
     ml_data = filter_ml_data(ml_data, dft_data)
 
     ###### Compute Metrics ######
-    success, ml_dft_calls = compute_success(
-        ml_data, dft_data, k=range(1, args.maxk + 1)
-    )
-
-    for kk in success:
-        print(f"Top-k = {kk}")
-        print("=" * 50)
-        print(f"Success Rate (%): {100*success[kk][0]}")
-        print(
-            f"DFT Speedup (SCF): {total_ground_truth_scf_calls/ml_dft_calls[kk]['scf']}"
-        )
-        print(
-            f"DFT Speedup (Ionic): {total_ground_truth_ionic_calls/ml_dft_calls[kk]['ionic']}\n"
-        )
+    print(args.results_file)
+    if not args.ml_success:
+        "Compute AdsorbML success rates (hybrid ML+DFT)"
+        compute_hybrid_success(ml_data, dft_data, k=range(1, args.maxk + 1))
+    else:
+        "Compute ML success rates (ML only)"
+        compute_valid_ml_success(ml_data, dft_data)
