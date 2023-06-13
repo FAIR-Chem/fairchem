@@ -412,19 +412,20 @@ if __name__ == "__main__":
     # will not be trained anyway
     overrides = {"model": {"first_trainable_layer": "output"}}
     # where to store the lmdb dataset
-    output_path = RUNS_DIR / JOB_ID / "deup_dataset"
+    deup_dataset_path = RUNS_DIR / JOB_ID / "deup_dataset"
     # main interface
     ddc = DeupDatasetCreator(trainers_conf=trainers_conf, overrides=overrides)
     # create the dataset
     ddc.create_deup_dataset(
-        output_path=output_path,
+        output_path=deup_dataset_path,
         dataset_strs=["train", "val_id", "val_ood_cat", "val_ood_ads"],
         n_samples=7,
         max_samples=-1,
-        batch_size=256,
+        batch_size=400,
     )
 
-    base_datasets_config = ddc.trainers[0].config["dataset"]
+    base_config = ddc.trainers[0].config
+    base_datasets_config = base_config["dataset"]
     # or:
     # base_config = make_config_from_conf_str("faenet-is2re-all")
     # base_datasets_config = base_config["dataset"]
@@ -432,10 +433,10 @@ if __name__ == "__main__":
     deup_dataset = DeupDataset(
         {
             **base_datasets_config,
-            **{"deup-train-val_id": {"src": output_path}},
+            **{"deup-train-val_id": {"src": deup_dataset_path}},
         },
         "deup-train-val_id",
-        transform=get_transforms(ddc.trainers[0].config),
+        transform=get_transforms(base_config),
     )
 
     deup_sample = deup_dataset[0]

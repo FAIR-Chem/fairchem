@@ -936,7 +936,9 @@ def set_cpus_to_workers(config, silent=None):
                 workers = cpus - 1
             else:
                 workers = cpus // gpus
-            if silent is False or not config["silent"]:
+            if (silent is False or not config["silent"]) and (
+                config["optim"]["num_workers"]
+            ) != workers:
                 print(
                     f"🏭 Overriding num_workers from {config['optim']['num_workers']}",
                     f"to {workers} to match the machine's CPUs.",
