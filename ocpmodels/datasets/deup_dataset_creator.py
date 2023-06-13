@@ -12,6 +12,7 @@ from ocpmodels.common.utils import (
     resolve,
     JOB_ID,
     RUNS_DIR,
+    set_cpus_to_workers,
 )
 from ocpmodels.datasets.lmdb_dataset import DeupDataset
 
@@ -139,6 +140,7 @@ class DeupDatasetCreator:
                 overrides={**{"load": False, "silent": True}, **overrides},
                 silent=True,
             )
+            trainer.config = set_cpus_to_workers(trainer.config, False)
             # trainer.load_seed_from_config()
             # trainer.load_logger()
             trainer.load_datasets()
