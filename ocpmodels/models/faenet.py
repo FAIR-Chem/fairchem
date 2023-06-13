@@ -722,6 +722,10 @@ class FAENet(BaseModel):
         else:
             print(f"⛄️ Freezing interaction block 0 / {len(self.interaction_blocks)}")
 
+        if self.skip_co == "concat_atom":
+            self.freeze_layer(self.mlp_skip_co)
+            print("⛄️ Freezing skip co atom layer")
+
         if "output" in lowest_layer:
             return
 
@@ -799,6 +803,7 @@ class FAENet(BaseModel):
         h, e = self.embed_block(z, rel_pos, edge_attr, data.tags, rel_pos_normalized)
         if "inter" and "0" in self.first_trainable_layer:
             q = h.clone().detach()
+            q = scatter(q, batch, dim=0, reduce="add")
         # print("h, e: ", h.mean(), e.mean())
 
         # Compute atom weights for late energy head
@@ -820,6 +825,7 @@ class FAENet(BaseModel):
                 self.first_trainable_layer.split("_")[1]
             ):
                 q = h.clone().detach()
+                q = scatter(q, batch, dim=0, reduce="add")
             h = h + interaction(h, edge_index, e)
             # print("h: ", h.mean())
 
@@ -828,8 +834,10 @@ class FAENet(BaseModel):
             energy_skip_co.append(h)
             h = self.act(self.mlp_skip_co(torch.cat(energy_skip_co, dim=1)))
 
+        # Compute a graph density estimate for deup
         if "output" in self.first_trainable_layer:
             q = h.clone().detach()
+            q = scatter(q, batch, dim=0, reduce="add")
 
         energy = self.output_block(h, edge_index, edge_weight, batch, alpha, data=data)
         # print("energy: ", energy.mean())
