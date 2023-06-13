@@ -555,7 +555,7 @@ class FAENet(BaseModel):
             Defaults to `output` if none is provided.
         first_trainable_layer (str): lowest layer to NOT freeze. All previous layers will be frozen.
             Can be ``, `embed`, `inter-{i}`, `output`, or `dropout`. If it is `` then no layer is frozen.
-            If it is `dropout` then it will be set to the layer before `dropout_lowest_layer`. 
+            If it is `dropout` then it will be set to the layer before `dropout_lowest_layer`.
             Defaults to ``.
     """
 
@@ -803,8 +803,6 @@ class FAENet(BaseModel):
         h, e = self.embed_block(z, rel_pos, edge_attr, data.tags, rel_pos_normalized)
         if "inter" and "0" in self.first_trainable_layer:
             q = h.clone().detach()
-            q = scatter(q, batch, dim=0, reduce="add")
-        # print("h, e: ", h.mean(), e.mean())
 
         # Compute atom weights for late energy head
         if self.energy_head == "weighted-av-initial-embeds":
@@ -825,9 +823,7 @@ class FAENet(BaseModel):
                 self.first_trainable_layer.split("_")[1]
             ):
                 q = h.clone().detach()
-                q = scatter(q, batch, dim=0, reduce="add")
             h = h + interaction(h, edge_index, e)
-            # print("h: ", h.mean())
 
         # Atom skip-co
         if self.skip_co == "concat_atom":
@@ -837,10 +833,11 @@ class FAENet(BaseModel):
         # Compute a graph density estimate for deup
         if "output" in self.first_trainable_layer:
             q = h.clone().detach()
+
+        if q is not None:
             q = scatter(q, batch, dim=0, reduce="add")
 
         energy = self.output_block(h, edge_index, edge_weight, batch, alpha, data=data)
-        # print("energy: ", energy.mean())
 
         # Skip-connection
         energy_skip_co.append(energy)
