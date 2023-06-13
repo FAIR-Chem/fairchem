@@ -553,6 +553,10 @@ class FAENet(BaseModel):
         dropout_lowest_layer (str): The first layer to apply dropout to. All subsequent
             layers will have the same dropout rate. Can be `inter-{i}` or `output`.
             Defaults to `output` if none is provided.
+        first_trainable_layer (str): lowest layer to NOT freeze. All previous layers will be frozen.
+            Can be ``, `embed`, `inter-{i}`, `output`, or `dropout`. If it is `` then no layer is frozen.
+            If it is `dropout` then it will be set to the layer before `dropout_lowest_layer`. 
+            Defaults to ``.
     """
 
     def __init__(self, **kwargs):
