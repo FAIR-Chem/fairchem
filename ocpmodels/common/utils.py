@@ -927,7 +927,7 @@ def load_config_legacy(path: str, previous_includes: list = []):
     return config, duplicates_warning, duplicates_error
 
 
-def set_cpus_to_workers(config, silent=False):
+def set_cpus_to_workers(config, silent=None):
     if not config.get("no_cpus_to_workers"):
         cpus = count_cpus()
         gpus = count_gpus()
@@ -936,7 +936,7 @@ def set_cpus_to_workers(config, silent=False):
                 workers = cpus - 1
             else:
                 workers = cpus // gpus
-            if not config["silent"] and not silent:
+            if silent is False or not config["silent"]:
                 print(
                     f"🏭 Overriding num_workers from {config['optim']['num_workers']}",
                     f"to {workers} to match the machine's CPUs.",
@@ -1021,7 +1021,7 @@ def load_config(config_str):
     return config
 
 
-def build_config(args, args_override=[], silent=False):
+def build_config(args, args_override=[], silent=None):
     config, overrides, loaded_config = {}, {}, {}
 
     if hasattr(args, "config_yml") and args.config_yml:
@@ -1747,7 +1747,7 @@ def make_script_trainer(str_args=[], overrides={}, silent=False, mode="train"):
     return trainer
 
 
-def make_trainer_from_dir(path, mode, overrides={}, silent=False):
+def make_trainer_from_dir(path, mode, overrides={}, silent=None):
     path = resolve(path)
     assert path.exists()
     assert mode in {
