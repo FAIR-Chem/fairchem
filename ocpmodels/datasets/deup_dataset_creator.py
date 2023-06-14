@@ -174,7 +174,7 @@ class DeupDatasetCreator:
         print("Loaded all checkpoints.")
         return shared_config
 
-    def forward(self, batch_list, n_samples=-1):
+    def forward(self, batch_list, n_samples=-1, shared_encoder=True):
         """
         Passes a batch_list through the ensemble.
         Returns a tensor of shape (batch_size, n_models).
@@ -208,33 +208,54 @@ class DeupDatasetCreator:
                 "q": preds[0]["q"],
             }
 
+        preds = []
+        q = None
+        trainers_idx = []
+        trainer_idx = 0
+
+        if self.mc_dropout:
+            shared_encoder = True
+        else:
+            trainers_idx = torch.randperm(len(self.trainers))[
+                : n_samples - len(preds)
+            ].tolist()
+            trainer_idx = trainers_idx[0]
+
+        if shared_encoder:
+            preds = [self.trainers[trainer_idx].model_forward(batch_list, mode="deup")]
+            q = preds[0]["q"]
+
         if self.mc_dropout:
             if n_samples <= 0:
                 raise ValueError("n_samples must be > 0 for MC-Dropout ensembles.")
-            preds = [
-                self.trainers[0].model_forward(batch_list, mode="deup")
-                for _ in range(n_samples)
+            preds += [
+                self.trainers[0].model_forward(batch_list, mode="deup", q=q)
+                for _ in range(n_samples - len(preds))
             ]
             return _structure(preds)
 
         # Deep ensemble
-        if n_samples > len(self.models):
+        if n_samples > len(self.trainers):
             raise ValueError(
-                f"n_samples must be less than {len(self.models)}. Received {n_samples}."
+                f"n_samples must be <= {len(self.trainers)}. Received {n_samples}."
             )
 
         if n_samples > 0:
-            models_idx = torch.randperm(len(self.models))[:n_samples].tolist()
-
             # concatenate random models' outputs for the Energy
-            preds = [self.models[i](batch_list, mode="deup") for i in models_idx]
+            preds += [
+                self.trainers[i].model_forward(batch_list, mode="deup", q=q)
+                for i in trainers_idx[1:]
+            ]
             return _structure(preds)
 
         if n_samples != -1:
             print("Warning: n_samples must be -1 to use all models. Using all models.")
 
         # concatenate all model outputs for the Energy
-        preds = [model(batch_list, mode="deup") for model in self.models]
+        preds += [
+            trainer.model_forward(batch_list, mode="deup")
+            for trainer in self.trainers[1:]
+        ]
         return _structure(preds)
 
     @torch.no_grad()
@@ -245,6 +266,7 @@ class DeupDatasetCreator:
         n_samples: int = 10,
         max_samples: int = -1,
         batch_size: int = None,
+        shared_encoder: bool = True,
     ):
         """
         Checkpoints  : ["/network/.../"]
@@ -294,7 +316,9 @@ class DeupDatasetCreator:
                 batch = batch_list[0]
 
                 # {"energies": Batch x n, "q": Batch x hidden_dim}
-                preds = self.forward(batch_list, n_samples=10)
+                preds = self.forward(
+                    batch_list, n_samples=n_samples, shared_encoder=True
+                )
 
                 pred_mean = preds["energies"].mean(dim=1)  # Batch
                 pred_std = preds["energies"].std(dim=1)  # Batch
@@ -303,16 +327,17 @@ class DeupDatasetCreator:
                 )
                 deup_samples += [
                     {
-                        "energy_target": batch.y_relaxed,
-                        "energy_pred_mean": pred_mean,
-                        "energy_pred_std": pred_std,
-                        "loss": loss,
+                        "energy_target": batch.y_relaxed.clone(),
+                        "energy_pred_mean": pred_mean.clone(),
+                        "energy_pred_std": pred_std.clone(),
+                        "loss": loss.clone(),
                         "s": torch.full_like(
                             loss, bool(dataset_name == "train")
                         ).bool(),
                         "ds": [dataset_name for _ in range(len(loss))],
-                        "idx_in_dataset": batch.idx_in_dataset,
-                        "q": preds["q"],
+                        "idx_in_dataset": batch.idx_in_dataset.clone(),
+                        "q": preds["q"].clone(),
+                        "batch": batch.batch.clone(),
                     }
                 ]
                 deup_ds_size += len(loss)
@@ -367,15 +392,21 @@ class DeupDatasetCreator:
                 k: v.cpu() if isinstance(v, torch.Tensor) else v
                 for k, v in sample.items()
             }
+            batch = sample.pop("batch")
+            batched_q = [sample["q"][batch == i, :] for i in range(batch.max() + 1)]
+            assert len(batched_q) == n
+            assert sum([len(q) for q in batched_q]) == len(sample["q"])
             for s in range(n):
                 deup_sample = {
                     k: v[s].item()
                     if isinstance(v, torch.Tensor) and v[s].ndim == 0
-                    else v[s].clone()
-                    if isinstance(v, torch.Tensor)
                     else v[s]
                     for k, v in sample.items()
+                    if k != "q"
                 }
+                deup_sample["q"] = batched_q[s]
+                # remember: if storing raw data, need to clone() tensor before
+                # pickling. It's fine for batched_q.
                 txn.put(
                     key=str(k).encode("ascii"),
                     value=pickle.dumps(deup_sample, protocol=pickle.HIGHEST_PROTOCOL),
@@ -421,7 +452,7 @@ if __name__ == "__main__":
         dataset_strs=["train", "val_id", "val_ood_cat", "val_ood_ads"],
         n_samples=7,
         max_samples=-1,
-        batch_size=400,
+        batch_size=256,
     )
 
     base_config = ddc.trainers[0].config

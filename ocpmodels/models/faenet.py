@@ -737,11 +737,13 @@ class FAENet(BaseModel):
         return self.decoder(preds["hidden_state"])
 
     @conditional_grad(torch.enable_grad())
-    def energy_forward(self, data):
+    def energy_forward(self, data, q=None):
         # Rewire the graph
         z = data.atomic_numbers.long()
         pos = data.pos
         batch = data.batch
+        energy_skip_co = []
+        pooling_loss = None
 
         # Use periodic boundary conditions
         if self.use_pbc:
@@ -791,51 +793,54 @@ class FAENet(BaseModel):
                 edge_attr = edge_attr[edge_mask]
                 rel_pos = rel_pos[edge_mask]
 
-        # Normalize and squash to [0,1] for gaussian basis
-        rel_pos_normalized = None
-        if self.edge_embed_type in {"sh", "all_rij", "all"}:
-            rel_pos_normalized = (rel_pos / edge_weight.view(-1, 1) + 1) / 2.0
+        if q is None:
+            # Normalize and squash to [0,1] for gaussian basis
+            rel_pos_normalized = None
+            if self.edge_embed_type in {"sh", "all_rij", "all"}:
+                rel_pos_normalized = (rel_pos / edge_weight.view(-1, 1) + 1) / 2.0
 
-        pooling_loss = None  # deal with pooling loss
-        q = None  # hidden state for deup dataset
+            # Embedding block
+            h, e = self.embed_block(
+                z, rel_pos, edge_attr, data.tags, rel_pos_normalized
+            )
+            if "inter" and "0" in self.first_trainable_layer:
+                q = h.clone().detach()
 
-        # Embedding block
-        h, e = self.embed_block(z, rel_pos, edge_attr, data.tags, rel_pos_normalized)
-        if "inter" and "0" in self.first_trainable_layer:
-            q = h.clone().detach()
+            # Compute atom weights for late energy head
+            if self.energy_head == "weighted-av-initial-embeds":
+                alpha = self.w_lin(h)
+            else:
+                alpha = None
 
-        # Compute atom weights for late energy head
-        if self.energy_head == "weighted-av-initial-embeds":
-            alpha = self.w_lin(h)
-        else:
-            alpha = None
+            # Interaction blocks
+            energy_skip_co = []
+            for ib, interaction in enumerate(self.interaction_blocks):
+                if self.skip_co == "concat_atom":
+                    energy_skip_co.append(h)
+                elif self.skip_co:
+                    energy_skip_co.append(
+                        self.output_block(
+                            h, edge_index, edge_weight, batch, alpha, data
+                        )
+                    )
+                if "inter" in self.first_trainable_layer and ib == int(
+                    self.first_trainable_layer.split("_")[1]
+                ):
+                    q = h.clone().detach()
+                h = h + interaction(h, edge_index, e)
 
-        # Interaction blocks
-        energy_skip_co = []
-        for ib, interaction in enumerate(self.interaction_blocks):
+            # Atom skip-co
             if self.skip_co == "concat_atom":
                 energy_skip_co.append(h)
-            elif self.skip_co:
-                energy_skip_co.append(
-                    self.output_block(h, edge_index, edge_weight, batch, alpha, data)
-                )
-            if "inter" in self.first_trainable_layer and ib == int(
-                self.first_trainable_layer.split("_")[1]
-            ):
+                h = self.act(self.mlp_skip_co(torch.cat(energy_skip_co, dim=1)))
+
+            # Compute a graph density estimate for deup
+            if "output" in self.first_trainable_layer:
                 q = h.clone().detach()
-            h = h + interaction(h, edge_index, e)
 
-        # Atom skip-co
-        if self.skip_co == "concat_atom":
-            energy_skip_co.append(h)
-            h = self.act(self.mlp_skip_co(torch.cat(energy_skip_co, dim=1)))
-
-        # Compute a graph density estimate for deup
-        if "output" in self.first_trainable_layer:
-            q = h.clone().detach()
-
-        if q is not None:
-            q = scatter(q, batch, dim=0, reduce="add")
+        else:
+            h = q
+            alpha = None
 
         energy = self.output_block(h, edge_index, edge_weight, batch, alpha, data=data)
 

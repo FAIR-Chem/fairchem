@@ -62,7 +62,7 @@ class BaseModel(nn.Module):
     def forces_forward(self, preds):
         raise NotImplementedError
 
-    def forward(self, data, mode="train", regress_forces=None):
+    def forward(self, data, mode="train", regress_forces=None, q=None):
         grad_forces = forces = None
 
         # Fine tune on gradients
@@ -74,7 +74,7 @@ class BaseModel(nn.Module):
             data.pos.requires_grad_(True)
 
         # predict energy
-        preds = self.energy_forward(data)
+        preds = self.energy_forward(data, q=q)
 
         if self.regress_forces:
             if self.regress_forces in {"direct", "direct_with_gradient_target"}:

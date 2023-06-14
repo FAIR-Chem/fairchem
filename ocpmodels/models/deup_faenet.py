@@ -15,10 +15,14 @@ class DeupOutputBlock(OutputBlock):
         self.deup_features = deup_features
         self.deup_data_keys = [f"deup_{k}" for k in deup_features]
         self.deup_extra_dim = 0
+        self._set_q_dim = False
+
         if "s" in deup_features:
             self.deup_extra_dim += 1
         if "energy_pred_std" in deup_features:
             self.deup_extra_dim += 1
+        if "q" in deup_features:
+            self._set_q_dim = True
 
         if self.deup_extra_dim > 0:
             self.deup_lin = Linear(
@@ -26,6 +30,18 @@ class DeupOutputBlock(OutputBlock):
             )
 
     def forward(self, h, edge_index, edge_weight, batch, alpha, data=None):
+        if self._set_q_dim:
+            assert data is not None
+            assert "deup_q" in data.to_dict().keys()
+            self.deup_extra_dim += data.deup_q.shape[-1]
+            self.deup_lin = Linear(
+                self.lin1.out_features + self.deup_extra_dim, self.lin1.out_features
+            )
+            print("\nLazy loading deup extra dim from q. New dim:", self.deup_extra_dim)
+            print("⚠️ OutputBlock will be reinitialized.\n")
+            self.reset_parameters()
+            self._set_q_dim = False
+
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
 
@@ -80,3 +96,8 @@ class DeupFAENet(FAENet):
             self.dropout_lin,
             kwargs.get("deup_features", {}),
         )
+        assert (
+            self.energy_head != "weighted-av-initial-embeds"
+        ), "Unsupported head weighted-av-initial-embeds"
+        assert self.skip_co != "concat", "Unsupported skip connection concat"
+        assert self.skip_co != "add", "Unsupported skip connection add"

@@ -496,7 +496,7 @@ class SingleTrainer(BaseTrainer):
             for ds in self.datasets.values():
                 ds.close_db()
 
-    def model_forward(self, batch_list, mode="train"):
+    def model_forward(self, batch_list, mode="train", q=None):
         # Distinguish frame averaging from base case.
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
@@ -515,6 +515,7 @@ class SingleTrainer(BaseTrainer):
                     deepcopy(batch_list),
                     mode=mode,
                     regress_forces=self.config["model"]["regress_forces"],
+                    q=q,
                 )
                 e_all.append(preds["energy"])
 
