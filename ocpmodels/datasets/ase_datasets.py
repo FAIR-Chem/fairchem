@@ -449,7 +449,10 @@ class AseDBDataset(AseAtomsDataset):
         self.db_ids = []
         for db in self.dbs:
             if hasattr(db, "ids") and self.select_args == {}:
-                self.db_ids.append(db.ids)
+                if self.config.get("filter", 1) < 1:
+                    self.db_ids.append(db.ids[:int(self.config["filter"] * len(db.ids))])
+                else:
+                    self.db_ids.append(db.ids)
             else:
                 self.db_ids.append(
                     [row.id for row in db.select(**self.select_args)]
