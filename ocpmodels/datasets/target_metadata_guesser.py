@@ -53,7 +53,9 @@ def target_extensive(atoms_lens, target_samples, threshold=0.2):
 
     # If the targets are all the same shapes, we shouldn't be asking if the property
     # is intensive or extensive!
-        assert target_constant_shape(atoms_lens, target_samples), "The shapes of this target are not constant!"
+    assert target_constant_shape(
+        atoms_lens, target_samples
+    ), "The shapes of this target are not constant!"
 
     # Get the per-atom normalized properties
     try:
