@@ -55,7 +55,7 @@ class LMDBDatabase(Database):
         self.readonly = readonly
 
         if self.readonly:
-            # Open a new env (add readonly support?)
+            # Open a new env
             self.env = lmdb.open(
                 self.filename,
                 subdir=False,

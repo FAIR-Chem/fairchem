@@ -33,7 +33,7 @@ class OC22LmdbDataset(Dataset):
     Relaxed State (IS2RS), and Initial State to Relaxed Energy (IS2RE) tasks.
 
     The keys in the LMDB must be integers (stored as ascii objects) starting
-    from 0 through the length of the LMDB. For historical reasons any key names
+    from 0 through the length of the LMDB. For historical reasons any key named
     "length" is ignored since that was used to infer length of many lmdbs in the same
     folder, but lmdb lengths are now calculated directly from the number of keys.
 
