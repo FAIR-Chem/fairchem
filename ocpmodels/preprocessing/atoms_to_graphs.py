@@ -126,14 +126,14 @@ class AtomsToGraphs:
 
         return edge_index, edge_distances, cell_offsets
 
-    def convert(
-        self,
-        atoms,
-    ):
+    def convert(self, atoms, sid=None):
         """Convert a single atomic stucture to a graph.
 
         Args:
             atoms (ase.atoms.Atoms): An ASE atoms object.
+
+            sid (uniquely identifying object): An identifier that can be used to track the structure in downstream
+            tasks. Common sids used in OCP datasets include unique strings or integers.
 
         Returns:
             data (torch_geometric.data.Data): A torch geometic data object with positions, atomic_numbers, tags,
@@ -158,6 +158,10 @@ class AtomsToGraphs:
             natoms=natoms,
             tags=tags,
         )
+
+        # Optionally add a systemid (sid) to the object
+        if sid is not None:
+            data.sid = sid
 
         # optionally include other properties
         if self.r_edges:
