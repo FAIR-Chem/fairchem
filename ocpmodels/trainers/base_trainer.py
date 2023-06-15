@@ -415,18 +415,6 @@ class BaseTrainer(ABC):
         self.best_val_metric = checkpoint.get("best_val_metric", None)
         self.primary_metric = checkpoint.get("primary_metric", None)
 
-        if self.config["task"].get("reset_checkpoint", False):
-            if "optimizer" in checkpoint:
-                del checkpoint["optimizer"]
-            if "scheduler" in checkpoint:
-                del checkpoint["scheduler"]
-            if "ema" in checkpoint:
-                del checkpoint["ema"]
-            self.epoch = 0
-            self.step = 0
-            self.best_val_metric = None
-            self.primary_metric = None
-
         # Match the "module." count in the keys of model and checkpoint state_dict
         # DataParallel model has 1 "module.",  DistributedDataParallel has 2 "module."
         # Not using either of the above two would have no "module."
@@ -479,6 +467,18 @@ class BaseTrainer(ABC):
                     "Skipping the embedding interpolation because the checkpoint config claims it was already interpolated!"
                 )
             else:
+                if self.config["task"].get("reset_checkpoint", False):
+                    if "optimizer" in checkpoint:
+                        del checkpoint["optimizer"]
+                    if "scheduler" in checkpoint:
+                        del checkpoint["scheduler"]
+                    if "ema" in checkpoint:
+                        del checkpoint["ema"]
+                    self.epoch = 0
+                    self.step = 0
+                    self.best_val_metric = None
+                    self.primary_metric = None
+                    
                 fitted_datasets = self.config["task"][
                     "interpolate_atomic_embeddings"
                 ].get("fitted_datasets", ["OC20", "OC22"])
