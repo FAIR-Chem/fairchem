@@ -5,6 +5,7 @@ import logging
 import os
 import warnings
 from pathlib import Path
+from abc import ABC, abstractmethod
 
 import ase
 import numpy as np
@@ -43,9 +44,9 @@ def apply_one_tags(atoms, skip_if_nonzero=True, skip_always=False):
     return atoms
 
 
-class AseAtomsDataset(Dataset):
+class AseAtomsDataset(Dataset, ABC):
     """
-    This is a abstract Dataset that includes helpful utilities for turning
+    This is an abstract Dataset that includes helpful utilities for turning
     ASE atoms objects into OCP-usable data objects. This should not be instantiated directly
     as get_atoms_object and load_dataset_get_ids are not implemented in this base class.
 
@@ -122,12 +123,14 @@ class AseAtomsDataset(Dataset):
 
         return data_object
 
+    @abstractmethod
     def get_atoms_object(self, identifier):
         # This function should return an ASE atoms object.
         raise NotImplementedError(
             "Returns an ASE atoms object. Derived classes should implement this function."
         )
 
+    @abstractmethod
     def load_dataset_get_ids(self, config):
         # This function should return a list of ids that can be used to index into the database
         raise NotImplementedError(
@@ -395,12 +398,13 @@ class AseDBDataset(AseAtomsDataset):
     args:
         config (dict):
             src (str): Either
-                    - the path to or connection address of your ASE DB, or
-                    -  a folder with many ASE DBs, or
-                    -  a glob string to use to find ASE DBs,
-                    -  a list of ASE db addresses.
+                    - the path an ASE DB,
+                    - the connection address of an ASE DB,
+                    - a folder with multiple ASE DBs,
+                    - a glob string to use to find ASE DBs, or
+                    - a list of ASE db paths/addresses.
                     If a folder, every file will be attempted as an ASE DB, and warnings
-                    raised for any files that can't connect cleanly
+                    are raised for any files that can't connect cleanly
 
                     Note that for large datasets, ID loading can be slow and there can be many
                     ids, so it's advised to make loading the id list as easy as possible. There is not

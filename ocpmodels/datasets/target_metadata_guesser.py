@@ -4,7 +4,7 @@ import numpy as np
 
 
 def uniform_atoms_lengths(atoms_lens):
-    # If all of the atoms are the same size, it's really hard to know
+    # If all of the structures have the same number of atoms, it's really hard to know
     # whether the entries are intensive or extensive, and whether
     # some of the entries are per-atom or not
     return len(set(atoms_lens)) == 1
@@ -53,10 +53,7 @@ def target_extensive(atoms_lens, target_samples, threshold=0.2):
 
     # If the targets are all the same shapes, we shouldn't be asking if the property
     # is intensive or extensive!
-    if not target_constant_shape(atoms_lens, target_samples):
-        raise Exception(
-            "The shapes of this target are not constant so I don't know what to do!"
-        )
+        assert target_constant_shape(atoms_lens, target_samples), "The shapes of this target are not constant!"
 
     # Get the per-atom normalized properties
     try:
