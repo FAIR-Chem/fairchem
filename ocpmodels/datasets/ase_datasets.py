@@ -1,13 +1,22 @@
-import ase
+import bisect
+import copy
+import functools
+import glob
+import logging
+import os
 import warnings
-import numpy as np
-
 from pathlib import Path
+from abc import ABC, abstractmethod
+
+import ase
+import numpy as np
 from torch import tensor
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from ocpmodels.common.registry import registry
+from ocpmodels.datasets.lmdb_database import LMDBDatabase
+from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -36,14 +45,19 @@ def apply_one_tags(atoms, skip_if_nonzero=True, skip_always=False):
     return atoms
 
 
-class AseAtomsDataset(Dataset):
+class AseAtomsDataset(Dataset, ABC):
     """
-    This is a base Dataset that includes helpful utilities for turning
-    ASE atoms objects into OCP-usable data objects.
+    This is an abstract Dataset that includes helpful utilities for turning
+    ASE atoms objects into OCP-usable data objects. This should not be instantiated directly
+    as get_atoms_object and load_dataset_get_ids are not implemented in this base class.
 
     Derived classes must add at least two things:
-        self.get_atoms_object(): a function that takes an identifier and returns a corresponding atoms object
-        self.id: a list of all possible identifiers that can be passed into self.get_atoms_object()
+        self.get_atoms_object(id): a function that takes an identifier and returns a corresponding atoms object
+
+        self.load_dataset_get_ids(config: dict): This function is responsible for any initialization/loads
+            of the dataset and importantly must return a list of all possible identifiers that can be passed into
+            self.get_atoms_object(id)
+
     Identifiers need not be any particular type.
     """
 
@@ -51,32 +65,31 @@ class AseAtomsDataset(Dataset):
         self.config = config
 
         a2g_args = config.get("a2g_args", {})
+
+        # Make sure we always include PBC info in the resulting atoms objects
+        a2g_args["r_pbc"] = True
         self.a2g = AtomsToGraphs(**a2g_args)
 
         self.transform = transform
         self.atoms_transform = atoms_transform
 
         if self.config.get("keep_in_memory", False):
-            self.data_objects = {}
+            self.__getitem__ = functools.cache(self.__getitem__)
 
-        # Derived classes should extend this functionality to also create self.id,
+        # Derived classes should extend this functionality to also create self.ids,
         # a list of identifiers that can be passed to get_atoms_object()
+        self.ids = self.load_dataset_get_ids(config)
 
     def __len__(self):
-        return len(self.id)
+        return len(self.ids)
 
     def __getitem__(self, idx):
         # Handle slicing
         if isinstance(idx, slice):
-            return [self[i] for i in range(len(self.id))[idx]]
-
-        # Check if data object is already in memory
-        if self.config.get("keep_in_memory", False):
-            if self.id[idx] in self.data_objects:
-                return self.data_objects[self.id[idx]]
+            return [self[i] for i in range(*idx.indices(len(self.ids)))]
 
         # Get atoms object via derived class method
-        atoms = self.get_atoms_object(self.id[idx])
+        atoms = self.get_atoms_object(self.ids[idx])
 
         # Transform atoms object
         if self.atoms_transform is not None:
@@ -84,9 +97,14 @@ class AseAtomsDataset(Dataset):
                 atoms, **self.config.get("atoms_transform_args", {})
             )
 
+        if "sid" in atoms.info:
+            sid = atoms.info["sid"]
+        else:
+            sid = tensor([idx])
+
         # Convert to data object
-        data_object = self.a2g.convert(atoms)
-        data_object.sid = tensor([idx])
+        data_object = self.a2g.convert(atoms, sid)
+
         data_object.pbc = tensor(atoms.pbc)
 
         # Transform data object
@@ -95,20 +113,50 @@ class AseAtomsDataset(Dataset):
                 data_object, **self.config.get("transform_args", {})
             )
 
-        # Save in memory, if specified
-        if self.config.get("keep_in_memory", False):
-            self.data_objects[self.id[idx]] = data_object
-
         return data_object
 
+    @abstractmethod
     def get_atoms_object(self, identifier):
+        # This function should return an ASE atoms object.
         raise NotImplementedError(
-            "Returns an ASE atoms object. Derived classes should implement this funciton."
+            "Returns an ASE atoms object. Derived classes should implement this function."
+        )
+
+    @abstractmethod
+    def load_dataset_get_ids(self, config):
+        # This function should return a list of ids that can be used to index into the database
+        raise NotImplementedError(
+            "Every ASE dataset needs to declare a function to load the dataset and return a list of ids."
         )
 
     def close_db(self):
-        pass
         # This method is sometimes called by a trainer
+        pass
+
+    def guess_target_metadata(self, num_samples=100):
+        metadata = {}
+
+        if num_samples < len(self):
+            metadata["targets"] = guess_property_metadata(
+                [
+                    self.get_atoms_object(self.ids[idx])
+                    for idx in np.random.choice(
+                        len(self), size=(num_samples,), replace=False
+                    )
+                ]
+            )
+        else:
+            metadata["targets"] = guess_property_metadata(
+                [
+                    self.get_atoms_object(self.ids[idx])
+                    for idx in range(len(self))
+                ]
+            )
+
+        return metadata
+
+    def get_metadata(self):
+        return self.guess_target_metadata()
 
 
 @registry.register_dataset("ase_read")
@@ -154,10 +202,7 @@ class AseReadDataset(AseAtomsDataset):
 
     """
 
-    def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
-        super(AseReadDataset, self).__init__(
-            config, transform, atoms_transform
-        )
+    def load_dataset_get_ids(self, config):
         self.ase_read_args = config.get("ase_read_args", {})
 
         if ":" in self.ase_read_args.get("index", ""):
@@ -165,10 +210,11 @@ class AseReadDataset(AseAtomsDataset):
                 "To read multiple structures from a single file, please use AseReadMultiStructureDataset."
             )
 
-        self.path = Path(self.config["src"])
+        self.path = Path(config["src"])
         if self.path.is_file():
             raise Exception("The specified src is not a directory")
-        self.id = list(self.path.glob(f'{self.config["pattern"]}'))
+
+        return list(self.path.glob(f'{config["pattern"]}'))
 
     def get_atoms_object(self, identifier):
         try:
@@ -235,11 +281,8 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
         transform (callable, optional): Additional preprocessing function for the Data object
     """
 
-    def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
-        super(AseReadMultiStructureDataset, self).__init__(
-            config, transform, atoms_transform
-        )
-        self.ase_read_args = self.config.get("ase_read_args", {})
+    def load_dataset_get_ids(self, config):
+        self.ase_read_args = config.get("ase_read_args", {})
         if not hasattr(self.ase_read_args, "index"):
             self.ase_read_args["index"] = ":"
 
@@ -247,22 +290,22 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             f = open(config["index_file"], "r")
             index = f.readlines()
 
-            self.id = []
+            ids = []
             for line in index:
                 filename = line.split(" ")[0]
                 for i in range(int(line.split(" ")[1])):
-                    self.id.append(f"{filename} {i}")
+                    ids.append(f"{filename} {i}")
 
-            return
+            return ids
 
-        self.path = Path(self.config["src"])
+        self.path = Path(config["src"])
         if self.path.is_file():
             raise Exception("The specified src is not a directory")
-        filenames = list(self.path.glob(f'{self.config["pattern"]}'))
+        filenames = list(self.path.glob(f'{config["pattern"]}'))
 
-        self.id = []
+        ids = []
 
-        if self.config.get("use_tqdm", True):
+        if config.get("use_tqdm", True):
             filenames = tqdm(filenames)
         for filename in filenames:
             try:
@@ -271,27 +314,9 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
                 warnings.warn(f"{err} occured for: {filename}")
             else:
                 for i, structure in enumerate(structures):
-                    self.id.append(f"{filename} {i}")
+                    ids.append(f"{filename} {i}")
 
-                    if self.config.get("keep_in_memory", False):
-                        # Transform atoms object
-                        if self.atoms_transform is not None:
-                            atoms = self.atoms_transform(
-                                structure,
-                                **self.config.get("atoms_transform_args", {}),
-                            )
-
-                        # Convert to data object
-                        data_object = self.a2g.convert(atoms)
-
-                        # Transform data object
-                        if self.transform is not None:
-                            data_object = self.transform(
-                                data_object,
-                                **self.config.get("transform_args", {}),
-                            )
-
-                        self.data_objects[f"{filename} {i}"] = data_object
+        return ids
 
     def get_atoms_object(self, identifier):
         try:
@@ -303,6 +328,35 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             raise err
 
         return atoms
+
+    def get_metadata(self):
+        return {}
+
+
+class dummy_list(list):
+    def __init__(self, max):
+        self.max = max
+        return
+
+    def __len__(self):
+        return self.max
+
+    def __getitem__(self, idx):
+        # Handle slicing
+        if isinstance(idx, slice):
+            return [self[i] for i in range(*idx.indices(self.max))]
+
+        # Cast idx as int since it could be a tensor index
+        idx = int(idx)
+
+        # Handle negative indices (referenced from end)
+        if idx < 0:
+            idx += self.max
+
+        if 0 <= idx < self.max:
+            return idx
+        else:
+            raise IndexError
 
 
 @registry.register_dataset("ase_db")
@@ -316,7 +370,20 @@ class AseDBDataset(AseAtomsDataset):
 
     args:
         config (dict):
-            src (str): The path to or connection address of your ASE DB
+            src (str): Either
+                    - the path an ASE DB,
+                    - the connection address of an ASE DB,
+                    - a folder with multiple ASE DBs,
+                    - a glob string to use to find ASE DBs, or
+                    - a list of ASE db paths/addresses.
+                    If a folder, every file will be attempted as an ASE DB, and warnings
+                    are raised for any files that can't connect cleanly
+
+                    Note that for large datasets, ID loading can be slow and there can be many
+                    ids, so it's advised to make loading the id list as easy as possible. There is not
+                    an obvious way to get a full list of ids from most ASE dbs besides simply looping
+                    through the entire dataset. See the AseLMDBDataset which was written with this usecase
+                    in mind.
 
             connect_args (dict): Keyword arguments for ase.db.connect()
 
@@ -344,31 +411,87 @@ class AseDBDataset(AseAtomsDataset):
         transform (callable, optional): Additional preprocessing function for the Data object
     """
 
-    def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
-        super(AseDBDataset, self).__init__(config, transform, atoms_transform)
+    def load_dataset_get_ids(self, config):
 
-        self.db = self.connect_db(
-            self.config["src"], self.config.get("connect_args", {})
-        )
+        if isinstance(config["src"], list):
+            filepaths = config["src"]
+        elif os.path.isfile(config["src"]):
+            filepaths = [config["src"]]
+        elif os.path.isdir(config["src"]):
+            filepaths = glob.glob(f'{config["src"]}/*')
+        else:
+            filepaths = glob.glob(config["src"])
 
-        self.select_args = self.config.get("select_args", {})
+        self.dbs = []
 
-        self.id = [row.id for row in self.db.select(**self.select_args)]
+        for path in filepaths:
+            try:
+                self.dbs.append(
+                    self.connect_db(path, config.get("connect_args", {}))
+                )
+            except ValueError:
+                logging.warning(
+                    f"Tried to connect to {path} but it's not an ASE database!"
+                )
 
-    def get_atoms_object(self, identifier):
-        return self.db._get_row(identifier).toatoms()
+        self.select_args = config.get("select_args", {})
+
+        # In order to get all of the unique IDs using the default ASE db interface
+        # we have to load all the data and check ids using a select. This is extremely
+        # inefficient for large dataset. If the db we're using already presents a list of
+        # ids and there is no query, we can just use that list instead and save ourselves
+        # a lot of time!
+        self.db_ids = []
+        for db in self.dbs:
+            if hasattr(db, "ids") and self.select_args == {}:
+                self.db_ids.append(db.ids)
+            else:
+                self.db_ids.append(
+                    [row.id for row in db.select(**self.select_args)]
+                )
+
+        idlens = [len(ids) for ids in self.db_ids]
+        self._idlen_cumulative = np.cumsum(idlens).tolist()
+
+        return dummy_list(sum(idlens))
+
+    def get_atoms_object(self, idx):
+        # Figure out which db this should be indexed from.
+        db_idx = bisect.bisect(self._idlen_cumulative, idx)
+
+        # Extract index of element within that db
+        el_idx = idx
+        if db_idx != 0:
+            el_idx = idx - self._idlen_cumulative[db_idx - 1]
+        assert el_idx >= 0
+
+        atoms_row = self.dbs[db_idx]._get_row(self.db_ids[db_idx][el_idx])
+        atoms = atoms_row.toatoms()
+
+        if isinstance(atoms_row.data, dict):
+            atoms.info.update(atoms_row.data)
+
+        return atoms
 
     def connect_db(self, address, connect_args={}):
         db_type = connect_args.get("type", "extract_from_name")
         if db_type == "lmdb" or (
             db_type == "extract_from_name" and address.split(".")[-1] == "lmdb"
         ):
-            from ocpmodels.datasets.lmdb_database import LMDBDatabase
-
             return LMDBDatabase(address, readonly=True, **connect_args)
         else:
             return ase.db.connect(address, **connect_args)
 
     def close_db(self):
-        if hasattr(self.db, "close"):
-            self.db.close()
+        for db in self.dbs:
+            if hasattr(db, "close"):
+                db.close()
+
+    def get_metadata(self):
+        logging.warning(
+            "You specific a folder of ASE dbs, so it's impossible to know which metadata to use. Using the first!"
+        )
+        if self.dbs[0].metadata == {}:
+            return self.guess_target_metadata()
+        else:
+            return copy.deepcopy(self.dbs[0].metadata)
