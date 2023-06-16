@@ -84,7 +84,10 @@ def process_mlrs(arg):
         if fmax:
             for atoms in traj:
                 forces = atoms.get_forces()
-                _fmax = max(np.sqrt((forces**2).sum(axis=1)))
+                tags = atoms.get_tags()
+                # only evaluate fmax on free atoms
+                free_atoms = [idx for idx, tag in enumerate(tags) if tag != 0]
+                _fmax = max(np.sqrt((forces[free_atoms] ** 2).sum(axis=1)))
                 if _fmax <= fmax:
                     final_atoms = atoms
                     break
@@ -107,11 +110,11 @@ def process_mlrs(arg):
     # Verify adslab and slab are ordered consistently before anomaly detection
     # This checks that the positions of the initial adslab and clean surface
     # are approximately equivalent.
-    diff = (min_diff(init_atoms[tags != 2], slab_traj[0])).sum()
+    diff = abs(min_diff(init_atoms[tags != 2], slab_traj[0])).sum()
     # ML trajectories are saved out after 1 optimization step, so some movement
     # is expected. A cushion of 0.5A is used based off the maximum difference
     # previously measured for sample trajectories.
-    assert abs(diff) < 0.5
+    assert diff < 0.5
 
     detector = DetectTrajAnomaly(
         init_atoms,

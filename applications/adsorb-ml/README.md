@@ -49,7 +49,7 @@ b07c64158e4bfa5f7b9bf6263753ecc5  oc20dense_ref_energies.pkl
 
 ### Running `AdsorbML`
 
-Please see the [README](scripts/README.md) inside the `scripts` directory for instructions.
+Please see the [README](adsorbml/scripts/README.md) inside the `scripts` directory for instructions.
 
 ### Citing `AdsorbML`
 
