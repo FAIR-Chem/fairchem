@@ -85,8 +85,9 @@ def process_mlrs(arg):
             for atoms in traj:
                 forces = atoms.get_forces()
                 tags = atoms.get_tags()
-                moveable_atoms = [idx for idx, tag in enumerate(tags) if tag != 0]
-                _fmax = max(np.sqrt((forces[moveable_atoms]**2).sum(axis=1)))
+                # only evaluate fmax on free atoms
+                free_atoms = [idx for idx, tag in enumerate(tags) if tag != 0]
+                _fmax = max(np.sqrt((forces[free_atoms] ** 2).sum(axis=1)))
                 if _fmax <= fmax:
                     final_atoms = atoms
                     break
