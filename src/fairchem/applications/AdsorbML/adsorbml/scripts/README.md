@@ -1,8 +1,7 @@
 
 ## How to run AdsorbML
 
-**Step 0**: Setup
-LMDBs, trajectories, and metadata files should be downloaded.
+**Step 0**: Setup: LMDBs, trajectories, and metadata files should be downloaded.
 
 **Step 1**: Run ML relaxations on the LMDB to generate predictions of relaxed energy and relaxed structures.
 For example, see [these instructions](https://github.com/Open-Catalyst-Project/ocp/blob/main/TRAIN.md#initial-structure-to-relaxed-structure-is2rs). We will be using the trajectory files.
