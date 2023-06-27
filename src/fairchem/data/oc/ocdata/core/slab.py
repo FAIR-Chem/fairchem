@@ -2,7 +2,6 @@ import math
 import os
 import pickle
 from collections import defaultdict
-import timeit
 
 import ase
 import numpy as np
@@ -238,7 +237,8 @@ def tile_and_tag_atoms(
     """
     slab_atoms = AseAtomsAdaptor.get_atoms(unit_slab_struct)
     return set_fixed_atom_constraints(
-        tile_atoms(tag_surface_atoms(slab_atoms, bulk_atoms), min_ab=min_ab))
+        tile_atoms(tag_surface_atoms(slab_atoms, bulk_atoms), min_ab=min_ab)
+    )
 
 
 def set_fixed_atom_constraints(atoms):
@@ -298,11 +298,12 @@ def tag_surface_atoms(
     assert slab_atoms is not None
     slab_atoms = slab_atoms.copy()
 
-    start_time = timeit.default_timer()
     height_tags = find_surface_atoms_by_height(slab_atoms)
-    print(timeit.default_timer() - start_time)
+
     if bulk_atoms is not None:
-        tags = find_surface_atoms_with_voronoi_given_height(bulk_atoms, slab_atoms, height_tags)
+        tags = find_surface_atoms_with_voronoi_given_height(
+            bulk_atoms, slab_atoms, height_tags
+        )
     else:
         tags = height_tags
 
@@ -402,11 +403,9 @@ def find_surface_atoms_with_voronoi_given_height(bulk_atoms, slab_atoms, height_
     # Initializations
     surface_struct = AseAtomsAdaptor.get_structure(slab_atoms)
     center_of_mass = calculate_center_of_mass(surface_struct)
-    start_time = timeit.default_timer()
     bulk_cn_dict = calculate_coordination_of_bulk_atoms(bulk_atoms)
-    print("bulk voronoi",timeit.default_timer() - start_time)
+
     voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
-    start_time = timeit.default_timer()
     tags = height_tags
     for idx, site in enumerate(surface_struct):
         if height_tags[idx] == 1 or site.frac_coords[2] < center_of_mass[2]:
@@ -422,7 +421,6 @@ def find_surface_atoms_with_voronoi_given_height(bulk_atoms, slab_atoms, height_
         except RuntimeError:
             tags[idx] = 1
 
-    print("voronoi tags",timeit.default_timer() - start_time)
     return tags
 
 
