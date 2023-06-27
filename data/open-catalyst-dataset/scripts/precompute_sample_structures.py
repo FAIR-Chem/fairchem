@@ -163,7 +163,6 @@ def flip_struct(struct):
 
 
 def precompute_enumerate_surface(bulk_database, bulk_index, opfile):
-
     with open(bulk_database, "rb") as f:
         inv_index = pickle.load(f)
     flatten = inv_index[1] + inv_index[2] + inv_index[3]
