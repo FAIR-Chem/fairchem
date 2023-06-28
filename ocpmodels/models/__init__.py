@@ -15,3 +15,8 @@ from .painn.painn import PaiNN
 from .schnet import SchNetWrap as SchNet
 from .scn.scn import SphericalChannelNetwork
 from .spinconv import spinconv
+
+try:
+    from .equiformer_v2.nets import EquiformerV2S_OC20
+except ImportError:
+    pass
