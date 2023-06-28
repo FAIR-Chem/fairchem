@@ -59,8 +59,8 @@ is2re:
       num_interactions: 5
       hidden_channels: 512
       decoder_hidden_channels: 512
-      pg_hidden_channels: 32 
-      phys_embeds: True 
+      pg_hidden_channels: 32
+      phys_embeds: True
     optim:
       max_epochs: 8  #15
       batch_size: 32
