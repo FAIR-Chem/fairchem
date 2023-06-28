@@ -63,7 +63,6 @@ def convert_bulk(
     output_pkl,
     precompute_pkl_for_surface_enumeration,
 ):
-
     index1, total_entries1 = get_bulk_inverted_index_1(bulk_path1, max_num_elements)
     index2, total_entries2 = get_bulk_inverted_index_2(bulk_path2, max_num_elements)
 
