@@ -27,9 +27,9 @@ EquiformerV2 (31M) trained on S2EF-All+MD, and EquiformerV2 (153M) trained on S2
 
 |Model	|Training Split	|Download	|val force MAE (meV / Å) |val energy MAE (meV) |
 |---	|---	|---	|---	|---	|
-|EquiformerV2	|2M	|[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_83M_2M.pt) \| [config](configs/s2ef/2M/equiformer_v2/83M.yml)	|19.4 | 278 |
-|EquiformerV2 (31M)|All+MD |[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_31M_ec4_allmd.pt) \| [config](configs/s2ef/all/equiformer_v2/31M.yml) |16.3 | 232 |
-|EquiformerV2 (153M) |All+MD | [checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_153M_ec4_allmd.pt) \| [config](configs/s2ef/all/equiformer_v2/153M.yml) |15.0 | 227 |
+|EquiformerV2	|2M	|[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_83M_2M.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/2M/equiformer_v2/83M.yml)	|19.4 | 278 |
+|EquiformerV2 (31M)|All+MD |[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_31M_ec4_allmd.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/equiformer_v2/31M.yml) |16.3 | 232 |
+|EquiformerV2 (153M) |All+MD | [checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_153M_ec4_allmd.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/equiformer_v2/153M.yml) |15.0 | 227 |
 
 ## Citing
 
