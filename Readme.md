@@ -8,10 +8,9 @@ To re-use components in this work, we recommend using one of the following 2 der
 
 * [**`phast`**](https://github.com/vict0rsch/phast), from [PhAST: Physics-Aware, Scalable, and Task-specific GNNs for Accelerated Catalyst Design](https://arxiv.org/abs/2211.12020)
   * `phast.PhysEmbedding` that allows one to create an embedding vector from atomic numbers that is the concatenation of:
-    * A learned embedding for the atom's group
-    * A learned embedding for the atom's period
+    * A learned embedding for the atom's group and one for the atom's period.
     * A fixed or learned embedding from a set of known physical properties, as reported by `mendeleev`
-    * In the case of the OC20 dataset, a learned embedding for the atom's `tag` (adsorbate, catalyst surface or catalyst sub-surface)
+    * For the OC20 dataset, a learned embedding for the atom's `tag` (adsorbate, catalyst surface or catalyst sub-surface)
   * Tag-based graph rewiring strategies for the OC20 dataset:
     * `remove_tag0_nodes` deletes all nodes in the graph associated with a tag 0 and recomputes edges
     * `one_supernode_per_graph` replaces all tag 0 atoms with a single new atom
