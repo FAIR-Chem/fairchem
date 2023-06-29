@@ -1,27 +1,27 @@
 import random
 from copy import deepcopy
 from itertools import product
+from faenet.utils import RandomRotate
 
 import torch
 
-from ocpmodels.common.graph_transforms import RandomRotate
 
-
-def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0):
-    """Compute all frames for a given graph
-    Related to frame ambiguity issue
+def compute_frames(
+    eigenvec, pos, cell, fa_method="stochastic", pos_3D=None, det_index=0
+):
+    """Compute all frames for a given graph.
 
     Args:
         eigenvec (tensor): eigenvectors matrix
-        pos (tensor): position vector (X-1t)
-        cell (tensor): cell direction (3x3)
-        fa_frames: whether to return one random frame (random),
-            one deterministic frame (det), all frames (all)
-            or SE(3) frames (se3- as prefix).
-        pos_3D: 3rd position coordinate of atoms, for 2D FA.
+        pos (tensor): centered position vector
+        cell (tensor): cell direction (dxd)
+        fa_method (str): the Frame Averaging (FA) inspired technique
+            chosen to select frames: stochastic-FA (stochastic), deterministic-FA (det),
+            Full-FA (all) or SE(3)-FA (se3).
+        pos_3D: for 2D FA, pass atoms' 3rd position coordinate.
 
     Returns:
-        tensor: lists of 3D positions tensors
+        list: 3D position tensors of projected representation
     """
     dim = pos.shape[1]  # to differentiate between 2D or 3D case
     plus_minus_list = list(product([1, -1], repeat=dim))
@@ -29,15 +29,22 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
     all_fa_pos = []
     all_cell = []
     all_rots = []
-    se3 = fa_frames in {
+    assert fa_method in {
+        "all",
+        "stochastic",
+        "det",
         "se3-all",
-        "se3-random",
+        "se3-stochastic",
         "se3-det",
-        "se3-multiple",
+    }
+    se3 = fa_method in {
+        "se3-all",
+        "se3-stochastic",
+        "se3-det",
     }
     fa_cell = deepcopy(cell)
 
-    if fa_frames == "det" or fa_frames == "se3-det":
+    if fa_method == "det" or fa_method == "se3-det":
         sum_eigenvec = torch.sum(eigenvec, axis=0)
         plus_minus_list = [torch.where(sum_eigenvec >= 0, 1.0, -1.0)]
 
@@ -73,32 +80,18 @@ def all_frames(eigenvec, pos, cell, fa_frames="random", pos_3D=None, det_index=0
         all_cell.append(fa_cell)
         all_rots.append(new_eigenvec.unsqueeze(0))
 
-    # Return frame(s) depending on method fa_frames
-    if fa_frames == "all" or fa_frames == "se3-all":
+    # Return frame(s) depending on method fa_method
+    if fa_method == "all" or fa_method == "se3-all":
         return all_fa_pos, all_cell, all_rots
 
-    if fa_frames == "multiple" or fa_frames == "se3-multiple":
-        index = torch.bernoulli(torch.tensor([0.5] * len(all_fa_pos)))
-        if index.sum() == 0:
-            index = random.randint(0, len(all_fa_pos) - 1)
-            return [all_fa_pos[index]], [all_cell[index]], [all_rots[index]]
-        if index.sum() == 1:
-            _, index = torch.max(index, dim=0)
-            return [all_fa_pos[index]], [all_cell[index]], [all_rots[index]]
-        else:
-            all_fa_pos = [a for a, b in zip(all_fa_pos, index) if b]
-            all_cell = [a for a, b in zip(all_cell, index) if b]
-            all_rots = [a for a, b in zip(all_rots, index) if b]
-            return all_fa_pos, all_cell, all_rots
-
-    elif fa_frames == "det" or fa_frames == "se3-det":
+    elif fa_method == "det" or fa_method == "se3-det":
         return [all_fa_pos[det_index]], [all_cell[det_index]], [all_rots[det_index]]
 
     index = random.randint(0, len(all_fa_pos) - 1)
     return [all_fa_pos[index]], [all_cell[index]], [all_rots[index]]
 
 
-def check_constraints(eigenval, eigenvec, dim):
+def check_constraints(eigenval, eigenvec, dim=3):
     """Check requirements for frame averaging are satisfied
 
     Args:
@@ -123,20 +116,24 @@ def check_constraints(eigenval, eigenvec, dim):
         print("Determinant is not 1")
 
 
-def frame_averaging_3D(g, fa_frames="random"):
-    """Computes new positions for the graph atoms,
-    using on frame averaging, which builds on PCA.
+def frame_averaging_3D(pos, cell=None, fa_method="stochastic", check=False):
+    """Computes new positions for the graph atoms using PCA
 
     Args:
-        g (data.Data): input graph
-        fa_frames (str): FA method used (random, det, all, se3)
+        pos (tensor): positions of atoms in the graph
+        cell (tensor): unit cell of the graph
+        fa_method (str): FA method used
+            (stochastic, det, all, se3-all, se3-det, se3-stochastic)
+        check (bool): check if constraints are satisfied. Default: False.
 
     Returns:
-        data.Data: graph with updated positions (and distances)
+        tensor: updated atom positions
+        tensor: updated unit cell
+        tensor: the rotation matrix used (PCA)
     """
 
     # Compute centroid and covariance
-    pos = g.pos - g.pos.mean(dim=0, keepdim=True)
+    pos = pos - pos.mean(dim=0, keepdim=True)
     C = torch.matmul(pos.t(), pos)
 
     # Eigendecomposition
@@ -147,54 +144,65 @@ def frame_averaging_3D(g, fa_frames="random"):
     eigenvec = eigenvec[:, idx]
     eigenval = eigenval[idx]
 
+    # Check if constraints are satisfied
+    if check:
+        check_constraints(eigenval, eigenvec, 3)
+
     # Compute fa_pos
-    g.fa_pos, g.fa_cell, g.fa_rot = all_frames(
-        eigenvec, pos, g.cell if hasattr(g, "cell") else None, fa_frames
-    )
+    fa_pos, fa_cell, fa_rot = compute_frames(eigenvec, pos, cell, fa_method)
 
     # No need to update distances, they are preserved.
 
-    return g
+    return fa_pos, fa_cell, fa_rot
 
 
-def frame_averaging_2D(g, fa_frames="random"):
+def frame_averaging_2D(pos, cell=None, fa_method="stochastic", check=False):
     """Computes new positions for the graph atoms,
     based on a frame averaging building on PCA.
 
     Args:
-        g (data.Data): graph
-        fa_frames (str): FA method used (random, det, all, se3)
+        pos (tensor): positions of atoms in the graph
+        cell (tensor): unit cell of the graph
+        fa_method (str): FA method used (stochastic, det, all, se3)
+        check (bool): check if constraints are satisfied. Default: False.
 
     Returns:
-        _type_: updated positions
+        tensor: updated atom positions
+        tensor: updated unit cell
+        tensor: the rotation matrix used (PCA)
     """
 
     # Compute centroid and covariance
-    pos_2D = g.pos[:, :2] - g.pos[:, :2].mean(dim=0, keepdim=True)
+    pos_2D = pos[:, :2] - pos[:, :2].mean(dim=0, keepdim=True)
     C = torch.matmul(pos_2D.t(), pos_2D)
 
     # Eigendecomposition
     eigenval, eigenvec = torch.linalg.eigh(C)
-    # Sort, if necessary
+    # Sort eigenvalues
     idx = eigenval.argsort(descending=True)
     eigenval = eigenval[idx]
     eigenvec = eigenvec[:, idx]
 
+    # Check if constraints are satisfied
+    if check:
+        check_constraints(eigenval, eigenvec, 3)
+
     # Compute all frames
-    g.fa_pos, g.fa_cell, g.fa_rot = all_frames(
-        eigenvec, pos_2D, g.cell if hasattr(g, "cell") else None, fa_frames, g.pos[:, 2]
+    fa_pos, fa_cell, fa_rot = compute_frames(
+        eigenvec, pos_2D, cell, fa_method, pos[:, 2]
     )
     # No need to update distances, they are preserved.
 
-    return g
+    return fa_pos, fa_cell, fa_rot
 
 
-def data_augmentation(g, *args):
+def data_augmentation(g, d=3, *args):
     """Data augmentation where we randomly rotate each graph
     in the dataloader transform
 
     Args:
         g (data.Data): single graph
+        d (int): dimension of the DA rotation (2D around z-axis or 3D)
         rotation (str, optional): around which axis do we rotate it.
             Defaults to 'z'.
 
@@ -203,8 +211,10 @@ def data_augmentation(g, *args):
     """
 
     # Sampling a random rotation within [-180, 180] for all axes.
-    transform = RandomRotate([-180, 180], [2])
-    # transform = RandomRotate([-180, 180], [0, 1, 2])  # 3D
+    if d == 3:
+        transform = RandomRotate([-180, 180], [0, 1, 2])  # 3D
+    else:
+        transform = RandomRotate([-180, 180], [2])  # 2D around z-axis
 
     # Rotate graph
     graph_rotated, _, _ = transform(g)
