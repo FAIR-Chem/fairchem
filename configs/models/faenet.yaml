@@ -88,7 +88,7 @@ is2re:
       warmup_steps: 468
       max_epochs: 20
 
-    all: {}
+  all: {}
 
 # ------------------
 # ----- OC20 S2EF  -----
