@@ -660,9 +660,6 @@ class BaseTrainer(ABC):
                         preds = self.model_forward(batch)
                     loss = self.compute_loss(preds, batch)
 
-                if preds.get("pooling_loss") is not None:
-                    loss["total_loss"] += preds["pooling_loss"]
-
                 # Compute metrics.
                 metrics = self.compute_metrics(preds, batch, evaluator, metrics)
                 for k, v in loss.items():
