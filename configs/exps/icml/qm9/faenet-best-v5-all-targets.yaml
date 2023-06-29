@@ -19,7 +19,7 @@ default:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, energy_head, mp_type
     optim: batch_size, lr_initial
   frame_averaging: 3D
-  fa_frames: random
+  fa_method: random
   dataset:
     train:
       lse_shift: true
@@ -69,7 +69,6 @@ default:
     skip_co: true
     tag_hidden_channels: 0
     use_pbc: false
-
 
 runs:
   - dataset:

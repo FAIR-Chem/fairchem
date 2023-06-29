@@ -11,9 +11,9 @@ default:
   graph_rewiring: remove-tag-0
   model:
     energy_head: weighted-av-final-embeds
-  fa_frames: random
+  fa_method: random
   frame_averaging: 2D
-  wandb_tags: 'rebuttal'
+  wandb_tags: "rebuttal"
   optim:
     batch_size: 192
     eval_batch_size: 192
@@ -23,13 +23,13 @@ default:
 
 runs:
   - config: faenet-s2ef-2M
-    note: 'force head mlp 1'
+    note: "force head mlp 1"
     optim:
       lr_initial: 0.00028
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40
@@ -51,13 +51,13 @@ runs:
           hidden_channels: 356
 
   - config: faenet-s2ef-2M
-    note: 'force head res'
+    note: "force head res"
     optim:
       lr_initial: 0.00028
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40
@@ -76,13 +76,13 @@ runs:
       force_decoder_type: res
 
   - config: faenet-s2ef-2M
-    note: 'force head res updown'
+    note: "force head res updown"
     optim:
       lr_initial: 0.00028
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40
@@ -101,13 +101,13 @@ runs:
       force_decoder_type: res_updown
 
   - config: faenet-s2ef-2M
-    note: 'force head res'
+    note: "force head res"
     optim:
       lr_initial: 0.00027
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 30
@@ -126,13 +126,13 @@ runs:
       force_decoder_type: res
 
   - config: faenet-s2ef-2M
-    note: 'force head res updown'
+    note: "force head res updown"
     optim:
       lr_initial: 0.00027
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 30
@@ -151,13 +151,13 @@ runs:
       force_decoder_type: res_updown
 
   - config: faenet-s2ef-2M
-    note: 'force head res simple'
+    note: "force head res simple"
     optim:
       lr_initial: 0.00027
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 30
@@ -175,16 +175,15 @@ runs:
       complex_mp: True
       force_decoder_type: simple
 
-
   - config: faenet-s2ef-2M
-    note: 'force head res'
+    note: "force head res"
     optim:
       lr_initial: 0.00022
       max_epochs: 12
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40
@@ -203,14 +202,14 @@ runs:
       force_decoder_type: res
 
   - config: faenet-s2ef-2M
-    note: 'force head res'
+    note: "force head res"
     optim:
       lr_initial: 0.00022
       max_epochs: 12
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40
@@ -229,14 +228,14 @@ runs:
       force_decoder_type: res_updown
 
   - config: faenet-s2ef-2M
-    note: 'force head res'
+    note: "force head res"
     optim:
       lr_initial: 0.00022
       max_epochs: 12
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40

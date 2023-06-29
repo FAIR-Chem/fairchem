@@ -35,7 +35,7 @@ default:
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels
     optim: batch_size, lr_initial
-    _root_: frame_averaging, fa_frames
+    _root_: frame_averaging, fa_method
 
 runs:
   - config: dpp-qm9-all

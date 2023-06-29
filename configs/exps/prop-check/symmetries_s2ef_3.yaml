@@ -12,49 +12,46 @@ default:
   model:
     phys_embeds: True
     tag_hidden_channels: 64
-    pg_hidden_channels: 0  # shall have been 32
+    pg_hidden_channels: 0 # shall have been 32
     energy_head: False # False ?
   optim:
     max_epochs: 5
     batch_size: 196
     eval_batch_size: 196
-  wandb_tags: 's2ef-sym-prop'
+  wandb_tags: "s2ef-sym-prop"
   cp_data_to_tmp_dir: True
 
 runs:
   - config: sfarinet-s2ef-2M
-    note: 'Baseline 5 epochs 1 Gpu'
+    note: "Baseline 5 epochs 1 Gpu"
     frame_averaging: 2D
-    fa_frames: all
+    fa_method: all
     model:
       regress_forces: from_energy
   - config: sfarinet-s2ef-2M
-    note: 'Baseline 5 epochs 1 Gpu'
+    note: "Baseline 5 epochs 1 Gpu"
     frame_averaging: 3D
-    fa_frames: all
+    fa_method: all
     model:
       regress_forces: from_energy
 
-
-
-
   - config: sfarinet-s2ef-2M
-    note: '2D all gradient'
+    note: "2D all gradient"
     frame_averaging: 2D
-    fa_frames: all
+    fa_method: all
     model:
       regress_forces: direct_with_gradient_target
   - config: sfarinet-s2ef-2M
-    note: '2d all no gradient'
+    note: "2d all no gradient"
     frame_averaging: 2D
-    fa_frames: all
+    fa_method: all
     model:
       regress_forces: direct
 
   - config: sfarinet-s2ef-2M
-    note: 'Big energy grad coef'
+    note: "Big energy grad coef"
     frame_averaging: 2D
-    fa_frames: all
+    fa_method: all
     model:
       regress_forces: direct_with_gradient_target
     optim:
@@ -62,9 +59,9 @@ runs:
       force_coefficient: 30
       energy_coefficient: 1
   - config: sfarinet-s2ef-2M
-    note: 'Big energy grad coef'
+    note: "Big energy grad coef"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       regress_forces: direct_with_gradient_target
     optim:
@@ -72,9 +69,9 @@ runs:
       force_coefficient: 30
       energy_coefficient: 1
   - config: sfarinet-s2ef-2M
-    note: 'No energy coef'
+    note: "No energy coef"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       regress_forces: direct_with_gradient_target
     optim:
@@ -82,9 +79,9 @@ runs:
       force_coefficient: 30
       energy_coefficient: 0
   - config: sfarinet-s2ef-2M
-    note: 'Large force coef'
+    note: "Large force coef"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       regress_forces: direct_with_gradient_target
     optim:

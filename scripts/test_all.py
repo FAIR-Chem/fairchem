@@ -154,15 +154,15 @@ if __name__ == "__main__":
 
     features = [
         "",
-        "--frame_averaging=2D --fa_frames=random",
-        "--frame_averaging=2D --fa_frames=det --test_ri=True",
-        "--frame_averaging=2D --fa_frames=all",
-        "--frame_averaging=2D --fa_frames=se3-all --test_ri=True",
-        "--frame_averaging=2D --fa_frames=se3-random",
-        "--frame_averaging=3D --fa_frames=random",
-        "--frame_averaging=3D --fa_frames=all --test_ri=True",
+        "--frame_averaging=2D --fa_method=random",
+        "--frame_averaging=2D --fa_method=det --test_ri=True",
+        "--frame_averaging=2D --fa_method=all",
+        "--frame_averaging=2D --fa_method=se3-all --test_ri=True",
+        "--frame_averaging=2D --fa_method=se3-random",
+        "--frame_averaging=3D --fa_method=random",
+        "--frame_averaging=3D --fa_method=all --test_ri=True",
         "--graph_rewiring=remove-tag-0 --frame_averaging=DA",
-        "--frame_averaging=2D --fa_frames=random --graph_rewiring=remove-tag-0",
+        "--frame_averaging=2D --fa_method=random --graph_rewiring=remove-tag-0",
     ]
 
     singles = [

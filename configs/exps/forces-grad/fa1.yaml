@@ -19,69 +19,69 @@ default:
 runs:
   - config: sfarinet-s2ef-2M
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     note: sfarinet 2D FA random
   - config: sfarinet-s2ef-2M
     frame_averaging: 2D
-    fa_frames: all
+    fa_method: all
     note: sfarinet 2D FA all
   - config: sfarinet-s2ef-2M
     frame_averaging: 3D
-    fa_frames: random
+    fa_method: random
     note: sfarinet 3D FA random
   - config: sfarinet-s2ef-2M
     frame_averaging: 3D
-    fa_frames: all
+    fa_method: all
     note: sfarinet 3D FA all
   - config: sfarinet-s2ef-2M
     frame_averaging: 3D
-    fa_frames: all
+    fa_method: all
     model:
       regress_forces: direct_with_gradient_target
     note: sfarinet 3D FA all regress direct_with_gradient_target
 
   - config: faenet-s2ef-2M
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     note: faenet 2D FA random
   - config: faenet-s2ef-2M
     frame_averaging: 2D
-    fa_frames: all
+    fa_method: all
     note: faenet 2D FA all
   - config: faenet-s2ef-2M
     frame_averaging: 3D
-    fa_frames: random
+    fa_method: random
     note: faenet 3D FA random
   - config: faenet-s2ef-2M
     frame_averaging: 3D
-    fa_frames: all
+    fa_method: all
     note: faenet 3D FA all
   - config: faenet-s2ef-2M
     frame_averaging: 3D
-    fa_frames: all
+    fa_method: all
     model:
       regress_forces: direct_with_gradient_target
     note: faenet 3D FA all regress direct_with_gradient_target
 
   - config: forcenet-s2ef-2M
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     note: forcenet 2D FA random
   - config: forcenet-s2ef-2M
     frame_averaging: 2D
-    fa_frames: all
+    fa_method: all
     note: forcenet 2D FA all
   - config: forcenet-s2ef-2M
     frame_averaging: 3D
-    fa_frames: random
+    fa_method: random
     note: forcenet 3D FA random
   - config: forcenet-s2ef-2M
     frame_averaging: 3D
-    fa_frames: all
+    fa_method: all
     note: forcenet 3D FA all
   - config: forcenet-s2ef-2M
     frame_averaging: 3D
-    fa_frames: all
+    fa_method: all
     model:
       regress_forces: direct_with_gradient_target
     note: forcenet 3D FA all regress direct_with_gradient_target

@@ -11,7 +11,7 @@ default:
   graph_rewiring: remove-tag-0
   model:
     edge_embed_type: all_rij
-  wandb_tags: 'best-config'
+  wandb_tags: "best-config"
   optim:
     batch_size: 256
     eval_batch_size: 256
@@ -19,11 +19,10 @@ default:
   cp_data_to_tmpdir: true
 
 runs:
-
-  - config: faenet-is2re-all  # 2700544
-    note: 'top-02-modif'
+  - config: faenet-is2re-all # 2700544
+    note: "top-02-modif"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       phys_embeds: True
@@ -39,16 +38,16 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 6.0
-    optim: 
+    optim:
       lr_initial: 0.0022
       scheduler: LinearWarmupCosineAnnealingLR
       max_epochs: 8
       eval_every: 0.4
 
   - config: faenet-is2re-all
-    note: 'top-1-modif'
+    note: "top-1-modif"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: updownscale
       phys_embeds: False
@@ -63,13 +62,13 @@ runs:
       num_interactions: 8
       second_layer_MLP: True
       skip_co: concat
-    optim: 
+    optim:
       lr_initial: 0.0019
       scheduler: LinearWarmupCosineAnnealingLR
   - config: faenet-is2re-all
-    note: 'top-1-modif'
+    note: "top-1-modif"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale
       phys_embeds: True
@@ -83,13 +82,13 @@ runs:
       num_gaussians: 110
       num_interactions: 6
       skip_co: concat
-    optim: 
+    optim:
       lr_initial: 0.0025
       scheduler: LinearWarmupCosineAnnealingLR
   - config: faenet-is2re-all
-    note: 'top-2-modif'
+    note: "top-2-modif"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: updown_local_env
       phys_embeds: True
@@ -104,13 +103,13 @@ runs:
       num_interactions: 5
       second_layer_MLP: True
       skip_co: add
-    optim: 
+    optim:
       lr_initial: 0.0027
       scheduler: LinearWarmupCosineAnnealingLR
   - config: faenet-is2re-all
-    note: 'top-3'
+    note: "top-3"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: updown_local_env
       phys_embeds: True
@@ -126,13 +125,13 @@ runs:
       second_layer_MLP: False
       skip_co: False
       cutoff: 4.0
-    optim: 
+    optim:
       lr_initial: 0.003
       scheduler: LinearWarmupCosineAnnealingLR
   - config: faenet-is2re-all
-    note: 'top-3-modif'
+    note: "top-3-modif"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: updown_local_env
       phys_embeds: True
@@ -148,13 +147,13 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 6.0
-    optim: 
+    optim:
       lr_initial: 0.003
       scheduler: LinearWarmupCosineAnnealingLR
   - config: faenet-is2re-all
-    note: 'top-4'
+    note: "top-4"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       phys_embeds: False
@@ -170,13 +169,13 @@ runs:
       second_layer_MLP: False
       skip_co: False
       cutoff: 10.0
-    optim: 
+    optim:
       lr_initial: 0.0025
       scheduler: LinearWarmupCosineAnnealingLR
   - config: faenet-is2re-all
-    note: 'top-4-modif'
+    note: "top-4-modif"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       phys_embeds: True
@@ -192,13 +191,13 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 6.0
-    optim: 
+    optim:
       lr_initial: 0.0025
       scheduler: LinearWarmupCosineAnnealingLR
   - config: faenet-is2re-all
-    note: 'top-5'
+    note: "top-5"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       phys_embeds: True
@@ -214,13 +213,13 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 4.0
-    optim: 
+    optim:
       lr_initial: 0.0034
       scheduler: LinearWarmupCosineAnnealingLR
   - config: faenet-is2re-all
-    note: 'top-5-modif'
+    note: "top-5-modif"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       phys_embeds: True
@@ -236,13 +235,13 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 6.0
-    optim: 
+    optim:
       lr_initial: 0.0034
       scheduler: LinearWarmupCosineAnnealingLR
   - config: faenet-is2re-all
-    note: 'top-6'
+    note: "top-6"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       phys_embeds: True
@@ -258,6 +257,6 @@ runs:
       second_layer_MLP: False
       skip_co: False
       cutoff: 6.0
-    optim: 
+    optim:
       lr_initial: 0.0034
       scheduler: LinearWarmupCosineAnnealingLR

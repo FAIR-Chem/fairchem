@@ -3,7 +3,7 @@ job:
   cpus: 8
   gres: gpu:rtx8000:1
   partition: long
-  
+
 default:
   test_ri: True
   cp_data_to_tmp_dir: True
@@ -42,8 +42,8 @@ default:
     skip_co: concat # output skip connections
     second_layer_MLP: True # in EmbeddingBlock
     edge_embed_type: all_rij
-    mp_type: updownscale_base 
-    force_decoder_type: "" 
+    mp_type: updownscale_base
+    force_decoder_type: ""
     force_decoder_model_config:
       simple:
         hidden_channels: 128
@@ -54,40 +54,40 @@ default:
 
 runs:
   - config: faenet-qm9-all
-    note: '2D all'
+    note: "2D all"
     frame_averaging: 2D
-    fa_frames: all
+    fa_method: all
   - config: faenet-qm9-all
-    note: '2D stocha'
+    note: "2D stocha"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
   - config: faenet-qm9-all
-    note: 'No train 2D stocha'
+    note: "No train 2D stocha"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     optim:
       max_epochs: 0
   - config: faenet-qm9-all
-    note: 'No DA/FA'
+    note: "No DA/FA"
     frame_averaging: ""
   - config: faenet-qm9-all
-    note: 'No train nor FA'
+    note: "No train nor FA"
     model:
       max_epochs: 0
     frame_averaging: ""
   - config: faenet-qm9-all
-    note: 'se3-random'
+    note: "se3-random"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
   - config: faenet-qm9-all
-    note: 'DA'
+    note: "DA"
     frame_averaging: DA
   - config: sfarinet-is2re-all
-    note: 'sfarinet 2D all'
+    note: "sfarinet 2D all"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
   - config: faenet-qm9-all
-    note: 'Little training no FA'
+    note: "Little training no FA"
     frame_averaging: ""
-    optim: 
+    optim:
       max_epochs: 50

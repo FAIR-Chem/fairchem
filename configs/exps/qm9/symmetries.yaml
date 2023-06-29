@@ -39,7 +39,7 @@ runs:
       cutoff: 5.0
     note: Sfarinet qm9 baseline -- small model
     frame_averaging: "3D"
-    fa_frames: "random"
+    fa_method: "random"
 
   - config: sfarinet-qm9-all
     note: Sfarinet Baseline
@@ -57,34 +57,34 @@ runs:
   - config: sfarinet-qm9-all
     note: Sfarinet 3D random
     frame_averaging: "3D"
-    fa_frames: "random"
+    fa_method: "random"
 
   - config: sfarinet-qm9-all
     note: Sfarinet 3D det
     frame_averaging: "3D"
-    fa_frames: "det"
+    fa_method: "det"
 
   - config: sfarinet-qm9-all
     note: Sfarinet 3D all
     frame_averaging: "3D"
-    fa_frames: "all"
+    fa_method: "all"
 
   - config: sfarinet-qm9-all
     note: Sfarinet 3D se3-all
     frame_averaging: "3D"
-    fa_frames: "se3-all"
+    fa_method: "se3-all"
 
   - config: sfarinet-qm9-all
     note: Sfarinet 3D se3-random
     frame_averaging: "3D"
-    fa_frames: "se3-random"
+    fa_method: "se3-random"
 
   - config: sfarinet-qm9-all
     note: Sfarinet 2D all
     frame_averaging: "2D"
-    fa_frames: "all"
+    fa_method: "all"
 
   - config: sfarinet-qm9-all
     note: Sfarinet 2D random
     frame_averaging: "2D"
-    fa_frames: "random"
+    fa_method: "random"

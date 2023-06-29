@@ -49,8 +49,7 @@ default:
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels
     optim: batch_size, lr_initial
-    _root_: frame_averaging, fa_frames
-
+    _root_: frame_averaging, fa_method
 
 runs:
   - config: sfarinet-qm9-all
@@ -81,18 +80,18 @@ runs:
       num_gaussians: 150
   - config: sfarinet-qm9-all
     frame_averaging: 3D
-    fa_frames: all
+    fa_method: all
     note: Sfarinet qm9 - baseline - FA-3d-all
   - config: sfarinet-qm9-all
     frame_averaging: 3D
-    fa_frames: all
+    fa_method: all
     note: Sfarinet qm9 - PhAST - FA-3d-all
     model:
       phys_embeds: True
       pg_hidden_channels: 64
   - config: sfarinet-qm9-all
     frame_averaging: 3D
-    fa_frames: all
+    fa_method: all
     note: Sfarinet qm9 - PhAST-Large - FA-3d-all
     model:
       phys_embeds: True
@@ -101,7 +100,7 @@ runs:
       num_interactions: 5
   - config: sfarinet-qm9-all
     frame_averaging: 3D
-    fa_frames: all
+    fa_method: all
     note: Sfarinet qm9 - PhAST-XLarge - FA-3d-all
     model:
       phys_embeds: True

@@ -17,13 +17,13 @@ default:
   model:
     edge_embed_type: all_rij
   frame_averaging: 2D
-  fa_frames: random
+  fa_method: random
   optim:
     scheduler: LinearWarmupCosineAnnealingLR
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm, complex_mp, att_heads, second_layer_MLP, skip_co
     optim: lr_initial, warmup_steps
-    _root_: frame_averaging, fa_frames
+    _root_: frame_averaging, fa_method
   orion_mult_factor:
     value: 32
     targets: hidden_channels, num_filters, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels

@@ -23,7 +23,7 @@ default:
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm, complex_mp, att_heads, second_layer_MLP, skip_co
     optim: lr_initial, warmup_steps
-    _root_: frame_averaging, fa_frames
+    _root_: frame_averaging, fa_method
   orion_mult_factor:
     value: 32
     targets: hidden_channels, num_filters, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels
@@ -39,7 +39,7 @@ orion:
     model/cutoff: choices([4.0, 6.0, 8.0])
     model/edge_embed_type: choices(["all_rij", "all"])
     model/energy_head: choices(["weighted-av-final-embeds", False])
-    model/fa_frames: choices(["random", "se3-random"])
+    model/fa_method: choices(["random", "se3-random"])
     model/hidden_channels: uniform(8, 16, discrete=True)
     model/max_num_neighbors: choices([30, 40, 50])
     model/mp_type: choices(["base", "updownscale", "updownscale_base", "updown_local_env"])

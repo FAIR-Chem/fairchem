@@ -15,9 +15,9 @@ default:
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, energy_head, mp_type
     optim: batch_size
-    _root_: frame_averaging, fa_frames
+    _root_: frame_averaging, fa_method
   frame_averaging: 3D
-  fa_frames: random
+  fa_method: random
   optim:
     warmup_steps: 3000
     # parameters EMA
@@ -60,7 +60,6 @@ default:
     tag_hidden_channels: 0
     use_pbc: false
     regress_forces: ""
-
 
 runs:
   - {}

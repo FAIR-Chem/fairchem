@@ -13,9 +13,9 @@ default:
     phys_embeds: True
     tag_hidden_channels: 64
     pg_hidden_channels: 0
-    energy_head: False 
+    energy_head: False
     edge_embed_type: all_rij
-  wandb_tags: 'mp-type'
+  wandb_tags: "mp-type"
   optim:
     max_epochs: 10
     batch_size: 256
@@ -24,127 +24,127 @@ default:
 
 runs:
   - config: faenet-is2re-all
-    note: 'simple'
+    note: "simple"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: simple
   - config: faenet-is2re-all
-    note: 'updown_scale'
+    note: "updown_scale"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updown_scale
   - config: faenet-is2re-all
-    note: 'local_env'
+    note: "local_env"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: local_env
   - config: faenet-is2re-all
-    note: 'updown_local_env'
+    note: "updown_local_env"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updown_local_env
   - config: faenet-is2re-all
-    note: 'base_with_att'
+    note: "base_with_att"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: base_with_att
   - config: faenet-is2re-all
-    note: 'att'
+    note: "att"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: att
   - config: faenet-is2re-all
-    note: 'base'
+    note: "base"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: base
   - config: faenet-is2re-all
-    note: 'updownscale_base'
+    note: "updownscale_base"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale_base
   - config: faenet-is2re-all
-    note: 'sfarinet'
+    note: "sfarinet"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: sfarinet
-      
+
   - config: faenet-is2re-all
-    note: 'sfarinet'
+    note: "sfarinet"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: sfarinet
       skip_co: concat
   - config: faenet-is2re-all
-    note: 'att skip co'
+    note: "att skip co"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: att
       skip_co: concat
   - config: faenet-is2re-all
-    note: 'local_env add'
+    note: "local_env add"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: local_env
       skip_co: add
   - config: faenet-is2re-all
-    note: 'base complex mp'
+    note: "base complex mp"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: base
       complex_mp: true
   - config: faenet-is2re-all
-    note: 'simple complex mp'
+    note: "simple complex mp"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: simple
       complex_mp: true
   - config: faenet-is2re-all
-    note: 'updown_local_env'
+    note: "updown_local_env"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updown_local_env
       second_layer_mlp: true
   - config: faenet-is2re-all
-    note: 'base_with_att'
+    note: "base_with_att"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: base_with_att
       second_layer_mlp: true
   - config: faenet-is2re-all
-    note: 'sfarinet '
+    note: "sfarinet "
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: sfarinet
       graph_norm: true
   - config: faenet-is2re-all
-    note: 'updownscale_base'
+    note: "updownscale_base"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale_base
       graph_norm: true
   - config: faenet-is2re-all
-    note: 'simple bigger layers'
+    note: "simple bigger layers"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: simple
       num_filters: 500
@@ -153,9 +153,9 @@ runs:
       num_interactions: 4
       tag_hidden_channels: 128
   - config: faenet-is2re-all
-    note: 'more interactions and bigger filters'
+    note: "more interactions and bigger filters"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: simple
       num_filters: 500
@@ -163,20 +163,20 @@ runs:
       num_interactions: 6
       tag_hidden_channels: 128
   - config: faenet-is2re-all
-    note: 'smaller lr and bigger gamma'
+    note: "smaller lr and bigger gamma"
     frame_averaging: 2D
-    fa_frames: se3-random
-    optim: 
+    fa_method: se3-random
+    optim:
       lr_initial: 0.0005
       lr_gamma: 0.4
   - config: faenet-is2re-all
-    note: 'bigger cutoff'
+    note: "bigger cutoff"
     frame_averaging: 2D
-    fa_frames: se3-random
-    model: 
+    fa_method: se3-random
+    model:
       cutoff: 10.0
   - config: faenet-is2re-all
-    note: 'DA'
+    note: "DA"
     frame_averaging: DA
-    optim: 
+    optim:
       max_epochs: 15

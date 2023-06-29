@@ -21,7 +21,7 @@ default:
   log_train_every: 250
   energy_head: False
   frame_averaging: 3D
-  fa_frames: random
+  fa_method: random
   optim:
     batch_size: 100
     max_steps: 2000000

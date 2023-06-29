@@ -1044,7 +1044,7 @@ def build_config(args, args_override, silent=False):
                 "config",
                 "dataset",
                 "energy_head",
-                "fa_frames",
+                "fa_method",
                 "frame_averaging",
                 "graph_rewiring",
                 "model",
@@ -1248,9 +1248,9 @@ def get_pbc_distances(
     return_offsets=False,
     return_distance_vec=False,
 ):
-    """ Compute distances between atoms with periodic boundary conditions
+    """Compute distances between atoms with periodic boundary conditions
 
-    Args:  
+    Args:
         pos (tensor): (N, 3) tensor of atomic positions
         edge_index (tensor): (2, E) tensor of edge indices
         cell (tensor): (3, 3) tensor of cell vectors
@@ -1262,7 +1262,7 @@ def get_pbc_distances(
     Returns:
         dict: dictionary with the updated edge_index, atom distances,
             and optionally the offsets and distance vectors.
-    """  
+    """
     row, col = edge_index
 
     distance_vectors = pos[row] - pos[col]

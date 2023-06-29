@@ -11,9 +11,9 @@ default:
   graph_rewiring: remove-tag-0
   model:
     energy_head: weighted-av-final-embeds
-  fa_frames: random
+  fa_method: random
   frame_averaging: 2D
-  wandb_tags: 'rebuttal'
+  wandb_tags: "rebuttal"
   optim:
     batch_size: 192
     eval_batch_size: 192
@@ -23,13 +23,13 @@ default:
 
 runs:
   - config: faenet-is2re
-    note: 'Test direct eval'
+    note: "Test direct eval"
     optim:
       lr_initial: 0.00028
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct
       cutoff: 4
       max_num_neighbors: 40

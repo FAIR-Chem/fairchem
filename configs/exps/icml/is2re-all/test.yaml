@@ -9,7 +9,7 @@ default:
   cp_data_to_tmpdir: True
   mode: train
   graph_rewiring: remove-tag-0
-  wandb_tags: 'rebuttal'
+  wandb_tags: "rebuttal"
   optim:
     batch_size: 256
     eval_batch_size: 256
@@ -19,11 +19,10 @@ default:
     scheduler: LinearWarmupCosineAnnealingLR
 
 runs:
-
   - config: faenet-is2re-all
-    note: 'Test inf. time of BASELINE'
+    note: "Test inf. time of BASELINE"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: all_rij

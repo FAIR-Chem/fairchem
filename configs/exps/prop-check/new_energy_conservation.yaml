@@ -11,9 +11,9 @@ default:
   graph_rewiring: remove-tag-0
   model:
     energy_head: weighted-av-final-embeds
-  fa_frames: random
+  fa_method: random
   frame_averaging: 2D
-  wandb_tags: 'rebuttal'
+  wandb_tags: "rebuttal"
   optim:
     batch_size: 192
     eval_batch_size: 192
@@ -22,14 +22,14 @@ default:
 
 runs:
   - config: faenet-s2ef-2M
-    note: 'Rebuttal test direct'
+    note: "Rebuttal test direct"
     optim:
       lr_initial: 0.00028
       max_epochs: 16
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct
       cutoff: 4
       max_num_neighbors: 40
@@ -47,14 +47,14 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Rebuttal test direct_with_grad'
+    note: "Rebuttal test direct_with_grad"
     optim:
       lr_initial: 0.00028
       max_epochs: 16
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40
@@ -72,14 +72,14 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Rebuttal test from energy'
+    note: "Rebuttal test from energy"
     optim:
       lr_initial: 0.00028
       max_epochs: 16
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: from_energy
       cutoff: 4
       max_num_neighbors: 40
@@ -97,14 +97,14 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Rebuttal test only energy conservation'
+    note: "Rebuttal test only energy conservation"
     optim:
       lr_initial: 0.00028
       max_epochs: 16
       force_coefficient: 0
       energy_coefficient: 0
       energy_grad_coefficient: 1
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40
@@ -122,14 +122,14 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Rebuttal test force + energy conservation'
+    note: "Rebuttal test force + energy conservation"
     optim:
       lr_initial: 0.00028
       max_epochs: 25
       force_coefficient: 30
       energy_coefficient: 0
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40
@@ -146,16 +146,15 @@ runs:
       second_layer_mlp: False
       complex_mp: False
 
-
   - config: faenet-s2ef-2M
-    note: 'Rebuttal test direct_with_grad bigger coeff'
+    note: "Rebuttal test direct_with_grad bigger coeff"
     optim:
       lr_initial: 0.00028
       max_epochs: 16
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 40
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40
@@ -173,14 +172,14 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Rebuttal test direct_with_grad force only'
+    note: "Rebuttal test direct_with_grad force only"
     optim:
       lr_initial: 0.00028
       max_epochs: 16
       force_coefficient: 30
       energy_coefficient: 0
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40

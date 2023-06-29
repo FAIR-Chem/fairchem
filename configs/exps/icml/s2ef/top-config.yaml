@@ -10,10 +10,10 @@ default:
   graph_rewiring: remove-tag-0
   cp_data_to_tmp: true
   model:
-    energy_head: 'weighted-av-final-embeds' # False ?  frame_averaging: 2D
-  fa_frames: random
+    energy_head: "weighted-av-final-embeds" # False ?  frame_averaging: 2D
+  fa_method: random
   frame_averaging: 2D
-  wandb_tags: 's2ef-top-config'
+  wandb_tags: "s2ef-top-config"
   optim:
     batch_size: 192
     eval_batch_size: 192
@@ -24,13 +24,13 @@ default:
 
 runs:
   - config: sfarinet-s2ef-2M
-    note: 'top-config'
+    note: "top-config"
     fa_fames: random
     optim:
       lr_initial: 0.00022
       max_epochs: 22
       force_coefficient: 100
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 40
@@ -49,13 +49,13 @@ runs:
       second_layer_MLP: True
 
   - config: sfarinet-s2ef-2M
-    note: 'DA'
+    note: "DA"
     frame_averaging: DA
     optim:
       lr_initial: 0.00022
       max_epochs: 22
       force_coefficient: 100
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 40
@@ -73,14 +73,14 @@ runs:
       second_layer_MLP: True
 
   - config: sfarinet-s2ef-2M
-    note: 'bigger se3-random'
+    note: "bigger se3-random"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     optim:
       lr_initial: 0.00022
       max_epochs: 22
       force_coefficient: 100
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 40
@@ -98,15 +98,15 @@ runs:
       second_layer_MLP: True
 
   - config: sfarinet-s2ef-2M
-    note: 'force only'
+    note: "force only"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     optim:
       lr_initial: 0.00022
       max_epochs: 22
       force_coefficient: 100
       energy_coefficient: 0
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 40
@@ -124,14 +124,14 @@ runs:
       second_layer_MLP: True
 
   - config: sfarinet-s2ef-2M
-    note: 'top-config'
+    note: "top-config"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     optim:
       lr_initial: 0.00022
       max_epochs: 22
       force_coefficient: 100
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 30
@@ -149,14 +149,14 @@ runs:
       second_layer_MLP: False
 
   - config: sfarinet-s2ef-2M
-    note: 'top-config'
+    note: "top-config"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     optim:
       lr_initial: 0.00027
       max_epochs: 22
       force_coefficient: 100
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 30
@@ -174,14 +174,14 @@ runs:
       second_layer_MLP: False
 
   - config: sfarinet-s2ef-2M
-    note: 'top-config'
+    note: "top-config"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     optim:
       lr_initial: 0.00027
       max_epochs: 22
       force_coefficient: 100
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 30
@@ -198,16 +198,15 @@ runs:
       complex_mp: True
       second_layer_MLP: False
 
-
   - config: sfarinet-s2ef-2M
-    note: 'top-config'
+    note: "top-config"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     optim:
       lr_initial: 0.00023
       max_epochs: 22
       force_coefficient: 100
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 50
@@ -225,14 +224,14 @@ runs:
       second_layer_MLP: False
 
   - config: sfarinet-s2ef-2M
-    note: ''
+    note: ""
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     optim:
       lr_initial: 0.00023
       max_epochs: 22
       force_coefficient: 100
-    model: 
+    model:
       regress_forces: direct
       cutoff: 6
       max_num_neighbors: 50
@@ -250,14 +249,14 @@ runs:
       second_layer_MLP: False
 
   - config: sfarinet-s2ef-2M
-    note: 'all'
+    note: "all"
     frame_averaging: 2D
-    fa_frames: all
+    fa_method: all
     optim:
       lr_initial: 0.00023
       max_epochs: 22
       force_coefficient: 100
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 50
@@ -275,14 +274,14 @@ runs:
       second_layer_MLP: True
 
   - config: sfarinet-s2ef-2M
-    note: 'from_energy'
+    note: "from_energy"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     optim:
       lr_initial: 0.00023
       max_epochs: 22
       force_coefficient: 100
-    model: 
+    model:
       regress_forces: from_energy
       cutoff: 6
       max_num_neighbors: 30

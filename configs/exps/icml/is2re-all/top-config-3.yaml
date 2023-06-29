@@ -11,18 +11,17 @@ default:
   graph_rewiring: remove-tag-0
   model:
     edge_embed_type: all_rij
-  wandb_tags: 'best-config'
+  wandb_tags: "best-config"
   optim:
     batch_size: 256
     eval_batch_size: 256
   cp_data_to_tmpdir: True
 
 runs:
-
-  - config: faenet-is2re-all  # 2700544
-    note: 'top-run'
+  - config: faenet-is2re-all # 2700544
+    note: "top-run"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale_base
       phys_embeds: True
@@ -38,16 +37,16 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 4.0
-    optim: 
+    optim:
       lr_initial: 0.002
       scheduler: LinearWarmupCosineAnnealingLR
       max_epochs: 10
       eval_every: 0.25
 
-  - config: faenet-is2re-all  # 2700544
-    note: 'top-run eval every epoch'
+  - config: faenet-is2re-all # 2700544
+    note: "top-run eval every epoch"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale_base
       phys_embeds: True
@@ -63,16 +62,16 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 4.0
-    optim: 
+    optim:
       lr_initial: 0.002
       scheduler: LinearWarmupCosineAnnealingLR
       max_epochs: 12
       eval_every: 1
 
-  - config: faenet-is2re-all  # 2700544
-    note: 'top-run eval every epoch'
+  - config: faenet-is2re-all # 2700544
+    note: "top-run eval every epoch"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale_base
       phys_embeds: True
@@ -88,16 +87,16 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 4.0
-    optim: 
+    optim:
       lr_initial: 0.002
       scheduler: LinearWarmupCosineAnnealingLR
       max_epochs: 12
       eval_every: 1
 
-  - config: faenet-is2re-all  # 2700544
-    note: 'top-run'
+  - config: faenet-is2re-all # 2700544
+    note: "top-run"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale_base
       phys_embeds: True
@@ -113,16 +112,16 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 4.0
-    optim: 
+    optim:
       lr_initial: 0.002
       scheduler: LinearWarmupCosineAnnealingLR
       max_epochs: 14
       eval_every: 0.4
 
-  - config: faenet-is2re-all  # 2700544
-    note: 'top-run'
+  - config: faenet-is2re-all # 2700544
+    note: "top-run"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale_base
       phys_embeds: True
@@ -138,16 +137,16 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 4.0
-    optim: 
+    optim:
       lr_initial: 0.002
       scheduler: LinearWarmupCosineAnnealingLR
       max_epochs: 12
       eval_every: 0.25
 
-  - config: faenet-is2re-all  # 2700544
-    note: 'top-run'
+  - config: faenet-is2re-all # 2700544
+    note: "top-run"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale_base
       phys_embeds: True
@@ -163,16 +162,16 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 5.0
-    optim: 
+    optim:
       lr_initial: 0.002
       scheduler: LinearWarmupCosineAnnealingLR
       max_epochs: 10
       eval_every: 0.4
 
-  - config: faenet-is2re-all  # 2700544
-    note: 'top-run'
+  - config: faenet-is2re-all # 2700544
+    note: "top-run"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale_base
       phys_embeds: True
@@ -188,16 +187,16 @@ runs:
       second_layer_MLP: True
       skip_co: concat
       cutoff: 5.0
-    optim: 
+    optim:
       lr_initial: 0.002
       scheduler: LinearWarmupCosineAnnealingLR
       max_epochs: 11
       eval_every: 0.4
 
-  - config: faenet-is2re-all  # 2700544
-    note: 'top-run'
+  - config: faenet-is2re-all # 2700544
+    note: "top-run"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale_base
       phys_embeds: True
@@ -213,17 +212,16 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 4.0
-    optim: 
+    optim:
       lr_initial: 0.002
       scheduler: LinearWarmupCosineAnnealingLR
       max_epochs: 9
       eval_every: 0.4
 
-
-  - config: faenet-is2re-all  # 2700544
-    note: 'top-run'
+  - config: faenet-is2re-all # 2700544
+    note: "top-run"
     frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: se3-random
     model:
       mp_type: updownscale_base
       phys_embeds: True
@@ -239,7 +237,7 @@ runs:
       second_layer_MLP: False
       skip_co: concat
       cutoff: 5.0
-    optim: 
+    optim:
       lr_initial: 0.002
       scheduler: LinearWarmupCosineAnnealingLR
       max_epochs: 13

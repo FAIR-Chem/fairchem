@@ -959,7 +959,7 @@ class BaseTrainer(ABC):
 
             g_list = batch_rotated.to_data_list()
             fa_transform = FrameAveraging(
-                self.config["frame_averaging"], self.config["fa_frames"]
+                self.config["frame_averaging"], self.config["fa_method"]
             )
             for g in g_list:
                 g = fa_transform(g)
@@ -996,7 +996,7 @@ class BaseTrainer(ABC):
             delattr(batch_reflected, "fa_rot")  # delete it otherwise can't iterate
             g_list = batch_reflected.to_data_list()
             fa_transform = FrameAveraging(
-                self.config["frame_averaging"], self.config["fa_frames"]
+                self.config["frame_averaging"], self.config["fa_method"]
             )
             for g in g_list:
                 g = fa_transform(g)

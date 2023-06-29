@@ -3,18 +3,18 @@ job:
   cpus: 4
   gres: gpu:rtx8000:1
   partition: long
-  
+
 default:
   test_ri: True
   cp_data_to_tmp_dir: True
   mode: train
-  graph_rewiring: remove-tag-0  
+  graph_rewiring: remove-tag-0
 
 runs:
   - config: faenet-s2ef-2M
-    note: 'S2EF optimising forces_mae only'
+    note: "S2EF optimising forces_mae only"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: updownscale_base
       edge_embed_type: all_rij
@@ -39,9 +39,9 @@ runs:
       lr_initial: 0.00025
       energy_coefficient: 0
   - config: faenet-s2ef-2M
-    note: 'S2EF optimising forces_mae only 2'
+    note: "S2EF optimising forces_mae only 2"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: all_rij

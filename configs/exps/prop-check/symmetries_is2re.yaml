@@ -12,40 +12,40 @@ default:
   model:
     phys_embeds: True
     tag_hidden_channels: 64
-    pg_hidden_channels: 0  # shall have been 32
-    energy_head: 'weighted-av-initial-embeds' # False ?
-  wandb_tags: 'prop-check-ICLM'
+    pg_hidden_channels: 0 # shall have been 32
+    energy_head: "weighted-av-initial-embeds" # False ?
+  wandb_tags: "prop-check-ICLM"
 
 runs:
   - config: sfarinet-is2re-all
-    note: 'Test 3D all symmetries IS2RE + FA correctness'
+    note: "Test 3D all symmetries IS2RE + FA correctness"
     frame_averaging: DA
-    fa_frames: all
+    fa_method: all
   - config: sfarinet-is2re-all
-    note: 'Test 3D se3-all symmetries IS2RE + FA correctness'
+    note: "Test 3D se3-all symmetries IS2RE + FA correctness"
     frame_averaging: 3D
-    fa_frames: se3-all
+    fa_method: se3-all
   - config: sfarinet-is2re-all
-    note: '2D det symmetries IS2RE + FA correctness'
+    note: "2D det symmetries IS2RE + FA correctness"
     frame_averaging: 2D
-    fa_frames: det
+    fa_method: det
   - config: sfarinet-is2re-all
-    note: '3D det symmetries IS2RE + FA correctness'
+    note: "3D det symmetries IS2RE + FA correctness"
     frame_averaging: 3D
-    fa_frames: det
+    fa_method: det
   - config: sfarinet-is2re-all
-    note: '2D se3-random 30 epochs symmetries IS2RE + FA correctness'
+    note: "2D se3-random 30 epochs symmetries IS2RE + FA correctness"
     frame_averaging: 2D
-    fa_frames: se3-random
-    optim: 
+    fa_method: se3-random
+    optim:
       max_epochs: 30
   - config: sfarinet-is2re-all
-    note: 'Baseline 30 epochs symmetries IS2RE + FA correctness'
-    optim: 
+    note: "Baseline 30 epochs symmetries IS2RE + FA correctness"
+    optim:
       max_epochs: 30
   - config: sfarinet-is2re-all
-    note: '2D all 30 epochs symmetries IS2RE + FA correctness'
+    note: "2D all 30 epochs symmetries IS2RE + FA correctness"
     frame_averaging: 2D
-    fa_frames: all
-    optim: 
+    fa_method: all
+    optim:
       max_epochs: 30

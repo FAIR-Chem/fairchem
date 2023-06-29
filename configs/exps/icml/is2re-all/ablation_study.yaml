@@ -9,7 +9,7 @@ default:
   cp_data_to_tmpdir: True
   mode: train
   graph_rewiring: remove-tag-0
-  wandb_tags: 'rebuttal'
+  wandb_tags: "rebuttal"
   optim:
     batch_size: 256
     eval_batch_size: 256
@@ -19,31 +19,10 @@ default:
     scheduler: LinearWarmupCosineAnnealingLR
 
 runs:
-
   - config: faenet-is2re-all
-    note: 'BASELINE'
+    note: "BASELINE"
     frame_averaging: 2D
-    fa_frames: random
-    model:
-      mp_type: base
-      edge_embed_type: all_rij
-      phys_embeds: True
-      tag_hidden_channels: 64
-      pg_hidden_channels: 64
-      energy_head: weighted-av-final-embeds
-      complex_mp: True
-      graph_norm: True
-      hidden_channels: 384
-      num_filters: 480
-      num_gaussians: 104
-      num_interactions: 5
-      second_layer_MLP: False
-      skip_co: concat
-
-  - config: faenet-is2re-all  
-    note: 'BASELINE se3-random'
-    frame_averaging: 2D
-    fa_frames: se3-random
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: all_rij
@@ -61,9 +40,29 @@ runs:
       skip_co: concat
 
   - config: faenet-is2re-all
-    note: 'no remove tag 0'
+    note: "BASELINE se3-random"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: se3-random
+    model:
+      mp_type: base
+      edge_embed_type: all_rij
+      phys_embeds: True
+      tag_hidden_channels: 64
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 384
+      num_filters: 480
+      num_gaussians: 104
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concat
+
+  - config: faenet-is2re-all
+    note: "no remove tag 0"
+    frame_averaging: 2D
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: all_rij
@@ -81,10 +80,10 @@ runs:
       skip_co: concat
     graph_rewiring: False
 
-  - config: faenet-is2re-all  # 2757229
-    note: 'SH edge embed'
+  - config: faenet-is2re-all # 2757229
+    note: "SH edge embed"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: sh
@@ -101,10 +100,10 @@ runs:
       second_layer_MLP: False
       skip_co: concat
 
-  - config: faenet-is2re-all  # 2757229
-    note: 'ALL edge embed, with SH'
+  - config: faenet-is2re-all # 2757229
+    note: "ALL edge embed, with SH"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: all
@@ -121,10 +120,10 @@ runs:
       second_layer_MLP: False
       skip_co: concat
 
-  - config: faenet-is2re-all  # 2757230
-    note: 'rij alone edge embed'
+  - config: faenet-is2re-all # 2757230
+    note: "rij alone edge embed"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: r_ij
@@ -142,9 +141,9 @@ runs:
       skip_co: concat
 
   - config: faenet-is2re-all
-    note: 'No graph norm'
+    note: "No graph norm"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: all_rij
@@ -161,10 +160,10 @@ runs:
       second_layer_MLP: False
       skip_co: concat
 
-  - config: faenet-is2re-all  # 2757232
-    note: 'No energy head'
+  - config: faenet-is2re-all # 2757232
+    note: "No energy head"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: all_rij
@@ -182,9 +181,9 @@ runs:
       skip_co: concat
 
   - config: faenet-is2re-all
-    note: 'No skip co'
+    note: "No skip co"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: all_rij
@@ -201,10 +200,10 @@ runs:
       second_layer_MLP: False
       skip_co: False
 
-  - config: faenet-is2re-all  # 2757234
-    note: 'With second layer MLP in Embed'
+  - config: faenet-is2re-all # 2757234
+    note: "With second layer MLP in Embed"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: all_rij
@@ -221,10 +220,10 @@ runs:
       second_layer_MLP: True
       skip_co: False
 
-  - config: faenet-is2re-all  # 2757236
-    note: 'No Complex MP'
+  - config: faenet-is2re-all # 2757236
+    note: "No Complex MP"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base
       edge_embed_type: all_rij
@@ -241,10 +240,10 @@ runs:
       second_layer_MLP: False
       skip_co: concat
 
-  - config: faenet-is2re-all  # 2757238
-    note: 'Simple'
+  - config: faenet-is2re-all # 2757238
+    note: "Simple"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: simple
       edge_embed_type: all_rij
@@ -261,10 +260,10 @@ runs:
       second_layer_MLP: False
       skip_co: concat
 
-  - config: faenet-is2re-all  # 2757239
-    note: 'updownscale_base'
+  - config: faenet-is2re-all # 2757239
+    note: "updownscale_base"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: updownscale_base
       edge_embed_type: all_rij
@@ -281,10 +280,10 @@ runs:
       second_layer_MLP: False
       skip_co: concat
 
-  - config: faenet-is2re-all  # 2757244
-    note: 'sfarinet'
+  - config: faenet-is2re-all # 2757244
+    note: "sfarinet"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: sfarinet
       edge_embed_type: all_rij
@@ -301,10 +300,10 @@ runs:
       second_layer_MLP: False
       skip_co: concat
 
-  - config: faenet-is2re-all  # 2757244
-    note: 'updownscale'
+  - config: faenet-is2re-all # 2757244
+    note: "updownscale"
     frame_averaging: 2D
-    fa_frames: updownscale
+    fa_method: updownscale
     model:
       mp_type: sfarinet
       edge_embed_type: all_rij
@@ -321,10 +320,10 @@ runs:
       second_layer_MLP: False
       skip_co: concat
 
-  - config: faenet-is2re-all  # 2757244
-    note: 'att'
+  - config: faenet-is2re-all # 2757244
+    note: "att"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: att
       edge_embed_type: all_rij
@@ -341,10 +340,10 @@ runs:
       second_layer_MLP: False
       skip_co: concat
 
-  - config: faenet-is2re-all  # 2757244
-    note: 'base_with_att'
+  - config: faenet-is2re-all # 2757244
+    note: "base_with_att"
     frame_averaging: 2D
-    fa_frames: random
+    fa_method: random
     model:
       mp_type: base_with_att
       edge_embed_type: all_rij

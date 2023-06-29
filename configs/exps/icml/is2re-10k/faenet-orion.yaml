@@ -27,7 +27,7 @@ default:
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm
     optim: batch_size, lr_initial
-    _root_: frame_averaging, fa_frames
+    _root_: frame_averaging, fa_method
   orion_mult_factor:
     value: 32
     targets: hidden_channels, num_filters, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels
@@ -54,7 +54,7 @@ orion:
     model/phys_hidden_channels: uniform(0, 2, discrete=True)
     model/tag_hidden_channels: uniform(0, 2, discrete=True)
     frame_averaging: choices(["", "2D", "3D", "DA"])
-    fa_frames: choices(["", "random", "det", "all", "se3-all", "se3-random", "se3-det", "multiple", "se3-multiple"])
+    fa_method: choices(["", "random", "det", "all", "se3-all", "se3-random", "se3-det", "multiple", "se3-multiple"])
   algorithms:
     asha:
       seed: 123

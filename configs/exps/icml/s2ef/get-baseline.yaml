@@ -11,9 +11,9 @@ default:
   graph_rewiring: remove-tag-0
   model:
     energy_head: weighted-av-final-embeds
-  fa_frames: random
+  fa_method: random
   frame_averaging: 2D
-  wandb_tags: 'rebuttal'
+  wandb_tags: "rebuttal"
   optim:
     batch_size: 192
     eval_batch_size: 192
@@ -23,13 +23,13 @@ default:
 
 runs:
   - config: faenet-s2ef-2M
-    note: 'Get top perf with direct 1'
+    note: "Get top perf with direct 1"
     optim:
       lr_initial: 0.00028
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct
       cutoff: 4
       max_num_neighbors: 40
@@ -47,13 +47,13 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Get top perf with direct 2'
+    note: "Get top perf with direct 2"
     optim:
       lr_initial: 0.00027
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: direct
       cutoff: 6
       max_num_neighbors: 30
@@ -70,16 +70,15 @@ runs:
       second_layer_mlp: False
       complex_mp: True
 
-
   - config: faenet-s2ef-2M
-    note: 'Get top perf with direct 3'
+    note: "Get top perf with direct 3"
     optim:
       lr_initial: 0.00022
       max_epochs: 12
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct
       cutoff: 4
       max_num_neighbors: 40
@@ -97,13 +96,13 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Get top perf with direct-grad 1'
+    note: "Get top perf with direct-grad 1"
     optim:
       lr_initial: 0.00028
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40
@@ -121,13 +120,13 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Get top perf with direct-grad 2'
+    note: "Get top perf with direct-grad 2"
     optim:
       lr_initial: 0.00027
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 6
       max_num_neighbors: 30
@@ -144,16 +143,15 @@ runs:
       second_layer_mlp: False
       complex_mp: True
 
-
   - config: faenet-s2ef-2M
-    note: 'Get top perf with direct-grad 3'
+    note: "Get top perf with direct-grad 3"
     optim:
       lr_initial: 0.00022
       max_epochs: 12
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40
@@ -171,13 +169,13 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Get top perf with from_energy 1'
+    note: "Get top perf with from_energy 1"
     optim:
       lr_initial: 0.00028
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 5
-    model: 
+    model:
       regress_forces: from_energy
       cutoff: 4
       max_num_neighbors: 40
@@ -195,13 +193,13 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Get top perf with from_energy 2'
+    note: "Get top perf with from_energy 2"
     optim:
       lr_initial: 0.00027
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: from_energy
       cutoff: 6
       max_num_neighbors: 30
@@ -218,16 +216,15 @@ runs:
       second_layer_mlp: False
       complex_mp: True
 
-
   - config: faenet-s2ef-2M
-    note: 'Get top perf with from_energy 3'
+    note: "Get top perf with from_energy 3"
     optim:
       lr_initial: 0.00022
       max_epochs: 12
       force_coefficient: 30
       energy_coefficient: 1
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: from_energy
       cutoff: 4
       max_num_neighbors: 40
@@ -244,16 +241,15 @@ runs:
       second_layer_mlp: True
       complex_mp: False
 
-
   - config: faenet-s2ef-2M
-    note: 'Force only with from energy 3'
+    note: "Force only with from energy 3"
     optim:
       lr_initial: 0.00022
       max_epochs: 12
       force_coefficient: 30
       energy_coefficient: 0
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: from_energy
       cutoff: 4
       max_num_neighbors: 40
@@ -270,16 +266,15 @@ runs:
       second_layer_mlp: True
       complex_mp: False
 
-
   - config: faenet-s2ef-2M
-    note: 'Force only with direct-grad 3'
+    note: "Force only with direct-grad 3"
     optim:
       lr_initial: 0.00022
       max_epochs: 12
       force_coefficient: 30
       energy_coefficient: 0
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: direct_with_energy_target
       cutoff: 4
       max_num_neighbors: 40
@@ -297,14 +292,14 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Force only with direct 3'
+    note: "Force only with direct 3"
     optim:
       lr_initial: 0.00022
       max_epochs: 12
       force_coefficient: 30
       energy_coefficient: 0
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: direct
       cutoff: 4
       max_num_neighbors: 40
@@ -322,14 +317,14 @@ runs:
       complex_mp: False
 
   - config: faenet-s2ef-2M
-    note: 'Energy conservation only with direct 3'
+    note: "Energy conservation only with direct 3"
     optim:
       lr_initial: 0.00022
       max_epochs: 12
       force_coefficient: 0
       energy_coefficient: 0
       energy_grad_coefficient: 10
-    model: 
+    model:
       regress_forces: direct_with_gradient_target
       cutoff: 4
       max_num_neighbors: 40

@@ -35,12 +35,12 @@ default:
   note:
     model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm
     optim: batch_size, lr_initial
-    _root_: frame_averaging, fa_frames
+    _root_: frame_averaging, fa_method
   orion_mult_factor:
     value: 25
     targets: num_filters, hidden_channels, num_gaussians
   frame_averaging: 3D
-  fa_frames: random
+  fa_method: random
   model:
     mp_type: updownscale_base
     edge_embed_type: all_rij

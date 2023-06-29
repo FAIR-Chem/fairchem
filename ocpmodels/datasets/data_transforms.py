@@ -31,7 +31,7 @@ class Transform:
 
 
 class FrameAveraging(Transform):
-    r""" Frame Averaging Transform for PyG Data objects
+    r"""Frame Averaging Transform for PyG Data objects
 
     Args:
         frame_averaging (str): Transform method used.
@@ -39,6 +39,7 @@ class FrameAveraging(Transform):
         fa_method (str): FA method used.
             (`""`, "stochastic", "all", "det", "se3-stochastic", "se3-all", "se3-det")
     """
+
     def __init__(self, frame_averaging=None, fa_method=None):
         self.fa_method = (
             "stochastic" if (fa_method is None or fa_method == "") else fa_method
@@ -77,7 +78,9 @@ class FrameAveraging(Transform):
         elif self.frame_averaging == "DA":
             return self.fa_func(data, self.fa_method)
         else:
-            data.fa_pos, data.fa_cell, data.fa_rot = self.fa_func(data.pos, data.cell, self.fa_method)
+            data.fa_pos, data.fa_cell, data.fa_rot = self.fa_func(
+                data.pos, data.cell, self.fa_method
+            )
             return data
 
 
@@ -149,6 +152,6 @@ def get_transforms(trainer_config):
     transforms = [
         AddAttributes(),
         GraphRewiring(trainer_config.get("graph_rewiring")),
-        FrameAveraging(trainer_config["frame_averaging"], trainer_config["fa_frames"]),
+        FrameAveraging(trainer_config["frame_averaging"], trainer_config["fa_method"]),
     ]
     return Compose(transforms)
