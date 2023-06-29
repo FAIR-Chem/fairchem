@@ -471,6 +471,10 @@ class SingleTrainer(BaseTrainer):
                 ds.close_db()
 
     def model_forward(self, batch_list, mode="train"):
+        """ Perform a forward pass of the model when frame averaging is applied. 
+        Returns:
+            (dict): model predictions tensor for "energy" and "forces". 
+        """
         # Distinguish frame averaging from base case.
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
