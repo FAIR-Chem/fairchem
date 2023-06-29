@@ -14,7 +14,7 @@ from ocpmodels.models.base_model import BaseModel
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.models.force_decoder import ForceDecoder
 from ocpmodels.models.utils.activations import swish
-from ocpmodels.common.utils import get_pbc_distances
+from ocpmodels.common.utils import get_pbc_distances, conditional_grad
 
 
 class GaussianSmearing(nn.Module):
@@ -511,10 +511,12 @@ class FAENet(BaseModel):
                 self.hidden_channels,
             )
 
+    # @conditional_grad(torch.enable_grad())
     def forces_forward(self, preds):
         if self.decoder:
             return self.decoder(preds["hidden_state"])
 
+    @conditional_grad(torch.enable_grad())
     def energy_forward(self, data):
         # Rewire the graph
         z = data.atomic_numbers.long()
