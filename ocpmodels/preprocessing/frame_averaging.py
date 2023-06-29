@@ -6,9 +6,7 @@ from ocpmodels.common.graph_transforms import RandomRotate
 import torch
 
 
-def compute_frames(
-    eigenvec, pos, cell, fa_method="stochastic", pos_3D=None, det_index=0
-):
+def compute_frames(eigenvec, pos, cell, fa_method="random", pos_3D=None, det_index=0):
     """Compute all frames for a given graph.
 
     Args:
@@ -16,7 +14,7 @@ def compute_frames(
         pos (tensor): centered position vector
         cell (tensor): cell direction (dxd)
         fa_method (str): the Frame Averaging (FA) inspired technique
-            chosen to select frames: stochastic-FA (stochastic), deterministic-FA (det),
+            chosen to select frames: stochastic-FA (random), deterministic-FA (det),
             Full-FA (all) or SE(3)-FA (se3).
         pos_3D: for 2D FA, pass atoms' 3rd position coordinate.
 
@@ -31,15 +29,15 @@ def compute_frames(
     all_rots = []
     assert fa_method in {
         "all",
-        "stochastic",
+        "random",
         "det",
         "se3-all",
-        "se3-stochastic",
+        "se3-random",
         "se3-det",
     }
     se3 = fa_method in {
         "se3-all",
-        "se3-stochastic",
+        "se3-random",
         "se3-det",
     }
     fa_cell = deepcopy(cell)
@@ -116,14 +114,14 @@ def check_constraints(eigenval, eigenvec, dim=3):
         print("Determinant is not 1")
 
 
-def frame_averaging_3D(pos, cell=None, fa_method="stochastic", check=False):
+def frame_averaging_3D(pos, cell=None, fa_method="random", check=False):
     """Computes new positions for the graph atoms using PCA
 
     Args:
         pos (tensor): positions of atoms in the graph
         cell (tensor): unit cell of the graph
         fa_method (str): FA method used
-            (stochastic, det, all, se3-all, se3-det, se3-stochastic)
+            (random, det, all, se3-all, se3-det, se3-random)
         check (bool): check if constraints are satisfied. Default: False.
 
     Returns:
@@ -156,14 +154,14 @@ def frame_averaging_3D(pos, cell=None, fa_method="stochastic", check=False):
     return fa_pos, fa_cell, fa_rot
 
 
-def frame_averaging_2D(pos, cell=None, fa_method="stochastic", check=False):
+def frame_averaging_2D(pos, cell=None, fa_method="random", check=False):
     """Computes new positions for the graph atoms,
     based on a frame averaging building on PCA.
 
     Args:
         pos (tensor): positions of atoms in the graph
         cell (tensor): unit cell of the graph
-        fa_method (str): FA method used (stochastic, det, all, se3)
+        fa_method (str): FA method used (random, det, all, se3)
         check (bool): check if constraints are satisfied. Default: False.
 
     Returns:

@@ -11,16 +11,16 @@ default:
     cutoff: 6.0
     use_pbc: True
     regress_forces: False
-    tag_hidden_channels: 64  # only for OC20
-    pg_hidden_channels: 64  # period & group embedding hidden channels
-    phys_embeds: True  # physics-aware embeddings for atoms
+    tag_hidden_channels: 64 # only for OC20
+    pg_hidden_channels: 64 # period & group embedding hidden channels
+    phys_embeds: True # physics-aware embeddings for atoms
     phys_hidden_channels: 0
-    energy_head: weighted-av-final-embeds  # Energy head: {False, weighted-av-initial-embeds, weighted-av-final-embeds}
-    skip_co: concat  # Skip connections {False, "add", "concat"}
-    second_layer_MLP: False  # in EmbeddingBlock
-    complex_mp: True  # 2-layer MLP in Interaction blocks
-    mp_type: base  # Message Passing type {'base', 'simple', 'updownscale', 'updownscale_base'}
-    graph_norm: True  # graph normalization layer
+    energy_head: weighted-av-final-embeds # Energy head: {False, weighted-av-initial-embeds, weighted-av-final-embeds}
+    skip_co: concat # Skip connections {False, "add", "concat"}
+    second_layer_MLP: False # in EmbeddingBlock
+    complex_mp: True # 2-layer MLP in Interaction blocks
+    mp_type: base # Message Passing type {'base', 'simple', 'updownscale', 'updownscale_base'}
+    graph_norm: True # graph normalization layer
     force_decoder_type: "mlp" # force head (`"simple"`, `"mlp"`, `"res"`, `"res_updown"`)
     force_decoder_model_config:
       simple:
@@ -54,7 +54,6 @@ default:
       - 27000
       - 37000
 
-
 # -------------------
 # --- OC20 IS2RE ---
 # -------------------
@@ -70,7 +69,7 @@ is2re:
   10k:
     optim:
       lr_initial: 0.005
-      lr_milestones: 
+      lr_milestones:
         - 1562
         - 2343
         - 3125
@@ -82,15 +81,14 @@ is2re:
       hidden_channels: 256
     optim:
       lr_initial: 0.005
-      lr_milestones: 
+      lr_milestones:
         - 1562
         - 2343
         - 3125
       warmup_steps: 468
       max_epochs: 20
-    
-    all: {}
 
+    all: {}
 
 # ------------------
 # ----- OC20 S2EF  -----
@@ -99,19 +97,19 @@ is2re:
 # 1 GPU, specific to 2M S2EF dataset split
 
 s2ef:
-  default: 
-    frame_averaging: 2D 
-    fa_method: random 
+  default:
+    frame_averaging: 2D
+    fa_method: random
     model:
       hidden_channels: 256
       num_interactions: 7
       num_gaussians: 136
       regress_forces: direct_with_gradient_target
       max_num_neighbors: 30
-      tag_hidden_channels: 32  
-      phys_embeds: False  
-      skip_co: False  
-      mp_type: updownscale_base  
+      tag_hidden_channels: 32
+      phys_embeds: False
+      skip_co: False
+      mp_type: updownscale_base
     optim:
       batch_size: 192
       eval_batch_size: 192
@@ -135,11 +133,11 @@ s2ef:
 # ----- QM9  -----
 # ------------------
 
-qm9: 
+qm9:
   default:
-    mode: train 
-    frame_averaging: 3D  # {"2D", "3D", "DA", ""}
-    fa_method: stochastic  # {"", all, stochastic, det, se3-all, se3-stochastic, se3-det}
+    mode: train
+    frame_averaging: 3D # {"2D", "3D", "DA", ""}
+    fa_method: random # {"", all, random, det, se3-all, se3-random, se3-det}
     dataset:
       train:
         lse_shift: true
@@ -194,8 +192,8 @@ qm9:
 
 qm7x:
   default:
-    frame_averaging: 3D  # {"2D", "3D", "DA", ""}
-    fa_method: stochastic  # {"", all, stochastic, det, se3-all, se3-stochastic, se3-det}
+    frame_averaging: 3D # {"2D", "3D", "DA", ""}
+    fa_method: random # {"", all, random, det, se3-all, se3-random, se3-det}
     model:
       act: swish
       max_num_neighbors: 40
@@ -206,16 +204,16 @@ qm7x:
       num_interactions: 5
       num_gaussians: 50
       cutoff: 5.0
-      tag_hidden_channels: 0  # only for OC20
-      pg_hidden_channels: 32  # period & group embedding hidden channels
-      phys_embeds: True  # physics-aware embeddings for atoms
+      tag_hidden_channels: 0 # only for OC20
+      pg_hidden_channels: 32 # period & group embedding hidden channels
+      phys_embeds: True # physics-aware embeddings for atoms
       phys_hidden_channels: 0
-      energy_head: False  # Energy head: {False, weighted-av-initial-embeds, weighted-av-final-embeds}
-      skip_co: concat  # Skip connections {False, "add", "concat"}
-      second_layer_MLP: True  # in EmbeddingBlock
-      complex_mp: True  # 2-layer MLP in Interaction blocks
-      mp_type: updownscale_base  # Message Passing type {'base', 'simple', 'updownscale', 'updownscale_base'}
-      graph_norm: False  # graph normalization layer
+      energy_head: False # Energy head: {False, weighted-av-initial-embeds, weighted-av-final-embeds}
+      skip_co: concat # Skip connections {False, "add", "concat"}
+      second_layer_MLP: True # in EmbeddingBlock
+      complex_mp: True # 2-layer MLP in Interaction blocks
+      mp_type: updownscale_base # Message Passing type {'base', 'simple', 'updownscale', 'updownscale_base'}
+      graph_norm: False # graph normalization layer
       force_decoder_type: "res_updown" # force head (`"simple"`, `"mlp"`, `"res"`, `"res_updown"`)
       force_decoder_model_config:
         simple:

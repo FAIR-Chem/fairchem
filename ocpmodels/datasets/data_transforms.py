@@ -37,12 +37,12 @@ class FrameAveraging(Transform):
         frame_averaging (str): Transform method used.
             (`""`, `"2D"`, `"3D"`, `"DA"`)
         fa_method (str): FA method used.
-            (`""`, "stochastic", "all", "det", "se3-stochastic", "se3-all", "se3-det")
+            (`""`, "random", "all", "det", "se3-random", "se3-all", "se3-det")
     """
 
     def __init__(self, frame_averaging=None, fa_method=None):
         self.fa_method = (
-            "stochastic" if (fa_method is None or fa_method == "") else fa_method
+            "random" if (fa_method is None or fa_method == "") else fa_method
         )
         self.frame_averaging = "" if frame_averaging is None else frame_averaging
         self.inactive = not self.frame_averaging
@@ -54,10 +54,10 @@ class FrameAveraging(Transform):
         }
         assert self.fa_method in {
             "",
-            "stochastic",
+            "random",
             "det",
             "all",
-            "se3-stochastic",
+            "se3-random",
             "se3-det",
             "se3-all",
         }
