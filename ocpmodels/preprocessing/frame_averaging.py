@@ -1,7 +1,7 @@
 import random
 from copy import deepcopy
 from itertools import product
-from faenet.utils import RandomRotate
+from ocpmodels.common.graph_transforms import RandomRotate
 
 import torch
 

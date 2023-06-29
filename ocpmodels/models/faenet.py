@@ -10,6 +10,7 @@ from torch_geometric.nn import MessagePassing, radius_graph
 from torch_geometric.nn.norm import GraphNorm
 from torch_scatter import scatter
 
+from ocpmodels.common.registry import registry
 from ocpmodels.models.base_model import BaseModel
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.models.force_decoder import ForceDecoder
@@ -405,6 +406,7 @@ class FAENet(BaseModel):
         regress_forces: Optional[str] = None,
         force_decoder_type: Optional[str] = "mlp",
         force_decoder_model_config: Optional[dict] = {"hidden_channels": 128},
+        **kwargs
     ):
         super(FAENet, self).__init__()
 
