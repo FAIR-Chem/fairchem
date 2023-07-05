@@ -51,10 +51,9 @@ def add_weight_decay(model, weight_decay, skip_list=()):
 @registry.register_trainer("equiformerv2_forces")
 class EquiformerV2ForcesTrainer(ForcesTrainer):
     # This trainer does a few things differently from the parent forces trainer:
-    # - When loading the model, it has a different way of setting up the params
-    #   with no weight decay.
-    # - Similar changes in the optimizer setup.
-    # - When using the scheduler, it first converts the epochs into number of
+    # - Different way of setting up model parameters with no weight decay.
+    # - Support for cosine LR scheduler.
+    # - When using the LR scheduler, it first converts the epochs into number of
     #   steps and then passes it to the scheduler. That way in the config
     #   everything can be specified in terms of epochs.
     def load_model(self):
