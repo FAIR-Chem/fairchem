@@ -30,7 +30,7 @@ hide_eval_progressbar: False
 
 
 model:
-  name: equiformer_v2s
+  name: equiformer_v2
 
   use_pbc:                  True
   regress_forces:           True
