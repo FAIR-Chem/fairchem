@@ -9,6 +9,7 @@ import os
 
 import numpy as np
 import pytest
+import torch
 from ase.io import read
 
 from ocpmodels.common.registry import registry
@@ -37,6 +38,7 @@ def load_data(request):
 
 @pytest.fixture(scope="class")
 def load_model(request):
+    torch.manual_seed(4)
     setup_imports()
 
     model = registry.get_model_class("forcenet")(
