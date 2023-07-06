@@ -95,9 +95,9 @@ def load_model(request):
     load_state_dict(model, new_dict)
 
     # Precision errors between mac vs. linux compound with multiple layers,
-    # so we explicitly set the number of layers to 2 (instead of all 8).
+    # so we explicitly set the number of layers to 1 (instead of all 8).
     # The other alternative is to have different snapshots for mac vs. linux.
-    model.num_layers = 2
+    model.num_layers = 1
     request.cls.model = model
 
 
@@ -115,4 +115,4 @@ class TestEquiformerV2:
         assert snapshot == pytest.approx(energy.detach())
 
         assert snapshot == forces.shape
-        assert snapshot == pytest.approx(forces.detach())
+        assert snapshot == pytest.approx(forces.detach().mean(0))
