@@ -102,8 +102,8 @@ jobs:
 
   test_macos:
     macos:
-      xcode: "13.4.1"
-    resource_class: medium
+      xcode: "14.2.0"
+    resource_class: macos.x86.medium.gen2
     steps:
       - install_deps_macos
       - run:
