@@ -17,8 +17,8 @@ development.
 We provide model weights for EquiformerV2 trained on S2EF-2M dataset for 30 epochs,
 EquiformerV2 (31M) trained on S2EF-All+MD, and EquiformerV2 (153M) trained on S2EF-All+MD.
 
-|Model	|Training Split	|Download	| S2EF val force MAE (meV / Å) | S2EF val energy MAE (meV) | Test results
-|---	|---	|---	|---	|---	|--- |
+| Model | Training Split | Download	| S2EF val force MAE (meV / Å) | S2EF val energy MAE (meV) | Test results |
+| ----- | -------------- | --------	| ---------------------------- | ------------------------- | ------------ |
 |EquiformerV2 (83M)	|2M	|[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_83M_2M.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/2M/equiformer_v2/equiformer_v2_N@12_L@6_M@2.yml)	|19.4 | 278 | - |
 |EquiformerV2 (31M)|All+MD |[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_31M_ec4_allmd.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/equiformer_v2/equiformer_v2_N@8_L@4_M@2_31M.yml) |16.3 | 232 | [S2EF](https://evalai.s3.amazonaws.com/media/submission_files/submission_289655/7208829e-f32b-4b61-aab3-a1c26b3e67da.json) \| [IS2RE](https://evalai.s3.amazonaws.com/media/submission_files/submission_289660/4b4da09a-9d67-4e83-9a3a-8e9c0e4b763f.json) \| [IS2RS](https://evalai.s3.amazonaws.com/media/submission_files/submission_289662/d38ac10a-e692-4354-a8c1-5af169f35640.json) |
 |EquiformerV2 (153M) |All+MD | [checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_153M_ec4_allmd.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/equiformer_v2/equiformer_v2_N@20_L@6_M@3_153M.yml) |15.0 | 227 | [S2EF](https://evalai.s3.amazonaws.com/media/submission_files/submission_277316/064d8657-4901-4c8b-89d2-5b13a171188d.json) \| [IS2RE](https://evalai.s3.amazonaws.com/media/submission_files/submission_277553/61652a78-539b-457d-927d-43a1f756d3a5.json) \| [IS2RS](https://evalai.s3.amazonaws.com/media/submission_files/submission_277562/c573bba6-156e-48c6-8a4e-e1293e1ce99b.json) |

@@ -94,6 +94,10 @@ def load_model(request):
     }
     load_state_dict(model, new_dict)
 
+    # Precision errors between mac vs. linux compound with multiple layers,
+    # so we explicitly set the number of layers to 2 (instead of all 8).
+    # The other alternative is to have different snapshots for mac vs. linux.
+    model.num_layers = 2
     request.cls.model = model
 
 
