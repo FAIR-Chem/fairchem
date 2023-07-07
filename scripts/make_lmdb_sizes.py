@@ -24,7 +24,7 @@ def get_data(index):
     return index, natoms, neighbors
 
 
-def main(args):
+def main(args) -> None:
     path = args.data_path
     global dataset
     if os.path.isdir(path):
@@ -73,5 +73,5 @@ if __name__ == "__main__":
         type=int,
         help="Num of workers to parallelize across",
     )
-    args = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
     main(args)

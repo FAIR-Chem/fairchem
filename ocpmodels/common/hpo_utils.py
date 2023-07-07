@@ -15,9 +15,9 @@ def tune_reporter(
     train_metrics,
     val_metrics,
     test_metrics=None,
-    metric_to_opt="val_loss",
-    min_max="min",
-):
+    metric_to_opt: str = "val_loss",
+    min_max: str = "min",
+) -> None:
     """
     Wrapper function for tune.report()
 

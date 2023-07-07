@@ -19,8 +19,7 @@ from .activations import Act
 
 
 class Sine(nn.Module):
-    def __init__(self, w0: float = 30.0):
-
+    def __init__(self, w0: float = 30.0) -> None:
         super(Sine, self).__init__()
         self.w0 = w0
 
@@ -37,8 +36,7 @@ class SIREN(nn.Module):
         w0: float = 30.0,
         initializer: str = "siren",
         c: float = 6,
-    ):
-
+    ) -> None:
         super(SIREN, self).__init__()
         self.layers = [nn.Linear(in_features, layers[0]), Sine(w0=w0)]
 
@@ -65,8 +63,9 @@ class SIREN(nn.Module):
 
 
 class SINESmearing(nn.Module):
-    def __init__(self, in_features, num_freqs=40, use_cosine=False):
-
+    def __init__(
+        self, in_features, num_freqs: int = 40, use_cosine: bool = False
+    ) -> None:
         super(SINESmearing, self).__init__()
 
         self.num_freqs = num_freqs
@@ -80,7 +79,7 @@ class SINESmearing(nn.Module):
             requires_grad=False,
         )
 
-    def forward(self, x):
+    def forward(self, x) -> torch.Tensor:
         x = x.repeat(1, self.num_freqs)
         x = x * self.freq_filter
 
@@ -91,7 +90,9 @@ class SINESmearing(nn.Module):
 
 
 class GaussianSmearing(nn.Module):
-    def __init__(self, in_features, start=0, end=1, num_freqs=50):
+    def __init__(
+        self, in_features, start: int = 0, end: int = 1, num_freqs: int = 50
+    ) -> None:
         super(GaussianSmearing, self).__init__()
         self.num_freqs = num_freqs
         offset = torch.linspace(start, end, num_freqs)
@@ -101,15 +102,16 @@ class GaussianSmearing(nn.Module):
             requires_grad=False,
         )
 
-    def forward(self, x):
+    def forward(self, x) -> torch.Tensor:
         x = x.repeat(1, self.num_freqs)
         x = x - self.offset
         return torch.exp(self.coeff * torch.pow(x, 2))
 
 
 class FourierSmearing(nn.Module):
-    def __init__(self, in_features, num_freqs=40, use_cosine=False):
-
+    def __init__(
+        self, in_features, num_freqs: int = 40, use_cosine: bool = False
+    ) -> None:
         super(FourierSmearing, self).__init__()
 
         self.num_freqs = num_freqs
@@ -122,7 +124,7 @@ class FourierSmearing(nn.Module):
             requires_grad=False,
         )
 
-    def forward(self, x):
+    def forward(self, x) -> torch.Tensor:
         x = x.repeat(1, self.num_freqs)
         x = x * self.freq_filter
 
@@ -140,7 +142,7 @@ class Basis(nn.Module):
         basis_type="powersine",
         act="ssp",
         sph=None,
-    ):
+    ) -> None:
         super(Basis, self).__init__()
 
         self.num_freqs = num_freqs
@@ -233,7 +235,7 @@ class Basis(nn.Module):
 
 
 class SphericalSmearing(nn.Module):
-    def __init__(self, max_n=10, option="all"):
+    def __init__(self, max_n: int = 10, option: str = "all") -> None:
         super(SphericalSmearing, self).__init__()
 
         self.max_n = max_n
@@ -260,7 +262,7 @@ class SphericalSmearing(nn.Module):
 
         self.out_dim = int(np.sum(self.m == 0) + 2 * np.sum(self.m != 0))
 
-    def forward(self, xyz):
+    def forward(self, xyz) -> torch.Tensor:
         # assuming input is already normalized
         assert xyz.size(1) == 3
 

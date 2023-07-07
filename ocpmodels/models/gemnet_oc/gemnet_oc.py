@@ -6,7 +6,7 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
-from typing import Optional
+from typing import Dict, Optional, Union
 
 import numpy as np
 import torch
@@ -224,11 +224,14 @@ class GemNetOC(BaseModel):
         max_neighbors_aeaint: Optional[int] = None,
         max_neighbors_aint: Optional[int] = None,
         enforce_max_neighbors_strictly: bool = True,
-        rbf: dict = {"name": "gaussian"},
+        rbf: Dict[str, str] = {"name": "gaussian"},
         rbf_spherical: Optional[dict] = None,
-        envelope: dict = {"name": "polynomial", "exponent": 5},
-        cbf: dict = {"name": "spherical_harmonics"},
-        sbf: dict = {"name": "spherical_harmonics"},
+        envelope: Dict[str, Union[str, int]] = {
+            "name": "polynomial",
+            "exponent": 5,
+        },
+        cbf: Dict[str, str] = {"name": "spherical_harmonics"},
+        sbf: Dict[str, str] = {"name": "spherical_harmonics"},
         extensive: bool = True,
         forces_coupled: bool = False,
         output_init: str = "HeOrthogonal",
@@ -243,7 +246,7 @@ class GemNetOC(BaseModel):
         otf_graph: bool = False,
         scale_file: Optional[str] = None,
         **kwargs,  # backwards compatibility with deprecated arguments
-    ):
+    ) -> None:
         super().__init__()
         if len(kwargs) > 0:
             logging.warning(f"Unrecognized arguments: {list(kwargs.keys())}")
@@ -1360,5 +1363,5 @@ class GemNetOC(BaseModel):
             return E_t
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())

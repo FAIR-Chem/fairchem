@@ -58,13 +58,13 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
         emb_size_rbf,
         emb_size_cbf,
         emb_size_bil_trip,
-        num_before_skip,
-        num_after_skip,
-        num_concat,
-        num_atom,
+        num_before_skip: int,
+        num_after_skip: int,
+        num_concat: int,
+        num_atom: int,
         activation=None,
-        name="Interaction",
-    ):
+        name: str = "Interaction",
+    ) -> None:
         super().__init__()
         self.name = name
 
@@ -247,9 +247,9 @@ class TripletInteraction(torch.nn.Module):
         emb_size_rbf,
         emb_size_cbf,
         activation=None,
-        name="TripletInteraction",
+        name: str = "TripletInteraction",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__()
         self.name = name
 
