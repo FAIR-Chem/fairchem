@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from typing import Dict, Union
 
+from ocpmodels.common.utils import change_mat
 
 """
 An evaluation module for use with the OCP dataset and suite of tasks. It should
@@ -50,10 +51,26 @@ class Evaluator:
         "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
     }
 
-    task_attributes = {
-        "s2ef": ["energy", "forces", "natoms"],
-        "is2rs": ["positions", "cell", "pbc", "natoms"],
-        "is2re": ["energy"],
+    metric_attributes = {
+        "forcesx_mae": ["forces"],
+        "forcesy_mae": ["forces"],
+        "forcesz_mae": ["forces"],
+        "forces_mae": ["forces"],
+        "forces_cos": ["forces"],
+        "forces_magnitude": ["forces"],
+        "energy_mae": ["energy"],
+        "energy_force_within_threshold": ["energy", "forces", "natoms"],
+        "energy_mse": ["energy"],
+        "energy_within_threshold": ["energy"],
+        "average_distance_within_threshold": [
+            "positions",
+            "cell",
+            "pbc",
+            "natoms",
+        ],
+        "positions_mae": ["positions"],
+        "positions_mse": ["positions"],
+        "stress_mae": ["isotropic_stress", "anisotropic_stress"],
     }
 
     task_primary_metric = {
@@ -62,20 +79,21 @@ class Evaluator:
         "is2re": "energy_mae",
     }
 
-    def __init__(self, task: str) -> None:
-        assert task in ["s2ef", "is2rs", "is2re"]
+    def __init__(self, task: str = None, eval_metrics: str = None) -> None:
         self.task = task
-        self.metric_fn = self.task_metrics[task]
+        self.metric_fns = self.task_metrics.get(task, eval_metrics)
 
     def eval(self, prediction, target, prev_metrics={}):
-        for attr in self.task_attributes[self.task]:
-            assert attr in prediction
-            assert attr in target
-            assert prediction[attr].shape == target[attr].shape
+
+        for metric in self.metric_fns:
+            for attr in self.metric_attributes.get(metric, {}):
+                assert attr in prediction
+                assert attr in target
+                assert prediction[attr].shape == target[attr].shape
 
         metrics = prev_metrics
 
-        for fn in self.task_metrics[self.task]:
+        for fn in self.metric_fns:
             res = eval(fn)(prediction, target)
             metrics = self.update(fn, res, metrics)
 
@@ -110,43 +128,43 @@ class Evaluator:
 
 
 def energy_mae(prediction, target):
-    return absolute_error(prediction["energy"], target["energy"])
+    return mae(prediction["energy"], target["energy"])
 
 
 def energy_mse(prediction, target):
-    return squared_error(prediction["energy"], target["energy"])
+    return mse(prediction["energy"], target["energy"])
 
 
 def forcesx_mae(prediction, target):
-    return absolute_error(prediction["forces"][:, 0], target["forces"][:, 0])
+    return mae(prediction["forces"][:, 0], target["forces"][:, 0])
 
 
 def forcesx_mse(prediction, target):
-    return squared_error(prediction["forces"][:, 0], target["forces"][:, 0])
+    return mse(prediction["forces"][:, 0], target["forces"][:, 0])
 
 
 def forcesy_mae(prediction, target):
-    return absolute_error(prediction["forces"][:, 1], target["forces"][:, 1])
+    return mae(prediction["forces"][:, 1], target["forces"][:, 1])
 
 
 def forcesy_mse(prediction, target):
-    return squared_error(prediction["forces"][:, 1], target["forces"][:, 1])
+    return mse(prediction["forces"][:, 1], target["forces"][:, 1])
 
 
 def forcesz_mae(prediction, target):
-    return absolute_error(prediction["forces"][:, 2], target["forces"][:, 2])
+    return mae(prediction["forces"][:, 2], target["forces"][:, 2])
 
 
 def forcesz_mse(prediction, target):
-    return squared_error(prediction["forces"][:, 2], target["forces"][:, 2])
+    return mse(prediction["forces"][:, 2], target["forces"][:, 2])
 
 
 def forces_mae(prediction, target):
-    return absolute_error(prediction["forces"], target["forces"])
+    return mae(prediction["forces"], target["forces"])
 
 
 def forces_mse(prediction, target):
-    return squared_error(prediction["forces"], target["forces"])
+    return mse(prediction["forces"], target["forces"])
 
 
 def forces_cos(prediction, target):
@@ -158,11 +176,11 @@ def forces_magnitude(prediction, target):
 
 
 def positions_mae(prediction, target):
-    return absolute_error(prediction["positions"], target["positions"])
+    return mae(prediction["positions"], target["positions"])
 
 
 def positions_mse(prediction, target):
-    return squared_error(prediction["positions"], target["positions"])
+    return mse(prediction["positions"], target["positions"])
 
 
 def energy_force_within_threshold(
@@ -252,6 +270,31 @@ def average_distance_within_threshold(
     return {"metric": success / total, "total": success, "numel": total}
 
 
+def stress_mae(prediction, target):
+    device = prediction["isotropic_stress"].device
+    cg_decomp_mat = change_mat.to(device)
+
+    zero_vectors = torch.zeros(
+        (prediction["isotropic_stress"].shape[0], 3),
+        device=device,
+    )
+    prediction_irreps = torch.concat(
+        [
+            prediction["isotropic_stress"].reshape(-1, 1),
+            zero_vectors,
+            prediction["anisotropic_stress"].reshape(-1, 5),
+        ],
+        dim=1,
+    )
+    prediction_stress = torch.einsum(
+        "ba, cb->ca", cg_decomp_mat, prediction_irreps
+    ).reshape(-1)
+
+    target_stress = target["stress"]
+
+    return mae(prediction_stress, target_stress)
+
+
 def min_diff(pred_pos, dft_pos, cell, pbc):
     pos_diff = pred_pos - dft_pos
     fractional = np.linalg.solve(cell.T, pos_diff.T).T
@@ -276,8 +319,8 @@ def cosine_similarity(prediction: torch.Tensor, target: torch.Tensor):
     }
 
 
-def absolute_error(
-    prediction: torch.Tensor, target: torch.Tensor
+def mae(
+    prediction: dict, target: dict
 ) -> Dict[str, Union[float, int]]:
     error = torch.abs(target - prediction)
     return {
@@ -287,8 +330,8 @@ def absolute_error(
     }
 
 
-def squared_error(
-    prediction: torch.Tensor, target: torch.Tensor
+def mse(
+    prediction: dict, target: dict
 ) -> Dict[str, Union[float, int]]:
     error = (target - prediction) ** 2
     return {

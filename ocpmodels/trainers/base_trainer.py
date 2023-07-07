@@ -126,7 +126,7 @@ class BaseTrainer(ABC):
         logger_name = logger if isinstance(logger, str) else logger["name"]
         self.config = {
             "task": task,
-            "trainer": "forces" if name == "s2ef" else "energy",
+            "trainer": "ocp",
             "model": assert_is_instance(model.pop("name"), str),
             "model_attributes": model,
             "optim": optimizer,
@@ -180,11 +180,6 @@ class BaseTrainer(ABC):
         else:
             self.config["dataset"] = dataset
 
-        self.normalizer = normalizer
-        # This supports the legacy way of providing norm parameters in dataset
-        if self.config.get("dataset", None) is not None and normalizer is None:
-            self.normalizer = self.config["dataset"]
-
         if not is_debug and distutils.is_master() and not is_hpo:
             os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
@@ -206,7 +201,9 @@ class BaseTrainer(ABC):
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
-        self.evaluator = Evaluator(task=name)
+        self.evaluator = Evaluator(
+            task=name, eval_metrics=self.config["task"].get("metrics", None)
+        )
 
     def load(self) -> None:
         self.load_seed_from_config()
@@ -283,6 +280,7 @@ class BaseTrainer(ABC):
         return loader
 
     def load_datasets(self) -> None:
+        logging.info(f"Loading dataset: {self.config['task']['dataset']}")
         self.parallel_collater = ParallelCollater(
             0 if self.cpu else 1,
             self.config["model_attributes"].get("otf_graph", False),
@@ -292,6 +290,7 @@ class BaseTrainer(ABC):
         self.val_loader = None
         self.test_loader = None
 
+        # load train, val, test datasets
         if self.config.get("dataset", None):
             self.train_dataset = registry.get_dataset_class(
                 self.config["task"]["dataset"]
@@ -338,23 +337,22 @@ class BaseTrainer(ABC):
                     self.test_sampler,
                 )
 
-        # Normalizer for the dataset.
-        # Compute mean, std of training set labels.
-        self.normalizers = {}
-        if self.normalizer.get("normalize_labels", False):
-            if "target_mean" in self.normalizer:
-                self.normalizers["target"] = Normalizer(
-                    mean=self.normalizer["target_mean"],
-                    std=self.normalizer["target_std"],
-                    device=self.device,
-                )
-            else:
-                self.normalizers["target"] = Normalizer(
-                    tensor=self.train_loader.dataset.data.y[
-                        self.train_loader.dataset.__indices__
-                    ],
-                    device=self.device,
-                )
+        # load relaxation dataset
+        if "relax_dataset" in self.config["task"]:
+            self.relax_dataset = registry.get_dataset_class("lmdb")(
+                self.config["task"]["relax_dataset"]
+            )
+            self.relax_sampler = self.get_sampler(
+                self.relax_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.relax_loader = self.get_dataloader(
+                self.relax_dataset,
+                self.relax_sampler,
+            )
 
     @abstractmethod
     def load_task(self):
@@ -467,24 +465,26 @@ class BaseTrainer(ABC):
                 self.scaler.load_state_dict(checkpoint["amp"])
 
     def load_loss(self) -> None:
-        self.loss_fn: Dict[str, str] = {
-            "energy": self.config["optim"].get("loss_energy", "mae"),
-            "force": self.config["optim"].get("loss_force", "mae"),
-        }
-        for loss, loss_name in self.loss_fn.items():
+        self.loss_fn = {}
+        for target_name in self.train_targets:
+            self.loss_fn[target_name] = self.train_targets[target_name].get(
+                "loss", "mae"
+            )
+
+        for target, loss_name in self.loss_fn.items():
             if loss_name in ["l1", "mae"]:
-                self.loss_fn[loss] = nn.L1Loss()
+                self.loss_fn[target] = nn.L1Loss()
             elif loss_name == "mse":
-                self.loss_fn[loss] = nn.MSELoss()
+                self.loss_fn[target] = nn.MSELoss()
             elif loss_name == "l2mae":
-                self.loss_fn[loss] = L2MAELoss()
+                self.loss_fn[target] = L2MAELoss()
             elif loss_name == "atomwisel2":
-                self.loss_fn[loss] = AtomwiseL2Loss()
+                self.loss_fn[target] = AtomwiseL2Loss()
             else:
                 raise NotImplementedError(
                     f"Unknown loss function name: {loss_name}"
                 )
-            self.loss_fn[loss] = DDPLoss(self.loss_fn[loss])
+            self.loss_fn[target] = DDPLoss(self.loss_fn[target], loss_name)
 
     def load_optimizer(self) -> None:
         optimizer = self.config["optim"].get("optimizer", "AdamW")
@@ -651,7 +651,14 @@ class BaseTrainer(ABC):
             self.ema.store()
             self.ema.copy_to()
 
-        evaluator, metrics = Evaluator(task=self.name), {}
+        evaluator, metrics = (
+            Evaluator(
+                task=self.name,
+                eval_metrics=self.config["task"].get("metrics", None),
+            ),
+            {},
+        )
+
         rank = distutils.get_rank()
 
         loader = self.val_loader if split == "val" else self.test_loader

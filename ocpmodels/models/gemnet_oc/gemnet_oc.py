@@ -1355,10 +1355,22 @@ class GemNetOC(BaseModel):
 
             E_t = E_t.squeeze(1)  # (num_molecules)
             F_t = F_t.squeeze(1)  # (num_atoms, 3)
-            return E_t, F_t
+
+            outputs = {
+                "energy": E_t,
+                "forces": F_t,
+                "isotropic_stress": torch.rand(
+                    (E_t.numel(), 1), device=E_t.device
+                ),
+                "anisotropic_stress": torch.rand(
+                    (E_t.numel(), 5), device=E_t.device
+                ),
+            }
         else:
             E_t = E_t.squeeze(1)  # (num_molecules)
-            return E_t
+            outputs = {"y": E_t}
+
+        return outputs
 
     @property
     def num_params(self) -> int:

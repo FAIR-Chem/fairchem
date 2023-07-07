@@ -151,6 +151,11 @@ class LmdbDataset(Dataset[T_co]):
         if self.transform is not None:
             data_object = self.transform(data_object)
 
+        if "stress" in data_object:
+            data_object.stress = data_object.stress.reshape(1, -1)
+        data_object.energy = data_object.y
+        data_object.forces = data_object.force
+
         return data_object
 
     def connect_db(self, lmdb_path: Optional[Path] = None):

@@ -46,9 +46,10 @@ class AtomwiseL2Loss(nn.Module):
 
 
 class DDPLoss(nn.Module):
-    def __init__(self, loss_fn, reduction: str = "mean") -> None:
+    def __init__(self, loss_fn, loss_name: str = "mae", reduction: str = "mean") -> None:
         super().__init__()
         self.loss_fn = loss_fn
+        self.loss_name = loss_name
         self.loss_fn.reduction = "sum"
         self.reduction = reduction
         assert reduction in ["mean", "sum"]
@@ -66,10 +67,11 @@ class DDPLoss(nn.Module):
             logging.warning("Found nans while computing loss")
             input = torch.nan_to_num(input, nan=0.0)
 
-        if natoms is None:
-            loss = self.loss_fn(input, target)
-        else:  # atom-wise loss
+        if self.loss_name.startswith("atomwise"):
             loss = self.loss_fn(input, target, natoms)
+        else:
+            loss = self.loss_fn(input, target)
+
         if self.reduction == "mean":
             num_samples = (
                 batch_size if batch_size is not None else input.shape[0]
