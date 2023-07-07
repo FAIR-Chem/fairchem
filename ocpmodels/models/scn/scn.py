@@ -521,7 +521,7 @@ class SphericalChannelNetwork(BaseModel):
             - index_neighbor_offset_expand
         )
 
-        num_atoms = torch.max(edge_index) + 1
+        num_atoms = int(torch.max(edge_index)) + 1
         distance_sort = torch.full(
             [num_atoms * max_num_neighbors], np.inf, device=device
         )

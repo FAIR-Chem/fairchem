@@ -12,6 +12,7 @@ import numpy as np
 from tqdm import tqdm
 
 from ocpmodels.datasets import SinglePointLmdbDataset, TrajectoryLmdbDataset
+from ocpmodels.common.typing import assert_is_instance
 
 
 def get_data(index):
@@ -25,7 +26,7 @@ def get_data(index):
 
 
 def main(args) -> None:
-    path = args.data_path
+    path = assert_is_instance(args.data_path, str)
     global dataset
     if os.path.isdir(path):
         dataset = TrajectoryLmdbDataset({"src": path})
@@ -34,10 +35,12 @@ def main(args) -> None:
         dataset = SinglePointLmdbDataset({"src": path})
         outpath = os.path.join(os.path.dirname(path), "metadata.npz")
 
-    indices = range(len(dataset))
+    output_indices = range(len(dataset))
 
-    pool = mp.Pool(args.num_workers)
-    outputs = list(tqdm(pool.imap(get_data, indices), total=len(indices)))
+    pool = mp.Pool(assert_is_instance(args.num_workers, int))
+    outputs = list(
+        tqdm(pool.imap(get_data, output_indices), total=len(indices))
+    )
 
     indices = []
     natoms = []

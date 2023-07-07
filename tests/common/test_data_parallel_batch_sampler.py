@@ -1,6 +1,7 @@
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
+from typing import TypeVar
 
 import numpy as np
 import pytest
@@ -12,6 +13,8 @@ DATA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 SIZE_ATOMS = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 SIZE_NEIGHBORS = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
 
+T_co = TypeVar("T_co", covariant=True)
+
 
 @contextmanager
 def _temp_file(name: str):
@@ -21,7 +24,7 @@ def _temp_file(name: str):
 
 @pytest.fixture
 def valid_path_dataset():
-    class _Dataset(Dataset):
+    class _Dataset(Dataset[T_co]):
         def __init__(self, data, fpath: Path) -> None:
             self.data = data
             self.metadata_path = fpath

@@ -11,6 +11,7 @@ from typing import Dict, Union
 import numpy as np
 import torch
 from scipy.special import binom
+from ocpmodels.common.typing import assert_is_instance
 from torch_geometric.nn.models.schnet import GaussianSmearing
 
 
@@ -32,7 +33,7 @@ class PolynomialEnvelope(torch.nn.Module):
         self.b = self.p * (self.p + 2)
         self.c = -self.p * (self.p + 1) / 2
 
-    def forward(self, d_scaled) -> torch.Tensor:
+    def forward(self, d_scaled: torch.Tensor) -> torch.Tensor:
         env_val = (
             1
             + self.a * d_scaled**self.p
@@ -174,7 +175,7 @@ class RadialBasis(torch.nn.Module):
         super().__init__()
         self.inv_cutoff = 1 / cutoff
 
-        env_name = envelope["name"].lower()
+        env_name = assert_is_instance(envelope["name"], str).lower()
         env_hparams = envelope.copy()
         del env_hparams["name"]
 

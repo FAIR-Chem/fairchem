@@ -5,8 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import os
 from math import pi as PI
+from typing import Optional
 
 import numpy as np
 import torch
@@ -323,7 +323,7 @@ class ForceNet(BaseModel):
         elif "sphcosine" in self.basis_type:
             self.pbc_sph_option = "cosine"
 
-        self.pbc_sph = None
+        self.pbc_sph: Optional[SphericalSmearing] = None
         if self.pbc_apply_sph_harm:
             self.pbc_sph = SphericalSmearing(
                 max_n=self.max_n, option=self.pbc_sph_option
@@ -501,7 +501,7 @@ class ForceNet(BaseModel):
             edge_attr = self.basis_fun(raw_edge_attr)
 
         # pass edge_attributes through interaction blocks
-        for i, interaction in enumerate(self.interactions):
+        for _, interaction in enumerate(self.interactions):
             h = h + interaction(h, edge_index, edge_attr, edge_weight)
 
         h = self.lin(h)

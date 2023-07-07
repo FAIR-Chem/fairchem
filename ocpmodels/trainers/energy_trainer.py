@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
+from typing import Optional
 
 import torch
 import torch_geometric
@@ -62,14 +63,14 @@ class EnergyTrainer(BaseTrainer):
         optimizer,
         identifier,
         normalizer=None,
-        timestamp_id=None,
+        timestamp_id: Optional[str] = None,
         run_dir=None,
         is_debug: bool = False,
         is_hpo: bool = False,
         print_every: int = 100,
         seed=None,
         logger: str = "tensorboard",
-        local_rank=0,
+        local_rank: int = 0,
         amp: bool = False,
         cpu: bool = False,
         slurm={},
@@ -134,7 +135,7 @@ class EnergyTrainer(BaseTrainer):
             self.normalizers["target"].to(self.device)
         predictions = {"id": [], "energy": []}
 
-        for i, batch in tqdm(
+        for _, batch in tqdm(
             enumerate(loader),
             total=len(loader),
             position=rank,

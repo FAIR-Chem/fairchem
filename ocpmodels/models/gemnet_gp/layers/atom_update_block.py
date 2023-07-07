@@ -66,7 +66,7 @@ class AtomUpdateBlock(torch.nn.Module):
         emb_size_edge: int,
         emb_size_rbf: int,
         nHidden: int,
-        activation=None,
+        activation: Optional[str] = None,
         name: str = "atom_update",
     ) -> None:
         super().__init__()
@@ -81,7 +81,13 @@ class AtomUpdateBlock(torch.nn.Module):
             emb_size_edge, emb_size_atom, nHidden, activation
         )
 
-    def get_mlp(self, units_in, units, nHidden, activation):
+    def get_mlp(
+        self,
+        units_in: int,
+        units: int,
+        nHidden: int,
+        activation: Optional[str],
+    ):
         dense1 = Dense(units_in, units, activation=activation, bias=False)
         mlp = [dense1]
         res = [
@@ -91,7 +97,7 @@ class AtomUpdateBlock(torch.nn.Module):
         mlp = mlp + res
         return torch.nn.ModuleList(mlp)
 
-    def forward(self, nAtoms, m, rbf, id_j):
+    def forward(self, nAtoms: int, m: int, rbf, id_j):
         """
         Returns
         -------
@@ -146,7 +152,7 @@ class OutputBlock(AtomUpdateBlock):
         emb_size_rbf: int,
         nHidden: int,
         num_targets: int,
-        activation=None,
+        activation: Optional[str] = None,
         direct_forces: bool = True,
         output_init: str = "HeOrthogonal",
         name: str = "output",
@@ -228,7 +234,7 @@ class OutputBlock(AtomUpdateBlock):
         # --------------------------------------- Force Prediction -------------------------------------- #
         if self.direct_forces:
             x_F = m
-            for i, layer in enumerate(self.seq_forces):
+            for _, layer in enumerate(self.seq_forces):
                 x_F = layer(x_F)  # (nEdges, emb_size_edge)
 
             rbf_emb_F = self.dense_rbf_F(rbf)  # (nEdges, emb_size_edge)

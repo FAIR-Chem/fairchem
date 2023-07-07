@@ -24,7 +24,7 @@ class PolynomialEnvelope(torch.nn.Module):
             Exponent of the envelope function.
     """
 
-    def __init__(self, exponent) -> None:
+    def __init__(self, exponent: int) -> None:
         super().__init__()
         assert exponent > 0
         self.p = exponent
@@ -32,7 +32,7 @@ class PolynomialEnvelope(torch.nn.Module):
         self.b = self.p * (self.p + 2)
         self.c = -self.p * (self.p + 1) / 2
 
-    def forward(self, d_scaled) -> torch.Tensor:
+    def forward(self, d_scaled: torch.Tensor) -> torch.Tensor:
         env_val = (
             1
             + self.a * d_scaled**self.p
@@ -53,7 +53,7 @@ class ExponentialEnvelope(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, d_scaled) -> torch.Tensor:
+    def forward(self, d_scaled: torch.Tensor) -> torch.Tensor:
         env_val = torch.exp(
             -(d_scaled**2) / ((1 - d_scaled) * (1 + d_scaled))
         )
@@ -89,7 +89,7 @@ class SphericalBesselBasis(torch.nn.Module):
             requires_grad=True,
         )
 
-    def forward(self, d_scaled):
+    def forward(self, d_scaled: torch.Tensor) -> torch.Tensor:
         return (
             self.norm_const
             / d_scaled[:, None]
@@ -138,7 +138,7 @@ class BernsteinBasis(torch.nn.Module):
         exp2 = num_radial - 1 - exp1
         self.register_buffer("exp2", exp2[None, :], persistent=False)
 
-    def forward(self, d_scaled) -> torch.Tensor:
+    def forward(self, d_scaled: torch.Tensor) -> torch.Tensor:
         gamma = self.softplus(self.pregamma)  # constrain to positive
         exp_d = torch.exp(-gamma * d_scaled)[:, None]
         return (
@@ -178,6 +178,7 @@ class RadialBasis(torch.nn.Module):
         env_hparams = envelope.copy()
         del env_hparams["name"]
 
+        self.envelope: Union[PolynomialEnvelope, ExponentialEnvelope]
         if env_name == "polynomial":
             self.envelope = PolynomialEnvelope(**env_hparams)
         elif env_name == "exponential":

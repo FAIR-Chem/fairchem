@@ -7,9 +7,10 @@ from __future__ import division, unicode_literals
 
 import copy
 import weakref
-from typing import Iterable, Optional
+from typing import List, Iterable, Optional
 
 import torch
+from ocpmodels.common.typing import none_throws
 
 
 # Partially based on:
@@ -40,7 +41,7 @@ class ExponentialMovingAverage:
         self.shadow_params = [
             p.clone().detach() for p in parameters if p.requires_grad
         ]
-        self.collected_params = []
+        self.collected_params: List[torch.nn.Parameter] = []
         # By maintaining only a weakref to each parameter,
         # we maintain the old GC behaviour of ExponentialMovingAverage:
         # if the model goes out of scope but the ExponentialMovingAverage
@@ -53,18 +54,16 @@ class ExponentialMovingAverage:
     def _get_parameters(
         self, parameters: Optional[Iterable[torch.nn.Parameter]]
     ) -> Iterable[torch.nn.Parameter]:
+        none_msg = (
+            "(One of) the parameters with which this "
+            "ExponentialMovingAverage "
+            "was initialized no longer exists (was garbage collected);"
+            " please either provide `parameters` explicitly or keep "
+            "the model to which they belong from being garbage "
+            "collected."
+        )
         if parameters is None:
-            parameters = [p() for p in self._params_refs]
-            if any(p is None for p in parameters):
-                raise ValueError(
-                    "(One of) the parameters with which this "
-                    "ExponentialMovingAverage "
-                    "was initialized no longer exists (was garbage collected);"
-                    " please either provide `parameters` explicitly or keep "
-                    "the model to which they belong from being garbage "
-                    "collected."
-                )
-            return parameters
+            return [none_throws(p(), none_msg) for p in self._params_refs]
         else:
             return [p for p in parameters if p.requires_grad]
 

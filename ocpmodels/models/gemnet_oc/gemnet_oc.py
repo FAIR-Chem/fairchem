@@ -350,8 +350,7 @@ class GemNetOC(BaseModel):
                 emb_size_atom,
                 activation=activation,
             )
-        ]
-        out_mlp_E += [
+        ] + [
             ResidualLayer(
                 emb_size_atom,
                 activation=activation,
@@ -369,8 +368,7 @@ class GemNetOC(BaseModel):
                     emb_size_edge,
                     activation=activation,
                 )
-            ]
-            out_mlp_F += [
+            ] + [
                 ResidualLayer(
                     emb_size_edge,
                     activation=activation,

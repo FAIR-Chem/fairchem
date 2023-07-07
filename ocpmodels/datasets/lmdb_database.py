@@ -186,7 +186,7 @@ class LMDBDatabase(Database):
         dct["id"] = id
         return AtomsRow(dct)
 
-    def _get_row_by_index(self, index, include_data: bool = True):
+    def _get_row_by_index(self, index: int, include_data: bool = True):
         """Auxiliary function to get the ith entry, rather than
         a specific id
         """
@@ -208,13 +208,13 @@ class LMDBDatabase(Database):
         self,
         keys,
         cmps,
-        explain=False,
-        verbosity=0,
+        explain: bool = False,
+        verbosity: int = 0,
         limit=None,
-        offset=0,
+        offset: int = 0,
         sort=None,
-        include_data=True,
-        columns="all",
+        include_data: bool = True,
+        columns: str = "all",
     ):
         if explain:
             yield {"explain": (0, 0, 0, "scan table")}
