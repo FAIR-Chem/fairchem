@@ -68,15 +68,15 @@ class AtomsToGraphs:
 
     def __init__(
         self,
-        max_neigh=200,
-        radius=6,
-        r_energy=False,
-        r_forces=False,
-        r_distances=False,
-        r_edges=True,
-        r_fixed=True,
-        r_pbc=False,
-    ):
+        max_neigh: int = 200,
+        radius: int = 6,
+        r_energy: bool = False,
+        r_forces: bool = False,
+        r_distances: bool = False,
+        r_edges: bool = True,
+        r_fixed: bool = True,
+        r_pbc: bool = False,
+    ) -> None:
         self.max_neigh = max_neigh
         self.radius = radius
         self.r_energy = r_energy

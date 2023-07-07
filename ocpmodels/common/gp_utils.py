@@ -22,16 +22,16 @@ _GRAPH_PARALLEL_GROUP = None
 _DATA_PARALLEL_GROUP = None
 
 
-def ensure_div(a, b):
+def ensure_div(a: int, b: int) -> None:
     assert a % b == 0
 
 
-def divide_and_check_no_remainder(a: int, b: int):
+def divide_and_check_no_remainder(a: int, b: int) -> int:
     ensure_div(a, b)
     return a // b
 
 
-def setup_gp(config):
+def setup_gp(config) -> None:
     gp_size = config["gp_gpus"]
     backend = config["distributed_backend"]
     assert torch.distributed.is_initialized()
@@ -67,12 +67,12 @@ def setup_gp(config):
             _GRAPH_PARALLEL_GROUP = group
 
 
-def cleanup_gp():
+def cleanup_gp() -> None:
     dist.destroy_process_group(_DATA_PARALLEL_GROUP)
     dist.destroy_process_group(_GRAPH_PARALLEL_GROUP)
 
 
-def initialized():
+def initialized() -> bool:
     return _GRAPH_PARALLEL_GROUP is not None
 
 
@@ -105,7 +105,9 @@ def get_gp_world_size():
 ########## DIST METHODS ##########
 
 
-def pad_tensor(tensor: torch.Tensor, dim: int = -1, target_size: int = None):
+def pad_tensor(
+    tensor: torch.Tensor, dim: int = -1, target_size: int = None
+) -> torch.Tensor:
     size = tensor.size(dim)
     if target_size is None:
         world_size = get_gp_world_size()
@@ -187,7 +189,7 @@ def _gather(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
     return torch.cat(tensor_list, dim=dim).contiguous()
 
 
-def _gather_with_padding(input: torch.Tensor, dim: int = -1):
+def _gather_with_padding(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
     group = get_gp_group()
     rank = get_gp_rank()
     world_size = dist.get_world_size(group=group)
@@ -233,28 +235,28 @@ def _gather_with_padding(input: torch.Tensor, dim: int = -1):
 
 class CopyToModelParallelRegion(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input: torch.Tensor):
+    def forward(ctx, input: torch.Tensor) -> torch.Tensor:
         return input
 
     @staticmethod
-    def backward(ctx, grad_output: torch.Tensor):
+    def backward(ctx, grad_output: torch.Tensor) -> torch.Tensor:
         return _reduce(None, grad_output)
 
 
 class ReduceFromModelParallelRegion(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input: torch.Tensor):
+    def forward(ctx, input: torch.Tensor) -> torch.Tensor:
         return _reduce(ctx, input)
 
     @staticmethod
-    def backward(ctx, grad_output: torch.Tensor):
+    def backward(ctx, grad_output: torch.Tensor) -> torch.Tensor:
         world_size = 1
         return grad_output.mul_(world_size)
 
 
 class ScatterToModelParallelRegion(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input: torch.Tensor, dim: int = -1):
+    def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
         result = _split(input, dim)
         ctx.save_for_backward(torch.tensor(dim))
         return result
@@ -271,7 +273,7 @@ class ScatterToModelParallelRegion(torch.autograd.Function):
 
 class GatherFromModelParallelRegion(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input: torch.Tensor, dim: int = -1):
+    def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
         ctx.save_for_backward(torch.tensor(dim))
         result = _gather_with_padding(input, dim)
         return result

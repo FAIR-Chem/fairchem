@@ -7,6 +7,7 @@ import os
 import warnings
 from pathlib import Path
 from abc import ABC, abstractmethod
+from typing import List
 
 import ase
 import numpy as np
@@ -20,7 +21,9 @@ from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
-def apply_one_tags(atoms, skip_if_nonzero=True, skip_always=False):
+def apply_one_tags(
+    atoms, skip_if_nonzero: bool = True, skip_always: bool = False
+):
     """
     This function will apply tags of 1 to an ASE atoms object.
     It is used as an atoms_transform in the datasets contained in this file.
@@ -61,7 +64,9 @@ class AseAtomsDataset(Dataset, ABC):
     Identifiers need not be any particular type.
     """
 
-    def __init__(self, config, transform=None, atoms_transform=apply_one_tags):
+    def __init__(
+        self, config, transform=None, atoms_transform=apply_one_tags
+    ) -> None:
         self.config = config
 
         a2g_args = config.get("a2g_args", {})
@@ -80,7 +85,7 @@ class AseAtomsDataset(Dataset, ABC):
         # a list of identifiers that can be passed to get_atoms_object()
         self.ids = self.load_dataset_get_ids(config)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.ids)
 
     def __getitem__(self, idx):
@@ -129,11 +134,11 @@ class AseAtomsDataset(Dataset, ABC):
             "Every ASE dataset needs to declare a function to load the dataset and return a list of ids."
         )
 
-    def close_db(self):
+    def close_db(self) -> None:
         # This method is sometimes called by a trainer
         pass
 
-    def guess_target_metadata(self, num_samples=100):
+    def guess_target_metadata(self, num_samples: int = 100):
         metadata = {}
 
         if num_samples < len(self):
@@ -202,7 +207,7 @@ class AseReadDataset(AseAtomsDataset):
 
     """
 
-    def load_dataset_get_ids(self, config):
+    def load_dataset_get_ids(self, config) -> List[Path]:
         self.ase_read_args = config.get("ase_read_args", {})
 
         if ":" in self.ase_read_args.get("index", ""):
@@ -334,7 +339,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
 
 
 class dummy_list(list):
-    def __init__(self, max):
+    def __init__(self, max) -> None:
         self.max = max
         return
 
@@ -411,8 +416,7 @@ class AseDBDataset(AseAtomsDataset):
         transform (callable, optional): Additional preprocessing function for the Data object
     """
 
-    def load_dataset_get_ids(self, config):
-
+    def load_dataset_get_ids(self, config) -> dummy_list:
         if isinstance(config["src"], list):
             filepaths = config["src"]
         elif os.path.isfile(config["src"]):
@@ -482,7 +486,7 @@ class AseDBDataset(AseAtomsDataset):
         else:
             return ase.db.connect(address, **connect_args)
 
-    def close_db(self):
+    def close_db(self) -> None:
         for db in self.dbs:
             if hasattr(db, "close"):
                 db.close()

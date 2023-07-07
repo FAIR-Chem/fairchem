@@ -5,7 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional
+from typing import Dict, Optional, Union
 
 import numpy as np
 import torch
@@ -125,9 +125,12 @@ class GemNetT(BaseModel):
         direct_forces: bool = False,
         cutoff: float = 6.0,
         max_neighbors: int = 50,
-        rbf: dict = {"name": "gaussian"},
-        envelope: dict = {"name": "polynomial", "exponent": 5},
-        cbf: dict = {"name": "spherical_harmonics"},
+        rbf: Dict[str, str] = {"name": "gaussian"},
+        envelope: Dict[str, Union[str, int]] = {
+            "name": "polynomial",
+            "exponent": 5,
+        },
+        cbf: Dict[str, str] = {"name": "spherical_harmonics"},
         extensive: bool = True,
         otf_graph: bool = False,
         use_pbc: bool = True,
@@ -135,7 +138,7 @@ class GemNetT(BaseModel):
         activation: str = "swish",
         num_elements: int = 83,
         scale_file: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__()
         self.num_targets = num_targets
         assert num_blocks > 0
@@ -260,7 +263,7 @@ class GemNetT(BaseModel):
 
         load_scales_compat(self, scale_file)
 
-    def get_triplets(self, edge_index, num_atoms):
+    def get_triplets(self, edge_index, num_atoms: int):
         """
         Get all b->a for each edge c->a.
         It is possible that b=c, as long as the edges are distinct.
@@ -443,7 +446,13 @@ class GemNetT(BaseModel):
             select_cutoff = None
         else:
             select_cutoff = self.cutoff
-        (edge_index, cell_offsets, neighbors, D_st, V_st,) = self.select_edges(
+        (
+            edge_index,
+            cell_offsets,
+            neighbors,
+            D_st,
+            V_st,
+        ) = self.select_edges(
             data=data,
             edge_index=edge_index,
             cell_offsets=cell_offsets,
@@ -597,5 +606,5 @@ class GemNetT(BaseModel):
             return E_t
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())

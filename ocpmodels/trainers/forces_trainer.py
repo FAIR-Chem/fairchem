@@ -74,17 +74,17 @@ class ForcesTrainer(BaseTrainer):
         normalizer=None,
         timestamp_id=None,
         run_dir=None,
-        is_debug=False,
-        is_hpo=False,
-        print_every=100,
+        is_debug: bool = False,
+        is_hpo: bool = False,
+        print_every: int = 100,
         seed=None,
-        logger="tensorboard",
-        local_rank=0,
-        amp=False,
-        cpu=False,
+        logger: str = "tensorboard",
+        local_rank: int = 0,
+        amp: bool = False,
+        cpu: bool = False,
         slurm={},
-        noddp=False,
-    ):
+        noddp: bool = False,
+    ) -> None:
         super().__init__(
             task=task,
             model=model,
@@ -107,7 +107,7 @@ class ForcesTrainer(BaseTrainer):
             noddp=noddp,
         )
 
-    def load_task(self):
+    def load_task(self) -> None:
         logging.info(f"Loading dataset: {self.config['task']['dataset']}")
 
         if "relax_dataset" in self.config["task"]:
@@ -276,8 +276,8 @@ class ForcesTrainer(BaseTrainer):
         self,
         primary_metric,
         val_metrics,
-        disable_eval_tqdm=True,
-    ):
+        disable_eval_tqdm: bool = True,
+    ) -> None:
         if (
             "mae" in primary_metric
             and val_metrics[primary_metric]["metric"] < self.best_val_metric
@@ -298,7 +298,7 @@ class ForcesTrainer(BaseTrainer):
                     disable_tqdm=disable_eval_tqdm,
                 )
 
-    def train(self, disable_eval_tqdm=False):
+    def train(self, disable_eval_tqdm: bool = False) -> None:
         ensure_fitted(self._unwrapped_model, warn=True)
 
         eval_every = self.config["optim"].get(
@@ -458,7 +458,7 @@ class ForcesTrainer(BaseTrainer):
 
         return out
 
-    def _compute_loss(self, out, batch_list):
+    def _compute_loss(self, out, batch_list) -> int:
         loss = []
 
         # Energy loss.
@@ -627,7 +627,7 @@ class ForcesTrainer(BaseTrainer):
         metrics = evaluator.eval(out, target, prev_metrics=metrics)
         return metrics
 
-    def run_relaxations(self, split="val"):
+    def run_relaxations(self, split: str = "val") -> None:
         ensure_fitted(self._unwrapped_model)
 
         # When set to true, uses deterministic CUDA scatter ops, if available.

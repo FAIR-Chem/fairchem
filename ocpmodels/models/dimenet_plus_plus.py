@@ -32,6 +32,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from typing import Optional
+
 import torch
 from torch import nn
 from torch_geometric.nn import radius_graph
@@ -73,7 +75,7 @@ class InteractionPPBlock(torch.nn.Module):
         num_before_skip,
         num_after_skip,
         act="silu",
-    ):
+    ) -> None:
         act = activation_resolver(act)
         super(InteractionPPBlock, self).__init__()
         self.act = act
@@ -111,7 +113,7 @@ class InteractionPPBlock(torch.nn.Module):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         glorot_orthogonal(self.lin_rbf1.weight, scale=2.0)
         glorot_orthogonal(self.lin_rbf2.weight, scale=2.0)
         glorot_orthogonal(self.lin_sbf1.weight, scale=2.0)
@@ -167,13 +169,13 @@ class InteractionPPBlock(torch.nn.Module):
 class OutputPPBlock(torch.nn.Module):
     def __init__(
         self,
-        num_radial,
+        num_radial: int,
         hidden_channels,
         out_emb_channels,
         out_channels,
-        num_layers,
-        act="silu",
-    ):
+        num_layers: int,
+        act: str = "silu",
+    ) -> None:
         act = activation_resolver(act)
         super(OutputPPBlock, self).__init__()
         self.act = act
@@ -187,7 +189,7 @@ class OutputPPBlock(torch.nn.Module):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         glorot_orthogonal(self.lin_rbf.weight, scale=2.0)
         glorot_orthogonal(self.lin_up.weight, scale=2.0)
         for lin in self.lins:
@@ -195,7 +197,7 @@ class OutputPPBlock(torch.nn.Module):
             lin.bias.data.fill_(0)
         self.lin.weight.data.fill_(0)
 
-    def forward(self, x, rbf, i, num_nodes=None):
+    def forward(self, x, rbf, i, num_nodes: Optional[int] = None):
         x = self.lin_rbf(rbf) * x
         x = scatter(x, i, dim=0, dim_size=num_nodes)
         x = self.lin_up(x)
@@ -236,20 +238,19 @@ class DimeNetPlusPlus(torch.nn.Module):
         self,
         hidden_channels,
         out_channels,
-        num_blocks,
-        int_emb_size,
-        basis_emb_size,
+        num_blocks: int,
+        int_emb_size: int,
+        basis_emb_size: int,
         out_emb_channels,
-        num_spherical,
-        num_radial,
-        cutoff=5.0,
+        num_spherical: int,
+        num_radial: int,
+        cutoff: float = 5.0,
         envelope_exponent=5,
-        num_before_skip=1,
-        num_after_skip=2,
-        num_output_layers=3,
-        act="silu",
-    ):
-
+        num_before_skip: int = 1,
+        num_after_skip: int = 2,
+        num_output_layers: int = 3,
+        act: str = "silu",
+    ) -> None:
         act = activation_resolver(act)
 
         super(DimeNetPlusPlus, self).__init__()
@@ -300,7 +301,7 @@ class DimeNetPlusPlus(torch.nn.Module):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         self.rbf.reset_parameters()
         self.emb.reset_parameters()
         for out in self.output_blocks:
@@ -308,7 +309,7 @@ class DimeNetPlusPlus(torch.nn.Module):
         for interaction in self.interaction_blocks:
             interaction.reset_parameters()
 
-    def triplets(self, edge_index, cell_offsets, num_nodes):
+    def triplets(self, edge_index, cell_offsets, num_nodes: int):
         row, col = edge_index  # j->i
 
         value = torch.arange(row.size(0), device=row.device)
@@ -364,7 +365,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         num_before_skip=1,
         num_after_skip=2,
         num_output_layers=3,
-    ):
+    ) -> None:
         self.num_targets = num_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
@@ -467,5 +468,5 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
             return energy
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())

@@ -68,7 +68,7 @@ class SchNetWrap(SchNet, BaseModel):
         num_gaussians=50,
         cutoff=10.0,
         readout="add",
-    ):
+    ) -> None:
         self.num_targets = num_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
@@ -138,5 +138,5 @@ class SchNetWrap(SchNet, BaseModel):
             return energy
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
