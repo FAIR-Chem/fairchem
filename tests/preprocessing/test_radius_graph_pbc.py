@@ -49,15 +49,15 @@ def check_features_match(
     features_2 = torch.cat((edge_index_2, cell_offsets_2.T), dim=0).T.long()
 
     # Convert rows of tensors to sets. The order of edges is not guaranteed
-    features_1 = {tuple(x.tolist()) for x in features_1}
-    features_2 = {tuple(x.tolist()) for x in features_2}
+    features_1_set = {tuple(x.tolist()) for x in features_1}
+    features_2_set = {tuple(x.tolist()) for x in features_2}
 
     # Ensure sets are not empty
-    assert len(features_1) > 0
-    assert len(features_2) > 0
+    assert len(features_1_set) > 0
+    assert len(features_2_set) > 0
 
     # Ensure sets are the same
-    assert features_1 == features_2
+    assert features_1_set == features_2_set
 
     return True
 

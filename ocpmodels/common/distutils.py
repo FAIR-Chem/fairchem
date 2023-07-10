@@ -11,6 +11,13 @@ import subprocess
 
 import torch
 import torch.distributed as dist
+from ocpmodels.common.typing import none_throws
+
+
+def os_environ_get_or_throw(x: str) -> str:
+    if x not in os.environ:
+        raise RuntimeError(f"Could not find {x} in ENV variables")
+    return none_throws(os.environ.get(x))
 
 
 def setup(config) -> None:
@@ -27,25 +34,29 @@ def setup(config) -> None:
                     host=hostnames.split()[0].decode("utf-8"),
                     port=config["distributed_port"],
                 )
-                nnodes = int(os.environ.get("SLURM_NNODES"))
+                nnodes = int(os_environ_get_or_throw("SLURM_NNODES"))
                 ntasks_per_node = os.environ.get("SLURM_NTASKS_PER_NODE")
                 if ntasks_per_node is not None:
                     ntasks_per_node = int(ntasks_per_node)
                 else:
-                    ntasks = int(os.environ.get("SLURM_NTASKS"))
-                    nnodes = int(os.environ.get("SLURM_NNODES"))
+                    ntasks = int(os_environ_get_or_throw("SLURM_NTASKS"))
+                    nnodes = int(os_environ_get_or_throw("SLURM_NNODES"))
                     assert ntasks % nnodes == 0
                     ntasks_per_node = int(ntasks / nnodes)
                 if ntasks_per_node == 1:
                     assert config["world_size"] % nnodes == 0
                     gpus_per_node = config["world_size"] // nnodes
-                    node_id = int(os.environ.get("SLURM_NODEID"))
+                    node_id = int(os_environ_get_or_throw("SLURM_NODEID"))
                     config["rank"] = node_id * gpus_per_node
                     config["local_rank"] = 0
                 else:
                     assert ntasks_per_node == config["world_size"] // nnodes
-                    config["rank"] = int(os.environ.get("SLURM_PROCID"))
-                    config["local_rank"] = int(os.environ.get("SLURM_LOCALID"))
+                    config["rank"] = int(
+                        os_environ_get_or_throw("SLURM_PROCID")
+                    )
+                    config["local_rank"] = int(
+                        os_environ_get_or_throw("SLURM_LOCALID")
+                    )
 
                 logging.info(
                     f"Init: {config['init_method']}, {config['world_size']}, {config['rank']}"
@@ -117,7 +128,7 @@ def synchronize() -> None:
 
 
 def broadcast(
-    tensor, src, group=dist.group.WORLD, async_op: bool = False
+    tensor: torch.Tensor, src, group=dist.group.WORLD, async_op: bool = False
 ) -> None:
     if get_world_size() == 1:
         return

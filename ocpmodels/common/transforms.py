@@ -11,6 +11,7 @@ LICENSE file in the root directory of this source tree.
 import math
 import numbers
 import random
+from typing import List
 
 import torch
 import torch_geometric
@@ -29,7 +30,7 @@ class RandomRotate:
         axes (int, optional): The rotation axes. (default: `[0, 1, 2]`)
     """
 
-    def __init__(self, degrees, axes=[0, 1, 2]) -> None:
+    def __init__(self, degrees, axes: List[int] = [0, 1, 2]) -> None:
         if isinstance(degrees, numbers.Number):
             degrees = (-abs(degrees), abs(degrees))
         assert isinstance(degrees, (tuple, list)) and len(degrees) == 2

@@ -16,8 +16,8 @@ class LRScheduler:
         specify scheduler: "Null" in the optim section of the config.
 
     Args:
-        config (dict): Optim dict from the input config
         optimizer (obj): torch optim object
+        config (dict): Optim dict from the input config
     """
 
     def __init__(self, optimizer, config) -> None:

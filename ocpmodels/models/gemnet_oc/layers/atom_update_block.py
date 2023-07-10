@@ -182,7 +182,7 @@ class OutputBlock(AtomUpdateBlock):
         # ------------------------- Edge embeddings ------------------------ #
         if self.direct_forces:
             x_F = m
-            for i, layer in enumerate(self.seq_forces):
+            for _, layer in enumerate(self.seq_forces):
                 x_F = layer(x_F)  # (nEdges, emb_size_edge)
 
             basis_emb_F = self.dense_rbf_F(basis_rad)
