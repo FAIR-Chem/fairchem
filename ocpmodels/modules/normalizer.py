@@ -8,10 +8,10 @@ LICENSE file in the root directory of this source tree.
 import torch
 
 
-class Normalizer(object):
+class Normalizer:
     """Normalize a Tensor and restore it later."""
 
-    def __init__(self, tensor=None, mean=None, std=None, device=None):
+    def __init__(self, tensor=None, mean=None, std=None, device=None) -> None:
         """tensor is taken as a sample to calculate the mean and std"""
         if tensor is None and mean is None:
             return
@@ -28,7 +28,7 @@ class Normalizer(object):
             self.mean = torch.tensor(mean).to(device)
             self.std = torch.tensor(std).to(device)
 
-    def to(self, device):
+    def to(self, device) -> None:
         self.mean = self.mean.to(device)
         self.std = self.std.to(device)
 
@@ -41,6 +41,6 @@ class Normalizer(object):
     def state_dict(self):
         return {"mean": self.mean, "std": self.std}
 
-    def load_state_dict(self, state_dict):
+    def load_state_dict(self, state_dict) -> None:
         self.mean = state_dict["mean"].to(self.mean.device)
         self.std = state_dict["std"].to(self.mean.device)

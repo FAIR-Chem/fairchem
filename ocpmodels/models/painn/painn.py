@@ -32,7 +32,7 @@ SOFTWARE.
 import logging
 import math
 import os
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 import torch
 from torch import nn
@@ -65,23 +65,26 @@ class PaiNN(BaseModel):
 
     def __init__(
         self,
-        num_atoms,
-        bond_feat_dim,
-        num_targets,
-        hidden_channels=512,
-        num_layers=6,
-        num_rbf=128,
-        cutoff=12.0,
-        max_neighbors=50,
-        rbf: dict = {"name": "gaussian"},
-        envelope: dict = {"name": "polynomial", "exponent": 5},
-        regress_forces=True,
-        direct_forces=True,
-        use_pbc=True,
-        otf_graph=True,
-        num_elements=83,
+        num_atoms: int,
+        bond_feat_dim: int,
+        num_targets: int,
+        hidden_channels: int = 512,
+        num_layers: int = 6,
+        num_rbf: int = 128,
+        cutoff: float = 12.0,
+        max_neighbors: int = 50,
+        rbf: Dict[str, str] = {"name": "gaussian"},
+        envelope: Dict[str, Union[str, int]] = {
+            "name": "polynomial",
+            "exponent": 5,
+        },
+        regress_forces: bool = True,
+        direct_forces: bool = True,
+        use_pbc: bool = True,
+        otf_graph: bool = True,
+        num_elements: int = 83,
         scale_file: Optional[str] = None,
-    ):
+    ) -> None:
         super(PaiNN, self).__init__()
 
         self.hidden_channels = hidden_channels
@@ -133,14 +136,16 @@ class PaiNN(BaseModel):
 
         load_scales_compat(self, scale_file)
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         nn.init.xavier_uniform_(self.out_energy[0].weight)
         self.out_energy[0].bias.data.fill_(0)
         nn.init.xavier_uniform_(self.out_energy[2].weight)
         self.out_energy[2].bias.data.fill_(0)
 
     # Borrowed from GemNet.
-    def select_symmetric_edges(self, tensor, mask, reorder_idx, inverse_neg):
+    def select_symmetric_edges(
+        self, tensor, mask, reorder_idx, inverse_neg
+    ) -> torch.Tensor:
         # Mask out counter-edges
         tensor_directed = tensor[mask]
         # Concatenate counter-edges after normal edges
@@ -434,10 +439,10 @@ class PaiNN(BaseModel):
             return energy
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}("
             f"hidden_channels={self.hidden_channels}, "
@@ -453,7 +458,7 @@ class PaiNNMessage(MessagePassing):
         self,
         hidden_channels,
         num_rbf,
-    ):
+    ) -> None:
         super(PaiNNMessage, self).__init__(aggr="add", node_dim=0)
 
         self.hidden_channels = hidden_channels
@@ -471,7 +476,7 @@ class PaiNNMessage(MessagePassing):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         nn.init.xavier_uniform_(self.x_proj[0].weight)
         self.x_proj[0].bias.data.fill_(0)
         nn.init.xavier_uniform_(self.x_proj[2].weight)
@@ -526,7 +531,7 @@ class PaiNNMessage(MessagePassing):
 
 
 class PaiNNUpdate(nn.Module):
-    def __init__(self, hidden_channels):
+    def __init__(self, hidden_channels) -> None:
         super().__init__()
         self.hidden_channels = hidden_channels
 
@@ -544,7 +549,7 @@ class PaiNNUpdate(nn.Module):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         nn.init.xavier_uniform_(self.vec_proj.weight)
         nn.init.xavier_uniform_(self.xvec_proj[0].weight)
         self.xvec_proj[0].bias.data.fill_(0)
@@ -577,7 +582,7 @@ class PaiNNUpdate(nn.Module):
 
 
 class PaiNNOutput(nn.Module):
-    def __init__(self, hidden_channels):
+    def __init__(self, hidden_channels) -> None:
         super().__init__()
         self.hidden_channels = hidden_channels
 
@@ -593,7 +598,7 @@ class PaiNNOutput(nn.Module):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         for layer in self.output_network:
             layer.reset_parameters()
 
@@ -613,7 +618,7 @@ class GatedEquivariantBlock(nn.Module):
         self,
         hidden_channels,
         out_channels,
-    ):
+    ) -> None:
         super(GatedEquivariantBlock, self).__init__()
         self.out_channels = out_channels
 
@@ -630,7 +635,7 @@ class GatedEquivariantBlock(nn.Module):
 
         self.act = ScaledSiLU()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         nn.init.xavier_uniform_(self.vec1_proj.weight)
         nn.init.xavier_uniform_(self.vec2_proj.weight)
         nn.init.xavier_uniform_(self.update_net[0].weight)

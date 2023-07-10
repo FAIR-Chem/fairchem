@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 import numpy as np
 import torch
+from typing import Dict, Union
 
 
 """
@@ -61,7 +62,7 @@ class Evaluator:
         "is2re": "energy_mae",
     }
 
-    def __init__(self, task=None):
+    def __init__(self, task: str) -> None:
         assert task in ["s2ef", "is2rs", "is2re"]
         self.task = task
         self.metric_fn = self.task_metrics[task]
@@ -212,7 +213,9 @@ def energy_within_threshold(prediction, target):
     }
 
 
-def average_distance_within_threshold(prediction, target):
+def average_distance_within_threshold(
+    prediction, target
+) -> Dict[str, Union[float, int]]:
     pred_pos = torch.split(
         prediction["positions"], prediction["natoms"].tolist()
     )
@@ -286,7 +289,7 @@ def squared_error(prediction, target):
     }
 
 
-def magnitude_error(prediction, target, p=2):
+def magnitude_error(prediction, target, p: int = 2):
     assert prediction.shape[1] > 1
     error = torch.abs(
         torch.norm(prediction, p=p, dim=-1) - torch.norm(target, p=p, dim=-1)

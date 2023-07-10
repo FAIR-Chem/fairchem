@@ -19,7 +19,7 @@ from ocpmodels.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")
-def load_data(request):
+def load_data(request) -> None:
     atoms = read(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "atoms.json"),
         index=0,
@@ -37,7 +37,7 @@ def load_data(request):
 
 
 @pytest.fixture(scope="class")
-def load_model(request):
+def load_model(request) -> None:
     torch.manual_seed(4)
     setup_imports()
 
@@ -53,7 +53,7 @@ def load_model(request):
 @pytest.mark.usefixtures("load_data")
 @pytest.mark.usefixtures("load_model")
 class TestForceNet:
-    def test_energy_force_shape(self, snapshot):
+    def test_energy_force_shape(self, snapshot) -> None:
         # Recreate the Data object to only keep the necessary features.
         data = self.data
 

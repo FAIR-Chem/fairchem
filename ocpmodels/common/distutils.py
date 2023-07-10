@@ -13,7 +13,7 @@ import torch
 import torch.distributed as dist
 
 
-def setup(config):
+def setup(config) -> None:
     if config["submit"]:
         node_list = os.environ.get("SLURM_STEP_NODELIST")
         if node_list is None:
@@ -90,7 +90,7 @@ def setup(config):
     # TODO: SLURM
 
 
-def cleanup():
+def cleanup() -> None:
     dist.destroy_process_group()
 
 
@@ -110,19 +110,23 @@ def is_master():
     return get_rank() == 0
 
 
-def synchronize():
+def synchronize() -> None:
     if get_world_size() == 1:
         return
     dist.barrier()
 
 
-def broadcast(tensor, src, group=dist.group.WORLD, async_op=False):
+def broadcast(
+    tensor, src, group=dist.group.WORLD, async_op: bool = False
+) -> None:
     if get_world_size() == 1:
         return
     dist.broadcast(tensor, src, group, async_op)
 
 
-def all_reduce(data, group=dist.group.WORLD, average=False, device=None):
+def all_reduce(
+    data, group=dist.group.WORLD, average: bool = False, device=None
+):
     if get_world_size() == 1:
         return data
     tensor = data

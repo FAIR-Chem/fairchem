@@ -38,7 +38,7 @@ class AtomUpdateBlock(torch.nn.Module):
         nHidden: int,
         activation=None,
         name: str = "atom_update",
-    ):
+    ) -> None:
         super().__init__()
         self.name = name
 
@@ -113,12 +113,11 @@ class OutputBlock(AtomUpdateBlock):
         nHidden: int,
         num_targets: int,
         activation=None,
-        direct_forces=True,
-        output_init="HeOrthogonal",
+        direct_forces: bool = True,
+        output_init: str = "HeOrthogonal",
         name: str = "output",
         **kwargs,
-    ):
-
+    ) -> None:
         super().__init__(
             name=name,
             emb_size_atom=emb_size_atom,
@@ -152,7 +151,7 @@ class OutputBlock(AtomUpdateBlock):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         if self.output_init == "heorthogonal":
             self.out_energy.reset_parameters(he_orthogonal_init)
             if self.direct_forces:

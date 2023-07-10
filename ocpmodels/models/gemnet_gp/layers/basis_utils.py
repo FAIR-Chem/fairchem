@@ -113,7 +113,7 @@ def sph_harm_prefactor(l_degree, m_order):
 
 
 def associated_legendre_polynomials(
-    L_maxdegree, zero_m_only=True, pos_m_only=True
+    L_maxdegree: int, zero_m_only: bool = True, pos_m_only: bool = True
 ):
     """Computes string formulas of the associated legendre polynomials up to degree L (excluded).
 
@@ -194,7 +194,9 @@ def associated_legendre_polynomials(
             return P_l_m
 
 
-def real_sph_harm(L_maxdegree, use_theta, use_phi=True, zero_m_only=True):
+def real_sph_harm(
+    L_maxdegree, use_theta, use_phi: bool = True, zero_m_only: bool = True
+):
     """
     Computes formula strings of the the real part of the spherical harmonics up to degree L (excluded).
     Variables are either spherical coordinates phi and theta (or cartesian coordinates x,y,z) on the UNIT SPHERE.

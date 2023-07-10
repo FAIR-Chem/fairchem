@@ -43,7 +43,7 @@ class OC22LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None):
+    def __init__(self, config, transform=None) -> None:
         super(OC22LmdbDataset, self).__init__()
         self.config = config
 
@@ -224,7 +224,7 @@ class OC22LmdbDataset(Dataset):
         )
         return env
 
-    def close_db(self):
+    def close_db(self) -> None:
         if not self.path.is_file():
             for env in self.envs:
                 env.close()

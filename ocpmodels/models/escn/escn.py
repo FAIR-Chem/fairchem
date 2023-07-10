@@ -86,7 +86,7 @@ class eSCN(BaseModel):
         basis_width_scalar=1.0,
         distance_resolution=0.02,
         show_timing_info=False,
-    ):
+    ) -> None:
         super().__init__()
 
         import sys
@@ -451,7 +451,7 @@ class eSCN(BaseModel):
         return edge_rot_mat.detach()
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
 
@@ -484,7 +484,7 @@ class LayerBlock(torch.nn.Module):
         max_num_elements,
         SO3_grid,
         act,
-    ):
+    ) -> None:
         super(LayerBlock, self).__init__()
         self.layer_idx = layer_idx
         self.act = act
@@ -531,7 +531,6 @@ class LayerBlock(torch.nn.Module):
         SO3_edge_rot,
         mappingReduced,
     ):
-
         # Compute messages by performing message block
         x_message = self.message_block(
             x,
@@ -591,7 +590,7 @@ class MessageBlock(torch.nn.Module):
         max_num_elements,
         SO3_grid,
         act,
-    ):
+    ) -> None:
         super(MessageBlock, self).__init__()
         self.layer_idx = layer_idx
         self.act = act
@@ -700,7 +699,7 @@ class SO2Block(torch.nn.Module):
         lmax_list,
         mmax_list,
         act,
-    ):
+    ) -> None:
         super(SO2Block, self).__init__()
         self.sphere_channels = sphere_channels
         self.hidden_channels = hidden_channels
@@ -745,7 +744,6 @@ class SO2Block(torch.nn.Module):
         x_edge,
         mappingReduced,
     ):
-
         num_edges = len(x_edge)
 
         # Reshape the spherical harmonics based on m (order)
@@ -813,7 +811,7 @@ class SO2Conv(torch.nn.Module):
         lmax_list,
         mmax_list,
         act,
-    ):
+    ) -> None:
         super(SO2Conv, self).__init__()
         self.hidden_channels = hidden_channels
         self.lmax_list = lmax_list
@@ -846,7 +844,7 @@ class SO2Conv(torch.nn.Module):
         self.fc1_i = nn.Linear(num_channels, self.hidden_channels, bias=False)
         self.fc2_i = nn.Linear(self.hidden_channels, num_channels, bias=False)
 
-    def forward(self, x_m, x_edge):
+    def forward(self, x_m, x_edge) -> torch.Tensor:
         # Compute edge scalar features
         x_edge = self.act(self.fc1_dist(x_edge))
         x_edge = x_edge.view(-1, 2, self.hidden_channels)
@@ -883,7 +881,7 @@ class EdgeBlock(torch.nn.Module):
         distance_expansion,
         max_num_elements,
         act,
-    ):
+    ) -> None:
         super(EdgeBlock, self).__init__()
         self.in_channels = distance_expansion.num_output
         self.distance_expansion = distance_expansion
@@ -911,7 +909,6 @@ class EdgeBlock(torch.nn.Module):
         )
 
     def forward(self, edge_distance, source_element, target_element):
-
         # Compute distance embedding
         x_dist = self.distance_expansion(edge_distance)
         x_dist = self.fc1_dist(x_dist)
@@ -939,10 +936,10 @@ class EnergyBlock(torch.nn.Module):
 
     def __init__(
         self,
-        num_channels,
-        num_sphere_samples,
+        num_channels: int,
+        num_sphere_samples: int,
         act,
-    ):
+    ) -> None:
         super(EnergyBlock, self).__init__()
         self.num_channels = num_channels
         self.num_sphere_samples = num_sphere_samples
@@ -952,7 +949,7 @@ class EnergyBlock(torch.nn.Module):
         self.fc2 = nn.Linear(self.num_channels, self.num_channels)
         self.fc3 = nn.Linear(self.num_channels, 1, bias=False)
 
-    def forward(self, x_pt):
+    def forward(self, x_pt) -> torch.Tensor:
         # x_pt are the values of the channels sampled at different points on the sphere
         x_pt = self.act(self.fc1(x_pt))
         x_pt = self.act(self.fc2(x_pt))
@@ -975,10 +972,10 @@ class ForceBlock(torch.nn.Module):
 
     def __init__(
         self,
-        num_channels,
-        num_sphere_samples,
+        num_channels: int,
+        num_sphere_samples: int,
         act,
-    ):
+    ) -> None:
         super(ForceBlock, self).__init__()
         self.num_channels = num_channels
         self.num_sphere_samples = num_sphere_samples
@@ -988,7 +985,7 @@ class ForceBlock(torch.nn.Module):
         self.fc2 = nn.Linear(self.num_channels, self.num_channels)
         self.fc3 = nn.Linear(self.num_channels, 1, bias=False)
 
-    def forward(self, x_pt, sphere_points):
+    def forward(self, x_pt, sphere_points) -> torch.Tensor:
         # x_pt are the values of the channels sampled at different points on the sphere
         x_pt = self.act(self.fc1(x_pt))
         x_pt = self.act(self.fc2(x_pt))

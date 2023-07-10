@@ -20,7 +20,7 @@ from tqdm import tqdm
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
-def write_images_to_lmdb(mp_arg):
+def write_images_to_lmdb(mp_arg) -> None:
     a2g, db_path, samples, pid = mp_arg
     db = lmdb.open(
         db_path,
@@ -65,7 +65,7 @@ def write_images_to_lmdb(mp_arg):
     db.close()
 
 
-def main(args, split):
+def main(args, split) -> None:
     systems = glob.glob(f"{eval(f'args.{split}')}/*.traj")
 
     systems_chunked = np.array_split(systems, args.num_workers)
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         help="No. of feature-extracting processes.",
     )
 
-    args = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
 
     for split in ["id", "ood_ads", "ood_cat", "ood_both"]:
         main(args, split)

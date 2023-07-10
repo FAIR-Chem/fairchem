@@ -22,8 +22,7 @@ from ase.data import covalent_radii
 from ase.io.pov import get_bondpairs
 
 
-def pov_from_atoms(mp_args):
-
+def pov_from_atoms(mp_args) -> None:
     atoms, idx, out_path = mp_args
     # how many extra repeats to generate on either side to look infinite
     extra_cells = 2
@@ -74,8 +73,7 @@ def pov_from_atoms(mp_args):
     print(f"image {idx} completed!")
 
 
-def parallelize_generation(traj_path, out_path, n_procs):
-
+def parallelize_generation(traj_path, out_path: str, n_procs) -> None:
     # make the covalent radii for O/C/N a little smaller to make bonds visible
     covalent_radii[6] = covalent_radii[6] * 0.7
     covalent_radii[7] = covalent_radii[7] * 0.7
@@ -102,7 +100,7 @@ def parallelize_generation(traj_path, out_path, n_procs):
     )
 
 
-def get_parser():
+def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--traj-path", required=True, help="Path to traj file")
     parser.add_argument(
@@ -120,8 +118,7 @@ def get_parser():
 
 
 if __name__ == "__main__":
-
-    parser = get_parser()
-    args = parser.parse_args()
+    parser: argparse.ArgumentParser = get_parser()
+    args: argparse.Namespace = parser.parse_args()
 
     parallelize_generation(args.traj_path, args.out_path, args.num_workers)

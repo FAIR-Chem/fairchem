@@ -15,6 +15,7 @@ import os
 import sys
 import zlib
 from contextlib import ExitStack
+from typing import Optional
 
 import lmdb
 import numpy as np
@@ -29,19 +30,19 @@ RESERVED_KEYS = ["nextid", "metadata", "deleted_ids"]
 
 
 class LMDBDatabase(Database):
-    def __enter__(self):
+    def __enter__(self) -> "LMDBDatabase":
         return self
 
     def __init__(
         self,
-        filename=None,
-        create_indices=True,
-        use_lock_file=False,
-        serial=False,
-        readonly=False,
+        filename: Optional[str] = None,
+        create_indices: bool = True,
+        use_lock_file: bool = False,
+        serial: bool = False,
+        readonly: bool = False,
         *args,
         **kwargs,
-    ):
+    ) -> None:
         """
         For the most part, this is identical to the standard ase db initiation
         arguments, except that we add a readonly flag.
@@ -85,17 +86,13 @@ class LMDBDatabase(Database):
 
         return
 
-    def __exit__(self, exc_type, exc_value, tb):
+    def __exit__(self, exc_type, exc_value, tb) -> None:
         self.close()
 
-        pass
-
-    def close(self):
+    def close(self) -> None:
         # Close the lmdb environment and transaction
         self.txn.commit()
         self.env.close()
-
-        return
 
     def _write(self, atoms, key_value_pairs, data, id):
         Database._write(self, atoms, key_value_pairs, data)
@@ -157,7 +154,7 @@ class LMDBDatabase(Database):
 
         return id
 
-    def delete(self, ids):
+    def delete(self, ids) -> None:
         for id in ids:
             self.txn.delete(f"{id}".encode("ascii"))
             self.ids.remove(id)
@@ -172,7 +169,7 @@ class LMDBDatabase(Database):
             ),
         )
 
-    def _get_row(self, id, include_data=True):
+    def _get_row(self, id, include_data: bool = True):
         if id is None:
             assert len(self.ids) == 1
             id = self.ids[0]
@@ -189,7 +186,7 @@ class LMDBDatabase(Database):
         dct["id"] = id
         return AtomsRow(dct)
 
-    def _get_row_by_index(self, index, include_data=True):
+    def _get_row_by_index(self, index, include_data: bool = True):
         """Auxiliary function to get the ith entry, rather than
         a specific id
         """
@@ -316,7 +313,7 @@ class LMDBDatabase(Database):
 
         return nextid
 
-    def count(self, selection=None, **kwargs):
+    def count(self, selection=None, **kwargs) -> int:
         """Count rows.
 
         See the select() method for the selection syntax.  Use db.count() or
@@ -331,7 +328,7 @@ class LMDBDatabase(Database):
             # Fast count if there's no queries! Just get number of ids
             return len(self.ids)
 
-    def _load_ids(self):
+    def _load_ids(self) -> None:
         """Load ids from the DB
 
         Since ASE db ids are mostly 1-N integers, but can be missing entries
@@ -353,5 +350,3 @@ class LMDBDatabase(Database):
             for i in range(1, self._get_nextid())
             if i not in set(self.deleted_ids)
         ]
-
-        return

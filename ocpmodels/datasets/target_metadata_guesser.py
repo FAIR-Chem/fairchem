@@ -3,20 +3,20 @@ import logging
 import numpy as np
 
 
-def uniform_atoms_lengths(atoms_lens):
+def uniform_atoms_lengths(atoms_lens) -> bool:
     # If all of the structures have the same number of atoms, it's really hard to know
     # whether the entries are intensive or extensive, and whether
     # some of the entries are per-atom or not
     return len(set(atoms_lens)) == 1
 
 
-def target_constant_shape(atoms_lens, target_samples):
+def target_constant_shape(atoms_lens, target_samples) -> bool:
     # Given a bunch of atoms lengths, and the corresponding samples for the target,
     # determine whether the shape is always the same regardless of atom size
     return len(set([sample.shape for sample in target_samples])) == 1
 
 
-def target_per_atom(atoms_lens, target_samples):
+def target_per_atom(atoms_lens, target_samples) -> bool:
     # Given a bunch of atoms lengths, and the corresponding samples for the target,
     # determine whether the target is per-atom (first dimension == # atoms, others constant)
 
@@ -45,7 +45,7 @@ def target_per_atom(atoms_lens, target_samples):
         return False
 
 
-def target_extensive(atoms_lens, target_samples, threshold=0.2):
+def target_extensive(atoms_lens, target_samples, threshold: float = 0.2):
     # Guess whether a property is intensive or extensive.
     # We guess by checking whether standard deviation of the per-atom
     # properties capture >20% of the variation in the property

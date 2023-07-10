@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 
 class Act(torch.nn.Module):
-    def __init__(self, act, slope=0.05):
+    def __init__(self, act: str, slope: float = 0.05) -> None:
         super(Act, self).__init__()
         self.act = act
         self.slope = slope

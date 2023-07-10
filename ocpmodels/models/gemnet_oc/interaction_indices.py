@@ -11,7 +11,7 @@ from torch_sparse import SparseTensor
 from .utils import get_inner_idx, masked_select_sparsetensor_flat
 
 
-def get_triplets(graph, num_atoms):
+def get_triplets(graph, num_atoms: int):
     """
     Get all input edges b->a for each output edge c->a.
     It is possible that b=c, as long as the edges are distinct

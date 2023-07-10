@@ -11,14 +11,14 @@ from scipy import special as sp
 from scipy.optimize import brentq
 
 
-def Jn(r, n):
+def Jn(r: int, n: int):
     """
     numerical spherical bessel functions of order n
     """
     return sp.spherical_jn(n, r)
 
 
-def Jn_zeros(n, k):
+def Jn_zeros(n: int, k: int):
     """
     Compute the first k zeros of the spherical bessel functions
     up to order n (excluded)
@@ -37,7 +37,7 @@ def Jn_zeros(n, k):
     return zerosj
 
 
-def spherical_bessel_formulas(n):
+def spherical_bessel_formulas(n: int):
     """
     Computes the sympy formulas for the spherical bessel functions
     up to order n (excluded)
@@ -53,7 +53,7 @@ def spherical_bessel_formulas(n):
     return j
 
 
-def bessel_basis(n, k):
+def bessel_basis(n: int, k: int):
     """
     Compute the sympy formulas for the normalized and rescaled spherical bessel
     functions up to order n (excluded) and maximum frequency k (excluded).
@@ -91,7 +91,7 @@ def bessel_basis(n, k):
     return bess_basis
 
 
-def sph_harm_prefactor(l_degree, m_order):
+def sph_harm_prefactor(l_degree: int, m_order: int):
     """
     Computes the constant pre-factor for the spherical harmonic
     of degree l and order m.
@@ -118,7 +118,7 @@ def sph_harm_prefactor(l_degree, m_order):
 
 
 def associated_legendre_polynomials(
-    L_maxdegree, zero_m_only=True, pos_m_only=True
+    L_maxdegree: int, zero_m_only: bool = True, pos_m_only: bool = True
 ):
     """
     Computes string formulas of the associated legendre polynomials
@@ -204,7 +204,12 @@ def associated_legendre_polynomials(
             return P_l_m
 
 
-def real_sph_harm(L_maxdegree, use_theta, use_phi=True, zero_m_only=True):
+def real_sph_harm(
+    L_maxdegree: int,
+    use_theta: bool,
+    use_phi: bool = True,
+    zero_m_only: bool = True,
+) -> None:
     """
     Computes formula strings of the the real part of the spherical harmonics
     up to degree L (excluded). Variables are either spherical coordinates phi
@@ -300,7 +305,7 @@ def real_sph_harm(L_maxdegree, use_theta, use_phi=True, zero_m_only=True):
     return Y_l_m
 
 
-def get_sph_harm_basis(L_maxdegree, zero_m_only=True):
+def get_sph_harm_basis(L_maxdegree: int, zero_m_only: bool = True):
     """Get a function calculating the spherical harmonics basis from z and phi."""
     # retrieve equations
     Y_lm = real_sph_harm(
@@ -319,7 +324,7 @@ def get_sph_harm_basis(L_maxdegree, zero_m_only=True):
 
     # Return as a single function
     # args are either [cosφ] or [cosφ, ϑ]
-    def basis_fn(*args):
+    def basis_fn(*args) -> torch.Tensor:
         basis = sph_funcs(*args)
         basis[0] = args[0].new_tensor(basis[0]).expand_as(args[0])
         return torch.stack(basis, dim=1)

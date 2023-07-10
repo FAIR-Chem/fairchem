@@ -41,7 +41,7 @@ class AtomUpdateBlock(torch.nn.Module):
         emb_size_rbf: int,
         nHidden: int,
         activation=None,
-    ):
+    ) -> None:
         super().__init__()
 
         self.dense_rbf = Dense(
@@ -120,8 +120,8 @@ class OutputBlock(AtomUpdateBlock):
         nHidden: int,
         nHidden_afteratom: int,
         activation=None,
-        direct_forces=True,
-    ):
+        direct_forces: bool = True,
+    ) -> None:
         super().__init__(
             emb_size_atom=emb_size_atom,
             emb_size_edge=emb_size_edge,

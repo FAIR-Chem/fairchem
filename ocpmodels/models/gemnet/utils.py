@@ -11,7 +11,7 @@ import torch
 from torch_scatter import segment_csr
 
 
-def read_json(path):
+def read_json(path: str):
     """"""
     if not path.endswith(".json"):
         raise UserWarning(f"Path {path} is not a json-path.")
@@ -21,7 +21,7 @@ def read_json(path):
     return content
 
 
-def update_json(path, data):
+def update_json(path: str, data) -> None:
     """"""
     if not path.endswith(".json"):
         raise UserWarning(f"Path {path} is not a json-path.")
@@ -31,7 +31,7 @@ def update_json(path, data):
     write_json(path, content)
 
 
-def write_json(path, data):
+def write_json(path: str, data) -> None:
     """"""
     if not path.endswith(".json"):
         raise UserWarning(f"Path {path} is not a json-path.")
@@ -40,7 +40,7 @@ def write_json(path, data):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-def read_value_json(path, key):
+def read_value_json(path: str, key):
     """"""
     content = read_json(path)
 
@@ -85,11 +85,11 @@ def ragged_range(sizes):
 def repeat_blocks(
     sizes,
     repeats,
-    continuous_indexing=True,
-    start_idx=0,
-    block_inc=0,
-    repeat_inc=0,
-):
+    continuous_indexing: bool = True,
+    start_idx: int = 0,
+    block_inc: int = 0,
+    repeat_inc: int = 0,
+) -> torch.Tensor:
     """Repeat blocks of indices.
     Adapted from https://stackoverflow.com/questions/51154989/numpy-vectorized-function-to-repeat-blocks-of-consecutive-elements
 
@@ -264,7 +264,7 @@ def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
     return D_st, V_st
 
 
-def inner_product_normalized(x, y):
+def inner_product_normalized(x, y) -> torch.Tensor:
     """
     Calculate the inner product between the given normalized vectors,
     giving a result between -1 and 1.
