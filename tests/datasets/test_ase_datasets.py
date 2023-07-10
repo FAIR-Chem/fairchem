@@ -26,7 +26,7 @@ for atoms in structures:
 structures[2].set_pbc(True)
 
 
-def test_ase_read_dataset():
+def test_ase_read_dataset() -> None:
     for i, structure in enumerate(structures):
         write(
             os.path.join(
@@ -56,7 +56,7 @@ def test_ase_read_dataset():
     dataset.close_db()
 
 
-def test_ase_db_dataset():
+def test_ase_db_dataset() -> None:
     try:
         os.remove(
             os.path.join(
@@ -90,7 +90,7 @@ def test_ase_db_dataset():
     )
 
 
-def test_ase_db_dataset_folder():
+def test_ase_db_dataset_folder() -> None:
     try:
         os.remove(
             os.path.join(
@@ -137,7 +137,7 @@ def test_ase_db_dataset_folder():
     )
 
 
-def test_ase_db_dataset_list():
+def test_ase_db_dataset_list() -> None:
     try:
         os.remove(
             os.path.join(
@@ -189,7 +189,7 @@ def test_ase_db_dataset_list():
     )
 
 
-def test_ase_lmdb_dataset():
+def test_ase_lmdb_dataset() -> None:
     try:
         os.remove(
             os.path.join(
@@ -222,7 +222,7 @@ def test_ase_lmdb_dataset():
     )
 
 
-def test_lmdb_metadata_guesser():
+def test_lmdb_metadata_guesser() -> None:
     # Cleanup old lmdb in case it's left over from previous tests
     try:
         os.remove(
@@ -276,7 +276,7 @@ def test_lmdb_metadata_guesser():
     )
 
 
-def test_ase_metadata_guesser():
+def test_ase_metadata_guesser() -> None:
     try:
         os.remove(
             os.path.join(
@@ -360,7 +360,7 @@ def test_ase_metadata_guesser():
     dataset.close_db()
 
 
-def test_ase_multiread_dataset():
+def test_ase_multiread_dataset() -> None:
     try:
         os.remove(
             os.path.join(

@@ -72,7 +72,7 @@ class BaseTrainer(ABC):
         name="base_trainer",
         slurm={},
         noddp=False,
-    ):
+    ) -> None:
         self.name = name
         self.cpu = cpu
         self.epoch = 0
@@ -206,7 +206,7 @@ class BaseTrainer(ABC):
 
         self.evaluator = Evaluator(task=name)
 
-    def load(self):
+    def load(self) -> None:
         self.load_seed_from_config()
         self.load_logger()
         self.load_datasets()
@@ -216,7 +216,7 @@ class BaseTrainer(ABC):
         self.load_optimizer()
         self.load_extras()
 
-    def load_seed_from_config(self):
+    def load_seed_from_config(self) -> None:
         # https://pytorch.org/docs/stable/notes/randomness.html
         seed = self.config["cmd"]["seed"]
         if seed is None:
@@ -229,7 +229,7 @@ class BaseTrainer(ABC):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    def load_logger(self):
+    def load_logger(self) -> None:
         self.logger = None
         if not self.is_debug and distutils.is_master() and not self.is_hpo:
             assert (
@@ -242,7 +242,9 @@ class BaseTrainer(ABC):
 
             self.logger = registry.get_logger_class(logger_name)(self.config)
 
-    def get_sampler(self, dataset, batch_size, shuffle):
+    def get_sampler(
+        self, dataset, batch_size, shuffle
+    ) -> BalancedBatchSampler:
         if "load_balancing" in self.config["optim"]:
             balancing_mode = self.config["optim"]["load_balancing"]
             force_balancing = True
@@ -278,7 +280,7 @@ class BaseTrainer(ABC):
         )
         return loader
 
-    def load_datasets(self):
+    def load_datasets(self) -> None:
         self.parallel_collater = ParallelCollater(
             0 if self.cpu else 1,
             self.config["model_attributes"].get("otf_graph", False),
@@ -354,7 +356,7 @@ class BaseTrainer(ABC):
     def load_task(self):
         """Initialize task-specific information. Derived classes should implement this function."""
 
-    def load_model(self):
+    def load_model(self) -> None:
         # Build model
         if distutils.is_master():
             logging.info(f"Loading model: {self.config['model']}")
@@ -396,7 +398,7 @@ class BaseTrainer(ABC):
                 self.model, device_ids=[self.device]
             )
 
-    def load_checkpoint(self, checkpoint_path):
+    def load_checkpoint(self, checkpoint_path: str) -> None:
         if not os.path.isfile(checkpoint_path):
             raise FileNotFoundError(
                 errno.ENOENT, "Checkpoint file not found", checkpoint_path
@@ -460,7 +462,7 @@ class BaseTrainer(ABC):
             if self.scaler and checkpoint["amp"]:
                 self.scaler.load_state_dict(checkpoint["amp"])
 
-    def load_loss(self):
+    def load_loss(self) -> None:
         self.loss_fn = {}
         self.loss_fn["energy"] = self.config["optim"].get("loss_energy", "mae")
         self.loss_fn["force"] = self.config["optim"].get("loss_force", "mae")
@@ -479,12 +481,11 @@ class BaseTrainer(ABC):
                 )
             self.loss_fn[loss] = DDPLoss(self.loss_fn[loss])
 
-    def load_optimizer(self):
+    def load_optimizer(self) -> None:
         optimizer = self.config["optim"].get("optimizer", "AdamW")
         optimizer = getattr(optim, optimizer)
 
         if self.config["optim"].get("weight_decay", 0) > 0:
-
             # Do not regularize bias etc.
             params_decay = []
             params_no_decay = []
@@ -517,7 +518,7 @@ class BaseTrainer(ABC):
                 **self.config["optim"].get("optimizer_params", {}),
             )
 
-    def load_extras(self):
+    def load_extras(self) -> None:
         self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
         self.clip_grad_norm = self.config["optim"].get("clip_grad_norm")
         self.ema_decay = self.config["optim"].get("ema_decay")
@@ -532,8 +533,8 @@ class BaseTrainer(ABC):
     def save(
         self,
         metrics=None,
-        checkpoint_file="checkpoint.pt",
-        training_state=True,
+        checkpoint_file: str = "checkpoint.pt",
+        training_state: bool = True,
     ):
         if not self.is_debug and distutils.is_master():
             if training_state:
@@ -632,7 +633,7 @@ class BaseTrainer(ABC):
         """Derived classes should implement this function."""
 
     @torch.no_grad()
-    def validate(self, split="val", disable_tqdm=False):
+    def validate(self, split: str = "val", disable_tqdm: bool = False):
         ensure_fitted(self._unwrapped_model, warn=True)
 
         if distutils.is_master():
@@ -708,7 +709,7 @@ class BaseTrainer(ABC):
     def _compute_loss(self, out, batch_list):
         """Derived classes should implement this function."""
 
-    def _backward(self, loss):
+    def _backward(self, loss) -> None:
         self.optimizer.zero_grad()
         loss.backward()
         # Scale down the gradients of shared parameters

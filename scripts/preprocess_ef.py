@@ -76,7 +76,7 @@ def write_images_to_lmdb(mp_arg):
     return sampled_ids, idx
 
 
-def main(args):
+def main(args: argparse.Namespace) -> None:
     xyz_logs = glob.glob(os.path.join(args.data_path, "*.txt"))
     if not xyz_logs:
         raise RuntimeError("No *.txt files found. Did you uncompress?")
@@ -133,7 +133,7 @@ def main(args):
         ids_log.writelines(sampled_ids[j])
 
 
-def get_parser():
+def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--data-path",
@@ -166,6 +166,6 @@ def get_parser():
 
 
 if __name__ == "__main__":
-    parser = get_parser()
-    args = parser.parse_args()
+    parser: argparse.ArgumentParser = get_parser()
+    args: argparse.Namespace = parser.parse_args()
     main(args)

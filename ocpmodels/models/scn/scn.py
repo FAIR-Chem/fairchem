@@ -73,33 +73,33 @@ class SphericalChannelNetwork(BaseModel):
 
     def __init__(
         self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,  # not used
-        use_pbc=True,
-        regress_forces=True,
-        otf_graph=False,
-        max_num_neighbors=20,
-        cutoff=8.0,
-        max_num_elements=90,
-        num_interactions=8,
-        lmax=6,
-        mmax=1,
-        num_resolutions=2,
-        sphere_channels=128,
-        sphere_channels_reduce=128,
-        hidden_channels=256,
-        num_taps=-1,
-        use_grid=True,
-        num_bands=1,
-        num_sphere_samples=128,
-        num_basis_functions=128,
-        distance_function="gaussian",
-        basis_width_scalar=1.0,
-        distance_resolution=0.02,
-        show_timing_info=False,
-        direct_forces=True,
-    ):
+        num_atoms: int,  # not used
+        bond_feat_dim: int,  # not used
+        num_targets: int,  # not used
+        use_pbc: bool = True,
+        regress_forces: bool = True,
+        otf_graph: bool = False,
+        max_num_neighbors: int = 20,
+        cutoff: float = 8.0,
+        max_num_elements: int = 90,
+        num_interactions: int = 8,
+        lmax: int = 6,
+        mmax: int = 1,
+        num_resolutions: int = 2,
+        sphere_channels: int = 128,
+        sphere_channels_reduce: int = 128,
+        hidden_channels: int = 256,
+        num_taps: int = -1,
+        use_grid: bool = True,
+        num_bands: int = 1,
+        num_sphere_samples: int = 128,
+        num_basis_functions: int = 128,
+        distance_function: str = "gaussian",
+        basis_width_scalar: float = 1.0,
+        distance_resolution: float = 0.02,
+        show_timing_info: bool = False,
+        direct_forces: bool = True,
+    ) -> None:
         super().__init__()
 
         if "e3nn" not in sys.modules:
@@ -502,8 +502,8 @@ class SphericalChannelNetwork(BaseModel):
         return edge_rot_mat.detach()
 
     def _rank_edge_distances(
-        self, edge_distance, edge_index, max_num_neighbors
-    ):
+        self, edge_distance, edge_index, max_num_neighbors: int
+    ) -> torch.Tensor:
         device = edge_distance.device
         # Create an index map to map distances from atom_distance to distance_sort
         # index_sort_map assumes index to be sorted
@@ -548,26 +548,26 @@ class SphericalChannelNetwork(BaseModel):
         return edge_rank
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
 
 class EdgeBlock(torch.nn.Module):
     def __init__(
         self,
-        num_resolutions,
+        num_resolutions: int,
         sphere_channels_reduce,
         hidden_channels_list,
         cutoff_list,
         sphharm_list,
         sphere_channels,
         distance_expansion,
-        max_num_elements,
-        num_basis_functions,
-        num_gaussians,
-        use_grid,
+        max_num_elements: int,
+        num_basis_functions: int,
+        num_gaussians: int,
+        use_grid: bool,
         act,
-    ):
+    ) -> None:
         super(EdgeBlock, self).__init__()
         self.num_resolutions = num_resolutions
         self.act = act
@@ -648,7 +648,6 @@ class EdgeBlock(torch.nn.Module):
         edge_index,
         cutoff_index,
     ):
-
         ###############################################################
         # Update spherical node embeddings
         ###############################################################
@@ -729,7 +728,7 @@ class MessageBlock(torch.nn.Module):
         num_basis_functions,
         sphharm,
         act,
-    ):
+    ) -> None:
         super(MessageBlock, self).__init__()
         self.act = act
         self.hidden_channels = hidden_channels
@@ -757,7 +756,6 @@ class MessageBlock(torch.nn.Module):
         x_edge,
         edge_index,
     ):
-
         ###############################################################
         # Compute messages
         ###############################################################
@@ -797,11 +795,11 @@ class DistanceBlock(torch.nn.Module):
     def __init__(
         self,
         in_channels,
-        num_basis_functions,
+        num_basis_functions: int,
         distance_expansion,
-        max_num_elements,
+        max_num_elements: int,
         act,
-    ):
+    ) -> None:
         super(DistanceBlock, self).__init__()
         self.in_channels = in_channels
         self.distance_expansion = distance_expansion

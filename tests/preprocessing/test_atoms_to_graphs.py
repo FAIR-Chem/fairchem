@@ -16,7 +16,7 @@ from ocpmodels.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")
-def atoms_to_graphs_internals(request):
+def atoms_to_graphs_internals(request) -> None:
     atoms = read(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "atoms.json"),
         index=0,
@@ -35,7 +35,7 @@ def atoms_to_graphs_internals(request):
 
 @pytest.mark.usefixtures("atoms_to_graphs_internals")
 class TestAtomsToGraphs:
-    def test_gen_neighbors_pymatgen(self):
+    def test_gen_neighbors_pymatgen(self) -> None:
         # call the internal function
         (
             c_index,
@@ -87,7 +87,7 @@ class TestAtomsToGraphs:
         np.testing.assert_allclose(act_dist, test_dist)
         np.testing.assert_array_equal(act_index, test_index)
 
-    def test_convert(self):
+    def test_convert(self) -> None:
         # run convert on a single atoms obj
         data = self.atg.convert(self.atoms)
         # atomic numbers
@@ -107,7 +107,7 @@ class TestAtomsToGraphs:
         forces = data.force.numpy()
         np.testing.assert_allclose(act_forces, forces)
 
-    def test_convert_all(self):
+    def test_convert_all(self) -> None:
         # run convert_all on a list with one atoms object
         # this does not test the atoms.db functionality
         atoms_list = [self.atoms]

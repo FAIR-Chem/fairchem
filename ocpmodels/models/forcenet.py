@@ -23,7 +23,9 @@ from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 
 
 class FNDecoder(nn.Module):
-    def __init__(self, decoder_type, decoder_activation_str, output_dim):
+    def __init__(
+        self, decoder_type, decoder_activation_str, output_dim
+    ) -> None:
         super(FNDecoder, self).__init__()
         self.decoder_type = decoder_type
         self.decoder_activation = Act(decoder_activation_str)
@@ -43,7 +45,7 @@ class FNDecoder(nn.Module):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         for m in self.decoder:
             if isinstance(m, nn.Linear):
                 nn.init.xavier_uniform_(m.weight)
@@ -57,13 +59,13 @@ class InteractionBlock(MessagePassing):
     def __init__(
         self,
         hidden_channels,
-        mlp_basis_dim,
+        mlp_basis_dim: int,
         basis_type,
-        depth_mlp_edge=2,
-        depth_mlp_trans=1,
-        activation_str="ssp",
-        ablation="none",
-    ):
+        depth_mlp_edge: int = 2,
+        depth_mlp_trans: int = 1,
+        activation_str: str = "ssp",
+        ablation: str = "none",
+    ) -> None:
         super(InteractionBlock, self).__init__(aggr="add")
 
         self.activation = Act(activation_str)
@@ -131,7 +133,7 @@ class InteractionBlock(MessagePassing):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         if self.basis_type != "rawcat":
             torch.nn.init.xavier_uniform_(self.lin_basis.weight)
             self.lin_basis.bias.data.fill_(0)
@@ -252,8 +254,7 @@ class ForceNet(BaseModel):
         training=True,
         otf_graph=False,
         use_pbc=True,
-    ):
-
+    ) -> None:
         super(ForceNet, self).__init__()
         self.training = training
         self.ablation = ablation
@@ -513,5 +514,5 @@ class ForceNet(BaseModel):
         return energy, force
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())

@@ -175,7 +175,7 @@ class Registry:
         return wrap
 
     @classmethod
-    def register(cls, name, obj):
+    def register(cls, name, obj) -> None:
         r"""Register an item to registry with key 'name'
 
         Args:
@@ -198,7 +198,7 @@ class Registry:
         current[path[-1]] = obj
 
     @classmethod
-    def __import_error(cls, name: str, mapping_name: str):
+    def __import_error(cls, name: str, mapping_name: str) -> RuntimeError:
         kind = mapping_name[: -len("_name_mapping")]
         mapping = cls.mapping.get(mapping_name, {})
         existing_keys = list(mapping.keys())
@@ -260,7 +260,7 @@ class Registry:
         return cls.get_class(name, "trainer_name_mapping")
 
     @classmethod
-    def get(cls, name, default=None, no_warning=False):
+    def get(cls, name, default=None, no_warning: bool = False):
         r"""Get an item from registry with key 'name'
 
         Args:

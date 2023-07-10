@@ -27,7 +27,7 @@ class EfficientInteractionDownProjection(torch.nn.Module):
         num_spherical: int,
         num_radial: int,
         emb_size_interm: int,
-    ):
+    ) -> None:
         super().__init__()
 
         self.num_spherical = num_spherical
@@ -36,7 +36,7 @@ class EfficientInteractionDownProjection(torch.nn.Module):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         self.weight = torch.nn.Parameter(
             torch.empty(
                 (self.num_spherical, self.num_radial, self.emb_size_interm)
@@ -105,7 +105,7 @@ class EfficientInteractionBilinear(torch.nn.Module):
         emb_size: int,
         emb_size_interm: int,
         units_out: int,
-    ):
+    ) -> None:
         super().__init__()
         self.emb_size = emb_size
         self.emb_size_interm = emb_size_interm
@@ -113,7 +113,7 @@ class EfficientInteractionBilinear(torch.nn.Module):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         self.weight = torch.nn.Parameter(
             torch.empty(
                 (self.emb_size, self.emb_size_interm, self.units_out),
@@ -128,7 +128,7 @@ class EfficientInteractionBilinear(torch.nn.Module):
         m,
         id_reduce,
         id_ragged_idx,
-    ):
+    ) -> torch.Tensor:
         """
 
         Arguments

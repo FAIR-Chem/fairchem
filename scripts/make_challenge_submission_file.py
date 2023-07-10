@@ -16,7 +16,7 @@ import os
 import numpy as np
 
 
-def write_is2re_relaxations(path, filename, hybrid):
+def write_is2re_relaxations(path: str, filename: str, hybrid) -> None:
     import ase.io
     from tqdm import tqdm
 
@@ -50,7 +50,7 @@ def write_is2re_relaxations(path, filename, hybrid):
     np.savez_compressed(filename, **submission_file)
 
 
-def write_predictions(path, filename):
+def write_predictions(path: str, filename: str) -> None:
     submission_file = {}
 
     res = np.load(path, allow_pickle=True)
@@ -62,7 +62,7 @@ def write_predictions(path, filename):
     np.savez_compressed(filename, **submission_file)
 
 
-def main(args):
+def main(args: argparse.Namespace) -> None:
     path = args.path
 
     if not args.out_path.endswith(".npz"):
@@ -114,5 +114,5 @@ if __name__ == "__main__":
         help="Write IS2RE results from S2EF prediction files. Path specified must be a S2EF NPZ file.",
     )
 
-    args = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
     main(args)

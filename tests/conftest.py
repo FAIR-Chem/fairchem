@@ -29,7 +29,7 @@ class Approx:
         *,
         rtol: Optional[float] = None,
         atol: Optional[float] = None,
-    ):
+    ) -> None:
         if isinstance(data, list):
             self.data = np.array(data)
         elif isinstance(data, np.ndarray):
@@ -41,7 +41,7 @@ class Approx:
         self.atol = atol if atol is not None else DEFAULT_ATOL
         self.tol_repr = True
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         data = np.array_repr(self.data)
         data = "\n".join(f"\t{line}" for line in data.splitlines())
         tol_repr = ""
@@ -51,10 +51,10 @@ class Approx:
 
 
 class _ApproxNumpyFormatter:
-    def __init__(self, data):
+    def __init__(self, data) -> None:
         self.data = data
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return Approx(
             self.data.expected,
             rtol=self.data.rel,
@@ -62,7 +62,7 @@ class _ApproxNumpyFormatter:
         ).__repr__()
 
 
-def _try_parse_approx(data: "SerializableData"):
+def _try_parse_approx(data: "SerializableData") -> Optional[Approx]:
     """
     Parse the string representation of an Approx object.
     We can just use eval here, since we know the string is safe.

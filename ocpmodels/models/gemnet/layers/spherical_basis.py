@@ -35,7 +35,7 @@ class CircularBasisLayer(torch.nn.Module):
         radial_basis: RadialBasis,
         cbf: str,
         efficient: bool = False,
-    ):
+    ) -> None:
         super().__init__()
 
         self.radial_basis = radial_basis
