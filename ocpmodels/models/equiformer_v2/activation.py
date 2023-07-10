@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# from .linear import Linear_gaussian_init
-
 
 class ScaledSiLU(nn.Module):
     def __init__(self, inplace=False):
