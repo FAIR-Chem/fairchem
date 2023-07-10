@@ -67,24 +67,24 @@ class DimeNetWrap(DimeNet, BaseModel):
 
     def __init__(
         self,
-        num_atoms,
+        num_atoms: int,
         bond_feat_dim,  # not used
-        num_targets,
-        use_pbc=True,
-        regress_forces=True,
-        hidden_channels=128,
-        num_blocks=6,
-        num_bilinear=8,
-        num_spherical=7,
-        num_radial=6,
-        otf_graph=False,
-        cutoff=10.0,
-        envelope_exponent=5,
-        num_before_skip=1,
-        num_after_skip=2,
-        num_output_layers=3,
-        max_angles_per_image=int(1e6),
-    ):
+        num_targets: int,
+        use_pbc: bool = True,
+        regress_forces: bool = True,
+        hidden_channels: int = 128,
+        num_blocks: int = 6,
+        num_bilinear: int = 8,
+        num_spherical: int = 7,
+        num_radial: int = 6,
+        otf_graph: bool = False,
+        cutoff: float = 10.0,
+        envelope_exponent: int = 5,
+        num_before_skip: int = 1,
+        num_after_skip: int = 2,
+        num_output_layers: int = 3,
+        max_angles_per_image: int = int(1e6),
+    ) -> None:
         self.num_targets = num_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
@@ -107,7 +107,7 @@ class DimeNetWrap(DimeNet, BaseModel):
             num_output_layers=num_output_layers,
         )
 
-    def triplets(self, edge_index, cell_offsets, num_nodes):
+    def triplets(self, edge_index, cell_offsets, num_nodes: int):
         row, col = edge_index  # j->i
 
         value = torch.arange(row.size(0), device=row.device)
@@ -226,5 +226,5 @@ class DimeNetWrap(DimeNet, BaseModel):
             return energy
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())

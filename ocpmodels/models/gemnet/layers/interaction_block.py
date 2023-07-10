@@ -63,7 +63,7 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
         num_atom,
         activation=None,
         name="Interaction",
-    ):
+    ) -> None:
         super().__init__()
         self.name = name
 
@@ -241,7 +241,7 @@ class TripletInteraction(torch.nn.Module):
         activation=None,
         name="TripletInteraction",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__()
         self.name = name
 

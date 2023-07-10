@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import argparse
 import copy
 import logging
 
@@ -21,10 +22,10 @@ from ocpmodels.common.utils import (
 
 
 class Runner(submitit.helpers.Checkpointable):
-    def __init__(self):
+    def __init__(self) -> None:
         self.config = None
 
-    def __call__(self, config):
+    def __call__(self, config) -> None:
         with new_trainer_context(args=args, config=config) as ctx:
             self.config = ctx.config
             self.task = ctx.task
@@ -46,7 +47,7 @@ class Runner(submitit.helpers.Checkpointable):
 if __name__ == "__main__":
     setup_logging()
 
-    parser = flags.get_parser()
+    parser: argparse.ArgumentParser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     config = build_config(args, override_args)
 

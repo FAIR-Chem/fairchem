@@ -12,11 +12,11 @@ from torch_scatter import segment_csr
 def repeat_blocks(
     sizes,
     repeats,
-    continuous_indexing=True,
-    start_idx=0,
-    block_inc=0,
-    repeat_inc=0,
-):
+    continuous_indexing: bool = True,
+    start_idx: int = 0,
+    block_inc: int = 0,
+    repeat_inc: int = 0,
+) -> torch.Tensor:
     """Repeat blocks of indices.
     Adapted from https://stackoverflow.com/questions/51154989/numpy-vectorized-function-to-repeat-blocks-of-consecutive-elements
 
@@ -154,7 +154,7 @@ def repeat_blocks(
     return res
 
 
-def get_edge_id(edge_idx, cell_offsets, num_atoms):
+def get_edge_id(edge_idx, cell_offsets, num_atoms: int):
     cell_basis = cell_offsets.max() - cell_offsets.min() + 1
     cell_id = (
         (

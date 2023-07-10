@@ -11,7 +11,7 @@ import torch
 ### Methods for sample points on a sphere
 
 
-def CalcSpherePoints(num_points, device="cpu"):
+def CalcSpherePoints(num_points: int, device: str = "cpu") -> torch.Tensor:
     goldenRatio = (1 + 5**0.5) / 2
     i = torch.arange(num_points, device=device).view(-1, 1)
     theta = 2 * math.pi * i / goldenRatio
@@ -34,7 +34,7 @@ def CalcSpherePoints(num_points, device="cpu"):
     return points * (scalar.view(-1, 1))
 
 
-def CalcSpherePointsRandom(num_points, device):
+def CalcSpherePointsRandom(num_points: int, device) -> float:
     pts = 2.0 * (torch.rand(num_points, 3, device=device) - 0.5)
     radius = torch.sum(pts**2, dim=1)
     while torch.max(radius) > 1.0:

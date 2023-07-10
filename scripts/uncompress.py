@@ -8,23 +8,24 @@ import glob
 import lzma
 import multiprocessing as mp
 import os
+from typing import List, Tuple
 
 from tqdm import tqdm
 
 
-def read_lzma(inpfile, outfile):
+def read_lzma(inpfile: str, outfile: str) -> None:
     with open(inpfile, "rb") as f:
         contents = lzma.decompress(f.read())
         with open(outfile, "wb") as op:
             op.write(contents)
 
 
-def decompress_list_of_files(ip_op_pair):
+def decompress_list_of_files(ip_op_pair: Tuple[str, str]) -> None:
     ip_file, op_file = ip_op_pair
     read_lzma(ip_file, op_file)
 
 
-def get_parser():
+def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--ipdir", type=str, help="Path to compressed dataset directory"
@@ -38,16 +39,18 @@ def get_parser():
     return parser
 
 
-def main(args):
+def main(args: argparse.Namespace) -> None:
     os.makedirs(args.opdir, exist_ok=True)
 
     filelist = glob.glob(os.path.join(args.ipdir, "*txt.xz")) + glob.glob(
         os.path.join(args.ipdir, "*extxyz.xz")
     )
-    ip_op_pairs = []
-    for i in filelist:
-        fname_base = os.path.basename(i)
-        ip_op_pairs.append((i, os.path.join(args.opdir, fname_base[:-3])))
+    ip_op_pairs: List[Tuple[str, str]] = []
+    for filename in filelist:
+        fname_base = os.path.basename(filename)
+        ip_op_pairs.append(
+            (filename, os.path.join(args.opdir, fname_base[:-3]))
+        )
 
     pool = mp.Pool(args.num_workers)
     list(
@@ -60,6 +63,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = get_parser()
-    args = parser.parse_args()
+    parser: argparse.ArgumentParser = get_parser()
+    args: argparse.Namespace = parser.parse_args()
     main(args)

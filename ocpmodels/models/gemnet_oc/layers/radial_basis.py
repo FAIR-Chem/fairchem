@@ -5,6 +5,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import math
+from typing import Dict, Union
 
 import numpy as np
 import sympy as sym
@@ -26,7 +27,7 @@ class PolynomialEnvelope(torch.nn.Module):
             Exponent of the envelope function.
     """
 
-    def __init__(self, exponent):
+    def __init__(self, exponent) -> None:
         super().__init__()
         assert exponent > 0
         self.p = exponent
@@ -34,7 +35,7 @@ class PolynomialEnvelope(torch.nn.Module):
         self.b = self.p * (self.p + 2)
         self.c = -self.p * (self.p + 1) / 2
 
-    def forward(self, d_scaled):
+    def forward(self, d_scaled) -> torch.Tensor:
         env_val = (
             1
             + self.a * d_scaled**self.p
@@ -52,10 +53,10 @@ class ExponentialEnvelope(torch.nn.Module):
     and Nonlocal Effects
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, d_scaled):
+    def forward(self, d_scaled) -> torch.Tensor:
         env_val = torch.exp(
             -(d_scaled**2) / ((1 - d_scaled) * (1 + d_scaled))
         )
@@ -63,7 +64,13 @@ class ExponentialEnvelope(torch.nn.Module):
 
 
 class GaussianBasis(torch.nn.Module):
-    def __init__(self, start=0.0, stop=5.0, num_gaussians=50, trainable=False):
+    def __init__(
+        self,
+        start: float = 0.0,
+        stop: float = 5.0,
+        num_gaussians: int = 50,
+        trainable: bool = False,
+    ) -> None:
         super().__init__()
         offset = torch.linspace(start, stop, num_gaussians)
         if trainable:
@@ -72,7 +79,7 @@ class GaussianBasis(torch.nn.Module):
             self.register_buffer("offset", offset)
         self.coeff = -0.5 / ((stop - start) / (num_gaussians - 1)) ** 2
 
-    def forward(self, dist):
+    def forward(self, dist) -> torch.Tensor:
         dist = dist[:, None] - self.offset[None, :]
         return torch.exp(self.coeff * torch.pow(dist, 2))
 
@@ -93,7 +100,7 @@ class SphericalBesselBasis(torch.nn.Module):
         self,
         num_radial: int,
         cutoff: float,
-    ):
+    ) -> None:
         super().__init__()
         self.norm_const = math.sqrt(2 / (cutoff**3))
         # cutoff ** 3 to counteract dividing by d_scaled = d / cutoff
@@ -135,7 +142,7 @@ class BernsteinBasis(torch.nn.Module):
         self,
         num_radial: int,
         pregamma_initial: float = 0.45264,
-    ):
+    ) -> None:
         super().__init__()
         prefactor = binom(num_radial - 1, np.arange(num_radial))
         self.register_buffer(
@@ -155,7 +162,7 @@ class BernsteinBasis(torch.nn.Module):
         exp2 = num_radial - 1 - exp1
         self.register_buffer("exp2", exp2[None, :], persistent=False)
 
-    def forward(self, d_scaled):
+    def forward(self, d_scaled) -> torch.Tensor:
         gamma = self.softplus(self.pregamma)  # constrain to positive
         exp_d = torch.exp(-gamma * d_scaled)[:, None]
         return (
@@ -184,10 +191,13 @@ class RadialBasis(torch.nn.Module):
         self,
         num_radial: int,
         cutoff: float,
-        rbf: dict = {"name": "gaussian"},
-        envelope: dict = {"name": "polynomial", "exponent": 5},
+        rbf: Dict[str, str] = {"name": "gaussian"},
+        envelope: Dict[str, Union[str, int]] = {
+            "name": "polynomial",
+            "exponent": 5,
+        },
         scale_basis: bool = False,
-    ):
+    ) -> None:
         super().__init__()
         self.inv_cutoff = 1 / cutoff
 

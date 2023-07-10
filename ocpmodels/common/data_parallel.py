@@ -21,7 +21,7 @@ from ocpmodels.datasets import data_list_collater
 
 
 class OCPDataParallel(torch.nn.DataParallel):
-    def __init__(self, module, output_device, num_gpus):
+    def __init__(self, module, output_device, num_gpus: int) -> None:
         if num_gpus < 0:
             raise ValueError("# GPUs must be positive.")
         if num_gpus > torch.cuda.device_count():
@@ -81,7 +81,7 @@ class OCPDataParallel(torch.nn.DataParallel):
 
 
 class ParallelCollater:
-    def __init__(self, num_gpus, otf_graph=False):
+    def __init__(self, num_gpus: int, otf_graph: bool = False) -> None:
         self.num_gpus = num_gpus
         self.otf_graph = otf_graph
 
@@ -113,7 +113,7 @@ class ParallelCollater:
 
 
 @numba.njit
-def balanced_partition(sizes, num_parts):
+def balanced_partition(sizes, num_parts: int):
     """
     Greedily partition the given set by always inserting
     the largest element into the smallest partition.
@@ -161,16 +161,16 @@ class BalancedBatchSampler(Sampler):
     def __init__(
         self,
         dataset,
-        batch_size,
-        num_replicas,
-        rank,
+        batch_size: int,
+        num_replicas: int,
+        rank: int,
         device,
         mode: Union[str, bool] = "atoms",
-        shuffle=True,
-        drop_last=False,
-        force_balancing=False,
-        throw_on_error=False,
-    ):
+        shuffle: bool = True,
+        drop_last: bool = False,
+        force_balancing: bool = False,
+        throw_on_error: bool = False,
+    ) -> None:
         if mode is True:
             mode = "atoms"
 
@@ -240,10 +240,10 @@ class BalancedBatchSampler(Sampler):
             else:
                 logging.warning(msg)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.batch_sampler)
 
-    def set_epoch(self, epoch):
+    def set_epoch(self, epoch: int) -> None:
         self.single_sampler.set_epoch(epoch)
 
     def __iter__(self):

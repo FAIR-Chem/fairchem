@@ -38,34 +38,34 @@ except Exception:
 class spinconv(BaseModel):
     def __init__(
         self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,
-        use_pbc=True,
-        regress_forces=True,
-        otf_graph=False,
-        hidden_channels=32,
-        mid_hidden_channels=200,
-        num_interactions=1,
-        num_basis_functions=200,
-        basis_width_scalar=1.0,
-        max_num_neighbors=20,
-        sphere_size_lat=15,
-        sphere_size_long=9,
-        cutoff=10.0,
-        distance_block_scalar_max=2.0,
-        max_num_elements=90,
-        embedding_size=32,
-        show_timing_info=False,
-        sphere_message="fullconv",  # message block sphere representation
-        output_message="fullconv",  # output block sphere representation
-        lmax=False,
-        force_estimator="random",
-        model_ref_number=0,
-        readout="add",
-        num_rand_rotations=5,
-        scale_distances=True,
-    ):
+        num_atoms: int,  # not used
+        bond_feat_dim: int,  # not used
+        num_targets: int,
+        use_pbc: bool = True,
+        regress_forces: bool = True,
+        otf_graph: bool = False,
+        hidden_channels: int = 32,
+        mid_hidden_channels: int = 200,
+        num_interactions: int = 1,
+        num_basis_functions: int = 200,
+        basis_width_scalar: float = 1.0,
+        max_num_neighbors: int = 20,
+        sphere_size_lat: int = 15,
+        sphere_size_long: int = 9,
+        cutoff: float = 10.0,
+        distance_block_scalar_max: float = 2.0,
+        max_num_elements: int = 90,
+        embedding_size: int = 32,
+        show_timing_info: bool = False,
+        sphere_message: str = "fullconv",  # message block sphere representation
+        output_message: str = "fullconv",  # output block sphere representation
+        lmax: bool = False,
+        force_estimator: str = "random",
+        model_ref_number: int = 0,
+        readout: str = "add",
+        num_rand_rotations: int = 5,
+        scale_distances: bool = True,
+    ) -> None:
         super(spinconv, self).__init__()
 
         self.num_targets = num_targets
@@ -320,12 +320,12 @@ class spinconv(BaseModel):
     def _compute_forces_random_rotations(
         self,
         x,
-        num_random_rotations,
+        num_random_rotations: int,
         target_element,
         edge_index,
         edge_distance_vec,
         batch,
-    ):
+    ) -> torch.Tensor:
         # Compute the forces and energy by randomly rotating the system and taking the average
 
         device = x.device
@@ -365,7 +365,6 @@ class spinconv(BaseModel):
         forces = torch.zeros(self.num_atoms, 3, device=device)
 
         for rot_index in range(num_random_rotations):
-
             rot_mat_x_perturb = torch.bmm(rot_mat_x, atom_rot_mat[rot_index])
             rot_mat_y_perturb = torch.bmm(rot_mat_y, atom_rot_mat[rot_index])
             rot_mat_z_perturb = torch.bmm(rot_mat_z, atom_rot_mat[rot_index])
@@ -541,7 +540,7 @@ class spinconv(BaseModel):
 
         return edge_index, edge_distance, edge_distance_vec
 
-    def _random_rot_mat(self, num_matrices, device):
+    def _random_rot_mat(self, num_matrices: int, device) -> torch.Tensor:
         ang_a = 2.0 * math.pi * torch.rand(num_matrices, device=device)
         ang_b = 2.0 * math.pi * torch.rand(num_matrices, device=device)
         ang_c = 2.0 * math.pi * torch.rand(num_matrices, device=device)
@@ -586,7 +585,9 @@ class spinconv(BaseModel):
 
         return torch.bmm(torch.bmm(rot_a, rot_b), rot_c)
 
-    def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
+    def _init_edge_rot_mat(
+        self, data, edge_index, edge_distance_vec
+    ) -> torch.Tensor:
         device = data.pos.device
         num_atoms = len(data.batch)
 
@@ -806,7 +807,7 @@ class spinconv(BaseModel):
         )
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
 
@@ -823,7 +824,7 @@ class MessageBlock(torch.nn.Module):
         sphere_message,
         act,
         lmax,
-    ):
+    ) -> None:
         super(MessageBlock, self).__init__()
         self.in_hidden_channels = in_hidden_channels
         self.out_hidden_channels = out_hidden_channels
@@ -915,7 +916,7 @@ class ForceOutputBlock(torch.nn.Module):
         sphere_message,
         act,
         lmax,
-    ):
+    ) -> None:
         super(ForceOutputBlock, self).__init__()
         self.in_hidden_channels = in_hidden_channels
         self.out_hidden_channels = out_hidden_channels
@@ -988,7 +989,7 @@ class SpinConvBlock(torch.nn.Module):
         sphere_message,
         act,
         lmax,
-    ):
+    ) -> None:
         super(SpinConvBlock, self).__init__()
         self.in_hidden_channels = in_hidden_channels
         self.mid_hidden_channels = mid_hidden_channels
@@ -1094,7 +1095,7 @@ class EmbeddingBlock(torch.nn.Module):
         num_embedding_basis,
         max_num_elements,
         act,
-    ):
+    ) -> None:
         super(EmbeddingBlock, self).__init__()
         self.in_hidden_channels = in_hidden_channels
         self.out_hidden_channels = out_hidden_channels
@@ -1157,7 +1158,7 @@ class DistanceBlock(torch.nn.Module):
         scalar_max,
         distance_expansion,
         scale_distances,
-    ):
+    ) -> None:
         super(DistanceBlock, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -1202,12 +1203,14 @@ class DistanceBlock(torch.nn.Module):
 
 
 class ProjectLatLongSphere(torch.nn.Module):
-    def __init__(self, sphere_size_lat, sphere_size_long):
+    def __init__(self, sphere_size_lat, sphere_size_long) -> None:
         super(ProjectLatLongSphere, self).__init__()
         self.sphere_size_lat = sphere_size_lat
         self.sphere_size_long = sphere_size_long
 
-    def forward(self, x, length, index, delta, source_edge_index):
+    def forward(
+        self, x, length, index, delta, source_edge_index
+    ) -> torch.Tensor:
         device = x.device
         hidden_channels = len(x[0])
 
@@ -1241,7 +1244,7 @@ class ProjectLatLongSphere(torch.nn.Module):
 
 
 class Swish(torch.nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super(Swish, self).__init__()
 
     def forward(self, x):
@@ -1250,8 +1253,12 @@ class Swish(torch.nn.Module):
 
 class GaussianSmearing(torch.nn.Module):
     def __init__(
-        self, start=-5.0, stop=5.0, num_gaussians=50, basis_width_scalar=1.0
-    ):
+        self,
+        start: float = -5.0,
+        stop: float = 5.0,
+        num_gaussians: int = 50,
+        basis_width_scalar: float = 1.0,
+    ) -> None:
         super(GaussianSmearing, self).__init__()
         offset = torch.linspace(start, stop, num_gaussians)
         self.coeff = (
@@ -1259,6 +1266,6 @@ class GaussianSmearing(torch.nn.Module):
         )
         self.register_buffer("offset", offset)
 
-    def forward(self, dist):
+    def forward(self, dist) -> torch.Tensor:
         dist = dist.view(-1, 1) - self.offset.view(1, -1)
         return torch.exp(self.coeff * torch.pow(dist, 2))

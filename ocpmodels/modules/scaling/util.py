@@ -5,7 +5,7 @@ import torch.nn as nn
 from .scale_factor import ScaleFactor
 
 
-def ensure_fitted(module: nn.Module, warn: bool = False):
+def ensure_fitted(module: nn.Module, warn: bool = False) -> None:
     for name, child in module.named_modules():
         if not isinstance(child, ScaleFactor) or child.fitted:
             continue

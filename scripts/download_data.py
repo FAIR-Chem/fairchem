@@ -2,6 +2,7 @@ import argparse
 import glob
 import logging
 import os
+from typing import Dict, Optional
 
 import ocpmodels
 
@@ -10,7 +11,7 @@ This script provides users with an automated way to download, preprocess (where
 applicable), and organize data to readily be used by the existing config files.
 """
 
-DOWNLOAD_LINKS = {
+DOWNLOAD_LINKS_s2ef: Dict[str, Dict[str, str]] = {
     "s2ef": {
         "200k": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar",
         "2M": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar",
@@ -24,6 +25,9 @@ DOWNLOAD_LINKS = {
         "rattled": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_rattled.tar",
         "md": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_md.tar",
     },
+}
+
+DOWNLOAD_LINKS_is2re: Dict[str, str] = {
     "is2re": "https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_test_lmdbs.tar.gz",
 }
 
@@ -43,20 +47,28 @@ S2EF_COUNTS = {
 }
 
 
-def get_data(datadir, task, split, del_intmd_files):
+def get_data(
+    datadir: str, task: str, split: Optional[str], del_intmd_files: bool
+) -> None:
     os.makedirs(datadir, exist_ok=True)
 
     if task == "s2ef" and split is None:
         raise NotImplementedError("S2EF requires a split to be defined.")
 
+    download_link: Optional[str] = None
     if task == "s2ef":
         assert (
-            split in DOWNLOAD_LINKS[task]
-        ), f'S2EF "{split}" split not defined, please specify one of the following: {list(DOWNLOAD_LINKS["s2ef"].keys())}'
-        download_link = DOWNLOAD_LINKS[task][split]
-
+            split is not None
+        ), "Split must be defined for the s2ef dataset task"
+        assert (
+            split in DOWNLOAD_LINKS_s2ef[task]
+        ), f'S2EF "{split}" split not defined, please specify one of the following: {list(DOWNLOAD_LINKS_s2ef["s2ef"].keys())}'
+        download_link = DOWNLOAD_LINKS_s2ef[task][split]
     elif task == "is2re":
-        download_link = DOWNLOAD_LINKS[task]
+        download_link = DOWNLOAD_LINKS_is2re[task]
+    else:
+        raise Exception(f"Unrecognized task {task}")
+    assert download_link is not None
 
     os.system(f"wget {download_link} -P {datadir}")
     filename = os.path.join(datadir, os.path.basename(download_link))
@@ -67,6 +79,9 @@ def get_data(datadir, task, split, del_intmd_files):
         os.path.basename(filename).split(".")[0],
     )
     if task == "s2ef" and split != "test":
+        assert (
+            split is not None
+        ), "Split must be defined for the s2ef dataset task"
         compressed_dir = os.path.join(dirname, os.path.basename(dirname))
         if split in ["200k", "2M", "20M", "all", "rattled", "md"]:
             output_path = os.path.join(datadir, task, split, "train")
@@ -85,7 +100,7 @@ def get_data(datadir, task, split, del_intmd_files):
         cleanup(filename, dirname)
 
 
-def uncompress_data(compressed_dir):
+def uncompress_data(compressed_dir: str) -> str:
     import uncompress
 
     parser = uncompress.get_parser()
@@ -96,7 +111,7 @@ def uncompress_data(compressed_dir):
     return args.opdir
 
 
-def preprocess_data(uncompressed_dir, output_path):
+def preprocess_data(uncompressed_dir: str, output_path: str) -> None:
     import preprocess_ef as preprocess
 
     parser = preprocess.get_parser()
@@ -106,7 +121,7 @@ def preprocess_data(uncompressed_dir, output_path):
     preprocess.main(args)
 
 
-def verify_count(output_path, task, split):
+def verify_count(output_path: str, task: str, split: str) -> None:
     paths = glob.glob(os.path.join(output_path, "*.txt"))
     count = 0
     for path in paths:
@@ -117,7 +132,7 @@ def verify_count(output_path, task, split):
     ), f"S2EF {split} count incorrect, verify preprocessing has completed successfully."
 
 
-def cleanup(filename, dirname):
+def cleanup(filename: str, dirname: str) -> None:
     import shutil
 
     if os.path.exists(filename):
