@@ -856,15 +856,13 @@ def get_pruned_edge_idx(
 
     # removes neighbors > max_neigh
     # assumes neighbors are sorted in increasing distance
-    _nonmax_idx = []
+    _nonmax_idx_list = []
     for i in range(num_atoms):
         idx_i = torch.arange(len(edge_index[1]))[(edge_index[1] == i)][
             :max_neigh
         ]
-        _nonmax_idx.append(idx_i)
-    _nonmax_idx = torch.cat(_nonmax_idx)
-
-    return _nonmax_idx
+        _nonmax_idx_list.append(idx_i)
+    return torch.cat(_nonmax_idx_list)
 
 
 def merge_dicts(dict1: dict, dict2: dict):

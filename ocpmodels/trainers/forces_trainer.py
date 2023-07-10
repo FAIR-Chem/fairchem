@@ -10,6 +10,7 @@ import os
 import pathlib
 from collections import defaultdict
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import torch
@@ -72,12 +73,12 @@ class ForcesTrainer(BaseTrainer):
         optimizer,
         identifier,
         normalizer=None,
-        timestamp_id=None,
-        run_dir=None,
+        timestamp_id: Optional[str] = None,
+        run_dir: Optional[str] = None,
         is_debug: bool = False,
         is_hpo: bool = False,
         print_every: int = 100,
-        seed=None,
+        seed: Optional[int] = None,
         logger: str = "tensorboard",
         local_rank: int = 0,
         amp: bool = False,
@@ -152,9 +153,9 @@ class ForcesTrainer(BaseTrainer):
     def predict(
         self,
         data_loader,
-        per_image=True,
+        per_image: bool = True,
         results_file=None,
-        disable_tqdm=False,
+        disable_tqdm: bool = False,
     ):
         ensure_fitted(self._unwrapped_model, warn=True)
 

@@ -57,7 +57,7 @@ class DDPLoss(nn.Module):
         self,
         input: torch.Tensor,
         target: torch.Tensor,
-        natoms: torch.Tensor = None,
+        natoms: Optional[torch.Tensor] = None,
         batch_size: Optional[int] = None,
     ):
         # zero out nans, if any
