@@ -83,17 +83,17 @@ class InteractionBlock(torch.nn.Module):
         emb_size_rbf,
         emb_size_cbf,
         emb_size_sbf,
-        num_before_skip,
-        num_after_skip,
-        num_concat,
-        num_atom,
-        num_atom_emb_layers=0,
-        quad_interaction=False,
-        atom_edge_interaction=False,
-        edge_atom_interaction=False,
-        atom_interaction=False,
+        num_before_skip: int,
+        num_after_skip: int,
+        num_concat: int,
+        num_atom: int,
+        num_atom_emb_layers: int = 0,
+        quad_interaction: bool = False,
+        atom_edge_interaction: bool = False,
+        edge_atom_interaction: bool = False,
+        atom_interaction: bool = False,
         activation=None,
-    ):
+    ) -> None:
         super().__init__()
 
         ## ------------------------ Message Passing ----------------------- ##
@@ -393,7 +393,7 @@ class QuadrupletInteraction(torch.nn.Module):
         emb_size_sbf,
         symmetric_mp=True,
         activation=None,
-    ):
+    ) -> None:
         super().__init__()
         self.symmetric_mp = symmetric_mp
 
@@ -551,7 +551,7 @@ class TripletInteraction(torch.nn.Module):
         symmetric_mp=True,
         swap_output=True,
         activation=None,
-    ):
+    ) -> None:
         super().__init__()
         self.symmetric_mp = symmetric_mp
         self.swap_output = swap_output
@@ -695,7 +695,7 @@ class PairInteraction(torch.nn.Module):
         emb_size_pair_out,
         emb_size_rbf,
         activation=None,
-    ):
+    ) -> None:
         super().__init__()
 
         # Bilinear layer and scaling factor

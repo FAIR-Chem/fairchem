@@ -34,7 +34,7 @@ class CircularBasisLayer(torch.nn.Module):
         radial_basis: RadialBasis,
         cbf: dict,
         scale_basis: bool = False,
-    ):
+    ) -> None:
         super().__init__()
 
         self.radial_basis = radial_basis
@@ -91,7 +91,7 @@ class SphericalBasisLayer(torch.nn.Module):
         radial_basis: RadialBasis,
         sbf: dict,
         scale_basis: bool = False,
-    ):
+    ) -> None:
         super().__init__()
 
         self.num_spherical = num_spherical

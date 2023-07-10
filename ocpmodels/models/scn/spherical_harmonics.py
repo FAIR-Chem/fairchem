@@ -39,11 +39,11 @@ class SphericalHarmonicsHelper:
 
     def __init__(
         self,
-        lmax,
-        mmax,
-        num_taps,
-        num_bands,
-    ):
+        lmax: int,
+        mmax: int,
+        num_taps: int,
+        num_bands: int,
+    ) -> None:
         import sys
 
         if "e3nn" not in sys.modules:
@@ -71,7 +71,7 @@ class SphericalHarmonicsHelper:
             )
         self.sphere_basis_reduce = int(self.sphere_basis_reduce)
 
-    def InitWignerDMatrix(self, edge_rot_mat):
+    def InitWignerDMatrix(self, edge_rot_mat) -> None:
         self.device = edge_rot_mat.device
 
         # Initialize matrix to combine the y-axis rotations during message passing
@@ -132,7 +132,6 @@ class SphericalHarmonicsHelper:
         wigner_inv = torch.tensor([], device=self.device)
 
         for y_rot in self.y_rotations:
-
             # Compute rotation about y-axis
             y_rot_mat = self.RotationMatrix(0, y_rot, 0)
             y_rot_mat = y_rot_mat.repeat(len(edge_rot_mat), 1, 1)
@@ -185,7 +184,6 @@ class SphericalHarmonicsHelper:
     # If num_taps is greater than 1, calculate how to combine the different samples.
     # Note the e3nn code flips the y-axis with the z-axis in the SCN paper description.
     def InitYRotMapping(self):
-
         if self.mmax == 0:
             y_rotations = torch.tensor([0.0], device=self.device)
             num_y_rotations = 1
@@ -194,7 +192,6 @@ class SphericalHarmonicsHelper:
             )
 
         if self.mmax == 1:
-
             if self.num_taps == 1:
                 y_rotations = torch.tensor([0.0], device=self.device)
                 num_y_rotations = len(y_rotations)
@@ -250,7 +247,7 @@ class SphericalHarmonicsHelper:
         return mapping_y_rot.detach(), y_rotations
 
     # Simplified version of function from e3nn
-    def ToGrid(self, x, channels):
+    def ToGrid(self, x, channels) -> torch.Tensor:
         x = x.view(-1, self.sphere_basis, channels)
         x_grid = torch.einsum("mbi,zic->zbmc", self.to_grid_shb, x)
         x_grid = torch.einsum(
@@ -260,14 +257,14 @@ class SphericalHarmonicsHelper:
         return x_grid
 
     # Simplified version of function from e3nn
-    def FromGrid(self, x_grid, channels):
+    def FromGrid(self, x_grid, channels) -> torch.Tensor:
         x_grid = x_grid.view(-1, self.grid_res, (self.grid_res + 1), channels)
         x = torch.einsum("am,zbac->zbmc", self.from_grid.sha, x_grid)
         x = torch.einsum("mbi,zbmc->zic", self.from_grid.shb, x).contiguous()
         x = x.view(-1, channels)
         return x
 
-    def CombineYRotations(self, x):
+    def CombineYRotations(self, x) -> torch.Tensor:
         num_channels = x.size()[-1]
         x = x.view(
             -1, self.num_y_rotations * self.sphere_basis_reduce, num_channels
@@ -275,7 +272,7 @@ class SphericalHarmonicsHelper:
         x = torch.einsum("abc, bd->adc", x, self.mapping_y_rot).contiguous()
         return x
 
-    def Rotate(self, x):
+    def Rotate(self, x) -> torch.Tensor:
         num_channels = x.size()[2]
         x = x.view(-1, 1, self.sphere_basis, num_channels).repeat(
             1, self.num_y_rotations, 1, 1
@@ -286,7 +283,7 @@ class SphericalHarmonicsHelper:
         x_rot = x_rot.view(-1, self.sphere_basis_reduce * num_channels)
         return x_rot
 
-    def FlipGrid(self, grid, num_channels):
+    def FlipGrid(self, grid, num_channels: int) -> torch.Tensor:
         # lat long
         long_res = self.grid_res
         grid = grid.view(-1, self.grid_res, self.grid_res, num_channels)
@@ -294,15 +291,17 @@ class SphericalHarmonicsHelper:
         flip_grid = torch.flip(grid, [1])
         return flip_grid.view(-1, num_channels)
 
-    def RotateInv(self, x):
+    def RotateInv(self, x) -> torch.Tensor:
         x_rot = torch.bmm(self.wigner_inv, x)
         return x_rot
 
-    def RotateWigner(self, x, wigner):
+    def RotateWigner(self, x, wigner) -> torch.Tensor:
         x_rot = torch.bmm(wigner, x)
         return x_rot
 
-    def RotationMatrix(self, rot_x, rot_y, rot_z):
+    def RotationMatrix(
+        self, rot_x: float, rot_y: float, rot_z: float
+    ) -> torch.Tensor:
         m1, m2, m3 = (
             torch.eye(3, device=self.device),
             torch.eye(3, device=self.device),

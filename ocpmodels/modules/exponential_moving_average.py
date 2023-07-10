@@ -31,7 +31,7 @@ class ExponentialMovingAverage:
         parameters: Iterable[torch.nn.Parameter],
         decay: float,
         use_num_updates: bool = False,
-    ):
+    ) -> None:
         if decay < 0.0 or decay > 1.0:
             raise ValueError("Decay must be between 0 and 1")
         self.decay = decay

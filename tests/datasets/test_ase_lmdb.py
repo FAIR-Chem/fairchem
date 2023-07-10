@@ -16,7 +16,7 @@ N_WRITES = 100
 N_READS = 200
 
 
-def cleanup_asedb():
+def cleanup_asedb() -> None:
     if Path(DB_NAME).is_file():
         Path(DB_NAME).unlink()
     if Path(f"{DB_NAME}-lock").is_file():
@@ -33,7 +33,6 @@ test_structures[2].set_constraint(FixAtoms(indices=[0, 1]))
 
 
 def generate_random_structure():
-
     # Make base slab
     slab = build.fcc111("Cu", size=(4, 4, 3), vacuum=10.0)
 
@@ -65,11 +64,9 @@ def generate_random_structure():
     return slab
 
 
-def write_random_atoms():
-
+def write_random_atoms() -> None:
     slab = build.fcc111("Cu", size=(4, 4, 3), vacuum=10.0)
     with LMDBDatabase(DB_NAME) as db:
-
         for structure in test_structures:
             db.write(structure)
 
@@ -80,8 +77,7 @@ def write_random_atoms():
             db.write(slab, data=slab.info)
 
 
-def test_aselmdb_write():
-
+def test_aselmdb_write() -> None:
     # Representative structure
     write_random_atoms()
 
@@ -92,8 +88,7 @@ def test_aselmdb_write():
     cleanup_asedb()
 
 
-def test_aselmdb_count():
-
+def test_aselmdb_count() -> None:
     # Representative structure
     write_random_atoms()
 
@@ -103,7 +98,7 @@ def test_aselmdb_count():
     cleanup_asedb()
 
 
-def test_aselmdb_delete():
+def test_aselmdb_delete() -> None:
     cleanup_asedb()
 
     # Representative structure
@@ -111,7 +106,6 @@ def test_aselmdb_delete():
 
     with LMDBDatabase(DB_NAME) as db:
         for i in range(5):
-
             # Note the available ids list is updating
             # but the ids themselves are fixed.
             db.delete([db.ids[0]])
@@ -121,8 +115,7 @@ def test_aselmdb_delete():
     cleanup_asedb()
 
 
-def test_aselmdb_randomreads():
-
+def test_aselmdb_randomreads() -> None:
     write_random_atoms()
 
     with LMDBDatabase(DB_NAME, readonly=True) as db:
@@ -133,8 +126,7 @@ def test_aselmdb_randomreads():
     cleanup_asedb()
 
 
-def test_aselmdb_constraintread():
-
+def test_aselmdb_constraintread() -> None:
     write_random_atoms()
 
     with LMDBDatabase(DB_NAME, readonly=True) as db:
@@ -145,8 +137,7 @@ def test_aselmdb_constraintread():
     cleanup_asedb()
 
 
-def update_keyvalue_pair():
-
+def update_keyvalue_pair() -> None:
     write_random_atoms()
     with LMDBDatabase(DB_NAME) as db:
         db.update(1, test=5)
@@ -158,8 +149,7 @@ def update_keyvalue_pair():
     cleanup_asedb()
 
 
-def update_atoms():
-
+def update_atoms() -> None:
     write_random_atoms()
     with LMDBDatabase(DB_NAME) as db:
         db.update(40, atoms=test_structures[-1])
@@ -171,7 +161,7 @@ def update_atoms():
     cleanup_asedb()
 
 
-def test_metadata():
+def test_metadata() -> None:
     write_random_atoms()
 
     with LMDBDatabase(DB_NAME) as db:

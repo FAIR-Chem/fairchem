@@ -34,7 +34,7 @@ class LBFGS:
         traj_dir: Path = None,
         traj_names=None,
         early_stop_batch: bool = False,
-    ):
+    ) -> None:
         self.batch = batch
         self.model = model
         self.maxstep = maxstep
@@ -57,13 +57,13 @@ class LBFGS:
         if not self.otf_graph and "edge_index" not in batch:
             self.model.update_graph(self.batch)
 
-    def get_energy_and_forces(self, apply_constraint=True):
+    def get_energy_and_forces(self, apply_constraint: bool = True):
         energy, forces = self.model.get_energy_and_forces(
             self.batch, apply_constraint
         )
         return energy, forces
 
-    def set_positions(self, update, update_mask):
+    def set_positions(self, update, update_mask) -> None:
         if not self.early_stop_batch:
             update = torch.where(update_mask.unsqueeze(1), update, 0.0)
         self.batch.pos += update.to(dtype=torch.float32)
@@ -147,7 +147,7 @@ class LBFGS:
         iteration: int,
         forces: Optional[torch.Tensor],
         update_mask: torch.Tensor,
-    ):
+    ) -> None:
         def determine_step(dr):
             steplengths = torch.norm(dr, dim=1)
             longest_steps = scatter(
@@ -201,7 +201,7 @@ class LBFGS:
         self.r0 = r
         self.f0 = forces
 
-    def write(self, energy, forces, update_mask):
+    def write(self, energy, forces, update_mask) -> None:
         self.batch.y, self.batch.force = energy, forces
         atoms_objects = batch_to_atoms(self.batch)
         update_mask_ = torch.split(update_mask, self.batch.natoms.tolist())
@@ -213,11 +213,11 @@ class LBFGS:
 
 
 class TorchCalc:
-    def __init__(self, model, transform=None):
+    def __init__(self, model, transform=None) -> None:
         self.model = model
         self.transform = transform
 
-    def get_energy_and_forces(self, atoms, apply_constraint=True):
+    def get_energy_and_forces(self, atoms, apply_constraint: bool = True):
         predictions = self.model.predict(
             atoms, per_image=False, disable_tqdm=True
         )

@@ -11,7 +11,7 @@ from ocpmodels.common.utils import build_config, setup_imports
 
 
 # this function is general and should work for any ocp trainer
-def ocp_trainable(config, checkpoint_dir=None):
+def ocp_trainable(config, checkpoint_dir=None) -> None:
     setup_imports()
     # trainer defaults are changed to run HPO
     trainer = registry.get_trainer_class(config.get("trainer", "energy"))(
@@ -41,7 +41,7 @@ def ocp_trainable(config, checkpoint_dir=None):
 
 # this section defines the hyperparameters to tune and all the Ray Tune settings
 # current params/settings are an example for ForceNet
-def main():
+def main() -> None:
     # parse config
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()

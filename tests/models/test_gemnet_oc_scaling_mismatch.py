@@ -19,7 +19,7 @@ from ocpmodels.modules.scaling.util import ensure_fitted
 
 
 class TestGemNetOC:
-    def test_no_scaling_mismatch(self):
+    def test_no_scaling_mismatch(self) -> None:
         torch.manual_seed(4)
         setup_imports()
 
@@ -96,7 +96,7 @@ class TestGemNetOC:
         except ValueError as e:
             assert False, f"'load_state_dict' raised an exception {e}"
 
-    def test_scaling_mismatch(self):
+    def test_scaling_mismatch(self) -> None:
         torch.manual_seed(4)
         setup_imports()
 
@@ -185,7 +185,7 @@ class TestGemNetOC:
             ):
                 load_state_dict(model, new_dict)
 
-    def test_no_file_exists(self):
+    def test_no_file_exists(self) -> None:
         torch.manual_seed(4)
         setup_imports()
 
@@ -242,7 +242,7 @@ class TestGemNetOC:
                 scale_file="/tmp/this/file/does/not/exist.pt",
             )
 
-    def test_not_fitted(self):
+    def test_not_fitted(self) -> None:
         torch.manual_seed(4)
         setup_imports()
 

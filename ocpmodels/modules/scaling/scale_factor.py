@@ -17,7 +17,7 @@ class _Stats(TypedDict):
 IndexFn = Callable[[], None]
 
 
-def _check_consistency(old: torch.Tensor, new: torch.Tensor, key: str):
+def _check_consistency(old: torch.Tensor, new: torch.Tensor, key: str) -> None:
     if not torch.allclose(old, new):
         raise ValueError(
             f"Scale factor parameter {key} is inconsistent with the loaded state dict.\n"
@@ -37,7 +37,7 @@ class ScaleFactor(nn.Module):
         self,
         name: Optional[str] = None,
         enforce_consistency: bool = True,
-    ):
+    ) -> None:
         super().__init__()
 
         self.name = name
@@ -59,7 +59,7 @@ class ScaleFactor(nn.Module):
         _missing_keys,
         _unexpected_keys,
         _error_msgs,
-    ):
+    ) -> None:
         if not self.fitted:
             return
 
@@ -82,15 +82,15 @@ class ScaleFactor(nn.Module):
             _check_consistency(old=param, new=input_param, key=key)
 
     @property
-    def fitted(self):
+    def fitted(self) -> bool:
         return bool((self.scale_factor != 0.0).item())
 
     @torch.jit.unused
-    def reset_(self):
+    def reset_(self) -> None:
         self.scale_factor.zero_()
 
     @torch.jit.unused
-    def set_(self, scale: Union[float, torch.Tensor]):
+    def set_(self, scale: Union[float, torch.Tensor]) -> None:
         if self.fitted:
             _check_consistency(
                 old=self.scale_factor,
@@ -100,7 +100,7 @@ class ScaleFactor(nn.Module):
         self.scale_factor.fill_(scale)
 
     @torch.jit.unused
-    def initialize_(self, *, index_fn: Optional[IndexFn] = None):
+    def initialize_(self, *, index_fn: Optional[IndexFn] = None) -> None:
         self.index_fn = index_fn
 
     @contextmanager
@@ -134,7 +134,9 @@ class ScaleFactor(nn.Module):
 
     @torch.no_grad()
     @torch.jit.unused
-    def _observe(self, x: torch.Tensor, ref: Optional[torch.Tensor] = None):
+    def _observe(
+        self, x: torch.Tensor, ref: Optional[torch.Tensor] = None
+    ) -> None:
         if self.stats is None:
             logging.debug("Observer not initialized but self.observe() called")
             return
@@ -157,7 +159,7 @@ class ScaleFactor(nn.Module):
         x: torch.Tensor,
         *,
         ref: Optional[torch.Tensor] = None,
-    ):
+    ) -> torch.Tensor:
         if self.index_fn is not None:
             self.index_fn()
 

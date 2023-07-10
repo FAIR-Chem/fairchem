@@ -54,20 +54,20 @@ class CGCNN(BaseModel):
 
     def __init__(
         self,
-        num_atoms,
-        bond_feat_dim,
-        num_targets,
-        use_pbc=True,
-        regress_forces=True,
-        atom_embedding_size=64,
-        num_graph_conv_layers=6,
-        fc_feat_size=128,
-        num_fc_layers=4,
-        otf_graph=False,
-        cutoff=6.0,
-        num_gaussians=50,
-        embeddings="khot",
-    ):
+        num_atoms: int,
+        bond_feat_dim: int,
+        num_targets: int,
+        use_pbc: bool = True,
+        regress_forces: bool = True,
+        atom_embedding_size: int = 64,
+        num_graph_conv_layers: int = 6,
+        fc_feat_size: int = 128,
+        num_fc_layers: int = 4,
+        otf_graph: bool = False,
+        cutoff: float = 6.0,
+        num_gaussians: int = 50,
+        embeddings: str = "khot",
+    ) -> None:
         super(CGCNN, self).__init__(num_atoms, bond_feat_dim, num_targets)
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
@@ -178,7 +178,9 @@ class CGCNNConv(MessagePassing):
     <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.120.145301>`.
     """
 
-    def __init__(self, node_dim, edge_dim, cutoff=6.0, **kwargs):
+    def __init__(
+        self, node_dim, edge_dim, cutoff: float = 6.0, **kwargs
+    ) -> None:
         super(CGCNNConv, self).__init__(aggr="add")
         self.node_feat_size = node_dim
         self.edge_feat_size = edge_dim
@@ -193,7 +195,7 @@ class CGCNNConv(MessagePassing):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         torch.nn.init.xavier_uniform_(self.lin1.weight)
 
         self.lin1.bias.data.fill_(0)

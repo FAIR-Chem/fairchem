@@ -17,7 +17,7 @@ from ocpmodels.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")
-def load_data(request):
+def load_data(request) -> None:
     atoms = read(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "atoms.json"),
         index=0,
@@ -36,7 +36,7 @@ def load_data(request):
 
 @pytest.mark.usefixtures("load_data")
 class TestPBC:
-    def test_pbc_distances(self):
+    def test_pbc_distances(self) -> None:
         data = self.data
         batch = data_list_collater([data] * 5)
         out = get_pbc_distances(

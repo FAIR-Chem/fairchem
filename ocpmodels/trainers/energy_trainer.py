@@ -64,17 +64,17 @@ class EnergyTrainer(BaseTrainer):
         normalizer=None,
         timestamp_id=None,
         run_dir=None,
-        is_debug=False,
-        is_hpo=False,
-        print_every=100,
+        is_debug: bool = False,
+        is_hpo: bool = False,
+        print_every: int = 100,
         seed=None,
-        logger="tensorboard",
+        logger: str = "tensorboard",
         local_rank=0,
-        amp=False,
-        cpu=False,
+        amp: bool = False,
+        cpu: bool = False,
         slurm={},
-        noddp=False,
-    ):
+        noddp: bool = False,
+    ) -> None:
         super().__init__(
             task=task,
             model=model,
@@ -97,13 +97,17 @@ class EnergyTrainer(BaseTrainer):
             noddp=noddp,
         )
 
-    def load_task(self):
+    def load_task(self) -> None:
         logging.info(f"Loading dataset: {self.config['task']['dataset']}")
         self.num_targets = 1
 
     @torch.no_grad()
     def predict(
-        self, loader, per_image=True, results_file=None, disable_tqdm=False
+        self,
+        loader,
+        per_image: bool = True,
+        results_file=None,
+        disable_tqdm: bool = False,
     ):
         ensure_fitted(self._unwrapped_model)
 
@@ -163,7 +167,7 @@ class EnergyTrainer(BaseTrainer):
 
         return predictions
 
-    def train(self, disable_eval_tqdm=False):
+    def train(self, disable_eval_tqdm: bool = False) -> None:
         ensure_fitted(self._unwrapped_model, warn=True)
 
         eval_every = self.config["optim"].get(

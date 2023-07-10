@@ -17,7 +17,7 @@ SPLITS = {
 }
 
 
-def write_is2re_relaxations(args):
+def write_is2re_relaxations(args) -> None:
     import ase.io
     from tqdm import tqdm
 
@@ -54,7 +54,7 @@ def write_is2re_relaxations(args):
     np.savez_compressed(args.out_path, **submission_file)
 
 
-def write_predictions(args):
+def write_predictions(args) -> None:
     if args.is2re_relaxations:
         write_is2re_relaxations(args)
     else:
@@ -70,7 +70,7 @@ def write_predictions(args):
         np.savez_compressed(args.out_path, **submission_file)
 
 
-def main(args):
+def main(args: argparse.Namespace) -> None:
     for split in SPLITS[args.dataset]:
         assert vars(args).get(
             split
@@ -144,5 +144,5 @@ if __name__ == "__main__":
         help="Which dataset to write a prediction file for, OC20 or OC22.",
     )
 
-    args = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
     main(args)

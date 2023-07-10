@@ -42,7 +42,7 @@ class LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None):
+    def __init__(self, config, transform=None) -> None:
         super(LmdbDataset, self).__init__()
         self.config = config
 
@@ -157,14 +157,14 @@ class LmdbDataset(Dataset):
         )
         return env
 
-    def close_db(self):
+    def close_db(self) -> None:
         if not self.path.is_file():
             for env in self.envs:
                 env.close()
         else:
             self.env.close()
 
-    def get_metadata(self, num_samples=100):
+    def get_metadata(self, num_samples: int = 100):
         # This will interogate the classic OCP LMDB format to determine
         # which properties are present and attempt to guess their shapes
         # and whether they are intensive or extensive.
@@ -207,7 +207,7 @@ class LmdbDataset(Dataset):
 
 
 class SinglePointLmdbDataset(LmdbDataset):
-    def __init__(self, config, transform=None):
+    def __init__(self, config, transform=None) -> None:
         super(SinglePointLmdbDataset, self).__init__(config, transform)
         warnings.warn(
             "SinglePointLmdbDataset is deprecated and will be removed in the future."
@@ -217,7 +217,7 @@ class SinglePointLmdbDataset(LmdbDataset):
 
 
 class TrajectoryLmdbDataset(LmdbDataset):
-    def __init__(self, config, transform=None):
+    def __init__(self, config, transform=None) -> None:
         super(TrajectoryLmdbDataset, self).__init__(config, transform)
         warnings.warn(
             "TrajectoryLmdbDataset is deprecated and will be removed in the future."
@@ -226,7 +226,7 @@ class TrajectoryLmdbDataset(LmdbDataset):
         )
 
 
-def data_list_collater(data_list, otf_graph=False):
+def data_list_collater(data_list, otf_graph: bool = False):
     batch = Batch.from_data_list(data_list)
 
     if not otf_graph:
