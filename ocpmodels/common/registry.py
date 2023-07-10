@@ -61,7 +61,7 @@ class Registry:
     }
 
     @classmethod
-    def register_task(cls, name):
+    def register_task(cls, name: str):
         r"""Register a new task to registry with key 'name'
         Args:
             name: Key with which the task will be registered.
@@ -80,7 +80,7 @@ class Registry:
         return wrap
 
     @classmethod
-    def register_dataset(cls, name):
+    def register_dataset(cls, name: str):
         r"""Register a dataset to registry with key 'name'
 
         Args:
@@ -103,7 +103,7 @@ class Registry:
         return wrap
 
     @classmethod
-    def register_model(cls, name):
+    def register_model(cls, name: str):
         r"""Register a model to registry with key 'name'
 
         Args:
@@ -126,7 +126,7 @@ class Registry:
         return wrap
 
     @classmethod
-    def register_logger(cls, name):
+    def register_logger(cls, name: str):
         r"""Register a logger to registry with key 'name'
 
         Args:
@@ -153,7 +153,7 @@ class Registry:
         return wrap
 
     @classmethod
-    def register_trainer(cls, name):
+    def register_trainer(cls, name: str):
         r"""Register a trainer to registry with key 'name'
 
         Args:
@@ -240,31 +240,31 @@ class Registry:
             raise cls.__import_error(name, mapping_name) from e
 
     @classmethod
-    def get_task_class(cls, name):
+    def get_task_class(cls, name: str):
         return cls.get_class(name, "task_name_mapping")
 
     @classmethod
-    def get_dataset_class(cls, name):
+    def get_dataset_class(cls, name: str):
         return cls.get_class(name, "dataset_name_mapping")
 
     @classmethod
-    def get_model_class(cls, name):
+    def get_model_class(cls, name: str):
         return cls.get_class(name, "model_name_mapping")
 
     @classmethod
-    def get_logger_class(cls, name):
+    def get_logger_class(cls, name: str):
         return cls.get_class(name, "logger_name_mapping")
 
     @classmethod
-    def get_trainer_class(cls, name):
+    def get_trainer_class(cls, name: str):
         return cls.get_class(name, "trainer_name_mapping")
 
     @classmethod
-    def get(cls, name, default=None, no_warning: bool = False):
+    def get(cls, name: str, default=None, no_warning: bool = False):
         r"""Get an item from registry with key 'name'
 
         Args:
-            name (string): Key whose value needs to be retreived.
+            name (string): Key whose value needs to be retrieved.
             default: If passed and key is not in registry, default value will
                      be returned with a warning. Default: None
             no_warning (bool): If passed as True, warning when key doesn't exist
@@ -277,9 +277,9 @@ class Registry:
             config = registry.get("config")
         """
         original_name = name
-        name = name.split(".")
+        split_name = name.split(".")
         value = cls.mapping["state"]
-        for subname in name:
+        for subname in split_name:
             value = value.get(subname, default)
             if value is default:
                 break
@@ -296,7 +296,7 @@ class Registry:
         return value
 
     @classmethod
-    def unregister(cls, name):
+    def unregister(cls, name: str):
         r"""Remove an item from registry with key 'name'
 
         Args:

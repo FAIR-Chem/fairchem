@@ -12,6 +12,7 @@ import random
 import subprocess
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from typing import cast, Dict, Optional
 
 import numpy as np
 import torch
@@ -30,6 +31,7 @@ from ocpmodels.common.data_parallel import (
     ParallelCollater,
 )
 from ocpmodels.common.registry import registry
+from ocpmodels.common.typing import assert_is_instance
 from ocpmodels.common.utils import load_state_dict, save_checkpoint
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -59,19 +61,19 @@ class BaseTrainer(ABC):
         optimizer,
         identifier,
         normalizer=None,
-        timestamp_id=None,
+        timestamp_id: Optional[str] = None,
         run_dir=None,
-        is_debug=False,
-        is_hpo=False,
-        print_every=100,
+        is_debug: bool = False,
+        is_hpo: bool = False,
+        print_every: int = 100,
         seed=None,
-        logger="tensorboard",
-        local_rank=0,
-        amp=False,
-        cpu=False,
-        name="base_trainer",
+        logger: str = "tensorboard",
+        local_rank: int = 0,
+        amp: bool = False,
+        cpu: bool = False,
+        name: str = "base_trainer",
         slurm={},
-        noddp=False,
+        noddp: bool = False,
     ) -> None:
         self.name = name
         self.cpu = cpu
@@ -94,7 +96,7 @@ class BaseTrainer(ABC):
             # create directories from master rank only
             distutils.broadcast(timestamp, 0)
             timestamp = datetime.datetime.fromtimestamp(
-                timestamp.int()
+                timestamp.float().item()
             ).strftime("%Y-%m-%d-%H-%M-%S")
             if identifier:
                 self.timestamp_id = f"{timestamp}-{identifier}"
@@ -109,7 +111,7 @@ class BaseTrainer(ABC):
                     [
                         "git",
                         "-C",
-                        ocpmodels.__path__[0],
+                        assert_is_instance(ocpmodels.__path__[0], str),
                         "describe",
                         "--always",
                     ]
@@ -125,7 +127,7 @@ class BaseTrainer(ABC):
         self.config = {
             "task": task,
             "trainer": "forces" if name == "s2ef" else "energy",
-            "model": model.pop("name"),
+            "model": assert_is_instance(model.pop("name"), str),
             "model_attributes": model,
             "optim": optimizer,
             "logger": logger,
@@ -243,7 +245,7 @@ class BaseTrainer(ABC):
             self.logger = registry.get_logger_class(logger_name)(self.config)
 
     def get_sampler(
-        self, dataset, batch_size, shuffle
+        self, dataset, batch_size: int, shuffle: bool
     ) -> BalancedBatchSampler:
         if "load_balancing" in self.config["optim"]:
             balancing_mode = self.config["optim"]["load_balancing"]
@@ -270,7 +272,7 @@ class BaseTrainer(ABC):
         )
         return sampler
 
-    def get_dataloader(self, dataset, sampler):
+    def get_dataloader(self, dataset, sampler) -> DataLoader:
         loader = DataLoader(
             dataset,
             collate_fn=self.parallel_collater,
@@ -286,7 +288,9 @@ class BaseTrainer(ABC):
             self.config["model_attributes"].get("otf_graph", False),
         )
 
-        self.train_loader = self.val_loader = self.test_loader = None
+        self.train_loader = None
+        self.val_loader = None
+        self.test_loader = None
 
         if self.config.get("dataset", None):
             self.train_dataset = registry.get_dataset_class(
@@ -463,9 +467,10 @@ class BaseTrainer(ABC):
                 self.scaler.load_state_dict(checkpoint["amp"])
 
     def load_loss(self) -> None:
-        self.loss_fn = {}
-        self.loss_fn["energy"] = self.config["optim"].get("loss_energy", "mae")
-        self.loss_fn["force"] = self.config["optim"].get("loss_force", "mae")
+        self.loss_fn: Dict[str, str] = {
+            "energy": self.config["optim"].get("loss_energy", "mae"),
+            "force": self.config["optim"].get("loss_force", "mae"),
+        }
         for loss, loss_name in self.loss_fn.items():
             if loss_name in ["l1", "mae"]:
                 self.loss_fn[loss] = nn.L1Loss()
@@ -591,7 +596,7 @@ class BaseTrainer(ABC):
                 return ckpt_path
         return None
 
-    def save_hpo(self, epoch, step, metrics, checkpoint_every):
+    def save_hpo(self, epoch, step: int, metrics, checkpoint_every: int):
         # default is no checkpointing
         # checkpointing frequency can be adjusted by setting checkpoint_every in steps
         # to checkpoint every time results are communicated to Ray Tune set checkpoint_every=1
@@ -744,7 +749,9 @@ class BaseTrainer(ABC):
         if self.ema:
             self.ema.update()
 
-    def save_results(self, predictions, results_file, keys):
+    def save_results(
+        self, predictions, results_file: Optional[str], keys
+    ) -> None:
         if results_file is None:
             return
 

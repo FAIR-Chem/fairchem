@@ -434,7 +434,11 @@ class spinconv(BaseModel):
         return forces
 
     def _filter_edges(
-        self, edge_index, edge_distance, edge_distance_vec, max_num_neighbors
+        self,
+        edge_index,
+        edge_distance,
+        edge_distance_vec,
+        max_num_neighbors: int,
     ):
         # Remove edges that aren't within the closest max_num_neighbors from either the target or source atom.
         # This ensures all edges occur in pairs, i.e., if X -> Y exists then Y -> X is included.
@@ -814,14 +818,14 @@ class spinconv(BaseModel):
 class MessageBlock(torch.nn.Module):
     def __init__(
         self,
-        in_hidden_channels,
-        out_hidden_channels,
-        mid_hidden_channels,
-        embedding_size,
-        sphere_size_lat,
-        sphere_size_long,
-        max_num_elements,
-        sphere_message,
+        in_hidden_channels: int,
+        out_hidden_channels: int,
+        mid_hidden_channels: int,
+        embedding_size: int,
+        sphere_size_lat: int,
+        sphere_size_long: int,
+        max_num_elements: int,
+        sphere_message: str,
         act,
         lmax,
     ) -> None:
@@ -906,14 +910,14 @@ class MessageBlock(torch.nn.Module):
 class ForceOutputBlock(torch.nn.Module):
     def __init__(
         self,
-        in_hidden_channels,
-        out_hidden_channels,
-        mid_hidden_channels,
-        embedding_size,
-        sphere_size_lat,
-        sphere_size_long,
-        max_num_elements,
-        sphere_message,
+        in_hidden_channels: int,
+        out_hidden_channels: int,
+        mid_hidden_channels: int,
+        embedding_size: int,
+        sphere_size_lat: int,
+        sphere_size_long: int,
+        max_num_elements: int,
+        sphere_message: str,
         act,
         lmax,
     ) -> None:
@@ -982,11 +986,11 @@ class ForceOutputBlock(torch.nn.Module):
 class SpinConvBlock(torch.nn.Module):
     def __init__(
         self,
-        in_hidden_channels,
-        mid_hidden_channels,
-        sphere_size_lat,
-        sphere_size_long,
-        sphere_message,
+        in_hidden_channels: int,
+        mid_hidden_channels: int,
+        sphere_size_lat: int,
+        sphere_size_long: int,
+        sphere_message: str,
         act,
         lmax,
     ) -> None:
@@ -1088,12 +1092,12 @@ class SpinConvBlock(torch.nn.Module):
 class EmbeddingBlock(torch.nn.Module):
     def __init__(
         self,
-        in_hidden_channels,
-        out_hidden_channels,
-        mid_hidden_channels,
-        embedding_size,
-        num_embedding_basis,
-        max_num_elements,
+        in_hidden_channels: int,
+        out_hidden_channels: int,
+        mid_hidden_channels: int,
+        embedding_size: int,
+        num_embedding_basis: int,
+        max_num_elements: int,
         act,
     ) -> None:
         super(EmbeddingBlock, self).__init__()
@@ -1129,7 +1133,9 @@ class EmbeddingBlock(torch.nn.Module):
 
         self.softmax = nn.Softmax(dim=1)
 
-    def forward(self, x, source_element, target_element):
+    def forward(
+        self, x: torch.Tensor, source_element, target_element
+    ) -> torch.Tensor:
         source_embedding = self.source_embedding(source_element)
         target_embedding = self.target_embedding(target_element)
         embedding = torch.cat([source_embedding, target_embedding], dim=1)
@@ -1152,9 +1158,9 @@ class EmbeddingBlock(torch.nn.Module):
 class DistanceBlock(torch.nn.Module):
     def __init__(
         self,
-        in_channels,
-        out_channels,
-        max_num_elements,
+        in_channels: int,
+        out_channels: int,
+        max_num_elements: int,
         scalar_max,
         distance_expansion,
         scale_distances,
@@ -1203,13 +1209,13 @@ class DistanceBlock(torch.nn.Module):
 
 
 class ProjectLatLongSphere(torch.nn.Module):
-    def __init__(self, sphere_size_lat, sphere_size_long) -> None:
+    def __init__(self, sphere_size_lat: int, sphere_size_long: int) -> None:
         super(ProjectLatLongSphere, self).__init__()
         self.sphere_size_lat = sphere_size_lat
         self.sphere_size_long = sphere_size_long
 
     def forward(
-        self, x, length, index, delta, source_edge_index
+        self, x, length: int, index, delta, source_edge_index
     ) -> torch.Tensor:
         device = x.device
         hidden_channels = len(x[0])

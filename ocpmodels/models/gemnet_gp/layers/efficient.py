@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import Tuple
+
 import torch
 
 from ..initializers import he_orthogonal_init
@@ -45,7 +47,14 @@ class EfficientInteractionDownProjection(torch.nn.Module):
         )
         he_orthogonal_init(self.weight)
 
-    def forward(self, rbf, sph, id_ca, id_ragged_idx, Kmax):
+    def forward(
+        self,
+        rbf: torch.Tensor,
+        sph: torch.Tensor,
+        id_ca,
+        id_ragged_idx,
+        Kmax: int,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
 
         Arguments
@@ -118,7 +127,13 @@ class EfficientInteractionBilinear(torch.nn.Module):
         he_orthogonal_init(self.weight)
 
     def forward(
-        self, basis, m, id_reduce, id_ragged_idx, edge_offset, Kmax
+        self,
+        basis: Tuple[torch.Tensor, torch.Tensor],
+        m,
+        id_reduce,
+        id_ragged_idx,
+        edge_offset,
+        Kmax: int,
     ) -> torch.Tensor:
         """
 

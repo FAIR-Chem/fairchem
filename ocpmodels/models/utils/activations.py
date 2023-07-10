@@ -16,7 +16,7 @@ class Act(torch.nn.Module):
         self.slope = slope
         self.shift = torch.log(torch.tensor(2.0)).item()
 
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         if self.act == "relu":
             return F.relu(input)
         elif self.act == "leaky_relu":

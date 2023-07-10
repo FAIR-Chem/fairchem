@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import math
+from typing import Optional
 
 import torch
 
@@ -27,11 +28,17 @@ class Dense(torch.nn.Module):
     """
 
     def __init__(
-        self, in_features, out_features, bias: bool = False, activation=None
+        self,
+        num_in_features: int,
+        num_out_features: int,
+        bias: bool = False,
+        activation: Optional[str] = None,
     ) -> None:
         super().__init__()
 
-        self.linear = torch.nn.Linear(in_features, out_features, bias=bias)
+        self.linear = torch.nn.Linear(
+            num_in_features, num_out_features, bias=bias
+        )
         self.reset_parameters()
 
         if isinstance(activation, str):
@@ -52,7 +59,7 @@ class Dense(torch.nn.Module):
         if self.linear.bias is not None:
             self.linear.bias.data.fill_(0)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.linear(x)
         x = self._activation(x)
         return x
@@ -64,7 +71,7 @@ class ScaledSiLU(torch.nn.Module):
         self.scale_factor = 1 / 0.6
         self._activation = torch.nn.SiLU()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self._activation(x) * self.scale_factor
 
 
@@ -73,7 +80,7 @@ class SiQU(torch.nn.Module):
         super().__init__()
         self._activation = torch.nn.SiLU()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x * self._activation(x)
 
 
@@ -108,7 +115,7 @@ class ResidualLayer(torch.nn.Module):
         )
         self.inv_sqrt_2 = 1 / math.sqrt(2)
 
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         x = self.dense_mlp(input)
         x = input + x
         x = x * self.inv_sqrt_2

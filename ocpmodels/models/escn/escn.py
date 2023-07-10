@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import time
+from typing import List
 
 import numpy as np
 import torch
@@ -65,27 +66,27 @@ class eSCN(BaseModel):
 
     def __init__(
         self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,  # not used
-        use_pbc=True,
-        regress_forces=True,
-        otf_graph=False,
-        max_neighbors=40,
-        cutoff=8.0,
-        max_num_elements=90,
-        num_layers=8,
-        lmax_list=[6],
-        mmax_list=[2],
-        sphere_channels=128,
-        hidden_channels=256,
-        edge_channels=128,
-        use_grid=True,
-        num_sphere_samples=128,
-        distance_function="gaussian",
-        basis_width_scalar=1.0,
-        distance_resolution=0.02,
-        show_timing_info=False,
+        num_atoms: int,  # not used
+        bond_feat_dim: int,  # not used
+        num_targets: int,  # not used
+        use_pbc: bool = True,
+        regress_forces: bool = True,
+        otf_graph: bool = False,
+        max_neighbors: int = 40,
+        cutoff: float = 8.0,
+        max_num_elements: int = 90,
+        num_layers: int = 8,
+        lmax_list: List[int] = [6],
+        mmax_list: List[int] = [2],
+        sphere_channels: int = 128,
+        hidden_channels: int = 256,
+        edge_channels: int = 128,
+        use_grid: bool = True,
+        num_sphere_samples: int = 128,
+        distance_function: str = "gaussian",
+        basis_width_scalar: float = 1.0,
+        distance_resolution: float = 0.02,
+        show_timing_info: bool = False,
     ) -> None:
         super().__init__()
 
@@ -209,9 +210,9 @@ class eSCN(BaseModel):
         )
 
         # For each spherical point, compute the spherical harmonic coefficient weights
-        self.sphharm_weights = []
+        sphharm_weights: List[nn.Parameter] = []
         for i in range(self.num_resolutions):
-            self.sphharm_weights.append(
+            sphharm_weights.append(
                 nn.Parameter(
                     o3.spherical_harmonics(
                         torch.arange(0, self.lmax_list[i] + 1).tolist(),
@@ -221,7 +222,7 @@ class eSCN(BaseModel):
                     requires_grad=False,
                 )
             )
-        self.sphharm_weights = nn.ParameterList(self.sphharm_weights)
+        self.sphharm_weights = nn.ParameterList(sphharm_weights)
 
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
