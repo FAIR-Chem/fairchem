@@ -180,7 +180,7 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
 
         ## ---------------------------------------- Update Edge Embeddings --------------------------------------- ##
         # Transformations before skip connection
-        for i, layer in enumerate(self.layers_before_skip):
+        for _, layer in enumerate(self.layers_before_skip):
             x = layer(x)  # (nEdges, emb_size_edge)
 
         # Skip connection
@@ -188,7 +188,7 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
         m = m * self.inv_sqrt_2
 
         # Transformations after skip connection
-        for i, layer in enumerate(self.layers_after_skip):
+        for _, layer in enumerate(self.layers_after_skip):
             m = layer(m)  # (nEdges, emb_size_edge)
 
         ## ---------------------------------------- Update Atom Embeddings --------------------------------------- ##
@@ -201,7 +201,7 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
         ## ----------------------------- Update Edge Embeddings with Atom Embeddings ----------------------------- ##
         m2 = self.concat_layer(h, m, idx_s, idx_t)  # (nEdges, emb_size_edge)
 
-        for i, layer in enumerate(self.residual_m):
+        for _, layer in enumerate(self.residual_m):
             m2 = layer(m2)  # (nEdges, emb_size_edge)
 
         # Skip connection

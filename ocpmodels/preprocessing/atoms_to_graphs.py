@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import Optional
+
 import ase.db.sqlite
 import ase.io.trajectory
 import numpy as np
@@ -86,7 +88,7 @@ class AtomsToGraphs:
         self.r_edges = r_edges
         self.r_pbc = r_pbc
 
-    def _get_neighbors_pymatgen(self, atoms):
+    def _get_neighbors_pymatgen(self, atoms: ase.Atoms):
         """Preforms nearest neighbor search and returns edge index, distances,
         and cell offsets"""
         struct = AseAtomsAdaptor.get_structure(atoms)
@@ -126,7 +128,7 @@ class AtomsToGraphs:
 
         return edge_index, edge_distances, cell_offsets
 
-    def convert(self, atoms, sid=None):
+    def convert(self, atoms: ase.Atoms, sid=None):
         """Convert a single atomic stucture to a graph.
 
         Args:
@@ -198,7 +200,7 @@ class AtomsToGraphs:
     def convert_all(
         self,
         atoms_collection,
-        processed_file_path=None,
+        processed_file_path: Optional[str] = None,
         collate_and_save=False,
         disable_tqdm=False,
     ):

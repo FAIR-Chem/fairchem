@@ -165,7 +165,9 @@ def positions_mse(prediction, target):
     return squared_error(prediction["positions"], target["positions"])
 
 
-def energy_force_within_threshold(prediction, target):
+def energy_force_within_threshold(
+    prediction, target
+) -> Dict[str, Union[float, int]]:
     # Note that this natoms should be the count of free atoms we evaluate over.
     assert target["natoms"].sum() == prediction["forces"].size(0)
     assert target["natoms"].size(0) == prediction["energy"].size(0)
@@ -176,7 +178,8 @@ def energy_force_within_threshold(prediction, target):
     f_thresh = 0.03
     e_thresh = 0.02
 
-    success, total = 0.0, target["natoms"].size(0)
+    success = 0
+    total = int(target["natoms"].size(0))
 
     error_forces = torch.abs(target["forces"] - prediction["forces"])
     error_energy = torch.abs(target["energy"] - prediction["energy"])
@@ -197,7 +200,9 @@ def energy_force_within_threshold(prediction, target):
     }
 
 
-def energy_within_threshold(prediction, target):
+def energy_within_threshold(
+    prediction, target
+) -> Dict[str, Union[float, int]]:
     # compute absolute error on energy per system.
     # then count the no. of systems where max energy error is < 0.02.
     e_thresh = 0.02
@@ -262,7 +267,7 @@ def min_diff(pred_pos, dft_pos, cell, pbc):
     return np.matmul(fractional, cell)
 
 
-def cosine_similarity(prediction, target):
+def cosine_similarity(prediction: torch.Tensor, target: torch.Tensor):
     error = torch.cosine_similarity(prediction, target)
     return {
         "metric": torch.mean(error).item(),
@@ -271,7 +276,9 @@ def cosine_similarity(prediction, target):
     }
 
 
-def absolute_error(prediction, target):
+def absolute_error(
+    prediction: torch.Tensor, target: torch.Tensor
+) -> Dict[str, Union[float, int]]:
     error = torch.abs(target - prediction)
     return {
         "metric": torch.mean(error).item(),
@@ -280,7 +287,9 @@ def absolute_error(prediction, target):
     }
 
 
-def squared_error(prediction, target):
+def squared_error(
+    prediction: torch.Tensor, target: torch.Tensor
+) -> Dict[str, Union[float, int]]:
     error = (target - prediction) ** 2
     return {
         "metric": torch.mean(error).item(),
@@ -289,7 +298,9 @@ def squared_error(prediction, target):
     }
 
 
-def magnitude_error(prediction, target, p: int = 2):
+def magnitude_error(
+    prediction: torch.Tensor, target: torch.Tensor, p: int = 2
+) -> Dict[str, Union[float, int]]:
     assert prediction.shape[1] > 1
     error = torch.abs(
         torch.norm(prediction, p=p, dim=-1) - torch.norm(target, p=p, dim=-1)

@@ -11,23 +11,28 @@ import pickle
 import random
 import warnings
 from pathlib import Path
+from typing import Optional, TypeVar
 
 import lmdb
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 from torch_geometric.data import Batch
+from torch_geometric.data.data import BaseData
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
+from ocpmodels.common.typing import assert_is_instance
 from ocpmodels.common.utils import pyg2_data_transform
 from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
+
+T_co = TypeVar("T_co", covariant=True)
 
 
 @registry.register_dataset("lmdb")
 @registry.register_dataset("single_point_lmdb")
 @registry.register_dataset("trajectory_lmdb")
-class LmdbDataset(Dataset):
+class LmdbDataset(Dataset[T_co]):
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
     Useful for Structure to Energy & Force (S2EF), Initial State to
@@ -57,7 +62,8 @@ class LmdbDataset(Dataset):
 
             self.metadata_path = self.path / "metadata.npz"
 
-            self._keys, self.envs = [], []
+            self._keys = []
+            self.envs = []
             for db_path in db_paths:
                 cur_env = self.connect_db(db_path)
                 self.envs.append(cur_env)
@@ -88,7 +94,9 @@ class LmdbDataset(Dataset):
             else:
                 # Get the number of stores data from the number of entries
                 # in the LMDB
-                num_entries = self.env.stat()["entries"]
+                num_entries = assert_is_instance(
+                    self.env.stat()["entries"], int
+                )
 
             self._keys = list(range(num_entries))
             self.num_samples = num_entries
@@ -110,10 +118,10 @@ class LmdbDataset(Dataset):
 
         self.transform = transform
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.num_samples
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int):
         # if sharding, remap idx to appropriate idx of the sharded set
         if self.sharded:
             idx = self.available_indices[idx]
@@ -145,7 +153,7 @@ class LmdbDataset(Dataset):
 
         return data_object
 
-    def connect_db(self, lmdb_path=None):
+    def connect_db(self, lmdb_path: Optional[Path] = None):
         env = lmdb.open(
             str(lmdb_path),
             subdir=False,
@@ -195,12 +203,13 @@ class LmdbDataset(Dataset):
         atoms_lens = [data.natoms for data in sample_pyg]
 
         # Guess the metadata for targets for each found property
-        metadata = {}
-        metadata["targets"] = {
-            prop: guess_property_metadata(
-                atoms_lens, [getattr(data, prop) for data in sample_pyg]
-            )
-            for prop in props
+        metadata = {
+            "targets": {
+                prop: guess_property_metadata(
+                    atoms_lens, [getattr(data, prop) for data in sample_pyg]
+                )
+                for prop in props
+            }
         }
 
         return metadata
@@ -226,13 +235,13 @@ class TrajectoryLmdbDataset(LmdbDataset):
         )
 
 
-def data_list_collater(data_list, otf_graph: bool = False):
+def data_list_collater(data_list, otf_graph: bool = False) -> BaseData:
     batch = Batch.from_data_list(data_list)
 
     if not otf_graph:
         try:
             n_neighbors = []
-            for i, data in enumerate(data_list):
+            for _, data in enumerate(data_list):
                 n_index = data.edge_index[1, :]
                 n_neighbors.append(n_index.shape[0])
             batch.neighbors = torch.tensor(n_neighbors)

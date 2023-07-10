@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import json
+from typing import Optional, Tuple
 
 import torch
 from torch_scatter import segment_csr
@@ -83,7 +84,7 @@ def ragged_range(sizes):
 
 
 def repeat_blocks(
-    sizes,
+    sizes: torch.Tensor,
     repeats,
     continuous_indexing: bool = True,
     start_idx: int = 0,
@@ -155,7 +156,7 @@ def repeat_blocks(
     )
 
     # Get total size of output array, as needed to initialize output indexing array
-    N = (sizes * repeats).sum()
+    N = int((sizes * repeats).sum().item())
 
     # Initialize indexing array with ones as we need to setup incremental indexing
     # within each group when cumulatively summed at the final stage.
@@ -227,7 +228,12 @@ def repeat_blocks(
     return res
 
 
-def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
+def calculate_interatomic_vectors(
+    R: torch.Tensor,
+    id_s: torch.Tensor,
+    id_t: torch.Tensor,
+    offsets_st: Optional[torch.Tensor],
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Calculate the vectors connecting the given atom pairs,
     considering offsets from periodic boundary conditions (PBC).
@@ -264,7 +270,7 @@ def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
     return D_st, V_st
 
 
-def inner_product_normalized(x, y) -> torch.Tensor:
+def inner_product_normalized(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """
     Calculate the inner product between the given normalized vectors,
     giving a result between -1 and 1.

@@ -5,7 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 import math
-from typing import Any, List
+from typing import Any, Optional
 
 import torch
 from torch import distributed as dist
@@ -84,19 +84,19 @@ def get_gp_group():
     return _GRAPH_PARALLEL_GROUP
 
 
-def get_dp_rank():
+def get_dp_rank() -> int:
     return dist.get_rank(group=get_dp_group())
 
 
-def get_gp_rank():
+def get_gp_rank() -> int:
     return dist.get_rank(group=get_gp_group())
 
 
-def get_dp_world_size():
+def get_dp_world_size() -> int:
     return dist.get_world_size(group=get_dp_group())
 
 
-def get_gp_world_size():
+def get_gp_world_size() -> int:
     return (
         1 if not initialized() else dist.get_world_size(group=get_gp_group())
     )
@@ -106,7 +106,7 @@ def get_gp_world_size():
 
 
 def pad_tensor(
-    tensor: torch.Tensor, dim: int = -1, target_size: int = None
+    tensor: torch.Tensor, dim: int = -1, target_size: Optional[int] = None
 ) -> torch.Tensor:
     size = tensor.size(dim)
     if target_size is None:
@@ -126,7 +126,7 @@ def pad_tensor(
 
 
 def trim_tensor(
-    tensor: torch.Tensor, sizes: torch.Tensor = None, dim: int = 0
+    tensor: torch.Tensor, sizes: Optional[torch.Tensor] = None, dim: int = 0
 ):
     size = tensor.size(dim)
     world_size = get_gp_world_size()
@@ -208,7 +208,7 @@ def _gather_with_padding(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
     dist.all_gather(size_list, size, group=group)
 
     # Gather the inputs
-    max_size = max([size.item() for size in size_list])
+    max_size = int(max([size.item() for size in size_list]))
     input = pad_tensor(input, dim, max_size)
     shape = list(input.shape)
     shape[dim] = max_size
