@@ -33,44 +33,36 @@ with the relevant metrics computed.
 
 class Evaluator:
     task_metrics = {
-        "s2ef": [
-            "forcesx_mae",
-            "forcesy_mae",
-            "forcesz_mae",
-            "forces_mae",
-            "forces_cos",
-            "forces_magnitude",
-            "energy_mae",
-            "energy_force_within_threshold",
-        ],
-        "is2rs": [
-            "average_distance_within_threshold",
-            "positions_mae",
-            "positions_mse",
-        ],
-        "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
-    }
-
-    metric_attributes = {
-        "forcesx_mae": ["forces"],
-        "forcesy_mae": ["forces"],
-        "forcesz_mae": ["forces"],
-        "forces_mae": ["forces"],
-        "forces_cos": ["forces"],
-        "forces_magnitude": ["forces"],
-        "energy_mae": ["energy"],
-        "energy_force_within_threshold": ["energy", "forces", "natoms"],
-        "energy_mse": ["energy"],
-        "energy_within_threshold": ["energy"],
-        "average_distance_within_threshold": [
-            "positions",
-            "cell",
-            "pbc",
-            "natoms",
-        ],
-        "positions_mae": ["positions"],
-        "positions_mse": ["positions"],
-        "stress_mae": ["isotropic_stress", "anisotropic_stress"],
+        "s2ef": {
+            "energy": {"metrics": ["energy_mae"]},
+            "forces": {
+                "metrics": [
+                    "forcesx_mae",
+                    "forcesy_mae",
+                    "forcesz_mae",
+                    "forces_mae",
+                    "forces_cos",
+                    "forces_magnitude",
+                    "energy_force_within_threshold",
+                ]
+            },
+        },
+        "is2rs": {
+            "positions": {
+                "metrics": [
+                    "average_distance_within_threshold",
+                    "positions_mae",
+                    "positions_mse",
+                ]
+            }
+        },
+        "is2re": {
+            "metrics": [
+                "energy_mae",
+                "energy_mse",
+                "energy_within_threshold",
+            ]
+        },
     }
 
     task_primary_metric = {
@@ -81,21 +73,27 @@ class Evaluator:
 
     def __init__(self, task: str = None, eval_metrics: str = None) -> None:
         self.task = task
-        self.metric_fns = self.task_metrics.get(task, eval_metrics)
+        self.target_metrics = self.task_metrics.get(task, eval_metrics)
 
     def eval(self, prediction, target, prev_metrics={}):
 
-        for metric in self.metric_fns:
-            for attr in self.metric_attributes.get(metric, {}):
-                assert attr in prediction
-                assert attr in target
-                assert prediction[attr].shape == target[attr].shape
+        # TODO: arbitrary type check
+        # for metric in self.metric_fns:
+        # assert attr in prediction
+        # assert attr in target
+        # assert prediction[attr].shape == target[attr].shape
 
         metrics = prev_metrics
 
-        for fn in self.metric_fns:
-            res = eval(fn)(prediction, target)
-            metrics = self.update(fn, res, metrics)
+        for target_property in self.target_metrics:
+            for fn in self.target_metrics[target_property]["metrics"]:
+                metric_name = (
+                    f"{target_property}_{fn}"
+                    if target_property not in fn
+                    else fn
+                )
+                res = eval(fn)(prediction, target, target_property)
+                metrics = self.update(metric_name, res, metrics)
 
         return metrics
 
@@ -127,38 +125,31 @@ class Evaluator:
         return metrics
 
 
-def energy_mae(prediction, target):
-    return mae(prediction["energy"], target["energy"])
-
-
-def energy_mse(prediction, target):
-    return mse(prediction["energy"], target["energy"])
-
-
-def forcesx_mae(prediction, target):
+def forcesx_mae(prediction, target, key=None):
     return mae(prediction["forces"][:, 0], target["forces"][:, 0])
 
 
-def forcesx_mse(prediction, target):
+def forcesx_mse(prediction, target, key=None):
     return mse(prediction["forces"][:, 0], target["forces"][:, 0])
 
 
-def forcesy_mae(prediction, target):
+def forcesy_mae(prediction, target, key=None):
     return mae(prediction["forces"][:, 1], target["forces"][:, 1])
 
 
-def forcesy_mse(prediction, target):
+def forcesy_mse(prediction, target, key=None):
     return mse(prediction["forces"][:, 1], target["forces"][:, 1])
 
 
-def forcesz_mae(prediction, target):
+def forcesz_mae(prediction, target, key=None):
     return mae(prediction["forces"][:, 2], target["forces"][:, 2])
 
 
-def forcesz_mse(prediction, target):
+def forcesz_mse(prediction, target, key=None):
     return mse(prediction["forces"][:, 2], target["forces"][:, 2])
 
 
+<<<<<<< HEAD
 def forces_mae(prediction, target):
     return mae(prediction["forces"], target["forces"])
 
@@ -184,7 +175,7 @@ def positions_mse(prediction, target):
 
 
 def energy_force_within_threshold(
-    prediction, target
+    prediction, target, key=None
 ) -> Dict[str, Union[float, int]]:
     # Note that this natoms should be the count of free atoms we evaluate over.
     assert target["natoms"].sum() == prediction["forces"].size(0)
@@ -219,7 +210,7 @@ def energy_force_within_threshold(
 
 
 def energy_within_threshold(
-    prediction, target
+    prediction, target, key=None
 ) -> Dict[str, Union[float, int]]:
     # compute absolute error on energy per system.
     # then count the no. of systems where max energy error is < 0.02.
@@ -237,7 +228,7 @@ def energy_within_threshold(
 
 
 def average_distance_within_threshold(
-    prediction, target
+    prediction, target, key=None
 ) -> Dict[str, Union[float, int]]:
     pred_pos = torch.split(
         prediction["positions"], prediction["natoms"].tolist()
@@ -270,7 +261,7 @@ def average_distance_within_threshold(
     return {"metric": success / total, "total": success, "numel": total}
 
 
-def stress_mae(prediction, target):
+def stress_mae(prediction, target, key=None):
     device = prediction["isotropic_stress"].device
     cg_decomp_mat = change_mat.to(device)
 
@@ -310,8 +301,8 @@ def min_diff(pred_pos, dft_pos, cell, pbc):
     return np.matmul(fractional, cell)
 
 
-def cosine_similarity(prediction: torch.Tensor, target: torch.Tensor):
-    error = torch.cosine_similarity(prediction, target)
+def cosine_similarity(prediction: dict, target: dict, key=slice(None)):
+    error = torch.cosine_similarity(prediction[key], target[key])
     return {
         "metric": torch.mean(error).item(),
         "total": torch.sum(error).item(),
@@ -320,33 +311,34 @@ def cosine_similarity(prediction: torch.Tensor, target: torch.Tensor):
 
 
 def mae(
-    prediction: dict, target: dict
+    prediction: dict, target: dict, key=slice(None)
 ) -> Dict[str, Union[float, int]]:
-    error = torch.abs(target - prediction)
+    error = torch.abs(target[key] - prediction[key])
     return {
         "metric": torch.mean(error).item(),
         "total": torch.sum(error).item(),
-        "numel": prediction.numel(),
+        "numel": error.numel(),
     }
 
 
 def mse(
-    prediction: dict, target: dict
+    prediction: dict, target: dict, key=slice(None)
 ) -> Dict[str, Union[float, int]]:
-    error = (target - prediction) ** 2
+    error = (target[key] - prediction[key]) ** 2
     return {
         "metric": torch.mean(error).item(),
         "total": torch.sum(error).item(),
-        "numel": prediction.numel(),
+        "numel": error.numel(),
     }
 
 
 def magnitude_error(
-    prediction: torch.Tensor, target: torch.Tensor, p: int = 2
+    prediction: dict, target: dict, key=slice(None), p: int = 2
 ) -> Dict[str, Union[float, int]]:
     assert prediction.shape[1] > 1
     error = torch.abs(
-        torch.norm(prediction, p=p, dim=-1) - torch.norm(target, p=p, dim=-1)
+        torch.norm(prediction[key], p=p, dim=-1)
+        - torch.norm(target[key], p=p, dim=-1)
     )
     return {
         "metric": torch.mean(error).item(),
