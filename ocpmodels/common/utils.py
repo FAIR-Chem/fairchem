@@ -994,9 +994,16 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
             gp_utils.setup_gp(config)
     try:
         setup_imports(config)
-        trainer_cls = registry.get_trainer_class(
-            config.get("trainer", "energy")
-        )
+        trainer_name = config.get("trainer", "ocp")
+        # backwards compatibility for older configs
+        if trainer_name == "forces":
+            task_name = "s2ef"
+        elif trainer_name == "energy":
+            task_name = "is2re"
+        else:
+            task_name = "ocp"
+
+        trainer_cls = registry.get_trainer_class(trainer_name)
         assert trainer_cls is not None, "Trainer not found"
         trainer = trainer_cls(
             task=config["task"],
@@ -1015,6 +1022,7 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
             cpu=config.get("cpu", False),
             slurm=config.get("slurm", {}),
             noddp=config.get("noddp", False),
+            name=task_name,
         )
 
         task_cls = registry.get_task_class(config["mode"])
