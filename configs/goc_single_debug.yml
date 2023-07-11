@@ -19,13 +19,19 @@ task:
   train_on_free_atoms: True
   eval_on_free_atoms: True
 
-  metrics:
-   - energy_mae
-   - energy_mse
-   - energy_within_threshold
-   - forces_mae
-   - forces_cos
-   - stress_mae
+  evaluation_metrics:
+    energy:
+      metrics:
+        - mae
+        - mse
+        - energy_within_threshold
+    forces:
+      metrics:
+        - mae
+        - cosine_similarity
+    stress:
+      metrics:
+        - stress_mae
 
   primary_metric: forces_mae
 
@@ -119,8 +125,8 @@ model:
   qint_tags: [1, 2]
 
 optim:
-  batch_size: 1
-  eval_batch_size: 1
+  batch_size: 4
+  eval_batch_size: 4
   load_balancing: atoms
   eval_every: 5000
   num_workers: 2
