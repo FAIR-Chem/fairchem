@@ -18,6 +18,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch_geometric
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
@@ -32,7 +33,13 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance
-from ocpmodels.common.utils import load_state_dict, save_checkpoint
+from ocpmodels.common.utils import (
+    cg_decomp_mat,
+    check_traj_files,
+    irreps_sum,
+    load_state_dict,
+    save_checkpoint,
+)
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
@@ -46,13 +53,6 @@ from ocpmodels.modules.scheduler import LRScheduler
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
-    @property
-    def _unwrapped_model(self):
-        module = self.model
-        while isinstance(module, (OCPDataParallel, DistributedDataParallel)):
-            module = module.module
-        return module
-
     def __init__(
         self,
         task,
@@ -71,7 +71,7 @@ class BaseTrainer(ABC):
         local_rank: int = 0,
         amp: bool = False,
         cpu: bool = False,
-        name: str = "base_trainer",
+        name: str = "ocp",
         slurm={},
         noddp: bool = False,
     ) -> None:
@@ -201,8 +201,10 @@ class BaseTrainer(ABC):
             print(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
+        # TODO: asserts for targets+evaluation config definitions
         self.evaluator = Evaluator(
-            task=name, eval_metrics=self.config["task"].get("metrics", None)
+            task=name,
+            eval_metrics=self.config["task"].get("evaluation_metrics", None),
         )
 
     def load(self) -> None:
@@ -354,9 +356,37 @@ class BaseTrainer(ABC):
                 self.relax_sampler,
             )
 
-    @abstractmethod
     def load_task(self):
-        """Initialize task-specific information. Derived classes should implement this function."""
+        self.targets = self.config["task"]["targets"]
+        self.num_targets = 1
+
+        self.train_targets = {}
+        for target in self.targets:
+            if "decomp" in self.targets[target]:
+                for subtarget in self.targets[target]["decomp"]:
+                    self.train_targets[subtarget] = self.targets[target][
+                        "decomp"
+                    ][subtarget]
+                    self.train_targets[subtarget]["parent"] = target
+                    self.train_targets[subtarget]["level"] = self.targets[
+                        target
+                    ].get("level", "system")
+            else:
+                self.train_targets[target] = self.targets[target]
+
+        # Normalizer for the dataset.
+        # Default - no normalization
+        self.normalizers = {}
+        for target in self.train_targets:
+            self.normalizers[target] = Normalizer(
+                mean=self.train_targets.get("mean", 0),
+                std=self.train_targets.get("std", 1),
+                device=self.device,
+            )
+
+        self.eval_metrics = self.config["task"].get("evaluation_metrics", {})
+
+        assert len(self.eval_metrics.keys() - self.targets.keys()) == 0
 
     def load_model(self) -> None:
         # Build model
@@ -399,6 +429,13 @@ class BaseTrainer(ABC):
             self.model = DistributedDataParallel(
                 self.model, device_ids=[self.device]
             )
+
+    @property
+    def _unwrapped_model(self):
+        module = self.model
+        while isinstance(module, (OCPDataParallel, DistributedDataParallel)):
+            module = module.module
+        return module
 
     def load_checkpoint(self, checkpoint_path: str) -> None:
         if not os.path.isfile(checkpoint_path):
@@ -633,9 +670,347 @@ class BaseTrainer(ABC):
             test_metrics=test_metrics,
         )
 
-    @abstractmethod
-    def train(self):
-        """Derived classes should implement this function."""
+    def update_best(
+        self,
+        primary_metric,
+        val_metrics,
+        disable_eval_tqdm=True,
+    ):
+        if (
+            "mae" in primary_metric
+            and val_metrics[primary_metric]["metric"] < self.best_val_metric
+        ) or (
+            "mae" not in primary_metric
+            and val_metrics[primary_metric]["metric"] > self.best_val_metric
+        ):
+            self.best_val_metric = val_metrics[primary_metric]["metric"]
+            self.save(
+                metrics=val_metrics,
+                checkpoint_file="best_checkpoint.pt",
+                training_state=False,
+            )
+            if self.test_loader is not None:
+                self.predict(
+                    self.test_loader,
+                    results_file="predictions",
+                    disable_tqdm=disable_eval_tqdm,
+                )
+
+    def train(self, disable_eval_tqdm=False):
+        ensure_fitted(self._unwrapped_model, warn=True)
+
+        eval_every = self.config["optim"].get(
+            "eval_every", len(self.train_loader)
+        )
+        checkpoint_every = self.config["optim"].get(
+            "checkpoint_every", eval_every
+        )
+        primary_metric = self.config["task"]["primary_metric"]
+        # TODO: support for old naming conventions - is2re, s2ef, etc.
+        # primary_metric = self.config["task"].get(
+        # "primary_metric", self.evaluator.task_primary_metric[self.name]
+        # )
+        if (
+            not hasattr(self, "primary_metric")
+            or self.primary_metric != primary_metric
+        ):
+            self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
+        else:
+            primary_metric = self.primary_metric
+        self.metrics = {}
+
+        # Calculate start_epoch from step instead of loading the epoch number
+        # to prevent inconsistencies due to different batch size in checkpoint.
+        start_epoch = self.step // len(self.train_loader)
+
+        for epoch_int in range(
+            start_epoch, self.config["optim"]["max_epochs"]
+        ):
+            self.train_sampler.set_epoch(epoch_int)
+            skip_steps = self.step % len(self.train_loader)
+            train_loader_iter = iter(self.train_loader)
+
+            for i in range(skip_steps, len(self.train_loader)):
+                self.epoch = epoch_int + (i + 1) / len(self.train_loader)
+                self.step = epoch_int * len(self.train_loader) + i + 1
+                self.model.train()
+
+                # Get a batch.
+                batch = next(train_loader_iter)
+
+                # Forward, loss, backward.
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    out = self._forward(batch)
+                    loss = self._compute_loss(out, batch)
+                loss = self.scaler.scale(loss) if self.scaler else loss
+                self._backward(loss)
+                scale = self.scaler.get_scale() if self.scaler else 1.0
+
+                # Compute metrics.
+                self.metrics = self._compute_metrics(
+                    out,
+                    batch,
+                    self.evaluator,
+                    self.metrics,
+                )
+                self.metrics = self.evaluator.update(
+                    "loss", loss.item() / scale, self.metrics
+                )
+
+                # Log metrics.
+                log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
+                log_dict.update(
+                    {
+                        "lr": self.scheduler.get_lr(),
+                        "epoch": self.epoch,
+                        "step": self.step,
+                    }
+                )
+                if (
+                    self.step % self.config["cmd"]["print_every"] == 0
+                    and distutils.is_master()
+                    and not self.is_hpo
+                ):
+                    log_str = [
+                        "{}: {:.2e}".format(k, v) for k, v in log_dict.items()
+                    ]
+                    logging.info(", ".join(log_str))
+                    self.metrics = {}
+
+                if self.logger is not None:
+                    self.logger.log(
+                        log_dict,
+                        step=self.step,
+                        split="train",
+                    )
+
+                if (
+                    checkpoint_every != -1
+                    and self.step % checkpoint_every == 0
+                ):
+                    self.save(
+                        checkpoint_file="checkpoint.pt", training_state=True
+                    )
+
+                # Evaluate on val set every `eval_every` iterations.
+                if self.step % eval_every == 0:
+                    if self.val_loader is not None:
+                        val_metrics = self.validate(
+                            split="val",
+                            disable_tqdm=disable_eval_tqdm,
+                        )
+                        self.update_best(
+                            primary_metric,
+                            val_metrics,
+                            disable_eval_tqdm=disable_eval_tqdm,
+                        )
+                        if self.is_hpo:
+                            self.hpo_update(
+                                self.epoch,
+                                self.step,
+                                self.metrics,
+                                val_metrics,
+                            )
+
+                    if self.config["task"].get("eval_relaxations", False):
+                        if "relax_dataset" not in self.config["task"]:
+                            logging.warning(
+                                "Cannot evaluate relaxations, relax_dataset not specified"
+                            )
+                        else:
+                            self.run_relaxations()
+
+                if self.scheduler.scheduler_type == "ReduceLROnPlateau":
+                    if self.step % eval_every == 0:
+                        self.scheduler.step(
+                            metrics=val_metrics[primary_metric]["metric"],
+                        )
+                else:
+                    self.scheduler.step()
+
+            torch.cuda.empty_cache()
+
+            if checkpoint_every == -1:
+                self.save(checkpoint_file="checkpoint.pt", training_state=True)
+
+        self.train_dataset.close_db()
+        if self.config.get("val_dataset", False):
+            self.val_dataset.close_db()
+        if self.config.get("test_dataset", False):
+            self.test_dataset.close_db()
+
+    def _forward(self, batch_list):
+        return self.model(batch_list)
+
+    def _compute_loss(self, out, batch_list):
+        natoms = torch.cat(
+            [batch.natoms.to(self.device) for batch in batch_list], dim=0
+        )
+        natoms = torch.repeat_interleave(natoms, natoms)
+        batch_size = natoms.numel()
+
+        loss = []
+        if self.config["task"].get("train_on_free_atoms", True):
+            fixed = torch.cat(
+                [batch.fixed.to(self.device) for batch in batch_list]
+            )
+            mask = fixed == 0
+
+        for target_name in self.train_targets:
+            if "parent" not in self.train_targets[target_name]:
+                target = torch.cat(
+                    [
+                        batch[target_name].to(self.device)
+                        for batch in batch_list
+                    ],
+                    dim=0,
+                )
+            # property is a decomposition of a higher order tensor
+            else:
+                irreps = self.train_targets[target_name]["irreps"]
+                if irreps > 2:
+                    raise NotImplementedError
+
+                target = [
+                    torch.einsum(
+                        "ab, cb->ca",
+                        cg_decomp_mat(2).to(self.device),
+                        batch[self.train_targets[target_name]["parent"]],
+                    )
+                    for batch in batch_list
+                ]
+
+                target = torch.cat(
+                    [
+                        batch[
+                            :,
+                            max(0, irreps_sum(irreps - 1)) : irreps_sum(
+                                irreps
+                            ),
+                        ]
+                        for batch in target
+                    ],
+                    dim=0,
+                )
+
+            pred = out[target_name]
+
+            if (
+                self.config["task"].get("train_on_free_atoms", True)
+                and self.train_targets[target_name].get("level", "system")
+                == "atom"
+            ):
+                target = target[mask]
+                pred = pred[mask]
+                natoms = natoms[mask]
+
+            if self.normalizers.get(target_name, False):
+                target = self.normalizers[target_name].norm(target)
+
+            mult = self.train_targets[target_name].get("coefficient", 1)
+
+            loss.append(
+                mult
+                * self.loss_fn[target_name](
+                    pred,
+                    target,
+                    natoms=natoms,
+                    batch_size=batch_size,
+                )
+            )
+
+        # Sanity check to make sure the compute graph is correct.
+        for lc in loss:
+            assert hasattr(lc, "grad_fn")
+
+        loss = sum(loss)
+        return loss
+
+    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+        natoms = torch.cat(
+            [batch.natoms.to(self.device) for batch in batch_list], dim=0
+        )
+
+        if self.config["task"].get("eval_on_free_atoms", True):
+            fixed = torch.cat(
+                [batch.fixed.to(self.device) for batch in batch_list]
+            )
+            mask = fixed == 0
+
+            s_idx = 0
+            natoms_free = []
+            for _natoms in natoms:
+                natoms_free.append(
+                    torch.sum(mask[s_idx : s_idx + _natoms]).item()
+                )
+                s_idx += _natoms
+            natoms = torch.LongTensor(natoms_free).to(self.device)
+
+        targets = {}
+        for target_name in self.train_targets:
+            if "parent" not in self.train_targets[target_name]:
+                target = torch.cat(
+                    [
+                        batch[target_name].to(self.device)
+                        for batch in batch_list
+                    ],
+                    dim=0,
+                )
+            else:
+                irreps = self.train_targets[target_name]["irreps"]
+                parent_target_name = self.train_targets[target_name]["parent"]
+
+                if parent_target_name not in targets:
+                    parent_target = torch.cat(
+                        [
+                            batch[parent_target_name].to(self.device)
+                            for batch in batch_list
+                        ],
+                        dim=0,
+                    )
+                    targets[parent_target_name] = parent_target
+
+                target = [
+                    torch.einsum(
+                        "ab, cb->ca",
+                        cg_decomp_mat(2).to(self.device),
+                        batch[parent_target_name],
+                    )
+                    for batch in batch_list
+                ]
+
+                target = torch.cat(
+                    [
+                        batch[
+                            :,
+                            max(0, irreps_sum(irreps - 1)) : irreps_sum(
+                                irreps
+                            ),
+                        ]
+                        for batch in target
+                    ],
+                    dim=0,
+                )
+
+            if (
+                self.config["task"].get("eval_on_free_atoms", True)
+                and self.train_targets[target_name].get("level", "system")
+                == "atom"
+            ):
+                target = target[mask]
+                out[target_name] = out[target_name][mask]
+
+            targets[target_name] = target
+            if self.normalizers.get(target_name, False):
+                out[target_name] = self.normalizers[target_name].denorm(
+                    out[target_name]
+                )
+
+        targets["natoms"] = natoms
+        out["natoms"] = natoms
+
+        metrics = evaluator.eval(out, targets, prev_metrics=metrics)
+        return metrics
 
     @torch.no_grad()
     def validate(self, split: str = "val", disable_tqdm: bool = False):
@@ -651,12 +1026,10 @@ class BaseTrainer(ABC):
             self.ema.store()
             self.ema.copy_to()
 
-        evaluator, metrics = (
-            Evaluator(
-                task=self.name,
-                eval_metrics=self.config["task"].get("metrics", None),
-            ),
-            {},
+        metrics = {}
+        evaluator = Evaluator(
+            task=self.name,
+            eval_metrics=self.config["task"].get("evaluation_metrics", None),
         )
 
         rank = distutils.get_rank()
@@ -713,14 +1086,6 @@ class BaseTrainer(ABC):
 
         return metrics
 
-    @abstractmethod
-    def _forward(self, batch_list):
-        """Derived classes should implement this function."""
-
-    @abstractmethod
-    def _compute_loss(self, out, batch_list):
-        """Derived classes should implement this function."""
-
     def _backward(self, loss) -> None:
         self.optimizer.zero_grad()
         loss.backward()
@@ -756,11 +1121,180 @@ class BaseTrainer(ABC):
         if self.ema:
             self.ema.update()
 
+    # Takes in a new data source and generates predictions on it.
+    @torch.no_grad()
+    def predict(
+        self,
+        data_loader,
+        per_image=True,
+        results_file=None,
+        disable_tqdm=False,
+    ):
+        ensure_fitted(self._unwrapped_model, warn=True)
+
+        if distutils.is_master() and not disable_tqdm:
+            logging.info("Predicting on test.")
+        assert isinstance(
+            data_loader,
+            (
+                torch.utils.data.dataloader.DataLoader,
+                torch_geometric.data.Batch,
+            ),
+        )
+        rank = distutils.get_rank()
+
+        if isinstance(data_loader, torch_geometric.data.Batch):
+            data_loader = [[data_loader]]
+
+        self.model.eval()
+        if self.ema:
+            self.ema.store()
+            self.ema.copy_to()
+
+        predictions = defaultdict(list)
+
+        for i, batch_list in tqdm(
+            enumerate(data_loader),
+            total=len(data_loader),
+            position=rank,
+            desc="device {}".format(rank),
+            disable=disable_tqdm,
+        ):
+            batch_size = batch_list[0].natoms.numel()
+
+            ### Get unique system identifiers
+            sids = batch_list[0].sid.tolist()
+            ## Support naming structure for OC20 S2EF
+            if "fid" in batch_list[0]:
+                fids = batch_list[0].fid.tolist()
+                systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
+            else:
+                systemids = [f"{sid}" for sid in sids]
+
+            predictions["ids"].extend(systemids)
+
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch_list)
+
+            for target_key in self.targets:
+                ### Target property is a direct output of the model
+                if target_key in self.train_targets:
+                    pred = out[target_key]
+                    ### Denormalize predictions if needed
+                    if self.normalizers.get(target_key, False):
+                        pred = self.normalizers[target_key].denorm(pred)
+                ## Target property is a derived output of the model
+                else:
+                    _max_rank = 0
+                    for subtarget_key in self.targets[target_key]["decomp"]:
+                        _max_rank = max(
+                            _max_rank,
+                            self.train_targets[subtarget_key]["irreps"],
+                        )
+
+                    pred_irreps = torch.zeros(
+                        (batch_size, irreps_sum(_max_rank)), device=self.device
+                    )
+
+                    for subtarget_key in self.targets[target_key]["decomp"]:
+                        irreps = self.train_targets[subtarget_key]["irreps"]
+                        _pred = out[subtarget_key]
+
+                        ### Denormalize predictions if needed
+                        if self.normalizers.get(subtarget_key, False):
+                            _pred = self.normalizers[subtarget_key].denorm(
+                                _pred
+                            )
+
+                        ## Fill in the corresponding irreps prediction
+                        pred_irreps[
+                            :,
+                            max(0, irreps_sum(irreps - 1)) : irreps_sum(
+                                irreps
+                            ),
+                        ] = _pred
+
+                    pred = torch.einsum(
+                        "ba, cb->ca",
+                        cg_decomp_mat(_max_rank, self.device),
+                        pred_irreps,
+                    )
+
+                ### Save outputs in desired precision, default float16
+                if (
+                    self.targets[target_key].get("prediction_dtype", "float16")
+                    == "float32"
+                    or self.config["task"].get("prediction_dtype", "float16")
+                    == "float32"
+                    or self.config["task"]["dataset"] == "oc22_lmdb"
+                ):
+                    dtype = torch.float32
+                else:
+                    dtype = torch.float16
+
+                pred = pred.cpu().detach().to(dtype)
+
+                ### Split predictions into per-image predictions
+                if self.targets[target_key].get("level", "system") == "atom":
+                    batch_natoms = torch.cat(
+                        [batch.natoms for batch in batch_list]
+                    )
+                    batch_fixed = torch.cat(
+                        [batch.fixed for batch in batch_list]
+                    )
+                    per_image_pred = torch.split(pred, batch_natoms.tolist())
+
+                    ### Save out only free atom, EvalAI does not need fixed atoms
+                    _per_image_fixed = torch.split(
+                        batch_fixed, batch_natoms.tolist()
+                    )
+                    _per_image_free_preds = [
+                        _pred[(fixed == 0).tolist()].numpy()
+                        for _pred, fixed in zip(
+                            per_image_pred, _per_image_fixed
+                        )
+                    ]
+                    _chunk_idx = np.array(
+                        [
+                            free_pred.shape[0]
+                            for free_pred in _per_image_free_preds
+                        ]
+                    )
+                    per_image_pred = _per_image_free_preds
+                ### Assumes system level properties are of the same dimension
+                else:
+                    per_image_pred = pred.numpy()
+                    _chunk_idx = None
+
+                predictions[f"{target_key}"].extend(per_image_pred)
+                ### Backwards compatibility, retain 'chunk_idx' for forces.
+                if _chunk_idx is not None:
+                    if target_key == "forces":
+                        predictions["chunk_idx"].extend(_chunk_idx)
+                    else:
+                        predictions[f"{target_key}_chunk_idx"].extend(
+                            _chunk_idx
+                        )
+
+        for key in predictions:
+            predictions[key] = np.array(predictions[key])
+
+        self.save_results(predictions, results_file)
+        # TODO relaxation support
+
+        if self.ema:
+            self.ema.restore()
+
+        return predictions
+
     def save_results(
         self, predictions, results_file: Optional[str], keys
     ) -> None:
+
         if results_file is None:
             return
+        if keys is None:
+            keys = predictions.keys()
 
         results_file_path = os.path.join(
             self.config["cmd"]["results_dir"],
@@ -768,7 +1302,6 @@ class BaseTrainer(ABC):
         )
         np.savez_compressed(
             results_file_path,
-            ids=predictions["id"],
             **{key: predictions[key] for key in keys},
         )
 
@@ -794,18 +1327,18 @@ class BaseTrainer(ABC):
             # Because of how distributed sampler works, some system ids
             # might be repeated to make no. of samples even across GPUs.
             _, idx = np.unique(gather_results["ids"], return_index=True)
-            gather_results["ids"] = np.array(gather_results["ids"])[idx]
             for k in keys:
-                if k == "forces":
-                    gather_results[k] = np.concatenate(
-                        np.array(gather_results[k])[idx]
-                    )
-                elif k == "chunk_idx":
+                if "chunk_idx" in k:
                     gather_results[k] = np.cumsum(
                         np.array(gather_results[k])[idx]
                     )[:-1]
                 else:
-                    gather_results[k] = np.array(gather_results[k])[idx]
+                    if f"{k}_chunk_idx" in keys or k == "forces":
+                        gather_results[k] = np.concatenate(
+                            np.array(gather_results[k])[idx]
+                        )
+                    else:
+                        gather_results[k] = np.array(gather_results[k])[idx]
 
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
