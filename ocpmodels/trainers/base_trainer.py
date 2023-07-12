@@ -36,6 +36,7 @@ from ocpmodels.common.typing import assert_is_instance
 from ocpmodels.common.utils import (
     cg_decomp_mat,
     check_traj_files,
+    get_commit_hash,
     irreps_sum,
     load_state_dict,
     save_checkpoint,
@@ -64,7 +65,6 @@ class BaseTrainer(ABC):
         timestamp_id: Optional[str] = None,
         run_dir=None,
         is_debug: bool = False,
-        is_hpo: bool = False,
         print_every: int = 100,
         seed=None,
         logger: str = "tensorboard",
@@ -95,38 +95,22 @@ class BaseTrainer(ABC):
             )
             # create directories from master rank only
             distutils.broadcast(timestamp, 0)
-            timestamp = datetime.datetime.fromtimestamp(
-                timestamp.float().item()
+            _timestamp_id = datetime.datetime.fromtimestamp(
+                timestamp.int()
             ).strftime("%Y-%m-%d-%H-%M-%S")
             if identifier:
-                self.timestamp_id = f"{timestamp}-{identifier}"
+                timestamp_id = f"{_timestamp_id}-{identifier}"
             else:
-                self.timestamp_id = timestamp
-        else:
-            self.timestamp_id = timestamp_id
+                timestamp_id = _timestamp_id
 
-        try:
-            commit_hash = (
-                subprocess.check_output(
-                    [
-                        "git",
-                        "-C",
-                        assert_is_instance(ocpmodels.__path__[0], str),
-                        "describe",
-                        "--always",
-                    ]
-                )
-                .strip()
-                .decode("ascii")
-            )
-        # catch instances where code is not being run from a git repo
-        except Exception:
-            commit_hash = None
+        self.timestamp_id = timestamp_id
+
+        commit_hash = get_commit_hash()
 
         logger_name = logger if isinstance(logger, str) else logger["name"]
         self.config = {
             "task": task,
-            "trainer": "ocp",
+            "trainer": name,
             "model": assert_is_instance(model.pop("name"), str),
             "model_attributes": model,
             "optim": optimizer,
@@ -155,6 +139,7 @@ class BaseTrainer(ABC):
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp else None
 
+        # Fill in SLURM information in config, if applicable
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
             if "SLURM_ARRAY_JOB_ID" in os.environ:
                 self.config["slurm"]["job_id"] = "%s_%s" % (
@@ -166,6 +151,7 @@ class BaseTrainer(ABC):
             self.config["slurm"]["folder"] = self.config["slurm"][
                 "folder"
             ].replace("%j", self.config["slurm"]["job_id"])
+
         if isinstance(dataset, list):
             if len(dataset) > 0:
                 self.config["dataset"] = dataset[0]
@@ -180,22 +166,12 @@ class BaseTrainer(ABC):
         else:
             self.config["dataset"] = dataset
 
-        if not is_debug and distutils.is_master() and not is_hpo:
+        if not is_debug and distutils.is_master():
             os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
         self.is_debug = is_debug
-        self.is_hpo = is_hpo
-
-        if self.is_hpo:
-            # conditional import is necessary for checkpointing
-
-            # sets the hpo checkpoint frequency
-            # default is no checkpointing
-            self.hpo_checkpoint_every = self.config["optim"].get(
-                "checkpoint_every", -1
-            )
 
         if distutils.is_master():
             print(yaml.dump(self.config, default_flow_style=False))
@@ -232,7 +208,7 @@ class BaseTrainer(ABC):
 
     def load_logger(self) -> None:
         self.logger = None
-        if not self.is_debug and distutils.is_master() and not self.is_hpo:
+        if not self.is_debug and distutils.is_master():
             assert (
                 self.config["logger"] is not None
             ), "Specify logger in config"
@@ -633,43 +609,6 @@ class BaseTrainer(ABC):
                 return ckpt_path
         return None
 
-    def save_hpo(self, epoch, step: int, metrics, checkpoint_every: int):
-        # default is no checkpointing
-        # checkpointing frequency can be adjusted by setting checkpoint_every in steps
-        # to checkpoint every time results are communicated to Ray Tune set checkpoint_every=1
-        if checkpoint_every != -1 and step % checkpoint_every == 0:
-            with tune.checkpoint_dir(  # noqa: F821
-                step=step
-            ) as checkpoint_dir:
-                path = os.path.join(checkpoint_dir, "checkpoint")
-                torch.save(self.save_state(epoch, step, metrics), path)
-
-    def hpo_update(
-        self, epoch, step, train_metrics, val_metrics, test_metrics=None
-    ):
-        progress = {
-            "steps": step,
-            "epochs": epoch,
-            "act_lr": self.optimizer.param_groups[0]["lr"],
-        }
-        # checkpointing must occur before reporter
-        # default is no checkpointing
-        self.save_hpo(
-            epoch,
-            step,
-            val_metrics,
-            self.hpo_checkpoint_every,
-        )
-        # report metrics to tune
-        tune_reporter(  # noqa: F821
-            iters=progress,
-            train_metrics={
-                k: train_metrics[k]["metric"] for k in self.metrics
-            },
-            val_metrics={k: val_metrics[k]["metric"] for k in val_metrics},
-            test_metrics=test_metrics,
-        )
-
     def update_best(
         self,
         primary_metric,
@@ -769,7 +708,6 @@ class BaseTrainer(ABC):
                 if (
                     self.step % self.config["cmd"]["print_every"] == 0
                     and distutils.is_master()
-                    and not self.is_hpo
                 ):
                     log_str = [
                         "{}: {:.2e}".format(k, v) for k, v in log_dict.items()
@@ -804,13 +742,6 @@ class BaseTrainer(ABC):
                             val_metrics,
                             disable_eval_tqdm=disable_eval_tqdm,
                         )
-                        if self.is_hpo:
-                            self.hpo_update(
-                                self.epoch,
-                                self.step,
-                                self.metrics,
-                                val_metrics,
-                            )
 
                     if self.config["task"].get("eval_relaxations", False):
                         if "relax_dataset" not in self.config["task"]:
@@ -1018,8 +949,6 @@ class BaseTrainer(ABC):
 
         if distutils.is_master():
             logging.info(f"Evaluating on {split}.")
-        if self.is_hpo:
-            disable_tqdm = True
 
         self.model.eval()
         if self.ema:
