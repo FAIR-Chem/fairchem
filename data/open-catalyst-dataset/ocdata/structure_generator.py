@@ -355,8 +355,9 @@ def precompute_slabs(bulk_ind):
             max_miller=args.max_miller,
             precomputed_slabs_dir=args.precomputed_slabs_dir,
         )
-        for surf_idx, slab in enumerate(all_slabs):
-            write_surface(args, slab, bulk_ind, surf_idx)
+        if not args.no_vasp:
+            for surf_idx, slab in enumerate(all_slabs):
+                write_surface(args, slab, bulk_ind, surf_idx)
     except Exception:
         traceback.print_exc()
 
