@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from typing import Dict, Union
 
-from ocpmodels.common.utils import change_mat
+from ocpmodels.common.utils import cg_decomp_mat
 
 """
 An evaluation module for use with the OCP dataset and suite of tasks. It should
@@ -263,7 +263,7 @@ def average_distance_within_threshold(
 
 def stress_mae(prediction, target, key=None):
     device = prediction["isotropic_stress"].device
-    cg_decomp_mat = change_mat.to(device)
+    cg_decomp_mat = cg_decomp_mat(2, device)
 
     zero_vectors = torch.zeros(
         (prediction["isotropic_stress"].shape[0], 3),

@@ -52,21 +52,21 @@ task:
       normalizer:
         stdev: 1.866159
     stress:
-      isotropic_stress:
-          irreps: 0
-          loss: mae
-          level: system
-          coefficient: 1
-          normalizer:
-            mean: 43.27065
-            stdev: 674.1657344451734
-      anisotropic_stress:
-          irreps: 2
-          loss: mae
-          level: system
-          coefficient: 1
-          normalizer:
-            stdev: 143.72764771869745
+      level: system
+      decomp:
+        isotropic_stress:
+            irreps: 0
+            loss: mae
+            coefficient: 1
+            normalizer:
+              mean: 43.27065
+              stdev: 674.1657344451734
+        anisotropic_stress:
+            irreps: 2
+            loss: mae
+            coefficient: 1
+            normalizer:
+              stdev: 143.72764771869745
 
 model:
   name: gemnet_oc
