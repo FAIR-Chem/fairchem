@@ -1189,3 +1189,46 @@ def get_commit_hash():
         commit_hash = None
 
     return commit_hash
+
+
+def load_old_targets(name, config):
+    normalizer = config.get("dataset", {})
+
+    if name == "is2re":
+        targets = {
+            "energy": {
+                "irreps": 0,
+                "loss": config["optim"].get("loss_energy", "mae"),
+                "level": "system",
+                "coefficient": config["optim"].get("energy_coefficient", 1),
+                "normalizer": {
+                    "mean": normalizer.get("target_mean", 0),
+                    "stdev": normalizer.get("target_std", 1),
+                },
+            }
+        }
+    elif name == "s2ef":
+        targets = {
+            "energy": {
+                "irreps": 0,
+                "loss": config["optim"].get("loss_energy", "mae"),
+                "level": "system",
+                "coefficient": config["optim"].get("energy_coefficient", 1),
+                "normalizer": {
+                    "mean": normalizer.get("target_mean", 0),
+                    "stdev": normalizer.get("target_std", 1),
+                },
+            },
+            "forces": {
+                "irreps": 1,
+                "loss": config["optim"].get("loss_force", "mae"),
+                "level": "atom",
+                "coefficient": config["optim"].get("force_coefficient", 1),
+                "normalizer": {
+                    "mean": normalizer.get("grad_target_mean", 0),
+                    "stdev": normalizer.get("grad_target_std", 1),
+                },
+            },
+        }
+
+    return targets

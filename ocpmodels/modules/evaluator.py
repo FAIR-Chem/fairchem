@@ -34,16 +34,16 @@ with the relevant metrics computed.
 class Evaluator:
     task_metrics = {
         "s2ef": {
-            "energy": {"metrics": ["energy_mae"]},
+            "energy": {"metrics": ["mae"]},
             "forces": {
                 "metrics": [
                     "forcesx_mae",
                     "forcesy_mae",
                     "forcesz_mae",
-                    "forces_mae",
-                    "forces_cos",
-                    "forces_magnitude",
-                    "energy_force_within_threshold",
+                    "mae",
+                    "cosine_similarity",
+                    "magnitude_error",
+                    "energy_forces_within_threshold",
                 ]
             },
         },
@@ -51,15 +51,15 @@ class Evaluator:
             "positions": {
                 "metrics": [
                     "average_distance_within_threshold",
-                    "positions_mae",
-                    "positions_mse",
+                    "mae",
+                    "mse",
                 ]
             }
         },
         "is2re": {
             "metrics": [
-                "energy_mae",
-                "energy_mse",
+                "mae",
+                "mse",
                 "energy_within_threshold",
             ]
         },
@@ -77,15 +77,13 @@ class Evaluator:
 
     def eval(self, prediction, target, prev_metrics={}):
 
-        # TODO: arbitrary type check
-        # for metric in self.metric_fns:
-        # assert attr in prediction
-        # assert attr in target
-        # assert prediction[attr].shape == target[attr].shape
-
         metrics = prev_metrics
 
         for target_property in self.target_metrics:
+            assert (
+                prediction[target_property].shape
+                == target[target_property].shape
+            )
             for fn in self.target_metrics[target_property]["metrics"]:
                 metric_name = (
                     f"{target_property}_{fn}"
@@ -149,33 +147,8 @@ def forcesz_mse(prediction, target, key=None):
     return mse(prediction["forces"][:, 2], target["forces"][:, 2])
 
 
-<<<<<<< HEAD
-def forces_mae(prediction, target):
-    return mae(prediction["forces"], target["forces"])
-
-
-def forces_mse(prediction, target):
-    return mse(prediction["forces"], target["forces"])
-
-
-def forces_cos(prediction, target):
-    return cosine_similarity(prediction["forces"], target["forces"])
-
-
-def forces_magnitude(prediction, target):
-    return magnitude_error(prediction["forces"], target["forces"], p=2)
-
-
-def positions_mae(prediction, target):
-    return mae(prediction["positions"], target["positions"])
-
-
-def positions_mse(prediction, target):
-    return mse(prediction["positions"], target["positions"])
-
-
-def energy_force_within_threshold(
-    prediction, target, key=None
+def energy_forces_within_threshold(
+        prediction: dict, target: dict, key=None
 ) -> Dict[str, Union[float, int]]:
     # Note that this natoms should be the count of free atoms we evaluate over.
     assert target["natoms"].sum() == prediction["forces"].size(0)
@@ -335,7 +308,7 @@ def mse(
 def magnitude_error(
     prediction: dict, target: dict, key=slice(None), p: int = 2
 ) -> Dict[str, Union[float, int]]:
-    assert prediction.shape[1] > 1
+    assert prediction[key].shape[1] > 1
     error = torch.abs(
         torch.norm(prediction[key], p=p, dim=-1)
         - torch.norm(target[key], p=p, dim=-1)

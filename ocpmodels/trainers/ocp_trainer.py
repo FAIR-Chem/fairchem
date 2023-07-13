@@ -27,6 +27,8 @@ from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
 @registry.register_trainer("ocp")
+@registry.register_trainer("energy")
+@registry.register_trainer("forces")
 class OCPTrainer(BaseTrainer):
     """
     Trainer class for the Structure to Energy & Force (S2EF) and Initial State to
@@ -69,7 +71,6 @@ class OCPTrainer(BaseTrainer):
         dataset,
         optimizer,
         identifier,
-        normalizer=None,
         timestamp_id=None,
         run_dir=None,
         is_debug=False,
@@ -89,7 +90,6 @@ class OCPTrainer(BaseTrainer):
             dataset=dataset,
             optimizer=optimizer,
             identifier=identifier,
-            normalizer=normalizer,
             timestamp_id=timestamp_id,
             run_dir=run_dir,
             is_debug=is_debug,
