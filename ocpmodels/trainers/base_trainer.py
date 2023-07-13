@@ -38,6 +38,7 @@ from ocpmodels.common.utils import (
     check_traj_files,
     get_commit_hash,
     irreps_sum,
+    load_old_targets,
     load_state_dict,
     save_checkpoint,
 )
@@ -61,7 +62,6 @@ class BaseTrainer(ABC):
         dataset,
         optimizer,
         identifier,
-        normalizer=None,
         timestamp_id: Optional[str] = None,
         run_dir=None,
         is_debug: bool = False,
@@ -180,7 +180,9 @@ class BaseTrainer(ABC):
         # TODO: asserts for targets+evaluation config definitions
         self.evaluator = Evaluator(
             task=name,
-            eval_metrics=self.config["task"].get("evaluation_metrics", None),
+            eval_metrics=self.config["task"].get(
+                "evaluation_metrics", Evaluator.task_metrics[name]
+            ),
         )
 
     def load(self) -> None:
@@ -333,8 +335,9 @@ class BaseTrainer(ABC):
             )
 
     def load_task(self):
-        self.targets = self.config["task"]["targets"]
-        self.num_targets = 1
+        self.targets = self.config["task"].get(
+            "targets", load_old_targets(self.name, self.config)
+        )
 
         self.train_targets = {}
         for target in self.targets:
@@ -384,7 +387,7 @@ class BaseTrainer(ABC):
             and loader.dataset[0].x is not None
             else None,
             bond_feat_dim,
-            self.num_targets,
+            1,
             **self.config["model_attributes"],
         ).to(self.device)
 
@@ -577,10 +580,9 @@ class BaseTrainer(ABC):
                         if self.scaler
                         else None,
                         "best_val_metric": self.best_val_metric,
-                        "primary_metric": self.config["task"].get(
-                            "primary_metric",
-                            self.evaluator.task_primary_metric[self.name],
-                        ),
+                        "primary_metric": self.config["task"][
+                            "primary_metric"
+                        ],
                     },
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
@@ -645,11 +647,9 @@ class BaseTrainer(ABC):
         checkpoint_every = self.config["optim"].get(
             "checkpoint_every", eval_every
         )
-        primary_metric = self.config["task"]["primary_metric"]
-        # TODO: support for old naming conventions - is2re, s2ef, etc.
-        # primary_metric = self.config["task"].get(
-        # "primary_metric", self.evaluator.task_primary_metric[self.name]
-        # )
+        primary_metric = self.config["task"].get(
+            "primary_metric", self.evaluator.task_primary_metric[self.name]
+        )
         if (
             not hasattr(self, "primary_metric")
             or self.primary_metric != primary_metric
@@ -959,7 +959,9 @@ class BaseTrainer(ABC):
         metrics = {}
         evaluator = Evaluator(
             task=self.name,
-            eval_metrics=self.config["task"].get("evaluation_metrics", None),
+            eval_metrics=self.config["task"].get(
+                "evaluation_metrics", Evaluator.task_metrics[self.name]
+            ),
         )
 
         rank = distutils.get_rank()
