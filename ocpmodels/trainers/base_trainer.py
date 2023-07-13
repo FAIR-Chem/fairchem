@@ -354,9 +354,10 @@ class BaseTrainer(ABC):
         # Default - no normalization
         self.normalizers = {}
         for target in self.train_targets:
+            normalizer = self.train_targets[target].get("normalizer", {})
             self.normalizers[target] = Normalizer(
-                mean=self.train_targets.get("mean", 0),
-                std=self.train_targets.get("std", 1),
+                mean=normalizer.get("mean", 0),
+                std=normalizer.get("stdev", 1),
                 device=self.device,
             )
 
@@ -777,8 +778,8 @@ class BaseTrainer(ABC):
         natoms = torch.cat(
             [batch.natoms.to(self.device) for batch in batch_list], dim=0
         )
-        natoms = torch.repeat_interleave(natoms, natoms)
         batch_size = natoms.numel()
+        natoms = torch.repeat_interleave(natoms, natoms)
 
         loss = []
         if self.config["task"].get("train_on_free_atoms", True):
