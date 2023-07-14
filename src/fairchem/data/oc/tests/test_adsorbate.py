@@ -7,8 +7,8 @@ from ocdata.core import Adsorbate
 
 
 _test_db = {
-    0: (ase.Atoms(symbols="H", pbc="False"), "*H", np.array([0])),
-    1: (ase.Atoms(symbols="C", pbc="False"), "*C", np.array([0])),
+    0: (ase.Atoms(symbols="H", pbc="False"), "*H", np.array([0]), ""),
+    1: (ase.Atoms(symbols="C", pbc="False"), "*C", np.array([0]), ""),
 }
 
 
