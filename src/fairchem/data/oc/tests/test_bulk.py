@@ -2,6 +2,7 @@ import os
 import pickle
 import random
 
+import ase
 import numpy as np
 import pytest
 
@@ -15,6 +16,20 @@ def load_bulk(request):
 
     request.cls.precomputed_path = os.path.join(cwd, str(request.cls.idx) + ".pkl")
     request.cls.bulk = Bulk(bulk_id_from_db=request.cls.idx)
+
+
+_test_db = [
+    {
+        "atoms": ase.Atoms(symbols="H", pbc=False),
+        "src_id": "test_id_1",
+        "bulk_sampling_str": "test_1",
+    },
+    {
+        "atoms": ase.Atoms(symbols="C", pbc=False),
+        "src_id": "test_id_2",
+        "bulk_sampling_str": "test_2",
+    },
+]
 
 
 @pytest.mark.usefixtures("load_bulk")
@@ -35,6 +50,21 @@ class TestBulk:
 
         bulk = Bulk()
         assert bulk.atoms.get_chemical_formula() == "IrSn2"
+
+    def test_bulk_init_from_id_with_db(self):
+        bulk = Bulk(bulk_id_from_db=1, bulk_db=_test_db)
+        assert bulk.atoms.get_chemical_formula() == "C"
+
+    def test_bulk_init_from_src_id_with_db(self):
+        bulk = Bulk(bulk_src_id_from_db="test_id_2", bulk_db=_test_db)
+        assert bulk.atoms.get_chemical_formula() == "C"
+
+    def test_bulk_init_random_with_db(self):
+        random.seed(1)
+        np.random.seed(1)
+
+        bulk = Bulk(bulk_db=_test_db)
+        assert bulk.atoms.get_chemical_formula() == "C"
 
     def test_unique_slab_enumeration(self):
         slabs = self.bulk.get_slabs()
