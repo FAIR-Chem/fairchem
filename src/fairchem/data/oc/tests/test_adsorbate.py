@@ -7,8 +7,13 @@ from ocdata.core import Adsorbate
 
 
 _test_db = {
-    0: (ase.Atoms(symbols="H", pbc="False"), "*H", np.array([0]), ""),
-    1: (ase.Atoms(symbols="C", pbc="False"), "*C", np.array([0]), ""),
+    0: (ase.Atoms(symbols="H", pbc="False"), "*H", np.array([0]), "rxn_1"),
+    1: (ase.Atoms(symbols="C", pbc="False"), "*C", np.array([0]), "rxn_2"),
+}
+
+# Used to test backwards compatability with old database formats
+_test_db_old = {
+    0: (ase.Atoms(symbols="H", pbc="False"), "*H", np.array([0])),
 }
 
 
@@ -46,3 +51,11 @@ class TestAdsorbate:
 
         adsorbate = Adsorbate(adsorbate_db=_test_db)
         assert adsorbate.atoms.get_chemical_formula() == "C"
+
+    def test_adsorbate_init_reaction_string(self):
+        adsorbate = Adsorbate(adsorbate_id_from_db=0, adsorbate_db=_test_db)
+        assert adsorbate.reaction_string == "rxn_1"
+
+    def test_adsorbate_init_reaction_string_with_old_db(self):
+        adsorbate = Adsorbate(adsorbate_id_from_db=0, adsorbate_db=_test_db_old)
+        assert not hasattr(adsorbate, "reaction_string")

@@ -64,12 +64,7 @@ class Adsorbate:
                 self.binding_indices = adsorbate_binding_indices
         elif adsorbate_id_from_db is not None:
             adsorbate_db = adsorbate_db or pickle.load(open(adsorbate_db_path, "rb"))
-            (
-                self.atoms,
-                self.smiles,
-                self.binding_indices,
-                self.reaction_string,
-            ) = adsorbate_db[adsorbate_id_from_db]
+            self._load_adsorbate(adsorbate_db[adsorbate_id_from_db])
         elif adsorbate_smiles_from_db is not None:
             adsorbate_db = adsorbate_db or pickle.load(open(adsorbate_db_path, "rb"))
             adsorbate_obj_tuple = [
@@ -83,12 +78,7 @@ class Adsorbate:
                 )
                 self._get_adsorbate_from_random(adsorbate_db)
             else:
-                (
-                    self.atoms,
-                    self.smiles,
-                    self.binding_indices,
-                    self.reaction_string,
-                ) = adsorbate_obj_tuple[0][1]
+                self._load_adsorbate(adsorbate_obj_tuple[0][1])
                 self.adsorbate_id_from_db = adsorbate_obj_tuple[0][0]
         else:
             adsorbate_db = adsorbate_db or pickle.load(open(adsorbate_db_path, "rb"))
@@ -108,12 +98,19 @@ class Adsorbate:
 
     def _get_adsorbate_from_random(self, adsorbate_db):
         self.adsorbate_id_from_db = np.random.randint(len(adsorbate_db))
-        (
-            self.atoms,
-            self.smiles,
-            self.binding_indices,
-            self.reaction_string,
-        ) = adsorbate_db[self.adsorbate_id_from_db]
+        self._load_adsorbate(adsorbate_db[self.adsorbate_id_from_db])
+
+    def _load_adsorbate(self, adsorbate: Tuple[Any, ...]) -> None:
+        """
+        Saves the fields from an adsorbate stored in a database. Fields added
+        after the first revision are conditionally added for backwards
+        compatibility with older database files.
+        """
+        self.atoms = adsorbate[0]
+        self.smiles = adsorbate[1]
+        self.binding_indices = adsorbate[2]
+        if len(adsorbate) > 3:
+            self.reaction_string = adsorbate[3]
 
 
 def randomly_rotate_adsorbate(
