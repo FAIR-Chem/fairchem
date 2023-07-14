@@ -63,7 +63,6 @@ class Evaluator:
                 "energy_within_threshold",
             ]
         },
-        "ocp": {},
     }
 
     task_primary_metric = {
