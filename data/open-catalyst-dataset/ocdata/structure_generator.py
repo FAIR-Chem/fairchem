@@ -406,6 +406,8 @@ if __name__ == "__main__":
             tqdm(pool.imap(run_placements, pool_inputs), total=len(pool_inputs))
         )
         pool.close()
+
+        print("Placements successfully generated!")
     elif args.bulk_indices_file:
         with open(args.bulk_indices_file, "r") as f:
             all_indices = f.read().splitlines()
@@ -418,6 +420,8 @@ if __name__ == "__main__":
             tqdm(pool.imap(precompute_slabs, inds_to_run), total=len(inds_to_run))
         )
         pool.close()
+
+        print("Slabs successfully precomputed!")
     else:
         job = StructureGenerator(
             args,
@@ -426,3 +430,5 @@ if __name__ == "__main__":
             adsorbate_index=args.adsorbate_index,
         )
         job.run()
+
+        print("Placements successfully generated!")
