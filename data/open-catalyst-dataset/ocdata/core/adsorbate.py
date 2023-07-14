@@ -1,4 +1,5 @@
 import pickle
+from typing import Any, Dict, Tuple
 import warnings
 
 import ase
@@ -36,6 +37,7 @@ class Adsorbate:
         adsorbate_id_from_db: int = None,
         adsorbate_smiles_from_db: str = None,
         adsorbate_db_path: str = ADSORBATES_PKL_PATH,
+        adsorbate_db: Dict[int, Tuple[Any, ...]] = None,
         adsorbate_binding_indices: list = None,
     ):
         self.adsorbate_id_from_db = adsorbate_id_from_db
@@ -61,7 +63,7 @@ class Adsorbate:
             else:
                 self.binding_indices = adsorbate_binding_indices
         elif adsorbate_id_from_db is not None:
-            adsorbate_db = pickle.load(open(adsorbate_db_path, "rb"))
+            adsorbate_db = adsorbate_db or pickle.load(open(adsorbate_db_path, "rb"))
             (
                 self.atoms,
                 self.smiles,
@@ -69,7 +71,7 @@ class Adsorbate:
                 self.reaction_string,
             ) = adsorbate_db[adsorbate_id_from_db]
         elif adsorbate_smiles_from_db is not None:
-            adsorbate_db = pickle.load(open(adsorbate_db_path, "rb"))
+            adsorbate_db = adsorbate_db or pickle.load(open(adsorbate_db_path, "rb"))
             adsorbate_obj_tuple = [
                 (idx, adsorbate_info)
                 for idx, adsorbate_info in adsorbate_db.items()
@@ -89,7 +91,7 @@ class Adsorbate:
                 ) = adsorbate_obj_tuple[0][1]
                 self.adsorbate_id_from_db = adsorbate_obj_tuple[0][0]
         else:
-            adsorbate_db = pickle.load(open(adsorbate_db_path, "rb"))
+            adsorbate_db = adsorbate_db or pickle.load(open(adsorbate_db_path, "rb"))
             self._get_adsorbate_from_random(adsorbate_db)
 
     def __len__(self):
