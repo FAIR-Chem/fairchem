@@ -62,9 +62,12 @@ class Adsorbate:
                 self.binding_indices = adsorbate_binding_indices
         elif adsorbate_id_from_db is not None:
             adsorbate_db = pickle.load(open(adsorbate_db_path, "rb"))
-            self.atoms, self.smiles, self.binding_indices = adsorbate_db[
-                adsorbate_id_from_db
-            ]
+            (
+                self.atoms,
+                self.smiles,
+                self.binding_indices,
+                self.reaction_string,
+            ) = adsorbate_db[adsorbate_id_from_db]
         elif adsorbate_smiles_from_db is not None:
             adsorbate_db = pickle.load(open(adsorbate_db_path, "rb"))
             adsorbate_obj_tuple = [
@@ -78,9 +81,12 @@ class Adsorbate:
                 )
                 self._get_adsorbate_from_random(adsorbate_db)
             else:
-                self.atoms, self.smiles, self.binding_indices = adsorbate_obj_tuple[0][
-                    1
-                ]
+                (
+                    self.atoms,
+                    self.smiles,
+                    self.binding_indices,
+                    self.reaction_string,
+                ) = adsorbate_obj_tuple[0][1]
                 self.adsorbate_id_from_db = adsorbate_obj_tuple[0][0]
         else:
             adsorbate_db = pickle.load(open(adsorbate_db_path, "rb"))
@@ -100,9 +106,12 @@ class Adsorbate:
 
     def _get_adsorbate_from_random(self, adsorbate_db):
         self.adsorbate_id_from_db = np.random.randint(len(adsorbate_db))
-        self.atoms, self.smiles, self.binding_indices = adsorbate_db[
-            self.adsorbate_id_from_db
-        ]
+        (
+            self.atoms,
+            self.smiles,
+            self.binding_indices,
+            self.reaction_string,
+        ) = adsorbate_db[self.adsorbate_id_from_db]
 
 
 def randomly_rotate_adsorbate(
