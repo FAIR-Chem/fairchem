@@ -1230,5 +1230,7 @@ def load_old_targets(name, config):
                 },
             },
         }
+    else:
+        targets = {}
 
     return targets

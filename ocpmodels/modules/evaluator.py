@@ -63,12 +63,14 @@ class Evaluator:
                 "energy_within_threshold",
             ]
         },
+        "ocp": {},
     }
 
     task_primary_metric = {
         "s2ef": "energy_force_within_threshold",
         "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
+        "ocp": None,
     }
 
     def __init__(self, task: str = None, eval_metrics: str = None) -> None:
