@@ -1,5 +1,6 @@
 import os
 import pickle
+from typing import Any, Dict, List
 import warnings
 
 import ase
@@ -27,8 +28,8 @@ class Bulk:
         Src id of bulk to select (e.g. "mp-30").
     bulk_db_path: str
         Path to bulk database.
-    precomputed_slabs_path: str
-        Path to folder of precomputed slabs.
+    bulk_db: List[Dict[str, Any]]
+        Already-loaded database.
     """
 
     def __init__(
@@ -37,6 +38,7 @@ class Bulk:
         bulk_id_from_db: int = None,
         bulk_src_id_from_db: str = None,
         bulk_db_path: str = BULK_PKL_PATH,
+        bulk_db: List[Dict[str, Any]] = None,
     ):
         self.bulk_id_from_db = bulk_id_from_db
         self.bulk_db_path = bulk_db_path
@@ -45,11 +47,11 @@ class Bulk:
             self.atoms = bulk_atoms.copy()
             self.src_id = None
         elif bulk_id_from_db is not None:
-            bulk_db = pickle.load(open(bulk_db_path, "rb"))
+            bulk_db = bulk_db or pickle.load(open(bulk_db_path, "rb"))
             bulk_obj = bulk_db[bulk_id_from_db]
             self.atoms, self.src_id = bulk_obj["atoms"], bulk_obj["src_id"]
         elif bulk_src_id_from_db is not None:
-            bulk_db = pickle.load(open(bulk_db_path, "rb"))
+            bulk_db = bulk_db or pickle.load(open(bulk_db_path, "rb"))
             bulk_obj_tuple = [
                 (idx, bulk)
                 for idx, bulk in enumerate(bulk_db)
@@ -65,7 +67,7 @@ class Bulk:
                 self.bulk_id_from_db = bulk_obj_tuple[0][0]
                 self.atoms, self.src_id = bulk_obj["atoms"], bulk_obj["src_id"]
         else:
-            bulk_db = pickle.load(open(bulk_db_path, "rb"))
+            bulk_db = bulk_db or pickle.load(open(bulk_db_path, "rb"))
             self._get_bulk_from_random(bulk_db)
 
     def _get_bulk_from_random(self, bulk_db):
