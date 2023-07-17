@@ -9,7 +9,6 @@ import logging
 import os
 
 from ocpmodels.common.registry import registry
-from ocpmodels.trainers.forces_trainer import ForcesTrainer
 
 
 class BaseTask:
