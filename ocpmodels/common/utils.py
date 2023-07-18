@@ -1134,7 +1134,7 @@ def scatter_det(*args, **kwargs):
     return out
 
 
-def cg_decomp_mat(l, device):
+def cg_decomp_mat(l, device="cpu"):
     if l not in [2]:
         raise NotImplementedError
 
