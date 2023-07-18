@@ -25,6 +25,7 @@ from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+import pytorch_lightning as pl
 import ocpmodels
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.data_parallel import (
@@ -57,7 +58,8 @@ from ocpmodels.modules.scheduler import LRScheduler
 
 
 @registry.register_trainer("base")
-class BaseTrainer(ABC):
+class BaseTrainer(ABC, pl.LightningModule):
+    cpu: bool
     train_loader: DataLoader[Any]
     val_loader: DataLoader[Any]
     test_loader: DataLoader[Any]

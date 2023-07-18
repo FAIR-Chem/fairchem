@@ -10,6 +10,7 @@ import os
 import pathlib
 from collections import defaultdict
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import torch
@@ -21,6 +22,7 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
 from ocpmodels.common.utils import cg_decomp_mat, check_traj_files, irreps_sum
 from ocpmodels.modules.evaluator import Evaluator
+from ocpmodels.modules.exponential_moving_average import ExponentialMovingAverage
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.trainers.base_trainer import BaseTrainer
@@ -64,6 +66,8 @@ class OCPTrainer(BaseTrainer):
             (default: :obj:`{}`)
     """
 
+    ema: Optional[ExponentialMovingAverage]
+
     def __init__(
         self,
         task,
@@ -84,8 +88,8 @@ class OCPTrainer(BaseTrainer):
         amp=False,
         cpu=False,
         slurm={},
-        noddp=False,
-        name="ocp",
+        noddp: bool = False,
+        name: str = "ocp",
     ):
         super().__init__(
             task=task,

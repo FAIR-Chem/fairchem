@@ -1187,7 +1187,7 @@ def cg_decomp_mat(l, device="cpu"):
     return change_mat
 
 
-def irreps_sum(l):
+def irreps_sum(l: int) -> int:
     total = 0
     for i in range(l + 1):
         total += 2 * i + 1
