@@ -78,10 +78,13 @@ jobs:
       - checkout
       - run:
           name: setup
-          command: pip install black==22.3.0
+          command: pip install black==22.3.0 isort
       - run:
           name: run black
           command: black . --check
+      - run:
+          name: run isort
+          command: isort . --check-only
 
   test_ubuntu:
     docker:
