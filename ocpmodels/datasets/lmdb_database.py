@@ -9,20 +9,15 @@ https://gitlab.com/ase/ase/-/blob/master/LICENSE
 """
 
 
-import base64
-import json
 import os
-import sys
 import zlib
-from contextlib import ExitStack
 from typing import Optional
 
 import lmdb
 import numpy as np
 import orjson
-from ase.db.core import Database, lock, now, ops
+from ase.db.core import Database, now, ops
 from ase.db.row import AtomsRow
-from ase.io.jsonio import decode, encode
 
 # These are special keys in the ASE LMDB that hold
 # metadata and other info

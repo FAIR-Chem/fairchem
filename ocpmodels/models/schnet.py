@@ -10,11 +10,7 @@ from torch_geometric.nn import SchNet
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    conditional_grad,
-    get_pbc_distances,
-    radius_graph_pbc,
-)
+from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 
 
