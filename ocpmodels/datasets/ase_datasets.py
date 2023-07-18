@@ -70,6 +70,8 @@ class AseAtomsDataset(Dataset, ABC):
         self.config = config
 
         a2g_args = config.get("a2g_args", {})
+        if a2g_args is None:
+            a2g_args = {}
 
         # Make sure we always include PBC info in the resulting atoms objects
         a2g_args["r_pbc"] = True
@@ -81,8 +83,6 @@ class AseAtomsDataset(Dataset, ABC):
         if self.config.get("keep_in_memory", False):
             self.__getitem__ = functools.cache(self.__getitem__)
 
-        # Derived classes should extend this functionality to also create self.ids,
-        # a list of identifiers that can be passed to get_atoms_object()
         self.ids = self.load_dataset_get_ids(config)
 
     def __len__(self) -> int:
@@ -101,21 +101,12 @@ class AseAtomsDataset(Dataset, ABC):
             atoms = self.atoms_transform(
                 atoms, **self.config.get("atoms_transform_args", {})
             )
-
-        if "sid" in atoms.info:
-            sid = atoms.info["sid"]
-        else:
-            sid = tensor([idx])
             
-        if "fid" in atoms.info:
-            fid = atoms.info["fid"]
-        else:
-            fid = tensor([0])
+        sid = atoms.info.get("sid", tensor([idx]))
+        fid = atoms.info.get("fid", tensor([0]))
 
         # Convert to data object
         data_object = self.a2g.convert(atoms, sid)
-
-        data_object.pbc = tensor(atoms.pbc)
         data_object.fid = fid
 
         # Transform data object
@@ -445,6 +436,8 @@ class AseDBDataset(AseAtomsDataset):
                 )
 
         self.select_args = config.get("select_args", {})
+        if self.select_args is None:
+            self.select_args = {}
 
         # In order to get all of the unique IDs using the default ASE db interface
         # we have to load all the data and check ids using a select. This is extremely
@@ -484,6 +477,8 @@ class AseDBDataset(AseAtomsDataset):
         return atoms
 
     def connect_db(self, address, connect_args={}):
+        if connect_args is None:
+            connect_args = {}
         db_type = connect_args.get("type", "extract_from_name")
         if db_type == "lmdb" or (
             db_type == "extract_from_name" and address.split(".")[-1] == "lmdb"
