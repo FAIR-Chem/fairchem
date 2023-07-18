@@ -101,8 +101,12 @@ class AseAtomsDataset(Dataset, ABC):
             atoms = self.atoms_transform(
                 atoms, **self.config.get("atoms_transform_args", {})
             )
-
-        sid = atoms.info.get("sid", str(self.ids[idx]))
+        
+        try:
+            sid = tensor([atoms.info.get("sid", self.ids[idx])])
+        except:
+            sid = tensor([idx])
+        
         fid = atoms.info.get("fid", tensor([0]))
 
         # Convert to data object
