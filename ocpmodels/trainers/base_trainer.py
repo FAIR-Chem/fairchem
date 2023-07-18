@@ -181,7 +181,7 @@ class BaseTrainer(ABC):
         self.evaluator = Evaluator(
             task=name,
             eval_metrics=self.config["task"].get(
-                "evaluation_metrics", Evaluator.task_metrics[name]
+                "evaluation_metrics", Evaluator.task_metrics.get(name, {})
             ),
         )
 
@@ -960,7 +960,7 @@ class BaseTrainer(ABC):
         evaluator = Evaluator(
             task=self.name,
             eval_metrics=self.config["task"].get(
-                "evaluation_metrics", Evaluator.task_metrics[self.name]
+                "evaluation_metrics", Evaluator.task_metrics.get(self.name, {})
             ),
         )
 
