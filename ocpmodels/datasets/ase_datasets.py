@@ -101,8 +101,8 @@ class AseAtomsDataset(Dataset, ABC):
             atoms = self.atoms_transform(
                 atoms, **self.config.get("atoms_transform_args", {})
             )
-            
-        sid = atoms.info.get("sid", tensor([idx]))
+
+        sid = atoms.info.get("sid", str(self.ids[idx]))
         fid = atoms.info.get("fid", tensor([0]))
 
         # Convert to data object
@@ -328,6 +328,9 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
         except Exception as err:
             warnings.warn(f"{err} occured for: {identifier}")
             raise err
+
+        atoms.info["sid"] = "".join(identifier.split(" ")[:-1])
+        atoms.info["fid"] = int(identifier.split(" ")[-1])
 
         return atoms
 
