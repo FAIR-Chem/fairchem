@@ -12,14 +12,9 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
-from torch_geometric.nn import radius_graph
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    conditional_grad,
-    get_pbc_distances,
-    radius_graph_pbc,
-)
+from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.scn.sampling import CalcSpherePoints
 from ocpmodels.models.scn.smearing import (

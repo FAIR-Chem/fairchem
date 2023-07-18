@@ -12,7 +12,6 @@ from pathlib import Path
 import torch
 from torch_geometric.data import Batch
 
-from ocpmodels.common.registry import registry
 from ocpmodels.datasets.lmdb_dataset import data_list_collater
 
 from .optimizers.lbfgs_torch import LBFGS, TorchCalc

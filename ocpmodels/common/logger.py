@@ -27,7 +27,6 @@ class Logger(ABC):
         """
         Monitor parameters and gradients.
         """
-        pass
 
     def log(self, update_dict, step=None, split: str = ""):
         """

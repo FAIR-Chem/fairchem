@@ -12,7 +12,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 from scipy.special import sph_harm
-from torch.nn.init import _calculate_correct_fan
 
 from .activations import Act
 

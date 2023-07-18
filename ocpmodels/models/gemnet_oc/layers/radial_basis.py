@@ -8,14 +8,11 @@ import math
 from typing import Dict, Union
 
 import numpy as np
-import sympy as sym
 import torch
 from scipy.special import binom
 
 from ocpmodels.common.typing import assert_is_instance
 from ocpmodels.modules.scaling import ScaleFactor
-
-from .basis_utils import bessel_basis
 
 
 class PolynomialEnvelope(torch.nn.Module):
