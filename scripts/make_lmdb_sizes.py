@@ -11,8 +11,8 @@ import warnings
 import numpy as np
 from tqdm import tqdm
 
-from ocpmodels.datasets import SinglePointLmdbDataset, TrajectoryLmdbDataset
 from ocpmodels.common.typing import assert_is_instance
+from ocpmodels.datasets import SinglePointLmdbDataset, TrajectoryLmdbDataset
 
 
 def get_data(index):
