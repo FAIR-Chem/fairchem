@@ -106,11 +106,17 @@ class AseAtomsDataset(Dataset, ABC):
             sid = atoms.info["sid"]
         else:
             sid = tensor([idx])
+            
+        if "fid" in atoms.info:
+            fid = atoms.info["fid"]
+        else:
+            fid = tensor([0])
 
         # Convert to data object
         data_object = self.a2g.convert(atoms, sid)
 
         data_object.pbc = tensor(atoms.pbc)
+        data_object.fid = fid
 
         # Transform data object
         if self.transform is not None:
