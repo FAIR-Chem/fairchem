@@ -16,6 +16,7 @@ from typing import Any, DefaultDict, Dict, Optional, cast
 
 import numpy as np
 import numpy.typing as npt
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -25,7 +26,6 @@ from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-import pytorch_lightning as pl
 import ocpmodels
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.data_parallel import (
@@ -885,7 +885,10 @@ class BaseTrainer(ABC, pl.LightningModule):
         loss = sum(loss)
         return loss
 
-    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+    def _compute_metrics(self, out, batch_list, evaluator, metrics=None):
+        if metrics is None:
+            metrics = {}
+
         natoms = torch.cat(
             [batch.natoms.to(self.device) for batch in batch_list], dim=0
         )
@@ -943,62 +946,68 @@ class BaseTrainer(ABC, pl.LightningModule):
         metrics = evaluator.eval(out, targets, prev_metrics=metrics)
         return metrics
 
-    @torch.no_grad()
-    def validate(self, split: str = "val", disable_tqdm: bool = False):
+    def on_validation_start(self) -> None:
         ensure_fitted(self._unwrapped_model, warn=True)
 
-        if distutils.is_master():
-            logging.info(f"Evaluating on {split}.")
+        # TODO: Remove this?
+        # if distutils.is_master():
+        #     logging.info(f"Evaluating on {split}.")
 
-        self.model.eval()
         if self.ema:
             self.ema.store()
             self.ema.copy_to()
 
-        metrics = {}
-        evaluator = Evaluator(
+        self.validation_metrics = {}
+        self.validation_evaluator = Evaluator(
             task=self.name,
             eval_metrics=self.evaluation_metrics.get(
                 "metrics", Evaluator.task_metrics.get(self.name, {})
             ),
         )
 
-        rank = distutils.get_rank()
+        # TODO: We should do this somewhere
+        # loader = self.val_loader if split == "val" else self.test_loader
 
-        loader = self.val_loader if split == "val" else self.test_loader
+    @torch.no_grad()
+    def validation_step(self, batch, batch_idx: int) -> None:
+        # Forward.
+        with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+            out = self._forward(batch)
+        loss = self._compute_loss(out, batch)
 
-        for i, batch in tqdm(
-            enumerate(loader),
-            total=len(loader),
-            position=rank,
-            desc="device {}".format(rank),
-            disable=disable_tqdm,
-        ):
-            # Forward.
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch)
-            loss = self._compute_loss(out, batch)
+        # Compute metrics.
+        self.validation_metrics = self._compute_metrics(
+            out, batch, self.validation_evaluator, self.validation_metrics
+        )
+        self.validation_metrics = self.validation_evaluator.update(
+            "loss", loss.item(), self.validation_metrics
+        )
 
-            # Compute metrics.
-            metrics = self._compute_metrics(out, batch, evaluator, metrics)
-            metrics = evaluator.update("loss", loss.item(), metrics)
-
+    def on_validation_end(self) -> None:
         aggregated_metrics = {}
-        for k in metrics:
+        for k in self.validation_metrics:
             aggregated_metrics[k] = {
                 "total": distutils.all_reduce(
-                    metrics[k]["total"], average=False, device=self.device
+                    self.validation_metrics[k]["total"],
+                    average=False,
+                    device=self.device,
                 ),
                 "numel": distutils.all_reduce(
-                    metrics[k]["numel"], average=False, device=self.device
+                    self.validation_metrics[k]["numel"],
+                    average=False,
+                    device=self.device,
                 ),
             }
             aggregated_metrics[k]["metric"] = (
                 aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
             )
-        metrics = aggregated_metrics
 
-        log_dict = {k: metrics[k]["metric"] for k in metrics}
+        # Free up memory
+        self.validation_metrics = {}
+
+        log_dict = {
+            k: aggregated_metrics[k]["metric"] for k in aggregated_metrics
+        }
         log_dict.update({"epoch": self.epoch})
         if distutils.is_master():
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
@@ -1009,13 +1018,13 @@ class BaseTrainer(ABC, pl.LightningModule):
             self.logger.log(
                 log_dict,
                 step=self.step,
-                split=split,
+                split="val",  # TODO: Hard-coded this. Not sure what to do.
             )
 
         if self.ema:
             self.ema.restore()
 
-        return metrics
+        return aggregated_metrics
 
     def _backward(self, loss) -> None:
         self.optimizer.zero_grad()
