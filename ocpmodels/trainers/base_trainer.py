@@ -24,7 +24,6 @@ import torch_geometric
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 
 import ocpmodels
 from ocpmodels.common import distutils, gp_utils
@@ -692,10 +691,9 @@ class BaseTrainer(ABC, pl.LightningModule):
                 self.predict(
                     self.test_loader,
                     results_file="predictions",
-                    disable_tqdm=disable_eval_tqdm,
                 )
 
-    def train(self, disable_eval_tqdm: bool = False) -> None:
+    def train(self):
         ensure_fitted(self._unwrapped_model, warn=True)
 
         eval_every = self.config["optim"].get(
@@ -793,12 +791,10 @@ class BaseTrainer(ABC, pl.LightningModule):
                     if self.val_loader is not None:
                         val_metrics = self.validate(
                             split="val",
-                            disable_tqdm=disable_eval_tqdm,
                         )
                         self.update_best(
                             primary_metric,
                             val_metrics,
-                            disable_eval_tqdm=disable_eval_tqdm,
                         )
 
                     if self.config["task"].get("eval_relaxations", False):
