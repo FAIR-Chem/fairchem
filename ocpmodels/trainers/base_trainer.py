@@ -1009,9 +1009,6 @@ class BaseTrainer(ABC, pl.LightningModule):
             k: aggregated_metrics[k]["metric"] for k in aggregated_metrics
         }
         log_dict.update({"epoch": self.epoch})
-        if distutils.is_master():
-            log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
-            logging.info(", ".join(log_str))
 
         # Make plots.
         if self.logger is not None:
@@ -1061,69 +1058,141 @@ class BaseTrainer(ABC, pl.LightningModule):
         if self.ema:
             self.ema.update()
 
-    # Takes in a new data source and generates predictions on it.
-    @torch.no_grad()
-    def predict(
-        self,
-        data_loader,
-        per_image: bool = True,
-        results_file: Optional[str] = None,
-        disable_tqdm: bool = False,
-    ):
+    def on_predict_batch_start(
+        self, batch, batch_idx: int, dataloader_idx: int = 0
+    ) -> None:
+        # TODO
+        #         data_loader,
+        # per_image: bool = True,
+        # results_file=None,
         ensure_fitted(self._unwrapped_model, warn=True)
 
-        if distutils.is_master() and not disable_tqdm:
-            logging.info("Predicting on test.")
-        assert isinstance(
-            data_loader,
-            (
-                torch.utils.data.dataloader.DataLoader,
-                torch_geometric.data.Batch,
-            ),
-        )
-        rank = distutils.get_rank()
+        # TODO
+        # assert isinstance(
+        #     data_loader,
+        #     (
+        #         torch.utils.data.dataloader.DataLoader,
+        #         torch_geometric.data.Batch,
+        #     ),
+        # )
+        # rank = distutils.get_rank()
 
-        if isinstance(data_loader, torch_geometric.data.Batch):
-            data_loader = [[data_loader]]
+        # if isinstance(data_loader, torch_geometric.data.Batch):
+        #     data_loader = [[data_loader]]
 
         self.model.eval()
         if self.ema is not None:
             self.ema.store()
             self.ema.copy_to()
 
-        predictions = defaultdict(list)
+        self.predictions = defaultdict(list)
 
-        for i, batch_list in tqdm(
-            enumerate(data_loader),
-            total=len(data_loader),
-            position=rank,
-            desc="device {}".format(rank),
-            disable=disable_tqdm,
-        ):
-            batch_size = batch_list[0].natoms.numel()
+    # Takes in a new data source and generates predictions on it.
+    def predict_step(
+        self, batch, batch_idx: int, dataloader_idx: int = 0
+    ) -> None:
+        batch_size = batch[0].natoms.numel()
 
-            ### Get unique system identifiers
-            sids = batch_list[0].sid.tolist()
-            ## Support naming structure for OC20 S2EF
-            if "fid" in batch_list[0]:
-                fids = batch_list[0].fid.tolist()
-                systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
+        ### Get unique system identifiers
+        sids = batch[0].sid.tolist()
+        ## Support naming structure for OC20 S2EF
+        if "fid" in batch[0]:
+            fids = batch[0].fid.tolist()
+            systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
+        else:
+            systemids = [f"{sid}" for sid in sids]
+
+        self.predictions["ids"].extend(systemids)
+
+        with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+            out = self._forward(batch)
+
+        for target_key in self.targets:
+            ### Target property is a direct output of the model
+            if target_key in self.train_targets:
+                pred = out[target_key]
+                ### Denormalize predictions if needed
+                if self.normalizers.get(target_key, False):
+                    pred = self.normalizers[target_key].denorm(pred)
+            ## Target property is a derived output of the model
             else:
-                systemids = [f"{sid}" for sid in sids]
+                _max_rank = 0
+                for subtarget_key in self.targets[target_key]["decomp"]:
+                    _max_rank = max(
+                        _max_rank,
+                        self.train_targets[subtarget_key]["irreps"],
+                    )
 
-            predictions["ids"].extend(systemids)
+                pred_irreps = torch.zeros(
+                    (batch_size, irreps_sum(_max_rank)), device=self.device
+                )
 
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch_list)
+                for subtarget_key in self.targets[target_key]["decomp"]:
+                    irreps = self.train_targets[subtarget_key]["irreps"]
+                    _pred = out[subtarget_key]
 
             for target_key in self.config["outputs"]:
                 ### Target property is a direct output of the model
                 if target_key in out:
                     pred = out[target_key]
                     ### Denormalize predictions if needed
-                    if self.normalizers.get(target_key, False):
-                        pred = self.normalizers[target_key].denorm(pred)
-                ## Target property is a derived output of the model
+                    if self.normalizers.get(subtarget_key, False):
+                        _pred = self.normalizers[subtarget_key].denorm(_pred)
+
+                    ## Fill in the corresponding irreps prediction
+                    pred_irreps[
+                        :,
+                        max(0, irreps_sum(irreps - 1)) : irreps_sum(irreps),
+                    ] = _pred
+
+                pred = torch.einsum(
+                    "ba, cb->ca",
+                    cg_decomp_mat(_max_rank, self.device),
+                    pred_irreps,
+                )
+
+            ### Save outputs in desired precision, default float16
+            if (
+                self.targets[target_key].get("prediction_dtype", "float16")
+                == "float32"
+                or self.config["task"].get("prediction_dtype", "float16")
+                == "float32"
+                or self.config["task"]["dataset"] == "oc22_lmdb"
+            ):
+                dtype = torch.float32
+            else:
+                dtype = torch.float16
+
+            pred = pred.cpu().detach().to(dtype)
+
+            ### Split predictions into per-image predictions
+            if self.targets[target_key].get("level", "system") == "atom":
+                batch_natoms = torch.cat([batch.natoms for batch in batch])
+                batch_fixed = torch.cat([batch.fixed for batch in batch])
+                per_image_pred = torch.split(pred, batch_natoms.tolist())
+
+                ### Save out only free atom, EvalAI does not need fixed atoms
+                _per_image_fixed = torch.split(
+                    batch_fixed, batch_natoms.tolist()
+                )
+                _per_image_free_preds = [
+                    _pred[(fixed == 0).tolist()].numpy()
+                    for _pred, fixed in zip(per_image_pred, _per_image_fixed)
+                ]
+                _chunk_idx = np.array(
+                    [free_pred.shape[0] for free_pred in _per_image_free_preds]
+                )
+                per_image_pred = _per_image_free_preds
+            ### Assumes system level properties are of the same dimension
+            else:
+                per_image_pred = pred.numpy()
+                _chunk_idx = None
+
+            self.predictions[f"{target_key}"].extend(per_image_pred)
+            ### Backwards compatibility, retain 'chunk_idx' for forces.
+            if _chunk_idx is not None:
+                if target_key == "forces":
+                    self.predictions["chunk_idx"].extend(_chunk_idx)
                 else:
                     _max_rank = 0
                     for subtarget_key in self.config["outputs"][target_key][
@@ -1237,7 +1306,7 @@ class BaseTrainer(ABC, pl.LightningModule):
         if self.ema:
             self.ema.restore()
 
-        return predictions
+        return self.predictions
 
     def save_results(
         self, predictions, results_file: Optional[str], keys=None
