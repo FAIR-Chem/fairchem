@@ -46,7 +46,9 @@ class AtomwiseL2Loss(nn.Module):
 
 
 class DDPLoss(nn.Module):
-    def __init__(self, loss_fn, loss_name: str = "mae", reduction: str = "mean") -> None:
+    def __init__(
+        self, loss_fn, loss_name: str = "mae", reduction: str = "mean"
+    ) -> None:
         super().__init__()
         self.loss_fn = loss_fn
         self.loss_name = loss_name
