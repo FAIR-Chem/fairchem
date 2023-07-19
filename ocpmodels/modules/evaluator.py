@@ -5,10 +5,10 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import numpy as np
-import torch
 from typing import Dict, Union
 
+import numpy as np
+import torch
 
 """
 An evaluation module for use with the OCP dataset and suite of tasks. It should
