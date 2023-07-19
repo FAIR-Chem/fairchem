@@ -5,9 +5,10 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import Dict, Union
+
 import numpy as np
 import torch
-from typing import Dict, Union
 
 from ocpmodels.common.utils import cg_decomp_mat
 
@@ -66,7 +67,7 @@ class Evaluator:
     }
 
     task_primary_metric = {
-        "s2ef": "energy_force_within_threshold",
+        "s2ef": "energy_forces_within_threshold",
         "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
         "ocp": None,
@@ -81,14 +82,10 @@ class Evaluator:
         metrics = prev_metrics
 
         for target_property in self.target_metrics:
-            assert (
-                prediction[target_property].shape
-                == target[target_property].shape
-            )
-            for fn in self.target_metrics[target_property]["metrics"]:
+            for fn in self.target_metrics[target_property]:
                 metric_name = (
                     f"{target_property}_{fn}"
-                    if target_property not in fn
+                    if target_property not in fn and target_property != "misc"
                     else fn
                 )
                 res = eval(fn)(prediction, target, target_property)
@@ -149,7 +146,7 @@ def forcesz_mse(prediction, target, key=None):
 
 
 def energy_forces_within_threshold(
-        prediction: dict, target: dict, key=None
+    prediction: dict, target: dict, key=None
 ) -> Dict[str, Union[float, int]]:
     # Note that this natoms should be the count of free atoms we evaluate over.
     assert target["natoms"].sum() == prediction["forces"].size(0)
@@ -235,9 +232,9 @@ def average_distance_within_threshold(
     return {"metric": success / total, "total": success, "numel": total}
 
 
-def stress_mae(prediction, target, key=None):
+def stress_mae_from_decomposition(prediction, target, key=None):
     device = prediction["isotropic_stress"].device
-    cg_decomp_mat = cg_decomp_mat(2, device)
+    cg_matrix = cg_decomp_mat(2, device)
 
     zero_vectors = torch.zeros(
         (prediction["isotropic_stress"].shape[0], 3),
@@ -252,10 +249,10 @@ def stress_mae(prediction, target, key=None):
         dim=1,
     )
     prediction_stress = torch.einsum(
-        "ba, cb->ca", cg_decomp_mat, prediction_irreps
+        "ba, cb->ca", cg_matrix, prediction_irreps
     ).reshape(-1)
 
-    target_stress = target["stress"]
+    target_stress = target["stress"].reshape(-1)
 
     return mae(prediction_stress, target_stress)
 

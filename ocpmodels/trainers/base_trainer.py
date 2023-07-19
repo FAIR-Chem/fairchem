@@ -12,7 +12,7 @@ import random
 import subprocess
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import cast, Dict, Optional
+from typing import Dict, Optional, cast
 
 import numpy as np
 import torch
@@ -59,8 +59,11 @@ class BaseTrainer(ABC):
         self,
         task,
         model,
+        outputs,
         dataset,
         optimizer,
+        loss_fns,
+        eval_metrics,
         identifier,
         timestamp_id: Optional[str] = None,
         run_dir=None,
@@ -113,7 +116,10 @@ class BaseTrainer(ABC):
             "trainer": name,
             "model": assert_is_instance(model.pop("name"), str),
             "model_attributes": model,
+            "outputs": outputs,
             "optim": optimizer,
+            "loss_fns": loss_fns,
+            "eval_metrics": eval_metrics,
             "logger": logger,
             "amp": amp,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
@@ -175,15 +181,8 @@ class BaseTrainer(ABC):
 
         if distutils.is_master():
             print(yaml.dump(self.config, default_flow_style=False))
-        self.load()
 
-        # TODO: asserts for targets+evaluation config definitions
-        self.evaluator = Evaluator(
-            task=name,
-            eval_metrics=self.config["task"].get(
-                "evaluation_metrics", Evaluator.task_metrics.get(name, {})
-            ),
-        )
+        self.load()
 
     def load(self) -> None:
         self.load_seed_from_config()
@@ -260,7 +259,9 @@ class BaseTrainer(ABC):
         return loader
 
     def load_datasets(self) -> None:
-        logging.info(f"Loading dataset: {self.config['task']['dataset']}")
+        logging.info(
+            f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
+        )
         self.parallel_collater = ParallelCollater(
             0 if self.cpu else 1,
             self.config["model_attributes"].get("otf_graph", False),
@@ -273,7 +274,7 @@ class BaseTrainer(ABC):
         # load train, val, test datasets
         if self.config.get("dataset", None):
             self.train_dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
+                self.config["dataset"].get("format", "lmdb")
             )(self.config["dataset"])
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
@@ -285,10 +286,15 @@ class BaseTrainer(ABC):
                 self.train_sampler,
             )
 
+            self.train_dataset[0]
             if self.config.get("val_dataset", None):
+                if self.config["val_dataset"].get("use_train_settings", True):
+                    val_config = self.config["dataset"].copy()
+                    val_config.update(self.config["val_dataset"])
+
                 self.val_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["val_dataset"])
+                    self.config["val_dataset"].get("format", "lmdb")
+                )(val_config)
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
                     self.config["optim"].get(
@@ -302,9 +308,13 @@ class BaseTrainer(ABC):
                 )
 
             if self.config.get("test_dataset", None):
+                if self.config["test_dataset"].get("use_train_settings", True):
+                    test_config = self.config["dataset"].copy()
+                    test_config.update(self.config["test_dataset"])
+
                 self.test_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["test_dataset"])
+                    self.config["test_dataset"].get("format", "lmdb")
+                )(test_config)
                 self.test_sampler = self.get_sampler(
                     self.test_dataset,
                     self.config["optim"].get(
@@ -335,38 +345,32 @@ class BaseTrainer(ABC):
             )
 
     def load_task(self):
-        self.targets = self.config["task"].get(
-            "targets", load_old_targets(self.name, self.config)
-        )
-
-        self.train_targets = {}
-        for target in self.targets:
-            if "decomp" in self.targets[target]:
-                for subtarget in self.targets[target]["decomp"]:
-                    self.train_targets[subtarget] = self.targets[target][
-                        "decomp"
-                    ][subtarget]
-                    self.train_targets[subtarget]["parent"] = target
-                    self.train_targets[subtarget]["level"] = self.targets[
-                        target
-                    ].get("level", "system")
-            else:
-                self.train_targets[target] = self.targets[target]
-
         # Normalizer for the dataset.
-        # Default - no normalization
-        self.normalizers = {}
-        for target in self.train_targets:
-            normalizer = self.train_targets[target].get("normalizer", {})
-            self.normalizers[target] = Normalizer(
-                mean=normalizer.get("mean", 0),
-                std=normalizer.get("stdev", 1),
-                device=self.device,
-            )
+        self.normalizers = self.train_dataset.normalizers
 
-        self.eval_metrics = self.config["task"].get("evaluation_metrics", {})
+        self.output_targets = {}
+        for target_name in self.config["outputs"]:
+            if "decomposition" not in self.config["outputs"][target_name]:
+                self.output_targets[target_name] = self.config["outputs"][
+                    target_name
+                ]
+            else:
+                for subtarget in self.config["outputs"][target_name][
+                    "decomposition"
+                ]:
+                    self.output_targets[subtarget] = (
+                        self.config["outputs"][target_name]["decomposition"]
+                    )[subtarget]
+                    self.output_targets[subtarget]["parent"] = target_name
 
-        assert len(self.eval_metrics.keys() - self.targets.keys()) == 0
+        ##TODO: Assert that all targets, loss fn, metrics defined and consistent
+        self.evaluation_metrics = self.config.get("eval_metrics", {})
+        self.evaluator = Evaluator(
+            task=self.name,
+            eval_metrics=self.evaluation_metrics.get(
+                "metrics", Evaluator.task_metrics.get(self.name, {})
+            ),
+        )
 
     def load_model(self) -> None:
         # Build model
@@ -482,26 +486,29 @@ class BaseTrainer(ABC):
                 self.scaler.load_state_dict(checkpoint["amp"])
 
     def load_loss(self) -> None:
-        self.loss_fn = {}
-        for target_name in self.train_targets:
-            self.loss_fn[target_name] = self.train_targets[target_name].get(
-                "loss", "mae"
-            )
+        self.loss_fns = []
+        for idx, loss in enumerate(self.config["loss_fns"]):
+            for target in loss:
+                loss_name = loss[target].get("fn", "mae")
+                coefficient = loss[target].get("coefficient", 1)
 
-        for target, loss_name in self.loss_fn.items():
-            if loss_name in ["l1", "mae"]:
-                self.loss_fn[target] = nn.L1Loss()
-            elif loss_name == "mse":
-                self.loss_fn[target] = nn.MSELoss()
-            elif loss_name == "l2mae":
-                self.loss_fn[target] = L2MAELoss()
-            elif loss_name == "atomwisel2":
-                self.loss_fn[target] = AtomwiseL2Loss()
-            else:
-                raise NotImplementedError(
-                    f"Unknown loss function name: {loss_name}"
+                if loss_name in ["l1", "mae"]:
+                    loss_fn = nn.L1Loss()
+                elif loss_name == "mse":
+                    loss_fn = nn.MSELoss()
+                elif loss_name == "l2mae":
+                    loss_fn = L2MAELoss()
+                elif loss_name == "atomwisel2":
+                    loss_fn = AtomwiseL2Loss()
+                else:
+                    raise NotImplementedError(
+                        f"Unknown loss function name: {loss_name}"
+                    )
+                loss_fn = DDPLoss(loss_fn, loss_name)
+
+                self.loss_fns.append(
+                    (target, {"fn": loss_fn, "coefficient": coefficient})
                 )
-            self.loss_fn[target] = DDPLoss(self.loss_fn[target], loss_name)
 
     def load_optimizer(self) -> None:
         optimizer = self.config["optim"].get("optimizer", "AdamW")
@@ -580,7 +587,7 @@ class BaseTrainer(ABC):
                         if self.scaler
                         else None,
                         "best_val_metric": self.best_val_metric,
-                        "primary_metric": self.config["task"][
+                        "primary_metric": self.config["metrics"][
                             "primary_metric"
                         ],
                     },
@@ -647,7 +654,7 @@ class BaseTrainer(ABC):
         checkpoint_every = self.config["optim"].get(
             "checkpoint_every", eval_every
         )
-        primary_metric = self.config["task"].get(
+        primary_metric = self.evaluation_metrics.get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
         if (
@@ -788,49 +795,18 @@ class BaseTrainer(ABC):
             )
             mask = fixed == 0
 
-        for target_name in self.train_targets:
-            if "parent" not in self.train_targets[target_name]:
-                target = torch.cat(
-                    [
-                        batch[target_name].to(self.device)
-                        for batch in batch_list
-                    ],
-                    dim=0,
-                )
-            # property is a decomposition of a higher order tensor
-            else:
-                irreps = self.train_targets[target_name]["irreps"]
-                if irreps > 2:
-                    raise NotImplementedError
+        for loss_fn in self.loss_fns:
+            target_name, loss_info = loss_fn
 
-                target = [
-                    torch.einsum(
-                        "ab, cb->ca",
-                        cg_decomp_mat(2).to(self.device),
-                        batch[self.train_targets[target_name]["parent"]],
-                    )
-                    for batch in batch_list
-                ]
-
-                target = torch.cat(
-                    [
-                        batch[
-                            :,
-                            max(0, irreps_sum(irreps - 1)) : irreps_sum(
-                                irreps
-                            ),
-                        ]
-                        for batch in target
-                    ],
-                    dim=0,
-                )
-
+            target = torch.cat(
+                [batch[target_name].to(self.device) for batch in batch_list],
+                dim=0,
+            )
             pred = out[target_name]
 
             if (
                 self.config["task"].get("train_on_free_atoms", True)
-                and self.train_targets[target_name].get("level", "system")
-                == "atom"
+                and self.config["outputs"].get("level", "system") == "atom"
             ):
                 target = target[mask]
                 pred = pred[mask]
@@ -839,11 +815,11 @@ class BaseTrainer(ABC):
             if self.normalizers.get(target_name, False):
                 target = self.normalizers[target_name].norm(target)
 
-            mult = self.train_targets[target_name].get("coefficient", 1)
+            mult = loss_info["coefficient"]
 
             loss.append(
                 mult
-                * self.loss_fn[target_name](
+                * loss_info["fn"](
                     pred,
                     target,
                     natoms=natoms,
@@ -879,18 +855,14 @@ class BaseTrainer(ABC):
             natoms = torch.LongTensor(natoms_free).to(self.device)
 
         targets = {}
-        for target_name in self.train_targets:
-            if "parent" not in self.train_targets[target_name]:
-                target = torch.cat(
-                    [
-                        batch[target_name].to(self.device)
-                        for batch in batch_list
-                    ],
-                    dim=0,
-                )
-            else:
-                irreps = self.train_targets[target_name]["irreps"]
-                parent_target_name = self.train_targets[target_name]["parent"]
+        for target_name in self.output_targets:
+            target = torch.cat(
+                [batch[target_name].to(self.device) for batch in batch_list],
+                dim=0,
+            )
+            # Add parent target to targets
+            if "parent" in self.output_targets[target_name]:
+                parent_target_name = self.output_targets[target_name]["parent"]
 
                 if parent_target_name not in targets:
                     parent_target = torch.cat(
@@ -902,31 +874,9 @@ class BaseTrainer(ABC):
                     )
                     targets[parent_target_name] = parent_target
 
-                target = [
-                    torch.einsum(
-                        "ab, cb->ca",
-                        cg_decomp_mat(2).to(self.device),
-                        batch[parent_target_name],
-                    )
-                    for batch in batch_list
-                ]
-
-                target = torch.cat(
-                    [
-                        batch[
-                            :,
-                            max(0, irreps_sum(irreps - 1)) : irreps_sum(
-                                irreps
-                            ),
-                        ]
-                        for batch in target
-                    ],
-                    dim=0,
-                )
-
             if (
                 self.config["task"].get("eval_on_free_atoms", True)
-                and self.train_targets[target_name].get("level", "system")
+                and self.output_targets[target_name].get("level", "system")
                 == "atom"
             ):
                 target = target[mask]
@@ -959,8 +909,8 @@ class BaseTrainer(ABC):
         metrics = {}
         evaluator = Evaluator(
             task=self.name,
-            eval_metrics=self.config["task"].get(
-                "evaluation_metrics", Evaluator.task_metrics.get(self.name, {})
+            eval_metrics=self.evaluation_metrics.get(
+                "metrics", Evaluator.task_metrics.get(self.name, {})
             ),
         )
 
@@ -1108,9 +1058,9 @@ class BaseTrainer(ABC):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch_list)
 
-            for target_key in self.targets:
+            for target_key in self.config["outputs"]:
                 ### Target property is a direct output of the model
-                if target_key in self.train_targets:
+                if target_key in out:
                     pred = out[target_key]
                     ### Denormalize predictions if needed
                     if self.normalizers.get(target_key, False):
@@ -1118,18 +1068,24 @@ class BaseTrainer(ABC):
                 ## Target property is a derived output of the model
                 else:
                     _max_rank = 0
-                    for subtarget_key in self.targets[target_key]["decomp"]:
+                    for subtarget_key in self.config["outputs"][target_key][
+                        "decomposition"
+                    ]:
                         _max_rank = max(
                             _max_rank,
-                            self.train_targets[subtarget_key]["irreps"],
+                            self.output_targets[subtarget_key]["irrep_dim"],
                         )
 
                     pred_irreps = torch.zeros(
                         (batch_size, irreps_sum(_max_rank)), device=self.device
                     )
 
-                    for subtarget_key in self.targets[target_key]["decomp"]:
-                        irreps = self.train_targets[subtarget_key]["irreps"]
+                    for subtarget_key in self.config["outputs"][target_key][
+                        "decomposition"
+                    ]:
+                        irreps = self.output_targets[subtarget_key][
+                            "irrep_dim"
+                        ]
                         _pred = out[subtarget_key]
 
                         ### Denormalize predictions if needed
@@ -1154,11 +1110,14 @@ class BaseTrainer(ABC):
 
                 ### Save outputs in desired precision, default float16
                 if (
-                    self.targets[target_key].get("prediction_dtype", "float16")
+                    self.config["outputs"][target_key].get(
+                        "prediction_dtype", "float16"
+                    )
                     == "float32"
                     or self.config["task"].get("prediction_dtype", "float16")
                     == "float32"
-                    or self.config["task"]["dataset"] == "oc22_lmdb"
+                    or self.config["task"].get("dataset", "lmdb")
+                    == "oc22_lmdb"
                 ):
                     dtype = torch.float32
                 else:
@@ -1167,7 +1126,10 @@ class BaseTrainer(ABC):
                 pred = pred.cpu().detach().to(dtype)
 
                 ### Split predictions into per-image predictions
-                if self.targets[target_key].get("level", "system") == "atom":
+                if (
+                    self.config["outputs"][target_key].get("level", "system")
+                    == "atom"
+                ):
                     batch_natoms = torch.cat(
                         [batch.natoms for batch in batch_list]
                     )
@@ -1220,7 +1182,7 @@ class BaseTrainer(ABC):
         return predictions
 
     def save_results(
-        self, predictions, results_file: Optional[str], keys
+        self, predictions, results_file: Optional[str], keys=None
     ) -> None:
 
         if results_file is None:
