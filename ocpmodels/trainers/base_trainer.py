@@ -12,7 +12,7 @@ import random
 import subprocess
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import cast, Dict, Optional
+from typing import Dict, Optional, cast
 
 import numpy as np
 import torch
