@@ -169,6 +169,7 @@ class OCPCalculator(Calculator):
             local_rank=config.get("local_rank", 0),
             is_debug=config.get("is_debug", True),
             cpu=cpu,
+            amp=True if config["amp"] else False,
         )
 
         if checkpoint is not None:
