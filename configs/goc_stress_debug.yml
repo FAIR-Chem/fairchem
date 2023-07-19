@@ -2,71 +2,89 @@ trainer: ocp
 
 dataset:
   train:
+    format: lmdb
     src: /checkpoint/saro00/mpf_datasets/s2efs/0/train.lmdb
-    #src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
+    key_mapping:
+      y: energy
+      force: forces
+      stress: stress
+    transforms:
+      decompose_tensor:
+          tensor: stress
+          rank: 2
+          decomposition:
+            isotropic_stress:
+              irrep_dim: 0
+            anisotropic_stress:
+              irrep_dim: 2
+      normalizer:
+        energy:
+          mean: -5.9749126
+          stdev: 1.866159
+        forces:
+          mean: 0
+          stdev: 1.866159
+        isotropic_stress:
+          mean: 43.27065
+          stdev: 674.1657344451734
+        anisotropic_stress:
+          stdev: 143.72764771869745
   val:
-    #src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
     src: /checkpoint/saro00/mpf_datasets/s2efs/0/val.lmdb
   test:
-    #src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
     src: /checkpoint/saro00/mpf_datasets/s2efs/0/val.lmdb
 
 logger: tensorboard
 
-task:
-  dataset: lmdb
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+  - forces:
+      fn: l2mae
+      coefficient: 100
+  - isotropic_stress:
+      fn: mae
+  - anisotropic_stress:
+      fn: mae
 
-  train_on_free_atoms: True
-  eval_on_free_atoms: True
-
-  evaluation_metrics:
+evaluation_metrics:
+  metrics:
     energy:
-      metrics:
-        - mae
-        - mse
-        - energy_within_threshold
+      - mae
+      - mse
+      - energy_within_threshold
     forces:
-      metrics:
-        - mae
-        - cosine_similarity
+      - mae
+      - cosine_similarity
+    isotropic_stress:
+      - mae
+    anisotropic_stress:
+      - mae
     stress:
-      metrics:
-        - stress_mae
-
+      - stress_mae_from_decomposition
+    misc:
+      - energy_forces_within_threshold
   primary_metric: forces_mae
 
-  targets:
-    energy:
-      irreps: 0
-      loss: mae
-      level: system
-      coefficient: 1
-      normalizer:
-        mean: -5.9749126
-        stdev: 1.866159
-    forces:
-      irreps: 1
-      loss: mae
-      level: atom
-      coefficient: 100
-      normalizer:
-        stdev: 1.866159
-    stress:
-      level: system
-      decomp:
-        isotropic_stress:
-            irreps: 0
-            loss: mae
-            coefficient: 1
-            normalizer:
-              mean: 43.27065
-              stdev: 674.1657344451734
-        anisotropic_stress:
-            irreps: 2
-            loss: mae
-            coefficient: 1
-            normalizer:
-              stdev: 143.72764771869745
+outputs:
+  energy:
+    shape: 1
+    level: system
+  forces:
+    shape: 3
+    level: atom
+  stress:
+    level: system
+    decomposition:
+      isotropic_stress:
+        irrep_dim: 0
+      anisotropic_stress:
+        irrep_dim: 2
+
+task:
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
 
 model:
   name: gemnet_oc
@@ -123,6 +141,7 @@ model:
   num_atom_emb_layers: 2
   num_global_out_layers: 2
   qint_tags: [1, 2]
+  otf_graph: True
 
 optim:
   batch_size: 4

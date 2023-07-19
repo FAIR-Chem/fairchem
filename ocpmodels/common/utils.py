@@ -1011,8 +1011,11 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         trainer = trainer_cls(
             task=config["task"],
             model=config["model"],
+            outputs=config.get("outputs", None),
             dataset=config["dataset"],
             optimizer=config["optim"],
+            loss_fns=config.get("loss_functions", None),
+            eval_metrics=config.get("evaluation_metrics", None),
             identifier=config["identifier"],
             timestamp_id=config.get("timestamp_id", None),
             run_dir=config.get("run_dir", "./"),
@@ -1134,6 +1137,22 @@ def scatter_det(*args, **kwargs):
     return out
 
 
+def get_commit_hash():
+    try:
+        commit_hash = (
+            subprocess.check_output(
+                ["git", "-C", ocpmodels.__path__[0], "describe", "--always"]
+            )
+            .strip()
+            .decode("ascii")
+        )
+    # catch instances where code is not being run from a git repo
+    except Exception:
+        commit_hash = None
+
+    return commit_hash
+
+
 def cg_decomp_mat(l, device="cpu"):
     if l not in [2]:
         raise NotImplementedError
@@ -1173,22 +1192,6 @@ def irreps_sum(l):
         total += 2 * i + 1
 
     return total
-
-
-def get_commit_hash():
-    try:
-        commit_hash = (
-            subprocess.check_output(
-                ["git", "-C", ocpmodels.__path__[0], "describe", "--always"]
-            )
-            .strip()
-            .decode("ascii")
-        )
-    # catch instances where code is not being run from a git repo
-    except Exception:
-        commit_hash = None
-
-    return commit_hash
 
 
 def load_old_targets(name, config):
