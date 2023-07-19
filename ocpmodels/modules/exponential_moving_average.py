@@ -7,9 +7,10 @@ from __future__ import division, unicode_literals
 
 import copy
 import weakref
-from typing import List, Iterable, Optional
+from typing import Iterable, List, Optional
 
 import torch
+
 from ocpmodels.common.typing import none_throws
 
 

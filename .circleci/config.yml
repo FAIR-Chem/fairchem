@@ -78,10 +78,13 @@ jobs:
       - checkout
       - run:
           name: setup
-          command: pip install black==22.3.0
+          command: pip install black==22.3.0 isort
       - run:
           name: run black
           command: black . --check
+      - run:
+          name: run isort
+          command: isort . --check-only
 
   test_ubuntu:
     docker:
@@ -102,8 +105,8 @@ jobs:
 
   test_macos:
     macos:
-      xcode: "13.4.1"
-    resource_class: medium
+      xcode: "14.2.0"
+    resource_class: macos.x86.medium.gen2
     steps:
       - install_deps_macos
       - run:
