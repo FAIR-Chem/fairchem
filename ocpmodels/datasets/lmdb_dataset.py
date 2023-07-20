@@ -6,9 +6,7 @@ LICENSE file in the root directory of this source tree.
 
 import bisect
 import logging
-import math
 import pickle
-import random
 import warnings
 from pathlib import Path
 from typing import Optional, TypeVar
@@ -20,7 +18,6 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Batch
 from torch_geometric.data.data import BaseData
 
-from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance
 from ocpmodels.common.utils import pyg2_data_transform

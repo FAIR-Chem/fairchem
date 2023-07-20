@@ -7,6 +7,8 @@ from .base import BaseModel
 from .cgcnn import CGCNN
 from .dimenet import DimeNetWrap as DimeNet
 from .dimenet_plus_plus import DimeNetPlusPlusWrap as DimeNetPlusPlus
+from .equiformer_v2 import EquiformerV2
+from .escn import eSCN
 from .forcenet import ForceNet
 from .gemnet.gemnet import GemNetT
 from .gemnet_gp.gemnet import GraphParallelGemNetT as GraphParallelGemNetT

@@ -6,20 +6,14 @@ LICENSE file in the root directory of this source tree.
 """
 
 import bisect
-import logging
-import math
 import pickle
-import random
-import warnings
 from pathlib import Path
 
 import lmdb
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from torch_geometric.data import Batch
 
-from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import pyg2_data_transform
 

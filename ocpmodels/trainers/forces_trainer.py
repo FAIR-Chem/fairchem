@@ -7,9 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
-import pathlib
 from collections import defaultdict
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
