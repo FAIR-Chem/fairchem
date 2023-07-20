@@ -8,7 +8,6 @@ LICENSE file in the root directory of this source tree.
 import os
 
 import torch
-import torch.nn as nn
 
 try:
     from e3nn import o3

@@ -7,12 +7,10 @@ LICENSE file in the root directory of this source tree.
 import math
 
 import torch
-from torch_scatter import scatter
 
 from ocpmodels.common.utils import scatter_det
 from ocpmodels.modules.scaling import ScaleFactor
 
-from ..initializers import get_initializer
 from .base_layers import Dense, ResidualLayer
 
 
