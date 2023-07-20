@@ -21,11 +21,7 @@ from ase.calculators.singlepoint import SinglePointCalculator as sp
 from ase.constraints import FixAtoms
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    radius_graph_pbc,
-    setup_imports,
-    setup_logging,
-)
+from ocpmodels.common.utils import setup_imports, setup_logging
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
