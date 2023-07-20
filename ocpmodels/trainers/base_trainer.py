@@ -362,6 +362,31 @@ class BaseTrainer(ABC):
                         self.config["outputs"][target_name]["decomposition"]
                     )[subtarget]
                     self.output_targets[subtarget]["parent"] = target_name
+                    # inherent properties if not available
+                    if "level" not in self.output_targets[subtarget]:
+                        self.output_targets[subtarget][
+                            "level"
+                        ] = self.output_targets[target_name].get(
+                            "level", "system"
+                        )
+                    if (
+                        "train_on_free_atoms"
+                        not in self.output_targets[subtarget]
+                    ):
+                        self.output_targets[subtarget][
+                            "train_on_free_atoms"
+                        ] = self.output_targets[target_name].get(
+                            "train_on_free_atoms", True
+                        )
+                    if (
+                        "eval_on_free_atoms"
+                        not in self.output_targets[subtarget]
+                    ):
+                        self.output_targets[subtarget][
+                            "eval_on_free_atoms"
+                        ] = self.output_targets[target_name].get(
+                            "eval_on_free_atoms", True
+                        )
 
         ##TODO: Assert that all targets, loss fn, metrics defined and consistent
         self.evaluation_metrics = self.config.get("eval_metrics", {})
@@ -788,12 +813,12 @@ class BaseTrainer(ABC):
         batch_size = natoms.numel()
         natoms = torch.repeat_interleave(natoms, natoms)
 
+        fixed = torch.cat(
+            [batch.fixed.to(self.device) for batch in batch_list]
+        )
+        mask = fixed == 0
+
         loss = []
-        if self.config["task"].get("train_on_free_atoms", True):
-            fixed = torch.cat(
-                [batch.fixed.to(self.device) for batch in batch_list]
-            )
-            mask = fixed == 0
 
         for loss_fn in self.loss_fns:
             target_name, loss_info = loss_fn
@@ -804,9 +829,10 @@ class BaseTrainer(ABC):
             )
             pred = out[target_name]
 
-            if (
-                self.config["task"].get("train_on_free_atoms", True)
-                and self.config["outputs"].get("level", "system") == "atom"
+            if self.output_targets[target_name].get(
+                "level", "system"
+            ) == "atom" and self.output_targets[target_name].get(
+                "train_on_free_atoms", True
             ):
                 target = target[mask]
                 pred = pred[mask]
@@ -839,20 +865,18 @@ class BaseTrainer(ABC):
             [batch.natoms.to(self.device) for batch in batch_list], dim=0
         )
 
-        if self.config["task"].get("eval_on_free_atoms", True):
-            fixed = torch.cat(
-                [batch.fixed.to(self.device) for batch in batch_list]
-            )
-            mask = fixed == 0
+        ### Retrieve free atoms
+        fixed = torch.cat(
+            [batch.fixed.to(self.device) for batch in batch_list]
+        )
+        mask = fixed == 0
 
-            s_idx = 0
-            natoms_free = []
-            for _natoms in natoms:
-                natoms_free.append(
-                    torch.sum(mask[s_idx : s_idx + _natoms]).item()
-                )
-                s_idx += _natoms
-            natoms = torch.LongTensor(natoms_free).to(self.device)
+        s_idx = 0
+        natoms_free = []
+        for _natoms in natoms:
+            natoms_free.append(torch.sum(mask[s_idx : s_idx + _natoms]).item())
+            s_idx += _natoms
+        natoms = torch.LongTensor(natoms_free).to(self.device)
 
         targets = {}
         for target_name in self.output_targets:
@@ -874,10 +898,10 @@ class BaseTrainer(ABC):
                     )
                     targets[parent_target_name] = parent_target
 
-            if (
-                self.config["task"].get("eval_on_free_atoms", True)
-                and self.output_targets[target_name].get("level", "system")
-                == "atom"
+            if self.output_targets[target_name].get(
+                "level", "system"
+            ) == "atom" and self.output_targets[target_name].get(
+                "eval_on_free_atoms", True
             ):
                 target = target[mask]
                 out[target_name] = out[target_name][mask]

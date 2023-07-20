@@ -16,7 +16,7 @@ from ocpmodels.common.registry import registry
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
 )
-from ocpmodels.trainers import ForcesTrainer
+from ocpmodels.trainers import OCPTrainer
 
 from .lr_scheduler import LRScheduler
 
@@ -49,7 +49,7 @@ def add_weight_decay(model, weight_decay, skip_list=()):
 
 
 @registry.register_trainer("equiformerv2_forces")
-class EquiformerV2ForcesTrainer(ForcesTrainer):
+class EquiformerV2ForcesTrainer(OCPTrainer):
     # This trainer does a few things differently from the parent forces trainer:
     # - Different way of setting up model parameters with no weight decay.
     # - Support for cosine LR scheduler.
