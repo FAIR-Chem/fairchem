@@ -1009,7 +1009,7 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         trainer_cls = registry.get_trainer_class(trainer_name)
         assert trainer_cls is not None, "Trainer not found"
         trainer = trainer_cls(
-            task=config["task"],
+            task=config.get("task", {}),
             model=config["model"],
             outputs=config.get("outputs", None),
             dataset=config["dataset"],

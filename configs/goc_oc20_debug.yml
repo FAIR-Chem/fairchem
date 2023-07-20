@@ -50,10 +50,8 @@ outputs:
   forces:
     shape: 3
     level: atom
-
-task:
-  train_on_free_atoms: True
-  eval_on_free_atoms: True
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
 
 model:
   name: gemnet_oc

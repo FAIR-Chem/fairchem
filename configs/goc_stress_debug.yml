@@ -74,6 +74,9 @@ outputs:
   forces:
     shape: 3
     level: atom
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+
   stress:
     level: system
     decomposition:
@@ -81,10 +84,6 @@ outputs:
         irrep_dim: 0
       anisotropic_stress:
         irrep_dim: 2
-
-task:
-  train_on_free_atoms: True
-  eval_on_free_atoms: True
 
 model:
   name: gemnet_oc
