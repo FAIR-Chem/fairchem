@@ -9,8 +9,7 @@ import errno
 import logging
 import os
 import random
-import subprocess
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections import defaultdict
 from typing import Any, DefaultDict, Dict, Optional, cast
 
@@ -20,12 +19,10 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch_geometric
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 
-import ocpmodels
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
@@ -37,7 +34,6 @@ from ocpmodels.common.typing import assert_is_instance as aii
 from ocpmodels.common.typing import none_throws
 from ocpmodels.common.utils import (
     cg_decomp_mat,
-    check_traj_files,
     get_commit_hash,
     get_loss_module,
     irreps_sum,
@@ -693,7 +689,44 @@ class BaseTrainer(ABC, pl.LightningModule):
                     results_file="predictions",
                 )
 
-    def train(self):
+    def configure_optimizers(self):
+        optimizer = aii(self.config.optim.get("optimizer", "AdamW"), str)
+        optimizer = getattr(optim, optimizer)
+
+        if self.config.optim.get("weight_decay", 0) > 0:
+            # Do not regularize bias etc.
+            params_decay: List[torch.nn.Parameter] = []
+            params_no_decay: List[torch.nn.Parameter] = []
+            for name, param in self.model.named_parameters():
+                if param.requires_grad:
+                    if "embedding" in name:
+                        params_no_decay += [param]
+                    elif "frequencies" in name:
+                        params_no_decay += [param]
+                    elif "bias" in name:
+                        params_no_decay += [param]
+                    else:
+                        params_decay += [param]
+
+            return optimizer(
+                [
+                    {"params": params_no_decay, "weight_decay": 0},
+                    {
+                        "params": params_decay,
+                        "weight_decay": self.config.optim["weight_decay"],
+                    },
+                ],
+                lr=self.config.optim["lr_initial"],
+                **self.config.optim.get("optimizer_params", {}),
+            )
+        else:
+            return optimizer(
+                params=self.model.parameters(),
+                lr=self.config.optim["lr_initial"],
+                **self.config.optim.get("optimizer_params", {}),
+            )
+
+    def on_train_start(self) -> None:
         ensure_fitted(self._unwrapped_model, warn=True)
 
         eval_every = self.config["optim"].get(
@@ -714,115 +747,156 @@ class BaseTrainer(ABC, pl.LightningModule):
             primary_metric = self.primary_metric
         self.metrics = {}
 
+        # TODO
+        # if (
+        #     not hasattr(self, "primary_metric")
+        #     or self.primary_metric != primary_metric
+        # ):
+        #     self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
+        # else:
+        #     primary_metric = self.primary_metric
+
+        self.train_metrics = {}
+
+        # TODO
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
-        start_epoch = self.step // len(self.train_loader)
+        # start_epoch = self.step // len(self.train_loader)
 
-        for epoch_int in range(
-            start_epoch, self.config["optim"]["max_epochs"]
-        ):
-            self.train_sampler.set_epoch(epoch_int)
-            skip_steps = self.step % len(self.train_loader)
-            train_loader_iter = iter(self.train_loader)
+    def on_train_batch_start(self, batch, batch_idx: int) -> None:
+        # TODO
+        # self.train_sampler.set_epoch(epoch_int)
+        # skip_steps = self.step % len(self.train_loader)
+        # train_loader_iter = iter(self.train_loader)
+        pass
 
-            for i in range(skip_steps, len(self.train_loader)):
-                self.epoch = epoch_int + (i + 1) / len(self.train_loader)
-                self.step = epoch_int * len(self.train_loader) + i + 1
-                self.model.train()
+    def training_step(self, train_batch, batch_idx: int):
+        # self.epoch = epoch_int + (i + 1) / len(self.train_loader)
+        # self.step = epoch_int * len(self.train_loader) + i + 1
+        # self.model.train()  # TODO: This seems to be misordered
 
-                # Get a batch.
-                batch = next(train_loader_iter)
+        # TODO: Probably handled by the above
+        # Get a batch.
+        # batch = next(train_loader_iter)
 
-                # Forward, loss, backward.
-                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out = self._forward(batch)
-                    loss = self._compute_loss(out, batch)
-                loss = self.scaler.scale(loss) if self.scaler else loss
-                self._backward(loss)
-                scale = self.scaler.get_scale() if self.scaler else 1.0
+        # Forward, loss, backward.
+        with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+            out = self._forward(train_batch)
+            loss = self._compute_loss(out, train_batch)
+        loss = self.scaler.scale(loss) if self.scaler else loss
+        return loss
 
-                # Compute metrics.
-                self.metrics = self._compute_metrics(
-                    out,
-                    batch,
-                    self.evaluator,
-                    self.metrics,
+    def backward(self, trainer, loss, optimizer, optimizer_idx: int) -> None:
+        self._backward(
+            trainer, loss, optimizer, optimizer_idx
+        )  # TODO: Refactor out `_backward`
+
+    def on_train_batch_end(
+        self,
+        outputs: Union[torch.Tensor, Dict[str, Any]],
+        batch,
+        batch_idx: int,
+    ) -> None:
+        # TODO: This seems duplicative
+        with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+            out = self._forward(batch)
+            loss = self._compute_loss(out, batch)
+        loss = self.scaler.scale(loss) if self.scaler else loss
+
+        # Compute metrics.
+        self.train_metrics = self._compute_metrics(
+            out,
+            batch,
+            self.evaluator,
+            self.train_metrics,
+        )
+        loss = self.scaler.scale(loss) if self.scaler else loss
+        scale = self.scaler.get_scale() if self.scaler else 1.0
+        self.train_metrics = self.evaluator.update(
+            "loss", loss.item() / scale, self.train_metrics
+        )
+
+        # Log metrics.
+        log_dict = {
+            k: self.train_metrics[k]["metric"] for k in self.train_metrics
+        }
+        log_dict.update(
+            {
+                "lr": self.scheduler.get_lr(),
+                "epoch": self.epoch,
+                "step": self.step,
+            }
+        )
+
+        # TODO
+        # if (
+        #     self.step % self.config.print_every == 0
+        #     and distutils.is_master()
+        # ):
+        #     log_str = [
+        #         "{}: {:.2e}".format(k, v) for k, v in log_dict.items()
+        #     ]
+        #     logging.info(", ".join(log_str))
+        #     self.train_metrics = {}
+
+        if self.config["task"].get("eval_relaxations", False):
+            if "relax_dataset" not in self.config["task"]:
+                logging.warning(
+                    "Cannot evaluate relaxations, relax_dataset not specified"
                 )
-                self.metrics = self.evaluator.update(
-                    "loss", loss.item() / scale, self.metrics
-                )
+            else:
+                self.run_relaxations()
 
-                # Log metrics.
-                log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
-                log_dict.update(
-                    {
-                        "lr": self.scheduler.get_lr(),
-                        "epoch": self.epoch,
-                        "step": self.step,
-                    }
-                )
-                if (
-                    self.step % self.config["cmd"]["print_every"] == 0
-                    and distutils.is_master()
-                ):
-                    log_str = [
-                        "{}: {:.2e}".format(k, v) for k, v in log_dict.items()
-                    ]
-                    logging.info(", ".join(log_str))
-                    self.metrics = {}
+        # TODO
+        # if (
+        #     checkpoint_every != -1
+        #     and self.step % checkpoint_every == 0
+        # ):
+        #     self.save(
+        #         checkpoint_file="checkpoint.pt", training_state=True
+        #     )
 
-                if self.logger is not None:
-                    self.logger.log(
-                        log_dict,
-                        step=self.step,
-                        split="train",
-                    )
+        torch.cuda.empty_cache()
 
-                if (
-                    checkpoint_every != -1
-                    and self.step % checkpoint_every == 0
-                ):
-                    self.save(
-                        checkpoint_file="checkpoint.pt", training_state=True
-                    )
+        # TODO
+        # if checkpoint_every == -1:
+        #     self.save(checkpoint_file="checkpoint.pt", training_state=True)
 
-                # Evaluate on val set every `eval_every` iterations.
-                if self.step % eval_every == 0:
-                    if self.val_loader is not None:
-                        val_metrics = self.validate(
-                            split="val",
-                        )
-                        self.update_best(
-                            primary_metric,
-                            val_metrics,
-                        )
-
-                    if self.config["task"].get("eval_relaxations", False):
-                        if "relax_dataset" not in self.config["task"]:
-                            logging.warning(
-                                "Cannot evaluate relaxations, relax_dataset not specified"
-                            )
-                        else:
-                            self.run_relaxations()
-
-                if self.scheduler.scheduler_type == "ReduceLROnPlateau":
-                    if self.step % eval_every == 0:
-                        self.scheduler.step(
-                            metrics=val_metrics[primary_metric]["metric"],
-                        )
-                else:
-                    self.scheduler.step()
-
-            torch.cuda.empty_cache()
-
-            if checkpoint_every == -1:
-                self.save(checkpoint_file="checkpoint.pt", training_state=True)
-
+    def on_train_end(self) -> None:
         self.train_dataset.close_db()
         if self.config.get("val_dataset", False):
             self.val_dataset.close_db()
         if self.config.get("test_dataset", False):
             self.test_dataset.close_db()
+
+    # TODO: What is this vs the other validation?
+    # def validation_step(self, val_batch, batch_idx: int) -> None:
+    #     if self.val_loader is not None:
+    #         val_metrics = self.validate(
+    #             split="val",
+    #         )
+    #         self.update_best(
+    #             primary_metric,
+    #             val_metrics,
+    #         )
+
+    #     if self.config.task.get("eval_relaxations", False):
+    #         if "relax_dataset" not in self.config.task:
+    #             logging.warning(
+    #                 "Cannot evaluate relaxations, relax_dataset not specified"
+    #             )
+    #         else:
+    #             self.run_relaxations()
+
+    # TODO
+    # def TODO(self):
+    #     if self.scheduler.scheduler_type == "ReduceLROnPlateau":
+    #         if self.step % eval_every == 0:
+    #             self.scheduler.step(
+    #                 metrics=val_metrics[primary_metric]["metric"],
+    #             )
+    #     else:
+    #         self.scheduler.step()
 
     def _forward(self, batch_list):
         return self.model(batch_list)
@@ -1019,8 +1093,7 @@ class BaseTrainer(ABC, pl.LightningModule):
 
         return aggregated_metrics
 
-    def _backward(self, loss) -> None:
-        self.optimizer.zero_grad()
+    def _backward(self, trainer, loss, optimizer, optimizer_idx: int) -> None:
         loss.backward()
         # Scale down the gradients of shared parameters
         if hasattr(self.model.module, "shared_parameters"):
@@ -1037,7 +1110,7 @@ class BaseTrainer(ABC, pl.LightningModule):
                         )
         if self.clip_grad_norm:
             if self.scaler:
-                self.scaler.unscale_(self.optimizer)
+                self.scaler.unscale_(optimizer)
             grad_norm = torch.nn.utils.clip_grad_norm_(
                 self.model.parameters(),
                 max_norm=self.clip_grad_norm,
@@ -1046,11 +1119,13 @@ class BaseTrainer(ABC, pl.LightningModule):
                 self.logger.log(
                     {"grad_norm": grad_norm}, step=self.step, split="train"
                 )
-        if self.scaler:
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
-        else:
-            self.optimizer.step()
+
+        # TODO: Lightning only does optimizer.step()
+        # if self.scaler:
+        #     self.scaler.step(self.optimizer)
+        #     self.scaler.update()
+        # else:
+        #     self.optimizer.step()
         if self.ema:
             self.ema.update()
 
