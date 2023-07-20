@@ -11,8 +11,9 @@ from typing import Dict, Union
 import numpy as np
 import torch
 from scipy.special import binom
-from ocpmodels.common.typing import assert_is_instance
 from torch_geometric.nn.models.schnet import GaussianSmearing
+
+from ocpmodels.common.typing import assert_is_instance
 
 
 class PolynomialEnvelope(torch.nn.Module):

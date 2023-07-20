@@ -8,8 +8,6 @@ import glob
 import multiprocessing as mp
 import os
 import pickle
-import random
-import sys
 
 import ase.io
 import lmdb

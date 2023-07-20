@@ -5,8 +5,8 @@ import glob
 import logging
 import os
 import warnings
-from pathlib import Path
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import List
 
 import ase

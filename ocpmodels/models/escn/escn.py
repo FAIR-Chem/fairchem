@@ -9,10 +9,8 @@ import logging
 import time
 from typing import List
 
-import numpy as np
 import torch
 import torch.nn as nn
-from pyexpat.model import XML_CQUANT_OPT
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import conditional_grad
