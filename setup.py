@@ -14,4 +14,5 @@ setup(
     url="https://github.com/Open-Catalyst-Project/ocp",
     packages=find_packages(),
     include_package_data=True,
+    entry_points={'console_scripts': ['ocp = ocpmodels.cli:main']},
 )
