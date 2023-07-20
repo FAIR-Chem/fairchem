@@ -364,18 +364,16 @@ class BaseTrainer(ABC):
                     self.output_targets[subtarget]["parent"] = target_name
                     # inherent properties if not available
                     if "level" not in self.output_targets[subtarget]:
-                        self.output_targets[subtarget][
-                            "level"
-                        ] = self.output_targets[target_name].get(
-                            "level", "system"
-                        )
+                        self.output_targets[subtarget]["level"] = self.config[
+                            "outputs"
+                        ][target_name].get("level", "system")
                     if (
                         "train_on_free_atoms"
                         not in self.output_targets[subtarget]
                     ):
                         self.output_targets[subtarget][
                             "train_on_free_atoms"
-                        ] = self.output_targets[target_name].get(
+                        ] = self.config["outputs"][target_name].get(
                             "train_on_free_atoms", True
                         )
                     if (
@@ -384,7 +382,7 @@ class BaseTrainer(ABC):
                     ):
                         self.output_targets[subtarget][
                             "eval_on_free_atoms"
-                        ] = self.output_targets[target_name].get(
+                        ] = self.config["outputs"][target_name].get(
                             "eval_on_free_atoms", True
                         )
 
