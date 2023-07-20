@@ -610,7 +610,7 @@ class BaseTrainer(ABC):
                         if self.scaler
                         else None,
                         "best_val_metric": self.best_val_metric,
-                        "primary_metric": self.config["metrics"][
+                        "primary_metric": self.config["eval_metrics"][
                             "primary_metric"
                         ],
                     },
