@@ -514,6 +514,7 @@ class BaseTrainer(ABC):
             for target in loss:
                 loss_name = loss[target].get("fn", "mae")
                 coefficient = loss[target].get("coefficient", 1)
+                loss_reduction = loss[target].get("reduction", "mean")
 
                 if loss_name in ["l1", "mae"]:
                     loss_fn = nn.L1Loss()
@@ -527,7 +528,7 @@ class BaseTrainer(ABC):
                     raise NotImplementedError(
                         f"Unknown loss function name: {loss_name}"
                     )
-                loss_fn = DDPLoss(loss_fn, loss_name)
+                loss_fn = DDPLoss(loss_fn, loss_name, loss_reduction)
 
                 self.loss_fns.append(
                     (target, {"fn": loss_fn, "coefficient": coefficient})
