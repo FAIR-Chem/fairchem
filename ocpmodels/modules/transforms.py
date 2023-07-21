@@ -8,10 +8,13 @@ class DataTransforms:
         self.config = config
 
     def __call__(self, data_object):
-        if self.config is None:
+        if not self.config:
             return data_object
 
         for transform_fn in self.config:
+            # TODO move normalizer into dataset
+            if transform_fn == "normalizer":
+                continue
             data_object = eval(transform_fn)(
                 data_object, self.config[transform_fn]
             )

@@ -35,9 +35,9 @@ with the relevant metrics computed.
 class Evaluator:
     task_metrics = {
         "s2ef": {
-            "energy": {"metrics": ["mae"]},
-            "forces": {
-                "metrics": [
+            "metrics": {
+                "energy": ["mae"],
+                "forces": [
                     "forcesx_mae",
                     "forcesy_mae",
                     "forcesz_mae",
@@ -45,12 +45,12 @@ class Evaluator:
                     "cosine_similarity",
                     "magnitude_error",
                     "energy_forces_within_threshold",
-                ]
-            },
+                ],
+            }
         },
         "is2rs": {
-            "positions": {
-                "metrics": [
+            "metrics": {
+                "positions": [
                     "average_distance_within_threshold",
                     "mae",
                     "mse",
@@ -58,11 +58,13 @@ class Evaluator:
             }
         },
         "is2re": {
-            "metrics": [
-                "mae",
-                "mse",
-                "energy_within_threshold",
-            ]
+            "metrics": {
+                "energy": [
+                    "mae",
+                    "mse",
+                    "energy_within_threshold",
+                ]
+            },
         },
     }
 
@@ -73,9 +75,11 @@ class Evaluator:
         "ocp": None,
     }
 
-    def __init__(self, task: str = None, eval_metrics: str = None) -> None:
+    def __init__(self, task: str = None, eval_metrics: dict = {}) -> None:
         self.task = task
-        self.target_metrics = self.task_metrics.get(task, eval_metrics)
+        self.target_metrics = (
+            eval_metrics if eval_metrics else self.task_metrics.get(task, {})
+        )
 
     def eval(self, prediction, target, prev_metrics={}):
 

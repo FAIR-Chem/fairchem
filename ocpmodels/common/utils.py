@@ -1011,11 +1011,11 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         trainer = trainer_cls(
             task=config.get("task", {}),
             model=config["model"],
-            outputs=config.get("outputs", None),
+            outputs=config.get("outputs", {}),
             dataset=config["dataset"],
             optimizer=config["optim"],
-            loss_fns=config.get("loss_functions", None),
-            eval_metrics=config.get("evaluation_metrics", None),
+            loss_fns=config.get("loss_functions", {}),
+            eval_metrics=config.get("evaluation_metrics", {}),
             identifier=config["identifier"],
             timestamp_id=config.get("timestamp_id", None),
             run_dir=config.get("run_dir", "./"),
@@ -1194,46 +1194,93 @@ def irreps_sum(l):
     return total
 
 
-def load_old_targets(name, config):
-    normalizer = config.get("dataset", {})
-
+def load_old_config(name, config):
     if name == "is2re":
-        targets = {
-            "energy": {
-                "irreps": 0,
-                "loss": config["optim"].get("loss_energy", "mae"),
-                "level": "system",
-                "coefficient": config["optim"].get("energy_coefficient", 1),
-                "normalizer": {
-                    "mean": normalizer.get("target_mean", 0),
-                    "stdev": normalizer.get("target_std", 1),
+        ### Define loss functions
+        _loss_fns = [
+            {
+                "energy": {
+                    "fn": config["optim"].get("loss_energy", "mae"),
+                    "coefficient": config["optim"].get(
+                        "energy_coefficient", 1
+                    ),
                 },
             }
+        ]
+        ### Define evaluation metrics
+        _eval_metrics = {
+            "metrics": {"energy": ["mae", "mse", "energy_within_threshold"]},
         }
-    elif name == "s2ef":
-        targets = {
-            "energy": {
-                "irreps": 0,
-                "loss": config["optim"].get("loss_energy", "mae"),
-                "level": "system",
-                "coefficient": config["optim"].get("energy_coefficient", 1),
-                "normalizer": {
-                    "mean": normalizer.get("target_mean", 0),
-                    "stdev": normalizer.get("target_std", 1),
+        if "primary_metric" in config["task"]:
+            _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
+        ### Define outputs
+        _outputs = {"energy": {"shape": 1, "level": "system"}}
+    if name == "s2ef":
+        ### Define loss functions
+        _loss_fns = [
+            {
+                "energy": {
+                    "fn": config["optim"].get("loss_energy", "mae"),
+                    "coefficient": config["optim"].get(
+                        "energy_coefficient", 1
+                    ),
                 },
+                "forces": {
+                    "fn": config["optim"].get("loss_forces", "l2mae"),
+                    "coefficient": config["optim"].get(
+                        "force_coefficient", 30
+                    ),
+                },
+            }
+        ]
+        ### Define evaluation metrics
+        _eval_metrics = {
+            "metrics": {
+                "misc": ["energy_forces_within_threshold"],
+                "energy": ["mae"],
+                "forces": [
+                    "forcesx_mae",
+                    "forcesy_mae",
+                    "forcesz_mae",
+                    "mae",
+                    "cosine_similarity",
+                    "magnitude_error",
+                ],
+            },
+        }
+        if "primary_metric" in config["task"]:
+            _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
+        ### Define outputs
+        _outputs = {
+            "energy": {"shape": 1, "level": "system"},
+            "forces": {
+                "shape": 3,
+                "level": "atom",
+                "train_on_free_atoms": (
+                    config["task"].get("train_on_free_atoms", False)
+                ),
+                "eval_on_free_atoms": (
+                    config["task"].get("eval_on_free_atoms", True)
+                ),
+            },
+        }
+
+    if config["dataset"].get("normalize_labels", False):
+        normalizer = {
+            "energy": {
+                "mean": config["dataset"]["target_mean"],
+                "stdev": config["dataset"]["target_std"],
             },
             "forces": {
-                "irreps": 1,
-                "loss": config["optim"].get("loss_force", "mae"),
-                "level": "atom",
-                "coefficient": config["optim"].get("force_coefficient", 1),
-                "normalizer": {
-                    "mean": normalizer.get("grad_target_mean", 0),
-                    "stdev": normalizer.get("grad_target_std", 1),
-                },
+                "mean": config["dataset"]["grad_target_mean"],
+                "stdev": config["dataset"]["grad_target_std"],
             },
         }
-    else:
-        targets = {}
+        config["dataset"]["normalizer"] = normalizer
 
-    return targets
+    config["dataset"]["key_mapping"] = {"y": "energy", "force": "forces"}
+    ### Update config
+    config.update({"loss_fns": _loss_fns})
+    config.update({"eval_metrics": _eval_metrics})
+    config.update({"outputs": _outputs})
+    return config

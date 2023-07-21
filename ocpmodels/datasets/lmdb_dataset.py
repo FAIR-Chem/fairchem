@@ -119,22 +119,7 @@ class LmdbDataset(Dataset[T_co]):
             self.num_samples = len(self.available_indices)
 
         self.key_mapping = self.config.get("key_mapping", None)
-        self.transforms = self.config.get("transforms", {})
-        self._normalizers = self.transforms.get("normalizer", None)
-
-        self.load()
-
-    def load(self):
-        self.normalizers = {}
-        if self._normalizers:
-            for target in self._normalizers:
-                self.normalizers[target] = Normalizer(
-                    mean=self._normalizers[target].get("mean", 0),
-                    std=self._normalizers[target].get("stdev", 1),
-                )
-            self.transforms.pop("normalizer")
-
-        self.transform = DataTransforms(self.transforms)
+        self.transforms = DataTransforms(self.config.get("transforms", {}))
 
     def __len__(self) -> int:
         return self.num_samples
@@ -175,7 +160,7 @@ class LmdbDataset(Dataset[T_co]):
                         data_object[new_property] = data_object[_property]
                         del data_object[_property]
 
-        self.transform(data_object)
+        self.transforms(data_object)
 
         return data_object
 
