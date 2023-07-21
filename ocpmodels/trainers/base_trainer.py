@@ -38,7 +38,7 @@ from ocpmodels.common.utils import (
     check_traj_files,
     get_commit_hash,
     irreps_sum,
-    load_old_targets,
+    load_old_config,
     load_state_dict,
     save_checkpoint,
 )
@@ -182,6 +182,10 @@ class BaseTrainer(ABC):
         if distutils.is_master():
             print(yaml.dump(self.config, default_flow_style=False))
 
+        ### backwards compatability with OCP v<2.0
+        if self.name in ["is2re", "s2ef"]:
+            self.config = load_old_config(self.name, self.config)
+
         self.load()
 
     def load(self) -> None:
@@ -286,7 +290,6 @@ class BaseTrainer(ABC):
                 self.train_sampler,
             )
 
-            self.train_dataset[0]
             if self.config.get("val_dataset", None):
                 if self.config["val_dataset"].get("use_train_settings", True):
                     val_config = self.config["dataset"].copy()
@@ -346,7 +349,14 @@ class BaseTrainer(ABC):
 
     def load_task(self):
         # Normalizer for the dataset.
-        self.normalizers = self.train_dataset.normalizers
+        self.normalizers = {}
+        if "normalizer" in self.config["dataset"]:
+            normalizer = self.config["dataset"]["normalizer"]
+            for target in normalizer:
+                self.normalizers[target] = Normalizer(
+                    mean=normalizer[target].get("mean", 0),
+                    std=normalizer[target].get("stdev", 1),
+                )
 
         self.output_targets = {}
         for target_name in self.config["outputs"]:
