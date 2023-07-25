@@ -56,7 +56,7 @@ class EquiformerV2ForcesTrainer(OCPTrainer):
     # - When using the LR scheduler, it first converts the epochs into number of
     #   steps and then passes it to the scheduler. That way in the config
     #   everything can be specified in terms of epochs.
-    def load_model(self):
+    def load_model(self) -> None:
         # Build model
         if distutils.is_master():
             logging.info(f"Loading model: {self.config['model']}")
@@ -75,7 +75,7 @@ class EquiformerV2ForcesTrainer(OCPTrainer):
             and loader.dataset[0].x is not None
             else None,
             bond_feat_dim,
-            self.num_targets,
+            1,
             **self.config["model_attributes"],
         ).to(self.device)
 
@@ -103,7 +103,7 @@ class EquiformerV2ForcesTrainer(OCPTrainer):
                 self.model, device_ids=[self.device]
             )
 
-    def load_optimizer(self):
+    def load_optimizer(self) -> None:
         optimizer = self.config["optim"].get("optimizer", "AdamW")
         optimizer = getattr(optim, optimizer)
         optimizer_params = self.config["optim"]["optimizer_params"]
@@ -121,7 +121,7 @@ class EquiformerV2ForcesTrainer(OCPTrainer):
             **optimizer_params,
         )
 
-    def load_extras(self):
+    def load_extras(self) -> None:
         def multiply(obj, num):
             if isinstance(obj, list):
                 for i in range(len(obj)):

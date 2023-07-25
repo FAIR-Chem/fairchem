@@ -494,9 +494,12 @@ class EquiformerV2_OC20(BaseModel):
             forces = forces.view(-1, 3)
 
         if not self.regress_forces:
-            return energy
+            return {"energy": energy}
         else:
-            return energy, forces
+            return {
+                "energy": energy,
+                "forces": forces,
+            }
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
