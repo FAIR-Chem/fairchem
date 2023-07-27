@@ -37,6 +37,7 @@ from ocpmodels.common.utils import (
     cg_decomp_mat,
     check_traj_files,
     get_commit_hash,
+    get_loss_module,
     irreps_sum,
     load_old_config,
     load_state_dict,
@@ -46,7 +47,7 @@ from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
 )
-from ocpmodels.modules.loss import AtomwiseL2Loss, DDPLoss, L2MAELoss
+from ocpmodels.modules.loss import DDPLoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scaling.compat import load_scales_compat
 from ocpmodels.modules.scaling.util import ensure_fitted
@@ -526,18 +527,13 @@ class BaseTrainer(ABC):
                 coefficient = loss[target].get("coefficient", 1)
                 loss_reduction = loss[target].get("reduction", "mean")
 
-                if loss_name in ["l1", "mae"]:
-                    loss_fn = nn.L1Loss()
-                elif loss_name == "mse":
-                    loss_fn = nn.MSELoss()
-                elif loss_name == "l2mae":
-                    loss_fn = L2MAELoss()
-                elif loss_name == "atomwisel2":
-                    loss_fn = AtomwiseL2Loss()
+                ### if torch module name provided, use that directly
+                if hasattr(nn, loss_name):
+                    loss_fn = getattr(nn, loss_name)()
+                ### otherwise, retrieve the correct module based off old naming
                 else:
-                    raise NotImplementedError(
-                        f"Unknown loss function name: {loss_name}"
-                    )
+                    loss_fn = get_loss_module(loss_name)
+
                 loss_fn = DDPLoss(loss_fn, loss_name, loss_reduction)
 
                 self.loss_fns.append(

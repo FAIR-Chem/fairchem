@@ -37,6 +37,7 @@ from torch_geometric.utils import remove_self_loops
 from torch_scatter import scatter, segment_coo, segment_csr
 
 import ocpmodels
+from ocpmodels.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
     from torch.nn.modules.module import _IncompatibleKeys
@@ -1284,3 +1285,18 @@ def load_old_config(name, config):
     config.update({"eval_metrics": _eval_metrics})
     config.update({"outputs": _outputs})
     return config
+
+
+def get_loss_module(loss_name):
+    if loss_name in ["l1", "mae"]:
+        loss_fn = nn.L1Loss()
+    elif loss_name == "mse":
+        loss_fn = nn.MSELoss()
+    elif loss_name == "l2mae":
+        loss_fn = L2MAELoss()
+    elif loss_name == "atomwisel2":
+        loss_fn = AtomwiseL2Loss()
+    else:
+        raise NotImplementedError(f"Unknown loss function name: {loss_name}")
+
+    return loss_fn
