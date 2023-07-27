@@ -1,5 +1,6 @@
 import copy
 import math
+from typing import List
 
 import torch
 import torch.nn as nn
@@ -86,12 +87,12 @@ class SO2_Convolution(torch.nn.Module):
 
     def __init__(
         self,
-        sphere_channels,
-        m_output_channels,
-        lmax_list,
-        mmax_list,
+        sphere_channels: int,
+        m_output_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         mappingReduced,
-        internal_weights=True,
+        internal_weights: bool = True,
         edge_channels_list=None,
         extra_m0_output_channels=None,
     ):
@@ -248,12 +249,12 @@ class SO2_Linear(torch.nn.Module):
 
     def __init__(
         self,
-        sphere_channels,
-        m_output_channels,
-        lmax_list,
-        mmax_list,
+        sphere_channels: int,
+        m_output_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         mappingReduced,
-        internal_weights=False,
+        internal_weights: bool = False,
         edge_channels_list=None,
     ):
         super(SO2_Linear, self).__init__()

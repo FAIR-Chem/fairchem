@@ -27,6 +27,8 @@ class BasisEmbedding(torch.nn.Module):
         Only required if there is a circular/spherical basis.
     """
 
+    weight: torch.nn.Parameter
+
     def __init__(
         self,
         num_radial: int,

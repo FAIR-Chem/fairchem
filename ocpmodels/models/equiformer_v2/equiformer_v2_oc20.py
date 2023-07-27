@@ -1,29 +1,20 @@
 import logging
 import math
-import time
+from typing import List, Optional
 
-import numpy as np
 import torch
 import torch.nn as nn
-from pyexpat.model import XML_CQUANT_OPT
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
-from ocpmodels.models.scn.sampling import CalcSpherePoints
-from ocpmodels.models.scn.smearing import (
-    GaussianSmearing,
-    LinearSigmoidSmearing,
-    SigmoidSmearing,
-    SiLUSmearing,
-)
+from ocpmodels.models.scn.smearing import GaussianSmearing
 
 try:
-    from e3nn import o3
+    pass
 except ImportError:
     pass
 
-from torch.nn import Linear
 
 from .edge_rot_mat import init_edge_rot_mat
 from .gaussian_rbf import GaussianRadialBasisLayer
@@ -37,7 +28,6 @@ from .layer_norm import (
 )
 from .module_list import ModuleListInfo
 from .radial_function import RadialFunction
-from .so2_ops import SO2_Convolution
 from .so3 import (
     CoefficientMappingModule,
     SO3_Embedding,
@@ -109,44 +99,44 @@ class EquiformerV2_OC20(BaseModel):
 
     def __init__(
         self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,  # not used
-        use_pbc=True,
-        regress_forces=True,
-        otf_graph=True,
-        max_neighbors=500,
-        max_radius=5.0,
-        max_num_elements=90,
-        num_layers=12,
-        sphere_channels=128,
-        attn_hidden_channels=128,
-        num_heads=8,
-        attn_alpha_channels=32,
-        attn_value_channels=16,
-        ffn_hidden_channels=512,
-        norm_type="rms_norm_sh",
-        lmax_list=[6],
-        mmax_list=[2],
-        grid_resolution=None,
-        num_sphere_samples=128,
-        edge_channels=128,
-        use_atom_edge_embedding=True,
-        share_atom_edge_embedding=False,
-        use_m_share_rad=False,
-        distance_function="gaussian",
-        num_distance_basis=512,
-        attn_activation="scaled_silu",
-        use_s2_act_attn=False,
-        use_attn_renorm=True,
-        ffn_activation="scaled_silu",
-        use_gate_act=False,
-        use_grid_mlp=False,
-        use_sep_s2_act=True,
-        alpha_drop=0.1,
-        drop_path_rate=0.05,
-        proj_drop=0.0,
-        weight_init="normal",
+        num_atoms: int,  # not used
+        bond_feat_dim: int,  # not used
+        num_targets: int,  # not used
+        use_pbc: bool = True,
+        regress_forces: bool = True,
+        otf_graph: bool = True,
+        max_neighbors: int = 500,
+        max_radius: float = 5.0,
+        max_num_elements: int = 90,
+        num_layers: int = 12,
+        sphere_channels: int = 128,
+        attn_hidden_channels: int = 128,
+        num_heads: int = 8,
+        attn_alpha_channels: int = 32,
+        attn_value_channels: int = 16,
+        ffn_hidden_channels: int = 512,
+        norm_type: str = "rms_norm_sh",
+        lmax_list: List[int] = [6],
+        mmax_list: List[int] = [2],
+        grid_resolution: Optional[int] = None,
+        num_sphere_samples: int = 128,
+        edge_channels: int = 128,
+        use_atom_edge_embedding: bool = True,
+        share_atom_edge_embedding: bool = False,
+        use_m_share_rad: bool = False,
+        distance_function: str = "gaussian",
+        num_distance_basis: int = 512,
+        attn_activation: str = "scaled_silu",
+        use_s2_act_attn: bool = False,
+        use_attn_renorm: bool = True,
+        ffn_activation: str = "scaled_silu",
+        use_gate_act: bool = False,
+        use_grid_mlp: bool = False,
+        use_sep_s2_act: bool = True,
+        alpha_drop: float = 0.1,
+        drop_path_rate: float = 0.05,
+        proj_drop: float = 0.0,
+        weight_init: str = "normal",
     ):
         super().__init__()
 
@@ -211,8 +201,10 @@ class EquiformerV2_OC20(BaseModel):
         self.device = "cpu"  # torch.cuda.current_device()
 
         self.grad_forces = False
-        self.num_resolutions = len(self.lmax_list)
-        self.sphere_channels_all = self.num_resolutions * self.sphere_channels
+        self.num_resolutions: int = len(self.lmax_list)
+        self.sphere_channels_all: int = (
+            self.num_resolutions * self.sphere_channels
+        )
 
         # Weights for message initialization
         self.sphere_embedding = nn.Embedding(
@@ -267,12 +259,12 @@ class EquiformerV2_OC20(BaseModel):
         self.SO3_grid = ModuleListInfo(
             "({}, {})".format(max(self.lmax_list), max(self.lmax_list))
         )
-        for l in range(max(self.lmax_list) + 1):
+        for lval in range(max(self.lmax_list) + 1):
             SO3_m_grid = nn.ModuleList()
             for m in range(max(self.lmax_list) + 1):
                 SO3_m_grid.append(
                     SO3_Grid(
-                        l,
+                        lval,
                         m,
                         resolution=self.grid_resolution,
                         normalization="component",

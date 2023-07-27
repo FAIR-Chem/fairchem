@@ -66,6 +66,13 @@ class SphericalChannelNetwork(BaseModel):
         show_timing_info (bool): Show timing and memory info
     """
 
+    energy_fc1: nn.Linear
+    energy_fc2: nn.Linear
+    energy_fc3: nn.Linear
+    force_fc1: nn.Linear
+    force_fc2: nn.Linear
+    force_fc3: nn.Linear
+
     def __init__(
         self,
         num_atoms: int,  # not used
