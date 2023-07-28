@@ -121,7 +121,7 @@ class LmdbDataset(Dataset[T_co]):
     def __len__(self) -> int:
         return self.num_samples
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> T_co:
         # if sharding, remap idx to appropriate idx of the sharded set
         if self.sharded:
             idx = self.available_indices[idx]
@@ -153,7 +153,7 @@ class LmdbDataset(Dataset[T_co]):
 
         return data_object
 
-    def connect_db(self, lmdb_path: Optional[Path] = None):
+    def connect_db(self, lmdb_path: Optional[Path] = None) -> lmdb.Environment:
         env = lmdb.open(
             str(lmdb_path),
             subdir=False,
@@ -215,7 +215,7 @@ class LmdbDataset(Dataset[T_co]):
         return metadata
 
 
-class SinglePointLmdbDataset(LmdbDataset):
+class SinglePointLmdbDataset(LmdbDataset[BaseData]):
     def __init__(self, config, transform=None) -> None:
         super(SinglePointLmdbDataset, self).__init__(config, transform)
         warnings.warn(
@@ -225,7 +225,7 @@ class SinglePointLmdbDataset(LmdbDataset):
         )
 
 
-class TrajectoryLmdbDataset(LmdbDataset):
+class TrajectoryLmdbDataset(LmdbDataset[BaseData]):
     def __init__(self, config, transform=None) -> None:
         super(TrajectoryLmdbDataset, self).__init__(config, transform)
         warnings.warn(
