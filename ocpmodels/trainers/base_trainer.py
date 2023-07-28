@@ -80,15 +80,18 @@ class BaseTrainer(ABC):
         self.epoch = 0
         self.step = 0
 
+        self.device: torch.device
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
         else:
             self.device = torch.device("cpu")
             self.cpu = True  # handle case when `--cpu` isn't specified
             # but there are no gpu devices available
+
         if run_dir is None:
             run_dir = os.getcwd()
 
+        self.timestamp_id: str
         if timestamp_id is None:
             timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(
                 self.device
