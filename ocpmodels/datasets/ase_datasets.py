@@ -22,7 +22,7 @@ from ocpmodels.preprocessing import AtomsToGraphs
 
 
 def apply_one_tags(
-    atoms, skip_if_nonzero: bool = True, skip_always: bool = False
+    atoms: ase.Atoms, skip_if_nonzero: bool = True, skip_always: bool = False
 ):
     """
     This function will apply tags of 1 to an ASE atoms object.

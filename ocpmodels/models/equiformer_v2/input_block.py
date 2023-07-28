@@ -1,4 +1,5 @@
 import copy
+from typing import List
 
 import torch
 import torch.nn as nn
@@ -29,14 +30,14 @@ class EdgeDegreeEmbedding(torch.nn.Module):
 
     def __init__(
         self,
-        sphere_channels,
-        lmax_list,
-        mmax_list,
+        sphere_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         SO3_rotation,
         mappingReduced,
-        max_num_elements,
+        max_num_elements: int,
         edge_channels_list,
-        use_atom_edge_embedding,
+        use_atom_edge_embedding: bool,
         rescale_factor,
     ):
         super(EdgeDegreeEmbedding, self).__init__()
@@ -47,8 +48,8 @@ class EdgeDegreeEmbedding(torch.nn.Module):
         self.SO3_rotation = SO3_rotation
         self.mappingReduced = mappingReduced
 
-        self.m_0_num_coefficients = self.mappingReduced.m_size[0]
-        self.m_all_num_coefficents = len(self.mappingReduced.l_harmonic)
+        self.m_0_num_coefficients: int = self.mappingReduced.m_size[0]
+        self.m_all_num_coefficents: int = len(self.mappingReduced.l_harmonic)
 
         # Create edge scalar (invariant to rotations) features
         # Embedding function of the atomic numbers

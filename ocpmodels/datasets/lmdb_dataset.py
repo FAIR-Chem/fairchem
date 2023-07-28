@@ -30,6 +30,9 @@ T_co = TypeVar("T_co", covariant=True)
 @registry.register_dataset("single_point_lmdb")
 @registry.register_dataset("trajectory_lmdb")
 class LmdbDataset(Dataset[T_co]):
+    metadata_path: Path
+    sharded: bool
+
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
     Useful for Structure to Energy & Force (S2EF), Initial State to

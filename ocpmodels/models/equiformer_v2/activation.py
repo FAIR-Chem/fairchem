@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class ScaledSiLU(nn.Module):
-    def __init__(self, inplace=False):
+    def __init__(self, inplace: bool = False) -> None:
         super(ScaledSiLU, self).__init__()
         self.inplace = inplace
         self.scale_factor = 1.6791767923989418
@@ -21,7 +21,7 @@ class ScaledSiLU(nn.Module):
 
 # Reference: https://github.com/facebookresearch/llama/blob/main/llama/model.py#L175
 class ScaledSwiGLU(nn.Module):
-    def __init__(self, in_channels, out_channels, bias=True):
+    def __init__(self, in_channels, out_channels, bias: bool = True) -> None:
         super(ScaledSwiGLU, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -39,7 +39,7 @@ class ScaledSwiGLU(nn.Module):
 
 # Reference: https://github.com/facebookresearch/llama/blob/main/llama/model.py#L175
 class SwiGLU(nn.Module):
-    def __init__(self, in_channels, out_channels, bias=True):
+    def __init__(self, in_channels, out_channels, bias: bool = True) -> None:
         super(SwiGLU, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -56,7 +56,7 @@ class SwiGLU(nn.Module):
 
 
 class SmoothLeakyReLU(torch.nn.Module):
-    def __init__(self, negative_slope=0.2):
+    def __init__(self, negative_slope: float = 0.2) -> None:
         super().__init__()
         self.alpha = negative_slope
 
@@ -70,7 +70,7 @@ class SmoothLeakyReLU(torch.nn.Module):
 
 
 class ScaledSmoothLeakyReLU(torch.nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.act = SmoothLeakyReLU(0.2)
         self.scale_factor = 1.531320475574866
@@ -85,7 +85,7 @@ class ScaledSmoothLeakyReLU(torch.nn.Module):
 
 
 class ScaledSigmoid(torch.nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.scale_factor = 1.8467055342154763
 
@@ -94,7 +94,7 @@ class ScaledSigmoid(torch.nn.Module):
 
 
 class GateActivation(torch.nn.Module):
-    def __init__(self, lmax, mmax, num_channels):
+    def __init__(self, lmax, mmax, num_channels) -> None:
         super().__init__()
 
         self.lmax = lmax
@@ -103,14 +103,14 @@ class GateActivation(torch.nn.Module):
 
         # compute `expand_index` based on `lmax` and `mmax`
         num_components = 0
-        for l in range(1, self.lmax + 1):
-            num_m_components = min((2 * l + 1), (2 * self.mmax + 1))
+        for lval in range(1, self.lmax + 1):
+            num_m_components = min((2 * lval + 1), (2 * self.mmax + 1))
             num_components = num_components + num_m_components
         expand_index = torch.zeros([num_components]).long()
         start_idx = 0
-        for l in range(1, self.lmax + 1):
-            length = min((2 * l + 1), (2 * self.mmax + 1))
-            expand_index[start_idx : (start_idx + length)] = l - 1
+        for lval in range(1, self.lmax + 1):
+            length = min((2 * lval + 1), (2 * self.mmax + 1))
+            expand_index[start_idx : (start_idx + length)] = lval - 1
             start_idx = start_idx + length
         self.register_buffer("expand_index", expand_index)
 
@@ -153,7 +153,7 @@ class S2Activation(torch.nn.Module):
     Assume we only have one resolution
     """
 
-    def __init__(self, lmax, mmax):
+    def __init__(self, lmax, mmax) -> None:
         super().__init__()
         self.lmax = lmax
         self.mmax = mmax
@@ -173,7 +173,7 @@ class S2Activation(torch.nn.Module):
 
 
 class SeparableS2Activation(torch.nn.Module):
-    def __init__(self, lmax, mmax):
+    def __init__(self, lmax, mmax) -> None:
         super().__init__()
 
         self.lmax = lmax

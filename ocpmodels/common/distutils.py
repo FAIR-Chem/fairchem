@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 import logging
 import os
 import subprocess
+from typing import List
 
 import torch
 import torch.distributed as dist
@@ -106,19 +107,19 @@ def cleanup() -> None:
     dist.destroy_process_group()
 
 
-def initialized():
+def initialized() -> bool:
     return dist.is_available() and dist.is_initialized()
 
 
-def get_rank():
+def get_rank() -> int:
     return dist.get_rank() if initialized() else 0
 
 
-def get_world_size():
+def get_world_size() -> int:
     return dist.get_world_size() if initialized() else 1
 
 
-def is_master():
+def is_master() -> bool:
     return get_rank() == 0
 
 
@@ -138,7 +139,7 @@ def broadcast(
 
 def all_reduce(
     data, group=dist.group.WORLD, average: bool = False, device=None
-):
+) -> torch.Tensor:
     if get_world_size() == 1:
         return data
     tensor = data
@@ -156,7 +157,9 @@ def all_reduce(
     return result
 
 
-def all_gather(data, group=dist.group.WORLD, device=None):
+def all_gather(
+    data, group=dist.group.WORLD, device=None
+) -> List[torch.Tensor]:
     if get_world_size() == 1:
         return data
     tensor = data

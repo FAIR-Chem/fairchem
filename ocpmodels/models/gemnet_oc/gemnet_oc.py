@@ -697,7 +697,13 @@ class GemNetOC(BaseModel):
 
         return cosφ_cab, cosφ_abd, angle_cabd
 
-    def select_symmetric_edges(self, tensor, mask, reorder_idx, opposite_neg):
+    def select_symmetric_edges(
+        self,
+        tensor: torch.Tensor,
+        mask: torch.Tensor,
+        reorder_idx: torch.Tensor,
+        opposite_neg,
+    ) -> torch.Tensor:
         """Use a mask to remove values of removed edges and then
         duplicate the values for the correct edge direction.
 
