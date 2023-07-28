@@ -296,7 +296,9 @@ class GraphParallelGemNetT(BaseModel):
 
         return id3_ba, id3_ca, id3_ragged_idx
 
-    def select_symmetric_edges(self, tensor, mask, reorder_idx, inverse_neg):
+    def select_symmetric_edges(
+        self, tensor: torch.Tensor, mask, reorder_idx, inverse_neg
+    ) -> torch.Tensor:
         # Mask out counter-edges
         tensor_directed = tensor[mask]
         # Concatenate counter-edges after normal edges

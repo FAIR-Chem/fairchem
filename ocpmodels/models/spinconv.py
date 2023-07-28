@@ -92,8 +92,8 @@ class spinconv(BaseModel):
 
         # variables used for display purposes
         self.counter = 0
-        self.start_time = time.time()
-        self.total_time = 0
+        self.start_time: float = time.time()
+        self.total_time: float = 0.0
         self.model_ref_number = model_ref_number
 
         if self.force_estimator == "grad":
@@ -102,7 +102,7 @@ class spinconv(BaseModel):
         # self.act = ShiftedSoftplus()
         self.act = Swish()
 
-        self.distance_expansion_forces = GaussianSmearing(
+        self.distance_expansion_forces: GaussianSmearing = GaussianSmearing(
             0.0,
             cutoff,
             num_basis_functions,
@@ -110,7 +110,7 @@ class spinconv(BaseModel):
         )
 
         # Weights for message initialization
-        self.embeddingblock2 = EmbeddingBlock(
+        self.embeddingblock2: EmbeddingBlock = EmbeddingBlock(
             self.mid_hidden_channels,
             self.hidden_channels,
             self.mid_hidden_channels,
@@ -119,14 +119,14 @@ class spinconv(BaseModel):
             self.max_num_elements,
             self.act,
         )
-        self.distfc1 = nn.Linear(
+        self.distfc1: nn.Linear = nn.Linear(
             self.mid_hidden_channels, self.mid_hidden_channels
         )
-        self.distfc2 = nn.Linear(
+        self.distfc2: nn.Linear = nn.Linear(
             self.mid_hidden_channels, self.mid_hidden_channels
         )
 
-        self.dist_block = DistanceBlock(
+        self.dist_block: DistanceBlock = DistanceBlock(
             self.num_basis_functions,
             self.mid_hidden_channels,
             self.max_num_elements,
@@ -843,7 +843,7 @@ class MessageBlock(torch.nn.Module):
             self.lmax,
         )
 
-        self.embeddingblock1 = EmbeddingBlock(
+        self.embeddingblock1: EmbeddingBlock = EmbeddingBlock(
             self.mid_hidden_channels,
             self.mid_hidden_channels,
             self.mid_hidden_channels,
@@ -852,7 +852,7 @@ class MessageBlock(torch.nn.Module):
             self.max_num_elements,
             self.act,
         )
-        self.embeddingblock2 = EmbeddingBlock(
+        self.embeddingblock2: EmbeddingBlock = EmbeddingBlock(
             self.mid_hidden_channels,
             self.out_hidden_channels,
             self.mid_hidden_channels,
@@ -925,7 +925,7 @@ class ForceOutputBlock(torch.nn.Module):
         self.max_num_elements = max_num_elements
         self.num_embedding_basis = 8
 
-        self.spinconvblock = SpinConvBlock(
+        self.spinconvblock: SpinConvBlock = SpinConvBlock(
             self.in_hidden_channels,
             self.mid_hidden_channels,
             self.sphere_size_lat,
@@ -935,7 +935,7 @@ class ForceOutputBlock(torch.nn.Module):
             self.lmax,
         )
 
-        self.block1 = EmbeddingBlock(
+        self.block1: EmbeddingBlock = EmbeddingBlock(
             self.mid_hidden_channels,
             self.mid_hidden_channels,
             self.mid_hidden_channels,
@@ -944,7 +944,7 @@ class ForceOutputBlock(torch.nn.Module):
             self.max_num_elements,
             self.act,
         )
-        self.block2 = EmbeddingBlock(
+        self.block2: EmbeddingBlock = EmbeddingBlock(
             self.mid_hidden_channels,
             self.out_hidden_channels,
             self.mid_hidden_channels,

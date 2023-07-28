@@ -187,7 +187,7 @@ def repeat_blocks(
     return res
 
 
-def masked_select_sparsetensor_flat(src, mask):
+def masked_select_sparsetensor_flat(src, mask) -> SparseTensor:
     row, col, value = src.coo()
     row = row[mask]
     col = col[mask]
