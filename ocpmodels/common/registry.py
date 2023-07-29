@@ -22,6 +22,10 @@ Various decorators for registry different kind of classes with unique keys
 - Register a model: ``@registry.register_model``
 """
 import importlib
+from typing import Any, Callable, Dict, List, TypeVar, Union
+
+R = TypeVar("R")
+NestedDict = Dict[str, Union[str, Callable[..., Any], "NestedDict"]]
 
 
 def _get_absolute_mapping(name: str):
@@ -50,7 +54,7 @@ def _get_absolute_mapping(name: str):
 
 class Registry:
     r"""Class for registry object which acts as central source of truth."""
-    mapping = {
+    mapping: NestedDict = {
         # Mappings to respective classes.
         "task_name_mapping": {},
         "dataset_name_mapping": {},
@@ -73,7 +77,7 @@ class Registry:
                 ...
         """
 
-        def wrap(func):
+        def wrap(func: Callable[..., R]) -> Callable[..., R]:
             cls.mapping["task_name_mapping"][name] = func
             return func
 
@@ -96,7 +100,7 @@ class Registry:
                 ...
         """
 
-        def wrap(func):
+        def wrap(func: Callable[..., R]) -> Callable[..., R]:
             cls.mapping["dataset_name_mapping"][name] = func
             return func
 
@@ -119,7 +123,7 @@ class Registry:
                 ...
         """
 
-        def wrap(func):
+        def wrap(func: Callable[..., R]) -> Callable[..., R]:
             cls.mapping["model_name_mapping"][name] = func
             return func
 
@@ -141,7 +145,7 @@ class Registry:
                 ...
         """
 
-        def wrap(func):
+        def wrap(func: Callable[..., R]) -> Callable[..., R]:
             from ocpmodels.common.logger import Logger
 
             assert issubclass(
@@ -168,14 +172,14 @@ class Registry:
                 ...
         """
 
-        def wrap(func):
+        def wrap(func: Callable[..., R]) -> Callable[..., R]:
             cls.mapping["trainer_name_mapping"][name] = func
             return func
 
         return wrap
 
     @classmethod
-    def register(cls, name, obj) -> None:
+    def register(cls, name: str, obj) -> None:
         r"""Register an item to registry with key 'name'
 
         Args:
@@ -201,7 +205,12 @@ class Registry:
     def __import_error(cls, name: str, mapping_name: str) -> RuntimeError:
         kind = mapping_name[: -len("_name_mapping")]
         mapping = cls.mapping.get(mapping_name, {})
-        existing_keys = list(mapping.keys())
+        existing_keys: List[str] = list(mapping.keys())
+
+        if len(existing_keys) == 0:
+            raise RuntimeError(
+                f"Registry for {mapping_name} is empty. You may have forgot to load a module."
+            )
 
         existing_cls_path = (
             mapping.get(existing_keys[-1], None) if existing_keys else None
