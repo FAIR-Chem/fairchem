@@ -28,10 +28,10 @@ class PolynomialEnvelope(torch.nn.Module):
     def __init__(self, exponent: int) -> None:
         super().__init__()
         assert exponent > 0
-        self.p = exponent
-        self.a = -(self.p + 1) * (self.p + 2) / 2
-        self.b = self.p * (self.p + 2)
-        self.c = -self.p * (self.p + 1) / 2
+        self.p = float(exponent)
+        self.a: float = -(self.p + 1) * (self.p + 2) / 2
+        self.b: float = self.p * (self.p + 2)
+        self.c: float = -self.p * (self.p + 1) / 2
 
     def forward(self, d_scaled: torch.Tensor) -> torch.Tensor:
         env_val = (
@@ -77,7 +77,7 @@ class GaussianBasis(torch.nn.Module):
             self.register_buffer("offset", offset)
         self.coeff = -0.5 / ((stop - start) / (num_gaussians - 1)) ** 2
 
-    def forward(self, dist) -> torch.Tensor:
+    def forward(self, dist: torch.Tensor) -> torch.Tensor:
         dist = dist[:, None] - self.offset[None, :]
         return torch.exp(self.coeff * torch.pow(dist, 2))
 

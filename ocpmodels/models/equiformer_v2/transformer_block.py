@@ -223,7 +223,13 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
             lmax=self.lmax_list[0],
         )
 
-    def forward(self, x, atomic_numbers, edge_distance, edge_index):
+    def forward(
+        self,
+        x: torch.Tensor,
+        atomic_numbers,
+        edge_distance: torch.Tensor,
+        edge_index,
+    ):
 
         # Compute edge scalar features (invariant to rotations)
         # Uses atomic numbers and edge distance as inputs
@@ -579,7 +585,7 @@ class TransBlockV2(torch.nn.Module):
         mappingReduced,
         SO3_grid,
         max_num_elements: int,
-        edge_channels_list,
+        edge_channels_list: List[int],
         use_atom_edge_embedding: bool = True,
         use_m_share_rad: bool = False,
         attn_activation: str = "silu",
@@ -593,7 +599,7 @@ class TransBlockV2(torch.nn.Module):
         alpha_drop: float = 0.0,
         drop_path_rate: float = 0.0,
         proj_drop: float = 0.0,
-    ):
+    ) -> None:
         super(TransBlockV2, self).__init__()
 
         max_lmax = max(lmax_list)
