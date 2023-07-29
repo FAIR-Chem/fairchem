@@ -1,8 +1,11 @@
 import inspect
 import math
 from bisect import bisect
+from typing import List, Optional
 
 import torch
+
+from ocpmodels.common.typing import assert_is_instance as aii
 
 
 def multiply(obj, num):
@@ -14,11 +17,11 @@ def multiply(obj, num):
     return obj
 
 
-def cosine_lr_lambda(current_step, scheduler_params):
-    warmup_epochs = scheduler_params["warmup_epochs"]
-    lr_warmup_factor = scheduler_params["warmup_factor"]
-    max_epochs = scheduler_params["epochs"]
-    lr_min_factor = scheduler_params["lr_min_factor"]
+def cosine_lr_lambda(current_step: int, scheduler_params):
+    warmup_epochs = aii(scheduler_params["warmup_epochs"], int)
+    lr_warmup_factor = aii(scheduler_params["warmup_factor"], float)
+    max_epochs = aii(scheduler_params["epochs"], int)
+    lr_min_factor = aii(scheduler_params["lr_min_factor"], float)
 
     # `warmup_epochs` is already multiplied with the num of iterations
     if current_step <= warmup_epochs:
@@ -35,12 +38,12 @@ def cosine_lr_lambda(current_step, scheduler_params):
 
 class CosineLRLambda:
     def __init__(self, scheduler_params) -> None:
-        self.warmup_epochs = scheduler_params["warmup_epochs"]
-        self.lr_warmup_factor = scheduler_params["warmup_factor"]
-        self.max_epochs = scheduler_params["epochs"]
-        self.lr_min_factor = scheduler_params["lr_min_factor"]
+        self.warmup_epochs = aii(scheduler_params["warmup_epochs"], int)
+        self.lr_warmup_factor = aii(scheduler_params["warmup_factor"], float)
+        self.max_epochs = aii(scheduler_params["epochs"], int)
+        self.lr_min_factor = aii(scheduler_params["lr_min_factor"], float)
 
-    def __call__(self, current_step):
+    def __call__(self, current_step: int):
         # `warmup_epochs` is already multiplied with the num of iterations
         if current_step <= self.warmup_epochs:
             alpha = current_step / float(self.warmup_epochs)
@@ -54,11 +57,11 @@ class CosineLRLambda:
             return lr_scale
 
 
-def multistep_lr_lambda(current_step, scheduler_params):
-    warmup_epochs = scheduler_params["warmup_epochs"]
-    lr_warmup_factor = scheduler_params["warmup_factor"]
-    lr_decay_epochs = scheduler_params["decay_epochs"]
-    lr_gamma = scheduler_params["decay_rate"]
+def multistep_lr_lambda(current_step: int, scheduler_params) -> float:
+    warmup_epochs = aii(scheduler_params["warmup_epochs"], int)
+    lr_warmup_factor = aii(scheduler_params["warmup_factor"], float)
+    lr_decay_epochs: List[int] = scheduler_params["decay_epochs"]
+    lr_gamma = aii(scheduler_params["decay_rate"], float)
 
     if current_step <= warmup_epochs:
         alpha = current_step / float(warmup_epochs)
@@ -70,12 +73,12 @@ def multistep_lr_lambda(current_step, scheduler_params):
 
 class MultistepLRLambda:
     def __init__(self, scheduler_params) -> None:
-        self.warmup_epochs = scheduler_params["warmup_epochs"]
-        self.lr_warmup_factor = scheduler_params["warmup_factor"]
-        self.lr_decay_epochs = scheduler_params["decay_epochs"]
-        self.lr_gamma = scheduler_params["decay_rate"]
+        self.warmup_epochs = aii(scheduler_params["warmup_epochs"], int)
+        self.lr_warmup_factor = aii(scheduler_params["warmup_factor"], float)
+        self.lr_decay_epochs = aii(scheduler_params["decay_epochs"], int)
+        self.lr_gamma = aii(scheduler_params["decay_rate"], float)
 
-    def __call__(self, current_step):
+    def __call__(self, current_step: int) -> float:
         if current_step <= self.warmup_epochs:
             alpha = current_step / float(self.warmup_epochs)
             return self.lr_warmup_factor * (1.0 - alpha) + alpha
@@ -121,7 +124,7 @@ class LRScheduler:
 
         assert "scheduler" in self.config.keys()
         assert "scheduler_params" in self.config.keys()
-        self.scheduler_type = self.config["scheduler"]
+        self.scheduler_type = aii(self.config["scheduler"], str)
         self.scheduler_params = self.config["scheduler_params"].copy()
 
         # Use `LambdaLR` for multi-step and cosine learning rate
@@ -170,6 +173,6 @@ class LRScheduler:
         }
         return scheduler_args
 
-    def get_lr(self):
+    def get_lr(self) -> Optional[float]:
         for group in self.optimizer.param_groups:
-            return group["lr"]
+            return aii(group["lr"], float)

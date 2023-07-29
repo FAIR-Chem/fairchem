@@ -207,7 +207,7 @@ class OutputBlock(AtomUpdateBlock):
         else:
             raise UserWarning(f"Unknown output_init: {self.output_init}")
 
-    def forward(self, nAtoms: int, m, rbf, id_j):
+    def forward(self, nAtoms: int, m, rbf, id_j: torch.Tensor):
         """
         Returns
         -------

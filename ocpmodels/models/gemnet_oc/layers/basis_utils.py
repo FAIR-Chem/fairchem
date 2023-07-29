@@ -13,7 +13,7 @@ from scipy import special as sp
 from scipy.optimize import brentq
 
 
-def Jn(r: int, n: int):
+def Jn(r: float, n: int):
     """
     numerical spherical bessel functions of order n
     """
@@ -31,8 +31,7 @@ def Jn_zeros(n: int, k: int):
     racines = np.zeros(k + n - 1, dtype="float32")
     for i in range(1, n):
         for j in range(k + n - 1 - i):
-            foo = brentq(Jn, points[j], points[j + 1], (i,))
-            racines[j] = foo
+            racines[j] = brentq(Jn, points[j], points[j + 1], (i,))
         points = racines
         zerosj[i][:k] = racines[:k]
 
