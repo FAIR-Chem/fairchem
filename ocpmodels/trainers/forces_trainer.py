@@ -260,10 +260,12 @@ class ForcesTrainer(BaseTrainer):
 
         predictions["forces"] = np.array(predictions["forces"], dtype=object)
         predictions["chunk_idx"] = np.array(
-            predictions["chunk_idx"], dtype=object
+            predictions["chunk_idx"],
         )
-        predictions["energy"] = np.array(predictions["energy"], dtype=object)
-        predictions["id"] = np.array(predictions["id"], dtype=object)
+        predictions["energy"] = np.array(predictions["energy"])
+        predictions["id"] = np.array(
+            predictions["id"],
+        )
         self.save_results(
             predictions, results_file, keys=["energy", "forces", "chunk_idx"]
         )

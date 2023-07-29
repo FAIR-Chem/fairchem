@@ -102,8 +102,12 @@ class AseAtomsDataset(Dataset, ABC):
                 atoms, **self.config.get("atoms_transform_args", {})
             )
 
+        sid = atoms.info.get("sid", self.ids[idx])
         try:
-            sid = tensor([atoms.info.get("sid", self.ids[idx])])
+            sid = tensor([sid])
+            warnings.warn(
+                "Supplied sid is not numeric (or missing). Using dataset indices instead."
+            )
         except:
             sid = tensor([idx])
 
@@ -333,8 +337,10 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             warnings.warn(f"{err} occured for: {identifier}")
             raise err
 
-        atoms.info["sid"] = "".join(identifier.split(" ")[:-1])
-        atoms.info["fid"] = int(identifier.split(" ")[-1])
+        if "sid" not in atoms.info:
+            atoms.info["sid"] = "".join(identifier.split(" ")[:-1])
+        if "fid" not in atoms.info:
+            atoms.info["fid"] = int(identifier.split(" ")[-1])
 
         return atoms
 

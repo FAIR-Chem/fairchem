@@ -791,7 +791,7 @@ class BaseTrainer(ABC):
             # might be repeated to make no. of samples even across GPUs.
             _, idx = np.unique(gather_results["ids"], return_index=True)
             gather_results["ids"] = np.array(
-                gather_results["ids"], dtype=object
+                gather_results["ids"],
             )[idx]
             for k in keys:
                 if k == "forces":
@@ -800,11 +800,13 @@ class BaseTrainer(ABC):
                     )
                 elif k == "chunk_idx":
                     gather_results[k] = np.cumsum(
-                        np.array(gather_results[k], dtype=object)[idx]
+                        np.array(
+                            gather_results[k],
+                        )[idx]
                     )[:-1]
                 else:
                     gather_results[k] = np.array(
-                        gather_results[k], dtype=object
+                        gather_results[k],
                     )[idx]
 
             logging.info(f"Writing results to {full_path}")
