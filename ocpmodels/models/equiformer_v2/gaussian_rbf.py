@@ -10,7 +10,7 @@ def gaussian(x, mean, std):
 
 # From Graphormer
 class GaussianRadialBasisLayer(torch.nn.Module):
-    def __init__(self, num_basis, cutoff):
+    def __init__(self, num_basis, cutoff) -> None:
         super().__init__()
         self.num_basis = num_basis
         self.cutoff = cutoff + 0.0

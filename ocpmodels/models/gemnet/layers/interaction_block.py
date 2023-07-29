@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import math
+from typing import Optional
 
 import torch
 
@@ -51,18 +52,18 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
 
     def __init__(
         self,
-        emb_size_atom,
-        emb_size_edge,
-        emb_size_trip,
-        emb_size_rbf,
-        emb_size_cbf,
-        emb_size_bil_trip,
-        num_before_skip,
-        num_after_skip,
-        num_concat,
-        num_atom,
-        activation=None,
-        name="Interaction",
+        emb_size_atom: int,
+        emb_size_edge: int,
+        emb_size_trip: int,
+        emb_size_rbf: int,
+        emb_size_cbf: int,
+        emb_size_bil_trip: int,
+        num_before_skip: int,
+        num_after_skip: int,
+        num_concat: int,
+        num_atom: int,
+        activation: Optional[str] = None,
+        name: str = "Interaction",
     ) -> None:
         super().__init__()
         self.name = name
@@ -97,7 +98,7 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
                     emb_size_edge,
                     activation=activation,
                 )
-                for i in range(num_before_skip)
+                for _ in range(num_before_skip)
             ]
         )
 
@@ -140,8 +141,8 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
 
     def forward(
         self,
-        h,
-        m,
+        h: torch.Tensor,
+        m: torch.Tensor,
         rbf3,
         cbf3,
         id3_ragged_idx,
@@ -233,13 +234,13 @@ class TripletInteraction(torch.nn.Module):
 
     def __init__(
         self,
-        emb_size_edge,
-        emb_size_trip,
-        emb_size_bilinear,
-        emb_size_rbf,
-        emb_size_cbf,
-        activation=None,
-        name="TripletInteraction",
+        emb_size_edge: int,
+        emb_size_trip: int,
+        emb_size_bilinear: int,
+        emb_size_rbf: int,
+        emb_size_cbf: int,
+        activation: Optional[str] = None,
+        name: str = "TripletInteraction",
         **kwargs,
     ) -> None:
         super().__init__()
@@ -293,7 +294,7 @@ class TripletInteraction(torch.nn.Module):
 
     def forward(
         self,
-        m,
+        m: torch.Tensor,
         rbf3,
         cbf3,
         id3_ragged_idx,

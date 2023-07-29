@@ -113,8 +113,10 @@ class eSCN(BaseModel):
         self.grad_forces = False
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
-        self.num_resolutions = len(self.lmax_list)
-        self.sphere_channels_all = self.num_resolutions * self.sphere_channels
+        self.num_resolutions: int = len(self.lmax_list)
+        self.sphere_channels_all: int = (
+            self.num_resolutions * self.sphere_channels
+        )
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
 
@@ -168,10 +170,10 @@ class eSCN(BaseModel):
 
         # Initialize the transformations between spherical and grid representations
         self.SO3_grid = nn.ModuleList()
-        for l in range(max(self.lmax_list) + 1):
+        for lval in range(max(self.lmax_list) + 1):
             SO3_m_grid = nn.ModuleList()
             for m in range(max(self.lmax_list) + 1):
-                SO3_m_grid.append(SO3_Grid(l, m))
+                SO3_m_grid.append(SO3_Grid(lval, m))
 
             self.SO3_grid.append(SO3_m_grid)
 
@@ -472,15 +474,15 @@ class LayerBlock(torch.nn.Module):
 
     def __init__(
         self,
-        layer_idx,
-        sphere_channels,
-        hidden_channels,
-        edge_channels,
-        lmax_list,
-        mmax_list,
+        layer_idx: int,
+        sphere_channels: int,
+        hidden_channels: int,
+        edge_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         distance_expansion,
-        max_num_elements,
-        SO3_grid,
+        max_num_elements: int,
+        SO3_grid: SO3_Grid,
         act,
     ) -> None:
         super(LayerBlock, self).__init__()
@@ -578,15 +580,15 @@ class MessageBlock(torch.nn.Module):
 
     def __init__(
         self,
-        layer_idx,
-        sphere_channels,
-        hidden_channels,
-        edge_channels,
-        lmax_list,
-        mmax_list,
+        layer_idx: int,
+        sphere_channels: int,
+        hidden_channels: int,
+        edge_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         distance_expansion,
-        max_num_elements,
-        SO3_grid,
+        max_num_elements: int,
+        SO3_grid: SO3_Grid,
         act,
     ) -> None:
         super(MessageBlock, self).__init__()
@@ -691,11 +693,11 @@ class SO2Block(torch.nn.Module):
 
     def __init__(
         self,
-        sphere_channels,
-        hidden_channels,
-        edge_channels,
-        lmax_list,
-        mmax_list,
+        sphere_channels: int,
+        hidden_channels: int,
+        edge_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         act,
     ) -> None:
         super(SO2Block, self).__init__()
@@ -703,7 +705,7 @@ class SO2Block(torch.nn.Module):
         self.hidden_channels = hidden_channels
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
-        self.num_resolutions = len(lmax_list)
+        self.num_resolutions: int = len(lmax_list)
         self.act = act
 
         num_channels_m0 = 0
@@ -802,12 +804,12 @@ class SO2Conv(torch.nn.Module):
 
     def __init__(
         self,
-        m,
-        sphere_channels,
-        hidden_channels,
-        edge_channels,
-        lmax_list,
-        mmax_list,
+        m: int,
+        sphere_channels: int,
+        hidden_channels: int,
+        edge_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         act,
     ) -> None:
         super(SO2Conv, self).__init__()
@@ -815,7 +817,7 @@ class SO2Conv(torch.nn.Module):
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
         self.sphere_channels = sphere_channels
-        self.num_resolutions = len(self.lmax_list)
+        self.num_resolutions: int = len(self.lmax_list)
         self.m = m
         self.act = act
 

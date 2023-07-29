@@ -208,9 +208,9 @@ def collate(data_list):
 def add_edge_distance_to_graph(
     batch,
     device="cpu",
-    dmin=0.0,
-    dmax=6.0,
-    num_gaussians=50,
+    dmin: float = 0.0,
+    dmax: float = 6.0,
+    num_gaussians: int = 50,
 ):
     # Make sure x has positions.
     if not all(batch.pos[0][:] == batch.x[0][-3:]):
@@ -454,7 +454,7 @@ def build_config(args, args_override):
     return config
 
 
-def create_grid(base_config, sweep_file):
+def create_grid(base_config, sweep_file: str):
     def _flatten_sweeps(sweeps, root_key: str = "", sep: str = "."):
         flat_sweeps = []
         for key, value in sweeps.items():

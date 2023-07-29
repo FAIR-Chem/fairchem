@@ -37,8 +37,8 @@ class Approx:
         else:
             raise TypeError(f"Cannot convert {type(data)} to np.array")
 
-        self.rtol = rtol if rtol is not None else DEFAULT_RTOL
-        self.atol = atol if atol is not None else DEFAULT_ATOL
+        self.rtol: float = rtol if rtol is not None else DEFAULT_RTOL
+        self.atol: float = atol if atol is not None else DEFAULT_ATOL
         self.tol_repr = True
 
     def __repr__(self) -> str:

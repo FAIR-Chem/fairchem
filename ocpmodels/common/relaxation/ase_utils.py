@@ -66,9 +66,9 @@ class OCPCalculator(Calculator):
         config_yml=None,
         checkpoint=None,
         trainer=None,
-        cutoff=6,
-        max_neighbors=50,
-        cpu=True,
+        cutoff: int = 6,
+        max_neighbors: int = 50,
+        cpu: bool = True,
     ) -> None:
         """
         OCP-ASE Calculator
@@ -194,7 +194,7 @@ class OCPCalculator(Calculator):
         except NotImplementedError:
             logging.warning("Unable to load checkpoint!")
 
-    def calculate(self, atoms, properties, system_changes) -> None:
+    def calculate(self, atoms: Atoms, properties, system_changes) -> None:
         Calculator.calculate(self, atoms, properties, system_changes)
         data_object = self.a2g.convert(atoms)
         batch = data_list_collater([data_object], otf_graph=True)

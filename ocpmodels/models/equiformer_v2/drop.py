@@ -35,7 +35,7 @@ def drop_path(x, drop_prob: float = 0.0, training: bool = False):
 class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks)."""
 
-    def __init__(self, drop_prob=None):
+    def __init__(self, drop_prob=None) -> None:
         super(DropPath, self).__init__()
         self.drop_prob = drop_prob
 
@@ -51,7 +51,7 @@ class GraphDropPath(nn.Module):
     Consider batch for graph data when dropping paths.
     """
 
-    def __init__(self, drop_prob=None):
+    def __init__(self, drop_prob=None) -> None:
         super(GraphDropPath, self).__init__()
         self.drop_prob = drop_prob
 
@@ -70,7 +70,7 @@ class GraphDropPath(nn.Module):
 
 
 class EquivariantDropout(nn.Module):
-    def __init__(self, irreps, drop_prob):
+    def __init__(self, irreps, drop_prob) -> None:
         super(EquivariantDropout, self).__init__()
         self.irreps = irreps
         self.num_irreps = irreps.num_irreps
@@ -91,7 +91,7 @@ class EquivariantDropout(nn.Module):
 
 
 class EquivariantScalarsDropout(nn.Module):
-    def __init__(self, irreps, drop_prob):
+    def __init__(self, irreps, drop_prob) -> None:
         super(EquivariantScalarsDropout, self).__init__()
         self.irreps = irreps
         self.drop_prob = drop_prob
@@ -117,7 +117,7 @@ class EquivariantScalarsDropout(nn.Module):
 
 
 class EquivariantDropoutArraySphericalHarmonics(nn.Module):
-    def __init__(self, drop_prob, drop_graph=False):
+    def __init__(self, drop_prob, drop_graph: bool = False) -> None:
         super(EquivariantDropoutArraySphericalHarmonics, self).__init__()
         self.drop_prob = drop_prob
         self.drop = torch.nn.Dropout(drop_prob, True)

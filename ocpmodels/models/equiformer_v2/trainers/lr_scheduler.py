@@ -34,7 +34,7 @@ def cosine_lr_lambda(current_step, scheduler_params):
 
 
 class CosineLRLambda:
-    def __init__(self, scheduler_params):
+    def __init__(self, scheduler_params) -> None:
         self.warmup_epochs = scheduler_params["warmup_epochs"]
         self.lr_warmup_factor = scheduler_params["warmup_factor"]
         self.max_epochs = scheduler_params["epochs"]
@@ -69,7 +69,7 @@ def multistep_lr_lambda(current_step, scheduler_params):
 
 
 class MultistepLRLambda:
-    def __init__(self, scheduler_params):
+    def __init__(self, scheduler_params) -> None:
         self.warmup_epochs = scheduler_params["warmup_epochs"]
         self.lr_warmup_factor = scheduler_params["warmup_factor"]
         self.lr_decay_epochs = scheduler_params["decay_epochs"]
@@ -115,7 +115,7 @@ class LRScheduler:
         config (dict): Optim dict from the input config
     """
 
-    def __init__(self, optimizer, config):
+    def __init__(self, optimizer, config) -> None:
         self.optimizer = optimizer
         self.config = config.copy()
 
