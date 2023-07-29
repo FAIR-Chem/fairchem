@@ -5,6 +5,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import math
+from typing import Optional
 
 import torch
 
@@ -28,7 +29,11 @@ class Dense(torch.nn.Module):
     """
 
     def __init__(
-        self, in_features, out_features, bias: bool = False, activation=None
+        self,
+        in_features: int,
+        out_features: int,
+        bias: bool = False,
+        activation: Optional[str] = None,
     ) -> None:
         super().__init__()
 
