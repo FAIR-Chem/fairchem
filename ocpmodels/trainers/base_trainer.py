@@ -617,9 +617,10 @@ class BaseTrainer(ABC):
                         if self.scaler
                         else None,
                         "best_val_metric": self.best_val_metric,
-                        "primary_metric": self.config["eval_metrics"][
-                            "primary_metric"
-                        ],
+                        "primary_metric": self.evaluation_metrics.get(
+                            "primary_metric",
+                            self.evaluator.task_primary_metric[self.name],
+                        ),
                     },
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
