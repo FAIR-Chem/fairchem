@@ -4,6 +4,7 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+import logging
 import math
 from typing import Any, Optional
 
@@ -43,8 +44,10 @@ def setup_gp(config) -> None:
     rank = dist.get_rank()
 
     if rank == 0:
-        print("> initializing graph parallel with size {}".format(gp_size))
-        print("> initializing ddp with size {}".format(dp_size))
+        logging.info(
+            "> initializing graph parallel with size {}".format(gp_size)
+        )
+        logging.info("> initializing ddp with size {}".format(dp_size))
 
     groups = torch.arange(world_size).reshape(dp_size, gp_size)
     found = [x.item() for x in torch.where(groups == rank)]
