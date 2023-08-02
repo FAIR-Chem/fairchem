@@ -227,7 +227,16 @@ class TrajectoryLmdbDataset(LmdbDataset):
 
 
 def data_list_collater(data_list, otf_graph=False):
-    batch = Batch.from_data_list(data_list)
+    exclude_keys = {'cell_offsets', 'nads', 'edge_index', 'nh2o', 'nco2', 'raw_y', 'name', 'supercell'}
+
+    for data in data_list:
+        if isinstance(data.fid, int):
+            data.fid = torch.tensor([data.fid])
+        if isinstance(data.sid, int):
+            data.sid = torch.tensor([data.sid])
+
+    # batch = Batch.from_data_list(data_list)
+    batch = Batch.from_data_list(data_list, exclude_keys=exclude_keys)
 
     if not otf_graph:
         try:

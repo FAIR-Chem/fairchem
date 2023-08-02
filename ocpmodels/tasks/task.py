@@ -79,10 +79,23 @@ class ValidateTask(BaseTask):
             self.trainer.val_loader is not None
         ), "Val dataset is required for making predictions"
         assert self.config["checkpoint"]
-        self.trainer.validate(
+        metrics = self.trainer.validate(
             split="val",
             disable_tqdm=self.config.get("hide_eval_progressbar", False),
         )
+
+        # Save metrics
+        from pathlib import Path
+        from datetime import datetime
+        import json
+
+        val_name = Path(self.trainer.config["val_dataset"]["src"]).name
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        results_file = Path(self.trainer.config["cmd"]["results_dir"]) / "results" / f"{val_name}_{timestamp}.json"
+        results_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(results_file, "w") as rf:
+            json.dump(metrics, rf)
+        print(f"Saved results to: {results_file}")
 
 
 @registry.register_task("run-relaxations")
@@ -95,4 +108,17 @@ class RelxationTask(BaseTask):
             self.trainer.relax_dataset is not None
         ), "Relax dataset is required for making predictions"
         assert self.config["checkpoint"]
-        self.trainer.run_relaxations()
+        metrics = self.trainer.run_relaxations()
+
+        # Save metrics
+        from pathlib import Path
+        from datetime import datetime
+        import json
+
+        val_name = Path(self.trainer.config["val_dataset"]["src"]).name
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        results_file = Path(self.trainer.config["cmd"]["results_dir"]) / "relax" / f"{val_name}_{timestamp}.json"
+        results_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(results_file, "w") as rf:
+            json.dump(metrics, rf)
+        print(f"Saved results to: {results_file}")

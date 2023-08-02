@@ -201,10 +201,16 @@ class ForcesTrainer(BaseTrainer):
                     out["forces"]
                 )
             if per_image:
+                sids = batch_list[0].sid
+                fids = batch_list[0].fid
+                if isinstance(sids, torch.Tensor):
+                    sids = sids.tolist()
+                if isinstance(fids, torch.Tensor):
+                    fids = fids.tolist()
                 systemids = [
                     str(i) + "_" + str(j)
                     for i, j in zip(
-                        batch_list[0].sid.tolist(), batch_list[0].fid.tolist()
+                        sids, fids
                     )
                 ]
                 predictions["id"].extend(systemids)
@@ -673,7 +679,7 @@ class ForcesTrainer(BaseTrainer):
             if check_traj_files(
                 batch, self.config["task"]["relax_opt"].get("traj_dir", None)
             ):
-                logging.info(f"Skipping batch: {batch[0].sid.tolist()}")
+                logging.info(f"Skipping batch: {batch[0].sid}")
                 continue
 
             relaxed_batch = ml_relax(
@@ -747,6 +753,10 @@ class ForcesTrainer(BaseTrainer):
             )
 
             distutils.synchronize()
+
+            distutils.synchronize()
+            distutils.synchronize()
+
             if distutils.is_master():
                 gather_results = defaultdict(list)
                 full_path = os.path.join(
@@ -824,3 +834,4 @@ class ForcesTrainer(BaseTrainer):
             self.ema.restore()
 
         registry.unregister("set_deterministic_scatter")
+        return metrics

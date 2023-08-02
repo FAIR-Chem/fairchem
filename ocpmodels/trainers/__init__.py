@@ -12,3 +12,4 @@ __all__ = [
 from .base_trainer import BaseTrainer
 from .energy_trainer import EnergyTrainer
 from .forces_trainer import ForcesTrainer
+from ..models.equiformer_v2.trainers.eq2_forces_trainer import EquiformerV2ForcesTrainer

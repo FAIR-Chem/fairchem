@@ -33,6 +33,7 @@ class LRScheduler:
         if self.scheduler_type != "Null":
             self.scheduler = getattr(lr_scheduler, self.scheduler_type)
             scheduler_args = self.filter_kwargs(config)
+            print("Scheduler:", self.scheduler, scheduler_args)
             self.scheduler = self.scheduler(optimizer, **scheduler_args)
 
     def step(self, metrics=None, epoch=None):

@@ -15,3 +15,4 @@ from .painn.painn import PaiNN
 from .schnet import SchNetWrap as SchNet
 from .scn.scn import SphericalChannelNetwork
 from .spinconv import spinconv
+from .equiformer_v2.model.equiformer_v2 import EquiformerV2S_OC20

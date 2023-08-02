@@ -1,13 +1,13 @@
 trainer: forces
 
 dataset:
-  - src: data/s2ef/all/train/
+  - src: /fsx-open-catalyst/anuroops/oc20/082422/struct_to_energy_forces/train/200k  # data/s2ef/all/train/
     normalize_labels: True
     target_mean: -0.7554450631141663
     target_std: 2.887317180633545
     grad_target_mean: 0.0
     grad_target_std: 2.887317180633545
-  - src: data/s2ef/all/val_id/
+  - src: /fsx-open-catalyst/anuroops/oc20/082422/struct_to_energy_forces/val/id_30k  # data/s2ef/all/val_id/
 
 logger: tensorboard
 

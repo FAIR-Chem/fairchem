@@ -270,9 +270,13 @@ def setup_experimental_imports(project_root: Path):
         with open(ignore_file, "r") as f:
             for line in f.read().splitlines():
                 for ignored_file in (experimental_folder / line).rglob("*.py"):
-                    experimental_files.remove(
-                        ignored_file.resolve().absolute()
-                    )
+                    try:
+                        experimental_files.remove(
+                            ignored_file.resolve().absolute()
+                        )
+                    except:
+                        # print("ERROR ignoring:", ignored_file)
+                        pass
 
     for f in experimental_files:
         _import_local_file(f, project_root=project_root)
@@ -962,7 +966,10 @@ def check_traj_files(batch, traj_dir):
     if traj_dir is None:
         return False
     traj_dir = Path(traj_dir)
-    traj_files = [traj_dir / f"{id}.traj" for id in batch[0].sid.tolist()]
+    sids = batch[0].sid
+    if isinstance(batch[0].sid, torch.Tensor):
+        sids = sids.tolist()
+    traj_files = [traj_dir / f"{id}.traj" for id in sids]
     return all(fl.exists() for fl in traj_files)
 
 
