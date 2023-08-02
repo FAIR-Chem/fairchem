@@ -123,10 +123,14 @@ def main(*, num_batches: int = 16) -> None:
             elif str(flag) == "2":
                 mode = "unfitted"
                 logging.info("Only fitting unfitted variables.")
-            else:
-                print(flag)
+            elif str(flag) == "3":
                 logging.info("Exiting script")
                 sys.exit()
+            else:
+                logging.error(
+                    f"Unrecognized flag associated with fitted_scale_factors: '{flag}'. Exiting."
+                )
+                sys.exit(-1)
         # endregion
 
         # region get the output path

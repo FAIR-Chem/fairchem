@@ -13,7 +13,7 @@ from scipy import special as sp
 from scipy.optimize import brentq
 
 
-def Jn(r, n):
+def Jn(r: float, n: int):
     """
     numerical spherical bessel functions of order n
     """
@@ -53,7 +53,7 @@ def spherical_bessel_formulas(n):
     return j
 
 
-def bessel_basis(n, k):
+def bessel_basis(n: int, k: int):
     """
     Compute the sympy formulas for the normalized and rescaled spherical bessel functions up to
     order n (excluded) and maximum frequency k (excluded).
