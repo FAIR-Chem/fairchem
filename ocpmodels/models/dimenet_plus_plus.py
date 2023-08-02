@@ -32,7 +32,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from typing import Optional
+from typing import Callable, Optional, Union
 
 import torch
 from torch import nn
@@ -56,6 +56,9 @@ try:
 except ImportError:
     sym = None
 
+ActivationType = Callable[[torch.Tensor], torch.Tensor]
+ActivationInput = Union[str, ActivationType]
+
 
 class InteractionPPBlock(torch.nn.Module):
     def __init__(
@@ -67,11 +70,11 @@ class InteractionPPBlock(torch.nn.Module):
         num_radial: int,
         num_before_skip: int,
         num_after_skip: int,
-        act="silu",
+        activation_func: ActivationInput = "silu",
     ) -> None:
-        act = activation_resolver(act)
+        act = activation_resolver(activation_func)
         super(InteractionPPBlock, self).__init__()
-        self.act = act
+        self.act: Callable[[torch.Tensor], torch.Tensor] = act
 
         # Transformations of Bessel and spherical basis representations.
         self.lin_rbf1 = nn.Linear(num_radial, basis_emb_size, bias=False)
@@ -127,7 +130,14 @@ class InteractionPPBlock(torch.nn.Module):
         for res_layer in self.layers_after_skip:
             res_layer.reset_parameters()
 
-    def forward(self, x, rbf, sbf, idx_kj, idx_ji):
+    def forward(
+        self,
+        x: torch.Tensor,
+        rbf: torch.Tensor,
+        sbf: torch.Tensor,
+        idx_kj: torch.Tensor,
+        idx_ji: torch.Tensor,
+    ) -> torch.Tensor:
         # Initial transformations.
         x_ji = self.act(self.lin_ji(x))
         x_kj = self.act(self.lin_kj(x))
@@ -167,11 +177,11 @@ class OutputPPBlock(torch.nn.Module):
         out_emb_channels: int,
         out_channels: int,
         num_layers: int,
-        act: str = "silu",
+        activation_function: ActivationInput = "silu",
     ) -> None:
-        act = activation_resolver(act)
+        act = activation_resolver(activation_function)
         super(OutputPPBlock, self).__init__()
-        self.act = act
+        self.act: Callable[[torch.Tensor], torch.Tensor] = act
 
         self.lin_rbf = nn.Linear(num_radial, hidden_channels, bias=False)
         self.lin_up = nn.Linear(hidden_channels, out_emb_channels, bias=True)
@@ -190,7 +200,13 @@ class OutputPPBlock(torch.nn.Module):
             lin.bias.data.fill_(0)
         self.lin.weight.data.fill_(0)
 
-    def forward(self, x, rbf, i, num_nodes: Optional[int] = None):
+    def forward(
+        self,
+        x: torch.Tensor,
+        rbf: torch.Tensor,
+        i: torch.Tensor,
+        num_nodes: Optional[int] = None,
+    ):
         x = self.lin_rbf(rbf) * x
         x = scatter(x, i, dim=0, dim_size=num_nodes)
         x = self.lin_up(x)
@@ -242,9 +258,11 @@ class DimeNetPlusPlus(torch.nn.Module):
         num_before_skip: int = 1,
         num_after_skip: int = 2,
         num_output_layers: int = 3,
-        act: str = "silu",
+        activation_function: ActivationInput = "silu",
     ) -> None:
-        act = activation_resolver(act)
+        act: Callable[[torch.Tensor], torch.Tensor] = activation_resolver(
+            activation_function
+        )
 
         super(DimeNetPlusPlus, self).__init__()
 

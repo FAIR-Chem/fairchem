@@ -14,14 +14,16 @@ ase==3.21
 import argparse
 import multiprocessing as mp
 import os
+from typing import List, Tuple
 
 import ase.io
 import numpy as np
+from ase import Atoms
 from ase.data import covalent_radii
 from ase.io.pov import get_bondpairs
 
 
-def pov_from_atoms(mp_args) -> None:
+def pov_from_atoms(mp_args: Tuple[Atoms, int, str]) -> None:
     atoms, idx, out_path = mp_args
     # how many extra repeats to generate on either side to look infinite
     extra_cells = 2
@@ -72,7 +74,9 @@ def pov_from_atoms(mp_args) -> None:
     print(f"image {idx} completed!")
 
 
-def parallelize_generation(traj_path, out_path: str, n_procs) -> None:
+def parallelize_generation(
+    traj_path: str, out_path: str, n_procs: int
+) -> None:
     # make the covalent radii for O/C/N a little smaller to make bonds visible
     covalent_radii[6] = covalent_radii[6] * 0.7
     covalent_radii[7] = covalent_radii[7] * 0.7
@@ -87,7 +91,7 @@ def parallelize_generation(traj_path, out_path: str, n_procs) -> None:
     atoms_list = ase.io.read(traj_path, ":")
 
     # parallelizing image generation
-    mp_args_list = [
+    mp_args_list: List[Tuple[Atoms, int, str]] = [
         (atoms, idx, out_path) for idx, atoms in enumerate(atoms_list)
     ]
     pool = mp.Pool(processes=n_procs)

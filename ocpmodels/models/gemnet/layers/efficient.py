@@ -45,7 +45,9 @@ class EfficientInteractionDownProjection(torch.nn.Module):
         )
         he_orthogonal_init(self.weight)
 
-    def forward(self, rbf, sph, id_ca, id_ragged_idx):
+    def forward(
+        self, rbf: torch.Tensor, sph: torch.Tensor, id_ca, id_ragged_idx
+    ):
         """
 
         Arguments

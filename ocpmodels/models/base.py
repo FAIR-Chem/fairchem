@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -20,7 +21,10 @@ from ocpmodels.common.utils import (
 
 class BaseModel(nn.Module):
     def __init__(
-        self, num_atoms=None, bond_feat_dim=None, num_targets=None
+        self,
+        num_atoms=None,
+        bond_feat_dim=None,
+        num_targets: Optional[int] = None,
     ) -> None:
         super(BaseModel, self).__init__()
         self.num_atoms = num_atoms

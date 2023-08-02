@@ -1,6 +1,10 @@
+from typing import List
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from .so3 import SO3_Grid
 
 
 class ScaledSiLU(nn.Module):
@@ -9,10 +13,10 @@ class ScaledSiLU(nn.Module):
         self.inplace = inplace
         self.scale_factor = 1.6791767923989418
 
-    def forward(self, inputs):
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         return F.silu(inputs, inplace=self.inplace) * self.scale_factor
 
-    def extra_repr(self):
+    def extra_repr(self) -> str:
         str = "scale_factor={}".format(self.scale_factor)
         if self.inplace:
             str = str + ", inplace=True"
@@ -30,7 +34,7 @@ class ScaledSwiGLU(nn.Module):
         self.w = torch.nn.Linear(in_channels, 2 * out_channels, bias=bias)
         self.act = ScaledSiLU()
 
-    def forward(self, inputs):
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         w = self.w(inputs)
         w_1 = w.narrow(-1, 0, self.out_channels)
         w_1 = self.act(w_1)
@@ -50,7 +54,7 @@ class SwiGLU(nn.Module):
         self.w = torch.nn.Linear(in_channels, 2 * out_channels, bias=bias)
         self.act = torch.nn.SiLU()
 
-    def forward(self, inputs):
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         w = self.w(inputs)
         w_1 = w.narrow(-1, 0, self.out_channels)
         w_1 = self.act(w_1)
@@ -64,12 +68,12 @@ class SmoothLeakyReLU(torch.nn.Module):
         super().__init__()
         self.alpha = negative_slope
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x1 = ((1 + self.alpha) / 2) * x
         x2 = ((1 - self.alpha) / 2) * x * (2 * torch.sigmoid(x) - 1)
         return x1 + x2
 
-    def extra_repr(self):
+    def extra_repr(self) -> str:
         return "negative_slope={}".format(self.alpha)
 
 
@@ -79,10 +83,10 @@ class ScaledSmoothLeakyReLU(torch.nn.Module):
         self.act = SmoothLeakyReLU(0.2)
         self.scale_factor = 1.531320475574866
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.act(x) * self.scale_factor
 
-    def extra_repr(self):
+    def extra_repr(self) -> str:
         return "negative_slope={}, scale_factor={}".format(
             self.act.alpha, self.scale_factor
         )
@@ -123,7 +127,7 @@ class GateActivation(torch.nn.Module):
         )  # SwiGLU(self.num_channels, self.num_channels)  # #
         self.gate_act = torch.nn.Sigmoid()  # torch.nn.SiLU() # #
 
-    def forward(self, gating_scalars, input_tensors):
+    def forward(self, gating_scalars: torch.Tensor, input_tensors):
         """
         `gating_scalars`: shape [N, lmax * num_channels]
         `input_tensors`: shape  [N, (lmax + 1) ** 2, num_channels]
@@ -163,7 +167,7 @@ class S2Activation(torch.nn.Module):
         self.mmax = mmax
         self.act = torch.nn.SiLU()
 
-    def forward(self, inputs, SO3_grid):
+    def forward(self, inputs, SO3_grid: List[List[SO3_Grid]]):
         to_grid_mat = SO3_grid[self.lmax][self.mmax].get_to_grid_mat(
             device=None
         )  # `device` is not used
@@ -186,7 +190,12 @@ class SeparableS2Activation(torch.nn.Module):
         self.scalar_act = torch.nn.SiLU()
         self.s2_act = S2Activation(self.lmax, self.mmax)
 
-    def forward(self, input_scalars, input_tensors, SO3_grid):
+    def forward(
+        self,
+        input_scalars: torch.Tensor,
+        input_tensors,
+        SO3_grid: List[List[SO3_Grid]],
+    ) -> torch.Tensor:
         output_scalars = self.scalar_act(input_scalars)
         output_scalars = output_scalars.reshape(
             output_scalars.shape[0], 1, output_scalars.shape[-1]

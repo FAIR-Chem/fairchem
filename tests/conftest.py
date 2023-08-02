@@ -122,7 +122,7 @@ class ApproxExtension(AmberSnapshotExtension):
             serialized_data=serialized_data, snapshot_data=snapshot_data
         )
 
-    def serialize(self, data, **kwargs):
+    def serialize(self, data, **kwargs) -> str:
         # we override the existing serialization behavior
         # of the `pytest.approx()` object to serialize it into a special string.
         if isinstance(data, type(pytest.approx(np.array(0.0)))):

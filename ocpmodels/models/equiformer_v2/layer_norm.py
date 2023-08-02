@@ -284,7 +284,7 @@ class EquivariantRMSNormArraySphericalHarmonics(nn.Module):
         return f"{self.__class__.__name__}(lmax={self.lmax}, num_channels={self.num_channels}, eps={self.eps})"
 
     @torch.cuda.amp.autocast(enabled=False)
-    def forward(self, node_input):
+    def forward(self, node_input) -> torch.Tensor:
         """
         Assume input is of shape [N, sphere_basis, C]
         """
@@ -339,7 +339,7 @@ class EquivariantRMSNormArraySphericalHarmonicsV2(nn.Module):
         normalization: str = "component",
         centering: bool = True,
         std_balance_degrees: bool = True,
-    ):
+    ) -> None:
         super().__init__()
 
         self.lmax = lmax
@@ -469,7 +469,7 @@ class EquivariantDegreeLayerScale(nn.Module):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(lmax={self.lmax}, num_channels={self.num_channels}, scale_factor={self.scale_factor})"
 
-    def forward(self, node_input):
+    def forward(self, node_input: torch.Tensor) -> torch.Tensor:
         weight = torch.index_select(
             self.affine_weight, dim=1, index=self.expand_index
         )  # [1, (L_max + 1)**2, C]

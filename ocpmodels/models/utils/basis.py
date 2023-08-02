@@ -197,24 +197,24 @@ class Basis(nn.Module):
             # the rest of the columns are distances
             if "cat" in basis_type:
                 # concatenate
-                self.smearing_sine = SINESmearing(
+                self.smearing_sine: SINESmearing = SINESmearing(
                     num_in_features - 3, num_freqs
                 )
                 self.out_dim = sph.out_dim + (num_in_features - 3) * num_freqs
             elif "mul" in basis_type:
-                self.smearing_sine = SINESmearing(
+                self.smearing_sine: SINESmearing = SINESmearing(
                     num_in_features - 3, num_freqs
                 )
-                self.lin = torch.nn.Linear(
+                self.lin: torch.nn.Linear = torch.nn.Linear(
                     self.smearing_sine.out_dim, num_in_features - 3
                 )
                 self.out_dim = (num_in_features - 3) * sph.out_dim
             elif "m40" in basis_type:
                 dim = 40
-                self.smearing_sine = SINESmearing(
+                self.smearing_sine: SINESmearing = SINESmearing(
                     num_in_features - 3, num_freqs
                 )
-                self.lin = torch.nn.Linear(
+                self.lin: torch.nn.Linear = torch.nn.Linear(
                     self.smearing_sine.out_dim, dim
                 )  # make the output dimensionality comparable.
                 self.out_dim = dim * sph.out_dim
@@ -230,7 +230,7 @@ class Basis(nn.Module):
 
     def forward(
         self, x: torch.Tensor, edge_attr_sph: Optional[torch.Tensor] = None
-    ):
+    ) -> torch.Tensor:
         if "sph" in self.basis_type:
             if "nosine" not in self.basis_type:
                 x_sine = self.smearing_sine(

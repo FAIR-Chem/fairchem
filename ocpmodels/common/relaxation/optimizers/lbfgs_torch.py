@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 import logging
 from collections import deque
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import ase
 import torch
@@ -20,6 +20,8 @@ from ocpmodels.common.utils import radius_graph_pbc
 
 
 class LBFGS:
+    trajectories: Optional[List[ase.io.Trajectory]]
+
     def __init__(
         self,
         batch: Batch,
@@ -32,7 +34,7 @@ class LBFGS:
         device: str = "cuda:0",
         save_full_traj: bool = True,
         traj_dir: Optional[Path] = None,
-        traj_names=None,
+        traj_names: Optional[List[str]] = None,
         early_stop_batch: bool = False,
     ) -> None:
         self.batch = batch
@@ -89,7 +91,7 @@ class LBFGS:
 
         return max_forces.ge(self.fmax), energy, forces
 
-    def run(self, fmax, steps):
+    def run(self, fmax, steps: int):
         self.fmax = fmax
         self.steps = steps
 
@@ -100,6 +102,7 @@ class LBFGS:
 
         self.trajectories = None
         if self.traj_dir:
+            assert self.traj_names is not None
             self.traj_dir.mkdir(exist_ok=True, parents=True)
             self.trajectories = [
                 ase.io.Trajectory(self.traj_dir / f"{name}.traj_tmp", mode="w")
@@ -148,7 +151,7 @@ class LBFGS:
         forces: Optional[torch.Tensor],
         update_mask: torch.Tensor,
     ) -> None:
-        def determine_step(dr):
+        def determine_step(dr: torch.Tensor) -> torch.Tensor:
             steplengths = torch.norm(dr, dim=1)
             longest_steps = scatter(
                 steplengths, self.batch.batch, reduce="max"

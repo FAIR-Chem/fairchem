@@ -12,18 +12,19 @@ please use make_submission_file.py.
 import argparse
 import glob
 import os
+from typing import List
 
 import numpy as np
 
 
-def write_is2re_relaxations(path: str, filename: str, hybrid) -> None:
+def write_is2re_relaxations(path: str, filename: str, hybrid: bool) -> None:
     import ase.io
     from tqdm import tqdm
 
     submission_file = {}
 
     if not hybrid:
-        ids = []
+        ids: List[str] = []
         energies = []
         systems = glob.glob(os.path.join(path, "*.traj"))
         for system in tqdm(systems):

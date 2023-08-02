@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from .radial_function import RadialFunction
-from .so3 import SO3_Embedding
+from .so3 import SO3_Embedding, SO3_Rotation
 
 
 class EdgeDegreeEmbedding(torch.nn.Module):
@@ -33,10 +33,10 @@ class EdgeDegreeEmbedding(torch.nn.Module):
         sphere_channels: int,
         lmax_list: List[int],
         mmax_list: List[int],
-        SO3_rotation,
+        SO3_rotation: List[SO3_Rotation],
         mappingReduced,
         max_num_elements: int,
-        edge_channels_list,
+        edge_channels_list: List[int],
         use_atom_edge_embedding: bool,
         rescale_factor,
     ):
@@ -80,7 +80,9 @@ class EdgeDegreeEmbedding(torch.nn.Module):
 
         self.rescale_factor = rescale_factor
 
-    def forward(self, atomic_numbers, edge_distance, edge_index):
+    def forward(
+        self, atomic_numbers, edge_distance, edge_index
+    ) -> SO3_Embedding:
 
         if self.use_atom_edge_embedding:
             source_element = atomic_numbers[

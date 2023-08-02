@@ -11,7 +11,7 @@ LICENSE file in the root directory of this source tree.
 import math
 import numbers
 import random
-from typing import List
+from typing import List, Sequence, Union
 
 import torch
 import torch_geometric
@@ -30,11 +30,19 @@ class RandomRotate:
         axes (int, optional): The rotation axes. (default: `[0, 1, 2]`)
     """
 
-    def __init__(self, degrees, axes: List[int] = [0, 1, 2]) -> None:
+    def __init__(
+        self,
+        degrees: Union[float, Sequence[float]],
+        axes: List[int] = [0, 1, 2],
+    ) -> None:
         if isinstance(degrees, numbers.Number):
-            degrees = (-abs(degrees), abs(degrees))
-        assert isinstance(degrees, (tuple, list)) and len(degrees) == 2
-        self.degrees = degrees
+            my_degrees = (-abs(float(degrees)), abs(float(degrees)))
+        elif isinstance(degrees, (tuple, list)):
+            assert len(degrees) == 2
+            my_degrees = (degrees[0], degrees[1])
+        else:
+            raise Exception("Unrecognized type for degrees")
+        self.degrees = my_degrees
         self.axes = axes
 
     def __call__(self, data):

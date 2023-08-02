@@ -137,7 +137,11 @@ class PaiNN(BaseModel):
 
     # Borrowed from GemNet.
     def select_symmetric_edges(
-        self, tensor, mask, reorder_idx, inverse_neg
+        self,
+        tensor: torch.Tensor,
+        mask: torch.Tensor,
+        reorder_idx: torch.Tensor,
+        inverse_neg,
     ) -> torch.Tensor:
         # Mask out counter-edges
         tensor_directed = tensor[mask]
@@ -449,8 +453,8 @@ class PaiNN(BaseModel):
 class PaiNNMessage(MessagePassing):
     def __init__(
         self,
-        hidden_channels,
-        num_rbf,
+        hidden_channels: int,
+        num_rbf: int,
     ) -> None:
         super(PaiNNMessage, self).__init__(aggr="add", node_dim=0)
 
@@ -524,7 +528,7 @@ class PaiNNMessage(MessagePassing):
 
 
 class PaiNNUpdate(nn.Module):
-    def __init__(self, hidden_channels) -> None:
+    def __init__(self, hidden_channels: int) -> None:
         super().__init__()
         self.hidden_channels = hidden_channels
 
@@ -549,7 +553,9 @@ class PaiNNUpdate(nn.Module):
         nn.init.xavier_uniform_(self.xvec_proj[2].weight)
         self.xvec_proj[2].bias.data.fill_(0)
 
-    def forward(self, x, vec):
+    def forward(
+        self, x: torch.Tensor, vec: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         vec1, vec2 = torch.split(
             self.vec_proj(vec), self.hidden_channels, dim=-1
         )
@@ -575,7 +581,7 @@ class PaiNNUpdate(nn.Module):
 
 
 class PaiNNOutput(nn.Module):
-    def __init__(self, hidden_channels) -> None:
+    def __init__(self, hidden_channels: int) -> None:
         super().__init__()
         self.hidden_channels = hidden_channels
 
@@ -595,7 +601,7 @@ class PaiNNOutput(nn.Module):
         for layer in self.output_network:
             layer.reset_parameters()
 
-    def forward(self, x, vec):
+    def forward(self, x: torch.Tensor, vec: torch.Tensor) -> torch.Tensor:
         for layer in self.output_network:
             x, vec = layer(x, vec)
         return vec.squeeze()
@@ -609,8 +615,8 @@ class GatedEquivariantBlock(nn.Module):
 
     def __init__(
         self,
-        hidden_channels,
-        out_channels,
+        hidden_channels: int,
+        out_channels: int,
     ) -> None:
         super(GatedEquivariantBlock, self).__init__()
         self.out_channels = out_channels
@@ -636,7 +642,9 @@ class GatedEquivariantBlock(nn.Module):
         nn.init.xavier_uniform_(self.update_net[2].weight)
         self.update_net[2].bias.data.fill_(0)
 
-    def forward(self, x, v):
+    def forward(
+        self, x: torch.Tensor, v: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         vec1 = torch.norm(self.vec1_proj(v), dim=-2)
         vec2 = self.vec2_proj(v)
 

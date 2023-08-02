@@ -16,7 +16,7 @@ from .drop import EquivariantDropoutArraySphericalHarmonics, GraphDropPath
 from .layer_norm import get_normalization_layer
 from .radial_function import RadialFunction
 from .so2_ops import SO2_Convolution
-from .so3 import SO3_Embedding, SO3_LinearV2
+from .so3 import SO3_Embedding, SO3_Grid, SO3_LinearV2, SO3_Rotation
 
 
 class SO2EquivariantGraphAttention(torch.nn.Module):
@@ -64,14 +64,14 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         output_channels: int,
         lmax_list: List[int],
         mmax_list: List[int],
-        SO3_rotation,
+        SO3_rotation: List[SO3_Rotation],
         mappingReduced,
-        SO3_grid,
+        SO3_grid: List[List[SO3_Grid]],
         max_num_elements: int,
-        edge_channels_list,
+        edge_channels_list: List[int],
         use_atom_edge_embedding: bool = True,
         use_m_share_rad: bool = False,
-        activation="scaled_silu",
+        activation: str = "scaled_silu",
         use_s2_act_attn: bool = False,
         use_attn_renorm: bool = True,
         use_gate_act: bool = False,
@@ -397,7 +397,7 @@ class FeedForwardNetwork(torch.nn.Module):
         output_channels: int,
         lmax_list: List[int],
         mmax_list: List[int],
-        SO3_grid,
+        SO3_grid: List[List[SO3_Grid]],
         activation: str = "scaled_silu",
         use_gate_act: bool = False,
         use_grid_mlp: bool = False,
@@ -470,7 +470,7 @@ class FeedForwardNetwork(torch.nn.Module):
             self.hidden_channels, self.output_channels, lmax=self.max_lmax
         )
 
-    def forward(self, input_embedding):
+    def forward(self, input_embedding: SO3_Embedding):
 
         gating_scalars = None
         if self.use_grid_mlp:
@@ -581,9 +581,9 @@ class TransBlockV2(torch.nn.Module):
         output_channels: int,
         lmax_list: List[int],
         mmax_list: List[int],
-        SO3_rotation,
+        SO3_rotation: List[SO3_Rotation],
         mappingReduced,
-        SO3_grid,
+        SO3_grid: List[List[SO3_Grid]],
         max_num_elements: int,
         edge_channels_list: List[int],
         use_atom_edge_embedding: bool = True,
@@ -668,11 +668,11 @@ class TransBlockV2(torch.nn.Module):
 
     def forward(
         self,
-        x,  # SO3_Embedding
+        x: SO3_Embedding,
         atomic_numbers,
         edge_distance,
         edge_index,
-        batch,  # for GraphDropPath
+        batch: GraphDropPath,
     ):
 
         output_embedding = x

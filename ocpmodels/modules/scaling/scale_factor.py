@@ -2,7 +2,7 @@ import itertools
 import logging
 import math
 from contextlib import contextmanager
-from typing import Callable, Optional, TypedDict, Union
+from typing import Callable, Iterator, Optional, TypedDict, Union
 
 import torch
 import torch.nn as nn
@@ -53,7 +53,7 @@ class ScaleFactor(nn.Module):
     def _enforce_consistency(
         self,
         state_dict,
-        prefix,
+        prefix: str,
         _local_metadata,
         _strict,
         _missing_keys,
@@ -105,7 +105,7 @@ class ScaleFactor(nn.Module):
 
     @contextmanager
     @torch.jit.unused
-    def fit_context_(self):
+    def fit_context_(self) -> Iterator[None]:
         self.stats = _Stats(variance_in=0.0, variance_out=0.0, n_samples=0)
         yield
         del self.stats

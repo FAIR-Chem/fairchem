@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import Optional
+
 import numpy as np
 import torch
 
@@ -56,10 +58,10 @@ class EdgeEmbedding(torch.nn.Module):
 
     def __init__(
         self,
-        atom_features,
-        edge_features,
-        out_features,
-        activation=None,
+        atom_features: int,
+        edge_features: int,
+        out_features: int,
+        activation: Optional[str] = None,
     ) -> None:
         super().__init__()
         in_features = 2 * atom_features + edge_features
@@ -73,7 +75,7 @@ class EdgeEmbedding(torch.nn.Module):
         m_rbf,
         idx_s,
         idx_t,
-    ):
+    ) -> torch.Tensor:
         """
 
         Arguments

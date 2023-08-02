@@ -88,7 +88,7 @@ class Complete:
         return data
 
 
-def warmup_lr_lambda(current_step: int, optim_config):
+def warmup_lr_lambda(current_step: int, optim_config) -> float:
     """Returns a learning rate multiplier.
     Till `warmup_steps`, learning rate linearly increases to `initial_lr`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
@@ -207,7 +207,7 @@ def collate(data_list):
 
 def add_edge_distance_to_graph(
     batch,
-    device="cpu",
+    device: str = "cpu",
     dmin: float = 0.0,
     dmax: float = 6.0,
     num_gaussians: int = 50,
@@ -369,8 +369,8 @@ def create_dict_from_args(args: list, sep: str = "."):
     return return_dict
 
 
-def load_config(path: str, previous_includes: list = []):
-    path = Path(path)
+def load_config(path_str: str, previous_includes: list = []):
+    path = Path(path_str)
     if path in previous_includes:
         raise ValueError(
             f"Cyclic config include detected. {path} included in sequence {previous_includes}."

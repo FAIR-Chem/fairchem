@@ -34,7 +34,9 @@ def CalcSpherePoints(num_points: int, device: str = "cpu") -> torch.Tensor:
     return points * (scalar.view(-1, 1))
 
 
-def CalcSpherePointsRandom(num_points: int, device) -> torch.Tensor:
+def CalcSpherePointsRandom(
+    num_points: int, device: torch.device
+) -> torch.Tensor:
     pts = 2.0 * (torch.rand(num_points, 3, device=device) - 0.5)
     radius = torch.sum(pts**2, dim=1)
     while torch.max(radius) > 1.0:

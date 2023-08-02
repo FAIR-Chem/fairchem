@@ -27,7 +27,11 @@ class Dense(torch.nn.Module):
     """
 
     def __init__(
-        self, in_features, out_features, bias: bool = False, activation=None
+        self,
+        in_features: int,
+        out_features: int,
+        bias: bool = False,
+        activation=None,
     ) -> None:
         super().__init__()
 
@@ -108,7 +112,7 @@ class ResidualLayer(torch.nn.Module):
         )
         self.inv_sqrt_2 = 1 / math.sqrt(2)
 
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         x = self.dense_mlp(input)
         x = input + x
         x = x * self.inv_sqrt_2

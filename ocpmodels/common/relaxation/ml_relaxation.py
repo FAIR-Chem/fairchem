@@ -25,7 +25,7 @@ def ml_relax(
     steps: int,
     fmax: float,
     relax_opt,
-    save_full_traj,
+    save_full_traj: bool,
     device: str = "cuda:0",
     transform=None,
     early_stop_batch: bool = False,
@@ -40,7 +40,7 @@ def ml_relax(
         fmax: float
             Structure relaxation terminates when the max force
             of the system is no bigger than fmax.
-        relax_opt: str
+        relax_opt: dict
             Optimizer and corresponding parameters to be used for structure relaxations.
         save_full_traj: bool
             Whether to save out the full ASE trajectory. If False, only save out initial and final frames.

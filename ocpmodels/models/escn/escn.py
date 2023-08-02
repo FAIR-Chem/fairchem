@@ -524,7 +524,7 @@ class LayerBlock(torch.nn.Module):
 
     def forward(
         self,
-        x,
+        x: SO3_Embedding,
         atomic_numbers,
         edge_distance,
         edge_index,

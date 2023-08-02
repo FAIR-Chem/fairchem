@@ -25,6 +25,7 @@ import importlib
 from typing import Any, Callable, Dict, List, TypeVar, Union
 
 R = TypeVar("R")
+T = TypeVar("T")
 NestedDict = Dict[str, Union[str, Callable[..., Any], "NestedDict"]]
 
 
@@ -145,7 +146,7 @@ class Registry:
                 ...
         """
 
-        def wrap(func: Callable[..., R]) -> Callable[..., R]:
+        def wrap(func: T) -> T:
             from ocpmodels.common.logger import Logger
 
             assert issubclass(

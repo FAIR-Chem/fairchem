@@ -2,7 +2,9 @@ import torch
 
 
 @torch.jit.script
-def gaussian(x: torch.Tensor, mean, std) -> torch.Tensor:
+def gaussian(
+    x: torch.Tensor, mean: torch.nn.Parameter, std: torch.Tensor
+) -> torch.Tensor:
     pi = 3.14159
     a = (2 * pi) ** 0.5
     return torch.exp(-0.5 * (((x - mean) / std) ** 2)) / (a * std)

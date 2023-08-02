@@ -5,7 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional
+from typing import Dict, Optional
 
 import torch
 
@@ -18,7 +18,7 @@ class Normalizer:
         tensor: Optional[torch.Tensor] = None,
         mean=None,
         std=None,
-        device=None,
+        device: Optional[torch.device] = None,
     ) -> None:
         """tensor is taken as a sample to calculate the mean and std"""
         if tensor is None and mean is None:
@@ -38,7 +38,7 @@ class Normalizer:
             self.mean = torch.tensor(mean).to(device)
             self.std = torch.tensor(std).to(device)
 
-    def to(self, device) -> None:
+    def to(self, device: torch.device) -> None:
         self.mean = self.mean.to(device)
         self.std = self.std.to(device)
 
@@ -51,6 +51,6 @@ class Normalizer:
     def state_dict(self):
         return {"mean": self.mean, "std": self.std}
 
-    def load_state_dict(self, state_dict) -> None:
+    def load_state_dict(self, state_dict: Dict[str, torch.Tensor]) -> None:
         self.mean = state_dict["mean"].to(self.mean.device)
         self.std = state_dict["std"].to(self.mean.device)

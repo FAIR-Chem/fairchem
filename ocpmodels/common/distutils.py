@@ -130,7 +130,10 @@ def synchronize() -> None:
 
 
 def broadcast(
-    tensor: torch.Tensor, src, group=dist.group.WORLD, async_op: bool = False
+    tensor: torch.Tensor,
+    src: torch.Tensor,
+    group=dist.group.WORLD,
+    async_op: bool = False,
 ) -> None:
     if get_world_size() == 1:
         return

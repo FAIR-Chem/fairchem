@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 import logging
 import sys
 import time
+from typing import Callable, List
 
 import numpy as np
 import torch
@@ -30,6 +31,8 @@ try:
     from e3nn import o3
 except ImportError:
     pass
+
+ActivationFunction = Callable[[torch.Tensor], torch.Tensor]
 
 
 @registry.register_model("scn")
@@ -131,7 +134,7 @@ class SphericalChannelNetwork(BaseModel):
         self.lmax = lmax
         self.mmax = mmax
         self.basis_width_scalar = basis_width_scalar
-        self.sphere_basis = (self.lmax + 1) ** 2
+        self.sphere_basis: int = (self.lmax + 1) ** 2
         self.use_grid = use_grid
         self.distance_function = distance_function
 
@@ -184,12 +187,16 @@ class SphericalChannelNetwork(BaseModel):
             )
 
         if num_resolutions == 1:
-            self.num_resolutions = 1
-            self.hidden_channels_list = torch.tensor([self.hidden_channels])
-            self.lmax_list = torch.tensor(
+            self.num_resolutions: int = 1
+            self.hidden_channels_list: torch.Tensor = torch.tensor(
+                [self.hidden_channels]
+            )
+            self.lmax_list: torch.Tensor = torch.tensor(
                 [self.lmax, -1]
             )  # always end with -1
-            self.cutoff_list = torch.tensor([self.max_num_neighbors - 0.01])
+            self.cutoff_list: torch.Tensor = torch.tensor(
+                [self.max_num_neighbors - 0.01]
+            )
         if num_resolutions == 2:
             self.num_resolutions = 2
             self.hidden_channels_list = torch.tensor(
@@ -200,7 +207,7 @@ class SphericalChannelNetwork(BaseModel):
                 [12 - 0.01, self.max_num_neighbors - 0.01]
             )
 
-        self.sphharm_list = []
+        self.sphharm_list: List[SphericalHarmonicsHelper] = []
         for i in range(self.num_resolutions):
             self.sphharm_list.append(
                 SphericalHarmonicsHelper(
@@ -248,7 +255,7 @@ class SphericalChannelNetwork(BaseModel):
 
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
-        self.device = data.pos.device
+        self.device: torch.device = data.pos.device
         self.num_atoms = len(data.batch)
         self.batch_size = len(data.natoms)
         # torch.autograd.set_detect_anomaly(True)
@@ -427,7 +434,9 @@ class SphericalChannelNetwork(BaseModel):
         else:
             return energy, forces
 
-    def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
+    def _init_edge_rot_mat(
+        self, data, edge_index, edge_distance_vec: torch.Tensor
+    ) -> torch.Tensor:
         edge_vec_0 = edge_distance_vec
         edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 
@@ -504,7 +513,10 @@ class SphericalChannelNetwork(BaseModel):
         return edge_rot_mat.detach()
 
     def _rank_edge_distances(
-        self, edge_distance, edge_index, max_num_neighbors: int
+        self,
+        edge_distance: torch.Tensor,
+        edge_index: torch.Tensor,
+        max_num_neighbors: int,
     ) -> torch.Tensor:
         device = edge_distance.device
         # Create an index map to map distances from atom_distance to distance_sort
@@ -558,17 +570,17 @@ class EdgeBlock(torch.nn.Module):
     def __init__(
         self,
         num_resolutions: int,
-        sphere_channels_reduce,
-        hidden_channels_list,
+        sphere_channels_reduce: int,
+        hidden_channels_list: List[int],
         cutoff_list,
-        sphharm_list,
-        sphere_channels,
+        sphharm_list: List[SphericalHarmonicsHelper],
+        sphere_channels: int,
         distance_expansion,
         max_num_elements: int,
         num_basis_functions: int,
         num_gaussians: int,
         use_grid: bool,
-        act,
+        act: ActivationFunction,
     ) -> None:
         super(EdgeBlock, self).__init__()
         self.num_resolutions = num_resolutions
@@ -644,10 +656,10 @@ class EdgeBlock(torch.nn.Module):
 
     def forward(
         self,
-        x,
+        x: torch.Tensor,
         atomic_numbers,
         edge_distance,
-        edge_index,
+        edge_index: torch.Tensor,
         cutoff_index,
     ):
         ###############################################################
@@ -725,11 +737,11 @@ class EdgeBlock(torch.nn.Module):
 class MessageBlock(torch.nn.Module):
     def __init__(
         self,
-        sphere_channels_reduce,
-        hidden_channels,
-        num_basis_functions,
-        sphharm,
-        act,
+        sphere_channels_reduce: int,
+        hidden_channels: int,
+        num_basis_functions: int,
+        sphharm: SphericalHarmonicsHelper,
+        act: ActivationFunction,
     ) -> None:
         super(MessageBlock, self).__init__()
         self.act = act
@@ -796,11 +808,11 @@ class MessageBlock(torch.nn.Module):
 class DistanceBlock(torch.nn.Module):
     def __init__(
         self,
-        in_channels,
+        in_channels: int,
         num_basis_functions: int,
         distance_expansion,
         max_num_elements: int,
-        act,
+        act: ActivationFunction,
     ) -> None:
         super(DistanceBlock, self).__init__()
         self.in_channels = in_channels

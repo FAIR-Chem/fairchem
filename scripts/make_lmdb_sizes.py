@@ -25,7 +25,7 @@ def get_data(index):
     return index, natoms, neighbors
 
 
-def main(args) -> None:
+def main(args: argparse.Namespace) -> None:
     path = assert_is_instance(args.data_path, str)
     global dataset
     if os.path.isdir(path):
@@ -34,12 +34,14 @@ def main(args) -> None:
     elif os.path.isfile(path):
         dataset = SinglePointLmdbDataset({"src": path})
         outpath = os.path.join(os.path.dirname(path), "metadata.npz")
+    else:
+        raise RuntimeError(f"Invalid path: {path}")
 
     output_indices = range(len(dataset))
 
     pool = mp.Pool(assert_is_instance(args.num_workers, int))
     outputs = list(
-        tqdm(pool.imap(get_data, output_indices), total=len(indices))
+        tqdm(pool.imap(get_data, output_indices), total=len(output_indices))
     )
 
     indices = []

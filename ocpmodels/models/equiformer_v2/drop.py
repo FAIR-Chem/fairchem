@@ -72,7 +72,7 @@ class GraphDropPath(nn.Module):
 
 
 class EquivariantDropout(nn.Module):
-    def __init__(self, irreps, drop_prob: float) -> None:
+    def __init__(self, irreps: o3.Irreps, drop_prob: float) -> None:
         super(EquivariantDropout, self).__init__()
         self.irreps = irreps
         self.num_irreps = irreps.num_irreps
@@ -93,7 +93,7 @@ class EquivariantDropout(nn.Module):
 
 
 class EquivariantScalarsDropout(nn.Module):
-    def __init__(self, irreps, drop_prob: float) -> None:
+    def __init__(self, irreps: o3.Irreps, drop_prob: float) -> None:
         super(EquivariantScalarsDropout, self).__init__()
         self.irreps = irreps
         self.drop_prob = drop_prob
