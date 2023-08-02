@@ -4,6 +4,7 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+import logging
 import math
 import time
 from math import pi as PI
@@ -206,7 +207,7 @@ class spinconv(BaseModel):
         )
         if self.show_timing_info is True:
             torch.cuda.synchronize()
-            print(
+            logging.info(
                 "Memory: {}\t{}\t{}".format(
                     len(edge_index[0]),
                     torch.cuda.memory_allocated()
@@ -590,13 +591,13 @@ class spinconv(BaseModel):
         edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 
         if torch.min(edge_vec_0_distance) < 0.0001:
-            print(
+            logging.error(
                 "Error edge_vec_0_distance: {}".format(
                     torch.min(edge_vec_0_distance)
                 )
             )
             (minval, minidx) = torch.min(edge_vec_0_distance, 0)
-            print(
+            logging.error(
                 "Error edge_vec_0_distance: {} {} {} {} {}".format(
                     minidx,
                     edge_index[0, minidx],
@@ -618,7 +619,7 @@ class spinconv(BaseModel):
         edge_vec_2_distance = torch.sqrt(torch.sum(edge_vec_2**2, dim=1))
 
         if torch.min(edge_vec_2_distance) < 0.000001:
-            print(
+            logging.error(
                 "Error edge_vec_2_distance: {}".format(
                     torch.min(edge_vec_2_distance)
                 )

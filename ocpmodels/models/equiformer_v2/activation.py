@@ -21,7 +21,9 @@ class ScaledSiLU(nn.Module):
 
 # Reference: https://github.com/facebookresearch/llama/blob/main/llama/model.py#L175
 class ScaledSwiGLU(nn.Module):
-    def __init__(self, in_channels, out_channels, bias: bool = True) -> None:
+    def __init__(
+        self, in_channels: int, out_channels: int, bias: bool = True
+    ) -> None:
         super(ScaledSwiGLU, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -39,7 +41,9 @@ class ScaledSwiGLU(nn.Module):
 
 # Reference: https://github.com/facebookresearch/llama/blob/main/llama/model.py#L175
 class SwiGLU(nn.Module):
-    def __init__(self, in_channels, out_channels, bias: bool = True) -> None:
+    def __init__(
+        self, in_channels: int, out_channels: int, bias: bool = True
+    ) -> None:
         super(SwiGLU, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -89,12 +93,12 @@ class ScaledSigmoid(torch.nn.Module):
         super().__init__()
         self.scale_factor = 1.8467055342154763
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return torch.sigmoid(x) * self.scale_factor
 
 
 class GateActivation(torch.nn.Module):
-    def __init__(self, lmax, mmax, num_channels) -> None:
+    def __init__(self, lmax: int, mmax: int, num_channels: int) -> None:
         super().__init__()
 
         self.lmax = lmax
@@ -153,7 +157,7 @@ class S2Activation(torch.nn.Module):
     Assume we only have one resolution
     """
 
-    def __init__(self, lmax, mmax) -> None:
+    def __init__(self, lmax: int, mmax: int) -> None:
         super().__init__()
         self.lmax = lmax
         self.mmax = mmax
@@ -173,7 +177,7 @@ class S2Activation(torch.nn.Module):
 
 
 class SeparableS2Activation(torch.nn.Module):
-    def __init__(self, lmax, mmax) -> None:
+    def __init__(self, lmax: int, mmax: int) -> None:
         super().__init__()
 
         self.lmax = lmax

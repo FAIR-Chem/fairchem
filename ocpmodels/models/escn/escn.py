@@ -355,7 +355,7 @@ class eSCN(BaseModel):
 
         if self.show_timing_info is True:
             torch.cuda.synchronize()
-            print(
+            logging.info(
                 "{} Time: {}\tMemory: {}\t{}".format(
                     self.counter,
                     time.time() - start_time,
@@ -378,13 +378,13 @@ class eSCN(BaseModel):
 
         # Make sure the atoms are far enough apart
         if torch.min(edge_vec_0_distance) < 0.0001:
-            print(
+            logging.error(
                 "Error edge_vec_0_distance: {}".format(
                     torch.min(edge_vec_0_distance)
                 )
             )
             (minval, minidx) = torch.min(edge_vec_0_distance, 0)
-            print(
+            logging.error(
                 "Error edge_vec_0_distance: {} {} {} {} {}".format(
                     minidx,
                     edge_index[0, minidx],

@@ -63,7 +63,7 @@ class DimeNetWrap(DimeNet, BaseModel):
     def __init__(
         self,
         num_atoms: int,
-        bond_feat_dim,  # not used
+        bond_feat_dim: int,  # not used
         num_targets: int,
         use_pbc: bool = True,
         regress_forces: bool = True,

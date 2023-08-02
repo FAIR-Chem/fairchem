@@ -234,7 +234,7 @@ class EnergyTrainer(BaseTrainer):
                     log_str = [
                         "{}: {:.2e}".format(k, v) for k, v in log_dict.items()
                     ]
-                    print(", ".join(log_str))
+                    logging.info(", ".join(log_str))
                     self.metrics = {}
 
                 if self.logger is not None:

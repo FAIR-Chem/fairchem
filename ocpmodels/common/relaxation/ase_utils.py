@@ -12,6 +12,7 @@ Environment (ASE)
 import copy
 import logging
 import os
+from typing import Optional
 
 import torch
 import yaml
@@ -63,9 +64,9 @@ class OCPCalculator(Calculator):
 
     def __init__(
         self,
-        config_yml=None,
-        checkpoint=None,
-        trainer=None,
+        config_yml: Optional[str] = None,
+        checkpoint: Optional[str] = None,
+        trainer: Optional[str] = None,
         cutoff: int = 6,
         max_neighbors: int = 50,
         cpu: bool = True,

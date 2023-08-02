@@ -1,3 +1,5 @@
+import logging
+
 import torch
 
 
@@ -8,7 +10,7 @@ def init_edge_rot_mat(edge_distance_vec):
     # Make sure the atoms are far enough apart
     # assert torch.min(edge_vec_0_distance) < 0.0001
     if torch.min(edge_vec_0_distance) < 0.0001:
-        print(
+        logging.error(
             "Error edge_vec_0_distance: {}".format(
                 torch.min(edge_vec_0_distance)
             )

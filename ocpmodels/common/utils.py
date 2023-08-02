@@ -88,7 +88,7 @@ class Complete:
         return data
 
 
-def warmup_lr_lambda(current_step, optim_config):
+def warmup_lr_lambda(current_step: int, optim_config):
     """Returns a learning rate multiplier.
     Till `warmup_steps`, learning rate linearly increases to `initial_lr`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
@@ -493,7 +493,7 @@ def save_experiment_log(args, jobs, configs):
     log_file.parent.mkdir(exist_ok=True, parents=True)
     with open(log_file, "w") as f:
         for job, config in zip(jobs, configs):
-            print(
+            logging.info(
                 json.dumps(
                     {
                         "config": config,
@@ -512,8 +512,8 @@ def get_pbc_distances(
     cell,
     cell_offsets,
     neighbors,
-    return_offsets=False,
-    return_distance_vec=False,
+    return_offsets: bool = False,
+    return_distance_vec: bool = False,
 ):
     row, col = edge_index
 
@@ -553,7 +553,7 @@ def radius_graph_pbc(
     data,
     radius,
     max_num_neighbors_threshold,
-    enforce_max_neighbors_strictly=False,
+    enforce_max_neighbors_strictly: bool = False,
     pbc=[True, True, True],
 ):
     device = data.pos.device
@@ -731,8 +731,8 @@ def get_max_neighbors_mask(
     index,
     atom_distance,
     max_num_neighbors_threshold,
-    degeneracy_tolerance=0.01,
-    enforce_max_strictly=False,
+    degeneracy_tolerance: float = 0.01,
+    enforce_max_strictly: bool = False,
 ):
     """
     Give a mask that filters out edges so that each atom has at most
@@ -908,12 +908,12 @@ def merge_dicts(dict1: dict, dict2: dict):
 
 
 class SeverityLevelBetween(logging.Filter):
-    def __init__(self, min_level, max_level) -> None:
+    def __init__(self, min_level: int, max_level: int) -> None:
         super().__init__()
         self.min_level = min_level
         self.max_level = max_level
 
-    def filter(self, record):
+    def filter(self, record) -> bool:
         return self.min_level <= record.levelno < self.max_level
 
 

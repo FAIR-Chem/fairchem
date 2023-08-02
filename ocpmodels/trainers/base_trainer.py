@@ -206,7 +206,7 @@ class BaseTrainer(ABC):
             )
 
         if distutils.is_master():
-            print(yaml.dump(self.config, default_flow_style=False))
+            logging.info(yaml.dump(self.config, default_flow_style=False))
         self.load()
 
         self.evaluator = Evaluator(task=name)
