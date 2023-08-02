@@ -259,10 +259,14 @@ class ForcesTrainer(BaseTrainer):
                     self.ema.restore()
                 return predictions
 
-        predictions["forces"] = np.array(predictions["forces"])
-        predictions["chunk_idx"] = np.array(predictions["chunk_idx"])
+        predictions["forces"] = np.array(predictions["forces"], dtype=object)
+        predictions["chunk_idx"] = np.array(
+            predictions["chunk_idx"],
+        )
         predictions["energy"] = np.array(predictions["energy"])
-        predictions["id"] = np.array(predictions["id"])
+        predictions["id"] = np.array(
+            predictions["id"],
+        )
         self.save_results(
             predictions, results_file, keys=["energy", "forces", "chunk_idx"]
         )

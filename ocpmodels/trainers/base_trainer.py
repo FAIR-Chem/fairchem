@@ -790,18 +790,24 @@ class BaseTrainer(ABC):
             # Because of how distributed sampler works, some system ids
             # might be repeated to make no. of samples even across GPUs.
             _, idx = np.unique(gather_results["ids"], return_index=True)
-            gather_results["ids"] = np.array(gather_results["ids"])[idx]
+            gather_results["ids"] = np.array(
+                gather_results["ids"],
+            )[idx]
             for k in keys:
                 if k == "forces":
                     gather_results[k] = np.concatenate(
-                        np.array(gather_results[k])[idx]
+                        np.array(gather_results[k], dtype=object)[idx]
                     )
                 elif k == "chunk_idx":
                     gather_results[k] = np.cumsum(
-                        np.array(gather_results[k])[idx]
+                        np.array(
+                            gather_results[k],
+                        )[idx]
                     )[:-1]
                 else:
-                    gather_results[k] = np.array(gather_results[k])[idx]
+                    gather_results[k] = np.array(
+                        gather_results[k],
+                    )[idx]
 
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
