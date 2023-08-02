@@ -157,7 +157,7 @@ def repeat_blocks(
     )
 
     # Get total size of output array, as needed to initialize output indexing array
-    N = (sizes * repeats).sum()
+    N = int((sizes * repeats).sum())
 
     # Initialize indexing array with ones as we need to setup incremental indexing
     # within each group when cumulatively summed at the final stage.

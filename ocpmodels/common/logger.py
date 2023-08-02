@@ -28,7 +28,7 @@ class Logger(ABC):
         Monitor parameters and gradients.
         """
 
-    def log(self, update_dict, step=None, split: str = ""):
+    def log(self, update_dict, step: int, split: str = ""):
         """
         Log some values.
         """
@@ -41,11 +41,11 @@ class Logger(ABC):
         return update_dict
 
     @abstractmethod
-    def log_plots(self, plots):
+    def log_plots(self, plots) -> None:
         pass
 
     @abstractmethod
-    def mark_preempting(self):
+    def mark_preempting(self) -> None:
         pass
 
 
@@ -71,7 +71,7 @@ class WandBLogger(Logger):
     def watch(self, model) -> None:
         wandb.watch(model)
 
-    def log(self, update_dict, step=None, split: str = "") -> None:
+    def log(self, update_dict, step: int, split: str = "") -> None:
         update_dict = super().log(update_dict, step, split)
         wandb.log(update_dict, step=int(step))
 
@@ -97,7 +97,7 @@ class TensorboardLogger(Logger):
         )
         return False
 
-    def log(self, update_dict, step=None, split: str = ""):
+    def log(self, update_dict, step: int, split: str = ""):
         update_dict = super().log(update_dict, step, split)
         for key in update_dict:
             if torch.is_tensor(update_dict[key]):
@@ -108,8 +108,8 @@ class TensorboardLogger(Logger):
                 )
                 self.writer.add_scalar(key, update_dict[key], step)
 
-    def mark_preempting(self):
+    def mark_preempting(self) -> None:
         pass
 
-    def log_plots(self, plots):
+    def log_plots(self, plots) -> None:
         pass
