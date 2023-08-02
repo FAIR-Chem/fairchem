@@ -8,6 +8,7 @@ import logging
 import math
 import time
 from math import pi as PI
+from typing import Callable
 
 import torch
 import torch.nn as nn
@@ -179,7 +180,7 @@ class spinconv(BaseModel):
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
         self.device = data.pos.device
-        self.num_atoms = len(data.batch)
+        self.num_atoms: int = len(data.batch)
         self.batch_size = len(data.natoms)
 
         pos = data.pos
@@ -443,7 +444,7 @@ class spinconv(BaseModel):
         target_node_index, neigh_count = torch.unique_consecutive(
             edge_index[1], return_counts=True
         )
-        max_neighbors = torch.max(neigh_count)
+        max_neighbors: int = torch.max(neigh_count)
 
         # handle special case where an atom doesn't have any neighbors
         target_neigh_count = torch.zeros(self.num_atoms, device=device).long()
@@ -536,7 +537,9 @@ class spinconv(BaseModel):
 
         return edge_index, edge_distance, edge_distance_vec
 
-    def _random_rot_mat(self, num_matrices: int, device) -> torch.Tensor:
+    def _random_rot_mat(
+        self, num_matrices: int, device: torch.device
+    ) -> torch.Tensor:
         ang_a = 2.0 * math.pi * torch.rand(num_matrices, device=device)
         ang_b = 2.0 * math.pi * torch.rand(num_matrices, device=device)
         ang_c = 2.0 * math.pi * torch.rand(num_matrices, device=device)
@@ -711,7 +714,11 @@ class spinconv(BaseModel):
         )
 
     def _project2D_init(
-        self, source_edge, target_edge, rot_mat, edge_distance_vec
+        self,
+        source_edge,
+        target_edge,
+        rot_mat,
+        edge_distance_vec: torch.Tensor,
     ):
         edge_distance_norm = F.normalize(edge_distance_vec)
         source_edge_offset = edge_distance_norm[source_edge]
@@ -911,7 +918,7 @@ class ForceOutputBlock(torch.nn.Module):
         max_num_elements: int,
         sphere_message: str,
         act,
-        lmax,
+        lmax: int,
     ) -> None:
         super(ForceOutputBlock, self).__init__()
         self.in_hidden_channels = in_hidden_channels
@@ -984,7 +991,7 @@ class SpinConvBlock(torch.nn.Module):
         sphere_size_long: int,
         sphere_message: str,
         act,
-        lmax,
+        lmax: int,
     ) -> None:
         super(SpinConvBlock, self).__init__()
         self.in_hidden_channels = in_hidden_channels
@@ -994,7 +1001,7 @@ class SpinConvBlock(torch.nn.Module):
         self.sphere_message = sphere_message
         self.act = act
         self.lmax = lmax
-        self.num_groups = self.in_hidden_channels // 8
+        self.num_groups: int = self.in_hidden_channels // 8
 
         self.ProjectLatLongSphere = ProjectLatLongSphere(
             sphere_size_lat, sphere_size_long
@@ -1090,7 +1097,7 @@ class EmbeddingBlock(torch.nn.Module):
         embedding_size: int,
         num_embedding_basis: int,
         max_num_elements: int,
-        act,
+        act: Callable[[torch.Tensor], torch.Tensor],
     ) -> None:
         super(EmbeddingBlock, self).__init__()
         self.in_hidden_channels = in_hidden_channels
@@ -1153,7 +1160,7 @@ class DistanceBlock(torch.nn.Module):
         in_channels: int,
         out_channels: int,
         max_num_elements: int,
-        scalar_max,
+        scalar_max: float,
         distance_expansion,
         scale_distances,
     ) -> None:
@@ -1245,11 +1252,13 @@ class Swish(torch.nn.Module):
     def __init__(self) -> None:
         super(Swish, self).__init__()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x * torch.sigmoid(x)
 
 
 class GaussianSmearing(torch.nn.Module):
+    offset: torch.Tensor
+
     def __init__(
         self,
         start: float = -5.0,
@@ -1264,6 +1273,6 @@ class GaussianSmearing(torch.nn.Module):
         )
         self.register_buffer("offset", offset)
 
-    def forward(self, dist) -> torch.Tensor:
+    def forward(self, dist: torch.Tensor) -> torch.Tensor:
         dist = dist.view(-1, 1) - self.offset.view(1, -1)
         return torch.exp(self.coeff * torch.pow(dist, 2))

@@ -200,6 +200,8 @@ class SO3_Embedding:
         dtype:                  type of the output tensors
     """
 
+    embedding: torch.Tensor
+
     def __init__(
         self,
         length: int,
@@ -244,7 +246,7 @@ class SO3_Embedding:
         return clone
 
     # Initialize an embedding of irreps
-    def set_embedding(self, embedding) -> None:
+    def set_embedding(self, embedding: torch.Tensor) -> None:
         self.length = len(embedding)
         self.embedding = embedding
 
@@ -298,7 +300,10 @@ class SO3_Embedding:
 
     # Rotate the embedding
     def _rotate(
-        self, SO3_rotation, lmax_list: List[int], mmax_list: List[int]
+        self,
+        SO3_rotation: List["SO3_Rotation"],
+        lmax_list: List[int],
+        mmax_list: List[int],
     ):
         if self.num_resolutions == 1:
             embedding_rotate = SO3_rotation[0].rotate(
@@ -363,7 +368,7 @@ class SO3_Embedding:
         self.set_lmax_mmax(self.lmax_list, self.mmax_list)
 
     # Compute point-wise spherical non-linearity
-    def _grid_act(self, SO3_grid, act, mappingReduced):
+    def _grid_act(self, SO3_grid: List[List["SO3_Grid"]], act, mappingReduced):
         offset = 0
         for i in range(self.num_resolutions):
 
@@ -392,7 +397,7 @@ class SO3_Embedding:
             offset = offset + num_coefficients
 
     # Compute a sample of the grid
-    def to_grid(self, SO3_grid, lmax=-1):
+    def to_grid(self, SO3_grid: List[List["SO3_Grid"]], lmax: int = -1):
         if lmax == -1:
             lmax = max(self.lmax_list)
 
@@ -426,7 +431,9 @@ class SO3_Embedding:
         return x_grid
 
     # Compute irreps from grid representation
-    def _from_grid(self, x_grid, SO3_grid, lmax: int = -1):
+    def _from_grid(
+        self, x_grid, SO3_grid: List[List["SO3_Grid"]], lmax: int = -1
+    ):
         if lmax == -1:
             lmax = max(self.lmax_list)
 
@@ -482,7 +489,7 @@ class SO3_Rotation(torch.nn.Module):
         self.lmax = lmax
         self.mapping = CoefficientMappingModule([self.lmax], [self.lmax])
 
-    def set_wigner(self, rot_mat3x3):
+    def set_wigner(self, rot_mat3x3: torch.Tensor) -> None:
         self.device, self.dtype = rot_mat3x3.device, rot_mat3x3.dtype
         self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, 0, self.lmax)
         self.wigner_inv = torch.transpose(self.wigner, 1, 2).contiguous()
@@ -490,13 +497,13 @@ class SO3_Rotation(torch.nn.Module):
         self.wigner_inv = self.wigner_inv.detach()
 
     # Rotate the embedding
-    def rotate(self, embedding, out_lmax: int, out_mmax: int):
+    def rotate(self, embedding: torch.Tensor, out_lmax: int, out_mmax: int):
         out_mask = self.mapping.coefficient_idx(out_lmax, out_mmax)
         wigner = self.wigner[:, out_mask, :]
         return torch.bmm(wigner, embedding)
 
     # Rotate the embedding by the inverse of the rotation matrix
-    def rotate_inv(self, embedding, in_lmax: int, in_mmax: int):
+    def rotate_inv(self, embedding: torch.Tensor, in_lmax: int, in_mmax: int):
         in_mask = self.mapping.coefficient_idx(in_lmax, in_mmax)
         wigner_inv = self.wigner_inv[:, :, in_mask]
         wigner_inv_rescale = self.mapping.get_rotate_inv_rescale(
@@ -507,7 +514,7 @@ class SO3_Rotation(torch.nn.Module):
 
     # Compute Wigner matrices from rotation matrix
     def RotationToWignerDMatrix(
-        self, edge_rot_mat, start_lmax: int, end_lmax: int
+        self, edge_rot_mat: torch.Tensor, start_lmax: int, end_lmax: int
     ) -> torch.Tensor:
         x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
         alpha, beta = o3.xyz_to_angles(x)
@@ -618,15 +625,17 @@ class SO3_Grid(torch.nn.Module):
         self.register_buffer("from_grid_mat", from_grid_mat)
 
     # Compute matrices to transform irreps to grid
-    def get_to_grid_mat(self, device):
+    def get_to_grid_mat(self, device: Optional[torch.device]) -> ToS2Grid:
         return self.to_grid_mat
 
     # Compute matrices to transform grid to irreps
-    def get_from_grid_mat(self, device):
+    def get_from_grid_mat(self, device: Optional[torch.device]) -> FromS2Grid:
         return self.from_grid_mat
 
     # Compute grid from irreps representation
-    def to_grid(self, embedding, lmax: int, mmax: int):
+    def to_grid(
+        self, embedding: torch.Tensor, lmax: int, mmax: int
+    ) -> torch.Tensor:
         to_grid_mat = self.to_grid_mat[
             :, :, self.mapping.coefficient_idx(lmax, mmax)
         ]
@@ -634,7 +643,9 @@ class SO3_Grid(torch.nn.Module):
         return grid
 
     # Compute irreps from grid representation
-    def from_grid(self, grid, lmax: int, mmax: int):
+    def from_grid(
+        self, grid: torch.Tensor, lmax: int, mmax: int
+    ) -> torch.Tensor:
         from_grid_mat = self.from_grid_mat[
             :, :, self.mapping.coefficient_idx(lmax, mmax)
         ]
@@ -661,7 +672,11 @@ class SO3_Linear(torch.nn.Module):
                     Linear(in_features, out_features, bias=False)
                 )
 
-    def forward(self, input_embedding, output_scale=None):
+    def forward(
+        self,
+        input_embedding: SO3_Embedding,
+        output_scale: Optional[torch.Tensor] = None,
+    ) -> SO3_Embedding:
         out = []
         for lval in range(self.lmax + 1):
             start_idx = lval**2
@@ -719,7 +734,7 @@ class SO3_LinearV2(torch.nn.Module):
             expand_index[start_idx : (start_idx + length)] = lval
         self.register_buffer("expand_index", expand_index)
 
-    def forward(self, input_embedding):
+    def forward(self, input_embedding: SO3_Embedding) -> SO3_Embedding:
 
         weight = torch.index_select(
             self.weight, dim=0, index=self.expand_index

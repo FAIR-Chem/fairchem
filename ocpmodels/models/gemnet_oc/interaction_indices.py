@@ -68,10 +68,10 @@ def get_triplets(graph, num_atoms: int):
 def get_mixed_triplets(
     graph_in,
     graph_out,
-    num_atoms,
-    to_outedge=False,
-    return_adj=False,
-    return_agg_idx=False,
+    num_atoms: int,
+    to_outedge: bool = False,
+    return_adj: bool = False,
+    return_agg_idx: bool = False,
 ):
     """
     Get all output edges (ingoing or outgoing) for each incoming edge.
@@ -175,7 +175,7 @@ def get_mixed_triplets(
 def get_quadruplets(
     main_graph,
     qint_graph,
-    num_atoms,
+    num_atoms: int,
 ):
     """
     Get all d->b for each edge c->a and connection b->a

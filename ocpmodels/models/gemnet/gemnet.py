@@ -5,7 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import torch
@@ -119,9 +119,9 @@ class GemNetT(BaseModel):
         direct_forces: bool = False,
         cutoff: float = 6.0,
         max_neighbors: int = 50,
-        rbf: dict = {"name": "gaussian"},
-        envelope: dict = {"name": "polynomial", "exponent": 5},
-        cbf: dict = {"name": "spherical_harmonics"},
+        rbf: Dict[str, Any] = {"name": "gaussian"},
+        envelope: Dict[str, Any] = {"name": "polynomial", "exponent": 5},
+        cbf: Dict[str, Any] = {"name": "spherical_harmonics"},
         extensive: bool = True,
         otf_graph: bool = False,
         use_pbc: bool = True,
@@ -204,8 +204,8 @@ class GemNetT(BaseModel):
             emb_size_atom, num_radial, emb_size_edge, activation=activation
         )
 
-        out_blocks = []
-        int_blocks = []
+        out_blocks: List[OutputBlock] = []
+        int_blocks: List[InteractionBlockTripletsOnly] = []
 
         # Interaction Blocks
         interaction_block = InteractionBlockTripletsOnly  # GemNet-(d)T
@@ -399,11 +399,11 @@ class GemNetT(BaseModel):
     def select_edges(
         self,
         data,
-        edge_index,
-        cell_offsets,
-        neighbors,
-        edge_dist,
-        edge_vector,
+        edge_index: torch.Tensor,
+        cell_offsets: torch.Tensor,
+        neighbors: torch.Tensor,
+        edge_dist: torch.Tensor,
+        edge_vector: torch.Tensor,
         cutoff=None,
     ):
         if cutoff is not None:

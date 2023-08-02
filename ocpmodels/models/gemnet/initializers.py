@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 import torch
 
 
-def _standardize(kernel):
+def _standardize(kernel: torch.Tensor) -> torch.Tensor:
     """
     Makes sure that N*Var(W) = 1 and E[W] = 0
     """

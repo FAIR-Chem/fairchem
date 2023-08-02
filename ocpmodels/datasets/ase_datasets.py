@@ -48,7 +48,7 @@ def apply_one_tags(
     return atoms
 
 
-class AseAtomsDataset(Dataset, ABC):
+class AseAtomsDataset(Dataset[ase.Atoms], ABC):
     """
     This is an abstract Dataset that includes helpful utilities for turning
     ASE atoms objects into OCP-usable data objects. This should not be instantiated directly
@@ -133,7 +133,7 @@ class AseAtomsDataset(Dataset, ABC):
         )
 
     @abstractmethod
-    def load_dataset_get_ids(self, config):
+    def load_dataset_get_ids(self, config) -> List[Path]:
         # This function should return a list of ids that can be used to index into the database
         raise NotImplementedError(
             "Every ASE dataset needs to declare a function to load the dataset and return a list of ids."

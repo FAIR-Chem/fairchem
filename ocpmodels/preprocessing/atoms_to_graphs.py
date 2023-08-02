@@ -5,7 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional
+from typing import List, Optional
 
 import ase.db.sqlite
 import ase.io.trajectory
@@ -128,7 +128,7 @@ class AtomsToGraphs:
 
         return edge_index, edge_distances, cell_offsets
 
-    def convert(self, atoms: ase.Atoms, sid=None):
+    def convert(self, atoms: ase.Atoms, sid=None) -> Data:
         """Convert a single atomic stucture to a graph.
 
         Args:
@@ -201,9 +201,9 @@ class AtomsToGraphs:
         self,
         atoms_collection,
         processed_file_path: Optional[str] = None,
-        collate_and_save=False,
-        disable_tqdm=False,
-    ):
+        collate_and_save: bool = False,
+        disable_tqdm: bool = False,
+    ) -> List[Data]:
         """Convert all atoms objects in a list or in an ase.db to graphs.
 
         Args:
@@ -219,7 +219,7 @@ class AtomsToGraphs:
         """
 
         # list for all data
-        data_list = []
+        data_list: List[Data] = []
         if isinstance(atoms_collection, list):
             atoms_iter = atoms_collection
         elif isinstance(atoms_collection, ase.db.sqlite.SQLite3Database):

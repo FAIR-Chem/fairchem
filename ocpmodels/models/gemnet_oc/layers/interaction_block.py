@@ -5,6 +5,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import math
+from typing import Optional, Tuple
 
 import torch
 
@@ -92,7 +93,7 @@ class InteractionBlock(torch.nn.Module):
         atom_edge_interaction: bool = False,
         edge_atom_interaction: bool = False,
         atom_interaction: bool = False,
-        activation=None,
+        activation: Optional[str] = None,
     ) -> None:
         super().__init__()
 
@@ -180,7 +181,7 @@ class InteractionBlock(torch.nn.Module):
                     emb_size_edge,
                     activation=activation,
                 )
-                for i in range(num_before_skip)
+                for _ in range(num_before_skip)
             ]
         )
 
@@ -191,7 +192,7 @@ class InteractionBlock(torch.nn.Module):
                     emb_size_edge,
                     activation=activation,
                 )
-                for i in range(num_after_skip)
+                for _ in range(num_after_skip)
             ]
         )
 
@@ -252,7 +253,7 @@ class InteractionBlock(torch.nn.Module):
         trip_idx_a2e,
         trip_idx_e2a,
         quad_idx,
-    ):
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Returns
         -------
@@ -385,14 +386,14 @@ class QuadrupletInteraction(torch.nn.Module):
 
     def __init__(
         self,
-        emb_size_edge,
-        emb_size_quad_in,
-        emb_size_quad_out,
-        emb_size_rbf,
-        emb_size_cbf,
-        emb_size_sbf,
-        symmetric_mp=True,
-        activation=None,
+        emb_size_edge: int,
+        emb_size_quad_in: int,
+        emb_size_quad_out: int,
+        emb_size_rbf: int,
+        emb_size_cbf: int,
+        emb_size_sbf: int,
+        symmetric_mp: bool = True,
+        activation: Optional[str] = None,
     ) -> None:
         super().__init__()
         self.symmetric_mp = symmetric_mp
@@ -550,7 +551,7 @@ class TripletInteraction(torch.nn.Module):
         emb_size_cbf: int,
         symmetric_mp: bool = True,
         swap_output: bool = True,
-        activation=None,
+        activation: Optional[str] = None,
     ) -> None:
         super().__init__()
         self.symmetric_mp = symmetric_mp
@@ -612,7 +613,7 @@ class TripletInteraction(torch.nn.Module):
         idx_agg2=None,
         idx_agg2_inner=None,
         agg2_out_size=None,
-    ):
+    ) -> torch.Tensor:
         """
         Returns
         -------
@@ -690,11 +691,11 @@ class PairInteraction(torch.nn.Module):
 
     def __init__(
         self,
-        emb_size_atom,
-        emb_size_pair_in,
-        emb_size_pair_out,
-        emb_size_rbf,
-        activation=None,
+        emb_size_atom: int,
+        emb_size_pair_in: int,
+        emb_size_pair_out: int,
+        emb_size_rbf: int,
+        activation: Optional[str] = None,
     ) -> None:
         super().__init__()
 
@@ -729,7 +730,7 @@ class PairInteraction(torch.nn.Module):
         rad_basis,
         edge_index,
         target_neighbor_idx,
-    ):
+    ) -> torch.Tensor:
         """
         Returns
         -------

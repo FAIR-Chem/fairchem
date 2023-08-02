@@ -6,7 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import os
-from typing import List
+from typing import List, Tuple
 
 import torch
 
@@ -36,7 +36,7 @@ class CoefficientMapping:
         self,
         lmax_list: List[int],
         mmax_list: List[int],
-        device,
+        device: torch.device,
     ) -> None:
         super().__init__()
 
@@ -96,7 +96,9 @@ class CoefficientMapping:
         self.to_m = self.to_m.detach()
 
     # Return mask containing coefficients of order m (real and imaginary parts)
-    def complex_idx(self, m, lmax: int = -1):
+    def complex_idx(
+        self, m: torch.Tensor, lmax: int = -1
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         if lmax == -1:
             lmax = max(self.lmax_list)
 
@@ -185,22 +187,24 @@ class SO3_Embedding(torch.nn.Module):
         return clone
 
     # Initialize an embedding of irreps
-    def set_embedding(self, embedding) -> None:
+    def set_embedding(self, embedding: torch.Tensor) -> None:
         self.length = len(embedding)
         self.embedding = embedding
 
     # Set the maximum order to be the maximum degree
-    def set_lmax_mmax(self, lmax_list, mmax_list) -> None:
+    def set_lmax_mmax(
+        self, lmax_list: List[int], mmax_list: List[int]
+    ) -> None:
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
 
     # Expand the node embeddings to the number of edges
-    def _expand_edge(self, edge_index) -> None:
+    def _expand_edge(self, edge_index: torch.Tensor) -> None:
         embedding = self.embedding[edge_index]
         self.set_embedding(embedding)
 
     # Initialize an embedding of irreps of a neighborhood
-    def expand_edge(self, edge_index) -> "SO3_Embedding":
+    def expand_edge(self, edge_index: torch.Tensor) -> "SO3_Embedding":
         x_expand = SO3_Embedding(
             0,
             self.lmax_list.copy(),
@@ -212,7 +216,7 @@ class SO3_Embedding(torch.nn.Module):
         return x_expand
 
     # Compute the sum of the embeddings of the neighborhood
-    def _reduce_edge(self, edge_index, num_nodes: int) -> None:
+    def _reduce_edge(self, edge_index: torch.Tensor, num_nodes: int) -> None:
         new_embedding = torch.zeros(
             num_nodes,
             self.num_coefficients,
@@ -236,7 +240,12 @@ class SO3_Embedding(torch.nn.Module):
         )
 
     # Rotate the embedding
-    def _rotate(self, SO3_rotation, lmax_list, mmax_list) -> None:
+    def _rotate(
+        self,
+        SO3_rotation: List["SO3_Rotation"],
+        lmax_list: List[int],
+        mmax_list: List[int],
+    ) -> None:
         embedding_rotate = torch.tensor(
             [], device=self.device, dtype=self.dtype
         )
@@ -260,7 +269,9 @@ class SO3_Embedding(torch.nn.Module):
         self.set_lmax_mmax(lmax_list.copy(), mmax_list.copy())
 
     # Rotate the embedding by the inverse of the rotation matrix
-    def _rotate_inv(self, SO3_rotation, mappingReduced) -> None:
+    def _rotate_inv(
+        self, SO3_rotation: List["SO3_Rotation"], mappingReduced
+    ) -> None:
         embedding_rotate = torch.tensor(
             [], device=self.device, dtype=self.dtype
         )
@@ -289,7 +300,9 @@ class SO3_Embedding(torch.nn.Module):
         self.set_lmax_mmax(self.lmax_list, self.mmax_list)
 
     # Compute point-wise spherical non-linearity
-    def _grid_act(self, SO3_grid, act, mappingReduced) -> None:
+    def _grid_act(
+        self, SO3_grid: List[List["SO3_Grid"]], act, mappingReduced
+    ) -> None:
         offset = 0
         for i in range(self.num_resolutions):
             num_coefficients = mappingReduced.res_size[i]
@@ -312,7 +325,9 @@ class SO3_Embedding(torch.nn.Module):
             offset = offset + num_coefficients
 
     # Compute a sample of the grid
-    def to_grid(self, SO3_grid, lmax: int = -1) -> torch.Tensor:
+    def to_grid(
+        self, SO3_grid: List[List["SO3_Grid"]], lmax: int = -1
+    ) -> torch.Tensor:
         if lmax == -1:
             lmax = max(self.lmax_list)
 
@@ -343,7 +358,9 @@ class SO3_Embedding(torch.nn.Module):
         return x_grid
 
     # Compute irreps from grid representation
-    def _from_grid(self, x_grid, SO3_grid, lmax: int = -1) -> None:
+    def _from_grid(
+        self, x_grid, SO3_grid: List[List["SO3_Grid"]], lmax: int = -1
+    ) -> None:
         if lmax == -1:
             lmax = max(self.lmax_list)
 
@@ -390,7 +407,7 @@ class SO3_Rotation(torch.nn.Module):
     def __init__(
         self,
         rot_mat3x3: torch.Tensor,
-        lmax: List[int],
+        lmax: int,
     ) -> None:
         super().__init__()
         self.device = rot_mat3x3.device
@@ -405,20 +422,24 @@ class SO3_Rotation(torch.nn.Module):
         self.set_lmax(lmax)
 
     # Initialize coefficients for reshape l<-->m
-    def set_lmax(self, lmax) -> None:
+    def set_lmax(self, lmax: int) -> None:
         self.lmax = lmax
         self.mapping = CoefficientMapping(
             [self.lmax], [self.lmax], self.device
         )
 
     # Rotate the embedding
-    def rotate(self, embedding, out_lmax, out_mmax) -> torch.Tensor:
+    def rotate(
+        self, embedding: torch.Tensor, out_lmax: int, out_mmax: int
+    ) -> torch.Tensor:
         out_mask = self.mapping.coefficient_idx(out_lmax, out_mmax)
         wigner = self.wigner[:, out_mask, :]
         return torch.bmm(wigner, embedding)
 
     # Rotate the embedding by the inverse of the rotation matrix
-    def rotate_inv(self, embedding, in_lmax, in_mmax) -> torch.Tensor:
+    def rotate_inv(
+        self, embedding: torch.Tensor, in_lmax: int, in_mmax: int
+    ) -> torch.Tensor:
         in_mask = self.mapping.coefficient_idx(in_lmax, in_mmax)
         wigner_inv = self.wigner_inv[:, :, in_mask]
 
@@ -454,7 +475,13 @@ class SO3_Rotation(torch.nn.Module):
     #
     # In 0.5.0, e3nn shifted to torch.matrix_exp which is significantly slower:
     # https://github.com/e3nn/e3nn/blob/0.5.0/e3nn/o3/_wigner.py#L92
-    def wigner_D(self, lval, alpha, beta, gamma):
+    def wigner_D(
+        self,
+        lval: int,
+        alpha: torch.Tensor,
+        beta: torch.Tensor,
+        gamma: torch.Tensor,
+    ):
         if not lval < len(_Jd):
             raise NotImplementedError(
                 f"wigner D maximum l implemented is {len(_Jd) - 1}, send us an email to ask for more"

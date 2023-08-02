@@ -41,7 +41,7 @@ def write_json(path: str, data) -> None:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-def read_value_json(path: str, key):
+def read_value_json(path: str, key: str):
     """"""
     content = read_json(path)
 

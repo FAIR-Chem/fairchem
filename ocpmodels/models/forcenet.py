@@ -23,7 +23,7 @@ from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 
 class FNDecoder(nn.Module):
     def __init__(
-        self, decoder_type, decoder_activation_str, output_dim: int
+        self, decoder_type: str, decoder_activation_str: str, output_dim: int
     ) -> None:
         super(FNDecoder, self).__init__()
         self.decoder_type = decoder_type
@@ -60,7 +60,7 @@ class InteractionBlock(MessagePassing):
         self,
         hidden_channels: int,
         mlp_basis_dim: int,
-        basis_type,
+        basis_type: str,
         depth_mlp_edge: int = 2,
         depth_mlp_trans: int = 1,
         activation_str: str = "ssp",
@@ -243,7 +243,7 @@ class ForceNet(BaseModel):
         feat: str = "full",
         num_freqs: int = 50,
         max_n: int = 3,
-        basis: str = "sphallmul",
+        basis_type: str = "sphallmul",
         depth_mlp_edge: int = 2,
         depth_mlp_node: int = 1,
         activation_str: str = "swish",
@@ -310,7 +310,7 @@ class ForceNet(BaseModel):
         atom_radii = atom_radii / 100
 
         self.atom_radii = nn.Parameter(atom_radii, requires_grad=False)
-        self.basis_type = basis
+        self.basis_type = basis_type
 
         self.pbc_apply_sph_harm = "sph" in self.basis_type
         self.pbc_sph_option = None

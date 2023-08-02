@@ -311,7 +311,7 @@ class TripletInteraction(torch.nn.Module):
         id3_ca,
         edge_offset,
         Kmax,
-    ):
+    ) -> torch.Tensor:
         """
         Returns
         -------

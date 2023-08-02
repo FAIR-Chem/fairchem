@@ -3,7 +3,7 @@ import logging
 import torch
 
 
-def init_edge_rot_mat(edge_distance_vec):
+def init_edge_rot_mat(edge_distance_vec: torch.Tensor) -> torch.Tensor:
     edge_vec_0 = edge_distance_vec
     edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 

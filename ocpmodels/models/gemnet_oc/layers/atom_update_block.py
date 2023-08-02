@@ -65,7 +65,7 @@ class AtomUpdateBlock(torch.nn.Module):
         mlp += res
         return torch.nn.ModuleList(mlp)
 
-    def forward(self, h: torch.Tensor, m, basis_rad, idx_atom):
+    def forward(self, h: torch.Tensor, m, basis_rad, idx_atom) -> torch.Tensor:
         """
         Returns
         -------

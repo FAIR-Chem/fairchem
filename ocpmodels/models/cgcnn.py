@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import List
+
 import torch
 import torch.nn as nn
 from torch_geometric.nn import MessagePassing, global_mean_pool
@@ -62,7 +64,7 @@ class CGCNN(BaseModel):
         otf_graph: bool = False,
         cutoff: float = 6.0,
         num_gaussians: int = 50,
-        embeddings: str = "khot",
+        embeddings_type: str = "khot",
     ) -> None:
         super(CGCNN, self).__init__(num_atoms, bond_feat_dim, num_targets)
         self.regress_forces = regress_forces
@@ -71,9 +73,9 @@ class CGCNN(BaseModel):
         self.otf_graph = otf_graph
         self.max_neighbors = 50
         # Get CGCNN atom embeddings
-        if embeddings == "khot":
+        if embeddings_type == "khot":
             embeddings = KHOT_EMBEDDINGS
-        elif embeddings == "qmof":
+        elif embeddings_type == "qmof":
             embeddings = QMOF_KHOT_EMBEDDINGS
         else:
             raise ValueError(
@@ -100,7 +102,7 @@ class CGCNN(BaseModel):
         )
 
         if num_fc_layers > 1:
-            layers = []
+            layers: List[torch.nn.Module] = []
             for _ in range(num_fc_layers - 1):
                 layers.append(nn.Linear(fc_feat_size, fc_feat_size))
                 layers.append(nn.Softplus())
@@ -175,7 +177,7 @@ class CGCNNConv(MessagePassing):
     """
 
     def __init__(
-        self, node_dim, edge_dim, cutoff: float = 6.0, **kwargs
+        self, node_dim: int, edge_dim: int, cutoff: float = 6.0, **kwargs
     ) -> None:
         super(CGCNNConv, self).__init__(aggr="add")
         self.node_feat_size = node_dim

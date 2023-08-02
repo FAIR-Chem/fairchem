@@ -210,7 +210,7 @@ class BalancedBatchSampler(Sampler):
         )
 
         self.sizes = None
-        self.balance_batches = False
+        self.balance_batches: bool = False
 
         if self.num_replicas <= 1:
             logging.info(

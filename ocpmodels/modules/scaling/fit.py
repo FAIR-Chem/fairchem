@@ -170,7 +170,7 @@ def main(*, num_batches: int = 16) -> None:
 
         # region we do a single pass through the network to get the correct execution order of the scale factors
         scale_factor_indices: Dict[str, int] = {}
-        max_idx = 0
+        max_idx: int = 0
 
         # initialize all scale factors
         for name, module in scale_factors.items():

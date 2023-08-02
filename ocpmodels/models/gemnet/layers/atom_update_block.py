@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import Callable, Optional, Union
+
 import torch
 from torch_scatter import scatter
 
@@ -12,6 +14,8 @@ from ocpmodels.modules.scaling import ScaleFactor
 
 from ..initializers import he_orthogonal_init
 from .base_layers import Dense, ResidualLayer
+
+ActivationInput = Union[str, Callable[[torch.Tensor], torch.Tensor]]
 
 
 class AtomUpdateBlock(torch.nn.Module):
@@ -36,7 +40,7 @@ class AtomUpdateBlock(torch.nn.Module):
         emb_size_edge: int,
         emb_size_rbf: int,
         nHidden: int,
-        activation=None,
+        activation: Optional[ActivationInput] = None,
         name: str = "atom_update",
     ) -> None:
         super().__init__()
@@ -51,17 +55,17 @@ class AtomUpdateBlock(torch.nn.Module):
             emb_size_edge, emb_size_atom, nHidden, activation
         )
 
-    def get_mlp(self, units_in, units, nHidden, activation):
+    def get_mlp(self, units_in: int, units: int, nHidden: int, activation):
         dense1 = Dense(units_in, units, activation=activation, bias=False)
         mlp = [dense1]
         res = [
             ResidualLayer(units, nLayers=2, activation=activation)
-            for i in range(nHidden)
+            for _ in range(nHidden)
         ]
         mlp += res
         return torch.nn.ModuleList(mlp)
 
-    def forward(self, h, m, rbf, id_j):
+    def forward(self, h: torch.Tensor, m, rbf, id_j) -> torch.Tensor:
         """
         Returns
         -------
@@ -112,7 +116,7 @@ class OutputBlock(AtomUpdateBlock):
         emb_size_rbf: int,
         nHidden: int,
         num_targets: int,
-        activation=None,
+        activation: Optional[ActivationInput] = None,
         direct_forces: bool = True,
         output_init: str = "HeOrthogonal",
         name: str = "output",

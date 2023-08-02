@@ -4,13 +4,15 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import Tuple
+
 import numpy as np
 import torch
 from torch_scatter import segment_coo, segment_csr
 from torch_sparse import SparseTensor
 
 
-def ragged_range(sizes):
+def ragged_range(sizes: torch.Tensor) -> torch.Tensor:
     """Multiple concatenated ranges.
 
     Examples
@@ -197,7 +199,12 @@ def masked_select_sparsetensor_flat(src, mask) -> SparseTensor:
     )
 
 
-def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
+def calculate_interatomic_vectors(
+    R: torch.Tensor,
+    id_s: torch.Tensor,
+    id_t: torch.Tensor,
+    offsets_st: torch.Tensor,
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Calculate the vectors connecting the given atom pairs,
     considering offsets from periodic boundary conditions (PBC).
@@ -234,7 +241,7 @@ def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
     return D_st, V_st
 
 
-def inner_product_clamped(x, y) -> torch.Tensor:
+def inner_product_clamped(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """
     Calculate the inner product between the given normalized vectors,
     giving a result between -1 and 1.
@@ -242,7 +249,7 @@ def inner_product_clamped(x, y) -> torch.Tensor:
     return torch.sum(x * y, dim=-1).clamp(min=-1, max=1)
 
 
-def get_angle(R_ac, R_ab) -> torch.Tensor:
+def get_angle(R_ac: torch.Tensor, R_ab: torch.Tensor) -> torch.Tensor:
     """Calculate angles between atoms c -> a <- b.
 
     Arguments
@@ -267,7 +274,7 @@ def get_angle(R_ac, R_ab) -> torch.Tensor:
     return angle
 
 
-def vector_rejection(R_ab, P_n):
+def vector_rejection(R_ab: torch.Tensor, P_n: torch.Tensor) -> torch.Tensor:
     """
     Project the vector R_ab onto a plane with normal vector P_n.
 
@@ -288,7 +295,9 @@ def vector_rejection(R_ab, P_n):
     return R_ab - (a_x_b / b_x_b)[:, None] * P_n
 
 
-def get_projected_angle(R_ab, P_n, eps: float = 1e-4) -> torch.Tensor:
+def get_projected_angle(
+    R_ab: torch.Tensor, P_n: torch.Tensor, eps: float = 1e-4
+) -> torch.Tensor:
     """
     Project the vector R_ab onto a plane with normal vector P_n,
     then calculate the angle w.r.t. the (x [cross] P_n),
@@ -330,14 +339,18 @@ def get_projected_angle(R_ab, P_n, eps: float = 1e-4) -> torch.Tensor:
     return angle
 
 
-def mask_neighbors(neighbors, edge_mask):
+def mask_neighbors(
+    neighbors: torch.Tensor, edge_mask: torch.Tensor
+) -> torch.Tensor:
     neighbors_old_indptr = torch.cat([neighbors.new_zeros(1), neighbors])
     neighbors_old_indptr = torch.cumsum(neighbors_old_indptr, dim=0)
     neighbors = segment_csr(edge_mask.long(), neighbors_old_indptr)
     return neighbors
 
 
-def get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor:
+def get_neighbor_order(
+    num_atoms: int, index: torch.Tensor, atom_distance
+) -> torch.Tensor:
     """
     Give a mask that filters out edges so that each atom has at most
     `max_num_neighbors_threshold` neighbors.
@@ -397,7 +410,7 @@ def get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor:
     return order[index_order_inverse]
 
 
-def get_inner_idx(idx, dim_size):
+def get_inner_idx(idx: torch.Tensor, dim_size: int) -> torch.Tensor:
     """
     Assign an inner index to each element (neighbor) with the same index.
     For example, with idx=[0 0 0 1 1 1 1 2 2] this returns [0 1 2 0 1 2 3 0 1].

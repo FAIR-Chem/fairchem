@@ -4,7 +4,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional
+from typing import Optional, Tuple
 
 import torch
 
@@ -55,13 +55,13 @@ class BasisEmbedding(torch.nn.Module):
 
     def forward(
         self,
-        rad_basis,
-        sph_basis=None,
-        idx_rad_outer=None,
-        idx_rad_inner=None,
-        idx_sph_outer=None,
-        idx_sph_inner=None,
-        num_atoms=None,
+        rad_basis: torch.Tensor,
+        sph_basis: Optional[torch.Tensor] = None,
+        idx_rad_outer: Optional[torch.Tensor] = None,
+        idx_rad_inner: Optional[torch.Tensor] = None,
+        idx_sph_outer: Optional[torch.Tensor] = None,
+        idx_sph_inner: Optional[torch.Tensor] = None,
+        num_atoms: Optional[int] = None,
     ):
         """
 
@@ -191,13 +191,13 @@ class EfficientInteractionBilinear(torch.nn.Module):
 
     def forward(
         self,
-        basis,
-        m,
-        idx_agg_outer,
-        idx_agg_inner,
-        idx_agg2_outer=None,
-        idx_agg2_inner=None,
-        agg2_out_size=None,
+        basis: Tuple[torch.Tensor, torch.Tensor],
+        m: torch.Tensor,
+        idx_agg_outer: torch.Tensor,
+        idx_agg_inner: torch.Tensor,
+        idx_agg2_outer: Optional[torch.Tensor] = None,
+        idx_agg2_inner: Optional[torch.Tensor] = None,
+        agg2_out_size: Optional[int] = None,
     ):
         """
 

@@ -2,7 +2,7 @@ import torch
 
 
 class ModuleListInfo(torch.nn.ModuleList):
-    def __init__(self, info_str, modules=None) -> None:
+    def __init__(self, info_str: str, modules=None) -> None:
         super().__init__(modules)
         self.info_str = str(info_str)
 

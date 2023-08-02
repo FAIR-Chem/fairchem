@@ -216,7 +216,7 @@ class EquiformerV2_OC20(BaseModel):
             "gaussian",
         ]
         if self.distance_function == "gaussian":
-            self.distance_expansion = GaussianSmearing(
+            self.distance_expansion: GaussianSmearing = GaussianSmearing(
                 0.0,
                 self.cutoff,
                 600,
