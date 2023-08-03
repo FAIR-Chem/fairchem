@@ -115,7 +115,7 @@ class RelxationTask(BaseTask):
         from datetime import datetime
         import json
 
-        val_name = Path(self.trainer.config["val_dataset"]["src"]).name
+        val_name = Path(self.trainer.config["relax_dataset"]["src"]).name
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         results_file = Path(self.trainer.config["cmd"]["results_dir"]) / "relax" / f"{val_name}_{timestamp}.json"
         results_file.parent.mkdir(parents=True, exist_ok=True)

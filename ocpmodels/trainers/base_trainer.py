@@ -31,6 +31,7 @@ from ocpmodels.common.data_parallel import (
 )
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import load_state_dict, save_checkpoint
+from ocpmodels.datasets.embeddings.interpolate_embeddings import interpolate_embeddings
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
@@ -430,6 +431,62 @@ class BaseTrainer(ABC):
             }
         else:
             new_dict = checkpoint["state_dict"]
+
+        # If the number of elements in the model embeddings has been expanded beyond
+        # that of the checkpoint, copy the checkpoint values into the start of the embeddings.
+        # For example, we may want to expand from 83 elements in an initial vector to the whole
+        # periodic table (118 elements)
+        if self.config["task"].get(
+            "expand_atomic_embeddings_from_checkpoint", False
+        ):
+            logging.info("Expanding atomic embeddings from the checkpoint!")
+            
+            for base_key in self.model.module.module.all_atomic_embeddings_keys():
+                key = mod_key_count * "module." + base_key
+                self.model.state_dict()[key][
+                    : new_dict[key].shape[0]
+                ] = new_dict[key]
+                new_dict[key] = self.model.state_dict()[key]
+                
+        if "interpolate_atomic_embeddings" in self.config["task"]:
+            if "interpolate_atomic_embeddings" in checkpoint["config"][
+                "task"
+            ] and checkpoint["config"]["task"][
+                "interpolate_atomic_embeddings"
+            ].get(
+                "already_interpolated", False
+            ):
+                logging.info(
+                    "Skipping the embedding interpolation because the checkpoint config claims it was already interpolated!"
+                )
+            else:
+                fitted_datasets = self.config["task"][
+                    "interpolate_atomic_embeddings"
+                ].get("fitted_datasets", ["OC20", "OC22"])
+                additional_fitted_elements = self.config["task"][
+                    "interpolate_atomic_embeddings"
+                ].get("additional_fitted_elements", None)
+                smoothing = self.config["task"][
+                    "interpolate_atomic_embeddings"
+                ].get("smoothing", 0.0)
+                logging.info(
+                    f"Interpolating atomic embeddings from an RBF kernel using datasets {fitted_datasets} and additional elements {additional_fitted_elements}!"
+                )
+
+                for base_key in self.model.module.module.all_atomic_embeddings_keys():
+                    key = mod_key_count * "module." + base_key
+                    new_dict[key][:] = torch.tensor(
+                        interpolate_embeddings(
+                            new_dict[key],
+                            fitted_datasets,
+                            additional_fitted_elements,
+                            smoothing,
+                        )
+                    ).to(self.device)
+
+                self.config["task"]["interpolate_atomic_embeddings"][
+                    "already_interpolated"
+                ] = True
 
         strict = self.config["task"].get("strict_load", True)
         load_state_dict(self.model, new_dict, strict=strict)

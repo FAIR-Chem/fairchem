@@ -775,6 +775,8 @@ class ForcesTrainer(BaseTrainer):
                     gather_results["chunk_idx"].extend(
                         rank_results["chunk_idx"]
                     )
+                
+                for i in range(distutils.get_world_size()):
                     os.remove(rank_path)
 
                 # Because of how distributed sampler works, some system ids

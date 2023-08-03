@@ -483,6 +483,21 @@ class EquiformerV2S_OC20(BaseModel):
     def num_params(self):
         return sum(p.numel() for p in self.parameters())
 
+    def all_atomic_embeddings_keys(self):
+        all_atomic_embeddings_keys = ["sphere_embedding.weight"]
+        if self.source_embedding is not None:
+            all_atomic_embeddings_keys.extend(["source_embedding.weight", "target_embedding.weight"])
+        if self.edge_degree_embedding.source_embedding is not None:
+            all_atomic_embeddings_keys.extend(["edge_degree_embedding.source_embedding.weight", "edge_degree_embedding.target_embedding.weight"])
+        if self.force_block.source_embedding is not None:
+            all_atomic_embeddings_keys.extend(["force_block.source_embedding.weight", "force_block.target_embedding.weight"])
+        for i in range(self.num_layers):
+            all_atomic_embeddings_keys.extend([
+                f"blocks.{i}.ga.source_embedding.weight",
+                f"blocks.{i}.ga.target_embedding.weight",
+            ])
+        return all_atomic_embeddings_keys
+    
     def _init_weights(self, m):
         if (isinstance(m, torch.nn.Linear)
             or isinstance(m, SO3_LinearV2)
@@ -532,3 +547,27 @@ class EquiformerV2S_OC20(BaseModel):
                     no_wd_list.append(global_parameter_name)
         return set(no_wd_list)
 
+
+"""
+sphere_embedding.weight torch.Size([90, 128])
+edge_degree_embedding.source_embedding.weight torch.Size([90, 128])
+edge_degree_embedding.target_embedding.weight torch.Size([90, 128])
+blocks.0.ga.source_embedding.weight torch.Size([90, 128])
+blocks.0.ga.target_embedding.weight torch.Size([90, 128])
+blocks.1.ga.source_embedding.weight torch.Size([90, 128])
+blocks.1.ga.target_embedding.weight torch.Size([90, 128])
+blocks.2.ga.source_embedding.weight torch.Size([90, 128])
+blocks.2.ga.target_embedding.weight torch.Size([90, 128])
+blocks.3.ga.source_embedding.weight torch.Size([90, 128])
+blocks.3.ga.target_embedding.weight torch.Size([90, 128])
+blocks.4.ga.source_embedding.weight torch.Size([90, 128])
+blocks.4.ga.target_embedding.weight torch.Size([90, 128])
+blocks.5.ga.source_embedding.weight torch.Size([90, 128])
+blocks.5.ga.target_embedding.weight torch.Size([90, 128])
+blocks.6.ga.source_embedding.weight torch.Size([90, 128])
+blocks.6.ga.target_embedding.weight torch.Size([90, 128])
+blocks.7.ga.source_embedding.weight torch.Size([90, 128])
+blocks.7.ga.target_embedding.weight torch.Size([90, 128])
+force_block.source_embedding.weight torch.Size([90, 128])
+force_block.target_embedding.weight torch.Size([90, 128])
+"""

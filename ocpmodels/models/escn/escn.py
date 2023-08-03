@@ -454,6 +454,21 @@ class eSCN(BaseModel):
     def num_params(self):
         return sum(p.numel() for p in self.parameters())
 
+    def all_atomic_embeddings_keys(self):
+        all_atomic_embeddings_keys = ["sphere_embedding.weight"]
+        for i in range(self.num_layers):
+            all_atomic_embeddings_keys += [
+                "layer_blocks."
+                + str(i)
+                + ".message_block.edge_block.target_embedding.weight"
+            ]
+            all_atomic_embeddings_keys += [
+                "layer_blocks."
+                + str(i)
+                + ".message_block.edge_block.source_embedding.weight"
+            ]
+        return all_atomic_embeddings_keys
+
 
 class LayerBlock(torch.nn.Module):
     """
