@@ -9,6 +9,7 @@ import logging
 
 import torch
 import torch.nn as nn
+from e3nn import o3
 from torch_geometric.nn import radius_graph
 
 from ocpmodels.common.utils import (
@@ -16,20 +17,98 @@ from ocpmodels.common.utils import (
     conditional_grad,
     get_pbc_distances,
     radius_graph_pbc,
+    scatter_det,
 )
+from ocpmodels.models.gemnet_oc.layers.base_layers import Dense
 
 
 class BaseModel(nn.Module):
     def __init__(
-        self, num_atoms=None, bond_feat_dim=None, num_targets=None
+        self, output_targets, node_embedding_dim, edge_embedding_dim
     ) -> None:
         super(BaseModel, self).__init__()
-        self.num_atoms = num_atoms
-        self.bond_feat_dim = bond_feat_dim
-        self.num_targets = num_targets
+
+        self.output_targets = output_targets
+        self.num_targets = len(output_targets)
+
+        self.module_dict = nn.ModuleDict({})
+        for target in output_targets:
+            if self.output_targets[target].get("custom_head", False):
+                if "irrep_dim" in self.output_targets[target]:
+                    layers = [
+                        Dense(
+                            edge_embedding_dim,
+                            edge_embedding_dim,
+                            activation="silu",
+                        )
+                    ] * self.output_targets[target].get("num_layers", 2)
+
+                    layers.append(
+                        Dense(edge_embedding_dim, 1, activation=None)
+                    )
+                # n-dimensional scalar properties
+                else:
+                    target_shape = self.output_targets[target].get("shape", 1)
+                    layers = [
+                        Dense(
+                            node_embedding_dim,
+                            node_embedding_dim,
+                            activation="silu",
+                        )
+                    ] * self.output_targets[target].get("num_layers", 2)
+
+                    layers.append(
+                        Dense(
+                            node_embedding_dim, target_shape, activation=None
+                        )
+                    )
+
+                self.module_dict[target] = nn.Sequential(*layers)
 
     def forward(self, data):
-        raise NotImplementedError
+        batch = data.batch
+        num_atoms = data.atomic_numbers.shape[0]
+        num_systems = data.natoms.shape[0]
+        out = self._forward(data)
+
+        results = {}
+
+        for target in self.output_targets:
+            # for models that directly return desired property, add
+            # result directly and continue
+            if target not in self.module_dict:
+                results[target] = out[target]
+                continue
+
+            if "irrep_dim" in self.output_targets[target]:
+                irrep = self.output_targets[target]["irrep_dim"]
+                edge_vec = out["edge_vec"]
+                edge_idx = out["edge_idx"]
+
+                # (nedges, (2*irrep_dim+1))
+                spharm = o3.spherical_harmonics(irrep, edge_vec, True).detach()
+                # (nedges, 1)
+                pred = self.module_dict[target](out["edge_embedding"])
+                # (nedges, 2*irrep-dim+1)
+                pred = pred * spharm
+                # aggregate edges per node
+                # (nnodes, 2*irrep-dim+1)
+                pred = scatter_det(
+                    pred, edge_idx, dim=0, dim_size=num_atoms, reduce="add"
+                )
+                # TODO: handle equivariant models internal spherical harmonics
+            else:
+                pred = self.module_dict[target](out["node_embedding"])
+
+            if self.output_targets[target].get("level", "system") == "system":
+                # TODO: handle extensive vs intensive properties
+                pred = scatter_det(
+                    pred, batch, dim=0, dim_size=num_systems, reduce="add"
+                )
+
+            results[target] = pred.squeeze()
+
+        return results
 
     def generate_graph(
         self,
