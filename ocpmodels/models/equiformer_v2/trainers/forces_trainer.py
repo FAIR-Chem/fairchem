@@ -147,8 +147,8 @@ class EquiformerV2ForcesTrainer(ForcesTrainer):
             for k in scheduler_params.keys():
                 if "epochs" in k:
                     if isinstance(scheduler_params[k], (int, float, list)):
-                        scheduler_params[k] = multiply(
-                            scheduler_params[k], n_iter_per_epoch
+                        scheduler_params[k] = int(
+                            multiply(scheduler_params[k], n_iter_per_epoch)
                         )
             self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
 
