@@ -493,7 +493,7 @@ def save_experiment_log(args, jobs, configs):
     log_file.parent.mkdir(exist_ok=True, parents=True)
     with open(log_file, "w") as f:
         for job, config in zip(jobs, configs):
-            logging.info(
+            print(
                 json.dumps(
                     {
                         "config": config,
