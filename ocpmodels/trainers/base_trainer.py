@@ -368,33 +368,18 @@ class BaseTrainer(ABC):
                 for subtarget in self.config["outputs"][target_name][
                     "decomposition"
                 ]:
-                    self.output_targets[subtarget] = (
+                    subtarget_config = self.config["outputs"][
+                        target_name
+                    ].copy()
+                    subtarget_config.pop("decomposition")
+
+                    _config = (
                         self.config["outputs"][target_name]["decomposition"]
                     )[subtarget]
-                    self.output_targets[subtarget]["parent"] = target_name
-                    # inherent properties if not available
-                    if "level" not in self.output_targets[subtarget]:
-                        self.output_targets[subtarget]["level"] = self.config[
-                            "outputs"
-                        ][target_name].get("level", "system")
-                    if (
-                        "train_on_free_atoms"
-                        not in self.output_targets[subtarget]
-                    ):
-                        self.output_targets[subtarget][
-                            "train_on_free_atoms"
-                        ] = self.config["outputs"][target_name].get(
-                            "train_on_free_atoms", True
-                        )
-                    if (
-                        "eval_on_free_atoms"
-                        not in self.output_targets[subtarget]
-                    ):
-                        self.output_targets[subtarget][
-                            "eval_on_free_atoms"
-                        ] = self.config["outputs"][target_name].get(
-                            "eval_on_free_atoms", True
-                        )
+                    _config["parent"] = target_name
+
+                    subtarget_config.update(_config)
+                    self.output_targets[subtarget] = subtarget_config
 
         ##TODO: Assert that all targets, loss fn, metrics defined and consistent
         self.evaluation_metrics = self.config.get("eval_metrics", {})
@@ -410,21 +395,8 @@ class BaseTrainer(ABC):
         if distutils.is_master():
             logging.info(f"Loading model: {self.config['model']}")
 
-        # TODO: depreicated, remove.
-        bond_feat_dim = None
-        bond_feat_dim = self.config["model_attributes"].get(
-            "num_gaussians", 50
-        )
-
-        loader = self.train_loader or self.val_loader or self.test_loader
         self.model = registry.get_model_class(self.config["model"])(
-            loader.dataset[0].x.shape[-1]
-            if loader
-            and hasattr(loader.dataset[0], "x")
-            and loader.dataset[0].x is not None
-            else None,
-            bond_feat_dim,
-            1,
+            self.output_targets,
             **self.config["model_attributes"],
         ).to(self.device)
 
@@ -835,7 +807,7 @@ class BaseTrainer(ABC):
             target = torch.cat(
                 [batch[target_name].to(self.device) for batch in batch_list],
                 dim=0,
-            )
+            ).squeeze()
             pred = out[target_name]
 
             if self.output_targets[target_name].get(

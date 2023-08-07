@@ -71,14 +71,17 @@ outputs:
   energy:
     shape: 1
     level: system
+    custom_head: False
   forces:
-    shape: 3
     level: atom
+    irrep_dim: 1
     train_on_free_atoms: True
     eval_on_free_atoms: True
+    custom_head: False
 
   stress:
     level: system
+    custom_head: True
     decomposition:
       isotropic_stress:
         irrep_dim: 0
