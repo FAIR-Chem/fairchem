@@ -35,33 +35,23 @@ class BaseModel(nn.Module):
         for target in output_targets:
             if self.output_targets[target].get("custom_head", False):
                 if "irrep_dim" in self.output_targets[target]:
-                    layers = [
-                        Dense(
-                            edge_embedding_dim,
-                            edge_embedding_dim,
-                            activation="silu",
-                        )
-                    ] * self.output_targets[target].get("num_layers", 2)
-
-                    layers.append(
-                        Dense(edge_embedding_dim, 1, activation=None)
-                    )
-                # n-dimensional scalar properties
+                    embedding_dim = edge_embedding_dim
+                    output_shape = 1
                 else:
-                    target_shape = self.output_targets[target].get("shape", 1)
-                    layers = [
-                        Dense(
-                            node_embedding_dim,
-                            node_embedding_dim,
-                            activation="silu",
-                        )
-                    ] * self.output_targets[target].get("num_layers", 2)
+                    embedding_dim = node_embedding_dim
+                    output_shape = self.output_targets[target].get("shape", 1)
 
-                    layers.append(
-                        Dense(
-                            node_embedding_dim, target_shape, activation=None
-                        )
+                layers = [
+                    Dense(
+                        embedding_dim,
+                        embedding_dim,
+                        activation="silu",
                     )
+                ] * self.output_targets[target].get("num_layers", 2)
+
+                layers.append(
+                    Dense(edge_embedding_dim, output_shape, activation=None)
+                )
 
                 self.module_dict[target] = nn.Sequential(*layers)
 
