@@ -86,17 +86,20 @@ class BaseModel(nn.Module):
                 pred = scatter_det(
                     pred, edge_idx, dim=0, dim_size=num_atoms, reduce="add"
                 )
-                # TODO: handle equivariant models internal spherical harmonics
+                # TODO: Add support for equivariant models internal spherical harmonics
             else:
                 pred = self.module_dict[target](out["node_embedding"])
 
             if self.output_targets[target].get("level", "system") == "system":
-                # TODO: handle extensive vs intensive properties
                 pred = scatter_det(
-                    pred, batch, dim=0, dim_size=num_systems, reduce="add"
+                    pred,
+                    batch,
+                    dim=0,
+                    dim_size=num_systems,
+                    reduce=self.output_targets[target].get("reduce", "add"),
                 )
 
-            results[target] = pred.squeeze()
+            results[target] = pred.squeeze(1)
 
         return results
 
