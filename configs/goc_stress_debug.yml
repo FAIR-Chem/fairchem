@@ -31,10 +31,8 @@ dataset:
           stdev: 143.72764771869745
   val:
     src: /checkpoint/saro00/mpf_datasets/s2efs/0/val.lmdb
-  test:
-    src: /checkpoint/saro00/mpf_datasets/s2efs/0/val.lmdb
 
-logger: tensorboard
+logger: wandb
 
 loss_functions:
   - energy:
@@ -42,11 +40,13 @@ loss_functions:
       coefficient: 1
   - forces:
       fn: l2mae
-      coefficient: 100
+      coefficient: 10
   - isotropic_stress:
       fn: mae
+      coefficient: 10
   - anisotropic_stress:
       fn: mae
+      coefficient: 10
 
 evaluation_metrics:
   metrics:
@@ -78,10 +78,10 @@ outputs:
     train_on_free_atoms: True
     eval_on_free_atoms: True
     custom_head: False
-
   stress:
     level: system
     custom_head: True
+    reduce: mean
     decomposition:
       isotropic_stress:
         irrep_dim: 0
@@ -163,3 +163,6 @@ optim:
   ema_decay: 0.999
   clip_grad_norm: 10
   weight_decay: 0
+
+slurm:
+  constraint: volta32gb

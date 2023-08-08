@@ -381,7 +381,7 @@ class BaseTrainer(ABC):
                     subtarget_config.update(_config)
                     self.output_targets[subtarget] = subtarget_config
 
-        ##TODO: Assert that all targets, loss fn, metrics defined and consistent
+        ## TODO: Assert that all targets, loss fn, metrics defined and consistent
         self.evaluation_metrics = self.config.get("eval_metrics", {})
         self.evaluator = Evaluator(
             task=self.name,
@@ -807,7 +807,9 @@ class BaseTrainer(ABC):
             target = torch.cat(
                 [batch[target_name].to(self.device) for batch in batch_list],
                 dim=0,
-            ).squeeze()
+            )
+            # backwards compatibility for flattened energy targets
+            target = target.squeeze(1) if len(target.shape) > 1 else target
             pred = out[target_name]
 
             if self.output_targets[target_name].get(
