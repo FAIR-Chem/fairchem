@@ -117,6 +117,7 @@ model:
   max_neighbors_qint: 8
   max_neighbors_aeaint: 20
   max_neighbors_aint: 1000
+  num_elements: 100
   rbf:
     name: gaussian
   envelope:
