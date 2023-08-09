@@ -106,18 +106,7 @@ class BaseTrainer(ABC):
             run_dir = os.getcwd()
 
         if timestamp_id is None:
-            timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(
-                self.device
-            )
-            # create directories from master rank only
-            distutils.broadcast(timestamp, 0)
-            _timestamp_id = datetime.datetime.fromtimestamp(
-                float(timestamp.float().item())
-            ).strftime("%Y-%m-%d-%H-%M-%S")
-            if identifier:
-                timestamp_id = f"{_timestamp_id}-{identifier}"
-            else:
-                timestamp_id = _timestamp_id
+            timestamp_id = self._get_timestamp(self.device, identifier)
 
         self.timestamp_id = none_throws(timestamp_id)
 
@@ -203,6 +192,19 @@ class BaseTrainer(ABC):
             update_old_config(self.config)
 
         self.load()
+
+    @staticmethod
+    def _get_timestamp(device: torch.device, suffix: Optional[str]) -> str:
+        now = datetime.datetime.now().timestamp()
+        timestamp_tensor = torch.tensor(now).to(device)
+        # create directories from master rank only
+        distutils.broadcast(timestamp_tensor, 0)
+        timestamp_str = datetime.datetime.fromtimestamp(
+            timestamp_tensor.float().item()
+        ).strftime("%Y-%m-%d-%H-%M-%S")
+        if suffix:
+            timestamp_str += "-" + suffix
+        return timestamp_str
 
     def load(self) -> None:
         self.load_seed_from_config()
