@@ -1,10 +1,11 @@
 import torch
+from torch_geometric.data import Data
 
 from ocpmodels.common.utils import cg_decomp_mat, irreps_sum
 
 
 class DataTransforms:
-    def __init__(self, config):
+    def __init__(self, config) -> None:
         self.config = config
 
     def __call__(self, data_object):
@@ -22,7 +23,7 @@ class DataTransforms:
         return data_object
 
 
-def decompose_tensor(data_object, config):
+def decompose_tensor(data_object, config) -> Data:
     tensor_key = config["tensor"]
     rank = config["rank"]
 
