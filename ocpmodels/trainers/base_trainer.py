@@ -39,9 +39,9 @@ from ocpmodels.common.utils import (
     get_commit_hash,
     get_loss_module,
     irreps_sum,
-    load_old_config,
     load_state_dict,
     save_checkpoint,
+    update_old_config,
 )
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -184,8 +184,11 @@ class BaseTrainer(ABC):
             print(yaml.dump(self.config, default_flow_style=False))
 
         ### backwards compatability with OCP v<2.0
-        if self.name in ["is2re", "s2ef"]:
-            self.config = load_old_config(self.name, self.config)
+        if self.name != "ocp":
+            logging.warning(
+                f"Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
+            )
+            update_old_config(self.config)
 
         self.load()
 

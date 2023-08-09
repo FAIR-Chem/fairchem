@@ -1195,8 +1195,16 @@ def irreps_sum(l):
     return total
 
 
-def load_old_config(name, config):
-    if name == "is2re":
+def update_old_config(config):
+    ### Read task based off config structure, similar to OCPCalculator.
+    if config["task"]["dataset"] == "trajectory_lmdb":
+        task = "s2ef"
+    elif config["task"]["dataset"] == "single_point_lmdb":
+        task = "is2re"
+    else:
+        raise NotImplementedError
+
+    if task == "is2re":
         ### Define loss functions
         _loss_fns = [
             {
@@ -1216,7 +1224,7 @@ def load_old_config(name, config):
             _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
         ### Define outputs
         _outputs = {"energy": {"shape": 1, "level": "system"}}
-    if name == "s2ef":
+    elif task == "s2ef":
         ### Define loss functions
         _loss_fns = [
             {
@@ -1284,7 +1292,6 @@ def load_old_config(name, config):
     config.update({"loss_fns": _loss_fns})
     config.update({"eval_metrics": _eval_metrics})
     config.update({"outputs": _outputs})
-    return config
 
 
 def get_loss_module(loss_name):
