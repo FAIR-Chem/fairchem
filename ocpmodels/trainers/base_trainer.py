@@ -12,9 +12,10 @@ import random
 import subprocess
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Dict, Optional, cast
+from typing import Any, DefaultDict, Dict, Optional, cast
 
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -32,7 +33,8 @@ from ocpmodels.common.data_parallel import (
     ParallelCollater,
 )
 from ocpmodels.common.registry import registry
-from ocpmodels.common.typing import assert_is_instance
+from ocpmodels.common.typing import assert_is_instance as aii
+from ocpmodels.common.typing import none_throws
 from ocpmodels.common.utils import (
     cg_decomp_mat,
     check_traj_files,
@@ -56,6 +58,16 @@ from ocpmodels.modules.scheduler import LRScheduler
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
+    train_loader: DataLoader[Any]
+    val_loader: DataLoader[Any]
+    test_loader: DataLoader[Any]
+    device: torch.device
+    output_targets: Dict[str, Any]
+    normalizers: Dict[str, Any]
+    ema: Optional[ExponentialMovingAverage]
+    clip_grad_norm: bool
+    ema_decay: float
+
     def __init__(
         self,
         task,
@@ -65,12 +77,12 @@ class BaseTrainer(ABC):
         optimizer,
         loss_fns,
         eval_metrics,
-        identifier,
+        identifier: str,
         timestamp_id: Optional[str] = None,
-        run_dir=None,
+        run_dir: Optional[str] = None,
         is_debug: bool = False,
         print_every: int = 100,
-        seed=None,
+        seed: Optional[int] = None,
         logger: str = "tensorboard",
         local_rank: int = 0,
         amp: bool = False,
@@ -100,14 +112,14 @@ class BaseTrainer(ABC):
             # create directories from master rank only
             distutils.broadcast(timestamp, 0)
             _timestamp_id = datetime.datetime.fromtimestamp(
-                timestamp.int()
+                float(timestamp.float().item())
             ).strftime("%Y-%m-%d-%H-%M-%S")
             if identifier:
                 timestamp_id = f"{_timestamp_id}-{identifier}"
             else:
                 timestamp_id = _timestamp_id
 
-        self.timestamp_id = timestamp_id
+        self.timestamp_id = none_throws(timestamp_id)
 
         commit_hash = get_commit_hash()
 
@@ -115,7 +127,7 @@ class BaseTrainer(ABC):
         self.config = {
             "task": task,
             "trainer": name,
-            "model": assert_is_instance(model.pop("name"), str),
+            "model": aii(model.pop("name"), str),
             "model_attributes": model,
             "outputs": outputs,
             "optim": optimizer,
@@ -186,7 +198,7 @@ class BaseTrainer(ABC):
         ### backwards compatability with OCP v<2.0
         if self.name != "ocp":
             logging.warning(
-                f"Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
+                "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
             )
             update_old_config(self.config)
 
@@ -400,7 +412,7 @@ class BaseTrainer(ABC):
                             "eval_on_free_atoms", True
                         )
 
-        ##TODO: Assert that all targets, loss fn, metrics defined and consistent
+        # TODO: Assert that all targets, loss fn, metrics defined and consistent
         self.evaluation_metrics = self.config.get("eval_metrics", {})
         self.evaluator = Evaluator(
             task=self.name,
@@ -582,8 +594,10 @@ class BaseTrainer(ABC):
 
     def load_extras(self) -> None:
         self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
-        self.clip_grad_norm = self.config["optim"].get("clip_grad_norm")
-        self.ema_decay = self.config["optim"].get("ema_decay")
+        self.clip_grad_norm = aii(
+            self.config["optim"].get("clip_grad_norm"), bool
+        )
+        self.ema_decay = aii(self.config["optim"].get("ema_decay"), float)
         if self.ema_decay:
             self.ema = ExponentialMovingAverage(
                 self.model.parameters(),
@@ -597,7 +611,7 @@ class BaseTrainer(ABC):
         metrics=None,
         checkpoint_file: str = "checkpoint.pt",
         training_state: bool = True,
-    ):
+    ) -> Optional[str]:
         if not self.is_debug and distutils.is_master():
             if training_state:
                 return save_checkpoint(
@@ -629,7 +643,7 @@ class BaseTrainer(ABC):
                     checkpoint_file=checkpoint_file,
                 )
             else:
-                if self.ema:
+                if self.ema is not None:
                     self.ema.store()
                     self.ema.copy_to()
                 ckpt_path = save_checkpoint(
@@ -657,8 +671,8 @@ class BaseTrainer(ABC):
         self,
         primary_metric,
         val_metrics,
-        disable_eval_tqdm=True,
-    ):
+        disable_eval_tqdm: bool = True,
+    ) -> None:
         if (
             "mae" in primary_metric
             and val_metrics[primary_metric]["metric"] < self.best_val_metric
@@ -679,7 +693,7 @@ class BaseTrainer(ABC):
                     disable_tqdm=disable_eval_tqdm,
                 )
 
-    def train(self, disable_eval_tqdm=False):
+    def train(self, disable_eval_tqdm: bool = False) -> None:
         ensure_fitted(self._unwrapped_model, warn=True)
 
         eval_every = self.config["optim"].get(
@@ -1041,9 +1055,9 @@ class BaseTrainer(ABC):
     def predict(
         self,
         data_loader,
-        per_image=True,
-        results_file=None,
-        disable_tqdm=False,
+        per_image: bool = True,
+        results_file: Optional[str] = None,
+        disable_tqdm: bool = False,
     ):
         ensure_fitted(self._unwrapped_model, warn=True)
 
@@ -1062,7 +1076,7 @@ class BaseTrainer(ABC):
             data_loader = [[data_loader]]
 
         self.model.eval()
-        if self.ema:
+        if self.ema is not None:
             self.ema.store()
             self.ema.copy_to()
 
@@ -1234,7 +1248,9 @@ class BaseTrainer(ABC):
 
         distutils.synchronize()
         if distutils.is_master():
-            gather_results = defaultdict(list)
+            gather_results: DefaultDict[
+                str, npt.NDArray[np.float_]
+            ] = defaultdict(list)
             full_path = os.path.join(
                 self.config["cmd"]["results_dir"],
                 f"{self.name}_{results_file}.npz",
