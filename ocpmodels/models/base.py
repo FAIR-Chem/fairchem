@@ -16,6 +16,7 @@ from ocpmodels.common.utils import (
     compute_neighbors,
     conditional_grad,
     get_pbc_distances,
+    irreps_sum,
     radius_graph_pbc,
     scatter_det,
 )
@@ -72,21 +73,41 @@ class BaseModel(nn.Module):
 
             if "irrep_dim" in self.output_targets[target]:
                 irrep = self.output_targets[target]["irrep_dim"]
-                edge_vec = out["edge_vec"]
-                edge_idx = out["edge_idx"]
+                ### If the model contains spherical harmonic embeddings, use those directly.
+                if self.output_targets[target].get("direct_irreps", False):
+                    # (nnodes, (l+1)^2, edge_embedding_dim)
+                    sphharm_node_embedding = out["sphharm_node_embedding"]
 
-                # (nedges, (2*irrep_dim+1))
-                spharm = o3.spherical_harmonics(irrep, edge_vec, True).detach()
-                # (nedges, 1)
-                pred = self.module_dict[target](out["edge_embedding"])
-                # (nedges, 2*irrep-dim+1)
-                pred = pred * spharm
-                # aggregate edges per node
-                # (nnodes, 2*irrep-dim+1)
-                pred = scatter_det(
-                    pred, edge_idx, dim=0, dim_size=num_atoms, reduce="add"
-                )
-                # TODO: Add support for equivariant models internal spherical harmonics
+                    # (nnodes, 2*l+1, edge_embedding_dim)
+                    irrep_node_embedding = sphharm_node_embedding[
+                        :,
+                        max(0, irreps_sum(irrep - 1)) : irreps_sum(irrep),
+                    ]
+
+                    # (nnodes, 2*l+1, 1)
+                    pred = self.module_dict[target](irrep_node_embedding)
+                    # (nnodes, 2*l+1)
+                    pred = pred.squeeze(2)
+
+                ### Otherwise, compute spherical harmonics
+                else:
+                    edge_vec = out["edge_vec"]
+                    edge_idx = out["edge_idx"]
+
+                    # (nedges, (2*irrep_dim+1))
+                    sphharm = o3.spherical_harmonics(
+                        irrep, edge_vec, True
+                    ).detach()
+                    # (nedges, 1)
+                    pred = self.module_dict[target](out["edge_embedding"])
+                    # (nedges, 2*irrep-dim+1)
+                    pred = pred * sphharm
+
+                    # aggregate edges per node
+                    # (nnodes, 2*irrep-dim+1)
+                    pred = scatter_det(
+                        pred, edge_idx, dim=0, dim_size=num_atoms, reduce="add"
+                    )
             else:
                 pred = self.module_dict[target](out["node_embedding"])
 

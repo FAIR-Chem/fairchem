@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
+import sys
 import time
 from typing import List
 
@@ -66,9 +67,7 @@ class eSCN(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,  # not used
-        bond_feat_dim: int,  # not used
-        num_targets: int,  # not used
+        output_targets,
         use_pbc: bool = True,
         regress_forces: bool = True,
         otf_graph: bool = False,
@@ -88,9 +87,11 @@ class eSCN(BaseModel):
         distance_resolution: float = 0.02,
         show_timing_info: bool = False,
     ) -> None:
-        super().__init__()
-
-        import sys
+        super().__init__(
+            output_targets=output_targets,
+            node_embedding_dim=hidden_channels,
+            edge_embedding_dim=edge_channels,
+        )
 
         if "e3nn" not in sys.modules:
             logging.error(
@@ -195,13 +196,15 @@ class eSCN(BaseModel):
             self.layer_blocks.append(block)
 
         # Output blocks for energy and forces
-        self.energy_block = EnergyBlock(
-            self.sphere_channels_all, self.num_sphere_samples, self.act
-        )
-        if self.regress_forces:
-            self.force_block = ForceBlock(
+        if "energy" in self.output_targets:
+            self.energy_block = EnergyBlock(
                 self.sphere_channels_all, self.num_sphere_samples, self.act
             )
+        if "forces" in self.output_targets:
+            if self.regress_forces:
+                self.force_block = ForceBlock(
+                    self.sphere_channels_all, self.num_sphere_samples, self.act
+                )
 
         # Create a roughly evenly distributed point sampling of the sphere for the output blocks
         self.sphere_points = nn.Parameter(
@@ -224,7 +227,7 @@ class eSCN(BaseModel):
         self.sphharm_weights = nn.ParameterList(sphharm_weights)
 
     @conditional_grad(torch.enable_grad())
-    def forward(self, data):
+    def _forward(self, data):
         device = data.pos.device
         self.batch_size = len(data.natoms)
         self.dtype = data.pos.dtype
@@ -316,44 +319,52 @@ class eSCN(BaseModel):
                     mappingReduced,
                 )
 
-        # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
-        # These values are fed into the output blocks.
-        x_pt = torch.tensor([], device=device)
-        offset = 0
-        # Compute the embedding values at every sampled point on the sphere
-        for i in range(self.num_resolutions):
-            num_coefficients = int((x.lmax_list[i] + 1) ** 2)
-            x_pt = torch.cat(
-                [
-                    x_pt,
-                    torch.einsum(
-                        "abc, pb->apc",
-                        x.embedding[:, offset : offset + num_coefficients],
-                        self.sphharm_weights[i],
-                    ).contiguous(),
-                ],
-                dim=2,
-            )
-            offset = offset + num_coefficients
+        outputs = {}
+        outputs["sphharm_node_embedding"] = x.embedding
 
-        x_pt = x_pt.view(-1, self.sphere_channels_all)
+        if "energy" in self.output_targets or "forces" in self.output_targets:
+            # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
+            # These values are fed into the output blocks.
+            x_pt = torch.tensor([], device=device)
+            offset = 0
+            # Compute the embedding values at every sampled point on the sphere
+            for i in range(self.num_resolutions):
+                num_coefficients = int((x.lmax_list[i] + 1) ** 2)
+                x_pt = torch.cat(
+                    [
+                        x_pt,
+                        torch.einsum(
+                            "abc, pb->apc",
+                            x.embedding[:, offset : offset + num_coefficients],
+                            self.sphharm_weights[i],
+                        ).contiguous(),
+                    ],
+                    dim=2,
+                )
+                offset = offset + num_coefficients
 
-        ###############################################################
-        # Energy estimation
-        ###############################################################
-        node_energy = self.energy_block(x_pt)
-        energy = torch.zeros(len(data.natoms), device=device)
-        energy.index_add_(0, data.batch, node_energy.view(-1))
-        # Scale energy to help balance numerical precision w.r.t. forces
-        energy = energy * 0.001
+            x_pt = x_pt.view(-1, self.sphere_channels_all)
 
-        ###############################################################
-        # Force estimation
-        ###############################################################
-        if self.regress_forces:
-            forces = self.force_block(x_pt, self.sphere_points)
+            ###############################################################
+            # Energy estimation
+            ###############################################################
+            if "energy" in self.output_targets:
+                node_energy = self.energy_block(x_pt)
+                energy = torch.zeros(len(data.natoms), device=device)
+                energy.index_add_(0, data.batch, node_energy.view(-1))
+                # Scale energy to help balance numerical precision w.r.t. forces
+                energy = energy * 0.001
+                outputs["energy"] = energy
 
-        if self.show_timing_info is True:
+            ###############################################################
+            # Force estimation
+            ###############################################################
+            if "forces" in self.output_targets:
+                if self.regress_forces:
+                    forces = self.force_block(x_pt, self.sphere_points)
+                    outputs["forces"] = forces
+
+        if self.show_timing_info:
             torch.cuda.synchronize()
             print(
                 "{} Time: {}\tMemory: {}\t{}".format(
@@ -364,12 +375,9 @@ class eSCN(BaseModel):
                 )
             )
 
-        self.counter = self.counter + 1
+            self.counter = self.counter + 1
 
-        if not self.regress_forces:
-            return energy
-        else:
-            return energy, forces
+        return outputs
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
