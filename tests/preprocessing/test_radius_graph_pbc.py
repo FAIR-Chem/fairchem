@@ -7,18 +7,15 @@ LICENSE file in the root directory of this source tree.
 
 import os
 
-import ase
-import numpy as np
 import pytest
 import torch
 from ase.build import molecule
 from ase.io import read
 from ase.lattice.cubic import FaceCenteredCubic
-from pymatgen.io.ase import AseAtomsAdaptor
 from torch_geometric.transforms.radius_graph import RadiusGraph
 from torch_geometric.utils.sort_edge_index import sort_edge_index
 
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
+from ocpmodels.common.utils import radius_graph_pbc
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 

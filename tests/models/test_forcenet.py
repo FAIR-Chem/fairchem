@@ -7,7 +7,6 @@ LICENSE file in the root directory of this source tree.
 
 import os
 
-import numpy as np
 import pytest
 import torch
 from ase.io import read

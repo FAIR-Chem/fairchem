@@ -12,6 +12,7 @@ Environment (ASE)
 import copy
 import logging
 import os
+from typing import Optional
 
 import torch
 import yaml
@@ -21,11 +22,7 @@ from ase.calculators.singlepoint import SinglePointCalculator as sp
 from ase.constraints import FixAtoms
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    radius_graph_pbc,
-    setup_imports,
-    setup_logging,
-)
+from ocpmodels.common.utils import setup_imports, setup_logging
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
@@ -67,12 +64,12 @@ class OCPCalculator(Calculator):
 
     def __init__(
         self,
-        config_yml=None,
-        checkpoint=None,
-        trainer=None,
-        cutoff=6,
-        max_neighbors=50,
-        cpu=True,
+        config_yml: Optional[str] = None,
+        checkpoint: Optional[str] = None,
+        trainer: Optional[str] = None,
+        cutoff: int = 6,
+        max_neighbors: int = 50,
+        cpu: bool = True,
     ) -> None:
         """
         OCP-ASE Calculator
@@ -198,7 +195,7 @@ class OCPCalculator(Calculator):
         except NotImplementedError:
             logging.warning("Unable to load checkpoint!")
 
-    def calculate(self, atoms, properties, system_changes) -> None:
+    def calculate(self, atoms: Atoms, properties, system_changes) -> None:
         Calculator.calculate(self, atoms, properties, system_changes)
         data_object = self.a2g.convert(atoms)
         batch = data_list_collater([data_object], otf_graph=True)

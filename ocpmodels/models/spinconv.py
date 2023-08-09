@@ -4,32 +4,24 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+import logging
 import math
 import time
 from math import pi as PI
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import Embedding, Linear, ModuleList, Sequential
-from torch_geometric.nn import MessagePassing, SchNet, radius_graph
+from torch.nn import ModuleList
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.transforms import RandomRotate
-from ocpmodels.common.utils import (
-    compute_neighbors,
-    conditional_grad,
-    get_pbc_distances,
-    radius_graph_pbc,
-)
+from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 
 try:
     from e3nn import o3
-    from e3nn.io import SphericalTensor
-    from e3nn.o3 import FromS2Grid, SphericalHarmonics, ToS2Grid
+    from e3nn.o3 import FromS2Grid
 except Exception:
     pass
 
@@ -101,8 +93,8 @@ class spinconv(BaseModel):
 
         # variables used for display purposes
         self.counter = 0
-        self.start_time = time.time()
-        self.total_time = 0
+        self.start_time: float = time.time()
+        self.total_time: float = 0.0
         self.model_ref_number = model_ref_number
 
         if self.force_estimator == "grad":
@@ -111,7 +103,7 @@ class spinconv(BaseModel):
         # self.act = ShiftedSoftplus()
         self.act = Swish()
 
-        self.distance_expansion_forces = GaussianSmearing(
+        self.distance_expansion_forces: GaussianSmearing = GaussianSmearing(
             0.0,
             cutoff,
             num_basis_functions,
@@ -119,7 +111,7 @@ class spinconv(BaseModel):
         )
 
         # Weights for message initialization
-        self.embeddingblock2 = EmbeddingBlock(
+        self.embeddingblock2: EmbeddingBlock = EmbeddingBlock(
             self.mid_hidden_channels,
             self.hidden_channels,
             self.mid_hidden_channels,
@@ -128,14 +120,14 @@ class spinconv(BaseModel):
             self.max_num_elements,
             self.act,
         )
-        self.distfc1 = nn.Linear(
+        self.distfc1: nn.Linear = nn.Linear(
             self.mid_hidden_channels, self.mid_hidden_channels
         )
-        self.distfc2 = nn.Linear(
+        self.distfc2: nn.Linear = nn.Linear(
             self.mid_hidden_channels, self.mid_hidden_channels
         )
 
-        self.dist_block = DistanceBlock(
+        self.dist_block: DistanceBlock = DistanceBlock(
             self.num_basis_functions,
             self.mid_hidden_channels,
             self.max_num_elements,
@@ -215,7 +207,7 @@ class spinconv(BaseModel):
         )
         if self.show_timing_info is True:
             torch.cuda.synchronize()
-            print(
+            logging.info(
                 "Memory: {}\t{}\t{}".format(
                     len(edge_index[0]),
                     torch.cuda.memory_allocated()
@@ -599,13 +591,13 @@ class spinconv(BaseModel):
         edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 
         if torch.min(edge_vec_0_distance) < 0.0001:
-            print(
+            logging.error(
                 "Error edge_vec_0_distance: {}".format(
                     torch.min(edge_vec_0_distance)
                 )
             )
             (minval, minidx) = torch.min(edge_vec_0_distance, 0)
-            print(
+            logging.error(
                 "Error edge_vec_0_distance: {} {} {} {} {}".format(
                     minidx,
                     edge_index[0, minidx],
@@ -627,7 +619,7 @@ class spinconv(BaseModel):
         edge_vec_2_distance = torch.sqrt(torch.sum(edge_vec_2**2, dim=1))
 
         if torch.min(edge_vec_2_distance) < 0.000001:
-            print(
+            logging.error(
                 "Error edge_vec_2_distance: {}".format(
                     torch.min(edge_vec_2_distance)
                 )
@@ -852,7 +844,7 @@ class MessageBlock(torch.nn.Module):
             self.lmax,
         )
 
-        self.embeddingblock1 = EmbeddingBlock(
+        self.embeddingblock1: EmbeddingBlock = EmbeddingBlock(
             self.mid_hidden_channels,
             self.mid_hidden_channels,
             self.mid_hidden_channels,
@@ -861,7 +853,7 @@ class MessageBlock(torch.nn.Module):
             self.max_num_elements,
             self.act,
         )
-        self.embeddingblock2 = EmbeddingBlock(
+        self.embeddingblock2: EmbeddingBlock = EmbeddingBlock(
             self.mid_hidden_channels,
             self.out_hidden_channels,
             self.mid_hidden_channels,
@@ -934,7 +926,7 @@ class ForceOutputBlock(torch.nn.Module):
         self.max_num_elements = max_num_elements
         self.num_embedding_basis = 8
 
-        self.spinconvblock = SpinConvBlock(
+        self.spinconvblock: SpinConvBlock = SpinConvBlock(
             self.in_hidden_channels,
             self.mid_hidden_channels,
             self.sphere_size_lat,
@@ -944,7 +936,7 @@ class ForceOutputBlock(torch.nn.Module):
             self.lmax,
         )
 
-        self.block1 = EmbeddingBlock(
+        self.block1: EmbeddingBlock = EmbeddingBlock(
             self.mid_hidden_channels,
             self.mid_hidden_channels,
             self.mid_hidden_channels,
@@ -953,7 +945,7 @@ class ForceOutputBlock(torch.nn.Module):
             self.max_num_elements,
             self.act,
         )
-        self.block2 = EmbeddingBlock(
+        self.block2: EmbeddingBlock = EmbeddingBlock(
             self.mid_hidden_channels,
             self.out_hidden_channels,
             self.mid_hidden_channels,

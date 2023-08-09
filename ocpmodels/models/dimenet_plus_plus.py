@@ -36,12 +36,10 @@ from typing import Optional
 
 import torch
 from torch import nn
-from torch_geometric.nn import radius_graph
 from torch_geometric.nn.inits import glorot_orthogonal
 from torch_geometric.nn.models.dimenet import (
     BesselBasisLayer,
     EmbeddingBlock,
-    Envelope,
     ResidualLayer,
     SphericalBasisLayer,
 )
@@ -50,11 +48,7 @@ from torch_scatter import scatter
 from torch_sparse import SparseTensor
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    conditional_grad,
-    get_pbc_distances,
-    radius_graph_pbc,
-)
+from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 
 try:
@@ -66,13 +60,13 @@ except ImportError:
 class InteractionPPBlock(torch.nn.Module):
     def __init__(
         self,
-        hidden_channels,
-        int_emb_size,
-        basis_emb_size,
-        num_spherical,
-        num_radial,
-        num_before_skip,
-        num_after_skip,
+        hidden_channels: int,
+        int_emb_size: int,
+        basis_emb_size: int,
+        num_spherical: int,
+        num_radial: int,
+        num_before_skip: int,
+        num_after_skip: int,
         act="silu",
     ) -> None:
         act = activation_resolver(act)
@@ -169,9 +163,9 @@ class OutputPPBlock(torch.nn.Module):
     def __init__(
         self,
         num_radial: int,
-        hidden_channels,
-        out_emb_channels,
-        out_channels,
+        hidden_channels: int,
+        out_emb_channels: int,
+        out_channels: int,
         num_layers: int,
         act: str = "silu",
     ) -> None:
@@ -235,16 +229,16 @@ class DimeNetPlusPlus(torch.nn.Module):
 
     def __init__(
         self,
-        hidden_channels,
-        out_channels,
+        hidden_channels: int,
+        out_channels: int,
         num_blocks: int,
         int_emb_size: int,
         basis_emb_size: int,
-        out_emb_channels,
+        out_emb_channels: int,
         num_spherical: int,
         num_radial: int,
         cutoff: float = 5.0,
-        envelope_exponent=5,
+        envelope_exponent: int = 5,
         num_before_skip: int = 1,
         num_after_skip: int = 2,
         num_output_layers: int = 3,
@@ -346,24 +340,24 @@ class DimeNetPlusPlus(torch.nn.Module):
 class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
     def __init__(
         self,
-        num_atoms,
-        bond_feat_dim,  # not used
-        num_targets,
-        use_pbc=True,
-        regress_forces=True,
-        hidden_channels=128,
-        num_blocks=4,
-        int_emb_size=64,
-        basis_emb_size=8,
-        out_emb_channels=256,
-        num_spherical=7,
-        num_radial=6,
-        otf_graph=False,
-        cutoff=10.0,
-        envelope_exponent=5,
-        num_before_skip=1,
-        num_after_skip=2,
-        num_output_layers=3,
+        num_atoms: int,
+        bond_feat_dim: int,  # not used
+        num_targets: int,
+        use_pbc: bool = True,
+        regress_forces: bool = True,
+        hidden_channels: int = 128,
+        num_blocks: int = 4,
+        int_emb_size: int = 64,
+        basis_emb_size: int = 8,
+        out_emb_channels: int = 256,
+        num_spherical: int = 7,
+        num_radial: int = 6,
+        otf_graph: bool = False,
+        cutoff: float = 10.0,
+        envelope_exponent: int = 5,
+        num_before_skip: int = 1,
+        num_after_skip: int = 2,
+        num_output_layers: int = 3,
     ) -> None:
         self.num_targets = num_targets
         self.regress_forces = regress_forces

@@ -7,12 +7,11 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
-import pathlib
 from collections import defaultdict
-from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch_geometric
 from tqdm import tqdm
@@ -156,7 +155,7 @@ class ForcesTrainer(BaseTrainer):
         per_image: bool = True,
         results_file=None,
         disable_tqdm: bool = False,
-    ):
+    ) -> Dict[str, npt.NDArray[np.float_]]:
         ensure_fitted(self._unwrapped_model, warn=True)
 
         if distutils.is_master() and not disable_tqdm:
@@ -260,10 +259,14 @@ class ForcesTrainer(BaseTrainer):
                     self.ema.restore()
                 return predictions
 
-        predictions["forces"] = np.array(predictions["forces"])
-        predictions["chunk_idx"] = np.array(predictions["chunk_idx"])
+        predictions["forces"] = np.array(predictions["forces"], dtype=object)
+        predictions["chunk_idx"] = np.array(
+            predictions["chunk_idx"],
+        )
         predictions["energy"] = np.array(predictions["energy"])
-        predictions["id"] = np.array(predictions["id"])
+        predictions["id"] = np.array(
+            predictions["id"],
+        )
         self.save_results(
             predictions, results_file, keys=["energy", "forces", "chunk_idx"]
         )

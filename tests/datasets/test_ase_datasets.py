@@ -1,7 +1,6 @@
 import os
 
 import numpy as np
-import pytest
 from ase import build, db
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.io import Trajectory, write

@@ -12,14 +12,9 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
-from torch_geometric.nn import radius_graph
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    conditional_grad,
-    get_pbc_distances,
-    radius_graph_pbc,
-)
+from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.scn.sampling import CalcSpherePoints
 from ocpmodels.models.scn.smearing import (
@@ -70,6 +65,13 @@ class SphericalChannelNetwork(BaseModel):
 
         show_timing_info (bool): Show timing and memory info
     """
+
+    energy_fc1: nn.Linear
+    energy_fc2: nn.Linear
+    energy_fc3: nn.Linear
+    force_fc1: nn.Linear
+    force_fc2: nn.Linear
+    force_fc3: nn.Linear
 
     def __init__(
         self,
@@ -259,7 +261,7 @@ class SphericalChannelNetwork(BaseModel):
 
         if self.show_timing_info is True:
             torch.cuda.synchronize()
-            print(
+            logging.info(
                 "{} Time: {}\tMemory: {}\t{}".format(
                     self.counter,
                     time.time() - start_time,
@@ -430,13 +432,13 @@ class SphericalChannelNetwork(BaseModel):
         edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 
         if torch.min(edge_vec_0_distance) < 0.0001:
-            print(
+            logging.error(
                 "Error edge_vec_0_distance: {}".format(
                     torch.min(edge_vec_0_distance)
                 )
             )
             (minval, minidx) = torch.min(edge_vec_0_distance, 0)
-            print(
+            logging.error(
                 "Error edge_vec_0_distance: {} {} {} {} {}".format(
                     minidx,
                     edge_index[0, minidx],

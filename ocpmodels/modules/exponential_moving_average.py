@@ -37,7 +37,7 @@ class ExponentialMovingAverage:
         if decay < 0.0 or decay > 1.0:
             raise ValueError("Decay must be between 0 and 1")
         self.decay = decay
-        self.num_updates = 0 if use_num_updates else None
+        self.num_updates: Optional[int] = 0 if use_num_updates else None
         parameters = list(parameters)
         self.shadow_params = [
             p.clone().detach() for p in parameters if p.requires_grad
