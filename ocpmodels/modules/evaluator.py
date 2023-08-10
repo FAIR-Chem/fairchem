@@ -35,36 +35,30 @@ with the relevant metrics computed.
 class Evaluator:
     task_metrics = {
         "s2ef": {
-            "metrics": {
-                "energy": ["mae"],
-                "forces": [
-                    "forcesx_mae",
-                    "forcesy_mae",
-                    "forcesz_mae",
-                    "mae",
-                    "cosine_similarity",
-                    "magnitude_error",
-                    "energy_forces_within_threshold",
-                ],
-            }
+            "energy": ["mae"],
+            "forces": [
+                "forcesx_mae",
+                "forcesy_mae",
+                "forcesz_mae",
+                "mae",
+                "cosine_similarity",
+                "magnitude_error",
+                "energy_forces_within_threshold",
+            ],
         },
         "is2rs": {
-            "metrics": {
-                "positions": [
-                    "average_distance_within_threshold",
-                    "mae",
-                    "mse",
-                ]
-            }
+            "positions": [
+                "average_distance_within_threshold",
+                "mae",
+                "mse",
+            ]
         },
         "is2re": {
-            "metrics": {
-                "energy": [
-                    "mae",
-                    "mse",
-                    "energy_within_threshold",
-                ]
-            },
+            "energy": [
+                "mae",
+                "mse",
+                "energy_within_threshold",
+            ]
         },
     }
 
