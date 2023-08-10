@@ -75,7 +75,12 @@ class Evaluator:
             eval_metrics if eval_metrics else self.task_metrics.get(task, {})
         )
 
-    def eval(self, prediction, target, prev_metrics={}):
+    def eval(
+        self,
+        prediction: Dict[str, torch.Tensor],
+        target: Dict[str, torch.Tensor],
+        prev_metrics={},
+    ):
 
         metrics = prev_metrics
 
@@ -119,32 +124,58 @@ class Evaluator:
         return metrics
 
 
-def forcesx_mae(prediction, target, key=None):
+def forcesx_mae(
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=None,
+):
     return mae(prediction["forces"][:, 0], target["forces"][:, 0])
 
 
-def forcesx_mse(prediction, target, key=None):
+def forcesx_mse(
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=None,
+):
     return mse(prediction["forces"][:, 0], target["forces"][:, 0])
 
 
-def forcesy_mae(prediction, target, key=None):
+def forcesy_mae(
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=None,
+):
     return mae(prediction["forces"][:, 1], target["forces"][:, 1])
 
 
-def forcesy_mse(prediction, target, key=None):
+def forcesy_mse(
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=None,
+):
     return mse(prediction["forces"][:, 1], target["forces"][:, 1])
 
 
-def forcesz_mae(prediction, target, key=None):
+def forcesz_mae(
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=None,
+):
     return mae(prediction["forces"][:, 2], target["forces"][:, 2])
 
 
-def forcesz_mse(prediction, target, key=None):
+def forcesz_mse(
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=None,
+):
     return mse(prediction["forces"][:, 2], target["forces"][:, 2])
 
 
 def energy_forces_within_threshold(
-    prediction: dict, target: dict, key=None
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=None,
 ) -> Dict[str, Union[float, int]]:
     # Note that this natoms should be the count of free atoms we evaluate over.
     assert target["natoms"].sum() == prediction["forces"].size(0)
@@ -179,7 +210,9 @@ def energy_forces_within_threshold(
 
 
 def energy_within_threshold(
-    prediction, target, key=None
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=None,
 ) -> Dict[str, Union[float, int]]:
     # compute absolute error on energy per system.
     # then count the no. of systems where max energy error is < 0.02.
@@ -197,7 +230,9 @@ def energy_within_threshold(
 
 
 def average_distance_within_threshold(
-    prediction, target, key=None
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=None,
 ) -> Dict[str, Union[float, int]]:
     pred_pos = torch.split(
         prediction["positions"], prediction["natoms"].tolist()
@@ -230,7 +265,11 @@ def average_distance_within_threshold(
     return {"metric": success / total, "total": success, "numel": total}
 
 
-def stress_mae_from_decomposition(prediction, target, key=None):
+def stress_mae_from_decomposition(
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=None,
+):
     device = prediction["isotropic_stress"].device
     cg_matrix = cg_decomp_mat(2, device)
 
@@ -255,7 +294,12 @@ def stress_mae_from_decomposition(prediction, target, key=None):
     return mae(prediction_stress, target_stress)
 
 
-def min_diff(pred_pos, dft_pos, cell, pbc):
+def min_diff(
+    pred_pos: torch.Tensor,
+    dft_pos: torch.Tensor,
+    cell: torch.Tensor,
+    pbc: torch.Tensor,
+):
     pos_diff = pred_pos - dft_pos
     fractional = np.linalg.solve(cell.T, pos_diff.T).T
 
@@ -270,7 +314,11 @@ def min_diff(pred_pos, dft_pos, cell, pbc):
     return np.matmul(fractional, cell)
 
 
-def cosine_similarity(prediction: dict, target: dict, key=slice(None)):
+def cosine_similarity(
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=slice(None),
+):
     error = torch.cosine_similarity(prediction[key], target[key])
     return {
         "metric": torch.mean(error).item(),
@@ -280,7 +328,9 @@ def cosine_similarity(prediction: dict, target: dict, key=slice(None)):
 
 
 def mae(
-    prediction: dict, target: dict, key=slice(None)
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=slice(None),
 ) -> Dict[str, Union[float, int]]:
     error = torch.abs(target[key] - prediction[key])
     return {
@@ -291,7 +341,9 @@ def mae(
 
 
 def mse(
-    prediction: dict, target: dict, key=slice(None)
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=slice(None),
 ) -> Dict[str, Union[float, int]]:
     error = (target[key] - prediction[key]) ** 2
     return {
@@ -302,7 +354,10 @@ def mse(
 
 
 def magnitude_error(
-    prediction: dict, target: dict, key=slice(None), p: int = 2
+    prediction: Dict[str, torch.Tensor],
+    target: Dict[str, torch.Tensor],
+    key=slice(None),
+    p: int = 2,
 ) -> Dict[str, Union[float, int]]:
     assert prediction[key].shape[1] > 1
     error = torch.abs(

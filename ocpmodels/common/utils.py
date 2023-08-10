@@ -37,6 +37,7 @@ from torch_geometric.utils import remove_self_loops
 from torch_scatter import scatter, segment_coo, segment_csr
 
 import ocpmodels
+from ocpmodels.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
     from torch.nn.modules.module import _IncompatibleKeys
@@ -1194,8 +1195,16 @@ def irreps_sum(l):
     return total
 
 
-def load_old_config(name, config):
-    if name == "is2re":
+def update_old_config(config):
+    ### Read task based off config structure, similar to OCPCalculator.
+    if config["task"]["dataset"] == "trajectory_lmdb":
+        task = "s2ef"
+    elif config["task"]["dataset"] == "single_point_lmdb":
+        task = "is2re"
+    else:
+        raise NotImplementedError
+
+    if task == "is2re":
         ### Define loss functions
         _loss_fns = [
             {
@@ -1215,7 +1224,7 @@ def load_old_config(name, config):
             _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
         ### Define outputs
         _outputs = {"energy": {"shape": 1, "level": "system"}}
-    if name == "s2ef":
+    elif task == "s2ef":
         ### Define loss functions
         _loss_fns = [
             {
@@ -1283,4 +1292,18 @@ def load_old_config(name, config):
     config.update({"loss_fns": _loss_fns})
     config.update({"eval_metrics": _eval_metrics})
     config.update({"outputs": _outputs})
-    return config
+
+
+def get_loss_module(loss_name):
+    if loss_name in ["l1", "mae"]:
+        loss_fn = nn.L1Loss()
+    elif loss_name == "mse":
+        loss_fn = nn.MSELoss()
+    elif loss_name == "l2mae":
+        loss_fn = L2MAELoss()
+    elif loss_name == "atomwisel2":
+        loss_fn = AtomwiseL2Loss()
+    else:
+        raise NotImplementedError(f"Unknown loss function name: {loss_name}")
+
+    return loss_fn
