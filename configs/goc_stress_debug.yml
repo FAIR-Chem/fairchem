@@ -141,6 +141,7 @@ model:
   edge_atom_interaction: True
   atom_interaction: True
 
+  num_elements: 100
   num_atom_emb_layers: 2
   num_global_out_layers: 2
   qint_tags: [1, 2]
