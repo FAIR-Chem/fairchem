@@ -6,6 +6,8 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
+from abc import abstractmethod
+from collections import defaultdict
 
 import torch
 import torch.nn as nn
@@ -13,6 +15,7 @@ from e3nn import o3
 from torch_geometric.nn import radius_graph
 
 from ocpmodels.common.utils import (
+    cg_decomp_mat,
     compute_neighbors,
     conditional_grad,
     get_pbc_distances,
@@ -58,71 +61,144 @@ class BaseModel(nn.Module):
 
     def forward(self, data):
         batch = data.batch
-        num_atoms = data.atomic_numbers.shape[0]
-        num_systems = data.natoms.shape[0]
+        self.device = data.pos.device
+        self.num_atoms = data.atomic_numbers.shape[0]
+        self.num_systems = data.natoms.shape[0]
+
+        # call declared model forward pass
         out = self._forward(data)
 
         results = {}
 
         for target in self.output_targets:
-            # for models that directly return desired property, add
-            # result directly and continue
+            ### for models that directly return desired property, add directly
             if target not in self.module_dict:
                 results[target] = out[target]
                 continue
 
+            # equivariant prediction
             if "irrep_dim" in self.output_targets[target]:
-                irrep = self.output_targets[target]["irrep_dim"]
-                ### If the model contains spherical harmonic embeddings, use those directly.
-                if self.output_targets[target].get("direct_irreps", False):
-                    # (nnodes, (l+1)^2, edge_embedding_dim)
-                    sphharm_node_embedding = out["sphharm_node_embedding"]
-
-                    # (nnodes, 2*l+1, edge_embedding_dim)
-                    irrep_node_embedding = sphharm_node_embedding[
-                        :,
-                        max(0, irreps_sum(irrep - 1)) : irreps_sum(irrep),
-                    ]
-
-                    # (nnodes, 2*l+1, 1)
-                    pred = self.module_dict[target](irrep_node_embedding)
-                    # (nnodes, 2*l+1)
-                    pred = pred.squeeze(2)
-
-                ### Otherwise, compute spherical harmonics
-                else:
-                    edge_vec = out["edge_vec"]
-                    edge_idx = out["edge_idx"]
-
-                    # (nedges, (2*irrep_dim+1))
-                    sphharm = o3.spherical_harmonics(
-                        irrep, edge_vec, True
-                    ).detach()
-                    # (nedges, 1)
-                    pred = self.module_dict[target](out["edge_embedding"])
-                    # (nedges, 2*irrep-dim+1)
-                    pred = pred * sphharm
-
-                    # aggregate edges per node
-                    # (nnodes, 2*irrep-dim+1)
-                    pred = scatter_det(
-                        pred, edge_idx, dim=0, dim_size=num_atoms, reduce="add"
-                    )
+                pred = self.forward_irrep(out, target)
+            # scalar prediction
             else:
                 pred = self.module_dict[target](out["node_embedding"])
 
+            # (batch, output_shape)
             if self.output_targets[target].get("level", "system") == "system":
                 pred = scatter_det(
                     pred,
                     batch,
                     dim=0,
-                    dim_size=num_systems,
+                    dim_size=self.num_systems,
                     reduce=self.output_targets[target].get("reduce", "add"),
                 )
 
             results[target] = pred.squeeze(1)
 
+        self.construct_parent_tensor(results)
+
         return results
+
+    def forward_irrep(self, out, target):
+        """
+        For equivariant properties, make use of spherical harmonics to ensure
+        SO(3) equivariance.
+        """
+        irrep = self.output_targets[target]["irrep_dim"]
+
+        ### leverage spherical harmonic embeddings directly
+        if self.output_targets[target].get("direct_irreps", False):
+            # (nnodes, (l+1)^2, edge_embedding_dim)
+            sphharm_node_embedding = out["sphharm_node_embedding"]
+
+            # (nnodes, 2*l+1, edge_embedding_dim)
+            irrep_node_embedding = sphharm_node_embedding[
+                :,
+                max(0, irreps_sum(irrep - 1)) : irreps_sum(irrep),
+            ]
+
+            # (nnodes, 2*l+1, 1)
+            pred = self.module_dict[target](irrep_node_embedding)
+            # (nnodes, 2*l+1)
+            pred = pred.squeeze(2)
+
+        ### Compute spherical harmonics based on edge vectors
+        else:
+            edge_vec = out["edge_vec"]
+            edge_idx = out["edge_idx"]
+
+            # (nedges, (2*irrep_dim+1))
+            sphharm = o3.spherical_harmonics(irrep, edge_vec, True).detach()
+            # (nedges, 1)
+            pred = self.module_dict[target](out["edge_embedding"])
+            # (nedges, 2*irrep-dim+1)
+            pred = pred * sphharm
+
+            # aggregate edges per node
+            # (nnodes, 2*irrep-dim+1)
+            pred = scatter_det(
+                pred, edge_idx, dim=0, dim_size=self.num_atoms, reduce="add"
+            )
+
+        return pred
+
+    def construct_parent_tensor(self, results):
+        parent_construction = defaultdict(dict)
+
+        # Identify target properties that are decomposition of parent property
+        for target in self.output_targets:
+            if "parent" in self.output_targets[target]:
+                parent_target = self.output_targets[target]["parent"]
+                irrep_dim = self.output_targets[target]["irrep_dim"]
+                ### NOTE: Only supports rank 2 tensors
+                ### TODO: Remove dictionary structure when rank 3 tensors are supported
+                parent_construction[parent_target][irrep_dim] = target
+
+        # Construct parent tensors from predicted irreps
+        for parent_target in parent_construction:
+            rank = max(parent_construction[parent_target].keys())
+            cg_matrix = cg_decomp_mat(rank, self.device)
+
+            # TODO: handle per-atom vs per-system properties
+            prediction_irreps = torch.zeros(
+                (self.num_systems, irreps_sum(rank)), device=self.device
+            )
+
+            # Rank 2 support
+            for irrep in range(rank + 1):
+                if irrep in parent_construction[parent_target]:
+                    _shape = prediction_irreps[
+                        :, max(0, irreps_sum(irrep - 1)) : irreps_sum(irrep)
+                    ].shape
+
+                    prediction_irreps[
+                        :, max(0, irreps_sum(irrep - 1)) : irreps_sum(irrep)
+                    ] = results[
+                        parent_construction[parent_target][irrep]
+                    ].view(
+                        _shape
+                    )
+
+            parent_prediction = torch.einsum(
+                "ba, cb->ca", cg_matrix, prediction_irreps
+            )
+
+            results[parent_target] = parent_prediction
+
+    @abstractmethod
+    def _forward(self, data):
+        """
+        Derived models should implement this function. Expected output should
+        be in the following format:
+
+            out = {
+                "output_property_1": pred_1,
+                "output_property_2": pred_2,
+            }
+
+        Where `output_property` are the desired model outputs as defined in the
+        `outputs` section of the model config.
+        """
 
     def generate_graph(
         self,
