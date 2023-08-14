@@ -9,7 +9,7 @@ dataset:
       force: forces
       stress: stress
     transforms:
-      decompose_tensor:
+      - decompose_tensor:
           tensor: stress
           rank: 2
           decomposition:
@@ -17,18 +17,20 @@ dataset:
               irrep_dim: 0
             anisotropic_stress:
               irrep_dim: 2
-      normalizer:
-        energy:
-          mean: -5.9749126
-          stdev: 1.866159
-        forces:
-          mean: 0
-          stdev: 1.866159
-        isotropic_stress:
-          mean: 43.27065
-          stdev: 674.1657344451734
-        anisotropic_stress:
-          stdev: 143.72764771869745
+      - flatten:
+          tensor: stress
+      - normalizer:
+          energy:
+            mean: -5.9749126
+            stdev: 1.866159
+          forces:
+            mean: 0
+            stdev: 1.866159
+          isotropic_stress:
+            mean: 43.27065
+            stdev: 674.1657344451734
+          anisotropic_stress:
+            stdev: 143.72764771869745
   val:
     src: /checkpoint/saro00/mpf_datasets/s2efs/0/val.lmdb
 
@@ -62,7 +64,7 @@ evaluation_metrics:
     anisotropic_stress:
       - mae
     stress:
-      - stress_mae_from_decomposition
+      - mae
     misc:
       - energy_forces_within_threshold
   primary_metric: forces_mae

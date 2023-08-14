@@ -167,21 +167,17 @@ class BaseModel(nn.Module):
             # Rank 2 support
             for irrep in range(rank + 1):
                 if irrep in parent_construction[parent_target]:
-                    _shape = prediction_irreps[
-                        :, max(0, irreps_sum(irrep - 1)) : irreps_sum(irrep)
-                    ].shape
-
+                    # (batch, 2*irrep+1)
                     prediction_irreps[
                         :, max(0, irreps_sum(irrep - 1)) : irreps_sum(irrep)
                     ] = results[
                         parent_construction[parent_target][irrep]
                     ].view(
-                        _shape
+                        -1, 2 * irrep + 1
                     )
 
-            parent_prediction = torch.einsum(
-                "ba, cb->ca", cg_matrix, prediction_irreps
-            )
+            # NOTE: AMP will return this as a float-16 tensor
+            parent_prediction = torch.mm(prediction_irreps, cg_matrix)
 
             results[parent_target] = parent_prediction
 
