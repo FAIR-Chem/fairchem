@@ -119,7 +119,7 @@ class LmdbDataset(Dataset[T_co]):
             self.num_samples = len(self.available_indices)
 
         self.key_mapping = self.config.get("key_mapping", None)
-        self.transforms = DataTransforms(self.config.get("transforms", {}))
+        self.transforms = DataTransforms(self.config.get("transforms", []))
 
     def __len__(self) -> int:
         return self.num_samples
