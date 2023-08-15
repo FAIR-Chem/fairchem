@@ -3,7 +3,6 @@ Uncompresses downloaded S2EF datasets to be used by the LMDB preprocessing
 script - preprocess_ef.py
 """
 
-import argparse
 import glob
 import lzma
 import multiprocessing as mp
@@ -25,44 +24,22 @@ def decompress_list_of_files(ip_op_pair: Tuple[str, str]) -> None:
     read_lzma(ip_file, op_file)
 
 
-def get_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--ipdir", type=str, help="Path to compressed dataset directory"
-    )
-    parser.add_argument(
-        "--opdir", type=str, help="Directory path to uncompress files to"
-    )
-    parser.add_argument(
-        "--num-workers", type=int, help="# of processes to parallelize across"
-    )
-    return parser
+def main(ipdir: str, opdir: str, num_workers: int) -> None:
+    os.makedirs(opdir, exist_ok=True)
 
-
-def main(args: argparse.Namespace) -> None:
-    os.makedirs(args.opdir, exist_ok=True)
-
-    filelist = glob.glob(os.path.join(args.ipdir, "*txt.xz")) + glob.glob(
-        os.path.join(args.ipdir, "*extxyz.xz")
+    filelist = glob.glob(os.path.join(ipdir, "*txt.xz")) + glob.glob(
+        os.path.join(ipdir, "*extxyz.xz")
     )
     ip_op_pairs: List[Tuple[str, str]] = []
     for filename in filelist:
         fname_base = os.path.basename(filename)
-        ip_op_pairs.append(
-            (filename, os.path.join(args.opdir, fname_base[:-3]))
-        )
+        ip_op_pairs.append((filename, os.path.join(opdir, fname_base[:-3])))
 
-    pool = mp.Pool(args.num_workers)
+    pool = mp.Pool(num_workers)
     list(
         tqdm(
             pool.imap(decompress_list_of_files, ip_op_pairs),
             total=len(ip_op_pairs),
-            desc=f"Uncompressing {args.ipdir}",
+            desc=f"Uncompressing {ipdir}",
         )
     )
-
-
-if __name__ == "__main__":
-    parser: argparse.ArgumentParser = get_parser()
-    args: argparse.Namespace = parser.parse_args()
-    main(args)
