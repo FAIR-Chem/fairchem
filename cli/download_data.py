@@ -1,10 +1,7 @@
-import argparse
 import glob
 import logging
 import os
 from typing import Dict, Optional
-
-import ocpmodels
 
 """
 This script provides users with an automated way to download, preprocess (where
@@ -48,7 +45,15 @@ S2EF_COUNTS = {
 
 
 def get_data(
-    datadir: str, task: str, split: Optional[str], del_intmd_files: bool
+    datadir: str,
+    task: str,
+    split: Optional[str],
+    del_intmd_files: bool,
+    num_workers: int = 1,
+    # Only used in preprocessing
+    get_edges: bool = False,
+    ref_energy: bool = False,
+    test_data: bool = False,
 ) -> None:
     os.makedirs(datadir, exist_ok=True)
 
@@ -87,8 +92,15 @@ def get_data(
             output_path = os.path.join(datadir, task, split, "train")
         else:
             output_path = os.path.join(datadir, task, "all", split)
-        uncompressed_dir = uncompress_data(compressed_dir)
-        preprocess_data(uncompressed_dir, output_path)
+        uncompressed_dir = uncompress_data(compressed_dir, num_workers)
+        preprocess_data(
+            uncompressed_dir=uncompressed_dir,
+            output_path=output_path,
+            num_workers=num_workers,
+            get_edges=get_edges,
+            ref_energy=ref_energy,
+            test_data=test_data,
+        )
 
         verify_count(output_path, task, split)
     if task == "s2ef" and split == "test":
@@ -100,25 +112,36 @@ def get_data(
         cleanup(filename, dirname)
 
 
-def uncompress_data(compressed_dir: str) -> str:
-    import uncompress
+def uncompress_data(compressed_dir: str, num_workers: int) -> str:
+    from cli import uncompress
 
-    parser = uncompress.get_parser()
-    args, _ = parser.parse_known_args()
-    args.ipdir = compressed_dir
-    args.opdir = os.path.dirname(compressed_dir) + "_uncompressed"
-    uncompress.main(args)
-    return args.opdir
+    opdir = os.path.dirname(compressed_dir) + "_uncompressed"
+    uncompress.main(
+        ipdir=compressed_dir,
+        opdir=opdir,
+        num_workers=num_workers,
+    )
+    return opdir
 
 
-def preprocess_data(uncompressed_dir: str, output_path: str) -> None:
-    import preprocess_ef as preprocess
+def preprocess_data(
+    uncompressed_dir: str,
+    output_path: str,
+    num_workers: int,
+    get_edges: bool,
+    ref_energy: bool,
+    test_data: bool,
+) -> None:
+    from cli import preprocess_ef as preprocess
 
-    parser = preprocess.get_parser()
-    args, _ = parser.parse_known_args()
-    args.data_path = uncompressed_dir
-    args.out_path = output_path
-    preprocess.main(args)
+    preprocess.main(
+        data_path=uncompressed_dir,
+        out_path=output_path,
+        num_workers=num_workers,
+        get_edges=get_edges,
+        ref_energy=ref_energy,
+        test_data=test_data,
+    )
 
 
 def verify_count(output_path: str, task: str, split: str) -> None:
@@ -141,46 +164,3 @@ def cleanup(filename: str, dirname: str) -> None:
         shutil.rmtree(dirname)
     if os.path.exists(dirname + "_uncompressed"):
         shutil.rmtree(dirname + "_uncompressed")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--task", type=str, help="Task to download")
-    parser.add_argument(
-        "--split", type=str, help="Corresponding data split to download"
-    )
-    parser.add_argument(
-        "--keep",
-        action="store_true",
-        help="Keep intermediate directories and files upon data retrieval/processing",
-    )
-    # Flags for S2EF train/val set preprocessing:
-    parser.add_argument(
-        "--get-edges",
-        action="store_true",
-        help="Store edge indices in LMDB, ~10x storage requirement. Default: compute edge indices on-the-fly.",
-    )
-    parser.add_argument(
-        "--num-workers",
-        type=int,
-        default=1,
-        help="No. of feature-extracting processes or no. of dataset chunks",
-    )
-    parser.add_argument(
-        "--ref-energy", action="store_true", help="Subtract reference energies"
-    )
-    parser.add_argument(
-        "--data-path",
-        type=str,
-        default=os.path.join(os.path.dirname(ocpmodels.__path__[0]), "data"),
-        help="Specify path to save dataset. Defaults to 'ocpmodels/data'",
-    )
-
-    args: argparse.Namespace
-    args, _ = parser.parse_known_args()
-    get_data(
-        datadir=args.data_path,
-        task=args.task,
-        split=args.split,
-        del_intmd_files=not args.keep,
-    )
