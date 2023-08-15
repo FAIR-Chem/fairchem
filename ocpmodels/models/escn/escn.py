@@ -319,50 +319,50 @@ class eSCN(BaseModel):
                     mappingReduced,
                 )
 
+        # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
+        # These values are fed into the output blocks.
+        x_pt = torch.tensor([], device=device)
+        offset = 0
+        # Compute the embedding values at every sampled point on the sphere
+        for i in range(self.num_resolutions):
+            num_coefficients = int((x.lmax_list[i] + 1) ** 2)
+            x_pt = torch.cat(
+                [
+                    x_pt,
+                    torch.einsum(
+                        "abc, pb->apc",
+                        x.embedding[:, offset : offset + num_coefficients],
+                        self.sphharm_weights[i],
+                    ).contiguous(),
+                ],
+                dim=2,
+            )
+            offset = offset + num_coefficients
+
+        x_pt = x_pt.view(-1, self.sphere_channels_all)
+
         outputs = {}
-        outputs["sphharm_node_embedding"] = x.embedding
+        outputs["sphere_values"] = x_pt
+        outputs["sphere_points"] = self.sphere_points
 
-        if "energy" in self.output_targets or "forces" in self.output_targets:
-            # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
-            # These values are fed into the output blocks.
-            x_pt = torch.tensor([], device=device)
-            offset = 0
-            # Compute the embedding values at every sampled point on the sphere
-            for i in range(self.num_resolutions):
-                num_coefficients = int((x.lmax_list[i] + 1) ** 2)
-                x_pt = torch.cat(
-                    [
-                        x_pt,
-                        torch.einsum(
-                            "abc, pb->apc",
-                            x.embedding[:, offset : offset + num_coefficients],
-                            self.sphharm_weights[i],
-                        ).contiguous(),
-                    ],
-                    dim=2,
-                )
-                offset = offset + num_coefficients
+        ###############################################################
+        # Energy estimation
+        ###############################################################
+        if "energy" in self.output_targets:
+            node_energy = self.energy_block(x_pt)
+            energy = torch.zeros(len(data.natoms), device=device)
+            energy.index_add_(0, data.batch, node_energy.view(-1))
+            # Scale energy to help balance numerical precision w.r.t. forces
+            energy = energy * 0.001
+            outputs["energy"] = energy
 
-            x_pt = x_pt.view(-1, self.sphere_channels_all)
-
-            ###############################################################
-            # Energy estimation
-            ###############################################################
-            if "energy" in self.output_targets:
-                node_energy = self.energy_block(x_pt)
-                energy = torch.zeros(len(data.natoms), device=device)
-                energy.index_add_(0, data.batch, node_energy.view(-1))
-                # Scale energy to help balance numerical precision w.r.t. forces
-                energy = energy * 0.001
-                outputs["energy"] = energy
-
-            ###############################################################
-            # Force estimation
-            ###############################################################
-            if "forces" in self.output_targets:
-                if self.regress_forces:
-                    forces = self.force_block(x_pt, self.sphere_points)
-                    outputs["forces"] = forces
+        ###############################################################
+        # Force estimation
+        ###############################################################
+        if "forces" in self.output_targets:
+            if self.regress_forces:
+                forces = self.force_block(x_pt, self.sphere_points)
+                outputs["forces"] = forces
 
         if self.show_timing_info:
             torch.cuda.synchronize()

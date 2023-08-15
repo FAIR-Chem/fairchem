@@ -107,23 +107,35 @@ class BaseModel(nn.Module):
         irrep = self.output_targets[target]["irrep_dim"]
 
         ### leverage spherical harmonic embeddings directly
-        if self.output_targets[target].get("direct_irreps", False):
-            # (nnodes, (l+1)^2, edge_embedding_dim)
-            sphharm_node_embedding = out["sphharm_node_embedding"]
+        if self.output_targets[target].get("use_sphere_s2", False):
+            assert "sphere_values" in out
+            assert "sphere_points" in out
 
-            # (nnodes, 2*l+1, edge_embedding_dim)
-            irrep_node_embedding = sphharm_node_embedding[
-                :,
-                max(0, irreps_sum(irrep - 1)) : irreps_sum(irrep),
-            ]
+            # (sphere_points, num_channels)
+            sphere_values = out["sphere_values"]
+            # (sphere_sample, 3)
+            sphere_points = out["sphere_points"]
+            num_sphere_samples = sphere_points.shape[0]
 
-            # (nnodes, 2*l+1, 1)
-            pred = self.module_dict[target](irrep_node_embedding)
-            # (nnodes, 2*l+1)
-            pred = pred.squeeze(2)
+            # (sphere_sample, 2*l+1)
+            sphharm = o3.spherical_harmonics(
+                irrep, sphere_points, True
+            ).detach()
+
+            # (sphere_sample, 1)
+            pred = self.module_dict[target](sphere_values)
+            # (nnodes, num_sphere_samples, 1)
+            pred = pred.view(-1, num_sphere_samples, 1)
+            # (nnodes, num_sphere_samples, 2*l+1)
+            pred = pred * sphharm
+            pred = pred.sum(dim=1) / num_sphere_samples
 
         ### Compute spherical harmonics based on edge vectors
         else:
+            assert "edge_vec" in out
+            assert "edge_idx" in out
+            assert "edge_embedding" in out
+
             edge_vec = out["edge_vec"]
             edge_idx = out["edge_idx"]
 
