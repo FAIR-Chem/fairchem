@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Text, Tuple, Union
 
 import numpy as np
 import torch
@@ -917,12 +917,12 @@ class SeverityLevelBetween(logging.Filter):
         return self.min_level <= record.levelno < self.max_level
 
 
-def setup_logging() -> None:
+def setup_logging(level: Union[int, Text] = logging.INFO) -> None:
     root = logging.getLogger()
 
     # Perform setup only if logging has not been configured
     if not root.hasHandlers():
-        root.setLevel(logging.INFO)
+        root.setLevel(level)
 
         log_formatter = logging.Formatter(
             "%(asctime)s (%(levelname)s): %(message)s",
