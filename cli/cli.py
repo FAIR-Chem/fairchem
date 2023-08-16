@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 """
 
 import functools
-import logging
 import os
 from typing import Any, Callable, TypeVar
 
@@ -14,6 +13,7 @@ import click
 from click_option_group import optgroup
 
 import ocpmodels
+from ocpmodels.common.utils import setup_logging
 from cli.download_data import DOWNLOAD_LINKS_s2ef, get_data
 
 T = TypeVar("T")
@@ -134,7 +134,7 @@ def download_s2ef(
     test_data: bool,
     log_level: str,
 ):
-    logging.basicConfig(level=log_level)
+    setup_logging(level=log_level)
     get_data(
         datadir=data_path,
         task="s2ef",
@@ -159,7 +159,7 @@ def download_is2re(
     keep: bool,
     log_level: str,
 ):
-    logging.basicConfig(level=log_level)
+    setup_logging(level=log_level)
     get_data(
         datadir=data_path,
         task="is2re",
@@ -175,7 +175,7 @@ def download_is2re(
 )
 @_logging_options
 def train(log_level: str):
-    logging.basicConfig(level=log_level)
+    setup_logging(level=log_level)
 
 
 @cli.command(
@@ -185,7 +185,7 @@ def train(log_level: str):
 )
 @_logging_options
 def finetune(log_level: str):
-    logging.basicConfig(level=log_level)
+    setup_logging(level=log_level)
 
 
 @cli.command(
@@ -195,7 +195,7 @@ def finetune(log_level: str):
 )
 @_logging_options
 def validate(log_level: str):
-    logging.basicConfig(level=log_level)
+    setup_logging(level=log_level)
 
 
 @cli.command(
@@ -205,7 +205,7 @@ def validate(log_level: str):
 )
 @_logging_options
 def predict(log_level: str):
-    logging.basicConfig(level=log_level)
+    setup_logging(level=log_level)
 
 
 @cli.command(
@@ -215,7 +215,7 @@ def predict(log_level: str):
 )
 @_logging_options
 def relax(log_level: str):
-    logging.basicConfig(level=log_level)
+    setup_logging(level=log_level)
 
 
 if __name__ == "__main__":
