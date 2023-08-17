@@ -19,7 +19,7 @@ from ocpmodels.models.base import BaseModel
 
 
 @registry.register_model("schnet")
-class SchNetWrap(BaseModel):
+class SchNetWrap(BaseModel, SchNet):
     r"""Wrapper around the continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
     Quantum Interactions" <https://arxiv.org/abs/1706.08566>`_. Each layer uses interaction
@@ -81,17 +81,17 @@ class SchNetWrap(BaseModel):
             cutoff=cutoff,
             readout=readout,
         )
-        breakpoint()
-        super(BaseModel, self).__init__(
+
+        BaseModel.__init__(
+            self,
             output_targets=output_targets,
             node_embedding_dim=hidden_channels,
             edge_embedding_dim=hidden_channels,
         )
 
     @conditional_grad(torch.enable_grad())
-    def _forward(self, data):
+    def _forward_helper(self, data):
         z = data.atomic_numbers.long()
-        pos = data.pos
         batch = data.batch
 
         (
@@ -120,10 +120,10 @@ class SchNetWrap(BaseModel):
 
         return energy, edge_embedding
 
-    def forward(self, data):
+    def _forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy, edge_embedding = self._forward(data)
+        energy, edge_embedding = self._forward_helper(data)
 
         outputs = {"energy": energy, "edge_embedding": edge_embedding}
 
