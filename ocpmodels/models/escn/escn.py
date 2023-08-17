@@ -67,7 +67,7 @@ class eSCN(BaseModel):
 
     def __init__(
         self,
-        output_targets,
+        output_targets: dict,
         use_pbc: bool = True,
         regress_forces: bool = True,
         otf_graph: bool = False,

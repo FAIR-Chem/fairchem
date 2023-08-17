@@ -45,7 +45,6 @@ class GemNetT(BaseModel):
 
     Parameters
     ----------
-        output_targets: dict
         num_spherical: int
             Controls maximum frequency.
         num_radial: int

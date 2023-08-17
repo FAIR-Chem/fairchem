@@ -30,7 +30,6 @@ class SchNetWrap(BaseModel, SchNet):
         h_{\mathbf{\Theta}} ( \exp(-\gamma(\mathbf{e}_{j,i} - \mathbf{\mu}))),
 
     Args:
-        output_targets (dict): Dictionary of desired model outputs.
         use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
             (default: :obj:`True`)
         regress_forces (bool, optional): If set to :obj:`True`, predict forces by differentiating
