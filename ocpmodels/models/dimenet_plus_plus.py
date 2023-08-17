@@ -235,9 +235,9 @@ class DimeNetPlusPlus:
 
     def __init__(
         self,
-        output_targets,
-        hidden_channels,
-        out_channels,
+        output_targets: dict,
+        hidden_channels: int,
+        out_channels: int,
         num_blocks: int,
         int_emb_size: int,
         basis_emb_size: int,
