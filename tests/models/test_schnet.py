@@ -44,7 +44,10 @@ def load_model(request) -> None:
     setup_imports()
 
     model = registry.get_model_class("schnet")(
-        None, 32, 1, cutoff=6.0, regress_forces=True, use_pbc=True
+        {"energy": {}, "forces": {}},
+        cutoff=6.0,
+        regress_forces=True,
+        use_pbc=True,
     )
     request.cls.model = model
 
@@ -66,10 +69,10 @@ class TestSchNet:
         out = self.model(batch)
 
         # Compare predicted energies and forces (after inv-rotation).
-        energies = out[0].detach()
+        energies = out["energy"].detach()
         np.testing.assert_almost_equal(energies[0], energies[1], decimal=5)
 
-        forces = out[1].detach()
+        forces = out["forces"].detach()
         np.testing.assert_array_almost_equal(
             forces[: forces.shape[0] // 2],
             torch.matmul(forces[forces.shape[0] // 2 :], inv_rot),
@@ -81,7 +84,9 @@ class TestSchNet:
         data = self.data
 
         # Pass it through the model.
-        energy, forces = self.model(data_list_collater([data]))
+        out = self.model(data_list_collater([data]))
+        energy = out["energy"]
+        forces = out["forces"]
 
         assert snapshot == energy.shape
         assert snapshot == pytest.approx(energy.detach())

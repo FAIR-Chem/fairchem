@@ -568,10 +568,8 @@ class BaseTrainer(ABC):
 
     def load_extras(self) -> None:
         self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
-        self.clip_grad_norm = aii(
-            self.config["optim"].get("clip_grad_norm"), int
-        )
-        self.ema_decay = aii(self.config["optim"].get("ema_decay"), float)
+        self.clip_grad_norm = self.config["optim"].get("clip_grad_norm", False)
+        self.ema_decay = self.config["optim"].get("ema_decay", False)
         if self.ema_decay:
             self.ema = ExponentialMovingAverage(
                 self.model.parameters(),

@@ -205,7 +205,7 @@ class OutputPPBlock(torch.nn.Module):
         return self.lin(x)
 
 
-class DimeNetPlusPlus(torch.nn.Module):
+class DimeNetPlusPlus:
     r"""DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
 
     Args:
@@ -235,6 +235,7 @@ class DimeNetPlusPlus(torch.nn.Module):
 
     def __init__(
         self,
+        output_targets,
         hidden_channels,
         out_channels,
         num_blocks: int,
@@ -252,8 +253,6 @@ class DimeNetPlusPlus(torch.nn.Module):
     ) -> None:
         act = activation_resolver(act)
 
-        super(DimeNetPlusPlus, self).__init__()
-
         self.cutoff = cutoff
 
         if sym is None:
@@ -268,19 +267,20 @@ class DimeNetPlusPlus(torch.nn.Module):
 
         self.emb = EmbeddingBlock(num_radial, hidden_channels, act)
 
-        self.output_blocks = torch.nn.ModuleList(
-            [
-                OutputPPBlock(
-                    num_radial,
-                    hidden_channels,
-                    out_emb_channels,
-                    out_channels,
-                    num_output_layers,
-                    act,
-                )
-                for _ in range(num_blocks + 1)
-            ]
-        )
+        if "energy" in self.output_targets or "forces" in self.output_targets:
+            self.output_blocks = torch.nn.ModuleList(
+                [
+                    OutputPPBlock(
+                        num_radial,
+                        hidden_channels,
+                        out_emb_channels,
+                        out_channels,
+                        num_output_layers,
+                        act,
+                    )
+                    for _ in range(num_blocks + 1)
+                ]
+            )
 
         self.interaction_blocks = torch.nn.ModuleList(
             [
@@ -303,8 +303,9 @@ class DimeNetPlusPlus(torch.nn.Module):
     def reset_parameters(self) -> None:
         self.rbf.reset_parameters()
         self.emb.reset_parameters()
-        for out in self.output_blocks:
-            out.reset_parameters()
+        if "energy" in self.output_targets or "forces" in self.output_targets:
+            for out in self.output_blocks:
+                out.reset_parameters()
         for interaction in self.interaction_blocks:
             interaction.reset_parameters()
 
@@ -343,12 +344,10 @@ class DimeNetPlusPlus(torch.nn.Module):
 
 
 @registry.register_model("dimenetplusplus")
-class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
+class DimeNetPlusPlusWrap(BaseModel, DimeNetPlusPlus):
     def __init__(
         self,
-        num_atoms,
-        bond_feat_dim,  # not used
-        num_targets,
+        output_targets,
         use_pbc=True,
         regress_forces=True,
         hidden_channels=128,
@@ -365,16 +364,26 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         num_after_skip=2,
         num_output_layers=3,
     ) -> None:
-        self.num_targets = num_targets
+        self.output_targets = output_targets
+
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
         self.max_neighbors = 50
 
-        super(DimeNetPlusPlusWrap, self).__init__(
+        BaseModel.__init__(
+            self,
+            output_targets=output_targets,
+            node_embedding_dim=None,
+            edge_embedding_dim=hidden_channels,
+        )
+
+        DimeNetPlusPlus.__init__(
+            self,
+            output_targets=output_targets,
             hidden_channels=hidden_channels,
-            out_channels=num_targets,
+            out_channels=1,
             num_blocks=num_blocks,
             int_emb_size=int_emb_size,
             basis_emb_size=basis_emb_size,
@@ -389,7 +398,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         )
 
     @conditional_grad(torch.enable_grad())
-    def _forward(self, data):
+    def forward_energy(self, data):
         pos = data.pos
         batch = data.batch
         (
@@ -435,36 +444,50 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
 
         # Embedding block.
         x = self.emb(data.atomic_numbers.long(), rbf, i, j)
-        P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
+        if "energy" in self.output_targets or "forces" in self.output_targets:
+            P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
 
         # Interaction blocks.
         for interaction_block, output_block in zip(
             self.interaction_blocks, self.output_blocks[1:]
         ):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
-            P += output_block(x, rbf, i, num_nodes=pos.size(0))
+            if (
+                "energy" in self.output_targets
+                or "forces" in self.output_targets
+            ):
+                P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
-        energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+        outputs = {}
+        outputs["edge_idx"] = i
+        outputs["edge_embedding"] = x
 
-        return energy
+        if "energy" in self.output_targets or "forces" in self.output_targets:
+            energy = (
+                P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+            )
+            outputs["energy"] = energy
 
-    def forward(self, data):
+        return outputs
+
+    def _forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy = self._forward(data)
+        outputs = self.forward_energy(data)
 
-        if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    data.pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
-            )
-            return energy, forces
-        else:
-            return energy
+        if "forces" in self.output_targets:
+            if self.regress_forces:
+                forces = -1 * (
+                    torch.autograd.grad(
+                        outputs["energy"],
+                        data.pos,
+                        grad_outputs=torch.ones_like(outputs["energy"]),
+                        create_graph=True,
+                    )[0]
+                )
+                outputs["forces"] = forces
+
+        return outputs
 
     @property
     def num_params(self) -> int:

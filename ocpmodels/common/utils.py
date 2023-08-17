@@ -1000,7 +1000,7 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         setup_imports(config)
         trainer_name = config.get("trainer", "ocp")
         # backwards compatibility for older configs
-        if trainer_name == "forces":
+        if trainer_name in ["forces", "equiformerv2_forces"]:
             task_name = "s2ef"
         elif trainer_name == "energy":
             task_name = "is2re"
@@ -1197,7 +1197,7 @@ def irreps_sum(l):
 
 def update_old_config(config):
     ### Read task based off config structure, similar to OCPCalculator.
-    if config["task"]["dataset"] == "trajectory_lmdb":
+    if config["task"]["dataset"] in ["trajectory_lmdb", "lmdb"]:
         task = "s2ef"
     elif config["task"]["dataset"] == "single_point_lmdb":
         task = "is2re"

@@ -1305,7 +1305,13 @@ class GemNetOC(BaseModel):
 
         nMolecules = torch.max(batch) + 1
 
-        outputs = {}
+        outputs = {
+            "edge_idx": idx_t,
+            "edge_vec": main_graph["vector"],
+            "node_embedding": x_E,
+            "edge_embedding": x_F,
+        }
+
         # Global output block for final predictions
         if "energy" in self.output_targets:
             x_E = self.out_mlp_E(torch.cat(xs_E, dim=-1))
@@ -1364,11 +1370,6 @@ class GemNetOC(BaseModel):
 
             F_t = F_t.squeeze(1)  # (num_atoms, 3)
             outputs["forces"] = F_t
-
-        outputs["edge_idx"] = idx_t
-        outputs["edge_vec"] = main_graph["vector"]
-        outputs["node_embedding"] = x_E
-        outputs["edge_embedding"] = x_F
 
         return outputs
 
