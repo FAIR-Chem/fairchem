@@ -19,7 +19,7 @@ from ocpmodels.models.base import BaseModel
 
 
 @registry.register_model("schnet")
-class SchNetWrap(SchNet, BaseModel):
+class SchNetWrap(BaseModel):
     r"""Wrapper around the continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
     Quantum Interactions" <https://arxiv.org/abs/1706.08566>`_. Each layer uses interaction
@@ -30,9 +30,7 @@ class SchNetWrap(SchNet, BaseModel):
         h_{\mathbf{\Theta}} ( \exp(-\gamma(\mathbf{e}_{j,i} - \mathbf{\mu}))),
 
     Args:
-        num_atoms (int): Unused argument
-        bond_feat_dim (int): Unused argument
-        num_targets (int): Number of targets to predict.
+        output_targets (dict): Dictionary of desired model outputs.
         use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
             (default: :obj:`True`)
         regress_forces (bool, optional): If set to :obj:`True`, predict forces by differentiating
@@ -56,9 +54,7 @@ class SchNetWrap(SchNet, BaseModel):
 
     def __init__(
         self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,
+        output_targets: dict,
         use_pbc=True,
         regress_forces=True,
         otf_graph=False,
@@ -69,20 +65,27 @@ class SchNetWrap(SchNet, BaseModel):
         cutoff=10.0,
         readout="add",
     ) -> None:
-        self.num_targets = num_targets
+        self.output_targets = output_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
         self.max_neighbors = 50
         self.reduce = readout
-        super(SchNetWrap, self).__init__(
+        SchNet.__init__(
+            self,
             hidden_channels=hidden_channels,
             num_filters=num_filters,
             num_interactions=num_interactions,
             num_gaussians=num_gaussians,
             cutoff=cutoff,
             readout=readout,
+        )
+        breakpoint()
+        super(BaseModel, self).__init__(
+            output_targets=output_targets,
+            node_embedding_dim=hidden_channels,
+            edge_embedding_dim=hidden_channels,
         )
 
     @conditional_grad(torch.enable_grad())
@@ -100,29 +103,29 @@ class SchNetWrap(SchNet, BaseModel):
             neighbors,
         ) = self.generate_graph(data)
 
-        if self.use_pbc:
-            assert z.dim() == 1 and z.dtype == torch.long
+        assert z.dim() == 1 and z.dtype == torch.long
 
-            edge_attr = self.distance_expansion(edge_weight)
+        edge_attr = self.distance_expansion(edge_weight)
 
-            h = self.embedding(z)
-            for interaction in self.interactions:
-                h = h + interaction(h, edge_index, edge_weight, edge_attr)
+        h = self.embedding(z)
+        for interaction in self.interactions:
+            h = h + interaction(h, edge_index, edge_weight, edge_attr)
 
-            h = self.lin1(h)
-            h = self.act(h)
-            h = self.lin2(h)
+        edge_embedding = self.lin1(h)
+        h = self.act(edge_embedding)
+        h = self.lin2(h)
 
-            batch = torch.zeros_like(z) if batch is None else batch
-            energy = scatter(h, batch, dim=0, reduce=self.reduce)
-        else:
-            energy = super(SchNetWrap, self).forward(z, pos, batch)
-        return energy
+        batch = torch.zeros_like(z) if batch is None else batch
+        energy = scatter(h, batch, dim=0, reduce=self.reduce)
+
+        return energy, edge_embedding
 
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-        energy = self._forward(data)
+        energy, edge_embedding = self._forward(data)
+
+        outputs = {"energy": energy, "edge_embedding": edge_embedding}
 
         if self.regress_forces:
             forces = -1 * (
@@ -133,9 +136,9 @@ class SchNetWrap(SchNet, BaseModel):
                     create_graph=True,
                 )[0]
             )
-            return energy, forces
-        else:
-            return energy
+            outputs["forces"] = forces
+
+        return outputs
 
     @property
     def num_params(self) -> int:

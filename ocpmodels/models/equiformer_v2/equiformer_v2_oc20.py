@@ -109,9 +109,7 @@ class EquiformerV2_OC20(BaseModel):
 
     def __init__(
         self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,  # not used
+        output_targets: dict,
         use_pbc=True,
         regress_forces=True,
         otf_graph=True,
@@ -148,7 +146,11 @@ class EquiformerV2_OC20(BaseModel):
         proj_drop=0.0,
         weight_init="normal",
     ):
-        super().__init__()
+        super().__init__(
+            output_targets=output_targets,
+            node_embedding_dim=sphere_channels,
+            edge_embedding_dim=edge_channels,
+        )
 
         import sys
 
@@ -483,6 +485,8 @@ class EquiformerV2_OC20(BaseModel):
         energy.index_add_(0, data.batch, node_energy.view(-1))
         energy = energy / _AVG_NUM_NODES
 
+        outputs = {"energy": energy}
+
         ###############################################################
         # Force estimation
         ###############################################################
@@ -493,13 +497,9 @@ class EquiformerV2_OC20(BaseModel):
             forces = forces.embedding.narrow(1, 1, 3)
             forces = forces.view(-1, 3)
 
-        if not self.regress_forces:
-            return {"energy": energy}
-        else:
-            return {
-                "energy": energy,
-                "forces": forces,
-            }
+            outputs["forces"] = forces
+
+        return outputs
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):

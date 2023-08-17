@@ -28,9 +28,12 @@ from ocpmodels.models.gemnet_oc.layers.base_layers import Dense
 
 class BaseModel(nn.Module):
     def __init__(
-        self, output_targets, node_embedding_dim, edge_embedding_dim
+        self,
+        output_targets={},
+        node_embedding_dim=None,
+        edge_embedding_dim=None,
     ) -> None:
-        super(BaseModel, self).__init__()
+        nn.Module.__init__(self)
 
         self.output_targets = output_targets
         self.num_targets = len(output_targets)
@@ -39,6 +42,10 @@ class BaseModel(nn.Module):
         for target in output_targets:
             if self.output_targets[target].get("custom_head", False):
                 if "irrep_dim" in self.output_targets[target]:
+                    if edge_embedding_dim is None:
+                        raise NotImplementedError(
+                            "Model does not support SO(3) equivariant prediction without edge embeddings."
+                        )
                     embedding_dim = edge_embedding_dim
                     output_shape = 1
                 else:
@@ -73,7 +80,12 @@ class BaseModel(nn.Module):
         for target in self.output_targets:
             ### for models that directly return desired property, add directly
             if target not in self.module_dict:
-                results[target] = out[target]
+                pred = out[target]
+                # squeeze if necessary
+                if len(pred.shape) > 1:
+                    pred = pred.squeeze(dim=1)
+
+                results[target] = pred
                 continue
 
             # equivariant prediction
