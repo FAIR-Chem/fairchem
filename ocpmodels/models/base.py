@@ -33,7 +33,7 @@ class BaseModel(nn.Module):
         node_embedding_dim=None,
         edge_embedding_dim=None,
     ) -> None:
-        nn.Module.__init__(self)
+        super().__init__()
 
         self.output_targets = output_targets
         self.num_targets = len(output_targets)
