@@ -388,6 +388,7 @@ class EquiformerV2_OC20(BaseModel):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
+        torch.manual_seed(0)
         edge_rot_mat = self._init_edge_rot_mat(
             data, edge_index, edge_distance_vec
         )
@@ -472,7 +473,9 @@ class EquiformerV2_OC20(BaseModel):
             device=node_energy.device,
             dtype=node_energy.dtype,
         )
+        torch.use_deterministic_algorithms(mode=True)
         energy.index_add_(0, data.batch, node_energy.view(-1))
+        torch.use_deterministic_algorithms(mode=False)
         energy = energy / _AVG_NUM_NODES
 
         ###############################################################

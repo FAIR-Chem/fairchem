@@ -281,7 +281,9 @@ class SO3_Embedding:
             device=self.embedding.device,
             dtype=self.embedding.dtype,
         )
+        torch.use_deterministic_algorithms(mode=True)
         new_embedding.index_add_(0, edge_index, self.embedding)
+        torch.use_deterministic_algorithms(mode=False)
         self.set_embedding(new_embedding)
 
     # Reshape the embedding lval -> m

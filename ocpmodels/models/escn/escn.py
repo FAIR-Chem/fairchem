@@ -246,6 +246,7 @@ class eSCN(BaseModel):
         # Initialize data structures
         ###############################################################
 
+        torch.manual_seed(0)
         # Compute 3x3 rotation matrix per edge
         edge_rot_mat = self._init_edge_rot_mat(
             data, edge_index, edge_distance_vec
@@ -343,7 +344,11 @@ class eSCN(BaseModel):
         ###############################################################
         node_energy = self.energy_block(x_pt)
         energy = torch.zeros(len(data.natoms), device=device)
+
+        torch.use_deterministic_algorithms(mode=True)
         energy.index_add_(0, data.batch, node_energy.view(-1))
+        torch.use_deterministic_algorithms(mode=False)
+
         # Scale energy to help balance numerical precision w.r.t. forces
         energy = energy * 0.001
 
