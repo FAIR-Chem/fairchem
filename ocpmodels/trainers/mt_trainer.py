@@ -2,7 +2,7 @@ import copy
 import logging
 from collections import abc
 from functools import cache
-from typing import Any, Callable, Literal, TypedDict, Union, cast
+from typing import Any, Callable, Literal, Optional, TypedDict, Union, cast
 
 import numpy as np
 import pydantic
@@ -23,8 +23,53 @@ from .ocp_trainer import OCPTrainer
 
 class LossFn(TypedDict):
     fn: Callable
+    reduction: Literal["mean", "none", "sum"]
     coefficient: NotRequired[float]
     task_idx: NotRequired[int]
+
+
+class SingleLossFnConfig(pydantic.BaseModel):
+    fn: str = "mae"
+    coefficient: float = 1.0
+    reduction: Literal["mean", "none", "sum"] = "mean"
+
+
+class TaskLossFnConfig(pydantic.BaseModel):
+    losses: dict[str, SingleLossFnConfig] = {}
+
+
+LossFnsConfig = Annotated[list[TaskLossFnConfig], pydantic.Field()]
+
+
+def _create_loss(config: SingleLossFnConfig, task_idx: int) -> LossFn:
+    ### if torch module name provided, use that directly
+    if hasattr(nn, config.fn):
+        loss_fn = getattr(nn, config.fn)()
+    ### otherwise, retrieve the correct module based off old naming
+    else:
+        loss_fn = get_loss_module(config.fn)
+
+    # loss_fn = DDPLoss(loss_fn, config.fn, config.reduction)
+    # DDP loss is not implemented for MT yet
+
+    loss: LossFn = {
+        "fn": loss_fn,
+        "coefficient": config.coefficient,
+        "task_idx": task_idx,
+        "reduction": config.reduction,
+    }
+    return loss
+
+
+def _create_task_losses(config: TaskLossFnConfig, task_idx: int):
+    for target_name, loss_config in config.losses.items():
+        yield target_name, _create_loss(loss_config, task_idx)
+
+
+def _create_losses(config: LossFnsConfig):
+    for task_idx, task_config in enumerate(config):
+        for target_name, loss in _create_task_losses(task_config, task_idx):
+            yield target_name, loss
 
 
 class IdentityTransformConfig(pydantic.BaseModel):
@@ -352,11 +397,11 @@ class MTTrainer(OCPTrainer):
             task,
             model,
             outputs,
-            pydantic.TypeAdapter(DatasetConfig).validate_python(
+            DatasetConfig.model_validate(
                 dataset
             ),  # HACK: wrap it in a class so it doesn't get registered as a dict
             optimizer,
-            loss_fns,
+            pydantic.TypeAdapter(LossFnsConfig).validate_python(loss_fns),
             eval_metrics,
             identifier,
             timestamp_id,
@@ -439,34 +484,14 @@ class MTTrainer(OCPTrainer):
                 "Relaxation dataset not implemented for MT."
             )
 
+    @property
+    def loss_fns_config(self):
+        loss_fns_config = self.config["loss_fns"]
+        return cast(LossFnsConfig, loss_fns_config)
+
     @override
     def load_loss(self) -> None:
-        self.loss_fns: list[tuple[str, LossFn]] = []
-        for task_idx, losses_dict in enumerate(self.config["loss_fns"]):
-            for target, loss in losses_dict["losses"].items():
-                loss_name = loss.get("fn", "mae")
-                coefficient = loss.get("coefficient", 1)
-                loss_reduction = loss.get("reduction", "mean")
-
-                ### if torch module name provided, use that directly
-                if hasattr(nn, loss_name):
-                    loss_fn = getattr(nn, loss_name)()
-                ### otherwise, retrieve the correct module based off old naming
-                else:
-                    loss_fn = get_loss_module(loss_name)
-
-                loss_fn = DDPLoss(loss_fn, loss_name, loss_reduction)
-
-                self.loss_fns.append(
-                    (
-                        target,
-                        {
-                            "fn": loss_fn,
-                            "coefficient": coefficient,
-                            "task_idx": task_idx,
-                        },
-                    )
-                )
+        self.loss_fns = list(_create_losses(self.loss_fns_config))
 
     @override
     def _compute_loss(
@@ -476,14 +501,21 @@ class MTTrainer(OCPTrainer):
     ):
         natoms = torch.cat(
             [batch.natoms.to(self.device) for batch in batch_list], dim=0
-        )
+        )  # (bsz,)
         batch_size = natoms.numel()
-        natoms = torch.repeat_interleave(natoms, natoms)
+        natoms = torch.repeat_interleave(natoms, natoms)  # (n_atoms,)
 
         fixed = torch.cat(
             [batch.fixed.to(self.device) for batch in batch_list]
         )
-        mask = fixed == 0
+        free_mask = fixed == 0  # (n_atoms,)
+
+        batch_task_idx = torch.cat(
+            [batch.task_idx.to(self.device) for batch in batch_list], dim=0
+        )  # (bsz,)
+        node_task_idx = torch.repeat_interleave(
+            batch_task_idx, natoms
+        )  # (n_atoms,)
 
         losses: list[torch.Tensor] = []
         for target_name, loss_info in self.loss_fns:
@@ -492,14 +524,30 @@ class MTTrainer(OCPTrainer):
                 dim=0,
             )
             pred = out[target_name]
+            mask = torch.ones_like(target, dtype=torch.bool)
 
-            if self.output_targets[target_name].get(
-                "level", "system"
-            ) == "atom" and self.output_targets[target_name].get(
+            level = self.output_targets[target_name].get("level", "system")
+
+            # For each task, we want to only consider the loss for that task's output head.
+            task_idx = loss_info.get("task_idx", None)
+            if task_idx is not None:
+                if level == "atom":
+                    mask = mask & (node_task_idx == task_idx)
+                elif level == "system":
+                    mask = mask & (batch_task_idx == task_idx)
+                else:
+                    raise NotImplementedError(
+                        f"Level {level} not implemented."
+                    )
+
+            if level == "atom" and self.output_targets[target_name].get(
                 "train_on_free_atoms", True
             ):
-                target = target[mask]
-                pred = pred[mask]
+                mask = mask & free_mask
+
+            target = target[mask]
+            pred = pred[mask]
+            if level == "atom":
                 natoms = natoms[mask]
 
             normalizer = self.normalizers.get(target_name, False)
