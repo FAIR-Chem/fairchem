@@ -5,7 +5,6 @@ from functools import cache
 from typing import Any, Callable, Literal, TypedDict, Union, cast
 
 import numpy as np
-import pydantic
 import torch
 import torch.nn as nn
 import wrapt
@@ -15,6 +14,7 @@ from typing_extensions import Annotated, NotRequired, override
 
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
+from ocpmodels.common.typed_config import Field, TypeAdapter, TypedConfig
 from ocpmodels.common.utils import get_loss_module
 from ocpmodels.modules.loss import DDPLoss
 
@@ -28,17 +28,17 @@ class LossFn(TypedDict):
     task_idx: NotRequired[int]
 
 
-class SingleLossFnConfig(pydantic.BaseModel):
+class SingleLossFnConfig(TypedConfig):
     fn: str = "mae"
     coefficient: float = 1.0
     reduction: Literal["mean", "none", "sum"] = "mean"
 
 
-class TaskLossFnConfig(pydantic.BaseModel):
+class TaskLossFnConfig(TypedConfig):
     losses: dict[str, SingleLossFnConfig] = {}
 
 
-LossFnsConfig = Annotated[list[TaskLossFnConfig], pydantic.Field()]
+LossFnsConfig = Annotated[list[TaskLossFnConfig], Field()]
 
 
 def _create_loss(config: SingleLossFnConfig, task_idx: int) -> LossFn:
@@ -72,21 +72,21 @@ def _create_losses(config: LossFnsConfig):
             yield target_name, loss
 
 
-class IdentityTransformConfig(pydantic.BaseModel):
+class IdentityTransformConfig(TypedConfig):
     type: Literal["identity"] = "identity"
 
 
-class NormalizerTransformConfig(pydantic.BaseModel):
+class NormalizerTransformConfig(TypedConfig):
     type: Literal["normalizer"] = "normalizer"
 
 
 TransformConfig = Annotated[
     Union[IdentityTransformConfig, NormalizerTransformConfig],
-    pydantic.Field(discriminator="type"),
+    Field(discriminator="type"),
 ]
 
 
-class SplitDatasetConfig(pydantic.BaseModel):
+class SplitDatasetConfig(TypedConfig):
     format: str = "lmdb"
     src: str = ""
 
@@ -94,7 +94,7 @@ class SplitDatasetConfig(pydantic.BaseModel):
     transforms: list[TransformConfig] = []
 
 
-class TaskDatasetConfig(pydantic.BaseModel):
+class TaskDatasetConfig(TypedConfig):
     train: SplitDatasetConfig | None = None
     val: SplitDatasetConfig | None = None
     test: SplitDatasetConfig | None = None
@@ -118,12 +118,12 @@ class TaskDatasetConfig(pydantic.BaseModel):
                     self.test.transforms = self.train.transforms.copy()
 
 
-class TemperatureSamplingConfig(pydantic.BaseModel):
+class TemperatureSamplingConfig(TypedConfig):
     type: Literal["temperature"] = "temperature"
     temperature: float = 1.0
 
 
-class FullyBalancedSamplingConfig(pydantic.BaseModel):
+class FullyBalancedSamplingConfig(TypedConfig):
     type: Literal["fully_balanced"] = "fully_balanced"
 
 
@@ -132,11 +132,11 @@ SamplingConfig = Annotated[
         TemperatureSamplingConfig,
         FullyBalancedSamplingConfig,
     ],
-    pydantic.Field(discriminator="type"),
+    Field(discriminator="type"),
 ]
 
 
-class DatasetConfig(pydantic.BaseModel):
+class DatasetConfig(TypedConfig):
     datasets: list[TaskDatasetConfig] = []
     sampling: SamplingConfig = TemperatureSamplingConfig()
 
@@ -226,7 +226,7 @@ def _create_split_dataset(
     # Create the dataset
     dataset_cls = registry.get_dataset_class(config.format)
     assert issubclass(dataset_cls, Dataset), f"{dataset_cls=} is not a Dataset"
-    dataset = cast(Any, dataset_cls)(dict(config))
+    dataset = cast(Any, dataset_cls)(config.to_dict())
     dataset = cast(Dataset, dataset)
 
     # Wrap the dataset with task_idx transform
@@ -397,11 +397,11 @@ class MTTrainer(OCPTrainer):
             task,
             model,
             outputs,
-            DatasetConfig.model_validate(
+            DatasetConfig.from_dict(
                 dataset
             ),  # HACK: wrap it in a class so it doesn't get registered as a dict
             optimizer,
-            pydantic.TypeAdapter(LossFnsConfig).validate_python(loss_fns),
+            TypeAdapter(LossFnsConfig).validate_python(loss_fns),
             eval_metrics,
             identifier,
             timestamp_id,
@@ -428,9 +428,7 @@ class MTTrainer(OCPTrainer):
 
     @override
     def load_datasets(self) -> None:
-        logging.info(
-            f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
-        )
+        logging.info("Loading datasets")
         self.parallel_collater = ParallelCollater(
             0 if self.cpu else 1,
             self.config["model_attributes"].get("otf_graph", False),
