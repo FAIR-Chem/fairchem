@@ -3,6 +3,7 @@ trainer: mt
 dataset:
   sampling:
     type: temperature
+    temperature: 2.0
   datasets:
     - train:
         format: lmdb
