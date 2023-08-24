@@ -17,7 +17,7 @@ from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import Field, TypeAdapter, TypedConfig
 
-from .ocp_trainer import OCPTrainer
+from ..ocp_trainer import OCPTrainer
 
 
 class LossFn(TypedDict):
