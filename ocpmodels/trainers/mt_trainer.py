@@ -17,7 +17,6 @@ from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import Field, TypeAdapter, TypedConfig
 
-
 from .ocp_trainer import OCPTrainer
 
 
@@ -75,26 +74,12 @@ def _create_losses(config: LossFnsConfig):
             yield target_name, loss
 
 
-class IdentityTransformConfig(TypedConfig):
-    type: Literal["identity"] = "identity"
-
-
-class NormalizerTransformConfig(TypedConfig):
-    type: Literal["normalizer"] = "normalizer"
-
-
-TransformConfig = Annotated[
-    Union[IdentityTransformConfig, NormalizerTransformConfig],
-    Field(discriminator="type"),
-]
-
-
 class SplitDatasetConfig(TypedConfig):
-    format: str = "lmdb"
-    src: str = ""
+    format: str
+    src: str
 
     key_mapping: dict[str, str] = {}
-    transforms: list[TransformConfig] = []
+    transforms: list[Any] = []
 
 
 class TaskDatasetConfig(TypedConfig):
