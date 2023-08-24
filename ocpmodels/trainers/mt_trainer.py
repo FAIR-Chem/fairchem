@@ -3,12 +3,12 @@ import logging
 from collections import abc
 from functools import cache, partial
 from typing import Any, Callable, Literal, TypedDict, Union, cast
-from einops import reduce
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 import wrapt
+from einops import reduce
 from torch.utils.data import ConcatDataset, Dataset
 from torch_geometric.data import Batch, Data
 from typing_extensions import Annotated, NotRequired, override
@@ -16,8 +16,7 @@ from typing_extensions import Annotated, NotRequired, override
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import Field, TypeAdapter, TypedConfig
-from ocpmodels.common.utils import get_loss_module
-from ocpmodels.modules.loss import DDPLoss, l2mae
+
 
 from .ocp_trainer import OCPTrainer
 
@@ -43,12 +42,13 @@ LossFnsConfig = Annotated[list[TaskLossFnConfig], Field()]
 
 
 def _create_loss(config: SingleLossFnConfig, task_idx: int) -> LossFn:
+    loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
     if config.fn in ("mae", "l1"):
         loss_fn = partial(F.l1_loss, reduction="none")
     elif config.fn in ("mse", "l2"):
         loss_fn = partial(F.mse_loss, reduction="none")
     elif config.fn in ("l2mae",):
-        loss_fn = partial(l2mae, reduction="none")
+        loss_fn = F.pairwise_distance
     else:
         raise NotImplementedError(f"{config.fn=} not implemented.")
 
@@ -577,4 +577,5 @@ class MTTrainer(OCPTrainer):
             assert hasattr(lc, "grad_fn")
 
         loss = sum(losses)
+        loss = cast(torch.Tensor, loss)
         return loss
