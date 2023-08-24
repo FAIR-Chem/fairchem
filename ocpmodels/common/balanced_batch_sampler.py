@@ -1,6 +1,14 @@
 import heapq
 from logging import getLogger
-from typing import Any, List, Literal, Protocol, Union, runtime_checkable
+from typing import (
+    Any,
+    List,
+    Literal,
+    Optional,
+    Protocol,
+    Union,
+    runtime_checkable,
+)
 
 import numba
 import numpy as np
@@ -12,7 +20,7 @@ from typing_extensions import override
 log = getLogger(__name__)
 
 
-def _all_gather(tensor: torch.Tensor, device: torch.device | None = None):
+def _all_gather(tensor: torch.Tensor, device: Optional[torch.device] = None):
     gathered = [
         torch.zeros_like(tensor, device=device)
         for _ in range(torch.distributed.get_world_size())
