@@ -1,4 +1,4 @@
-import logging
+from logging import getLogger
 from typing import cast
 
 import torch
@@ -13,6 +13,8 @@ from ocpmodels.common.typed_config import TypeAdapter
 from ..ocp_trainer import OCPTrainer
 from .dataset import DatasetConfig, create_datasets
 from .loss import LossFnsConfig, create_losses
+
+log = getLogger(__name__)
 
 
 @registry.register_trainer("mt_trainer")
@@ -76,7 +78,7 @@ class MTTrainer(OCPTrainer):
 
     @override
     def load_datasets(self) -> None:
-        logging.info("Loading datasets")
+        log.info("Loading datasets")
         self.parallel_collater = ParallelCollater(
             0 if self.cpu else 1,
             self.config["model_attributes"].get("otf_graph", False),
@@ -224,3 +226,32 @@ class MTTrainer(OCPTrainer):
         loss = sum(losses)
         loss = cast(torch.Tensor, loss)
         return loss
+
+    def _validate_mt_outputs(self, outputs: dict[str, torch.Tensor]):
+        num_tasks = len(self.dataset_config.datasets)
+        for target, config in self.output_targets.items():
+            # Get the value
+            value = outputs.get(target, None)
+            if value is None:
+                log.warning(f"{target=} not in {outputs=}")
+                continue
+
+            system = config.get("level", "system")
+            if system == "system":
+                # Shape should be (bsz, n_tasks)
+                assert (
+                    value.ndim == 2 and value.shape[-1] == num_tasks
+                ), f"System output {value.shape=} should be (bsz, {num_tasks=})"
+            elif system == "atom":
+                # Shape should be (n_atoms, n_tasks, 3)
+                assert (
+                    value.ndim == 3 and value.shape[1] == num_tasks
+                ), f"Atom output {value.shape=} should be (n_atoms, {num_tasks=}, 3)"
+            else:
+                raise NotImplementedError(f"{system=} not implemented.")
+
+    @override
+    def _forward(self, batch_list):
+        outputs = super()._forward(batch_list)
+        self._validate_mt_outputs(outputs)
+        return outputs
