@@ -2,9 +2,26 @@ import logging
 from typing import Optional
 
 import torch
-from torch import nn
+import torch.nn as nn
+import torch.nn.functional as F
 
 from ocpmodels.common import distutils
+
+
+def l2mae(
+    input: torch.Tensor,
+    target: torch.Tensor,
+    reduction: str = "mean",
+) -> torch.Tensor:
+    dists = F.pairwise_distance(input, target, p=2)
+    if reduction == "mean":
+        return torch.mean(dists)
+    elif reduction == "sum":
+        return torch.sum(dists)
+    elif reduction == "none":
+        return dists
+    else:
+        raise ValueError(f"Invalid reduction: {reduction}")
 
 
 class L2MAELoss(nn.Module):

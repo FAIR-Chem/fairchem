@@ -1,12 +1,13 @@
 import copy
 import logging
 from collections import abc
-from functools import cache
+from functools import cache, partial
 from typing import Any, Callable, Literal, TypedDict, Union, cast
+from einops import reduce
 
 import numpy as np
 import torch
-import torch.nn as nn
+import torch.nn.functional as F
 import wrapt
 from torch.utils.data import ConcatDataset, Dataset
 from torch_geometric.data import Batch, Data
@@ -16,22 +17,22 @@ from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import Field, TypeAdapter, TypedConfig
 from ocpmodels.common.utils import get_loss_module
-from ocpmodels.modules.loss import DDPLoss
+from ocpmodels.modules.loss import DDPLoss, l2mae
 
 from .ocp_trainer import OCPTrainer
 
 
 class LossFn(TypedDict):
-    fn: Callable
-    reduction: Literal["mean", "none", "sum"]
+    fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
+    reduction: Literal["mean", "sum"]
     coefficient: NotRequired[float]
     task_idx: NotRequired[int]
 
 
 class SingleLossFnConfig(TypedConfig):
-    fn: str = "mae"
+    fn: Literal["mae", "mse", "l1", "l2", "l2mae"] = "mae"
     coefficient: float = 1.0
-    reduction: Literal["mean", "none", "sum"] = "mean"
+    reduction: Literal["mean", "sum"] = "mean"
 
 
 class TaskLossFnConfig(TypedConfig):
@@ -42,14 +43,16 @@ LossFnsConfig = Annotated[list[TaskLossFnConfig], Field()]
 
 
 def _create_loss(config: SingleLossFnConfig, task_idx: int) -> LossFn:
-    ### if torch module name provided, use that directly
-    if hasattr(nn, config.fn):
-        loss_fn = getattr(nn, config.fn)()
-    ### otherwise, retrieve the correct module based off old naming
+    if config.fn in ("mae", "l1"):
+        loss_fn = partial(F.l1_loss, reduction="none")
+    elif config.fn in ("mse", "l2"):
+        loss_fn = partial(F.mse_loss, reduction="none")
+    elif config.fn in ("l2mae",):
+        loss_fn = partial(l2mae, reduction="none")
     else:
-        loss_fn = get_loss_module(config.fn)
+        raise NotImplementedError(f"{config.fn=} not implemented.")
 
-    loss_fn = DDPLoss(loss_fn, config.fn, config.reduction)
+    # loss_fn = DDPLoss(loss_fn, config.fn, config.reduction)
     # DDP loss is not implemented for MT yet
 
     loss: LossFn = {
@@ -497,11 +500,9 @@ class MTTrainer(OCPTrainer):
         out: dict[str, torch.Tensor],
         batch_list: list[Batch],
     ):
-        natoms = torch.cat(
-            [batch.natoms.to(self.device) for batch in batch_list], dim=0
-        )  # (bsz,)
-        batch_size = natoms.numel()
-        natoms = torch.repeat_interleave(natoms, natoms)  # (n_atoms,)
+        batch_idx = torch.cat(
+            [batch.batch.to(self.device) for batch in batch_list]
+        )  # (n_atoms,)
 
         fixed = torch.cat(
             [batch.fixed.to(self.device) for batch in batch_list]
@@ -511,9 +512,7 @@ class MTTrainer(OCPTrainer):
         batch_task_idx = torch.cat(
             [batch.task_idx.to(self.device) for batch in batch_list], dim=0
         )  # (bsz,)
-        node_task_idx = torch.repeat_interleave(
-            batch_task_idx, natoms
-        )  # (n_atoms,)
+        node_task_idx = batch_task_idx[batch_idx]  # (n_atoms,)
 
         losses: list[torch.Tensor] = []
         for target_name, loss_info in self.loss_fns:
@@ -530,9 +529,9 @@ class MTTrainer(OCPTrainer):
             task_idx = loss_info.get("task_idx", None)
             if task_idx is not None:
                 if level == "atom":
-                    mask = mask & (node_task_idx == task_idx)
+                    mask = mask & (node_task_idx == task_idx)  # (n_atoms,)
                 elif level == "system":
-                    mask = mask & (batch_task_idx == task_idx)
+                    mask = mask & (batch_task_idx == task_idx)  # (bsz,)
                 else:
                     raise NotImplementedError(
                         f"Level {level} not implemented."
@@ -543,23 +542,34 @@ class MTTrainer(OCPTrainer):
             ):
                 mask = mask & free_mask
 
-            target = target[mask]
-            pred = pred[mask]
-            if level == "atom":
-                natoms = natoms[mask]
-
             normalizer = self.normalizers.get(target_name, False)
             if normalizer:
                 target = normalizer.norm(target)
 
+            # Compute the loss
             loss = loss_info["fn"](
-                pred,
-                target,
-                natoms=natoms,
-                batch_size=batch_size,
-            )
+                pred, target
+            )  # (bsz,) or (n_atoms,) or (natoms, 3)
+
+            # Mask out invalid values
+            loss = torch.where(mask, loss, torch.zeros_like(loss))
+
+            # Apply the coefficient
             coeff = loss_info.get("coefficient", 1.0)
             loss = coeff * loss
+
+            # Apply the reduction
+            reduction = loss_info.get("reduction", "mean")
+            if reduction == "sum":
+                loss = reduce(loss, "... -> ", "sum")
+            elif reduction == "mean":
+                loss = reduce(loss, "b ... -> ...", "sum") / reduce(
+                    mask, "b -> ", "sum"
+                )
+                loss = reduce(loss, "... -> ", "mean")
+            else:
+                raise NotImplementedError(f"{reduction=} not implemented.")
+
             losses.append(loss)
 
         # Sanity check to make sure the compute graph is correct.
