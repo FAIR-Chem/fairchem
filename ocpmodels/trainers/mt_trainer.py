@@ -2,7 +2,7 @@ import copy
 import logging
 from collections import abc
 from functools import cache
-from typing import Any, Callable, Literal, Optional, TypedDict, Union, cast
+from typing import Any, Callable, Literal, TypedDict, Union, cast
 
 import numpy as np
 import pydantic
@@ -49,7 +49,7 @@ def _create_loss(config: SingleLossFnConfig, task_idx: int) -> LossFn:
     else:
         loss_fn = get_loss_module(config.fn)
 
-    # loss_fn = DDPLoss(loss_fn, config.fn, config.reduction)
+    loss_fn = DDPLoss(loss_fn, config.fn, config.reduction)
     # DDP loss is not implemented for MT yet
 
     loss: LossFn = {
