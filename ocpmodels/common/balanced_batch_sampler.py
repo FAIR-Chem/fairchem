@@ -119,6 +119,23 @@ class BalancedBatchSampler(BatchSampler):
         ] = "raise",
         drop_last: bool = False,
     ):
+        """
+        Initializes a BalancedBatchSampler object.
+
+        Args:
+            dataset (Dataset): The dataset to sample from.
+            batch_size (int): The size of each batch.
+            num_replicas (int): The number of processes participating in distributed training.
+            rank (int): The rank of the current process in distributed training.
+            device (torch.device): The device to use for the batches.
+            mode (Union[str, bool], optional): The mode to use for balancing the batches. Defaults to "atoms".
+            shuffle (bool, optional): Whether to shuffle the samples. Defaults to True.
+            on_error (Literal["warn_and_balance", "warn_and_no_balance", "raise"], optional): The action to take when an error occurs (i.e., when we have an invalid dataset). Defaults to "raise".
+                - "warn_and_balance": Raise a warning and balance the batch by manually loading the data samples and counting the number of nodes (this is slow).
+                - "warn_and_no_balance": Raise a warning and do not do any balancing.
+                - "raise": Raise an error.
+            drop_last (bool, optional): Whether to drop the last incomplete batch. Defaults to False.
+        """
         self.disabled = False
 
         if mode is False:
