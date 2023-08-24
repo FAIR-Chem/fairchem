@@ -2,20 +2,29 @@ import copy
 import logging
 from collections import abc
 from functools import cache
-from typing import Any, Callable, Literal, Union, cast
+from typing import Any, Callable, Literal, TypedDict, Union, cast
 
 import numpy as np
 import pydantic
 import torch
+import torch.nn as nn
 import wrapt
 from torch.utils.data import ConcatDataset, Dataset
-from torch_geometric.data import Data
-from typing_extensions import Annotated, override
+from torch_geometric.data import Batch, Data
+from typing_extensions import Annotated, NotRequired, override
 
 from ocpmodels.common.data_parallel import ParallelCollater
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import get_loss_module
+from ocpmodels.modules.loss import DDPLoss
 
 from .ocp_trainer import OCPTrainer
+
+
+class LossFn(TypedDict):
+    fn: Callable
+    coefficient: NotRequired[float]
+    task_idx: NotRequired[int]
 
 
 class IdentityTransformConfig(pydantic.BaseModel):
@@ -364,6 +373,14 @@ class MTTrainer(OCPTrainer):
             name,
         )
 
+    @property
+    def dataset_config(self):
+        dataset_config = self.config["dataset"]
+        assert isinstance(
+            dataset_config, DatasetConfig
+        ), f"{dataset_config=} is not a DatasetConfig"
+        return dataset_config
+
     @override
     def load_datasets(self) -> None:
         logging.info(
@@ -383,15 +400,11 @@ class MTTrainer(OCPTrainer):
             eval_batch_size, int
         ), f"{eval_batch_size=} is not an integer"
 
-        dataset_config = self.config["dataset"]
-        assert isinstance(
-            dataset_config, DatasetConfig
-        ), f"{dataset_config=} is not a DatasetConfig"
         (
             self.train_dataset,
             self.val_dataset,
             self.test_dataset,
-        ) = _create_datasets(dataset_config)
+        ) = _create_datasets(self.dataset_config)
 
         self.train_loader = None
         self.val_loader = None
@@ -425,3 +438,87 @@ class MTTrainer(OCPTrainer):
             raise NotImplementedError(
                 "Relaxation dataset not implemented for MT."
             )
+
+    @override
+    def load_loss(self) -> None:
+        self.loss_fns: list[tuple[str, LossFn]] = []
+        for task_idx, losses_dict in enumerate(self.config["loss_fns"]):
+            for target, loss in losses_dict["losses"].items():
+                loss_name = loss.get("fn", "mae")
+                coefficient = loss.get("coefficient", 1)
+                loss_reduction = loss.get("reduction", "mean")
+
+                ### if torch module name provided, use that directly
+                if hasattr(nn, loss_name):
+                    loss_fn = getattr(nn, loss_name)()
+                ### otherwise, retrieve the correct module based off old naming
+                else:
+                    loss_fn = get_loss_module(loss_name)
+
+                loss_fn = DDPLoss(loss_fn, loss_name, loss_reduction)
+
+                self.loss_fns.append(
+                    (
+                        target,
+                        {
+                            "fn": loss_fn,
+                            "coefficient": coefficient,
+                            "task_idx": task_idx,
+                        },
+                    )
+                )
+
+    @override
+    def _compute_loss(
+        self,
+        out: dict[str, torch.Tensor],
+        batch_list: list[Batch],
+    ):
+        natoms = torch.cat(
+            [batch.natoms.to(self.device) for batch in batch_list], dim=0
+        )
+        batch_size = natoms.numel()
+        natoms = torch.repeat_interleave(natoms, natoms)
+
+        fixed = torch.cat(
+            [batch.fixed.to(self.device) for batch in batch_list]
+        )
+        mask = fixed == 0
+
+        losses: list[torch.Tensor] = []
+        for target_name, loss_info in self.loss_fns:
+            target = torch.cat(
+                [batch[target_name].to(self.device) for batch in batch_list],
+                dim=0,
+            )
+            pred = out[target_name]
+
+            if self.output_targets[target_name].get(
+                "level", "system"
+            ) == "atom" and self.output_targets[target_name].get(
+                "train_on_free_atoms", True
+            ):
+                target = target[mask]
+                pred = pred[mask]
+                natoms = natoms[mask]
+
+            normalizer = self.normalizers.get(target_name, False)
+            if normalizer:
+                target = normalizer.norm(target)
+
+            loss = loss_info["fn"](
+                pred,
+                target,
+                natoms=natoms,
+                batch_size=batch_size,
+            )
+            coeff = loss_info.get("coefficient", 1.0)
+            loss = coeff * loss
+            losses.append(loss)
+
+        # Sanity check to make sure the compute graph is correct.
+        for lc in losses:
+            assert hasattr(lc, "grad_fn")
+
+        loss = sum(losses)
+        return loss
