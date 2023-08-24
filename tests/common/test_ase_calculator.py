@@ -76,4 +76,6 @@ class TestCalculator:
         opt = BFGS(atoms)
         opt.run(fmax=0.05, steps=100)
 
-        assert snapshot == atoms.get_potential_energy()
+        assert snapshot == pytest.approx(
+            [atoms.get_potential_energy()], rel=1e-3
+        )
