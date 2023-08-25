@@ -53,9 +53,7 @@ def load_model(request):
     )
 
     model = registry.get_model_class("equiformer_v2")(
-        None,
-        -1,
-        1,
+        {"energy": {}, "forces": {}},
         use_pbc=True,
         regress_forces=True,
         otf_graph=True,
@@ -109,7 +107,9 @@ class TestEquiformerV2:
         data = self.data
 
         # Pass it through the model.
-        energy, forces = self.model(data_list_collater([data]))
+        out = self.model(data_list_collater([data]))
+        energy = out["energy"]
+        forces = out["forces"]
 
         assert snapshot == energy.shape
         assert snapshot == pytest.approx(energy.detach())

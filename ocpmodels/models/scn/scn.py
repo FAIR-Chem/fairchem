@@ -73,9 +73,7 @@ class SphericalChannelNetwork(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,  # not used
-        bond_feat_dim: int,  # not used
-        num_targets: int,  # not used
+        output_targets: dict,
         use_pbc: bool = True,
         regress_forces: bool = True,
         otf_graph: bool = False,
@@ -100,7 +98,11 @@ class SphericalChannelNetwork(BaseModel):
         show_timing_info: bool = False,
         direct_forces: bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(
+            output_targets=output_targets,
+            node_embedding_dim=hidden_channels,
+            edge_embedding_dim=hidden_channels,
+        )
 
         if "e3nn" not in sys.modules:
             logging.error(
@@ -108,8 +110,9 @@ class SphericalChannelNetwork(BaseModel):
             )
             raise ImportError
 
-        assert e3nn.__version__ == "0.2.6"
+        assert e3nn.__version__ >= "0.2.6"
 
+        self.output_targets = output_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
@@ -245,11 +248,10 @@ class SphericalChannelNetwork(BaseModel):
             self.force_fc3 = nn.Linear(self.sphere_channels_reduce, 1)
 
     @conditional_grad(torch.enable_grad())
-    def forward(self, data):
+    def _forward(self, data):
         self.device = data.pos.device
         self.num_atoms = len(data.batch)
         self.batch_size = len(data.natoms)
-        # torch.autograd.set_detect_anomaly(True)
 
         start_time = time.time()
 
@@ -370,7 +372,7 @@ class SphericalChannelNetwork(BaseModel):
         x[:, 0, :] = self.sphere_embedding(atomic_numbers)
 
         ###############################################################
-        # Update spherical node embeddings
+        # Update spherical nodg embeddings
         ###############################################################
         for i, interaction in enumerate(self.edge_blocks):
             if i > 0:
@@ -407,6 +409,8 @@ class SphericalChannelNetwork(BaseModel):
         energy = torch.zeros(len(data.natoms), device=pos.device)
         energy.index_add_(0, data.batch, node_energy.view(-1))
 
+        outputs = {"energy": energy}
+
         # Force estimation
         if self.regress_forces:
             forces = torch.einsum(
@@ -420,10 +424,9 @@ class SphericalChannelNetwork(BaseModel):
             forces = forces * sphere_points.view(1, self.num_sphere_samples, 3)
             forces = torch.sum(forces, dim=1) / self.num_sphere_samples
 
-        if not self.regress_forces:
-            return energy
-        else:
-            return energy, forces
+            outputs["forces"] = forces
+
+        return outputs
 
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
         edge_vec_0 = edge_distance_vec

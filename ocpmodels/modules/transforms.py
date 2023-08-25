@@ -5,20 +5,20 @@ from ocpmodels.common.utils import cg_decomp_mat, irreps_sum
 
 
 class DataTransforms:
-    def __init__(self, config) -> None:
-        self.config = config
+    def __init__(self, transform_config) -> None:
+        self.transform_config = transform_config
 
     def __call__(self, data_object):
-        if not self.config:
+        if not self.transform_config:
             return data_object
 
-        for transform_fn in self.config:
-            # TODO move normalizer into dataset
-            if transform_fn == "normalizer":
-                continue
-            data_object = eval(transform_fn)(
-                data_object, self.config[transform_fn]
-            )
+        for transform in self.transform_config:
+            for transform_fn in transform:
+                if transform_fn == "normalizer":
+                    continue
+                data_object = eval(transform_fn)(
+                    data_object, transform[transform_fn]
+                )
 
         return data_object
 
@@ -42,5 +42,13 @@ def decompose_tensor(data_object, config) -> Data:
             :,
             max(0, irreps_sum(irrep_dim - 1)) : irreps_sum(irrep_dim),
         ]
+
+    return data_object
+
+
+def flatten(data_object, config) -> Data:
+    tensor_key = config["tensor"]
+
+    data_object[tensor_key] = data_object[tensor_key].reshape(1, -1)
 
     return data_object
