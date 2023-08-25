@@ -5,7 +5,13 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import Dict
+
 import torch
+from torch_geometric.data import Batch, Data
+from typing_extensions import Annotated
+
+from ocpmodels.common.typed_config import Field, TypedConfig
 
 
 class Normalizer:
@@ -44,3 +50,58 @@ class Normalizer:
     def load_state_dict(self, state_dict) -> None:
         self.mean = state_dict["mean"].to(self.mean.device)
         self.std = state_dict["std"].to(self.mean.device)
+
+
+class NormalizerTargetConfig(TypedConfig):
+    mean: float = 0.0
+    std: float = 1.0
+
+
+NormalizerConfig = Annotated[Dict[str, NormalizerTargetConfig], Field()]
+
+
+def normalizer_transform(data: Data, config: NormalizerConfig):
+    for target, target_config in config.items():
+        if target not in data:
+            raise ValueError(f"Target {target} not found in data.")
+
+        data[target] = (data[target] - target_config.mean) / target_config.std
+        data[f"{target}_norm_mean"] = target_config.mean
+        data[f"{target}_norm_std"] = target_config.std
+
+    return data
+
+
+def denormalize_batch(
+    batch: Batch,
+    additional_tensors: Dict[str, torch.Tensor] | None = None,
+):
+    if additional_tensors is None:
+        additional_tensors = {}
+
+    keys: set[str] = set(batch.keys)  # type: ignore
+
+    # find all keys that have a norm_mean and norm_std
+    norm_keys: set[str] = {
+        key.replace("_norm_mean", "")
+        for key in keys
+        if key.endswith("_norm_mean")
+    } & {
+        key.replace("_norm_std", "")
+        for key in keys
+        if key.endswith("_norm_std")
+    }
+
+    for key in norm_keys:
+        mean = getattr(batch, f"{key}_norm_mean")
+        std = getattr(batch, f"{key}_norm_std")
+        value = getattr(batch, key)
+
+        value = (value * std) + mean
+        setattr(batch, key, value)
+
+        additional_value = additional_tensors.pop(key, None)
+        if additional_value is not None:
+            additional_tensors[key] = (additional_value * std) + mean
+
+    return batch, additional_tensors

@@ -1,20 +1,71 @@
+from collections import defaultdict
 from logging import getLogger
-from typing import cast
+from typing import Any, Dict, Literal, Union, cast
 
 import torch
 from einops import reduce
+from torch.nn.parallel.distributed import DistributedDataParallel
 from torch_geometric.data import Batch
-from typing_extensions import override
+from typing_extensions import Annotated, override
 
-from ocpmodels.common.data_parallel import ParallelCollater
+from ocpmodels.common import distutils
+from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.registry import registry
-from ocpmodels.common.typed_config import TypeAdapter
+from ocpmodels.common.typed_config import Field, TypeAdapter, TypedConfig
+from ocpmodels.modules.evaluator import Evaluator
+from ocpmodels.modules.normalizer import Normalizer
 
 from ..ocp_trainer import OCPTrainer
 from .dataset import DatasetConfig, create_datasets
 from .loss import LossFnsConfig, create_losses
 
 log = getLogger(__name__)
+
+
+class BaseOutputHeadConfig(TypedConfig):
+    custom_head: bool = False
+    per_task: bool = False
+
+    @override
+    def __post_init__(self):
+        super().__post_init__()
+
+        if not self.custom_head:
+            raise NotImplementedError(
+                f"The MT trainer requires all outputs to have custom_head=True."
+            )
+        if not self.per_task:
+            raise NotImplementedError(
+                f"The MT trainer requires all outputs to have per_task=True."
+            )
+
+
+class SystemLevelOutputHeadConfig(BaseOutputHeadConfig):
+    level: Literal["system"] = "system"
+
+
+class AtomLevelOutputHeadConfig(BaseOutputHeadConfig):
+    level: Literal["atom"] = "atom"
+    irrep_dim: int
+    train_on_free_atoms: bool = True
+    eval_on_free_atoms: bool = True
+
+    @override
+    def __post_init__(self):
+        super().__post_init__()
+
+        if self.irrep_dim != 1:
+            raise NotImplementedError(
+                f"Only irrep_dim=1 is supported for the MT trainer."
+            )
+
+
+OutputHeadConfig = Annotated[
+    Union[SystemLevelOutputHeadConfig, AtomLevelOutputHeadConfig],
+    Field(discriminator="type"),
+]
+
+OutputsConfig = Annotated[Dict[str, OutputHeadConfig], Field()]
 
 
 @registry.register_trainer("mt_trainer")
@@ -67,6 +118,65 @@ class MTTrainer(OCPTrainer):
             noddp,
             name,
         )
+
+    @override
+    def load_task(self):
+        # This is the old/legacy way of doing things.
+        # Keep it so things don't break.
+        self.normalizers = {}
+
+        self.multi_task_targets = defaultdict[str, list[str]](lambda: [])
+        self.per_task_output_targets = {}
+        self.output_targets = {}
+        for target_name, target_config in (
+            TypeAdapter(OutputsConfig)
+            .validate_python(self.config["outputs"])
+            .items()
+        ):
+            target_config_dict = target_config.to_dict()
+            self.output_targets[target_name] = target_config_dict.copy()
+            for task_idx in range(len(self.dataset_config.datasets)):
+                key = f"{target_name}_task_{task_idx}"
+                self.per_task_output_targets[key] = target_config_dict.copy()
+                self.multi_task_targets[target_name].append(key)
+
+        self.evaluation_metrics = self.config.get("eval_metrics", {})
+        self.evaluator = Evaluator(
+            task=self.name,
+            eval_metrics=self.evaluation_metrics.get(
+                "metrics", Evaluator.task_metrics.get(self.name, {})
+            ),
+        )
+
+    @override
+    def load_model(self) -> None:
+        # Build model
+        if distutils.is_master():
+            log.info(f"Loading model: {self.config['model']}")
+
+        self.model = registry.get_model_class(self.config["model"])(
+            self.per_task_output_targets,
+            **self.config["model_attributes"],
+        ).to(self.device)
+
+        if distutils.is_master():
+            log.info(
+                f"Loaded {self.model.__class__.__name__} with "
+                f"{self.model.num_params} parameters."
+            )
+
+        if self.logger is not None:
+            self.logger.watch(self.model)
+
+        self.model = OCPDataParallel(
+            self.model,
+            output_device=self.device,
+            num_gpus=1 if not self.cpu else 0,
+        )
+        if distutils.initialized() and not self.config["noddp"]:
+            self.model = DistributedDataParallel(
+                self.model, device_ids=[self.device]
+            )
 
     @property
     def dataset_config(self):
@@ -227,6 +337,17 @@ class MTTrainer(OCPTrainer):
         loss = cast(torch.Tensor, loss)
         return loss
 
+    def _merge_mt_outputs(self, outputs: dict[str, torch.Tensor]):
+        merged_outputs: dict[str, torch.Tensor] = outputs.copy()
+
+        # Merge the per-task outputs
+        for target_name, target_key_list in self.multi_task_targets.items():
+            merged_outputs[target_name] = torch.stack(
+                [outputs.pop(key) for key in target_key_list], dim=1
+            )
+
+        return merged_outputs
+
     def _validate_mt_outputs(self, outputs: dict[str, torch.Tensor]):
         num_tasks = len(self.dataset_config.datasets)
         for target, config in self.output_targets.items():
@@ -240,7 +361,7 @@ class MTTrainer(OCPTrainer):
             if system == "system":
                 # Shape should be (bsz, n_tasks)
                 assert (
-                    value.ndim == 2 and value.shape[-1] == num_tasks
+                    value.ndim == 2 and value.shape[1] == num_tasks
                 ), f"System output {value.shape=} should be (bsz, {num_tasks=})"
             elif system == "atom":
                 # Shape should be (n_atoms, n_tasks, 3)
@@ -253,5 +374,6 @@ class MTTrainer(OCPTrainer):
     @override
     def _forward(self, batch_list):
         outputs = super()._forward(batch_list)
+        outputs = self._merge_mt_outputs(outputs)
         self._validate_mt_outputs(outputs)
         return outputs

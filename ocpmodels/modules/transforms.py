@@ -2,6 +2,9 @@ import torch
 from torch_geometric.data import Data
 
 from ocpmodels.common.utils import cg_decomp_mat, irreps_sum
+from ocpmodels.modules.normalizer import normalizer_transform as normalizer
+
+_ = normalizer  # to avoid unused import error
 
 
 class DataTransforms:
@@ -14,8 +17,6 @@ class DataTransforms:
 
         for transform in self.transform_config:
             for transform_fn in transform:
-                if transform_fn == "normalizer":
-                    continue
                 data_object = eval(transform_fn)(
                     data_object, transform[transform_fn]
                 )

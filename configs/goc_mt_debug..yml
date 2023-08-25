@@ -91,11 +91,15 @@ outputs:
   energy:
     shape: 1
     level: system
+    custom_head: True
+    per_task: True
   forces:
-    shape: 3
     level: atom
+    irrep_dim: 1
     train_on_free_atoms: True
     eval_on_free_atoms: True
+    custom_head: True
+    per_task: True
 
 model:
   name: gemnet_oc
