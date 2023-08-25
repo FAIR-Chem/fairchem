@@ -48,7 +48,7 @@ class TaskDatasetConfig(TypedConfig):
 
 class TemperatureSamplingConfig(TypedConfig):
     type: Literal["temperature"] = "temperature"
-    temperature: float = 1.0
+    temperature: float
 
 
 class FullyBalancedSamplingConfig(TypedConfig):
@@ -66,7 +66,7 @@ SamplingConfig = Annotated[
 
 class DatasetConfig(TypedConfig):
     datasets: list[TaskDatasetConfig] = []
-    sampling: SamplingConfig = TemperatureSamplingConfig()
+    sampling: SamplingConfig = TemperatureSamplingConfig(temperature=1.0)
 
 
 def _create_split_dataset(

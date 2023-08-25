@@ -1,4 +1,5 @@
 from collections import defaultdict
+from functools import cached_property
 from logging import getLogger
 from typing import Dict, Literal, Union, cast
 
@@ -19,6 +20,11 @@ from .dataset import DatasetConfig, create_datasets
 from .loss import LossFnsConfig, create_losses
 
 log = getLogger(__name__)
+
+
+def _safe_divide(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    b = b.masked_fill(b == 0.0, 1.0)
+    return a / b
 
 
 class BaseOutputHeadConfig(TypedConfig):
@@ -246,12 +252,13 @@ class MTTrainer(OCPTrainer):
                 "Relaxation dataset not implemented for MT."
             )
 
+    @cached_property
+    def loss_config(self):
+        return LossFnsConfig.from_dict(self.config["loss_fns"])
+
     @override
     def load_loss(self) -> None:
-        loss_fns_config = TypeAdapter(LossFnsConfig).validate_python(
-            self.config["loss_fns"]
-        )
-        self.loss_fns = list(create_losses(loss_fns_config))
+        self.loss_fns = list(create_losses(self.loss_config))
 
     @override
     def _compute_loss(
@@ -273,28 +280,26 @@ class MTTrainer(OCPTrainer):
         )  # (bsz,)
         node_task_idx = batch_task_idx[batch_idx]  # (n_atoms,)
 
-        losses: list[torch.Tensor] = []
+        losses = defaultdict[str, list[torch.Tensor]](lambda: [])
         for target_name, loss_info in self.loss_fns:
             target = torch.cat(
                 [batch[target_name].to(self.device) for batch in batch_list],
                 dim=0,
             )
             pred = out[target_name]
-            mask = torch.ones_like(target, dtype=torch.bool)
 
             level = self.output_targets[target_name].get("level", "system")
 
             # For each task, we want to only consider the loss for that task's output head.
             task_idx = loss_info.get("task_idx", None)
-            if task_idx is not None:
-                if level == "atom":
-                    mask = mask & (node_task_idx == task_idx)  # (n_atoms,)
-                elif level == "system":
-                    mask = mask & (batch_task_idx == task_idx)  # (bsz,)
-                else:
-                    raise NotImplementedError(
-                        f"Level {level} not implemented."
-                    )
+            if task_idx is None:
+                raise ValueError(f"{task_idx=} not found in {loss_info=}")
+            if level == "atom":
+                mask = node_task_idx == task_idx  # (n_atoms,)
+            elif level == "system":
+                mask = batch_task_idx == task_idx  # (bsz,)
+            else:
+                raise NotImplementedError(f"Level {level} not implemented.")
 
             if level == "atom" and self.output_targets[target_name].get(
                 "train_on_free_atoms", True
@@ -317,19 +322,32 @@ class MTTrainer(OCPTrainer):
             coeff = loss_info.get("coefficient", 1.0)
             loss = coeff * loss
 
-            # Apply the reduction
-            reduction = loss_info.get("reduction", "mean")
-            if reduction == "sum":
-                loss = reduce(loss, "... -> ", "sum")
-            elif reduction == "mean":
-                loss = reduce(loss, "b ... -> ...", "sum") / reduce(
-                    mask, "b -> ", "sum"
+            # For SWL, we want to reduce the loss per structure, not per atom.
+            default_reduction = (
+                "structure_wise_mean" if level == "atom" else "mean"
+            )
+            reduction = self.loss_config.reduction.get(
+                target_name, default_reduction
+            )
+            if reduction == "structure_wise_mean":
+                loss = _safe_divide(
+                    reduce(loss, "n ... -> n", reduction="sum"),
+                    reduce(mask, "n -> n", reduction="sum"),
                 )
-                loss = reduce(loss, "... -> ", "mean")
-            else:
-                raise NotImplementedError(f"{reduction=} not implemented.")
 
-            losses.append(loss)
+            losses[level].append(loss)
+
+        if reduction == "sum":
+            loss = reduce(loss, "... -> ", "sum")
+        elif reduction == "mean":
+            loss = _safe_divide(
+                reduce(loss, "b ... -> ...", reduction="sum"),
+                reduce(mask, "b -> ", "sum"),
+            )
+            # TODO: This may not be doing SWA
+            loss = reduce(loss, "... -> ", "mean")
+        else:
+            raise NotImplementedError(f"{reduction=} not implemented.")
 
         # Sanity check to make sure the compute graph is correct.
         for lc in losses:

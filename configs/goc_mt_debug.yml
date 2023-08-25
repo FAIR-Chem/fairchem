@@ -49,20 +49,24 @@ dataset:
 logger: tensorboard
 
 loss_functions:
-  - losses:
-      energy:
-        fn: mae
-        coefficient: 1
-      forces:
-        fn: l2mae
-        coefficient: 100
-  - losses:
-      energy:
-        fn: mae
-        coefficient: 1
-      forces:
-        fn: l2mae
-        coefficient: 100
+  reduction:
+    energy: mean
+    forces: structure_wise_mean
+  tasks:
+    - losses:
+        energy:
+          fn: mae
+          coefficient: 1
+        forces:
+          fn: l2mae
+          coefficient: 100
+    - losses:
+        energy:
+          fn: mae
+          coefficient: 1
+        forces:
+          fn: l2mae
+          coefficient: 100
 
 evaluation_metrics:
   metrics:

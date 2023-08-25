@@ -1,16 +1,15 @@
 from functools import partial
-from typing import Callable, List, Literal, TypedDict
+from typing import Callable, Dict, List, Literal, TypedDict
 
 import torch
 import torch.nn.functional as F
-from typing_extensions import Annotated, NotRequired
+from typing_extensions import NotRequired
 
-from ocpmodels.common.typed_config import Field, TypedConfig
+from ocpmodels.common.typed_config import TypedConfig
 
 
 class LossFn(TypedDict):
     fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
-    reduction: Literal["mean", "sum"]
     coefficient: NotRequired[float]
     task_idx: NotRequired[int]
 
@@ -18,14 +17,15 @@ class LossFn(TypedDict):
 class SingleLossFnConfig(TypedConfig):
     fn: Literal["mae", "mse", "l1", "l2", "l2mae"] = "mae"
     coefficient: float = 1.0
-    reduction: Literal["mean", "sum"] = "mean"
 
 
 class TaskLossFnConfig(TypedConfig):
-    losses: dict[str, SingleLossFnConfig] = {}
+    losses: Dict[str, SingleLossFnConfig]
 
 
-LossFnsConfig = Annotated[List[TaskLossFnConfig], Field()]
+class LossFnsConfig(TypedConfig):
+    tasks: List[TaskLossFnConfig]
+    reduction: Dict[str, Literal["sum", "mean", "structure_wise_mean"]]
 
 
 def _create_loss(config: SingleLossFnConfig, task_idx: int) -> LossFn:
@@ -46,7 +46,6 @@ def _create_loss(config: SingleLossFnConfig, task_idx: int) -> LossFn:
         "fn": loss_fn,
         "coefficient": config.coefficient,
         "task_idx": task_idx,
-        "reduction": config.reduction,
     }
     return loss
 
@@ -57,6 +56,6 @@ def _create_task_losses(config: TaskLossFnConfig, task_idx: int):
 
 
 def create_losses(config: LossFnsConfig):
-    for task_idx, task_config in enumerate(config):
+    for task_idx, task_config in enumerate(config.tasks):
         for target_name, loss in _create_task_losses(task_config, task_idx):
             yield target_name, loss
