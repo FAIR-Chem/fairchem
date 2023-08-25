@@ -336,7 +336,7 @@ class GemNetOC(BaseModel):
                     nHidden=num_atom,
                     nHidden_afteratom=num_output_afteratom,
                     activation=activation,
-                    direct_forces=direct_forces,
+                    direct_forces=True,
                 )
             )
         self.out_blocks = torch.nn.ModuleList(out_blocks)

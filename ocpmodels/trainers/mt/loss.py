@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Callable, Literal, TypedDict
+from typing import Callable, List, Literal, TypedDict
 
 import torch
 import torch.nn.functional as F
@@ -25,7 +25,7 @@ class TaskLossFnConfig(TypedConfig):
     losses: dict[str, SingleLossFnConfig] = {}
 
 
-LossFnsConfig = Annotated[list[TaskLossFnConfig], Field()]
+LossFnsConfig = Annotated[List[TaskLossFnConfig], Field()]
 
 
 def _create_loss(config: SingleLossFnConfig, task_idx: int) -> LossFn:

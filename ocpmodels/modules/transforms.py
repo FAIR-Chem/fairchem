@@ -1,26 +1,29 @@
+from typing import Callable, Dict, List
+
 import torch
 from torch_geometric.data import Data
 
 from ocpmodels.common.utils import cg_decomp_mat, irreps_sum
-from ocpmodels.modules.normalizer import normalizer_transform as normalizer
-
-_ = normalizer  # to avoid unused import error
+from ocpmodels.modules.normalizer import normalizer_transform
 
 
 class DataTransforms:
-    def __init__(self, transform_config) -> None:
-        self.transform_config = transform_config
+    def __init__(self, transform_config: List[Dict]) -> None:
+        transform_config = transform_config.copy()
+
+        self.transforms: List[Callable] = []
+        for transform_dict in transform_config:
+            for name, config in transform_dict.items():
+                if name == "normalizer":
+                    fn = normalizer_transform(config)
+                else:
+                    fn = eval(name)
+
+                self.transforms.append(fn)
 
     def __call__(self, data_object):
-        if not self.transform_config:
-            return data_object
-
-        for transform in self.transform_config:
-            for transform_fn in transform:
-                data_object = eval(transform_fn)(
-                    data_object, transform[transform_fn]
-                )
-
+        for transform in self.transforms:
+            data_object = transform(data_object)
         return data_object
 
 

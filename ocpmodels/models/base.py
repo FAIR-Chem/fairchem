@@ -61,7 +61,7 @@ class BaseModel(nn.Module):
                 ] * self.output_targets[target].get("num_layers", 2)
 
                 layers.append(
-                    Dense(edge_embedding_dim, output_shape, activation=None)
+                    Dense(embedding_dim, output_shape, activation=None)
                 )
 
                 self.module_dict[target] = nn.Sequential(*layers)

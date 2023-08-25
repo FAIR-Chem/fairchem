@@ -1,6 +1,6 @@
 from collections import defaultdict
 from logging import getLogger
-from typing import Any, Dict, Literal, Union, cast
+from typing import Dict, Literal, Union, cast
 
 import torch
 from einops import reduce
@@ -13,7 +13,6 @@ from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import Field, TypeAdapter, TypedConfig
 from ocpmodels.modules.evaluator import Evaluator
-from ocpmodels.modules.normalizer import Normalizer
 
 from ..ocp_trainer import OCPTrainer
 from .dataset import DatasetConfig, create_datasets
@@ -62,13 +61,13 @@ class AtomLevelOutputHeadConfig(BaseOutputHeadConfig):
 
 OutputHeadConfig = Annotated[
     Union[SystemLevelOutputHeadConfig, AtomLevelOutputHeadConfig],
-    Field(discriminator="type"),
+    Field(discriminator="level"),
 ]
 
 OutputsConfig = Annotated[Dict[str, OutputHeadConfig], Field()]
 
 
-@registry.register_trainer("mt_trainer")
+@registry.register_trainer("mt")
 class MTTrainer(OCPTrainer):
     @override
     def __init__(
@@ -94,6 +93,13 @@ class MTTrainer(OCPTrainer):
         noddp=False,
         name="ocp",
     ):
+        if model.get("regress_forces", True) or model.get(
+            "direct_forces", False
+        ):
+            raise NotImplementedError(
+                "regress_forces and direct_forces are not supported for MTTrainer"
+            )
+
         super().__init__(
             task,
             model,
@@ -102,7 +108,7 @@ class MTTrainer(OCPTrainer):
                 dataset
             ),  # HACK: wrap it in a class so it doesn't get registered as a dict
             optimizer,
-            TypeAdapter(LossFnsConfig).validate_python(loss_fns),
+            loss_fns,
             eval_metrics,
             identifier,
             timestamp_id,
@@ -121,18 +127,16 @@ class MTTrainer(OCPTrainer):
 
     @override
     def load_task(self):
-        # This is the old/legacy way of doing things.
-        # Keep it so things don't break.
+        # We don't use this way of normalizing.
         self.normalizers = {}
 
+        outputs_config = TypeAdapter(OutputsConfig).validate_python(
+            self.config["outputs"]
+        )
         self.multi_task_targets = defaultdict[str, list[str]](lambda: [])
         self.per_task_output_targets = {}
         self.output_targets = {}
-        for target_name, target_config in (
-            TypeAdapter(OutputsConfig)
-            .validate_python(self.config["outputs"])
-            .items()
-        ):
+        for target_name, target_config in outputs_config.items():
             target_config_dict = target_config.to_dict()
             self.output_targets[target_name] = target_config_dict.copy()
             for task_idx in range(len(self.dataset_config.datasets)):
@@ -242,14 +246,12 @@ class MTTrainer(OCPTrainer):
                 "Relaxation dataset not implemented for MT."
             )
 
-    @property
-    def loss_fns_config(self):
-        loss_fns_config = self.config["loss_fns"]
-        return cast(LossFnsConfig, loss_fns_config)
-
     @override
     def load_loss(self) -> None:
-        self.loss_fns = list(create_losses(self.loss_fns_config))
+        loss_fns_config = TypeAdapter(LossFnsConfig).validate_python(
+            self.config["loss_fns"]
+        )
+        self.loss_fns = list(create_losses(loss_fns_config))
 
     @override
     def _compute_loss(
@@ -343,7 +345,7 @@ class MTTrainer(OCPTrainer):
         # Merge the per-task outputs
         for target_name, target_key_list in self.multi_task_targets.items():
             merged_outputs[target_name] = torch.stack(
-                [outputs.pop(key) for key in target_key_list], dim=1
+                [merged_outputs.pop(key) for key in target_key_list], dim=1
             )
 
         return merged_outputs

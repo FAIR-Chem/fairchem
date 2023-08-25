@@ -11,7 +11,7 @@ import torch
 from torch_geometric.data import Batch, Data
 from typing_extensions import Annotated
 
-from ocpmodels.common.typed_config import Field, TypedConfig
+from ocpmodels.common.typed_config import Field, TypeAdapter, TypedConfig
 
 
 class Normalizer:
@@ -60,16 +60,24 @@ class NormalizerTargetConfig(TypedConfig):
 NormalizerConfig = Annotated[Dict[str, NormalizerTargetConfig], Field()]
 
 
-def normalizer_transform(data: Data, config: NormalizerConfig):
-    for target, target_config in config.items():
-        if target not in data:
-            raise ValueError(f"Target {target} not found in data.")
+def normalizer_transform(config_dict: dict):
+    config = TypeAdapter(NormalizerConfig).validate_python(config_dict)
 
-        data[target] = (data[target] - target_config.mean) / target_config.std
-        data[f"{target}_norm_mean"] = target_config.mean
-        data[f"{target}_norm_std"] = target_config.std
+    def transform(data: Data):
+        nonlocal config
+        for target, target_config in config.items():
+            if target not in data:
+                raise ValueError(f"Target {target} not found in data.")
 
-    return data
+            data[target] = (
+                data[target] - target_config.mean
+            ) / target_config.std
+            data[f"{target}_norm_mean"] = target_config.mean
+            data[f"{target}_norm_std"] = target_config.std
+
+        return data
+
+    return transform
 
 
 def denormalize_batch(

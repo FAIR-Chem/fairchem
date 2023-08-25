@@ -12,16 +12,18 @@ dataset:
           y: energy
           force: forces
         transforms:
-          normalizer:
-            energy:
-              mean: -0.7554450631141663
-              stdev: 2.887317180633545
-            forces:
-              mean: 0
-              stdev: 2.887317180633545
+          - normalizer:
+              energy:
+                mean: -0.7554450631141663
+                stdev: 2.887317180633545
+              forces:
+                mean: 0
+                stdev: 2.887317180633545
       val:
+        format: lmdb
         src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
       test:
+        format: lmdb
         src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
     - train:
         format: lmdb
@@ -30,49 +32,37 @@ dataset:
           y: energy
           force: forces
         transforms:
-          normalizer:
-            energy:
-              mean: -0.7554450631141663
-              stdev: 2.887317180633545
-            forces:
-              mean: 0
-              stdev: 2.887317180633545
+          - normalizer:
+              energy:
+                mean: -0.7554450631141663
+                stdev: 2.887317180633545
+              forces:
+                mean: 0
+                stdev: 2.887317180633545
       val:
+        format: lmdb
         src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
       test:
+        format: lmdb
         src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
 
 logger: tensorboard
 
 loss_functions:
   - losses:
-      - energy:
-          fn: mae
-          coefficient: 1
-      - forces:
-          fn: l2mae
-          coefficient: 100
+      energy:
+        fn: mae
+        coefficient: 1
+      forces:
+        fn: l2mae
+        coefficient: 100
   - losses:
-      - energy:
-          fn: mae
-          coefficient: 1
-      - forces:
-          fn: l2mae
-          coefficient: 100
-  - losses:
-      - energy:
-          fn: mae
-          coefficient: 1
-      - forces:
-          fn: l2mae
-          coefficient: 100
-  - losses:
-      - energy:
-          fn: mae
-          coefficient: 1
-      - forces:
-          fn: l2mae
-          coefficient: 100
+      energy:
+        fn: mae
+        coefficient: 1
+      forces:
+        fn: l2mae
+        coefficient: 100
 
 evaluation_metrics:
   metrics:
@@ -144,8 +134,8 @@ model:
   activation: silu
   scale_file: configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
 
-  regress_forces: True
-  direct_forces: True
+  regress_forces: False
+  direct_forces: False
   forces_coupled: False
 
   quad_interaction: True
@@ -166,7 +156,7 @@ optim:
   num_workers: 2
   lr_initial: 5.e-4
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True}
+  optimizer_params: { "amsgrad": True }
   scheduler: ReduceLROnPlateau
   mode: min
   factor: 0.8
