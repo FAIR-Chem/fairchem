@@ -64,7 +64,7 @@ def _duration_to_steps(duration: Duration, context: OptimizerTrainerContext):
 
 
 class ReduceLROnPlateauConfig(TypedConfig):
-    lr_scheduler: Literal["ReduceLROnPlateau"]
+    name: Literal["ReduceLROnPlateau"]
 
     patience: int
     factor: float
@@ -109,7 +109,7 @@ class ReduceLROnPlateauConfig(TypedConfig):
 
 
 class WarmupCosineDecayRLPSchedulerConfig(TypedConfig):
-    lr_scheduler: Literal["WarmupCosineDecayRLP"]
+    name: Literal["WarmupCosineDecayRLP"]
 
     warmup: Duration
     decay: Duration
@@ -132,7 +132,7 @@ class WarmupCosineDecayRLPSchedulerConfig(TypedConfig):
 
 LRSchedulerConfig = Annotated[
     Union[ReduceLROnPlateauConfig, WarmupCosineDecayRLPSchedulerConfig],
-    Field(discriminator="lr_scheduler"),
+    Field(discriminator="name"),
 ]
 
 LLRDConfig = Annotated[dict[str, float], Field()]
