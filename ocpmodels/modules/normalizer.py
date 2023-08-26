@@ -5,7 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Dict
+from contextlib import contextmanager
+from typing import Dict, List
 
 import torch
 from torch_geometric.data import Batch, Data
@@ -81,13 +82,13 @@ def normalizer_transform(config_dict: dict):
 
 
 def denormalize_batch(
-    batch: Batch,
+    batch_list: List[Batch],
     additional_tensors: Dict[str, torch.Tensor] | None = None,
 ):
     if additional_tensors is None:
         additional_tensors = {}
 
-    keys: set[str] = set(batch.keys)  # type: ignore
+    keys: set[str] = set([k for batch in batch_list for k in batch.keys])  # type: ignore
 
     # find all keys that have a norm_mean and norm_std
     norm_keys: set[str] = {
@@ -101,15 +102,30 @@ def denormalize_batch(
     }
 
     for key in norm_keys:
-        mean = getattr(batch, f"{key}_norm_mean")
-        std = getattr(batch, f"{key}_norm_std")
-        value = getattr(batch, key)
+        for batch in batch_list:
+            mean = getattr(batch, f"{key}_norm_mean")
+            std = getattr(batch, f"{key}_norm_std")
+            value = getattr(batch, key)
 
-        value = (value * std) + mean
-        setattr(batch, key, value)
+            value = (value * std) + mean
+            setattr(batch, key, value)
 
-        additional_value = additional_tensors.pop(key, None)
-        if additional_value is not None:
-            additional_tensors[key] = (additional_value * std) + mean
+            additional_value = additional_tensors.pop(key, None)
+            if additional_value is not None:
+                additional_tensors[key] = (additional_value * std) + mean
 
-    return batch, additional_tensors
+    return batch_list, additional_tensors
+
+
+@contextmanager
+def denormalize_context(
+    batch_list: List[Batch],
+    additional_tensors: Dict[str, torch.Tensor] | None = None,
+):
+    batch_list, additional_tensors = denormalize_batch(
+        batch_list, additional_tensors
+    )
+    yield batch_list, additional_tensors
+    batch_list, additional_tensors = denormalize_batch(
+        batch_list, additional_tensors
+    )
