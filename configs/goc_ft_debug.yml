@@ -121,18 +121,25 @@ optim:
   max_epochs: 80
   clip_grad_norm: 10
 
-  optim_mode: single_group
-  optimizer:
-    name: AdamW
-    lr: 5.e-4
-    amsgrad: True
-    weight_decay: 0.01
+  # optim_mode: single_group
+  # optimizer:
+  #   name: AdamW
+  #   lr: 5.e-4
+  #   amsgrad: True
+  #   weight_decay: 0.01
 
-  # lr_scheduler:
-  #   name: ReduceLROnPlateau
-  #   mode: min
-  #   factor: 0.8
-  #   patience: 3
+  # # lr_scheduler:
+  # #   name: ReduceLROnPlateau
+  # #   mode: min
+  # #   factor: 0.8
+  # #   patience: 3
+
+  # # lr_scheduler:
+  # #   name: WarmupCosineDecayRLP
+  # #   warmup_duration: [100, steps]
+  # #   warmup_factor: 1.0e-3
+  # #   decay_duration: [1000, steps]
+  # #   decay_factor: 0.1
 
   # lr_scheduler:
   #   name: WarmupCosineDecayRLP
@@ -140,6 +147,21 @@ optim:
   #   warmup_factor: 1.0e-3
   #   decay_duration: [1000, steps]
   #   decay_factor: 0.1
+
+  #   rlp:
+  #     mode: min
+  #     factor: 0.8
+  #     patience: 3
+
+  # exponential_moving_average:
+  #   decay: 0.999
+
+  optim_mode: multi_group
+  optimizer:
+    name: AdamW
+    lr: 5.e-4
+    amsgrad: True
+    weight_decay: 0.01
 
   lr_scheduler:
     name: WarmupCosineDecayRLP
@@ -155,3 +177,6 @@ optim:
 
   exponential_moving_average:
     decay: 0.999
+
+  groups:
+    - parameter_patterns: ["*"]

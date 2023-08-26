@@ -1,10 +1,13 @@
+import copy
 import fnmatch
 from dataclasses import dataclass
 from functools import partial
+from logging import getLogger
 from typing import TYPE_CHECKING, Any, Generic, Literal, Tuple, Union, cast
 
 import torch.nn as nn
 import torch.optim as optim
+from pydantic import ValidationError
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from typing_extensions import Annotated, TypeVar
@@ -15,6 +18,8 @@ from ocpmodels.modules.exponential_moving_average import (
 )
 
 from . import lr_scheduler as LR
+
+log = getLogger(__name__)
 
 
 @dataclass
@@ -155,8 +160,42 @@ class SingleGroupOptimConfig(BaseOptimConfig):
 
 class MultiGroupPerGroupOptimConfig(TypedConfig):
     parameter_patterns: list[str]
-    optimizer: AdamWConfig
-    lr_scheduler: WarmupCosineDecayRLPSchedulerConfig
+    optimizer: dict[str, Any] | None = None
+    lr_scheduler: dict[str, Any] | None = None
+
+    def optimizer_config(self, base: AdamWConfig):
+        config = base
+        if self.optimizer:
+            config = cast(
+                AdamWConfig,
+                config._as_pydantic_model.model_copy(
+                    update=self.optimizer, deep=True
+                ),
+            )
+        return config
+
+    def lr_scheduler_config(self, base: WarmupCosineDecayRLPSchedulerConfig):
+        config = copy.deepcopy(base)
+        if self.lr_scheduler:
+            config = cast(
+                WarmupCosineDecayRLPSchedulerConfig,
+                config._as_pydantic_model.model_copy(update=self.lr_scheduler),
+            )
+        return config
+
+    def _throw_if_rlp(self, base: WarmupCosineDecayRLPSchedulerConfig):
+        if not self.lr_scheduler:
+            return self
+
+        config = copy.deepcopy(base)
+        config.rlp = None
+        lr_scheduler = self.lr_scheduler_config(base)
+        if lr_scheduler.rlp is not None:
+            raise ValueError(
+                "Per-param group ReduceLROnPlateau scheduler not supported for multi group, "
+                f"but got {lr_scheduler.rlp=}."
+            )
+        return self
 
 
 class MultiGroupOptimConfig(BaseOptimConfig):
@@ -237,8 +276,16 @@ def _named_parameters_matching_patterns(
         yield name, param, matching_pattern
 
 
-def _split_parameters(model: nn.Module, pattern_lists: list[list[str]]):
-    all_parameters: list[nn.Parameter] = list(model.parameters())
+def _split_parameters(
+    model: nn.Module,
+    pattern_lists: list[list[str]],
+    check_requires_grad: bool = True,
+):
+    all_parameters: list[nn.Parameter] = [
+        p
+        for p in model.parameters()
+        if not check_requires_grad or p.requires_grad
+    ]
 
     parameters: list[list[nn.Parameter]] = []
     for patterns in pattern_lists:
@@ -268,9 +315,23 @@ def _construct_multi_group(
     # an error and tell the user to add a fallthrough group "*" to the
     # parameter patterns.
     if remaining_parameters:
+        n_params_total = sum(p.numel() for p in remaining_parameters)
+        param_names = {param: name for name, param in model.named_parameters()}
+        remaining_parameter_names = [
+            param_names[param] for param in remaining_parameters
+        ]
         raise ValueError(
-            f"{len(remaining_parameters)} parameters were not matched by any group. "
+            f"{len(remaining_parameters)} nn.Parameter objects ({n_params_total} total parameters)"
+            " were not matched by any group. "
+            f"These parameters are: {' ' .join(remaining_parameter_names)}. "
             "Please add a fallthrough group '*' to the parameter patterns."
+        )
+
+    log.critical(f"Constructed the following parameter groups:")
+    for group, params in zip(config.groups, param_groups):
+        n_params = sum(p.numel() for p in params)
+        log.critical(
+            f"  {group.parameter_patterns}: {n_params} params with config.optimizer={group.optimizer} and config.lr_scheduler={group.lr_scheduler}"
         )
 
     match config.optimizer:
@@ -279,7 +340,9 @@ def _construct_multi_group(
                 [
                     {
                         "params": params,
-                        **group_config.optimizer._to_ctor_kwargs(),
+                        **group_config.optimizer_config(
+                            config.optimizer
+                        )._to_ctor_kwargs(),
                     }
                     for params, group_config in zip(
                         param_groups, config.groups
@@ -292,16 +355,6 @@ def _construct_multi_group(
                 f"Optimizer {config.optimizer} not implemented."
             )
 
-    # Make sure none of the groups have a ReduceLROnPlateau scheduler
-    if any(
-        isinstance(group_config.lr_scheduler, ReduceLROnPlateauConfig)
-        or (group_config.lr_scheduler.rlp is not None)
-        for group_config in config.groups
-    ):
-        raise ValueError(
-            "Per-param group ReduceLROnPlateau scheduler not supported for multi group."
-        )
-
     match config.lr_scheduler:
         case WarmupCosineDecayRLPSchedulerConfig(
             rlp=_ReduceLROnPlateauBaseConfig() as rlp_config
@@ -309,7 +362,9 @@ def _construct_multi_group(
             lr_scheduler = LR.PerParamGroupLinearWarmupCosineDecayRLPScheduler(
                 optimizer,
                 [
-                    group_config.lr_scheduler._to_settings(context)
+                    group_config._throw_if_rlp(config.lr_scheduler)
+                    .lr_scheduler_config(config.lr_scheduler)
+                    ._to_settings(context)
                     for group_config in config.groups
                 ],
                 rlp_config._to_settings(),
@@ -318,7 +373,9 @@ def _construct_multi_group(
             lr_scheduler = LR.PerParamGroupLinearWarmupCosineDecayScheduler(
                 optimizer,
                 [
-                    group_config.lr_scheduler._to_settings(context)
+                    group_config._throw_if_rlp(config.lr_scheduler)
+                    .lr_scheduler_config(config.lr_scheduler)
+                    ._to_settings(context)
                     for group_config in config.groups
                 ],
             )

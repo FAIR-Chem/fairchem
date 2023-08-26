@@ -27,8 +27,10 @@ class TypedConfig(_ModelBase):
         # actions on the model.
         pass
 
-    def model_post_init(self, __context: Any):
-        self.__post_init__()
+    if not TYPE_CHECKING:
+
+        def model_post_init(self, __context: Any):
+            self.__post_init__()
 
     @classmethod
     @property
