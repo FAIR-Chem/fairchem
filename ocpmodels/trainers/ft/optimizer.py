@@ -1,13 +1,13 @@
 import fnmatch
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, Literal, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Generic, Literal, Tuple, Union, cast
 
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from typing_extensions import Annotated
+from typing_extensions import Annotated, TypeVar
 
 from ocpmodels.common.typed_config import Field, TypedConfig
 from ocpmodels.modules.exponential_moving_average import (
@@ -330,6 +330,43 @@ def _construct_multi_group(
     return optimizer, lr_scheduler
 
 
+TScheduler = TypeVar("TScheduler", infer_variance=True)
+
+
+class _LrSchedulerWrapper(Generic[TScheduler]):
+    def __init__(self, scheduler: TScheduler):
+        super().__init__()
+
+        self.scheduler = scheduler
+
+    def step(self, metrics=None, epoch=None) -> None:
+        match self.scheduler:
+            case LR.LinearWarmupCosineDecayRLPScheduler() | LR.PerParamGroupLinearWarmupCosineDecayRLPScheduler():
+                self.scheduler.rlp_step(metrics, epoch)
+            case ReduceLROnPlateau():
+                if metrics is None:
+                    raise Exception(
+                        "Validation set required for ReduceLROnPlateau."
+                    )
+                self.scheduler.step(metrics, epoch)
+            case LR._LRScheduler():
+                self.scheduler.step(epoch=epoch)
+            case _:
+                raise ValueError(f"Invalid scheduler: {type(self.scheduler)}")
+
+    def get_lr(self):
+        match self.scheduler:
+            case ReduceLROnPlateau():
+                return self.scheduler.optimizer.param_groups[0]["lr"]
+            case LR._LRScheduler():
+                lr = self.scheduler.get_lr()
+                if isinstance(lr, list):
+                    lr = lr[0]
+                return lr
+            case _:
+                raise ValueError(f"Invalid scheduler: {type(self.scheduler)}")
+
+
 def load_optimizer(
     model: nn.Module,
     config: OptimConfig,
@@ -354,5 +391,8 @@ def load_optimizer(
             model.parameters(),
             config.exponential_moving_average.decay,
         )
+
+    # Wrap lr_scheduler in an object that's compatible with the trainer
+    lr_scheduler = _LrSchedulerWrapper(lr_scheduler)
 
     return optimizer, lr_scheduler, ema

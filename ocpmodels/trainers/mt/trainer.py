@@ -1,7 +1,7 @@
 from collections import defaultdict
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Dict, List, Literal, Optional, Union, cast
+from typing import Any, Dict, List, Literal, Union, cast
 
 import torch
 import torchmetrics
@@ -18,7 +18,7 @@ from ocpmodels.common.typed_config import Field, TypeAdapter, TypedConfig
 from ocpmodels.modules.evaluator import Evaluator
 
 from ...modules.normalizer import denormalize_context, denormalize_tensors
-from ..ocp_trainer import OCPTrainer
+from ..base_trainer import BaseTrainer
 from .dataset import DatasetConfig, create_datasets
 from .loss import LossFnsConfig, create_losses
 
@@ -99,7 +99,7 @@ OutputsConfig = Annotated[Dict[str, OutputHeadConfig], Field()]
 
 
 @registry.register_trainer("mt")
-class MTTrainer(OCPTrainer):
+class MTTrainer(BaseTrainer):
     @override
     def __init__(
         self,

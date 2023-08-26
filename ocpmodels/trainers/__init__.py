@@ -5,8 +5,12 @@
 
 __all__ = [
     "BaseTrainer",
+    "FTTrainer",
+    "MTTrainer",
     "OCPTrainer",
 ]
 
 from .base_trainer import BaseTrainer
+from .ft import FTTrainer
+from .mt import MTTrainer
 from .ocp_trainer import OCPTrainer
