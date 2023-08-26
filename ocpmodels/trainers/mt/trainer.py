@@ -1,7 +1,7 @@
 from collections import defaultdict
 from functools import cached_property
 from logging import getLogger
-from typing import Dict, Literal, Union, cast
+from typing import Any, Dict, List, Literal, Union, cast
 
 import torch
 from einops import rearrange, reduce
@@ -120,7 +120,7 @@ class MTTrainer(OCPTrainer):
         cpu=False,
         slurm={},
         noddp=False,
-        name="ocp",
+        name="mt",
     ):
         if model.get("regress_forces", True) or model.get(
             "direct_forces", False
@@ -180,6 +180,16 @@ class MTTrainer(OCPTrainer):
                 "metrics", Evaluator.task_metrics.get(self.name, {})
             ),
         )
+
+        self.per_task_evaluator = {
+            task_idx: Evaluator(
+                task=self.name,
+                eval_metrics=self.evaluation_metrics.get(
+                    "metrics", Evaluator.task_metrics.get(self.name, {})
+                ),
+            )
+            for task_idx in range(len(self.dataset_config.datasets))
+        }
 
     @override
     def load_model(self) -> None:
@@ -288,7 +298,7 @@ class MTTrainer(OCPTrainer):
     @override
     def _compute_loss(
         self,
-        out: dict[str, torch.Tensor],
+        out: Dict[str, torch.Tensor],
         batch_list: list[Batch],
     ):
         batch_idx = torch.cat(
@@ -365,12 +375,101 @@ class MTTrainer(OCPTrainer):
         return loss
 
     @override
-    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
-        # return super()._compute_metrics(out, batch_list, evaluator, metrics)
+    def _compute_metrics(
+        self,
+        outputs: Dict[str, torch.Tensor],
+        batch_list: List[Batch],
+        evaluator: Evaluator,
+        metrics: Dict[str, Any] = {},
+    ):
+        # First, compute the aggregate metrics across all tasks
+        aggregated_outputs: Dict[str, torch.Tensor] = {}
+        batch_idx = torch.cat(
+            [batch.batch.to(self.device) for batch in batch_list]
+        )  # (n_atoms,)
+        task_mask = torch.cat(
+            [batch.task_mask.to(self.device) for batch in batch_list]
+        )  # (bsz, t)
+        task_mask_node = task_mask[batch_idx]  # (n_atoms, t)
+        for target_name, target_value in outputs.items():
+            output_target = self.typed_output_targets[target_name]
+            level = output_target.level
+
+            if level == "system":
+                # Shape should be (bsz, n_tasks)
+                aggregated_outputs[target_name] = target_value[
+                    task_mask
+                ]  # (bsz)
+            elif level == "atom":
+                # Shape should be (n_atoms, n_tasks, 3)
+                aggregated_outputs[target_name] = target_value[
+                    task_mask_node
+                ]  # (n_atoms, 3)
+            else:
+                raise NotImplementedError(f"{level=} not implemented.")
+        metrics = super()._compute_metrics(
+            aggregated_outputs,
+            batch_list,
+            evaluator,
+            metrics,
+        )
+
+        # Now, compute the per-task metrics
+        for task_idx, per_task_evaluator in self.per_task_evaluator.items():
+            task_outputs: Dict[str, torch.Tensor] = {}
+            batch_idx = torch.cat(
+                [batch.batch.to(self.device) for batch in batch_list]
+            )  # (n_atoms,)
+            task_idx = torch.cat(
+                [batch.task_idx.to(self.device) for batch in batch_list]
+            )  # (bsz,)
+            task_mask = torch.cat(
+                [batch.task_mask.to(self.device) for batch in batch_list]
+            )  # (bsz, t)
+            task_mask = task_mask & rearrange(
+                task_idx == task_idx, "b -> b 1"
+            )  # (bsz, t)
+
+            # If the batch contains no samples for this task, skip it.
+            if not task_mask.any():
+                continue
+
+            task_mask_node = task_mask[batch_idx]  # (n_atoms, t)
+            for target_name, target_value in outputs.items():
+                output_target = self.typed_output_targets[target_name]
+                level = output_target.level
+
+                if level == "system":
+                    # Shape should be (bsz, n_tasks)
+                    task_outputs[target_name] = target_value[
+                        task_mask
+                    ]  # (bsz)
+                elif level == "atom":
+                    # Shape should be (n_atoms, n_tasks, 3)
+                    task_outputs[target_name] = target_value[
+                        task_mask_node
+                    ]  # (n_atoms, 3)
+                else:
+                    raise NotImplementedError(f"{level=} not implemented.")
+
+            per_task_metrics = super()._compute_metrics(
+                task_outputs,
+                batch_list,
+                per_task_evaluator,
+                {},
+            )
+            metrics = {
+                **metrics,
+                **{
+                    f"task_{task_idx}/{key}": value
+                    for key, value in per_task_metrics.items()
+                },
+            }
+
         return metrics
 
-    def _merge_mt_outputs(self, outputs: dict[str, torch.Tensor]):
-        merged_outputs: dict[str, torch.Tensor] = outputs.copy()
+    def _merge_mt_outputs(self, outputs: Dict[str, torch.Tensor]):
+        merged_outputs: Dict[str, torch.Tensor] = outputs.copy()
 
         # Merge the per-task outputs
         for target_name, target_key_list in self.multi_task_targets.items():
@@ -380,7 +479,7 @@ class MTTrainer(OCPTrainer):
 
         return merged_outputs
 
-    def _validate_mt_outputs(self, outputs: dict[str, torch.Tensor]):
+    def _validate_mt_outputs(self, outputs: Dict[str, torch.Tensor]):
         num_tasks = len(self.dataset_config.datasets)
         for target, config in self.output_targets.items():
             # Get the value
