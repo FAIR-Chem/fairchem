@@ -13,14 +13,12 @@ from .optimizer import OptimConfig, OptimizerTrainerContext, load_optimizer
 class FTTrainer(BaseTrainer):
     @cached_property
     def optim_config(self):
-        return TypeAdapter(OptimConfig).validate_python(
-            self.config["optimizer"]
-        )
+        return TypeAdapter(OptimConfig).validate_python(self.config["optim"])
 
     @override
     def load_optimizer(self) -> None:
         num_steps_per_epoch = len(self.train_loader)
-        self.optimizer, self.lr_scheduler, self.ema = load_optimizer(
+        self.optimizer, self.scheduler, self.ema = load_optimizer(
             self.model,
             self.optim_config,
             OptimizerTrainerContext(num_steps_per_epoch=num_steps_per_epoch),

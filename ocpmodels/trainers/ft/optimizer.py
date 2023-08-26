@@ -339,6 +339,14 @@ class _LrSchedulerWrapper(Generic[TScheduler]):
 
         self.scheduler = scheduler
 
+    @property
+    def scheduler_type(self):
+        match self.scheduler:
+            case LR.LinearWarmupCosineDecayRLPScheduler() | LR.PerParamGroupLinearWarmupCosineDecayRLPScheduler() | ReduceLROnPlateau():
+                return "ReduceLROnPlateau"
+            case _:
+                return type(self.scheduler).__name__
+
     def step(self, metrics=None, epoch=None) -> None:
         match self.scheduler:
             case LR.LinearWarmupCosineDecayRLPScheduler() | LR.PerParamGroupLinearWarmupCosineDecayRLPScheduler():

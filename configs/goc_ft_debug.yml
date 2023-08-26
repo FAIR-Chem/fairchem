@@ -8,13 +8,13 @@ dataset:
       y: energy
       force: forces
     transforms:
-      normalizer:
-        energy:
-          mean: -0.7554450631141663
-          stdev: 2.887317180633545
-        forces:
-          mean: 0
-          stdev: 2.887317180633545
+      - normalizer:
+          energy:
+            mean: -0.7554450631141663
+            stdev: 2.887317180633545
+          forces:
+            mean: 0
+            stdev: 2.887317180633545
   val:
     src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
   test:
@@ -47,11 +47,13 @@ outputs:
   energy:
     shape: 1
     level: system
+    custom_head: False
   forces:
-    shape: 3
     level: atom
+    irrep_dim: 1
     train_on_free_atoms: True
     eval_on_free_atoms: True
+    custom_head: False
 
 model:
   name: gemnet_oc
@@ -116,14 +118,21 @@ optim:
   load_balancing: atoms
   eval_every: 5000
   num_workers: 2
-  lr_initial: 5.e-4
-  optimizer: AdamW
-  optimizer_params: { "amsgrad": True }
-  scheduler: ReduceLROnPlateau
-  mode: min
-  factor: 0.8
-  patience: 3
   max_epochs: 80
-  ema_decay: 0.999
   clip_grad_norm: 10
-  weight_decay: 0
+
+  optim_mode: single_group
+  optimizer:
+    name: AdamW
+    lr: 5.e-4
+    amsgrad: True
+    weight_decay: 0.01
+
+  lr_scheduler:
+    name: ReduceLROnPlateau
+    mode: min
+    factor: 0.8
+    patience: 3
+
+  exponential_moving_average:
+    decay: 0.999
