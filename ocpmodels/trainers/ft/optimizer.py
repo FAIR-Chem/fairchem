@@ -18,7 +18,7 @@ from . import lr_scheduler as LR
 
 
 @dataclass
-class TrainerContext:
+class OptimizerTrainerContext:
     num_steps_per_epoch: int
 
 
@@ -53,7 +53,7 @@ OptimizerConfig = Annotated[AdamWConfig, Field(discriminator="optimizer")]
 Duration = Tuple[int, Literal["steps", "epochs"]]
 
 
-def _duration_to_steps(duration: Duration, context: TrainerContext):
+def _duration_to_steps(duration: Duration, context: OptimizerTrainerContext):
     match duration:
         case (num, "steps"):
             return num
@@ -121,7 +121,7 @@ class WarmupCosineDecayRLPSchedulerConfig(TypedConfig):
 
     rlp: ReduceLROnPlateauConfig | None = None
 
-    def _to_settings(self, context: TrainerContext):
+    def _to_settings(self, context: OptimizerTrainerContext):
         return LR.LinearWarmupCosineDecaySettings(
             warmup_steps=_duration_to_steps(self.warmup, context),
             total_steps=_duration_to_steps(self.decay, context),
@@ -176,7 +176,7 @@ OptimConfig = Annotated[
 def _construct_single_group(
     model: nn.Module,
     config: SingleGroupOptimConfig,
-    context: TrainerContext,
+    context: OptimizerTrainerContext,
 ):
     match config.optimizer:
         case AdamWConfig():
@@ -258,7 +258,7 @@ def _split_parameters(model: nn.Module, pattern_lists: list[list[str]]):
 def _construct_multi_group(
     model: nn.Module,
     config: MultiGroupOptimConfig,
-    context: TrainerContext,
+    context: OptimizerTrainerContext,
 ):
     # Split parameters into groups
     param_groups, remaining_parameters = _split_parameters(
@@ -333,7 +333,7 @@ def _construct_multi_group(
 def load_optimizer(
     model: nn.Module,
     config: OptimConfig,
-    context: TrainerContext,
+    context: OptimizerTrainerContext,
 ):
     match config:
         case SingleGroupOptimConfig():
