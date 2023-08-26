@@ -420,14 +420,14 @@ class MTTrainer(OCPTrainer):
             batch_idx = torch.cat(
                 [batch.batch.to(self.device) for batch in batch_list]
             )  # (n_atoms,)
-            task_idx = torch.cat(
+            batch_task_idx = torch.cat(
                 [batch.task_idx.to(self.device) for batch in batch_list]
             )  # (bsz,)
             task_mask = torch.cat(
                 [batch.task_mask.to(self.device) for batch in batch_list]
             )  # (bsz, t)
             task_mask = task_mask & rearrange(
-                task_idx == task_idx, "b -> b 1"
+                batch_task_idx == task_idx, "b -> b 1"
             )  # (bsz, t)
 
             # If the batch contains no samples for this task, skip it.
