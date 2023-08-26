@@ -111,22 +111,20 @@ class ReduceLROnPlateauConfig(TypedConfig):
 class WarmupCosineDecayRLPSchedulerConfig(TypedConfig):
     name: Literal["WarmupCosineDecayRLP"]
 
-    warmup: Duration
-    decay: Duration
+    warmup_duration: Duration
+    warmup_factor: float = 0.0
 
-    warmup_start_lr_factor: float = 0.0
-    min_lr_factor: float = 1.0e-2
-    last_step: int = -1
-    should_restart: bool = True
+    decay_duration: Duration
+    decay_factor: float = 1.0e-2
 
     rlp: ReduceLROnPlateauConfig | None = None
 
     def _to_settings(self, context: OptimizerTrainerContext):
         return LR.LinearWarmupCosineDecaySettings(
-            warmup_steps=_duration_to_steps(self.warmup, context),
-            total_steps=_duration_to_steps(self.decay, context),
-            warmup_factor=self.warmup_start_lr_factor,
-            min_lr_factor=self.min_lr_factor,
+            warmup_steps=_duration_to_steps(self.warmup_duration, context),
+            total_steps=_duration_to_steps(self.decay_duration, context),
+            warmup_factor=self.warmup_factor,
+            min_lr_factor=self.decay_factor,
         )
 
 

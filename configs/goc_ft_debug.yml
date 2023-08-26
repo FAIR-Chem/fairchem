@@ -20,7 +20,7 @@ dataset:
   test:
     src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
 
-logger: tensorboard
+logger: wandb
 
 loss_functions:
   - energy:
@@ -128,11 +128,18 @@ optim:
     amsgrad: True
     weight_decay: 0.01
 
+  # lr_scheduler:
+  #   name: ReduceLROnPlateau
+  #   mode: min
+  #   factor: 0.8
+  #   patience: 3
+
   lr_scheduler:
-    name: ReduceLROnPlateau
-    mode: min
-    factor: 0.8
-    patience: 3
+    name: WarmupCosineDecayRLP
+    warmup_duration: [1000, steps]
+    warmup_start_factor: 1.0e-3
+    decay_duration: [10_000, steps]
+    decay_factor: 0.1
 
   exponential_moving_average:
     decay: 0.999
