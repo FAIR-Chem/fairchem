@@ -23,7 +23,7 @@ class OptimizerTrainerContext:
 
 
 class AdamWConfig(TypedConfig):
-    optimizer: Literal["AdamW"]
+    name: Literal["AdamW"]
     lr: float
     amsgrad: bool = False
     weight_decay: float = 0.01
@@ -48,7 +48,7 @@ class AdamWConfig(TypedConfig):
         )
 
 
-OptimizerConfig = Annotated[AdamWConfig, Field(discriminator="optimizer")]
+OptimizerConfig = Annotated[AdamWConfig, Field(discriminator="name")]
 
 Duration = Tuple[int, Literal["steps", "epochs"]]
 
