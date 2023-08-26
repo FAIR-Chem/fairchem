@@ -1,16 +1,25 @@
-from typing import Literal, Tuple, Union
+import fnmatch
+from dataclasses import dataclass
+from functools import partial
+from typing import TYPE_CHECKING, Any, Literal, Tuple, Union, cast
 
-import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.optim import AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from typing_extensions import Annotated, override
+from typing_extensions import Annotated
 
 from ocpmodels.common.typed_config import Field, TypedConfig
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
 )
-from .lr_scheduler import warmup_cosine_decay
+
+from . import lr_scheduler as LR
+
+
+@dataclass
+class TrainerContext:
+    num_steps_per_epoch: int
 
 
 class AdamWConfig(TypedConfig):
@@ -21,10 +30,37 @@ class AdamWConfig(TypedConfig):
     betas: tuple[float, float] = (0.9, 0.999)
     eps: float = 1e-8
 
+    def _to_ctor_kwargs(self):
+        if TYPE_CHECKING:
+            ctor = partial(AdamW, cast(Any, None))
+        else:
+            ctor = dict
+
+        return cast(
+            dict[str, Any],
+            ctor(
+                lr=self.lr,
+                amsgrad=self.amsgrad,
+                weight_decay=self.weight_decay,
+                betas=self.betas,
+                eps=self.eps,
+            ),
+        )
+
 
 OptimizerConfig = Annotated[AdamWConfig, Field(discriminator="optimizer")]
 
 Duration = Tuple[int, Literal["steps", "epochs"]]
+
+
+def _duration_to_steps(duration: Duration, context: TrainerContext):
+    match duration:
+        case (num, "steps"):
+            return num
+        case (num, "epochs"):
+            return num * context.num_steps_per_epoch
+        case _:
+            raise ValueError(f"Invalid duration: {duration}")
 
 
 class ReduceLROnPlateauConfig(TypedConfig):
@@ -39,30 +75,37 @@ class ReduceLROnPlateauConfig(TypedConfig):
     threshold: float = 1.0e-4
     threshold_mode: str = "rel"
 
-    def _to_linear_warmup_cos_rlp_dict(self):
-        """
-        Params for PerParamGroupLinearWarmupCosineAnnealingRLPLR's RLP
-            mode="min",
-            factor=0.1,
-            patience=10,
-            threshold=1e-4,
-            threshold_mode="rel",
-            cooldown=0,
-            min_lr=0,
-            eps=1e-8,
-            verbose=False,
-        """
-        return {
-            "mode": self.mode,
-            "factor": self.factor,
-            "patience": self.patience,
-            "threshold": self.threshold,
-            "threshold_mode": self.threshold_mode,
-            "cooldown": self.cooldown,
-            "min_lr": self.min_lr,
-            "eps": self.eps,
-            "verbose": False,
-        }
+    def _to_settings(self):
+        return LR.ReduceLROnPlateauSettings(
+            patience=self.patience,
+            factor=self.factor,
+            mode=self.mode,
+            min_lr=self.min_lr,
+            eps=self.eps,
+            cooldown=self.cooldown,
+            threshold=self.threshold,
+            threshold_mode=self.threshold_mode,
+        )
+
+    def _to_ctor_kwargs(self):
+        if TYPE_CHECKING:
+            ctor = partial(ReduceLROnPlateau, cast(Any, None))
+        else:
+            ctor = dict
+
+        return cast(
+            dict[str, Any],
+            ctor(
+                patience=self.patience,
+                factor=self.factor,
+                mode=self.mode,
+                min_lr=self.min_lr,
+                eps=self.eps,
+                cooldown=self.cooldown,
+                threshold=self.threshold,
+                threshold_mode=self.threshold_mode,
+            ),
+        )
 
 
 class WarmupCosineDecayRLPSchedulerConfig(TypedConfig):
@@ -77,6 +120,14 @@ class WarmupCosineDecayRLPSchedulerConfig(TypedConfig):
     should_restart: bool = True
 
     rlp: ReduceLROnPlateauConfig | None = None
+
+    def _to_settings(self, context: TrainerContext):
+        return LR.LinearWarmupCosineDecaySettings(
+            warmup_steps=_duration_to_steps(self.warmup, context),
+            total_steps=_duration_to_steps(self.decay, context),
+            warmup_factor=self.warmup_start_lr_factor,
+            min_lr_factor=self.min_lr_factor,
+        )
 
 
 LRSchedulerConfig = Annotated[
@@ -102,10 +153,18 @@ class SingleGroupOptimConfig(BaseOptimConfig):
     lr_scheduler: LRSchedulerConfig
 
 
+class MultiGroupPerGroupOptimConfig(TypedConfig):
+    parameter_patterns: list[str]
+    optimizer: AdamWConfig
+    lr_scheduler: WarmupCosineDecayRLPSchedulerConfig
+
+
 class MultiGroupOptimConfig(BaseOptimConfig):
     optim_mode: Literal["multi_group"]
 
-    groups: dict[str, SingleGroupOptimConfig]
+    optimizer: AdamWConfig
+    lr_scheduler: WarmupCosineDecayRLPSchedulerConfig
+    groups: list[MultiGroupPerGroupOptimConfig]
 
 
 OptimConfig = Annotated[
@@ -114,16 +173,15 @@ OptimConfig = Annotated[
 ]
 
 
-def _construct_single_group(model: nn.Module, config: SingleGroupOptimConfig):
+def _construct_single_group(
+    model: nn.Module,
+    config: SingleGroupOptimConfig,
+    context: TrainerContext,
+):
     match config.optimizer:
         case AdamWConfig():
             optimizer = optim.AdamW(
-                model.parameters(),
-                lr=config.optimizer.lr,
-                amsgrad=config.optimizer.amsgrad,
-                weight_decay=config.optimizer.weight_decay,
-                betas=config.optimizer.betas,
-                eps=config.optimizer.eps,
+                model.parameters(), **config.optimizer._to_ctor_kwargs()
             )
         case _:
             raise NotImplementedError(
@@ -131,27 +189,21 @@ def _construct_single_group(model: nn.Module, config: SingleGroupOptimConfig):
             )
 
     match config.lr_scheduler:
-        case WarmupCosineDecayRLPSchedulerConfig():
-            lr_scheduler = WarmupCosineDecayRLPScheduler(
+        case WarmupCosineDecayRLPSchedulerConfig(
+            rlp=ReduceLROnPlateauConfig() as rlp_config
+        ) as cos_config:
+            lr_scheduler = LR.LinearWarmupCosineDecayRLPScheduler(
                 optimizer,
-                config.lr_scheduler.warmup,
-                config.lr_scheduler.decay,
-                warmup_start_lr_factor=config.lr_scheduler.warmup_start_lr_factor,
-                min_lr_factor=config.lr_scheduler.min_lr_factor,
-                last_step=config.lr_scheduler.last_step,
-                should_restart=config.lr_scheduler.should_restart,
+                cos_config._to_settings(context),
+                rlp_config._to_settings(),
             )
-        case ReduceLROnPlateauConfig():
+        case WarmupCosineDecayRLPSchedulerConfig(rlp=None) as cos_config:
+            lr_scheduler = LR.LinearWarmupCosineDecayScheduler(
+                optimizer, cos_config._to_settings(context)
+            )
+        case ReduceLROnPlateauConfig() as rlp_config:
             lr_scheduler = ReduceLROnPlateau(
-                optimizer,
-                patience=config.lr_scheduler.patience,
-                factor=config.lr_scheduler.factor,
-                mode=config.lr_scheduler.mode,
-                min_lr=config.lr_scheduler.min_lr,
-                eps=config.lr_scheduler.eps,
-                cooldown=config.lr_scheduler.cooldown,
-                threshold=config.lr_scheduler.threshold,
-                threshold_mode=config.lr_scheduler.threshold_mode,
+                optimizer, **rlp_config._to_ctor_kwargs()
             )
         case _:
             raise NotImplementedError(
@@ -161,14 +213,137 @@ def _construct_single_group(model: nn.Module, config: SingleGroupOptimConfig):
     return optimizer, lr_scheduler
 
 
-def load_optimizer(model: nn.Module, config: OptimConfig):
+def _named_parameters_matching_patterns(
+    model: nn.Module,
+    patterns: list[str],
+    check_requires_grad: bool = True,
+):
+    for name, param in model.named_parameters():
+        if check_requires_grad and not param.requires_grad:
+            continue
+
+        if (
+            matching_pattern := next(
+                (
+                    pattern
+                    for pattern in patterns
+                    if fnmatch.fnmatch(name, pattern)
+                ),
+                None,
+            )
+        ) is None:
+            continue
+
+        yield name, param, matching_pattern
+
+
+def _split_parameters(model: nn.Module, pattern_lists: list[list[str]]):
+    all_parameters: list[nn.Parameter] = list(model.parameters())
+
+    parameters: list[list[nn.Parameter]] = []
+    for patterns in pattern_lists:
+        matching = [
+            p
+            for _, p, _ in _named_parameters_matching_patterns(model, patterns)
+        ]
+        parameters.append(matching)
+        # remove matching parameters from all_parameters
+        all_parameters = [
+            p for p in all_parameters if all(p is not m for m in matching)
+        ]
+
+    return parameters, all_parameters
+
+
+def _construct_multi_group(
+    model: nn.Module,
+    config: MultiGroupOptimConfig,
+    context: TrainerContext,
+):
+    # Split parameters into groups
+    param_groups, remaining_parameters = _split_parameters(
+        model, [group.parameter_patterns for group in config.groups]
+    )
+    # There should be no remaining parameters. If there are, then we throw
+    # an error and tell the user to add a fallthrough group "*" to the
+    # parameter patterns.
+    if remaining_parameters:
+        raise ValueError(
+            f"{len(remaining_parameters)} parameters were not matched by any group. "
+            "Please add a fallthrough group '*' to the parameter patterns."
+        )
+
+    match config.optimizer:
+        case AdamWConfig():
+            optimizer = optim.AdamW(
+                [
+                    {
+                        "params": params,
+                        **group_config.optimizer._to_ctor_kwargs(),
+                    }
+                    for params, group_config in zip(
+                        param_groups, config.groups
+                    )
+                ],
+                **config.optimizer._to_ctor_kwargs(),
+            )
+        case _:
+            raise NotImplementedError(
+                f"Optimizer {config.optimizer} not implemented."
+            )
+
+    # Make sure none of the groups have a ReduceLROnPlateau scheduler
+    if any(
+        isinstance(group_config.lr_scheduler, ReduceLROnPlateauConfig)
+        or (group_config.lr_scheduler.rlp is not None)
+        for group_config in config.groups
+    ):
+        raise ValueError(
+            "Per-param group ReduceLROnPlateau scheduler not supported for multi group."
+        )
+
+    match config.lr_scheduler:
+        case WarmupCosineDecayRLPSchedulerConfig(
+            rlp=ReduceLROnPlateauConfig() as rlp_config
+        ):
+            lr_scheduler = LR.PerParamGroupLinearWarmupCosineDecayRLPScheduler(
+                optimizer,
+                [
+                    group_config.lr_scheduler._to_settings(context)
+                    for group_config in config.groups
+                ],
+                rlp_config._to_settings(),
+            )
+        case WarmupCosineDecayRLPSchedulerConfig(rlp=None):
+            lr_scheduler = LR.PerParamGroupLinearWarmupCosineDecayScheduler(
+                optimizer,
+                [
+                    group_config.lr_scheduler._to_settings(context)
+                    for group_config in config.groups
+                ],
+            )
+        case _:
+            raise NotImplementedError(
+                f"LR scheduler {config.lr_scheduler} not implemented for multi group."
+            )
+
+    return optimizer, lr_scheduler
+
+
+def load_optimizer(
+    model: nn.Module,
+    config: OptimConfig,
+    context: TrainerContext,
+):
     match config:
         case SingleGroupOptimConfig():
             optimizer, lr_scheduler = _construct_single_group(
-                model, config.optimizer
+                model, config, context
             )
         case MultiGroupOptimConfig():
-            pass
+            optimizer, lr_scheduler = _construct_multi_group(
+                model, config, context
+            )
         case _:
             raise ValueError(f"Invalid optimizer config: {config}")
 
@@ -180,4 +355,4 @@ def load_optimizer(model: nn.Module, config: OptimConfig):
             config.exponential_moving_average.decay,
         )
 
-    return ema
+    return optimizer, lr_scheduler, ema

@@ -13,8 +13,9 @@ log = getLogger(__name__)
 @dataclass(frozen=True, kw_only=True)
 class LinearWarmupCosineDecaySettings:
     warmup_steps: int
+    warmup_factor: float
     total_steps: int
-    cycles: float = 0.5
+    min_lr_factor: float
 
 
 def linear_warmup_cosine_decay_schedule(
@@ -23,16 +24,22 @@ def linear_warmup_cosine_decay_schedule(
 ):
     # Linear warmup
     if step < config.warmup_steps:
-        return float(step) / float(max(1.0, config.warmup_steps))
+        return config.warmup_factor + (1.0 - config.warmup_factor) * (
+            float(step) / float(max(1, config.warmup_steps - 1))
+        )
 
-    # Cosine decay after warmup
+    # Decay following cosine schedule (no restarts/annealing)
     progress = float(step - config.warmup_steps) / float(
         max(1, config.total_steps - config.warmup_steps)
     )
+    # No restarts/annealing
+    progress = min(progress, 1.0)
     return max(
-        0.0,
+        config.min_lr_factor,
         0.5
-        * (1.0 + math.cos(math.pi * float(config.cycles) * 2.0 * progress)),
+        * (1.0 + math.cos(math.pi * progress))
+        * (1.0 - config.min_lr_factor)
+        + config.min_lr_factor,
     )
 
 
