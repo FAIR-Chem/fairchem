@@ -1205,7 +1205,6 @@ class BaseTrainer(ABC):
     def save_results(
         self, predictions, results_file: Optional[str], keys=None
     ) -> None:
-
         if results_file is None:
             return
         if keys is None:
