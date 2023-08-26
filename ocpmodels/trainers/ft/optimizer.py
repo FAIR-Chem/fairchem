@@ -388,17 +388,10 @@ TScheduler = TypeVar("TScheduler", infer_variance=True)
 
 
 class _LrSchedulerWrapper(Generic[TScheduler]):
-    def __init__(
-        self,
-        scheduler: TScheduler,
-        optimizer: Optimizer,
-        verbose: bool = False,
-    ):
+    def __init__(self, scheduler: TScheduler):
         super().__init__()
 
         self.scheduler = scheduler
-        self.optimizer = optimizer
-        self.verbose = verbose
 
     def rlp_step(self, metrics: Any):
         match self.scheduler:
@@ -423,13 +416,6 @@ class _LrSchedulerWrapper(Generic[TScheduler]):
                 raise ValueError(f"Invalid scheduler: {type(self.scheduler)}")
 
     def get_lr_dict(self):
-        if self.verbose:
-            log.info(f"Getting LR from scheduler {type(self.scheduler)}")
-            for param_group in self.optimizer.param_groups:
-                log.info(
-                    f"  - {param_group['__parameter_patterns']}: {param_group['lr']}"
-                )
-
         match self.scheduler:
             case ReduceLROnPlateau():
                 return {
@@ -473,6 +459,6 @@ def load_optimizer(
         )
 
     # Wrap lr_scheduler in an object that's compatible with the trainer
-    lr_scheduler = _LrSchedulerWrapper(lr_scheduler, optimizer, verbose=False)
+    lr_scheduler = _LrSchedulerWrapper(lr_scheduler)
 
     return optimizer, lr_scheduler, ema
