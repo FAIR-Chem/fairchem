@@ -179,4 +179,7 @@ optim:
     decay: 0.999
 
   groups:
+    - parameter_patterns: ["*energy*"]
+      optimizer:
+        lr: 1.e-3
     - parameter_patterns: ["*"]

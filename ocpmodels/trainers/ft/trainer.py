@@ -96,9 +96,10 @@ class FTTrainer(OCPTrainer):
                 log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
                 log_dict.update(
                     {
-                        "lr": self.scheduler.get_lr(),
+                        # "lr": self.scheduler.get_lr(),
                         "epoch": self.epoch,
                         "step": self.step,
+                        **self.scheduler.get_lr_dict(),
                     }
                 )
                 if (

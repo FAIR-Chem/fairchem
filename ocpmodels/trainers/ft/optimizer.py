@@ -6,9 +6,8 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any, Generic, Literal, Tuple, Union, cast
 
 import torch.nn as nn
-import torch.optim as optim
 from pydantic import ValidationError
-from torch.optim import AdamW
+from torch.optim import AdamW, Optimizer
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from typing_extensions import Annotated, TypeVar
 
@@ -219,7 +218,7 @@ def _construct_single_group(
 ):
     match config.optimizer:
         case AdamWConfig():
-            optimizer = optim.AdamW(
+            optimizer = AdamW(
                 model.parameters(), **config.optimizer._to_ctor_kwargs()
             )
         case _:
@@ -253,14 +252,10 @@ def _construct_single_group(
 
 
 def _named_parameters_matching_patterns(
-    model: nn.Module,
+    all_parameters: list[tuple[str, nn.Parameter]],
     patterns: list[str],
-    check_requires_grad: bool = True,
 ):
-    for name, param in model.named_parameters():
-        if check_requires_grad and not param.requires_grad:
-            continue
-
+    for name, param in all_parameters:
         if (
             matching_pattern := next(
                 (
@@ -281,23 +276,27 @@ def _split_parameters(
     pattern_lists: list[list[str]],
     check_requires_grad: bool = True,
 ):
-    all_parameters: list[nn.Parameter] = [
-        p
-        for p in model.parameters()
+    all_parameters: list[tuple[str, nn.Parameter]] = [
+        (n, p)
+        for n, p in model.named_parameters()
         if not check_requires_grad or p.requires_grad
     ]
 
-    parameters: list[list[nn.Parameter]] = []
+    parameters: list[list[tuple[str, nn.Parameter]]] = []
     for patterns in pattern_lists:
         matching = [
-            p
-            for _, p, _ in _named_parameters_matching_patterns(model, patterns)
+            (n, p)
+            for n, p, _ in _named_parameters_matching_patterns(
+                all_parameters, patterns
+            )
         ]
-        parameters.append(matching)
         # remove matching parameters from all_parameters
         all_parameters = [
-            p for p in all_parameters if all(p is not m for m in matching)
+            (n, p)
+            for n, p in all_parameters
+            if all(p is not m for _, m in matching)
         ]
+        parameters.append(matching)
 
     return parameters, all_parameters
 
@@ -315,11 +314,8 @@ def _construct_multi_group(
     # an error and tell the user to add a fallthrough group "*" to the
     # parameter patterns.
     if remaining_parameters:
-        n_params_total = sum(p.numel() for p in remaining_parameters)
-        param_names = {param: name for name, param in model.named_parameters()}
-        remaining_parameter_names = [
-            param_names[param] for param in remaining_parameters
-        ]
+        n_params_total = sum(p.numel() for _, p in remaining_parameters)
+        remaining_parameter_names = [n for n, _ in remaining_parameters]
         raise ValueError(
             f"{len(remaining_parameters)} nn.Parameter objects ({n_params_total} total parameters)"
             " were not matched by any group. "
@@ -329,20 +325,21 @@ def _construct_multi_group(
 
     log.critical(f"Constructed the following parameter groups:")
     for group, params in zip(config.groups, param_groups):
-        n_params = sum(p.numel() for p in params)
+        n_params = sum(p.numel() for _, p in params)
         log.critical(
             f"  {group.parameter_patterns}: {n_params} params with config.optimizer={group.optimizer} and config.lr_scheduler={group.lr_scheduler}"
         )
 
     match config.optimizer:
         case AdamWConfig():
-            optimizer = optim.AdamW(
+            optimizer = AdamW(
                 [
                     {
-                        "params": params,
+                        "params": [p for _, p in params],
                         **group_config.optimizer_config(
                             config.optimizer
                         )._to_ctor_kwargs(),
+                        "__parameter_patterns": group_config.parameter_patterns,
                     }
                     for params, group_config in zip(
                         param_groups, config.groups
@@ -391,10 +388,17 @@ TScheduler = TypeVar("TScheduler", infer_variance=True)
 
 
 class _LrSchedulerWrapper(Generic[TScheduler]):
-    def __init__(self, scheduler: TScheduler):
+    def __init__(
+        self,
+        scheduler: TScheduler,
+        optimizer: Optimizer,
+        verbose: bool = False,
+    ):
         super().__init__()
 
         self.scheduler = scheduler
+        self.optimizer = optimizer
+        self.verbose = verbose
 
     def rlp_step(self, metrics: Any):
         match self.scheduler:
@@ -418,15 +422,27 @@ class _LrSchedulerWrapper(Generic[TScheduler]):
             case _:
                 raise ValueError(f"Invalid scheduler: {type(self.scheduler)}")
 
-    def get_lr(self):
+    def get_lr_dict(self):
+        if self.verbose:
+            log.info(f"Getting LR from scheduler {type(self.scheduler)}")
+            for param_group in self.optimizer.param_groups:
+                log.info(
+                    f"  - {param_group['__parameter_patterns']}: {param_group['lr']}"
+                )
+
         match self.scheduler:
             case ReduceLROnPlateau():
-                return self.scheduler.optimizer.param_groups[0]["lr"]
+                return {
+                    f"lr_pg{i}": pg["lr"]
+                    for i, pg in enumerate(
+                        self.scheduler.optimizer.param_groups
+                    )
+                }
             case LR._LRScheduler():
-                lr = self.scheduler.get_lr()
-                if isinstance(lr, list):
-                    lr = lr[0]
-                return lr
+                lrs = self.scheduler.get_lr()
+                if isinstance(lrs, float):
+                    return {"lr": lrs}
+                return {f"lr_pg{i}": lr for i, lr in enumerate(lrs)}
             case _:
                 raise ValueError(f"Invalid scheduler: {type(self.scheduler)}")
 
@@ -457,6 +473,6 @@ def load_optimizer(
         )
 
     # Wrap lr_scheduler in an object that's compatible with the trainer
-    lr_scheduler = _LrSchedulerWrapper(lr_scheduler)
+    lr_scheduler = _LrSchedulerWrapper(lr_scheduler, optimizer, verbose=False)
 
     return optimizer, lr_scheduler, ema
