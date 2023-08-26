@@ -4,6 +4,9 @@ dataset:
   sampling:
     type: temperature
     temperature: 2.0
+  one_hot_targets:
+    graph_level: ["energy"]
+    node_level: ["forces"]
   datasets:
     - train:
         format: lmdb
@@ -49,24 +52,12 @@ dataset:
 logger: tensorboard
 
 loss_functions:
-  reduction:
-    energy: mean
-    forces: structure_wise_mean
-  tasks:
-    - losses:
-        energy:
-          fn: mae
-          coefficient: 1
-        forces:
-          fn: l2mae
-          coefficient: 100
-    - losses:
-        energy:
-          fn: mae
-          coefficient: 1
-        forces:
-          fn: l2mae
-          coefficient: 100
+  - target: energy
+    fn: mae
+    coefficient: 1
+  - target: forces
+    fn: l2mae
+    coefficient: 100
 
 evaluation_metrics:
   metrics:

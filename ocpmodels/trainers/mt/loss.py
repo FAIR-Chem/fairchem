@@ -1,34 +1,36 @@
+from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Dict, List, Literal, TypedDict
+from typing import Any, Callable, List, Literal
 
 import torch
 import torch.nn.functional as F
-from typing_extensions import NotRequired
+from typing_extensions import Annotated
 
-from ocpmodels.common.typed_config import TypedConfig
+from ocpmodels.common.typed_config import Field, TypedConfig
 
 
-class LossFn(TypedDict):
+class LossFnConfig(TypedConfig):
+    target: str
+    fn: Literal["mae", "mse", "l1", "l2", "l2mae"]
+
+    coefficient: float | list[Any] = 1.0
+    reduction: Literal["sum", "mean", "structure_wise_mean"] = "mean"
+
+
+@dataclass(frozen=True)
+class LossFn:
+    config: LossFnConfig
     fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
-    coefficient: NotRequired[float]
-    task_idx: NotRequired[int]
+
+    def apply_coefficient(self, loss: torch.Tensor) -> torch.Tensor:
+        coefficient = loss.new_tensor(self.config.coefficient)
+        return loss * coefficient
 
 
-class SingleLossFnConfig(TypedConfig):
-    fn: Literal["mae", "mse", "l1", "l2", "l2mae"] = "mae"
-    coefficient: float = 1.0
+LossFnsConfig = Annotated[List[LossFnConfig], Field()]
 
 
-class TaskLossFnConfig(TypedConfig):
-    losses: Dict[str, SingleLossFnConfig]
-
-
-class LossFnsConfig(TypedConfig):
-    tasks: List[TaskLossFnConfig]
-    reduction: Dict[str, Literal["sum", "mean", "structure_wise_mean"]]
-
-
-def _create_loss(config: SingleLossFnConfig, task_idx: int) -> LossFn:
+def _create_loss(config: LossFnConfig) -> LossFn:
     loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
     if config.fn in ("mae", "l1"):
         loss_fn = partial(F.l1_loss, reduction="none")
@@ -42,20 +44,8 @@ def _create_loss(config: SingleLossFnConfig, task_idx: int) -> LossFn:
     # loss_fn = DDPLoss(loss_fn, config.fn, config.reduction)
     # DDP loss is not implemented for MT yet
 
-    loss: LossFn = {
-        "fn": loss_fn,
-        "coefficient": config.coefficient,
-        "task_idx": task_idx,
-    }
-    return loss
-
-
-def _create_task_losses(config: TaskLossFnConfig, task_idx: int):
-    for target_name, loss_config in config.losses.items():
-        yield target_name, _create_loss(loss_config, task_idx)
+    return LossFn(config, loss_fn)
 
 
 def create_losses(config: LossFnsConfig):
-    for task_idx, task_config in enumerate(config.tasks):
-        for target_name, loss in _create_task_losses(task_config, task_idx):
-            yield target_name, loss
+    return [_create_loss(loss_config) for loss_config in config]

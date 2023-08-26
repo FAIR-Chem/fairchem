@@ -4,9 +4,10 @@ from logging import getLogger
 from typing import Dict, Literal, Union, cast
 
 import torch
-from einops import reduce
+from einops import rearrange, reduce
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch_geometric.data import Batch
+from torch_scatter import scatter
 from typing_extensions import Annotated, override
 
 from ocpmodels.common import distutils
@@ -25,6 +26,28 @@ log = getLogger(__name__)
 def _safe_divide(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     b = b.masked_fill(b == 0.0, 1.0)
     return a / b
+
+
+def _reduce_loss(loss: torch.Tensor, mask: torch.Tensor, reduction: str):
+    match reduction:
+        case "sum":
+            loss = reduce(loss, "b t -> ", "sum")
+        case "mean":
+            # loss = reduce(loss, "b t -> ", "sum") / reduce(mask, "b t -> ", "sum")
+            loss = _safe_divide(
+                reduce(loss, "b t -> ", "sum"),
+                reduce(mask, "b t -> ", "sum"),
+            )
+        case "task_mean":
+            loss = _safe_divide(
+                reduce(loss, "b t -> t", "sum"),
+                reduce(mask, "b t -> t", "sum"),
+            )
+            loss = reduce(loss, "t -> ", "mean")
+        case _:
+            raise ValueError(f"Unknown redution: {reduction}")
+
+    return loss
 
 
 class BaseOutputHeadConfig(TypedConfig):
@@ -136,9 +159,9 @@ class MTTrainer(OCPTrainer):
         # We don't use this way of normalizing.
         self.normalizers = {}
 
-        outputs_config = TypeAdapter(OutputsConfig).validate_python(
-            self.config["outputs"]
-        )
+        self.typed_output_targets = outputs_config = TypeAdapter(
+            OutputsConfig
+        ).validate_python(self.config["outputs"])
         self.multi_task_targets = defaultdict[str, list[str]](lambda: [])
         self.per_task_output_targets = {}
         self.output_targets = {}
@@ -254,11 +277,13 @@ class MTTrainer(OCPTrainer):
 
     @cached_property
     def loss_config(self):
-        return LossFnsConfig.from_dict(self.config["loss_fns"])
+        return TypeAdapter(LossFnsConfig).validate_python(
+            self.config["loss_fns"]
+        )
 
     @override
     def load_loss(self) -> None:
-        self.loss_fns = list(create_losses(self.loss_config))
+        self.loss_fns = create_losses(self.loss_config)
 
     @override
     def _compute_loss(
@@ -269,85 +294,67 @@ class MTTrainer(OCPTrainer):
         batch_idx = torch.cat(
             [batch.batch.to(self.device) for batch in batch_list]
         )  # (n_atoms,)
-
         fixed = torch.cat(
             [batch.fixed.to(self.device) for batch in batch_list]
         )
         free_mask = fixed == 0  # (n_atoms,)
 
-        batch_task_idx = torch.cat(
-            [batch.task_idx.to(self.device) for batch in batch_list], dim=0
-        )  # (bsz,)
-        node_task_idx = batch_task_idx[batch_idx]  # (n_atoms,)
+        task_mask = torch.cat(
+            [batch.task_mask.to(self.device) for batch in batch_list]
+        )  # (bsz, t)
 
-        losses = defaultdict[str, list[torch.Tensor]](lambda: [])
-        for target_name, loss_info in self.loss_fns:
+        losses: list[torch.Tensor] = []
+        for loss_info in self.loss_fns:
+            target_name = loss_info.config.target
+            output_target = self.typed_output_targets[target_name]
+            level = output_target.level
+
             target = torch.cat(
-                [batch[target_name].to(self.device) for batch in batch_list],
+                [
+                    batch[f"{target_name}_onehot"].to(self.device)
+                    for batch in batch_list
+                ],
                 dim=0,
-            )
-            pred = out[target_name]
-
-            level = self.output_targets[target_name].get("level", "system")
-
-            # For each task, we want to only consider the loss for that task's output head.
-            task_idx = loss_info.get("task_idx", None)
-            if task_idx is None:
-                raise ValueError(f"{task_idx=} not found in {loss_info=}")
+            )  # (bsz, t) or (n_atoms, t, 3)
+            pred = out[target_name]  # (bsz, t) or (n_atoms, t, 3)
+            mask = task_mask  # (bsz, t)
             if level == "atom":
-                mask = node_task_idx == task_idx  # (n_atoms,)
-            elif level == "system":
-                mask = batch_task_idx == task_idx  # (bsz,)
-            else:
-                raise NotImplementedError(f"Level {level} not implemented.")
+                mask = mask[batch_idx]  # (n_atoms, t)
 
-            if level == "atom" and self.output_targets[target_name].get(
-                "train_on_free_atoms", True
+            if (
+                level == "atom"
+                and isinstance(output_target, AtomLevelOutputHeadConfig)
+                and output_target.train_on_free_atoms
             ):
-                mask = mask & free_mask
+                mask = mask & rearrange(free_mask, "n -> n 1")  # (n_atoms, t)
 
             normalizer = self.normalizers.get(target_name, False)
             if normalizer:
                 target = normalizer.norm(target)
 
             # Compute the loss
-            loss = loss_info["fn"](
-                pred, target
-            )  # (bsz,) or (n_atoms,) or (natoms, 3)
-
-            # Mask out invalid values
-            loss = torch.where(mask, loss, torch.zeros_like(loss))
+            loss = loss_info.fn(pred, target)  # (bsz, t) or (n_atoms, t)
 
             # Apply the coefficient
-            coeff = loss_info.get("coefficient", 1.0)
-            loss = coeff * loss
+            loss = loss_info.apply_coefficient(loss)
 
             # For SWL, we want to reduce the loss per structure, not per atom.
-            default_reduction = (
-                "structure_wise_mean" if level == "atom" else "mean"
-            )
-            reduction = self.loss_config.reduction.get(
-                target_name, default_reduction
-            )
+            reduction = loss_info.config.reduction
             if reduction == "structure_wise_mean":
-                loss = _safe_divide(
-                    reduce(loss, "n ... -> n", reduction="sum"),
-                    reduce(mask, "n -> n", reduction="sum"),
-                )
+                assert level == "atom", f"{level=} must be atom"
+                loss = scatter(loss, batch_idx, dim=0, reduce="sum")  # (b, t)
+                force_loss_mask_natoms = scatter(
+                    mask.float(), batch_idx, dim=0, reduce="sum"
+                )  # (b, t)
+                loss = _safe_divide(loss, force_loss_mask_natoms)  # (b, t)
+                mask = force_loss_mask_natoms > 0.0  # (b, t)
 
-            losses[level].append(loss)
+                # We can now just reduce the loss as normal
+                reduction = "mean"
 
-        if reduction == "sum":
-            loss = reduce(loss, "... -> ", "sum")
-        elif reduction == "mean":
-            loss = _safe_divide(
-                reduce(loss, "b ... -> ...", reduction="sum"),
-                reduce(mask, "b -> ", "sum"),
-            )
-            # TODO: This may not be doing SWA
-            loss = reduce(loss, "... -> ", "mean")
-        else:
-            raise NotImplementedError(f"{reduction=} not implemented.")
+            # Now, reduce the loss
+            loss = _reduce_loss(loss, mask, reduction)
+            losses.append(loss)
 
         # Sanity check to make sure the compute graph is correct.
         for lc in losses:
@@ -356,6 +363,11 @@ class MTTrainer(OCPTrainer):
         loss = sum(losses)
         loss = cast(torch.Tensor, loss)
         return loss
+
+    @override
+    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+        # return super()._compute_metrics(out, batch_list, evaluator, metrics)
+        return metrics
 
     def _merge_mt_outputs(self, outputs: dict[str, torch.Tensor]):
         merged_outputs: dict[str, torch.Tensor] = outputs.copy()
