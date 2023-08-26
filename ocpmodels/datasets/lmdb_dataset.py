@@ -20,12 +20,10 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Batch
 from torch_geometric.data.data import BaseData
 
-from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance
-from ocpmodels.common.utils import pyg2_data_transform
+from ocpmodels.common.utils import apply_key_mapping, pyg2_data_transform
 from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
-from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.transforms import DataTransforms
 
 T_co = TypeVar("T_co", covariant=True)
@@ -152,15 +150,9 @@ class LmdbDataset(Dataset[T_co]):
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
 
         if self.key_mapping is not None:
-            for _property in self.key_mapping:
-                # catch for test data not containing labels
-                if _property in data_object:
-                    new_property = self.key_mapping[_property]
-                    if new_property not in data_object:
-                        data_object[new_property] = data_object[_property]
-                        del data_object[_property]
+            data_object = apply_key_mapping(data_object, self.key_mapping)
 
-        self.transforms(data_object)
+        data_object = self.transforms(data_object)
 
         return data_object
 

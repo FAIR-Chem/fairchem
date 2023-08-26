@@ -23,7 +23,16 @@ from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import torch
@@ -1307,3 +1316,42 @@ def get_loss_module(loss_name):
         raise NotImplementedError(f"Unknown loss function name: {loss_name}")
 
     return loss_fn
+
+
+def apply_key_mapping(
+    data: Data,
+    key_mapping: Dict[str, Union[str, Dict[str, str], Dict[int, str]]],
+):
+    for from_, to_ in key_mapping.items():
+        # If the to_ key is already present, raise an error
+        if isinstance(to_, str) and getattr(data, to_, None) is not None:
+            raise ValueError(f"Key {to_} already exists in data.")
+        elif isinstance(to_, dict):
+            existing_new_key = next(
+                (
+                    new_key
+                    for _, new_key in to_.items()
+                    if getattr(data, new_key, None) is not None
+                ),
+                None,
+            )
+            if existing_new_key is not None:
+                raise ValueError(
+                    f"Key {existing_new_key} already exists in data."
+                )
+
+        value = getattr(data, from_, None)
+        if value is None:
+            continue
+
+        if isinstance(to_, str):
+            setattr(data, to_, value)
+        elif isinstance(to_, dict):
+            for from_key, to_key in to_.items():
+                setattr(data, to_key, value[from_key])
+        else:
+            raise ValueError(f"Unknown key mapping type: {type(to_)}")
+
+        delattr(data, from_)
+
+    return data
