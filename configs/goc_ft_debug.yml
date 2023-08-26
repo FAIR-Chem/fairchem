@@ -134,12 +134,24 @@ optim:
   #   factor: 0.8
   #   patience: 3
 
+  # lr_scheduler:
+  #   name: WarmupCosineDecayRLP
+  #   warmup_duration: [100, steps]
+  #   warmup_factor: 1.0e-3
+  #   decay_duration: [1000, steps]
+  #   decay_factor: 0.1
+
   lr_scheduler:
     name: WarmupCosineDecayRLP
-    warmup_duration: [1000, steps]
-    warmup_start_factor: 1.0e-3
-    decay_duration: [10_000, steps]
+    warmup_duration: [100, steps]
+    warmup_factor: 1.0e-3
+    decay_duration: [1000, steps]
     decay_factor: 0.1
+
+    rlp:
+      mode: min
+      factor: 0.8
+      patience: 3
 
   exponential_moving_average:
     decay: 0.999

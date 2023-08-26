@@ -63,9 +63,7 @@ def _duration_to_steps(duration: Duration, context: OptimizerTrainerContext):
             raise ValueError(f"Invalid duration: {duration}")
 
 
-class ReduceLROnPlateauConfig(TypedConfig):
-    name: Literal["ReduceLROnPlateau"]
-
+class _ReduceLROnPlateauBaseConfig(TypedConfig):
     patience: int
     factor: float
     mode: Literal["min", "max"] = "min"
@@ -86,6 +84,10 @@ class ReduceLROnPlateauConfig(TypedConfig):
             threshold=self.threshold,
             threshold_mode=self.threshold_mode,
         )
+
+
+class ReduceLROnPlateauConfig(_ReduceLROnPlateauBaseConfig):
+    name: Literal["ReduceLROnPlateau"]
 
     def _to_ctor_kwargs(self):
         if TYPE_CHECKING:
@@ -117,13 +119,13 @@ class WarmupCosineDecayRLPSchedulerConfig(TypedConfig):
     decay_duration: Duration
     decay_factor: float = 1.0e-2
 
-    rlp: ReduceLROnPlateauConfig | None = None
+    rlp: _ReduceLROnPlateauBaseConfig | None = None
 
     def _to_settings(self, context: OptimizerTrainerContext):
         return LR.LinearWarmupCosineDecaySettings(
             warmup_steps=_duration_to_steps(self.warmup_duration, context),
-            total_steps=_duration_to_steps(self.decay_duration, context),
             warmup_factor=self.warmup_factor,
+            decay_steps=_duration_to_steps(self.decay_duration, context),
             min_lr_factor=self.decay_factor,
         )
 
@@ -137,7 +139,7 @@ LLRDConfig = Annotated[dict[str, float], Field()]
 
 
 class ExponentialMovingAverageConfig(TypedConfig):
-    decay: float = 0.9999
+    decay: float
 
 
 class BaseOptimConfig(TypedConfig):
@@ -188,7 +190,7 @@ def _construct_single_group(
 
     match config.lr_scheduler:
         case WarmupCosineDecayRLPSchedulerConfig(
-            rlp=ReduceLROnPlateauConfig() as rlp_config
+            rlp=_ReduceLROnPlateauBaseConfig() as rlp_config
         ) as cos_config:
             lr_scheduler = LR.LinearWarmupCosineDecayRLPScheduler(
                 optimizer,
@@ -302,7 +304,7 @@ def _construct_multi_group(
 
     match config.lr_scheduler:
         case WarmupCosineDecayRLPSchedulerConfig(
-            rlp=ReduceLROnPlateauConfig() as rlp_config
+            rlp=_ReduceLROnPlateauBaseConfig() as rlp_config
         ):
             lr_scheduler = LR.PerParamGroupLinearWarmupCosineDecayRLPScheduler(
                 optimizer,
@@ -337,26 +339,25 @@ class _LrSchedulerWrapper(Generic[TScheduler]):
 
         self.scheduler = scheduler
 
-    @property
-    def scheduler_type(self):
-        match self.scheduler:
-            case LR.LinearWarmupCosineDecayRLPScheduler() | LR.PerParamGroupLinearWarmupCosineDecayRLPScheduler() | ReduceLROnPlateau():
-                return "ReduceLROnPlateau"
-            case _:
-                return type(self.scheduler).__name__
-
-    def step(self, metrics=None, epoch=None) -> None:
+    def rlp_step(self, metrics: Any):
         match self.scheduler:
             case LR.LinearWarmupCosineDecayRLPScheduler() | LR.PerParamGroupLinearWarmupCosineDecayRLPScheduler():
-                self.scheduler.rlp_step(metrics, epoch)
+                self.scheduler.rlp_step(metrics)
             case ReduceLROnPlateau():
-                if metrics is None:
-                    raise Exception(
-                        "Validation set required for ReduceLROnPlateau."
-                    )
-                self.scheduler.step(metrics, epoch)
+                self.scheduler.step(metrics)
             case LR._LRScheduler():
-                self.scheduler.step(epoch=epoch)
+                pass
+            case _:
+                raise ValueError(f"Invalid scheduler: {type(self.scheduler)}")
+
+    def step(self) -> None:
+        match self.scheduler:
+            case LR.LinearWarmupCosineDecayRLPScheduler() | LR.PerParamGroupLinearWarmupCosineDecayRLPScheduler():
+                self.scheduler.step()
+            case ReduceLROnPlateau():
+                pass
+            case LR._LRScheduler():
+                self.scheduler.step()
             case _:
                 raise ValueError(f"Invalid scheduler: {type(self.scheduler)}")
 

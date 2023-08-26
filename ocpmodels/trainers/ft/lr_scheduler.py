@@ -14,8 +14,12 @@ log = getLogger(__name__)
 class LinearWarmupCosineDecaySettings:
     warmup_steps: int
     warmup_factor: float
-    total_steps: int
+    decay_steps: int
     min_lr_factor: float
+
+    @property
+    def total_steps(self):
+        return self.warmup_steps + self.decay_steps
 
 
 def linear_warmup_cosine_decay_schedule(
@@ -30,7 +34,7 @@ def linear_warmup_cosine_decay_schedule(
 
     # Decay following cosine schedule (no restarts/annealing)
     progress = float(step - config.warmup_steps) / float(
-        max(1, config.total_steps - config.warmup_steps)
+        max(1, config.decay_steps - 1)
     )
     # No restarts/annealing
     progress = min(progress, 1.0)
