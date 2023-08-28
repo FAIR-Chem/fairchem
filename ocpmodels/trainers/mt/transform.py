@@ -14,24 +14,19 @@ from ocpmodels.models.gemnet_oc_mt.goc_graph import (
     tag_mask,
 )
 
-from .config import MultiTaskConfig
-
-
-@dataclass
-class TransformConfigs:
-    mt: MultiTaskConfig
+from .config import TransformConfigs
 
 
 def _process_aint_graph(
     graph: Graph,
-    config: MultiTaskConfig,
+    config: TransformConfigs,
     *,
     training: bool,
 ):
-    if config.edge_dropout:
+    if config.mt.edge_dropout:
         graph["edge_index"], mask = dropout_edge(
             graph["edge_index"],
-            p=config.edge_dropout,
+            p=config.mt.edge_dropout,
             training=training,
         )
         graph["distance"] = graph["distance"][mask]
@@ -46,7 +41,7 @@ def _process_aint_graph(
 
 def _generate_graphs(
     data: Data,
-    config: MultiTaskConfig,
+    config: TransformConfigs,
     cutoffs: Cutoffs,
     max_neighbors: MaxNeighbors,
     pbc: bool,
@@ -72,9 +67,7 @@ def _generate_graphs(
     # that it needs to increment the "id_swap" indices as it collates the data.
     # So we do this at the graph level (which is done in the GemNetOC `get_graphs_and_indices` method).
     # main_graph = symmetrize_edges(main_graph, num_atoms=data.pos.shape[0])
-    qint_graph = tag_mask(
-        data, qint_graph, tags=self.config.backbone.qint_tags
-    )
+    qint_graph = tag_mask(data, qint_graph, tags=config.model.qint_tags)
 
     graphs = {
         "main": main_graph,
@@ -91,7 +84,7 @@ def _generate_graphs(
     return data
 
 
-def oc20_transform(data: Data, *, config: MultiTaskConfig, training: bool):
+def oc20_transform(data: Data, *, config: TransformConfigs, training: bool):
     # convert back these keys into required format for collation
     data.natoms = int(
         data.natoms.item() if torch.is_tensor(data) else data.natoms
@@ -100,13 +93,13 @@ def oc20_transform(data: Data, *, config: MultiTaskConfig, training: bool):
     data.atomic_numbers = data.atomic_numbers.long()
     data.tags = data.tags.long()
     try:
-        if not torch.is_tensor(data.y):
-            data.y = torch.tensor(data.y)
-        data.y = data.y.view(-1)
+        if not torch.is_tensor(data.energy):
+            data.energy = torch.tensor(data.energy)
+        data.energy = data.energy.view(-1)
     except:
         if not torch.is_tensor(data.y_relaxed):
             data.y_relaxed = torch.tensor(data.y_relaxed)
-        data.y = data.y_relaxed.view(-1)
+        data.energy = data.y_relaxed.view(-1)
     data.name = "oc20"
 
     data = _generate_graphs(
@@ -120,7 +113,7 @@ def oc20_transform(data: Data, *, config: MultiTaskConfig, training: bool):
     return data
 
 
-def oc22_transform(data: Data, *, config: MultiTaskConfig, training: bool):
+def oc22_transform(data: Data, *, config: TransformConfigs, training: bool):
     # convert back these keys into required format for collation
     data.natoms = int(
         data.natoms.item() if torch.is_tensor(data) else data.natoms
@@ -129,9 +122,9 @@ def oc22_transform(data: Data, *, config: MultiTaskConfig, training: bool):
     data.atomic_numbers = data.atomic_numbers.long()
     data.tags = data.tags.long()
     try:
-        data.y = torch.tensor(float(data.y)).view(-1)
+        data.energy = torch.tensor(float(data.energy)).view(-1)
     except:
-        data.y = torch.tensor(float(data.y_relaxed)).view(-1)
+        data.energy = torch.tensor(float(data.y_relaxed)).view(-1)
     data.name = "oc22"
 
     data = _generate_graphs(
@@ -150,8 +143,8 @@ def _set_inf_cell(data: Data, max_length: float = 1000.0):
     return data
 
 
-def ani1x_transform(data: Data, *, config: MultiTaskConfig, training: bool):
-    data.y = data.y.view(-1).float()
+def ani1x_transform(data: Data, *, config: TransformConfigs, training: bool):
+    data.energy = data.energy.view(-1).float()
     if not hasattr(data, "sid"):
         data.sid = data.absolute_idx
     if not hasattr(data, "natoms"):
@@ -177,9 +170,9 @@ def ani1x_transform(data: Data, *, config: MultiTaskConfig, training: bool):
 
 
 def transition1x_transform(
-    data: Data, *, config: MultiTaskConfig, training: bool
+    data: Data, *, config: TransformConfigs, training: bool
 ):
-    data.y = data.y.view(-1).float()
+    data.energy = data.energy.view(-1).float()
     if not hasattr(data, "sid"):
         data.sid = data.absolute_idx
     if not hasattr(data, "natoms"):

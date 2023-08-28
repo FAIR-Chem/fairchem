@@ -60,6 +60,16 @@ dataset:
   one_hot_targets:
     graph_level: ["energy"]
     node_level: ["forces"]
+  collate_exclude_keys: [
+      "id", # only oc20,oc22 have this
+      "fid", # only oc20,oc22 have this
+      "cell_offsets", # only oc20 has this
+      "edge_index", # only oc20 has this
+      "absolute_idx", # only ani has this
+      "target_pos", # only ani has this
+      "ref_energy", # only ani/geom have this
+      "pbc", # only ani/transition1x have this
+    ]
   datasets:
     - train:
         config:
@@ -105,6 +115,7 @@ dataset:
             total_energy: True
           first_n:
             n: 5_000
+      mt_transform: ocpmodels.trainers.mt.transform.oc20_transform
       key_mapping:
         y: energy
         force: forces
@@ -127,6 +138,7 @@ dataset:
             lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
           first_n:
             n: 5_000
+      mt_transform: ocpmodels.trainers.mt.transform.oc22_transform
       key_mapping:
         y: energy
         force: forces
@@ -143,6 +155,7 @@ dataset:
             metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/ani1x_val_metadata.npz
           first_n:
             n: 5_000
+      mt_transform: ocpmodels.trainers.mt.transform.ani1x_transform
       key_mapping:
         y: energy
         force: forces
@@ -159,6 +172,7 @@ dataset:
             metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/transition1x_val_metadata.npz
           first_n:
             n: 7_500
+      mt_transform: ocpmodels.trainers.mt.transform.transition1x_transform
       key_mapping:
         y: energy
         force: forces

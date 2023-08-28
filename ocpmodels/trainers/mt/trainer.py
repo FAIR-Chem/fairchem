@@ -12,13 +12,14 @@ from torch_scatter import scatter
 from typing_extensions import override
 
 from ocpmodels.common import distutils, gp_utils
-from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
+from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import TypeAdapter
 from ocpmodels.modules.evaluator import Evaluator
 
 from ..base_trainer import BaseTrainer
 from .balanced_batch_sampler import BalancedBatchSampler
+from .collate import ParallelCollater
 from .config import (
     AtomLevelOutputHeadConfig,
     DatasetConfig,
@@ -272,6 +273,7 @@ class MTTrainer(BaseTrainer):
         log.info("Loading datasets")
         self.parallel_collater = ParallelCollater(
             0 if self.cpu else 1,
+            self.dataset_config,
             self.config["model_attributes"].get("otf_graph", False),
         )
 
@@ -288,7 +290,11 @@ class MTTrainer(BaseTrainer):
             self.train_dataset,
             self.val_dataset,
             self.test_dataset,
-        ) = create_datasets(self.dataset_config, self.multi_task_config)
+        ) = create_datasets(
+            self.dataset_config,
+            self.multi_task_config,
+            self.model_config,
+        )
 
         self.train_loader = None
         self.val_loader = None

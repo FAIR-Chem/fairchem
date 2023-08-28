@@ -16,13 +16,14 @@ from ocpmodels.common.utils import apply_key_mapping
 from .config import (
     DatasetConfig,
     FullyBalancedSamplingConfig,
+    ModelConfig,
     MultiTaskConfig,
     OneHotTargetsConfig,
     SamplingConfig,
-    SplitDatasetConfig,
     TaskConfig,
     TaskDatasetConfig,
     TemperatureSamplingConfig,
+    TransformConfigs,
 )
 from .dataset_transform import dataset_transform, expand_dataset
 from .normalizer import normalizer_transform
@@ -54,27 +55,49 @@ def _update_node_value(data: Data, key: str, onehot: torch.Tensor):
     setattr(data, f"{key}_onehot", value)
 
 
-def _create_split_dataset(
-    config: dict[str, Any],
-    task_idx: int,
-    total_num_tasks: int,
-    one_hot_targets: OneHotTargetsConfig,
-) -> Dataset:
+def _create_split_dataset(config: dict[str, Any]) -> Dataset:
     # Create the dataset
     dataset_cls = registry.get_dataset_class(config["format"])
     assert issubclass(dataset_cls, Dataset), f"{dataset_cls=} is not a Dataset"
     dataset = cast(Any, dataset_cls)(config)
     dataset = cast(Dataset, dataset)
 
-    # Wrap the dataset with task_idx transform
+    return dataset
+
+
+def _apply_transforms(
+    dataset: Dataset[Any],
+    config: TaskDatasetConfig,
+    task_config: TaskConfig,
+    total_num_tasks: int,
+    one_hot_targets: OneHotTargetsConfig,
+    transform_configs: TransformConfigs,
+    training: bool,
+):
+    # Key mapping transform
+    if config.key_mapping:
+        dataset = dataset_transform(
+            dataset,
+            partial(apply_key_mapping, key_mapping=config.key_mapping),
+        )
+
+    # Normalization transform
+    if task_config.normalization:
+        dataset = dataset_transform(
+            dataset,
+            normalizer_transform(task_config.normalization),
+        )
+
+    # Taskify/onehot transform
     def _transform(data: Data):
-        nonlocal task_idx, total_num_tasks, one_hot_targets
+        # Wrap the dataset with task_idx transform
+        nonlocal task_config, total_num_tasks, one_hot_targets
 
         if not isinstance(data, Data):
             raise TypeError(f"{data=} is not a torch_geometric.data.Data")
 
         # Set the task_idx
-        data.task_idx = torch.tensor(task_idx, dtype=torch.long)
+        data.task_idx = torch.tensor(task_config.idx, dtype=torch.long)
         onehot: torch.Tensor = F.one_hot(
             data.task_idx, num_classes=total_num_tasks
         ).bool()  # (t,)
@@ -92,34 +115,26 @@ def _create_split_dataset(
         return data
 
     dataset = dataset_transform(dataset, _transform)
-    return dataset
 
-
-def _apply_transforms(
-    dataset: Dataset[Any],
-    config: TaskDatasetConfig,
-    task_config: TaskConfig,
-):
-    if config.key_mapping:
+    if config.mt_transform_fn is not None:
         dataset = dataset_transform(
             dataset,
-            partial(apply_key_mapping, key_mapping=config.key_mapping),
+            partial(
+                config.mt_transform_fn,
+                config=transform_configs,
+                training=training,
+            ),
         )
 
-    if task_config.normalization:
-        dataset = dataset_transform(
-            dataset,
-            normalizer_transform(task_config.normalization),
-        )
     return dataset
 
 
 def _create_task_datasets(
     config: TaskDatasetConfig,
     task_config: TaskConfig,
-    task_idx: int,
     total_num_tasks: int,
     one_hot_targets: OneHotTargetsConfig,
+    transform_configs: TransformConfigs,
 ):
     train_dataset = None
     val_dataset = None
@@ -127,35 +142,44 @@ def _create_task_datasets(
 
     # Create the train, val, test datasets
     if config.train is not None:
-        train_dataset = _create_split_dataset(
-            config.train.config,
-            task_idx,
+        train_dataset = _create_split_dataset(config.train.config)
+        train_dataset = _apply_transforms(
+            train_dataset,
+            config,
+            task_config,
             total_num_tasks,
             one_hot_targets,
+            transform_configs=transform_configs,
+            training=True,
         )
-        train_dataset = _apply_transforms(train_dataset, config, task_config)
     if config.val is not None:
         datasets: list[Dataset[Any]] = []
         for val_config in config.val:
-            dataset = _create_split_dataset(
-                val_config.config,
-                task_idx,
+            dataset = _create_split_dataset(val_config.config)
+            dataset = _apply_transforms(
+                dataset,
+                config,
+                task_config,
                 total_num_tasks,
                 one_hot_targets,
+                transform_configs=transform_configs,
+                training=False,
             )
-            dataset = _apply_transforms(dataset, config, task_config)
             datasets.append(dataset)
         val_dataset = ConcatDataset(datasets)
     if config.test is not None:
         datasets: list[Dataset[Any]] = []
         for test_config in config.test:
-            dataset = _create_split_dataset(
-                test_config.config,
-                task_idx,
+            dataset = _create_split_dataset(test_config.config)
+            dataset = _apply_transforms(
+                dataset,
+                config,
+                task_config,
                 total_num_tasks,
                 one_hot_targets,
+                transform_configs=transform_configs,
+                training=False,
             )
-            dataset = _apply_transforms(dataset, config, task_config)
             datasets.append(dataset)
         test_dataset = ConcatDataset(datasets)
 
@@ -223,9 +247,15 @@ def _combine_datasets(sampling: SamplingConfig, datasets: List[Dataset]):
     return combined_dataset
 
 
-def create_datasets(config: DatasetConfig, multi_task: MultiTaskConfig):
+def create_datasets(
+    config: DatasetConfig,
+    multi_task: MultiTaskConfig,
+    model: ModelConfig,
+):
     total_num_tasks = len(config.datasets)
     assert total_num_tasks > 0, "No tasks found in the config."
+
+    transform_configs = TransformConfigs(mt=multi_task, model=model)
 
     # Create all the datasets
     train_datasets: List[Dataset] = []
@@ -237,9 +267,9 @@ def create_datasets(config: DatasetConfig, multi_task: MultiTaskConfig):
         train_dataset, val_dataset, test_dataset = _create_task_datasets(
             task_dataset_config,
             task_config,
-            task_idx,
             total_num_tasks,
             config.one_hot_targets,
+            transform_configs=transform_configs,
         )
 
         if train_dataset is not None:

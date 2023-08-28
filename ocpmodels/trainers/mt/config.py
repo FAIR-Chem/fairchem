@@ -1,8 +1,9 @@
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any, Callable, Literal, Union
+from typing import Any, Callable, Literal, Protocol, Union, runtime_checkable
 
 import torch
+from torch_geometric.data import Data
 from typing_extensions import Annotated, override
 
 from ocpmodels.common.typed_config import Field, TypedConfig
@@ -142,8 +143,34 @@ class TaskDatasetConfig(TypedConfig):
     test: list[SplitDatasetConfig] | None = None
 
     key_mapping: dict[str, MappedKeyType] = {}
+    mt_transform: str | None = None
 
     copy_from_train: bool = True
+
+    @property
+    def mt_transform_fn(self):
+        if self.mt_transform is None:
+            return None
+
+        # Import the transform function
+        import importlib
+
+        module_name, fn_name = self.mt_transform.rsplit(".", 1)
+        module = importlib.import_module(module_name)
+        fn = getattr(module, fn_name)
+
+        # Make sure the transform function is valid
+        if not callable(fn):
+            raise ValueError(
+                f"MT transform {self.mt_transform} must be callable."
+            )
+        if not isinstance(fn, TransformFnProtocol):
+            raise ValueError(
+                f"MT transform {self.mt_transform} must be callable with the signature "
+                "`def __call__(self, data: Data, *, config: TransformConfigs, training: bool) -> Data:`."
+            )
+
+        return fn
 
     @override
     def __post_init__(self):
@@ -182,6 +209,8 @@ class DatasetConfig(TypedConfig):
     datasets: list[TaskDatasetConfig]
     one_hot_targets: OneHotTargetsConfig = OneHotTargetsConfig()
     sampling: SamplingConfig = TemperatureSamplingConfig(temperature=1.0)
+
+    batch_exclude_keys: list[str] | None = None
 
 
 # endregion
@@ -287,3 +316,21 @@ def validate_all_configs(
     for name, output in outputs.items():
         if not output.per_task:
             raise ValueError(f"Output {name} must have per_task=True.")
+
+
+@dataclass(kw_only=True, frozen=True)
+class TransformConfigs:
+    mt: MultiTaskConfig
+    model: ModelConfig
+
+
+@runtime_checkable
+class TransformFnProtocol(Protocol):
+    def __call__(
+        self,
+        data: Data,
+        *,
+        config: TransformConfigs,
+        training: bool,
+    ) -> Data:
+        ...
