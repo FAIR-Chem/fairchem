@@ -9,6 +9,8 @@ from ocpmodels.models.gemnet_oc_mt.config import (
     BackboneConfig as GOCBackboneConfig,
 )
 
+from .normalizer import NormalizerTargetConfig
+
 
 # region Output Head Config
 class BaseOutputHeadConfig(TypedConfig):
@@ -168,10 +170,16 @@ ModelConfig = Annotated[GemNetOCModelConfig, Field(discriminator="name")]
 # region MultiTask Config
 
 
+class NormalizerTargetConfig(TypedConfig):
+    mean: float = 0.0
+    std: float = 1.0
+
+
 class TaskConfig(TypedConfig):
     idx: int
     name: str
     loss_coefficients: dict[str, float] = {}
+    normalization: dict[str, NormalizerTargetConfig] = {}
 
 
 class MultiTaskConfig(TypedConfig):

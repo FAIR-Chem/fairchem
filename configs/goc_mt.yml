@@ -8,21 +8,49 @@ tasks:
         loss_coefficients:
           energy: 1
           forces: 73.0
+        normalization:
+          energy:
+            mean: 0.0
+            stdev: 24.901469505465872
+          forces:
+            mean: 0.0
+            stdev: 0.5111534595489502
       - idx: 1
         name: oc22
         loss_coefficients:
           energy: 1
           forces: 80.0
+        normalization:
+          energy:
+            mean: 0.0
+            stdev: 25.229595396538468
+          forces:
+            mean: 0.0
+            stdev: 0.25678861141204834
       - idx: 2
         name: ani1x
         loss_coefficients:
           energy: 1
           forces: 15.0
+        normalization:
+          energy:
+            mean: 0.0
+            stdev: 2.8700712783472118
+          forces:
+            mean: 0.0
+            stdev: 2.131422996520996
       - idx: 3
         name: transition1x
         loss_coefficients:
           energy: 1
           forces: 14.0
+        normalization:
+          energy:
+            mean: 0.0
+            stdev: 1.787466168382901
+          forces:
+            mean: 0.0
+            stdev: 0.3591422140598297
     edge_dropout: 0.15
 
 dataset:
@@ -39,14 +67,6 @@ dataset:
         key_mapping:
           y: energy
           force: forces
-        transforms:
-          - normalizer:
-              energy:
-                mean: -0.7554450631141663
-                stdev: 2.887317180633545
-              forces:
-                mean: 0
-                stdev: 2.887317180633545
       val:
         format: lmdb
         src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
@@ -59,14 +79,6 @@ dataset:
         key_mapping:
           y: energy
           force: forces
-        transforms:
-          - normalizer:
-              energy:
-                mean: -0.7554450631141663
-                stdev: 2.887317180633545
-              forces:
-                mean: 0
-                stdev: 2.887317180633545
       val:
         format: lmdb
         src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k

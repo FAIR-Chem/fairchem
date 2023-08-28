@@ -1,29 +1,25 @@
-from typing import Callable, Dict, List
-
 import torch
 from torch_geometric.data import Data
 
 from ocpmodels.common.utils import cg_decomp_mat, irreps_sum
-from ocpmodels.modules.normalizer import normalizer_transform
 
 
 class DataTransforms:
-    def __init__(self, transform_config: List[Dict]) -> None:
-        transform_config = transform_config.copy()
-
-        self.transforms: List[Callable] = []
-        for transform_dict in transform_config:
-            for name, config in transform_dict.items():
-                if name == "normalizer":
-                    fn = normalizer_transform(config)
-                else:
-                    fn = eval(name)
-
-                self.transforms.append(fn)
+    def __init__(self, config) -> None:
+        self.config = config
 
     def __call__(self, data_object):
-        for transform in self.transforms:
-            data_object = transform(data_object)
+        if not self.config:
+            return data_object
+
+        for transform_fn in self.config:
+            # TODO move normalizer into dataset
+            if transform_fn == "normalizer":
+                continue
+            data_object = eval(transform_fn)(
+                data_object, self.config[transform_fn]
+            )
+
         return data_object
 
 
@@ -46,13 +42,5 @@ def decompose_tensor(data_object, config) -> Data:
             :,
             max(0, irreps_sum(irrep_dim - 1)) : irreps_sum(irrep_dim),
         ]
-
-    return data_object
-
-
-def flatten(data_object, config) -> Data:
-    tensor_key = config["tensor"]
-
-    data_object[tensor_key] = data_object[tensor_key].reshape(1, -1)
 
     return data_object

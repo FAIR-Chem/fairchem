@@ -17,7 +17,6 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import TypeAdapter
 from ocpmodels.modules.evaluator import Evaluator
 
-from ...modules.normalizer import denormalize_context, denormalize_tensors
 from ..base_trainer import BaseTrainer
 from .config import (
     AtomLevelOutputHeadConfig,
@@ -30,6 +29,7 @@ from .config import (
 )
 from .dataset import create_datasets
 from .loss import create_losses
+from .normalizer import denormalize_context, denormalize_tensors
 
 log = getLogger(__name__)
 
@@ -133,6 +133,10 @@ class MTTrainer(BaseTrainer):
             self.config["task"].get("mt", {})
         )
 
+    @property
+    def num_tasks(self):
+        return len(self.multi_task_config.tasks)
+
     @override
     def load_task(self):
         # We don't use this way of normalizing.
@@ -147,7 +151,7 @@ class MTTrainer(BaseTrainer):
         for target_name, target_config in outputs_config.items():
             target_config_dict = target_config.to_dict()
             self.output_targets[target_name] = target_config_dict.copy()
-            for task_idx in range(len(self.dataset_config.datasets)):
+            for task_idx in range(self.num_tasks):
                 key = f"{target_name}_task_{task_idx}"
                 self.per_task_output_targets[key] = target_config_dict.copy()
                 self.multi_task_targets[target_name].append(key)
@@ -162,19 +166,19 @@ class MTTrainer(BaseTrainer):
 
         self.train_per_task_energy_maes = {
             task_idx: torchmetrics.MeanAbsoluteError().to(self.device)
-            for task_idx in range(len(self.dataset_config.datasets))
+            for task_idx in range(self.num_tasks)
         }
         self.val_per_task_energy_maes = {
             task_idx: torchmetrics.MeanAbsoluteError().to(self.device)
-            for task_idx in range(len(self.dataset_config.datasets))
+            for task_idx in range(self.num_tasks)
         }
         self.train_per_task_force_maes = {
             task_idx: torchmetrics.MeanAbsoluteError().to(self.device)
-            for task_idx in range(len(self.dataset_config.datasets))
+            for task_idx in range(self.num_tasks)
         }
         self.val_per_task_force_maes = {
             task_idx: torchmetrics.MeanAbsoluteError().to(self.device)
-            for task_idx in range(len(self.dataset_config.datasets))
+            for task_idx in range(self.num_tasks)
         }
 
     @cached_property
@@ -244,7 +248,7 @@ class MTTrainer(BaseTrainer):
             self.train_dataset,
             self.val_dataset,
             self.test_dataset,
-        ) = create_datasets(self.dataset_config)
+        ) = create_datasets(self.dataset_config, self.multi_task_config)
 
         self.train_loader = None
         self.val_loader = None
@@ -388,7 +392,7 @@ class MTTrainer(BaseTrainer):
         )
 
         metrics: Dict[str, Any] = {}
-        for task_idx in range(len(self.dataset_config.datasets)):
+        for task_idx in range(self.num_tasks):
             mask = torch.cat(
                 [batch.task_mask.to(self.device) for batch in batch_list]
             ) & rearrange(
@@ -456,7 +460,7 @@ class MTTrainer(BaseTrainer):
 
         # For the per-task metrics, we compute and return the state here
         # so that we can report the final metric.
-        for task_idx in range(len(self.dataset_config.datasets)):
+        for task_idx in range(self.num_tasks):
             energy_mae = self.val_per_task_energy_maes[task_idx]
             metrics = self.evaluator.update(
                 f"task_{task_idx}_energy_mae",
@@ -528,7 +532,7 @@ class MTTrainer(BaseTrainer):
             and self.step % self.config["cmd"]["print_every"] == 0
         ):
             # Reset the train per-task metrics
-            for task_idx in range(len(self.dataset_config.datasets)):
+            for task_idx in range(self.num_tasks):
                 self.train_per_task_energy_maes[task_idx].reset()
                 self.train_per_task_force_maes[task_idx].reset()
 
@@ -546,7 +550,7 @@ class MTTrainer(BaseTrainer):
         return merged_outputs
 
     def _validate_mt_outputs(self, outputs: Dict[str, torch.Tensor]):
-        num_tasks = len(self.dataset_config.datasets)
+        num_tasks = self.num_tasks
         for target, config in self.output_targets.items():
             # Get the value
             value = outputs.get(target, None)

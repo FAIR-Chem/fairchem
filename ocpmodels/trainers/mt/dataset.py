@@ -10,17 +10,21 @@ from torch.utils.data import ConcatDataset, Dataset
 from torch_geometric.data import Data
 
 from ocpmodels.common.registry import registry
+from ocpmodels.tasks import task
 
 from .config import (
     DatasetConfig,
     FullyBalancedSamplingConfig,
+    MultiTaskConfig,
     OneHotTargetsConfig,
     SamplingConfig,
     SplitDatasetConfig,
+    TaskConfig,
     TaskDatasetConfig,
     TemperatureSamplingConfig,
 )
 from .dataset_transform import dataset_transform, expand_dataset
+from .normalizer import normalizer_transform
 
 
 def _update_graph_value(data: Data, key: str, onehot: torch.Tensor):
@@ -88,8 +92,18 @@ def _create_split_dataset(
     return dataset
 
 
+def _apply_normalization_transform(
+    dataset: Dataset[Any],
+    task_config: TaskConfig,
+):
+    tranform = normalizer_transform(task_config.normalization)
+    dataset = dataset_transform(dataset, tranform)
+    return dataset
+
+
 def _create_task_datasets(
     config: TaskDatasetConfig,
+    task_config: TaskConfig,
     task_idx: int,
     total_num_tasks: int,
     one_hot_targets: OneHotTargetsConfig,
@@ -106,6 +120,9 @@ def _create_task_datasets(
             total_num_tasks,
             one_hot_targets,
         )
+        train_dataset = _apply_normalization_transform(
+            train_dataset, task_config
+        )
     if config.val is not None:
         val_dataset = _create_split_dataset(
             config.val,
@@ -113,12 +130,16 @@ def _create_task_datasets(
             total_num_tasks,
             one_hot_targets,
         )
+        val_dataset = _apply_normalization_transform(val_dataset, task_config)
     if config.test is not None:
         test_dataset = _create_split_dataset(
             config.test,
             task_idx,
             total_num_tasks,
             one_hot_targets,
+        )
+        test_dataset = _apply_normalization_transform(
+            test_dataset, task_config
         )
     return train_dataset, val_dataset, test_dataset
 
@@ -184,7 +205,7 @@ def _combine_datasets(sampling: SamplingConfig, datasets: List[Dataset]):
     return combined_dataset
 
 
-def create_datasets(config: DatasetConfig):
+def create_datasets(config: DatasetConfig, multi_task: MultiTaskConfig):
     total_num_tasks = len(config.datasets)
     assert total_num_tasks > 0, "No tasks found in the config."
 
@@ -193,8 +214,11 @@ def create_datasets(config: DatasetConfig):
     val_datasets: List[Dataset] = []
     test_datasets: List[Dataset] = []
     for task_idx, task_dataset_config in enumerate(config.datasets):
+        task_config = multi_task.task_by_idx(task_idx)
+
         train_dataset, val_dataset, test_dataset = _create_task_datasets(
             task_dataset_config,
+            task_config,
             task_idx,
             total_num_tasks,
             config.one_hot_targets,
