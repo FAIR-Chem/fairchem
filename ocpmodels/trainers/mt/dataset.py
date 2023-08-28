@@ -11,7 +11,7 @@ from torch.utils.data import ConcatDataset, Dataset
 from torch_geometric.data import Data
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import MappedKeyType, apply_key_mapping
+from ocpmodels.common.utils import apply_key_mapping
 
 from .config import (
     DatasetConfig,

@@ -75,6 +75,16 @@ class LossFnConfig(TypedConfig):
 
     coefficient: float | list[Any] = 1.0
     reduction: Literal["sum", "mean", "structure_wise_mean"] = "mean"
+    per_task: bool = False
+
+    @override
+    def __post_init__(self):
+        super().__post_init__()
+
+        if not self.per_task:
+            raise ValueError(
+                f"Loss {self.target} must have per_task=True for MT trainer."
+            )
 
 
 @dataclass(frozen=True)
@@ -82,7 +92,10 @@ class LossFn:
     config: LossFnConfig
     fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
 
-    def apply_coefficient(self, loss: torch.Tensor) -> torch.Tensor:
+    def apply_coefficient(
+        self,
+        loss: torch.Tensor,
+    ) -> torch.Tensor:
         coefficient = loss.new_tensor(self.config.coefficient)
         return loss * coefficient
 
@@ -214,10 +227,7 @@ def validate_all_configs(
         )
 
     # Validate loss config
-    if len(loss_fns) != num_tasks:
-        raise ValueError(
-            f"Number of loss functions ({len(loss_fns)}) must match number of tasks ({num_tasks})."
-        )
+    _ = loss_fns
 
     # Validate model config
     _ = model
