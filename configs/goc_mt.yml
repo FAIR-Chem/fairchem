@@ -201,9 +201,10 @@ outputs:
     eval_on_free_atoms: True
     custom_head: True
     per_task: True
+    use_raw_edge_vecs: True
 
 model:
-  name: gemnet_oc
+  name: gemnet_oc_mt
   num_spherical: 7
   num_radial: 128
   num_blocks: 4

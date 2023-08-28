@@ -215,14 +215,23 @@ class TaskConfig(TypedConfig):
 
 class MultiTaskConfig(TypedConfig):
     tasks: list[TaskConfig]
+
+    ln: bool = False
     edge_dropout: float | None = None
-    node_dropout: float | None = None
+    dropout: float | None = None
 
     def task_by_name(self, name: str) -> TaskConfig:
         return next(task for task in self.tasks if task.name == name)
 
     def task_by_idx(self, idx: int) -> TaskConfig:
         return next(task for task in self.tasks if task.idx == idx)
+
+    def update_model_config_dict(self, config: dict[str, Any]):
+        config = config.copy()
+        config["ln"] = config.get("ln", self.ln)
+        config["dropout"] = config.get("dropout", self.dropout)
+        config["edge_dropout"] = config.get("edge_dropout", self.edge_dropout)
+        return config
 
 
 # endregion

@@ -269,7 +269,6 @@ class GemNetOCBackbone(BaseModel):
         output_targets: dict,
         config: BackboneConfig,
         *,
-        num_targets: int,
         num_spherical: int,
         num_radial: int,
         num_blocks: int,
@@ -340,7 +339,6 @@ class GemNetOCBackbone(BaseModel):
             )
 
         self.ln = ln
-        self.num_targets = num_targets
         assert num_blocks > 0
         self.num_blocks = num_blocks
         self.extensive = extensive
@@ -383,6 +381,7 @@ class GemNetOCBackbone(BaseModel):
         # self.edge_emb = EdgeEmbedding(
         #     emb_size_atom, num_radial, emb_size_edge, activation=activation
         # )
+        self.atom_embedding = nn.Embedding(num_elements, emb_size_atom)
 
         # Interaction Blocks
         int_blocks = []
@@ -779,6 +778,9 @@ class GemNetOCBackbone(BaseModel):
 
         # ActSave(edge_index=main_graph["edge_index"])
 
+        # Embedding block
+        h = self.atom_embedding(data.atomic_numbers - 1)
+
         bases: BasesOutput = self.bases(
             data,
             h=h,
@@ -795,8 +797,6 @@ class GemNetOCBackbone(BaseModel):
         m = bases.m
         # ActSave(m_initial=m)
 
-        # Embedding block
-        # h = self.atom_emb(atomic_numbers)
         # (nAtoms, emb_size_atom)
         # m = self.edge_emb(h, bases.rbf_main, main_graph["edge_index"])
         # (nEdges_main, emb_size_edge)
@@ -855,26 +855,16 @@ class GemNetOCBackbone(BaseModel):
         # ActSave({f"h_{self.num_blocks}": h, f"m_{self.num_blocks}": m})
 
         # Global output block for final predictions
-        if self.regress_forces:
-            assert (
-                self.direct_forces
-            ), "Only direct forces are supported for now."
-            x_F = self.out_mlp_F(
-                torch.cat(xs_F, dim=-1),
-                data=data,
-                edge_index=main_graph["edge_index"],
-            )
-        else:
-            x_F = None
-
-        if self.regress_energy:
-            x_E = self.out_mlp_E(
-                torch.cat(xs_E, dim=-1),
-                data=data,
-                edge_index=main_graph["edge_index"],
-            )
-        else:
-            x_E = None
+        x_E = self.out_mlp_E(
+            torch.cat(xs_E, dim=-1),
+            data=data,
+            edge_index=main_graph["edge_index"],
+        )
+        x_F = self.out_mlp_F(
+            torch.cat(xs_F, dim=-1),
+            data=data,
+            edge_index=main_graph["edge_index"],
+        )
 
         outputs = {
             "edge_idx": idx_t,

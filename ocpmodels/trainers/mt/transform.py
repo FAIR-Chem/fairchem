@@ -38,33 +38,6 @@ def _process_aint_graph(
     return graph
 
 
-def _pre_generate_graph_transform(
-    data: Data,
-    config: MultiTaskConfig,
-    *,
-    training: bool,
-):
-    if config.node_dropout and training:
-        node_mask = (
-            torch.rand(data.pos.shape[0], device=data.pos.device)
-            > config.node_dropout
-        )  # (n_nodes,)
-        # make sure that at least four nodes are left
-        if (n_masked := node_mask.sum()) < 4:
-            (unmasked_idx,) = torch.nonzero(~node_mask, as_tuple=True)
-            node_mask[unmasked_idx[: 4 - n_masked]] = True
-            assert node_mask.sum() >= 4, f"{node_mask.sum()=} < 4"
-
-        data.pos = data.pos[node_mask]
-        data.force = data.force[node_mask]
-        data.atomic_numbers = data.atomic_numbers[node_mask]
-        data.fixed = data.fixed[node_mask]
-        data.tags = data.tags[node_mask]
-        data.natoms = node_mask.sum().item()
-
-    return data
-
-
 def _generate_graphs(
     data: Data,
     config: MultiTaskConfig,

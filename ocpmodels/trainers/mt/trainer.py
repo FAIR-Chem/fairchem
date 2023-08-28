@@ -187,6 +187,9 @@ class MTTrainer(BaseTrainer):
     def model_config(self):
         model_config_dict: dict = self.config["model_attributes"].copy()
         model_config_dict["name"] = self.config["model"]
+        model_config_dict = self.multi_task_config.update_model_config_dict(
+            model_config_dict
+        )
 
         return TypeAdapter(ModelConfig).validate_python(model_config_dict)
 
@@ -447,14 +450,14 @@ class MTTrainer(BaseTrainer):
         )
 
         metrics: Dict[str, Any] = {}
-        for task_idx in range(self.num_tasks):
+        for task in self.multi_task_config.tasks:
             mask = torch.cat(
                 [batch.task_mask.to(self.device) for batch in batch_list]
             ) & rearrange(
                 torch.cat(
                     [batch.task_idx.to(self.device) for batch in batch_list]
                 )
-                == task_idx,
+                == task.idx,
                 "b -> b 1",
             )  # (bsz, t)
             if not mask.any():
@@ -474,14 +477,14 @@ class MTTrainer(BaseTrainer):
                 batch_list,
                 "energy",
                 (energy_target, energy_pred),
-                mask[:, task_idx],
+                mask[:, task.idx],
             )
 
-            energy_mae = per_task_energy_maes[task_idx](
+            energy_mae = per_task_energy_maes[task.idx](
                 energy_pred, energy_target
             )
             metrics = self.evaluator.update(
-                f"task_{task_idx}_energy_mae", energy_mae.item(), metrics
+                f"{task.name}_energy_mae", energy_mae.item(), metrics
             )
 
             forces_target = torch.cat(
@@ -492,20 +495,15 @@ class MTTrainer(BaseTrainer):
                 batch_list,
                 "forces",
                 (forces_target, forces_pred),
-                node_mask[:, task_idx],
+                node_mask[:, task.idx],
             )
 
-            forces_mae = per_task_force_maes[task_idx](
+            forces_mae = per_task_force_maes[task.idx](
                 forces_pred, forces_target
             )
             metrics = self.evaluator.update(
-                f"task_{task_idx}_forces_mae", forces_mae.item(), metrics
+                f"{task.name}_forces_mae", forces_mae.item(), metrics
             )
-
-        if is_eval:
-            # If we're evaluating, then we need to return any intermediate computations.
-            # We just aggregate everything for the final metric.
-            return {}
 
         return metrics
 
@@ -605,7 +603,6 @@ class MTTrainer(BaseTrainer):
         return merged_outputs
 
     def _validate_mt_outputs(self, outputs: Dict[str, torch.Tensor]):
-        num_tasks = self.num_tasks
         for target, config in self.output_targets.items():
             # Get the value
             value = outputs.get(target, None)
@@ -617,13 +614,13 @@ class MTTrainer(BaseTrainer):
             if system == "system":
                 # Shape should be (bsz, n_tasks)
                 assert (
-                    value.ndim == 2 and value.shape[1] == num_tasks
-                ), f"System output {value.shape=} should be (bsz, {num_tasks=})"
+                    value.ndim == 2 and value.shape[1] == self.num_tasks
+                ), f"System output {value.shape=} should be (bsz, {self.num_tasks=})"
             elif system == "atom":
                 # Shape should be (n_atoms, n_tasks, 3)
                 assert (
-                    value.ndim == 3 and value.shape[1] == num_tasks
-                ), f"Atom output {value.shape=} should be (n_atoms, {num_tasks=}, 3)"
+                    value.ndim == 3 and value.shape[1] == self.num_tasks
+                ), f"Atom output {value.shape=} should be (n_atoms, {self.num_tasks=}, 3)"
             else:
                 raise NotImplementedError(f"{system=} not implemented.")
 
