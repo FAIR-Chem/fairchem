@@ -61,9 +61,7 @@ class DatasetWithSizes(Protocol):
 
 def _ensure_supported(dataset: Any):
     if not isinstance(dataset, Dataset):
-        raise UnsupportedDatasetError(
-            "BalancedBatchSampler requires a dataset."
-        )
+        raise UnsupportedDatasetError("BalancedBatchSampler requires a dataset.")
 
     if not isinstance(dataset, DatasetWithSizes):
         raise UnsupportedDatasetError(
@@ -114,9 +112,7 @@ class BalancedBatchSampler(BatchSampler):
         device: torch.device,
         mode: Union[str, bool] = "atoms",
         shuffle: bool = True,
-        on_error: Literal[
-            "warn_and_balance", "warn_and_no_balance", "raise"
-        ] = "raise",
+        on_error: Literal["warn_and_balance", "warn_and_no_balance", "raise"] = "raise",
         drop_last: bool = False,
     ):
         """
@@ -143,9 +139,7 @@ class BalancedBatchSampler(BatchSampler):
             self.disabled = True
 
         if num_replicas == 1:
-            log.warning(
-                f"Disabled BalancedBatchSampler because {num_replicas=}."
-            )
+            log.warning(f"Disabled BalancedBatchSampler because {num_replicas=}.")
             self.disabled = True
 
         if isinstance(mode, str) and mode != "atoms":
@@ -168,12 +162,13 @@ class BalancedBatchSampler(BatchSampler):
             f"Created BalancedBatchSampler with {sampler=}, {batch_size=}, {drop_last=}"
         )
 
+    def set_epoch(self, epoch: int) -> None:
+        if isinstance(self.sampler, DistributedSampler):
+            self.sampler.set_epoch(epoch)
+
     @staticmethod
     def _dist_enabled():
-        return (
-            torch.distributed.is_available()
-            and torch.distributed.is_initialized()
-        )
+        return torch.distributed.is_available() and torch.distributed.is_initialized()
 
     def _should_disable(self):
         return self.disabled or not self._dist_enabled()
@@ -207,6 +202,4 @@ class BalancedBatchSampler(BatchSampler):
             )
             # Since DistributedSampler pads the last batch
             # this should always have an entry for each replica.
-            yield idx_all[
-                local_idx_balanced[self.distributed_sampler.rank]
-            ].tolist()
+            yield idx_all[local_idx_balanced[self.distributed_sampler.rank]].tolist()
