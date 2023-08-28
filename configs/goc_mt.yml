@@ -73,14 +73,38 @@ dataset:
           n: 100_000_000
           seed: 0
       val:
-        config:
-          src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
-          metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k/metadata.npz
-          oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
-          lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
-          total_energy: True
-        first_n:
-          n: 10_000
+        - config:
+            src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id
+            metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id/metadata.npz
+            oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
+            total_energy: True
+          first_n:
+            n: 5_000
+        - config:
+            src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_ads
+            metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_ads/metadata.npz
+            oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
+            total_energy: True
+          first_n:
+            n: 5_000
+        - config:
+            src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_both
+            metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_both/metadata.npz
+            oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
+            total_energy: True
+          first_n:
+            n: 5_000
+        - config:
+            src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_cat
+            metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_cat/metadata.npz
+            oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
+            total_energy: True
+          first_n:
+            n: 5_000
       key_mapping:
         y: energy
         force: forces
@@ -91,12 +115,18 @@ dataset:
           metadata_path: /checkpoint/nimashoghi/oc22_metadata/train_metadata.npz
           lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
       val:
-        config:
-          src: /large_experiments/opencatalyst/data/oc22/2022_06_16/s2ef/val_id_ef/
-          metadata_path: /checkpoint/nimashoghi/oc22_metadata/val_metadata.npz
-          lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
-        first_n:
-          n: 5_000
+        - config:
+            src: /large_experiments/opencatalyst/data/oc22/2022_06_16/s2ef/val_id_ef/
+            metadata_path: /checkpoint/nimashoghi/oc22_metadata/val_metadata_val_id_ef.npz
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
+          first_n:
+            n: 5_000
+        - config:
+            src: /large_experiments/opencatalyst/data/oc22/2022_06_16/s2ef/val_ood_ef/
+            metadata_path: /checkpoint/nimashoghi/oc22_metadata/val_metadata_val_ood_ef.npz
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
+          first_n:
+            n: 5_000
       key_mapping:
         y: energy
         force: forces
@@ -107,12 +137,12 @@ dataset:
           lin_ref: /checkpoint/bmwood/ani1x_dataset/lmdbs/train/lin_ref_coeffs.npz
           metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/ani1x_metadata.npz
       val:
-        config:
-          src: /checkpoint/bmwood/ani1x_dataset/lmdbs/val/
-          lin_ref: /checkpoint/bmwood/ani1x_dataset/lmdbs/train/lin_ref_coeffs.npz
-          metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/ani1x_val_metadata.npz
-        first_n:
-          n: 5_000
+        - config:
+            src: /checkpoint/bmwood/ani1x_dataset/lmdbs/val/
+            lin_ref: /checkpoint/bmwood/ani1x_dataset/lmdbs/train/lin_ref_coeffs.npz
+            metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/ani1x_val_metadata.npz
+          first_n:
+            n: 5_000
       key_mapping:
         y: energy
         force: forces
@@ -123,12 +153,12 @@ dataset:
           lin_ref: /checkpoint/bmwood/trans1x_dataset/lmdbs/train/lin_ref_coeffs.npz
           metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/transition1x_metadata.npz
       val:
-        config:
-          src: /checkpoint/bmwood/trans1x_dataset/lmdbs/val/
-          lin_ref: /checkpoint/bmwood/trans1x_dataset/lmdbs/train/lin_ref_coeffs.npz
-          metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/transition1x_val_metadata.npz
-        first_n:
-          n: 7_500
+        - config:
+            src: /checkpoint/bmwood/trans1x_dataset/lmdbs/val/
+            lin_ref: /checkpoint/bmwood/trans1x_dataset/lmdbs/train/lin_ref_coeffs.npz
+            metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/transition1x_val_metadata.npz
+          first_n:
+            n: 7_500
       key_mapping:
         y: energy
         force: forces

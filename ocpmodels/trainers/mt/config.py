@@ -138,8 +138,8 @@ class SplitDatasetConfig(TypedConfig):
 
 class TaskDatasetConfig(TypedConfig):
     train: SplitDatasetConfig | None = None
-    val: SplitDatasetConfig | None = None
-    test: SplitDatasetConfig | None = None
+    val: list[SplitDatasetConfig] | None = None
+    test: list[SplitDatasetConfig] | None = None
 
     key_mapping: dict[str, MappedKeyType] = {}
 
@@ -151,9 +151,11 @@ class TaskDatasetConfig(TypedConfig):
 
         if self.copy_from_train and self.train is not None:
             if self.val is not None:
-                self.val.config = {**self.train.config, **self.val.config}
+                for val in self.val:
+                    val.config = {**self.train.config, **val.config}
             if self.test is not None:
-                self.test.config = {**self.train.config, **self.test.config}
+                for test in self.test:
+                    test.config = {**self.train.config, **test.config}
 
 
 class TemperatureSamplingConfig(TypedConfig):
@@ -166,10 +168,7 @@ class FullyBalancedSamplingConfig(TypedConfig):
 
 
 SamplingConfig = Annotated[
-    Union[
-        TemperatureSamplingConfig,
-        FullyBalancedSamplingConfig,
-    ],
+    Union[TemperatureSamplingConfig, FullyBalancedSamplingConfig],
     Field(discriminator="type"),
 ]
 

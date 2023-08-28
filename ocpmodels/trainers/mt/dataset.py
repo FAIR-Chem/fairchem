@@ -1,6 +1,6 @@
-import logging
 from collections import abc
 from functools import partial
+from logging import getLogger
 from typing import Any, List, cast
 
 import numpy as np
@@ -26,6 +26,8 @@ from .config import (
 )
 from .dataset_transform import dataset_transform, expand_dataset
 from .normalizer import normalizer_transform
+
+log = getLogger(__name__)
 
 
 def _update_graph_value(data: Data, key: str, onehot: torch.Tensor):
@@ -53,7 +55,7 @@ def _update_node_value(data: Data, key: str, onehot: torch.Tensor):
 
 
 def _create_split_dataset(
-    config: SplitDatasetConfig,
+    config: dict[str, Any],
     task_idx: int,
     total_num_tasks: int,
     one_hot_targets: OneHotTargetsConfig,
@@ -126,28 +128,37 @@ def _create_task_datasets(
     # Create the train, val, test datasets
     if config.train is not None:
         train_dataset = _create_split_dataset(
-            config.train,
+            config.train.config,
             task_idx,
             total_num_tasks,
             one_hot_targets,
         )
         train_dataset = _apply_transforms(train_dataset, config, task_config)
     if config.val is not None:
-        val_dataset = _create_split_dataset(
-            config.val,
-            task_idx,
-            total_num_tasks,
-            one_hot_targets,
-        )
-        val_dataset = _apply_transforms(val_dataset, config, task_config)
+        datasets: list[Dataset[Any]] = []
+        for val_config in config.val:
+            dataset = _create_split_dataset(
+                val_config.config,
+                task_idx,
+                total_num_tasks,
+                one_hot_targets,
+            )
+            dataset = _apply_transforms(dataset, config, task_config)
+            datasets.append(dataset)
+        val_dataset = ConcatDataset(datasets)
     if config.test is not None:
-        test_dataset = _create_split_dataset(
-            config.test,
-            task_idx,
-            total_num_tasks,
-            one_hot_targets,
-        )
-        test_dataset = _apply_transforms(test_dataset, config, task_config)
+        datasets: list[Dataset[Any]] = []
+        for test_config in config.test:
+            dataset = _create_split_dataset(
+                test_config.config,
+                task_idx,
+                total_num_tasks,
+                one_hot_targets,
+            )
+            dataset = _apply_transforms(dataset, config, task_config)
+            datasets.append(dataset)
+        test_dataset = ConcatDataset(datasets)
+
     return train_dataset, val_dataset, test_dataset
 
 
@@ -194,7 +205,7 @@ def _combine_datasets(sampling: SamplingConfig, datasets: List[Dataset]):
 
     # Normalize the ratios
     ratios = [r / sum(ratios) for r in ratios]
-    logging.info(f"Using {ratios=} for {sampling=}.")
+    log.info(f"Using {ratios=} for {sampling=}.")
 
     # Calculate the expanded dataset sizes
     expanded_dataset_sizes = _merged_dataset(dataset_sizes, ratios)
@@ -206,7 +217,7 @@ def _combine_datasets(sampling: SamplingConfig, datasets: List[Dataset]):
 
     # Combine the datasets
     combined_dataset = ConcatDataset(expanded_datasets)
-    logging.info(
+    log.info(
         f"Combined {len(expanded_datasets)} datasets into {len(combined_dataset)}."
     )
     return combined_dataset
