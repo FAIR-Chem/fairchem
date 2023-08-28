@@ -9,7 +9,7 @@ import math
 import torch
 from torch_scatter import scatter
 
-from ocpmodels.modules.scaling import ScaleFactor
+from ocpmodels.models.gemnet_oc_mt.scaling import ScaleFactor
 
 from .base_layers import Dense, ResidualLayer
 

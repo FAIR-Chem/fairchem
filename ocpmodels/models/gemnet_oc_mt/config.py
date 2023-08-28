@@ -51,8 +51,6 @@ class BackboneConfig(Singleton, TypedConfig):
     dropout: float | None
     scale_file: str | None = None
 
-    replace_scale_factors_with_ln: bool = False
-
     absolute_rbf_cutoff: float | None = None
     learnable_rbf: bool = False
     learnable_rbf_stds: bool = False

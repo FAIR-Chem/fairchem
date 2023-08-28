@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 import torch
 import torch.nn as nn
 
-from fm.modules.scaling import ScaleFactor
+from ocpmodels.models.gemnet_oc_mt.scaling import ScaleFactor
 
 from .basis_utils import get_sph_harm_basis
 from .radial_basis_dynamic_cutoff import GaussianBasis, RadialBasis
@@ -53,12 +53,16 @@ class CircularBasisLayer(nn.Module):
                 start=-1, stop=1, num_gaussians=num_spherical, **cbf_hparams
             )
         elif cbf_name == "spherical_harmonics":
-            self.cosφ_basis = get_sph_harm_basis(num_spherical, zero_m_only=True)
+            self.cosφ_basis = get_sph_harm_basis(
+                num_spherical, zero_m_only=True
+            )
         else:
             raise ValueError(f"Unknown cosine basis function '{cbf_name}'.")
 
     def forward(self, D_ca, cosφ_cab, *, data):
-        rad_basis = self.radial_basis(D_ca, data=data)  # (num_edges, num_radial)
+        rad_basis = self.radial_basis(
+            D_ca, data=data
+        )  # (num_edges, num_radial)
         cir_basis = self.cosφ_basis(cosφ_cab)  # (num_triplets, num_spherical)
 
         if self.scale_basis:
@@ -105,10 +109,14 @@ class SphericalBasisLayer(nn.Module):
         del sbf_hparams["name"]
 
         if sbf_name == "spherical_harmonics":
-            self.spherical_basis = get_sph_harm_basis(num_spherical, zero_m_only=False)
+            self.spherical_basis = get_sph_harm_basis(
+                num_spherical, zero_m_only=False
+            )
 
         elif sbf_name == "legendre_outer":
-            circular_basis = get_sph_harm_basis(num_spherical, zero_m_only=True)
+            circular_basis = get_sph_harm_basis(
+                num_spherical, zero_m_only=True
+            )
             self.spherical_basis = lambda cosφ, ϑ: (
                 circular_basis(cosφ)[:, :, None]
                 * circular_basis(torch.cos(ϑ))[:, None, :]

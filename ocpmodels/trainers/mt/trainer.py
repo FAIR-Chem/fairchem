@@ -1,3 +1,5 @@
+import errno
+import os
 from collections import defaultdict
 from functools import cached_property
 from logging import getLogger
@@ -15,6 +17,11 @@ from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import TypeAdapter
+from ocpmodels.models.gemnet_oc_mt.scaling.compat import load_scales_compat
+from ocpmodels.models.gemnet_oc_mt.scaling.util import (
+    ensure_fitted,
+    load_state_dict,
+)
 from ocpmodels.modules.evaluator import Evaluator
 
 from ..base_trainer import BaseTrainer
@@ -122,6 +129,76 @@ class MTTrainer(BaseTrainer):
             outputs=self.typed_output_targets,
             multi_task=self.multi_task_config,
         )
+
+    @override
+    def train(self, disable_eval_tqdm: bool = False) -> None:
+        ensure_fitted(self._unwrapped_model)
+        super().train(disable_eval_tqdm)
+
+    @override
+    def load_checkpoint(self, checkpoint_path: str) -> None:
+        if not os.path.isfile(checkpoint_path):
+            raise FileNotFoundError(
+                errno.ENOENT, "Checkpoint file not found", checkpoint_path
+            )
+
+        log.info(f"Loading checkpoint from: {checkpoint_path}")
+        map_location = torch.device("cpu") if self.cpu else self.device
+        checkpoint = torch.load(checkpoint_path, map_location=map_location)
+        self.epoch = checkpoint.get("epoch", 0)
+        self.step = checkpoint.get("step", 0)
+        self.best_val_metric = checkpoint.get("best_val_metric", None)
+        self.primary_metric = checkpoint.get("primary_metric", None)
+
+        # Match the "module." count in the keys of model and checkpoint state_dict
+        # DataParallel model has 1 "module.",  DistributedDataParallel has 2 "module."
+        # Not using either of the above two would have no "module."
+
+        ckpt_key_count = next(iter(checkpoint["state_dict"])).count("module")
+        mod_key_count = next(iter(self.model.state_dict())).count("module")
+        key_count_diff = mod_key_count - ckpt_key_count
+
+        if key_count_diff > 0:
+            new_dict = {
+                key_count_diff * "module." + k: v
+                for k, v in checkpoint["state_dict"].items()
+            }
+        elif key_count_diff < 0:
+            new_dict = {
+                k[len("module.") * abs(key_count_diff) :]: v
+                for k, v in checkpoint["state_dict"].items()
+            }
+        else:
+            new_dict = checkpoint["state_dict"]
+
+        strict = self.config["task"].get("strict_load", True)
+        load_state_dict(self.model, new_dict, strict=strict)
+
+        if "optimizer" in checkpoint:
+            self.optimizer.load_state_dict(checkpoint["optimizer"])
+        if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
+            self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
+        if "ema" in checkpoint and checkpoint["ema"] is not None:
+            self.ema.load_state_dict(checkpoint["ema"])
+        else:
+            self.ema = None
+
+        scale_dict = checkpoint.get("scale_dict", None)
+        if scale_dict:
+            log.info(
+                "Overwriting scaling factors with those loaded from checkpoint. "
+                "If you're generating predictions with a pretrained checkpoint, this is the correct behavior. "
+                "To disable this, delete `scale_dict` from the checkpoint. "
+            )
+            load_scales_compat(self._unwrapped_model, scale_dict)
+
+        for key in checkpoint["normalizers"]:
+            if key in self.normalizers:
+                self.normalizers[key].load_state_dict(
+                    checkpoint["normalizers"][key]
+                )
+            if self.scaler and checkpoint["amp"]:
+                self.scaler.load_state_dict(checkpoint["amp"])
 
     @cached_property
     def multi_task_config(self):
@@ -507,7 +584,10 @@ class MTTrainer(BaseTrainer):
         return metrics
 
     @override
+    @torch.no_grad()
+    @torch.inference_mode()
     def validate(self, split: str = "val", disable_tqdm: bool = False):
+        ensure_fitted(self._unwrapped_model, warn=True)
         metrics = super().validate(split, disable_tqdm)
 
         # For the per-task metrics, we compute and return the state here

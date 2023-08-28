@@ -9,7 +9,6 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
-from fm.datasets.utils.goc_graph import graphs_from_batch
 from torch_geometric.data import Batch
 from torch_scatter import segment_coo
 from typing_extensions import override
@@ -17,10 +16,11 @@ from typing_extensions import override
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import TypedModuleList
 from ocpmodels.models.base import BaseModel
-from ocpmodels.modules.scaling.compat import load_scales_compat
+from ocpmodels.models.gemnet_oc_mt.scaling.compat import load_scales_compat
 
 from .bases import Bases, BasesOutput
 from .config import BackboneConfig, BasesConfig
+from .goc_graph import graphs_from_batch
 from .interaction_indices import (
     get_mixed_triplets,
     get_quadruplets,

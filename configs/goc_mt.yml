@@ -257,7 +257,7 @@ model:
   extensive: True
   output_init: HeOrthogonal
   activation: silu
-  scale_file: configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
+  scale_file: /private/home/nimashoghi/workspaces/ocp/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc-large.pt
 
   regress_forces: True
   direct_forces: True
@@ -289,4 +289,3 @@ optim:
   max_epochs: 80
   ema_decay: 0.999
   clip_grad_norm: 10
-  weight_decay: 0
