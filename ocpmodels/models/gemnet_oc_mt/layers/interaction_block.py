@@ -8,7 +8,7 @@ import math
 
 import torch
 
-from ocpmodels.models.gemnet_oc_mt.scaling import ScaleFactor
+from ocpmodels.trainers.mt.scaling import ScaleFactor
 
 from .atom_update_block import AtomUpdateBlock
 from .base_layers import Dense, ResidualLayer

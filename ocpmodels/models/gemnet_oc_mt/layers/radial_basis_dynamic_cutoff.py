@@ -14,7 +14,7 @@ import torch.nn as nn
 from scipy.special import binom
 from torch_geometric.data import Batch
 
-from ocpmodels.models.gemnet_oc_mt.scaling import ScaleFactor
+from ocpmodels.trainers.mt.scaling import ScaleFactor
 
 from ..config import BackboneConfig
 

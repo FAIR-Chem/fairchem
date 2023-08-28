@@ -17,11 +17,6 @@ from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import TypeAdapter
-from ocpmodels.models.gemnet_oc_mt.scaling.compat import load_scales_compat
-from ocpmodels.models.gemnet_oc_mt.scaling.util import (
-    ensure_fitted,
-    load_state_dict,
-)
 from ocpmodels.modules.evaluator import Evaluator
 
 from ..base_trainer import BaseTrainer
@@ -40,6 +35,8 @@ from .config import (
 from .dataset import create_datasets
 from .loss import create_losses
 from .normalizer import denormalize_context, denormalize_tensors
+from .scaling.compat import load_scales_compat
+from .scaling.util import ensure_fitted, load_state_dict
 
 log = getLogger(__name__)
 
@@ -132,11 +129,15 @@ class MTTrainer(BaseTrainer):
 
     @override
     def train(self, disable_eval_tqdm: bool = False) -> None:
+        # Same as the base trainer, except we need to use our own ScaleFactor implementation.
+
         ensure_fitted(self._unwrapped_model)
         super().train(disable_eval_tqdm)
 
     @override
     def load_checkpoint(self, checkpoint_path: str) -> None:
+        # Same as the base trainer, except we need to use our own ScaleFactor implementation.
+
         if not os.path.isfile(checkpoint_path):
             raise FileNotFoundError(
                 errno.ENOENT, "Checkpoint file not found", checkpoint_path
@@ -172,13 +173,16 @@ class MTTrainer(BaseTrainer):
             new_dict = checkpoint["state_dict"]
 
         strict = self.config["task"].get("strict_load", True)
-        load_state_dict(self.model, new_dict, strict=strict)
+        _ = load_state_dict(self.model, new_dict, strict=strict)
 
         if "optimizer" in checkpoint:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
         if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
             self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
         if "ema" in checkpoint and checkpoint["ema"] is not None:
+            assert (
+                self.ema is not None
+            ), "EMA not initialized but found in checkpoint."
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None

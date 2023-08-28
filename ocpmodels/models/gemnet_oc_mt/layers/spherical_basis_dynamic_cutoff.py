@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 import torch
 import torch.nn as nn
 
-from ocpmodels.models.gemnet_oc_mt.scaling import ScaleFactor
+from ocpmodels.trainers.mt.scaling import ScaleFactor
 
 from .basis_utils import get_sph_harm_basis
 from .radial_basis_dynamic_cutoff import GaussianBasis, RadialBasis
