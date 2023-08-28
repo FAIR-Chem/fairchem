@@ -1,3 +1,4 @@
+from collections import Counter
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Union
 
@@ -218,6 +219,30 @@ def validate_all_configs(
     multi_task: MultiTaskConfig,
 ):
     num_tasks = len(multi_task.tasks)
+
+    # Make sure that the task_idx is in the range [0, num_tasks) and is in order
+    for i, task in enumerate(multi_task.tasks):
+        if task.idx < 0 or task.idx >= num_tasks:
+            raise ValueError(
+                f"{task.name} has idx={task.idx} which is not in the range [0, {num_tasks})."
+            )
+        if task.idx != i:
+            raise ValueError(
+                f"{task.name} has idx={task.idx} which is not in order."
+            )
+
+    # Make sure the task names are unique
+    duplicate_names = [
+        name
+        for name, count in Counter(
+            [task.name for task in multi_task.tasks]
+        ).items()
+        if count > 1
+    ]
+    if duplicate_names:
+        raise ValueError(
+            f"Task names must be unique but found {duplicate_names=}."
+        )
 
     # Validate dataset config
     if len(dataset.datasets) != num_tasks:
