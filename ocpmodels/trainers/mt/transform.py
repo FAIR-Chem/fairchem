@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from functools import partial
 
 import torch
@@ -14,6 +15,11 @@ from ocpmodels.models.gemnet_oc_mt.goc_graph import (
 )
 
 from .config import MultiTaskConfig
+
+
+@dataclass
+class TransformConfigs:
+    mt: MultiTaskConfig
 
 
 def _process_aint_graph(

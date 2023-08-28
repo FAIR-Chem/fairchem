@@ -168,11 +168,9 @@ logger: tensorboard
 loss_functions:
   - target: energy
     fn: mae
-    coefficient: 1
     per_task: True
   - target: forces
     fn: l2mae
-    coefficient: 100
     per_task: True
 
 evaluation_metrics:

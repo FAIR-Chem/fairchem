@@ -168,6 +168,10 @@ class BalancedBatchSampler(BatchSampler):
             f"Created BalancedBatchSampler with {sampler=}, {batch_size=}, {drop_last=}"
         )
 
+    def set_epoch(self, epoch: int) -> None:
+        if isinstance(self.sampler, DistributedSampler):
+            self.sampler.set_epoch(epoch)
+
     @staticmethod
     def _dist_enabled():
         return (
