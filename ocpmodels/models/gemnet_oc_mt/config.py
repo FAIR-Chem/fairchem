@@ -1,9 +1,6 @@
-from pathlib import Path
-from typing import Any, Callable
-
-import torch
-from ll import Singleton, TypedConfig
 from typing_extensions import override
+
+from ocpmodels.common.typed_config import Singleton, TypedConfig
 
 
 class BackboneConfig(Singleton, TypedConfig):
@@ -135,7 +132,12 @@ class BackboneConfig(Singleton, TypedConfig):
         _ = model_config.pop("scale_file", None)
 
         for key in list(model_config.keys()):
-            if any([key.startswith(prefix) for prefix in ["cutoff", "max_neighbors"]]):
+            if any(
+                [
+                    key.startswith(prefix)
+                    for prefix in ["cutoff", "max_neighbors"]
+                ]
+            ):
                 _ = model_config.pop(key)
 
         model_config.update(kwargs)
@@ -218,24 +220,21 @@ class BackboneConfig(Singleton, TypedConfig):
         _ = model_config.pop("scale_file", None)
 
         for key in list(model_config.keys()):
-            if any([key.startswith(prefix) for prefix in ["cutoff", "max_neighbors"]]):
+            if any(
+                [
+                    key.startswith(prefix)
+                    for prefix in ["cutoff", "max_neighbors"]
+                ]
+            ):
                 _ = model_config.pop(key)
 
         model_config.update(kwargs)
         config = cls.from_dict(model_config)
         return config
 
-    @classmethod
-    def from_ckpt(
-        cls,
-        ckpt_path: Path | str,
-        transform: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
-    ):
-        ckpt = torch.load(ckpt_path, map_location="cpu")
-        config = ckpt["config"]
-        if transform is not None:
-            config = transform(config)
-        return cls(**config)
+    @override
+    def __post_init__(self):
+        pass
 
 
 class BasesConfig(TypedConfig):

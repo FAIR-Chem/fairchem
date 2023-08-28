@@ -3,9 +3,10 @@ from typing import TypedDict
 
 import torch
 import torch.nn as nn
-from ll.util.typed import TypedModuleList
 from torch_geometric.data import Batch
 from torch_sparse import SparseTensor
+
+from ocpmodels.common.typing import TypedModuleList
 
 from .config import BasesConfig
 from .layers.base_layers import Dense
@@ -19,7 +20,8 @@ from .layers.spherical_basis_dynamic_cutoff import (
 from .utils import get_angle, inner_product_clamped
 
 TripletIn = TypedDict(
-    "TripletIn", {"adj_edges": SparseTensor, "in": torch.Tensor, "out": torch.Tensor}
+    "TripletIn",
+    {"adj_edges": SparseTensor, "in": torch.Tensor, "out": torch.Tensor},
 )
 TripletOut = TypedDict("TripletOut", {"in": torch.Tensor, "out": torch.Tensor})
 
@@ -131,7 +133,11 @@ class Bases(nn.Module):
     def _add_shared_param(self, param: nn.Parameter, factor: int | float):
         if (
             shared_param_idx := next(
-                (i for i, p in enumerate(self.shared_parameters) if p[0] is param),
+                (
+                    i
+                    for i, p in enumerate(self.shared_parameters)
+                    if p[0] is param
+                ),
                 None,
             )
         ) is not None:
@@ -292,7 +298,9 @@ class Bases(nn.Module):
             bias=False,
         )
         self.mlp_cbf_tint = BasisEmbedding(
-            self.config.num_radial, self.config.emb_size_cbf, self.config.num_spherical
+            self.config.num_radial,
+            self.config.emb_size_cbf,
+            self.config.num_spherical,
         )
 
         # Share the dense Layer of the atom embedding block accross the interaction blocks
@@ -385,7 +393,9 @@ class Bases(nn.Module):
         num_atoms: int,
     ):
         """Calculate and transform basis functions."""
-        basis_rad_main_raw = self.radial_basis(main_graph["distance"], data=data)
+        basis_rad_main_raw = self.radial_basis(
+            main_graph["distance"], data=data
+        )
 
         # Calculate triplet angles
         cosφ_cab = inner_product_clamped(
@@ -532,7 +542,9 @@ class TaskSpecificBases(nn.Module):
     def __init__(self, task_configs: list[BasesConfig]):
         super().__init__()
 
-        self.bases_layers = TypedModuleList([Bases(config) for config in task_configs])
+        self.bases_layers = TypedModuleList(
+            [Bases(config) for config in task_configs]
+        )
 
         self.shared_parameters: list[tuple[nn.Parameter, int]] = []
         for layer in self.bases_layers:
@@ -582,12 +594,16 @@ class TaskSpecificBases(nn.Module):
             if bases is None:
                 bases = bases_task
 
-            task_mask_node = (task_idx_node == idx).unsqueeze(-1)  # (n_nodes, 1)
+            task_mask_node = (task_idx_node == idx).unsqueeze(
+                -1
+            )  # (n_nodes, 1)
             task_mask_main_graph = (task_idx_main_graph == idx).unsqueeze(
                 -1
             )  # (n_edges_main, 1)
 
-            task_mask_triplets_qint = (task_idx_triplets_qint == idx).unsqueeze(
+            task_mask_triplets_qint = (
+                task_idx_triplets_qint == idx
+            ).unsqueeze(
                 -1
             )  # (n_triplets_qint, 1)
             task_mask_a2ee2a_graph = (task_idx_a2ee2a_graph == idx).unsqueeze(
@@ -599,7 +615,9 @@ class TaskSpecificBases(nn.Module):
             bases.output += task_mask_main_graph * bases_task.output
 
             bases.qint["rad"] += task_mask_main_graph * bases_task.qint["rad"]
-            bases.qint["cir"] += task_mask_triplets_qint * bases_task.qint["cir"]
+            bases.qint["cir"] += (
+                task_mask_triplets_qint * bases_task.qint["cir"]
+            )
             bases.qint["sph"][0] += (
                 task_mask_main_graph.unsqueeze(-1) * bases_task.qint["sph"][0]
             )
@@ -633,6 +651,8 @@ class TaskSpecificBases(nn.Module):
 
             if bases.a2a_rad is not None:
                 assert bases_task.a2a_rad is not None
-                bases.a2a_rad += task_mask_node.unsqueeze(-1) * bases_task.a2a_rad
+                bases.a2a_rad += (
+                    task_mask_node.unsqueeze(-1) * bases_task.a2a_rad
+                )
 
         return bases
