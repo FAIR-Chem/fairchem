@@ -105,7 +105,35 @@ LossFnsConfig = Annotated[list[LossFnConfig], Field()]
 
 
 # region Dataset Config
-SplitDatasetConfig = dict[str, Any]
+
+
+class SplitDatasetFirstNConfig(TypedConfig):
+    n: int
+
+
+class SplitDatasetSampleNConfig(TypedConfig):
+    n: int
+    seed: int
+
+
+class SplitDatasetConfig(TypedConfig):
+    config: dict[str, Any]
+
+    first_n: SplitDatasetFirstNConfig | None = None
+    sample_n: SplitDatasetSampleNConfig | None = None
+
+    key_mapping: dict[str, MappedKeyType] | None = None
+
+    @override
+    def __post_init__(self):
+        super().__post_init__()
+
+        # Make sure train/val/test don't have "key_mapping"
+        # (since it's already been applied)
+        if self.key_mapping:
+            raise ValueError(
+                "Per-split key_mapping is not supported. Please use the task-level key_mapping instead."
+            )
 
 
 class TaskDatasetConfig(TypedConfig):
@@ -123,17 +151,9 @@ class TaskDatasetConfig(TypedConfig):
 
         if self.copy_from_train and self.train is not None:
             if self.val is not None:
-                self.val = {**self.train, **self.val}
+                self.val.config = {**self.train.config, **self.val.config}
             if self.test is not None:
-                self.test = {**self.train, **self.test}
-
-        # Make sure train/val/test don't have "key_mapping"
-        # (since it's already been applied)
-        for config in [self.train, self.val, self.test]:
-            if config and "key_mapping" in config:
-                raise ValueError(
-                    "Per-split key_mapping is not supported. Please use the task-level key_mapping instead."
-                )
+                self.test.config = {**self.train.config, **self.test.config}
 
 
 class TemperatureSamplingConfig(TypedConfig):
