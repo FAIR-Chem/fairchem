@@ -277,7 +277,7 @@ optim:
   batch_size: 4
   eval_batch_size: 4
   load_balancing: atoms
-  eval_every: 5000
+  eval_every: 10_000
   num_workers: 2
   lr_initial: 5.e-4
   optimizer: AdamW

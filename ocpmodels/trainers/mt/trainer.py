@@ -18,6 +18,7 @@ from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import TypeAdapter
 from ocpmodels.modules.evaluator import Evaluator
+from ocpmodels.common.utils import save_checkpoint
 
 from ..base_trainer import BaseTrainer
 from .balanced_batch_sampler import BalancedBatchSampler
@@ -135,6 +136,23 @@ class MTTrainer(BaseTrainer):
         ensure_fitted(self._unwrapped_model)
         super().train(disable_eval_tqdm)
 
+    def _all_per_task_metric_objects(self):
+        keys = [
+            "train_per_task_steps",
+            "train_per_task_energy_maes",
+            "val_per_task_energy_maes",
+            "train_per_task_force_maes",
+            "val_per_task_force_maes",
+        ]
+
+        for key in keys:
+            value: dict[int, torchmetrics.Metric] = getattr(self, key)
+            metrics: list[torchmetrics.Metric] = []
+            for task_idx in range(self.num_tasks):
+                metric = value[task_idx]
+                metrics.append(metric)
+            yield key, metrics
+
     @override
     def load_checkpoint(self, checkpoint_path: str) -> None:
         # Same as the base trainer, except we need to use our own ScaleFactor implementation.
@@ -205,6 +223,85 @@ class MTTrainer(BaseTrainer):
             if self.scaler and checkpoint["amp"]:
                 self.scaler.load_state_dict(checkpoint["amp"])
 
+        per_task_metrics = checkpoint.get("per_task_metrics", None)
+        if per_task_metrics:
+            for key, metrics in self._all_per_task_metric_objects():
+                metrics_dict = per_task_metrics.get(key, None)
+                if not metrics_dict:
+                    continue
+
+                for task_idx, metric in enumerate(metrics):
+                    _ = metric.load_state_dict(metrics_dict[task_idx])
+
+    @override
+    def save(
+        self,
+        metrics=None,
+        checkpoint_file: str = "checkpoint.pt",
+        training_state: bool = True,
+    ):
+        if not self.is_debug and distutils.is_master():
+            if training_state:
+                return save_checkpoint(
+                    {
+                        "epoch": self.epoch,
+                        "step": self.step,
+                        "state_dict": self.model.state_dict(),
+                        "optimizer": self.optimizer.state_dict(),
+                        "scheduler": self.scheduler.scheduler.state_dict()
+                        if self.scheduler.scheduler_type != "Null"
+                        else None,
+                        "normalizers": {
+                            key: value.state_dict()
+                            for key, value in self.normalizers.items()
+                        },
+                        "config": self.config,
+                        "val_metrics": metrics,
+                        "per_task_metrics": {
+                            key: {
+                                task_idx: metric.state_dict()
+                                for task_idx, metric in enumerate(metrics)
+                            }
+                            for key, metrics in self._all_per_task_metric_objects()
+                        },
+                        "ema": self.ema.state_dict() if self.ema else None,
+                        "amp": self.scaler.state_dict()
+                        if self.scaler
+                        else None,
+                        "best_val_metric": self.best_val_metric,
+                        "primary_metric": self.evaluation_metrics.get(
+                            "primary_metric",
+                            self.evaluator.task_primary_metric[self.name],
+                        ),
+                    },
+                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
+                    checkpoint_file=checkpoint_file,
+                )
+            else:
+                if self.ema is not None:
+                    self.ema.store()
+                    self.ema.copy_to()
+                ckpt_path = save_checkpoint(
+                    {
+                        "state_dict": self.model.state_dict(),
+                        "normalizers": {
+                            key: value.state_dict()
+                            for key, value in self.normalizers.items()
+                        },
+                        "config": self.config,
+                        "val_metrics": metrics,
+                        "amp": self.scaler.state_dict()
+                        if self.scaler
+                        else None,
+                    },
+                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
+                    checkpoint_file=checkpoint_file,
+                )
+                if self.ema:
+                    self.ema.restore()
+                return ckpt_path
+        return None
+
     @cached_property
     def multi_task_config(self):
         return TypeAdapter(MultiTaskConfig).validate_python(
@@ -245,9 +342,11 @@ class MTTrainer(BaseTrainer):
         if self.multi_task_config.log_task_steps_and_epochs:
             self.train_per_task_steps: dict[int, torchmetrics.SumMetric] = {}
             for task_idx in range(self.num_tasks):
-                metric = torchmetrics.SumMetric()
+                metric = torchmetrics.SumMetric().to(self.device)
                 metric.persistent(True)
                 self.train_per_task_steps[task_idx] = metric
+        else:
+            self.train_per_task_steps = None
 
         self.train_per_task_energy_maes = {
             task_idx: torchmetrics.MeanAbsoluteError().to(self.device)
@@ -539,7 +638,7 @@ class MTTrainer(BaseTrainer):
             metric = self.train_per_task_steps[task.idx]
             metric(task_idx[task.idx])
 
-            step = metric.compute()
+            step = metric.compute().item()
             metrics = self.evaluator.update(f"{task.name}_step", step, metrics)
 
             epoch = step / self._train_dataset_sizes[task.idx]
@@ -569,6 +668,9 @@ class MTTrainer(BaseTrainer):
         )
 
         metrics: Dict[str, Any] = {}
+        if not is_eval:
+            metrics.update(self._per_task_step_epoch_metrics(batch_list))
+
         for task in self.multi_task_config.tasks:
             mask = torch.cat(
                 [batch.task_mask.to(self.device) for batch in batch_list]
