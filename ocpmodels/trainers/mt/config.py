@@ -9,6 +9,7 @@ from ocpmodels.models.gemnet_oc_mt.config import (
     BackboneConfig as GOCBackboneConfig,
 )
 
+from ...common.utils import MappedKeyType
 from .normalizer import NormalizerTargetConfig
 
 
@@ -96,7 +97,7 @@ class SplitDatasetConfig(TypedConfig):
     format: str
     src: str
 
-    key_mapping: dict[str, str] = {}
+    key_mapping: dict[str, MappedKeyType] = {}
     transforms: list[Any] = []
 
 

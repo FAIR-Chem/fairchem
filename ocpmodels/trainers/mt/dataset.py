@@ -1,5 +1,6 @@
 import logging
 from collections import abc
+from functools import partial
 from typing import Any, List, cast
 
 import numpy as np
@@ -10,7 +11,7 @@ from torch.utils.data import ConcatDataset, Dataset
 from torch_geometric.data import Data
 
 from ocpmodels.common.registry import registry
-from ocpmodels.tasks import task
+from ocpmodels.common.utils import apply_key_mapping
 
 from .config import (
     DatasetConfig,
@@ -92,12 +93,22 @@ def _create_split_dataset(
     return dataset
 
 
-def _apply_normalization_transform(
+def _apply_transforms(
     dataset: Dataset[Any],
+    config: SplitDatasetConfig,
     task_config: TaskConfig,
 ):
-    tranform = normalizer_transform(task_config.normalization)
-    dataset = dataset_transform(dataset, tranform)
+    if config.key_mapping:
+        dataset = dataset_transform(
+            dataset,
+            partial(apply_key_mapping, key_mapping=config.key_mapping),
+        )
+
+    if task_config.normalization:
+        dataset = dataset_transform(
+            dataset,
+            normalizer_transform(task_config.normalization),
+        )
     return dataset
 
 
@@ -120,8 +131,8 @@ def _create_task_datasets(
             total_num_tasks,
             one_hot_targets,
         )
-        train_dataset = _apply_normalization_transform(
-            train_dataset, task_config
+        train_dataset = _apply_transforms(
+            train_dataset, config.train, task_config
         )
     if config.val is not None:
         val_dataset = _create_split_dataset(
@@ -130,7 +141,7 @@ def _create_task_datasets(
             total_num_tasks,
             one_hot_targets,
         )
-        val_dataset = _apply_normalization_transform(val_dataset, task_config)
+        val_dataset = _apply_transforms(val_dataset, config.val, task_config)
     if config.test is not None:
         test_dataset = _create_split_dataset(
             config.test,
@@ -138,8 +149,8 @@ def _create_task_datasets(
             total_num_tasks,
             one_hot_targets,
         )
-        test_dataset = _apply_normalization_transform(
-            test_dataset, task_config
+        test_dataset = _apply_transforms(
+            test_dataset, config.test, task_config
         )
     return train_dataset, val_dataset, test_dataset
 

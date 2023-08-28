@@ -1318,9 +1318,12 @@ def get_loss_module(loss_name):
     return loss_fn
 
 
+MappedKeyType = Union[str, Dict[str, str], Dict[int, str]]
+
+
 def apply_key_mapping(
     data: Data,
-    key_mapping: Dict[str, Union[str, Dict[str, str], Dict[int, str]]],
+    key_mapping: Dict[str, MappedKeyType],
 ):
     for from_, to_ in key_mapping.items():
         # If the to_ key is already present, raise an error
