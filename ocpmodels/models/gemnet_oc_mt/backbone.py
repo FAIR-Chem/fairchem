@@ -5,7 +5,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, TypedDict
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -15,6 +15,8 @@ from torch_geometric.data import Batch
 from torch_scatter import segment_coo
 from typing_extensions import override
 
+from ocpmodels.common.registry import registry
+from ocpmodels.models.base import BaseModel
 from ocpmodels.modules.scaling.compat import load_scales_compat
 
 from .bases import Bases, BasesOutput
@@ -35,16 +37,6 @@ from .utils import (
     inner_product_clamped,
     repeat_blocks,
 )
-
-
-class GOCBackboneOutput(TypedDict):
-    idx_s: torch.Tensor
-    idx_t: torch.Tensor
-    V_st: torch.Tensor
-    D_st: torch.Tensor
-
-    energy: torch.Tensor
-    forces: torch.Tensor
 
 
 class FinalMLP(nn.Module):
@@ -158,7 +150,8 @@ class TaskSpecificForcesFinalMLP(TaskSpecificFinalMLP):
         return task_idx
 
 
-class GemNetOCBackbone(nn.Module):
+@registry.register_model("gemnet_oc_mt")
+class GemNetOCBackbone(BaseModel):
 
     """
     Arguments
@@ -273,6 +266,7 @@ class GemNetOCBackbone(nn.Module):
 
     def __init__(
         self,
+        output_targets: dict,
         config: BackboneConfig,
         *,
         num_targets: int,
@@ -324,7 +318,11 @@ class GemNetOCBackbone(nn.Module):
         edge_dropout: float | None = None,
         **kwargs,
     ):
-        super().__init__()
+        super().__init__(
+            output_targets=output_targets,
+            node_embedding_dim=emb_size_atom,
+            edge_embedding_dim=emb_size_edge,
+        )
 
         self.shared_parameters: list[tuple[nn.Parameter, int]] = []
 
@@ -750,12 +748,8 @@ class GemNetOCBackbone(nn.Module):
             quad_idx,
         )
 
-    def forward(
-        self,
-        data: Batch,
-        *,
-        h: torch.Tensor,
-    ):
+    @override
+    def _forward(self, data: Batch):
         pos = data.pos
         # batch = data.batch
         # atomic_numbers = data.atomic_numbers.long()
@@ -882,12 +876,10 @@ class GemNetOCBackbone(nn.Module):
         else:
             x_E = None
 
-        out: GOCBackboneOutput = {
-            "energy": x_E,
-            "forces": x_F,
-            "V_st": main_graph["vector"],
-            "D_st": main_graph["distance"],
-            "idx_s": idx_s,
-            "idx_t": idx_t,
+        outputs = {
+            "edge_idx": idx_t,
+            "edge_vec": main_graph["vector"],
+            "node_embedding": x_E,
+            "edge_embedding": x_F,
         }
-        return out
+        return outputs

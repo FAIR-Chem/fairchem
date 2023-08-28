@@ -2,7 +2,14 @@ from abc import ABC
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Mapping, cast
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    ValidationError,
+    field_validator,
+)
 from typing_extensions import Self, dataclass_transform
 
 log = getLogger(__name__)
@@ -53,5 +60,6 @@ __all__ = [
     "Field",
     "TypeAdapter",
     "TypedConfig",
+    "ValidationError",
     "field_validator",
 ]

@@ -23,7 +23,10 @@ from .config import (
     AtomLevelOutputHeadConfig,
     DatasetConfig,
     LossFnsConfig,
+    ModelConfig,
+    MultiTaskConfig,
     OutputsConfig,
+    validate_all_configs,
 )
 from .dataset import create_datasets
 from .loss import create_losses
@@ -111,9 +114,23 @@ class MTTrainer(BaseTrainer):
             local_rank,
             amp,
             cpu,
+            name,
             slurm,
             noddp,
-            name,
+        )
+
+        validate_all_configs(
+            dataset=self.dataset_config,
+            loss_fns=self.loss_config,
+            model=self.model_config,
+            outputs=self.typed_output_targets,
+            multi_task=self.multi_task_config,
+        )
+
+    @cached_property
+    def multi_task_config(self):
+        return TypeAdapter(MultiTaskConfig).validate_python(
+            self.config["task"].get("mt", {})
         )
 
     @override
@@ -160,6 +177,13 @@ class MTTrainer(BaseTrainer):
             for task_idx in range(len(self.dataset_config.datasets))
         }
 
+    @cached_property
+    def model_config(self):
+        model_config_dict: dict = self.config["model_attributes"].copy()
+        model_config_dict["name"] = self.config["model"]
+
+        return TypeAdapter(ModelConfig).validate_python(model_config_dict)
+
     @override
     def load_model(self) -> None:
         # Build model
@@ -168,6 +192,7 @@ class MTTrainer(BaseTrainer):
 
         self.model = registry.get_model_class(self.config["model"])(
             self.per_task_output_targets,
+            self.model_config,
             **self.config["model_attributes"],
         ).to(self.device)
 

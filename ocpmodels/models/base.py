@@ -152,7 +152,21 @@ class BaseModel(nn.Module):
             edge_idx = out["edge_idx"]
 
             # (nedges, (2*irrep_dim+1))
-            sphharm = o3.spherical_harmonics(irrep, edge_vec, True).detach()
+            if self.output_targets[target].get("use_raw_edge_vecs", False):
+                # Because `edge_vec` contains normalized direction vectors,
+                # `o3.spherical_harmonics(edge_vec)` will just return a
+                # scaled up version of the edge_vecs. To avoid this, we
+                # just use the raw edge_vecs.
+                # This is used to reproduce the results of the original
+                # FM model.
+                assert (
+                    self.output_targets[target]["irrep_dim"] == 1
+                ), "Only irrep_dim=1 is supported when use_raw_edge_vecs=True"
+                sphharm = edge_vec
+            else:
+                sphharm = o3.spherical_harmonics(
+                    irrep, edge_vec, True
+                ).detach()
             # (nedges, 1)
             pred = self.module_dict[target](out["edge_embedding"])
             # (nedges, 2*irrep-dim+1)

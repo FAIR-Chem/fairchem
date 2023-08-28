@@ -5,6 +5,9 @@ import torch
 from typing_extensions import Annotated, override
 
 from ocpmodels.common.typed_config import Field, TypedConfig
+from ocpmodels.models.gemnet_oc_mt.config import (
+    BackboneConfig as GOCBackboneConfig,
+)
 
 
 # region Output Head Config
@@ -35,6 +38,7 @@ class AtomLevelOutputHeadConfig(BaseOutputHeadConfig):
     irrep_dim: int
     train_on_free_atoms: bool = True
     eval_on_free_atoms: bool = True
+    use_raw_edge_vecs: bool = False
 
     @override
     def __post_init__(self):
@@ -43,6 +47,11 @@ class AtomLevelOutputHeadConfig(BaseOutputHeadConfig):
         if self.irrep_dim != 1:
             raise NotImplementedError(
                 f"Only irrep_dim=1 is supported for the MT trainer."
+            )
+
+        if not self.use_raw_edge_vecs:
+            raise NotImplementedError(
+                f"Only use_raw_edge_vecs=True is supported for the MT trainer."
             )
 
 
@@ -145,6 +154,17 @@ class DatasetConfig(TypedConfig):
 # endregion
 
 
+# region Model Config
+
+
+class GemNetOCModelConfig(GOCBackboneConfig):
+    name: Literal["gemnet_oc_mt"] = "gemnet_oc_mt"
+
+
+ModelConfig = Annotated[GemNetOCModelConfig, Field(discriminator="name")]
+
+# endregion
+
 # region MultiTask Config
 
 
@@ -167,3 +187,34 @@ class MultiTaskConfig(TypedConfig):
 
 
 # endregion
+
+
+def validate_all_configs(
+    *,
+    dataset: DatasetConfig,
+    loss_fns: LossFnsConfig,
+    model: ModelConfig,
+    outputs: OutputsConfig,
+    multi_task: MultiTaskConfig,
+):
+    num_tasks = len(multi_task.tasks)
+
+    # Validate dataset config
+    if len(dataset.datasets) != num_tasks:
+        raise ValueError(
+            f"Number of datasets ({len(dataset.datasets)}) must match number of tasks ({num_tasks})."
+        )
+
+    # Validate loss config
+    if len(loss_fns) != num_tasks:
+        raise ValueError(
+            f"Number of loss functions ({len(loss_fns)}) must match number of tasks ({num_tasks})."
+        )
+
+    # Validate model config
+    _ = model
+
+    # Validate outputs config
+    for name, output in outputs.items():
+        if not output.per_task:
+            raise ValueError(f"Output {name} must have per_task=True.")
