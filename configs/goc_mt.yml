@@ -68,10 +68,8 @@ dataset:
           y: energy
           force: forces
       val:
-        format: lmdb
         src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
       test:
-        format: lmdb
         src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
     - train:
         format: lmdb
@@ -80,10 +78,8 @@ dataset:
           y: energy
           force: forces
       val:
-        format: lmdb
         src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
       test:
-        format: lmdb
         src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
 
 logger: tensorboard

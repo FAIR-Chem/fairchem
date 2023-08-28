@@ -11,7 +11,7 @@ from torch.utils.data import ConcatDataset, Dataset
 from torch_geometric.data import Data
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import apply_key_mapping
+from ocpmodels.common.utils import MappedKeyType, apply_key_mapping
 
 from .config import (
     DatasetConfig,
@@ -95,13 +95,13 @@ def _create_split_dataset(
 
 def _apply_transforms(
     dataset: Dataset[Any],
-    config: SplitDatasetConfig,
+    key_mapping: dict[str, MappedKeyType],
     task_config: TaskConfig,
 ):
-    if config.key_mapping:
+    if key_mapping:
         dataset = dataset_transform(
             dataset,
-            partial(apply_key_mapping, key_mapping=config.key_mapping),
+            partial(apply_key_mapping, key_mapping=key_mapping),
         )
 
     if task_config.normalization:
@@ -125,6 +125,7 @@ def _create_task_datasets(
 
     # Create the train, val, test datasets
     if config.train is not None:
+        key_mapping = config.train.pop("key_mapping", {})
         train_dataset = _create_split_dataset(
             config.train,
             task_idx,
@@ -132,17 +133,25 @@ def _create_task_datasets(
             one_hot_targets,
         )
         train_dataset = _apply_transforms(
-            train_dataset, config.train, task_config
+            train_dataset,
+            key_mapping,
+            task_config,
         )
     if config.val is not None:
+        key_mapping = config.val.pop("key_mapping", {})
         val_dataset = _create_split_dataset(
             config.val,
             task_idx,
             total_num_tasks,
             one_hot_targets,
         )
-        val_dataset = _apply_transforms(val_dataset, config.val, task_config)
+        val_dataset = _apply_transforms(
+            val_dataset,
+            key_mapping,
+            task_config,
+        )
     if config.test is not None:
+        key_mapping = config.test.pop("key_mapping", {})
         test_dataset = _create_split_dataset(
             config.test,
             task_idx,
@@ -150,7 +159,9 @@ def _create_task_datasets(
             one_hot_targets,
         )
         test_dataset = _apply_transforms(
-            test_dataset, config.test, task_config
+            test_dataset,
+            key_mapping,
+            task_config,
         )
     return train_dataset, val_dataset, test_dataset
 

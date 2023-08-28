@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Literal, Union
+from typing import Any, Callable, Literal, TypedDict, Union
 
 import torch
 from typing_extensions import Annotated, override
@@ -93,12 +93,7 @@ LossFnsConfig = Annotated[list[LossFnConfig], Field()]
 
 
 # region Dataset Config
-class SplitDatasetConfig(TypedConfig):
-    format: str
-    src: str
-
-    key_mapping: dict[str, MappedKeyType] = {}
-    transforms: list[Any] = []
+SplitDatasetConfig = dict[str, Any]
 
 
 class TaskDatasetConfig(TypedConfig):
@@ -114,15 +109,9 @@ class TaskDatasetConfig(TypedConfig):
 
         if self.copy_from_train and self.train is not None:
             if self.val is not None:
-                if not self.val.key_mapping:
-                    self.val.key_mapping = self.train.key_mapping.copy()
-                if not self.val.transforms:
-                    self.val.transforms = self.train.transforms.copy()
+                self.val = {**self.train, **self.val}
             if self.test is not None:
-                if not self.test.key_mapping:
-                    self.test.key_mapping = self.train.key_mapping.copy()
-                if not self.test.transforms:
-                    self.test.transforms = self.train.transforms.copy()
+                self.test = {**self.train, **self.test}
 
 
 class TemperatureSamplingConfig(TypedConfig):
