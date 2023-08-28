@@ -86,6 +86,6 @@ def expand_dataset(dataset: Dataset, n: int) -> Dataset:
 
     dataset = cast(Dataset, _ExpandedDataset(dataset))
     log.info(
-        f"Expanded dataset {dataset.__class__.__name__} from {og_size} to {n}."
+        f"Expanded dataset {dataset.__class__.__name__} from {og_size:,} to {n:,} samples."
     )
     return dataset

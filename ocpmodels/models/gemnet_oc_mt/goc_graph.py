@@ -10,8 +10,9 @@ from torch_geometric.utils import sort_edge_index
 from torch_scatter import segment_coo
 from typing_extensions import NotRequired
 
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
+from ocpmodels.common.utils import get_pbc_distances
 
+from .radius_graph import radius_graph_pbc
 from .utils import (
     get_edge_id,
     get_max_neighbors_mask,

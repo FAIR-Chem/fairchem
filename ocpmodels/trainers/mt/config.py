@@ -210,7 +210,7 @@ class DatasetConfig(TypedConfig):
     one_hot_targets: OneHotTargetsConfig = OneHotTargetsConfig()
     sampling: SamplingConfig = TemperatureSamplingConfig(temperature=1.0)
 
-    batch_exclude_keys: list[str] | None = None
+    collate_exclude_keys: list[str] | None = None
 
 
 # endregion

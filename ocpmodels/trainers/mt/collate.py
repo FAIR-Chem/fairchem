@@ -22,7 +22,8 @@ def data_list_collater(
     otf_graph: bool = False,
 ):
     batch = Batch.from_data_list(
-        data_list, exclude_keys=dataset_config.batch_exclude_keys
+        data_list,
+        exclude_keys=dataset_config.collate_exclude_keys,
     )
 
     if not otf_graph:

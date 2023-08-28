@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from functools import partial
 
 import torch
@@ -138,26 +137,31 @@ def oc22_transform(data: Data, *, config: TransformConfigs, training: bool):
     return data
 
 
-def _set_inf_cell(data: Data, max_length: float = 1000.0):
-    data.cell = (torch.eye(3) * max_length).unsqueeze(dim=0)
+def _common_transform(data: Data):
+    if not torch.is_tensor(data.energy):
+        data.energy = torch.tensor(data.energy, dtype=torch.float)
+    data.energy = data.energy.view(-1).float()
+    if not hasattr(data, "sid"):
+        data.sid = data.absolute_idx
+    if not hasattr(data, "natoms"):
+        data.natoms = data.num_nodes
+
+    # data.fixed = torch.ones(data.natoms)
+    if not hasattr(data, "fixed"):
+        data.fixed = torch.zeros(data.natoms, dtype=torch.bool)
+
+    if not hasattr(data, "tags"):
+        data.tags = 2 * torch.ones(data.natoms)
+        data.tags = data.tags.long()
+    if not hasattr(data, "cell"):
+        max_length = 1000.0
+        data.cell = (torch.eye(3) * max_length).unsqueeze(dim=0)
+
     return data
 
 
 def ani1x_transform(data: Data, *, config: TransformConfigs, training: bool):
-    data.energy = data.energy.view(-1).float()
-    if not hasattr(data, "sid"):
-        data.sid = data.absolute_idx
-    if not hasattr(data, "natoms"):
-        data.natoms = data.num_nodes
-
-    # data.fixed = torch.ones(data.natoms)
-    data.fixed = torch.zeros(data.natoms, dtype=torch.bool)
-
-    data.tags = 2 * torch.ones(data.natoms)
-    data.tags = data.tags.long()
-    data.name = "ani1x"
-
-    data = _set_inf_cell(data)
+    data = _common_transform(data)
     data = _generate_graphs(
         data,
         config,
@@ -166,26 +170,17 @@ def ani1x_transform(data: Data, *, config: TransformConfigs, training: bool):
         pbc=False,
         training=training,
     )
+    data.name = "ani1x"
     return data
 
 
 def transition1x_transform(
-    data: Data, *, config: TransformConfigs, training: bool
+    data: Data,
+    *,
+    config: TransformConfigs,
+    training: bool,
 ):
-    data.energy = data.energy.view(-1).float()
-    if not hasattr(data, "sid"):
-        data.sid = data.absolute_idx
-    if not hasattr(data, "natoms"):
-        data.natoms = data.num_nodes
-
-    # data.fixed = torch.ones(data.natoms)
-    data.fixed = torch.zeros(data.natoms, dtype=torch.bool)
-
-    data.tags = 2 * torch.ones(data.natoms)
-    data.tags = data.tags.long()
-    data.name = "transition1x"
-
-    data = _set_inf_cell(data)
+    data = _common_transform(data)
     data = _generate_graphs(
         data,
         config,
@@ -194,4 +189,5 @@ def transition1x_transform(
         pbc=False,
         training=training,
     )
+    data.name = "transition1x"
     return data
