@@ -1,6 +1,6 @@
 trainer: mt
 
-tasks:
+task:
   mt:
     tasks:
       - idx: 0
@@ -83,7 +83,7 @@ dataset:
         metadata_path: /checkpoint/nimashoghi/oc22_metadata/train_metadata.npz
         lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
       val:
-        src: /large_experiments/opencatalyst/data/oc22/2022_06_16/s2ef/val/
+        src: /large_experiments/opencatalyst/data/oc22/2022_06_16/s2ef/val_id_ef/
         metadata_path: /checkpoint/nimashoghi/oc22_metadata/val_metadata.npz
         lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
       key_mapping:

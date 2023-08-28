@@ -11,7 +11,6 @@ from ocpmodels.models.gemnet_oc_mt.config import (
 )
 
 from ...common.utils import MappedKeyType
-from .normalizer import NormalizerTargetConfig
 
 
 # region Output Head Config
