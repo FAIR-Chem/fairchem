@@ -244,7 +244,7 @@ def _combine_datasets(sampling: SamplingConfig, datasets: List[Dataset]):
     log.info(
         f"Combined {len(expanded_datasets)} datasets into {len(combined_dataset)}."
     )
-    return combined_dataset
+    return combined_dataset, expanded_dataset_sizes
 
 
 def create_datasets(
@@ -281,14 +281,15 @@ def create_datasets(
 
     # Combine the datasets
     # For train, we need to adhere to the sampling strategy
-    train_dataset = (
-        _combine_datasets(config.sampling, train_datasets)
-        if train_datasets
-        else None
-    )
+    train_dataset = None
+    train_dataset_sizes = None
+    if train_datasets:
+        train_dataset, train_dataset_sizes = _combine_datasets(
+            config.sampling, train_datasets
+        )
 
     # For val and test, we just concatenate them
     val_dataset = ConcatDataset(val_datasets) if val_datasets else None
     test_dataset = ConcatDataset(test_datasets) if test_datasets else None
 
-    return train_dataset, val_dataset, test_dataset
+    return (train_dataset, val_dataset, test_dataset), train_dataset_sizes

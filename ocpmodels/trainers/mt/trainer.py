@@ -94,6 +94,7 @@ class MTTrainer(BaseTrainer):
         noddp=False,
         name="mt",
     ):
+        self._train_dataset_sizes: dict[int, int] = {}
         super().__init__(
             task,
             model,
@@ -241,6 +242,13 @@ class MTTrainer(BaseTrainer):
             ),
         )
 
+        if self.multi_task_config.log_task_steps_and_epochs:
+            self.train_per_task_steps: dict[int, torchmetrics.SumMetric] = {}
+            for task_idx in range(self.num_tasks):
+                metric = torchmetrics.SumMetric()
+                metric.persistent(True)
+                self.train_per_task_steps[task_idx] = metric
+
         self.train_per_task_energy_maes = {
             task_idx: torchmetrics.MeanAbsoluteError().to(self.device)
             for task_idx in range(self.num_tasks)
@@ -364,11 +372,16 @@ class MTTrainer(BaseTrainer):
             self.train_dataset,
             self.val_dataset,
             self.test_dataset,
-        ) = create_datasets(
+        ), train_dataset_sizes = create_datasets(
             self.dataset_config,
             self.multi_task_config,
             self.model_config,
         )
+        if train_dataset_sizes:
+            for task, size in zip(
+                self.multi_task_config.tasks, train_dataset_sizes
+            ):
+                self._train_dataset_sizes[task.idx] = size
 
         self.train_loader = None
         self.val_loader = None
@@ -509,6 +522,32 @@ class MTTrainer(BaseTrainer):
         loss = sum(losses)
         loss = cast(torch.Tensor, loss)
         return loss
+
+    def _per_task_step_epoch_metrics(self, batch_list: List[Batch]):
+        metrics: dict[str, Any] = {}
+        if (
+            not self.multi_task_config.log_task_steps_and_epochs
+            or not self._train_dataset_sizes
+        ):
+            return metrics
+
+        task_mask = torch.cat(
+            [batch.task_mask.to(self.device) for batch in batch_list]
+        )  # (b, t)
+        task_idx = reduce(task_mask, "b t -> t", "sum")  # (t,)
+        for task in self.multi_task_config.tasks:
+            metric = self.train_per_task_steps[task.idx]
+            metric(task_idx[task.idx])
+
+            step = metric.compute()
+            metrics = self.evaluator.update(f"{task.name}_step", step, metrics)
+
+            epoch = step / self._train_dataset_sizes[task.idx]
+            metrics = self.evaluator.update(
+                f"{task.name}_epoch", epoch, metrics
+            )
+
+        return metrics
 
     def _compute_per_task_metrics(
         self,

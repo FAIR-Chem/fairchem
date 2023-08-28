@@ -249,6 +249,8 @@ class MultiTaskConfig(TypedConfig):
     edge_dropout: float | None = None
     dropout: float | None = None
 
+    log_task_steps_and_epochs: bool = True
+
     def task_by_name(self, name: str) -> TaskConfig:
         return next(task for task in self.tasks if task.name == name)
 
