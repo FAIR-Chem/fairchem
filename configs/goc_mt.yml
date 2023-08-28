@@ -11,10 +11,10 @@ tasks:
         normalization:
           energy:
             mean: 0.0
-            stdev: 24.901469505465872
+            std: 24.901469505465872
           forces:
             mean: 0.0
-            stdev: 0.5111534595489502
+            std: 0.5111534595489502
       - idx: 1
         name: oc22
         loss_coefficients:
@@ -23,10 +23,10 @@ tasks:
         normalization:
           energy:
             mean: 0.0
-            stdev: 25.229595396538468
+            std: 25.229595396538468
           forces:
             mean: 0.0
-            stdev: 0.25678861141204834
+            std: 0.25678861141204834
       - idx: 2
         name: ani1x
         loss_coefficients:
@@ -35,10 +35,10 @@ tasks:
         normalization:
           energy:
             mean: 0.0
-            stdev: 2.8700712783472118
+            std: 2.8700712783472118
           forces:
             mean: 0.0
-            stdev: 2.131422996520996
+            std: 2.131422996520996
       - idx: 3
         name: transition1x
         loss_coefficients:
@@ -47,10 +47,10 @@ tasks:
         normalization:
           energy:
             mean: 0.0
-            stdev: 1.787466168382901
+            std: 1.787466168382901
           forces:
             mean: 0.0
-            stdev: 0.3591422140598297
+            std: 0.3591422140598297
     edge_dropout: 0.15
 
 dataset:

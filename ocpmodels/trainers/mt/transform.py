@@ -16,19 +16,6 @@ from ocpmodels.models.gemnet_oc_mt.goc_graph import (
 from .config import MultiTaskConfig
 
 
-def _set_loss_scales(
-    data: Data,
-    config: MultiTaskConfig,
-    task: str,
-):
-    task_config = config.task_by_name(task)
-
-    data.y_scale = task_config.loss_coefficients.get("energy", 1.0)
-    data.force_scale = task_config.loss_coefficients.get("forces", 1.0)
-
-    return data
-
-
 def _process_aint_graph(
     graph: Graph,
     config: MultiTaskConfig,
@@ -87,8 +74,6 @@ def _generate_graphs(
     *,
     training: bool,
 ):
-    data = _pre_generate_graph_transform(data, config, training=training)
-
     aint_graph = generate_graph(
         data, cutoff=cutoffs.aint, max_neighbors=max_neighbors.aint, pbc=pbc
     )
@@ -153,9 +138,6 @@ def oc20_transform(data: Data, *, config: MultiTaskConfig, training: bool):
         pbc=True,
         training=training,
     )
-
-    data = _set_loss_scales(data, config, "oc20")
-
     return data
 
 
@@ -181,9 +163,6 @@ def oc22_transform(data: Data, *, config: MultiTaskConfig, training: bool):
         pbc=True,
         training=training,
     )
-
-    data = _set_loss_scales(data, config, "oc22")
-
     return data
 
 
@@ -215,9 +194,6 @@ def ani1x_transform(data: Data, *, config: MultiTaskConfig, training: bool):
         pbc=False,
         training=training,
     )
-
-    data = _set_loss_scales(data, config, "ani1x")
-
     return data
 
 
@@ -246,7 +222,4 @@ def transition1x_transform(
         pbc=False,
         training=training,
     )
-
-    data = _set_loss_scales(data, config, "transition1x")
-
     return data

@@ -73,7 +73,7 @@ class LossFnConfig(TypedConfig):
     target: str
     fn: Literal["mae", "mse", "l1", "l2", "l2mae"]
 
-    coefficient: float | list[Any] = 1.0
+    coefficient: Any | None = None
     reduction: Literal["sum", "mean", "structure_wise_mean"] = "mean"
     per_task: bool = False
 
@@ -86,18 +86,17 @@ class LossFnConfig(TypedConfig):
                 f"Loss {self.target} must have per_task=True for MT trainer."
             )
 
+        if self.coefficient is not None:
+            raise ValueError(
+                f"Loss {self.target} must have coefficient=None for MT trainer. "
+                "Use the loss_coefficients in `config.tasks.mt` (MultiTaskConfig) instead."
+            )
+
 
 @dataclass(frozen=True)
 class LossFn:
     config: LossFnConfig
     fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
-
-    def apply_coefficient(
-        self,
-        loss: torch.Tensor,
-    ) -> torch.Tensor:
-        coefficient = loss.new_tensor(self.config.coefficient)
-        return loss * coefficient
 
 
 LossFnsConfig = Annotated[list[LossFnConfig], Field()]

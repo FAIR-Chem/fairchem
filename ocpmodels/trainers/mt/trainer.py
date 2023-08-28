@@ -22,6 +22,7 @@ from .balanced_batch_sampler import BalancedBatchSampler
 from .config import (
     AtomLevelOutputHeadConfig,
     DatasetConfig,
+    LossFn,
     LossFnsConfig,
     ModelConfig,
     MultiTaskConfig,
@@ -329,6 +330,24 @@ class MTTrainer(BaseTrainer):
     def load_loss(self) -> None:
         self.loss_fns = create_losses(self.loss_config)
 
+    def _apply_loss_coefficient(
+        self,
+        loss: torch.Tensor,
+        loss_info: LossFn,
+    ):
+        # loss: (bsz, t) or (n_atoms, t)
+        coeff = loss.new_tensor(
+            [
+                self.multi_task_config.task_by_idx(
+                    task_idx
+                ).loss_coefficients.get(loss_info.config.target, 1.0)
+                for task_idx in range(self.num_tasks)
+            ]
+        )  # (t,)
+
+        loss = loss * coeff  # (bsz, t) or (n_atoms, t)
+        return loss
+
     @override
     def _compute_loss(
         self,
@@ -380,7 +399,7 @@ class MTTrainer(BaseTrainer):
             loss = loss_info.fn(pred, target)  # (bsz, t) or (n_atoms, t)
 
             # Apply the coefficient
-            loss = loss_info.apply_coefficient(loss)
+            loss = self._apply_loss_coefficient(loss, loss_info)
 
             # For SWL, we want to reduce the loss per structure, not per atom.
             reduction = loss_info.config.reduction
