@@ -1,0 +1,169 @@
+from dataclasses import dataclass
+from typing import Any, Callable, Literal, Union
+
+import torch
+from typing_extensions import Annotated, override
+
+from ocpmodels.common.typed_config import Field, TypedConfig
+
+
+# region Output Head Config
+class BaseOutputHeadConfig(TypedConfig):
+    custom_head: bool = False
+    per_task: bool = False
+
+    @override
+    def __post_init__(self):
+        super().__post_init__()
+
+        if not self.custom_head:
+            raise NotImplementedError(
+                f"The MT trainer requires all outputs to have custom_head=True."
+            )
+        if not self.per_task:
+            raise NotImplementedError(
+                f"The MT trainer requires all outputs to have per_task=True."
+            )
+
+
+class SystemLevelOutputHeadConfig(BaseOutputHeadConfig):
+    level: Literal["system"] = "system"
+
+
+class AtomLevelOutputHeadConfig(BaseOutputHeadConfig):
+    level: Literal["atom"] = "atom"
+    irrep_dim: int
+    train_on_free_atoms: bool = True
+    eval_on_free_atoms: bool = True
+
+    @override
+    def __post_init__(self):
+        super().__post_init__()
+
+        if self.irrep_dim != 1:
+            raise NotImplementedError(
+                f"Only irrep_dim=1 is supported for the MT trainer."
+            )
+
+
+OutputHeadConfig = Annotated[
+    Union[SystemLevelOutputHeadConfig, AtomLevelOutputHeadConfig],
+    Field(discriminator="level"),
+]
+
+OutputsConfig = Annotated[dict[str, OutputHeadConfig], Field()]
+# endregion
+
+# region Loss Config
+
+
+class LossFnConfig(TypedConfig):
+    target: str
+    fn: Literal["mae", "mse", "l1", "l2", "l2mae"]
+
+    coefficient: float | list[Any] = 1.0
+    reduction: Literal["sum", "mean", "structure_wise_mean"] = "mean"
+
+
+@dataclass(frozen=True)
+class LossFn:
+    config: LossFnConfig
+    fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
+
+    def apply_coefficient(self, loss: torch.Tensor) -> torch.Tensor:
+        coefficient = loss.new_tensor(self.config.coefficient)
+        return loss * coefficient
+
+
+LossFnsConfig = Annotated[list[LossFnConfig], Field()]
+
+# endregion
+
+
+# region Dataset Config
+class SplitDatasetConfig(TypedConfig):
+    format: str
+    src: str
+
+    key_mapping: dict[str, str] = {}
+    transforms: list[Any] = []
+
+
+class TaskDatasetConfig(TypedConfig):
+    train: SplitDatasetConfig | None = None
+    val: SplitDatasetConfig | None = None
+    test: SplitDatasetConfig | None = None
+
+    copy_from_train: bool = True
+
+    @override
+    def __post_init__(self):
+        super().__post_init__()
+
+        if self.copy_from_train and self.train is not None:
+            if self.val is not None:
+                if not self.val.key_mapping:
+                    self.val.key_mapping = self.train.key_mapping.copy()
+                if not self.val.transforms:
+                    self.val.transforms = self.train.transforms.copy()
+            if self.test is not None:
+                if not self.test.key_mapping:
+                    self.test.key_mapping = self.train.key_mapping.copy()
+                if not self.test.transforms:
+                    self.test.transforms = self.train.transforms.copy()
+
+
+class TemperatureSamplingConfig(TypedConfig):
+    type: Literal["temperature"] = "temperature"
+    temperature: float
+
+
+class FullyBalancedSamplingConfig(TypedConfig):
+    type: Literal["fully_balanced"] = "fully_balanced"
+
+
+SamplingConfig = Annotated[
+    Union[
+        TemperatureSamplingConfig,
+        FullyBalancedSamplingConfig,
+    ],
+    Field(discriminator="type"),
+]
+
+
+class OneHotTargetsConfig(TypedConfig):
+    graph_level: list[str] = []
+    node_level: list[str] = []
+
+
+class DatasetConfig(TypedConfig):
+    datasets: list[TaskDatasetConfig]
+    one_hot_targets: OneHotTargetsConfig = OneHotTargetsConfig()
+    sampling: SamplingConfig = TemperatureSamplingConfig(temperature=1.0)
+
+
+# endregion
+
+
+# region MultiTask Config
+
+
+class TaskConfig(TypedConfig):
+    idx: int
+    name: str
+    loss_coefficients: dict[str, float] = {}
+
+
+class MultiTaskConfig(TypedConfig):
+    tasks: list[TaskConfig]
+    edge_dropout: float | None = None
+    node_dropout: float | None = None
+
+    def task_by_name(self, name: str) -> TaskConfig:
+        return next(task for task in self.tasks if task.name == name)
+
+    def task_by_idx(self, idx: int) -> TaskConfig:
+        return next(task for task in self.tasks if task.idx == idx)
+
+
+# endregion

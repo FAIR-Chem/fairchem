@@ -1,6 +1,6 @@
 import logging
 from collections import abc
-from typing import Any, List, Literal, Union, cast
+from typing import Any, List, cast
 
 import numpy as np
 import torch
@@ -8,73 +8,19 @@ import torch.nn.functional as F
 from einops import rearrange
 from torch.utils.data import ConcatDataset, Dataset
 from torch_geometric.data import Data
-from typing_extensions import Annotated, override
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.typed_config import Field, TypedConfig
 
-from .transform import dataset_transform, expand_dataset
-
-
-class SplitDatasetConfig(TypedConfig):
-    format: str
-    src: str
-
-    key_mapping: dict[str, str] = {}
-    transforms: List[Any] = []
-
-
-class TaskDatasetConfig(TypedConfig):
-    train: SplitDatasetConfig | None = None
-    val: SplitDatasetConfig | None = None
-    test: SplitDatasetConfig | None = None
-
-    copy_from_train: bool = True
-
-    @override
-    def model_post_init(self, __context: Any):
-        super().model_post_init(__context)
-
-        if self.copy_from_train and self.train is not None:
-            if self.val is not None:
-                if not self.val.key_mapping:
-                    self.val.key_mapping = self.train.key_mapping.copy()
-                if not self.val.transforms:
-                    self.val.transforms = self.train.transforms.copy()
-            if self.test is not None:
-                if not self.test.key_mapping:
-                    self.test.key_mapping = self.train.key_mapping.copy()
-                if not self.test.transforms:
-                    self.test.transforms = self.train.transforms.copy()
-
-
-class TemperatureSamplingConfig(TypedConfig):
-    type: Literal["temperature"] = "temperature"
-    temperature: float
-
-
-class FullyBalancedSamplingConfig(TypedConfig):
-    type: Literal["fully_balanced"] = "fully_balanced"
-
-
-SamplingConfig = Annotated[
-    Union[
-        TemperatureSamplingConfig,
-        FullyBalancedSamplingConfig,
-    ],
-    Field(discriminator="type"),
-]
-
-
-class OneHotTargetsConfig(TypedConfig):
-    graph_level: List[str] = []
-    node_level: List[str] = []
-
-
-class DatasetConfig(TypedConfig):
-    datasets: List[TaskDatasetConfig]
-    one_hot_targets: OneHotTargetsConfig = OneHotTargetsConfig()
-    sampling: SamplingConfig = TemperatureSamplingConfig(temperature=1.0)
+from .config import (
+    DatasetConfig,
+    FullyBalancedSamplingConfig,
+    OneHotTargetsConfig,
+    SamplingConfig,
+    SplitDatasetConfig,
+    TaskDatasetConfig,
+    TemperatureSamplingConfig,
+)
+from .dataset_transform import dataset_transform, expand_dataset
 
 
 def _update_graph_value(data: Data, key: str, onehot: torch.Tensor):

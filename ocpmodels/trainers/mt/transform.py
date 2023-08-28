@@ -1,91 +1,252 @@
-import copy
-from collections import abc
-from functools import cache
-from logging import getLogger
-from typing import Any, Callable, cast
+from functools import partial
 
-import numpy as np
-import wrapt
-from torch.utils.data import Dataset
-from typing_extensions import TypeVar, override
+import torch
+from torch_geometric.data import Data
+from torch_geometric.utils import dropout_edge
 
-log = getLogger(__name__)
+from ocpmodels.models.gemnet_oc_mt.goc_graph import (
+    Cutoffs,
+    Graph,
+    MaxNeighbors,
+    generate_graph,
+    subselect_graph,
+    tag_mask,
+)
 
-TDataset = TypeVar("TDataset", bound=Dataset, infer_variance=True)
-
-
-def dataset_transform(
-    dataset: TDataset,
-    transform: Callable[[Any], Any],
-    copy_data: bool = False,
-) -> TDataset:
-    class _TransformedDataset(wrapt.ObjectProxy):
-        @override
-        def __getitem__(self, idx):
-            nonlocal copy_data, transform
-
-            assert transform is not None, "Transform must be defined."
-            data = self.__wrapped__.__getitem__(idx)
-            if copy_data:
-                data = copy.deepcopy(data)
-            data = transform(data)
-            return data
-
-    return cast(TDataset, _TransformedDataset(dataset))
+from .config import MultiTaskConfig
 
 
-def expand_dataset(dataset: Dataset, n: int) -> Dataset:
-    if not isinstance(dataset, abc.Sized):
-        raise TypeError(
-            f"expand_dataset ({n}) must be used with a dataset that is an instance of abc.Sized "
-            f"for {dataset.__class__.__qualname__} "
+def _set_loss_scales(
+    data: Data,
+    config: MultiTaskConfig,
+    task: str,
+):
+    task_config = config.task_by_name(task)
+
+    data.y_scale = task_config.loss_coefficients.get("energy", 1.0)
+    data.force_scale = task_config.loss_coefficients.get("forces", 1.0)
+
+    return data
+
+
+def _process_aint_graph(
+    graph: Graph,
+    config: MultiTaskConfig,
+    *,
+    training: bool,
+):
+    if config.edge_dropout:
+        graph["edge_index"], mask = dropout_edge(
+            graph["edge_index"],
+            p=config.edge_dropout,
+            training=training,
         )
+        graph["distance"] = graph["distance"][mask]
+        graph["vector"] = graph["vector"][mask]
+        graph["cell_offset"] = graph["cell_offset"][mask]
 
-    og_size = len(dataset)
-    if og_size > n:
-        raise ValueError(
-            f"expand_dataset ({n}) must be greater than or equal to the length of the dataset "
-            f"({len(dataset)}) for {dataset.__class__.__qualname__}"
-        )
+        if "id_swap_edge_index" in graph:
+            graph["id_swap_edge_index"] = graph["id_swap_edge_index"][mask]
 
-    class _ExpandedDataset(wrapt.ObjectProxy):
-        @override
-        def __len__(self):
-            nonlocal n
-            return n
+    return graph
 
-        @override
-        def __getitem__(self, index: int):
-            nonlocal n, og_size
-            if index < 0 or index >= n:
-                raise IndexError(
-                    f"Index {index} is out of bounds for dataset of size {n}."
-                )
-            return self.__wrapped__.__getitem__(index % og_size)
 
-        @cache
-        def _atoms_metadata_cached(self):
-            """
-            We want to retrieve the atoms metadata for the expanded dataset.
-            This includes repeating the atoms metadata for the elemens that are repeated.
-            """
+def _pre_generate_graph_transform(
+    data: Data,
+    config: MultiTaskConfig,
+    *,
+    training: bool,
+):
+    if config.node_dropout and training:
+        node_mask = (
+            torch.rand(data.pos.shape[0], device=data.pos.device)
+            > config.node_dropout
+        )  # (n_nodes,)
+        # make sure that at least four nodes are left
+        if (n_masked := node_mask.sum()) < 4:
+            (unmasked_idx,) = torch.nonzero(~node_mask, as_tuple=True)
+            node_mask[unmasked_idx[: 4 - n_masked]] = True
+            assert node_mask.sum() >= 4, f"{node_mask.sum()=} < 4"
 
-            # the out metadata shape should be (n,)
-            nonlocal n, og_size
+        data.pos = data.pos[node_mask]
+        data.force = data.force[node_mask]
+        data.atomic_numbers = data.atomic_numbers[node_mask]
+        data.fixed = data.fixed[node_mask]
+        data.tags = data.tags[node_mask]
+        data.natoms = node_mask.sum().item()
 
-            metadata = self.__wrapped__.atoms_metadata
-            metadata = np.resize(metadata, (n,))
-            log.debug(
-                f"Expanded the atoms metadata for {self.__class__.__name__} ({og_size} => {len(metadata)})."
-            )
-            return metadata
+    return data
 
-        @property
-        def atoms_metadata(self):
-            return self._atoms_metadata_cached()
 
-    dataset = cast(Dataset, _ExpandedDataset(dataset))
-    log.info(
-        f"Expanded dataset {dataset.__class__.__name__} from {og_size} to {n}."
+def _generate_graphs(
+    data: Data,
+    config: MultiTaskConfig,
+    cutoffs: Cutoffs,
+    max_neighbors: MaxNeighbors,
+    pbc: bool,
+    *,
+    training: bool,
+):
+    data = _pre_generate_graph_transform(data, config, training=training)
+
+    aint_graph = generate_graph(
+        data, cutoff=cutoffs.aint, max_neighbors=max_neighbors.aint, pbc=pbc
     )
-    return dataset
+    aint_graph = _process_aint_graph(aint_graph, config, training=training)
+    subselect = partial(
+        subselect_graph,
+        data,
+        aint_graph,
+        cutoff_orig=cutoffs.aint,
+        max_neighbors_orig=max_neighbors.aint,
+    )
+    main_graph = subselect(cutoffs.main, max_neighbors.main)
+    aeaint_graph = subselect(cutoffs.aeaint, max_neighbors.aeaint)
+    qint_graph = subselect(cutoffs.qint, max_neighbors.qint)
+
+    # We can't do this at the data level: This is because the batch collate_fn doesn't know
+    # that it needs to increment the "id_swap" indices as it collates the data.
+    # So we do this at the graph level (which is done in the GemNetOC `get_graphs_and_indices` method).
+    # main_graph = symmetrize_edges(main_graph, num_atoms=data.pos.shape[0])
+    qint_graph = tag_mask(
+        data, qint_graph, tags=self.config.backbone.qint_tags
+    )
+
+    graphs = {
+        "main": main_graph,
+        "a2a": aint_graph,
+        "a2ee2a": aeaint_graph,
+        "qint": qint_graph,
+    }
+
+    for graph_type, graph in graphs.items():
+        graph["num_neighbors"] = graph["edge_index"].shape[1]
+        for key, value in graph.items():
+            setattr(data, f"{graph_type}_{key}", value)
+
+    return data
+
+
+def oc20_transform(data: Data, *, config: MultiTaskConfig, training: bool):
+    # convert back these keys into required format for collation
+    data.natoms = int(
+        data.natoms.item() if torch.is_tensor(data) else data.natoms
+    )
+
+    data.atomic_numbers = data.atomic_numbers.long()
+    data.tags = data.tags.long()
+    try:
+        if not torch.is_tensor(data.y):
+            data.y = torch.tensor(data.y)
+        data.y = data.y.view(-1)
+    except:
+        if not torch.is_tensor(data.y_relaxed):
+            data.y_relaxed = torch.tensor(data.y_relaxed)
+        data.y = data.y_relaxed.view(-1)
+    data.name = "oc20"
+
+    data = _generate_graphs(
+        data,
+        config,
+        cutoffs=Cutoffs.from_constant(12.0),
+        max_neighbors=MaxNeighbors.from_goc_base_proportions(30),
+        pbc=True,
+        training=training,
+    )
+
+    data = _set_loss_scales(data, config, "oc20")
+
+    return data
+
+
+def oc22_transform(data: Data, *, config: MultiTaskConfig, training: bool):
+    # convert back these keys into required format for collation
+    data.natoms = int(
+        data.natoms.item() if torch.is_tensor(data) else data.natoms
+    )
+
+    data.atomic_numbers = data.atomic_numbers.long()
+    data.tags = data.tags.long()
+    try:
+        data.y = torch.tensor(float(data.y)).view(-1)
+    except:
+        data.y = torch.tensor(float(data.y_relaxed)).view(-1)
+    data.name = "oc22"
+
+    data = _generate_graphs(
+        data,
+        config,
+        cutoffs=Cutoffs.from_constant(12.0),
+        max_neighbors=MaxNeighbors.from_goc_base_proportions(30),
+        pbc=True,
+        training=training,
+    )
+
+    data = _set_loss_scales(data, config, "oc22")
+
+    return data
+
+
+def _set_inf_cell(data: Data, max_length: float = 1000.0):
+    data.cell = (torch.eye(3) * max_length).unsqueeze(dim=0)
+    return data
+
+
+def ani1x_transform(data: Data, *, config: MultiTaskConfig, training: bool):
+    data.y = data.y.view(-1).float()
+    if not hasattr(data, "sid"):
+        data.sid = data.absolute_idx
+    if not hasattr(data, "natoms"):
+        data.natoms = data.num_nodes
+
+    # data.fixed = torch.ones(data.natoms)
+    data.fixed = torch.zeros(data.natoms, dtype=torch.bool)
+
+    data.tags = 2 * torch.ones(data.natoms)
+    data.tags = data.tags.long()
+    data.name = "ani1x"
+
+    data = _set_inf_cell(data)
+    data = _generate_graphs(
+        data,
+        config,
+        cutoffs=Cutoffs.from_constant(8.0),
+        max_neighbors=MaxNeighbors.from_goc_base_proportions(30),
+        pbc=False,
+        training=training,
+    )
+
+    data = _set_loss_scales(data, config, "ani1x")
+
+    return data
+
+
+def transition1x_transform(
+    data: Data, *, config: MultiTaskConfig, training: bool
+):
+    data.y = data.y.view(-1).float()
+    if not hasattr(data, "sid"):
+        data.sid = data.absolute_idx
+    if not hasattr(data, "natoms"):
+        data.natoms = data.num_nodes
+
+    # data.fixed = torch.ones(data.natoms)
+    data.fixed = torch.zeros(data.natoms, dtype=torch.bool)
+
+    data.tags = 2 * torch.ones(data.natoms)
+    data.tags = data.tags.long()
+    data.name = "transition1x"
+
+    data = _set_inf_cell(data)
+    data = _generate_graphs(
+        data,
+        config,
+        cutoffs=Cutoffs.from_constant(8.0),
+        max_neighbors=MaxNeighbors.from_goc_base_proportions(30),
+        pbc=False,
+        training=training,
+    )
+
+    data = _set_loss_scales(data, config, "transition1x")
+
+    return data

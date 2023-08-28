@@ -1,33 +1,10 @@
-from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, List, Literal
+from typing import Callable
 
 import torch
 import torch.nn.functional as F
-from typing_extensions import Annotated
 
-from ocpmodels.common.typed_config import Field, TypedConfig
-
-
-class LossFnConfig(TypedConfig):
-    target: str
-    fn: Literal["mae", "mse", "l1", "l2", "l2mae"]
-
-    coefficient: float | list[Any] = 1.0
-    reduction: Literal["sum", "mean", "structure_wise_mean"] = "mean"
-
-
-@dataclass(frozen=True)
-class LossFn:
-    config: LossFnConfig
-    fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
-
-    def apply_coefficient(self, loss: torch.Tensor) -> torch.Tensor:
-        coefficient = loss.new_tensor(self.config.coefficient)
-        return loss * coefficient
-
-
-LossFnsConfig = Annotated[List[LossFnConfig], Field()]
+from .config import LossFn, LossFnConfig, LossFnsConfig
 
 
 def _create_loss(config: LossFnConfig) -> LossFn:

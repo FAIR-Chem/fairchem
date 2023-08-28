@@ -1,7 +1,7 @@
 from collections import defaultdict
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Dict, List, Literal, Union, cast
+from typing import Any, Dict, List, cast
 
 import torch
 import torchmetrics
@@ -9,18 +9,24 @@ from einops import rearrange, reduce
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch_geometric.data import Batch
 from torch_scatter import scatter
-from typing_extensions import Annotated, override
+from typing_extensions import override
 
 from ocpmodels.common import distutils
 from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.registry import registry
-from ocpmodels.common.typed_config import Field, TypeAdapter, TypedConfig
+from ocpmodels.common.typed_config import TypeAdapter
 from ocpmodels.modules.evaluator import Evaluator
 
 from ...modules.normalizer import denormalize_context, denormalize_tensors
 from ..base_trainer import BaseTrainer
-from .dataset import DatasetConfig, create_datasets
-from .loss import LossFnsConfig, create_losses
+from .config import (
+    AtomLevelOutputHeadConfig,
+    DatasetConfig,
+    LossFnsConfig,
+    OutputsConfig,
+)
+from .dataset import create_datasets
+from .loss import create_losses
 
 log = getLogger(__name__)
 
@@ -50,52 +56,6 @@ def _reduce_loss(loss: torch.Tensor, mask: torch.Tensor, reduction: str):
             raise ValueError(f"Unknown redution: {reduction}")
 
     return loss
-
-
-class BaseOutputHeadConfig(TypedConfig):
-    custom_head: bool = False
-    per_task: bool = False
-
-    @override
-    def __post_init__(self):
-        super().__post_init__()
-
-        if not self.custom_head:
-            raise NotImplementedError(
-                f"The MT trainer requires all outputs to have custom_head=True."
-            )
-        if not self.per_task:
-            raise NotImplementedError(
-                f"The MT trainer requires all outputs to have per_task=True."
-            )
-
-
-class SystemLevelOutputHeadConfig(BaseOutputHeadConfig):
-    level: Literal["system"] = "system"
-
-
-class AtomLevelOutputHeadConfig(BaseOutputHeadConfig):
-    level: Literal["atom"] = "atom"
-    irrep_dim: int
-    train_on_free_atoms: bool = True
-    eval_on_free_atoms: bool = True
-
-    @override
-    def __post_init__(self):
-        super().__post_init__()
-
-        if self.irrep_dim != 1:
-            raise NotImplementedError(
-                f"Only irrep_dim=1 is supported for the MT trainer."
-            )
-
-
-OutputHeadConfig = Annotated[
-    Union[SystemLevelOutputHeadConfig, AtomLevelOutputHeadConfig],
-    Field(discriminator="level"),
-]
-
-OutputsConfig = Annotated[Dict[str, OutputHeadConfig], Field()]
 
 
 @registry.register_trainer("mt")
