@@ -4,12 +4,13 @@ from functools import cached_property
 import torch
 from typing_extensions import override
 
-from ocpmodels.common import distutils
+from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import TypeAdapter
 from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.trainers.ocp_trainer import OCPTrainer
 
+from ..mt.balanced_batch_sampler import BalancedBatchSampler
 from .optimizer import OptimConfig, OptimizerTrainerContext, load_optimizer
 
 
@@ -164,3 +165,38 @@ class FTTrainer(OCPTrainer):
             self.val_dataset.close_db()
         if self.config.get("test_dataset", False):
             self.test_dataset.close_db()
+
+    @override
+    def get_sampler(
+        self, dataset, batch_size: int, shuffle: bool
+    ) -> BalancedBatchSampler:
+        balancing_mode = self.config["optim"].get("load_balancing", None)
+        on_error = self.config["optim"].get("load_balancing_on_error", None)
+        if balancing_mode is not None:
+            if on_error is None:
+                on_error = "raise"
+        else:
+            balancing_mode = "atoms"
+
+        if on_error is None:
+            on_error = "warn_and_no_balance"
+
+        if gp_utils.initialized():
+            num_replicas = gp_utils.get_dp_world_size()
+            rank = gp_utils.get_dp_rank()
+            raise NotImplementedError("GP not implemented for MT/FT.")
+        else:
+            num_replicas = distutils.get_world_size()
+            rank = distutils.get_rank()
+
+        sampler = BalancedBatchSampler(
+            dataset,
+            batch_size=batch_size,
+            num_replicas=num_replicas,
+            rank=rank,
+            device=self.device,
+            mode=balancing_mode,
+            shuffle=shuffle,
+            on_error=on_error,
+        )
+        return sampler
