@@ -62,25 +62,57 @@ dataset:
     node_level: ["forces"]
   datasets:
     - train:
-        format: lmdb
-        src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/train/2M
-        key_mapping:
-          y: energy
-          force: forces
+        format: mt_lmdb
+        src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/train/s2efall_md38M_rattled17M/
+        metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/train/s2efall_md38M_rattled17M/metadata.npz
+        oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
+        lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
+        total_energy: True
       val:
         src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
-      test:
-        src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
+        metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k/metadata.npz
+        oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
+        lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
+        total_energy: True
+      key_mapping:
+        y: energy
+        force: forces
     - train:
-        format: lmdb
-        src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/train/2M
-        key_mapping:
-          y: energy
-          force: forces
+        format: mt_lmdb
+        src: /large_experiments/opencatalyst/data/oc22/2022_06_16/s2ef/train_ef/
+        metadata_path: /checkpoint/nimashoghi/oc22_metadata/train_metadata.npz
+        lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
       val:
-        src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
-      test:
-        src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id_30k
+        src: /large_experiments/opencatalyst/data/oc22/2022_06_16/s2ef/val/
+        metadata_path: /checkpoint/nimashoghi/oc22_metadata/val_metadata.npz
+        lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
+      key_mapping:
+        y: energy
+        force: forces
+    - train:
+        format: mt_lmdb
+        src: /checkpoint/bmwood/ani1x_dataset/lmdbs/train/
+        lin_ref: /checkpoint/bmwood/ani1x_dataset/lmdbs/train/lin_ref_coeffs.npz
+        metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/ani1x_metadata.npz
+      val:
+        src: /checkpoint/bmwood/ani1x_dataset/lmdbs/val/
+        lin_ref: /checkpoint/bmwood/ani1x_dataset/lmdbs/train/lin_ref_coeffs.npz
+        metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/ani1x_val_metadata.npz
+      key_mapping:
+        y: energy
+        force: forces
+    - train:
+        format: mt_lmdb
+        src: /checkpoint/bmwood/trans1x_dataset/lmdbs/train/
+        lin_ref: /checkpoint/bmwood/trans1x_dataset/lmdbs/train/lin_ref_coeffs.npz
+        metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/transition1x_metadata.npz
+      val:
+        src: /checkpoint/bmwood/trans1x_dataset/lmdbs/val/
+        lin_ref: /checkpoint/bmwood/trans1x_dataset/lmdbs/train/lin_ref_coeffs.npz
+        metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/transition1x_val_metadata.npz
+      key_mapping:
+        y: energy
+        force: forces
 
 logger: tensorboard
 

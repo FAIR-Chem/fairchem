@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Literal, TypedDict, Union
+from typing import Any, Callable, Literal, Union
 
 import torch
 from typing_extensions import Annotated, override
@@ -101,6 +101,8 @@ class TaskDatasetConfig(TypedConfig):
     val: SplitDatasetConfig | None = None
     test: SplitDatasetConfig | None = None
 
+    key_mapping: dict[str, MappedKeyType] = {}
+
     copy_from_train: bool = True
 
     @override
@@ -112,6 +114,14 @@ class TaskDatasetConfig(TypedConfig):
                 self.val = {**self.train, **self.val}
             if self.test is not None:
                 self.test = {**self.train, **self.test}
+
+        # Make sure train/val/test don't have "key_mapping"
+        # (since it's already been applied)
+        for config in [self.train, self.val, self.test]:
+            if config and "key_mapping" in config:
+                raise ValueError(
+                    "Per-split key_mapping is not supported. Please use the task-level key_mapping instead."
+                )
 
 
 class TemperatureSamplingConfig(TypedConfig):
