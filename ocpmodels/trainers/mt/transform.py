@@ -83,11 +83,20 @@ def _generate_graphs(
     return data
 
 
-def oc20_transform(data: Data, *, config: TransformConfigs, training: bool):
-    # convert back these keys into required format for collation
+def _common_transform_all(data: Data):
+    data.fixed = data.fixed.long()
+    data.atomic_numbers = data.atomic_numbers.long()
+    data.tags = data.tags.long()
+
     data.natoms = int(
         data.natoms.item() if torch.is_tensor(data) else data.natoms
     )
+
+    return data
+
+
+def oc20_transform(data: Data, *, config: TransformConfigs, training: bool):
+    # convert back these keys into required format for collation
 
     data.atomic_numbers = data.atomic_numbers.long()
     data.tags = data.tags.long()
@@ -109,7 +118,7 @@ def oc20_transform(data: Data, *, config: TransformConfigs, training: bool):
         pbc=True,
         training=training,
     )
-    return data
+    return _common_transform_all(data)
 
 
 def oc22_transform(data: Data, *, config: TransformConfigs, training: bool):
@@ -134,7 +143,7 @@ def oc22_transform(data: Data, *, config: TransformConfigs, training: bool):
         pbc=True,
         training=training,
     )
-    return data
+    return _common_transform_all(data)
 
 
 def _common_transform(data: Data):
@@ -148,7 +157,7 @@ def _common_transform(data: Data):
 
     # data.fixed = torch.ones(data.natoms)
     if not hasattr(data, "fixed"):
-        data.fixed = torch.zeros(data.natoms, dtype=torch.bool)
+        data.fixed = torch.zeros(data.natoms, dtype=torch.float)
 
     if not hasattr(data, "tags"):
         data.tags = 2 * torch.ones(data.natoms)
@@ -171,7 +180,7 @@ def ani1x_transform(data: Data, *, config: TransformConfigs, training: bool):
         training=training,
     )
     data.name = "ani1x"
-    return data
+    return _common_transform_all(data)
 
 
 def transition1x_transform(
@@ -190,4 +199,4 @@ def transition1x_transform(
         training=training,
     )
     data.name = "transition1x"
-    return data
+    return _common_transform_all(data)

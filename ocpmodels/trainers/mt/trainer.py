@@ -90,13 +90,6 @@ class MTTrainer(BaseTrainer):
         noddp=False,
         name="mt",
     ):
-        if model.get("regress_forces", True) or model.get(
-            "direct_forces", False
-        ):
-            raise NotImplementedError(
-                "regress_forces and direct_forces are not supported for MTTrainer"
-            )
-
         super().__init__(
             task,
             model,

@@ -217,6 +217,7 @@ outputs:
 
 model:
   name: gemnet_oc_mt
+  absolute_rbf_cutoff: 12.0
   num_spherical: 7
   num_radial: 128
   num_blocks: 4
@@ -258,8 +259,8 @@ model:
   activation: silu
   scale_file: configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
 
-  regress_forces: False
-  direct_forces: False
+  regress_forces: True
+  direct_forces: True
   forces_coupled: False
 
   quad_interaction: True

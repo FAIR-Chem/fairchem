@@ -234,7 +234,8 @@ class BackboneConfig(Singleton, TypedConfig):
 
     @override
     def __post_init__(self):
-        pass
+        if not self.absolute_rbf_cutoff:
+            raise ValueError("absolute_rbf_cutoff must be specified")
 
 
 class BasesConfig(TypedConfig):

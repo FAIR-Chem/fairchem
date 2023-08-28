@@ -860,11 +860,15 @@ class GemNetOCBackbone(BaseModel):
             data=data,
             edge_index=main_graph["edge_index"],
         )
-        x_F = self.out_mlp_F(
-            torch.cat(xs_F, dim=-1),
-            data=data,
-            edge_index=main_graph["edge_index"],
-        )
+
+        if self.direct_forces:
+            x_F = self.out_mlp_F(
+                torch.cat(xs_F, dim=-1),
+                data=data,
+                edge_index=main_graph["edge_index"],
+            )
+        else:
+            x_F = None
 
         outputs = {
             "edge_idx": idx_t,
