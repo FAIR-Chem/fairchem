@@ -221,24 +221,23 @@ outputs:
 
 model:
   name: gemnet_oc_mt
-  absolute_rbf_cutoff: 12.0
   num_spherical: 7
   num_radial: 128
-  num_blocks: 4
+  num_blocks: 6
   emb_size_atom: 256
-  emb_size_edge: 512
+  emb_size_edge: 1024
   emb_size_trip_in: 64
-  emb_size_trip_out: 64
-  emb_size_quad_in: 32
+  emb_size_trip_out: 128
+  emb_size_quad_in: 64
   emb_size_quad_out: 32
   emb_size_aint_in: 64
   emb_size_aint_out: 64
-  emb_size_rbf: 16
+  emb_size_rbf: 32
   emb_size_cbf: 16
-  emb_size_sbf: 32
+  emb_size_sbf: 64
   num_before_skip: 2
   num_after_skip: 2
-  num_concat: 1
+  num_concat: 4
   num_atom: 3
   num_output_afteratom: 3
   cutoff: 12.0
@@ -275,6 +274,9 @@ model:
   num_atom_emb_layers: 2
   num_global_out_layers: 2
   qint_tags: [1, 2]
+
+  # new keys for mt trainer
+  absolute_rbf_cutoff: 12.0
   otf_graph: True
 
 optim:

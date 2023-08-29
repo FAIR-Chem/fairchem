@@ -52,16 +52,26 @@ class BaseModel(nn.Module):
                     embedding_dim = node_embedding_dim
                     output_shape = self.output_targets[target].get("shape", 1)
 
+                bias = self.output_targets[target].get("bias", True)
+
                 layers = [
                     Dense(
                         embedding_dim,
                         embedding_dim,
                         activation="silu",
+                        bias=bias,
                     )
                 ] * self.output_targets[target].get("num_layers", 2)
 
                 layers.append(
-                    Dense(embedding_dim, output_shape, activation=None)
+                    Dense(
+                        embedding_dim,
+                        output_shape,
+                        activation=None,
+                        bias=not self.output_targets[target].get(
+                            "no_final_bias", not bias
+                        ),
+                    )
                 )
 
                 self.module_dict[target] = nn.Sequential(*layers)

@@ -27,7 +27,7 @@ def data_list_collater(
     )
 
     if not otf_graph:
-        raise NotImplementedError("OTF graph is not implemented.")
+        raise NotImplementedError("OTF graph is mandatory for MT trainer.")
 
     return batch
 
@@ -40,7 +40,7 @@ class ParallelCollater:
         otf_graph: bool = False,
     ) -> None:
         if not otf_graph:
-            raise NotImplementedError("OTF graph is not implemented.")
+            raise NotImplementedError("OTF graph is mandatory for MT trainer.")
 
         self.num_gpus = num_gpus
         self.dataset_config = dataset_config

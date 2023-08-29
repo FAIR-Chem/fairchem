@@ -16,8 +16,11 @@ from ...common.utils import MappedKeyType
 
 # region Output Head Config
 class BaseOutputHeadConfig(TypedConfig):
+    num_layers: int = 2
     custom_head: bool = False
     per_task: bool = False
+    bias: bool = True
+    no_final_bias: bool = False
 
     @override
     def __post_init__(self):

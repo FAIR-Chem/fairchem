@@ -174,8 +174,8 @@ class MTTrainer(BaseTrainer):
         # DataParallel model has 1 "module.",  DistributedDataParallel has 2 "module."
         # Not using either of the above two would have no "module."
 
-        ckpt_key_count = next(iter(checkpoint["state_dict"])).count("module")
-        mod_key_count = next(iter(self.model.state_dict())).count("module")
+        ckpt_key_count = next(iter(checkpoint["state_dict"])).count("module.")
+        mod_key_count = next(iter(self.model.state_dict())).count("module.")
         key_count_diff = mod_key_count - ckpt_key_count
 
         if key_count_diff > 0:
