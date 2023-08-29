@@ -13,7 +13,9 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import TypeAdapter
 from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.trainers.mt.balanced_batch_sampler import BalancedBatchSampler
-from ocpmodels.trainers.mt.config import ModelConfig
+from ocpmodels.trainers.mt.collate import ParallelCollater
+from ocpmodels.trainers.mt.config import TaskDatasetConfig, ModelConfig
+from ocpmodels.trainers.mt.dataset import create_ft_datasets
 from ocpmodels.trainers.mt.scaling.compat import load_scales_compat
 from ocpmodels.trainers.ocp_trainer import OCPTrainer
 
@@ -26,6 +28,119 @@ log = getLogger(__name__)
 
 @registry.register_trainer("ft")
 class FTTrainer(OCPTrainer):
+    @override
+    def __init__(
+        self,
+        task,
+        model,
+        outputs,
+        dataset,
+        optimizer,
+        loss_fns,
+        eval_metrics,
+        identifier,
+        timestamp_id=None,
+        run_dir=None,
+        is_debug=False,
+        print_every=100,
+        seed=None,
+        logger="tensorboard",
+        local_rank=0,
+        amp=False,
+        cpu=False,
+        slurm={},
+        noddp=False,
+        name="ocp",
+    ):
+        super().__init__(
+            task,
+            model,
+            outputs,
+            TaskDatasetConfig.from_dict(
+                dataset
+            ),  # HACK: wrap it in a class so it doesn't get registered as a dict,
+            optimizer,
+            loss_fns,
+            eval_metrics,
+            identifier,
+            timestamp_id,
+            run_dir,
+            is_debug,
+            print_every,
+            seed,
+            logger,
+            local_rank,
+            amp,
+            cpu,
+            slurm,
+            noddp,
+            name,
+        )
+
+    @property
+    def dataset_config(self):
+        dataset_config = self.config["dataset"]
+        assert isinstance(
+            dataset_config, TaskDatasetConfig
+        ), f"{dataset_config=} is not a TaskDatasetConfig"
+        return dataset_config
+
+    @override
+    def load_datasets(self) -> None:
+        log.info("Loading datasets")
+        self.parallel_collater = ParallelCollater(
+            0 if self.cpu else 1,
+            otf_graph=self.config["model_attributes"].get("otf_graph", False),
+        )
+
+        batch_size = self.config["optim"]["batch_size"]
+        assert isinstance(batch_size, int), f"{batch_size=} is not an integer"
+        eval_batch_size = self.config["optim"].get(
+            "eval_batch_size", batch_size
+        )
+        assert isinstance(
+            eval_batch_size, int
+        ), f"{eval_batch_size=} is not an integer"
+
+        (
+            self.train_dataset,
+            self.val_dataset,
+            self.test_dataset,
+        ) = create_ft_datasets(self.dataset_config, self.model_config)
+
+        self.train_loader = None
+        self.val_loader = None
+        self.test_loader = None
+
+        if self.train_dataset is not None:
+            self.train_sampler = self.get_sampler(
+                self.train_dataset, batch_size, shuffle=True
+            )
+            self.train_loader = self.get_dataloader(
+                self.train_dataset, self.train_sampler
+            )
+
+        if self.val_dataset is not None:
+            self.val_sampler = self.get_sampler(
+                self.val_dataset, eval_batch_size, shuffle=False
+            )
+            self.val_loader = self.get_dataloader(
+                self.val_dataset, self.val_sampler
+            )
+
+        if self.test_dataset is not None:
+            self.test_sampler = self.get_sampler(
+                self.test_dataset, eval_batch_size, shuffle=False
+            )
+            self.test_loader = self.get_dataloader(
+                self.test_dataset, self.test_sampler
+            )
+        # load relaxation dataset
+        if "relax_dataset" in self.config["task"]:
+            raise NotImplementedError(
+                "Relaxation dataset not implemented for MT."
+            )
+
     @cached_property
     def model_config(self):
         model_config_dict: dict = self.config["model_attributes"].copy()

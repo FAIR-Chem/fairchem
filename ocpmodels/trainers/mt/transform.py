@@ -22,7 +22,7 @@ def _process_aint_graph(
     *,
     training: bool,
 ):
-    if config.mt.edge_dropout:
+    if config.mt is not None and config.mt.edge_dropout:
         graph["edge_index"], mask = dropout_edge(
             graph["edge_index"],
             p=config.mt.edge_dropout,
@@ -147,11 +147,14 @@ def oc22_transform(data: Data, *, config: TransformConfigs, training: bool):
 
 
 def _common_transform(data: Data):
-    if not torch.is_tensor(data.energy):
-        data.energy = torch.tensor(data.energy, dtype=torch.float)
-    data.energy = data.energy.view(-1).float()
+    if hasattr(data, "energy"):
+        if not torch.is_tensor(data.energy):
+            data.energy = torch.tensor(data.energy, dtype=torch.float)
+        data.energy = data.energy.view(-1).float()
+
     if not hasattr(data, "sid"):
-        data.sid = data.absolute_idx
+        if hasattr(data, "absolute_idx"):
+            data.sid = data.absolute_idx
     if not hasattr(data, "natoms"):
         data.natoms = data.num_nodes
 

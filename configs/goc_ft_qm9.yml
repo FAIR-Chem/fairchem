@@ -6,40 +6,35 @@ ft:
     ignore_keys_patterns: ["*module_dict.*"]
 
 dataset:
+  mt_transform: ocpmodels.trainers.ft.transform.qm9_transform
   train:
-    format: lmdb
-    src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/train
-    normalizer:
-      U_0:
-        mean: 0.0028667436
-        stdev: 1.0965848
+    config:
+      format: lmdb
+      src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/train
+    # normalizer: TODO
+    #   U_0:
+    #     mean: 0.0028667436
+    #     stdev: 1.0965848
   val:
-    src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/val
+    - config:
+        src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/val
   test:
-    src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/test
+    - config:
+        src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/test
 
 logger: wandb
 
 loss_functions:
-  - energy:
+  - U_0:
       fn: mae
       coefficient: 1
-  - forces:
-      fn: l2mae
-      coefficient: 100
 
 evaluation_metrics:
   metrics:
-    energy:
+    U_0:
       - mae
       - mse
-      - energy_within_threshold
-    forces:
-      - mae
-      - cosine_similarity
-    misc:
-      - energy_forces_within_threshold
-  primary_metric: forces_mae
+  primary_metric: U_0_mae
 
 outputs:
   U_0:

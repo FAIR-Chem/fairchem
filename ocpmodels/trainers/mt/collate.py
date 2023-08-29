@@ -8,7 +8,6 @@ LICENSE file in the root directory of this source tree.
 
 from logging import getLogger
 
-import torch
 from torch_geometric.data import Batch, Data
 
 from .config import DatasetConfig
@@ -18,12 +17,14 @@ log = getLogger(__name__)
 
 def data_list_collater(
     data_list: list[Data],
-    dataset_config: DatasetConfig,
+    dataset_config: DatasetConfig | None = None,
     otf_graph: bool = False,
 ):
     batch = Batch.from_data_list(
         data_list,
-        exclude_keys=dataset_config.collate_exclude_keys,
+        exclude_keys=dataset_config.collate_exclude_keys
+        if dataset_config is not None
+        else None,
     )
 
     if not otf_graph:
@@ -36,7 +37,7 @@ class ParallelCollater:
     def __init__(
         self,
         num_gpus: int,
-        dataset_config: DatasetConfig,
+        dataset_config: DatasetConfig | None = None,
         otf_graph: bool = False,
     ) -> None:
         if not otf_graph:

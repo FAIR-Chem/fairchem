@@ -325,7 +325,7 @@ def validate_all_configs(
 
 @dataclass(kw_only=True, frozen=True)
 class TransformConfigs:
-    mt: MultiTaskConfig
+    mt: MultiTaskConfig | None
     model: ModelConfig
 
 
