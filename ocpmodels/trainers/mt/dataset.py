@@ -20,12 +20,13 @@ from .config import (
     MultiTaskConfig,
     OneHotTargetsConfig,
     SamplingConfig,
+    SplitDatasetConfig,
     TaskConfig,
     TaskDatasetConfig,
     TemperatureSamplingConfig,
     TransformConfigs,
 )
-from .dataset_transform import dataset_transform, expand_dataset
+from . import dataset_transform as DT
 from .normalizer import normalizer_transform
 
 log = getLogger(__name__)
@@ -65,30 +66,12 @@ def _create_split_dataset(config: dict[str, Any]) -> Dataset:
     return dataset
 
 
-def _apply_transforms(
+def _mt_taskify_transform(
     dataset: Dataset[Any],
-    config: TaskDatasetConfig,
     task_config: TaskConfig,
     total_num_tasks: int,
     one_hot_targets: OneHotTargetsConfig,
-    transform_configs: TransformConfigs,
-    training: bool,
 ):
-    # Key mapping transform
-    if config.key_mapping:
-        dataset = dataset_transform(
-            dataset,
-            partial(apply_key_mapping, key_mapping=config.key_mapping),
-        )
-
-    # Normalization transform
-    if task_config.normalization:
-        dataset = dataset_transform(
-            dataset,
-            normalizer_transform(task_config.normalization),
-        )
-
-    # Taskify/onehot transform
     def _transform(data: Data):
         # Wrap the dataset with task_idx transform
         nonlocal task_config, total_num_tasks, one_hot_targets
@@ -114,10 +97,51 @@ def _apply_transforms(
 
         return data
 
-    dataset = dataset_transform(dataset, _transform)
+    dataset = DT.dataset_transform(dataset, _transform)
+    return dataset
 
+
+def _apply_transforms(
+    dataset: Dataset[Any],
+    config: TaskDatasetConfig,
+    split_config: SplitDatasetConfig,
+    task_config: TaskConfig,
+    total_num_tasks: int,
+    one_hot_targets: OneHotTargetsConfig,
+    transform_configs: TransformConfigs,
+    training: bool,
+):
+    # Key mapping transform
+    if config.key_mapping:
+        dataset = DT.dataset_transform(
+            dataset,
+            partial(apply_key_mapping, key_mapping=config.key_mapping),
+        )
+
+    # Normalization transform
+    if task_config.normalization:
+        dataset = DT.dataset_transform(
+            dataset,
+            normalizer_transform(task_config.normalization),
+        )
+
+    # Taskify/onehot transform
+    dataset = _mt_taskify_transform(
+        dataset,
+        task_config,
+        total_num_tasks,
+        one_hot_targets,
+    )
+
+    # first_n/sample_n transform
+    if (first_n := split_config.first_n) is not None:
+        dataset = DT.first_n_transform(dataset, first_n.n)
+    if (sample_n := split_config.sample_n) is not None:
+        dataset = DT.sample_n_transform(dataset, sample_n.n, sample_n.seed)
+
+    # Additonal transforms from the config
     if config.mt_transform_fn is not None:
-        dataset = dataset_transform(
+        dataset = DT.dataset_transform(
             dataset,
             partial(
                 config.mt_transform_fn,
@@ -146,6 +170,7 @@ def _create_task_datasets(
         train_dataset = _apply_transforms(
             train_dataset,
             config,
+            config.train,
             task_config,
             total_num_tasks,
             one_hot_targets,
@@ -159,6 +184,7 @@ def _create_task_datasets(
             dataset = _apply_transforms(
                 dataset,
                 config,
+                val_config,
                 task_config,
                 total_num_tasks,
                 one_hot_targets,
@@ -174,6 +200,7 @@ def _create_task_datasets(
             dataset = _apply_transforms(
                 dataset,
                 config,
+                test_config,
                 task_config,
                 total_num_tasks,
                 one_hot_targets,
@@ -236,7 +263,8 @@ def _combine_datasets(sampling: SamplingConfig, datasets: List[Dataset]):
 
     # Expand the datasets
     expanded_datasets = [
-        expand_dataset(d, n) for d, n in zip(datasets, expanded_dataset_sizes)
+        DT.expand_dataset(d, n)
+        for d, n in zip(datasets, expanded_dataset_sizes)
     ]
 
     # Combine the datasets

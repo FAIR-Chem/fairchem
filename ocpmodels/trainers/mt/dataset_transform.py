@@ -89,3 +89,113 @@ def expand_dataset(dataset: Dataset, n: int) -> Dataset:
         f"Expanded dataset {dataset.__class__.__name__} from {og_size:,} to {n:,} samples."
     )
     return dataset
+
+
+def first_n_transform(dataset: TDataset, n: int) -> TDataset:
+    if not isinstance(dataset, abc.Sized):
+        raise TypeError(
+            f"first_n ({n}) must be used with a dataset that is an instance of abc.Sized "
+            f"for {dataset.__class__.__qualname__} "
+        )
+
+    if len(dataset) < n:
+        raise ValueError(
+            f"first_n ({n}) must be less than or equal to the length of the dataset "
+            f"({len(dataset)}) for {dataset.__class__.__qualname__} "
+        )
+
+    class _FirstNDataset(wrapt.ObjectProxy):
+        @override
+        def __getitem__(self, idx: int):
+            nonlocal n
+
+            if idx < 0 or idx >= n:
+                raise IndexError(
+                    f"Index {idx} is out of bounds for dataset of size {n}."
+                )
+
+            return self.__wrapped__.__getitem__(idx)
+
+        @override
+        def __len__(self):
+            nonlocal n
+            return n
+
+        @cache
+        def _atoms_metadata_cached(self):
+            """We only want to retrieve the atoms metadata for the first n elements."""
+            nonlocal n
+
+            metadata = self.__wrapped__.atoms_metadata
+            og_size = len(metadata)
+            metadata = metadata[:n]
+
+            log.info(
+                f"Retrieved the first {n} atoms metadata for {self.__class__.__name__} ({og_size} => {len(metadata)})."
+            )
+            return metadata
+
+        @property
+        def atoms_metadata(self):
+            return self._atoms_metadata_cached()
+
+    return cast(TDataset, _FirstNDataset(dataset))
+
+
+def sample_n_transform(dataset: TDataset, n: int, seed: int) -> TDataset:
+    """
+    Similar to first_n_transform, but samples n elements randomly from the dataset.
+    """
+
+    if not isinstance(dataset, abc.Sized):
+        raise TypeError(
+            f"sample_n ({n}) must be used with a dataset that is an instance of abc.Sized "
+            f"for {dataset.__class__.__qualname__} "
+        )
+
+    if len(dataset) < n:
+        raise ValueError(
+            f"sample_n ({n}) must be less than or equal to the length of the dataset "
+            f"({len(dataset)}) for {dataset.__class__.__qualname__} "
+        )
+
+    sampled_indices = np.random.default_rng(seed).choice(
+        len(dataset), n, replace=False
+    )
+
+    class _SampleNDataset(wrapt.ObjectProxy):
+        @override
+        def __getitem__(self, idx: int):
+            nonlocal n, sampled_indices
+
+            if idx < 0 or idx >= n:
+                raise IndexError(
+                    f"Index {idx} is out of bounds for dataset of size {n}."
+                )
+
+            return self.__wrapped__.__getitem__(sampled_indices[idx])
+
+        @override
+        def __len__(self):
+            nonlocal n
+            return n
+
+        @cache
+        def _atoms_metadata_cached(self):
+            """We only want to retrieve the atoms metadata for the sampled n elements."""
+            nonlocal n, sampled_indices
+
+            metadata = self.__wrapped__.atoms_metadata
+            og_size = len(metadata)
+            metadata = metadata[sampled_indices]
+
+            log.info(
+                f"Retrieved the sampled {n} atoms metadata for {self.__class__.__name__} ({og_size} => {len(metadata)})."
+            )
+            return metadata
+
+        @property
+        def atoms_metadata(self):
+            return self._atoms_metadata_cached()
+
+    return cast(TDataset, _SampleNDataset(dataset))
