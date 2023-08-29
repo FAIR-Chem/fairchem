@@ -41,6 +41,7 @@ outputs:
     shape: 1
     level: system
     custom_head: True
+    num_layers: 4
 
 model:
   name: gemnet_oc_mt
