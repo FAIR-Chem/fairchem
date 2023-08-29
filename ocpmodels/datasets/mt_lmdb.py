@@ -46,6 +46,10 @@ class MTLmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
+    def data_sizes(self, indices: list[int]) -> np.ndarray:
+        natoms = self.atoms_metadata
+        return natoms[indices]
+
     @cached_property
     def atoms_metadata(self) -> np.ndarray:
         metadata_path = getattr(self, "metadata_path", None)

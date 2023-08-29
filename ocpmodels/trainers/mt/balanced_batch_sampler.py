@@ -67,10 +67,11 @@ def _ensure_supported(dataset: Any):
 
     if not isinstance(dataset, DatasetWithSizes):
         raise UnsupportedDatasetError(
-            "BalancedBatchSampler requires a dataset that implements the `data_sizes` method."
+            f"BalancedBatchSampler requires a dataset that implements the `data_sizes` method. "
+            f"The provided dataset of type {type(dataset)} does not implement this method."
         )
 
-    log.critical(f"BalancedBatchSampler: Resolved dataset to {type(dataset)}")
+    log.info(f"BalancedBatchSampler: Resolved dataset to {type(dataset)}")
     return dataset
 
 

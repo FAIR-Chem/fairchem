@@ -1,17 +1,20 @@
 from collections import abc
 from functools import partial
 from logging import getLogger
-from typing import Any, List, cast
+from typing import Any, Iterable, List, cast
+from typing_extensions import override
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from einops import rearrange
 from torch.utils.data import ConcatDataset, Dataset
+from torch.utils.data.dataset import Dataset
 from torch_geometric.data import Data
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import apply_key_mapping
+from .balanced_batch_sampler import DatasetWithSizes
 
 from .config import (
     DatasetConfig,
@@ -30,6 +33,50 @@ from . import dataset_transform as DT
 from .normalizer import normalizer_transform
 
 log = getLogger(__name__)
+
+
+class MTConcatDataset(ConcatDataset):
+    def data_sizes(self, indices: list[int]) -> np.ndarray:
+        # For the indices, find the dataset that they belong to
+        dataset_idx = np.searchsorted(
+            self.cumulative_sizes, indices, side="right"
+        )
+        dataset_idx = np.clip(dataset_idx, 0, len(self.cumulative_sizes) - 1)
+
+        # Get the indices for each dataset
+        indices_array = np.array(indices)
+        dataset_indices = [
+            indices_array[np.where(dataset_idx == idx)[0]]
+            for idx in range(len(self.datasets))
+        ]
+
+        # Get the sizes for each dataset
+        sizes_list: list[np.ndarray] = []
+        for idx, dataset in enumerate(self.datasets):
+            if not isinstance(dataset, DatasetWithSizes):
+                raise TypeError(f"{dataset=} is not a DatasetWithSizes.")
+
+            curr_dataset_indices = dataset_indices[idx]
+            if len(curr_dataset_indices) > 0:
+                sizes_list.append(dataset.data_sizes(curr_dataset_indices))
+
+        if not sizes_list:
+            raise ValueError(f"No sizes found for {indices=}")
+
+        # Concatenate the sizes
+        sizes = np.concatenate(sizes_list)
+        assert len(sizes) == len(
+            indices
+        ), f"{sizes=} does not match {indices=}"
+        return sizes
+
+    @override
+    def __init__(self, datasets: Iterable[Dataset]) -> None:
+        for dataset in datasets:
+            if not isinstance(dataset, abc.Sized):
+                raise TypeError(f"{dataset=} is not a Sized.")
+
+        super().__init__(datasets)
 
 
 def _update_graph_value(data: Data, key: str, onehot: torch.Tensor):
@@ -192,7 +239,7 @@ def _create_task_datasets(
                 training=False,
             )
             datasets.append(dataset)
-        val_dataset = ConcatDataset(datasets)
+        val_dataset = MTConcatDataset(datasets)
     if config.test is not None:
         datasets: list[Dataset[Any]] = []
         for test_config in config.test:
@@ -208,7 +255,7 @@ def _create_task_datasets(
                 training=False,
             )
             datasets.append(dataset)
-        test_dataset = ConcatDataset(datasets)
+        test_dataset = MTConcatDataset(datasets)
 
     return train_dataset, val_dataset, test_dataset
 
@@ -268,7 +315,7 @@ def _combine_datasets(sampling: SamplingConfig, datasets: List[Dataset]):
     ]
 
     # Combine the datasets
-    combined_dataset = ConcatDataset(expanded_datasets)
+    combined_dataset = MTConcatDataset(expanded_datasets)
     log.info(
         f"Combined {len(expanded_datasets)} datasets into {len(combined_dataset)}."
     )
@@ -317,7 +364,7 @@ def create_datasets(
         )
 
     # For val and test, we just concatenate them
-    val_dataset = ConcatDataset(val_datasets) if val_datasets else None
-    test_dataset = ConcatDataset(test_datasets) if test_datasets else None
+    val_dataset = MTConcatDataset(val_datasets) if val_datasets else None
+    test_dataset = MTConcatDataset(test_datasets) if test_datasets else None
 
     return (train_dataset, val_dataset, test_dataset), train_dataset_sizes
