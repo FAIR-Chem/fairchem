@@ -365,7 +365,11 @@ def create_datasets(
 
     # For val and test, we just concatenate them
     val_dataset = MTConcatDataset(val_datasets) if val_datasets else None
+    if val_dataset:
+        log.info(f"Created {len(val_dataset)} val samples.")
     test_dataset = MTConcatDataset(test_datasets) if test_datasets else None
+    if test_dataset:
+        log.info(f"Created {len(test_dataset)} test samples.")
 
     return (train_dataset, val_dataset, test_dataset), train_dataset_sizes
 

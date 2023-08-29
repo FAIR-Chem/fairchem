@@ -77,6 +77,8 @@ def denormalize_context(
     if additional_tensors is None:
         additional_tensors = {}
 
+    additional_tensors = additional_tensors.copy()
+
     keys: set[str] = set([k for batch in batch_list for k in batch.keys])  # type: ignore
 
     # find all keys that have a norm_mean and norm_std
@@ -113,10 +115,6 @@ def denormalize_context(
 
             value = (value - mean) / std
             setattr(batch, key, value)
-
-            additional_value = additional_tensors.pop(key, None)
-            if additional_value is not None:
-                additional_tensors[key] = (additional_value - mean) / std
 
 
 def denormalize_tensors(

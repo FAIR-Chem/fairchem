@@ -253,6 +253,7 @@ class MultiTaskConfig(TypedConfig):
     dropout: float | None = None
 
     log_task_steps_and_epochs: bool = True
+    lovely_tensors: bool = False
 
     def task_by_name(self, name: str) -> TaskConfig:
         return next(task for task in self.tasks if task.name == name)
@@ -266,6 +267,20 @@ class MultiTaskConfig(TypedConfig):
         config["dropout"] = config.get("dropout", self.dropout)
         config["edge_dropout"] = config.get("edge_dropout", self.edge_dropout)
         return config
+
+    @override
+    def __post_init__(self):
+        super().__post_init__()
+
+        if self.lovely_tensors:
+            try:
+                import lovely_tensors
+
+                _ = lovely_tensors  # silence unused import warning
+            except ImportError:
+                raise ImportError(
+                    "lovely-tensors is required for lovely_tensors=True."
+                )
 
 
 # endregion

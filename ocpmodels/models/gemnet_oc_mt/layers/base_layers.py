@@ -51,7 +51,8 @@ class Dense(nn.Module):
         if activation in ["scaled_silu", "scaled_swish"]:
             self.activation = ScaledSiLU()
         elif activation in ["silu", "swish"]:
-            self.activation = nn.SiLU()
+            # self.activation = nn.SiLU()
+            self.activation = ScaledSiLU()
         elif activation is None:
             self.activation = nn.Identity()
         else:
@@ -69,7 +70,9 @@ class Dense(nn.Module):
             ln = False
             # dropout = None
 
-        self.dropout = nn.Dropout(dropout) if dropout is not None else nn.Identity()
+        self.dropout = (
+            nn.Dropout(dropout) if dropout is not None else nn.Identity()
+        )
 
         self.ln_kind = "pre" if isinstance(ln, bool) else ln
         match ln:
@@ -80,7 +83,9 @@ class Dense(nn.Module):
             case False:
                 self.ln = nn.Identity()
             case _:
-                raise ValueError(f"ln must be bool or 'pre' or 'post' but got {ln}")
+                raise ValueError(
+                    f"ln must be bool or 'pre' or 'post' but got {ln}"
+                )
 
     def reset_parameters(
         self,
@@ -145,7 +150,12 @@ class ResidualLayer(nn.Module):
 
         self.dense_mlp = nn.Sequential(
             *[
-                layer(in_features=units, out_features=units, bias=False, **layer_kwargs)
+                layer(
+                    in_features=units,
+                    out_features=units,
+                    bias=False,
+                    **layer_kwargs,
+                )
                 for _ in range(nLayers)
             ]
         )

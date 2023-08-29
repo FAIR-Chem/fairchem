@@ -71,7 +71,7 @@ def _ensure_supported(dataset: Any):
             f"The provided dataset of type {type(dataset)} does not implement this method."
         )
 
-    log.info(f"BalancedBatchSampler: Resolved dataset to {type(dataset)}")
+    log.debug(f"BalancedBatchSampler: Resolved dataset to {type(dataset)}")
     return dataset
 
 

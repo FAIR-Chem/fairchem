@@ -129,6 +129,11 @@ class MTTrainer(BaseTrainer):
             multi_task=self.multi_task_config,
         )
 
+        if self.multi_task_config.lovely_tensors:
+            import lovely_tensors
+
+            lovely_tensors.monkey_patch()
+
     @override
     def train(self, disable_eval_tqdm: bool = False) -> None:
         # Same as the base trainer, except we need to use our own ScaleFactor implementation.
@@ -795,7 +800,7 @@ class MTTrainer(BaseTrainer):
             denormed_aggregated_outputs,
         ):
             metrics = super()._compute_metrics(
-                denormed_aggregated_outputs.copy(),
+                denormed_aggregated_outputs,
                 denormed_batch_list,
                 evaluator,
                 metrics,

@@ -1,0 +1,298 @@
+trainer: mt
+
+task:
+  mt:
+    lovely_tensors: True
+    tasks:
+      - idx: 0
+        name: oc20
+        loss_coefficients:
+          energy: 1
+          forces: 73.0
+        normalization:
+          energy:
+            mean: 0.0
+            std: 24.901469505465872
+          forces:
+            mean: 0.0
+            std: 0.5111534595489502
+      - idx: 1
+        name: oc22
+        loss_coefficients:
+          energy: 1
+          forces: 80.0
+        normalization:
+          energy:
+            mean: 0.0
+            std: 25.229595396538468
+          forces:
+            mean: 0.0
+            std: 0.25678861141204834
+      - idx: 2
+        name: ani1x
+        loss_coefficients:
+          energy: 1
+          forces: 15.0
+        normalization:
+          energy:
+            mean: 0.0
+            std: 2.8700712783472118
+          forces:
+            mean: 0.0
+            std: 2.131422996520996
+      - idx: 3
+        name: transition1x
+        loss_coefficients:
+          energy: 1
+          forces: 14.0
+        normalization:
+          energy:
+            mean: 0.0
+            std: 1.787466168382901
+          forces:
+            mean: 0.0
+            std: 0.3591422140598297
+    edge_dropout: 0.15
+
+dataset:
+  sampling:
+    type: temperature
+    temperature: 2.0
+  one_hot_targets:
+    graph_level: ["energy"]
+    node_level: ["forces"]
+  collate_exclude_keys: [
+      "id", # only oc20,oc22 have this
+      "fid", # only oc20,oc22 have this
+      "cell_offsets", # only oc20 has this
+      "edge_index", # only oc20 has this
+      "absolute_idx", # only ani has this
+      "target_pos", # only ani has this
+      "ref_energy", # only ani/geom have this
+      "pbc", # only ani/transition1x have this
+    ]
+  datasets:
+    - train:
+        config:
+          format: mt_lmdb
+          src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/train/s2efall_md38M_rattled17M/
+          metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/train/s2efall_md38M_rattled17M/metadata.npz
+          oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
+          lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
+          total_energy: True
+        sample_n:
+          n: 100_000_000
+          seed: 0
+      val:
+        - config:
+            src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id
+            metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id/metadata.npz
+            oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
+            total_energy: True
+          first_n:
+            n: 10
+        - config:
+            src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_ads
+            metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_ads/metadata.npz
+            oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
+            total_energy: True
+          first_n:
+            n: 10
+        - config:
+            src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_both
+            metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_both/metadata.npz
+            oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
+            total_energy: True
+          first_n:
+            n: 10
+        - config:
+            src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_cat
+            metadata_path: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/ood_cat/metadata.npz
+            oc20_ref: /checkpoint/nimashoghi/oc20_ref.pkl
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/experimental/mshuaibi/oc22/scripts/coeffs/coeff_2M.npz
+            total_energy: True
+          first_n:
+            n: 10
+      mt_transform: ocpmodels.trainers.mt.transform.oc20_transform
+      key_mapping:
+        y: energy
+        force: forces
+    - train:
+        config:
+          format: mt_lmdb
+          src: /large_experiments/opencatalyst/data/oc22/2022_06_16/s2ef/train_ef/
+          metadata_path: /checkpoint/nimashoghi/oc22_metadata/train_metadata.npz
+          lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
+      val:
+        - config:
+            src: /large_experiments/opencatalyst/data/oc22/2022_06_16/s2ef/val_id_ef/
+            metadata_path: /checkpoint/nimashoghi/oc22_metadata/val_metadata_val_id_ef.npz
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
+          first_n:
+            n: 10
+        - config:
+            src: /large_experiments/opencatalyst/data/oc22/2022_06_16/s2ef/val_ood_ef/
+            metadata_path: /checkpoint/nimashoghi/oc22_metadata/val_metadata_val_ood_ef.npz
+            lin_ref: /private/home/nimashoghi/workspaces/ocp/configs/oc22/linref/oc22_linfit_coeffs.npz
+          first_n:
+            n: 10
+      mt_transform: ocpmodels.trainers.mt.transform.oc22_transform
+      key_mapping:
+        y: energy
+        force: forces
+    - train:
+        config:
+          format: mt_lmdb
+          src: /checkpoint/bmwood/ani1x_dataset/lmdbs/train/
+          lin_ref: /checkpoint/bmwood/ani1x_dataset/lmdbs/train/lin_ref_coeffs.npz
+          metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/ani1x_metadata.npz
+      val:
+        - config:
+            src: /checkpoint/bmwood/ani1x_dataset/lmdbs/val/
+            lin_ref: /checkpoint/bmwood/ani1x_dataset/lmdbs/train/lin_ref_coeffs.npz
+            metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/ani1x_val_metadata.npz
+          first_n:
+            n: 10
+      mt_transform: ocpmodels.trainers.mt.transform.ani1x_transform
+      key_mapping:
+        y: energy
+        force: forces
+    - train:
+        config:
+          format: mt_lmdb
+          src: /checkpoint/bmwood/trans1x_dataset/lmdbs/train/
+          lin_ref: /checkpoint/bmwood/trans1x_dataset/lmdbs/train/lin_ref_coeffs.npz
+          metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/transition1x_metadata.npz
+      val:
+        - config:
+            src: /checkpoint/bmwood/trans1x_dataset/lmdbs/val/
+            lin_ref: /checkpoint/bmwood/trans1x_dataset/lmdbs/train/lin_ref_coeffs.npz
+            metadata_path: /checkpoint/nimashoghi/fm_metadata_4_14/transition1x_val_metadata.npz
+          first_n:
+            n: 10
+      mt_transform: ocpmodels.trainers.mt.transform.transition1x_transform
+      key_mapping:
+        y: energy
+        force: forces
+
+logger: tensorboard
+
+loss_functions:
+  - target: energy
+    fn: mae
+    per_task: True
+  - target: forces
+    fn: l2mae
+    per_task: True
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+      - mse
+      - energy_within_threshold
+    forces:
+      - mae
+      - cosine_similarity
+    misc:
+      - energy_forces_within_threshold
+  primary_metric: forces_mae
+
+outputs:
+  energy:
+    shape: 1
+    level: system
+    custom_head: True
+    per_task: True
+    num_layers: 4
+    no_final_bias: True
+  forces:
+    level: atom
+    irrep_dim: 1
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+    custom_head: True
+    per_task: True
+    use_raw_edge_vecs: True
+    num_layers: 4
+    no_final_bias: True
+
+model:
+  name: gemnet_oc_mt
+  num_spherical: 7
+  num_radial: 128
+  num_blocks: 6
+  emb_size_atom: 256
+  emb_size_edge: 1024
+  emb_size_trip_in: 64
+  emb_size_trip_out: 128
+  emb_size_quad_in: 64
+  emb_size_quad_out: 32
+  emb_size_aint_in: 64
+  emb_size_aint_out: 64
+  emb_size_rbf: 32
+  emb_size_cbf: 16
+  emb_size_sbf: 64
+  num_before_skip: 2
+  num_after_skip: 2
+  num_concat: 4
+  num_atom: 3
+  num_output_afteratom: 3
+  cutoff: 12.0
+  cutoff_qint: 12.0
+  cutoff_aeaint: 12.0
+  cutoff_aint: 12.0
+  max_neighbors: 30
+  max_neighbors_qint: 8
+  max_neighbors_aeaint: 20
+  max_neighbors_aint: 1000
+  rbf:
+    name: gaussian
+  envelope:
+    name: polynomial
+    exponent: 5
+  cbf:
+    name: spherical_harmonics
+  sbf:
+    name: legendre_outer
+  extensive: True
+  output_init: HeOrthogonal
+  activation: silu
+  scale_file: /private/home/nimashoghi/workspaces/ocp/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc-large.pt
+
+  regress_forces: True
+  direct_forces: True
+  forces_coupled: False
+
+  quad_interaction: True
+  atom_edge_interaction: True
+  edge_atom_interaction: True
+  atom_interaction: True
+
+  num_atom_emb_layers: 2
+  num_global_out_layers: 2
+  qint_tags: [1, 2]
+
+  # new keys for mt trainer
+  absolute_rbf_cutoff: 12.0
+  otf_graph: True
+
+optim:
+  batch_size: 6
+  eval_batch_size: 6
+  load_balancing: atoms
+  eval_every: 10_000
+  num_workers: 2
+  lr_initial: 5.e-4
+  optimizer: AdamW
+  optimizer_params: { "amsgrad": True }
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.8
+  patience: 3
+  max_epochs: 80
+  ema_decay: 0.999
+  clip_grad_norm: 10
