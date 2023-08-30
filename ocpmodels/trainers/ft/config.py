@@ -210,6 +210,8 @@ class FinetuneCheckpointConfig(TypedConfig):
 
 
 class FinetuneConfig(TypedConfig):
+    """Finetune config"""
+
     base_checkpoint: FinetuneCheckpointConfig
 
     @override

@@ -1,7 +1,7 @@
 {
     "$defs": {
         "AdamWConfig": {
-            "description": "__main__.AdamWConfig",
+            "description": "",
             "properties": {
                 "name": {
                     "const": "AdamW",
@@ -53,7 +53,7 @@
             "type": "object"
         },
         "AtomLevelOutputHeadConfig": {
-            "description": "ocpmodels.trainers.mt.config.AtomLevelOutputHeadConfig",
+            "description": "",
             "properties": {
                 "num_layers": {
                     "default": 2,
@@ -113,7 +113,7 @@
             "type": "object"
         },
         "ExponentialMovingAverageConfig": {
-            "description": "__main__.ExponentialMovingAverageConfig",
+            "description": "",
             "properties": {
                 "decay": {
                     "title": "Decay",
@@ -127,7 +127,7 @@
             "type": "object"
         },
         "FinetuneCheckpointConfig": {
-            "description": "__main__.FinetuneCheckpointConfig",
+            "description": "",
             "properties": {
                 "src": {
                     "format": "path",
@@ -150,7 +150,7 @@
             "type": "object"
         },
         "FinetuneConfig": {
-            "description": "__main__.FinetuneConfig",
+            "description": "Description:\nFinetune config",
             "properties": {
                 "base_checkpoint": {
                     "$ref": "#/$defs/FinetuneCheckpointConfig"
@@ -163,7 +163,7 @@
             "type": "object"
         },
         "GemNetOCModelConfig": {
-            "description": "ocpmodels.trainers.mt.config.GemNetOCModelConfig",
+            "description": "",
             "properties": {
                 "num_targets": {
                     "default": 1,
@@ -493,7 +493,7 @@
             "type": "object"
         },
         "MultiGroupOptimConfig": {
-            "description": "__main__.MultiGroupOptimConfig",
+            "description": "",
             "properties": {
                 "exponential_moving_average": {
                     "anyOf": [
@@ -534,7 +534,7 @@
             "type": "object"
         },
         "MultiGroupPerGroupOptimConfig": {
-            "description": "__main__.MultiGroupPerGroupOptimConfig",
+            "description": "",
             "properties": {
                 "parameter_patterns": {
                     "items": {
@@ -575,7 +575,7 @@
             "type": "object"
         },
         "OCPTaskConfig": {
-            "description": "__main__.OCPTaskConfig",
+            "description": "",
             "properties": {
                 "ft": {
                     "$ref": "#/$defs/FinetuneConfig"
@@ -588,7 +588,7 @@
             "type": "object"
         },
         "ReduceLROnPlateauBaseConfig": {
-            "description": "__main__.ReduceLROnPlateauBaseConfig",
+            "description": "",
             "properties": {
                 "patience": {
                     "title": "Patience",
@@ -641,7 +641,7 @@
             "type": "object"
         },
         "ReduceLROnPlateauConfig": {
-            "description": "__main__.ReduceLROnPlateauConfig",
+            "description": "",
             "properties": {
                 "patience": {
                     "title": "Patience",
@@ -699,7 +699,7 @@
             "type": "object"
         },
         "SingleGroupOptimConfig": {
-            "description": "__main__.SingleGroupOptimConfig",
+            "description": "",
             "properties": {
                 "exponential_moving_average": {
                     "anyOf": [
@@ -758,7 +758,7 @@
             "type": "object"
         },
         "SplitDatasetConfig": {
-            "description": "ocpmodels.trainers.mt.config.SplitDatasetConfig",
+            "description": "",
             "properties": {
                 "config": {
                     "title": "Config",
@@ -819,7 +819,7 @@
             "type": "object"
         },
         "SplitDatasetFirstNConfig": {
-            "description": "ocpmodels.trainers.mt.config.SplitDatasetFirstNConfig",
+            "description": "",
             "properties": {
                 "n": {
                     "title": "N",
@@ -833,7 +833,7 @@
             "type": "object"
         },
         "SplitDatasetSampleNConfig": {
-            "description": "ocpmodels.trainers.mt.config.SplitDatasetSampleNConfig",
+            "description": "",
             "properties": {
                 "n": {
                     "title": "N",
@@ -852,7 +852,7 @@
             "type": "object"
         },
         "SystemLevelOutputHeadConfig": {
-            "description": "ocpmodels.trainers.mt.config.SystemLevelOutputHeadConfig",
+            "description": "",
             "properties": {
                 "num_layers": {
                     "default": 2,
@@ -890,7 +890,7 @@
             "type": "object"
         },
         "TaskDatasetConfig": {
-            "description": "ocpmodels.trainers.mt.config.TaskDatasetConfig",
+            "description": "",
             "properties": {
                 "train": {
                     "anyOf": [
@@ -973,7 +973,7 @@
             "type": "object"
         },
         "WarmupCosineDecayRLPSchedulerConfig": {
-            "description": "__main__.WarmupCosineDecayRLPSchedulerConfig",
+            "description": "",
             "properties": {
                 "name": {
                     "const": "WarmupCosineDecayRLP",
@@ -1046,7 +1046,7 @@
             "type": "object"
         }
     },
-    "description": "__main__.OCPConfig\n\nOCP config.",
+    "description": "Description:\nOCP config.",
     "properties": {
         "task": {
             "$ref": "#/$defs/OCPTaskConfig"

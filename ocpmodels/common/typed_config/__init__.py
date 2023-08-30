@@ -47,6 +47,18 @@ class TypedConfig(_ModelBase):
         super().__init_subclass__()
 
     @classmethod
+    def __update_description(cls):
+        description_parts: list[str] = []
+
+        # Add the class docstring if it exists.
+        if cls.__doc__:
+            description_parts.append(cls.__doc__.strip())
+
+        cls._as_pydantic_model_cls.model_config["json_schema_extra"] = {
+            "description": "\n".join(description_parts)
+        }
+
+    @classmethod
     def __pydantic_init_subclass__(
         cls,
         use_attributes_docstring: bool = True,
@@ -55,16 +67,7 @@ class TypedConfig(_ModelBase):
         super().__pydantic_init_subclass__()  # type: ignore
 
         # Set the description of the model to the class docstring + some additional info.
-        cls_full_name = cls.__module__ + "." + cls.__name__
-        description_parts: list[str] = [
-            f"{cls_full_name}",
-        ]
-        if cls.__doc__:
-            description_parts.append("")
-            description_parts.append(cls.__doc__.strip())
-        cls._as_pydantic_model_cls.model_config["json_schema_extra"] = {
-            "description": "\n".join(description_parts)
-        }
+        cls.__update_description()
 
         # Update the fields descriptions from the docstrings.
         if use_attributes_docstring:
