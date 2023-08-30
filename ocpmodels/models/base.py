@@ -58,7 +58,10 @@ class BaseModel(nn.Module):
                         embedding_dim,
                         activation="silu",
                     )
-                ] * self.output_targets[target].get("num_layers", 2)
+                    for _ in range(
+                        self.output_targets[target].get("num_layers", 2) - 1
+                    )
+                ]
 
                 layers.append(
                     Dense(edge_embedding_dim, output_shape, activation=None)
