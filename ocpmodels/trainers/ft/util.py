@@ -1,6 +1,6 @@
 import fnmatch
 from logging import getLogger
-from typing import TYPE_CHECKING, List, Mapping, Tuple
+from typing import TYPE_CHECKING, Mapping
 
 import torch
 import torch.nn as nn
@@ -27,11 +27,11 @@ def _resolve_scale_factor_submodule(model: nn.Module, name: str):
 def _report_incompat_keys(
     model: nn.Module,
     keys: "_IncompatibleKeys",
-    ignore_keys_patterns: List[str],
+    ignore_keys_patterns: list[str],
     strict: bool = False,
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     # filter out the missing scale factor keys for the new scaling factor module
-    missing_keys: List[str] = []
+    missing_keys: list[str] = []
     for full_key_name in keys.missing_keys:
         parent_module_name, _ = full_key_name.rsplit(".", 1)
         scale_factor = _resolve_scale_factor_submodule(
@@ -54,7 +54,7 @@ def _report_incompat_keys(
         missing_keys.append(full_key_name)
 
     # filter out unexpected scale factor keys that remain from the old scaling modules
-    unexpected_keys: List[str] = []
+    unexpected_keys: list[str] = []
     for full_key_name in keys.unexpected_keys:
         parent_module_name, _ = full_key_name.rsplit(".", 1)
         scale_factor = _resolve_scale_factor_submodule(
@@ -95,9 +95,9 @@ def _report_incompat_keys(
 def load_state_dict(
     module: nn.Module,
     state_dict: Mapping[str, torch.Tensor],
-    ignore_keys_patterns: List[str] = [],
+    ignore_keys_patterns: list[str] = [],
     strict: bool = True,
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     updated_state_dict: dict[str, torch.Tensor] = {}
     for k, v in state_dict.items():
         if (
