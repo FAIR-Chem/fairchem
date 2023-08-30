@@ -46,6 +46,25 @@ class TypedConfig(_ModelBase):
     ):
         super().__init_subclass__()
 
+    @classmethod
+    def __pydantic_init_subclass__(
+        cls,
+        use_attributes_docstring: bool = True,
+        write_schema_to_file: bool = False,
+    ):
+        super().__pydantic_init_subclass__()  # type: ignore
+
+        cls_full_name = cls.__module__ + "." + cls.__name__
+        description_parts: list[str] = [
+            f"{cls_full_name}",
+        ]
+        if cls.__doc__:
+            description_parts.append("")
+            description_parts.append(cls.__doc__.strip())
+        cls._as_pydantic_model_cls.model_config["json_schema_extra"] = {
+            "description": "\n".join(description_parts)
+        }
+
         if use_attributes_docstring:
             fields_docs = getattr(cls, "fields_docs", None)
             if fields_docs is None:
@@ -58,9 +77,13 @@ class TypedConfig(_ModelBase):
             )
 
         if write_schema_to_file:
-            # Get the path of the file where the class is defined.
-            # This is used to write the schema to a file with the same name.
-            cls.cls_file_path = inspect.getfile(cls)
+            cls_file_path = inspect.getfile(cls)
+            if cls_file_path:
+                # Save the schema to a file with the same name as the class.
+                dest = Path(cls_file_path).with_suffix(
+                    f".{cls.__name__}.schema.json"
+                )
+                cls.dump_schema(dest)
 
     model_config = ConfigDict(
         # By default, Pydantic will throw a warning if a field starts with "model_",
@@ -74,25 +97,16 @@ class TypedConfig(_ModelBase):
         # actions on the model.
         pass
 
-    def __save_schema(self):
-        # Save the schema to a file with the same name as the class.
-        cls_file_path = getattr(self, "cls_file_path", None)
-        if not cls_file_path:
-            return
-        cls_name = self.__class__.__name__
-        schema_path = Path(cls_file_path).with_suffix(
-            f".{cls_name}.schema.json"
-        )
-        _ = self._as_pydantic_model_cls.model_rebuild()
-        json_schema = self._as_pydantic_model_cls.model_json_schema()
-        _ = schema_path.write_text(json.dumps(json_schema, indent=4))
+    @classmethod
+    def dump_schema(cls, dest: Path):
+        _ = cls._as_pydantic_model_cls.model_rebuild(force=True)
+        json_schema = cls._as_pydantic_model_cls.model_json_schema()
+        _ = dest.write_text(json.dumps(json_schema, indent=4))
 
     if not TYPE_CHECKING:
 
         def model_post_init(self, __context: Any):
             self.__post_init__()
-
-            self.__save_schema()
 
     @classmethod
     @property

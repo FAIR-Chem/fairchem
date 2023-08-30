@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../ocpmodels/trainers/mt/config.OCPConfig.schema.json
 trainer: mt
 
 task:

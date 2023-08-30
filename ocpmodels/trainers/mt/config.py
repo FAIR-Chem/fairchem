@@ -75,6 +75,8 @@ OutputsConfig = Annotated[dict[str, OutputHeadConfig], Field()]
 
 
 class LossFnConfig(TypedConfig):
+    """Loss function config."""
+
     target: str
     fn: Literal["mae", "mse", "l1", "l2", "l2mae"]
 
@@ -104,7 +106,7 @@ class LossFn:
     fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
 
 
-LossFnsConfig = Annotated[list[LossFnConfig], Field()]
+LossFnsConfig = Annotated[list[LossFnConfig], Field(description="Losses")]
 
 # endregion
 
@@ -289,6 +291,8 @@ class OCPTaskConfig(TypedConfig):
 
 
 class OCPConfig(TypedConfig, write_schema_to_file=True):
+    """OCP config."""
+
     task: OCPTaskConfig
     dataset: DatasetConfig
     loss_functions: LossFnsConfig
@@ -370,14 +374,15 @@ class TransformFnProtocol(Protocol):
 
 
 if __name__ == "__main__":
-    import yaml
+    pass
 
-    with open("configs/goc_mt_large.yml", "r") as f:
-        config = yaml.safe_load(f)
+    # import yaml
+    # with open("configs/goc_mt_large.yml", "r") as f:
+    #     config = yaml.safe_load(f)
 
-    mt_config = MultiTaskConfig.from_dict(config["task"]["mt"])
-    config["model"]["ln"] = mt_config.ln
-    config["model"]["dropout"] = mt_config.dropout
-    config["model"]["edge_dropout"] = mt_config.edge_dropout
+    # mt_config = MultiTaskConfig.from_dict(config["task"]["mt"])
+    # config["model"]["ln"] = mt_config.ln
+    # config["model"]["dropout"] = mt_config.dropout
+    # config["model"]["edge_dropout"] = mt_config.edge_dropout
 
-    _ = OCPConfig.from_dict(config)
+    # _ = OCPConfig.from_dict(config)

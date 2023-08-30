@@ -1,6 +1,7 @@
 {
     "$defs": {
         "AtomLevelOutputHeadConfig": {
+            "description": "ocpmodels.trainers.mt.config.AtomLevelOutputHeadConfig",
             "properties": {
                 "num_layers": {
                     "default": 2,
@@ -60,6 +61,7 @@
             "type": "object"
         },
         "DatasetConfig": {
+            "description": "ocpmodels.trainers.mt.config.DatasetConfig",
             "properties": {
                 "datasets": {
                     "items": {
@@ -124,6 +126,7 @@
             "type": "object"
         },
         "FullyBalancedSamplingConfig": {
+            "description": "ocpmodels.trainers.mt.config.FullyBalancedSamplingConfig",
             "properties": {
                 "type": {
                     "const": "fully_balanced",
@@ -135,6 +138,7 @@
             "type": "object"
         },
         "GemNetOCModelConfig": {
+            "description": "ocpmodels.trainers.mt.config.GemNetOCModelConfig",
             "properties": {
                 "num_targets": {
                     "default": 1,
@@ -464,6 +468,7 @@
             "type": "object"
         },
         "LossFnConfig": {
+            "description": "ocpmodels.trainers.mt.config.LossFnConfig\n\nLoss function config.",
             "properties": {
                 "target": {
                     "title": "Target",
@@ -514,6 +519,7 @@
             "type": "object"
         },
         "MultiTaskConfig": {
+            "description": "ocpmodels.trainers.mt.config.MultiTaskConfig",
             "properties": {
                 "tasks": {
                     "items": {
@@ -569,6 +575,7 @@
             "type": "object"
         },
         "NormalizerTargetConfig": {
+            "description": "ocpmodels.trainers.mt.config.NormalizerTargetConfig",
             "properties": {
                 "mean": {
                     "default": 0.0,
@@ -585,6 +592,7 @@
             "type": "object"
         },
         "OCPTaskConfig": {
+            "description": "ocpmodels.trainers.mt.config.OCPTaskConfig",
             "properties": {
                 "mt": {
                     "$ref": "#/$defs/MultiTaskConfig"
@@ -597,6 +605,7 @@
             "type": "object"
         },
         "OneHotTargetsConfig": {
+            "description": "ocpmodels.trainers.mt.config.OneHotTargetsConfig",
             "properties": {
                 "graph_level": {
                     "default": [],
@@ -619,6 +628,7 @@
             "type": "object"
         },
         "SplitDatasetConfig": {
+            "description": "ocpmodels.trainers.mt.config.SplitDatasetConfig",
             "properties": {
                 "config": {
                     "title": "Config",
@@ -679,6 +689,7 @@
             "type": "object"
         },
         "SplitDatasetFirstNConfig": {
+            "description": "ocpmodels.trainers.mt.config.SplitDatasetFirstNConfig",
             "properties": {
                 "n": {
                     "title": "N",
@@ -692,6 +703,7 @@
             "type": "object"
         },
         "SplitDatasetSampleNConfig": {
+            "description": "ocpmodels.trainers.mt.config.SplitDatasetSampleNConfig",
             "properties": {
                 "n": {
                     "title": "N",
@@ -710,6 +722,7 @@
             "type": "object"
         },
         "SystemLevelOutputHeadConfig": {
+            "description": "ocpmodels.trainers.mt.config.SystemLevelOutputHeadConfig",
             "properties": {
                 "num_layers": {
                     "default": 2,
@@ -747,6 +760,7 @@
             "type": "object"
         },
         "TaskConfig": {
+            "description": "ocpmodels.trainers.mt.config.TaskConfig",
             "properties": {
                 "idx": {
                     "title": "Idx",
@@ -781,6 +795,7 @@
             "type": "object"
         },
         "TaskDatasetConfig": {
+            "description": "ocpmodels.trainers.mt.config.TaskDatasetConfig",
             "properties": {
                 "train": {
                     "anyOf": [
@@ -863,6 +878,7 @@
             "type": "object"
         },
         "TemperatureSamplingConfig": {
+            "description": "ocpmodels.trainers.mt.config.TemperatureSamplingConfig",
             "properties": {
                 "type": {
                     "const": "temperature",
@@ -881,6 +897,7 @@
             "type": "object"
         }
     },
+    "description": "ocpmodels.trainers.mt.config.OCPConfig\n\nOCP config.",
     "properties": {
         "task": {
             "$ref": "#/$defs/OCPTaskConfig"
@@ -889,6 +906,7 @@
             "$ref": "#/$defs/DatasetConfig"
         },
         "loss_functions": {
+            "description": "Losses",
             "items": {
                 "$ref": "#/$defs/LossFnConfig"
             },
