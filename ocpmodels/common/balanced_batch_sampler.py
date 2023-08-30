@@ -70,7 +70,7 @@ def _ensure_supported(dataset: Any):
             "BalancedBatchSampler requires a dataset that implements the `data_sizes` method."
         )
 
-    log.critical(f"BalancedBatchSampler: Resolved dataset to {type(dataset)}")
+    log.debug(f"BalancedBatchSampler: Resolved dataset to {type(dataset)}")
     return dataset
 
 
