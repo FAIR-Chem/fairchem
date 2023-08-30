@@ -283,6 +283,18 @@ class MultiTaskConfig(TypedConfig):
                 )
 
 
+class OCPTaskConfig(TypedConfig):
+    mt: MultiTaskConfig
+
+
+class OCPConfig(TypedConfig, write_schema_to_file=True):
+    task: OCPTaskConfig
+    dataset: DatasetConfig
+    loss_functions: LossFnsConfig
+    model: ModelConfig
+    outputs: OutputsConfig
+
+
 # endregion
 
 
@@ -354,3 +366,17 @@ class TransformFnProtocol(Protocol):
         training: bool,
     ) -> Data:
         ...
+
+
+if __name__ == "__main__":
+    import yaml
+
+    with open("configs/goc_mt_large.yml", "r") as f:
+        config = yaml.safe_load(f)
+
+    mt_config = MultiTaskConfig.from_dict(config["task"]["mt"])
+    config["model"]["ln"] = mt_config.ln
+    config["model"]["dropout"] = mt_config.dropout
+    config["model"]["edge_dropout"] = mt_config.edge_dropout
+
+    print(OCPConfig.from_dict(config))
