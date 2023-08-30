@@ -281,7 +281,7 @@ model:
 
 optim:
   batch_size: 4
-  eval_batch_size: 48
+  eval_batch_size: 45
   load_balancing: atoms
   eval_every: 10_000
   num_workers: 2

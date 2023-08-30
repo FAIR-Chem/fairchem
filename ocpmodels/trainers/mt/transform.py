@@ -22,11 +22,10 @@ def _process_aint_graph(
     *,
     training: bool,
 ):
-    if config.mt is not None and config.mt.edge_dropout:
+    if config.mt is not None and config.mt.edge_dropout and training:
         graph["edge_index"], mask = dropout_edge(
             graph["edge_index"],
             p=config.mt.edge_dropout,
-            training=training,
         )
         graph["distance"] = graph["distance"][mask]
         graph["vector"] = graph["vector"][mask]

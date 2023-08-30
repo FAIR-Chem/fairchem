@@ -699,12 +699,12 @@ class MTTrainer(BaseTrainer):
                 [batch.energy_onehot.to(self.device) for batch in batch_list]
             )[mask]
             energy_pred = outputs["energy"][mask]
-            energy_target, energy_pred = denormalize_tensors(
-                batch_list,
-                "energy",
-                (energy_target, energy_pred),
-                mask[:, task.idx],
-            )
+            # energy_target, energy_pred = denormalize_tensors(
+            #     batch_list,
+            #     "energy",
+            #     (energy_target, energy_pred),
+            #     mask[:, task.idx],
+            # )
 
             energy_mae = per_task_energy_maes[task.idx](
                 energy_pred, energy_target
@@ -717,12 +717,12 @@ class MTTrainer(BaseTrainer):
                 [batch.forces_onehot.to(self.device) for batch in batch_list]
             )[node_mask]
             forces_pred = outputs["forces"][node_mask]
-            forces_target, forces_pred = denormalize_tensors(
-                batch_list,
-                "forces",
-                (forces_target, forces_pred),
-                node_mask[:, task.idx],
-            )
+            # forces_target, forces_pred = denormalize_tensors(
+            #     batch_list,
+            #     "forces",
+            #     (forces_target, forces_pred),
+            #     node_mask[:, task.idx],
+            # )
 
             forces_mae = per_task_force_maes[task.idx](
                 forces_pred, forces_target
@@ -795,19 +795,28 @@ class MTTrainer(BaseTrainer):
             else:
                 raise NotImplementedError(f"{level=} not implemented.")
 
-        with denormalize_context(batch_list, aggregated_outputs) as (
+        with denormalize_context(
+            batch_list,
+            [aggregated_outputs],
+            [outputs],
+        ) as (
             denormed_batch_list,
-            denormed_aggregated_outputs,
+            [denormed_aggregated_outputs],
+            [denormed_outputs],
         ):
             metrics = super()._compute_metrics(
-                denormed_aggregated_outputs,
+                denormed_aggregated_outputs.copy(),
                 denormed_batch_list,
                 evaluator,
                 metrics,
             )
 
-        # Now, compute the per-task metrics
-        _ = metrics.update(self._compute_per_task_metrics(outputs, batch_list))
+            # Now, compute the per-task metrics
+            _ = metrics.update(
+                self._compute_per_task_metrics(
+                    denormed_outputs, denormed_batch_list
+                )
+            )
 
         if (
             self.model.training

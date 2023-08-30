@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from typing import Any, Generator
 
 import torch
 from torch_geometric.data import Batch, Data
@@ -18,6 +19,7 @@ def normalizer_transform(config: dict[str, NormalizerTargetConfig]):
                 if not isinstance(data[target], torch.Tensor)
                 else data[target]
             )
+            data[f"{target}_unnormalized"] = data[target].clone()
             data[target] = (
                 data[target] - target_config.mean
             ) / target_config.std
@@ -72,12 +74,13 @@ def denormalize_batch(
 @contextmanager
 def denormalize_context(
     batch_list: list[Batch],
-    additional_tensors: dict[str, torch.Tensor] | None = None,
+    additional_tensors: list[dict[str, torch.Tensor]],
+    task_level_additional_tensors: list[dict[str, torch.Tensor]],
 ):
-    if additional_tensors is None:
-        additional_tensors = {}
-
-    additional_tensors = additional_tensors.copy()
+    additional_tensors_list = [d.copy() for d in additional_tensors]
+    task_level_additional_tensors_list = [
+        d.copy() for d in task_level_additional_tensors
+    ]
 
     keys: set[str] = set([k for batch in batch_list for k in batch.keys])  # type: ignore
 
@@ -101,11 +104,18 @@ def denormalize_context(
             value = (value * std) + mean
             setattr(batch, key, value)
 
-            additional_value = additional_tensors.pop(key, None)
-            if additional_value is not None:
-                additional_tensors[key] = (additional_value * std) + mean
+            for d in additional_tensors_list:
+                additional_value = d.pop(key, None)
+                if additional_value is not None:
+                    d[key] = (additional_value * std) + mean
+            for d in task_level_additional_tensors_list:
+                additional_value = d.pop(key, None)
+                if additional_value is not None:
+                    std = std.unsqueeze(dim=1)
+                    mean = mean.unsqueeze(dim=1)
+                    d[key] = (additional_value * std) + mean
 
-    yield batch_list, additional_tensors
+    yield batch_list, additional_tensors_list, task_level_additional_tensors_list
 
     for key in norm_keys:
         for batch in batch_list:

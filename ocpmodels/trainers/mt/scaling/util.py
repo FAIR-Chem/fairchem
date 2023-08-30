@@ -95,10 +95,66 @@ def _report_incompat_keys(
     return missing_keys, unexpected_keys
 
 
+def ensure_state_dict_matches(
+    module: nn.Module,
+    state_dict: Mapping[str, torch.Tensor],
+    strict: bool = True,
+) -> None:
+    module_state_dict = module.state_dict()
+    shared_keys = set(module_state_dict.keys()) & set(state_dict.keys())
+    if strict:
+        missing_keys = set(module_state_dict.keys()) - shared_keys
+        unexpected_keys = set(state_dict.keys()) - shared_keys
+        if len(missing_keys) > 0:
+            raise RuntimeError(
+                f"Missing keys in state_dict: {missing_keys}. "
+                "Please make sure that the model has been initialized properly."
+            )
+
+        if len(unexpected_keys) > 0:
+            raise RuntimeError(
+                f"Unexpected keys in state_dict: {unexpected_keys}. "
+                "Please make sure that the model has been initialized properly."
+            )
+
+    for key in shared_keys:
+        state_dict_value = state_dict[key]
+        module_value = module_state_dict[key]
+        if state_dict_value.shape != module_value.shape:
+            raise RuntimeError(
+                f"Shape mismatch for key {key}: "
+                f"state_dict: {state_dict_value.shape}, "
+                f"module: {module_value.shape}. "
+                "Please make sure that the model has been initialized properly."
+            )
+
+        if state_dict_value.dtype != module_value.dtype:
+            raise RuntimeError(
+                f"Dtype mismatch for key {key}: "
+                f"state_dict: {state_dict_value.dtype}, "
+                f"module: {module_value.dtype}. "
+                "Please make sure that the model has been initialized properly."
+            )
+
+        if not torch.allclose(state_dict_value, module_value):
+            raise RuntimeError(
+                f"Value mismatch for key {key}: "
+                f"state_dict: {state_dict_value}, "
+                f"module: {module_value}. "
+                "Please make sure that the model has been initialized properly."
+            )
+
+
 def load_state_dict(
     module: nn.Module,
     state_dict: Mapping[str, torch.Tensor],
     strict: bool = True,
+    check_matches: bool = True,
 ) -> tuple[list[str], list[str]]:
     incompat_keys = module.load_state_dict(state_dict, strict=False)  # type: ignore
-    return _report_incompat_keys(module, incompat_keys, strict=strict)
+    missing_keys, unexpected_keys = _report_incompat_keys(
+        module, incompat_keys, strict=strict
+    )
+    if check_matches:
+        ensure_state_dict_matches(module, state_dict, strict=strict)
+    return missing_keys, unexpected_keys

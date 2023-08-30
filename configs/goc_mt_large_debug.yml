@@ -52,7 +52,7 @@ task:
           forces:
             mean: 0.0
             std: 0.3591422140598297
-    edge_dropout: 0.15
+    edge_dropout: 0.0
 
 dataset:
   sampling:
@@ -294,5 +294,5 @@ optim:
   factor: 0.8
   patience: 3
   max_epochs: 80
-  ema_decay: 0.999
   clip_grad_norm: 10
+  # ema_decay: 0.999
