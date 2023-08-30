@@ -17,6 +17,7 @@ from ...common.utils import MappedKeyType
 # region Output Head Config
 class BaseOutputHeadConfig(TypedConfig):
     num_layers: int = 2
+    """Number of layers in the output head."""
     custom_head: bool = False
     per_task: bool = False
     bias: bool = True
@@ -379,4 +380,4 @@ if __name__ == "__main__":
     config["model"]["dropout"] = mt_config.dropout
     config["model"]["edge_dropout"] = mt_config.edge_dropout
 
-    print(OCPConfig.from_dict(config))
+    _ = OCPConfig.from_dict(config)

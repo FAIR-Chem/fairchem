@@ -1,0 +1,943 @@
+{
+    "$defs": {
+        "AtomLevelOutputHeadConfig": {
+            "properties": {
+                "num_layers": {
+                    "default": 2,
+                    "description": "Number of layers in the output head.",
+                    "title": "Num Layers",
+                    "type": "integer"
+                },
+                "custom_head": {
+                    "default": false,
+                    "title": "Custom Head",
+                    "type": "boolean"
+                },
+                "per_task": {
+                    "default": false,
+                    "title": "Per Task",
+                    "type": "boolean"
+                },
+                "bias": {
+                    "default": true,
+                    "title": "Bias",
+                    "type": "boolean"
+                },
+                "no_final_bias": {
+                    "default": false,
+                    "title": "No Final Bias",
+                    "type": "boolean"
+                },
+                "level": {
+                    "const": "atom",
+                    "default": "atom",
+                    "title": "Level"
+                },
+                "irrep_dim": {
+                    "title": "Irrep Dim",
+                    "type": "integer"
+                },
+                "train_on_free_atoms": {
+                    "default": true,
+                    "title": "Train On Free Atoms",
+                    "type": "boolean"
+                },
+                "eval_on_free_atoms": {
+                    "default": true,
+                    "title": "Eval On Free Atoms",
+                    "type": "boolean"
+                },
+                "use_raw_edge_vecs": {
+                    "default": false,
+                    "title": "Use Raw Edge Vecs",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "irrep_dim"
+            ],
+            "title": "AtomLevelOutputHeadConfig",
+            "type": "object"
+        },
+        "DatasetConfig": {
+            "properties": {
+                "datasets": {
+                    "items": {
+                        "$ref": "#/$defs/TaskDatasetConfig"
+                    },
+                    "title": "Datasets",
+                    "type": "array"
+                },
+                "one_hot_targets": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/OneHotTargetsConfig"
+                        }
+                    ],
+                    "default": {
+                        "graph_level": [],
+                        "node_level": []
+                    }
+                },
+                "sampling": {
+                    "default": {
+                        "temperature": 1.0,
+                        "type": "temperature"
+                    },
+                    "discriminator": {
+                        "mapping": {
+                            "fully_balanced": "#/$defs/FullyBalancedSamplingConfig",
+                            "temperature": "#/$defs/TemperatureSamplingConfig"
+                        },
+                        "propertyName": "type"
+                    },
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/TemperatureSamplingConfig"
+                        },
+                        {
+                            "$ref": "#/$defs/FullyBalancedSamplingConfig"
+                        }
+                    ],
+                    "title": "Sampling"
+                },
+                "collate_exclude_keys": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Collate Exclude Keys"
+                }
+            },
+            "required": [
+                "datasets"
+            ],
+            "title": "DatasetConfig",
+            "type": "object"
+        },
+        "FullyBalancedSamplingConfig": {
+            "properties": {
+                "type": {
+                    "const": "fully_balanced",
+                    "default": "fully_balanced",
+                    "title": "Type"
+                }
+            },
+            "title": "FullyBalancedSamplingConfig",
+            "type": "object"
+        },
+        "GemNetOCModelConfig": {
+            "properties": {
+                "num_targets": {
+                    "default": 1,
+                    "title": "Num Targets",
+                    "type": "integer"
+                },
+                "num_spherical": {
+                    "title": "Num Spherical",
+                    "type": "integer"
+                },
+                "num_radial": {
+                    "title": "Num Radial",
+                    "type": "integer"
+                },
+                "num_blocks": {
+                    "title": "Num Blocks",
+                    "type": "integer"
+                },
+                "emb_size_atom": {
+                    "title": "Emb Size Atom",
+                    "type": "integer"
+                },
+                "emb_size_edge": {
+                    "title": "Emb Size Edge",
+                    "type": "integer"
+                },
+                "emb_size_trip_in": {
+                    "title": "Emb Size Trip In",
+                    "type": "integer"
+                },
+                "emb_size_trip_out": {
+                    "title": "Emb Size Trip Out",
+                    "type": "integer"
+                },
+                "emb_size_quad_in": {
+                    "title": "Emb Size Quad In",
+                    "type": "integer"
+                },
+                "emb_size_quad_out": {
+                    "title": "Emb Size Quad Out",
+                    "type": "integer"
+                },
+                "emb_size_aint_in": {
+                    "title": "Emb Size Aint In",
+                    "type": "integer"
+                },
+                "emb_size_aint_out": {
+                    "title": "Emb Size Aint Out",
+                    "type": "integer"
+                },
+                "emb_size_rbf": {
+                    "title": "Emb Size Rbf",
+                    "type": "integer"
+                },
+                "emb_size_cbf": {
+                    "title": "Emb Size Cbf",
+                    "type": "integer"
+                },
+                "emb_size_sbf": {
+                    "title": "Emb Size Sbf",
+                    "type": "integer"
+                },
+                "num_before_skip": {
+                    "title": "Num Before Skip",
+                    "type": "integer"
+                },
+                "num_after_skip": {
+                    "title": "Num After Skip",
+                    "type": "integer"
+                },
+                "num_concat": {
+                    "title": "Num Concat",
+                    "type": "integer"
+                },
+                "num_atom": {
+                    "title": "Num Atom",
+                    "type": "integer"
+                },
+                "num_output_afteratom": {
+                    "title": "Num Output Afteratom",
+                    "type": "integer"
+                },
+                "num_atom_emb_layers": {
+                    "default": 0,
+                    "title": "Num Atom Emb Layers",
+                    "type": "integer"
+                },
+                "num_global_out_layers": {
+                    "default": 2,
+                    "title": "Num Global Out Layers",
+                    "type": "integer"
+                },
+                "regress_forces": {
+                    "default": true,
+                    "title": "Regress Forces",
+                    "type": "boolean"
+                },
+                "regress_energy": {
+                    "default": true,
+                    "title": "Regress Energy",
+                    "type": "boolean"
+                },
+                "direct_forces": {
+                    "default": false,
+                    "title": "Direct Forces",
+                    "type": "boolean"
+                },
+                "use_pbc": {
+                    "default": true,
+                    "title": "Use Pbc",
+                    "type": "boolean"
+                },
+                "scale_backprop_forces": {
+                    "default": false,
+                    "title": "Scale Backprop Forces",
+                    "type": "boolean"
+                },
+                "rbf": {
+                    "default": {
+                        "name": "gaussian"
+                    },
+                    "title": "Rbf",
+                    "type": "object"
+                },
+                "rbf_spherical": {
+                    "anyOf": [
+                        {
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Rbf Spherical"
+                },
+                "envelope": {
+                    "default": {
+                        "exponent": 5,
+                        "name": "polynomial"
+                    },
+                    "title": "Envelope",
+                    "type": "object"
+                },
+                "cbf": {
+                    "default": {
+                        "name": "spherical_harmonics"
+                    },
+                    "title": "Cbf",
+                    "type": "object"
+                },
+                "sbf": {
+                    "default": {
+                        "name": "spherical_harmonics"
+                    },
+                    "title": "Sbf",
+                    "type": "object"
+                },
+                "extensive": {
+                    "default": true,
+                    "title": "Extensive",
+                    "type": "boolean"
+                },
+                "forces_coupled": {
+                    "default": false,
+                    "title": "Forces Coupled",
+                    "type": "boolean"
+                },
+                "activation": {
+                    "default": "scaled_silu",
+                    "title": "Activation",
+                    "type": "string"
+                },
+                "quad_interaction": {
+                    "default": false,
+                    "title": "Quad Interaction",
+                    "type": "boolean"
+                },
+                "atom_edge_interaction": {
+                    "default": false,
+                    "title": "Atom Edge Interaction",
+                    "type": "boolean"
+                },
+                "edge_atom_interaction": {
+                    "default": false,
+                    "title": "Edge Atom Interaction",
+                    "type": "boolean"
+                },
+                "atom_interaction": {
+                    "default": false,
+                    "title": "Atom Interaction",
+                    "type": "boolean"
+                },
+                "scale_basis": {
+                    "default": false,
+                    "title": "Scale Basis",
+                    "type": "boolean"
+                },
+                "qint_tags": {
+                    "default": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "items": {},
+                    "title": "Qint Tags",
+                    "type": "array"
+                },
+                "num_elements": {
+                    "default": 120,
+                    "title": "Num Elements",
+                    "type": "integer"
+                },
+                "otf_graph": {
+                    "default": false,
+                    "title": "Otf Graph",
+                    "type": "boolean"
+                },
+                "ln": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ],
+                    "title": "Ln"
+                },
+                "dropout": {
+                    "anyOf": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "title": "Dropout"
+                },
+                "scale_file": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Scale File"
+                },
+                "absolute_rbf_cutoff": {
+                    "anyOf": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Absolute Rbf Cutoff"
+                },
+                "learnable_rbf": {
+                    "default": false,
+                    "title": "Learnable Rbf",
+                    "type": "boolean"
+                },
+                "learnable_rbf_stds": {
+                    "default": false,
+                    "title": "Learnable Rbf Stds",
+                    "type": "boolean"
+                },
+                "unique_basis_per_layer": {
+                    "default": false,
+                    "title": "Unique Basis Per Layer",
+                    "type": "boolean"
+                },
+                "old_gaussian_implementation": {
+                    "default": false,
+                    "title": "Old Gaussian Implementation",
+                    "type": "boolean"
+                },
+                "edge_dropout": {
+                    "anyOf": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "title": "Edge Dropout"
+                },
+                "name": {
+                    "const": "gemnet_oc_mt",
+                    "default": "gemnet_oc_mt",
+                    "title": "Name"
+                }
+            },
+            "required": [
+                "num_spherical",
+                "num_radial",
+                "num_blocks",
+                "emb_size_atom",
+                "emb_size_edge",
+                "emb_size_trip_in",
+                "emb_size_trip_out",
+                "emb_size_quad_in",
+                "emb_size_quad_out",
+                "emb_size_aint_in",
+                "emb_size_aint_out",
+                "emb_size_rbf",
+                "emb_size_cbf",
+                "emb_size_sbf",
+                "num_before_skip",
+                "num_after_skip",
+                "num_concat",
+                "num_atom",
+                "num_output_afteratom",
+                "ln",
+                "dropout",
+                "edge_dropout"
+            ],
+            "title": "GemNetOCModelConfig",
+            "type": "object"
+        },
+        "LossFnConfig": {
+            "properties": {
+                "target": {
+                    "title": "Target",
+                    "type": "string"
+                },
+                "fn": {
+                    "enum": [
+                        "mae",
+                        "mse",
+                        "l1",
+                        "l2",
+                        "l2mae"
+                    ],
+                    "title": "Fn",
+                    "type": "string"
+                },
+                "coefficient": {
+                    "anyOf": [
+                        {},
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Coefficient"
+                },
+                "reduction": {
+                    "default": "mean",
+                    "enum": [
+                        "sum",
+                        "mean",
+                        "structure_wise_mean"
+                    ],
+                    "title": "Reduction",
+                    "type": "string"
+                },
+                "per_task": {
+                    "default": false,
+                    "title": "Per Task",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "target",
+                "fn"
+            ],
+            "title": "LossFnConfig",
+            "type": "object"
+        },
+        "MultiTaskConfig": {
+            "properties": {
+                "tasks": {
+                    "items": {
+                        "$ref": "#/$defs/TaskConfig"
+                    },
+                    "title": "Tasks",
+                    "type": "array"
+                },
+                "ln": {
+                    "default": false,
+                    "title": "Ln",
+                    "type": "boolean"
+                },
+                "edge_dropout": {
+                    "anyOf": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Edge Dropout"
+                },
+                "dropout": {
+                    "anyOf": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Dropout"
+                },
+                "log_task_steps_and_epochs": {
+                    "default": true,
+                    "title": "Log Task Steps And Epochs",
+                    "type": "boolean"
+                },
+                "lovely_tensors": {
+                    "default": false,
+                    "title": "Lovely Tensors",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "tasks"
+            ],
+            "title": "MultiTaskConfig",
+            "type": "object"
+        },
+        "NormalizerTargetConfig": {
+            "properties": {
+                "mean": {
+                    "default": 0.0,
+                    "title": "Mean",
+                    "type": "number"
+                },
+                "std": {
+                    "default": 1.0,
+                    "title": "Std",
+                    "type": "number"
+                }
+            },
+            "title": "NormalizerTargetConfig",
+            "type": "object"
+        },
+        "OCPTaskConfig": {
+            "properties": {
+                "mt": {
+                    "$ref": "#/$defs/MultiTaskConfig"
+                }
+            },
+            "required": [
+                "mt"
+            ],
+            "title": "OCPTaskConfig",
+            "type": "object"
+        },
+        "OneHotTargetsConfig": {
+            "properties": {
+                "graph_level": {
+                    "default": [],
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Graph Level",
+                    "type": "array"
+                },
+                "node_level": {
+                    "default": [],
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Node Level",
+                    "type": "array"
+                }
+            },
+            "title": "OneHotTargetsConfig",
+            "type": "object"
+        },
+        "SplitDatasetConfig": {
+            "properties": {
+                "config": {
+                    "title": "Config",
+                    "type": "object"
+                },
+                "first_n": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SplitDatasetFirstNConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "sample_n": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SplitDatasetSampleNConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "key_mapping": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "additionalProperties": {
+                                            "type": "string"
+                                        },
+                                        "type": "object"
+                                    }
+                                ]
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Key Mapping"
+                }
+            },
+            "required": [
+                "config"
+            ],
+            "title": "SplitDatasetConfig",
+            "type": "object"
+        },
+        "SplitDatasetFirstNConfig": {
+            "properties": {
+                "n": {
+                    "title": "N",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "n"
+            ],
+            "title": "SplitDatasetFirstNConfig",
+            "type": "object"
+        },
+        "SplitDatasetSampleNConfig": {
+            "properties": {
+                "n": {
+                    "title": "N",
+                    "type": "integer"
+                },
+                "seed": {
+                    "title": "Seed",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "n",
+                "seed"
+            ],
+            "title": "SplitDatasetSampleNConfig",
+            "type": "object"
+        },
+        "SystemLevelOutputHeadConfig": {
+            "properties": {
+                "num_layers": {
+                    "default": 2,
+                    "description": "Number of layers in the output head.",
+                    "title": "Num Layers",
+                    "type": "integer"
+                },
+                "custom_head": {
+                    "default": false,
+                    "title": "Custom Head",
+                    "type": "boolean"
+                },
+                "per_task": {
+                    "default": false,
+                    "title": "Per Task",
+                    "type": "boolean"
+                },
+                "bias": {
+                    "default": true,
+                    "title": "Bias",
+                    "type": "boolean"
+                },
+                "no_final_bias": {
+                    "default": false,
+                    "title": "No Final Bias",
+                    "type": "boolean"
+                },
+                "level": {
+                    "const": "system",
+                    "default": "system",
+                    "title": "Level"
+                }
+            },
+            "title": "SystemLevelOutputHeadConfig",
+            "type": "object"
+        },
+        "TaskConfig": {
+            "properties": {
+                "idx": {
+                    "title": "Idx",
+                    "type": "integer"
+                },
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "loss_coefficients": {
+                    "additionalProperties": {
+                        "type": "number"
+                    },
+                    "default": {},
+                    "title": "Loss Coefficients",
+                    "type": "object"
+                },
+                "normalization": {
+                    "additionalProperties": {
+                        "$ref": "#/$defs/NormalizerTargetConfig"
+                    },
+                    "default": {},
+                    "title": "Normalization",
+                    "type": "object"
+                }
+            },
+            "required": [
+                "idx",
+                "name"
+            ],
+            "title": "TaskConfig",
+            "type": "object"
+        },
+        "TaskDatasetConfig": {
+            "properties": {
+                "train": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SplitDatasetConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "val": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/SplitDatasetConfig"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Val"
+                },
+                "test": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/SplitDatasetConfig"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Test"
+                },
+                "key_mapping": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "type": "object"
+                            }
+                        ]
+                    },
+                    "default": {},
+                    "title": "Key Mapping",
+                    "type": "object"
+                },
+                "mt_transform": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Mt Transform"
+                },
+                "copy_from_train": {
+                    "default": true,
+                    "title": "Copy From Train",
+                    "type": "boolean"
+                }
+            },
+            "title": "TaskDatasetConfig",
+            "type": "object"
+        },
+        "TemperatureSamplingConfig": {
+            "properties": {
+                "type": {
+                    "const": "temperature",
+                    "default": "temperature",
+                    "title": "Type"
+                },
+                "temperature": {
+                    "title": "Temperature",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "temperature"
+            ],
+            "title": "TemperatureSamplingConfig",
+            "type": "object"
+        }
+    },
+    "properties": {
+        "task": {
+            "$ref": "#/$defs/OCPTaskConfig"
+        },
+        "dataset": {
+            "$ref": "#/$defs/DatasetConfig"
+        },
+        "loss_functions": {
+            "items": {
+                "$ref": "#/$defs/LossFnConfig"
+            },
+            "title": "Loss Functions",
+            "type": "array"
+        },
+        "model": {
+            "discriminator": {
+                "mapping": {
+                    "gemnet_oc_mt": "#/$defs/GemNetOCModelConfig"
+                },
+                "propertyName": "name"
+            },
+            "oneOf": [
+                {
+                    "$ref": "#/$defs/GemNetOCModelConfig"
+                }
+            ],
+            "title": "Model"
+        },
+        "outputs": {
+            "additionalProperties": {
+                "discriminator": {
+                    "mapping": {
+                        "atom": "#/$defs/AtomLevelOutputHeadConfig",
+                        "system": "#/$defs/SystemLevelOutputHeadConfig"
+                    },
+                    "propertyName": "level"
+                },
+                "oneOf": [
+                    {
+                        "$ref": "#/$defs/SystemLevelOutputHeadConfig"
+                    },
+                    {
+                        "$ref": "#/$defs/AtomLevelOutputHeadConfig"
+                    }
+                ]
+            },
+            "title": "Outputs",
+            "type": "object"
+        }
+    },
+    "required": [
+        "task",
+        "dataset",
+        "loss_functions",
+        "model",
+        "outputs"
+    ],
+    "title": "OCPConfig",
+    "type": "object"
+}

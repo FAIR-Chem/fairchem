@@ -13,7 +13,10 @@ from pydantic import (
     ValidationError,
     field_validator,
 )
+from pydantic.fields import FieldInfo
 from typing_extensions import Self, dataclass_transform, override
+
+from ._docs_extraction import extract_docstrings_from_cls
 
 log = getLogger(__name__)
 
@@ -23,12 +26,36 @@ if TYPE_CHECKING:
     _ModelBase = ABC
 
 
+def _update_fields_from_docstrings(
+    fields: dict[str, FieldInfo],
+    fields_docs: dict[str, str],
+) -> None:
+    for ann_name, field_info in fields.items():
+        if field_info.description is None and ann_name in fields_docs:
+            field_info.description = fields_docs[ann_name]
+
+
 @dataclass_transform(kw_only_default=True)
 class TypedConfig(_ModelBase):
     @override
     @classmethod
-    def __init_subclass__(cls, write_schema_to_file: bool = False):
+    def __init_subclass__(
+        cls,
+        use_attributes_docstring: bool = True,
+        write_schema_to_file: bool = False,
+    ):
         super().__init_subclass__()
+
+        if use_attributes_docstring:
+            fields_docs = getattr(cls, "fields_docs", None)
+            if fields_docs is None:
+                fields_docs = {}
+            fields_docs = {**fields_docs, **extract_docstrings_from_cls(cls)}
+            setattr(cls, "fields_docs", fields_docs)
+
+            _update_fields_from_docstrings(
+                cls._as_pydantic_model_cls.model_fields, fields_docs
+            )
 
         if write_schema_to_file:
             # Get the path of the file where the class is defined.
