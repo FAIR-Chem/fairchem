@@ -54,6 +54,7 @@ class TypedConfig(_ModelBase):
     ):
         super().__pydantic_init_subclass__()  # type: ignore
 
+        # Set the description of the model to the class docstring + some additional info.
         cls_full_name = cls.__module__ + "." + cls.__name__
         description_parts: list[str] = [
             f"{cls_full_name}",
@@ -65,6 +66,7 @@ class TypedConfig(_ModelBase):
             "description": "\n".join(description_parts)
         }
 
+        # Update the fields descriptions from the docstrings.
         if use_attributes_docstring:
             fields_docs = getattr(cls, "fields_docs", None)
             if fields_docs is None:
@@ -76,6 +78,7 @@ class TypedConfig(_ModelBase):
                 cls._as_pydantic_model_cls.model_fields, fields_docs
             )
 
+        # If requested, write the schema to a file.
         if write_schema_to_file:
             cls_file_path = inspect.getfile(cls)
             if cls_file_path:
