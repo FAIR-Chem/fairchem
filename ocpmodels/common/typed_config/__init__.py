@@ -1,5 +1,6 @@
 import inspect
 import json
+import warnings
 from abc import ABC
 from logging import getLogger
 from pathlib import Path
@@ -120,6 +121,17 @@ class TypedConfig(_ModelBase):
 
     def to_dict(self) -> dict[str, Any]:
         return self._as_pydantic_model.model_dump()
+
+    def pprint(self):
+        try:
+            from rich import print as rprint
+        except ImportError:
+            warnings.warn(
+                "rich is not installed, falling back to default print function"
+            )
+            print(self)
+        else:
+            rprint(self)
 
 
 class Singleton:
