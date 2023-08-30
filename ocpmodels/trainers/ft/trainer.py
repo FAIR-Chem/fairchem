@@ -14,12 +14,13 @@ from ocpmodels.common.typed_config import TypeAdapter
 from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.trainers.mt.balanced_batch_sampler import BalancedBatchSampler
 from ocpmodels.trainers.mt.collate import ParallelCollater
-from ocpmodels.trainers.mt.config import TaskDatasetConfig, ModelConfig
-from ocpmodels.trainers.mt.dataset import create_ft_datasets
+from ocpmodels.trainers.mt.config import ModelConfig
+from ocpmodels.trainers.mt.normalizer import denormalize_context
 from ocpmodels.trainers.mt.scaling.compat import load_scales_compat
 from ocpmodels.trainers.ocp_trainer import OCPTrainer
 
 from .config import FinetuneConfig, OptimConfig, OptimizerTrainerContext
+from .dataset import FTDatasetsConfig, create_ft_datasets
 from .optimizer import load_optimizer
 from .util import load_state_dict
 
@@ -56,7 +57,7 @@ class FTTrainer(OCPTrainer):
             task,
             model,
             outputs,
-            TaskDatasetConfig.from_dict(
+            FTDatasetsConfig.from_dict(
                 dataset
             ),  # HACK: wrap it in a class so it doesn't get registered as a dict,
             optimizer,
@@ -81,8 +82,8 @@ class FTTrainer(OCPTrainer):
     def dataset_config(self):
         dataset_config = self.config["dataset"]
         assert isinstance(
-            dataset_config, TaskDatasetConfig
-        ), f"{dataset_config=} is not a TaskDatasetConfig"
+            dataset_config, FTDatasetsConfig
+        ), f"{dataset_config=} is not a FTDatasetsConfig"
         return dataset_config
 
     @override
@@ -467,3 +468,17 @@ class FTTrainer(OCPTrainer):
             on_error=on_error,
         )
         return sampler
+
+    @override
+    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
+        with denormalize_context(batch_list, [out], []) as (
+            denormed_batch_list,
+            [denormed_out],
+            _,
+        ):
+            return super()._compute_metrics(
+                denormed_out.copy(),
+                denormed_batch_list,
+                evaluator,
+                metrics,
+            )

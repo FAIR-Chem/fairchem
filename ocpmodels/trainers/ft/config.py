@@ -10,7 +10,12 @@ from typing_extensions import Annotated, override
 
 from ocpmodels.common.typed_config import Field, TypedConfig
 
-from ..mt.config import ModelConfig, OutputsConfig, TaskDatasetConfig
+from ..mt.config import (
+    ModelConfig,
+    NormalizerTargetConfig,
+    OutputsConfig,
+    TaskDatasetConfig,
+)
 from . import lr_scheduler as LR
 
 
@@ -224,6 +229,10 @@ class FinetuneConfig(TypedConfig):
             )
 
 
+class FTDatasetsConfig(TaskDatasetConfig):
+    normalization: dict[str, NormalizerTargetConfig] = {}
+
+
 # region OCP Config Schema
 
 
@@ -236,7 +245,7 @@ class OCPConfig(TypedConfig, write_schema_to_file=True):
 
     task: OCPTaskConfig
     outputs: OutputsConfig
-    dataset: TaskDatasetConfig
+    dataset: FTDatasetsConfig
     model: ModelConfig
     optim: OptimConfig
 

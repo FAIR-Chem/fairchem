@@ -9,14 +9,15 @@ task:
 
 dataset:
   mt_transform: ocpmodels.trainers.ft.transform.qm9_transform
+  normalization:
+    U_0:
+      mean: 0.0028667436
+      std: 1.0965848
+
   train:
     config:
       format: lmdb
       src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/train
-    # normalizer: TODO
-    #   U_0:
-    #     mean: 0.0028667436
-    #     stdev: 1.0965848
   val:
     - config:
         src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/val

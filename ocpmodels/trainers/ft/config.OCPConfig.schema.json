@@ -123,6 +123,96 @@
             "title": "ExponentialMovingAverageConfig",
             "type": "object"
         },
+        "FTDatasetsConfig": {
+            "properties": {
+                "train": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SplitDatasetConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "val": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/SplitDatasetConfig"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Val"
+                },
+                "test": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/SplitDatasetConfig"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Test"
+                },
+                "key_mapping": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "type": "object"
+                            }
+                        ]
+                    },
+                    "default": {},
+                    "title": "Key Mapping",
+                    "type": "object"
+                },
+                "mt_transform": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Mt Transform"
+                },
+                "copy_from_train": {
+                    "default": true,
+                    "title": "Copy From Train",
+                    "type": "boolean"
+                },
+                "normalization": {
+                    "additionalProperties": {
+                        "$ref": "#/$defs/NormalizerTargetConfig"
+                    },
+                    "default": {},
+                    "title": "Normalization",
+                    "type": "object"
+                }
+            },
+            "title": "FTDatasetsConfig",
+            "type": "object"
+        },
         "FinetuneCheckpointConfig": {
             "properties": {
                 "src": {
@@ -567,6 +657,22 @@
             "title": "MultiGroupPerGroupOptimConfig",
             "type": "object"
         },
+        "NormalizerTargetConfig": {
+            "properties": {
+                "mean": {
+                    "default": 0.0,
+                    "title": "Mean",
+                    "type": "number"
+                },
+                "std": {
+                    "default": 1.0,
+                    "title": "Std",
+                    "type": "number"
+                }
+            },
+            "title": "NormalizerTargetConfig",
+            "type": "object"
+        },
         "OCPTaskConfig": {
             "properties": {
                 "ft": {
@@ -874,88 +980,6 @@
             "title": "SystemLevelOutputHeadConfig",
             "type": "object"
         },
-        "TaskDatasetConfig": {
-            "properties": {
-                "train": {
-                    "anyOf": [
-                        {
-                            "$ref": "#/$defs/SplitDatasetConfig"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null
-                },
-                "val": {
-                    "anyOf": [
-                        {
-                            "items": {
-                                "$ref": "#/$defs/SplitDatasetConfig"
-                            },
-                            "type": "array"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null,
-                    "title": "Val"
-                },
-                "test": {
-                    "anyOf": [
-                        {
-                            "items": {
-                                "$ref": "#/$defs/SplitDatasetConfig"
-                            },
-                            "type": "array"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null,
-                    "title": "Test"
-                },
-                "key_mapping": {
-                    "additionalProperties": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "additionalProperties": {
-                                    "type": "string"
-                                },
-                                "type": "object"
-                            }
-                        ]
-                    },
-                    "default": {},
-                    "title": "Key Mapping",
-                    "type": "object"
-                },
-                "mt_transform": {
-                    "anyOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null,
-                    "title": "Mt Transform"
-                },
-                "copy_from_train": {
-                    "default": true,
-                    "title": "Copy From Train",
-                    "type": "boolean"
-                }
-            },
-            "title": "TaskDatasetConfig",
-            "type": "object"
-        },
         "WarmupCosineDecayRLPSchedulerConfig": {
             "properties": {
                 "name": {
@@ -1056,7 +1080,7 @@
             "type": "object"
         },
         "dataset": {
-            "$ref": "#/$defs/TaskDatasetConfig"
+            "$ref": "#/$defs/FTDatasetsConfig"
         },
         "model": {
             "discriminator": {
