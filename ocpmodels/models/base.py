@@ -60,7 +60,10 @@ class BaseModel(nn.Module):
                         activation="silu",
                         bias=bias,
                     )
-                ] * self.output_targets[target].get("num_layers", 2)
+                    for _ in range(
+                        self.output_targets[target].get("num_layers", 2)
+                    )
+                ]
 
                 layers.append(
                     Dense(
