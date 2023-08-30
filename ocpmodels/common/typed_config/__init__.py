@@ -31,8 +31,14 @@ def _update_fields_from_docstrings(
     fields_docs: dict[str, str],
 ) -> None:
     for ann_name, field_info in fields.items():
-        if field_info.description is None and ann_name in fields_docs:
-            field_info.description = fields_docs[ann_name]
+        field_doc = fields_docs.get(ann_name)
+        if field_doc is None:
+            continue
+
+        if not field_info.description:
+            field_info.description = field_doc
+        else:
+            field_info.description = f"{field_doc}\n\n{field_info.description}"
 
 
 @dataclass_transform(kw_only_default=True)
@@ -47,27 +53,12 @@ class TypedConfig(_ModelBase):
         super().__init_subclass__()
 
     @classmethod
-    def __update_description(cls):
-        description_parts: list[str] = []
-
-        # Add the class docstring if it exists.
-        if cls.__doc__:
-            description_parts.append(cls.__doc__.strip())
-
-        cls._as_pydantic_model_cls.model_config["json_schema_extra"] = {
-            "description": "\n".join(description_parts)
-        }
-
-    @classmethod
     def __pydantic_init_subclass__(
         cls,
         use_attributes_docstring: bool = True,
         write_schema_to_file: bool = False,
     ):
         super().__pydantic_init_subclass__()  # type: ignore
-
-        # Set the description of the model to the class docstring + some additional info.
-        cls.__update_description()
 
         # Update the fields descriptions from the docstrings.
         if use_attributes_docstring:

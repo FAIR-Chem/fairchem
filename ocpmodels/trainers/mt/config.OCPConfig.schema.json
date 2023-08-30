@@ -1,7 +1,6 @@
 {
     "$defs": {
         "AtomLevelOutputHeadConfig": {
-            "description": "",
             "properties": {
                 "num_layers": {
                     "default": 2,
@@ -61,7 +60,6 @@
             "type": "object"
         },
         "DatasetConfig": {
-            "description": "",
             "properties": {
                 "datasets": {
                     "items": {
@@ -126,7 +124,6 @@
             "type": "object"
         },
         "FullyBalancedSamplingConfig": {
-            "description": "",
             "properties": {
                 "type": {
                     "const": "fully_balanced",
@@ -138,7 +135,6 @@
             "type": "object"
         },
         "GemNetOCModelConfig": {
-            "description": "",
             "properties": {
                 "num_targets": {
                     "default": 1,
@@ -468,7 +464,7 @@
             "type": "object"
         },
         "LossFnConfig": {
-            "description": "Description:\nLoss function config.",
+            "description": "Loss function config.",
             "properties": {
                 "target": {
                     "title": "Target",
@@ -519,7 +515,6 @@
             "type": "object"
         },
         "MultiTaskConfig": {
-            "description": "",
             "properties": {
                 "tasks": {
                     "items": {
@@ -575,7 +570,6 @@
             "type": "object"
         },
         "NormalizerTargetConfig": {
-            "description": "",
             "properties": {
                 "mean": {
                     "default": 0.0,
@@ -592,7 +586,6 @@
             "type": "object"
         },
         "OCPTaskConfig": {
-            "description": "",
             "properties": {
                 "mt": {
                     "$ref": "#/$defs/MultiTaskConfig"
@@ -605,7 +598,6 @@
             "type": "object"
         },
         "OneHotTargetsConfig": {
-            "description": "",
             "properties": {
                 "graph_level": {
                     "default": [],
@@ -628,7 +620,6 @@
             "type": "object"
         },
         "SplitDatasetConfig": {
-            "description": "",
             "properties": {
                 "config": {
                     "title": "Config",
@@ -689,7 +680,6 @@
             "type": "object"
         },
         "SplitDatasetFirstNConfig": {
-            "description": "",
             "properties": {
                 "n": {
                     "title": "N",
@@ -703,7 +693,6 @@
             "type": "object"
         },
         "SplitDatasetSampleNConfig": {
-            "description": "",
             "properties": {
                 "n": {
                     "title": "N",
@@ -722,7 +711,6 @@
             "type": "object"
         },
         "SystemLevelOutputHeadConfig": {
-            "description": "",
             "properties": {
                 "num_layers": {
                     "default": 2,
@@ -760,7 +748,6 @@
             "type": "object"
         },
         "TaskConfig": {
-            "description": "",
             "properties": {
                 "idx": {
                     "title": "Idx",
@@ -795,7 +782,6 @@
             "type": "object"
         },
         "TaskDatasetConfig": {
-            "description": "",
             "properties": {
                 "train": {
                     "anyOf": [
@@ -878,7 +864,6 @@
             "type": "object"
         },
         "TemperatureSamplingConfig": {
-            "description": "",
             "properties": {
                 "type": {
                     "const": "temperature",
@@ -897,7 +882,7 @@
             "type": "object"
         }
     },
-    "description": "Description:\nOCP config.",
+    "description": "OCP config.",
     "properties": {
         "task": {
             "$ref": "#/$defs/OCPTaskConfig"

@@ -1,7 +1,6 @@
 {
     "$defs": {
         "AdamWConfig": {
-            "description": "",
             "properties": {
                 "name": {
                     "const": "AdamW",
@@ -53,7 +52,6 @@
             "type": "object"
         },
         "AtomLevelOutputHeadConfig": {
-            "description": "",
             "properties": {
                 "num_layers": {
                     "default": 2,
@@ -113,7 +111,6 @@
             "type": "object"
         },
         "ExponentialMovingAverageConfig": {
-            "description": "",
             "properties": {
                 "decay": {
                     "title": "Decay",
@@ -127,7 +124,6 @@
             "type": "object"
         },
         "FinetuneCheckpointConfig": {
-            "description": "",
             "properties": {
                 "src": {
                     "format": "path",
@@ -150,7 +146,7 @@
             "type": "object"
         },
         "FinetuneConfig": {
-            "description": "Description:\nFinetune config",
+            "description": "Finetune config",
             "properties": {
                 "base_checkpoint": {
                     "$ref": "#/$defs/FinetuneCheckpointConfig"
@@ -163,7 +159,6 @@
             "type": "object"
         },
         "GemNetOCModelConfig": {
-            "description": "",
             "properties": {
                 "num_targets": {
                     "default": 1,
@@ -493,7 +488,6 @@
             "type": "object"
         },
         "MultiGroupOptimConfig": {
-            "description": "",
             "properties": {
                 "exponential_moving_average": {
                     "anyOf": [
@@ -534,7 +528,6 @@
             "type": "object"
         },
         "MultiGroupPerGroupOptimConfig": {
-            "description": "",
             "properties": {
                 "parameter_patterns": {
                     "items": {
@@ -575,7 +568,6 @@
             "type": "object"
         },
         "OCPTaskConfig": {
-            "description": "",
             "properties": {
                 "ft": {
                     "$ref": "#/$defs/FinetuneConfig"
@@ -588,7 +580,6 @@
             "type": "object"
         },
         "ReduceLROnPlateauBaseConfig": {
-            "description": "",
             "properties": {
                 "patience": {
                     "title": "Patience",
@@ -641,7 +632,6 @@
             "type": "object"
         },
         "ReduceLROnPlateauConfig": {
-            "description": "",
             "properties": {
                 "patience": {
                     "title": "Patience",
@@ -699,7 +689,6 @@
             "type": "object"
         },
         "SingleGroupOptimConfig": {
-            "description": "",
             "properties": {
                 "exponential_moving_average": {
                     "anyOf": [
@@ -758,7 +747,6 @@
             "type": "object"
         },
         "SplitDatasetConfig": {
-            "description": "",
             "properties": {
                 "config": {
                     "title": "Config",
@@ -819,7 +807,6 @@
             "type": "object"
         },
         "SplitDatasetFirstNConfig": {
-            "description": "",
             "properties": {
                 "n": {
                     "title": "N",
@@ -833,7 +820,6 @@
             "type": "object"
         },
         "SplitDatasetSampleNConfig": {
-            "description": "",
             "properties": {
                 "n": {
                     "title": "N",
@@ -852,7 +838,6 @@
             "type": "object"
         },
         "SystemLevelOutputHeadConfig": {
-            "description": "",
             "properties": {
                 "num_layers": {
                     "default": 2,
@@ -890,7 +875,6 @@
             "type": "object"
         },
         "TaskDatasetConfig": {
-            "description": "",
             "properties": {
                 "train": {
                     "anyOf": [
@@ -973,7 +957,6 @@
             "type": "object"
         },
         "WarmupCosineDecayRLPSchedulerConfig": {
-            "description": "",
             "properties": {
                 "name": {
                     "const": "WarmupCosineDecayRLP",
@@ -1046,7 +1029,7 @@
             "type": "object"
         }
     },
-    "description": "Description:\nOCP config.",
+    "description": "OCP config.",
     "properties": {
         "task": {
             "$ref": "#/$defs/OCPTaskConfig"
