@@ -27,8 +27,6 @@ dataset:
     - config:
         src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/test
 
-logger: wandb
-
 loss_functions:
   - U_0:
       fn: mae
