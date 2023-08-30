@@ -58,6 +58,8 @@ def _construct_single_group(
             lr_scheduler = ReduceLROnPlateau(
                 optimizer, **rlp_config._to_ctor_kwargs()
             )
+        case None:
+            lr_scheduler = None
         case _:
             raise NotImplementedError(
                 f"LR scheduler {config.lr_scheduler} not implemented."
@@ -191,6 +193,8 @@ def _construct_multi_group(
                     for group_config in config.groups
                 ],
             )
+        case None:
+            lr_scheduler = None
         case _:
             raise NotImplementedError(
                 f"LR scheduler {config.lr_scheduler} not implemented for multi group."
@@ -203,10 +207,16 @@ TScheduler = TypeVar("TScheduler", infer_variance=True)
 
 
 class _LrSchedulerWrapper(Generic[TScheduler]):
-    def __init__(self, scheduler: TScheduler):
+    def __init__(self, scheduler: TScheduler | None):
         super().__init__()
 
         self.scheduler = scheduler
+
+    @property
+    def scheduler_type(self):
+        if self.scheduler is None:
+            return "None"
+        return type(self.scheduler).__name__
 
     def rlp_step(self, metrics: Any):
         match self.scheduler:

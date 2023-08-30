@@ -133,7 +133,7 @@ class WarmupCosineDecayRLPSchedulerConfig(TypedConfig):
 
 
 LRSchedulerConfig = Annotated[
-    Union[ReduceLROnPlateauConfig, WarmupCosineDecayRLPSchedulerConfig],
+    Union[ReduceLROnPlateauConfig, WarmupCosineDecayRLPSchedulerConfig, None],
     Field(discriminator="name"),
 ]
 
