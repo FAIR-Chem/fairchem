@@ -1,6 +1,8 @@
 # yaml-language-server: $schema=../ocpmodels/trainers/ft/config.OCPConfig.schema.json
 trainer: ft
 
+logger: wandb
+
 task:
   ft:
     base_checkpoint:
