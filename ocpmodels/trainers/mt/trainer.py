@@ -6,8 +6,10 @@ from logging import getLogger
 from typing import Any, Dict, List, cast
 
 import torch
+import torch.nn.functional as F
 import torchmetrics
-from einops import rearrange, reduce
+import tqdm
+from einops import einsum, rearrange, reduce
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch_geometric.data import Batch
 from torch_scatter import scatter
@@ -17,8 +19,8 @@ from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typed_config import TypeAdapter
-from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.common.utils import save_checkpoint
+from ocpmodels.modules.evaluator import Evaluator
 
 from ..base_trainer import BaseTrainer
 from .balanced_batch_sampler import BalancedBatchSampler
@@ -566,6 +568,14 @@ class MTTrainer(BaseTrainer):
             [batch.task_mask.to(self.device) for batch in batch_list]
         )  # (bsz, t)
 
+        one_hot = F.one_hot(
+            torch.cat(
+                [batch.task_idx.to(self.device) for batch in batch_list]
+            ),
+            num_classes=self.num_tasks,
+        ).float()  # (bsz, t)
+        one_hot_node = one_hot[batch_idx]  # (n_atoms, t)
+
         losses: list[torch.Tensor] = []
         for loss_info in self.loss_fns:
             target_name = loss_info.config.target
@@ -573,12 +583,17 @@ class MTTrainer(BaseTrainer):
             level = output_target.level
 
             target = torch.cat(
-                [
-                    batch[f"{target_name}_onehot"].to(self.device)
-                    for batch in batch_list
-                ],
+                [batch[target_name].to(self.device) for batch in batch_list],
                 dim=0,
-            )  # (bsz, t) or (n_atoms, t, 3)
+            )  # (bsz,) or (n_atoms, 3)
+            # Turn to one-hot
+            if level == "system":
+                target = einsum(target, one_hot, "b, b t -> b t")
+            elif level == "atom":
+                target = einsum(target, one_hot_node, "n p, n t -> n t p")
+            else:
+                raise ValueError(f"Unknown level: {level}")
+
             pred = out[target_name]  # (bsz, t) or (n_atoms, t, 3)
             mask = task_mask  # (bsz, t)
             if level == "atom":
@@ -597,6 +612,9 @@ class MTTrainer(BaseTrainer):
 
             # Compute the loss
             loss = loss_info.fn(pred, target)  # (bsz, t) or (n_atoms, t)
+
+            # Apply mask
+            loss = loss * mask
 
             # Apply the coefficient
             loss = self._apply_loss_coefficient(loss, loss_info)
@@ -657,24 +675,47 @@ class MTTrainer(BaseTrainer):
         self,
         outputs: Dict[str, torch.Tensor],
         batch_list: List[Batch],
+        validate: bool = False,
     ):
         # HACK: If the model is in eval mode, then we're validating and should keep metric states.
         # Otherwise, we just report the metric values for the current batch.
-        is_eval = not self.model.training
         per_task_energy_maes = (
             self.val_per_task_energy_maes
-            if is_eval
+            if validate
             else self.train_per_task_energy_maes
         )
         per_task_force_maes = (
             self.val_per_task_force_maes
-            if is_eval
+            if validate
             else self.train_per_task_force_maes
         )
 
         metrics: Dict[str, Any] = {}
-        if not is_eval:
+        if not validate:
             metrics.update(self._per_task_step_epoch_metrics(batch_list))
+        one_hot = F.one_hot(
+            torch.cat(
+                [batch.task_idx.to(self.device) for batch in batch_list]
+            ),
+            num_classes=self.num_tasks,
+        ).float()  # (bsz, t)
+        energy_target = torch.cat(
+            [batch.energy.to(self.device) for batch in batch_list]
+        )  # (bsz,)
+        energy_target = einsum(
+            energy_target, one_hot, "b, b t -> b t"
+        )  # (bsz, t)
+
+        batch_idx = torch.cat(
+            [batch.batch.to(self.device) for batch in batch_list]
+        )
+        one_hot_node = one_hot[batch_idx]  # (n_atoms, t)
+        forces_target = torch.cat(
+            [batch.forces.to(self.device) for batch in batch_list]
+        )  # (n_atoms, 3)
+        forces_target = einsum(
+            forces_target, one_hot_node, "n p, n t -> n t p"
+        )  # (n_atoms, t, 3)
 
         for task in self.multi_task_config.tasks:
             mask = torch.cat(
@@ -689,47 +730,23 @@ class MTTrainer(BaseTrainer):
             if not mask.any():
                 continue
 
-            node_mask = mask[
-                torch.cat(
-                    [batch.batch.to(self.device) for batch in batch_list]
-                )
-            ]  # (n_atoms, t)
-
-            energy_target = torch.cat(
-                [batch.energy_onehot.to(self.device) for batch in batch_list]
-            )[mask]
-            energy_pred = outputs["energy"][mask]
-            # energy_target, energy_pred = denormalize_tensors(
-            #     batch_list,
-            #     "energy",
-            #     (energy_target, energy_pred),
-            #     mask[:, task.idx],
-            # )
+            node_mask = mask[batch_idx]  # (n_atoms, t)
 
             energy_mae = per_task_energy_maes[task.idx](
-                energy_pred, energy_target
+                outputs["energy"][mask], energy_target[mask]
             )
-            metrics = self.evaluator.update(
-                f"{task.name}_energy_mae", energy_mae.item(), metrics
-            )
-
-            forces_target = torch.cat(
-                [batch.forces_onehot.to(self.device) for batch in batch_list]
-            )[node_mask]
-            forces_pred = outputs["forces"][node_mask]
-            # forces_target, forces_pred = denormalize_tensors(
-            #     batch_list,
-            #     "forces",
-            #     (forces_target, forces_pred),
-            #     node_mask[:, task.idx],
-            # )
+            if not validate:
+                metrics = self.evaluator.update(
+                    f"{task.name}_energy_mae", energy_mae.item(), metrics
+                )
 
             forces_mae = per_task_force_maes[task.idx](
-                forces_pred, forces_target
+                outputs["forces"][node_mask], forces_target[node_mask]
             )
-            metrics = self.evaluator.update(
-                f"{task.name}_forces_mae", forces_mae.item(), metrics
-            )
+            if not validate:
+                metrics = self.evaluator.update(
+                    f"{task.name}_forces_mae", forces_mae.item(), metrics
+                )
 
         return metrics
 
@@ -738,26 +755,102 @@ class MTTrainer(BaseTrainer):
     @torch.inference_mode()
     def validate(self, split: str = "val", disable_tqdm: bool = False):
         ensure_fitted(self._unwrapped_model, warn=True)
-        metrics = super().validate(split, disable_tqdm)
+
+        # validate as normal
+        ensure_fitted(self._unwrapped_model, warn=True)
+
+        if distutils.is_master():
+            log.info(f"Evaluating on {split}.")
+
+        self.model.eval()
+        if self.ema:
+            self.ema.store()
+            self.ema.copy_to()
+
+        metrics = {}
+        evaluator = Evaluator(
+            task=self.name,
+            eval_metrics=self.evaluation_metrics.get(
+                "metrics", Evaluator.task_metrics.get(self.name, {})
+            ),
+        )
+
+        rank = distutils.get_rank()
+
+        loader = self.val_loader if split == "val" else self.test_loader
+
+        for i, batch in tqdm(
+            enumerate(loader),
+            total=len(loader),
+            position=rank,
+            desc="device {}".format(rank),
+            disable=disable_tqdm,
+        ):
+            # Forward.
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch)
+            loss = self._compute_loss(out, batch)
+
+            # Compute metrics.
+            metrics = self._compute_metrics(
+                out,
+                batch,
+                evaluator,
+                metrics,
+                True,
+            )
+            metrics = evaluator.update("loss", loss.item(), metrics)
+
+        aggregated_metrics = {}
+        for k in metrics:
+            aggregated_metrics[k] = {
+                "total": distutils.all_reduce(
+                    metrics[k]["total"], average=False, device=self.device
+                ),
+                "numel": distutils.all_reduce(
+                    metrics[k]["numel"], average=False, device=self.device
+                ),
+            }
+            aggregated_metrics[k]["metric"] = (
+                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
+            )
+        metrics = aggregated_metrics
 
         # For the per-task metrics, we compute and return the state here
         # so that we can report the final metric.
-        for task_idx in range(self.num_tasks):
-            energy_mae = self.val_per_task_energy_maes[task_idx]
+        for task in self.multi_task_config.tasks:
+            energy_mae = self.val_per_task_energy_maes[task.idx]
             metrics = self.evaluator.update(
-                f"task_{task_idx}_energy_mae",
+                f"{task.name}_energy_mae",
                 energy_mae.compute().item(),
                 metrics,
             )
             energy_mae.reset()
 
-            force_mae = self.val_per_task_force_maes[task_idx]
+            force_mae = self.val_per_task_force_maes[task.idx]
             metrics = self.evaluator.update(
-                f"task_{task_idx}_forces_mae",
+                f"{task.name}_forces_mae",
                 force_mae.compute().item(),
                 metrics,
             )
             force_mae.reset()
+
+        log_dict = {k: metrics[k]["metric"] for k in metrics}
+        log_dict.update({"epoch": self.epoch})
+        if distutils.is_master():
+            log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
+            log.info(", ".join(log_str))
+
+        # Make plots.
+        if self.logger is not None:
+            self.logger.log(
+                log_dict,
+                step=self.step,
+                split=split,
+            )
+
+        if self.ema:
+            self.ema.restore()
 
         return metrics
 
@@ -768,6 +861,7 @@ class MTTrainer(BaseTrainer):
         batch_list: List[Batch],
         evaluator: Evaluator,
         metrics: Dict[str, Any] = {},
+        validate: bool = False,
     ):
         # First, compute the aggregate metrics across all tasks
         aggregated_outputs: Dict[str, torch.Tensor] = {}
@@ -814,7 +908,9 @@ class MTTrainer(BaseTrainer):
             # Now, compute the per-task metrics
             _ = metrics.update(
                 self._compute_per_task_metrics(
-                    denormed_outputs, denormed_batch_list
+                    denormed_outputs,
+                    denormed_batch_list,
+                    validate,
                 )
             )
 

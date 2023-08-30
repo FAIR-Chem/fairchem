@@ -79,30 +79,6 @@ class MTConcatDataset(ConcatDataset):
         super().__init__(datasets)
 
 
-def _update_graph_value(data: Data, key: str, onehot: torch.Tensor):
-    value = getattr(data, key, None)
-    assert (value) is not None, f"{key} must be defined."
-    if not torch.is_tensor(value):
-        value = torch.tensor(value, dtype=torch.float)
-
-    value = cast(torch.Tensor, value)
-    value = rearrange(value.view(-1), "1 -> 1 1") * onehot
-    setattr(data, f"{key}_onehot", value)
-
-
-def _update_node_value(data: Data, key: str, onehot: torch.Tensor):
-    value = getattr(data, key, None)
-    assert (value) is not None, f"{key} must be defined."
-    assert torch.is_tensor(value), f"{key} must be a tensor."
-
-    value = cast(torch.Tensor, value)
-    value = rearrange(value, "n ... -> n ... 1") * onehot
-    if value.ndim > 2:
-        # Move the onehot to dim=1
-        value = rearrange(value, "n ... t -> n t ...")
-    setattr(data, f"{key}_onehot", value)
-
-
 def _create_split_dataset(config: dict[str, Any]) -> Dataset:
     # Create the dataset
     dataset_cls = registry.get_dataset_class(config["format"])
@@ -133,14 +109,6 @@ def _mt_taskify_transform(
         ).bool()  # (t,)
         # Set task boolean mask
         data.task_mask = rearrange(onehot, "t -> 1 t")
-
-        # Update graph-level attrs to be a one-hot vector * attr
-        for key in one_hot_targets.graph_level:
-            _update_graph_value(data, key, onehot)
-
-        # Update node-level attrs to be a one-hot vector * attr
-        for key in one_hot_targets.node_level:
-            _update_node_value(data, key, onehot)
 
         return data
 
