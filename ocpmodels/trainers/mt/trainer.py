@@ -8,11 +8,11 @@ from typing import Any, Dict, List, cast
 import torch
 import torch.nn.functional as F
 import torchmetrics
-import tqdm
 from einops import einsum, rearrange, reduce
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch_geometric.data import Batch
 from torch_scatter import scatter
+from tqdm import tqdm
 from typing_extensions import override
 
 from ocpmodels.common import distutils, gp_utils
@@ -37,7 +37,7 @@ from .config import (
 )
 from .dataset import create_datasets
 from .loss import create_losses
-from .normalizer import denormalize_context, denormalize_tensors
+from .normalizer import denormalize_context
 from .scaling.compat import load_scales_compat
 from .scaling.util import ensure_fitted, load_state_dict
 
@@ -717,6 +717,14 @@ class MTTrainer(BaseTrainer):
             forces_target, one_hot_node, "n p, n t -> n t p"
         )  # (n_atoms, t, 3)
 
+        eval_on_free_atoms = self.typed_output_targets["forces"].eval_on_free_atoms  # type: ignore
+        free_mask = None
+        if eval_on_free_atoms:
+            fixed = torch.cat(
+                [batch.fixed.to(self.device) for batch in batch_list]
+            )
+            free_mask = fixed == 0  # (n_atoms,)
+
         for task in self.multi_task_config.tasks:
             mask = torch.cat(
                 [batch.task_mask.to(self.device) for batch in batch_list]
@@ -731,6 +739,11 @@ class MTTrainer(BaseTrainer):
                 continue
 
             node_mask = mask[batch_idx]  # (n_atoms, t)
+            if eval_on_free_atoms:
+                assert free_mask is not None
+                node_mask = node_mask & rearrange(
+                    free_mask, "n -> n 1"
+                )  # (n_atoms, t)
 
             energy_mae = per_task_energy_maes[task.idx](
                 outputs["energy"][mask], energy_target[mask]
