@@ -1,0 +1,1120 @@
+{
+    "$defs": {
+        "AdamWConfig": {
+            "description": "__main__.AdamWConfig",
+            "properties": {
+                "name": {
+                    "const": "AdamW",
+                    "title": "Name"
+                },
+                "lr": {
+                    "title": "Lr",
+                    "type": "number"
+                },
+                "amsgrad": {
+                    "default": false,
+                    "title": "Amsgrad",
+                    "type": "boolean"
+                },
+                "weight_decay": {
+                    "default": 0.01,
+                    "title": "Weight Decay",
+                    "type": "number"
+                },
+                "betas": {
+                    "default": [
+                        0.9,
+                        0.999
+                    ],
+                    "maxItems": 2,
+                    "minItems": 2,
+                    "prefixItems": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ],
+                    "title": "Betas",
+                    "type": "array"
+                },
+                "eps": {
+                    "default": 1e-08,
+                    "title": "Eps",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "name",
+                "lr"
+            ],
+            "title": "AdamWConfig",
+            "type": "object"
+        },
+        "AtomLevelOutputHeadConfig": {
+            "description": "ocpmodels.trainers.mt.config.AtomLevelOutputHeadConfig",
+            "properties": {
+                "num_layers": {
+                    "default": 2,
+                    "description": "Number of layers in the output head.",
+                    "title": "Num Layers",
+                    "type": "integer"
+                },
+                "custom_head": {
+                    "default": false,
+                    "title": "Custom Head",
+                    "type": "boolean"
+                },
+                "per_task": {
+                    "default": false,
+                    "title": "Per Task",
+                    "type": "boolean"
+                },
+                "bias": {
+                    "default": true,
+                    "title": "Bias",
+                    "type": "boolean"
+                },
+                "no_final_bias": {
+                    "default": false,
+                    "title": "No Final Bias",
+                    "type": "boolean"
+                },
+                "level": {
+                    "const": "atom",
+                    "default": "atom",
+                    "title": "Level"
+                },
+                "irrep_dim": {
+                    "title": "Irrep Dim",
+                    "type": "integer"
+                },
+                "train_on_free_atoms": {
+                    "default": true,
+                    "title": "Train On Free Atoms",
+                    "type": "boolean"
+                },
+                "eval_on_free_atoms": {
+                    "default": true,
+                    "title": "Eval On Free Atoms",
+                    "type": "boolean"
+                },
+                "use_raw_edge_vecs": {
+                    "default": false,
+                    "title": "Use Raw Edge Vecs",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "irrep_dim"
+            ],
+            "title": "AtomLevelOutputHeadConfig",
+            "type": "object"
+        },
+        "ExponentialMovingAverageConfig": {
+            "description": "__main__.ExponentialMovingAverageConfig",
+            "properties": {
+                "decay": {
+                    "title": "Decay",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "decay"
+            ],
+            "title": "ExponentialMovingAverageConfig",
+            "type": "object"
+        },
+        "FinetuneCheckpointConfig": {
+            "description": "__main__.FinetuneCheckpointConfig",
+            "properties": {
+                "src": {
+                    "format": "path",
+                    "title": "Src",
+                    "type": "string"
+                },
+                "ignore_keys_patterns": {
+                    "default": [],
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Ignore Keys Patterns",
+                    "type": "array"
+                }
+            },
+            "required": [
+                "src"
+            ],
+            "title": "FinetuneCheckpointConfig",
+            "type": "object"
+        },
+        "FinetuneConfig": {
+            "description": "__main__.FinetuneConfig",
+            "properties": {
+                "base_checkpoint": {
+                    "$ref": "#/$defs/FinetuneCheckpointConfig"
+                }
+            },
+            "required": [
+                "base_checkpoint"
+            ],
+            "title": "FinetuneConfig",
+            "type": "object"
+        },
+        "GemNetOCModelConfig": {
+            "description": "ocpmodels.trainers.mt.config.GemNetOCModelConfig",
+            "properties": {
+                "num_targets": {
+                    "default": 1,
+                    "title": "Num Targets",
+                    "type": "integer"
+                },
+                "num_spherical": {
+                    "title": "Num Spherical",
+                    "type": "integer"
+                },
+                "num_radial": {
+                    "title": "Num Radial",
+                    "type": "integer"
+                },
+                "num_blocks": {
+                    "title": "Num Blocks",
+                    "type": "integer"
+                },
+                "emb_size_atom": {
+                    "title": "Emb Size Atom",
+                    "type": "integer"
+                },
+                "emb_size_edge": {
+                    "title": "Emb Size Edge",
+                    "type": "integer"
+                },
+                "emb_size_trip_in": {
+                    "title": "Emb Size Trip In",
+                    "type": "integer"
+                },
+                "emb_size_trip_out": {
+                    "title": "Emb Size Trip Out",
+                    "type": "integer"
+                },
+                "emb_size_quad_in": {
+                    "title": "Emb Size Quad In",
+                    "type": "integer"
+                },
+                "emb_size_quad_out": {
+                    "title": "Emb Size Quad Out",
+                    "type": "integer"
+                },
+                "emb_size_aint_in": {
+                    "title": "Emb Size Aint In",
+                    "type": "integer"
+                },
+                "emb_size_aint_out": {
+                    "title": "Emb Size Aint Out",
+                    "type": "integer"
+                },
+                "emb_size_rbf": {
+                    "title": "Emb Size Rbf",
+                    "type": "integer"
+                },
+                "emb_size_cbf": {
+                    "title": "Emb Size Cbf",
+                    "type": "integer"
+                },
+                "emb_size_sbf": {
+                    "title": "Emb Size Sbf",
+                    "type": "integer"
+                },
+                "num_before_skip": {
+                    "title": "Num Before Skip",
+                    "type": "integer"
+                },
+                "num_after_skip": {
+                    "title": "Num After Skip",
+                    "type": "integer"
+                },
+                "num_concat": {
+                    "title": "Num Concat",
+                    "type": "integer"
+                },
+                "num_atom": {
+                    "title": "Num Atom",
+                    "type": "integer"
+                },
+                "num_output_afteratom": {
+                    "title": "Num Output Afteratom",
+                    "type": "integer"
+                },
+                "num_atom_emb_layers": {
+                    "default": 0,
+                    "title": "Num Atom Emb Layers",
+                    "type": "integer"
+                },
+                "num_global_out_layers": {
+                    "default": 2,
+                    "title": "Num Global Out Layers",
+                    "type": "integer"
+                },
+                "regress_forces": {
+                    "default": true,
+                    "title": "Regress Forces",
+                    "type": "boolean"
+                },
+                "regress_energy": {
+                    "default": true,
+                    "title": "Regress Energy",
+                    "type": "boolean"
+                },
+                "direct_forces": {
+                    "default": false,
+                    "title": "Direct Forces",
+                    "type": "boolean"
+                },
+                "use_pbc": {
+                    "default": true,
+                    "title": "Use Pbc",
+                    "type": "boolean"
+                },
+                "scale_backprop_forces": {
+                    "default": false,
+                    "title": "Scale Backprop Forces",
+                    "type": "boolean"
+                },
+                "rbf": {
+                    "default": {
+                        "name": "gaussian"
+                    },
+                    "title": "Rbf",
+                    "type": "object"
+                },
+                "rbf_spherical": {
+                    "anyOf": [
+                        {
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Rbf Spherical"
+                },
+                "envelope": {
+                    "default": {
+                        "exponent": 5,
+                        "name": "polynomial"
+                    },
+                    "title": "Envelope",
+                    "type": "object"
+                },
+                "cbf": {
+                    "default": {
+                        "name": "spherical_harmonics"
+                    },
+                    "title": "Cbf",
+                    "type": "object"
+                },
+                "sbf": {
+                    "default": {
+                        "name": "spherical_harmonics"
+                    },
+                    "title": "Sbf",
+                    "type": "object"
+                },
+                "extensive": {
+                    "default": true,
+                    "title": "Extensive",
+                    "type": "boolean"
+                },
+                "forces_coupled": {
+                    "default": false,
+                    "title": "Forces Coupled",
+                    "type": "boolean"
+                },
+                "activation": {
+                    "default": "scaled_silu",
+                    "title": "Activation",
+                    "type": "string"
+                },
+                "quad_interaction": {
+                    "default": false,
+                    "title": "Quad Interaction",
+                    "type": "boolean"
+                },
+                "atom_edge_interaction": {
+                    "default": false,
+                    "title": "Atom Edge Interaction",
+                    "type": "boolean"
+                },
+                "edge_atom_interaction": {
+                    "default": false,
+                    "title": "Edge Atom Interaction",
+                    "type": "boolean"
+                },
+                "atom_interaction": {
+                    "default": false,
+                    "title": "Atom Interaction",
+                    "type": "boolean"
+                },
+                "scale_basis": {
+                    "default": false,
+                    "title": "Scale Basis",
+                    "type": "boolean"
+                },
+                "qint_tags": {
+                    "default": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "items": {},
+                    "title": "Qint Tags",
+                    "type": "array"
+                },
+                "num_elements": {
+                    "default": 120,
+                    "title": "Num Elements",
+                    "type": "integer"
+                },
+                "otf_graph": {
+                    "default": false,
+                    "title": "Otf Graph",
+                    "type": "boolean"
+                },
+                "ln": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ],
+                    "title": "Ln"
+                },
+                "dropout": {
+                    "anyOf": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "title": "Dropout"
+                },
+                "scale_file": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Scale File"
+                },
+                "absolute_rbf_cutoff": {
+                    "anyOf": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Absolute Rbf Cutoff"
+                },
+                "learnable_rbf": {
+                    "default": false,
+                    "title": "Learnable Rbf",
+                    "type": "boolean"
+                },
+                "learnable_rbf_stds": {
+                    "default": false,
+                    "title": "Learnable Rbf Stds",
+                    "type": "boolean"
+                },
+                "unique_basis_per_layer": {
+                    "default": false,
+                    "title": "Unique Basis Per Layer",
+                    "type": "boolean"
+                },
+                "old_gaussian_implementation": {
+                    "default": false,
+                    "title": "Old Gaussian Implementation",
+                    "type": "boolean"
+                },
+                "edge_dropout": {
+                    "anyOf": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "title": "Edge Dropout"
+                },
+                "name": {
+                    "const": "gemnet_oc_mt",
+                    "default": "gemnet_oc_mt",
+                    "title": "Name"
+                }
+            },
+            "required": [
+                "num_spherical",
+                "num_radial",
+                "num_blocks",
+                "emb_size_atom",
+                "emb_size_edge",
+                "emb_size_trip_in",
+                "emb_size_trip_out",
+                "emb_size_quad_in",
+                "emb_size_quad_out",
+                "emb_size_aint_in",
+                "emb_size_aint_out",
+                "emb_size_rbf",
+                "emb_size_cbf",
+                "emb_size_sbf",
+                "num_before_skip",
+                "num_after_skip",
+                "num_concat",
+                "num_atom",
+                "num_output_afteratom",
+                "ln",
+                "dropout",
+                "edge_dropout"
+            ],
+            "title": "GemNetOCModelConfig",
+            "type": "object"
+        },
+        "MultiGroupOptimConfig": {
+            "description": "__main__.MultiGroupOptimConfig",
+            "properties": {
+                "exponential_moving_average": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ExponentialMovingAverageConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "optim_mode": {
+                    "const": "multi_group",
+                    "title": "Optim Mode"
+                },
+                "optimizer": {
+                    "$ref": "#/$defs/AdamWConfig"
+                },
+                "lr_scheduler": {
+                    "$ref": "#/$defs/WarmupCosineDecayRLPSchedulerConfig"
+                },
+                "groups": {
+                    "items": {
+                        "$ref": "#/$defs/MultiGroupPerGroupOptimConfig"
+                    },
+                    "title": "Groups",
+                    "type": "array"
+                }
+            },
+            "required": [
+                "optim_mode",
+                "optimizer",
+                "lr_scheduler",
+                "groups"
+            ],
+            "title": "MultiGroupOptimConfig",
+            "type": "object"
+        },
+        "MultiGroupPerGroupOptimConfig": {
+            "description": "__main__.MultiGroupPerGroupOptimConfig",
+            "properties": {
+                "parameter_patterns": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Parameter Patterns",
+                    "type": "array"
+                },
+                "optimizer": {
+                    "anyOf": [
+                        {
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Optimizer"
+                },
+                "lr_scheduler": {
+                    "anyOf": [
+                        {
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Lr Scheduler"
+                }
+            },
+            "required": [
+                "parameter_patterns"
+            ],
+            "title": "MultiGroupPerGroupOptimConfig",
+            "type": "object"
+        },
+        "OCPTaskConfig": {
+            "description": "__main__.OCPTaskConfig",
+            "properties": {
+                "ft": {
+                    "$ref": "#/$defs/FinetuneConfig"
+                }
+            },
+            "required": [
+                "ft"
+            ],
+            "title": "OCPTaskConfig",
+            "type": "object"
+        },
+        "ReduceLROnPlateauBaseConfig": {
+            "description": "__main__.ReduceLROnPlateauBaseConfig",
+            "properties": {
+                "patience": {
+                    "title": "Patience",
+                    "type": "integer"
+                },
+                "factor": {
+                    "title": "Factor",
+                    "type": "number"
+                },
+                "mode": {
+                    "default": "min",
+                    "enum": [
+                        "min",
+                        "max"
+                    ],
+                    "title": "Mode",
+                    "type": "string"
+                },
+                "min_lr": {
+                    "default": 0.0,
+                    "title": "Min Lr",
+                    "type": "number"
+                },
+                "eps": {
+                    "default": 1e-08,
+                    "title": "Eps",
+                    "type": "number"
+                },
+                "cooldown": {
+                    "default": 0,
+                    "title": "Cooldown",
+                    "type": "integer"
+                },
+                "threshold": {
+                    "default": 0.0001,
+                    "title": "Threshold",
+                    "type": "number"
+                },
+                "threshold_mode": {
+                    "default": "rel",
+                    "title": "Threshold Mode",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "patience",
+                "factor"
+            ],
+            "title": "ReduceLROnPlateauBaseConfig",
+            "type": "object"
+        },
+        "ReduceLROnPlateauConfig": {
+            "description": "__main__.ReduceLROnPlateauConfig",
+            "properties": {
+                "patience": {
+                    "title": "Patience",
+                    "type": "integer"
+                },
+                "factor": {
+                    "title": "Factor",
+                    "type": "number"
+                },
+                "mode": {
+                    "default": "min",
+                    "enum": [
+                        "min",
+                        "max"
+                    ],
+                    "title": "Mode",
+                    "type": "string"
+                },
+                "min_lr": {
+                    "default": 0.0,
+                    "title": "Min Lr",
+                    "type": "number"
+                },
+                "eps": {
+                    "default": 1e-08,
+                    "title": "Eps",
+                    "type": "number"
+                },
+                "cooldown": {
+                    "default": 0,
+                    "title": "Cooldown",
+                    "type": "integer"
+                },
+                "threshold": {
+                    "default": 0.0001,
+                    "title": "Threshold",
+                    "type": "number"
+                },
+                "threshold_mode": {
+                    "default": "rel",
+                    "title": "Threshold Mode",
+                    "type": "string"
+                },
+                "name": {
+                    "const": "ReduceLROnPlateau",
+                    "title": "Name"
+                }
+            },
+            "required": [
+                "patience",
+                "factor",
+                "name"
+            ],
+            "title": "ReduceLROnPlateauConfig",
+            "type": "object"
+        },
+        "SingleGroupOptimConfig": {
+            "description": "__main__.SingleGroupOptimConfig",
+            "properties": {
+                "exponential_moving_average": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ExponentialMovingAverageConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "optim_mode": {
+                    "const": "single_group",
+                    "default": "single_group",
+                    "title": "Optim Mode"
+                },
+                "optimizer": {
+                    "discriminator": {
+                        "mapping": {
+                            "AdamW": "#/$defs/AdamWConfig"
+                        },
+                        "propertyName": "name"
+                    },
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/AdamWConfig"
+                        }
+                    ],
+                    "title": "Optimizer"
+                },
+                "lr_scheduler": {
+                    "discriminator": {
+                        "mapping": {
+                            "ReduceLROnPlateau": "#/$defs/ReduceLROnPlateauConfig",
+                            "WarmupCosineDecayRLP": "#/$defs/WarmupCosineDecayRLPSchedulerConfig"
+                        },
+                        "propertyName": "name"
+                    },
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/ReduceLROnPlateauConfig"
+                        },
+                        {
+                            "$ref": "#/$defs/WarmupCosineDecayRLPSchedulerConfig"
+                        }
+                    ],
+                    "title": "Lr Scheduler"
+                }
+            },
+            "required": [
+                "optimizer",
+                "lr_scheduler"
+            ],
+            "title": "SingleGroupOptimConfig",
+            "type": "object"
+        },
+        "SplitDatasetConfig": {
+            "description": "ocpmodels.trainers.mt.config.SplitDatasetConfig",
+            "properties": {
+                "config": {
+                    "title": "Config",
+                    "type": "object"
+                },
+                "first_n": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SplitDatasetFirstNConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "sample_n": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SplitDatasetSampleNConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "key_mapping": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "additionalProperties": {
+                                            "type": "string"
+                                        },
+                                        "type": "object"
+                                    }
+                                ]
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Key Mapping"
+                }
+            },
+            "required": [
+                "config"
+            ],
+            "title": "SplitDatasetConfig",
+            "type": "object"
+        },
+        "SplitDatasetFirstNConfig": {
+            "description": "ocpmodels.trainers.mt.config.SplitDatasetFirstNConfig",
+            "properties": {
+                "n": {
+                    "title": "N",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "n"
+            ],
+            "title": "SplitDatasetFirstNConfig",
+            "type": "object"
+        },
+        "SplitDatasetSampleNConfig": {
+            "description": "ocpmodels.trainers.mt.config.SplitDatasetSampleNConfig",
+            "properties": {
+                "n": {
+                    "title": "N",
+                    "type": "integer"
+                },
+                "seed": {
+                    "title": "Seed",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "n",
+                "seed"
+            ],
+            "title": "SplitDatasetSampleNConfig",
+            "type": "object"
+        },
+        "SystemLevelOutputHeadConfig": {
+            "description": "ocpmodels.trainers.mt.config.SystemLevelOutputHeadConfig",
+            "properties": {
+                "num_layers": {
+                    "default": 2,
+                    "description": "Number of layers in the output head.",
+                    "title": "Num Layers",
+                    "type": "integer"
+                },
+                "custom_head": {
+                    "default": false,
+                    "title": "Custom Head",
+                    "type": "boolean"
+                },
+                "per_task": {
+                    "default": false,
+                    "title": "Per Task",
+                    "type": "boolean"
+                },
+                "bias": {
+                    "default": true,
+                    "title": "Bias",
+                    "type": "boolean"
+                },
+                "no_final_bias": {
+                    "default": false,
+                    "title": "No Final Bias",
+                    "type": "boolean"
+                },
+                "level": {
+                    "const": "system",
+                    "default": "system",
+                    "title": "Level"
+                }
+            },
+            "title": "SystemLevelOutputHeadConfig",
+            "type": "object"
+        },
+        "TaskDatasetConfig": {
+            "description": "ocpmodels.trainers.mt.config.TaskDatasetConfig",
+            "properties": {
+                "train": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SplitDatasetConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "val": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/SplitDatasetConfig"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Val"
+                },
+                "test": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/SplitDatasetConfig"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Test"
+                },
+                "key_mapping": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "type": "object"
+                            }
+                        ]
+                    },
+                    "default": {},
+                    "title": "Key Mapping",
+                    "type": "object"
+                },
+                "mt_transform": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Mt Transform"
+                },
+                "copy_from_train": {
+                    "default": true,
+                    "title": "Copy From Train",
+                    "type": "boolean"
+                }
+            },
+            "title": "TaskDatasetConfig",
+            "type": "object"
+        },
+        "WarmupCosineDecayRLPSchedulerConfig": {
+            "description": "__main__.WarmupCosineDecayRLPSchedulerConfig",
+            "properties": {
+                "name": {
+                    "const": "WarmupCosineDecayRLP",
+                    "title": "Name"
+                },
+                "warmup_duration": {
+                    "maxItems": 2,
+                    "minItems": 2,
+                    "prefixItems": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "enum": [
+                                "steps",
+                                "epochs"
+                            ],
+                            "type": "string"
+                        }
+                    ],
+                    "title": "Warmup Duration",
+                    "type": "array"
+                },
+                "warmup_factor": {
+                    "default": 0.0,
+                    "title": "Warmup Factor",
+                    "type": "number"
+                },
+                "decay_duration": {
+                    "maxItems": 2,
+                    "minItems": 2,
+                    "prefixItems": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "enum": [
+                                "steps",
+                                "epochs"
+                            ],
+                            "type": "string"
+                        }
+                    ],
+                    "title": "Decay Duration",
+                    "type": "array"
+                },
+                "decay_factor": {
+                    "default": 0.01,
+                    "title": "Decay Factor",
+                    "type": "number"
+                },
+                "rlp": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ReduceLROnPlateauBaseConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                }
+            },
+            "required": [
+                "name",
+                "warmup_duration",
+                "decay_duration"
+            ],
+            "title": "WarmupCosineDecayRLPSchedulerConfig",
+            "type": "object"
+        }
+    },
+    "description": "__main__.OCPConfig\n\nOCP config.",
+    "properties": {
+        "task": {
+            "$ref": "#/$defs/OCPTaskConfig"
+        },
+        "outputs": {
+            "additionalProperties": {
+                "discriminator": {
+                    "mapping": {
+                        "atom": "#/$defs/AtomLevelOutputHeadConfig",
+                        "system": "#/$defs/SystemLevelOutputHeadConfig"
+                    },
+                    "propertyName": "level"
+                },
+                "oneOf": [
+                    {
+                        "$ref": "#/$defs/SystemLevelOutputHeadConfig"
+                    },
+                    {
+                        "$ref": "#/$defs/AtomLevelOutputHeadConfig"
+                    }
+                ]
+            },
+            "title": "Outputs",
+            "type": "object"
+        },
+        "dataset": {
+            "$ref": "#/$defs/TaskDatasetConfig"
+        },
+        "model": {
+            "discriminator": {
+                "mapping": {
+                    "gemnet_oc_mt": "#/$defs/GemNetOCModelConfig"
+                },
+                "propertyName": "name"
+            },
+            "oneOf": [
+                {
+                    "$ref": "#/$defs/GemNetOCModelConfig"
+                }
+            ],
+            "title": "Model"
+        },
+        "optim": {
+            "discriminator": {
+                "mapping": {
+                    "multi_group": "#/$defs/MultiGroupOptimConfig",
+                    "single_group": "#/$defs/SingleGroupOptimConfig"
+                },
+                "propertyName": "optim_mode"
+            },
+            "oneOf": [
+                {
+                    "$ref": "#/$defs/SingleGroupOptimConfig"
+                },
+                {
+                    "$ref": "#/$defs/MultiGroupOptimConfig"
+                }
+            ],
+            "title": "Optim"
+        }
+    },
+    "required": [
+        "task",
+        "outputs",
+        "dataset",
+        "model",
+        "optim"
+    ],
+    "title": "OCPConfig",
+    "type": "object"
+}

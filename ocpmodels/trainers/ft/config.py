@@ -10,6 +10,7 @@ from typing_extensions import Annotated, override
 
 from ocpmodels.common.typed_config import Field, TypedConfig
 
+from ..mt.config import ModelConfig, OutputsConfig, TaskDatasetConfig
 from . import lr_scheduler as LR
 
 
@@ -219,3 +220,23 @@ class FinetuneConfig(TypedConfig):
             raise ValueError(
                 f"Base checkpoint {self.base_checkpoint} not found."
             )
+
+
+# region OCP Config Schema
+
+
+class OCPTaskConfig(TypedConfig):
+    ft: FinetuneConfig
+
+
+class OCPConfig(TypedConfig, write_schema_to_file=True):
+    """OCP config."""
+
+    task: OCPTaskConfig
+    outputs: OutputsConfig
+    dataset: TaskDatasetConfig
+    model: ModelConfig
+    optim: OptimConfig
+
+
+# endregion

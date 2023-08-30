@@ -1,9 +1,11 @@
+# yaml-language-server: $schema=../ocpmodels/trainers/ft/config.OCPConfig.schema.json
 trainer: ft
 
-ft:
-  base_checkpoint:
-    src: /checkpoint/nimashoghi/gemnet_oc_large_mt_oc20.pt
-    ignore_keys_patterns: ["*module_dict.*"]
+task:
+  ft:
+    base_checkpoint:
+      src: /checkpoint/nimashoghi/gemnet_oc_large_mt_oc20.pt
+      ignore_keys_patterns: ["*module_dict.*"]
 
 dataset:
   mt_transform: ocpmodels.trainers.ft.transform.qm9_transform
