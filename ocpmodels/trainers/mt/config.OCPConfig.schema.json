@@ -854,6 +854,28 @@
                     "default": null,
                     "title": "Mt Transform"
                 },
+                "referencing": {
+                    "anyOf": [
+                        {
+                            "format": "path",
+                            "type": "string"
+                        },
+                        {
+                            "additionalProperties": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "type": "object"
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Referencing"
+                },
                 "copy_from_train": {
                     "default": true,
                     "title": "Copy From Train",

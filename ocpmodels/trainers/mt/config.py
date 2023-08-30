@@ -1,5 +1,6 @@
 from collections import Counter
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, Literal, Protocol, Union, runtime_checkable
 
 import torch
@@ -143,6 +144,9 @@ class SplitDatasetConfig(TypedConfig):
             )
 
 
+ReferencingConfig = Annotated[Union[Path, dict[str, dict[int, str]]], Field()]
+
+
 class TaskDatasetConfig(TypedConfig):
     train: SplitDatasetConfig | None = None
     val: list[SplitDatasetConfig] | None = None
@@ -150,6 +154,7 @@ class TaskDatasetConfig(TypedConfig):
 
     key_mapping: dict[str, MappedKeyType] = {}
     mt_transform: str | None = None
+    referencing: ReferencingConfig | None = None
 
     copy_from_train: bool = True
 

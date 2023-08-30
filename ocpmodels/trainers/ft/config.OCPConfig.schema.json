@@ -196,6 +196,28 @@
                     "default": null,
                     "title": "Mt Transform"
                 },
+                "referencing": {
+                    "anyOf": [
+                        {
+                            "format": "path",
+                            "type": "string"
+                        },
+                        {
+                            "additionalProperties": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "type": "object"
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Referencing"
+                },
                 "copy_from_train": {
                     "default": true,
                     "title": "Copy From Train",
@@ -827,19 +849,26 @@
                     "title": "Optimizer"
                 },
                 "lr_scheduler": {
-                    "discriminator": {
-                        "mapping": {
-                            "ReduceLROnPlateau": "#/$defs/ReduceLROnPlateauConfig",
-                            "WarmupCosineDecayRLP": "#/$defs/WarmupCosineDecayRLPSchedulerConfig"
-                        },
-                        "propertyName": "name"
-                    },
-                    "oneOf": [
+                    "anyOf": [
                         {
-                            "$ref": "#/$defs/ReduceLROnPlateauConfig"
+                            "discriminator": {
+                                "mapping": {
+                                    "ReduceLROnPlateau": "#/$defs/ReduceLROnPlateauConfig",
+                                    "WarmupCosineDecayRLP": "#/$defs/WarmupCosineDecayRLPSchedulerConfig"
+                                },
+                                "propertyName": "name"
+                            },
+                            "oneOf": [
+                                {
+                                    "$ref": "#/$defs/ReduceLROnPlateauConfig"
+                                },
+                                {
+                                    "$ref": "#/$defs/WarmupCosineDecayRLPSchedulerConfig"
+                                }
+                            ]
                         },
                         {
-                            "$ref": "#/$defs/WarmupCosineDecayRLPSchedulerConfig"
+                            "type": "null"
                         }
                     ],
                     "title": "Lr Scheduler"

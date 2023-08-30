@@ -1,6 +1,8 @@
+import pickle
 from collections import abc
 from functools import partial
 from logging import getLogger
+from pathlib import Path
 from typing import Any, Iterable, List, cast
 
 import numpy as np
@@ -132,6 +134,19 @@ def _apply_transforms(
             dataset,
             partial(apply_key_mapping, key_mapping=config.key_mapping),
         )
+
+    # Referencing transform
+    if config.referencing:
+        if isinstance(config.referencing, Path):
+            with config.referencing.open("rb") as f:
+                referencing = pickle.load(f)
+
+            assert isinstance(
+                referencing, dict
+            ), f"Referencing must be a dict, got {type(referencing)}"
+        else:
+            referencing = config.referencing
+        dataset = DT.referencing_transform(dataset, cast(Any, referencing))
 
     # Normalization transform
     if task_config.normalization:

@@ -14,6 +14,7 @@ from ..mt.config import (
     ModelConfig,
     NormalizerTargetConfig,
     OutputsConfig,
+    ReferencingConfig,
     TaskDatasetConfig,
 )
 from . import lr_scheduler as LR
@@ -231,6 +232,7 @@ class FinetuneConfig(TypedConfig):
 
 class FTDatasetsConfig(TaskDatasetConfig):
     normalization: dict[str, NormalizerTargetConfig] = {}
+    referencing: ReferencingConfig | None = None
 
 
 # region OCP Config Schema

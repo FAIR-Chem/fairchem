@@ -5,6 +5,7 @@ from logging import getLogger
 from typing import Any, Callable, cast
 
 import numpy as np
+import torch
 import wrapt
 from torch.utils.data import Dataset
 from typing_extensions import TypeVar, override
@@ -63,26 +64,9 @@ def expand_dataset(dataset: Dataset, n: int) -> Dataset:
                 )
             return self.__wrapped__.__getitem__(index % og_size)
 
-        @cache
-        def _atoms_metadata_cached(self):
-            """
-            We want to retrieve the atoms metadata for the expanded dataset.
-            This includes repeating the atoms metadata for the elemens that are repeated.
-            """
-
-            # the out metadata shape should be (n,)
+        def data_sizes(self, indices: list[int]) -> np.ndarray:
             nonlocal n, og_size
-
-            metadata = self.__wrapped__.atoms_metadata
-            metadata = np.resize(metadata, (n,))
-            log.debug(
-                f"Expanded the atoms metadata for {self.__class__.__name__} ({og_size} => {len(metadata)})."
-            )
-            return metadata
-
-        @property
-        def atoms_metadata(self):
-            return self._atoms_metadata_cached()
+            return self.__wrapped__.data_sizes([i % og_size for i in indices])
 
     dataset = cast(Dataset, _ExpandedDataset(dataset))
     log.info(
@@ -121,23 +105,9 @@ def first_n_transform(dataset: TDataset, n: int) -> TDataset:
             nonlocal n
             return n
 
-        @cache
-        def _atoms_metadata_cached(self):
-            """We only want to retrieve the atoms metadata for the first n elements."""
+        def data_sizes(self, indices: list[int]) -> np.ndarray:
             nonlocal n
-
-            metadata = self.__wrapped__.atoms_metadata
-            og_size = len(metadata)
-            metadata = metadata[:n]
-
-            log.info(
-                f"Retrieved the first {n} atoms metadata for {self.__class__.__name__} ({og_size} => {len(metadata)})."
-            )
-            return metadata
-
-        @property
-        def atoms_metadata(self):
-            return self._atoms_metadata_cached()
+            return self.__wrapped__.data_sizes(indices)
 
     return cast(TDataset, _FirstNDataset(dataset))
 
@@ -180,22 +150,49 @@ def sample_n_transform(dataset: TDataset, n: int, seed: int) -> TDataset:
             nonlocal n
             return n
 
-        @cache
-        def _atoms_metadata_cached(self):
-            """We only want to retrieve the atoms metadata for the sampled n elements."""
+        def data_sizes(self, indices: list[int]) -> np.ndarray:
             nonlocal n, sampled_indices
-
-            metadata = self.__wrapped__.atoms_metadata
-            og_size = len(metadata)
-            metadata = metadata[sampled_indices]
-
-            log.info(
-                f"Retrieved the sampled {n} atoms metadata for {self.__class__.__name__} ({og_size} => {len(metadata)})."
+            return self.__wrapped__.data_sizes(
+                [sampled_indices[i] for i in indices]
             )
-            return metadata
-
-        @property
-        def atoms_metadata(self):
-            return self._atoms_metadata_cached()
 
     return cast(TDataset, _SampleNDataset(dataset))
+
+
+def referencing_transform(
+    dataset: TDataset,
+    refs: dict[
+        str, list[float] | dict[int, float] | np.ndarray | torch.Tensor
+    ],
+) -> TDataset:
+    # Convert the refs to tensors
+    refs_dict: dict[str, torch.Tensor] = {}
+    for k, v in refs.items():
+        if isinstance(v, dict):
+            max_idx = max(v.keys())
+            v = torch.tensor(
+                [v.get(i, 0) for i in range(max_idx + 1)],
+                dtype=torch.float,
+            )
+        elif isinstance(v, list):
+            v = torch.tensor(v, dtype=torch.float)
+        elif isinstance(v, np.ndarray):
+            v = torch.from_numpy(v).float()
+        elif not torch.is_tensor(v):
+            raise TypeError(f"Invalid type for {k} in atomrefs: {type(v)}")
+        refs_dict[k] = v
+
+    def _transform(data: Any):
+        nonlocal refs_dict
+
+        z: torch.Tensor = data.atomic_numbers
+        for target, coeffs in refs_dict.items():
+            value = getattr(data, target)
+            setattr(data, f"{target}_raw", value.clone())
+            value = value - coeffs[z].sum()
+            setattr(data, target, value)
+
+        return data
+
+    dataset = dataset_transform(dataset, _transform, copy_data=False)
+    return dataset

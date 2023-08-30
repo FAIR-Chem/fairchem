@@ -15,7 +15,6 @@ dataset:
     U_0:
       mean: 0.0028667436
       std: 1.0965848
-
   train:
     config:
       format: lmdb
@@ -26,6 +25,7 @@ dataset:
   test:
     - config:
         src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/test
+  referencing: /checkpoint/nimashoghi/qm9/linref/linref.pkl
 
 loss_functions:
   - U_0:
