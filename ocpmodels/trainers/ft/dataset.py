@@ -11,7 +11,11 @@ from ocpmodels.common.utils import apply_key_mapping
 
 from ..mt import dataset_transform as DT
 from ..mt.config import ModelConfig, SplitDatasetConfig, TransformConfigs
-from ..mt.dataset import MTConcatDataset, _create_split_dataset
+from ..mt.dataset import (
+    MTConcatDataset,
+    _create_split_dataset,
+    _set_sid_transform,
+)
 from ..mt.normalizer import normalizer_transform
 from .config import FTDatasetsConfig
 
@@ -31,6 +35,9 @@ def _apply_ft_transforms(
             dataset,
             partial(apply_key_mapping, key_mapping=config.key_mapping),
         )
+
+    # Set sid if not present
+    dataset = _set_sid_transform(dataset)
 
     # Referencing transform
     if config.referencing:

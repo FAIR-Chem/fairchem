@@ -196,3 +196,23 @@ def referencing_transform(
 
     dataset = dataset_transform(dataset, _transform, copy_data=False)
     return dataset
+
+
+def dataset_idx_transform(
+    dataset: TDataset,
+    transform_idx: Callable[[Any, Any], Any],
+    copy_data: bool = False,
+) -> TDataset:
+    class _IdxTransformedDataset(wrapt.ObjectProxy):
+        @override
+        def __getitem__(self, idx):
+            nonlocal copy_data, transform_idx
+
+            assert transform_idx is not None, "Transform must be defined."
+            data = self.__wrapped__.__getitem__(idx)
+            if copy_data:
+                data = copy.deepcopy(data)
+            data = transform_idx(idx, data)
+            return data
+
+    return cast(TDataset, _IdxTransformedDataset(dataset))

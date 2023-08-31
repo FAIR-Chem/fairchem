@@ -37,6 +37,16 @@ from .normalizer import normalizer_transform
 log = getLogger(__name__)
 
 
+def _set_sid_transform(dataset: DT.TDataset) -> DT.TDataset:
+    def transform_idx(idx: int, data):
+        if getattr(data, "sid", None) is None:
+            data.sid = torch.tensor([idx], dtype=torch.long)
+        return data
+
+    dataset = DT.dataset_idx_transform(dataset, transform_idx)
+    return dataset
+
+
 class MTConcatDataset(ConcatDataset):
     def data_sizes(self, indices: list[int]) -> np.ndarray:
         # For the indices, find the dataset that they belong to
@@ -134,6 +144,9 @@ def _apply_transforms(
             dataset,
             partial(apply_key_mapping, key_mapping=config.key_mapping),
         )
+
+    # Set sid if not present
+    dataset = _set_sid_transform(dataset)
 
     # Referencing transform
     if config.referencing:
