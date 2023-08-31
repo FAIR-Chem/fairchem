@@ -70,7 +70,7 @@ class DDPLoss(nn.Module):
         batch_size: Optional[int] = None,
     ):
         # ensure torch doesn't do any unwanted broadcasting
-        assert input.shape == target.shape
+        assert input.shape == target.shape, f"Mismatched shapes: {input.shape} and {target.shape}"
 
         # zero out nans, if any
         found_nans_or_infs = not torch.all(input.isfinite())
