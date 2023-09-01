@@ -21,3 +21,37 @@ To get deterministic results on GPU, use [`torch.use_deterministic_algorithms`](
 where available (for example, see [`scatter_det`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/common/utils.py#L1112)). Note that deterministic operations are often slower
 than non-deterministic operations, so while this may be worth using for testing
 and debugging, this is not recommended for large-scale training and inference.
+
+### How do I train a model on OC20 total energies?
+
+By default, the OC20 S2EF/IS2RE LMDBs have adsorption energies, i.e. the DFT
+total energies minus the clean surface and gas phase adsorbate energies.
+
+In order to train a model on DFT total energies, set the following flags in the
+YAML config:
+
+```yaml
+task:
+    ...
+    # To train on OC20 total energies, use the 'oc22_lmdb' dataset class.
+    dataset: oc22_lmdb
+    ...
+
+dataset:
+    train:
+        ...
+        # To train on OC20 total energies, a path to OC20 reference energies
+        # `oc20_ref` must be specified to unreference existing data.
+        train_on_oc20_total_energies: True
+        oc20_ref: path/to/oc20_ref.pkl
+        ...
+    val:
+        ...
+        train_on_oc20_total_energies: True
+        oc20_ref: path/to/oc20_ref.pkl
+        ...
+```
+
+The OC20 reference pickle file containing the energy necessary to convert
+adsorption energy values to total energy is available for download
+[here](https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md#oc20-reference-information).
