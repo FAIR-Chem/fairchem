@@ -19,7 +19,9 @@ class BaseTask:
     def setup(self, trainer) -> None:
         self.trainer = trainer
         if self.config["checkpoint"] is not None:
-            self.trainer.load_checkpoint(self.config["checkpoint"])
+            self.trainer.load_checkpoint(
+                checkpoint_path=self.config["checkpoint"]
+            )
 
         # save checkpoint path to runner state for slurm resubmissions
         self.chkpt_path = os.path.join(
