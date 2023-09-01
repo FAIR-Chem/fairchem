@@ -53,5 +53,25 @@ dataset:
 ```
 
 The OC20 reference pickle file containing the energy necessary to convert
-adsorption energy values to total energy is available for download
-[here](https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md#oc20-reference-information).
+adsorption energy values to total energy is [available for download
+here](https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md#oc20-reference-information).
+
+To test if your setup is correct, try the following:
+
+```python
+from ocpmodels.datasets import OC22LmdbDataset
+
+dset = OC22LmdbDataset({
+    "src": "path/to/oc20/lmdb/folder/",
+    "train_on_oc20_total_energies": True,
+    "oc20_ref": "path/to/oc20_ref.pkl",
+})
+
+print(dset[0])
+# Data(y=-181.54722937, ...) -- total DFT energies are usually quite high!
+```
+
+Another option that might be useful for training on total energies is passing
+precomputed per-element average energies with [`lin_ref`](https://github.com/Open-Catalyst-Project/ocp/blob/faq/configs/s2ef/example.yml#L94-L97). If you use this option, make sure to recompute the
+[normalizer statistics (for energies)](https://github.com/Open-Catalyst-Project/ocp/blob/faq/configs/s2ef/example.yml#L82-L83)
+_after_ linear referencing.
