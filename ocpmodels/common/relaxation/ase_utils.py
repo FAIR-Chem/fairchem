@@ -12,7 +12,7 @@ Environment (ASE)
 import copy
 import logging
 import os
-from typing import Optional
+from typing import Dict, Optional
 
 import torch
 import yaml
@@ -65,7 +65,7 @@ class OCPCalculator(Calculator):
     def __init__(
         self,
         config_yml: Optional[str] = None,
-        checkpoint: Optional[str] = None,
+        checkpoint_path: Optional[str] = None,
         trainer: Optional[str] = None,
         cutoff: int = 6,
         max_neighbors: int = 50,
@@ -77,7 +77,7 @@ class OCPCalculator(Calculator):
         Args:
             config_yml (str):
                 Path to yaml config or could be a dictionary.
-            checkpoint (str):
+            checkpoint_path (str):
                 Path to trained checkpoint.
             trainer (str):
                 OCP trainer to be used. "forces" for S2EF, "energy" for IS2RE.
@@ -93,8 +93,9 @@ class OCPCalculator(Calculator):
         Calculator.__init__(self)
 
         # Either the config path or the checkpoint path needs to be provided
-        assert config_yml or checkpoint is not None
+        assert config_yml or checkpoint_path is not None
 
+        checkpoint = None
         if config_yml is not None:
             if isinstance(config_yml, str):
                 config = yaml.safe_load(open(config_yml, "r"))
@@ -116,9 +117,10 @@ class OCPCalculator(Calculator):
                 config["dataset"] = config["dataset"].get("train", None)
         else:
             # Loads the config from the checkpoint directly (always on CPU).
-            config = torch.load(checkpoint, map_location=torch.device("cpu"))[
-                "config"
-            ]
+            checkpoint = torch.load(
+                checkpoint_path, map_location=torch.device("cpu")
+            )
+            config = checkpoint["config"]
         if trainer is not None:  # passing the arg overrides everything else
             config["trainer"] = trainer
         else:
@@ -147,7 +149,7 @@ class OCPCalculator(Calculator):
 
         # Save config so obj can be transported over network (pkl)
         self.config = copy.deepcopy(config)
-        self.config["checkpoint"] = checkpoint
+        self.config["checkpoint"] = checkpoint_path
 
         if "normalizer" not in config:
             del config["dataset"]["src"]
@@ -169,8 +171,10 @@ class OCPCalculator(Calculator):
             amp=config.get("amp", False),
         )
 
-        if checkpoint is not None:
-            self.load_checkpoint(checkpoint)
+        if checkpoint_path is not None:
+            self.load_checkpoint(
+                checkpoint_path=checkpoint_path, checkpoint=checkpoint
+            )
 
         self.a2g = AtomsToGraphs(
             max_neigh=max_neighbors,
@@ -182,7 +186,9 @@ class OCPCalculator(Calculator):
             r_pbc=True,
         )
 
-    def load_checkpoint(self, checkpoint_path: str) -> None:
+    def load_checkpoint(
+        self, checkpoint_path: str, checkpoint: Dict = {}
+    ) -> None:
         """
         Load existing trained model
 
@@ -191,7 +197,7 @@ class OCPCalculator(Calculator):
                 Path to trained model
         """
         try:
-            self.trainer.load_checkpoint(checkpoint_path)
+            self.trainer.load_checkpoint(checkpoint_path, checkpoint)
         except NotImplementedError:
             logging.warning("Unable to load checkpoint!")
 

@@ -7,7 +7,7 @@ This page summarizes all the pretrained models released as part of the [Open Cat
     * [S2EF models optimized for force](#s2ef-models-optimized-for-force-only)
     * [IS2RE models](#is2re-models)
 * [Open Catalyst 2022 (OC22)](#open-catalyst-2022-oc22)
-    * [S2EF models](#s2ef-models)
+    * [S2EF total models](#s2ef-total-models)
 
 * * *
 
@@ -16,6 +16,7 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 
 * All configurations for these models are available in the [`configs/`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs) directory.
 * All of these models are trained on various splits of the OC20 S2EF / IS2RE datasets. For details, see [https://arxiv.org/abs/2010.09990](https://arxiv.org/abs/2010.09990) and https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md.
+* All OC20 models are trained on adsorption energies, i.e. the DFT total energies minus the clean surface and gas phase adsorbate energies. For details on how to train models on OC20 total energies, please read the [referencing section here](https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md#oc20-reference-information).
 
 ## S2EF models: optimized for EFwT
 
@@ -102,8 +103,10 @@ OC20 dataset or pretrained models, as well as the original paper for each model:
 
 * All configurations for these models are available in the [`configs/oc22`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/oc22) directory.
 * All of these models are trained on various splits of the OC22 S2EF / IS2RE datasets. For details, see [https://arxiv.org/abs/2206.08917](https://arxiv.org/abs/2206.08917) and https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md.
+* All OC22 models released here are trained on DFT total energies, in contrast to the OC20 models listed above, which are trained on adsorption energies.
 
-## S2EF models
+
+## S2EF-Total models
 
 |Model	|Training	|Download	|val ID force MAE	|val ID energy MAE	|
 |---	|---	|---	|---	|---	|

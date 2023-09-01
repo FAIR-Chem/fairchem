@@ -405,15 +405,21 @@ class BaseTrainer(ABC):
                 self.model, device_ids=[self.device]
             )
 
-    def load_checkpoint(self, checkpoint_path: str) -> None:
-        if not os.path.isfile(checkpoint_path):
-            raise FileNotFoundError(
-                errno.ENOENT, "Checkpoint file not found", checkpoint_path
-            )
+    def load_checkpoint(
+        self, checkpoint_path: str, checkpoint: Dict = {}
+    ) -> None:
+        if not checkpoint:
+            if not os.path.isfile(checkpoint_path):
+                raise FileNotFoundError(
+                    errno.ENOENT, "Checkpoint file not found", checkpoint_path
+                )
+            else:
+                logging.info(f"Loading checkpoint from: {checkpoint_path}")
+                map_location = torch.device("cpu") if self.cpu else self.device
+                checkpoint = torch.load(
+                    checkpoint_path, map_location=map_location
+                )
 
-        logging.info(f"Loading checkpoint from: {checkpoint_path}")
-        map_location = torch.device("cpu") if self.cpu else self.device
-        checkpoint = torch.load(checkpoint_path, map_location=map_location)
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
         self.best_val_metric = checkpoint.get("best_val_metric", None)
