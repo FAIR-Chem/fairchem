@@ -513,13 +513,31 @@ class FAENet(BaseModel):
                 self.hidden_channels,
             )
 
-    # @conditional_grad(torch.enable_grad())
+    # FAENet's forward pass in done in BaseModel, inherited here.
+    # It uses forces_forward() and energy_forward() defined below.
+
+    @conditional_grad(torch.enable_grad())
     def forces_forward(self, preds):
+        """ Predicts forces for 3D atomic systems.
+        Can be utilised to predict any atom-level property.
+
+        Args:
+            preds (dict): dictionnary with predicted properties for each graph.
+
+        Returns:
+            dict: additional predicted properties, at an atom-level (e.g. forces)
+        """
         if self.decoder:
             return self.decoder(preds["hidden_state"])
 
     @conditional_grad(torch.enable_grad())
     def energy_forward(self, data):
+        """ Predicts any graph-level properties (e.g. energy) for 3D atomic systems.
+        Args:
+            data (data.Batch): Batch of graphs datapoints. 
+        Returns:
+            dict: predicted properties for each graph (e.g. energy)
+        """
         # Rewire the graph
         z = data.atomic_numbers.long()
         pos = data.pos

@@ -1,0 +1,18 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:1
+  partition: main
+  time: 10:00:00
+
+default:
+  test_ri: True
+  mode: train
+  optim:
+    max_epochs: 3
+  wandb_tags: "debug"
+  cp_data_to_tmpdir: true
+
+runs:
+  - config: faenet-is2re-all
+    note: "debug"
