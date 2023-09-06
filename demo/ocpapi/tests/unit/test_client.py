@@ -5,7 +5,7 @@ from unittest import IsolatedAsyncioTestCase
 import responses
 
 from ocpapi.client import Client, RequestException
-from ocpapi.models import Bulk, BulksResponse, _Model
+from ocpapi.models import AdsorbatesResponse, Bulk, BulksResponse, _Model
 
 
 class TestClient(IsolatedAsyncioTestCase):
@@ -142,5 +142,21 @@ class TestClient(IsolatedAsyncioTestCase):
                         formula="C60",
                     ),
                 ],
+            ),
+        )
+
+    async def test_get_adsorbates(self) -> None:
+        await self._run_common_tests_against_route(
+            method="GET",
+            route="adsorbates",
+            client_method_name="get_adsorbates",
+            successful_response_code=200,
+            successful_response_body="""
+{
+    "adsorbates_supported": ["A", "B"]
+}
+""",
+            successful_response_object=AdsorbatesResponse(
+                adsorbates_supported=["A", "B"],
             ),
         )

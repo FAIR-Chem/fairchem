@@ -21,3 +21,12 @@ class TestClient(IsolatedAsyncioTestCase):
             Bulk(src_id="mp-149", elements=["Si"], formula="Si"),
             response.bulks_supported,
         )
+
+    async def test_get_adsorbates(self) -> None:
+        # Make sure that at least one of the expected adsorbates is in the
+        # response
+
+        client = Client(self.TEST_HOST)
+        response = await client.get_adsorbates()
+
+        self.assertIn("*CO", response.adsorbates_supported)
