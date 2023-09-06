@@ -80,37 +80,41 @@ In the rest of this tutorial, we explain how to train models for each task.
 In the IS2RE tasks, the model takes the initial structure as an input and predicts the structure’s adsorption energy
 in the relaxed state. To train a model for the IS2RE task, you can use the `EnergyTrainer`
 Trainer and `SinglePointLmdb` dataset by specifying the following in your configuration file:
-```
+
+```yaml
 trainer: energy # Use the EnergyTrainer
 
 dataset:
   # Train data
-  - src: [Path to training data]
+  train:
+    src: [Path to training data]
     normalize_labels: True
     # Mean and standard deviation of energies
     target_mean: -0.969171404838562
     target_std: 1.3671793937683105
   # Val data (optional)
-  - src: [Path to validation data]
+  val:
+    src: [Path to validation data]
   # Test data (optional)
-  - src: [Path to test data]
+  test:
+    src: [Path to test data]
 ```
 You can find examples configuration files in [`configs/is2re`](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs/is2re).
 
 To train a SchNet model for the IS2RE task on the 10k split, run:
-```
+```bash
 python main.py --mode train --config-yml configs/is2re/10k/schnet/schnet.yml
 ```
 
 Training logs are stored in `logs/tensorboard/[TIMESTAMP]` where `[TIMESTAMP]` is
 the starting time-stamp of the run. You can monitor the training process by running:
-```
+```bash
 tensorboard --logdir logs/tensorboard/[TIMESTAMP]
 ```
 At the end of training, the model checkpoint is stored in `checkpoints/[TIMESTAMP]/checkpoint.pt`.
 
 Next, run this model on the test data:
-```
+```bash
 python main.py --mode predict --config-yml configs/is2re/10k/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
@@ -159,7 +163,7 @@ trainer: forces  # Use the ForcesTrainer
 
 dataset:
   # Training data
-  train
+  train:
     src: [Path to training data]
     normalize_labels: True
     # Mean and standard deviation of energies
