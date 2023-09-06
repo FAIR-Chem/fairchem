@@ -76,7 +76,7 @@ precomputed per-element average energies with [`lin_ref`](https://github.com/Ope
 [normalizer statistics (for energies)](https://github.com/Open-Catalyst-Project/ocp/blob/faq/configs/s2ef/example.yml#L82-L83)
 _after_ linear referencing.
 
-### I'm trying run GemNet-OC / GemNet-dT, but it throws an error that scaling factors are not fitted. What should I do?
+### I'm trying to run GemNet-OC / GemNet-dT, but it throws an error that scaling factors are not fitted. What should I do?
 
 GemNet-OC and GemNet-dT make use of empirical scaling factors that are fit on a
 few batches of data prior to training in order to stabilize the variance of
@@ -108,7 +108,7 @@ python main.py \
     --mode train
 ```
 
-### I'm trying run GemNet-OC on my data, but it errors out on `sph_basis = self.spherical_basis(cosφ_cab, θ_cabd)`.
+### I'm trying to run GemNet-OC on my data, but it errors out on `sph_basis = self.spherical_basis(cosφ_cab, θ_cabd)`.
 
 This is likely a tagging issue -- GemNet-OC computes quadruplet interactions
 for atoms tagged as 1 and 2
