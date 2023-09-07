@@ -14,6 +14,7 @@ from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.force_decoder import ForceDecoder
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.models.utils.activations import swish
+from ocpmodels.modules.phys_embeddings import PhysEmbedding
 
 
 class GaussianSmearing(nn.Module):
