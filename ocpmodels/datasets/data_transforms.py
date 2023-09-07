@@ -91,7 +91,7 @@ class FrameAveraging(Transform):
             return self.fa_func(data, self.fa_method)
         else:
             data.fa_pos, data.fa_cell, data.fa_rot = self.fa_func(
-                data.pos, data.cell, self.fa_method
+                data.pos, data.cell if hasattr(data, "cell") else None, self.fa_method
             )
             return data
 

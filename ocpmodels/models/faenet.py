@@ -544,7 +544,7 @@ class FAENet(BaseModel):
         batch = data.batch
 
         # Use periodic boundary conditions
-        if self.use_pbc:
+        if self.use_pbc and hasattr(data, "cell"):
             assert z.dim() == 1 and z.dtype == torch.long
 
             out = get_pbc_distances(
@@ -568,8 +568,7 @@ class FAENet(BaseModel):
                 max_num_neighbors=self.max_num_neighbors,
             )
             # edge_index = data.edge_index
-            row, col = edge_index
-            rel_pos = pos[row] - pos[col]
+            rel_pos = pos[edge_index[0]] - pos[edge_index[1]]
             edge_weight = rel_pos.norm(dim=-1)
             edge_attr = self.distance_expansion(edge_weight)
 
