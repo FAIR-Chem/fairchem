@@ -105,8 +105,8 @@ class ResidualLayer(torch.nn.Module):
         self.dense_mlp = torch.nn.Sequential(
             *[
                 layer(
-                    in_features=units,
-                    out_features=units,
+                    num_in_features=units,
+                    num_out_features=units,
                     bias=False,
                     **layer_kwargs
                 )
