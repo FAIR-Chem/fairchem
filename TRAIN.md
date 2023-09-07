@@ -6,6 +6,7 @@
     - [IS2RE Relaxations](#is2re-relaxations)
   - [Structure to Energy and Forces (S2EF)](#structure-to-energy-and-forces-s2ef)
   - [Training OC20 models with total energies (IS2RE/S2EF)](#training-oc20-models-with-total-energies-is2res2ef)
+  - [Overriding YAML config parameters from the command line](#overriding-yaml-config-parameters-from-the-command-line)
   - [Initial Structure to Relaxed Structure (IS2RS)](#initial-structure-to-relaxed-structure-is2rs)
   - [Create EvalAI submission files](#create-evalai-oc20-submission-files)
     - [S2EF/IS2RE](#s2efis2re)
@@ -79,37 +80,41 @@ In the rest of this tutorial, we explain how to train models for each task.
 In the IS2RE tasks, the model takes the initial structure as an input and predicts the structure’s adsorption energy
 in the relaxed state. To train a model for the IS2RE task, you can use the `EnergyTrainer`
 Trainer and `SinglePointLmdb` dataset by specifying the following in your configuration file:
-```
+
+```yaml
 trainer: energy # Use the EnergyTrainer
 
 dataset:
   # Train data
-  - src: [Path to training data]
+  train:
+    src: [Path to training data]
     normalize_labels: True
     # Mean and standard deviation of energies
     target_mean: -0.969171404838562
     target_std: 1.3671793937683105
   # Val data (optional)
-  - src: [Path to validation data]
+  val:
+    src: [Path to validation data]
   # Test data (optional)
-  - src: [Path to test data]
+  test:
+    src: [Path to test data]
 ```
 You can find examples configuration files in [`configs/is2re`](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs/is2re).
 
 To train a SchNet model for the IS2RE task on the 10k split, run:
-```
+```bash
 python main.py --mode train --config-yml configs/is2re/10k/schnet/schnet.yml
 ```
 
 Training logs are stored in `logs/tensorboard/[TIMESTAMP]` where `[TIMESTAMP]` is
 the starting time-stamp of the run. You can monitor the training process by running:
-```
+```bash
 tensorboard --logdir logs/tensorboard/[TIMESTAMP]
 ```
 At the end of training, the model checkpoint is stored in `checkpoints/[TIMESTAMP]/checkpoint.pt`.
 
 Next, run this model on the test data:
-```
+```bash
 python main.py --mode predict --config-yml configs/is2re/10k/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
@@ -152,12 +157,14 @@ Alternatively, the IS2RE task may be approached by 2 methods as described in our
 In the S2EF task, the model takes the positions of the atoms as input and predicts the adsorption energy and per-atom
 forces as calculated by DFT. To train a model for the S2EF task, you can use the `ForcesTrainer` Trainer
 and `TrajectoryLmdb` dataset by specifying the following in your configuration file:
-```
+
+```yaml
 trainer: forces  # Use the ForcesTrainer
 
 dataset:
   # Training data
-  - src: [Path to training data]
+  train:
+    src: [Path to training data]
     normalize_labels: True
     # Mean and standard deviation of energies
     target_mean: -0.7586356401443481
@@ -166,14 +173,17 @@ dataset:
     grad_target_mean: 0.0
     grad_target_std: 2.981738567352295
   # Val data (optional)
-  - src: [Path to validation data]
+  val:
+    src: [Path to validation data]
   # Test data (optional)
-  - src: [Path to test data]
+  test:
+    src: [Path to test data]
 ```
 You can find examples configuration files in [`configs/s2ef`](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs/s2ef).
 
 To train a SchNet model for the S2EF task on the 2M split using 2 GPUs, run:
-```
+
+```bash
 python -u -m torch.distributed.launch --nproc_per_node=2 main.py \
         --mode train --config-yml configs/s2ef/2M/schnet/schnet.yml --num-gpus 2 --distributed
 ```
@@ -181,7 +191,8 @@ Similar to the IS2RE task, tensorboard logs are stored in `logs/tensorboard/[TIM
 checkpoint is stored in `checkpoints/[TIMESTAMP]/checkpoint.pt`.
 
 Next, run this model on the test data:
-```
+
+```bash
 python main.py --mode predict --config-yml configs/s2ef/2M/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
@@ -189,9 +200,9 @@ The predictions are stored in `[RESULTS_DIR]/s2ef_predictions.npz` and later use
 
 ## Training OC20 models with total energies (IS2RE/S2EF)
 
-To train and validate an OC20 IS2RE/S2EF model on total energies targets instead of adsorption energies there are a number of required changes to the config. They include setting: `dataset: oc22_lmdb`, `prediction_dtype: float32`, `train_on_oc20_total_energies: True`, and `oc20_ref: path/to/oc20_ref.pkl` (see example below). Also, please note that our evaluation server does not currently support OC20 total energy models.
+To train and validate an OC20 IS2RE/S2EF model on total energies instead of adsorption energies there are a number of required changes to the config. They include setting: `dataset: oc22_lmdb`, `prediction_dtype: float32`, `train_on_oc20_total_energies: True`, and `oc20_ref: path/to/oc20_ref.pkl` (see example below). Also, please note that our evaluation server does not currently support OC20 total energy models.
 
-```
+```yaml
 task:
   dataset: oc22_lmdb
   prediction_dtype: float32
@@ -202,7 +213,7 @@ dataset:
     src: data/oc20/s2ef/train
     normalize_labels: False
     train_on_oc20_total_energies: True
-    #download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
+    # download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
     oc20_ref: path/to/oc20_ref.pkl
   val:
     src: data/oc20/s2ef/val_id
@@ -210,7 +221,30 @@ dataset:
     oc20_ref: path/to/oc20_ref.pkl
 ```
 
+## Overriding YAML config parameters from the command line
 
+There is some support for specifying arguments from the command line, such that
+they would override any parameter from the YAML configuration file. The parser
+for this relies on the [nesting level being correctly specified using a `.`
+separator](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/common/utils.py#L357).
+
+For example, to override the training dataset path via a command line argument:
+
+```bash
+python main.py \
+    --mode train
+    --config-yml configs/s2ef/2M/schnet/schnet.yml \
+    --dataset.train.src=path/to/my/dataset/
+```
+
+Or to update the initial learning rate:
+
+```bash
+python main.py \
+    --mode train
+    --config-yml configs/s2ef/2M/schnet/schnet.yml \
+    --optim.lr_initial=3e-4
+```
 
 ## Initial Structure to Relaxed Structure (IS2RS)
 
@@ -333,7 +367,7 @@ EvalAI expects results to be structured in a specific format for a submission to
 
 # Using Your Own Data
 
-There are multiple ways to train and evaluate OCP models on data other than OC20 and OC22. Writing an LMDB is the most performant option. However, ASE-based dataset formats are also included as a convenience for people with existing data who simply want to try OCP tools without needing to learn about LMDBs. 
+There are multiple ways to train and evaluate OCP models on data other than OC20 and OC22. Writing an LMDB is the most performant option. However, ASE-based dataset formats are also included as a convenience for people with existing data who simply want to try OCP tools without needing to learn about LMDBs.
 
 This tutorial will briefly discuss the basic use of these dataset formats. For more detailed information about the ASE datasets, see the [source code and docstrings](ocpmodels/datasets/ase_datasets.py).
 
@@ -350,7 +384,7 @@ To use this dataset, we will just have to change our config files to use the ASE
 ```
 task:
   dataset: ase_db
-  
+
 dataset:
   train:
     src: # The path/address to your ASE DB
@@ -387,12 +421,12 @@ This dataset assumes a single structure will be obtained from each file:
 ```
 task:
   dataset: ase_read
-  
+
 dataset:
   train:
       src: # The folder that contains ASE-readable files
       pattern: # Pattern matching each file you want to read (e.g. "*/POSCAR"). Search recursively with two wildcards: "**/*.cif".
-      
+
       ase_read_args:
         # Keyword arguments for ase.io.read()
       a2g_args:
@@ -409,18 +443,18 @@ This dataset supports reading files that each contain multiple structure (for ex
 ```
 task:
   dataset: ase_read_multi
-  
+
 dataset:
   train:
     index_file: Filepath to an index file which contains each filename and the number of structures in each file. e.g.:
             /path/to/relaxation1.traj 200
             /path/to/relaxation2.traj 150
             ...
-            
+
       # If using an index file, the src and pattern are not necessary
       src: # The folder that contains ASE-readable files
       pattern: # Pattern matching each file you want to read (e.g. "*.traj"). Search recursively with two wildcards: "**/*.xyz".
-      
+
       ase_read_args:
         # Keyword arguments for ase.io.read()
       a2g_args:
