@@ -49,3 +49,18 @@ class BulksResponse(_Model):
     """
 
     bulks_supported: List[Bulk] = field(default_factory=list)
+
+
+@dataclass_json(undefined=Undefined.INCLUDE)
+@dataclass
+class AdsorbatesResponse(_Model):
+    """
+    Stores the response from a request to fetch adsorbates supported in the
+    API.
+
+    Attributes:
+        adsorbates_supported: List of adsorbates that can be used in the API,
+            each in SMILES notation.
+    """
+
+    adsorbates_supported: List[str] = field(default_factory=list)

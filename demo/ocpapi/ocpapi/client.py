@@ -2,7 +2,7 @@ import asyncio
 
 import requests
 
-from ocpapi.models import BulksResponse
+from ocpapi.models import AdsorbatesResponse, BulksResponse
 
 
 class RequestException(Exception):
@@ -38,6 +38,17 @@ class Client:
         )
         return BulksResponse.from_json(response)
 
+    async def get_adsorbates(self) -> AdsorbatesResponse:
+        """
+        Fetch the list of adsorbates that are supported in the API.
+        """
+        response = await self._run_request(
+            url=f"{self._base_url}/adsorbates",
+            method="GET",
+            expected_response_code=200,
+        )
+        return AdsorbatesResponse.from_json(response)
+
     async def _run_request(
         self, url: str, method: str, expected_response_code: int, **kwargs
     ) -> str:
@@ -72,12 +83,4 @@ class Client:
                 ),
             )
 
-        # Try to decode the response
-        try:
-            return response.text
-        except Exception as e:
-            raise RequestException(
-                method=method,
-                url=url,
-                cause=f"Error parsing response body: {response.text}",
-            ) from e
+        return response.text

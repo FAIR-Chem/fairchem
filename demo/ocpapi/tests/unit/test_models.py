@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Generic, List, Type, TypeVar
 from unittest import TestCase as UnitTestCase
 
-from ocpapi.models import Bulk, BulksResponse, _Model
+from ocpapi.models import AdsorbatesResponse, Bulk, BulksResponse, _Model
 
 T = TypeVar("T", bound=_Model)
 
@@ -181,6 +181,38 @@ class TestBulksResponse(ModelTestWrapper.ModelTest[BulksResponse]):
             "formula": "AB2"
         }
     ],
+    "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestAdsorbatesResponse(ModelTestWrapper.ModelTest[AdsorbatesResponse]):
+    """
+    Serde tests for the AdsorbatesResponse data model.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            model_type=AdsorbatesResponse,
+            default_obj=AdsorbatesResponse(
+                adsorbates_supported=[],
+                other_fields={},
+            ),
+            default_json="""
+{
+    "adsorbates_supported": []
+}
+""",
+            complete_obj=AdsorbatesResponse(
+                adsorbates_supported=["A", "B"],
+                other_fields={"extra_field": "extra_value"},
+            ),
+            complete_json="""
+{
+    "adsorbates_supported": ["A", "B"],
     "extra_field": "extra_value"
 }
 """,
