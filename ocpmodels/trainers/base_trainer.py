@@ -65,7 +65,7 @@ class BaseTrainer(ABC):
     output_targets: Dict[str, Any]
     normalizers: Dict[str, Any]
     ema: Optional[ExponentialMovingAverage]
-    clip_grad_norm: bool
+    clip_grad_norm: float
     ema_decay: float
 
     def __init__(
@@ -597,7 +597,7 @@ class BaseTrainer(ABC):
     def load_extras(self) -> None:
         self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
         self.clip_grad_norm = aii(
-            self.config["optim"].get("clip_grad_norm"), bool
+            self.config["optim"].get("clip_grad_norm"), (int, float)
         )
         self.ema_decay = aii(self.config["optim"].get("ema_decay"), float)
         if self.ema_decay:
