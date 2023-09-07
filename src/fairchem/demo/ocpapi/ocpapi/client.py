@@ -83,12 +83,4 @@ class Client:
                 ),
             )
 
-        # Try to decode the response
-        try:
-            return response.text
-        except Exception as e:
-            raise RequestException(
-                method=method,
-                url=url,
-                cause=f"Error parsing response body: {response.text}",
-            ) from e
+        return response.text
