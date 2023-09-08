@@ -10,6 +10,8 @@ default:
   mode: train
   wandb_tags: "test"
   cp_data_to_tmpdir: True
+  optim:
+    max_epochs: 5
 
 runs:
   

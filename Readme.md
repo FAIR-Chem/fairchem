@@ -101,16 +101,11 @@ $ git clone https://github.com/icanswim/cosmosis.git cosmosis # For the QM7X dat
 
 ### Usage Examples
 
-* Run directly on computing resource: `python main.py --config=faenet-is2re-10k --optim.batch_size=128 --optim.eval_batch_size=128`
-* Run on login node of your cluster: `sbatch scripts/submit_example.sh`, making sure to replace relevant components. Check `scripts/submit.sh` for a more general script.
+* Run directly on computing resource: `python main.py --config=faenet-is2re-10k --optim.batch_size=128`
+* Run on login node of your cluster: `sbatch scripts/submit_example.sh`, making sure to replace relevant components. You can also check `scripts/submit.sh` for a more general script.
 
-To launch multiple jobs at the same time, we have used the following scripts, adapted to our Mila cluster. 
-  * `python mila/launch_exp.py exp=test`, where the run configs are specified in the folder `configs/exps/test.yaml`. 
+To launch multiple jobs at the same time, we have used the following scripts, adapted to our Mila cluster:
+  * `python mila/launch_exp.py exp=test_models`, where the various run configs are specified in `configs/exps/test_models.yaml`. 
   * `python mila/sbatch.py mem=48GB cpus=4 gres=gpu:1 job_name=jmlr exp_name=jmlr/last-runs py_args=--test_ri=True --cp_data_to_tmp_dir=True --mode='train' --wandb_tags='test-run' --optim.force_coefficient=50 --config='faenet-s2ef-2M' --note='FAENet baseline' --model.regress_forces='direct'` where the run configs are specified in the folder `configs/exps/test.yaml`.
 
 ❗️ Before running the scripts, make sure to (1) install the required dependencies (2) follow TL;DR instructions (3) target the right compute environement (gpu, cluster) (4) you have taken care of loggers. Also, remember that you could use the FAENet package directly to utilise the model and frame averaging directly. 
-
-
-### License
-
-This project is licensed under the [License Name](link_to_license).
