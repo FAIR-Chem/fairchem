@@ -16,14 +16,11 @@ runs:
   - config: faenet-is2re-10k
     note: "test faenet is2re 10K "
     optim:
-      batch_size: 216
-      eval_batch_size: 216
+      batch_size: 192
+      eval_batch_size: 192
 
   - config: faenet-is2re-all 
     note: "test faenet is2re all "
-    optim:
-      batch_size: 216
-      eval_batch_size: 216
 
   - config: faenet-s2ef-2M 
     note: "test faenet s2ef 2M"
@@ -34,15 +31,17 @@ runs:
     note: "test faenet s2ef 2M direct"
     model:
       regress_forces: direct
+    optim:
+      batch_size: 164
+      eval_batch_size: 164
   
-  - config: faenet-qm9-all
-    wandb_tags: qm9
-    note: "test faenet qm9"
+  # - config: faenet-qm9-all
+  #   wandb_tags: qm9
+  #   note: "test faenet qm9"
 
-  - config: faenet-qm7x-all
-    wandb_tags: qm7x
-    note: "test faenet qm7x"
-
+  # - config: faenet-qm7x-all
+  #   wandb_tags: qm7x
+  #   note: "test faenet qm7x"
 
   # - config: faenet-s2ef-2M
   #   note: "advanced config"

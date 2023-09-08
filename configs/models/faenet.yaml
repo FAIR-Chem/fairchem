@@ -60,6 +60,7 @@ default:
 
 is2re:
   default:
+    graph_rewiring: remove-tag-0
     frame_averaging: "2D" # {"2D", "3D", "DA", ""}
     fa_method: "se3-random" # {"", all, randon, det, se3-all, se3-randon, se3-det}
   # *** Important note ***
@@ -100,6 +101,7 @@ s2ef:
   default:
     frame_averaging: 2D
     fa_method: random
+    graph_rewiring: remove-tag-0
     model:
       hidden_channels: 256
       num_interactions: 7
