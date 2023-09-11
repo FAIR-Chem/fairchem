@@ -6,6 +6,7 @@ import responses
 
 from ocpapi.client import Client, RequestException
 from ocpapi.models import (
+    AdsorbateSlabConfigsResponse,
     AdsorbatesResponse,
     Atoms,
     Bulk,
@@ -286,5 +287,103 @@ class TestClient(IsolatedAsyncioTestCase):
                         ),
                     )
                 ],
+            ),
+        )
+
+    async def test_get_adsorbate_slab_configurations(self) -> None:
+        await self._run_common_tests_against_route(
+            method="POST",
+            route="adsorbate-slab-configs",
+            client_method_name="get_adsorbate_slab_configs",
+            client_method_args={
+                "adsorbate": "*A",
+                "slab": Slab(
+                    atoms=Atoms(
+                        cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                        pbc=(True, False, True),
+                        numbers=[1, 2],
+                        positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                        tags=[0, 1],
+                    ),
+                    metadata=SlabMetadata(
+                        bulk_src_id="test_id",
+                        millers=(-1, 0, 1),
+                        shift=0.25,
+                        top=False,
+                    ),
+                ),
+            },
+            expected_request_body={
+                "adsorbate": "*A",
+                "slab": {
+                    "slab_atomsobject": {
+                        "cell": [[1.1, 2.1, 3.1], [4.1, 5.1, 6.1], [7.1, 8.1, 9.1]],
+                        "pbc": [True, False, True],
+                        "numbers": [1, 2],
+                        "positions": [[1.1, 1.2, 1.3], [2.1, 2.2, 2.3]],
+                        "tags": [0, 1],
+                    },
+                    "slab_metadata": {
+                        "bulk_id": "test_id",
+                        "millers": [-1, 0, 1],
+                        "shift": 0.25,
+                        "top": False,
+                    },
+                },
+            },
+            successful_response_code=200,
+            successful_response_body="""
+{
+    "adsorbate_configs": [
+        {
+            "cell": [[1.1, 2.1, 3.1], [4.1, 5.1, 6.1], [7.1, 8.1, 9.1]],
+            "pbc": [true, false, true],
+            "numbers": [1],
+            "positions": [[1.1, 1.2, 1.3]],
+            "tags": [2]
+        }
+    ],
+    "slab": {
+        "slab_atomsobject": {
+            "cell": [[1.1, 2.1, 3.1], [4.1, 5.1, 6.1], [7.1, 8.1, 9.1]],
+            "pbc": [true, false, true],
+            "numbers": [1, 2],
+            "positions": [[1.1, 1.2, 1.3], [2.1, 2.2, 2.3]],
+            "tags": [0, 1]
+        },
+        "slab_metadata": {
+            "bulk_id": "test_id",
+            "millers": [-1, 0, 1],
+            "shift": 0.25,
+            "top": false
+        }
+    }
+}
+""",
+            successful_response_object=AdsorbateSlabConfigsResponse(
+                adsorbate_configs=[
+                    Atoms(
+                        cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                        pbc=(True, False, True),
+                        numbers=[1],
+                        positions=[(1.1, 1.2, 1.3)],
+                        tags=[2],
+                    )
+                ],
+                slab=Slab(
+                    atoms=Atoms(
+                        cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                        pbc=(True, False, True),
+                        numbers=[1, 2],
+                        positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                        tags=[0, 1],
+                    ),
+                    metadata=SlabMetadata(
+                        bulk_src_id="test_id",
+                        millers=(-1, 0, 1),
+                        shift=0.25,
+                        top=False,
+                    ),
+                ),
             ),
         )

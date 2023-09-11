@@ -146,3 +146,20 @@ class SlabsResponse(_Model):
     """
 
     slabs: List[Slab]
+
+
+@dataclass_json(undefined=Undefined.INCLUDE)
+@dataclass
+class AdsorbateSlabConfigsResponse(_Model):
+    """
+    Stores the response from a request to fetch placements of a single
+    absorbate on a slab.
+
+    Attributes:
+        adsorbate_configs: List of structures, each representing one possible
+            adsorbate placement.
+        slab: The structure of the slab on which the adsorbate is placed.
+    """
+
+    adsorbate_configs: List[Atoms]
+    slab: Slab
