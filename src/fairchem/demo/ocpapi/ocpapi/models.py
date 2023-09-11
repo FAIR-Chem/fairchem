@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Tuple
 
 from dataclasses_json import CatchAll, Undefined, config, dataclass_json
 
@@ -30,12 +30,10 @@ class Bulk(_Model):
         elements: The list of elements in the material.
     """
 
-    src_id: str = ""
-    formula: str = ""
-    elements: List[str] = field(
-        metadata=config(field_name="els"),
-        default_factory=list,
-    )
+    src_id: str
+    formula: str
+    # Stored under "els" in the API response
+    elements: List[str] = field(metadata=config(field_name="els"))
 
 
 @dataclass_json(undefined=Undefined.INCLUDE)
@@ -48,7 +46,7 @@ class BulksResponse(_Model):
         bulks_supported: List of bulks that can be used in the API.
     """
 
-    bulks_supported: List[Bulk] = field(default_factory=list)
+    bulks_supported: List[Bulk]
 
 
 @dataclass_json(undefined=Undefined.INCLUDE)
@@ -63,4 +61,4 @@ class AdsorbatesResponse(_Model):
             each in SMILES notation.
     """
 
-    adsorbates_supported: List[str] = field(default_factory=list)
+    adsorbates_supported: List[str]
