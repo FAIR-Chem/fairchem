@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from typing import Any, Final, Generic, List, Optional, Type, TypeVar
 from unittest import TestCase as UnitTestCase
 
-from ocpapi.models import AdsorbatesResponse, Bulk, BulksResponse, _Model
+from ocpapi.models import (AdsorbatesResponse, Atoms, Bulk, BulksResponse,
+                           Slab, SlabMetadata, SlabsResponse, _Model)
 
 T = TypeVar("T", bound=_Model)
 
@@ -172,6 +173,174 @@ class TestAdsorbatesResponse(ModelTestWrapper.ModelTest[AdsorbatesResponse]):
             obj_json="""
 {
     "adsorbates_supported": ["A", "B"],
+    "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestAtoms(ModelTestWrapper.ModelTest[Atoms]):
+    """
+    Serde tests for the Atoms data model.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=Atoms(
+                cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                pbc=(True, False, True),
+                numbers=[1, 2],
+                positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                tags=[0, 1],
+                other_fields={"extra_field": "extra_value"},
+            ),
+            obj_json="""
+{
+    "cell": [[1.1, 2.1, 3.1], [4.1, 5.1, 6.1], [7.1, 8.1, 9.1]],
+    "pbc": [true, false, true],
+    "numbers": [1, 2],
+    "positions": [[1.1, 1.2, 1.3], [2.1, 2.2, 2.3]],
+    "tags": [0, 1],
+    "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestSlabMetadata(ModelTestWrapper.ModelTest[SlabMetadata]):
+    """
+    Serde tests for the SlabMetadata data model.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=SlabMetadata(
+                bulk_src_id="test_id",
+                millers=(-1, 0, 1),
+                shift=0.25,
+                top=False,
+                other_fields={"extra_field": "extra_value"},
+            ),
+            obj_json="""
+{
+    "bulk_id": "test_id",
+    "millers": [-1, 0, 1],
+    "shift": 0.25,
+    "top": false,
+    "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestSlab(ModelTestWrapper.ModelTest[Slab]):
+    """
+    Serde tests for the Slab data model.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=Slab(
+                atoms=Atoms(
+                    cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                    pbc=(True, False, True),
+                    numbers=[1, 2],
+                    positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                    tags=[0, 1],
+                    other_fields={"extra_atoms_field": "extra_atoms_value"},
+                ),
+                metadata=SlabMetadata(
+                    bulk_src_id="test_id",
+                    millers=(-1, 0, 1),
+                    shift=0.25,
+                    top=False,
+                    other_fields={"extra_metadata_field": "extra_metadata_value"},
+                ),
+                other_fields={"extra_field": "extra_value"},
+            ),
+            obj_json="""
+{
+    "slab_atomsobject": {
+        "cell": [[1.1, 2.1, 3.1], [4.1, 5.1, 6.1], [7.1, 8.1, 9.1]],
+        "pbc": [true, false, true],
+        "numbers": [1, 2],
+        "positions": [[1.1, 1.2, 1.3], [2.1, 2.2, 2.3]],
+        "tags": [0, 1],
+        "extra_atoms_field": "extra_atoms_value"
+    },
+    "slab_metadata": {
+        "bulk_id": "test_id",
+        "millers": [-1, 0, 1],
+        "shift": 0.25,
+        "top": false,
+        "extra_metadata_field": "extra_metadata_value"
+    },
+    "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestSlabsResponse(ModelTestWrapper.ModelTest[SlabsResponse]):
+    """
+    Serde tests for the SlabsResponse data model.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=SlabsResponse(
+                slabs=[
+                    Slab(
+                        atoms=Atoms(
+                            cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                            pbc=(True, False, True),
+                            numbers=[1, 2],
+                            positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                            tags=[0, 1],
+                            other_fields={"extra_atoms_field": "extra_atoms_value"},
+                        ),
+                        metadata=SlabMetadata(
+                            bulk_src_id="test_id",
+                            millers=(-1, 0, 1),
+                            shift=0.25,
+                            top=False,
+                            other_fields={
+                                "extra_metadata_field": "extra_metadata_value"
+                            },
+                        ),
+                        other_fields={"extra_slab_field": "extra_slab_value"},
+                    )
+                ],
+                other_fields={"extra_field": "extra_value"},
+            ),
+            obj_json="""
+{
+    "slabs": [{
+        "slab_atomsobject": {
+            "cell": [[1.1, 2.1, 3.1], [4.1, 5.1, 6.1], [7.1, 8.1, 9.1]],
+            "pbc": [true, false, true],
+            "numbers": [1, 2],
+            "positions": [[1.1, 1.2, 1.3], [2.1, 2.2, 2.3]],
+            "tags": [0, 1],
+            "extra_atoms_field": "extra_atoms_value"
+        },
+        "slab_metadata": {
+            "bulk_id": "test_id",
+            "millers": [-1, 0, 1],
+            "shift": 0.25,
+            "top": false,
+            "extra_metadata_field": "extra_metadata_value"
+        },
+        "extra_slab_field": "extra_slab_value"
+    }],
     "extra_field": "extra_value"
 }
 """,
