@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from typing import Any, Generic, List, Type, TypeVar
+from typing import Any, Final, Generic, List, Optional, Type, TypeVar
 from unittest import TestCase as UnitTestCase
 
 from ocpapi.models import AdsorbatesResponse, Bulk, BulksResponse, _Model
@@ -17,36 +17,28 @@ class ModelTestWrapper:
         def __init__(
             self,
             *args: Any,
-            model_type: Type[T],
-            default_obj: T,
-            default_json: str,
-            complete_obj: T,
-            complete_json: str,
+            obj: T,
+            obj_json: str,
             **kwargs: Any,
         ) -> None:
             """
             Args:
-                model_type: Subclass of _Model that is being tested.
-                default_obj: A model instance that has been created with
-                    default values.
-                default_json: JSON-serialized version of default_obj.
-                complete_obj: A model instance in which all fields, even
-                    unknown ones, are included.
-                complete_json: JSON-serialized version of complete_obj.
+                obj: A model instance in which all fields, even unknown ones,
+                    are included.
+                obj_json: JSON-serialized version of obj.
             """
             super().__init__(*args, **kwargs)
-            self._model_type = model_type
-            self._default_obj = default_obj
-            self._default_json = default_json
-            self._complete_obj = complete_obj
-            self._complete_json = complete_json
+            self._obj = obj
+            self._obj_json = obj_json
+            self._obj_type = type(obj)
 
         def test_from_json(self) -> None:
             @dataclass
             class TestCase:
                 message: str
                 json_repr: str
-                expected: T
+                expected: Final[Optional[T]] = None
+                expected_exception: Final[Optional[Type[Exception]]] = None
 
             test_cases: List[TestCase] = [
                 # If the json object is empty then default values should
@@ -54,21 +46,28 @@ class ModelTestWrapper:
                 TestCase(
                     message="empty object",
                     json_repr="{}",
-                    expected=self._default_obj,
+                    expected_exception=Exception,
                 ),
                 # If all fields are set then they should be included in the
                 # resulting object
                 TestCase(
                     message="all fields set",
-                    json_repr=self._complete_json,
-                    expected=self._complete_obj,
+                    json_repr=self._obj_json,
+                    expected=self._obj,
                 ),
             ]
 
             for case in test_cases:
                 with self.subTest(msg=case.message):
-                    actual = self._model_type.from_json(case.json_repr)
-                    self.assertEqual(actual, case.expected)
+                    # Make sure an exception is raised if one is expected
+                    if case.expected_exception is not None:
+                        with self.assertRaises(case.expected_exception):
+                            self._obj_type.from_json(case.json_repr)
+
+                    # Otherwise make sure the expected value is returned
+                    if case.expected is not None:
+                        actual = self._obj_type.from_json(case.json_repr)
+                        self.assertEqual(actual, case.expected)
 
         def test_to_json(self) -> None:
             @dataclass
@@ -78,17 +77,11 @@ class ModelTestWrapper:
                 expected: str
 
             test_cases: List[TestCase] = [
-                # An empty model instance should serialize default values
-                TestCase(
-                    message="empty object",
-                    obj=self._model_type(),
-                    expected=self._default_json,
-                ),
                 # All explicitly-defined fields should serialize
                 TestCase(
                     message="all fields set",
-                    obj=self._complete_obj,
-                    expected=self._complete_json,
+                    obj=self._obj,
+                    expected=self._obj_json,
                 ),
             ]
 
@@ -112,27 +105,13 @@ class TestBulk(ModelTestWrapper.ModelTest[Bulk]):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
-            model_type=Bulk,
-            default_obj=Bulk(
-                src_id="",
-                formula="",
-                elements=[],
-                other_fields={},
-            ),
-            default_json="""
-{
-    "src_id": "",
-    "els": [],
-    "formula": ""
-}
-""",
-            complete_obj=Bulk(
+            obj=Bulk(
                 src_id="test_id",
                 elements=["A", "B"],
                 formula="AB2",
                 other_fields={"extra_field": "extra_value"},
             ),
-            complete_json="""
+            obj_json="""
 {
     "src_id": "test_id",
     "els": ["A", "B"],
@@ -152,17 +131,7 @@ class TestBulksResponse(ModelTestWrapper.ModelTest[BulksResponse]):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
-            model_type=BulksResponse,
-            default_obj=BulksResponse(
-                bulks_supported=[],
-                other_fields={},
-            ),
-            default_json="""
-{
-    "bulks_supported": []
-}
-""",
-            complete_obj=BulksResponse(
+            obj=BulksResponse(
                 bulks_supported=[
                     Bulk(
                         src_id="test_id",
@@ -172,7 +141,7 @@ class TestBulksResponse(ModelTestWrapper.ModelTest[BulksResponse]):
                 ],
                 other_fields={"extra_field": "extra_value"},
             ),
-            complete_json="""
+            obj_json="""
 {
     "bulks_supported": [
         {
@@ -196,21 +165,11 @@ class TestAdsorbatesResponse(ModelTestWrapper.ModelTest[AdsorbatesResponse]):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
-            model_type=AdsorbatesResponse,
-            default_obj=AdsorbatesResponse(
-                adsorbates_supported=[],
-                other_fields={},
-            ),
-            default_json="""
-{
-    "adsorbates_supported": []
-}
-""",
-            complete_obj=AdsorbatesResponse(
+            obj=AdsorbatesResponse(
                 adsorbates_supported=["A", "B"],
                 other_fields={"extra_field": "extra_value"},
             ),
-            complete_json="""
+            obj_json="""
 {
     "adsorbates_supported": ["A", "B"],
     "extra_field": "extra_value"
