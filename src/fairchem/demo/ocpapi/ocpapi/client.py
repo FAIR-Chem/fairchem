@@ -4,8 +4,14 @@ from typing import Union
 
 import requests
 
-from ocpapi.models import (AdsorbatesResponse, Bulk, BulksResponse,
-                           SlabsResponse)
+from ocpapi.models import (
+    AdsorbateSlabConfigsResponse,
+    AdsorbatesResponse,
+    Bulk,
+    BulksResponse,
+    Slab,
+    SlabsResponse,
+)
 
 
 class RequestException(Exception):
@@ -33,6 +39,9 @@ class Client:
     async def get_bulks(self) -> BulksResponse:
         """
         Fetch the list of bulk materials that are supported in the API.
+
+        Returns:
+            BulksResponse
         """
         response = await self._run_request(
             url=f"{self._base_url}/bulks",
@@ -44,6 +53,9 @@ class Client:
     async def get_adsorbates(self) -> AdsorbatesResponse:
         """
         Fetch the list of adsorbates that are supported in the API.
+
+        Returns:
+            AdsorbatesResponse
         """
         response = await self._run_request(
             url=f"{self._base_url}/adsorbates",
@@ -59,6 +71,9 @@ class Client:
         Args:
             bulk: If a string, the id of the bulk to use. Otherwise the Bulk
                 instance to use.
+
+        Returns:
+            SlabsResponse
         """
         response = await self._run_request(
             url=f"{self._base_url}/slabs",
@@ -71,12 +86,49 @@ class Client:
         )
         return SlabsResponse.from_json(response)
 
+    async def get_adsorbate_slab_configs(
+        self, adsorbate: str, slab: Slab
+    ) -> AdsorbateSlabConfigsResponse:
+        """
+        Get a list of possible binding sites for the input adsorbate on the
+        input slab.
+
+        Args:
+            adsorbate: SMILES string describing the adsorbate to place.
+            slab: Information about the slab on which the adsorbate should
+                be placed.
+
+        Returns:
+            AdsorbateSlabConfigsResponse
+        """
+        response = await self._run_request(
+            url=f"{self._base_url}/adsorbate-slab-configs",
+            method="POST",
+            expected_response_code=200,
+            data=json.dumps(
+                {
+                    "adsorbate": adsorbate,
+                    "slab": slab.to_dict(),
+                }
+            ),
+            headers={"Content-Type": "application/json"},
+        )
+        return AdsorbateSlabConfigsResponse.from_json(response)
+
     async def _run_request(
         self, url: str, method: str, expected_response_code: int, **kwargs
     ) -> str:
         """
         Helper method that runs the input request on a thread so that
         it doesn't block the event loop on the calling thread.
+
+        Args:
+            url: The full URL to make the request against.
+            method: The HTTP method to use (GET, POST, etc.).
+            expected_response_code: The response code that indicates success.
+
+        Returns:
+            The response body from the request as a string.
         """
 
         # Make the request
