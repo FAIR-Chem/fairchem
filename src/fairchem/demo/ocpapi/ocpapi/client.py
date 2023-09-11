@@ -1,8 +1,11 @@
 import asyncio
+import json
+from typing import Union
 
 import requests
 
-from ocpapi.models import AdsorbatesResponse, BulksResponse
+from ocpapi.models import (AdsorbatesResponse, Bulk, BulksResponse,
+                           SlabsResponse)
 
 
 class RequestException(Exception):
@@ -48,6 +51,25 @@ class Client:
             expected_response_code=200,
         )
         return AdsorbatesResponse.from_json(response)
+
+    async def get_slabs(self, bulk: Union[str, Bulk]) -> SlabsResponse:
+        """
+        Get a unique list of slabs for for the input bulk structure.
+
+        Args:
+            bulk: If a string, the id of the bulk to use. Otherwise the Bulk
+                instance to use.
+        """
+        response = await self._run_request(
+            url=f"{self._base_url}/slabs",
+            method="POST",
+            expected_response_code=200,
+            data=json.dumps(
+                {"bulk_src_id": bulk.src_id if isinstance(bulk, Bulk) else bulk}
+            ),
+            headers={"Content-Type": "application/json"},
+        )
+        return SlabsResponse.from_json(response)
 
     async def _run_request(
         self, url: str, method: str, expected_response_code: int, **kwargs
