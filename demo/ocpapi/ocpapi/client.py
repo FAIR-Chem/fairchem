@@ -1,22 +1,35 @@
 import asyncio
 import json
-from typing import Union
+from enum import Enum
+from typing import List, Union
 
 import requests
 
-from ocpapi.models import (
-    AdsorbateSlabConfigsResponse,
-    AdsorbatesResponse,
-    Bulk,
-    BulksResponse,
-    Slab,
-    SlabsResponse,
-)
+from ocpapi.models import (AdsorbateSlabConfigsResponse,
+                           AdsorbateSlabRelaxationsResponse,
+                           AdsorbatesResponse, Atoms, Bulk, BulksResponse,
+                           Slab, SlabsResponse)
 
 
 class RequestException(Exception):
     def __init__(self, method: str, url: str, cause: str) -> None:
         super().__init__(f"Request to {method} {url} failed. {cause}")
+
+
+class Model(Enum):
+    """
+    ML model that can be used in adsorbate-slab relaxations.
+
+    Attributes:
+        GEMNET_OC_BASE_S2EF_ALL_MD: https://arxiv.org/abs/2204.02782
+        EQUIFORMER_V2_31M_S2EF_ALL_MD: https://arxiv.org/abs/2306.12059
+    """
+
+    GEMNET_OC_BASE_S2EF_ALL_MD = "gemnet_oc_base_s2ef_all_md"
+    EQUIFORMER_V2_31M_S2EF_ALL_MD = "equiformer_v2_31M_s2ef_all_md"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class Client:
@@ -114,6 +127,59 @@ class Client:
             headers={"Content-Type": "application/json"},
         )
         return AdsorbateSlabConfigsResponse.from_json(response)
+
+    async def submit_adsorbate_slab_relaxations(
+        self,
+        adsorbate: str,
+        adsorbate_configs: List[Atoms],
+        bulk: Bulk,
+        slab: Slab,
+        model: Union[Model, str],
+        ephemeral: bool = False,
+    ) -> AdsorbateSlabRelaxationsResponse:
+        """
+        Starts relaxations of the input adsorbate configurations on the input
+        slab using energies and forces returned by the input model. Relaxations
+        are run asynchronously and results can be fetched using the system id
+        that is returned from this method.
+
+        Args:
+            adsorbate: SMILES string describing the adsorbate being simulated.
+            adsorbate_configs: List of adsorbate configurations to relax. This
+                should only include the adsorbates themselves; the surface is
+                defined in the "slab" field that is a peer to this one.
+            bulk: Details of the bulk material being simulated.
+            slab: The structure of the slab on which adsorbates are placed.
+            model: The model that will be used to evaluate energies and forces
+                during relaxations. Prefer using the enumerated Model values,
+                but a free-form string can be supplied if this client version
+                does not support a model known to exist on the API being
+                invoked.
+            ephemeral: If False (default), any later attempt to delete the
+                generated relaxations will be rejected. If True, deleting the
+                relaxations will be allowed, which is generally useful for
+                testing when there is no reason for results to be persisted.
+
+        Returns:
+            AdsorbateSlabRelaxationsResponse
+        """
+        response = await self._run_request(
+            url=f"{self._base_url}/adsorbate-slab-relaxations",
+            method="POST",
+            expected_response_code=200,
+            data=json.dumps(
+                {
+                    "adsorbate": adsorbate,
+                    "adsorbate_configs": [a.to_dict() for a in adsorbate_configs],
+                    "bulk": bulk.to_dict(),
+                    "slab": slab.to_dict(),
+                    "model": str(model),
+                    "ephemeral": ephemeral,
+                }
+            ),
+            headers={"Content-Type": "application/json"},
+        )
+        return AdsorbateSlabRelaxationsResponse.from_json(response)
 
     async def _run_request(
         self, url: str, method: str, expected_response_code: int, **kwargs

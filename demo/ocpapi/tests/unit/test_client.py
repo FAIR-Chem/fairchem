@@ -4,18 +4,11 @@ from unittest import IsolatedAsyncioTestCase
 
 import responses
 
-from ocpapi.client import Client, RequestException
-from ocpapi.models import (
-    AdsorbateSlabConfigsResponse,
-    AdsorbatesResponse,
-    Atoms,
-    Bulk,
-    BulksResponse,
-    Slab,
-    SlabMetadata,
-    SlabsResponse,
-    _Model,
-)
+from ocpapi.client import Client, Model, RequestException
+from ocpapi.models import (AdsorbateSlabConfigsResponse,
+                           AdsorbateSlabRelaxationsResponse,
+                           AdsorbatesResponse, Atoms, Bulk, BulksResponse,
+                           Slab, SlabMetadata, SlabsResponse, _Model)
 
 
 class TestClient(IsolatedAsyncioTestCase):
@@ -385,5 +378,91 @@ class TestClient(IsolatedAsyncioTestCase):
                         top=False,
                     ),
                 ),
+            ),
+        )
+
+    async def test_submit_adsorbate_slab_relaxations(self) -> None:
+        await self._run_common_tests_against_route(
+            method="POST",
+            route="adsorbate-slab-relaxations",
+            client_method_name="submit_adsorbate_slab_relaxations",
+            client_method_args={
+                "adsorbate": "*A",
+                "adsorbate_configs": [
+                    Atoms(
+                        cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                        pbc=(True, False, True),
+                        numbers=[1],
+                        positions=[(1.1, 1.2, 1.3)],
+                        tags=[2],
+                    ),
+                ],
+                "bulk": Bulk(
+                    src_id="test_id",
+                    formula="AB",
+                    elements=["A", "B"],
+                ),
+                "slab": Slab(
+                    atoms=Atoms(
+                        cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                        pbc=(True, False, True),
+                        numbers=[1, 2],
+                        positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                        tags=[0, 1],
+                    ),
+                    metadata=SlabMetadata(
+                        bulk_src_id="test_id",
+                        millers=(-1, 0, 1),
+                        shift=0.25,
+                        top=False,
+                    ),
+                ),
+                "model": Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+                "ephemeral": True,
+            },
+            expected_request_body={
+                "adsorbate": "*A",
+                "adsorbate_configs": [
+                    {
+                        "cell": [[1.1, 2.1, 3.1], [4.1, 5.1, 6.1], [7.1, 8.1, 9.1]],
+                        "pbc": [True, False, True],
+                        "numbers": [1],
+                        "positions": [[1.1, 1.2, 1.3]],
+                        "tags": [2],
+                    }
+                ],
+                "bulk": {
+                    "src_id": "test_id",
+                    "formula": "AB",
+                    "els": ["A", "B"],
+                },
+                "slab": {
+                    "slab_atomsobject": {
+                        "cell": [[1.1, 2.1, 3.1], [4.1, 5.1, 6.1], [7.1, 8.1, 9.1]],
+                        "pbc": [True, False, True],
+                        "numbers": [1, 2],
+                        "positions": [[1.1, 1.2, 1.3], [2.1, 2.2, 2.3]],
+                        "tags": [0, 1],
+                    },
+                    "slab_metadata": {
+                        "bulk_id": "test_id",
+                        "millers": [-1, 0, 1],
+                        "shift": 0.25,
+                        "top": False,
+                    },
+                },
+                "model": "gemnet_oc_base_s2ef_all_md",
+                "ephemeral": True,
+            },
+            successful_response_code=200,
+            successful_response_body="""
+{
+    "system_id": "sys_id",
+    "config_ids": [1, 2, 3]
+}
+""",
+            successful_response_object=AdsorbateSlabRelaxationsResponse(
+                system_id="sys_id",
+                config_ids=[1, 2, 3],
             ),
         )
