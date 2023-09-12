@@ -3,17 +3,10 @@ from dataclasses import dataclass
 from typing import Any, Final, Generic, List, Optional, Type, TypeVar
 from unittest import TestCase as UnitTestCase
 
-from ocpapi.models import (
-    AdsorbateSlabConfigsResponse,
-    AdsorbatesResponse,
-    Atoms,
-    Bulk,
-    BulksResponse,
-    Slab,
-    SlabMetadata,
-    SlabsResponse,
-    _Model,
-)
+from ocpapi.models import (AdsorbateSlabConfigsResponse,
+                           AdsorbateSlabRelaxationsResponse,
+                           AdsorbatesResponse, Atoms, Bulk, BulksResponse,
+                           Slab, SlabMetadata, SlabsResponse, _Model)
 
 T = TypeVar("T", bound=_Model)
 
@@ -430,6 +423,32 @@ class TestAdsorbateSlabConfigsResponse(
         },
         "extra_slab_field": "extra_slab_value"
     },
+    "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestAdsorbateSlabRelaxationsResponse(
+    ModelTestWrapper.ModelTest[AdsorbateSlabRelaxationsResponse]
+):
+    """
+    Serde tests for the AdsorbateSlabRelaxationsResponse data model.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=AdsorbateSlabRelaxationsResponse(
+                system_id="test_id",
+                config_ids=[1, 2, 3],
+                other_fields={"extra_field": "extra_value"},
+            ),
+            obj_json="""
+{
+    "system_id": "test_id",
+    "config_ids": [1, 2, 3],
     "extra_field": "extra_value"
 }
 """,

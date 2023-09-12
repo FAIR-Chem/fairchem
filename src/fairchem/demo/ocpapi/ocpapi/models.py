@@ -163,3 +163,21 @@ class AdsorbateSlabConfigsResponse(_Model):
 
     adsorbate_configs: List[Atoms]
     slab: Slab
+
+
+@dataclass_json(undefined=Undefined.INCLUDE)
+@dataclass
+class AdsorbateSlabRelaxationsResponse(_Model):
+    """
+    Stores the response from a request to submit a new batch of adsorbate
+    slab relaxations.
+
+    Attributes:
+        system_id: Unique ID for this set of relaxations which can be used to
+            fetch results later.
+        config_ids: The list of IDs assigned to each of the input adsorbate
+            placements, in the same order in which they were submitted.
+    """
+
+    system_id: str
+    config_ids: List[int]
