@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=48GB
 #SBATCH --gres=gpu:rtx8000:4
-#SBATCH --output=${output-dir}/runs/%j/output-main.txt
+#SBATCH --output=${output-dir}/runs/output-main-%j.txt
 #SBATCH --tmp=800GB
 
 # Note: replace ${value} by whatever you want to use
