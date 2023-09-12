@@ -38,7 +38,7 @@ class LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None, fa_frames=None):
+    def __init__(self, config, transform=None, fa_method=None):
         super(LmdbDataset, self).__init__()
         self.config = config
 
@@ -72,7 +72,7 @@ class LmdbDataset(Dataset):
             self.num_samples = len(self._keys)
 
         self.transform = transform
-        self.fa_frames = fa_frames
+        self.fa_method = fa_method
 
     def __len__(self):
         return self.num_samples

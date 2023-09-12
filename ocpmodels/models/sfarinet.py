@@ -13,12 +13,8 @@ from ocpmodels.common.utils import conditional_grad, get_pbc_distances
 from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.force_decoder import ForceDecoder
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
-from ocpmodels.modules.phys_embeddings import PhysEmbedding
-from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
 from ocpmodels.models.utils.activations import swish
-
-NUM_CLUSTERS = 20
-NUM_POOLING_LAYERS = 1
+from ocpmodels.modules.phys_embeddings import PhysEmbedding
 
 
 class GaussianSmearing(nn.Module):
@@ -235,18 +231,8 @@ class OutputBlock(nn.Module):
         self.lin1 = Linear(hidden_channels, hidden_channels // 2)
         self.lin2 = Linear(hidden_channels // 2, 1)
 
-        # weighted average & pooling
-        if self.energy_head in {"pooling", "random"}:
-            self.hierarchical_pooling = Hierarchical_Pooling(
-                hidden_channels,
-                self.act,
-                NUM_POOLING_LAYERS,
-                NUM_CLUSTERS,
-                self.energy_head,
-            )
-        elif self.energy_head == "graclus":
-            self.graclus = Graclus(hidden_channels, self.act)
-        elif self.energy_head == "weighted-av-final-embeds":
+        # weighted average
+        if self.energy_head == "weighted-av-final-embeds":
             self.w_lin = Linear(hidden_channels, 1)
 
     def reset_parameters(self):
@@ -261,14 +247,6 @@ class OutputBlock(nn.Module):
     def forward(self, h, edge_index, edge_weight, batch, alpha):
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
-
-        elif self.energy_head == "graclus":
-            h, batch = self.graclus(h, edge_index, edge_weight, batch)
-
-        elif self.energy_head in {"pooling", "random"}:
-            h, batch, pooling_loss = self.hierarchical_pooling(
-                h, edge_index, edge_weight, batch
-            )
 
         # MLP
         h = self.lin1(h)
@@ -438,8 +416,6 @@ class SfariNet(BaseModel):
         if self.edge_embed_type in {"sh", "all_rij", "all"}:
             rel_pos_normalized = (rel_pos / edge_weight.view(-1, 1) + 1) / 2.0
 
-        pooling_loss = None  # deal with pooling loss
-
         # Embedding block
         h, e = self.embed_block(z, rel_pos, edge_attr, data.tags, rel_pos_normalized)
 
@@ -460,6 +436,6 @@ class SfariNet(BaseModel):
 
         # Force-head for S2EF, IS2RS
 
-        preds = {"energy": energy, "pooling_loss": pooling_loss, "hidden_state": h}
+        preds = {"energy": energy, "hidden_state": h}
 
         return preds

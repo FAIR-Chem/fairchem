@@ -1,0 +1,127 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  time: 15:00:00
+
+default:
+  test_ri: True
+  mode: train
+  wandb_tags: "test"
+  cp_data_to_tmpdir: True
+  optim:
+    max_epochs: 5
+
+runs:
+  
+  - config: faenet-is2re-10k
+    note: "test faenet is2re 10K "
+    optim:
+      batch_size: 192
+      eval_batch_size: 192
+
+  - config: faenet-is2re-all 
+    note: "test faenet is2re all "
+
+  - config: faenet-s2ef-2M 
+    note: "test faenet s2ef 2M"
+    model:
+      regress_forces: direct_with_gradient_target
+
+  - config: faenet-s2ef-2M 
+    note: "test faenet s2ef 2M direct"
+    model:
+      regress_forces: direct
+    optim:
+      batch_size: 164
+      eval_batch_size: 164
+  
+  - config: faenet-qm9-all
+    wandb_tags: qm9
+    note: "test faenet qm9"
+
+  - config: faenet-qm7x-all
+    wandb_tags: qm7x
+    note: "test faenet qm7x"
+
+  - config: faenet-s2ef-2M
+    note: "advanced config"
+    wandb_tags: "s2ef-top-config"
+    fa_fames: random
+    frame_averaging: 2D
+    optim:
+      lr_initial: 0.00022
+      max_epochs: 22
+      force_coefficient: 100
+      energy_coefficient: 1
+      energy_grad_coefficient: 5
+    model:
+      regress_forces: direct_with_gradient_target
+      energy_head: "weighted-av-final-embeds" # False ?  frame_averaging: 2D
+      cutoff: 6
+      max_num_neighbors: 40
+      graph_norm: False
+      mp_type: updownscale
+      hidden_channels: 480
+      num_gaussians: 145
+      num_filters: 384
+      num_interactions: 4
+      pg_hidden_channels: 64
+      tag_hidden_channels: 64
+      phys_embeds: False
+      skip_co: "concat"
+      second_layer_mlp: False
+      complex_mp: True
+      second_layer_MLP: True
+
+
+  - config: faenet-is2re-all
+    note: "advanced config IS2RE"
+    frame_averaging: 2D
+    fa_method: se3-random
+    model:
+      mp_type: updownscale_base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 352
+      num_filters: 288
+      num_gaussians: 68
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 4.0
+    optim:
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 10
+      eval_every: 0.25
+
+  - config: faenet-s2ef-2M
+    note: "Tune force head S2EF"
+    optim:
+      lr_initial: 0.00028
+      force_coefficient: 30
+      energy_coefficient: 1
+      energy_grad_coefficient: 5
+    model:
+      regress_forces: direct_with_gradient_target
+      cutoff: 4
+      max_num_neighbors: 40
+      graph_norm: True
+      mp_type: base
+      hidden_channels: 352
+      num_gaussians: 79
+      num_filters: 96
+      num_interactions: 4
+      pg_hidden_channels: 96
+      tag_hidden_channels: 32
+      phys_embeds: True
+      skip_co: False
+      second_layer_mlp: False
+      complex_mp: False
+      force_decoder_type: res_updown

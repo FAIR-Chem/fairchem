@@ -86,10 +86,9 @@ class RandomRotate(object):
 
 
 class RandomReflect(object):
-    r"""Reflect node positions around a specific axis (x, y, x=y) or the origin
-    z-axis remains fixed.
-
-    Info -- type 0: reflect wrt x-axis, type1: wrt y-axis, type2: y=x, type3: origin
+    r"""Reflect node positions around a specific axis (x, y, x=y) or the origin.
+    Take a random reflection type from a list of reflection types.
+        (type 0: reflect wrt x-axis, type1: wrt y-axis, type2: y=x, type3: origin)
     """
 
     def __init__(self):

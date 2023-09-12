@@ -57,17 +57,12 @@ from ocpmodels.common.utils import (
 from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
-from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
 from ocpmodels.models.utils.activations import swish
 
 try:
     import sympy as sym
 except ImportError:
     sym = None
-
-NUM_CLUSTERS = 20
-NUM_POOLING_LAYERS = 1
-
 
 class BesselBasisLayer(torch.nn.Module):
     def __init__(self, num_radial, cutoff=5.0, envelope_exponent=5):
@@ -342,18 +337,8 @@ class EHOutputPPBlock(torch.nn.Module):
             self.lins.append(nn.Linear(out_emb_channels, out_emb_channels))
         self.lin = nn.Linear(out_emb_channels, out_channels, bias=False)
 
-        # weighted average & pooling
-        if self.energy_head in {"pooling", "random"}:
-            self.hierarchical_pooling = Hierarchical_Pooling(
-                hidden_channels,
-                self.act,
-                NUM_POOLING_LAYERS,
-                NUM_CLUSTERS,
-                self.energy_head,
-            )
-        elif self.energy_head == "graclus":
-            self.graclus = Graclus(hidden_channels, self.act)
-        elif self.energy_head == "weighted-av-final-embeds":
+        # weighted average
+        if self.energy_head == "weighted-av-final-embeds":
             self.w_lin = Linear(hidden_channels, 1)
 
         self.reset_parameters()
@@ -373,15 +358,8 @@ class EHOutputPPBlock(torch.nn.Module):
         x = self.lin_rbf(rbf) * x
         x = scatter(x, i, dim=0, dim_size=num_nodes)
 
-        pooling_loss = None
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(x)
-        elif self.energy_head == "graclus":
-            x, batch = self.graclus(x, edge_index, edge_weight, batch)
-        elif self.energy_head in {"pooling", "random"}:
-            x, batch, pooling_loss = self.hierarchical_pooling(
-                x, edge_index, edge_weight, batch
-            )
 
         x = self.lin_up(x)
         for lin in self.lins:
@@ -391,7 +369,7 @@ class EHOutputPPBlock(torch.nn.Module):
         if self.energy_head == "weighted-av-final-embeds":
             x = x * alpha
 
-        return x, pooling_loss, batch
+        return x, batch
 
 
 class OutputPPBlock(torch.nn.Module):
@@ -683,12 +661,10 @@ class DimeNetPlusPlus(BaseModel):
         rbf = self.rbf(dist)
         sbf = self.sbf(dist, angle, idx_kj)
 
-        pooling_loss = None  # deal with pooling loss
-
         # Embedding block.
         x = self.emb(data.atomic_numbers.long(), rbf, i, j, data.tags, data.subnodes)
         if self.energy_head:
-            P, pooling_loss, batch = self.output_blocks[0](
+            P, batch = self.output_blocks[0](
                 x, rbf, i, edge_index, dist, data.batch, num_nodes=pos.size(0)
             )
         else:
@@ -706,7 +682,7 @@ class DimeNetPlusPlus(BaseModel):
         ):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
             if self.energy_head:
-                P_bis, pooling_loss_bis, _ = output_block(
+                P_bis, _ = output_block(
                     x, rbf, i, edge_index, dist, data.batch, num_nodes=pos.size(0)
                 )
                 energy_Ps.append(
@@ -714,8 +690,6 @@ class DimeNetPlusPlus(BaseModel):
                     if batch is None
                     else scatter(P_bis, batch, dim=0)
                 )
-                if pooling_loss_bis is not None:
-                    pooling_loss += pooling_loss_bis
             else:
                 P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
@@ -731,7 +705,6 @@ class DimeNetPlusPlus(BaseModel):
 
         return {
             "energy": energy,
-            "pooling_loss": pooling_loss,
         }
 
     @conditional_grad(torch.enable_grad())

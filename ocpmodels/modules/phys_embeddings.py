@@ -7,16 +7,17 @@ from mendeleev.fetch import fetch_ionization_energies, fetch_table
 class PhysEmbedding(nn.Module):
     def __init__(self, props=True, props_grad=False, pg=False, short=False) -> None:
         """
-        Create physical embeddings meta class with sub-emeddings for each atom
+        Create physics-aware embeddings meta class with sub-emeddings for each atom
 
         Args:
-            props (bool, optional): Whether to create an embedding of physical embeddings
-                Defaults to True.
-            props_grad (bool, optional): Whether the physical properties embedding should
-                be learned or kept fixed. Defaults to False.
-            pg (bool, optional): Whether to use period and group embeddings.
-                Defaults to False.
-            short (bool, optional)
+            props (bool, optional): Create an embedding of physical
+                properties. (default: :obj:`True`)
+            props_grad (bool, optional): Learn a physics-aware embedding
+                instead of keeping it fixed. (default: :obj:`False`)
+            pg (bool, optional): Learn two embeddings based on period and
+                group information respectively. (default: :obj:`False`)
+            short (bool, optional): Remove all columns containing NaN values.
+                (default: :obj:`False`)
         """
         super().__init__()
 
