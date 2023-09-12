@@ -63,7 +63,15 @@ class PredictTask(BaseTask):
             self.trainer.test_loader is not None
         ), "Test dataset is required for making predictions"
         assert self.config["checkpoint"]
-        results_file = "predictions"
+        # results_file = "predictions"
+
+        from pathlib import Path
+        from datetime import datetime
+
+        test_name = Path(self.trainer.config["test_dataset"]["src"]).name
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        results_file = f"{test_name}_{timestamp}"
+
         self.trainer.predict(
             self.trainer.test_loader,
             results_file=results_file,
@@ -115,7 +123,10 @@ class RelxationTask(BaseTask):
         from datetime import datetime
         import json
 
-        val_name = Path(self.trainer.config["relax_dataset"]["src"]).name
+        task_config = self.trainer.config["task"]
+        metrics.update(**task_config)
+
+        val_name = Path(self.trainer.config["task"]["relax_dataset"]["src"]).name
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         results_file = Path(self.trainer.config["cmd"]["results_dir"]) / "relax" / f"{val_name}_{timestamp}.json"
         results_file.parent.mkdir(parents=True, exist_ok=True)

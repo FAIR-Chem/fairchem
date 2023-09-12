@@ -246,8 +246,9 @@ def data_list_collater(data_list, otf_graph=False):
                 n_neighbors.append(n_index.shape[0])
             batch.neighbors = torch.tensor(n_neighbors)
         except (NotImplementedError, TypeError):
-            logging.warning(
-                "LMDB does not contain edge index information, set otf_graph=True"
-            )
+            # logging.warning(
+            #     "LMDB does not contain edge index information, set otf_graph=True"
+            # )
+            pass
 
     return batch

@@ -286,7 +286,7 @@ class ForcesTrainer(BaseTrainer):
     ):
         if (
             "mae" in primary_metric
-            and val_metrics[primary_metric]["metric"] < self.best_val_metric
+            and val_metrics[primary_metric]["metric"] < (self.best_val_metric if self.best_val_metric is not None else 1e9)
         ) or (
             "mae" not in primary_metric
             and val_metrics[primary_metric]["metric"] > self.best_val_metric
@@ -634,7 +634,7 @@ class ForcesTrainer(BaseTrainer):
         return metrics
 
     def run_relaxations(self, split="val"):
-        ensure_fitted(self._unwrapped_model)
+        # ensure_fitted(self._unwrapped_model)
 
         # When set to true, uses deterministic CUDA scatter ops, if available.
         # https://pytorch.org/docs/stable/generated/torch.use_deterministic_algorithms.html#torch.use_deterministic_algorithms
@@ -669,6 +669,7 @@ class ForcesTrainer(BaseTrainer):
         ids = []
         relaxed_positions = []
         chunk_idx = []
+        relaxed_energies = []
         for i, batch in tqdm(
             enumerate(self.relax_loader), total=len(self.relax_loader)
         ):
@@ -702,6 +703,7 @@ class ForcesTrainer(BaseTrainer):
                 relaxed_positions += batch_relaxed_positions
                 chunk_idx += natoms
                 ids += systemids
+                relaxed_energies += relaxed_batch.y.tolist()
 
             if split == "val":
                 mask = relaxed_batch.fixed == 0
@@ -742,59 +744,62 @@ class ForcesTrainer(BaseTrainer):
 
         if self.config["task"].get("write_pos", False):
             rank = distutils.get_rank()
+            import pathlib
+            dataset_name = pathlib.Path(self.config["task"]["relax_dataset"]["src"]).name
+            (pathlib.Path(self.config["cmd"]["results_dir"]) / dataset_name).mkdir(exist_ok=True, parents=True)
+
             pos_filename = os.path.join(
-                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.npz"
+                self.config["cmd"]["results_dir"], dataset_name, f"relaxed_pos_{rank}.npz"
             )
             np.savez_compressed(
                 pos_filename,
                 ids=ids,
                 pos=np.array(relaxed_positions, dtype=object),
                 chunk_idx=chunk_idx,
+                energies=relaxed_energies,
             )
 
             distutils.synchronize()
 
-            distutils.synchronize()
-            distutils.synchronize()
+            # if distutils.is_master():
+            #     gather_results = defaultdict(list)
+            #     full_path = os.path.join(
+            #         self.config["cmd"]["results_dir"],
+            #         "relaxed_positions.npz",
+            #     )
 
-            if distutils.is_master():
-                gather_results = defaultdict(list)
-                full_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
-                    "relaxed_positions.npz",
-                )
-
-                for i in range(distutils.get_world_size()):
-                    rank_path = os.path.join(
-                        self.config["cmd"]["results_dir"],
-                        f"relaxed_pos_{i}.npz",
-                    )
-                    rank_results = np.load(rank_path, allow_pickle=True)
-                    gather_results["ids"].extend(rank_results["ids"])
-                    gather_results["pos"].extend(rank_results["pos"])
-                    gather_results["chunk_idx"].extend(
-                        rank_results["chunk_idx"]
-                    )
+            #     for i in range(distutils.get_world_size()):
+            #         rank_path = os.path.join(
+            #             self.config["cmd"]["results_dir"],
+            #             f"relaxed_pos_{i}.npz",
+            #         )
+            #         rank_results = np.load(rank_path, allow_pickle=True)
+            #         gather_results["ids"].extend(rank_results["ids"])
+            #         gather_results["pos"].extend(rank_results["pos"])
+            #         gather_results["chunk_idx"].extend(
+            #             rank_results["chunk_idx"]
+            #         )
                 
-                for i in range(distutils.get_world_size()):
-                    os.remove(rank_path)
+            #     for i in range(distutils.get_world_size()):
+            #         os.remove(rank_path)
 
-                # Because of how distributed sampler works, some system ids
-                # might be repeated to make no. of samples even across GPUs.
-                _, idx = np.unique(gather_results["ids"], return_index=True)
-                gather_results["ids"] = np.array(gather_results["ids"])[idx]
-                gather_results["pos"] = np.concatenate(
-                    np.array(gather_results["pos"])[idx]
-                )
-                gather_results["chunk_idx"] = np.cumsum(
-                    np.array(gather_results["chunk_idx"])[idx]
-                )[
-                    :-1
-                ]  # np.split does not need last idx, assumes n-1:end
+            #     # Because of how distributed sampler works, some system ids
+            #     # might be repeated to make no. of samples even across GPUs.
+            #     _, idx = np.unique(gather_results["ids"], return_index=True)
+            #     gather_results["ids"] = np.array(gather_results["ids"])[idx]
+            #     gather_results["pos"] = np.concatenate(
+            #         np.array(gather_results["pos"])[idx]
+            #     )
+            #     gather_results["chunk_idx"] = np.cumsum(
+            #         np.array(gather_results["chunk_idx"])[idx]
+            #     )[
+            #         :-1
+            #     ]  # np.split does not need last idx, assumes n-1:end
 
-                logging.info(f"Writing results to {full_path}")
-                np.savez_compressed(full_path, **gather_results)
+            #     logging.info(f"Writing results to {full_path}")
+            #     np.savez_compressed(full_path, **gather_results)
 
+        all_metrics = {}
         if split == "val":
             for task in ["is2rs", "is2re"]:
                 metrics = eval(f"metrics_{task}")
@@ -817,6 +822,7 @@ class ForcesTrainer(BaseTrainer):
                         / aggregated_metrics[k]["numel"]
                     )
                 metrics = aggregated_metrics
+                all_metrics.update(**metrics)
 
                 # Make plots.
                 log_dict = {
@@ -836,4 +842,4 @@ class ForcesTrainer(BaseTrainer):
             self.ema.restore()
 
         registry.unregister("set_deterministic_scatter")
-        return metrics
+        return all_metrics

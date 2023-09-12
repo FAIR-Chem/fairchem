@@ -489,6 +489,20 @@ class BaseTrainer(ABC):
                 ] = True
 
         strict = self.config["task"].get("strict_load", True)
+
+        if "reset_param_prefixes" in self.config["task"]:
+            strict = False
+            removed_params = []
+            reset_param_prefixes = list(self.config["task"]["reset_param_prefixes"].split(","))
+            for prefix in reset_param_prefixes:
+                prefix_ = mod_key_count * "module." + prefix
+                for param_name in new_dict:
+                    if param_name.startswith(prefix_):
+                        removed_params.append(param_name)
+            for param in removed_params:
+                del new_dict[param]
+            logging.info(f"Removed params: {removed_params}")
+
         load_state_dict(self.model, new_dict, strict=strict)
 
         if "optimizer" in checkpoint:

@@ -71,6 +71,7 @@ def ml_relax(
             relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
             relaxed_batches.append(relaxed_batch)
         except RuntimeError as e:
+            print(e.__str__)
             oom = True
             torch.cuda.empty_cache()
 
@@ -78,7 +79,8 @@ def ml_relax(
             # move OOM recovery code outside of except clause to allow tensors to be freed.
             data_list = batch.to_data_list()
             if len(data_list) == 1:
-                raise e
+                # raise e
+                return
             logging.info(
                 f"Failed to relax batch with size: {len(data_list)}, splitting into two..."
             )
