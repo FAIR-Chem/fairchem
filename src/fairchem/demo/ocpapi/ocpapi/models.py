@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from enum import Enum
+from typing import List, Optional, Tuple
 
 from dataclasses_json import CatchAll, Undefined, config, dataclass_json
 
@@ -181,3 +182,124 @@ class AdsorbateSlabRelaxationsResponse(_Model):
 
     system_id: str
     config_ids: List[int]
+
+
+class Status(Enum):
+    """
+    Relaxation status of a single adsorbate placement on a slab.
+
+    Attributes:
+        NOT_AVAILABLE: The configuration exists but the result is not yet
+            available. It is possible that checking again in the future could
+            yield a result.
+        FAILED_RELAXATION: The relaxation failed for this configuration.
+        SUCCESS: The relaxation was successful and the requested information
+            about the configuration was returned.
+        DOES_NOT_EXIST: The requested configuration does not exist.
+        OMITTED: The requestion configuration exists but information about it
+            was not included in the response. This can happen when the response
+            becomes too large and a subset of the configurations were left out.
+    """
+
+    NOT_AVAILABLE = "not_available"
+    FAILED_RELAXATION = "failed_relaxation"
+    SUCCESS = "success"
+    DOES_NOT_EXIST = "does_not_exist"
+    OMITTED = "omitted"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass_json(undefined=Undefined.INCLUDE)
+@dataclass
+class AdsorbateSlabConfig(_Model):
+    """
+    Stores information about a single adsorbate slab configuration, including
+    outputs for the model used in relaxations.
+
+    The API to fetch relaxation results supports requesting a subset of fields
+    in order to limit the size of response payloads. Optional attributes will
+    be defined only if they are including the response.
+
+    Attributes:
+        config_id: ID of the configuration within the system
+        status: The status of the request for information about this
+            configuration.
+        system_id: The ID of the system in which the configuration was
+            originally submitted.
+        cell: 3x3 matrix with unit cell vectors.
+        pbc: Whether the structure is periodic along the a, b, and c lattice
+            vectors, respectively.
+        numbers: The atomic number of each atom in the unit cell.
+        positions: The coordinates of each atom in the unit cell, relative to
+            the cartesian frame.
+        tags: Labels for each atom in the unit cell where 0 represents a
+            subsurface atom (fixed during optimization), 1 represents a
+            surface atom, and 2 represents an adsorbate atom.
+        energy: The energy of the configuration.
+        energy_trajectory: The energy of the configuration at each point along
+            the relaxation trajectory.
+        forces: The forces on each atom in the relaxed structure.
+    """
+
+    config_id: int
+    status: Status
+    # Omit from serialization when None
+    system_id: Optional[str] = field(
+        default=None,
+        metadata=config(exclude=lambda v: v is None),
+    )
+    cell: Optional[
+        Tuple[
+            Tuple[float, float, float],
+            Tuple[float, float, float],
+            Tuple[float, float, float],
+        ]
+    ] = field(
+        default=None,
+        metadata=config(exclude=lambda v: v is None),
+    )
+    pbc: Optional[Tuple[bool, bool, bool]] = field(
+        default=None,
+        metadata=config(exclude=lambda v: v is None),
+    )
+    numbers: Optional[List[int]] = field(
+        default=None,
+        metadata=config(exclude=lambda v: v is None),
+    )
+    positions: Optional[List[Tuple[float, float, float]]] = field(
+        default=None,
+        metadata=config(exclude=lambda v: v is None),
+    )
+    tags: Optional[List[int]] = field(
+        default=None,
+        metadata=config(exclude=lambda v: v is None),
+    )
+    energy: Optional[float] = field(
+        default=None,
+        metadata=config(exclude=lambda v: v is None),
+    )
+    energy_trajectory: Optional[float] = field(
+        default=None,
+        metadata=config(exclude=lambda v: v is None),
+    )
+    forces: Optional[List[Tuple[float, float, float]]] = field(
+        default=None,
+        metadata=config(exclude=lambda v: v is None),
+    )
+
+
+@dataclass_json(undefined=Undefined.INCLUDE)
+@dataclass
+class AdsorbateSlabRelaxationsResults(_Model):
+    """
+    Stores the response from a request for results of adsorbate slab
+    relaxations.
+
+    Attributes:
+        configs: List of configurations in the system, each representing
+            one placement of an adsorbate on a slab surface.
+    """
+
+    configs: List[AdsorbateSlabConfig]

@@ -6,7 +6,7 @@ from unittest import IsolatedAsyncioTestCase, mock
 import requests
 
 from ocpapi.client import Client, Model
-from ocpapi.models import Atoms, Bulk, Slab, SlabMetadata
+from ocpapi.models import Atoms, Bulk, Slab, SlabMetadata, Status
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +36,7 @@ class TestClient(IsolatedAsyncioTestCase):
     """
 
     TEST_HOST = "https://open-catalyst-api.metademolab.com/ocp"
+    KNOWN_SYSTEM_ID = "f9eacd8f-748c-41dd-ae43-f263dd36d735"
 
     async def test_get_bulks(self) -> None:
         # Make sure that at least one of the expected bulks is in the response
@@ -376,3 +377,59 @@ class TestClient(IsolatedAsyncioTestCase):
         with _try_ensure_system_deleted(self.TEST_HOST, response.system_id):
             self.assertNotEqual(response.system_id, "")
             self.assertEqual(len(response.config_ids), 1)
+
+    async def test_get_adsorbate_slab_relaxations_results__all_fields_and_configs(
+        self,
+    ) -> None:
+        # Make sure relaxation results can be fetched for an already-relaxed
+        # system. Check that all configurations and all fields for each are
+        # returned.
+
+        client = Client(self.TEST_HOST)
+        response = await client.get_adsorbate_slab_relaxations_results(
+            system_id=self.KNOWN_SYSTEM_ID,
+        )
+
+        self.assertEqual(len(response.configs), 59)
+        for config in response.configs:
+            self.assertEqual(config.status, Status.SUCCESS)
+            self.assertIsNotNone(config.system_id)
+            self.assertIsNotNone(config.cell)
+            self.assertIsNotNone(config.pbc)
+            self.assertIsNotNone(config.numbers)
+            self.assertIsNotNone(config.positions)
+            self.assertIsNotNone(config.tags)
+            self.assertIsNotNone(config.energy)
+            self.assertIsNotNone(config.energy_trajectory)
+            self.assertIsNotNone(config.forces)
+        config_ids = {c.config_id for c in response.configs}
+        self.assertEqual(config_ids, set(range(59)))
+
+    async def test_get_adsorbate_slab_relaxations_results__limited_fields_and_configs(
+        self,
+    ) -> None:
+        # Make sure relaxation results can be fetched for an already-relaxed
+        # system. Check that only the requested configurations and fields are
+        # returned.
+
+        client = Client(self.TEST_HOST)
+        response = await client.get_adsorbate_slab_relaxations_results(
+            system_id=self.KNOWN_SYSTEM_ID,
+            config_ids=[10, 20, 30],
+            fields=["energy", "cell"],
+        )
+
+        self.assertEqual(len(response.configs), 3)
+        for config in response.configs:
+            self.assertEqual(config.status, Status.SUCCESS)
+            self.assertIsNone(config.system_id)
+            self.assertIsNotNone(config.cell)
+            self.assertIsNone(config.pbc)
+            self.assertIsNone(config.numbers)
+            self.assertIsNone(config.positions)
+            self.assertIsNone(config.tags)
+            self.assertIsNotNone(config.energy)
+            self.assertIsNone(config.energy_trajectory)
+            self.assertIsNone(config.forces)
+        config_ids = {c.config_id for c in response.configs}
+        self.assertEqual(config_ids, {10, 20, 30})

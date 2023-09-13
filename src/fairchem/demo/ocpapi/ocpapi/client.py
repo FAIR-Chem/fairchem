@@ -1,14 +1,21 @@
 import asyncio
 import json
 from enum import Enum
-from typing import List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import requests
 
-from ocpapi.models import (AdsorbateSlabConfigsResponse,
-                           AdsorbateSlabRelaxationsResponse,
-                           AdsorbatesResponse, Atoms, Bulk, BulksResponse,
-                           Slab, SlabsResponse)
+from ocpapi.models import (
+    AdsorbateSlabConfigsResponse,
+    AdsorbateSlabRelaxationsResponse,
+    AdsorbateSlabRelaxationsResults,
+    AdsorbatesResponse,
+    Atoms,
+    Bulk,
+    BulksResponse,
+    Slab,
+    SlabsResponse,
+)
 
 
 class RequestException(Exception):
@@ -79,7 +86,7 @@ class Client:
 
     async def get_slabs(self, bulk: Union[str, Bulk]) -> SlabsResponse:
         """
-        Get a unique list of slabs for for the input bulk structure.
+        Get a unique list of slabs for the input bulk structure.
 
         Args:
             bulk: If a string, the id of the bulk to use. Otherwise the Bulk
@@ -180,6 +187,38 @@ class Client:
             headers={"Content-Type": "application/json"},
         )
         return AdsorbateSlabRelaxationsResponse.from_json(response)
+
+    async def get_adsorbate_slab_relaxations_results(
+        self,
+        system_id: str,
+        config_ids: Optional[List[int]] = None,
+        fields: Optional[List[str]] = None,
+    ) -> AdsorbateSlabRelaxationsResults:
+        """
+        Fetches relaxation results for the input system.
+
+        Args:
+            system_id: The system id of the relaxations.
+            config_ids: If defined and not empty, a subset of configurations
+                to fetch. Otherwise all configurations are returned.
+            fields: If defined and not empty, a subset of fields in each
+                configuration to fetch. Otherwise all fields are returned.
+
+        Returns:
+            AdsorbateSlabRelaxationsResults
+        """
+        params: Dict[str, Any] = {}
+        if fields:
+            params["field"] = fields
+        if config_ids:
+            params["config_id"] = config_ids
+        response = await self._run_request(
+            url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}/configs",
+            method="GET",
+            expected_response_code=200,
+            params=params,
+        )
+        return AdsorbateSlabRelaxationsResults.from_json(response)
 
     async def _run_request(
         self, url: str, method: str, expected_response_code: int, **kwargs
