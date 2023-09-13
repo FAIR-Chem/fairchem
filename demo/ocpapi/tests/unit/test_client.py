@@ -5,10 +5,21 @@ from unittest import IsolatedAsyncioTestCase
 import responses
 
 from ocpapi.client import Client, Model, RequestException
-from ocpapi.models import (AdsorbateSlabConfigsResponse,
-                           AdsorbateSlabRelaxationsResponse,
-                           AdsorbatesResponse, Atoms, Bulk, BulksResponse,
-                           Slab, SlabMetadata, SlabsResponse, _Model)
+from ocpapi.models import (
+    AdsorbateSlabConfig,
+    AdsorbateSlabConfigsResponse,
+    AdsorbateSlabRelaxationsResponse,
+    AdsorbateSlabRelaxationsResults,
+    AdsorbatesResponse,
+    Atoms,
+    Bulk,
+    BulksResponse,
+    Slab,
+    SlabMetadata,
+    SlabsResponse,
+    _Model,
+    Status,
+)
 
 
 class TestClient(IsolatedAsyncioTestCase):
@@ -25,6 +36,7 @@ class TestClient(IsolatedAsyncioTestCase):
         successful_response_body: str,
         successful_response_object: _Model,
         client_method_args: Optional[Dict[str, Any]] = None,
+        expected_request_params: Optional[Dict[str, Any]] = None,
         expected_request_body: Optional[Dict[str, Any]] = None,
     ) -> None:
         @dataclass
@@ -34,6 +46,7 @@ class TestClient(IsolatedAsyncioTestCase):
             response_body: Union[str, Exception]
             response_code: int
             expected: Optional[_Model] = None
+            expected_request_params: Optional[Dict[str, Any]] = None
             expected_request_body: Optional[Dict[str, Any]] = None
             expected_exception: Optional[Exception] = None
 
@@ -45,6 +58,7 @@ class TestClient(IsolatedAsyncioTestCase):
                 base_url="https://test_host/ocp",
                 response_body='{"message": "failed"}',
                 response_code=500,
+                expected_request_params=expected_request_params,
                 expected_request_body=expected_request_body,
                 expected_exception=RequestException(
                     method=method,
@@ -63,6 +77,7 @@ class TestClient(IsolatedAsyncioTestCase):
                 # This tells the responses library to raise an exception
                 response_body=Exception("exception message"),
                 response_code=successful_response_code,
+                expected_request_params=expected_request_params,
                 expected_request_body=expected_request_body,
                 expected_exception=RequestException(
                     method=method,
@@ -81,6 +96,7 @@ class TestClient(IsolatedAsyncioTestCase):
                 response_body=successful_response_body,
                 response_code=successful_response_code,
                 expected=successful_response_object,
+                expected_request_params=expected_request_params,
                 expected_request_body=expected_request_body,
             ),
         ]
@@ -93,6 +109,12 @@ class TestClient(IsolatedAsyncioTestCase):
                     match.append(
                         responses.matchers.json_params_matcher(
                             case.expected_request_body
+                        )
+                    )
+                if case.expected_request_params is not None:
+                    match.append(
+                        responses.matchers.query_param_matcher(
+                            case.expected_request_params
                         )
                     )
 
@@ -464,5 +486,70 @@ class TestClient(IsolatedAsyncioTestCase):
             successful_response_object=AdsorbateSlabRelaxationsResponse(
                 system_id="sys_id",
                 config_ids=[1, 2, 3],
+            ),
+        )
+
+    async def test_get_adsorbate_slab_relaxations_results__all_args(self) -> None:
+        await self._run_common_tests_against_route(
+            method="GET",
+            route="adsorbate-slab-relaxations/test_sys_id/configs",
+            client_method_name="get_adsorbate_slab_relaxations_results",
+            client_method_args={
+                "system_id": "test_sys_id",
+                "config_ids": [1, 2],
+                "fields": ["A", "B"],
+            },
+            expected_request_params={
+                "config_id": ["1", "2"],
+                "field": ["A", "B"],
+            },
+            successful_response_code=200,
+            successful_response_body="""
+{
+    "configs": [
+        {
+            "config_id": 1,
+            "status": "success"
+        }
+    ]
+}
+""",
+            successful_response_object=AdsorbateSlabRelaxationsResults(
+                configs=[
+                    AdsorbateSlabConfig(
+                        config_id=1,
+                        status=Status.SUCCESS,
+                    )
+                ]
+            ),
+        )
+
+    async def test_get_adsorbate_slab_relaxations_results__req_args_only(self) -> None:
+        await self._run_common_tests_against_route(
+            method="GET",
+            route="adsorbate-slab-relaxations/test_sys_id/configs",
+            client_method_name="get_adsorbate_slab_relaxations_results",
+            client_method_args={
+                "system_id": "test_sys_id",
+            },
+            expected_request_params={},
+            successful_response_code=200,
+            successful_response_body="""
+{
+    "configs": [
+        {
+            "config_id": 1,
+            "status": "success"
+        }
+    ]
+}
+""",
+            successful_response_object=AdsorbateSlabRelaxationsResults(
+                configs=[
+                    AdsorbateSlabConfig(
+                        config_id=1,
+                        status=Status.SUCCESS,
+                    )
+                ]
             ),
         )

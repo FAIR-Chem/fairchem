@@ -3,10 +3,21 @@ from dataclasses import dataclass
 from typing import Any, Final, Generic, List, Optional, Type, TypeVar
 from unittest import TestCase as UnitTestCase
 
-from ocpapi.models import (AdsorbateSlabConfigsResponse,
-                           AdsorbateSlabRelaxationsResponse,
-                           AdsorbatesResponse, Atoms, Bulk, BulksResponse,
-                           Slab, SlabMetadata, SlabsResponse, _Model)
+from ocpapi.models import (
+    AdsorbateSlabConfig,
+    AdsorbateSlabConfigsResponse,
+    AdsorbateSlabRelaxationsResponse,
+    AdsorbateSlabRelaxationsResults,
+    AdsorbatesResponse,
+    Atoms,
+    Bulk,
+    BulksResponse,
+    Slab,
+    SlabMetadata,
+    SlabsResponse,
+    _Model,
+    Status,
+)
 
 T = TypeVar("T", bound=_Model)
 
@@ -449,6 +460,125 @@ class TestAdsorbateSlabRelaxationsResponse(
 {
     "system_id": "test_id",
     "config_ids": [1, 2, 3],
+    "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestAdsorbateSlabConfig(ModelTestWrapper.ModelTest[AdsorbateSlabConfig]):
+    """
+    Serde tests for the AdsorbateSlabConfig data model.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=AdsorbateSlabConfig(
+                config_id=1,
+                status=Status.SUCCESS,
+                system_id="sys_id",
+                cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                pbc=(True, False, True),
+                numbers=[1, 2],
+                positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                tags=[0, 1],
+                energy=100.1,
+                energy_trajectory=[99.9, 100.1],
+                forces=[(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)],
+                other_fields={"extra_field": "extra_value"},
+            ),
+            obj_json="""
+{
+    "config_id": 1,
+    "status": "success",
+    "system_id": "sys_id",
+    "cell": [[1.1, 2.1, 3.1], [4.1, 5.1, 6.1], [7.1, 8.1, 9.1]],
+    "pbc": [true, false, true],
+    "numbers": [1, 2],
+    "positions": [[1.1, 1.2, 1.3], [2.1, 2.2, 2.3]],
+    "tags": [0, 1],
+    "energy": 100.1,
+    "energy_trajectory": [99.9, 100.1],
+    "forces": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]],
+    "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestAdsorbateSlabConfig_req_fields_only(
+    ModelTestWrapper.ModelTest[AdsorbateSlabConfig]
+):
+    """
+    Serde tests for the AdsorbateSlabConfig data model in which optional
+    fields are omitted.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=AdsorbateSlabConfig(
+                config_id=1,
+                status=Status.SUCCESS,
+            ),
+            obj_json="""
+{
+    "config_id": 1,
+    "status": "success"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestAdsorbateSlabRelaxationsResults(
+    ModelTestWrapper.ModelTest[AdsorbateSlabRelaxationsResults]
+):
+    """
+    Serde tests for the AdsorbateSlabRelaxationsResults data model.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=AdsorbateSlabRelaxationsResults(
+                configs=[
+                    AdsorbateSlabConfig(
+                        config_id=1,
+                        status=Status.SUCCESS,
+                        system_id="sys_id",
+                        cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                        pbc=(True, False, True),
+                        numbers=[1, 2],
+                        positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                        tags=[0, 1],
+                        energy=100.1,
+                        energy_trajectory=[99.9, 100.1],
+                        forces=[(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)],
+                        other_fields={"extra_adslab_field": "extra_adslab_value"},
+                    )
+                ],
+                other_fields={"extra_field": "extra_value"},
+            ),
+            obj_json="""
+{
+    "configs": [{
+        "config_id": 1,
+        "status": "success",
+        "system_id": "sys_id",
+        "cell": [[1.1, 2.1, 3.1], [4.1, 5.1, 6.1], [7.1, 8.1, 9.1]],
+        "pbc": [true, false, true],
+        "numbers": [1, 2],
+        "positions": [[1.1, 1.2, 1.3], [2.1, 2.2, 2.3]],
+        "tags": [0, 1],
+        "energy": 100.1,
+        "energy_trajectory": [99.9, 100.1],
+        "forces": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]],
+        "extra_adslab_field": "extra_adslab_value"
+    }],
     "extra_field": "extra_value"
 }
 """,
