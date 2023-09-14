@@ -10,7 +10,6 @@ from copy import deepcopy
 from pathlib import Path
 from typing import List
 
-
 import ase
 import numpy as np
 from torch import tensor
