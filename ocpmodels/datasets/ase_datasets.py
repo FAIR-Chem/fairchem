@@ -6,9 +6,10 @@ import logging
 import os
 import warnings
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from pathlib import Path
 from typing import List
-from copy import deepcopy
+
 
 import ase
 import numpy as np
