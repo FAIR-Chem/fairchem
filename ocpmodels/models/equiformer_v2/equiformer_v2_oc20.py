@@ -139,6 +139,8 @@ class EquiformerV2_OC20(BaseModel):
         proj_drop: float = 0.0,
         weight_init: str = "normal",
         enforce_max_neighbors_strictly: bool = True,
+        avg_num_nodes: Optional[float] = None,
+        avg_degree: Optional[float] = None,
     ):
         super().__init__()
 
@@ -196,6 +198,9 @@ class EquiformerV2_OC20(BaseModel):
         self.alpha_drop = alpha_drop
         self.drop_path_rate = drop_path_rate
         self.proj_drop = proj_drop
+
+        self.avg_num_nodes = avg_num_nodes or _AVG_NUM_NODES
+        self.avg_degree = avg_degree or _AVG_DEGREE
 
         self.weight_init = weight_init
         assert self.weight_init in ["normal", "uniform"]
@@ -286,7 +291,7 @@ class EquiformerV2_OC20(BaseModel):
             self.max_num_elements,
             self.edge_channels_list,
             self.block_use_atom_edge_embedding,
-            rescale_factor=_AVG_DEGREE,
+            rescale_factor=self.avg_degree,
         )
 
         # Initialize the blocks for each layer of EquiformerV2
@@ -480,7 +485,7 @@ class EquiformerV2_OC20(BaseModel):
             dtype=node_energy.dtype,
         )
         energy.index_add_(0, data.batch, node_energy.view(-1))
-        energy = energy / _AVG_NUM_NODES
+        energy = energy / self.avg_num_nodes
 
         ###############################################################
         # Force estimation
