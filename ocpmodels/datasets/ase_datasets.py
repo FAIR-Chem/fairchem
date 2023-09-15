@@ -541,5 +541,5 @@ class AseDBDataset(AseAtomsDataset):
 
     def get_relaxed_energy(self, identifier):
         raise NotImplementedError(
-            "Direct IS2RE trainig with an ASE DB is not currently supported!"
+            "IS2RE-Direct training with an ASE DB is not currently supported."
         )
