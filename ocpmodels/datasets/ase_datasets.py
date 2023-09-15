@@ -6,10 +6,8 @@ import logging
 import os
 import warnings
 from abc import ABC, abstractmethod
-from copy import deepcopy
 from pathlib import Path
 from typing import List
-
 
 import ase
 import numpy as np
@@ -234,7 +232,7 @@ class AseReadDataset(AseAtomsDataset):
             raise Exception("The specified src is not a directory")
 
         if self.config.get("include_relaxed_energy", False):
-            self.relaxed_ase_read_args = deepcopy(self.ase_read_args)
+            self.relaxed_ase_read_args = copy.deepcopy(self.ase_read_args)
             self.relaxed_ase_read_args["index"] = "-1"
 
         return list(self.path.glob(f'{config["pattern"]}'))
