@@ -1,9 +1,7 @@
 import logging
-from contextlib import contextmanager
-from typing import Generator
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Generator
 from unittest import IsolatedAsyncioTestCase, mock
-
-import requests
 
 from ocpapi.client import Client, Model
 from ocpapi.models import Atoms, Bulk, Slab, SlabMetadata, Status
@@ -11,11 +9,11 @@ from ocpapi.models import Atoms, Bulk, Slab, SlabMetadata, Status
 log = logging.getLogger(__name__)
 
 
-@contextmanager
-def _try_ensure_system_deleted(
-    base_url: str,
+@asynccontextmanager
+async def _ensure_system_deleted(
+    client: Client,
     system_id: str,
-) -> Generator[None, None, None]:
+) -> AsyncGenerator[None, None]:
     """
     Immediately yields control to the caller. When control returns to this
     function, try to delete the system with the input id.
@@ -23,11 +21,7 @@ def _try_ensure_system_deleted(
     try:
         yield
     finally:
-        try:
-            requests.delete(f"{base_url}/adsorbate-slab-relaxations/{system_id}")
-            log.info(f"Deleted system with id={system_id}")
-        except BaseException:
-            log.exception(f"Failed to delete system with id={system_id}")
+        await client.delete_adsorbate_slab_relaxations(system_id)
 
 
 class TestClient(IsolatedAsyncioTestCase):
@@ -268,7 +262,7 @@ class TestClient(IsolatedAsyncioTestCase):
             ephemeral=True,
         )
 
-        with _try_ensure_system_deleted(self.TEST_HOST, response.system_id):
+        async with _ensure_system_deleted(client, response.system_id):
             self.assertNotEqual(response.system_id, "")
             self.assertEqual(len(response.config_ids), 1)
 
@@ -374,7 +368,7 @@ class TestClient(IsolatedAsyncioTestCase):
             ephemeral=True,
         )
 
-        with _try_ensure_system_deleted(self.TEST_HOST, response.system_id):
+        async with _ensure_system_deleted(client, response.system_id):
             self.assertNotEqual(response.system_id, "")
             self.assertEqual(len(response.config_ids), 1)
 

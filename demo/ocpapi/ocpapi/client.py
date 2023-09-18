@@ -220,6 +220,19 @@ class Client:
         )
         return AdsorbateSlabRelaxationsResults.from_json(response)
 
+    async def delete_adsorbate_slab_relaxations(self, system_id: str) -> None:
+        """
+        Deletes all relaxation results for the input system.
+
+        Args:
+            system_id: The ID of the system to delete.
+        """
+        await self._run_request(
+            url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}",
+            method="DELETE",
+            expected_response_code=200,
+        )
+
     async def _run_request(
         self, url: str, method: str, expected_response_code: int, **kwargs
     ) -> str:
