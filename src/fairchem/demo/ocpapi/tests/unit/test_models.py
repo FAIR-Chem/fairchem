@@ -4,17 +4,17 @@ from typing import Any, Final, Generic, List, Optional, Type, TypeVar
 from unittest import TestCase as UnitTestCase
 
 from ocpapi.models import (
-    AdsorbateSlabConfig,
-    AdsorbateSlabConfigsResponse,
-    AdsorbateSlabRelaxationsResponse,
+    AdsorbateSlabRelaxationResult,
+    AdsorbateSlabConfigs,
+    AdsorbateSlabRelaxationsSystem,
     AdsorbateSlabRelaxationsResults,
-    AdsorbatesResponse,
+    Adsorbates,
     Atoms,
     Bulk,
-    BulksResponse,
+    Bulks,
     Slab,
     SlabMetadata,
-    SlabsResponse,
+    Slabs,
     _Model,
     Status,
 )
@@ -138,14 +138,14 @@ class TestBulk(ModelTestWrapper.ModelTest[Bulk]):
         )
 
 
-class TestBulksResponse(ModelTestWrapper.ModelTest[BulksResponse]):
+class TestBulks(ModelTestWrapper.ModelTest[Bulks]):
     """
-    Serde tests for the BulksResponse data model.
+    Serde tests for the Bulks data model.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
-            obj=BulksResponse(
+            obj=Bulks(
                 bulks_supported=[
                     Bulk(
                         src_id="test_id",
@@ -172,14 +172,14 @@ class TestBulksResponse(ModelTestWrapper.ModelTest[BulksResponse]):
         )
 
 
-class TestAdsorbatesResponse(ModelTestWrapper.ModelTest[AdsorbatesResponse]):
+class TestAdsorbates(ModelTestWrapper.ModelTest[Adsorbates]):
     """
-    Serde tests for the AdsorbatesResponse data model.
+    Serde tests for the Adsorbates data model.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
-            obj=AdsorbatesResponse(
+            obj=Adsorbates(
                 adsorbates_supported=["A", "B"],
                 other_fields={"extra_field": "extra_value"},
             ),
@@ -302,14 +302,14 @@ class TestSlab(ModelTestWrapper.ModelTest[Slab]):
         )
 
 
-class TestSlabsResponse(ModelTestWrapper.ModelTest[SlabsResponse]):
+class TestSlabs(ModelTestWrapper.ModelTest[Slabs]):
     """
-    Serde tests for the SlabsResponse data model.
+    Serde tests for the Slabs data model.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
-            obj=SlabsResponse(
+            obj=Slabs(
                 slabs=[
                     Slab(
                         atoms=Atoms(
@@ -362,16 +362,14 @@ class TestSlabsResponse(ModelTestWrapper.ModelTest[SlabsResponse]):
         )
 
 
-class TestAdsorbateSlabConfigsResponse(
-    ModelTestWrapper.ModelTest[AdsorbateSlabConfigsResponse]
-):
+class TestAdsorbateSlabConfigs(ModelTestWrapper.ModelTest[AdsorbateSlabConfigs]):
     """
-    Serde tests for the AdsorbateSlabConfigsResponse data model.
+    Serde tests for the AdsorbateSlabConfigs data model.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
-            obj=AdsorbateSlabConfigsResponse(
+            obj=AdsorbateSlabConfigs(
                 adsorbate_configs=[
                     Atoms(
                         cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
@@ -442,16 +440,16 @@ class TestAdsorbateSlabConfigsResponse(
         )
 
 
-class TestAdsorbateSlabRelaxationsResponse(
-    ModelTestWrapper.ModelTest[AdsorbateSlabRelaxationsResponse]
+class TestAdsorbateSlabRelaxationsSystem(
+    ModelTestWrapper.ModelTest[AdsorbateSlabRelaxationsSystem]
 ):
     """
-    Serde tests for the AdsorbateSlabRelaxationsResponse data model.
+    Serde tests for the AdsorbateSlabRelaxationsSystem data model.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
-            obj=AdsorbateSlabRelaxationsResponse(
+            obj=AdsorbateSlabRelaxationsSystem(
                 system_id="test_id",
                 config_ids=[1, 2, 3],
                 other_fields={"extra_field": "extra_value"},
@@ -468,14 +466,16 @@ class TestAdsorbateSlabRelaxationsResponse(
         )
 
 
-class TestAdsorbateSlabConfig(ModelTestWrapper.ModelTest[AdsorbateSlabConfig]):
+class TestAdsorbateSlabRelaxationResult(
+    ModelTestWrapper.ModelTest[AdsorbateSlabRelaxationResult]
+):
     """
-    Serde tests for the AdsorbateSlabConfig data model.
+    Serde tests for the AdsorbateSlabRelaxationResult data model.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
-            obj=AdsorbateSlabConfig(
+            obj=AdsorbateSlabRelaxationResult(
                 config_id=1,
                 status=Status.SUCCESS,
                 system_id="sys_id",
@@ -510,17 +510,17 @@ class TestAdsorbateSlabConfig(ModelTestWrapper.ModelTest[AdsorbateSlabConfig]):
         )
 
 
-class TestAdsorbateSlabConfig_req_fields_only(
-    ModelTestWrapper.ModelTest[AdsorbateSlabConfig]
+class TestAdsorbateSlabRelaxationResult_req_fields_only(
+    ModelTestWrapper.ModelTest[AdsorbateSlabRelaxationResult]
 ):
     """
-    Serde tests for the AdsorbateSlabConfig data model in which optional
-    fields are omitted.
+    Serde tests for the AdsorbateSlabRelaxationResult data model in which
+    optional fields are omitted.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
-            obj=AdsorbateSlabConfig(
+            obj=AdsorbateSlabRelaxationResult(
                 config_id=1,
                 status=Status.SUCCESS,
             ),
@@ -546,7 +546,7 @@ class TestAdsorbateSlabRelaxationsResults(
         super().__init__(
             obj=AdsorbateSlabRelaxationsResults(
                 configs=[
-                    AdsorbateSlabConfig(
+                    AdsorbateSlabRelaxationResult(
                         config_id=1,
                         status=Status.SUCCESS,
                         system_id="sys_id",

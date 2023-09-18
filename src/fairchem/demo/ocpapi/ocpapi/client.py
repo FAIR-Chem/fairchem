@@ -6,15 +6,15 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 
 from ocpapi.models import (
-    AdsorbateSlabConfigsResponse,
-    AdsorbateSlabRelaxationsResponse,
+    AdsorbateSlabConfigs,
+    AdsorbateSlabRelaxationsSystem,
     AdsorbateSlabRelaxationsResults,
-    AdsorbatesResponse,
+    Adsorbates,
     Atoms,
     Bulk,
-    BulksResponse,
+    Bulks,
     Slab,
-    SlabsResponse,
+    Slabs,
 )
 
 
@@ -56,35 +56,35 @@ class Client:
         # does not end in a '/' character
         self._base_url = base_url.rstrip("/")
 
-    async def get_bulks(self) -> BulksResponse:
+    async def get_bulks(self) -> Bulks:
         """
         Fetch the list of bulk materials that are supported in the API.
 
         Returns:
-            BulksResponse
+            Bulks
         """
         response = await self._run_request(
             url=f"{self._base_url}/bulks",
             method="GET",
             expected_response_code=200,
         )
-        return BulksResponse.from_json(response)
+        return Bulks.from_json(response)
 
-    async def get_adsorbates(self) -> AdsorbatesResponse:
+    async def get_adsorbates(self) -> Adsorbates:
         """
         Fetch the list of adsorbates that are supported in the API.
 
         Returns:
-            AdsorbatesResponse
+            Adsorbates
         """
         response = await self._run_request(
             url=f"{self._base_url}/adsorbates",
             method="GET",
             expected_response_code=200,
         )
-        return AdsorbatesResponse.from_json(response)
+        return Adsorbates.from_json(response)
 
-    async def get_slabs(self, bulk: Union[str, Bulk]) -> SlabsResponse:
+    async def get_slabs(self, bulk: Union[str, Bulk]) -> Slabs:
         """
         Get a unique list of slabs for the input bulk structure.
 
@@ -93,7 +93,7 @@ class Client:
                 instance to use.
 
         Returns:
-            SlabsResponse
+            Slabs
         """
         response = await self._run_request(
             url=f"{self._base_url}/slabs",
@@ -104,11 +104,11 @@ class Client:
             ),
             headers={"Content-Type": "application/json"},
         )
-        return SlabsResponse.from_json(response)
+        return Slabs.from_json(response)
 
     async def get_adsorbate_slab_configs(
         self, adsorbate: str, slab: Slab
-    ) -> AdsorbateSlabConfigsResponse:
+    ) -> AdsorbateSlabConfigs:
         """
         Get a list of possible binding sites for the input adsorbate on the
         input slab.
@@ -119,7 +119,7 @@ class Client:
                 be placed.
 
         Returns:
-            AdsorbateSlabConfigsResponse
+            AdsorbateSlabConfigs
         """
         response = await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-configs",
@@ -133,7 +133,7 @@ class Client:
             ),
             headers={"Content-Type": "application/json"},
         )
-        return AdsorbateSlabConfigsResponse.from_json(response)
+        return AdsorbateSlabConfigs.from_json(response)
 
     async def submit_adsorbate_slab_relaxations(
         self,
@@ -143,7 +143,7 @@ class Client:
         slab: Slab,
         model: Union[Model, str],
         ephemeral: bool = False,
-    ) -> AdsorbateSlabRelaxationsResponse:
+    ) -> AdsorbateSlabRelaxationsSystem:
         """
         Starts relaxations of the input adsorbate configurations on the input
         slab using energies and forces returned by the input model. Relaxations
@@ -168,7 +168,7 @@ class Client:
                 testing when there is no reason for results to be persisted.
 
         Returns:
-            AdsorbateSlabRelaxationsResponse
+            AdsorbateSlabRelaxationsSystem
         """
         response = await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-relaxations",
@@ -186,7 +186,7 @@ class Client:
             ),
             headers={"Content-Type": "application/json"},
         )
-        return AdsorbateSlabRelaxationsResponse.from_json(response)
+        return AdsorbateSlabRelaxationsSystem.from_json(response)
 
     async def get_adsorbate_slab_relaxations_results(
         self,
