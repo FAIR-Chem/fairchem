@@ -39,7 +39,7 @@ class Bulk(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class BulksResponse(_Model):
+class Bulks(_Model):
     """
     Stores the response from a request to fetch bulks supported in the API.
 
@@ -52,7 +52,7 @@ class BulksResponse(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class AdsorbatesResponse(_Model):
+class Adsorbates(_Model):
     """
     Stores the response from a request to fetch adsorbates supported in the
     API.
@@ -137,7 +137,7 @@ class Slab(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class SlabsResponse(_Model):
+class Slabs(_Model):
     """
     Stores the response from a request to fetch slabs for a bulk structure.
 
@@ -151,7 +151,7 @@ class SlabsResponse(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class AdsorbateSlabConfigsResponse(_Model):
+class AdsorbateSlabConfigs(_Model):
     """
     Stores the response from a request to fetch placements of a single
     absorbate on a slab.
@@ -168,7 +168,7 @@ class AdsorbateSlabConfigsResponse(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class AdsorbateSlabRelaxationsResponse(_Model):
+class AdsorbateSlabRelaxationsSystem(_Model):
     """
     Stores the response from a request to submit a new batch of adsorbate
     slab relaxations.
@@ -213,7 +213,7 @@ class Status(Enum):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class AdsorbateSlabConfig(_Model):
+class AdsorbateSlabRelaxationResult(_Model):
     """
     Stores information about a single adsorbate slab configuration, including
     outputs for the model used in relaxations.
@@ -302,4 +302,4 @@ class AdsorbateSlabRelaxationsResults(_Model):
             one placement of an adsorbate on a slab surface.
     """
 
-    configs: List[AdsorbateSlabConfig]
+    configs: List[AdsorbateSlabRelaxationResult]

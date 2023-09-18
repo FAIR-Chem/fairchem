@@ -1,6 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator
 from unittest import IsolatedAsyncioTestCase, mock
 
 from ocpapi.client import Client, Model

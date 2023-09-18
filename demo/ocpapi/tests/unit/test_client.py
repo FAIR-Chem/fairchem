@@ -6,17 +6,17 @@ import responses
 
 from ocpapi.client import Client, Model, RequestException
 from ocpapi.models import (
-    AdsorbateSlabConfig,
-    AdsorbateSlabConfigsResponse,
-    AdsorbateSlabRelaxationsResponse,
+    AdsorbateSlabRelaxationResult,
+    AdsorbateSlabConfigs,
+    AdsorbateSlabRelaxationsSystem,
     AdsorbateSlabRelaxationsResults,
-    AdsorbatesResponse,
+    Adsorbates,
     Atoms,
     Bulk,
-    BulksResponse,
+    Bulks,
     Slab,
     SlabMetadata,
-    SlabsResponse,
+    Slabs,
     _Model,
     Status,
 )
@@ -171,7 +171,7 @@ class TestClient(IsolatedAsyncioTestCase):
     ]
 }
 """,
-            successful_response_object=BulksResponse(
+            successful_response_object=Bulks(
                 bulks_supported=[
                     Bulk(
                         src_id="1",
@@ -198,7 +198,7 @@ class TestClient(IsolatedAsyncioTestCase):
     "adsorbates_supported": ["A", "B"]
 }
 """,
-            successful_response_object=AdsorbatesResponse(
+            successful_response_object=Adsorbates(
                 adsorbates_supported=["A", "B"],
             ),
         )
@@ -230,7 +230,7 @@ class TestClient(IsolatedAsyncioTestCase):
     }]
 }
 """,
-            successful_response_object=SlabsResponse(
+            successful_response_object=Slabs(
                 slabs=[
                     Slab(
                         atoms=Atoms(
@@ -284,7 +284,7 @@ class TestClient(IsolatedAsyncioTestCase):
     }]
 }
 """,
-            successful_response_object=SlabsResponse(
+            successful_response_object=Slabs(
                 slabs=[
                     Slab(
                         atoms=Atoms(
@@ -375,7 +375,7 @@ class TestClient(IsolatedAsyncioTestCase):
     }
 }
 """,
-            successful_response_object=AdsorbateSlabConfigsResponse(
+            successful_response_object=AdsorbateSlabConfigs(
                 adsorbate_configs=[
                     Atoms(
                         cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
@@ -483,7 +483,7 @@ class TestClient(IsolatedAsyncioTestCase):
     "config_ids": [1, 2, 3]
 }
 """,
-            successful_response_object=AdsorbateSlabRelaxationsResponse(
+            successful_response_object=AdsorbateSlabRelaxationsSystem(
                 system_id="sys_id",
                 config_ids=[1, 2, 3],
             ),
@@ -516,7 +516,7 @@ class TestClient(IsolatedAsyncioTestCase):
 """,
             successful_response_object=AdsorbateSlabRelaxationsResults(
                 configs=[
-                    AdsorbateSlabConfig(
+                    AdsorbateSlabRelaxationResult(
                         config_id=1,
                         status=Status.SUCCESS,
                     )
@@ -546,7 +546,7 @@ class TestClient(IsolatedAsyncioTestCase):
 """,
             successful_response_object=AdsorbateSlabRelaxationsResults(
                 configs=[
-                    AdsorbateSlabConfig(
+                    AdsorbateSlabRelaxationResult(
                         config_id=1,
                         status=Status.SUCCESS,
                     )
