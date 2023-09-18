@@ -7,7 +7,7 @@ from dataclasses_json import CatchAll, Undefined, config, dataclass_json
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class _Model:
+class _DataModel:
     """
     Base class for all data models.
 
@@ -21,7 +21,7 @@ class _Model:
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class Bulk(_Model):
+class Bulk(_DataModel):
     """
     Stores information about a single bulk material.
 
@@ -39,7 +39,7 @@ class Bulk(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class Bulks(_Model):
+class Bulks(_DataModel):
     """
     Stores the response from a request to fetch bulks supported in the API.
 
@@ -52,7 +52,7 @@ class Bulks(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class Adsorbates(_Model):
+class Adsorbates(_DataModel):
     """
     Stores the response from a request to fetch adsorbates supported in the
     API.
@@ -67,7 +67,7 @@ class Adsorbates(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class Atoms(_Model):
+class Atoms(_DataModel):
     """
     Subset of the fields from an ASE Atoms object that are used within this
     API.
@@ -97,7 +97,7 @@ class Atoms(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class SlabMetadata(_Model):
+class SlabMetadata(_DataModel):
     """
     Stores metadata about a slab that is returned from the API.
 
@@ -120,7 +120,7 @@ class SlabMetadata(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class Slab(_Model):
+class Slab(_DataModel):
     """
     Stores all information about a slab that is returned from the API.
 
@@ -137,7 +137,7 @@ class Slab(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class Slabs(_Model):
+class Slabs(_DataModel):
     """
     Stores the response from a request to fetch slabs for a bulk structure.
 
@@ -151,7 +151,7 @@ class Slabs(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class AdsorbateSlabConfigs(_Model):
+class AdsorbateSlabConfigs(_DataModel):
     """
     Stores the response from a request to fetch placements of a single
     absorbate on a slab.
@@ -168,7 +168,7 @@ class AdsorbateSlabConfigs(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class AdsorbateSlabRelaxationsSystem(_Model):
+class AdsorbateSlabRelaxationsSystem(_DataModel):
     """
     Stores the response from a request to submit a new batch of adsorbate
     slab relaxations.
@@ -182,6 +182,57 @@ class AdsorbateSlabRelaxationsSystem(_Model):
 
     system_id: str
     config_ids: List[int]
+
+
+class Model(Enum):
+    """
+    ML model that can be used in adsorbate-slab relaxations.
+
+    Attributes:
+        GEMNET_OC_BASE_S2EF_ALL_MD: https://arxiv.org/abs/2204.02782
+        EQUIFORMER_V2_31M_S2EF_ALL_MD: https://arxiv.org/abs/2306.12059
+    """
+
+    GEMNET_OC_BASE_S2EF_ALL_MD = "gemnet_oc_base_s2ef_all_md"
+    EQUIFORMER_V2_31M_S2EF_ALL_MD = "equiformer_v2_31M_s2ef_all_md"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass_json(undefined=Undefined.INCLUDE)
+@dataclass
+class AdsorbateSlabRelaxationsRequest(_DataModel):
+    """
+    Stores the request to submit a new batch of adsorbate slab relaxations.
+
+    Attributes:
+        adsorbate: SMILES string desribing the adsorbate.
+        adsorbate_configs: List of adsorbate placements being relaxed.
+        bulk: Information about the original bulk structure used to create
+            the slab.
+        slab: The structure of the slab on which adsorbates are placed.
+        model: The type of the ML model being used during relaxations.
+        ephemeral: Whether the relaxations can be deleted (assume they
+            cannot be deleted if None).
+        adsorbate_reaction: If possible, an html-formatted string describing
+            the reaction will be added to this field.
+    """
+
+    adsorbate: str
+    adsorbate_configs: List[Atoms]
+    bulk: Bulk
+    slab: Slab
+    model: Model
+    # Omit from serialization when None
+    ephemeral: Optional[bool] = field(
+        default=None,
+        metadata=config(exclude=lambda v: v is None),
+    )
+    adsorbate_reaction: Optional[str] = field(
+        default=None,
+        metadata=config(exclude=lambda v: v is None),
+    )
 
 
 class Status(Enum):
@@ -213,7 +264,7 @@ class Status(Enum):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class AdsorbateSlabRelaxationResult(_Model):
+class AdsorbateSlabRelaxationResult(_DataModel):
     """
     Stores information about a single adsorbate slab configuration, including
     outputs for the model used in relaxations.
@@ -292,7 +343,7 @@ class AdsorbateSlabRelaxationResult(_Model):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
-class AdsorbateSlabRelaxationsResults(_Model):
+class AdsorbateSlabRelaxationsResults(_DataModel):
     """
     Stores the response from a request for results of adsorbate slab
     relaxations.

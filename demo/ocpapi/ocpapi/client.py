@@ -1,18 +1,19 @@
 import asyncio
 import json
-from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 import requests
 
 from ocpapi.models import (
-    AdsorbateSlabConfigs,
-    AdsorbateSlabRelaxationsSystem,
-    AdsorbateSlabRelaxationsResults,
     Adsorbates,
+    AdsorbateSlabConfigs,
+    AdsorbateSlabRelaxationsRequest,
+    AdsorbateSlabRelaxationsResults,
+    AdsorbateSlabRelaxationsSystem,
     Atoms,
     Bulk,
     Bulks,
+    Model,
     Slab,
     Slabs,
 )
@@ -21,22 +22,6 @@ from ocpapi.models import (
 class RequestException(Exception):
     def __init__(self, method: str, url: str, cause: str) -> None:
         super().__init__(f"Request to {method} {url} failed. {cause}")
-
-
-class Model(Enum):
-    """
-    ML model that can be used in adsorbate-slab relaxations.
-
-    Attributes:
-        GEMNET_OC_BASE_S2EF_ALL_MD: https://arxiv.org/abs/2204.02782
-        EQUIFORMER_V2_31M_S2EF_ALL_MD: https://arxiv.org/abs/2306.12059
-    """
-
-    GEMNET_OC_BASE_S2EF_ALL_MD = "gemnet_oc_base_s2ef_all_md"
-    EQUIFORMER_V2_31M_S2EF_ALL_MD = "equiformer_v2_31M_s2ef_all_md"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 class Client:
@@ -141,7 +126,7 @@ class Client:
         adsorbate_configs: List[Atoms],
         bulk: Bulk,
         slab: Slab,
-        model: Union[Model, str],
+        model: Model,
         ephemeral: bool = False,
     ) -> AdsorbateSlabRelaxationsSystem:
         """
@@ -158,10 +143,7 @@ class Client:
             bulk: Details of the bulk material being simulated.
             slab: The structure of the slab on which adsorbates are placed.
             model: The model that will be used to evaluate energies and forces
-                during relaxations. Prefer using the enumerated Model values,
-                but a free-form string can be supplied if this client version
-                does not support a model known to exist on the API being
-                invoked.
+                during relaxations.
             ephemeral: If False (default), any later attempt to delete the
                 generated relaxations will be rejected. If True, deleting the
                 relaxations will be allowed, which is generally useful for
@@ -187,6 +169,25 @@ class Client:
             headers={"Content-Type": "application/json"},
         )
         return AdsorbateSlabRelaxationsSystem.from_json(response)
+
+    async def get_adsorbate_slab_relaxations_request(
+        self, system_id: str
+    ) -> AdsorbateSlabRelaxationsRequest:
+        """
+        Fetches the original relaxations request for the input system.
+
+        Args:
+            system_id: The ID of the system to fetch.
+
+        Returns:
+            AdsorbateSlabRelaxationsRequest
+        """
+        response = await self._run_request(
+            url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}",
+            method="GET",
+            expected_response_code=200,
+        )
+        return AdsorbateSlabRelaxationsRequest.from_json(response)
 
     async def get_adsorbate_slab_relaxations_results(
         self,

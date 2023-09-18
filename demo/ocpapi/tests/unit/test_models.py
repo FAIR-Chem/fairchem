@@ -4,22 +4,24 @@ from typing import Any, Final, Generic, List, Optional, Type, TypeVar
 from unittest import TestCase as UnitTestCase
 
 from ocpapi.models import (
-    AdsorbateSlabRelaxationResult,
-    AdsorbateSlabConfigs,
-    AdsorbateSlabRelaxationsSystem,
-    AdsorbateSlabRelaxationsResults,
     Adsorbates,
+    AdsorbateSlabConfigs,
+    AdsorbateSlabRelaxationResult,
+    AdsorbateSlabRelaxationsRequest,
+    AdsorbateSlabRelaxationsResults,
+    AdsorbateSlabRelaxationsSystem,
     Atoms,
     Bulk,
     Bulks,
+    Model,
     Slab,
     SlabMetadata,
     Slabs,
-    _Model,
     Status,
+    _DataModel,
 )
 
-T = TypeVar("T", bound=_Model)
+T = TypeVar("T", bound=_DataModel)
 
 
 class ModelTestWrapper:
@@ -459,6 +461,185 @@ class TestAdsorbateSlabRelaxationsSystem(
     "system_id": "test_id",
     "config_ids": [1, 2, 3],
     "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestAdsorbateSlabRelaxationsRequest(
+    ModelTestWrapper.ModelTest[AdsorbateSlabRelaxationsRequest]
+):
+    """
+    Serde tests for the AdsorbateSlabRelaxationsRequest data model.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=AdsorbateSlabRelaxationsRequest(
+                adsorbate="ABC",
+                adsorbate_configs=[
+                    Atoms(
+                        cell=((0.1, 0.2, 0.3), (0.4, 0.5, 0.6), (0.7, 0.8, 0.9)),
+                        pbc=(True, False, True),
+                        numbers=[1, 2],
+                        positions=[(1.1, 1.2, 1.3), (1.4, 1.5, 1.6)],
+                        tags=[2, 2],
+                        other_fields={"extra_ad_field": "extra_ad_value"},
+                    )
+                ],
+                bulk=Bulk(
+                    src_id="bulk_id",
+                    formula="XYZ",
+                    elements=["X", "Y", "Z"],
+                    other_fields={"extra_bulk_field": "extra_bulk_value"},
+                ),
+                slab=Slab(
+                    atoms=Atoms(
+                        cell=((0.1, 0.2, 0.3), (0.4, 0.5, 0.6), (0.7, 0.8, 0.9)),
+                        pbc=(True, True, True),
+                        numbers=[1],
+                        positions=[(1.1, 1.2, 1.3)],
+                        tags=[0],
+                        other_fields={"extra_slab_field": "extra_slab_value"},
+                    ),
+                    metadata=SlabMetadata(
+                        bulk_src_id="bulk_id",
+                        millers=(1, 1, 1),
+                        shift=0.25,
+                        top=False,
+                        other_fields={"extra_meta_field": "extra_meta_value"},
+                    ),
+                ),
+                model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+                ephemeral=True,
+                adsorbate_reaction="A + B -> C",
+                other_fields={"extra_field": "extra_value"},
+            ),
+            obj_json="""
+{
+    "adsorbate": "ABC",
+    "adsorbate_configs": [
+        {
+            "cell": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]],
+            "pbc": [true, false, true],
+            "numbers": [1, 2],
+            "positions": [[1.1, 1.2, 1.3], [1.4, 1.5, 1.6]],
+            "tags": [2, 2],
+            "extra_ad_field": "extra_ad_value"
+        }
+    ],
+    "bulk": {
+        "src_id": "bulk_id",
+        "formula": "XYZ",
+        "els": ["X", "Y", "Z"],
+        "extra_bulk_field": "extra_bulk_value"
+    },
+    "slab": {
+        "slab_atomsobject": {
+            "cell": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]],
+            "pbc": [true, true, true],
+            "numbers": [1],
+            "positions": [[1.1, 1.2, 1.3]],
+            "tags": [0],
+            "extra_slab_field": "extra_slab_value"
+        },
+        "slab_metadata": {
+            "bulk_id": "bulk_id",
+            "millers": [1, 1, 1],
+            "shift": 0.25,
+            "top": false,
+            "extra_meta_field": "extra_meta_value"
+        }
+    },
+    "model": "gemnet_oc_base_s2ef_all_md",
+    "ephemeral": true,
+    "adsorbate_reaction": "A + B -> C",
+    "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestAdsorbateSlabRelaxationsRequest_req_fields_only(
+    ModelTestWrapper.ModelTest[AdsorbateSlabRelaxationsRequest]
+):
+    """
+    Serde tests for the AdsorbateSlabRelaxationsRequest data model in which
+    optional fields are omitted.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=AdsorbateSlabRelaxationsRequest(
+                adsorbate="ABC",
+                adsorbate_configs=[
+                    Atoms(
+                        cell=((0.1, 0.2, 0.3), (0.4, 0.5, 0.6), (0.7, 0.8, 0.9)),
+                        pbc=(True, False, True),
+                        numbers=[1, 2],
+                        positions=[(1.1, 1.2, 1.3), (1.4, 1.5, 1.6)],
+                        tags=[2, 2],
+                    )
+                ],
+                bulk=Bulk(
+                    src_id="bulk_id",
+                    formula="XYZ",
+                    elements=["X", "Y", "Z"],
+                ),
+                slab=Slab(
+                    atoms=Atoms(
+                        cell=((0.1, 0.2, 0.3), (0.4, 0.5, 0.6), (0.7, 0.8, 0.9)),
+                        pbc=(True, True, True),
+                        numbers=[1],
+                        positions=[(1.1, 1.2, 1.3)],
+                        tags=[0],
+                    ),
+                    metadata=SlabMetadata(
+                        bulk_src_id="bulk_id",
+                        millers=(1, 1, 1),
+                        shift=0.25,
+                        top=False,
+                    ),
+                ),
+                model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+            ),
+            obj_json="""
+{
+    "adsorbate": "ABC",
+    "adsorbate_configs": [
+        {
+            "cell": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]],
+            "pbc": [true, false, true],
+            "numbers": [1, 2],
+            "positions": [[1.1, 1.2, 1.3], [1.4, 1.5, 1.6]],
+            "tags": [2, 2]
+        }
+    ],
+    "bulk": {
+        "src_id": "bulk_id",
+        "formula": "XYZ",
+        "els": ["X", "Y", "Z"]
+    },
+    "slab": {
+        "slab_atomsobject": {
+            "cell": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]],
+            "pbc": [true, true, true],
+            "numbers": [1],
+            "positions": [[1.1, 1.2, 1.3]],
+            "tags": [0]
+        },
+        "slab_metadata": {
+            "bulk_id": "bulk_id",
+            "millers": [1, 1, 1],
+            "shift": 0.25,
+            "top": false
+        }
+    },
+    "model": "gemnet_oc_base_s2ef_all_md"
 }
 """,
             *args,
