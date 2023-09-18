@@ -4,21 +4,23 @@ from unittest import IsolatedAsyncioTestCase
 
 import responses
 
-from ocpapi.client import Client, Model, RequestException
+from ocpapi.client import Client, RequestException
 from ocpapi.models import (
-    AdsorbateSlabRelaxationResult,
-    AdsorbateSlabConfigs,
-    AdsorbateSlabRelaxationsSystem,
-    AdsorbateSlabRelaxationsResults,
     Adsorbates,
+    AdsorbateSlabConfigs,
+    AdsorbateSlabRelaxationResult,
+    AdsorbateSlabRelaxationsRequest,
+    AdsorbateSlabRelaxationsResults,
+    AdsorbateSlabRelaxationsSystem,
     Atoms,
     Bulk,
     Bulks,
+    Model,
     Slab,
     SlabMetadata,
     Slabs,
-    _Model,
     Status,
+    _DataModel,
 )
 
 
@@ -34,7 +36,7 @@ class TestClient(IsolatedAsyncioTestCase):
         client_method_name: str,
         successful_response_code: int,
         successful_response_body: str,
-        successful_response_object: Optional[_Model],
+        successful_response_object: Optional[_DataModel],
         client_method_args: Optional[Dict[str, Any]] = None,
         expected_request_params: Optional[Dict[str, Any]] = None,
         expected_request_body: Optional[Dict[str, Any]] = None,
@@ -45,7 +47,7 @@ class TestClient(IsolatedAsyncioTestCase):
             base_url: str
             response_body: Union[str, Exception]
             response_code: int
-            expected: Optional[_Model] = None
+            expected: Optional[_DataModel] = None
             expected_request_params: Optional[Dict[str, Any]] = None
             expected_request_body: Optional[Dict[str, Any]] = None
             expected_exception: Optional[Exception] = None
@@ -486,6 +488,83 @@ class TestClient(IsolatedAsyncioTestCase):
             successful_response_object=AdsorbateSlabRelaxationsSystem(
                 system_id="sys_id",
                 config_ids=[1, 2, 3],
+            ),
+        )
+
+    async def test_get_adsorbate_slab_relaxations_request(self) -> None:
+        await self._run_common_tests_against_route(
+            method="GET",
+            route="adsorbate-slab-relaxations/test_system_id",
+            client_method_name="get_adsorbate_slab_relaxations_request",
+            client_method_args={"system_id": "test_system_id"},
+            successful_response_code=200,
+            successful_response_body="""
+{
+    "adsorbate": "ABC",
+    "adsorbate_configs": [
+        {
+            "cell": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]],
+            "pbc": [true, false, true],
+            "numbers": [1, 2],
+            "positions": [[1.1, 1.2, 1.3], [1.4, 1.5, 1.6]],
+            "tags": [2, 2]
+        }
+    ],
+    "bulk": {
+        "src_id": "bulk_id",
+        "formula": "XYZ",
+        "els": ["X", "Y", "Z"]
+    },
+    "slab": {
+        "slab_atomsobject": {
+            "cell": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]],
+            "pbc": [true, true, true],
+            "numbers": [1],
+            "positions": [[1.1, 1.2, 1.3]],
+            "tags": [0]
+        },
+        "slab_metadata": {
+            "bulk_id": "bulk_id",
+            "millers": [1, 1, 1],
+            "shift": 0.25,
+            "top": false
+        }
+    },
+    "model": "gemnet_oc_base_s2ef_all_md"
+}
+""",
+            successful_response_object=AdsorbateSlabRelaxationsRequest(
+                adsorbate="ABC",
+                adsorbate_configs=[
+                    Atoms(
+                        cell=((0.1, 0.2, 0.3), (0.4, 0.5, 0.6), (0.7, 0.8, 0.9)),
+                        pbc=(True, False, True),
+                        numbers=[1, 2],
+                        positions=[(1.1, 1.2, 1.3), (1.4, 1.5, 1.6)],
+                        tags=[2, 2],
+                    )
+                ],
+                bulk=Bulk(
+                    src_id="bulk_id",
+                    formula="XYZ",
+                    elements=["X", "Y", "Z"],
+                ),
+                slab=Slab(
+                    atoms=Atoms(
+                        cell=((0.1, 0.2, 0.3), (0.4, 0.5, 0.6), (0.7, 0.8, 0.9)),
+                        pbc=(True, True, True),
+                        numbers=[1],
+                        positions=[(1.1, 1.2, 1.3)],
+                        tags=[0],
+                    ),
+                    metadata=SlabMetadata(
+                        bulk_src_id="bulk_id",
+                        millers=(1, 1, 1),
+                        shift=0.25,
+                        top=False,
+                    ),
+                ),
+                model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
             ),
         )
 

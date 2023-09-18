@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from unittest import IsolatedAsyncioTestCase, mock
 
-from ocpapi.client import Client, Model
-from ocpapi.models import Atoms, Bulk, Slab, SlabMetadata, Status
+from ocpapi.client import Client
+from ocpapi.models import Atoms, Bulk, Model, Slab, SlabMetadata, Status
 
 log = logging.getLogger(__name__)
 
@@ -371,6 +371,19 @@ class TestClient(IsolatedAsyncioTestCase):
         async with _ensure_system_deleted(client, response.system_id):
             self.assertNotEqual(response.system_id, "")
             self.assertEqual(len(response.config_ids), 1)
+
+    async def test_get_adsorbate_slab_relaxations_request(self) -> None:
+        # Make sure the original request can be fetched for an already-
+        # submitted system.
+
+        client = Client(self.TEST_HOST)
+        response = await client.get_adsorbate_slab_relaxations_request(
+            system_id=self.KNOWN_SYSTEM_ID
+        )
+
+        # Don't worry about checking all fields - just make sure at least one
+        # of the expected fields was returned
+        self.assertEqual(response.adsorbate, "*CO")
 
     async def test_get_adsorbate_slab_relaxations_results__all_fields_and_configs(
         self,
