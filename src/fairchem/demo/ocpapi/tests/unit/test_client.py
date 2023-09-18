@@ -34,7 +34,7 @@ class TestClient(IsolatedAsyncioTestCase):
         client_method_name: str,
         successful_response_code: int,
         successful_response_body: str,
-        successful_response_object: _Model,
+        successful_response_object: Optional[_Model],
         client_method_args: Optional[Dict[str, Any]] = None,
         expected_request_params: Optional[Dict[str, Any]] = None,
         expected_request_body: Optional[Dict[str, Any]] = None,
@@ -552,4 +552,17 @@ class TestClient(IsolatedAsyncioTestCase):
                     )
                 ]
             ),
+        )
+
+    async def test_delete_adsorbate_slab_relaxations(self) -> None:
+        await self._run_common_tests_against_route(
+            method="DELETE",
+            route="adsorbate-slab-relaxations/test_sys_id",
+            client_method_name="delete_adsorbate_slab_relaxations",
+            client_method_args={
+                "system_id": "test_sys_id",
+            },
+            successful_response_code=200,
+            successful_response_body="{}",
+            successful_response_object=None,
         )
