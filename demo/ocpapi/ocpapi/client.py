@@ -1,5 +1,6 @@
 import asyncio
 import json
+from datetime import timedelta
 from typing import Any, Dict, List, Optional, Union
 
 import requests
@@ -20,8 +21,45 @@ from ocpapi.models import (
 
 
 class RequestException(Exception):
+    """
+    Exception raised any time there is an error while making an API call.
+    """
+
     def __init__(self, method: str, url: str, cause: str) -> None:
+        """
+        Args:
+            method: The type of the method being run (POST, GET, etc.).
+            url: The full URL that was called.
+            cause: A description of the failure.
+        """
         super().__init__(f"Request to {method} {url} failed. {cause}")
+
+
+class RateLimitExceededException(RequestException):
+    """
+    Exception raised when an API call is rejected because a rate limit has
+    been exceeded.
+
+    Attributes:
+        retry_after: If known, the time to wait before the next attempt to
+            call the API should be made.
+    """
+
+    def __init__(
+        self,
+        method: str,
+        url: str,
+        retry_after: Optional[timedelta] = None,
+    ) -> None:
+        """
+        Args:
+            method: The type of the method being run (POST, GET, etc.).
+            url: The full URL that was called.
+            retry_after: If known, the time to wait before the next attempt
+                to call the API should be made.
+        """
+        super().__init__(method=method, url=url, cause="Exceeded rate limit")
+        self.retry_after: Optional[timedelta] = retry_after
 
 
 class Client:
@@ -46,6 +84,8 @@ class Client:
         Fetch the list of bulk materials that are supported in the API.
 
         Raises:
+            RateLimitExceededException if the call was rejected because a
+                server side rate limit was breached.
             RequestException if there is an error while making the request.
 
         Returns:
@@ -63,6 +103,8 @@ class Client:
         Fetch the list of adsorbates that are supported in the API.
 
         Raises:
+            RateLimitExceededException if the call was rejected because a
+                server side rate limit was breached.
             RequestException if there is an error while making the request.
 
         Returns:
@@ -84,6 +126,8 @@ class Client:
                 instance to use.
 
         Raises:
+            RateLimitExceededException if the call was rejected because a
+                server side rate limit was breached.
             RequestException if there is an error while making the request.
 
         Returns:
@@ -113,6 +157,8 @@ class Client:
                 be placed.
 
         Raises:
+            RateLimitExceededException if the call was rejected because a
+                server side rate limit was breached.
             RequestException if there is an error while making the request.
 
         Returns:
@@ -162,6 +208,8 @@ class Client:
                 testing when there is no reason for results to be persisted.
 
         Raises:
+            RateLimitExceededException if the call was rejected because a
+                server side rate limit was breached.
             RequestException if there is an error while making the request.
 
         Returns:
@@ -195,6 +243,8 @@ class Client:
             system_id: The ID of the system to fetch.
 
         Raises:
+            RateLimitExceededException if the call was rejected because a
+                server side rate limit was breached.
             RequestException if there is an error while making the request.
 
         Returns:
@@ -224,6 +274,8 @@ class Client:
                 configuration to fetch. Otherwise all fields are returned.
 
         Raises:
+            RateLimitExceededException if the call was rejected because a
+                server side rate limit was breached.
             RequestException if there is an error while making the request.
 
         Returns:
@@ -250,6 +302,8 @@ class Client:
             system_id: The ID of the system to delete.
 
         Raises:
+            RateLimitExceededException if the call was rejected because a
+                server side rate limit was breached.
             RequestException if there is an error while making the request.
         """
         await self._run_request(
@@ -271,6 +325,8 @@ class Client:
             expected_response_code: The response code that indicates success.
 
         Raises:
+            RateLimitExceededException if the call was rejected because a
+                server side rate limit was breached.
             RequestException if there is an error while making the request.
 
         Returns:
@@ -291,6 +347,17 @@ class Client:
                 url=url,
                 cause=f"Exception while making request: {type(e).__name__}: {e}",
             ) from e
+
+        # Exceeded server side rate limit
+        if response.status_code == 429:
+            retry_after: Optional[str] = response.headers.get("Retry-After", None)
+            raise RateLimitExceededException(
+                method=method,
+                url=url,
+                retry_after=timedelta(seconds=float(retry_after))
+                if retry_after is not None
+                else None,
+            )
 
         # Check the response code
         if response.status_code != expected_response_code:
