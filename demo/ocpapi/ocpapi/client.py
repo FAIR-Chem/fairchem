@@ -45,6 +45,9 @@ class Client:
         """
         Fetch the list of bulk materials that are supported in the API.
 
+        Raises:
+            RequestException if there is an error while making the request.
+
         Returns:
             Bulks
         """
@@ -58,6 +61,9 @@ class Client:
     async def get_adsorbates(self) -> Adsorbates:
         """
         Fetch the list of adsorbates that are supported in the API.
+
+        Raises:
+            RequestException if there is an error while making the request.
 
         Returns:
             Adsorbates
@@ -76,6 +82,9 @@ class Client:
         Args:
             bulk: If a string, the id of the bulk to use. Otherwise the Bulk
                 instance to use.
+
+        Raises:
+            RequestException if there is an error while making the request.
 
         Returns:
             Slabs
@@ -102,6 +111,9 @@ class Client:
             adsorbate: SMILES string describing the adsorbate to place.
             slab: Information about the slab on which the adsorbate should
                 be placed.
+
+        Raises:
+            RequestException if there is an error while making the request.
 
         Returns:
             AdsorbateSlabConfigs
@@ -149,6 +161,9 @@ class Client:
                 relaxations will be allowed, which is generally useful for
                 testing when there is no reason for results to be persisted.
 
+        Raises:
+            RequestException if there is an error while making the request.
+
         Returns:
             AdsorbateSlabRelaxationsSystem
         """
@@ -179,6 +194,9 @@ class Client:
         Args:
             system_id: The ID of the system to fetch.
 
+        Raises:
+            RequestException if there is an error while making the request.
+
         Returns:
             AdsorbateSlabRelaxationsRequest
         """
@@ -205,6 +223,9 @@ class Client:
             fields: If defined and not empty, a subset of fields in each
                 configuration to fetch. Otherwise all fields are returned.
 
+        Raises:
+            RequestException if there is an error while making the request.
+
         Returns:
             AdsorbateSlabRelaxationsResults
         """
@@ -227,6 +248,9 @@ class Client:
 
         Args:
             system_id: The ID of the system to delete.
+
+        Raises:
+            RequestException if there is an error while making the request.
         """
         await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}",
@@ -245,6 +269,9 @@ class Client:
             url: The full URL to make the request against.
             method: The HTTP method to use (GET, POST, etc.).
             expected_response_code: The response code that indicates success.
+
+        Raises:
+            RequestException if there is an error while making the request.
 
         Returns:
             The response body from the request as a string.
