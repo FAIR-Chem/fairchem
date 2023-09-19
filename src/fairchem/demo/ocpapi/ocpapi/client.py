@@ -39,7 +39,7 @@ class Client:
         """
         # Normalize the base URL so that all methods below can assume it
         # does not end in a '/' character
-        self._base_url = base_url.rstrip("/")
+        self._base_url: str = base_url.rstrip("/")
 
     async def get_bulks(self) -> Bulks:
         """
@@ -51,7 +51,7 @@ class Client:
         Returns:
             Bulks
         """
-        response = await self._run_request(
+        response: str = await self._run_request(
             url=f"{self._base_url}/bulks",
             method="GET",
             expected_response_code=200,
@@ -68,7 +68,7 @@ class Client:
         Returns:
             Adsorbates
         """
-        response = await self._run_request(
+        response: str = await self._run_request(
             url=f"{self._base_url}/adsorbates",
             method="GET",
             expected_response_code=200,
@@ -89,7 +89,7 @@ class Client:
         Returns:
             Slabs
         """
-        response = await self._run_request(
+        response: str = await self._run_request(
             url=f"{self._base_url}/slabs",
             method="POST",
             expected_response_code=200,
@@ -118,7 +118,7 @@ class Client:
         Returns:
             AdsorbateSlabConfigs
         """
-        response = await self._run_request(
+        response: str = await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-configs",
             method="POST",
             expected_response_code=200,
@@ -167,7 +167,7 @@ class Client:
         Returns:
             AdsorbateSlabRelaxationsSystem
         """
-        response = await self._run_request(
+        response: str = await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-relaxations",
             method="POST",
             expected_response_code=200,
@@ -200,7 +200,7 @@ class Client:
         Returns:
             AdsorbateSlabRelaxationsRequest
         """
-        response = await self._run_request(
+        response: str = await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}",
             method="GET",
             expected_response_code=200,
@@ -234,7 +234,7 @@ class Client:
             params["field"] = fields
         if config_ids:
             params["config_id"] = config_ids
-        response = await self._run_request(
+        response: str = await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}/configs",
             method="GET",
             expected_response_code=200,
@@ -279,7 +279,7 @@ class Client:
 
         # Make the request
         try:
-            response = await asyncio.to_thread(
+            response: requests.Response = await asyncio.to_thread(
                 requests.request,
                 method=method,
                 url=url,
