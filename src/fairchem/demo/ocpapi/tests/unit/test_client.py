@@ -1,10 +1,11 @@
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any, Dict, List, Optional, Union
 from unittest import IsolatedAsyncioTestCase
 
 import responses
 
-from ocpapi.client import Client, RequestException
+from ocpapi.client import Client, RateLimitExceededException, RequestException
 from ocpapi.models import (
     Adsorbates,
     AdsorbateSlabConfigs,
@@ -47,14 +48,48 @@ class TestClient(IsolatedAsyncioTestCase):
             base_url: str
             response_body: Union[str, Exception]
             response_code: int
+            response_headers: Optional[Dict[str, str]] = None
             expected: Optional[_DataModel] = None
             expected_request_params: Optional[Dict[str, Any]] = None
             expected_request_body: Optional[Dict[str, Any]] = None
             expected_exception: Optional[Exception] = None
 
         test_cases: List[TestCase] = [
-            # If a non-200 response code is returned then an exception should
-            # be raised
+            # If a 429 response code is returned, then a rate limit exception
+            # should be raised
+            TestCase(
+                message="rate limit exceeded",
+                base_url="https://test_host/ocp",
+                response_body='{"message": "failed"}',
+                response_code=429,
+                response_headers={"Retry-After": "100"},
+                expected_request_params=expected_request_params,
+                expected_request_body=expected_request_body,
+                expected_exception=RateLimitExceededException(
+                    method=method,
+                    url=f"https://test_host/ocp/{route}",
+                    retry_after=timedelta(seconds=100),
+                ),
+            ),
+            # If a 429 response code is returned, then a rate limit exception
+            # should be raised - ensure correct handling when retry-after
+            # header is not present
+            TestCase(
+                message="rate limit exceeded",
+                base_url="https://test_host/ocp",
+                response_body='{"message": "failed"}',
+                response_code=429,
+                response_headers={},
+                expected_request_params=expected_request_params,
+                expected_request_body=expected_request_body,
+                expected_exception=RateLimitExceededException(
+                    method=method,
+                    url=f"https://test_host/ocp/{route}",
+                    retry_after=None,
+                ),
+            ),
+            # If another unexpected response code is returned then an exception
+            # should be raised
             TestCase(
                 message="non-200 response code",
                 base_url="https://test_host/ocp",
@@ -126,6 +161,7 @@ class TestClient(IsolatedAsyncioTestCase):
                         method,
                         f"{case.base_url}/{route}",
                         body=case.response_body,
+                        headers=case.response_headers,
                         status=case.response_code,
                         match=match,
                     )
@@ -141,8 +177,8 @@ class TestClient(IsolatedAsyncioTestCase):
                         with self.assertRaises(type(case.expected_exception)) as ex:
                             await request_coro
                         self.assertEqual(
-                            str(case.expected_exception),
-                            str(ex.exception),
+                            vars(case.expected_exception),
+                            vars(ex.exception),
                         )
 
                     # If an exception is not expected, then make sure the
