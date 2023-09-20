@@ -5,7 +5,12 @@ from unittest import IsolatedAsyncioTestCase
 
 import responses
 
-from ocpapi.client import Client, RateLimitExceededException, RequestException
+from ocpapi.client import (
+    Client,
+    NonRetryableRequestException,
+    RateLimitExceededException,
+    RequestException,
+)
 from ocpapi.models import (
     Adsorbates,
     AdsorbateSlabConfigs,
@@ -55,8 +60,8 @@ class TestClient(IsolatedAsyncioTestCase):
             expected_exception: Optional[Exception] = None
 
         test_cases: List[TestCase] = [
-            # If a 429 response code is returned, then a rate limit exception
-            # should be raised
+            # If a 429 response code is returned, then a
+            # RateLimitExceededException should be raised
             TestCase(
                 message="rate limit exceeded",
                 base_url="https://test_host/ocp",
@@ -71,11 +76,11 @@ class TestClient(IsolatedAsyncioTestCase):
                     retry_after=timedelta(seconds=100),
                 ),
             ),
-            # If a 429 response code is returned, then a rate limit exception
-            # should be raised - ensure correct handling when retry-after
-            # header is not present
+            # If a 429 response code is returned, then a
+            # RateLimitExceededException should be raised - ensure correct
+            # handling when retry-after header is not present
             TestCase(
-                message="rate limit exceeded",
+                message="rate limit exceeded, no retry-after",
                 base_url="https://test_host/ocp",
                 response_body='{"message": "failed"}',
                 response_code=429,
@@ -86,6 +91,25 @@ class TestClient(IsolatedAsyncioTestCase):
                     method=method,
                     url=f"https://test_host/ocp/{route}",
                     retry_after=None,
+                ),
+            ),
+            # If a 400-level response code is returned then a
+            # NonRetryableRequestException should be raised
+            TestCase(
+                message="non-retryable error",
+                base_url="https://test_host/ocp",
+                response_body='{"message": "failed"}',
+                response_code=404,
+                response_headers={},
+                expected_request_params=expected_request_params,
+                expected_request_body=expected_request_body,
+                expected_exception=NonRetryableRequestException(
+                    method=method,
+                    url=f"https://test_host/ocp/{route}",
+                    cause=(
+                        "Unexpected response code: 404. "
+                        'Response body: {"message": "failed"}'
+                    ),
                 ),
             ),
             # If another unexpected response code is returned then an exception
@@ -101,8 +125,8 @@ class TestClient(IsolatedAsyncioTestCase):
                     method=method,
                     url=f"https://test_host/ocp/{route}",
                     cause=(
-                        "Expected response code 200; got 500. "
-                        'Body = {"message": "failed"}'
+                        "Unexpected response code: 500. "
+                        'Response body: {"message": "failed"}'
                     ),
                 ),
             ),
@@ -179,6 +203,10 @@ class TestClient(IsolatedAsyncioTestCase):
                         self.assertEqual(
                             vars(case.expected_exception),
                             vars(ex.exception),
+                        )
+                        self.assertEqual(
+                            str(case.expected_exception),
+                            str(ex.exception),
                         )
 
                     # If an exception is not expected, then make sure the
