@@ -3,23 +3,13 @@ from dataclasses import dataclass
 from typing import Any, Final, Generic, List, Optional, Type, TypeVar
 from unittest import TestCase as UnitTestCase
 
-from ocpapi.models import (
-    Adsorbates,
-    AdsorbateSlabConfigs,
-    AdsorbateSlabRelaxationResult,
-    AdsorbateSlabRelaxationsRequest,
-    AdsorbateSlabRelaxationsResults,
-    AdsorbateSlabRelaxationsSystem,
-    Atoms,
-    Bulk,
-    Bulks,
-    Model,
-    Slab,
-    SlabMetadata,
-    Slabs,
-    Status,
-    _DataModel,
-)
+from ocpapi import (Adsorbates, AdsorbateSlabConfigs,
+                    AdsorbateSlabRelaxationResult,
+                    AdsorbateSlabRelaxationsRequest,
+                    AdsorbateSlabRelaxationsResults,
+                    AdsorbateSlabRelaxationsSystem, Atoms, Bulk, Bulks, Model,
+                    Slab, SlabMetadata, Slabs, Status)
+from ocpapi.models import _DataModel
 
 T = TypeVar("T", bound=_DataModel)
 

@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import requests
 
-from ocpapi.models import (
+from .models import (
     Adsorbates,
     AdsorbateSlabConfigs,
     AdsorbateSlabRelaxationsRequest,
