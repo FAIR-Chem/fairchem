@@ -5,13 +5,7 @@ from unittest import IsolatedAsyncioTestCase
 
 import responses
 
-from ocpapi.client import (
-    Client,
-    NonRetryableRequestException,
-    RateLimitExceededException,
-    RequestException,
-)
-from ocpapi.models import (
+from ocpapi import (
     Adsorbates,
     AdsorbateSlabConfigs,
     AdsorbateSlabRelaxationResult,
@@ -21,13 +15,17 @@ from ocpapi.models import (
     Atoms,
     Bulk,
     Bulks,
+    Client,
     Model,
+    NonRetryableRequestException,
+    RateLimitExceededException,
+    RequestException,
     Slab,
     SlabMetadata,
     Slabs,
     Status,
-    _DataModel,
 )
+from ocpapi.models import _DataModel
 
 
 class TestClient(IsolatedAsyncioTestCase):

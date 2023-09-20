@@ -3,8 +3,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from unittest import IsolatedAsyncioTestCase, mock
 
-from ocpapi.client import Client
-from ocpapi.models import Atoms, Bulk, Model, Slab, SlabMetadata, Status
+from ocpapi import Atoms, Bulk, Client, Model, Slab, SlabMetadata, Status
 
 log = logging.getLogger(__name__)
 
