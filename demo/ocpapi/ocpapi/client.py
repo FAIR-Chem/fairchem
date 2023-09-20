@@ -35,6 +35,23 @@ class RequestException(Exception):
         super().__init__(f"Request to {method} {url} failed. {cause}")
 
 
+class NonRetryableRequestException(RequestException):
+    """
+    Exception raised when an API call is rejected for a reason that will
+    not succeed on retry. For example, this might include a malformed request
+    or action that is not allowed.
+    """
+
+    def __init__(self, method: str, url: str, cause: str) -> None:
+        """
+        Args:
+            method: The type of the method being run (POST, GET, etc.).
+            url: The full URL that was called.
+            cause: A description of the failure.
+        """
+        super().__init__(method=method, url=url, cause=cause)
+
+
 class RateLimitExceededException(RequestException):
     """
     Exception raised when an API call is rejected because a rate limit has
@@ -86,7 +103,10 @@ class Client:
         Raises:
             RateLimitExceededException if the call was rejected because a
                 server side rate limit was breached.
-            RequestException if there is an error while making the request.
+            NonRetryableRequestException if the call was rejected and a retry
+                is not expected to succeed.
+            RequestException for all other errors when making the request; it
+                possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             Bulks
@@ -94,7 +114,6 @@ class Client:
         response: str = await self._run_request(
             url=f"{self._base_url}/bulks",
             method="GET",
-            expected_response_code=200,
         )
         return Bulks.from_json(response)
 
@@ -105,7 +124,10 @@ class Client:
         Raises:
             RateLimitExceededException if the call was rejected because a
                 server side rate limit was breached.
-            RequestException if there is an error while making the request.
+            NonRetryableRequestException if the call was rejected and a retry
+                is not expected to succeed.
+            RequestException for all other errors when making the request; it
+                possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             Adsorbates
@@ -113,7 +135,6 @@ class Client:
         response: str = await self._run_request(
             url=f"{self._base_url}/adsorbates",
             method="GET",
-            expected_response_code=200,
         )
         return Adsorbates.from_json(response)
 
@@ -128,7 +149,10 @@ class Client:
         Raises:
             RateLimitExceededException if the call was rejected because a
                 server side rate limit was breached.
-            RequestException if there is an error while making the request.
+            NonRetryableRequestException if the call was rejected and a retry
+                is not expected to succeed.
+            RequestException for all other errors when making the request; it
+                possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             Slabs
@@ -136,7 +160,6 @@ class Client:
         response: str = await self._run_request(
             url=f"{self._base_url}/slabs",
             method="POST",
-            expected_response_code=200,
             data=json.dumps(
                 {"bulk_src_id": bulk.src_id if isinstance(bulk, Bulk) else bulk}
             ),
@@ -159,7 +182,10 @@ class Client:
         Raises:
             RateLimitExceededException if the call was rejected because a
                 server side rate limit was breached.
-            RequestException if there is an error while making the request.
+            NonRetryableRequestException if the call was rejected and a retry
+                is not expected to succeed.
+            RequestException for all other errors when making the request; it
+                possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             AdsorbateSlabConfigs
@@ -167,7 +193,6 @@ class Client:
         response: str = await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-configs",
             method="POST",
-            expected_response_code=200,
             data=json.dumps(
                 {
                     "adsorbate": adsorbate,
@@ -210,7 +235,10 @@ class Client:
         Raises:
             RateLimitExceededException if the call was rejected because a
                 server side rate limit was breached.
-            RequestException if there is an error while making the request.
+            NonRetryableRequestException if the call was rejected and a retry
+                is not expected to succeed.
+            RequestException for all other errors when making the request; it
+                possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             AdsorbateSlabRelaxationsSystem
@@ -218,7 +246,6 @@ class Client:
         response: str = await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-relaxations",
             method="POST",
-            expected_response_code=200,
             data=json.dumps(
                 {
                     "adsorbate": adsorbate,
@@ -245,7 +272,10 @@ class Client:
         Raises:
             RateLimitExceededException if the call was rejected because a
                 server side rate limit was breached.
-            RequestException if there is an error while making the request.
+            NonRetryableRequestException if the call was rejected and a retry
+                is not expected to succeed.
+            RequestException for all other errors when making the request; it
+                possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             AdsorbateSlabRelaxationsRequest
@@ -253,7 +283,6 @@ class Client:
         response: str = await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}",
             method="GET",
-            expected_response_code=200,
         )
         return AdsorbateSlabRelaxationsRequest.from_json(response)
 
@@ -276,7 +305,10 @@ class Client:
         Raises:
             RateLimitExceededException if the call was rejected because a
                 server side rate limit was breached.
-            RequestException if there is an error while making the request.
+            NonRetryableRequestException if the call was rejected and a retry
+                is not expected to succeed.
+            RequestException for all other errors when making the request; it
+                possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             AdsorbateSlabRelaxationsResults
@@ -289,7 +321,6 @@ class Client:
         response: str = await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}/configs",
             method="GET",
-            expected_response_code=200,
             params=params,
         )
         return AdsorbateSlabRelaxationsResults.from_json(response)
@@ -304,17 +335,17 @@ class Client:
         Raises:
             RateLimitExceededException if the call was rejected because a
                 server side rate limit was breached.
-            RequestException if there is an error while making the request.
+            NonRetryableRequestException if the call was rejected and a retry
+                is not expected to succeed.
+            RequestException for all other errors when making the request; it
+                possible, though not guaranteed, that a retry could succeed.
         """
         await self._run_request(
             url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}",
             method="DELETE",
-            expected_response_code=200,
         )
 
-    async def _run_request(
-        self, url: str, method: str, expected_response_code: int, **kwargs
-    ) -> str:
+    async def _run_request(self, url: str, method: str, **kwargs) -> str:
         """
         Helper method that runs the input request on a thread so that
         it doesn't block the event loop on the calling thread.
@@ -322,12 +353,14 @@ class Client:
         Args:
             url: The full URL to make the request against.
             method: The HTTP method to use (GET, POST, etc.).
-            expected_response_code: The response code that indicates success.
 
         Raises:
             RateLimitExceededException if the call was rejected because a
                 server side rate limit was breached.
-            RequestException if there is an error while making the request.
+            NonRetryableRequestException if the call was rejected and a retry
+                is not expected to succeed.
+            RequestException for all other errors when making the request; it
+                possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             The response body from the request as a string.
@@ -348,26 +381,37 @@ class Client:
                 cause=f"Exception while making request: {type(e).__name__}: {e}",
             ) from e
 
-        # Exceeded server side rate limit
-        if response.status_code == 429:
-            retry_after: Optional[str] = response.headers.get("Retry-After", None)
-            raise RateLimitExceededException(
-                method=method,
-                url=url,
-                retry_after=timedelta(seconds=float(retry_after))
-                if retry_after is not None
-                else None,
-            )
-
         # Check the response code
-        if response.status_code != expected_response_code:
+        if response.status_code >= 300:
+            # Exceeded server side rate limit
+            if response.status_code == 429:
+                retry_after: Optional[str] = response.headers.get("Retry-After", None)
+                raise RateLimitExceededException(
+                    method=method,
+                    url=url,
+                    retry_after=timedelta(seconds=float(retry_after))
+                    if retry_after is not None
+                    else None,
+                )
+
+            # Treat all other 400-level response codes as ones that are
+            # unlikely to succeed on retry
+            cause: str = (
+                f"Unexpected response code: {response.status_code}. "
+                f"Response body: {response.text}"
+            )
+            if response.status_code >= 400 and response.status_code < 500:
+                raise NonRetryableRequestException(
+                    method=method,
+                    url=url,
+                    cause=cause,
+                )
+
+            # Treat all other errors as ones that might succeed on retry
             raise RequestException(
                 method=method,
                 url=url,
-                cause=(
-                    f"Expected response code {expected_response_code}; "
-                    f"got {response.status_code}. Body = {response.text}"
-                ),
+                cause=cause,
             )
 
         return response.text
