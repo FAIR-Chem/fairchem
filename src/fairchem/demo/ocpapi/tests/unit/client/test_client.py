@@ -5,7 +5,7 @@ from unittest import IsolatedAsyncioTestCase
 
 import responses
 
-from ocpapi import (
+from ocpapi.client import (
     Adsorbates,
     AdsorbateSlabConfigs,
     AdsorbateSlabRelaxationResult,
@@ -25,7 +25,7 @@ from ocpapi import (
     Slabs,
     Status,
 )
-from ocpapi.models import _DataModel
+from ocpapi.client.models import _DataModel
 
 
 class TestClient(IsolatedAsyncioTestCase):
