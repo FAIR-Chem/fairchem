@@ -21,7 +21,7 @@ from ocpapi.client import (
 )
 
 from .context import set_context_var
-from .retry import NO_LIMIT, retry_api_calls
+from .retry import NO_LIMIT, RateLimitLogging, retry_api_calls
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ def _setup_log_record_factory() -> None:
             m = slab.metadata
             top = "t" if m.top else "b"
             millers = f"({m.millers[0]},{m.millers[1]},{m.millers[2]})"
-            parts.append(f"[{millers}/{round(m.shift, 3)},{top}]")
+            parts.append(f"[{millers}/{round(m.shift, 3):.3f},{top}]")
 
         # Prepend context to the current message
         record = old_factory(*args, **kwargs)
@@ -185,7 +185,13 @@ async def _get_absorbate_configs_on_slab(
 # Retry forever since we can't know how many jobs are being submitted along
 # with this one (rate limits are enforced on the API server and not limited
 # to a specific instance of this module).
-@retry_api_calls(max_attempts=NO_LIMIT)
+@retry_api_calls(
+    max_attempts=NO_LIMIT,
+    rate_limit_logging=RateLimitLogging(
+        logger=log,
+        action="submit relaxations",
+    ),
+)
 async def _submit_relaxations(
     client: Client,
     adsorbate: str,
@@ -224,6 +230,59 @@ async def _submit_relaxations(
         )
     )
     return system.system_id
+
+
+async def _submit_relaxations_with_logging(
+    client: Client,
+    adsorbate: str,
+    adsorbate_configs: List[Atoms],
+    bulk: Bulk,
+    slab: Slab,
+    model: Model,
+    ephemeral: bool,
+) -> str:
+    """
+    Wrapper around _submit_relaxations that adds periodic logging in case
+    calls to submit relaxations are being rate limited.
+    """
+
+    # Function that will log periodically while attempts to submit relaxations
+    # are being retried
+    async def log_waiting() -> None:
+        while True:
+            await asyncio.sleep(30)
+            log.info(
+                "Still waiting for relaxations to be accepted, possibly "
+                "because calls are being rate limited"
+            )
+
+    # Run until relaxations are accepted
+    submit_task = asyncio.create_task(
+        _submit_relaxations(
+            client=client,
+            adsorbate=adsorbate,
+            adsorbate_configs=adsorbate_configs,
+            bulk=bulk,
+            slab=slab,
+            model=model,
+            ephemeral=ephemeral,
+        )
+    )
+    _, pending = await asyncio.wait(
+        [
+            asyncio.create_task(log_waiting()),
+            submit_task,
+        ],
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+
+    # Cancel pending tasks (this should just be the task to log that waiting)
+    for task in pending:
+        with suppress(asyncio.CancelledError):
+            task.cancel()
+            await task
+
+    return submit_task.result()
 
 
 @retry_api_calls(max_attempts=3)
@@ -398,7 +457,7 @@ async def _find_binding_sites_on_slab(
             f"Submitting relaxations for {len(adsorbate_configs)} "
             "adsorbate placements"
         )
-        system_id: str = await _submit_relaxations(
+        system_id: str = await _submit_relaxations_with_logging(
             client=client,
             adsorbate=adsorbate,
             adsorbate_configs=adsorbate_configs,
@@ -496,8 +555,8 @@ async def find_adsorbate_binding_sites(
         _, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
 
         # There shouldn't be any pending tasks since we wait for all coroutines
-        # to finish above. However, make sure they are cancelled in case there is
-        # some edge case in which tasks are still running.
+        # to finish above. However, make sure they are cancelled in case there
+        # is some edge case in which tasks are still running.
         for t in pending:
             log.warning("Cancelling running task")
             with suppress(asyncio.CancelledError):
