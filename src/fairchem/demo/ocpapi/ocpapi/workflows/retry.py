@@ -1,4 +1,6 @@
-from typing import Any, Literal, Union
+import logging
+from dataclasses import dataclass
+from typing import Any, Literal, Optional, Union
 
 from tenacity import RetryCallState
 from tenacity import retry as tenacity_retry
@@ -19,6 +21,20 @@ from ocpapi.client import (
 )
 
 
+@dataclass
+class RateLimitLogging:
+    """
+    Controls logging when rate limits are hit.
+
+    Attributes:
+        logger: The logger to use.
+        action: A short description of the action being attempted.
+    """
+
+    logger: logging.Logger
+    action: str
+
+
 class _wait_check_retry_after(wait_base):
     """
     Tenacity wait strategy that first checks whether RateLimitExceededException
@@ -26,13 +42,20 @@ class _wait_check_retry_after(wait_base):
     amount of time. Otherwise, fall back to the provided default strategy.
     """
 
-    def __init__(self, default_wait: wait_base) -> None:
+    def __init__(
+        self,
+        default_wait: wait_base,
+        rate_limit_logging: Optional[RateLimitLogging] = None,
+    ) -> None:
         """
         Args:
             default_wait: If a retry-after value was not provided in an API
                 response, use this wait method.
+            rate_limit_logging: If not None, log statements will be generated
+                using this configuration when a rate limit is hit.
         """
         self._default_wait = default_wait
+        self._rate_limit_logging = rate_limit_logging
 
     def __call__(self, retry_state: RetryCallState) -> float:
         """
@@ -42,7 +65,14 @@ class _wait_check_retry_after(wait_base):
         exception = retry_state.outcome.exception()
         if isinstance(exception, RateLimitExceededException):
             if exception.retry_after is not None:
-                return exception.retry_after.total_seconds()
+                # Log information about the rate limit if needed
+                wait_for: float = exception.retry_after.total_seconds()
+                if (l := self._rate_limit_logging) is not None:
+                    l.logger.info(
+                        f"Request to {l.action} was rate limited with "
+                        f"retry-after = {wait_for} seconds"
+                    )
+                return wait_for
         return self._default_wait(retry_state)
 
 
@@ -50,13 +80,18 @@ NoLimitType = Literal[0]
 NO_LIMIT: NoLimitType = 0
 
 
-def retry_api_calls(max_attempts: Union[int, NoLimitType] = 3) -> Any:
+def retry_api_calls(
+    max_attempts: Union[int, NoLimitType] = 3,
+    rate_limit_logging: Optional[RateLimitLogging] = None,
+) -> Any:
     """
     Decorator with sensible defaults for retrying calls to the OCP API.
 
     Args:
         max_attempts: The maximum number of calls to make. If NO_LIMIT,
             retries will be made forever.
+        rate_limit_logging: If not None, log statements will be generated
+            using this configuration when a rate limit is hit.
     """
     return tenacity_retry(
         # Retry forever if no limit was applied. Otherwise stop after the
@@ -67,7 +102,8 @@ def retry_api_calls(max_attempts: Union[int, NoLimitType] = 3) -> Any:
         # If the API returns that a rate limit was breached and gives a
         # retry-after value, use that. Otherwise wait 2 seconds. In all
         # cases, add a random jitter.
-        wait=_wait_check_retry_after(wait_fixed(2)) + wait_random(0, 1),
+        wait=_wait_check_retry_after(wait_fixed(2), rate_limit_logging)
+        + wait_random(0, 1),
         # Retry any API exceptions unless they are explicitly marked as
         # not retryable.
         retry=retry_if_exception_type(RequestException)

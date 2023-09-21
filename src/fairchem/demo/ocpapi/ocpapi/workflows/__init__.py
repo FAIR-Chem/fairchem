@@ -6,4 +6,4 @@ from .adsorbates import (  # noqa
     get_adsorbate_relaxation_results,
     wait_for_adsorbate_relaxations,
 )
-from .retry import NO_LIMIT, retry_api_calls  # noqa
+from .retry import NO_LIMIT, RateLimitLogging, retry_api_calls  # noqa
