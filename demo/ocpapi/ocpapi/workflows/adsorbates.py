@@ -1,0 +1,479 @@
+import asyncio
+from contextlib import suppress
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
+from ocpapi import Client
+from ocpapi import (
+    Adsorbates,
+    AdsorbateSlabConfigs,
+    AdsorbateSlabRelaxationsSystem,
+    AdsorbateSlabRelaxationResult,
+    AdsorbateSlabRelaxationsResults,
+    Atoms,
+    Model,
+    Slab,
+    Bulk,
+    Bulks,
+    Slabs,
+    Status,
+)
+from .retry import retry_api_calls, NO_LIMIT
+import logging
+
+log = logging.getLogger(__name__)
+
+
+DEFAULT_CLIENT: Client = Client()
+
+
+class UnsupportedBulkException(Exception):
+    """
+    Exception raised when a bulk material is not supported in the API.
+    """
+
+    def __init__(self, bulk: str) -> None:
+        """
+        Args:
+            bulk: The bulk structure that was requested.
+        """
+        super().__init__(f"Bulk {bulk} is not supported")
+
+
+class UnsupportedAdsorbateException(Exception):
+    """
+    Exception raised when an adsorbate is not supported in the API.
+    """
+
+    def __init__(self, adsorbate: str) -> None:
+        """
+        Args:
+            adsorbate: The adsorbate that was requested.
+        """
+        super().__init__(f"Adsorbate {adsorbate} is not supported")
+
+
+@retry_api_calls(max_attempts=3)
+async def _get_bulk_if_supported(client: Client, bulk: str) -> Bulk:
+    """
+    Returns the object from the input bulk if it is supported in the API.
+
+    Args:
+        client: The client to use when making requests to the API.
+        bulk: The bulk to fetch.
+
+    Raises:
+        UnsupportedBulkException if the requested bulk is not supported.
+
+    Returns:
+        Bulk instance for the input type.
+    """
+    bulks: Bulks = await client.get_bulks()
+    for b in bulks.bulks_supported:
+        if b.src_id == bulk:
+            return b
+    raise UnsupportedBulkException(bulk)
+
+
+@retry_api_calls(max_attempts=3)
+async def _ensure_adsorbate_supported(client: Client, adsorbate: str) -> None:
+    """
+    Checks that the input adsorbate is supported in the API.
+
+    Args:
+        client: The client to use when making requests to the API.
+        adsorbate: The adsorbate to check.
+
+    Raises:
+        UnsupportedAdsorbateException if the adsorbate is not supported.
+    """
+    adsorbates: Adsorbates = await client.get_adsorbates()
+    if adsorbate not in adsorbates.adsorbates_supported:
+        raise UnsupportedAdsorbateException(adsorbate)
+
+
+@retry_api_calls(max_attempts=3)
+async def _get_slabs(
+    client: Client,
+    bulk: Bulk,
+    slab_filter: Optional[Callable[[Slab], bool]],
+) -> List[Slab]:
+    """
+    Enumerates surfaces for the input bulk material.
+
+    Args:
+        client: The client to use when making requests to the API.
+        bulk: The bulk material from which slabs will be generated.
+        slab_filter: If not None, a function that filters which generated
+            slabs will be considered when placing adsorbates.
+    """
+    slabs: Slabs = await client.get_slabs(bulk)
+    slabs_list: List[slabs] = slabs.slabs
+    if slab_filter is not None:
+        slabs_list = [s for s in slabs_list if slab_filter(s)]
+    return slabs_list
+
+
+@retry_api_calls(max_attempts=3)
+async def _get_absorbate_configs_on_slab(
+    client: Client,
+    adsorbate: str,
+    slab: Slab,
+) -> List[Atoms]:
+    """
+    Generate initial guesses at adsorbate binding sites on the input slab.
+
+    Args:
+        client: The client to use when making API calls.
+        adsorbate: The SMILES string of the adsorbate to place.
+        slab: The slab on which the adsorbate should be placed.
+
+    Returns:
+        List of Atoms objects, each with the positions of the adsorbate atoms
+        on one of the candidate binding sites.
+    """
+    configs: AdsorbateSlabConfigs = await client.get_adsorbate_slab_configs(
+        adsorbate=adsorbate,
+        slab=slab,
+    )
+    return configs.adsorbate_configs
+
+
+# The API behind Client.submit_adsorbate_slab_relaxations() is rate limited
+# and this decorator will handle retrying when that rate limit is breached.
+# Retry forever since we can't know how many jobs are being submitted along
+# with this one (rate limits are enforced on the API server and not limited
+# to a specific instance of this module).
+@retry_api_calls(max_attempts=NO_LIMIT)
+async def _submit_relaxations(
+    client: Client,
+    adsorbate: str,
+    adsorbate_configs: List[Atoms],
+    bulk: Bulk,
+    slab: Slab,
+    model: Model,
+    ephemeral: bool,
+) -> str:
+    """
+    Start relaxations for each of the input adsorbate configurations on the
+    input slab.
+
+    Args:
+        client: The client to use when making API calls.
+        adsorbate: The SMILES string of the adsorbate to place.
+        adsorbate_configs: Positions of the adsorbate on the slab. Each
+            will be relaxed independently.
+        bulk: The bulk material from which the slab was generated.
+        slab: The slab that should be searched for adsorbate binding sites.
+        model: The model to use when evaluating forces and energies.
+        ephemeral: Whether the relaxations should be marked as ephemeral.
+
+    Returns:
+        The system ID of the relaxation run, which can be used to fetch results
+        as they become available.
+    """
+    system: AdsorbateSlabRelaxationsSystem = (
+        await client.submit_adsorbate_slab_relaxations(
+            adsorbate=adsorbate,
+            adsorbate_configs=adsorbate_configs,
+            bulk=bulk,
+            slab=slab,
+            model=model,
+            ephemeral=ephemeral,
+        )
+    )
+    return system.system_id
+
+
+@retry_api_calls(max_attempts=3)
+async def get_adsorbate_relaxation_results(
+    client: Client,
+    system_id: str,
+    config_ids: Optional[List[int]] = None,
+    fields: Optional[List[str]] = None,
+) -> List[AdsorbateSlabRelaxationResult]:
+    """
+    Wrapper around Client.get_adsorbate_slab_relaxations_results() that
+    handles retries, including re-fetching individual configurations that
+    are initially returned with an "omitted" status.
+
+    Args:
+        client: The client to use when making API calls.
+        system_id: The system ID of the relaxations.
+        config_ids: If defined and not empty, a subset of configurations
+            to fetch. Otherwise all configurations are returned.
+        fields: If defined and not empty, a subset of fields in each
+            configuration to fetch. Otherwise all fields are returned.
+
+    Returns:
+        List of relaxation results, one for each adsorbate configuration in
+        the system.
+    """
+    results: AdsorbateSlabRelaxationsResults = (
+        await client.get_adsorbate_slab_relaxations_results(
+            system_id=system_id,
+            config_ids=config_ids,
+            fields=fields,
+        )
+    )
+
+    # Build the list of (1) results that were successfully fetched and
+    # (2) results that were omitted by the API server. The latter can
+    # happen when the response generated by the server becomes large and
+    # it chooses to omit some results in order to avoid transferring an
+    # exceptionally-large amount of data.
+    fetched: List[AdsorbateSlabRelaxationResult] = []
+    omitted_config_ids: List[int] = []
+    for c in results.configs:
+        if c.status == Status.OMITTED:
+            omitted_config_ids.append(c.config_id)
+        else:
+            fetched.append(c)
+
+    # If any results were omitted, fetch them before returning
+    if omitted_config_ids:
+        fetched.extend(
+            await get_adsorbate_relaxation_results(
+                client=client,
+                system_id=system_id,
+                config_ids=omitted_config_ids,
+                fields=fields,
+            )
+        )
+
+    return fetched
+
+
+async def wait_for_adsorbate_relaxations(
+    client: Client,
+    system_id: str,
+    check_immediately: bool = False,
+    slow_interval_sec: float = 30,
+    fast_interval_sec: float = 10,
+) -> Dict[int, Status]:
+    """
+    Blocks until all relaxations in the input system have finished, whether
+    successfully or not.
+
+    Relaxations are queued in the API, waiting until machines are ready to
+    run them. Once started, they can take 1-2 minutes to finish. This method
+    initially sleeps "slow_interval_sec" seconds between each check for any
+    relaxations having finished. Once at least one result is ready, subsequent
+    sleeps are for "fast_interval_sec" seconds.
+
+    Args:
+        client: The client to use when making API calls.
+        system_id: The ID of the system for which relaxations are running.
+        check_immediately: If False (default), sleep before the first check
+            for relaxations having finished. If True, check whether relaxations
+            have finished immediately on entering this function.
+        slow_interval_sec: The number of seconds to wait between each check
+            while all are still running.
+        fast_interval_sec: The number of seconds to wait between each check
+            when at least one relaxation has finished in the system.
+
+    Returns:
+        Map of config IDs in the system to their terminal status.
+    """
+
+    # First wait if needed
+    wait_for_sec: float = slow_interval_sec
+    if not check_immediately:
+        log.info(
+            f"Sleeping for {wait_for_sec} seconds before checking whether "
+            "relaxations have finished"
+        )
+        await asyncio.sleep(wait_for_sec)
+
+    # Run until all results are available
+    while True:
+        # Get the current results. Only fetch the energy; this hits an index
+        # that will return results more quickly.
+        results: List[
+            AdsorbateSlabRelaxationResult
+        ] = await get_adsorbate_relaxation_results(
+            client=client,
+            system_id=system_id,
+            fields=["energy"],
+        )
+
+        # Return if all of the relaxations have finished
+        unique_statuses: Set[Status] = set(r.status for r in results)
+        if Status.NOT_AVAILABLE not in unique_statuses:
+            log.info("All relaxations have finished")
+            return {r.config_id: r.status for r in results}
+
+        # Shorten the wait time if any relaxations have finished. not_available
+        # means that a relaxation is still running, so the presence of any
+        # other statuses means that some have finished.
+        if unique_statuses - {Status.NOT_AVAILABLE}:
+            wait_for_sec = fast_interval_sec
+
+        # Wait until the next scheduled check
+        num_finished: int = len(
+            [r for r in results if r.status != Status.NOT_AVAILABLE]
+        )
+        log.info(
+            f"{num_finished} of {len(results)} relaxations have finished; "
+            f"sleeping for {wait_for_sec} seconds before checking again"
+        )
+        await asyncio.sleep(wait_for_sec)
+
+
+async def _find_binding_sites_on_slab(
+    client: Client,
+    adsorbate: str,
+    bulk: Bulk,
+    slab: Slab,
+    model: Model,
+    ephemeral: bool,
+) -> None:
+    """
+    Search for adsorbate binding sites on the input slab.
+
+    Args:
+        client: The client to use when making API calls.
+        adsorbate: The SMILES string of the adsorbate to place.
+        bulk: The bulk material from which the slab was generated.
+        slab: The slab that should be searched for adsorbate binding sites.
+        model: The model to use when evaluating forces and energies.
+        ephemeral: Whether relaxations should be marked as ephemeral.
+    """
+
+    # Enumerate candidate binding sites
+    log.info("Generating adsorbate placements")
+    adsorbate_configs: List[Atoms] = await _get_absorbate_configs_on_slab(
+        client=client,
+        adsorbate=adsorbate,
+        slab=slab,
+    )
+
+    # Start relaxations for all of the adsorbate placements
+    log.info("Submitting relaxations of all adsorbate placements")
+    system_id: str = await _submit_relaxations(
+        client=client,
+        adsorbate=adsorbate,
+        adsorbate_configs=adsorbate_configs,
+        bulk=bulk,
+        slab=slab,
+        model=model,
+        ephemeral=ephemeral,
+    )
+    log.info(f"Relaxations running with system id {system_id}")
+
+    # Wait for all relaxations to finish
+    await wait_for_adsorbate_relaxations(
+        client=client,
+        system_id=system_id,
+    )
+
+
+async def find_adsorbate_binding_sites(
+    adsorbate: str,
+    bulk: str,
+    model: Model,
+    slab_filter: Optional[Callable[[Slab], bool]] = None,
+    client: Client = DEFAULT_CLIENT,
+    mark_relaxations_as_ephemeral: bool = False,
+) -> None:
+    """
+    Search for adsorbate binding sites on surfaces of a bulk material.
+    This executes the following steps:
+
+        1. Ensure that both the adsorbate and bulk are supported in the
+           OCP API.
+        2. Enumerate unique surfaces from the bulk material. If a
+           surface_filter function is provided, only those surfaces for
+           which the filter returns True will be kept.
+        3. Enumerate likely binding sites for the input adsorbate on each
+           of the generated surfaces.
+        4. Relax each generated surface+adsorbate structure by refining
+           atomic positions to minimize forces generated by the input model.
+
+    Args:
+        adsorbate: SMILES string describing the adsorbate to place.
+        bulk: The ID (typically Materials Project MP ID) of the bulk material
+            on which the adsorbate will be placed.
+        model: The type of the model to use when calculating forces during
+            relaxations.
+        slab_filter: If not None, a function that filters which generated
+            slabs will be considered when placing adsorbates.
+        client: The OCP API client to use.
+        mark_relaxations_as_ephemeral: Whether relaxations should have an
+            "ephemeral" flag attached to them, which allows them to be
+            deleted later.
+
+    Raises:
+        UnsupportedBulkException if the requested bulk is not supported.
+        UnsupportedAdsorbateException if the requested adsorbate is not
+            supported.
+    """
+
+    # Make sure the input adsorbate is supported in the API
+    log.info(f"Ensuring that adsorbate {adsorbate} is supported")
+    await _ensure_adsorbate_supported(
+        client=client,
+        adsorbate=adsorbate,
+    )
+
+    # Make sure the input bulk is supported in the API
+    log.info(f"Ensuring that bulk {bulk} is supported")
+    bulk_obj: Bulk = await _get_bulk_if_supported(
+        client=client,
+        bulk=bulk,
+    )
+
+    # Fetch all slabs for the bulk
+    log.info("Generating surfaces")
+    slabs: List[Slab] = await _get_slabs(
+        client=client,
+        bulk=bulk_obj,
+        slab_filter=slab_filter,
+    )
+
+    # Generate adsorbate placements and run relaxations
+    tasks: List[asyncio.Task] = [
+        asyncio.create_task(
+            _find_binding_sites_on_slab(
+                client=client,
+                adsorbate=adsorbate,
+                bulk=bulk_obj,
+                slab=slab,
+                model=model,
+                ephemeral=mark_relaxations_as_ephemeral,
+            )
+        )
+        for slab in slabs
+    ]
+    _, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+
+    # There shouldn't be any pending tasks since we wait for all coroutines
+    # to finish above. However, make sure they are cancelled in case there is
+    # some edge case in which tasks are still running.
+    for t in pending:
+        log.warning("Cancelling running task")
+        with suppress(asyncio.CancelledError):
+            t.cancel()
+            await t
+
+
+def filter_slabs_with_miller_indices(
+    allowed_miller_indices: Iterable[Tuple[int, int, int]],
+) -> Callable[[Slab], bool]:
+    """
+    Filter that can be passed to find_adsorbate_binding_sites that keeps
+    surfaces for which the Miller Indices match one set in the input list.
+
+    Args:
+        allowed_miller_indices: The list of Miller Indices that will be kept.
+            Any surfaces for which the Miller Indices are not in the input
+            list will be discarded.
+
+    Returns:
+        The function that filters surfaces, keeping only those in the input
+        list.
+    """
+    unique_millers: Set[Tuple[int, int, int]] = set(allowed_miller_indices)
+
+    def func(slab: Slab) -> bool:
+        return slab.metadata.millers in unique_millers
+
+    return func
