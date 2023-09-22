@@ -2,7 +2,10 @@ import asyncio
 import logging
 from contextlib import suppress
 from contextvars import ContextVar
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+
+from dataclasses_json import Undefined, dataclass_json
 
 from ocpapi.client import (
     Adsorbates,
@@ -92,6 +95,28 @@ class UnsupportedAdsorbateException(Exception):
             adsorbate: The adsorbate that was requested.
         """
         super().__init__(f"Adsorbate {adsorbate} is not supported")
+
+
+@dataclass_json(undefined=Undefined.INCLUDE)
+@dataclass(kw_only=True)
+class AdsorbateConfiguration(AdsorbateSlabRelaxationResult):
+    """
+    Extension of AdsorbateSlabRelaxationResult that includes information
+    about the inputs to the relaxation result.
+
+    Attributes:
+        adsorbate: The SMILES string of the adsorbate.
+        adsorbate_config: The configuration of the adsorbate before relaxation.
+        bulk: The bulk material that was being modeled.
+        slab: The slab on which the adsorbate was placed.
+        model: The type of the model that was run.
+    """
+
+    adsorbate: str
+    adsorbate_config: Atoms
+    bulk: Bulk
+    slab: Slab
+    model: Model
 
 
 @retry_api_calls(max_attempts=3)
@@ -378,10 +403,6 @@ async def wait_for_adsorbate_relaxations(
     # First wait if needed
     wait_for_sec: float = slow_interval_sec
     if not check_immediately:
-        log.info(
-            f"Sleeping for {wait_for_sec} seconds before checking whether "
-            "relaxations have finished"
-        )
         await asyncio.sleep(wait_for_sec)
 
     # Run until all results are available
@@ -412,10 +433,7 @@ async def wait_for_adsorbate_relaxations(
         num_finished: int = len(
             [r for r in results if r.status != Status.NOT_AVAILABLE]
         )
-        log.info(
-            f"{num_finished} of {len(results)} relaxations have finished; "
-            f"sleeping for {wait_for_sec} seconds before checking again"
-        )
+        log.info(f"{num_finished} of {len(results)} relaxations have finished")
         await asyncio.sleep(wait_for_sec)
 
 
@@ -426,7 +444,7 @@ async def _find_binding_sites_on_slab(
     slab: Slab,
     model: Model,
     ephemeral: bool,
-) -> None:
+) -> List[AdsorbateConfiguration]:
     """
     Search for adsorbate binding sites on the input slab.
 
@@ -437,6 +455,9 @@ async def _find_binding_sites_on_slab(
         slab: The slab that should be searched for adsorbate binding sites.
         model: The model to use when evaluating forces and energies.
         ephemeral: Whether relaxations should be marked as ephemeral.
+
+    Returns:
+        Details of each adsorbate placement, including its relaxed position.
     """
     with set_context_var(_CTX_SLAB, slab):
         # Enumerate candidate binding sites
@@ -474,6 +495,25 @@ async def _find_binding_sites_on_slab(
             system_id=system_id,
         )
 
+        # Fetch the final results
+        results: List[
+            AdsorbateSlabRelaxationResult
+        ] = await get_adsorbate_relaxation_results(
+            client=client,
+            system_id=system_id,
+        )
+        return [
+            AdsorbateConfiguration(
+                adsorbate=adsorbate,
+                adsorbate_config=initial_config,
+                bulk=bulk,
+                slab=slab,
+                model=model,
+                **vars(result),
+            )
+            for initial_config, result in zip(adsorbate_configs, results)
+        ]
+
 
 async def find_adsorbate_binding_sites(
     adsorbate: str,
@@ -482,7 +522,7 @@ async def find_adsorbate_binding_sites(
     slab_filter: Optional[Callable[[Slab], bool]] = None,
     client: Client = DEFAULT_CLIENT,
     mark_relaxations_as_ephemeral: bool = False,
-) -> None:
+) -> List[AdsorbateConfiguration]:
     """
     Search for adsorbate binding sites on surfaces of a bulk material.
     This executes the following steps:
@@ -509,6 +549,10 @@ async def find_adsorbate_binding_sites(
         mark_relaxations_as_ephemeral: Whether relaxations should have an
             "ephemeral" flag attached to them, which allows them to be
             deleted later.
+
+    Returns:
+        Details of each adsorbate binding site, including results of relaxing
+        to locally-optimized positions using the input model.
 
     Raises:
         UnsupportedBulkException if the requested bulk is not supported.
@@ -562,6 +606,11 @@ async def find_adsorbate_binding_sites(
             with suppress(asyncio.CancelledError):
                 t.cancel()
                 await t
+
+        results: List[AdsorbateConfiguration] = []
+        for t in tasks:
+            results.extend(t.result())
+        return results
 
 
 def filter_slabs_with_miller_indices(
