@@ -331,7 +331,7 @@ class AdsorbateSlabRelaxationResult(_DataModel):
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
-    energy_trajectory: Optional[float] = field(
+    energy_trajectory: Optional[List[float]] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
