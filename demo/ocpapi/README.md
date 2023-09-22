@@ -69,3 +69,25 @@ results = await find_adsorbate_binding_sites(
 
 This example adds the `slab_filter` field, which takes a function that selects out generated surfaces that meet some criteria; in this case, keeping only the surfaces that have Miller indices of (1, 1, 0) or (1, 1, 1).
 
+
+### Persisting results
+
+**Results should be saved whenever possible in order to avoid expensive recomputation.**
+
+Assuming `results` was generated with the `find_adsorbate_binding_sites` method used above, it contains a list of `AdsorbateConfiguration` objects. Those results can be saved to file with:
+
+```
+from ocpapi import AdsorbateConfiguration
+
+with open("results.json", "w") as f:
+    f.write(AdsorbateConfiguration.schema().dumps(results, many=True))
+```
+
+Similarly, results can be read back from file to a list of `AdsorbateConfiguration` objects with:
+
+```
+from ocpapi import AdsorbateConfiguration
+
+with open("results.json", "r") as f:
+    results = AdsorbateConfiguration.schema().loads(f.read(), many=True)
+```
