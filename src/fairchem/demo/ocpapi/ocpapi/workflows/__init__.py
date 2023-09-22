@@ -1,4 +1,5 @@
 from .adsorbates import (  # noqa
+    AdsorbateConfiguration,
     UnsupportedAdsorbateException,
     UnsupportedBulkException,
     filter_slabs_with_miller_indices,
