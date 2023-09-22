@@ -613,7 +613,7 @@ async def find_adsorbate_binding_sites(
         return results
 
 
-def filter_slabs_with_miller_indices(
+def keep_slabs_with_miller_indices(
     allowed_miller_indices: Iterable[Tuple[int, int, int]],
 ) -> Callable[[Slab], bool]:
     """
