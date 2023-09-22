@@ -2,9 +2,9 @@ from .adsorbates import (  # noqa
     AdsorbateConfiguration,
     UnsupportedAdsorbateException,
     UnsupportedBulkException,
-    filter_slabs_with_miller_indices,
     find_adsorbate_binding_sites,
     get_adsorbate_relaxation_results,
+    keep_slabs_with_miller_indices,
     wait_for_adsorbate_relaxations,
 )
 from .retry import NO_LIMIT, RateLimitLogging, retry_api_calls  # noqa

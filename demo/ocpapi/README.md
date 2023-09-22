@@ -51,8 +51,8 @@ This should take 5-10 minutes to finish while hundreds of individual adsorbate p
 
 ```
 from ocpapi import (
-    filter_slabs_with_miller_indices, 
     find_adsorbate_binding_sites, 
+    keep_slabs_with_miller_indices, 
     Model,
 )
 
@@ -63,7 +63,7 @@ results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
     bulk="mp-126",
     model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
-    slab_filter=filter_slabs_with_miller_indices([(1, 1, 0), (1, 1, 1)])
+    slab_filter=keep_slabs_with_miller_indices([(1, 1, 0), (1, 1, 1)])
 )
 ```
 
