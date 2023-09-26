@@ -1,11 +1,11 @@
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any, Dict, List, Optional, Union
 from unittest import IsolatedAsyncioTestCase
 
 import responses
 
-from ocpapi.client import Client, RequestException
-from ocpapi.models import (
+from ocpapi.client import (
     Adsorbates,
     AdsorbateSlabConfigs,
     AdsorbateSlabRelaxationResult,
@@ -15,13 +15,17 @@ from ocpapi.models import (
     Atoms,
     Bulk,
     Bulks,
+    Client,
     Model,
+    NonRetryableRequestException,
+    RateLimitExceededException,
+    RequestException,
     Slab,
     SlabMetadata,
     Slabs,
     Status,
-    _DataModel,
 )
+from ocpapi.client.models import _DataModel
 
 
 class TestClient(IsolatedAsyncioTestCase):
@@ -47,14 +51,67 @@ class TestClient(IsolatedAsyncioTestCase):
             base_url: str
             response_body: Union[str, Exception]
             response_code: int
+            response_headers: Optional[Dict[str, str]] = None
             expected: Optional[_DataModel] = None
             expected_request_params: Optional[Dict[str, Any]] = None
             expected_request_body: Optional[Dict[str, Any]] = None
             expected_exception: Optional[Exception] = None
 
         test_cases: List[TestCase] = [
-            # If a non-200 response code is returned then an exception should
-            # be raised
+            # If a 429 response code is returned, then a
+            # RateLimitExceededException should be raised
+            TestCase(
+                message="rate limit exceeded",
+                base_url="https://test_host/ocp",
+                response_body='{"message": "failed"}',
+                response_code=429,
+                response_headers={"Retry-After": "100"},
+                expected_request_params=expected_request_params,
+                expected_request_body=expected_request_body,
+                expected_exception=RateLimitExceededException(
+                    method=method,
+                    url=f"https://test_host/ocp/{route}",
+                    retry_after=timedelta(seconds=100),
+                ),
+            ),
+            # If a 429 response code is returned, then a
+            # RateLimitExceededException should be raised - ensure correct
+            # handling when retry-after header is not present
+            TestCase(
+                message="rate limit exceeded, no retry-after",
+                base_url="https://test_host/ocp",
+                response_body='{"message": "failed"}',
+                response_code=429,
+                response_headers={},
+                expected_request_params=expected_request_params,
+                expected_request_body=expected_request_body,
+                expected_exception=RateLimitExceededException(
+                    method=method,
+                    url=f"https://test_host/ocp/{route}",
+                    retry_after=None,
+                ),
+            ),
+            # If a 400-level response code is returned then a
+            # NonRetryableRequestException should be raised
+            TestCase(
+                message="non-retryable error",
+                base_url="https://test_host/ocp",
+                response_body='{"message": "failed"}',
+                response_code=404,
+                response_headers={},
+                expected_request_params=expected_request_params,
+                expected_request_body=expected_request_body,
+                expected_exception=NonRetryableRequestException(
+                    method=method,
+                    url=f"https://test_host/ocp/{route}",
+                    cause=(
+                        "Unexpected response code: 404. "
+                        'Response body: {"message": "failed"}'
+                    ),
+                ),
+            ),
+            # If another unexpected response code is returned then an exception
+            # should be raised
             TestCase(
                 message="non-200 response code",
                 base_url="https://test_host/ocp",
@@ -66,8 +123,8 @@ class TestClient(IsolatedAsyncioTestCase):
                     method=method,
                     url=f"https://test_host/ocp/{route}",
                     cause=(
-                        "Expected response code 200; got 500. "
-                        'Body = {"message": "failed"}'
+                        "Unexpected response code: 500. "
+                        'Response body: {"message": "failed"}'
                     ),
                 ),
             ),
@@ -126,6 +183,7 @@ class TestClient(IsolatedAsyncioTestCase):
                         method,
                         f"{case.base_url}/{route}",
                         body=case.response_body,
+                        headers=case.response_headers,
                         status=case.response_code,
                         match=match,
                     )
@@ -140,6 +198,10 @@ class TestClient(IsolatedAsyncioTestCase):
                     if case.expected_exception is not None:
                         with self.assertRaises(type(case.expected_exception)) as ex:
                             await request_coro
+                        self.assertEqual(
+                            vars(case.expected_exception),
+                            vars(ex.exception),
+                        )
                         self.assertEqual(
                             str(case.expected_exception),
                             str(ex.exception),
