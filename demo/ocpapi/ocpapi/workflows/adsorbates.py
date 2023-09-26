@@ -99,10 +99,10 @@ class UnsupportedAdsorbateException(Exception):
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass(kw_only=True)
-class AdsorbateConfiguration(AdsorbateSlabRelaxationResult):
+class AdsorbateSlabRelaxation(AdsorbateSlabRelaxationResult):
     """
     Extension of AdsorbateSlabRelaxationResult that includes information
-    about the inputs to the relaxation result.
+    about the initial structure and other inputs to the relaxation.
 
     Attributes:
         adsorbate: The SMILES string of the adsorbate.
@@ -444,7 +444,7 @@ async def _find_binding_sites_on_slab(
     slab: Slab,
     model: Model,
     ephemeral: bool,
-) -> List[AdsorbateConfiguration]:
+) -> List[AdsorbateSlabRelaxation]:
     """
     Search for adsorbate binding sites on the input slab.
 
@@ -503,7 +503,7 @@ async def _find_binding_sites_on_slab(
             system_id=system_id,
         )
         return [
-            AdsorbateConfiguration(
+            AdsorbateSlabRelaxation(
                 adsorbate=adsorbate,
                 adsorbate_config=initial_config,
                 bulk=bulk,
@@ -522,7 +522,7 @@ async def find_adsorbate_binding_sites(
     slab_filter: Optional[Callable[[Slab], bool]] = None,
     client: Client = DEFAULT_CLIENT,
     mark_relaxations_as_ephemeral: bool = False,
-) -> List[AdsorbateConfiguration]:
+) -> List[AdsorbateSlabRelaxation]:
     """
     Search for adsorbate binding sites on surfaces of a bulk material.
     This executes the following steps:
@@ -607,7 +607,7 @@ async def find_adsorbate_binding_sites(
                 t.cancel()
                 await t
 
-        results: List[AdsorbateConfiguration] = []
+        results: List[AdsorbateSlabRelaxation] = []
         for t in tasks:
             results.extend(t.result())
         return results
