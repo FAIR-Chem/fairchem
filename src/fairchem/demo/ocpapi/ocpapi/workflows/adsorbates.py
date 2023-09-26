@@ -312,10 +312,10 @@ async def _submit_relaxations_with_logging(
 
 @retry_api_calls(max_attempts=3)
 async def get_adsorbate_relaxation_results(
-    client: Client,
     system_id: str,
     config_ids: Optional[List[int]] = None,
     fields: Optional[List[str]] = None,
+    client: Client = DEFAULT_CLIENT,
 ) -> List[AdsorbateSlabRelaxationResult]:
     """
     Wrapper around Client.get_adsorbate_slab_relaxations_results() that
@@ -369,11 +369,11 @@ async def get_adsorbate_relaxation_results(
 
 
 async def wait_for_adsorbate_relaxations(
-    client: Client,
     system_id: str,
     check_immediately: bool = False,
     slow_interval_sec: float = 30,
     fast_interval_sec: float = 10,
+    client: Client = DEFAULT_CLIENT,
 ) -> Dict[int, Status]:
     """
     Blocks until all relaxations in the input system have finished, whether
