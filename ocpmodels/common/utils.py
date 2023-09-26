@@ -15,14 +15,23 @@ import logging
 import os
 import sys
 import time
-from argparse import Namespace
 from bisect import bisect
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import torch
@@ -411,8 +420,30 @@ def load_config(path: str, previous_includes: list = []):
     return config, duplicates_warning, duplicates_error
 
 
-def build_config(args, args_override):
-    config, duplicates_warning, duplicates_error = load_config(args.config_yml)
+def build_config(
+    mode: str,
+    config_yml: str,
+    config_overrides: List[str],
+    identifier: str,
+    timestamp_id: Optional[str],
+    seed: int,
+    debug: bool,
+    run_dir: str,
+    print_every: int,
+    amp: bool,
+    checkpoint: Optional[str],
+    cpu_only: bool,
+    submit: bool,
+    summit: bool,
+    local_rank: int,
+    distributed_port: int,
+    distributed_backend: str,
+    num_nodes: int,
+    num_gpus: int,
+    no_ddp: bool,
+    gp_gpus: int,
+):
+    config, duplicates_warning, duplicates_error = load_config(config_yml)
     if len(duplicates_warning) > 0:
         logging.warning(
             f"Overwritten config parameters from included configs "
@@ -425,31 +456,31 @@ def build_config(args, args_override):
         )
 
     # Check for overridden parameters.
-    if args_override != []:
-        overrides = create_dict_from_args(args_override)
+    if config_overrides != []:
+        overrides = create_dict_from_args(config_overrides)
         config, _ = merge_dicts(config, overrides)
 
     # Some other flags.
-    config["mode"] = args.mode
-    config["identifier"] = args.identifier
-    config["timestamp_id"] = args.timestamp_id
-    config["seed"] = args.seed
-    config["is_debug"] = args.debug
-    config["run_dir"] = args.run_dir
-    config["print_every"] = args.print_every
-    config["amp"] = args.amp
-    config["checkpoint"] = args.checkpoint
-    config["cpu"] = args.cpu
+    config["mode"] = mode
+    config["identifier"] = identifier
+    config["timestamp_id"] = timestamp_id
+    config["seed"] = seed
+    config["is_debug"] = debug
+    config["run_dir"] = run_dir
+    config["print_every"] = print_every
+    config["amp"] = amp
+    config["checkpoint"] = checkpoint
+    config["cpu"] = cpu_only
     # Submit
-    config["submit"] = args.submit
-    config["summit"] = args.summit
+    config["submit"] = submit
+    config["summit"] = summit
     # Distributed
-    config["local_rank"] = args.local_rank
-    config["distributed_port"] = args.distributed_port
-    config["world_size"] = args.num_nodes * args.num_gpus
-    config["distributed_backend"] = args.distributed_backend
-    config["noddp"] = args.no_ddp
-    config["gp_gpus"] = args.gp_gpus
+    config["local_rank"] = local_rank
+    config["distributed_port"] = distributed_port
+    config["world_size"] = num_nodes * num_gpus
+    config["distributed_backend"] = distributed_backend
+    config["noddp"] = no_ddp
+    config["gp_gpus"] = gp_gpus
 
     return config
 
@@ -488,8 +519,8 @@ def create_grid(base_config, sweep_file: str):
     return configs
 
 
-def save_experiment_log(args, jobs, configs):
-    log_file = args.logdir / "exp" / time.strftime("%Y-%m-%d-%I-%M-%S%p.log")
+def save_experiment_log(logdir, jobs, configs):
+    log_file = logdir / "exp" / time.strftime("%Y-%m-%d-%I-%M-%S%p.log")
     log_file.parent.mkdir(exist_ok=True, parents=True)
     with open(log_file, "w") as f:
         for job, config in zip(jobs, configs):
@@ -917,12 +948,12 @@ class SeverityLevelBetween(logging.Filter):
         return self.min_level <= record.levelno < self.max_level
 
 
-def setup_logging() -> None:
+def setup_logging(level: Union[int, Text] = logging.INFO) -> None:
     root = logging.getLogger()
 
     # Perform setup only if logging has not been configured
     if not root.hasHandlers():
-        root.setLevel(logging.INFO)
+        root.setLevel(level)
 
         log_formatter = logging.Formatter(
             "%(asctime)s (%(levelname)s): %(message)s",
@@ -970,7 +1001,7 @@ def check_traj_files(batch, traj_dir) -> bool:
 
 
 @contextmanager
-def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
+def new_trainer_context(*, config: Dict[str, Any], distributed: bool):
     from ocpmodels.common import distutils, gp_utils
     from ocpmodels.common.registry import registry
 
@@ -988,7 +1019,7 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
     original_config = config
     config = copy.deepcopy(original_config)
 
-    if args.distributed:
+    if distributed:
         distutils.setup(config)
         if config["gp_gpus"] is not None:
             gp_utils.setup_gp(config)
@@ -1029,7 +1060,7 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         if distutils.is_master():
             logging.info(f"Total time taken: {time.time() - start_time}")
     finally:
-        if args.distributed:
+        if distributed:
             distutils.cleanup()
 
 
