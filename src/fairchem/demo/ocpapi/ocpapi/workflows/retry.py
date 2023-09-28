@@ -83,6 +83,8 @@ NO_LIMIT: NoLimitType = 0
 def retry_api_calls(
     max_attempts: Union[int, NoLimitType] = 3,
     rate_limit_logging: Optional[RateLimitLogging] = None,
+    fixed_wait_sec: float = 2,
+    max_jitter_sec: float = 1,
 ) -> Any:
     """
     Decorator with sensible defaults for retrying calls to the OCP API.
@@ -92,6 +94,12 @@ def retry_api_calls(
             retries will be made forever.
         rate_limit_logging: If not None, log statements will be generated
             using this configuration when a rate limit is hit.
+        fixed_wait_sec: The fixed number of seconds to wait when retrying an
+            exception that does *not* include a retry-after value. The default
+            value is sensible; this is exposed mostly for testing.
+        max_jitter_sec: The maximum number of seconds that will be randomly
+            added to wait times. The default value is sensible; this is exposed
+            mostly for testing.
     """
     return tenacity_retry(
         # Retry forever if no limit was applied. Otherwise stop after the
@@ -100,12 +108,18 @@ def retry_api_calls(
         if max_attempts == NO_LIMIT
         else stop_after_attempt(max_attempts),
         # If the API returns that a rate limit was breached and gives a
-        # retry-after value, use that. Otherwise wait 2 seconds. In all
-        # cases, add a random jitter.
-        wait=_wait_check_retry_after(wait_fixed(2), rate_limit_logging)
-        + wait_random(0, 1),
+        # retry-after value, use that. Otherwise wait a fixed number of
+        # seconds. In all cases, add a random jitter.
+        wait=_wait_check_retry_after(
+            wait_fixed(fixed_wait_sec),
+            rate_limit_logging,
+        )
+        + wait_random(0, max_jitter_sec),
         # Retry any API exceptions unless they are explicitly marked as
         # not retryable.
         retry=retry_if_exception_type(RequestException)
         & retry_if_not_exception_type(NonRetryableRequestException),
+        # Raise the original exception instead of wrapping it in a
+        # tenacity exception
+        reraise=True,
     )

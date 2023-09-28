@@ -8,4 +8,4 @@ from .adsorbates import (  # noqa
     keep_slabs_with_miller_indices,
     wait_for_adsorbate_relaxations,
 )
-from .retry import NO_LIMIT, RateLimitLogging, retry_api_calls  # noqa
+from .retry import NO_LIMIT, NoLimitType, RateLimitLogging, retry_api_calls  # noqa
