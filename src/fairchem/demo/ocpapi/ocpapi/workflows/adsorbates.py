@@ -340,7 +340,7 @@ async def _submit_relaxations_with_logging(
 
 
 @retry_api_calls(max_attempts=3)
-async def get_adsorbate_relaxation_results(
+async def get_adsorbate_slab_relaxation_results(
     system_id: str,
     config_ids: Optional[List[int]] = None,
     fields: Optional[List[str]] = None,
@@ -386,7 +386,7 @@ async def get_adsorbate_relaxation_results(
     # If any results were omitted, fetch them before returning
     if omitted_config_ids:
         fetched.extend(
-            await get_adsorbate_relaxation_results(
+            await get_adsorbate_slab_relaxation_results(
                 client=client,
                 system_id=system_id,
                 config_ids=omitted_config_ids,
@@ -397,7 +397,7 @@ async def get_adsorbate_relaxation_results(
     return fetched
 
 
-async def wait_for_adsorbate_relaxations(
+async def wait_for_adsorbate_slab_relaxations(
     system_id: str,
     check_immediately: bool = False,
     slow_interval_sec: float = 30,
@@ -440,7 +440,7 @@ async def wait_for_adsorbate_relaxations(
         # that will return results more quickly.
         results: List[
             AdsorbateSlabRelaxationResult
-        ] = await get_adsorbate_relaxation_results(
+        ] = await get_adsorbate_slab_relaxation_results(
             client=client,
             system_id=system_id,
             fields=["energy"],
@@ -562,7 +562,7 @@ async def _find_binding_sites_on_slab(
             )
 
         # Wait for all relaxations to finish
-        await wait_for_adsorbate_relaxations(
+        await wait_for_adsorbate_slab_relaxations(
             client=client,
             system_id=system_id,
         )
@@ -570,7 +570,7 @@ async def _find_binding_sites_on_slab(
         # Fetch the final results
         results: List[
             AdsorbateSlabRelaxationResult
-        ] = await get_adsorbate_relaxation_results(
+        ] = await get_adsorbate_slab_relaxation_results(
             client=client,
             system_id=system_id,
         )

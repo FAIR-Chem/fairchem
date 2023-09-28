@@ -6,9 +6,9 @@ from ocpapi.client import Atoms, Client, Model, Status
 from ocpapi.workflows import (
     Lifetime,
     find_adsorbate_binding_sites,
-    get_adsorbate_relaxation_results,
+    get_adsorbate_slab_relaxation_results,
     keep_slabs_with_miller_indices,
-    wait_for_adsorbate_relaxations,
+    wait_for_adsorbate_slab_relaxations,
 )
 from ocpapi.workflows.adsorbates import _get_absorbate_configs_on_slab
 
@@ -21,7 +21,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
     TEST_HOST = "https://open-catalyst-api.metademolab.com/ocp"
     KNOWN_SYSTEM_ID = "f9eacd8f-748c-41dd-ae43-f263dd36d735"
 
-    async def test_get_adsorbate_relaxation_results(self) -> None:
+    async def test_get_adsorbate_slab_relaxation_results(self) -> None:
         # The server is expected to return "omitted" as the status when
         # many results are requested. Check that all results are fetched
         # since test method under test should retry until all results have
@@ -32,7 +32,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
         num_configs = 59
 
         client = Client(self.TEST_HOST)
-        results = await get_adsorbate_relaxation_results(
+        results = await get_adsorbate_slab_relaxation_results(
             system_id=self.KNOWN_SYSTEM_ID,
             config_ids=list(range(num_configs)),
             # Fetch a subset of fields to avoid transferring significantly more
@@ -46,7 +46,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
             [Status.SUCCESS] * num_configs,
         )
 
-    async def test_wait_for_adsorbate_relaxations(self) -> None:
+    async def test_wait_for_adsorbate_slab_relaxations(self) -> None:
         # This test runs against an already-finished set of relaxations.
         # The goal is not to check that the method waits when relaxations
         # are still running (that is covered in unit tests), but just to
@@ -56,7 +56,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
         start = time.monotonic()
 
         client = Client(self.TEST_HOST)
-        await wait_for_adsorbate_relaxations(
+        await wait_for_adsorbate_slab_relaxations(
             system_id=self.KNOWN_SYSTEM_ID,
             check_immediately=False,
             slow_interval_sec=1,
