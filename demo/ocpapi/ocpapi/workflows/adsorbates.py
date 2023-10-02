@@ -1,9 +1,20 @@
 import asyncio
 import logging
-from contextlib import suppress
+from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from enum import Enum, auto
+from typing import (
+    Any,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+)
 
 from dataclasses_json import Undefined, dataclass_json
 
@@ -95,6 +106,24 @@ class UnsupportedAdsorbateException(Exception):
             adsorbate: The adsorbate that was requested.
         """
         super().__init__(f"Adsorbate {adsorbate} is not supported")
+
+
+class Lifetime(Enum):
+    """
+    Represents different lifetimes when running relaxations.
+
+    Attributes:
+        SAVE: The relaxation will be available on API servers indefinitely.
+            It will not be possible to delete the relaxation in the future.
+        MARK_EPHEMERAL: The relaxation will be saved on API servers, but
+            can be deleted at any time in the future.
+        DELETE: The relaxation will be deleted from API servers as soon as
+            the results have been fetched.
+    """
+
+    SAVE = auto()
+    MARK_EPHEMERAL = auto()
+    DELETE = auto()
 
 
 @dataclass_json(undefined=Undefined.INCLUDE)
@@ -311,11 +340,11 @@ async def _submit_relaxations_with_logging(
 
 
 @retry_api_calls(max_attempts=3)
-async def get_adsorbate_relaxation_results(
-    client: Client,
+async def get_adsorbate_slab_relaxation_results(
     system_id: str,
     config_ids: Optional[List[int]] = None,
     fields: Optional[List[str]] = None,
+    client: Client = DEFAULT_CLIENT,
 ) -> List[AdsorbateSlabRelaxationResult]:
     """
     Wrapper around Client.get_adsorbate_slab_relaxations_results() that
@@ -357,7 +386,7 @@ async def get_adsorbate_relaxation_results(
     # If any results were omitted, fetch them before returning
     if omitted_config_ids:
         fetched.extend(
-            await get_adsorbate_relaxation_results(
+            await get_adsorbate_slab_relaxation_results(
                 client=client,
                 system_id=system_id,
                 config_ids=omitted_config_ids,
@@ -368,12 +397,12 @@ async def get_adsorbate_relaxation_results(
     return fetched
 
 
-async def wait_for_adsorbate_relaxations(
-    client: Client,
+async def wait_for_adsorbate_slab_relaxations(
     system_id: str,
     check_immediately: bool = False,
     slow_interval_sec: float = 30,
     fast_interval_sec: float = 10,
+    client: Client = DEFAULT_CLIENT,
 ) -> Dict[int, Status]:
     """
     Blocks until all relaxations in the input system have finished, whether
@@ -411,7 +440,7 @@ async def wait_for_adsorbate_relaxations(
         # that will return results more quickly.
         results: List[
             AdsorbateSlabRelaxationResult
-        ] = await get_adsorbate_relaxation_results(
+        ] = await get_adsorbate_slab_relaxation_results(
             client=client,
             system_id=system_id,
             fields=["energy"],
@@ -437,13 +466,45 @@ async def wait_for_adsorbate_relaxations(
         await asyncio.sleep(wait_for_sec)
 
 
+@retry_api_calls(max_attempts=3)
+async def _delete_system(client: Client, system_id: str) -> None:
+    """
+    Deletes the input system, with retries on failed attempts.
+
+    Args:
+        client: The client to use when making API calls.
+        system_id: The ID of the system to delete.
+    """
+    await client.delete_adsorbate_slab_relaxations(system_id)
+
+
+@asynccontextmanager
+async def _ensure_system_deleted(
+    client: Client,
+    system_id: str,
+) -> AsyncGenerator[None, None]:
+    """
+    Immediately yields control to the caller. When control returns to this
+    function, try to delete the system with the input id.
+
+    Args:
+        client: The client to use when making API calls.
+        system_id: The ID of the system to delete.
+    """
+    try:
+        yield
+    finally:
+        log.info(f"Ensuring system with id {system_id} is deleted")
+        await _delete_system(client=client, system_id=system_id)
+
+
 async def _find_binding_sites_on_slab(
     client: Client,
     adsorbate: str,
     bulk: Bulk,
     slab: Slab,
     model: Model,
-    ephemeral: bool,
+    lifetime: Lifetime = Lifetime.SAVE,
 ) -> List[AdsorbateSlabRelaxation]:
     """
     Search for adsorbate binding sites on the input slab.
@@ -454,12 +515,16 @@ async def _find_binding_sites_on_slab(
         bulk: The bulk material from which the slab was generated.
         slab: The slab that should be searched for adsorbate binding sites.
         model: The model to use when evaluating forces and energies.
-        ephemeral: Whether relaxations should be marked as ephemeral.
+        lifetime: Whether relaxations should be saved on the server, be marked
+            as ephemeral (allowing them to deleted in the future), or deleted
+            immediately.
 
     Returns:
         Details of each adsorbate placement, including its relaxed position.
     """
-    with set_context_var(_CTX_SLAB, slab):
+    async with AsyncExitStack() as es:
+        es.enter_context(set_context_var(_CTX_SLAB, slab))
+
         # Enumerate candidate binding sites
         log.info(
             "Generating adsorbate placements on "
@@ -485,12 +550,19 @@ async def _find_binding_sites_on_slab(
             bulk=bulk,
             slab=slab,
             model=model,
-            ephemeral=ephemeral,
+            ephemeral=lifetime in {Lifetime.MARK_EPHEMERAL, Lifetime.DELETE},
         )
         log.info(f"Relaxations running with system id {system_id}")
 
+        # If requested, ensure the system is deleted once results have been
+        # fetched
+        if lifetime == Lifetime.DELETE:
+            await es.enter_async_context(
+                _ensure_system_deleted(client=client, system_id=system_id)
+            )
+
         # Wait for all relaxations to finish
-        await wait_for_adsorbate_relaxations(
+        await wait_for_adsorbate_slab_relaxations(
             client=client,
             system_id=system_id,
         )
@@ -498,7 +570,7 @@ async def _find_binding_sites_on_slab(
         # Fetch the final results
         results: List[
             AdsorbateSlabRelaxationResult
-        ] = await get_adsorbate_relaxation_results(
+        ] = await get_adsorbate_slab_relaxation_results(
             client=client,
             system_id=system_id,
         )
@@ -521,7 +593,7 @@ async def find_adsorbate_binding_sites(
     model: Model,
     slab_filter: Optional[Callable[[Slab], bool]] = None,
     client: Client = DEFAULT_CLIENT,
-    mark_relaxations_as_ephemeral: bool = False,
+    lifetime: Lifetime = Lifetime.SAVE,
 ) -> List[AdsorbateSlabRelaxation]:
     """
     Search for adsorbate binding sites on surfaces of a bulk material.
@@ -530,7 +602,7 @@ async def find_adsorbate_binding_sites(
         1. Ensure that both the adsorbate and bulk are supported in the
            OCP API.
         2. Enumerate unique surfaces from the bulk material. If a
-           surface_filter function is provided, only those surfaces for
+           slab_filter function is provided, only those surfaces for
            which the filter returns True will be kept.
         3. Enumerate likely binding sites for the input adsorbate on each
            of the generated surfaces.
@@ -546,9 +618,9 @@ async def find_adsorbate_binding_sites(
         slab_filter: If not None, a function that filters which generated
             slabs will be considered when placing adsorbates.
         client: The OCP API client to use.
-        mark_relaxations_as_ephemeral: Whether relaxations should have an
-            "ephemeral" flag attached to them, which allows them to be
-            deleted later.
+        lifetime: Whether relaxations should be saved on the server, be marked
+            as ephemeral (allowing them to deleted in the future), or deleted
+            immediately.
 
     Returns:
         Details of each adsorbate binding site, including results of relaxing
@@ -591,7 +663,7 @@ async def find_adsorbate_binding_sites(
                     bulk=bulk_obj,
                     slab=slab,
                     model=model,
-                    ephemeral=mark_relaxations_as_ephemeral,
+                    lifetime=lifetime,
                 )
             )
             for slab in slabs
