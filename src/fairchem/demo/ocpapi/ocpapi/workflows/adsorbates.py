@@ -349,7 +349,7 @@ async def get_adsorbate_slab_relaxation_results(
     """
     Wrapper around Client.get_adsorbate_slab_relaxations_results() that
     handles retries, including re-fetching individual configurations that
-    are initially returned with an "omitted" status.
+    are initially omitted.
 
     Args:
         client: The client to use when making API calls.
@@ -371,25 +371,16 @@ async def get_adsorbate_slab_relaxation_results(
         )
     )
 
-    # Build the list of (1) results that were successfully fetched and
-    # (2) results that were omitted by the API server. The latter can
-    # occur when the API server decides to skip fetching or return
-    # certain results in order to optimize its performance.
-    fetched: List[AdsorbateSlabRelaxationResult] = []
-    omitted_config_ids: List[int] = []
-    for c in results.configs:
-        if c.status == Status.OMITTED:
-            omitted_config_ids.append(c.config_id)
-        else:
-            fetched.append(c)
+    # Save a copy of all results that were fetched
+    fetched: List[AdsorbateSlabRelaxationResult] = list(results.configs)
 
     # If any results were omitted, fetch them before returning
-    if omitted_config_ids:
+    if results.omitted_config_ids:
         fetched.extend(
             await get_adsorbate_slab_relaxation_results(
                 client=client,
                 system_id=system_id,
-                config_ids=omitted_config_ids,
+                config_ids=results.omitted_config_ids,
                 fields=fields,
             )
         )

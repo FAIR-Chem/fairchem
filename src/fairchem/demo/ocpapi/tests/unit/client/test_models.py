@@ -742,6 +742,7 @@ class TestAdsorbateSlabRelaxationsResults(
                         other_fields={"extra_adslab_field": "extra_adslab_value"},
                     )
                 ],
+                omitted_config_ids=[1, 2, 3],
                 other_fields={"extra_field": "extra_value"},
             ),
             obj_json="""
@@ -760,6 +761,7 @@ class TestAdsorbateSlabRelaxationsResults(
         "forces": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]],
         "extra_adslab_field": "extra_adslab_value"
     }],
+    "omitted_config_ids": [1, 2, 3],
     "extra_field": "extra_value"
 }
 """,
