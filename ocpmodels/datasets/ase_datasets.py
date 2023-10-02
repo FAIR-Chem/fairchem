@@ -123,6 +123,9 @@ class AseAtomsDataset(Dataset, ABC):
                 data_object, **self.config.get("transform_args", {})
             )
 
+        if self.config.get("include_relaxed_energy", False):
+            data_object.y_relaxed = self.get_relaxed_energy(self.ids[idx])
+
         return data_object
 
     @abstractmethod
@@ -201,6 +204,10 @@ class AseReadDataset(AseAtomsDataset):
                     to iterate over a dataset many times (e.g. training for many epochs).
                     Not recommended for large datasets.
 
+            include_relaxed_energy (bool): Include the relaxed energy in the resulting data object.
+                    The relaxed structure is assumed to be the final structure in the file
+                    (e.g. the last frame of a .traj).
+
             atoms_transform_args (dict): Additional keyword arguments for the atoms_transform callable
 
             transform_args (dict): Additional keyword arguments for the transform callable
@@ -224,6 +231,10 @@ class AseReadDataset(AseAtomsDataset):
         if self.path.is_file():
             raise Exception("The specified src is not a directory")
 
+        if self.config.get("include_relaxed_energy", False):
+            self.relaxed_ase_read_args = copy.deepcopy(self.ase_read_args)
+            self.relaxed_ase_read_args["index"] = "-1"
+
         return list(self.path.glob(f'{config["pattern"]}'))
 
     def get_atoms_object(self, identifier):
@@ -234,6 +245,10 @@ class AseReadDataset(AseAtomsDataset):
             raise err
 
         return atoms
+
+    def get_relaxed_energy(self, identifier):
+        relaxed_atoms = ase.io.read(identifier, **self.relaxed_ase_read_args)
+        return relaxed_atoms.get_potential_energy(apply_constraint=False)
 
 
 @registry.register_dataset("ase_read_multi")
@@ -278,6 +293,10 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             keep_in_memory (bool): Store data in memory. This helps avoid random reads if you need
                     to iterate over a dataset many times (e.g. training for many epochs).
                     Not recommended for large datasets.
+
+            include_relaxed_energy (bool): Include the relaxed energy in the resulting data object.
+                    The relaxed structure is assumed to be the final structure in the file
+                    (e.g. the last frame of a .traj).
 
             use_tqdm (bool): Use TQDM progress bar when initializing dataset
 
@@ -346,6 +365,12 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
 
     def get_metadata(self):
         return {}
+
+    def get_relaxed_energy(self, identifier):
+        relaxed_atoms = ase.io.read(
+            "".join(identifier.split(" ")[:-1]), **self.ase_read_args
+        )[-1]
+        return relaxed_atoms.get_potential_energy(apply_constraint=False)
 
 
 class dummy_list(list):
@@ -513,3 +538,8 @@ class AseDBDataset(AseAtomsDataset):
             return self.guess_target_metadata()
         else:
             return copy.deepcopy(self.dbs[0].metadata)
+
+    def get_relaxed_energy(self, identifier):
+        raise NotImplementedError(
+            "IS2RE-Direct training with an ASE DB is not currently supported."
+        )

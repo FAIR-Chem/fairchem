@@ -45,14 +45,14 @@ def test_ase_read_dataset() -> None:
     data = dataset[0]
     del data
 
+    dataset.close_db()
+
     for i in range(len(structures)):
         os.remove(
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), f"{i}.cif"
             )
         )
-
-    dataset.close_db()
 
 
 def test_ase_db_dataset() -> None:
@@ -380,11 +380,18 @@ def test_ase_multiread_dataset() -> None:
 
     atoms_objects = [build.bulk("Cu", a=a) for a in np.linspace(3.5, 3.7, 10)]
 
+    energies = np.linspace(1, 0, len(atoms_objects))
+
     traj = Trajectory(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "test.traj"),
         mode="w",
     )
-    for atoms in atoms_objects:
+
+    for atoms, energy in zip(atoms_objects, energies):
+        calc = SinglePointCalculator(
+            atoms, energy=energy, forces=atoms.positions
+        )
+        atoms.calc = calc
         traj.write(atoms)
 
     dataset = AseReadMultiStructureDataset(
@@ -422,6 +429,46 @@ def test_ase_multiread_dataset() -> None:
 
     assert len(dataset) == len(atoms_objects)
     [dataset[:]]
+
+    dataset = AseReadMultiStructureDataset(
+        config={
+            "index_file": os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "test_index_file"
+            ),
+            "a2g_args": {
+                "r_energy": True,
+                "r_forces": True,
+            },
+            "include_relaxed_energy": True,
+        }
+    )
+
+    assert len(dataset) == len(atoms_objects)
+    [dataset[:]]
+
+    assert hasattr(dataset[0], "y_relaxed")
+    assert dataset[0].y_relaxed != dataset[0].y
+    assert dataset[-1].y_relaxed == dataset[-1].y
+
+    dataset = AseReadDataset(
+        config={
+            "src": os.path.join(os.path.dirname(os.path.abspath(__file__))),
+            "pattern": "*.traj",
+            "ase_read_args": {
+                "index": "0",
+            },
+            "a2g_args": {
+                "r_energy": True,
+                "r_forces": True,
+            },
+            "include_relaxed_energy": True,
+        }
+    )
+
+    [dataset[:]]
+
+    assert hasattr(dataset[0], "y_relaxed")
+    assert dataset[0].y_relaxed != dataset[0].y
 
     os.remove(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "test.traj")
