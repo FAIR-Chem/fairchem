@@ -526,11 +526,12 @@ class EquiformerV2_OC20(BaseModel):
             # We can also write this as
             # \hat{E_DFT} = E_std * (\hat{E} + E_ref / E_std) + E_mean,
             # which is why we save E_ref / E_std as the linear reference.
-            energy.index_add_(
-                0,
-                data.batch,
-                self.energy_lin_ref[atomic_numbers].to(node_energy.dtype),
-            )
+            with torch.cuda.amp.autocast(False):
+                energy = energy.to(self.energy_lin_ref.dtype).index_add(
+                    0,
+                    data.batch,
+                    self.energy_lin_ref[atomic_numbers],
+                )
 
         ###############################################################
         # Force estimation
