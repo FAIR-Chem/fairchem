@@ -512,6 +512,20 @@ class EquiformerV2_OC20(BaseModel):
 
         # Add the per-atom linear references to the energy.
         if self.use_energy_lin_ref and self.load_energy_lin_ref:
+            # During training, target E = (E_DFT - E_ref - E_mean) / E_std, and
+            # during inference, \hat{E_DFT} = \hat{E} * E_std + E_ref + E_mean
+            # where
+            #
+            # E_DFT = raw DFT energy,
+            # E_ref = reference energy,
+            # E_mean = normalizer mean,
+            # E_std = normalizer std,
+            # \hat{E} = predicted energy,
+            # \hat{E_DFT} = predicted DFT energy.
+            #
+            # We can also write this as
+            # \hat{E_DFT} = E_std * (\hat{E} + E_ref / E_std) + E_mean,
+            # which is why we save E_ref / E_std as the linear reference.
             energy.index_add_(
                 0,
                 data.batch,
