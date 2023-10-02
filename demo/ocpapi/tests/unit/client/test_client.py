@@ -661,7 +661,8 @@ class TestClient(IsolatedAsyncioTestCase):
                         config_id=1,
                         status=Status.SUCCESS,
                     )
-                ]
+                ],
+                omitted_config_ids=[],
             ),
         )
 
@@ -691,7 +692,8 @@ class TestClient(IsolatedAsyncioTestCase):
                         config_id=1,
                         status=Status.SUCCESS,
                     )
-                ]
+                ],
+                omitted_config_ids=[],
             ),
         )
 

@@ -21,8 +21,8 @@ class MockGetRelaxationResults:
     """
     Helper that can be used to mock calls to
     Client.get_adsorbate_slab_relaxations_results(). This allows for
-    some configs to be returned with "success" status and others with
-    "omitted", similar to the behavior in the API.
+    some configs to be returned with "success" status and others to be
+    omitted, similar to the behavior in the API.
     """
 
     def __init__(
@@ -64,14 +64,8 @@ class MockGetRelaxationResults:
                     status=Status.SUCCESS,
                 )
                 for i in config_ids[:num_success]
-            ]
-            + [
-                AdsorbateSlabRelaxationResult(
-                    config_id=i,
-                    status=Status.OMITTED,
-                )
-                for i in config_ids[num_success:]
-            ]
+            ],
+            omitted_config_ids=config_ids[num_success:],
         )
 
 
@@ -110,7 +104,8 @@ class TestMockGetRelaxationResults(UnitTestCase):
                                 config_id=0,
                                 status=Status.SUCCESS,
                             )
-                        ]
+                        ],
+                        omitted_config_ids=[],
                     ),
                 ],
             ),
@@ -135,19 +130,8 @@ class TestMockGetRelaxationResults(UnitTestCase):
                                 config_id=1,
                                 status=Status.SUCCESS,
                             ),
-                            AdsorbateSlabRelaxationResult(
-                                config_id=2,
-                                status=Status.OMITTED,
-                            ),
-                            AdsorbateSlabRelaxationResult(
-                                config_id=3,
-                                status=Status.OMITTED,
-                            ),
-                            AdsorbateSlabRelaxationResult(
-                                config_id=4,
-                                status=Status.OMITTED,
-                            ),
-                        ]
+                        ],
+                        omitted_config_ids=[2, 3, 4],
                     ),
                 ],
             ),
@@ -172,11 +156,8 @@ class TestMockGetRelaxationResults(UnitTestCase):
                                 config_id=3,
                                 status=Status.SUCCESS,
                             ),
-                            AdsorbateSlabRelaxationResult(
-                                config_id=4,
-                                status=Status.OMITTED,
-                            ),
-                        ]
+                        ],
+                        omitted_config_ids=[4],
                     ),
                 ],
             ),

@@ -22,10 +22,9 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
     KNOWN_SYSTEM_ID = "f9eacd8f-748c-41dd-ae43-f263dd36d735"
 
     async def test_get_adsorbate_slab_relaxation_results(self) -> None:
-        # The server is expected to return "omitted" as the status when
-        # many results are requested. Check that all results are fetched
-        # since test method under test should retry until all results have
-        # been retrieved.
+        # The server is expected to omit some results when too many are
+        # requested. Check that all results are fetched since test method
+        # under test should retry until all results have been retrieved.
 
         # The system under test has 59 configs:
         # https://open-catalyst.metademolab.com/results/f9eacd8f-748c-41dd-ae43-f263dd36d735

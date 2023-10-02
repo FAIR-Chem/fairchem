@@ -247,16 +247,12 @@ class Status(Enum):
         SUCCESS: The relaxation was successful and the requested information
             about the configuration was returned.
         DOES_NOT_EXIST: The requested configuration does not exist.
-        OMITTED: The requestion configuration exists but information about it
-            was not included in the response. This can happen when the response
-            becomes too large and a subset of the configurations were left out.
     """
 
     NOT_AVAILABLE = "not_available"
     FAILED_RELAXATION = "failed_relaxation"
     SUCCESS = "success"
     DOES_NOT_EXIST = "does_not_exist"
-    OMITTED = "omitted"
 
     def __str__(self) -> str:
         return self.value
@@ -351,6 +347,10 @@ class AdsorbateSlabRelaxationsResults(_DataModel):
     Attributes:
         configs: List of configurations in the system, each representing
             one placement of an adsorbate on a slab surface.
+        omitted_config_ids: List of IDs of configurations that were requested
+            but omitted by the server. Results for these IDs can be requested
+            again.
     """
 
     configs: List[AdsorbateSlabRelaxationResult]
+    omitted_config_ids: List[int] = field(default_factory=lambda: list())
