@@ -28,7 +28,6 @@ commands:
               # Conda configuration
               conda config --set always_yes yes --set auto_update_conda false
               # Update conda
-              conda update conda
               conda install mamba -n base -c conda-forge
               # Install ocp conda env
               conda create --name ocp-models --clone base
