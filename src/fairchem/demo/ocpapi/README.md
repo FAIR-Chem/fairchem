@@ -1,18 +1,29 @@
 # ocpapi
 
-Python library for programmatic use of the [Open Catalyst Demo](https://open-catalyst.metademolab.com/). Users unfamiliar with the Open Catalyst Demo are encouraged to read more about it at that link before continuing.
+Python library for programmatic use of the [Open Catalyst Demo](https://open-catalyst.metademolab.com/). Users unfamiliar with the Open Catalyst Demo are encouraged to read more about it before continuing.
 
 ## Quickstart
 
 The following examples are used to search for *OH binding sites on Pt surfaces. They use the `find_adsorbate_binding_sites` function, which is a high-level workflow on top of other methods included in this library. Once familiar with this routine, users are encouraged to learn about lower-level methods and features that support more advanced use cases.
 
+### Note about async methods
+
+This package relies heavily on [asyncio](https://docs.python.org/3/library/asyncio.html). The examples throughout this document can be copied to a python repl launched with:
+```sh
+$ python -m asyncio
+```
+Alternatively, an async function can be run in a script by wrapping it with [asyncio.run()](https://docs.python.org/3/library/asyncio-runner.html#asyncio.run):
+```python
+import asyncio
+from ocpapi import find_adsorbate_binding_sites
+
+asyncio.run(find_adsorbate_binding_sites(...))
+```
+
 ### Search over all surfaces
 
-```
+```python
 from ocpapi import find_adsorbate_binding_sites, Model
-
-import logging
-logging.basicConfig(level=logging.INFO)
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
@@ -49,15 +60,12 @@ This should take 5-10 minutes to finish while hundreds of individual adsorbate p
 
 ### Search over a subset of Miller indices
 
-```
+```python
 from ocpapi import (
     find_adsorbate_binding_sites, 
     keep_slabs_with_miller_indices, 
     Model,
 )
-
-import logging
-logging.basicConfig(level=logging.INFO)
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
@@ -76,7 +84,7 @@ This example adds the `slab_filter` field, which takes a function that selects o
 
 Assuming `results` was generated with the `find_adsorbate_binding_sites` method used above, it contains a list of `AdsorbateSlabRelaxation` objects. Those results can be saved to file with:
 
-```
+```python
 from ocpapi import AdsorbateSlabRelaxation
 
 with open("results.json", "w") as f:
@@ -85,7 +93,7 @@ with open("results.json", "w") as f:
 
 Similarly, results can be read back from file to a list of `AdsorbateSlabRelaxation` objects with:
 
-```
+```python
 from ocpapi import AdsorbateSlabRelaxation
 
 with open("results.json", "r") as f:
