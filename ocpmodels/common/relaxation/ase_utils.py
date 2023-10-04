@@ -11,18 +11,16 @@ Environment (ASE)
 """
 import copy
 import logging
-import os
 from typing import Dict, Optional
 
 import torch
-import yaml
 from ase import Atoms
 from ase.calculators.calculator import Calculator
 from ase.calculators.singlepoint import SinglePointCalculator as sp
 from ase.constraints import FixAtoms
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import setup_imports, setup_logging
+from ocpmodels.common.utils import load_config, setup_imports, setup_logging
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
@@ -98,18 +96,22 @@ class OCPCalculator(Calculator):
         checkpoint = None
         if config_yml is not None:
             if isinstance(config_yml, str):
-                config = yaml.safe_load(open(config_yml, "r"))
-
-                if "includes" in config:
-                    for include in config["includes"]:
-                        # Change the path based on absolute path of config_yml
-                        path = os.path.join(
-                            config_yml.split("configs")[0], include
-                        )
-                        include_config = yaml.safe_load(open(path, "r"))
-                        config.update(include_config)
+                config, duplicates_warning, duplicates_error = load_config(
+                    config_yml
+                )
+                if len(duplicates_warning) > 0:
+                    logging.warning(
+                        f"Overwritten config parameters from included configs "
+                        f"(non-included parameters take precedence): {duplicates_warning}"
+                    )
+                if len(duplicates_error) > 0:
+                    raise ValueError(
+                        f"Conflicting (duplicate) parameters in simultaneously "
+                        f"included configs: {duplicates_error}"
+                    )
             else:
                 config = config_yml
+
             # Only keeps the train data that might have normalizer values
             if isinstance(config["dataset"], list):
                 config["dataset"] = config["dataset"][0]
