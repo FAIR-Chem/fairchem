@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from typing import Any, Final, Generic, List, Optional, Type, TypeVar
 from unittest import TestCase as UnitTestCase
 
+from ase.atoms import Atoms as ASEAtoms
+
 from ocpapi.client import (
     Adsorbates,
     AdsorbateSlabConfigs,
@@ -223,6 +225,26 @@ class TestAtoms(ModelTestWrapper.ModelTest[Atoms]):
 """,
             *args,
             **kwargs,
+        )
+
+    def test_to_ase_atoms(self) -> None:
+        atoms = Atoms(
+            cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+            pbc=(True, False, True),
+            numbers=[1, 2],
+            positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+            tags=[0, 1],
+        )
+        ase_atoms = atoms.to_ase_atoms()
+        self.assertEqual(
+            ase_atoms,
+            ASEAtoms(
+                cell=[(1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)],
+                pbc=(True, False, True),
+                numbers=[1, 2],
+                positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                tags=[0, 1],
+            ),
         )
 
 
@@ -688,6 +710,32 @@ class TestAdsorbateSlabRelaxationResult(
 """,
             *args,
             **kwargs,
+        )
+
+    def test_to_ase_atoms(self) -> None:
+        result = AdsorbateSlabRelaxationResult(
+            config_id=1,
+            status=Status.SUCCESS,
+            system_id="sys_id",
+            cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+            pbc=(True, False, True),
+            numbers=[1, 2],
+            positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+            tags=[0, 1],
+            energy=100.1,
+            energy_trajectory=[99.9, 100.1],
+            forces=[(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)],
+        )
+        ase_atoms = result.to_ase_atoms()
+        self.assertEqual(
+            ase_atoms,
+            ASEAtoms(
+                cell=[(1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)],
+                pbc=(True, False, True),
+                numbers=[1, 2],
+                positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                tags=[0, 1],
+            ),
         )
 
 
