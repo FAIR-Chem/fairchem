@@ -159,9 +159,9 @@ class OC22LmdbDataset(Dataset):
                 fid = fid.item()
                 data_object.fid = fid
 
-        if hasattr(data_object, "y_relaxed"):
+        if getattr(data_object, "y_relaxed", None) is not None:
             attr = "y_relaxed"
-        elif hasattr(data_object, "y"):
+        elif getattr(data_object, "y", None) is not None:
             attr = "y"
         # if targets are not available, test data is being used
         else:
