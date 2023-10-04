@@ -101,7 +101,7 @@ jobs:
             conda activate ocp-models
             pip install -e .
             pre-commit install
-            pytest --cov-report=xml --cov=ocpmodels/ /home/circleci/project/tests
+            pytest --cov-report=xml --cov-fail-under=101 --cov=ocpmodels/ /home/circleci/project/tests
       - codecov/upload:
           file: coverage.xml
 
