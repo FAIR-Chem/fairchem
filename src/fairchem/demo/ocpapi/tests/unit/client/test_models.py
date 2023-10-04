@@ -1,9 +1,21 @@
 import json
 from dataclasses import dataclass
-from typing import Any, Final, Generic, List, Optional, Type, TypeVar
+from typing import (
+    Any,
+    Final,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 from unittest import TestCase as UnitTestCase
 
+import numpy as np
 from ase.atoms import Atoms as ASEAtoms
+from ase.calculators.singlepoint import SinglePointCalculator
 
 from ocpapi.client import (
     Adsorbates,
@@ -713,30 +725,98 @@ class TestAdsorbateSlabRelaxationResult(
         )
 
     def test_to_ase_atoms(self) -> None:
-        result = AdsorbateSlabRelaxationResult(
-            config_id=1,
-            status=Status.SUCCESS,
-            system_id="sys_id",
-            cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
-            pbc=(True, False, True),
-            numbers=[1, 2],
-            positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
-            tags=[0, 1],
-            energy=100.1,
-            energy_trajectory=[99.9, 100.1],
-            forces=[(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)],
-        )
-        ase_atoms = result.to_ase_atoms()
-        self.assertEqual(
-            ase_atoms,
-            ASEAtoms(
-                cell=[(1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)],
-                pbc=(True, False, True),
-                numbers=[1, 2],
-                positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
-                tags=[0, 1],
+        @dataclass
+        class TestCase:
+            message: str
+            result: AdsorbateSlabRelaxationResult
+            expected_atoms: ASEAtoms
+            expected_energy: Union[float, Type[Exception]]
+            expected_forces: Union[np.ndarray, Type[Exception]]
+
+        # Helper function to construct an ase.Atoms object with the
+        # input attributes.
+        def get_ase_atoms(
+            energy: Optional[float],
+            forces: Optional[List[Tuple[float, float, float]]],
+            **kwargs: Any,
+        ) -> ASEAtoms:
+            atoms = ASEAtoms(**kwargs)
+            atoms.calc = SinglePointCalculator(
+                atoms=atoms,
+                energy=energy,
+                forces=forces,
+            )
+            return atoms
+
+        test_cases: List[TestCase] = [
+            # If all optional fields are omitted, the generated ase.Atoms
+            # object should also have no values set
+            TestCase(
+                message="optional fields omitted",
+                result=AdsorbateSlabRelaxationResult(
+                    config_id=1,
+                    status=Status.SUCCESS,
+                ),
+                expected_atoms=ASEAtoms(),
+                expected_energy=Exception,
+                expected_forces=Exception,
             ),
-        )
+            # If all fields are included, the generated ase.Atoms object
+            # should have positions, forces, etc. configured
+            TestCase(
+                message="all fields set",
+                result=AdsorbateSlabRelaxationResult(
+                    config_id=1,
+                    status=Status.SUCCESS,
+                    system_id="sys_id",
+                    cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                    pbc=(True, False, True),
+                    numbers=[1, 2],
+                    positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                    tags=[0, 1],
+                    energy=100.1,
+                    energy_trajectory=[99.9, 100.1],
+                    forces=[(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)],
+                ),
+                expected_atoms=get_ase_atoms(
+                    cell=((1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)),
+                    pbc=(True, False, True),
+                    numbers=[1, 2],
+                    positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+                    tags=[0, 1],
+                    energy=100.1,
+                    forces=[(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)],
+                ),
+                expected_energy=100.1,
+                expected_forces=np.array([(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)], float),
+            ),
+        ]
+
+        for case in test_cases:
+            with self.subTest(msg=case.message):
+                # Check that the atoms object is constructed correctly
+                ase_atoms = case.result.to_ase_atoms()
+                self.assertEqual(ase_atoms, case.expected_atoms)
+
+                # Check the energy (or that an exception is raised if expected)
+                if isinstance(case.expected_energy, float):
+                    self.assertEqual(
+                        case.expected_energy,
+                        ase_atoms.get_potential_energy(),
+                    )
+                else:
+                    with self.assertRaises(case.expected_energy):
+                        ase_atoms.get_potential_energy()
+
+                # Check the forces (or that an exception is raised if expected)
+                if isinstance(case.expected_forces, np.ndarray):
+                    self.assertEqual(
+                        case.expected_forces.tolist(),
+                        ase_atoms.get_forces().tolist(),
+                    )
+                else:
+                    with self.assertRaises(case.expected_forces):
+                        ase_atoms.get_forces()
 
 
 class TestAdsorbateSlabRelaxationResult_req_fields_only(
