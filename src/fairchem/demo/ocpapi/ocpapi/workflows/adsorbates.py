@@ -17,6 +17,8 @@ from typing import (
 )
 
 from dataclasses_json import Undefined, dataclass_json
+from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 from ocpapi.client import (
     Adsorbates,
@@ -35,13 +37,12 @@ from ocpapi.client import (
 )
 
 from .context import set_context_var
+from .log import log
 from .retry import NO_LIMIT, RateLimitLogging, retry_api_calls
-
-log = logging.getLogger(__name__)
 
 # Context instance that stores information about the adsorbate and bulk
 # material as a tuple in that order
-_CTX_AD_BULK: ContextVar[Tuple[str, Bulk]] = ContextVar(f"{__name__}:ad_bulk")
+_CTX_AD_BULK: ContextVar[Tuple[str, str]] = ContextVar(f"{__name__}:ad_bulk")
 
 # Context intance that stores information about a slab
 _CTX_SLAB: ContextVar[Slab] = ContextVar(f"{__name__}:slab")
@@ -234,6 +235,29 @@ async def _get_absorbate_configs_on_slab(
     return configs.adsorbate_configs
 
 
+async def _get_absorbate_configs_on_slab_with_logging(
+    client: Client,
+    adsorbate: str,
+    slab: Slab,
+) -> List[Atoms]:
+    """
+    Wrapper around _get_absorbate_configs_on_slab that adds logging.
+    """
+    with set_context_var(_CTX_SLAB, slab):
+        # Enumerate candidate binding sites
+        log.info(
+            "Generating adsorbate placements on "
+            f"{'top' if slab.metadata.top else 'bottom'} "
+            f"{slab.metadata.millers} surface, shifted by "
+            f"{round(slab.metadata.shift, 3)}"
+        )
+        return await _get_absorbate_configs_on_slab(
+            client=client,
+            adsorbate=adsorbate,
+            slab=slab,
+        )
+
+
 # The API behind Client.submit_adsorbate_slab_relaxations() is rate limited
 # and this decorator will handle retrying when that rate limit is breached.
 # Retry forever since we can't know how many jobs are being submitted along
@@ -286,7 +310,7 @@ async def _submit_relaxations(
     return system.system_id
 
 
-async def _submit_relaxations_with_logging(
+async def _submit_relaxations_with_progress_logging(
     client: Client,
     adsorbate: str,
     adsorbate_configs: List[Atoms],
@@ -322,11 +346,9 @@ async def _submit_relaxations_with_logging(
             ephemeral=ephemeral,
         )
     )
+    logging_task = asyncio.create_task(log_waiting())
     _, pending = await asyncio.wait(
-        [
-            asyncio.create_task(log_waiting()),
-            submit_task,
-        ],
+        [logging_task, submit_task],
         return_when=asyncio.FIRST_COMPLETED,
     )
 
@@ -393,6 +415,7 @@ async def wait_for_adsorbate_slab_relaxations(
     check_immediately: bool = False,
     slow_interval_sec: float = 30,
     fast_interval_sec: float = 10,
+    pbar: Optional[tqdm] = None,
     client: Client = DEFAULT_CLIENT,
 ) -> Dict[int, Status]:
     """
@@ -406,7 +429,6 @@ async def wait_for_adsorbate_slab_relaxations(
     sleeps are for "fast_interval_sec" seconds.
 
     Args:
-        client: The client to use when making API calls.
         system_id: The ID of the system for which relaxations are running.
         check_immediately: If False (default), sleep before the first check
             for relaxations having finished. If True, check whether relaxations
@@ -415,6 +437,10 @@ async def wait_for_adsorbate_slab_relaxations(
             while all are still running.
         fast_interval_sec: The number of seconds to wait between each check
             when at least one relaxation has finished in the system.
+        pbar: A tqdm instance that tracks the number of configurations that
+            have finished. This will be updated with the number of individual
+            configurations whose relaxations have finished.
+        client: The client to use when making API calls.
 
     Returns:
         Map of config IDs in the system to their terminal status.
@@ -426,6 +452,7 @@ async def wait_for_adsorbate_slab_relaxations(
         await asyncio.sleep(wait_for_sec)
 
     # Run until all results are available
+    num_finished: int = 0
     while True:
         # Get the current results. Only fetch the energy; this hits an index
         # that will return results more quickly.
@@ -437,22 +464,22 @@ async def wait_for_adsorbate_slab_relaxations(
             fields=["energy"],
         )
 
+        # Check the number of finished jobs
+        last_num_finished: int = num_finished
+        num_finished = len([r for r in results if r.status != Status.NOT_AVAILABLE])
+        if pbar is not None:
+            pbar.update(num_finished - last_num_finished)
+
         # Return if all of the relaxations have finished
-        unique_statuses: Set[Status] = set(r.status for r in results)
-        if Status.NOT_AVAILABLE not in unique_statuses:
+        if num_finished == len(results):
             log.info("All relaxations have finished")
             return {r.config_id: r.status for r in results}
 
-        # Shorten the wait time if any relaxations have finished. not_available
-        # means that a relaxation is still running, so the presence of any
-        # other statuses means that some have finished.
-        if unique_statuses - {Status.NOT_AVAILABLE}:
+        # Shorten the wait time if any relaxations have finished
+        if num_finished > 0:
             wait_for_sec = fast_interval_sec
 
         # Wait until the next scheduled check
-        num_finished: int = len(
-            [r for r in results if r.status != Status.NOT_AVAILABLE]
-        )
         log.info(f"{num_finished} of {len(results)} relaxations have finished")
         await asyncio.sleep(wait_for_sec)
 
@@ -489,26 +516,32 @@ async def _ensure_system_deleted(
         await _delete_system(client=client, system_id=system_id)
 
 
-async def _find_binding_sites_on_slab(
+async def _run_relaxations_on_slab(
     client: Client,
     adsorbate: str,
+    adsorbate_configs: List[Atoms],
     bulk: Bulk,
     slab: Slab,
     model: Model,
-    lifetime: Lifetime = Lifetime.SAVE,
+    lifetime: Lifetime,
+    pbar: tqdm,
 ) -> List[AdsorbateSlabRelaxation]:
     """
-    Search for adsorbate binding sites on the input slab.
+    Start relaxations for each adsorbate configuration on the input slab
+    and wait for all to finish.
 
     Args:
         client: The client to use when making API calls.
         adsorbate: The SMILES string of the adsorbate to place.
+        adsorbate_configs: The positions of atoms in each adsorbate placement
+            to be relaxed.
         bulk: The bulk material from which the slab was generated.
         slab: The slab that should be searched for adsorbate binding sites.
         model: The model to use when evaluating forces and energies.
         lifetime: Whether relaxations should be saved on the server, be marked
             as ephemeral (allowing them to deleted in the future), or deleted
             immediately.
+        pbar: A progress bar to update as relaxations finish.
 
     Returns:
         Details of each adsorbate placement, including its relaxed position.
@@ -516,25 +549,12 @@ async def _find_binding_sites_on_slab(
     async with AsyncExitStack() as es:
         es.enter_context(set_context_var(_CTX_SLAB, slab))
 
-        # Enumerate candidate binding sites
-        log.info(
-            "Generating adsorbate placements on "
-            f"{'top' if slab.metadata.top else 'bottom'} "
-            f"{slab.metadata.millers} surface, shifted by "
-            f"{round(slab.metadata.shift, 3)}"
-        )
-        adsorbate_configs: List[Atoms] = await _get_absorbate_configs_on_slab(
-            client=client,
-            adsorbate=adsorbate,
-            slab=slab,
-        )
-
         # Start relaxations for all of the adsorbate placements
         log.info(
             f"Submitting relaxations for {len(adsorbate_configs)} "
             "adsorbate placements"
         )
-        system_id: str = await _submit_relaxations_with_logging(
+        system_id: str = await _submit_relaxations_with_progress_logging(
             client=client,
             adsorbate=adsorbate,
             adsorbate_configs=adsorbate_configs,
@@ -554,8 +574,9 @@ async def _find_binding_sites_on_slab(
 
         # Wait for all relaxations to finish
         await wait_for_adsorbate_slab_relaxations(
-            client=client,
             system_id=system_id,
+            pbar=pbar,
+            client=client,
         )
 
         # Fetch the final results
@@ -576,6 +597,107 @@ async def _find_binding_sites_on_slab(
             )
             for initial_config, result in zip(adsorbate_configs, results)
         ]
+
+
+async def _refresh_pbar(pbar: tqdm, interval_sec: float) -> None:
+    """
+    Helper function that refreshes the input progress bar on a regular
+    schedule. This function never returns; it must be cancelled.
+
+    Args:
+        pbar: The progress bar to refresh.
+        interval_sec: The number of seconds to wait between each refresh.
+    """
+    while True:
+        await asyncio.sleep(interval_sec)
+        pbar.refresh()
+
+
+async def _find_binding_sites_on_slabs(
+    client: Client,
+    adsorbate: str,
+    bulk: Bulk,
+    slabs: List[Slab],
+    model: Model,
+    lifetime: Lifetime,
+) -> List[AdsorbateSlabRelaxation]:
+    """
+    Search for adsorbate binding sites on the input slab.
+
+    Args:
+        client: The client to use when making API calls.
+        adsorbate: The SMILES string of the adsorbate to place.
+        bulk: The bulk material from which the slab was generated.
+        slabs: The slabs that should be searched for adsorbate binding sites.
+        model: The model to use when evaluating forces and energies.
+        lifetime: Whether relaxations should be saved on the server, be marked
+            as ephemeral (allowing them to deleted in the future), or deleted
+            immediately.
+
+    Returns:
+        Details of each adsorbate placement, including its relaxed position.
+    """
+
+    # Get the binding sites on each slab
+    config_tasks: List[asyncio.Task] = [
+        asyncio.create_task(
+            _get_absorbate_configs_on_slab_with_logging(
+                client=client,
+                adsorbate=adsorbate,
+                slab=slab,
+            )
+        )
+        for slab in slabs
+    ]
+    await asyncio.wait(config_tasks)
+    configs_by_slab: List[List[Atoms]] = [t.result() for t in config_tasks]
+
+    # Make sure logs and progress bars work together while tqdm is
+    # being used
+    with logging_redirect_tqdm():
+        # Start a progress bar to track relaxations of the individual
+        # configurations
+        with tqdm(
+            desc="Finished relaxations",
+            bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]",
+            total=sum(len(c) for c in configs_by_slab),
+            miniters=0,
+            leave=False,
+        ) as pbar:
+            # Start a task that refreshes the progress bar on a regular
+            # schedule
+            pbar_refresh_task: asyncio.Task = asyncio.create_task(
+                _refresh_pbar(pbar=pbar, interval_sec=1)
+            )
+
+            # Run relaxations for all configurations on all slabs
+            relaxation_tasks: List[asyncio.Task] = [
+                asyncio.create_task(
+                    _run_relaxations_on_slab(
+                        client=client,
+                        adsorbate=adsorbate,
+                        adsorbate_configs=configs,
+                        bulk=bulk,
+                        slab=slab,
+                        model=model,
+                        lifetime=lifetime,
+                        pbar=pbar,
+                    )
+                )
+                for configs, slab in zip(configs_by_slab, slabs)
+            ]
+            await asyncio.wait(relaxation_tasks)
+
+            # Cancel the task that refreshes the progress bar on a schedule
+            with suppress(asyncio.CancelledError):
+                pbar_refresh_task.cancel()
+                await pbar_refresh_task
+
+    # Return results
+    results: List[AdsorbateSlabRelaxation] = []
+    for t in relaxation_tasks:
+        results.extend(t.result())
+    return results
 
 
 async def find_adsorbate_binding_sites(
@@ -645,35 +767,15 @@ async def find_adsorbate_binding_sites(
             slab_filter=slab_filter,
         )
 
-        # Generate adsorbate placements and run relaxations
-        tasks: List[asyncio.Task] = [
-            asyncio.create_task(
-                _find_binding_sites_on_slab(
-                    client=client,
-                    adsorbate=adsorbate,
-                    bulk=bulk_obj,
-                    slab=slab,
-                    model=model,
-                    lifetime=lifetime,
-                )
-            )
-            for slab in slabs
-        ]
-        _, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
-
-        # There shouldn't be any pending tasks since we wait for all coroutines
-        # to finish above. However, make sure they are cancelled in case there
-        # is some edge case in which tasks are still running.
-        for t in pending:
-            log.warning("Cancelling running task")
-            with suppress(asyncio.CancelledError):
-                t.cancel()
-                await t
-
-        results: List[AdsorbateSlabRelaxation] = []
-        for t in tasks:
-            results.extend(t.result())
-        return results
+        # Find binding sites on all slabs
+        return await _find_binding_sites_on_slabs(
+            client=client,
+            adsorbate=adsorbate,
+            bulk=bulk_obj,
+            slabs=slabs,
+            model=model,
+            lifetime=lifetime,
+        )
 
 
 def keep_slabs_with_miller_indices(
