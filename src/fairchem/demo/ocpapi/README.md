@@ -82,22 +82,20 @@ This example adds the `slab_filter` field, which takes a function that selects o
 
 **Results should be saved whenever possible in order to avoid expensive recomputation.**
 
-Assuming `results` was generated with the `find_adsorbate_binding_sites` method used above, it contains a list of `AdsorbateSlabRelaxation` objects. Those results can be saved to file with:
+Assuming `results` was generated with the `find_adsorbate_binding_sites` method used above, it is an `AdsorbateBindingSites` object. This can be saved to file with:
 
 ```python
-from ocpapi import AdsorbateSlabRelaxation
-
 with open("results.json", "w") as f:
-    f.write(AdsorbateSlabRelaxation.schema().dumps(results, many=True))
+    f.write(results.to_json())
 ```
 
-Similarly, results can be read back from file to a list of `AdsorbateSlabRelaxation` objects with:
+Similarly, results can be read back from file to an `AdsorbateBindingSites` object with:
 
 ```python
-from ocpapi import AdsorbateSlabRelaxation
+from ocpapi import AdsorbateBindingSites
 
 with open("results.json", "r") as f:
-    results = AdsorbateSlabRelaxation.schema().loads(f.read(), many=True)
+    results = AdsorbateBindingSites.from_json(f.read())
 ```
 
 ## Advanced usage

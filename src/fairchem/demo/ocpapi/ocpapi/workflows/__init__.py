@@ -1,5 +1,6 @@
 from .adsorbates import (  # noqa
-    AdsorbateSlabRelaxation,
+    AdsorbateBindingSites,
+    AdsorbateSlabRelaxations,
     Lifetime,
     UnsupportedAdsorbateException,
     UnsupportedBulkException,

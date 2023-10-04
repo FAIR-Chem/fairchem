@@ -12,8 +12,8 @@ class _DataModel:
     Base class for all data models.
 
     Attributes:
-        other: Fields that may have been added to the API that all not yet
-            supported explicitly in this class.
+        other_fields: Fields that may have been added to the API that all
+            not yet supported explicitly in this class.
     """
 
     other_fields: CatchAll
