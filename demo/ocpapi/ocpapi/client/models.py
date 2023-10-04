@@ -356,14 +356,21 @@ class AdsorbateSlabRelaxationResult(_DataModel):
             ASE Atoms object with values from this instance.
         """
         from ase import Atoms as ASEAtoms
+        from ase.calculators.singlepoint import SinglePointCalculator
 
-        return ASEAtoms(
+        atoms: ASEAtoms = ASEAtoms(
             cell=self.cell,
             pbc=self.pbc,
             numbers=self.numbers,
             positions=self.positions,
             tags=self.tags,
         )
+        atoms.calc = SinglePointCalculator(
+            atoms=atoms,
+            energy=self.energy,
+            forces=self.forces,
+        )
+        return atoms
 
 
 @dataclass_json(undefined=Undefined.INCLUDE)
