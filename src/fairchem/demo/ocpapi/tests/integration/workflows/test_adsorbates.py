@@ -101,5 +101,6 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 lifetime=Lifetime.DELETE,
             )
 
-            self.assertEqual(1, len(results))
-            self.assertEqual(Status.SUCCESS, results[0].status)
+            self.assertEqual(1, len(results.slabs))
+            self.assertEqual(1, len(results.slabs[0].configs))
+            self.assertEqual(Status.SUCCESS, results.slabs[0].configs[0].status)
