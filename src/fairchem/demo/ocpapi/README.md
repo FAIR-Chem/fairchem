@@ -99,3 +99,35 @@ from ocpapi import AdsorbateSlabRelaxation
 with open("results.json", "r") as f:
     results = AdsorbateSlabRelaxation.schema().loads(f.read(), many=True)
 ```
+
+## Advanced usage
+
+### Converting to [ase.Atoms](https://wiki.fysik.dtu.dk/ase/ase/atoms.html) objects
+
+**Important! The `to_ase_atoms()` method described below will fail with an import error if [ase](https://wiki.fysik.dtu.dk/ase) is not installed.**
+
+Two classes have support for generating [ase.Atoms](https://wiki.fysik.dtu.dk/ase/ase/atoms.html) objects: 
+* `ocpapi.Atoms.to_ase_atoms()`: Adds unit cell, atomic positions, and other structural information to the returned `ase.Atoms` object.
+* `ocpapi.AdsorbateSlabRelaxationResult.to_ase_atoms()`: Adds the same structure information to the `ase.Atoms` object. Also adds the predicted forces and energy of the relaxed structure, which can be accessed with the `ase.Atoms.get_potential_energy()` and `ase.Atoms.get_forces()` methods.
+
+For example, the following would generate an `ase.Atoms` object for the first relaxed adsorbate configuration on the first slab generated for *OH binding on Pt:
+```python
+from ocpapi import find_adsorbate_binding_sites, Model
+
+results = await find_adsorbate_binding_sites(
+    adsorbate="*OH",
+    bulk="mp-126",
+    model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+)
+
+ase_atoms = results.slabs[0].configs[0].to_ase_atoms()
+```
+
+### Converting to other structure formats
+
+From an `ase.Atoms` object (see previous section), is is possible to [write to other structure formats](https://wiki.fysik.dtu.dk/ase/ase/io/io.html#ase.io.write). Extending the example above, the `ase_atoms` object could be written to a [VASP POSCAR file](https://www.vasp.at/wiki/index.php/POSCAR) with:
+```python
+from ase.io import write
+
+write("POSCAR", ase_atoms, "vasp")
+```

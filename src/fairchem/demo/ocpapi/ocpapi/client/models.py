@@ -94,6 +94,20 @@ class Atoms(_DataModel):
     positions: List[Tuple[float, float, float]]
     tags: List[int]
 
+    def to_ase_atoms(self) -> "ASEAtoms":
+        from ase import Atoms as ASEAtoms
+        from ase.constraints import FixAtoms
+
+        return ASEAtoms(
+            cell=self.cell,
+            pbc=self.pbc,
+            numbers=self.numbers,
+            positions=self.positions,
+            tags=self.tags,
+            # Fix sub-surface atoms
+            constraint=FixAtoms(mask=[t == 0 for t in self.tags]),
+        )
+
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
@@ -335,6 +349,35 @@ class AdsorbateSlabRelaxationResult(_DataModel):
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
+
+    def to_ase_atoms(self) -> "ASEAtoms":
+        """
+        Creates an ASE Atoms object from values in this instance. Only those
+        fields that are supported by the ASE Atoms class will be copied.
+
+        Returns:
+            ASE Atoms object with values from this instance.
+        """
+        from ase import Atoms as ASEAtoms
+        from ase.calculators.singlepoint import SinglePointCalculator
+        from ase.constraints import FixAtoms
+
+        atoms: ASEAtoms = ASEAtoms(
+            cell=self.cell,
+            pbc=self.pbc,
+            numbers=self.numbers,
+            positions=self.positions,
+            tags=self.tags,
+        )
+        if self.tags is not None:
+            # Fix sub-surface atoms
+            atoms.constraints = FixAtoms(mask=[t == 0 for t in self.tags])
+        atoms.calc = SinglePointCalculator(
+            atoms=atoms,
+            energy=self.energy,
+            forces=self.forces,
+        )
+        return atoms
 
 
 @dataclass_json(undefined=Undefined.INCLUDE)
