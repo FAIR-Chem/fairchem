@@ -18,8 +18,11 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
     Tests that workflow methods run against a real server execute correctly.
     """
 
-    TEST_HOST = "https://open-catalyst-api.metademolab.com/ocp"
-    KNOWN_SYSTEM_ID = "f9eacd8f-748c-41dd-ae43-f263dd36d735"
+    CLIENT: Client = Client(
+        host="open-catalyst-api.metademolab.com",
+        scheme="https",
+    )
+    KNOWN_SYSTEM_ID: str = "f9eacd8f-748c-41dd-ae43-f263dd36d735"
 
     async def test_get_adsorbate_slab_relaxation_results(self) -> None:
         # The server is expected to omit some results when too many are
@@ -30,14 +33,13 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
         # https://open-catalyst.metademolab.com/results/f9eacd8f-748c-41dd-ae43-f263dd36d735
         num_configs = 59
 
-        client = Client(self.TEST_HOST)
         results = await get_adsorbate_slab_relaxation_results(
             system_id=self.KNOWN_SYSTEM_ID,
             config_ids=list(range(num_configs)),
             # Fetch a subset of fields to avoid transferring significantly more
             # data than we really need in this test
             fields=["energy", "pbc"],
-            client=client,
+            client=self.CLIENT,
         )
 
         self.assertEqual(
@@ -54,13 +56,12 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
 
         start = time.monotonic()
 
-        client = Client(self.TEST_HOST)
         await wait_for_adsorbate_slab_relaxations(
             system_id=self.KNOWN_SYSTEM_ID,
             check_immediately=False,
             slow_interval_sec=1,
             fast_interval_sec=1,
-            client=client,
+            client=self.CLIENT,
         )
 
         took = time.monotonic() - start
@@ -89,13 +90,12 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
             "ocpapi.workflows.adsorbates._get_absorbate_configs_on_slab",
             wraps=_get_first_absorbate_config_on_slab,
         ):
-            client = Client(self.TEST_HOST)
             results = await find_adsorbate_binding_sites(
                 adsorbate="*O",
                 bulk="mp-30",
                 model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
                 slab_filter=keep_slabs_with_miller_indices([(1, 1, 1)]),
-                client=client,
+                client=self.CLIENT,
                 # Since this is a test, delete the relaxations from the server
                 # once results have been fetched.
                 lifetime=Lifetime.DELETE,

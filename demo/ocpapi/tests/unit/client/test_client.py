@@ -48,7 +48,8 @@ class TestClient(IsolatedAsyncioTestCase):
         @dataclass
         class TestCase:
             message: str
-            base_url: str
+            scheme: str
+            host: str
             response_body: Union[str, Exception]
             response_code: int
             response_headers: Optional[Dict[str, str]] = None
@@ -62,7 +63,8 @@ class TestClient(IsolatedAsyncioTestCase):
             # RateLimitExceededException should be raised
             TestCase(
                 message="rate limit exceeded",
-                base_url="https://test_host/ocp",
+                scheme="https",
+                host="test_host",
                 response_body='{"message": "failed"}',
                 response_code=429,
                 response_headers={"Retry-After": "100"},
@@ -70,7 +72,7 @@ class TestClient(IsolatedAsyncioTestCase):
                 expected_request_body=expected_request_body,
                 expected_exception=RateLimitExceededException(
                     method=method,
-                    url=f"https://test_host/ocp/{route}",
+                    url=f"https://test_host/{route}",
                     retry_after=timedelta(seconds=100),
                 ),
             ),
@@ -79,7 +81,8 @@ class TestClient(IsolatedAsyncioTestCase):
             # handling when retry-after header is not present
             TestCase(
                 message="rate limit exceeded, no retry-after",
-                base_url="https://test_host/ocp",
+                scheme="https",
+                host="test_host",
                 response_body='{"message": "failed"}',
                 response_code=429,
                 response_headers={},
@@ -87,7 +90,7 @@ class TestClient(IsolatedAsyncioTestCase):
                 expected_request_body=expected_request_body,
                 expected_exception=RateLimitExceededException(
                     method=method,
-                    url=f"https://test_host/ocp/{route}",
+                    url=f"https://test_host/{route}",
                     retry_after=None,
                 ),
             ),
@@ -95,7 +98,8 @@ class TestClient(IsolatedAsyncioTestCase):
             # NonRetryableRequestException should be raised
             TestCase(
                 message="non-retryable error",
-                base_url="https://test_host/ocp",
+                scheme="https",
+                host="test_host",
                 response_body='{"message": "failed"}',
                 response_code=404,
                 response_headers={},
@@ -103,7 +107,7 @@ class TestClient(IsolatedAsyncioTestCase):
                 expected_request_body=expected_request_body,
                 expected_exception=NonRetryableRequestException(
                     method=method,
-                    url=f"https://test_host/ocp/{route}",
+                    url=f"https://test_host/{route}",
                     cause=(
                         "Unexpected response code: 404. "
                         'Response body: {"message": "failed"}'
@@ -114,14 +118,15 @@ class TestClient(IsolatedAsyncioTestCase):
             # should be raised
             TestCase(
                 message="non-200 response code",
-                base_url="https://test_host/ocp",
+                scheme="https",
+                host="test_host",
                 response_body='{"message": "failed"}',
                 response_code=500,
                 expected_request_params=expected_request_params,
                 expected_request_body=expected_request_body,
                 expected_exception=RequestException(
                     method=method,
-                    url=f"https://test_host/ocp/{route}",
+                    url=f"https://test_host/{route}",
                     cause=(
                         "Unexpected response code: 500. "
                         'Response body: {"message": "failed"}'
@@ -132,7 +137,8 @@ class TestClient(IsolatedAsyncioTestCase):
             # re-raised in the client
             TestCase(
                 message="exception in request handling",
-                base_url="https://test_host/ocp",
+                scheme="https",
+                host="test_host",
                 # This tells the responses library to raise an exception
                 response_body=Exception("exception message"),
                 response_code=successful_response_code,
@@ -140,7 +146,7 @@ class TestClient(IsolatedAsyncioTestCase):
                 expected_request_body=expected_request_body,
                 expected_exception=RequestException(
                     method=method,
-                    url=f"https://test_host/ocp/{route}",
+                    url=f"https://test_host/{route}",
                     cause=(
                         "Exception while making request: "
                         "Exception: exception message"
@@ -151,7 +157,8 @@ class TestClient(IsolatedAsyncioTestCase):
             # the response object
             TestCase(
                 message="response with data",
-                base_url="https://test_host/ocp",
+                scheme="https",
+                host="test_host",
                 response_body=successful_response_body,
                 response_code=successful_response_code,
                 expected=successful_response_object,
@@ -181,7 +188,7 @@ class TestClient(IsolatedAsyncioTestCase):
                 with responses.RequestsMock() as mock_responses:
                     mock_responses.add(
                         method,
-                        f"{case.base_url}/{route}",
+                        f"{case.scheme}://{case.host}/{route}",
                         body=case.response_body,
                         headers=case.response_headers,
                         status=case.response_code,
@@ -189,7 +196,7 @@ class TestClient(IsolatedAsyncioTestCase):
                     )
 
                     # Create the coroutine that will run the request
-                    client = Client(case.base_url)
+                    client = Client(scheme=case.scheme, host=case.host)
                     request_method = getattr(client, client_method_name)
                     args = client_method_args if client_method_args else {}
                     request_coro = request_method(**args)
@@ -213,10 +220,14 @@ class TestClient(IsolatedAsyncioTestCase):
                         response = await request_coro
                         self.assertEqual(response, case.expected)
 
+    def test_host(self) -> None:
+        client = Client(host="test-host")
+        self.assertEqual("test-host", client.host)
+
     async def test_get_bulks(self) -> None:
         await self._run_common_tests_against_route(
             method="GET",
-            route="bulks",
+            route="ocp/bulks",
             client_method_name="get_bulks",
             successful_response_code=200,
             successful_response_body="""
@@ -254,7 +265,7 @@ class TestClient(IsolatedAsyncioTestCase):
     async def test_get_adsorbates(self) -> None:
         await self._run_common_tests_against_route(
             method="GET",
-            route="adsorbates",
+            route="ocp/adsorbates",
             client_method_name="get_adsorbates",
             successful_response_code=200,
             successful_response_body="""
@@ -270,7 +281,7 @@ class TestClient(IsolatedAsyncioTestCase):
     async def test_get_slabs__bulk_by_id(self) -> None:
         await self._run_common_tests_against_route(
             method="POST",
-            route="slabs",
+            route="ocp/slabs",
             client_method_name="get_slabs",
             client_method_args={"bulk": "test_id"},
             expected_request_body={"bulk_src_id": "test_id"},
@@ -318,7 +329,7 @@ class TestClient(IsolatedAsyncioTestCase):
     async def test_get_slabs__bulk_by_obj(self) -> None:
         await self._run_common_tests_against_route(
             method="POST",
-            route="slabs",
+            route="ocp/slabs",
             client_method_name="get_slabs",
             client_method_args={
                 "bulk": Bulk(
@@ -372,7 +383,7 @@ class TestClient(IsolatedAsyncioTestCase):
     async def test_get_adsorbate_slab_configurations(self) -> None:
         await self._run_common_tests_against_route(
             method="POST",
-            route="adsorbate-slab-configs",
+            route="ocp/adsorbate-slab-configs",
             client_method_name="get_adsorbate_slab_configs",
             client_method_args={
                 "adsorbate": "*A",
@@ -470,7 +481,7 @@ class TestClient(IsolatedAsyncioTestCase):
     async def test_submit_adsorbate_slab_relaxations(self) -> None:
         await self._run_common_tests_against_route(
             method="POST",
-            route="adsorbate-slab-relaxations",
+            route="ocp/adsorbate-slab-relaxations",
             client_method_name="submit_adsorbate_slab_relaxations",
             client_method_args={
                 "adsorbate": "*A",
@@ -556,7 +567,7 @@ class TestClient(IsolatedAsyncioTestCase):
     async def test_get_adsorbate_slab_relaxations_request(self) -> None:
         await self._run_common_tests_against_route(
             method="GET",
-            route="adsorbate-slab-relaxations/test_system_id",
+            route="ocp/adsorbate-slab-relaxations/test_system_id",
             client_method_name="get_adsorbate_slab_relaxations_request",
             client_method_args={"system_id": "test_system_id"},
             successful_response_code=200,
@@ -633,7 +644,7 @@ class TestClient(IsolatedAsyncioTestCase):
     async def test_get_adsorbate_slab_relaxations_results__all_args(self) -> None:
         await self._run_common_tests_against_route(
             method="GET",
-            route="adsorbate-slab-relaxations/test_sys_id/configs",
+            route="ocp/adsorbate-slab-relaxations/test_sys_id/configs",
             client_method_name="get_adsorbate_slab_relaxations_results",
             client_method_args={
                 "system_id": "test_sys_id",
@@ -669,7 +680,7 @@ class TestClient(IsolatedAsyncioTestCase):
     async def test_get_adsorbate_slab_relaxations_results__req_args_only(self) -> None:
         await self._run_common_tests_against_route(
             method="GET",
-            route="adsorbate-slab-relaxations/test_sys_id/configs",
+            route="ocp/adsorbate-slab-relaxations/test_sys_id/configs",
             client_method_name="get_adsorbate_slab_relaxations_results",
             client_method_args={
                 "system_id": "test_sys_id",
@@ -700,7 +711,7 @@ class TestClient(IsolatedAsyncioTestCase):
     async def test_delete_adsorbate_slab_relaxations(self) -> None:
         await self._run_common_tests_against_route(
             method="DELETE",
-            route="adsorbate-slab-relaxations/test_sys_id",
+            route="ocp/adsorbate-slab-relaxations/test_sys_id",
             client_method_name="delete_adsorbate_slab_relaxations",
             client_method_args={
                 "system_id": "test_sys_id",
