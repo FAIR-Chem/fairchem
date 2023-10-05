@@ -96,6 +96,7 @@ class Atoms(_DataModel):
 
     def to_ase_atoms(self) -> "ASEAtoms":
         from ase import Atoms as ASEAtoms
+        from ase.constraints import FixAtoms
 
         return ASEAtoms(
             cell=self.cell,
@@ -103,6 +104,8 @@ class Atoms(_DataModel):
             numbers=self.numbers,
             positions=self.positions,
             tags=self.tags,
+            # Fix sub-surface atoms
+            constraint=FixAtoms(mask=[t == 0 for t in self.tags]),
         )
 
 
@@ -357,6 +360,7 @@ class AdsorbateSlabRelaxationResult(_DataModel):
         """
         from ase import Atoms as ASEAtoms
         from ase.calculators.singlepoint import SinglePointCalculator
+        from ase.constraints import FixAtoms
 
         atoms: ASEAtoms = ASEAtoms(
             cell=self.cell,
@@ -365,6 +369,9 @@ class AdsorbateSlabRelaxationResult(_DataModel):
             positions=self.positions,
             tags=self.tags,
         )
+        if self.tags is not None:
+            # Fix sub-surface atoms
+            atoms.constraints = FixAtoms(mask=[t == 0 for t in self.tags])
         atoms.calc = SinglePointCalculator(
             atoms=atoms,
             energy=self.energy,
