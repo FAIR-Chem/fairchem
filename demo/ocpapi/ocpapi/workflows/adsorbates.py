@@ -127,26 +127,41 @@ class Lifetime(Enum):
     DELETE = auto()
 
 
-@dataclass_json(undefined=Undefined.INCLUDE)
-@dataclass(kw_only=True)
-class AdsorbateSlabRelaxation(AdsorbateSlabRelaxationResult):
+@dataclass_json(undefined=Undefined.EXCLUDE)
+@dataclass
+class AdsorbateSlabRelaxations:
     """
-    Extension of AdsorbateSlabRelaxationResult that includes information
-    about the initial structure and other inputs to the relaxation.
+    Stores the relaxations of adsorbate placements on the surface of a slab.
+
+    Attributes:
+        slab: The slab on which the adsorbate was placed.
+        configs: Details of the relaxation of each adsorbate placement,
+            include the final position.
+    """
+
+    slab: Slab
+    configs: List[AdsorbateSlabRelaxationResult]
+
+
+@dataclass_json(undefined=Undefined.EXCLUDE)
+@dataclass
+class AdsorbateBindingSites:
+    """
+    Stores the inputs and results of a set of relaxations of adsorbate
+    placements on the surface of a slab.
 
     Attributes:
         adsorbate: The SMILES string of the adsorbate.
-        adsorbate_config: The configuration of the adsorbate before relaxation.
         bulk: The bulk material that was being modeled.
-        slab: The slab on which the adsorbate was placed.
         model: The type of the model that was run.
+        slabs: The list of slabs that were generated from the bulk structure.
+            Each contains its own list of adsorbate placements.
     """
 
     adsorbate: str
-    adsorbate_config: Atoms
     bulk: Bulk
-    slab: Slab
     model: Model
+    slabs: List[AdsorbateSlabRelaxations]
 
 
 @retry_api_calls(max_attempts=3)
@@ -525,7 +540,7 @@ async def _run_relaxations_on_slab(
     model: Model,
     lifetime: Lifetime,
     pbar: tqdm,
-) -> List[AdsorbateSlabRelaxation]:
+) -> AdsorbateSlabRelaxations:
     """
     Start relaxations for each adsorbate configuration on the input slab
     and wait for all to finish.
@@ -586,17 +601,10 @@ async def _run_relaxations_on_slab(
             client=client,
             system_id=system_id,
         )
-        return [
-            AdsorbateSlabRelaxation(
-                adsorbate=adsorbate,
-                adsorbate_config=initial_config,
-                bulk=bulk,
-                slab=slab,
-                model=model,
-                **vars(result),
-            )
-            for initial_config, result in zip(adsorbate_configs, results)
-        ]
+        return AdsorbateSlabRelaxations(
+            slab=slab,
+            configs=results,
+        )
 
 
 async def _refresh_pbar(pbar: tqdm, interval_sec: float) -> None:
@@ -620,7 +628,7 @@ async def _find_binding_sites_on_slabs(
     slabs: List[Slab],
     model: Model,
     lifetime: Lifetime,
-) -> List[AdsorbateSlabRelaxation]:
+) -> AdsorbateBindingSites:
     """
     Search for adsorbate binding sites on the input slab.
 
@@ -694,10 +702,12 @@ async def _find_binding_sites_on_slabs(
                 await pbar_refresh_task
 
     # Return results
-    results: List[AdsorbateSlabRelaxation] = []
-    for t in relaxation_tasks:
-        results.extend(t.result())
-    return results
+    return AdsorbateBindingSites(
+        adsorbate=adsorbate,
+        bulk=bulk,
+        model=model,
+        slabs=[t.result() for t in relaxation_tasks],
+    )
 
 
 async def find_adsorbate_binding_sites(
@@ -707,7 +717,7 @@ async def find_adsorbate_binding_sites(
     slab_filter: Optional[Callable[[Slab], bool]] = None,
     client: Client = DEFAULT_CLIENT,
     lifetime: Lifetime = Lifetime.SAVE,
-) -> List[AdsorbateSlabRelaxation]:
+) -> AdsorbateBindingSites:
     """
     Search for adsorbate binding sites on surfaces of a bulk material.
     This executes the following steps:
