@@ -2,6 +2,14 @@
 
 Python library for programmatic use of the [Open Catalyst Demo](https://open-catalyst.metademolab.com/). Users unfamiliar with the Open Catalyst Demo are encouraged to read more about it before continuing.
 
+## Installation
+
+Ensure you have Python 3.9.1 or newer, and install `ocpapi` using:
+
+```bash
+pip install git+https://github.com/Open-Catalyst-Project/ocpapi.git
+```
+
 ## Quickstart
 
 The following examples are used to search for *OH binding sites on Pt surfaces. They use the `find_adsorbate_binding_sites` function, which is a high-level workflow on top of other methods included in this library. Once familiar with this routine, users are encouraged to learn about lower-level methods and features that support more advanced use cases.
@@ -62,8 +70,8 @@ This should take 5-10 minutes to finish while hundreds of individual adsorbate p
 
 ```python
 from ocpapi import (
-    find_adsorbate_binding_sites, 
-    keep_slabs_with_miller_indices, 
+    find_adsorbate_binding_sites,
+    keep_slabs_with_miller_indices,
     Model,
 )
 
@@ -106,7 +114,7 @@ with open("results.json", "r") as f:
 
 **Important! The `to_ase_atoms()` method described below will fail with an import error if [ase](https://wiki.fysik.dtu.dk/ase) is not installed.**
 
-Two classes have support for generating [ase.Atoms](https://wiki.fysik.dtu.dk/ase/ase/atoms.html) objects: 
+Two classes have support for generating [ase.Atoms](https://wiki.fysik.dtu.dk/ase/ase/atoms.html) objects:
 * `ocpapi.Atoms.to_ase_atoms()`: Adds unit cell, atomic positions, and other structural information to the returned `ase.Atoms` object.
 * `ocpapi.AdsorbateSlabRelaxationResult.to_ase_atoms()`: Adds the same structure information to the `ase.Atoms` object. Also adds the predicted forces and energy of the relaxed structure, which can be accessed with the `ase.Atoms.get_potential_energy()` and `ase.Atoms.get_forces()` methods.
 
