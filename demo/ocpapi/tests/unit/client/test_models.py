@@ -16,6 +16,7 @@ from unittest import TestCase as UnitTestCase
 import numpy as np
 from ase.atoms import Atoms as ASEAtoms
 from ase.calculators.singlepoint import SinglePointCalculator
+from ase.constraints import FixAtoms
 
 from ocpapi.client import (
     Adsorbates,
@@ -247,17 +248,19 @@ class TestAtoms(ModelTestWrapper.ModelTest[Atoms]):
             positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
             tags=[0, 1],
         )
-        ase_atoms = atoms.to_ase_atoms()
-        self.assertEqual(
-            ase_atoms,
-            ASEAtoms(
-                cell=[(1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)],
-                pbc=(True, False, True),
-                numbers=[1, 2],
-                positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
-                tags=[0, 1],
-            ),
+        actual = atoms.to_ase_atoms()
+        expected = ASEAtoms(
+            cell=[(1.1, 2.1, 3.1), (4.1, 5.1, 6.1), (7.1, 8.1, 9.1)],
+            pbc=(True, False, True),
+            numbers=[1, 2],
+            positions=[(1.1, 1.2, 1.3), (2.1, 2.2, 2.3)],
+            tags=[0, 1],
+            constraint=FixAtoms(mask=[True, False]),
         )
+        self.assertEqual(actual, expected)
+        # The constraint property isn't checked in the Atoms.__eq__ method
+        # so check it explicitly
+        self.assertEqual(actual.constraints[0].index, [0])
 
 
 class TestSlabMetadata(ModelTestWrapper.ModelTest[SlabMetadata]):
@@ -732,6 +735,7 @@ class TestAdsorbateSlabRelaxationResult(
             expected_atoms: ASEAtoms
             expected_energy: Union[float, Type[Exception]]
             expected_forces: Union[np.ndarray, Type[Exception]]
+            expected_unconstrained_forces: Union[np.ndarray, Type[Exception]]
 
         # Helper function to construct an ase.Atoms object with the
         # input attributes.
@@ -760,6 +764,7 @@ class TestAdsorbateSlabRelaxationResult(
                 expected_atoms=ASEAtoms(),
                 expected_energy=Exception,
                 expected_forces=Exception,
+                expected_unconstrained_forces=Exception,
             ),
             # If all fields are included, the generated ase.Atoms object
             # should have positions, forces, etc. configured
@@ -788,7 +793,12 @@ class TestAdsorbateSlabRelaxationResult(
                     forces=[(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)],
                 ),
                 expected_energy=100.1,
-                expected_forces=np.array([(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)], float),
+                # The constraint on the first atom causes its force to be
+                # zeroed out
+                expected_forces=np.array([(0, 0, 0), (0.4, 0.5, 0.6)], float),
+                expected_unconstrained_forces=np.array(
+                    [(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)], float
+                ),
             ),
         ]
 
@@ -817,6 +827,17 @@ class TestAdsorbateSlabRelaxationResult(
                 else:
                     with self.assertRaises(case.expected_forces):
                         ase_atoms.get_forces()
+
+                # Check the unconstrained forces (or that an exception is
+                # raised if expected)
+                if isinstance(case.expected_unconstrained_forces, np.ndarray):
+                    self.assertEqual(
+                        case.expected_unconstrained_forces.tolist(),
+                        ase_atoms.get_forces(apply_constraint=False).tolist(),
+                    )
+                else:
+                    with self.assertRaises(case.expected_unconstrained_forces):
+                        ase_atoms.get_forces(apply_constraint=False)
 
 
 class TestAdsorbateSlabRelaxationResult_req_fields_only(
