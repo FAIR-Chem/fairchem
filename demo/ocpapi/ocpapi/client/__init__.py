@@ -20,3 +20,4 @@ from .models import (  # noqa
     Slabs,
     Status,
 )
+from .ui import get_results_ui_url  # noqa
