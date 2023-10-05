@@ -735,6 +735,13 @@ class BaseTrainer(ABC):
                 # Get a batch.
                 batch = next(train_loader_iter)
 
+                # add noise for some experiments
+                if "noise" in self.config["dataset"] and self.config["dataset"]["noise"] > 0:
+                    # add gaussian noise to input xyz coordinates
+                    gaussian_noise = np.random.normal(0, self.config["dataset"]["noise"],
+                        size=batch[0].pos.shape).astype(np.float32)
+                    batch[0].pos += gaussian_noise
+
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
@@ -974,6 +981,12 @@ class BaseTrainer(ABC):
             desc="device {}".format(rank),
             disable=disable_tqdm,
         ):
+            if "noise" in self.config["val_dataset"] and self.config["val_dataset"]["noise"] > 0:
+                # add gaussian noise to input xyz coordinates
+                gaussian_noise = np.random.normal(0, self.config["val_dataset"]["noise"],
+                    size=batch[0].pos.shape).astype(np.float32)
+                batch[0].pos += gaussian_noise
+
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
@@ -1102,10 +1115,14 @@ class BaseTrainer(ABC):
             else:
                 systemids = [f"{sid}" for sid in sids]
 
-            predictions["ids"].extend(systemids)
+            try:
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    out = self._forward(batch_list)
+            except RuntimeError:
+                print(f"oom'd on sid {sids} ({batch_list[0].natoms.item()} atoms)")
+                continue
 
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch_list)
+            predictions["ids"].extend(systemids)
 
             for target_key in self.config["outputs"]:
                 ### Target property is a direct output of the model
@@ -1209,7 +1226,9 @@ class BaseTrainer(ABC):
                     per_image_pred = pred.numpy()
                     _chunk_idx = None
 
-                predictions[f"{target_key}"].extend(per_image_pred)
+                predictions[f"{target_key}"].extend(per_image_pred.reshape((-1, 9)))
+                # todo: fix chunking for matrix outputs
+
                 ### Backwards compatibility, retain 'chunk_idx' for forces.
                 if _chunk_idx is not None:
                     if target_key == "forces":
