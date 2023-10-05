@@ -34,6 +34,7 @@ from ocpapi.client import (
     Slab,
     Slabs,
     Status,
+    get_results_ui_url,
 )
 
 from .context import set_context_var
@@ -137,10 +138,16 @@ class AdsorbateSlabRelaxations:
         slab: The slab on which the adsorbate was placed.
         configs: Details of the relaxation of each adsorbate placement,
             include the final position.
+        system_id: The ID of the system that stores all of the relaxations.
+        api_host: The API host on which the relaxations were run.
+        ui_url: The URL at which results can be visualized.
     """
 
     slab: Slab
     configs: List[AdsorbateSlabRelaxationResult]
+    system_id: str
+    api_host: str
+    ui_url: Optional[str]
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)
@@ -605,6 +612,12 @@ async def _run_relaxations_on_slab(
         return AdsorbateSlabRelaxations(
             slab=slab,
             configs=results,
+            system_id=system_id,
+            api_host=client.host,
+            ui_url=get_results_ui_url(
+                api_host=client.host,
+                system_id=system_id,
+            ),
         )
 
 

@@ -2,6 +2,8 @@ import time
 from typing import Any, List
 from unittest import IsolatedAsyncioTestCase, mock
 
+import requests
+
 from ocpapi.client import Atoms, Client, Model, Status
 from ocpapi.workflows import (
     Lifetime,
@@ -101,21 +103,25 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 lifetime=Lifetime.DELETE,
             )
 
-            self.assertEqual(1, len(results.slabs))
-            self.assertEqual(1, len(results.slabs[0].configs))
-            self.assertEqual(Status.SUCCESS, results.slabs[0].configs[0].status)
+        self.assertEqual(1, len(results.slabs))
+        self.assertEqual(1, len(results.slabs[0].configs))
+        self.assertEqual(Status.SUCCESS, results.slabs[0].configs[0].status)
 
-            # Make sure that the adslabs being used have tags for sub-surface,
-            # surface, and adsorbate atoms. Then make sure that forces are
-            # exactly zero only for the sub-surface atoms.
-            config = results.slabs[0].configs[0]
-            self.assertEqual(
-                {0, 1, 2},
-                set(config.tags),
-                "Expected tags for surface, sub-surface, and adsorbate atoms",
-            )
-            for tag, forces in zip(config.tags, config.forces):
-                if tag == 0:  # Sub-surface atoms are fixed / have 0 forces
-                    self.assertEqual(forces, (0, 0, 0))
-                else:
-                    self.assertNotEqual(forces, (0, 0, 0))
+        # Make sure that the adslabs being used have tags for sub-surface,
+        # surface, and adsorbate atoms. Then make sure that forces are
+        # exactly zero only for the sub-surface atoms.
+        config = results.slabs[0].configs[0]
+        self.assertEqual(
+            {0, 1, 2},
+            set(config.tags),
+            "Expected tags for surface, sub-surface, and adsorbate atoms",
+        )
+        for tag, forces in zip(config.tags, config.forces):
+            if tag == 0:  # Sub-surface atoms are fixed / have 0 forces
+                self.assertEqual(forces, (0, 0, 0))
+            else:
+                self.assertNotEqual(forces, (0, 0, 0))
+
+        # Make sure the UI URL is reachable
+        response = requests.head(results.slabs[0].ui_url)
+        self.assertEqual(200, response.status_code)
