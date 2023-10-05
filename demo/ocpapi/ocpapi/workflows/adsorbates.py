@@ -230,7 +230,7 @@ async def _get_absorbate_configs_on_slab(
     client: Client,
     adsorbate: str,
     slab: Slab,
-) -> List[Atoms]:
+) -> Tuple[Slab, List[Atoms]]:
     """
     Generate initial guesses at adsorbate binding sites on the input slab.
 
@@ -240,21 +240,22 @@ async def _get_absorbate_configs_on_slab(
         slab: The slab on which the adsorbate should be placed.
 
     Returns:
-        List of Atoms objects, each with the positions of the adsorbate atoms
-        on one of the candidate binding sites.
+        First, an updated slab instance that has had tags applied to it.
+        Second, a list of Atoms objects, each with the positions of the
+        adsorbate atoms on one of the candidate binding sites.
     """
     configs: AdsorbateSlabConfigs = await client.get_adsorbate_slab_configs(
         adsorbate=adsorbate,
         slab=slab,
     )
-    return configs.adsorbate_configs
+    return configs.slab, configs.adsorbate_configs
 
 
 async def _get_absorbate_configs_on_slab_with_logging(
     client: Client,
     adsorbate: str,
     slab: Slab,
-) -> List[Atoms]:
+) -> Tuple[Slab, List[Atoms]]:
     """
     Wrapper around _get_absorbate_configs_on_slab that adds logging.
     """
@@ -658,7 +659,9 @@ async def _find_binding_sites_on_slabs(
         for slab in slabs
     ]
     await asyncio.wait(config_tasks)
-    configs_by_slab: List[List[Atoms]] = [t.result() for t in config_tasks]
+    slabs_and_configs: List[Tuple[Slab, List[Atoms]]] = [
+        t.result() for t in config_tasks
+    ]
 
     # Make sure logs and progress bars work together while tqdm is
     # being used
@@ -668,7 +671,7 @@ async def _find_binding_sites_on_slabs(
         with tqdm(
             desc="Finished relaxations",
             bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]",
-            total=sum(len(c) for c in configs_by_slab),
+            total=sum(len(c[1]) for c in slabs_and_configs),
             miniters=0,
             leave=False,
         ) as pbar:
@@ -692,7 +695,7 @@ async def _find_binding_sites_on_slabs(
                         pbar=pbar,
                     )
                 )
-                for configs, slab in zip(configs_by_slab, slabs)
+                for slab, configs in slabs_and_configs
             ]
             await asyncio.wait(relaxation_tasks)
 
