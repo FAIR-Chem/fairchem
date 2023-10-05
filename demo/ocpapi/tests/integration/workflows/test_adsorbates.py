@@ -82,8 +82,8 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
         async def _get_first_absorbate_config_on_slab(
             *args: Any, **kwargs: Any
         ) -> List[Atoms]:
-            all = await _get_absorbate_configs_on_slab(*args, **kwargs)
-            return all[:1]
+            slab, all_configs = await _get_absorbate_configs_on_slab(*args, **kwargs)
+            return slab, all_configs[:1]
 
         with mock.patch(
             "ocpapi.workflows.adsorbates._get_absorbate_configs_on_slab",
@@ -104,3 +104,18 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
             self.assertEqual(1, len(results.slabs))
             self.assertEqual(1, len(results.slabs[0].configs))
             self.assertEqual(Status.SUCCESS, results.slabs[0].configs[0].status)
+
+            # Make sure that the adslabs being used have tags for sub-surface,
+            # surface, and adsorbate atoms. Then make sure that forces are
+            # exactly zero only for the sub-surface atoms.
+            config = results.slabs[0].configs[0]
+            self.assertEqual(
+                {0, 1, 2},
+                set(config.tags),
+                "Expected tags for surface, sub-surface, and adsorbate atoms",
+            )
+            for tag, forces in zip(config.tags, config.forces):
+                if tag == 0:  # Sub-surface atoms are fixed / have 0 forces
+                    self.assertEqual(forces, (0, 0, 0))
+                else:
+                    self.assertNotEqual(forces, (0, 0, 0))
