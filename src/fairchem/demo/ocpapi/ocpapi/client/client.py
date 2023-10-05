@@ -86,15 +86,23 @@ class Client:
 
     def __init__(
         self,
-        base_url: str = "https://open-catalyst-api.metademolab.com/ocp/",
+        host: str = "open-catalyst-api.metademolab.com",
+        scheme: str = "https",
     ) -> None:
         """
         Args:
-            base_url: The base URL for all API requests.
+            host: The host that will be called.
+            scheme: The scheme used when making API calls.
         """
-        # Normalize the base URL so that all methods below can assume it
-        # does not end in a '/' character
-        self._base_url: str = base_url.rstrip("/")
+        self._host = host
+        self._base_url = f"{scheme}://{host}"
+
+    @property
+    def host(self) -> str:
+        """
+        The host being called by this client.
+        """
+        return self._host
 
     async def get_bulks(self) -> Bulks:
         """
@@ -112,7 +120,7 @@ class Client:
             Bulks
         """
         response: str = await self._run_request(
-            url=f"{self._base_url}/bulks",
+            path="ocp/bulks",
             method="GET",
         )
         return Bulks.from_json(response)
@@ -133,7 +141,7 @@ class Client:
             Adsorbates
         """
         response: str = await self._run_request(
-            url=f"{self._base_url}/adsorbates",
+            path="ocp/adsorbates",
             method="GET",
         )
         return Adsorbates.from_json(response)
@@ -158,7 +166,7 @@ class Client:
             Slabs
         """
         response: str = await self._run_request(
-            url=f"{self._base_url}/slabs",
+            path="ocp/slabs",
             method="POST",
             data=json.dumps(
                 {"bulk_src_id": bulk.src_id if isinstance(bulk, Bulk) else bulk}
@@ -191,7 +199,7 @@ class Client:
             AdsorbateSlabConfigs
         """
         response: str = await self._run_request(
-            url=f"{self._base_url}/adsorbate-slab-configs",
+            path="ocp/adsorbate-slab-configs",
             method="POST",
             data=json.dumps(
                 {
@@ -244,7 +252,7 @@ class Client:
             AdsorbateSlabRelaxationsSystem
         """
         response: str = await self._run_request(
-            url=f"{self._base_url}/adsorbate-slab-relaxations",
+            path="ocp/adsorbate-slab-relaxations",
             method="POST",
             data=json.dumps(
                 {
@@ -281,7 +289,7 @@ class Client:
             AdsorbateSlabRelaxationsRequest
         """
         response: str = await self._run_request(
-            url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}",
+            path=f"ocp/adsorbate-slab-relaxations/{system_id}",
             method="GET",
         )
         return AdsorbateSlabRelaxationsRequest.from_json(response)
@@ -319,7 +327,7 @@ class Client:
         if config_ids:
             params["config_id"] = config_ids
         response: str = await self._run_request(
-            url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}/configs",
+            path=f"ocp/adsorbate-slab-relaxations/{system_id}/configs",
             method="GET",
             params=params,
         )
@@ -341,17 +349,17 @@ class Client:
                 possible, though not guaranteed, that a retry could succeed.
         """
         await self._run_request(
-            url=f"{self._base_url}/adsorbate-slab-relaxations/{system_id}",
+            path=f"ocp/adsorbate-slab-relaxations/{system_id}",
             method="DELETE",
         )
 
-    async def _run_request(self, url: str, method: str, **kwargs) -> str:
+    async def _run_request(self, path: str, method: str, **kwargs) -> str:
         """
         Helper method that runs the input request on a thread so that
         it doesn't block the event loop on the calling thread.
 
         Args:
-            url: The full URL to make the request against.
+            path: The URL path to make the request against.
             method: The HTTP method to use (GET, POST, etc.).
 
         Raises:
@@ -367,6 +375,7 @@ class Client:
         """
 
         # Make the request
+        url = f"{self._base_url}/{path}"
         try:
             response: requests.Response = await asyncio.to_thread(
                 requests.request,
