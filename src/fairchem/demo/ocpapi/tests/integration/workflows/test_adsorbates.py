@@ -2,6 +2,8 @@ import time
 from typing import Any, List
 from unittest import IsolatedAsyncioTestCase, mock
 
+import requests
+
 from ocpapi.client import Atoms, Client, Model, Status
 from ocpapi.workflows import (
     Lifetime,
@@ -18,8 +20,11 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
     Tests that workflow methods run against a real server execute correctly.
     """
 
-    TEST_HOST = "https://open-catalyst-api.metademolab.com/ocp"
-    KNOWN_SYSTEM_ID = "f9eacd8f-748c-41dd-ae43-f263dd36d735"
+    CLIENT: Client = Client(
+        host="open-catalyst-api.metademolab.com",
+        scheme="https",
+    )
+    KNOWN_SYSTEM_ID: str = "f9eacd8f-748c-41dd-ae43-f263dd36d735"
 
     async def test_get_adsorbate_slab_relaxation_results(self) -> None:
         # The server is expected to omit some results when too many are
@@ -30,14 +35,13 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
         # https://open-catalyst.metademolab.com/results/f9eacd8f-748c-41dd-ae43-f263dd36d735
         num_configs = 59
 
-        client = Client(self.TEST_HOST)
         results = await get_adsorbate_slab_relaxation_results(
             system_id=self.KNOWN_SYSTEM_ID,
             config_ids=list(range(num_configs)),
             # Fetch a subset of fields to avoid transferring significantly more
             # data than we really need in this test
             fields=["energy", "pbc"],
-            client=client,
+            client=self.CLIENT,
         )
 
         self.assertEqual(
@@ -54,13 +58,12 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
 
         start = time.monotonic()
 
-        client = Client(self.TEST_HOST)
         await wait_for_adsorbate_slab_relaxations(
             system_id=self.KNOWN_SYSTEM_ID,
             check_immediately=False,
             slow_interval_sec=1,
             fast_interval_sec=1,
-            client=client,
+            client=self.CLIENT,
         )
 
         took = time.monotonic() - start
@@ -89,33 +92,36 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
             "ocpapi.workflows.adsorbates._get_absorbate_configs_on_slab",
             wraps=_get_first_absorbate_config_on_slab,
         ):
-            client = Client(self.TEST_HOST)
             results = await find_adsorbate_binding_sites(
                 adsorbate="*O",
                 bulk="mp-30",
                 model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
                 slab_filter=keep_slabs_with_miller_indices([(1, 1, 1)]),
-                client=client,
+                client=self.CLIENT,
                 # Since this is a test, delete the relaxations from the server
                 # once results have been fetched.
                 lifetime=Lifetime.DELETE,
             )
 
-            self.assertEqual(1, len(results.slabs))
-            self.assertEqual(1, len(results.slabs[0].configs))
-            self.assertEqual(Status.SUCCESS, results.slabs[0].configs[0].status)
+        self.assertEqual(1, len(results.slabs))
+        self.assertEqual(1, len(results.slabs[0].configs))
+        self.assertEqual(Status.SUCCESS, results.slabs[0].configs[0].status)
 
-            # Make sure that the adslabs being used have tags for sub-surface,
-            # surface, and adsorbate atoms. Then make sure that forces are
-            # exactly zero only for the sub-surface atoms.
-            config = results.slabs[0].configs[0]
-            self.assertEqual(
-                {0, 1, 2},
-                set(config.tags),
-                "Expected tags for surface, sub-surface, and adsorbate atoms",
-            )
-            for tag, forces in zip(config.tags, config.forces):
-                if tag == 0:  # Sub-surface atoms are fixed / have 0 forces
-                    self.assertEqual(forces, (0, 0, 0))
-                else:
-                    self.assertNotEqual(forces, (0, 0, 0))
+        # Make sure that the adslabs being used have tags for sub-surface,
+        # surface, and adsorbate atoms. Then make sure that forces are
+        # exactly zero only for the sub-surface atoms.
+        config = results.slabs[0].configs[0]
+        self.assertEqual(
+            {0, 1, 2},
+            set(config.tags),
+            "Expected tags for surface, sub-surface, and adsorbate atoms",
+        )
+        for tag, forces in zip(config.tags, config.forces):
+            if tag == 0:  # Sub-surface atoms are fixed / have 0 forces
+                self.assertEqual(forces, (0, 0, 0))
+            else:
+                self.assertNotEqual(forces, (0, 0, 0))
+
+        # Make sure the UI URL is reachable
+        response = requests.head(results.slabs[0].ui_url)
+        self.assertEqual(200, response.status_code)
