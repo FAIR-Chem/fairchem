@@ -31,12 +31,11 @@ asyncio.run(find_adsorbate_binding_sites(...))
 ### Search over all surfaces
 
 ```python
-from ocpapi import find_adsorbate_binding_sites, Model
+from ocpapi import find_adsorbate_binding_sites
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
     bulk="mp-126",
-    model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
 )
 ```
 
@@ -44,13 +43,12 @@ Input to this function includes:
 
 * The SMILES string of the adsorbate to place
 * The Materials Project ID of the bulk structure from which surfaces will be generated
-* The type of the model being used
 
 This function will perform the following steps:
 
 1. Enumerate surfaces of the bulk material
 2. On each surface, enumerate initial guesses for adorbate binding sites
-3. Run local force-based relaxations of each adsorbate placement using the specified model
+3. Run local force-based relaxations of each adsorbate placement
 
 In addition, this handles:
 
@@ -72,13 +70,11 @@ This should take 5-10 minutes to finish while hundreds of individual adsorbate p
 from ocpapi import (
     find_adsorbate_binding_sites,
     keep_slabs_with_miller_indices,
-    Model,
 )
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
     bulk="mp-126",
-    model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
     slab_filter=keep_slabs_with_miller_indices([(1, 1, 0), (1, 1, 1)])
 )
 ```
@@ -120,6 +116,23 @@ urls = [
 
 ## Advanced usage
 
+### Changing the model type
+
+The API currently supports two models:
+* `GEMNET_OC_BASE_S2EF_ALL_MD`: https://arxiv.org/abs/2204.02782
+* `EQUIFORMER_V2_31M_S2EF_ALL_MD` (default): https://arxiv.org/abs/2306.12059
+
+A specific model type can be requested with:
+```python
+from ocpapi import find_adsorbate_binding_sites, Model
+
+results = await find_adsorbate_binding_sites(
+    adsorbate="*OH",
+    bulk="mp-126",
+    model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+)
+```
+
 ### Converting to [ase.Atoms](https://wiki.fysik.dtu.dk/ase/ase/atoms.html) objects
 
 **Important! The `to_ase_atoms()` method described below will fail with an import error if [ase](https://wiki.fysik.dtu.dk/ase) is not installed.**
@@ -130,12 +143,11 @@ Two classes have support for generating [ase.Atoms](https://wiki.fysik.dtu.dk/as
 
 For example, the following would generate an `ase.Atoms` object for the first relaxed adsorbate configuration on the first slab generated for *OH binding on Pt:
 ```python
-from ocpapi import find_adsorbate_binding_sites, Model
+from ocpapi import find_adsorbate_binding_sites
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
     bulk="mp-126",
-    model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
 )
 
 ase_atoms = results.slabs[0].configs[0].to_ase_atoms()
