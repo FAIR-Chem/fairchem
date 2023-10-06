@@ -6,8 +6,8 @@ Python library for programmatic use of the [Open Catalyst Demo](https://open-cat
 
 Ensure you have Python 3.9.1 or newer, and install `ocpapi` using:
 
-```bash
-pip install git+https://github.com/Open-Catalyst-Project/ocpapi.git
+```sh
+pip install ocpapi
 ```
 
 ## Quickstart
@@ -160,4 +160,21 @@ From an `ase.Atoms` object (see previous section), is is possible to [write to o
 from ase.io import write
 
 write("POSCAR", ase_atoms, "vasp")
+```
+
+## License
+
+`ocpapi` is released under the [MIT License](LICENSE).
+
+## Citing `ocpapi`
+
+If you use `ocpapi` in your research, please consider citing the [AdsorbML paper](https://www.nature.com/articles/s41524-023-01121-5) (in addition to the relevant datasets / models used):
+
+```bibtex
+@article{lan2023adsorbml,
+  title={{AdsorbML}: a leap in efficiency for adsorption energy calculations using generalizable machine learning potentials},
+  author={Lan*, Janice and Palizhati*, Aini and Shuaibi*, Muhammed and Wood*, Brandon M and Wander, Brook and Das, Abhishek and Uyttendaele, Matt and Zitnick, C Lawrence and Ulissi, Zachary W},
+  journal={npj Computational Materials},
+  year={2023},
+}
 ```
