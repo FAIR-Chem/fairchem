@@ -729,7 +729,7 @@ async def _find_binding_sites_on_slabs(
 async def find_adsorbate_binding_sites(
     adsorbate: str,
     bulk: str,
-    model: Model,
+    model: Model = Model.EQUIFORMER_V2_31M_S2EF_ALL_MD,
     slab_filter: Optional[Callable[[Slab], bool]] = None,
     client: Client = DEFAULT_CLIENT,
     lifetime: Lifetime = Lifetime.SAVE,
