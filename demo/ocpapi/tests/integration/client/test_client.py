@@ -36,14 +36,16 @@ class TestClient(IsolatedAsyncioTestCase):
     Tests that calls to a real server are handled correctly.
     """
 
-    TEST_HOST = "https://open-catalyst-api.metademolab.com/ocp"
-    KNOWN_SYSTEM_ID = "f9eacd8f-748c-41dd-ae43-f263dd36d735"
+    CLIENT: Client = Client(
+        host="open-catalyst-api.metademolab.com",
+        scheme="https",
+    )
+    KNOWN_SYSTEM_ID: str = "f9eacd8f-748c-41dd-ae43-f263dd36d735"
 
     async def test_get_bulks(self) -> None:
         # Make sure that at least one of the expected bulks is in the response
 
-        client = Client(self.TEST_HOST)
-        response = await client.get_bulks()
+        response = await self.CLIENT.get_bulks()
 
         self.assertIn(
             Bulk(src_id="mp-149", elements=["Si"], formula="Si"),
@@ -54,16 +56,14 @@ class TestClient(IsolatedAsyncioTestCase):
         # Make sure that at least one of the expected adsorbates is in the
         # response
 
-        client = Client(self.TEST_HOST)
-        response = await client.get_adsorbates()
+        response = await self.CLIENT.get_adsorbates()
 
         self.assertIn("*CO", response.adsorbates_supported)
 
     async def test_get_slabs(self) -> None:
         # Make sure that at least one of the expected slabs is in the response
 
-        client = Client(self.TEST_HOST)
-        response = await client.get_slabs("mp-149")
+        response = await self.CLIENT.get_slabs("mp-149")
 
         self.assertIn(
             Slab(
@@ -86,8 +86,7 @@ class TestClient(IsolatedAsyncioTestCase):
         # Make sure that adsorbate placements are generated for a slab
         # and adsorbate combination that is known to be supported
 
-        client = Client(self.TEST_HOST)
-        response = await client.get_adsorbate_slab_configs(
+        response = await self.CLIENT.get_adsorbate_slab_configs(
             adsorbate="*CO",
             slab=Slab(
                 atoms=Atoms(
@@ -171,8 +170,7 @@ class TestClient(IsolatedAsyncioTestCase):
         # Make sure that a relaxation can be started for an adsorbate
         # placement on a slab with the gemnet oc model
 
-        client = Client(self.TEST_HOST)
-        response = await client.submit_adsorbate_slab_relaxations(
+        response = await self.CLIENT.submit_adsorbate_slab_relaxations(
             adsorbate="*CO",
             adsorbate_configs=[
                 Atoms(
@@ -269,7 +267,7 @@ class TestClient(IsolatedAsyncioTestCase):
             ephemeral=True,
         )
 
-        async with _ensure_system_deleted(client, response.system_id):
+        async with _ensure_system_deleted(self.CLIENT, response.system_id):
             self.assertNotEqual(response.system_id, "")
             self.assertEqual(len(response.config_ids), 1)
 
@@ -277,8 +275,7 @@ class TestClient(IsolatedAsyncioTestCase):
         # Make sure that a relaxation can be started for an adsorbate
         # placement on a slab with the equiformer v2 model
 
-        client = Client(self.TEST_HOST)
-        response = await client.submit_adsorbate_slab_relaxations(
+        response = await self.CLIENT.submit_adsorbate_slab_relaxations(
             adsorbate="*CO",
             adsorbate_configs=[
                 Atoms(
@@ -375,7 +372,7 @@ class TestClient(IsolatedAsyncioTestCase):
             ephemeral=True,
         )
 
-        async with _ensure_system_deleted(client, response.system_id):
+        async with _ensure_system_deleted(self.CLIENT, response.system_id):
             self.assertNotEqual(response.system_id, "")
             self.assertEqual(len(response.config_ids), 1)
 
@@ -383,8 +380,7 @@ class TestClient(IsolatedAsyncioTestCase):
         # Make sure the original request can be fetched for an already-
         # submitted system.
 
-        client = Client(self.TEST_HOST)
-        response = await client.get_adsorbate_slab_relaxations_request(
+        response = await self.CLIENT.get_adsorbate_slab_relaxations_request(
             system_id=self.KNOWN_SYSTEM_ID
         )
 
@@ -399,8 +395,7 @@ class TestClient(IsolatedAsyncioTestCase):
         # system. Check that all configurations and all fields for each are
         # returned.
 
-        client = Client(self.TEST_HOST)
-        response = await client.get_adsorbate_slab_relaxations_results(
+        response = await self.CLIENT.get_adsorbate_slab_relaxations_results(
             system_id=self.KNOWN_SYSTEM_ID,
         )
 
@@ -426,8 +421,7 @@ class TestClient(IsolatedAsyncioTestCase):
         # system. Check that only the requested configurations and fields are
         # returned.
 
-        client = Client(self.TEST_HOST)
-        response = await client.get_adsorbate_slab_relaxations_results(
+        response = await self.CLIENT.get_adsorbate_slab_relaxations_results(
             system_id=self.KNOWN_SYSTEM_ID,
             config_ids=[10, 20, 30],
             fields=["energy", "cell"],

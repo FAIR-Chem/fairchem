@@ -106,6 +106,18 @@ with open("results.json", "r") as f:
     results = AdsorbateBindingSites.from_json(f.read())
 ```
 
+### Viewing results in the web UI
+
+Relaxation results can be viewed in a web UI. For example, https://open-catalyst.metademolab.com/results/7eaa0d63-83aa-473f-ac84-423ffd0c67f5 shows the results of relaxing *OH on a Pt (1,1,1) surface; the uuid, "7eaa0d63-83aa-473f-ac84-423ffd0c67f5", is referred to as the `system_id`.
+
+Extending the examples above, the URLs to visualize the results of relaxations on each Pt surface can be obtained with:
+```python
+urls = [
+    slab.ui_url
+    for slab in results.slabs
+]
+```
+
 ## Advanced usage
 
 ### Converting to [ase.Atoms](https://wiki.fysik.dtu.dk/ase/ase/atoms.html) objects
