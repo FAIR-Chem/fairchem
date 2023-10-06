@@ -35,20 +35,16 @@ For the energy targets, instead of using the total DFT energies directly, we
 reference them using per-element linear fit reference energies, followed by
 normalizing the referenced energy distribution.
 
-That is, during training,
-target $E = \frac{E_{DFT} - E_{ref} - E_{mean}}{E_{std}}$, and
-during testing/inference, the total DFT energy prediction $\hat{E}_{DFT}$ is given
-as $\hat{E} \times E_{std} + E_{ref} + E_{mean}$
-where  
+That is, during training, target $E = \frac{E_{DFT} - E_{ref} - E_{mean}}{E_{std}}$, and during testing/inference, the total DFT energy prediction $\hat{E_{DFT}}$ is given as $\hat{E} \times E_{std} + E_{ref} + E_{mean}$ where  
 $E_{DFT}$ = raw DFT energy,  
 $E_{ref}$ = reference energy ([per-element reference energies available here for OC22](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/linref/oc22_linfit_coeffs.npz)),  
 $E_{mean}$ = normalizer mean, computed after subtracting per-element references (=0 for OC22),  
-$E_{std}$ = normalizer standard deviation, computed after subtracting per-element references (=25.12 for OC22),   
+$E_{std}$ = normalizer standard deviation, computed after subtracting per-element references (=25.12 for OC22),  
 $\hat{E}$ = predicted energy,  
 $\hat{E_{DFT}}$ = predicted total DFT energy.  
 
 We can also write this as
-$\hat{E}_{DFT} = E_{std} \times \frac{\hat{E} + E_{ref}}{E_{std}} + E_{mean}$,
+$\hat{E_{DFT}} = E_{std} \times \frac{\hat{E} + E_{ref}}{E_{std}} + E_{mean}$,
 which makes it a little easier to handle it in the current version of the code.
 
 $\frac{E_{ref}}{E_{std}}$ comes packaged as part of the checkpoint above and
