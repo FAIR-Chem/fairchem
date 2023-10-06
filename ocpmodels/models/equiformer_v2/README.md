@@ -44,7 +44,7 @@ $\hat{E}$ = predicted energy,
 $\hat{E_{DFT}}$ = predicted total DFT energy.  
 
 We can also write this as
-$\hat{E_{DFT}} = E_{std} \times \frac{\hat{E} + E_{ref}}{E_{std}} + E_{mean}$,
+$\hat{E_{DFT}} = E_{std} \times (\hat{E} + \frac{E_{ref}}{E_{std}}) + E_{mean}$,
 which makes it a little easier to handle it in the current version of the code.
 
 $\frac{E_{ref}}{E_{std}}$ comes packaged as part of the checkpoint above and
