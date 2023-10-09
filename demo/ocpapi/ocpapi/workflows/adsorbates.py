@@ -671,7 +671,8 @@ async def _find_binding_sites_on_slabs(
         )
         for slab in slabs
     ]
-    await asyncio.wait(config_tasks)
+    if config_tasks:
+        await asyncio.wait(config_tasks)
     slabs_and_configs: List[Tuple[Slab, List[Atoms]]] = [
         t.result() for t in config_tasks
     ]
@@ -710,7 +711,8 @@ async def _find_binding_sites_on_slabs(
                 )
                 for slab, configs in slabs_and_configs
             ]
-            await asyncio.wait(relaxation_tasks)
+            if relaxation_tasks:
+                await asyncio.wait(relaxation_tasks)
 
             # Cancel the task that refreshes the progress bar on a schedule
             with suppress(asyncio.CancelledError):
