@@ -42,6 +42,16 @@ class TestClient(IsolatedAsyncioTestCase):
     )
     KNOWN_SYSTEM_ID: str = "f9eacd8f-748c-41dd-ae43-f263dd36d735"
 
+    async def test_get_models(self) -> None:
+        # Make sure that at least one of the known models is in the response
+
+        response = await self.CLIENT.get_models()
+
+        self.assertIn(
+            Model(id="equiformer_v2_31M_s2ef_all_md"),
+            response.models,
+        )
+
     async def test_get_bulks(self) -> None:
         # Make sure that at least one of the expected bulks is in the response
 
@@ -263,7 +273,7 @@ class TestClient(IsolatedAsyncioTestCase):
                     top=True,
                 ),
             ),
-            model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+            model="gemnet_oc_base_s2ef_all_md",
             ephemeral=True,
         )
 
@@ -368,7 +378,7 @@ class TestClient(IsolatedAsyncioTestCase):
                     top=True,
                 ),
             ),
-            model=Model.EQUIFORMER_V2_31M_S2EF_ALL_MD,
+            model="equiformer_v2_31M_s2ef_all_md",
             ephemeral=True,
         )
 

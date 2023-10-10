@@ -30,7 +30,7 @@ from ocpapi.client import (
     Bulk,
     Bulks,
     Client,
-    Model,
+    Models,
     Slab,
     Slabs,
     Status,
@@ -82,6 +82,22 @@ _setup_log_record_factory()
 
 
 DEFAULT_CLIENT: Client = Client()
+
+
+class UnsupportedModelException(Exception):
+    """
+    Exception raised when a model is not supported in the API.
+    """
+
+    def __init__(self, model: str, allowed_models: List[str]) -> None:
+        """
+        Args:
+            model: The model that was requested.
+            allowed_models: The list of models that are supported.
+        """
+        super().__init__(
+            f"Model {model} is not supported; expected one of {allowed_models}"
+        )
 
 
 class UnsupportedBulkException(Exception):
@@ -167,8 +183,29 @@ class AdsorbateBindingSites:
 
     adsorbate: str
     bulk: Bulk
-    model: Model
+    model: str
     slabs: List[AdsorbateSlabRelaxations]
+
+
+@retry_api_calls(max_attempts=3)
+async def _ensure_model_supported(client: Client, model: str) -> None:
+    """
+    Checks that the input model is supported in the API.
+
+    Args:
+        client: The client to use when making requests to the API.
+        model: The model to check.
+
+    Raises:
+        UnsupportedModelException if the model is not supported.
+    """
+    models: Models = await client.get_models()
+    allowed_models: List[str] = [m.id for m in models.models]
+    if model not in allowed_models:
+        raise UnsupportedModelException(
+            model=model,
+            allowed_models=allowed_models,
+        )
 
 
 @retry_api_calls(max_attempts=3)
@@ -299,7 +336,7 @@ async def _submit_relaxations(
     adsorbate_configs: List[Atoms],
     bulk: Bulk,
     slab: Slab,
-    model: Model,
+    model: str,
     ephemeral: bool,
 ) -> str:
     """
@@ -339,7 +376,7 @@ async def _submit_relaxations_with_progress_logging(
     adsorbate_configs: List[Atoms],
     bulk: Bulk,
     slab: Slab,
-    model: Model,
+    model: str,
     ephemeral: bool,
 ) -> str:
     """
@@ -545,7 +582,7 @@ async def _run_relaxations_on_slab(
     adsorbate_configs: List[Atoms],
     bulk: Bulk,
     slab: Slab,
-    model: Model,
+    model: str,
     lifetime: Lifetime,
     pbar: tqdm,
 ) -> AdsorbateSlabRelaxations:
@@ -640,7 +677,7 @@ async def _find_binding_sites_on_slabs(
     adsorbate: str,
     bulk: Bulk,
     slabs: List[Slab],
-    model: Model,
+    model: str,
     lifetime: Lifetime,
 ) -> AdsorbateBindingSites:
     """
@@ -731,7 +768,7 @@ async def _find_binding_sites_on_slabs(
 async def find_adsorbate_binding_sites(
     adsorbate: str,
     bulk: str,
-    model: Model = Model.EQUIFORMER_V2_31M_S2EF_ALL_MD,
+    model: str = "equiformer_v2_31M_s2ef_all_md",
     slab_filter: Optional[Callable[[Slab], bool]] = None,
     client: Client = DEFAULT_CLIENT,
     lifetime: Lifetime = Lifetime.SAVE,
@@ -768,11 +805,19 @@ async def find_adsorbate_binding_sites(
         to locally-optimized positions using the input model.
 
     Raises:
+        UnsupportedModelException if the requested model is not supported.
         UnsupportedBulkException if the requested bulk is not supported.
         UnsupportedAdsorbateException if the requested adsorbate is not
             supported.
     """
     with set_context_var(_CTX_AD_BULK, (adsorbate, bulk)):
+        # Make sure the input model is supported in the API
+        log.info(f"Ensuring that model {model} is supported")
+        await _ensure_model_supported(
+            client=client,
+            model=model,
+        )
+
         # Make sure the input adsorbate is supported in the API
         log.info(f"Ensuring that adsorbate {adsorbate} is supported")
         await _ensure_adsorbate_supported(

@@ -17,6 +17,7 @@ from ocpapi.client import (
     Bulks,
     Client,
     Model,
+    Models,
     NonRetryableRequestException,
     RateLimitExceededException,
     RequestException,
@@ -223,6 +224,32 @@ class TestClient(IsolatedAsyncioTestCase):
     def test_host(self) -> None:
         client = Client(host="test-host")
         self.assertEqual("test-host", client.host)
+
+    async def test_get_models(self) -> None:
+        await self._run_common_tests_against_route(
+            method="GET",
+            route="ocp/models",
+            client_method_name="get_models",
+            successful_response_code=200,
+            successful_response_body="""
+{
+    "models": [
+        {
+            "id": "model_1"
+        },
+        {
+            "id": "model_2"
+        }
+    ]
+}
+""",
+            successful_response_object=Models(
+                models=[
+                    Model(id="model_1"),
+                    Model(id="model_2"),
+                ]
+            ),
+        )
 
     async def test_get_bulks(self) -> None:
         await self._run_common_tests_against_route(
@@ -514,7 +541,7 @@ class TestClient(IsolatedAsyncioTestCase):
                         top=False,
                     ),
                 ),
-                "model": Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+                "model": "test_model",
                 "ephemeral": True,
             },
             expected_request_body={
@@ -548,7 +575,7 @@ class TestClient(IsolatedAsyncioTestCase):
                         "top": False,
                     },
                 },
-                "model": "gemnet_oc_base_s2ef_all_md",
+                "model": "test_model",
                 "ephemeral": True,
             },
             successful_response_code=200,
@@ -603,7 +630,7 @@ class TestClient(IsolatedAsyncioTestCase):
             "top": false
         }
     },
-    "model": "gemnet_oc_base_s2ef_all_md"
+    "model": "test_model"
 }
 """,
             successful_response_object=AdsorbateSlabRelaxationsRequest(
@@ -637,7 +664,7 @@ class TestClient(IsolatedAsyncioTestCase):
                         top=False,
                     ),
                 ),
-                model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+                model="test_model",
             ),
         )
 

@@ -15,6 +15,7 @@ from .models import (  # noqa
     Bulk,
     Bulks,
     Model,
+    Models,
     Slab,
     SlabMetadata,
     Slabs,

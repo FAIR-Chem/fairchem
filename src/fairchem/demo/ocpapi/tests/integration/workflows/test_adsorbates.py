@@ -4,7 +4,7 @@ from unittest import IsolatedAsyncioTestCase, mock
 
 import requests
 
-from ocpapi.client import Atoms, Client, Model, Status
+from ocpapi.client import Atoms, Client, Status
 from ocpapi.workflows import (
     Lifetime,
     find_adsorbate_binding_sites,
@@ -95,7 +95,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
             results = await find_adsorbate_binding_sites(
                 adsorbate="*O",
                 bulk="mp-30",
-                model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+                model="gemnet_oc_base_s2ef_all_md",
                 slab_filter=keep_slabs_with_miller_indices([(1, 1, 1)]),
                 client=self.CLIENT,
                 # Since this is a test, delete the relaxations from the server

@@ -121,17 +121,17 @@ urls = [
 ### Changing the model type
 
 The API currently supports two models:
-* `GEMNET_OC_BASE_S2EF_ALL_MD`: https://arxiv.org/abs/2204.02782
-* `EQUIFORMER_V2_31M_S2EF_ALL_MD` (default): https://arxiv.org/abs/2306.12059
+* `equiformer_v2_31M_s2ef_all_md` (default): https://arxiv.org/abs/2306.12059
+* `gemnet_oc_base_s2ef_all_md`: https://arxiv.org/abs/2204.02782
 
 A specific model type can be requested with:
 ```python
-from ocpapi import find_adsorbate_binding_sites, Model
+from ocpapi import find_adsorbate_binding_sites
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
     bulk="mp-126",
-    model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+    model="gemnet_oc_base_s2ef_all_md",
 )
 ```
 

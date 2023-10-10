@@ -29,6 +29,7 @@ from ocpapi.client import (
     Bulks,
     Client,
     Model,
+    Models,
     RateLimitExceededException,
     RequestException,
     Slab,
@@ -42,6 +43,7 @@ from ocpapi.workflows import (
     AdsorbateSlabRelaxations,
     UnsupportedAdsorbateException,
     UnsupportedBulkException,
+    UnsupportedModelException,
     find_adsorbate_binding_sites,
     get_adsorbate_slab_relaxation_results,
     keep_slabs_with_miller_indices,
@@ -494,6 +496,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
             message: str
             adsorbate: str
             bulk: str
+            client_get_models: List[Union[Models, Exception]]
             client_get_adsorbates: List[Union[Adsorbates, Exception]]
             client_get_bulks: List[Union[Bulks, Exception]]
             client_get_slabs: List[Union[Slabs, Exception]]
@@ -509,6 +512,14 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
             non_default_args: Optional[Dict[str, Any]] = None
             expected: Final[Optional[AdsorbateBindingSites]] = None
             expected_exception: Final[Optional[Type[Exception]]] = None
+
+        # List of models to return from the API
+        models: Models = Models(
+            models=[
+                Model(id="equiformer_v2_31M_s2ef_all_md"),
+                Model(id="model_2"),
+            ]
+        )
 
         # List of adsorbates to return from the API
         adsorbates: Adsorbates = Adsorbates(
@@ -620,11 +631,66 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
         api_host, ui_host = next(iter(_API_TO_UI_HOSTS.items()))
 
         test_cases: List[TestCase] = [
+            # An exception raised when fetching models should be re-raised
+            TestCase(
+                message="exception while getting models",
+                adsorbate="*B",
+                bulk="id-1",
+                client_get_models=[TestException()],
+                client_get_adsorbates=[adsorbates],
+                client_get_bulks=[bulks],
+                client_get_slabs=[slabs],
+                client_get_adsorbate_slab_configs=[
+                    adsorbate_slab_configs_1,
+                    adsorbate_slab_configs_2,
+                ],
+                client_submit_adsorbate_slab_relaxations=[
+                    system_1,
+                    system_2,
+                ],
+                client_get_adsorbate_slab_relaxations_results=[
+                    results,
+                    results,
+                    results,
+                    results,
+                ],
+                expected_exception=TestException,
+            ),
+            # If the requested model is not supported in the API then an
+            # exception should be raised
+            TestCase(
+                message="model not supported",
+                adsorbate="*B",
+                bulk="id-1",
+                non_default_args={
+                    "model": "model_3",  # Not is set returned by API
+                },
+                client_get_models=[models],
+                client_get_adsorbates=[adsorbates],
+                client_get_bulks=[bulks],
+                client_get_slabs=[slabs],
+                client_get_adsorbate_slab_configs=[
+                    adsorbate_slab_configs_1,
+                    adsorbate_slab_configs_2,
+                ],
+                client_submit_adsorbate_slab_relaxations=[
+                    system_1,
+                    system_2,
+                ],
+                client_get_adsorbate_slab_relaxations_results=[
+                    results,
+                    results,
+                    results,
+                    results,
+                ],
+                expected_exception=UnsupportedModelException,
+            ),
             # An exception raised when fetching adsorbates should be re-raised
             TestCase(
                 message="exception while getting adsorbates",
                 adsorbate="*B",
                 bulk="id-1",
+                client_get_models=[models],
                 client_get_adsorbates=[TestException()],
                 client_get_bulks=[bulks],
                 client_get_slabs=[slabs],
@@ -650,6 +716,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 message="adsorbate not supported",
                 adsorbate="*C",  # Not is set returned by API
                 bulk="id-1",
+                client_get_models=[models],
                 client_get_adsorbates=[adsorbates],
                 client_get_bulks=[bulks],
                 client_get_slabs=[slabs],
@@ -674,6 +741,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 message="exception while getting bulks",
                 adsorbate="*B",
                 bulk="id-1",
+                client_get_models=[models],
                 client_get_adsorbates=[adsorbates],
                 client_get_bulks=[TestException()],
                 client_get_slabs=[slabs],
@@ -698,6 +766,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 message="bulk not supported",
                 adsorbate="*B",
                 bulk="id-3",  # Not in set returned by API
+                client_get_models=[models],
                 client_get_adsorbates=[adsorbates],
                 client_get_bulks=[bulks],
                 client_get_slabs=[slabs],
@@ -722,6 +791,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 message="exception while getting slabs",
                 adsorbate="*B",
                 bulk="id-1",
+                client_get_models=[models],
                 client_get_adsorbates=[adsorbates],
                 client_get_bulks=[bulks],
                 client_get_slabs=[TestException()],
@@ -747,6 +817,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 message="exception while getting adslab configs",
                 adsorbate="*B",
                 bulk="id-1",
+                client_get_models=[models],
                 client_get_adsorbates=[adsorbates],
                 client_get_bulks=[bulks],
                 client_get_slabs=[slabs],
@@ -772,6 +843,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 message="exception while submitting relaxations",
                 adsorbate="*B",
                 bulk="id-1",
+                client_get_models=[models],
                 client_get_adsorbates=[adsorbates],
                 client_get_bulks=[bulks],
                 client_get_slabs=[slabs],
@@ -797,6 +869,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 message="exception while getting relaxation results",
                 adsorbate="*B",
                 bulk="id-1",
+                client_get_models=[models],
                 client_get_adsorbates=[adsorbates],
                 client_get_bulks=[bulks],
                 client_get_slabs=[slabs],
@@ -822,6 +895,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 message="no slabs",
                 adsorbate="*B",
                 bulk="id-1",
+                client_get_models=[models],
                 client_get_adsorbates=[adsorbates],
                 client_get_bulks=[bulks],
                 client_get_slabs=[Slabs(slabs=[])],  # No slabs generated
@@ -839,7 +913,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 expected=AdsorbateBindingSites(
                     adsorbate="*B",
                     bulk=bulk_1,
-                    model=Model.EQUIFORMER_V2_31M_S2EF_ALL_MD,
+                    model="equiformer_v2_31M_s2ef_all_md",
                     slabs=[],
                 ),
             ),
@@ -849,6 +923,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 message="retryable exceptions",
                 adsorbate="*B",
                 bulk="id-1",
+                client_get_models=[RequestException("", "", ""), models],
                 client_get_adsorbates=[RequestException("", "", ""), adsorbates],
                 client_get_bulks=[RequestException("", "", ""), bulks],
                 client_get_slabs=[RequestException("", "", ""), slabs],
@@ -873,7 +948,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 expected=AdsorbateBindingSites(
                     adsorbate="*B",
                     bulk=bulk_1,
-                    model=Model.EQUIFORMER_V2_31M_S2EF_ALL_MD,
+                    model="equiformer_v2_31M_s2ef_all_md",
                     slabs=[
                         AdsorbateSlabRelaxations(
                             slab=adsorbate_slab_configs_1.slab,
@@ -897,6 +972,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 message="non-default values",
                 adsorbate="*B",
                 bulk="id-1",
+                client_get_models=[models],
                 client_get_adsorbates=[adsorbates],
                 client_get_bulks=[bulks],
                 client_get_slabs=[slabs],
@@ -915,13 +991,13 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                     results,
                 ],
                 non_default_args={
-                    "model": Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+                    "model": "model_2",
                     "slab_filter": keep_slabs_with_miller_indices([(1, 0, 0)]),
                 },
                 expected=AdsorbateBindingSites(
                     adsorbate="*B",
                     bulk=bulk_1,
-                    model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+                    model="model_2",
                     slabs=[
                         AdsorbateSlabRelaxations(
                             slab=adsorbate_slab_configs_1.slab,
@@ -941,6 +1017,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
 
                 # Mock the client
                 client = mock.create_autospec(Client)
+                client.get_models.side_effect = case.client_get_models
                 client.get_adsorbates.side_effect = case.client_get_adsorbates
                 client.get_bulks.side_effect = case.client_get_bulks
                 client.get_slabs.side_effect = case.client_get_slabs
