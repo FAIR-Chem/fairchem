@@ -21,6 +21,32 @@ class _DataModel:
 
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
+class Model(_DataModel):
+    """
+    Stores information about a single model supported in the API.
+
+    Attributes:
+        id: The ID of the model.
+    """
+
+    id: str
+
+
+@dataclass_json(undefined=Undefined.INCLUDE)
+@dataclass
+class Models(_DataModel):
+    """
+    Stores the response from a request for models supported in the API.
+
+    Attributes:
+        models: The list of models that are supported.
+    """
+
+    models: List[Model]
+
+
+@dataclass_json(undefined=Undefined.INCLUDE)
+@dataclass
 class Bulk(_DataModel):
     """
     Stores information about a single bulk material.
@@ -198,22 +224,6 @@ class AdsorbateSlabRelaxationsSystem(_DataModel):
     config_ids: List[int]
 
 
-class Model(Enum):
-    """
-    ML model that can be used in adsorbate-slab relaxations.
-
-    Attributes:
-        GEMNET_OC_BASE_S2EF_ALL_MD: https://arxiv.org/abs/2204.02782
-        EQUIFORMER_V2_31M_S2EF_ALL_MD: https://arxiv.org/abs/2306.12059
-    """
-
-    GEMNET_OC_BASE_S2EF_ALL_MD = "gemnet_oc_base_s2ef_all_md"
-    EQUIFORMER_V2_31M_S2EF_ALL_MD = "equiformer_v2_31M_s2ef_all_md"
-
-    def __str__(self) -> str:
-        return self.value
-
-
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
 class AdsorbateSlabRelaxationsRequest(_DataModel):
@@ -237,7 +247,7 @@ class AdsorbateSlabRelaxationsRequest(_DataModel):
     adsorbate_configs: List[Atoms]
     bulk: Bulk
     slab: Slab
-    model: Model
+    model: str
     # Omit from serialization when None
     ephemeral: Optional[bool] = field(
         default=None,
