@@ -1,5 +1,7 @@
 # ocpapi
 
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/Open-Catalyst-Project/ocpapi/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/Open-Catalyst-Project/ocpapi/tree/main) [![codecov](https://codecov.io/gh/Open-Catalyst-Project/ocpapi/graph/badge.svg?token=66Z7Y7QUUW)](https://codecov.io/gh/Open-Catalyst-Project/ocpapi)
+
 Python library for programmatic use of the [Open Catalyst Demo](https://open-catalyst.metademolab.com/). Users unfamiliar with the Open Catalyst Demo are encouraged to read more about it before continuing.
 
 ## Installation
