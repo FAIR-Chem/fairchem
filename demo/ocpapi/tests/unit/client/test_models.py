@@ -29,6 +29,7 @@ from ocpapi.client import (
     Bulk,
     Bulks,
     Model,
+    Models,
     Slab,
     SlabMetadata,
     Slabs,
@@ -127,6 +128,54 @@ class ModelTestWrapper:
             comparing the generated built-in types.
             """
             self.assertEqual(json.loads(first), json.loads(second))
+
+
+class TestModel(ModelTestWrapper.ModelTest[Model]):
+    """
+    Serde tests for the Model data model.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=Model(
+                id="model_id",
+                other_fields={"extra_field": "extra_value"},
+            ),
+            obj_json="""
+{
+    "id": "model_id",
+    "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
+
+
+class TestModels(ModelTestWrapper.ModelTest[Models]):
+    """
+    Serde tests for the Models data model.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            obj=Models(
+                models=[Model(id="model_id")],
+                other_fields={"extra_field": "extra_value"},
+            ),
+            obj_json="""
+{
+    "models": [
+        {
+            "id": "model_id"
+        }
+    ],
+    "extra_field": "extra_value"
+}
+""",
+            *args,
+            **kwargs,
+        )
 
 
 class TestBulk(ModelTestWrapper.ModelTest[Bulk]):
@@ -549,7 +598,7 @@ class TestAdsorbateSlabRelaxationsRequest(
                         other_fields={"extra_meta_field": "extra_meta_value"},
                     ),
                 ),
-                model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+                model="test_model",
                 ephemeral=True,
                 adsorbate_reaction="A + B -> C",
                 other_fields={"extra_field": "extra_value"},
@@ -590,7 +639,7 @@ class TestAdsorbateSlabRelaxationsRequest(
             "extra_meta_field": "extra_meta_value"
         }
     },
-    "model": "gemnet_oc_base_s2ef_all_md",
+    "model": "test_model",
     "ephemeral": true,
     "adsorbate_reaction": "A + B -> C",
     "extra_field": "extra_value"
@@ -642,7 +691,7 @@ class TestAdsorbateSlabRelaxationsRequest_req_fields_only(
                         top=False,
                     ),
                 ),
-                model=Model.GEMNET_OC_BASE_S2EF_ALL_MD,
+                model="test_model",
             ),
             obj_json="""
 {
@@ -676,7 +725,7 @@ class TestAdsorbateSlabRelaxationsRequest_req_fields_only(
             "top": false
         }
     },
-    "model": "gemnet_oc_base_s2ef_all_md"
+    "model": "test_model"
 }
 """,
             *args,

@@ -4,6 +4,7 @@ from .adsorbates import (  # noqa
     Lifetime,
     UnsupportedAdsorbateException,
     UnsupportedBulkException,
+    UnsupportedModelException,
     find_adsorbate_binding_sites,
     get_adsorbate_slab_relaxation_results,
     keep_slabs_with_miller_indices,
