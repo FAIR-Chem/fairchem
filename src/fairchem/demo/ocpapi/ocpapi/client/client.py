@@ -14,7 +14,7 @@ from .models import (
     Atoms,
     Bulk,
     Bulks,
-    Model,
+    Models,
     Slab,
     Slabs,
 )
@@ -104,6 +104,27 @@ class Client:
         """
         return self._host
 
+    async def get_models(self) -> Models:
+        """
+        Fetch the list of models that are supported in the API.
+
+        Raises:
+            RateLimitExceededException if the call was rejected because a
+                server side rate limit was breached.
+            NonRetryableRequestException if the call was rejected and a retry
+                is not expected to succeed.
+            RequestException for all other errors when making the request; it
+                is possible, though not guaranteed, that a retry could succeed.
+
+        Returns:
+            Models
+        """
+        response: str = await self._run_request(
+            path="ocp/models",
+            method="GET",
+        )
+        return Models.from_json(response)
+
     async def get_bulks(self) -> Bulks:
         """
         Fetch the list of bulk materials that are supported in the API.
@@ -114,7 +135,7 @@ class Client:
             NonRetryableRequestException if the call was rejected and a retry
                 is not expected to succeed.
             RequestException for all other errors when making the request; it
-                possible, though not guaranteed, that a retry could succeed.
+                is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             Bulks
@@ -135,7 +156,7 @@ class Client:
             NonRetryableRequestException if the call was rejected and a retry
                 is not expected to succeed.
             RequestException for all other errors when making the request; it
-                possible, though not guaranteed, that a retry could succeed.
+                is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             Adsorbates
@@ -160,7 +181,7 @@ class Client:
             NonRetryableRequestException if the call was rejected and a retry
                 is not expected to succeed.
             RequestException for all other errors when making the request; it
-                possible, though not guaranteed, that a retry could succeed.
+                is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             Slabs
@@ -193,7 +214,7 @@ class Client:
             NonRetryableRequestException if the call was rejected and a retry
                 is not expected to succeed.
             RequestException for all other errors when making the request; it
-                possible, though not guaranteed, that a retry could succeed.
+                is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             AdsorbateSlabConfigs
@@ -217,7 +238,7 @@ class Client:
         adsorbate_configs: List[Atoms],
         bulk: Bulk,
         slab: Slab,
-        model: Model,
+        model: str,
         ephemeral: bool = False,
     ) -> AdsorbateSlabRelaxationsSystem:
         """
@@ -246,7 +267,7 @@ class Client:
             NonRetryableRequestException if the call was rejected and a retry
                 is not expected to succeed.
             RequestException for all other errors when making the request; it
-                possible, though not guaranteed, that a retry could succeed.
+                is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             AdsorbateSlabRelaxationsSystem
@@ -260,7 +281,7 @@ class Client:
                     "adsorbate_configs": [a.to_dict() for a in adsorbate_configs],
                     "bulk": bulk.to_dict(),
                     "slab": slab.to_dict(),
-                    "model": str(model),
+                    "model": model,
                     "ephemeral": ephemeral,
                 }
             ),
@@ -283,7 +304,7 @@ class Client:
             NonRetryableRequestException if the call was rejected and a retry
                 is not expected to succeed.
             RequestException for all other errors when making the request; it
-                possible, though not guaranteed, that a retry could succeed.
+                is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             AdsorbateSlabRelaxationsRequest
@@ -316,7 +337,7 @@ class Client:
             NonRetryableRequestException if the call was rejected and a retry
                 is not expected to succeed.
             RequestException for all other errors when making the request; it
-                possible, though not guaranteed, that a retry could succeed.
+                is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             AdsorbateSlabRelaxationsResults
@@ -346,7 +367,7 @@ class Client:
             NonRetryableRequestException if the call was rejected and a retry
                 is not expected to succeed.
             RequestException for all other errors when making the request; it
-                possible, though not guaranteed, that a retry could succeed.
+                is possible, though not guaranteed, that a retry could succeed.
         """
         await self._run_request(
             path=f"ocp/adsorbate-slab-relaxations/{system_id}",
@@ -368,7 +389,7 @@ class Client:
             NonRetryableRequestException if the call was rejected and a retry
                 is not expected to succeed.
             RequestException for all other errors when making the request; it
-                possible, though not guaranteed, that a retry could succeed.
+                is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
             The response body from the request as a string.
