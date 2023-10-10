@@ -22,7 +22,12 @@ from ocpapi.client import (
     RateLimitExceededException,
     RequestException,
 )
-from ocpapi.workflows import NO_LIMIT, NoLimitType, RateLimitLogging, retry_api_calls
+from ocpapi.workflows import (
+    NO_LIMIT,
+    NoLimitType,
+    RateLimitLogging,
+    retry_api_calls,
+)
 
 T = TypeVar("T")
 
