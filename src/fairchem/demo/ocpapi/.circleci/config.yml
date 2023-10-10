@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  codecov: codecov/codecov@3.1.1
+  codecov: codecov/codecov@3.2.4
 
 workflows:
   analyze-and-test:
@@ -35,9 +35,10 @@ jobs:
       - run:
           name: Setup
           command: |
-            pip install --upgrade pip
             pip install --upgrade setuptools 
+            pip install pytest-cov
             pip install .[dev]
       - run:
           name: Test
-          command: python -m unittest
+          command: pytest --cov --cov-report=xml
+      - codecov/upload
