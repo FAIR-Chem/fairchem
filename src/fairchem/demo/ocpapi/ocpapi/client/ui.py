@@ -1,6 +1,5 @@
 from typing import Dict, Optional
 
-
 # Map of known API hosts to UI hosts
 _API_TO_UI_HOSTS: Dict[str, str] = {
     "open-catalyst-api.metademolab.com": "open-catalyst.metademolab.com",
