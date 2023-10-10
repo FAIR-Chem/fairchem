@@ -51,7 +51,7 @@ from ocpapi.workflows import (
 
 # Exception used in test cases below
 class TestException(Exception):
-    pass
+    __test__ = False
 
 
 class MockGetRelaxationResults:
