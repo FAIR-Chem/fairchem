@@ -7,9 +7,9 @@ from .adsorbates import (  # noqa
     UnsupportedModelException,
     find_adsorbate_binding_sites,
     get_adsorbate_slab_relaxation_results,
-    keep_slabs_with_miller_indices,
     wait_for_adsorbate_slab_relaxations,
 )
+from .filter import keep_all_slabs, keep_slabs_with_miller_indices  # noqa
 from .retry import (  # noqa
     NO_LIMIT,
     NoLimitType,
