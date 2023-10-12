@@ -9,7 +9,11 @@ from .adsorbates import (  # noqa
     get_adsorbate_slab_relaxation_results,
     wait_for_adsorbate_slab_relaxations,
 )
-from .filter import keep_all_slabs, keep_slabs_with_miller_indices  # noqa
+from .filter import (  # noqa
+    keep_all_slabs,
+    keep_slabs_with_miller_indices,
+    prompt_for_slabs_to_keep,
+)
 from .retry import (  # noqa
     NO_LIMIT,
     NoLimitType,

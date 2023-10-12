@@ -36,6 +36,7 @@ from ocpapi.workflows import (
     UnsupportedModelException,
     find_adsorbate_binding_sites,
     get_adsorbate_slab_relaxation_results,
+    keep_all_slabs,
     keep_slabs_with_miller_indices,
     wait_for_adsorbate_slab_relaxations,
 )
@@ -1040,8 +1041,14 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
 
                 # Coroutine that will fetch results
                 other = case.non_default_args if case.non_default_args else {}
+                if "adslab_filter" not in other:
+                    # Override default that will prompt for input
+                    other["adslab_filter"] = keep_all_slabs()
                 coro = find_adsorbate_binding_sites(
-                    adsorbate=case.adsorbate, bulk=case.bulk, client=client, **other
+                    adsorbate=case.adsorbate,
+                    bulk=case.bulk,
+                    client=client,
+                    **other,
                 )
 
                 # Make sure an exception is raised if expected

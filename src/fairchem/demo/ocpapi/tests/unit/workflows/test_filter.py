@@ -1,9 +1,22 @@
+import functools
+import sys
+from contextlib import ExitStack
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
-from unittest import IsolatedAsyncioTestCase
+from io import StringIO
+from typing import Any, List, Optional, Tuple
+from unittest import IsolatedAsyncioTestCase, mock
+
+from inquirer import prompt
+from inquirer.events import KeyEventGenerator
+from inquirer.render import ConsoleRender
+from readchar import key
 
 from ocpapi.client import AdsorbateSlabConfigs, Atoms, Slab, SlabMetadata
-from ocpapi.workflows import keep_all_slabs, keep_slabs_with_miller_indices
+from ocpapi.workflows import (
+    keep_all_slabs,
+    keep_slabs_with_miller_indices,
+    prompt_for_slabs_to_keep,
+)
 
 
 # Function used to generate a new adslab instance. This filles the minimum
@@ -122,3 +135,96 @@ class TestFilter(IsolatedAsyncioTestCase):
             with self.subTest(msg=case.message):
                 actual = await case.adslab_filter(case.input)
                 self.assertEqual(case.expected, actual)
+
+    async def test_prompt_for_slabs_to_keep(self) -> None:
+        @dataclass
+        class TestCase:
+            message: str
+            input: List[AdsorbateSlabConfigs]
+            key_events: List[Any]
+            expected: List[AdsorbateSlabConfigs]
+
+        test_cases: List[TestCase] = [
+            # If no adslabs are provided then none should be returned
+            TestCase(
+                message="no slabs provided",
+                input=[],
+                key_events=[],
+                expected=[],
+            ),
+            # If adslabs are provided but none are selected then none
+            # should be returned
+            TestCase(
+                message="no slabs selected",
+                input=[
+                    _new_adslab(miller_indices=(1, 0, 0)),
+                    _new_adslab(miller_indices=(2, 0, 0)),
+                    _new_adslab(miller_indices=(3, 0, 0)),
+                ],
+                key_events=[key.ENTER],
+                expected=[],
+            ),
+            # If adslabs are provided and some are selected then those
+            # should be returned
+            TestCase(
+                message="some slabs selected",
+                input=[
+                    _new_adslab(miller_indices=(1, 0, 0)),
+                    _new_adslab(miller_indices=(2, 0, 0)),
+                    _new_adslab(miller_indices=(3, 0, 0)),
+                ],
+                key_events=[
+                    key.SPACE,  # Select first slab
+                    key.DOWN,  # Move to second slab
+                    key.DOWN,  # Move to third slab
+                    key.SPACE,  # Select third slab
+                    key.ENTER,  # Finish
+                ],
+                expected=[
+                    _new_adslab(miller_indices=(1, 0, 0)),
+                    _new_adslab(miller_indices=(3, 0, 0)),
+                ],
+            ),
+        ]
+
+        for case in test_cases:
+            with ExitStack() as es:
+                es.enter_context(self.subTest(msg=case.message))
+
+                # prompt_for_slabs_to_keep() creates an interactive prompt
+                # that the user can select from. Here we inject key presses
+                # to simulate a user interacting with the prompt. First we
+                # need to direct stdin and stdout to our own io objects.
+                orig_stdin = sys.stdin
+                orig_stdout = sys.stdout
+                try:
+                    sys.stdin = StringIO()
+                    sys.stdout = StringIO()
+
+                    # Now we create a inquirer.ConsoleRender instance that
+                    # uses the key_events (key presses) in the current test
+                    # case.
+                    it = iter(case.key_events)
+                    renderer = ConsoleRender(
+                        event_generator=KeyEventGenerator(lambda: next(it))
+                    )
+
+                    # Now inject our renderer into the prompt
+                    es.enter_context(
+                        mock.patch(
+                            "inquirer.prompt",
+                            side_effect=functools.partial(
+                                prompt,
+                                render=renderer,
+                            ),
+                        )
+                    )
+
+                    # Finally run the filter
+                    adslab_filter = prompt_for_slabs_to_keep()
+                    actual = await adslab_filter(case.input)
+                    self.assertEqual(case.expected, actual)
+
+                finally:
+                    sys.stdin = orig_stdin
+                    sys.stdout = orig_stdout
