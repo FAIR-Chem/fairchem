@@ -41,6 +41,8 @@ results = await find_adsorbate_binding_sites(
 )
 ```
 
+Users will be prompted to select one or more surfaces that should be relaxed. 
+
 Input to this function includes:
 
 * The SMILES string of the adsorbate to place
@@ -57,31 +59,13 @@ In addition, this handles:
 * Retrying failed calls to the Open Catalyst Demo API
 * Retrying submission of relaxations when they are rate limited
 
-This should take 5-10 minutes to finish while hundreds of individual adsorbate placements are relaxed over six unique surfaces of Pt. Each of the objects in the returned list includes (among other details):
+This should take 2-10 minutes to finish while tens to hundreds (depending on the number of surfaces that are selected) of individual adsorbate placements are relaxed on unique surfaces of Pt. Each of the objects in the returned list includes (among other details):
 
 * Information about the surface being searched, including its structure and Miller indices
 * The initial positions of the adsorbate before relaxation
 * The final structure after relaxation
 * The predicted energy of the final structure
 * The predicted force on each atom in the final structure
-
-
-### Search over a subset of Miller indices
-
-```python
-from ocpapi import (
-    find_adsorbate_binding_sites,
-    keep_slabs_with_miller_indices,
-)
-
-results = await find_adsorbate_binding_sites(
-    adsorbate="*OH",
-    bulk="mp-126",
-    slab_filter=keep_slabs_with_miller_indices([(1, 1, 0), (1, 1, 1)])
-)
-```
-
-This example adds the `slab_filter` field, which takes a function that selects out generated surfaces that meet some criteria; in this case, keeping only the surfaces that have Miller indices of (1, 1, 0) or (1, 1, 1).
 
 
 ### Persisting results
@@ -132,6 +116,32 @@ results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
     bulk="mp-126",
     model="gemnet_oc_base_s2ef_all_md",
+)
+```
+
+### Skip relaxation approval prompts
+
+Calls to `find_adsorbate_binding_sites()` will, by default, show the user all pending relaxations and ask for approval before they are submitted. In order to run the relaxations automatically without manual approval, `adslab_filter` can be set to a function that automatically approves any or all adsorbate/slab (adslab) configurations.
+
+Run relaxations for all slabs that are generated:
+```python
+from ocpapi import find_adsorbate_binding_sites, keep_all_slabs
+
+results = await find_adsorbate_binding_sites(
+    adsorbate="*OH",
+    bulk="mp-126",
+    adslab_filter=keep_all_slabs(),
+)
+```
+
+Run relaxations only for slabs with Miller Indices in the input set:
+```python
+from ocpapi import find_adsorbate_binding_sites, keep_slabs_with_miller_indices
+
+results = await find_adsorbate_binding_sites(
+    adsorbate="*OH",
+    bulk="mp-126",
+    adslab_filter=keep_slabs_with_miller_indices([(1, 0, 0), (1, 1, 1)]),
 )
 ```
 
