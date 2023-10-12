@@ -7,12 +7,11 @@ from enum import Enum, auto
 from typing import (
     Any,
     AsyncGenerator,
+    Awaitable,
     Callable,
     Dict,
-    Iterable,
     List,
     Optional,
-    Set,
     Tuple,
 )
 
@@ -38,6 +37,7 @@ from ocpapi.client import (
 )
 
 from .context import set_context_var
+from .filter import keep_all_slabs
 from .log import log
 from .retry import NO_LIMIT, RateLimitLogging, retry_api_calls
 
@@ -84,7 +84,15 @@ _setup_log_record_factory()
 DEFAULT_CLIENT: Client = Client()
 
 
-class UnsupportedModelException(Exception):
+class AdsorbatesException(Exception):
+    """
+    Base exception for all others in this module.
+    """
+
+    pass
+
+
+class UnsupportedModelException(AdsorbatesException):
     """
     Exception raised when a model is not supported in the API.
     """
@@ -100,7 +108,7 @@ class UnsupportedModelException(Exception):
         )
 
 
-class UnsupportedBulkException(Exception):
+class UnsupportedBulkException(AdsorbatesException):
     """
     Exception raised when a bulk material is not supported in the API.
     """
@@ -113,7 +121,7 @@ class UnsupportedBulkException(Exception):
         super().__init__(f"Bulk {bulk} is not supported")
 
 
-class UnsupportedAdsorbateException(Exception):
+class UnsupportedAdsorbateException(AdsorbatesException):
     """
     Exception raised when an adsorbate is not supported in the API.
     """
@@ -251,7 +259,6 @@ async def _ensure_adsorbate_supported(client: Client, adsorbate: str) -> None:
 async def _get_slabs(
     client: Client,
     bulk: Bulk,
-    slab_filter: Optional[Callable[[Slab], bool]],
 ) -> List[Slab]:
     """
     Enumerates surfaces for the input bulk material.
@@ -259,14 +266,9 @@ async def _get_slabs(
     Args:
         client: The client to use when making requests to the API.
         bulk: The bulk material from which slabs will be generated.
-        slab_filter: If not None, a function that filters which generated
-            slabs will be considered when placing adsorbates.
     """
     slabs: Slabs = await client.get_slabs(bulk)
-    slabs_list: List[slabs] = slabs.slabs
-    if slab_filter is not None:
-        slabs_list = [s for s in slabs_list if slab_filter(s)]
-    return slabs_list
+    return slabs.slabs
 
 
 @retry_api_calls(max_attempts=3)
@@ -274,7 +276,7 @@ async def _get_absorbate_configs_on_slab(
     client: Client,
     adsorbate: str,
     slab: Slab,
-) -> Tuple[Slab, List[Atoms]]:
+) -> AdsorbateSlabConfigs:
     """
     Generate initial guesses at adsorbate binding sites on the input slab.
 
@@ -284,22 +286,21 @@ async def _get_absorbate_configs_on_slab(
         slab: The slab on which the adsorbate should be placed.
 
     Returns:
-        First, an updated slab instance that has had tags applied to it.
-        Second, a list of Atoms objects, each with the positions of the
-        adsorbate atoms on one of the candidate binding sites.
+        An updated slab instance that has had tags applied to it and a list
+        of Atoms objects, each with the positions of the adsorbate atoms on
+        one of the candidate binding sites.
     """
-    configs: AdsorbateSlabConfigs = await client.get_adsorbate_slab_configs(
+    return await client.get_adsorbate_slab_configs(
         adsorbate=adsorbate,
         slab=slab,
     )
-    return configs.slab, configs.adsorbate_configs
 
 
 async def _get_absorbate_configs_on_slab_with_logging(
     client: Client,
     adsorbate: str,
     slab: Slab,
-) -> Tuple[Slab, List[Atoms]]:
+) -> AdsorbateSlabConfigs:
     """
     Wrapper around _get_absorbate_configs_on_slab that adds logging.
     """
@@ -316,6 +317,37 @@ async def _get_absorbate_configs_on_slab_with_logging(
             adsorbate=adsorbate,
             slab=slab,
         )
+
+
+async def _get_adsorbate_configs_on_slabs(
+    client: Client,
+    adsorbate: str,
+    slabs: List[Slab],
+) -> List[AdsorbateSlabConfigs]:
+    """
+    Finds candidate adsorbate binding sites on each of the input slabs.
+    Args:
+        client: The client to use when making API calls.
+        adsorbate: Description of the adsorbate to place.
+        slabs: The slabs on which the adsorbate should be placed.
+
+    Returns:
+        List of slabs and, for each, the positions of the adsorbate
+        atoms in the potential binding site.
+    """
+    tasks: List[asyncio.Task] = [
+        asyncio.create_task(
+            _get_absorbate_configs_on_slab_with_logging(
+                client=client,
+                adsorbate=adsorbate,
+                slab=slab,
+            )
+        )
+        for slab in slabs
+    ]
+    if tasks:
+        await asyncio.wait(tasks)
+    return [t.result() for t in tasks]
 
 
 # The API behind Client.submit_adsorbate_slab_relaxations() is rate limited
@@ -672,11 +704,11 @@ async def _refresh_pbar(pbar: tqdm, interval_sec: float) -> None:
         pbar.refresh()
 
 
-async def _find_binding_sites_on_slabs(
+async def _relax_binding_sites_on_slabs(
     client: Client,
     adsorbate: str,
     bulk: Bulk,
-    slabs: List[Slab],
+    adslabs: List[AdsorbateSlabConfigs],
     model: str,
     lifetime: Lifetime,
 ) -> AdsorbateBindingSites:
@@ -687,7 +719,8 @@ async def _find_binding_sites_on_slabs(
         client: The client to use when making API calls.
         adsorbate: The SMILES string of the adsorbate to place.
         bulk: The bulk material from which the slab was generated.
-        slabs: The slabs that should be searched for adsorbate binding sites.
+        adslabs: The slabs and, for each, the binding sites that should be
+            relaxed.
         model: The model to use when evaluating forces and energies.
         lifetime: Whether relaxations should be saved on the server, be marked
             as ephemeral (allowing them to deleted in the future), or deleted
@@ -697,23 +730,6 @@ async def _find_binding_sites_on_slabs(
         Details of each adsorbate placement, including its relaxed position.
     """
 
-    # Get the binding sites on each slab
-    config_tasks: List[asyncio.Task] = [
-        asyncio.create_task(
-            _get_absorbate_configs_on_slab_with_logging(
-                client=client,
-                adsorbate=adsorbate,
-                slab=slab,
-            )
-        )
-        for slab in slabs
-    ]
-    if config_tasks:
-        await asyncio.wait(config_tasks)
-    slabs_and_configs: List[Tuple[Slab, List[Atoms]]] = [
-        t.result() for t in config_tasks
-    ]
-
     # Make sure logs and progress bars work together while tqdm is
     # being used
     with logging_redirect_tqdm():
@@ -722,7 +738,7 @@ async def _find_binding_sites_on_slabs(
         with tqdm(
             desc="Finished relaxations",
             bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]",
-            total=sum(len(c[1]) for c in slabs_and_configs),
+            total=sum(len(adslab.adsorbate_configs) for adslab in adslabs),
             miniters=0,
             leave=False,
         ) as pbar:
@@ -733,23 +749,23 @@ async def _find_binding_sites_on_slabs(
             )
 
             # Run relaxations for all configurations on all slabs
-            relaxation_tasks: List[asyncio.Task] = [
+            tasks: List[asyncio.Task] = [
                 asyncio.create_task(
                     _run_relaxations_on_slab(
                         client=client,
                         adsorbate=adsorbate,
-                        adsorbate_configs=configs,
+                        adsorbate_configs=adslab.adsorbate_configs,
                         bulk=bulk,
-                        slab=slab,
+                        slab=adslab.slab,
                         model=model,
                         lifetime=lifetime,
                         pbar=pbar,
                     )
                 )
-                for slab, configs in slabs_and_configs
+                for adslab in adslabs
             ]
-            if relaxation_tasks:
-                await asyncio.wait(relaxation_tasks)
+            if tasks:
+                await asyncio.wait(tasks)
 
             # Cancel the task that refreshes the progress bar on a schedule
             with suppress(asyncio.CancelledError):
@@ -761,15 +777,22 @@ async def _find_binding_sites_on_slabs(
         adsorbate=adsorbate,
         bulk=bulk,
         model=model,
-        slabs=[t.result() for t in relaxation_tasks],
+        slabs=[t.result() for t in tasks],
     )
+
+
+_DEFAULT_ADSLAB_FILTER: Callable[
+    [List[AdsorbateSlabConfigs]], Awaitable[List[AdsorbateSlabConfigs]]
+] = keep_all_slabs()
 
 
 async def find_adsorbate_binding_sites(
     adsorbate: str,
     bulk: str,
     model: str = "equiformer_v2_31M_s2ef_all_md",
-    slab_filter: Optional[Callable[[Slab], bool]] = None,
+    adslab_filter: Callable[
+        [List[AdsorbateSlabConfigs]], Awaitable[List[AdsorbateSlabConfigs]]
+    ] = _DEFAULT_ADSLAB_FILTER,
     client: Client = DEFAULT_CLIENT,
     lifetime: Lifetime = Lifetime.SAVE,
 ) -> AdsorbateBindingSites:
@@ -793,8 +816,9 @@ async def find_adsorbate_binding_sites(
             on which the adsorbate will be placed.
         model: The type of the model to use when calculating forces during
             relaxations.
-        slab_filter: If not None, a function that filters which generated
-            slabs will be considered when placing adsorbates.
+        adslab_filter: A function that modifies the set of adslabs that will
+            be relaxed. This can be used to subselect slabs and/or adsorbate
+            configurations.
         client: The OCP API client to use.
         lifetime: Whether relaxations should be saved on the server, be marked
             as ephemeral (allowing them to deleted in the future), or deleted
@@ -837,39 +861,24 @@ async def find_adsorbate_binding_sites(
         slabs: List[Slab] = await _get_slabs(
             client=client,
             bulk=bulk_obj,
-            slab_filter=slab_filter,
         )
 
+        # Finding candidate binding site on each slab
+        adslabs: List[AdsorbateSlabConfigs] = await _get_adsorbate_configs_on_slabs(
+            client=client,
+            adsorbate=adsorbate,
+            slabs=slabs,
+        )
+
+        # Filter the adslabs
+        adslabs = await adslab_filter(adslabs)
+
         # Find binding sites on all slabs
-        return await _find_binding_sites_on_slabs(
+        return await _relax_binding_sites_on_slabs(
             client=client,
             adsorbate=adsorbate,
             bulk=bulk_obj,
-            slabs=slabs,
+            adslabs=adslabs,
             model=model,
             lifetime=lifetime,
         )
-
-
-def keep_slabs_with_miller_indices(
-    allowed_miller_indices: Iterable[Tuple[int, int, int]],
-) -> Callable[[Slab], bool]:
-    """
-    Filter that can be passed to find_adsorbate_binding_sites that keeps
-    surfaces for which the Miller Indices match one set in the input list.
-
-    Args:
-        allowed_miller_indices: The list of Miller Indices that will be kept.
-            Any surfaces for which the Miller Indices are not in the input
-            list will be discarded.
-
-    Returns:
-        The function that filters surfaces, keeping only those in the input
-        list.
-    """
-    unique_millers: Set[Tuple[int, int, int]] = set(allowed_miller_indices)
-
-    def func(slab: Slab) -> bool:
-        return slab.metadata.millers in unique_millers
-
-    return func

@@ -77,11 +77,11 @@ from ocpapi import (
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
     bulk="mp-126",
-    slab_filter=keep_slabs_with_miller_indices([(1, 1, 0), (1, 1, 1)])
+    adslab_filter=keep_slabs_with_miller_indices([(1, 1, 0), (1, 1, 1)])
 )
 ```
 
-This example adds the `slab_filter` field, which takes a function that selects out generated surfaces that meet some criteria; in this case, keeping only the surfaces that have Miller indices of (1, 1, 0) or (1, 1, 1).
+This example adds the `adslab_filter` field, which takes a function that selects out generated surfaces that meet some criteria; in this case, keeping only the surfaces that have Miller indices of (1, 1, 0) or (1, 1, 1).
 
 
 ### Persisting results

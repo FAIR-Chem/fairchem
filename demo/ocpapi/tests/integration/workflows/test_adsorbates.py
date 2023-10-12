@@ -1,18 +1,16 @@
 import time
-from typing import Any, List
-from unittest import IsolatedAsyncioTestCase, mock
+from typing import List
+from unittest import IsolatedAsyncioTestCase
 
 import requests
 
-from ocpapi.client import Atoms, Client, Status
+from ocpapi.client import AdsorbateSlabConfigs, Client, Status
 from ocpapi.workflows import (
     Lifetime,
     find_adsorbate_binding_sites,
     get_adsorbate_slab_relaxation_results,
-    keep_slabs_with_miller_indices,
     wait_for_adsorbate_slab_relaxations,
 )
-from ocpapi.workflows.adsorbates import _get_absorbate_configs_on_slab
 
 
 class TestAdsorbates(IsolatedAsyncioTestCase):
@@ -78,30 +76,29 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
 
         # By default, we'll end up running relaxations for dozens of adsorbate
         # placements on the bulk surface. This function selects out only the
-        # first adsorbate configuration. It is injected into the
-        # find_adsorbate_binding_sites workflow using the mock below. This
-        # lets us run a smaller number of relaxations since we really don't
-        # need to run dozens just to know that the method under test works.
-        async def _get_first_absorbate_config_on_slab(
-            *args: Any, **kwargs: Any
-        ) -> List[Atoms]:
-            slab, all_configs = await _get_absorbate_configs_on_slab(*args, **kwargs)
-            return slab, all_configs[:1]
+        # first adsorbate configuration. This lets us run a smaller number of
+        # relaxations since we really don't need to run dozens just to know
+        # that the method under test works.
+        async def _keep_first_adslab(
+            adslabs: List[AdsorbateSlabConfigs],
+        ) -> List[AdsorbateSlabConfigs]:
+            return [
+                AdsorbateSlabConfigs(
+                    adsorbate_configs=adslabs[0].adsorbate_configs[:1],
+                    slab=adslabs[0].slab,
+                )
+            ]
 
-        with mock.patch(
-            "ocpapi.workflows.adsorbates._get_absorbate_configs_on_slab",
-            wraps=_get_first_absorbate_config_on_slab,
-        ):
-            results = await find_adsorbate_binding_sites(
-                adsorbate="*O",
-                bulk="mp-30",
-                model="gemnet_oc_base_s2ef_all_md",
-                slab_filter=keep_slabs_with_miller_indices([(1, 1, 1)]),
-                client=self.CLIENT,
-                # Since this is a test, delete the relaxations from the server
-                # once results have been fetched.
-                lifetime=Lifetime.DELETE,
-            )
+        results = await find_adsorbate_binding_sites(
+            adsorbate="*O",
+            bulk="mp-30",
+            model="gemnet_oc_base_s2ef_all_md",
+            adslab_filter=_keep_first_adslab,
+            client=self.CLIENT,
+            # Since this is a test, delete the relaxations from the server
+            # once results have been fetched.
+            lifetime=Lifetime.DELETE,
+        )
 
         self.assertEqual(1, len(results.slabs))
         self.assertEqual(1, len(results.slabs[0].configs))
