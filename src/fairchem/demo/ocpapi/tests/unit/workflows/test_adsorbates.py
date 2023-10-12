@@ -3,17 +3,7 @@ from contextlib import ExitStack
 from dataclasses import dataclass, replace
 from datetime import timedelta
 from functools import partial
-from typing import (
-    Any,
-    Dict,
-    Final,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, Dict, Final, Iterable, List, Optional, Type, Union
 from unittest import IsolatedAsyncioTestCase
 from unittest import TestCase as UnitTestCase
 from unittest import mock
@@ -46,6 +36,7 @@ from ocpapi.workflows import (
     UnsupportedModelException,
     find_adsorbate_binding_sites,
     get_adsorbate_slab_relaxation_results,
+    keep_all_slabs,
     keep_slabs_with_miller_indices,
     wait_for_adsorbate_slab_relaxations,
 )
@@ -992,7 +983,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 ],
                 non_default_args={
                     "model": "model_2",
-                    "slab_filter": keep_slabs_with_miller_indices([(1, 0, 0)]),
+                    "adslab_filter": keep_slabs_with_miller_indices([(1, 0, 0)]),
                 },
                 expected=AdsorbateBindingSites(
                     adsorbate="*B",
@@ -1050,8 +1041,14 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
 
                 # Coroutine that will fetch results
                 other = case.non_default_args if case.non_default_args else {}
+                if "adslab_filter" not in other:
+                    # Override default that will prompt for input
+                    other["adslab_filter"] = keep_all_slabs()
                 coro = find_adsorbate_binding_sites(
-                    adsorbate=case.adsorbate, bulk=case.bulk, client=client, **other
+                    adsorbate=case.adsorbate,
+                    bulk=case.bulk,
+                    client=client,
+                    **other,
                 )
 
                 # Make sure an exception is raised if expected
@@ -1074,74 +1071,3 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                         key=lambda x: x.system_id,
                     )
                     self.assertEqual(case.expected, result)
-
-    def test_keep_slabs_with_miller_indices(self) -> None:
-        @dataclass
-        class TestCase:
-            message: str
-            allowed_miller_indices: Iterable[Tuple[int, int, int]]
-            input_slabs: Iterable[Slab]
-            expected: List[bool]
-
-        # Helper function that generates a slab with the input
-        # miller indices
-        def new_slab(miller_indices: Tuple[int, int, int]) -> Slab:
-            return Slab(
-                atoms=Atoms(
-                    cell=((1, 0, 0), (0, 1, 0), (0, 0, 1)),
-                    pbc=(True, True, True),
-                    numbers=[],
-                    positions=[],
-                    tags=[],
-                ),
-                metadata=SlabMetadata(
-                    bulk_src_id="",
-                    millers=miller_indices,
-                    shift=0,
-                    top=True,
-                ),
-            )
-
-        test_cases: List[TestCase] = [
-            # If no miller indices are defined, then no slabs should be kept
-            TestCase(
-                message="no miller indices allowed",
-                allowed_miller_indices=[],
-                input_slabs=[
-                    new_slab((1, 0, 0)),
-                    new_slab((1, 1, 0)),
-                    new_slab((1, 1, 1)),
-                ],
-                expected=[False, False, False],
-            ),
-            # If no slabs are defined then nothing should be returned
-            TestCase(
-                message="no slabs provided",
-                allowed_miller_indices=[(1, 1, 1)],
-                input_slabs=[],
-                expected=[],
-            ),
-            # Any miller indices that do match should be kept
-            TestCase(
-                message="some miller indices matched",
-                allowed_miller_indices=[
-                    (1, 0, 1),  # Won't match anything
-                    (1, 0, 0),  # Will match
-                    (1, 1, 1),  # Will match
-                ],
-                input_slabs=[
-                    new_slab((1, 0, 0)),
-                    new_slab((1, 1, 0)),
-                    new_slab((1, 1, 1)),
-                ],
-                expected=[True, False, True],
-            ),
-        ]
-
-        for case in test_cases:
-            with self.subTest(msg=case.message):
-                slab_filter = keep_slabs_with_miller_indices(
-                    case.allowed_miller_indices
-                )
-                results = [slab_filter(slab) for slab in case.input_slabs]
-                self.assertEqual(results, case.expected)
