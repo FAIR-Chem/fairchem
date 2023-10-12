@@ -121,7 +121,7 @@ results = await find_adsorbate_binding_sites(
 
 ### Skip relaxation approval prompts
 
-Calls to `find_adsorbate_binding_sites()` will, by default, show the user all pending relaxations and ask for approval before they are submitted. In order to run the relaxations automatically without manual approval, `adslab_filter` can be set to a function that automatically approves any or all adslabs.
+Calls to `find_adsorbate_binding_sites()` will, by default, show the user all pending relaxations and ask for approval before they are submitted. In order to run the relaxations automatically without manual approval, `adslab_filter` can be set to a function that automatically approves any or all adsorbate/slab (adslab) configurations.
 
 Run relaxations for all slabs that are generated:
 ```python
