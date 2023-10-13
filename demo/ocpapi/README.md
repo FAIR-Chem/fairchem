@@ -45,8 +45,8 @@ Users will be prompted to select one or more surfaces that should be relaxed.
 
 Input to this function includes:
 
-* The SMILES string of the adsorbate to place
-* The Materials Project ID of the bulk structure from which surfaces will be generated
+* The name of the adsorbate to place
+* A unique ID of the bulk structure from which surfaces will be generated
 
 This function will perform the following steps:
 
@@ -66,6 +66,25 @@ This should take 2-10 minutes to finish while tens to hundreds (depending on the
 * The final structure after relaxation
 * The predicted energy of the final structure
 * The predicted force on each atom in the final structure
+
+
+### Supported bulks and adsorbates
+
+A finite set of bulk materials and adsorbates can be referenced by ID throughout the OCP API. The lists of supported values can be viewed in two ways.
+
+1. Visit the UI at https://open-catalyst.metademolab.com/demo and explore the lists in Step 1 and Step 3.
+2. Use the low-level client that ships with this library:
+```python
+from ocpapi import Client
+
+client = Client()
+
+bulks = await client.get_bulks()
+print({b.src_id: b.formula for b in bulks.bulks_supported})
+
+adsorbates = await client.get_adsorbates()
+print(adsorbates.adsorbates_supported)
+```
 
 
 ### Persisting results

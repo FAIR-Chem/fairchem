@@ -25,14 +25,17 @@ from ocpapi.client import (
 class RateLimitLogging:
     """
     Controls logging when rate limits are hit.
-
-    Attributes:
-        logger: The logger to use.
-        action: A short description of the action being attempted.
     """
 
     logger: logging.Logger
+    """
+    The logger to use.
+    """
+
     action: str
+    """
+    A short description of the action being attempted.
+    """
 
 
 class _wait_check_retry_after(wait_base):

@@ -137,19 +137,25 @@ class UnsupportedAdsorbateException(AdsorbatesException):
 class Lifetime(Enum):
     """
     Represents different lifetimes when running relaxations.
-
-    Attributes:
-        SAVE: The relaxation will be available on API servers indefinitely.
-            It will not be possible to delete the relaxation in the future.
-        MARK_EPHEMERAL: The relaxation will be saved on API servers, but
-            can be deleted at any time in the future.
-        DELETE: The relaxation will be deleted from API servers as soon as
-            the results have been fetched.
     """
 
     SAVE = auto()
+    """
+    The relaxation will be available on API servers indefinitely. It will not 
+    be possible to delete the relaxation in the future.
+    """
+
     MARK_EPHEMERAL = auto()
+    """
+    The relaxation will be saved on API servers, but can be deleted at any time 
+    in the future.
+    """
+
     DELETE = auto()
+    """
+    The relaxation will be deleted from API servers as soon as the results have 
+    been fetched.
+    """
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)
@@ -157,21 +163,33 @@ class Lifetime(Enum):
 class AdsorbateSlabRelaxations:
     """
     Stores the relaxations of adsorbate placements on the surface of a slab.
-
-    Attributes:
-        slab: The slab on which the adsorbate was placed.
-        configs: Details of the relaxation of each adsorbate placement,
-            include the final position.
-        system_id: The ID of the system that stores all of the relaxations.
-        api_host: The API host on which the relaxations were run.
-        ui_url: The URL at which results can be visualized.
     """
 
     slab: Slab
+    """
+    The slab on which the adsorbate was placed.
+    """
+
     configs: List[AdsorbateSlabRelaxationResult]
+    """
+    Details of the relaxation of each adsorbate placement, including the 
+    final position.
+    """
+
     system_id: str
+    """
+    The ID of the system that stores all of the relaxations.
+    """
+
     api_host: str
+    """
+    The API host on which the relaxations were run.
+    """
+
     ui_url: Optional[str]
+    """
+    The URL at which results can be visualized.
+    """
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)
@@ -180,19 +198,28 @@ class AdsorbateBindingSites:
     """
     Stores the inputs and results of a set of relaxations of adsorbate
     placements on the surface of a slab.
-
-    Attributes:
-        adsorbate: The SMILES string of the adsorbate.
-        bulk: The bulk material that was being modeled.
-        model: The type of the model that was run.
-        slabs: The list of slabs that were generated from the bulk structure.
-            Each contains its own list of adsorbate placements.
     """
 
     adsorbate: str
+    """
+    Description of the adsorbate.
+    """
+
     bulk: Bulk
+    """
+    The bulk material that was being modeled.
+    """
+
     model: str
+    """
+    The type of the model that was run.
+    """
+
     slabs: List[AdsorbateSlabRelaxations]
+    """
+    The list of slabs that were generated from the bulk structure. Each
+    contains its own list of adsorbate placements.
+    """
 
 
 @retry_api_calls(max_attempts=3)
@@ -205,7 +232,7 @@ async def _ensure_model_supported(client: Client, model: str) -> None:
         model: The model to check.
 
     Raises:
-        UnsupportedModelException if the model is not supported.
+        UnsupportedModelException: If the model is not supported.
     """
     models: Models = await client.get_models()
     allowed_models: List[str] = [m.id for m in models.models]
@@ -226,7 +253,7 @@ async def _get_bulk_if_supported(client: Client, bulk: str) -> Bulk:
         bulk: The bulk to fetch.
 
     Raises:
-        UnsupportedBulkException if the requested bulk is not supported.
+        UnsupportedBulkException: If the requested bulk is not supported.
 
     Returns:
         Bulk instance for the input type.
@@ -248,7 +275,7 @@ async def _ensure_adsorbate_supported(client: Client, adsorbate: str) -> None:
         adsorbate: The adsorbate to check.
 
     Raises:
-        UnsupportedAdsorbateException if the adsorbate is not supported.
+        UnsupportedAdsorbateException: If the adsorbate is not supported.
     """
     adsorbates: Adsorbates = await client.get_adsorbates()
     if adsorbate not in adsorbates.adsorbates_supported:
@@ -266,6 +293,9 @@ async def _get_slabs(
     Args:
         client: The client to use when making requests to the API.
         bulk: The bulk material from which slabs will be generated.
+
+    Returns:
+        The list of slabs that were generated.
     """
     slabs: Slabs = await client.get_slabs(bulk)
     return slabs.slabs
@@ -282,7 +312,7 @@ async def _get_absorbate_configs_on_slab(
 
     Args:
         client: The client to use when making API calls.
-        adsorbate: The SMILES string of the adsorbate to place.
+        adsorbate: Description of the adsorbate to place.
         slab: The slab on which the adsorbate should be placed.
 
     Returns:
@@ -326,6 +356,7 @@ async def _get_adsorbate_configs_on_slabs(
 ) -> List[AdsorbateSlabConfigs]:
     """
     Finds candidate adsorbate binding sites on each of the input slabs.
+
     Args:
         client: The client to use when making API calls.
         adsorbate: Description of the adsorbate to place.
@@ -377,7 +408,7 @@ async def _submit_relaxations(
 
     Args:
         client: The client to use when making API calls.
-        adsorbate: The SMILES string of the adsorbate to place.
+        adsorbate: Description of the adsorbate to place.
         adsorbate_configs: Positions of the adsorbate on the slab. Each
             will be relaxed independently.
         bulk: The bulk material from which the slab was generated.
@@ -624,7 +655,7 @@ async def _run_relaxations_on_slab(
 
     Args:
         client: The client to use when making API calls.
-        adsorbate: The SMILES string of the adsorbate to place.
+        adsorbate: Description of the adsorbate to place.
         adsorbate_configs: The positions of atoms in each adsorbate placement
             to be relaxed.
         bulk: The bulk material from which the slab was generated.
@@ -717,7 +748,7 @@ async def _relax_binding_sites_on_slabs(
 
     Args:
         client: The client to use when making API calls.
-        adsorbate: The SMILES string of the adsorbate to place.
+        adsorbate: Description of the adsorbate to place.
         bulk: The bulk material from which the slab was generated.
         adslabs: The slabs and, for each, the binding sites that should be
             relaxed.
@@ -811,7 +842,7 @@ async def find_adsorbate_binding_sites(
            atomic positions to minimize forces generated by the input model.
 
     Args:
-        adsorbate: SMILES string describing the adsorbate to place.
+        adsorbate: Description of the adsorbate to place.
         bulk: The ID (typically Materials Project MP ID) of the bulk material
             on which the adsorbate will be placed.
         model: The type of the model to use when calculating forces during
@@ -829,9 +860,9 @@ async def find_adsorbate_binding_sites(
         to locally-optimized positions using the input model.
 
     Raises:
-        UnsupportedModelException if the requested model is not supported.
-        UnsupportedBulkException if the requested bulk is not supported.
-        UnsupportedAdsorbateException if the requested adsorbate is not
+        UnsupportedModelException: If the requested model is not supported.
+        UnsupportedBulkException: If the requested bulk is not supported.
+        UnsupportedAdsorbateException: If the requested adsorbate is not
             supported.
     """
     with set_context_var(_CTX_AD_BULK, (adsorbate, bulk)):
