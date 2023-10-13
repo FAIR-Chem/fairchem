@@ -109,15 +109,15 @@ class Client:
         Fetch the list of models that are supported in the API.
 
         Raises:
-            RateLimitExceededException if the call was rejected because a
+            RateLimitExceededException: If the call was rejected because a
                 server side rate limit was breached.
-            NonRetryableRequestException if the call was rejected and a retry
+            NonRetryableRequestException: If the call was rejected and a retry
                 is not expected to succeed.
-            RequestException for all other errors when making the request; it
+            RequestException: For all other errors when making the request; it
                 is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
-            Models
+            The models that are supported in the API.
         """
         response: str = await self._run_request(
             path="ocp/models",
@@ -130,15 +130,15 @@ class Client:
         Fetch the list of bulk materials that are supported in the API.
 
         Raises:
-            RateLimitExceededException if the call was rejected because a
+            RateLimitExceededException: If the call was rejected because a
                 server side rate limit was breached.
-            NonRetryableRequestException if the call was rejected and a retry
+            NonRetryableRequestException: If the call was rejected and a retry
                 is not expected to succeed.
-            RequestException for all other errors when making the request; it
+            RequestException: For all other errors when making the request; it
                 is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
-            Bulks
+            The bulks that are supported throughout the API.
         """
         response: str = await self._run_request(
             path="ocp/bulks",
@@ -151,15 +151,15 @@ class Client:
         Fetch the list of adsorbates that are supported in the API.
 
         Raises:
-            RateLimitExceededException if the call was rejected because a
+            RateLimitExceededException: If the call was rejected because a
                 server side rate limit was breached.
-            NonRetryableRequestException if the call was rejected and a retry
+            NonRetryableRequestException: If the call was rejected and a retry
                 is not expected to succeed.
-            RequestException for all other errors when making the request; it
+            RequestException: For all other errors when making the request; it
                 is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
-            Adsorbates
+            The adsorbates that are supported throughout the API.
         """
         response: str = await self._run_request(
             path="ocp/adsorbates",
@@ -176,15 +176,15 @@ class Client:
                 instance to use.
 
         Raises:
-            RateLimitExceededException if the call was rejected because a
+            RateLimitExceededException: If the call was rejected because a
                 server side rate limit was breached.
-            NonRetryableRequestException if the call was rejected and a retry
+            NonRetryableRequestException: If the call was rejected and a retry
                 is not expected to succeed.
-            RequestException for all other errors when making the request; it
+            RequestException: For all other errors when making the request; it
                 is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
-            Slabs
+            Slabs for each of the unique surfaces of the material.
         """
         response: str = await self._run_request(
             path="ocp/slabs",
@@ -204,20 +204,20 @@ class Client:
         input slab.
 
         Args:
-            adsorbate: SMILES string describing the adsorbate to place.
+            adsorbate: Description of the the adsorbate to place.
             slab: Information about the slab on which the adsorbate should
                 be placed.
 
         Raises:
-            RateLimitExceededException if the call was rejected because a
+            RateLimitExceededException: If the call was rejected because a
                 server side rate limit was breached.
-            NonRetryableRequestException if the call was rejected and a retry
+            NonRetryableRequestException: If the call was rejected and a retry
                 is not expected to succeed.
-            RequestException for all other errors when making the request; it
+            RequestException: For all other errors when making the request; it
                 is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
-            AdsorbateSlabConfigs
+            Configurations for each adsorbate binding site on the slab.
         """
         response: str = await self._run_request(
             path="ocp/adsorbate-slab-configs",
@@ -248,7 +248,7 @@ class Client:
         that is returned from this method.
 
         Args:
-            adsorbate: SMILES string describing the adsorbate being simulated.
+            adsorbate: Description of the adsorbate being simulated.
             adsorbate_configs: List of adsorbate configurations to relax. This
                 should only include the adsorbates themselves; the surface is
                 defined in the "slab" field that is a peer to this one.
@@ -262,15 +262,15 @@ class Client:
                 testing when there is no reason for results to be persisted.
 
         Raises:
-            RateLimitExceededException if the call was rejected because a
+            RateLimitExceededException: If the call was rejected because a
                 server side rate limit was breached.
-            NonRetryableRequestException if the call was rejected and a retry
+            NonRetryableRequestException: If the call was rejected and a retry
                 is not expected to succeed.
-            RequestException for all other errors when making the request; it
+            RequestException: For all other errors when making the request; it
                 is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
-            AdsorbateSlabRelaxationsSystem
+            IDs of the relaxations.
         """
         response: str = await self._run_request(
             path="ocp/adsorbate-slab-relaxations",
@@ -299,15 +299,15 @@ class Client:
             system_id: The ID of the system to fetch.
 
         Raises:
-            RateLimitExceededException if the call was rejected because a
+            RateLimitExceededException: If the call was rejected because a
                 server side rate limit was breached.
-            NonRetryableRequestException if the call was rejected and a retry
+            NonRetryableRequestException: If the call was rejected and a retry
                 is not expected to succeed.
-            RequestException for all other errors when making the request; it
+            RequestException: For all other errors when making the request; it
                 is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
-            AdsorbateSlabRelaxationsRequest
+            The original request that was made when submitting relaxations.
         """
         response: str = await self._run_request(
             path=f"ocp/adsorbate-slab-relaxations/{system_id}",
@@ -332,15 +332,15 @@ class Client:
                 configuration to fetch. Otherwise all fields are returned.
 
         Raises:
-            RateLimitExceededException if the call was rejected because a
+            RateLimitExceededException: If the call was rejected because a
                 server side rate limit was breached.
-            NonRetryableRequestException if the call was rejected and a retry
+            NonRetryableRequestException: If the call was rejected and a retry
                 is not expected to succeed.
-            RequestException for all other errors when making the request; it
+            RequestException: For all other errors when making the request; it
                 is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
-            AdsorbateSlabRelaxationsResults
+            The relaxation results for each configuration in the system.
         """
         params: Dict[str, Any] = {}
         if fields:
@@ -362,11 +362,11 @@ class Client:
             system_id: The ID of the system to delete.
 
         Raises:
-            RateLimitExceededException if the call was rejected because a
+            RateLimitExceededException: If the call was rejected because a
                 server side rate limit was breached.
-            NonRetryableRequestException if the call was rejected and a retry
+            NonRetryableRequestException: If the call was rejected and a retry
                 is not expected to succeed.
-            RequestException for all other errors when making the request; it
+            RequestException: For all other errors when making the request; it
                 is possible, though not guaranteed, that a retry could succeed.
         """
         await self._run_request(
@@ -384,11 +384,11 @@ class Client:
             method: The HTTP method to use (GET, POST, etc.).
 
         Raises:
-            RateLimitExceededException if the call was rejected because a
+            RateLimitExceededException: If the call was rejected because a
                 server side rate limit was breached.
-            NonRetryableRequestException if the call was rejected and a retry
+            NonRetryableRequestException: If the call was rejected and a retry
                 is not expected to succeed.
-            RequestException for all other errors when making the request; it
+            RequestException: For all other errors when making the request; it
                 is possible, though not guaranteed, that a retry could succeed.
 
         Returns:
