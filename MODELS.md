@@ -2,13 +2,16 @@
 
 This page summarizes all the pretrained models released as part of the [Open Catalyst Project](https://opencatalystproject.org/). All models were trained using this codebase.
 
-* [Open Catalyst 2020 (OC20)](#open-catalyst-2020-oc20)
-    * [S2EF models optimized for EFwT](#s2ef-models-optimized-for-efwt)
-    * [S2EF models optimized for force](#s2ef-models-optimized-for-force-only)
-    * [IS2RE models](#is2re-models)
-* [Open Catalyst 2022 (OC22)](#open-catalyst-2022-oc22)
-    * [S2EF total models](#s2ef-total-models)
-
+- [Pretrained OCP models](#pretrained-ocp-models)
+- [Open Catalyst 2020 (OC20)](#open-catalyst-2020-oc20)
+  - [S2EF models: optimized for EFwT](#s2ef-models-optimized-for-efwt)
+  - [S2EF models: optimized for force only](#s2ef-models-optimized-for-force-only)
+  - [IS2RE models](#is2re-models)
+- [Open Catalyst 2022 (OC22)](#open-catalyst-2022-oc22)
+  - [S2EF-Total models](#s2ef-total-models)
+  - [Open Direct Air Capture 2023 (ODAC23)](#open-direct-air-capture-2023-odac23)
+  - [S2EF models](#s2ef-models)
+  - [IS2RE Direct models](#is2re-direct-models)
 * * *
 
 
@@ -128,5 +131,42 @@ OC22 dataset or pretrained models, as well as the original paper for each model:
     title = {The Open Catalyst 2022 (OC22) Dataset and Challenges for Oxide Electrocatalysis},
     year = {2022},
     journal = {arXiv preprint arXiv:2206.08917},
+}
+```
+
+## Open Direct Air Capture 2023 (ODAC23)
+
+* All config files for the ODAC23 models are available in the [`configs/odac`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac) directory.
+
+## S2EF models
+
+|Model	|Checkpoint	| Config |
+|---	|---	|---	|
+|Schnet | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Schnet.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/schnet.yml) |
+|Dimenet++ | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Dimenet++.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/dpp.yml) |
+|PaiNN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/PaiNN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/painn.yml) |
+|Gemnet-OC | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/gemnet-oc.yml) |
+|eSCN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eSCN.yml) |
+|Equiformer_V2 | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_31M.yml.yml) |
+|Equiformer_V2_Large | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Large.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_153M.yml.yml) |
+ 
+## IS2RE Direct models
+
+|Model	|Checkpoint	| Config |
+|---	|---	| --- |
+|Gemnet-OC_Direct | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/gemnet-oc.yml) |
+|eSCN_Direct | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eSCN.yml) |
+|Equiformer_V2_Direct | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eqv2_31M.yml) |
+
+The Open DAC 2023 (ODAC23) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
+
+Please consider citing the following paper in any research manuscript using the OC22 dataset:
+
+```
+@article{odac23_dataset,
+    author = {},
+    title = {},
+    year = {2023},
+    journal={arXiv preprint arXiv:},
 }
 ```
