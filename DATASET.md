@@ -16,7 +16,7 @@
     * [OC22 metadata](#oc22-mappings)
     * [License and bibtex](#citing-oc22)
 * [Open Direct Air Capture 2023 (ODAC23)](#open-direct-air-capture-2023-odac23)
-    * [Structure to Total Energy and Forces (S2EF) task](#structure-to-total-energy-and-forces-s2ef-task)
+    * [Structure to Total Energy and Forces (S2EF) task](#structure-to-energy-and-forces-s2ef-task)
     * [Initial Structure to Relaxed Structure (IS2RS) / Relaxed Total Energy (IS2RE) tasks](#initial-structure-to-relaxed-structure-is2rs--relaxed-total-energy-is2re-tasks)
 
 * * *
@@ -480,7 +480,7 @@ We provide precomputed LMDBs for train, validation, and the various test sets th
 
 |Splits    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
 |---    |---    |---    |---    |
-|Train + Validation + Test (all splits)    |  172G  |  476G  | [162f0660b2f1c9209c5b57f7b9e545a7](https://dl.fbaipublicfiles.com/dac/datasets/odac23_s2ef.tar.gz ) |
+|Train + Validation + Test (all splits)    |  172G  |  476G  | [162f0660b2f1c9209c5b57f7b9e545a7](https://dl.fbaipublicfiles.com/dac/datasets/odac23_s2ef.tar.gz )  |
 |    |    |    |    |
 
 
