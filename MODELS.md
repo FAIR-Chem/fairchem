@@ -2,16 +2,17 @@
 
 This page summarizes all the pretrained models released as part of the [Open Catalyst Project](https://opencatalystproject.org/). All models were trained using this codebase.
 
-- [Pretrained OCP models](#pretrained-ocp-models)
-- [Open Catalyst 2020 (OC20)](#open-catalyst-2020-oc20)
-  - [S2EF models: optimized for EFwT](#s2ef-models-optimized-for-efwt)
-  - [S2EF models: optimized for force only](#s2ef-models-optimized-for-force-only)
-  - [IS2RE models](#is2re-models)
-- [Open Catalyst 2022 (OC22)](#open-catalyst-2022-oc22)
-  - [S2EF-Total models](#s2ef-total-models)
-  - [Open Direct Air Capture 2023 (ODAC23)](#open-direct-air-capture-2023-odac23)
-  - [S2EF models](#s2ef-models)
-  - [IS2RE Direct models](#is2re-direct-models)
+
+* [Open Catalyst 2020 (OC20)](#open-catalyst-2020-oc20)
+    * [S2EF models optimized for EFwT](#s2ef-models-optimized-for-efwt)
+    * [S2EF models optimized for force](#s2ef-models-optimized-for-force-only)
+    * [IS2RE models](#is2re-models)
+* [Open Catalyst 2022 (OC22)](#open-catalyst-2022-oc22)
+    * [S2EF total models](#s2ef-total-models)
+* [Open Direct Air Capture 2023 (ODAC23)](#open-direct-air-capture-2023-odac23)
+    * [S2EF models](#s2ef-models)
+    * [IS2RE Direct models](#is2re-direct-models)
+
 * * *
 
 
