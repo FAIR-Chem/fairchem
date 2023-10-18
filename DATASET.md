@@ -1,20 +1,38 @@
 # Open Catalyst datasets
 
-* [Open Catalyst 2020 (OC20)](#open-catalyst-2020-oc20)
-    * [Scripts to download and preprocess the data](#download-and-preprocess-the-dataset)
-    * [Structure to Energy and Forces (S2EF)](#structure-to-energy-and-forces-s2ef-task)
-    * [Initial Structure to Relaxed Structure (IS2RS) / Relaxed Energy (IS2RE)](#initial-structure-to-relaxed-structure-is2rs-and-initial-structure-to-relaxed-energy-is2re-tasks)
-    * [Relaxation Trajectories](#relaxation-trajectories)
-    * [Bader charge data](#bader-charge-data)
-    * [OC20 metadata](#oc20-mappings)
-    * [Changelog](#dataset-changelog)
-    * [License and bibtex](#citing-oc20)
-* [Open Catalyst 2022 (OC22)](#open-catalyst-2022-oc22)
-    * [Structure to Total Energy and Forces (S2EF-total)](#structure-to-total-energy-and-forces-s2ef-total-task)
-    * [Initial Structure to Relaxed Structure (IS2RS) / Relaxed Total Energy (IS2RE-total)](#initial-structure-to-relaxed-structure-is2rs-and-initial-structure-to-relaxed-total-energy-is2re-total-tasks)
-    * [Relaxation Trajectories](#relaxation-trajectories-1)
-    * [OC22 metadata](#oc22-mappings)
-    * [License and bibtex](#citing-oc22)
+- [Open Catalyst datasets](#open-catalyst-datasets)
+  - [Open Catalyst 2020 (OC20)](#open-catalyst-2020-oc20)
+    - [Download and preprocess the dataset](#download-and-preprocess-the-dataset)
+    - [Structure to Energy and Forces (S2EF) task](#structure-to-energy-and-forces-s2ef-task)
+    - [Initial Structure to Relaxed Structure (IS2RS) and Initial Structure to Relaxed Energy (IS2RE) tasks](#initial-structure-to-relaxed-structure-is2rs-and-initial-structure-to-relaxed-energy-is2re-tasks)
+    - [Relaxation Trajectories](#relaxation-trajectories)
+      - [Adsorbate+catalyst system trajectories (optional download)](#adsorbatecatalyst-system-trajectories-optional-download)
+        - [Per-adsorbate trajectories (optional download)](#per-adsorbate-trajectories-optional-download)
+      - [Catalyst system trajectories (optional download)](#catalyst-system-trajectories-optional-download)
+    - [Bader charge data](#bader-charge-data)
+    - [OC20 mappings](#oc20-mappings)
+      - [Data mapping information](#data-mapping-information)
+    - [Adsorbate-catalyst system to catalyst system mapping information](#adsorbate-catalyst-system-to-catalyst-system-mapping-information)
+    - [Dataset changelog](#dataset-changelog)
+      - [September 2021](#september-2021)
+      - [March 2021](#march-2021)
+      - [Version 2, Feb 2021](#version-2-feb-2021)
+      - [Version 1, Oct 2020](#version-1-oct-2020)
+    - [Citing OC20](#citing-oc20)
+  - [Open Catalyst 2022 (OC22)](#open-catalyst-2022-oc22)
+    - [Structure to Total Energy and Forces (S2EF-Total) task](#structure-to-total-energy-and-forces-s2ef-total-task)
+    - [Initial Structure to Relaxed Structure (IS2RS) and Initial Structure to Relaxed Total Energy (IS2RE-Total) tasks](#initial-structure-to-relaxed-structure-is2rs-and-initial-structure-to-relaxed-total-energy-is2re-total-tasks)
+    - [Relaxation Trajectories](#relaxation-trajectories-1)
+      - [System trajectories (optional download)](#system-trajectories-optional-download)
+    - [OC22 Mappings](#oc22-mappings)
+      - [Data mapping information](#data-mapping-information-1)
+      - [](#)
+      - [OC20 reference information](#oc20-reference-information)
+      - [](#-1)
+    - [Citing OC22](#citing-oc22)
+  - [Open Direct Air Capture 2023 (ODAC23)](#open-direct-air-capture-2023-odac23)
+    - [Structure to Total Energy and Forces (S2EF) task](#structure-to-total-energy-and-forces-s2ef-task)
+    - [Initial Structure to Relaxed Structure (IS2RS) / Relaxed Total Energy (IS2RE) tasks](#initial-structure-to-relaxed-structure-is2rs--relaxed-total-energy-is2re-tasks)
 
 * * *
 
@@ -467,3 +485,73 @@ Please consider citing the following paper in any research manuscript using the 
     journal={arXiv preprint arXiv:2206.08917},
 }
 ```
+
+
+## Open Direct Air Capture 2023 (ODAC23)
+
+### Structure to Total Energy and Forces (S2EF) task
+
+We provide precomputed LMDBs for train, validation, and the various test sets that can be used directly with the dataloaders provided in our code. The LMDBs contain input structures from all points in relaxation trajectories along with the energy of the structure and the atomic forces. The dataset contains an in-domain test set and 4 out-of-domain test sets (ood-large, ood-linker, ood-topology, and ood-linker & topology). All LMDbs  are compressed into a single `.tar.gz` file.
+
+|Splits    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
+|---    |---    |---    |---    |
+|Train + Validation + Test (all splits)    |  172G  |  476G  | [162f0660b2f1c9209c5b57f7b9e545a7](https://dl.fbaipublicfiles.com/dac/datasets/odac23_s2ef.tar.gz)
+|    |    |    |    |
+
+
+
+
+### Initial Structure to Relaxed Structure (IS2RS) / Relaxed Total Energy (IS2RE) tasks
+
+For IS2RE / IS2RS training, validation and test sets, we provide precomputed LMDBs that can be directly used with dataloaders provided in our code. The LMDBs contain input initial structures and the output relaxed structures and energies. The dataset contains an in-domain test set and 4 out-of-domain test sets (ood-large, ood-linker, ood-topology, and ood-linker & topology). All LMDBs are compressed into a single `.tar.gz` file.
+
+
+|Splits    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
+|---    |---    |---    |---    |
+|Train + Validation + Test (all splits)    |  809M | 2.2G |  [f7f2f58669a30abae8cb9ba1b7f2bcd2](https://dl.fbaipublicfiles.com/dac/datasets/odac23_is2r.tar.gz )  |
+|    |    |    |    |
+
+
+<!-- ### ODAC23 metadata
+
+We provide a Python pickle file containing information about the slab and adsorbates for each of the systems in ODAC23 dataset. The pickle file can be loaded as a Python dictionary where the keys are the system-ids (of the format `XYZ`  where `XYZ` is an integer, corresponding to the `sid` in the LMDB Data object), and the corresponding value of each key is a dictionary with information about:
+
+
+* `bulk_id`: Materials Project ID of the bulk system used corresponding the the catalyst surface
+* `bulk_symbols`: Chemical composition of the bulk counterpart
+* `miller_index`: 3-tuple of integers indicating the Miller indices of the surface
+* `traj_id`: Identifier associated with the accompanying raw trajectory (if available)
+* `slab_sid`: Identifier associated with the corresponding slab (if available)
+* `ads_symbols`: Chemical composition of the adsorbate counterpart (adosrbate+slabs only)
+* `nads`: Number of adsorbates present
+
+
+
+Downloadable link:   (MD5 checksum: `` )
+
+
+An example adsorbate+slab entry:
+
+```
+ 6877: {'bulk_id': 'mp-559112',
+  'miller_index': (1, 0, 0),
+  'nads': 1,
+  'traj_id': 'K2Zn6O7_mp-559112_RyQXa0N0uc_ohyUKozY3G',
+  'bulk_symbols': 'K4Zn12O14',
+  'slab_sid': 30859,
+  'ads_symbols': 'O2'},
+```
+
+An example slab entry:
+
+```
+ 34815: {'bulk_id': 'mp-18793',
+  'miller_index': (1, 2, 1),
+  'nads': 0,
+  'traj_id': 'LiCrO2_mp-18793_clean_3HDHBg6TIz',
+  'bulk_symbols': 'Li2Cr2O4'},
+```
+
+
+
+ -->
