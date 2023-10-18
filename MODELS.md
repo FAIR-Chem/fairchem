@@ -144,7 +144,7 @@ OC22 dataset or pretrained models, as well as the original paper for each model:
 |Model	|Checkpoint	| Config |
 |---	|---	|---	|
 |Schnet | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Schnet.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/schnet.yml) |
-|Dimenet++ | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Dimenet++.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/dpp.yml) |
+|Dimenet++ | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/DimenetPP.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/dpp.yml) |
 |PaiNN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/PaiNN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/painn.yml) |
 |Gemnet-OC | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/gemnet-oc.yml) |
 |eSCN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eSCN.yml) |
