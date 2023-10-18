@@ -148,8 +148,8 @@ OC22 dataset or pretrained models, as well as the original paper for each model:
 |PaiNN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/PaiNN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/painn.yml) |
 |Gemnet-OC | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/gemnet-oc.yml) |
 |eSCN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eSCN.yml) |
-|Equiformer_V2 | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_31M.yml.yml) |
-|Equiformer_V2_Large | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Large.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_153M.yml.yml) |
+|Equiformer_V2 | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_31M.yml) |
+|Equiformer_V2_Large | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Large.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_153M.yml) |
  
 ## IS2RE Direct models
 
