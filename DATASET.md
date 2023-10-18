@@ -18,7 +18,6 @@
 * [Open Direct Air Capture 2023 (ODAC23)](#open-direct-air-capture-2023-odac23)
     * [Structure to Total Energy and Forces (S2EF) task](#structure-to-total-energy-and-forces-s2ef-task)
     * [Initial Structure to Relaxed Structure (IS2RS) / Relaxed Total Energy (IS2RE) tasks](#initial-structure-to-relaxed-structure-is2rs--relaxed-total-energy-is2re-tasks)
-    * [ODAC23 metadata](#odac23-metadata)
 
 * * *
 
