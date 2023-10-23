@@ -111,7 +111,9 @@ class EquiformerV2EnergyTrainer(EnergyTrainer):
         optimizer_params = self.config["optim"]["optimizer_params"]
         weight_decay = optimizer_params["weight_decay"]
 
-        parameters, name_no_wd = add_weight_decay(self.model, weight_decay, self.model_params_no_wd)
+        parameters, name_no_wd = add_weight_decay(
+            self.model, weight_decay, self.model_params_no_wd
+        )
         logging.info("Parameters without weight decay:")
         logging.info(name_no_wd)
 
@@ -122,7 +124,6 @@ class EquiformerV2EnergyTrainer(EnergyTrainer):
         )
 
     def load_extras(self):
-
         def multiply(obj, num):
             if isinstance(obj, list):
                 for i in range(len(obj)):
@@ -131,8 +132,12 @@ class EquiformerV2EnergyTrainer(EnergyTrainer):
                 obj = obj * num
             return obj
 
-        self.config["optim"]["scheduler_params"]["epochs"] = self.config["optim"]["max_epochs"]
-        self.config["optim"]["scheduler_params"]["lr"] = self.config["optim"]["lr_initial"]
+        self.config["optim"]["scheduler_params"]["epochs"] = self.config[
+            "optim"
+        ]["max_epochs"]
+        self.config["optim"]["scheduler_params"]["lr"] = self.config["optim"][
+            "lr_initial"
+        ]
 
         # convert epochs into number of steps
         n_iter_per_epoch = len(self.train_loader)
@@ -140,7 +145,9 @@ class EquiformerV2EnergyTrainer(EnergyTrainer):
         for k in scheduler_params.keys():
             if "epochs" in k:
                 if isinstance(scheduler_params[k], (int, float, list)):
-                    scheduler_params[k] = multiply(scheduler_params[k], n_iter_per_epoch)
+                    scheduler_params[k] = multiply(
+                        scheduler_params[k], n_iter_per_epoch
+                    )
 
         self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
         self.clip_grad_norm = self.config["optim"].get("clip_grad_norm")
