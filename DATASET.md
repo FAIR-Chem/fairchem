@@ -16,8 +16,8 @@
     * [OC22 metadata](#oc22-mappings)
     * [License and bibtex](#citing-oc22)
 * [Open Direct Air Capture 2023 (ODAC23)](#open-direct-air-capture-2023-odac23)
-    * [Structure to Total Energy and Forces (S2EF) task](#structure-to-energy-and-forces-s2ef-task)
-    * [Initial Structure to Relaxed Structure (IS2RS) / Relaxed Total Energy (IS2RE) tasks](#initial-structure-to-relaxed-structure-is2rs--relaxed-total-energy-is2re-tasks)
+    * [Structure to Energy and Forces (S2EF) task](#structure-to-energy-and-forces-s2ef-task)
+    * [Initial Structure to Relaxed Structure (IS2RS) / Relaxed Energy (IS2RE) tasks](#initial-structure-to-relaxed-structure-is2rs--relaxed-energy-is2re-tasks)
 
 * * *
 
@@ -474,7 +474,7 @@ Please consider citing the following paper in any research manuscript using the 
 
 ## Open Direct Air Capture 2023 (ODAC23)
 
-### Structure to Total Energy and Forces (S2EF) task
+### Structure to Energy and Forces (S2EF) task
 
 We provide precomputed LMDBs for train, validation, and the various test sets that can be used directly with the dataloaders provided in our code. The LMDBs contain input structures from all points in relaxation trajectories along with the energy of the structure and the atomic forces. The dataset contains an in-domain test set and 4 out-of-domain test sets (ood-large, ood-linker, ood-topology, and ood-linker & topology). All LMDbs  are compressed into a single `.tar.gz` file.
 
@@ -486,7 +486,7 @@ We provide precomputed LMDBs for train, validation, and the various test sets th
 
 
 
-### Initial Structure to Relaxed Structure (IS2RS) / Relaxed Total Energy (IS2RE) tasks
+### Initial Structure to Relaxed Structure (IS2RS) / Relaxed Energy (IS2RE) tasks
 
 For IS2RE / IS2RS training, validation and test sets, we provide precomputed LMDBs that can be directly used with dataloaders provided in our code. The LMDBs contain input initial structures and the output relaxed structures and energies. The dataset contains an in-domain test set and 4 out-of-domain test sets (ood-large, ood-linker, ood-topology, and ood-linker & topology). All LMDBs are compressed into a single `.tar.gz` file.
 
