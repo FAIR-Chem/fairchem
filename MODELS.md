@@ -148,20 +148,20 @@ OC22 dataset or pretrained models, as well as the original paper for each model:
 |PaiNN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/PaiNN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/painn.yml) |
 |Gemnet-OC | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/gemnet-oc.yml) |
 |eSCN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eSCN.yml) |
-|Equiformer_V2 | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_31M.yml) |
-|Equiformer_V2_Large | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Large.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_153M.yml) |
+|EquiformerV2 | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_31M.yml) |
+|EquiformerV2 (Large) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Large.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_153M.yml) |
  
 ## IS2RE Direct models
 
 |Model	|Checkpoint	| Config |
 |---	|---	| --- |
-|Gemnet-OC_Direct | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/gemnet-oc.yml) |
-|eSCN_Direct | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eSCN.yml) |
-|Equiformer_V2_Direct | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eqv2_31M.yml) |
+|Gemnet-OC (Direct) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/gemnet-oc.yml) |
+|eSCN (Direct) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eSCN.yml) |
+|EquiformerV2 (Direct) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eqv2_31M.yml) |
 
 The Open DAC 2023 (ODAC23) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
 
-Please consider citing the following paper in any research manuscript using the OC22 dataset:
+Please consider citing the following paper in any research manuscript using the ODAC23 dataset:
 
 ```
 @article{odac23_dataset,
