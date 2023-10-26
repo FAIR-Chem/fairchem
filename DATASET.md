@@ -498,9 +498,9 @@ For IS2RE / IS2RS training, validation and test sets, we provide precomputed LMD
 
 ### Citing ODAC23
 
-The Open DAC 2023 (ODAC23) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
+The OpenDAC 2023 (ODAC23) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
 
-Please consider citing the following paper in any research manuscript using the OC22 dataset:
+Please consider citing the following paper in any research manuscript using the ODAC23 dataset:
 
 
 ```
