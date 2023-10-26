@@ -13,7 +13,7 @@ logger:
   name: wandb
 
 task:
-  dataset: single_point_lmdb
+  dataset: lmdb
   description: "Relaxed state energy prediction from initial structure."
   type: regression
   metric: mae
