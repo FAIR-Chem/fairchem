@@ -412,11 +412,11 @@ class PaiNN(BaseModel):
 
         per_atom_energy = self.out_energy(x).squeeze(1)
         energy = scatter(per_atom_energy, batch, dim=0)
+        outputs = {"energy": energy}
 
         if self.regress_forces:
             if self.direct_forces:
                 forces = self.out_forces(x, vec)
-                return energy, forces
             else:
                 forces = (
                     -1
@@ -427,9 +427,9 @@ class PaiNN(BaseModel):
                         create_graph=True,
                     )[0]
                 )
-                return energy, forces
-        else:
-            return energy
+            outputs["forces"] = forces
+
+        return outputs
 
     @property
     def num_params(self) -> int:

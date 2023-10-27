@@ -347,11 +347,13 @@ class eSCN(BaseModel):
         # Scale energy to help balance numerical precision w.r.t. forces
         energy = energy * 0.001
 
+        outputs = {"energy": energy}
         ###############################################################
         # Force estimation
         ###############################################################
         if self.regress_forces:
             forces = self.force_block(x_pt, self.sphere_points)
+            outputs["forces"] = forces
 
         if self.show_timing_info is True:
             torch.cuda.synchronize()
@@ -366,10 +368,7 @@ class eSCN(BaseModel):
 
         self.counter = self.counter + 1
 
-        if not self.regress_forces:
-            return energy
-        else:
-            return energy, forces
+        return outputs
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
