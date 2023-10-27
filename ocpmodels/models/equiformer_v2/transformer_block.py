@@ -1,31 +1,22 @@
 import copy
 import math
+from typing import List
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch_geometric
 
 from .activation import (
     GateActivation,
     S2Activation,
-    ScaledSiLU,
-    ScaledSmoothLeakyReLU,
-    ScaledSwiGLU,
     SeparableS2Activation,
     SmoothLeakyReLU,
-    SwiGLU,
 )
 from .drop import EquivariantDropoutArraySphericalHarmonics, GraphDropPath
-from .layer_norm import (
-    EquivariantLayerNormArray,
-    EquivariantLayerNormArraySphericalHarmonics,
-    EquivariantRMSNormArraySphericalHarmonics,
-    get_normalization_layer,
-)
+from .layer_norm import get_normalization_layer
 from .radial_function import RadialFunction
-from .so2_ops import SO2_Convolution, SO2_Linear
-from .so3 import SO3_Embedding, SO3_Linear, SO3_LinearV2
+from .so2_ops import SO2_Convolution
+from .so3 import SO3_Embedding, SO3_LinearV2
 
 
 class SO2EquivariantGraphAttention(torch.nn.Module):
@@ -65,27 +56,27 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
 
     def __init__(
         self,
-        sphere_channels,
-        hidden_channels,
-        num_heads,
-        attn_alpha_channels,
-        attn_value_channels,
-        output_channels,
-        lmax_list,
-        mmax_list,
+        sphere_channels: int,
+        hidden_channels: int,
+        num_heads: int,
+        attn_alpha_channels: int,
+        attn_value_channels: int,
+        output_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         SO3_rotation,
         mappingReduced,
         SO3_grid,
-        max_num_elements,
+        max_num_elements: int,
         edge_channels_list,
-        use_atom_edge_embedding=True,
-        use_m_share_rad=False,
+        use_atom_edge_embedding: bool = True,
+        use_m_share_rad: bool = False,
         activation="scaled_silu",
-        use_s2_act_attn=False,
-        use_attn_renorm=True,
-        use_gate_act=False,
-        use_sep_s2_act=True,
-        alpha_drop=0.0,
+        use_s2_act_attn: bool = False,
+        use_attn_renorm: bool = True,
+        use_gate_act: bool = False,
+        use_sep_s2_act: bool = True,
+        alpha_drop: float = 0.0,
     ):
         super(SO2EquivariantGraphAttention, self).__init__()
 
@@ -155,10 +146,10 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
             ]
             self.rad_func = RadialFunction(self.edge_channels_list)
             expand_index = torch.zeros([(max(self.lmax_list) + 1) ** 2]).long()
-            for l in range(max(self.lmax_list) + 1):
-                start_idx = l**2
-                length = 2 * l + 1
-                expand_index[start_idx : (start_idx + length)] = l
+            for lval in range(max(self.lmax_list) + 1):
+                start_idx = lval**2
+                length = 2 * lval + 1
+                expand_index[start_idx : (start_idx + length)] = lval
             self.register_buffer("expand_index", expand_index)
 
         self.so2_conv_1 = SO2_Convolution(
@@ -232,7 +223,13 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
             lmax=self.lmax_list[0],
         )
 
-    def forward(self, x, atomic_numbers, edge_distance, edge_index):
+    def forward(
+        self,
+        x: torch.Tensor,
+        atomic_numbers,
+        edge_distance: torch.Tensor,
+        edge_index,
+    ):
 
         # Compute edge scalar features (invariant to rotations)
         # Uses atomic numbers and edge distance as inputs
@@ -395,16 +392,16 @@ class FeedForwardNetwork(torch.nn.Module):
 
     def __init__(
         self,
-        sphere_channels,
-        hidden_channels,
-        output_channels,
-        lmax_list,
-        mmax_list,
+        sphere_channels: int,
+        hidden_channels: int,
+        output_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         SO3_grid,
-        activation="scaled_silu",
-        use_gate_act=False,
-        use_grid_mlp=False,
-        use_sep_s2_act=True,
+        activation: str = "scaled_silu",
+        use_gate_act: bool = False,
+        use_grid_mlp: bool = False,
+        use_sep_s2_act: bool = True,
     ):
         super(FeedForwardNetwork, self).__init__()
         self.sphere_channels = sphere_channels
@@ -575,34 +572,34 @@ class TransBlockV2(torch.nn.Module):
 
     def __init__(
         self,
-        sphere_channels,
-        attn_hidden_channels,
-        num_heads,
-        attn_alpha_channels,
-        attn_value_channels,
-        ffn_hidden_channels,
-        output_channels,
-        lmax_list,
-        mmax_list,
+        sphere_channels: int,
+        attn_hidden_channels: int,
+        num_heads: int,
+        attn_alpha_channels: int,
+        attn_value_channels: int,
+        ffn_hidden_channels: int,
+        output_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         SO3_rotation,
         mappingReduced,
         SO3_grid,
-        max_num_elements,
-        edge_channels_list,
-        use_atom_edge_embedding=True,
-        use_m_share_rad=False,
-        attn_activation="silu",
-        use_s2_act_attn=False,
-        use_attn_renorm=True,
-        ffn_activation="silu",
-        use_gate_act=False,
-        use_grid_mlp=False,
-        use_sep_s2_act=True,
-        norm_type="rms_norm_sh",
-        alpha_drop=0.0,
-        drop_path_rate=0.0,
-        proj_drop=0.0,
-    ):
+        max_num_elements: int,
+        edge_channels_list: List[int],
+        use_atom_edge_embedding: bool = True,
+        use_m_share_rad: bool = False,
+        attn_activation: str = "silu",
+        use_s2_act_attn: bool = False,
+        use_attn_renorm: bool = True,
+        ffn_activation: str = "silu",
+        use_gate_act: bool = False,
+        use_grid_mlp: bool = False,
+        use_sep_s2_act: bool = True,
+        norm_type: str = "rms_norm_sh",
+        alpha_drop: float = 0.0,
+        drop_path_rate: float = 0.0,
+        proj_drop: float = 0.0,
+    ) -> None:
         super(TransBlockV2, self).__init__()
 
         max_lmax = max(lmax_list)

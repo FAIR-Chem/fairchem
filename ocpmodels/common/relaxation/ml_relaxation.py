@@ -8,11 +8,12 @@ LICENSE file in the root directory of this source tree.
 import logging
 from collections import deque
 from pathlib import Path
+from typing import Optional
 
 import torch
 from torch_geometric.data import Batch
 
-from ocpmodels.common.registry import registry
+from ocpmodels.common.typing import assert_is_instance
 from ocpmodels.datasets.lmdb_dataset import data_list_collater
 
 from .optimizers.lbfgs_torch import LBFGS, TorchCalc
@@ -21,13 +22,13 @@ from .optimizers.lbfgs_torch import LBFGS, TorchCalc
 def ml_relax(
     batch,
     model,
-    steps,
-    fmax,
+    steps: int,
+    fmax: float,
     relax_opt,
     save_full_traj,
-    device="cuda:0",
+    device: str = "cuda:0",
     transform=None,
-    early_stop_batch=False,
+    early_stop_batch: bool = False,
 ):
     """
     Runs ML-based relaxations.
@@ -67,10 +68,13 @@ def ml_relax(
             traj_names=ids,
             early_stop_batch=early_stop_batch,
         )
+
+        e: Optional[RuntimeError] = None
         try:
             relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
             relaxed_batches.append(relaxed_batch)
-        except RuntimeError as e:
+        except RuntimeError as err:
+            e = err
             oom = True
             torch.cuda.empty_cache()
 
@@ -78,7 +82,7 @@ def ml_relax(
             # move OOM recovery code outside of except clause to allow tensors to be freed.
             data_list = batch.to_data_list()
             if len(data_list) == 1:
-                raise e
+                raise assert_is_instance(e, RuntimeError)
             logging.info(
                 f"Failed to relax batch with size: {len(data_list)}, splitting into two..."
             )

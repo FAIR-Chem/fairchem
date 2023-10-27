@@ -36,7 +36,7 @@ class AtomEmbedding(torch.nn.Module):
             self.embeddings.weight, a=-np.sqrt(3), b=np.sqrt(3)
         )
 
-    def forward(self, Z):
+    def forward(self, Z) -> torch.Tensor:
         """
         Returns
         -------
@@ -78,7 +78,7 @@ class EdgeEmbedding(torch.nn.Module):
         m_rbf,
         idx_s,
         idx_t,
-    ):
+    ) -> torch.Tensor:
         """
 
         Arguments

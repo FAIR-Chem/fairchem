@@ -6,21 +6,16 @@ LICENSE file in the root directory of this source tree.
 """
 
 import bisect
-import logging
-import math
 import pickle
-import random
-import warnings
 from pathlib import Path
 
 import lmdb
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from torch_geometric.data import Batch
 
-from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
+from ocpmodels.common.typing import assert_is_instance as aii
 from ocpmodels.common.utils import pyg2_data_transform
 
 
@@ -62,7 +57,7 @@ class OC22LmdbDataset(Dataset):
 
                 # Get the number of stores data from the number of entries
                 # in the LMDB
-                num_entries = cur_env.stat()["entries"]
+                num_entries = aii(cur_env.stat()["entries"], int)
 
                 # If "length" encoded as ascii is present, we have one fewer
                 # data than the stats suggest
@@ -95,7 +90,7 @@ class OC22LmdbDataset(Dataset):
             self.metadata_path = self.path.parent / "metadata.npz"
             self.env = self.connect_db(self.path)
 
-            num_entries = self.env.stat()["entries"]
+            num_entries = aii(self.env.stat()["entries"], int)
 
             # If "length" encoded as ascii is present, we have one fewer
             # data than the stats suggest
@@ -118,9 +113,9 @@ class OC22LmdbDataset(Dataset):
             self.lin_ref = torch.nn.Parameter(
                 torch.tensor(coeff), requires_grad=False
             )
-        self.subsample = self.config.get("subsample", False)
+        self.subsample = aii(self.config.get("subsample", False), bool)
 
-    def __len__(self):
+    def __len__(self) -> int:
         if self.subsample:
             return min(self.subsample, self.num_samples)
         return self.num_samples
@@ -164,9 +159,9 @@ class OC22LmdbDataset(Dataset):
                 fid = fid.item()
                 data_object.fid = fid
 
-        if hasattr(data_object, "y_relaxed"):
+        if getattr(data_object, "y_relaxed", None) is not None:
             attr = "y_relaxed"
-        elif hasattr(data_object, "y"):
+        elif getattr(data_object, "y", None) is not None:
             attr = "y"
         # if targets are not available, test data is being used
         else:

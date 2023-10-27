@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 import argparse
 import copy
 import logging
+from typing import List
 
 import submitit
 
@@ -48,6 +49,8 @@ if __name__ == "__main__":
     setup_logging()
 
     parser: argparse.ArgumentParser = flags.get_parser()
+    args: argparse.Namespace
+    override_args: List[str]
     args, override_args = parser.parse_known_args()
     config = build_config(args, override_args)
 

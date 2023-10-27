@@ -26,13 +26,13 @@ class PolynomialEnvelope(torch.nn.Module):
             Exponent of the envelope function.
     """
 
-    def __init__(self, exponent) -> None:
+    def __init__(self, exponent: int) -> None:
         super().__init__()
         assert exponent > 0
-        self.p = exponent
-        self.a = -(self.p + 1) * (self.p + 2) / 2
-        self.b = self.p * (self.p + 2)
-        self.c = -self.p * (self.p + 1) / 2
+        self.p = float(exponent)
+        self.a: float = -(self.p + 1) * (self.p + 2) / 2
+        self.b: float = self.p * (self.p + 2)
+        self.c: float = -self.p * (self.p + 1) / 2
 
     def forward(self, d_scaled: torch.Tensor) -> torch.Tensor:
         env_val = (

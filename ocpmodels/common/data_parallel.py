@@ -9,19 +9,25 @@ import heapq
 import logging
 from itertools import chain
 from pathlib import Path
-from typing import List, Literal, Protocol, Union, runtime_checkable
+from typing import List, Literal, Protocol, Tuple, Union, runtime_checkable
 
 import numba
 import numpy as np
+import numpy.typing as npt
 import torch
 from torch.utils.data import BatchSampler, DistributedSampler, Sampler
+from torch_geometric.data.data import BaseData
 
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.datasets import data_list_collater
 
 
 class OCPDataParallel(torch.nn.DataParallel):
-    def __init__(self, module, output_device, num_gpus: int) -> None:
+    use_cpu: bool
+
+    def __init__(
+        self, module, output_device: torch.device, num_gpus: int
+    ) -> None:
         if num_gpus < 0:
             raise ValueError("# GPUs must be positive.")
         if num_gpus > torch.cuda.device_count():
@@ -29,9 +35,9 @@ class OCPDataParallel(torch.nn.DataParallel):
 
         self.src_device = torch.device(output_device)
 
-        self.cpu = False
+        self.use_cpu = False
         if num_gpus == 0:
-            self.cpu = True
+            self.use_cpu = True
         elif num_gpus == 1:
             device_ids = [self.src_device]
         else:
@@ -42,7 +48,7 @@ class OCPDataParallel(torch.nn.DataParallel):
                 raise ValueError("Main device must be less than # of GPUs")
             device_ids = list(range(num_gpus))
 
-        if self.cpu:
+        if self.use_cpu:
             super(torch.nn.DataParallel, self).__init__()
             self.module = module
 
@@ -54,7 +60,7 @@ class OCPDataParallel(torch.nn.DataParallel):
             )
 
     def forward(self, batch_list, **kwargs):
-        if self.cpu:
+        if self.use_cpu:
             return self.module(batch_list[0])
 
         if len(self.device_ids) == 1:
@@ -85,7 +91,7 @@ class ParallelCollater:
         self.num_gpus = num_gpus
         self.otf_graph = otf_graph
 
-    def __call__(self, data_list):
+    def __call__(self, data_list: List[BaseData]) -> List[BaseData]:
         if self.num_gpus in [0, 1]:  # adds cpu-only case
             batch = data_list_collater(data_list, otf_graph=self.otf_graph)
             return [batch]
@@ -113,13 +119,13 @@ class ParallelCollater:
 
 
 @numba.njit
-def balanced_partition(sizes, num_parts: int):
+def balanced_partition(sizes: npt.NDArray[np.int_], num_parts: int):
     """
     Greedily partition the given set by always inserting
     the largest element into the smallest partition.
     """
     sort_idx = np.argsort(-sizes)  # Sort in descending order
-    heap = []
+    heap: List[Tuple[List[int], List[int]]] = []
     for idx in sort_idx[:num_parts]:
         heap.append((sizes[idx], [idx]))
     heapq.heapify(heap)
@@ -164,7 +170,7 @@ class BalancedBatchSampler(Sampler):
         batch_size: int,
         num_replicas: int,
         rank: int,
-        device,
+        device: torch.device,
         mode: Union[str, bool] = "atoms",
         shuffle: bool = True,
         drop_last: bool = False,

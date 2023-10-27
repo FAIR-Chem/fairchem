@@ -7,7 +7,6 @@ LICENSE file in the root directory of this source tree.
 from typing import Optional
 
 import torch
-from torch_scatter import scatter
 
 from ..initializers import he_orthogonal_init
 from .base_layers import Dense
@@ -27,6 +26,8 @@ class BasisEmbedding(torch.nn.Module):
         Number of circular/spherical basis functions.
         Only required if there is a circular/spherical basis.
     """
+
+    weight: torch.nn.Parameter
 
     def __init__(
         self,

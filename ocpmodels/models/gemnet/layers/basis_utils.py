@@ -13,7 +13,7 @@ from scipy import special as sp
 from scipy.optimize import brentq
 
 
-def Jn(r, n):
+def Jn(r: float, n: int):
     """
     numerical spherical bessel functions of order n
     """

@@ -145,6 +145,10 @@ class OutputBlock(AtomUpdateBlock):
             Kernel initializer of the final dense layer.
     """
 
+    dense_rbf_F: Dense
+    out_forces: Dense
+    out_energy: Dense
+
     def __init__(
         self,
         emb_size_atom: int,
@@ -203,7 +207,7 @@ class OutputBlock(AtomUpdateBlock):
         else:
             raise UserWarning(f"Unknown output_init: {self.output_init}")
 
-    def forward(self, nAtoms, m, rbf, id_j):
+    def forward(self, nAtoms: int, m, rbf, id_j: torch.Tensor):
         """
         Returns
         -------

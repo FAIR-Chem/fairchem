@@ -6,13 +6,13 @@ LICENSE file in the root directory of this source tree.
 """
 
 import math
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 from scipy.special import sph_harm
-from torch.nn.init import _calculate_correct_fan
 
 from .activations import Act
 
@@ -33,7 +33,7 @@ class SIREN(nn.Module):
         num_in_features: int,
         out_features: int,
         w0: float = 30.0,
-        initializer="siren",
+        initializer: Optional[str] = "siren",
         c: float = 6,
     ) -> None:
         super(SIREN, self).__init__()
@@ -57,7 +57,7 @@ class SIREN(nn.Module):
                             math.sqrt(6.0 / num_input),
                         )
 
-    def forward(self, X):
+    def forward(self, X: torch.Tensor) -> torch.Tensor:
         return self.network(X)
 
 
@@ -144,6 +144,14 @@ class FourierSmearing(nn.Module):
 
 
 class Basis(nn.Module):
+    smearing: Union[
+        SINESmearing,
+        SINESmearing,
+        FourierSmearing,
+        GaussianSmearing,
+        torch.nn.Sequential,
+    ]
+
     def __init__(
         self,
         num_in_features: int,
@@ -220,7 +228,9 @@ class Basis(nn.Module):
         else:
             raise RuntimeError("Undefined basis type.")
 
-    def forward(self, x: torch.Tensor, edge_attr_sph=None):
+    def forward(
+        self, x: torch.Tensor, edge_attr_sph: Optional[torch.Tensor] = None
+    ):
         if "sph" in self.basis_type:
             if "nosine" not in self.basis_type:
                 x_sine = self.smearing_sine(
@@ -228,6 +238,7 @@ class Basis(nn.Module):
                 )  # the first three features correspond to edge_vec_normalized, so we ignore
                 if "cat" in self.basis_type:
                     # just concatenate spherical edge feature and sined node features
+                    assert isinstance(edge_attr_sph, torch.Tensor)
                     return torch.cat([edge_attr_sph, x_sine], dim=1)
                 elif "mul" in self.basis_type or "m40" in self.basis_type:
                     # multiply sined node features into spherical edge feature (inspired by theory in spherical harmonics)
@@ -251,20 +262,23 @@ class Basis(nn.Module):
 
 
 class SphericalSmearing(nn.Module):
+    m: npt.NDArray[np.int_]
+    n: npt.NDArray[np.int_]
+
     def __init__(self, max_n: int = 10, option: str = "all") -> None:
         super(SphericalSmearing, self).__init__()
 
         self.max_n = max_n
 
-        m: List[int] = []
-        n: List[int] = []
+        m_list: List[int] = []
+        n_list: List[int] = []
         for i in range(max_n):
             for j in range(0, i + 1):
-                n.append(i)
-                m.append(j)
+                m_list.append(j)
+                n_list.append(i)
 
-        m = np.array(m)
-        n = np.array(n)
+        m = np.array(m_list)
+        n = np.array(n_list)
 
         if option == "all":
             self.m = m
@@ -278,7 +292,7 @@ class SphericalSmearing(nn.Module):
 
         self.out_dim = int(np.sum(self.m == 0) + 2 * np.sum(self.m != 0))
 
-    def forward(self, xyz) -> torch.Tensor:
+    def forward(self, xyz: torch.Tensor) -> torch.Tensor:
         # assuming input is already normalized
         assert xyz.size(1) == 3
 

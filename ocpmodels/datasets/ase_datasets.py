@@ -22,7 +22,7 @@ from ocpmodels.preprocessing import AtomsToGraphs
 
 
 def apply_one_tags(
-    atoms, skip_if_nonzero: bool = True, skip_always: bool = False
+    atoms: ase.Atoms, skip_if_nonzero: bool = True, skip_always: bool = False
 ):
     """
     This function will apply tags of 1 to an ASE atoms object.
@@ -70,6 +70,8 @@ class AseAtomsDataset(Dataset, ABC):
         self.config = config
 
         a2g_args = config.get("a2g_args", {})
+        if a2g_args is None:
+            a2g_args = {}
 
         # Make sure we always include PBC info in the resulting atoms objects
         a2g_args["r_pbc"] = True
@@ -81,8 +83,6 @@ class AseAtomsDataset(Dataset, ABC):
         if self.config.get("keep_in_memory", False):
             self.__getitem__ = functools.cache(self.__getitem__)
 
-        # Derived classes should extend this functionality to also create self.ids,
-        # a list of identifiers that can be passed to get_atoms_object()
         self.ids = self.load_dataset_get_ids(config)
 
     def __len__(self) -> int:
@@ -102,21 +102,29 @@ class AseAtomsDataset(Dataset, ABC):
                 atoms, **self.config.get("atoms_transform_args", {})
             )
 
-        if "sid" in atoms.info:
-            sid = atoms.info["sid"]
-        else:
+        sid = atoms.info.get("sid", self.ids[idx])
+        try:
+            sid = tensor([sid])
+            warnings.warn(
+                "Supplied sid is not numeric (or missing). Using dataset indices instead."
+            )
+        except:
             sid = tensor([idx])
+
+        fid = atoms.info.get("fid", tensor([0]))
 
         # Convert to data object
         data_object = self.a2g.convert(atoms, sid)
-
-        data_object.pbc = tensor(atoms.pbc)
+        data_object.fid = fid
 
         # Transform data object
         if self.transform is not None:
             data_object = self.transform(
                 data_object, **self.config.get("transform_args", {})
             )
+
+        if self.config.get("include_relaxed_energy", False):
+            data_object.y_relaxed = self.get_relaxed_energy(self.ids[idx])
 
         return data_object
 
@@ -196,6 +204,10 @@ class AseReadDataset(AseAtomsDataset):
                     to iterate over a dataset many times (e.g. training for many epochs).
                     Not recommended for large datasets.
 
+            include_relaxed_energy (bool): Include the relaxed energy in the resulting data object.
+                    The relaxed structure is assumed to be the final structure in the file
+                    (e.g. the last frame of a .traj).
+
             atoms_transform_args (dict): Additional keyword arguments for the atoms_transform callable
 
             transform_args (dict): Additional keyword arguments for the transform callable
@@ -219,6 +231,10 @@ class AseReadDataset(AseAtomsDataset):
         if self.path.is_file():
             raise Exception("The specified src is not a directory")
 
+        if self.config.get("include_relaxed_energy", False):
+            self.relaxed_ase_read_args = copy.deepcopy(self.ase_read_args)
+            self.relaxed_ase_read_args["index"] = "-1"
+
         return list(self.path.glob(f'{config["pattern"]}'))
 
     def get_atoms_object(self, identifier):
@@ -229,6 +245,10 @@ class AseReadDataset(AseAtomsDataset):
             raise err
 
         return atoms
+
+    def get_relaxed_energy(self, identifier):
+        relaxed_atoms = ase.io.read(identifier, **self.relaxed_ase_read_args)
+        return relaxed_atoms.get_potential_energy(apply_constraint=False)
 
 
 @registry.register_dataset("ase_read_multi")
@@ -273,6 +293,10 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             keep_in_memory (bool): Store data in memory. This helps avoid random reads if you need
                     to iterate over a dataset many times (e.g. training for many epochs).
                     Not recommended for large datasets.
+
+            include_relaxed_energy (bool): Include the relaxed energy in the resulting data object.
+                    The relaxed structure is assumed to be the final structure in the file
+                    (e.g. the last frame of a .traj).
 
             use_tqdm (bool): Use TQDM progress bar when initializing dataset
 
@@ -332,10 +356,21 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             warnings.warn(f"{err} occured for: {identifier}")
             raise err
 
+        if "sid" not in atoms.info:
+            atoms.info["sid"] = "".join(identifier.split(" ")[:-1])
+        if "fid" not in atoms.info:
+            atoms.info["fid"] = int(identifier.split(" ")[-1])
+
         return atoms
 
     def get_metadata(self):
         return {}
+
+    def get_relaxed_energy(self, identifier):
+        relaxed_atoms = ase.io.read(
+            "".join(identifier.split(" ")[:-1]), **self.ase_read_args
+        )[-1]
+        return relaxed_atoms.get_potential_energy(apply_constraint=False)
 
 
 class dummy_list(list):
@@ -439,6 +474,8 @@ class AseDBDataset(AseAtomsDataset):
                 )
 
         self.select_args = config.get("select_args", {})
+        if self.select_args is None:
+            self.select_args = {}
 
         # In order to get all of the unique IDs using the default ASE db interface
         # we have to load all the data and check ids using a select. This is extremely
@@ -478,6 +515,8 @@ class AseDBDataset(AseAtomsDataset):
         return atoms
 
     def connect_db(self, address, connect_args={}):
+        if connect_args is None:
+            connect_args = {}
         db_type = connect_args.get("type", "extract_from_name")
         if db_type == "lmdb" or (
             db_type == "extract_from_name" and address.split(".")[-1] == "lmdb"
@@ -499,3 +538,8 @@ class AseDBDataset(AseAtomsDataset):
             return self.guess_target_metadata()
         else:
             return copy.deepcopy(self.dbs[0].metadata)
+
+    def get_relaxed_energy(self, identifier):
+        raise NotImplementedError(
+            "IS2RE-Direct training with an ASE DB is not currently supported."
+        )
