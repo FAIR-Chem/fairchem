@@ -89,14 +89,14 @@ class TestS2EFEval:
     def test_metrics_exist(self) -> None:
         assert "energy_mae" in self.metrics
         assert "forces_mae" in self.metrics
-        assert "forces_cos" in self.metrics
-        assert "energy_force_within_threshold" in self.metrics
+        assert "forces_cosine_similarity" in self.metrics
+        assert "energy_forces_within_threshold" in self.metrics
 
 
 @pytest.mark.usefixtures("load_evaluator_is2rs")
 class TestIS2RSEval:
     def test_metrics_exist(self) -> None:
-        assert "average_distance_within_threshold" in self.metrics
+        assert "positions_average_distance_within_threshold" in self.metrics
 
 
 @pytest.mark.usefixtures("load_evaluator_is2re")
