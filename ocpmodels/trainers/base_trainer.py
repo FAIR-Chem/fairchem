@@ -9,10 +9,9 @@ import errno
 import logging
 import os
 import random
-import subprocess
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, Optional, cast
+from typing import Any, DefaultDict, Dict, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -25,7 +24,6 @@ from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-import ocpmodels
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
@@ -37,7 +35,6 @@ from ocpmodels.common.typing import assert_is_instance as aii
 from ocpmodels.common.typing import none_throws
 from ocpmodels.common.utils import (
     cg_decomp_mat,
-    check_traj_files,
     get_commit_hash,
     get_loss_module,
     irreps_sum,
@@ -96,15 +93,18 @@ class BaseTrainer(ABC):
         self.epoch = 0
         self.step = 0
 
+        self.device: torch.device
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
         else:
             self.device = torch.device("cpu")
             self.cpu = True  # handle case when `--cpu` isn't specified
             # but there are no gpu devices available
+
         if run_dir is None:
             run_dir = os.getcwd()
 
+        self.timestamp_id: str
         if timestamp_id is None:
             timestamp_id = self._get_timestamp(self.device, identifier)
 
@@ -182,7 +182,7 @@ class BaseTrainer(ABC):
         self.is_debug = is_debug
 
         if distutils.is_master():
-            print(yaml.dump(self.config, default_flow_style=False))
+            logging.info(yaml.dump(self.config, default_flow_style=False))
 
         ### backwards compatability with OCP v<2.0
         if self.name != "ocp":
@@ -472,15 +472,21 @@ class BaseTrainer(ABC):
             module = module.module
         return module
 
-    def load_checkpoint(self, checkpoint_path: str) -> None:
-        if not os.path.isfile(checkpoint_path):
-            raise FileNotFoundError(
-                errno.ENOENT, "Checkpoint file not found", checkpoint_path
-            )
+    def load_checkpoint(
+        self, checkpoint_path: str, checkpoint: Dict = {}
+    ) -> None:
+        if not checkpoint:
+            if not os.path.isfile(checkpoint_path):
+                raise FileNotFoundError(
+                    errno.ENOENT, "Checkpoint file not found", checkpoint_path
+                )
+            else:
+                logging.info(f"Loading checkpoint from: {checkpoint_path}")
+                map_location = torch.device("cpu") if self.cpu else self.device
+                checkpoint = torch.load(
+                    checkpoint_path, map_location=map_location
+                )
 
-        logging.info(f"Loading checkpoint from: {checkpoint_path}")
-        map_location = torch.device("cpu") if self.cpu else self.device
-        checkpoint = torch.load(checkpoint_path, map_location=map_location)
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
         self.best_val_metric = checkpoint.get("best_val_metric", None)
@@ -1274,7 +1280,9 @@ class BaseTrainer(ABC):
             for k in keys:
                 if "chunk_idx" in k:
                     gather_results[k] = np.cumsum(
-                        np.array(gather_results[k])[idx]
+                        np.array(
+                            gather_results[k],
+                        )[idx]
                     )[:-1]
                 else:
                     if f"{k}_chunk_idx" in keys or k == "forces":

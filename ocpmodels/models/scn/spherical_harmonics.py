@@ -23,7 +23,6 @@ except (ImportError, FileNotFoundError):
     logging.error(
         "Invalid setup for SCN. Either the e3nn library or Jd.pt is missing."
     )
-    pass
 
 
 class SphericalHarmonicsHelper:

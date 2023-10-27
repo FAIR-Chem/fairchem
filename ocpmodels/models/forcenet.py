@@ -15,7 +15,6 @@ from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
 from ocpmodels.datasets.embeddings import ATOMIC_RADII, CONTINUOUS_EMBEDDINGS
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.utils.activations import Act
@@ -24,13 +23,14 @@ from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 
 class FNDecoder(nn.Module):
     def __init__(
-        self, decoder_type, decoder_activation_str, output_dim
+        self, decoder_type, decoder_activation_str, output_dim: int
     ) -> None:
         super(FNDecoder, self).__init__()
         self.decoder_type = decoder_type
         self.decoder_activation = Act(decoder_activation_str)
         self.output_dim = output_dim
 
+        self.decoder: nn.Sequential
         if self.decoder_type == "linear":
             self.decoder = nn.Sequential(nn.Linear(self.output_dim, 3))
         elif self.decoder_type == "mlp":
@@ -58,7 +58,7 @@ class FNDecoder(nn.Module):
 class InteractionBlock(MessagePassing):
     def __init__(
         self,
-        hidden_channels,
+        hidden_channels: int,
         mlp_basis_dim: int,
         basis_type,
         depth_mlp_edge: int = 2,
@@ -93,7 +93,7 @@ class InteractionBlock(MessagePassing):
 
         if depth_mlp_edge > 0:
             mlp_edge = [torch.nn.Linear(in_features, hidden_channels)]
-            for i in range(depth_mlp_edge):
+            for _ in range(depth_mlp_edge):
                 mlp_edge.append(self.activation)
                 mlp_edge.append(
                     torch.nn.Linear(hidden_channels, hidden_channels)
@@ -111,7 +111,7 @@ class InteractionBlock(MessagePassing):
 
         if depth_mlp_trans > 0:
             mlp_trans = [torch.nn.Linear(hidden_channels, hidden_channels)]
-            for i in range(depth_mlp_trans):
+            for _ in range(depth_mlp_trans):
                 mlp_trans.append(torch.nn.BatchNorm1d(hidden_channels))
                 mlp_trans.append(self.activation)
                 mlp_trans.append(
@@ -234,26 +234,26 @@ class ForceNet(BaseModel):
 
     def __init__(
         self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,  # not used
-        hidden_channels=512,
-        num_interactions=5,
-        cutoff=6.0,
-        feat="full",
-        num_freqs=50,
-        max_n=3,
-        basis="sphallmul",
-        depth_mlp_edge=2,
-        depth_mlp_node=1,
-        activation_str="swish",
-        ablation="none",
-        decoder_hidden_channels=512,
-        decoder_type="mlp",
-        decoder_activation_str="swish",
-        training=True,
-        otf_graph=False,
-        use_pbc=True,
+        num_atoms: int,  # not used
+        bond_feat_dim: int,  # not used
+        num_targets: int,  # not used
+        hidden_channels: int = 512,
+        num_interactions: int = 5,
+        cutoff: float = 6.0,
+        feat: str = "full",
+        num_freqs: int = 50,
+        max_n: int = 3,
+        basis: str = "sphallmul",
+        depth_mlp_edge: int = 2,
+        depth_mlp_node: int = 1,
+        activation_str: str = "swish",
+        ablation: str = "none",
+        decoder_hidden_channels: int = 512,
+        decoder_type: str = "mlp",
+        decoder_activation_str: str = "swish",
+        training: bool = True,
+        otf_graph: bool = False,
+        use_pbc: bool = True,
     ) -> None:
         super(ForceNet, self).__init__()
         self.training = training

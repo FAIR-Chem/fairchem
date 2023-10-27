@@ -1,5 +1,6 @@
 import copy
 import math
+from typing import List, Optional
 
 import torch
 import torch.nn as nn
@@ -22,8 +23,13 @@ class SO2_m_Convolution(torch.nn.Module):
     """
 
     def __init__(
-        self, m, sphere_channels, m_output_channels, lmax_list, mmax_list
-    ):
+        self,
+        m: int,
+        sphere_channels: int,
+        m_output_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
+    ) -> None:
         super(SO2_m_Convolution, self).__init__()
 
         self.m = m
@@ -31,7 +37,7 @@ class SO2_m_Convolution(torch.nn.Module):
         self.m_output_channels = m_output_channels
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
-        self.num_resolutions = len(self.lmax_list)
+        self.num_resolutions: int = len(self.lmax_list)
 
         num_channels = 0
         for i in range(self.num_resolutions):
@@ -86,14 +92,14 @@ class SO2_Convolution(torch.nn.Module):
 
     def __init__(
         self,
-        sphere_channels,
-        m_output_channels,
-        lmax_list,
-        mmax_list,
+        sphere_channels: int,
+        m_output_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         mappingReduced,
-        internal_weights=True,
-        edge_channels_list=None,
-        extra_m0_output_channels=None,
+        internal_weights: bool = True,
+        edge_channels_list: Optional[List[int]] = None,
+        extra_m0_output_channels: Optional[int] = None,
     ):
         super(SO2_Convolution, self).__init__()
         self.sphere_channels = sphere_channels
@@ -248,13 +254,13 @@ class SO2_Linear(torch.nn.Module):
 
     def __init__(
         self,
-        sphere_channels,
-        m_output_channels,
-        lmax_list,
-        mmax_list,
+        sphere_channels: int,
+        m_output_channels: int,
+        lmax_list: List[int],
+        mmax_list: List[int],
         mappingReduced,
-        internal_weights=False,
-        edge_channels_list=None,
+        internal_weights: bool = False,
+        edge_channels_list: Optional[List[int]] = None,
     ):
         super(SO2_Linear, self).__init__()
         self.sphere_channels = sphere_channels
