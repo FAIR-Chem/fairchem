@@ -533,6 +533,7 @@ class EquiformerV2_OC20(BaseModel):
                     self.energy_lin_ref[atomic_numbers],
                 )
 
+        outputs = {"energy": energy}
         ###############################################################
         # Force estimation
         ###############################################################
@@ -542,14 +543,9 @@ class EquiformerV2_OC20(BaseModel):
             )
             forces = forces.embedding.narrow(1, 1, 3)
             forces = forces.view(-1, 3)
+            outputs["forces"] = forces
 
-        if not self.regress_forces:
-            return {"energy": energy}
-        else:
-            return {
-                "energy": energy,
-                "forces": forces,
-            }
+        return outputs
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
