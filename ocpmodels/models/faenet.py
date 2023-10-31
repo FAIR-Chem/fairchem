@@ -518,7 +518,6 @@ class FAENet(BaseModel):
                     self.act,
                     self.mp_type,
                     self.complex_mp,
-                    self.att_heads,
                     self.graph_norm,
                     (
                         print(
@@ -713,15 +712,9 @@ class FAENet(BaseModel):
                 rel_pos = rel_pos[edge_mask]
 
         if q is None:
-            # Normalize and squash to [0,1] for gaussian basis
-            rel_pos_normalized = None
-            if self.edge_embed_type in {"sh", "all_rij", "all"}:
-                rel_pos_normalized = (rel_pos / edge_weight.view(-1, 1) + 1) / 2.0
-
             # Embedding block
-            h, e = self.embed_block(
-                z, rel_pos, edge_attr, data.tags, rel_pos_normalized
-            )
+            h, e = self.embed_block(z, rel_pos, edge_attr, data.tags)
+
             if "inter" and "0" in self.first_trainable_layer:
                 q = h.clone().detach()
 
