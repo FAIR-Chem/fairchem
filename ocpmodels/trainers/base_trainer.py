@@ -255,7 +255,12 @@ class BaseTrainer(ABC):
             else:
                 self.datasets[split] = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(ds_conf, transform=transform)
+                )(
+                    ds_conf,
+                    transform=transform,
+                    adsorbates=self.config["task"].get("adsorbates"),
+                    adsorbates_ref_dir=self.config["task"].get("adsorbates_ref_dir"),
+                )
 
             shuffle = False
             if "train" in split:
