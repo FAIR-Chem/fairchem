@@ -516,14 +516,14 @@ class FAENet(BaseModel):
                     self.hidden_channels,
                     self.num_filters,
                     self.act,
-                    kwargs["mp_type"],
-                    kwargs["complex_mp"],
-                    kwargs["att_heads"],
-                    kwargs["graph_norm"],
+                    self.mp_type,
+                    self.complex_mp,
+                    self.att_heads,
+                    self.graph_norm,
                     (
                         print(
                             "🗑️ Setting dropout_lin for interaction block ",
-                            f"{i} / {kwargs['num_interactions']}",
+                            f"{i} / {self.num_interactions}",
                         )
                         or self.dropout_lin
                     )
@@ -531,14 +531,14 @@ class FAENet(BaseModel):
                     and (i >= int(self.dropout_lowest_layer.split("-")[-1]))
                     else 0,
                 )
-                for _ in range(kwargs["num_interactions"])
+                for i in range(self.num_interactions)
             ]
         )
 
         # Output block
         self.output_block = OutputBlock(
             self.energy_head,
-            kwargs["hidden_channels"],
+            self.hidden_channels,
             self.act,
             (print("🗑️ Setting dropout_lin for output block") or self.dropout_lin)
             if (
