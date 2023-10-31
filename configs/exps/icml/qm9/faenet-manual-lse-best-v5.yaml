@@ -30,7 +30,7 @@ default:
     # parameters EMA
     ema_decay: 0.999
     batch_size: 64
-    initial_lr: 0.0005
+    lr_initial: 0.0005
     max_epochs: 1500
     loss_energy: mse
     loss_force: mse
@@ -138,7 +138,7 @@ runs:
       skip_co: true
 
   - optim:
-      initial_lr: 0.001
+      lr_initial: 0.001
     model:
       complex_mp: true
       cutoff: 5.0
@@ -153,7 +153,7 @@ runs:
       skip_co: true
 
   - optim:
-      initial_lr: 0.001
+      lr_initial: 0.001
       batch_size: 128
     model:
       complex_mp: true
@@ -169,7 +169,7 @@ runs:
       skip_co: true
 
   - optim:
-      initial_lr: 0.001
+      lr_initial: 0.001
       batch_size: 128
     model:
       complex_mp: true
@@ -185,7 +185,7 @@ runs:
       skip_co: true
 
   - optim:
-      initial_lr: 0.001
+      lr_initial: 0.001
       batch_size: 1024
     model:
       complex_mp: true
@@ -201,7 +201,7 @@ runs:
       skip_co: true
 
   - optim:
-      initial_lr: 0.001
+      lr_initial: 0.001
       batch_size: 128
     model:
       complex_mp: true

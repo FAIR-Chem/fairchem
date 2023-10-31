@@ -1,22 +1,24 @@
 """ Code of the Scalable Frame Averaging (Rotation Invariant) GNN
 """
 import torch
+import torch.nn.functional as F
 from e3nn.o3 import spherical_harmonics
 from torch import nn
 from torch.nn import Embedding, Linear
 from torch_geometric.nn import MessagePassing, TransformerConv, radius_graph
-from torch_geometric.nn.norm import BatchNorm, GraphNorm
+from torch_geometric.nn.norm import GraphNorm
+from torch_geometric.utils import dropout_edge
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import conditional_grad, get_pbc_distances
 from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.force_decoder import ForceDecoder
+from ocpmodels.models.utils.activations import swish
 from ocpmodels.models.utils.attention_model import TransfoAttConv
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-from ocpmodels.models.utils.activations import swish
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1
@@ -235,6 +237,7 @@ class InteractionBlock(MessagePassing):
         complex_mp,
         att_heads,
         graph_norm,
+        dropout_lin,
     ):
         super(InteractionBlock, self).__init__()
         self.act = act
@@ -242,6 +245,7 @@ class InteractionBlock(MessagePassing):
         self.hidden_channels = hidden_channels
         self.complex_mp = complex_mp
         self.graph_norm = graph_norm
+        self.dropout_lin = float(dropout_lin)
         if graph_norm:
             self.graph_norm = GraphNorm(
                 hidden_channels if "updown" not in self.mp_type else num_filters
@@ -324,6 +328,12 @@ class InteractionBlock(MessagePassing):
 
     def forward(self, h, edge_index, e):
         # Define edge embedding
+
+        if self.dropout_lin > 0:
+            h = F.dropout(
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
+            )
+
         if self.mp_type in {"base", "updownscale_base"}:
             e = torch.cat([e, h[edge_index[0]], h[edge_index[1]]], dim=1)
 
@@ -343,18 +353,27 @@ class InteractionBlock(MessagePassing):
             h = self.propagate(edge_index, x=h, W=e)  # propagate
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
+            h = F.dropout(
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
+            )
             h = self.act(self.lin_up(h))  # upscale node rep.
 
         elif self.mp_type == "att":
             h = self.lin_geom(h, edge_index, edge_attr=e)
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
+            h = F.dropout(
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
+            )
             h = self.act(self.lin_h(h))
 
         elif self.mp_type == "base_with_att":
             h = self.lin_geom(h, edge_index, edge_attr=e)  # propagate is inside
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
+            h = F.dropout(
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
+            )
             h = self.act(self.lin_h(h))
 
         elif self.mp_type == "local_env":
@@ -363,28 +382,43 @@ class InteractionBlock(MessagePassing):
             h = h + chi
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
+            h = F.dropout(
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
+            )
             h = h = self.act(self.lin_h(h))
 
         elif self.mp_type == "updown_local_env":
             h = self.act(self.lin_down(h))
             chi = self.propagate(edge_index, x=h, W=e, local_env=True)
+            e = F.dropout(
+                e, p=self.dropout_lin, training=self.training or self.deup_inference
+            )
             e = self.lin_geom(e)
             h = self.propagate(edge_index, x=h, W=e)  # propagate
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
             h = torch.cat((h, chi), dim=1)
+            h = F.dropout(
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
+            )
             h = self.lin_up(h)
 
         elif self.mp_type in {"base", "simple", "sfarinet"}:
             h = self.propagate(edge_index, x=h, W=e)  # propagate
             if self.graph_norm:
                 h = self.act(self.graph_norm(h))
+            h = F.dropout(
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
+            )
             h = self.act(self.lin_h(h))
 
         else:
             raise ValueError("mp_type provided does not exist")
 
         if self.complex_mp:
+            h = F.dropout(
+                h, p=self.dropout_lin, training=self.training or self.deup_inference
+            )
             h = self.act(self.other_mlp(h))
 
         return h
@@ -397,10 +431,11 @@ class InteractionBlock(MessagePassing):
 
 
 class OutputBlock(nn.Module):
-    def __init__(self, energy_head, hidden_channels, act):
+    def __init__(self, energy_head, hidden_channels, act, dropout_lin):
         super().__init__()
         self.energy_head = energy_head
         self.act = act
+        self.dropout_lin = float(dropout_lin)
 
         self.lin1 = Linear(hidden_channels, hidden_channels // 2)
         self.lin2 = Linear(hidden_channels // 2, 1)
@@ -427,8 +462,11 @@ class OutputBlock(nn.Module):
         if self.energy_head == "weighted-av-final-embeds":
             nn.init.xavier_uniform_(self.w_lin.weight)
             self.w_lin.bias.data.fill_(0)
+        if hasattr(self, "deup_lin"):
+            nn.init.xavier_uniform_(self.deup_lin.weight)
+            self.deup_lin.bias.data.fill_(0)
 
-    def forward(self, h, edge_index, edge_weight, batch, alpha):
+    def forward(self, h, edge_index, edge_weight, batch, alpha, data=None):
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
 
@@ -441,8 +479,14 @@ class OutputBlock(nn.Module):
             )
 
         # MLP
+        h = F.dropout(
+            h, p=self.dropout_lin, training=self.training or self.deup_inference
+        )
         h = self.lin1(h)
         h = self.act(h)
+        h = F.dropout(
+            h, p=self.dropout_lin, training=self.training or self.deup_inference
+        )
         h = self.lin2(h)
 
         if self.energy_head in {
@@ -504,10 +548,19 @@ class FAENet(BaseModel):
             keys: "model_type", "hidden_channels", "num_layers", "num_heads",
         force_decoder_type (str): type of the force decoder model.
             (options: "mlp", "simple", "res", "res_updown")
+        dropout_lin (float): dropout rate for linear layers.
+        dropout_edge (float): dropout rate for edges.
+        dropout_lowest_layer (str): The first layer to apply dropout to. All subsequent
+            layers will have the same dropout rate. Can be `inter-{i}` or `output`.
+            Defaults to `output` if none is provided.
+        first_trainable_layer (str): lowest layer to NOT freeze. All previous layers will be frozen.
+            Can be ``, `embed`, `inter-{i}`, `output`, or `dropout`. If it is `` then no layer is frozen.
+            If it is `dropout` then it will be set to the layer before `dropout_lowest_layer`.
+            Defaults to ``.
     """
 
     def __init__(self, **kwargs):
-        super(FAENet, self).__init__()
+        super().__init__()
 
         self.cutoff = kwargs["cutoff"]
         self.energy_head = kwargs["energy_head"]
@@ -516,6 +569,11 @@ class FAENet(BaseModel):
         self.max_num_neighbors = kwargs["max_num_neighbors"]
         self.edge_embed_type = kwargs["edge_embed_type"]
         self.skip_co = kwargs["skip_co"]
+        self.dropout_edge = float(kwargs.get("dropout_edge") or 0)
+        self.dropout_lin = float(kwargs.get("dropout_lin") or 0)
+        self.dropout_lowest_layer = kwargs.get("dropout_lowest_layer", "output") or ""
+        self.first_trainable_layer = kwargs.get("first_trainable_layer", "") or ""
+
         if kwargs["mp_type"] == "sfarinet":
             kwargs["num_filters"] = kwargs["hidden_channels"]
 
@@ -558,14 +616,32 @@ class FAENet(BaseModel):
                     kwargs["complex_mp"],
                     kwargs["att_heads"],
                     kwargs["graph_norm"],
+                    (
+                        print(
+                            "🗑️ Setting dropout_lin for interaction block ",
+                            f"{i} / {kwargs['num_interactions']}",
+                        )
+                        or self.dropout_lin
+                    )
+                    if "inter" in self.dropout_lowest_layer
+                    and (i >= int(self.dropout_lowest_layer.split("-")[-1]))
+                    else 0,
                 )
-                for _ in range(kwargs["num_interactions"])
+                for i in range(kwargs["num_interactions"])
             ]
         )
 
         # Output block
         self.output_block = OutputBlock(
-            self.energy_head, kwargs["hidden_channels"], self.act
+            self.energy_head,
+            kwargs["hidden_channels"],
+            self.act,
+            (print("🗑️ Setting dropout_lin for output block") or self.dropout_lin)
+            if (
+                "inter" in self.dropout_lowest_layer
+                or "output" in self.dropout_lowest_layer
+            )
+            else 0,
         )
 
         # Energy head
@@ -593,20 +669,93 @@ class FAENet(BaseModel):
                 kwargs["hidden_channels"],
             )
 
+        self.freeze(self.first_trainable_layer)
+        print()
+
+    def freeze(self, lowest_layer="dropout"):
+        assert (
+            not lowest_layer
+            or "inter_" in lowest_layer
+            or lowest_layer == "output"
+            or lowest_layer == "dropout"
+            or lowest_layer == "none"
+        ), (
+            "first_trainable_layer must be None, '', 'inter_{i}', "
+            + f"'output', 'dropout', or 'none'. Received: {lowest_layer}"
+        )
+        if lowest_layer == "dropout":
+            lowest_layer = self.dropout_lowest_layer
+
+        if not lowest_layer:
+            print("⛄️ No layer to freeze")
+            return
+
+        if lowest_layer == "embed":
+            print("⛄️ No layer to freeze")
+            return
+
+        print("⛄️ Freezing embedding layer")
+        self.freeze_layer(self.embed_block)
+        if lowest_layer == "inter_0":
+            return
+
+        interaction_block_idx = (
+            int(lowest_layer.replace("inter_", ""))
+            if "inter_" in lowest_layer
+            else len(self.interaction_blocks)
+        )
+        if interaction_block_idx < 0:
+            interaction_block_idx = len(self.interaction_blocks) + interaction_block_idx
+            self.first_trainable_layer = f"inter_{interaction_block_idx}"
+
+        for ib in range(interaction_block_idx):
+            if ib >= len(self.interaction_blocks):
+                print("⛄️ Trying to freeze too many interaction blocks")
+                break
+            self.freeze_layer(self.interaction_blocks[ib])
+
+        if ib > 0:
+            print(
+                "⛄️ Freezing interaction blocks 0 ->",
+                f"{ib} / {len(self.interaction_blocks)}",
+            )
+        else:
+            print(f"⛄️ Freezing interaction block 0 / {len(self.interaction_blocks)}")
+
+        if self.skip_co == "concat_atom":
+            self.freeze_layer(self.mlp_skip_co)
+            print("⛄️ Freezing skip co atom layer")
+
+        if "output" in lowest_layer:
+            return
+
+        print("⛄️ Freezing output block")
+        self.freeze_layer(self.output_block)
+
     @conditional_grad(torch.enable_grad())
     def forces_forward(self, preds):
         return self.decoder(preds["hidden_state"])
 
     @conditional_grad(torch.enable_grad())
-    def energy_forward(self, data):
+    def energy_forward(self, data, q=None):
         # Rewire the graph
         z = data.atomic_numbers.long()
         pos = data.pos
         batch = data.batch
+        energy_skip_co = []
+        pooling_loss = None
 
         # Use periodic boundary conditions
         if self.use_pbc:
             assert z.dim() == 1 and z.dtype == torch.long
+
+            if self.dropout_edge > 0:
+                edge_index, edge_mask = dropout_edge(
+                    data.edge_index,
+                    p=self.dropout_edge,
+                    force_undirected=True,
+                    training=self.training or self.deup_inference,
+                )
 
             out = get_pbc_distances(
                 pos,
@@ -633,40 +782,67 @@ class FAENet(BaseModel):
             rel_pos = pos[row] - pos[col]
             edge_weight = rel_pos.norm(dim=-1)
             edge_attr = self.distance_expansion(edge_weight)
+            if self.dropout_edge > 0:
+                edge_index, edge_mask = dropout_edge(
+                    edge_index,
+                    p=self.dropout_edge,
+                    force_undirected=True,
+                    training=self.training or self.deup_inference,
+                )
+                edge_weight = edge_weight[edge_mask]
+                edge_attr = edge_attr[edge_mask]
+                rel_pos = rel_pos[edge_mask]
 
-        # Normalize and squash to [0,1] for gaussian basis
-        rel_pos_normalized = None
-        if self.edge_embed_type in {"sh", "all_rij", "all"}:
-            rel_pos_normalized = (rel_pos / edge_weight.view(-1, 1) + 1) / 2.0
+        if q is None:
+            # Normalize and squash to [0,1] for gaussian basis
+            rel_pos_normalized = None
+            if self.edge_embed_type in {"sh", "all_rij", "all"}:
+                rel_pos_normalized = (rel_pos / edge_weight.view(-1, 1) + 1) / 2.0
 
-        pooling_loss = None  # deal with pooling loss
+            # Embedding block
+            h, e = self.embed_block(
+                z, rel_pos, edge_attr, data.tags, rel_pos_normalized
+            )
+            if "inter" and "0" in self.first_trainable_layer:
+                q = h.clone().detach()
 
-        # Embedding block
-        h, e = self.embed_block(z, rel_pos, edge_attr, data.tags, rel_pos_normalized)
+            # Compute atom weights for late energy head
+            if self.energy_head == "weighted-av-initial-embeds":
+                alpha = self.w_lin(h)
+            else:
+                alpha = None
 
-        # Compute atom weights for late energy head
-        if self.energy_head == "weighted-av-initial-embeds":
-            alpha = self.w_lin(h)
-        else:
-            alpha = None
+            # Interaction blocks
+            energy_skip_co = []
+            for ib, interaction in enumerate(self.interaction_blocks):
+                if self.skip_co == "concat_atom":
+                    energy_skip_co.append(h)
+                elif self.skip_co:
+                    energy_skip_co.append(
+                        self.output_block(
+                            h, edge_index, edge_weight, batch, alpha, data
+                        )
+                    )
+                if "inter" in self.first_trainable_layer and ib == int(
+                    self.first_trainable_layer.split("_")[1]
+                ):
+                    q = h.clone().detach()
+                h = h + interaction(h, edge_index, e)
 
-        # Interaction blocks
-        energy_skip_co = []
-        for interaction in self.interaction_blocks:
+            # Atom skip-co
             if self.skip_co == "concat_atom":
                 energy_skip_co.append(h)
-            elif self.skip_co:
-                energy_skip_co.append(
-                    self.output_block(h, edge_index, edge_weight, batch, alpha)
-                )
-            h = h + interaction(h, edge_index, e)
+                h = self.act(self.mlp_skip_co(torch.cat(energy_skip_co, dim=1)))
 
-        # Atom skip-co
-        if self.skip_co == "concat_atom":
-            energy_skip_co.append(h)
-            h = self.act(self.mlp_skip_co(torch.cat(energy_skip_co, dim=1)))
+            # Compute a graph density estimate for deup
+            if "output" in self.first_trainable_layer:
+                q = h.clone().detach()
 
-        energy = self.output_block(h, edge_index, edge_weight, batch, alpha)
+        else:
+            h = q
+            alpha = None
+
+        energy = self.output_block(h, edge_index, edge_weight, batch, alpha, data=data)
 
         # Skip-connection
         energy_skip_co.append(energy)
@@ -675,6 +851,11 @@ class FAENet(BaseModel):
         elif self.skip_co == "add":
             energy = sum(energy_skip_co)
 
-        preds = {"energy": energy, "pooling_loss": pooling_loss, "hidden_state": h}
+        preds = {
+            "energy": energy,
+            "pooling_loss": pooling_loss,
+            "hidden_state": h,
+            "q": q,
+        }
 
         return preds

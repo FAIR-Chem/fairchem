@@ -63,10 +63,10 @@ class Cluster:
 
 
 CLUSTER = Cluster()
-OCP_TASKS = {"s2ef", "is2re", "is2es"}
+OCP_AND_DEUP_TASKS = {"s2ef", "is2re", "is2es", "deup_is2re"}
 ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ID = os.environ.get("SLURM_JOB_ID")
-RUN_DIR = Path(os.environ["SCRATCH"]) / "ocp" / "runs"
+RUNS_DIR = Path(os.environ["SCRATCH"]) / "ocp" / "runs"
 
 
 def read_slurm_env(config):
@@ -229,6 +229,51 @@ def override_drac_paths(trainer_config):
     trainer_config["dataset"] = merge_dicts(
         trainer_config["dataset"], path_overrides[task][split]
     )
+
+    return trainer_config
+
+
+def set_deup_samples_path(trainer_config):
+    if not trainer_config.get("deup_samples_path") and all(
+        "deup-" not in s for s in trainer_config["dataset"]
+    ):
+        return trainer_config
+
+    deup_train_key = [k for k in trainer_config["dataset"] if "deup-train" in k][0]
+
+    dsp = resolve(
+        trainer_config.get(
+            "deup_samples_path", trainer_config["dataset"][deup_train_key]["src"]
+        )
+    )
+    if not dsp.exists() or not dsp.is_dir():
+        raise FileNotFoundError(f"deup_samples_path {str(dsp)} not found")
+
+    if dsp.name != "deup_dataset":
+        if (dsp / "deup_dataset").exists() and (dsp / "deup_dataset").is_dir():
+            dsp = dsp / "deup_dataset"
+
+    assert len(list(dsp.glob("*.lmdb"))) > 0, f"No lmdb files found in {str(dsp)}"
+    assert (
+        dsp / "deup_config.yaml"
+    ).exists(), f"No deup_config.yaml found in {str(dsp)}"
+
+    for split in trainer_config["dataset"]:
+        if "deup-" in split:
+            trainer_config["dataset"][split]["src"] = str(dsp)
+
+    stats = yaml.safe_load((dsp / "deup_config.yaml").read_text())["stats"]["train"]
+    trainer_config["dataset"][deup_train_key]["target_mean"] = stats["mean"]
+    trainer_config["dataset"][deup_train_key]["target_std"] = stats["std"]
+
+    if not trainer_config.get("silent"):
+        print(
+            "📊 Automatically setting target stats to",
+            stats,
+            "for deup dataset",
+            str(dsp),
+            flush=True,
+        )
 
     return trainer_config
 
@@ -535,7 +580,7 @@ class Complete(object):
 
 def warmup_lr_lambda(current_step, optim_config):
     """Returns a learning rate multiplier.
-    Till `warmup_steps`, learning rate linearly increases to `initial_lr`,
+    Till `warmup_steps`, learning rate linearly increases to `lr_initial`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
     """
 
@@ -555,7 +600,10 @@ def warmup_lr_lambda(current_step, optim_config):
         )
 
     # warmup
-    if current_step <= optim_config["warmup_steps"]:
+    if (
+        optim_config["warmup_steps"] > 0
+        and current_step <= optim_config["warmup_steps"]
+    ):
         alpha = current_step / float(optim_config["warmup_steps"])
         return optim_config["warmup_factor"] * (1.0 - alpha) + alpha
 
@@ -879,7 +927,7 @@ def load_config_legacy(path: str, previous_includes: list = []):
     return config, duplicates_warning, duplicates_error
 
 
-def set_cpus_to_workers(config, silent=False):
+def set_cpus_to_workers(config, silent=None):
     if not config.get("no_cpus_to_workers"):
         cpus = count_cpus()
         gpus = count_gpus()
@@ -888,7 +936,9 @@ def set_cpus_to_workers(config, silent=False):
                 workers = cpus - 1
             else:
                 workers = cpus // gpus
-            if not config["silent"] and not silent:
+            if (silent is False or not config["silent"]) and (
+                config["optim"]["num_workers"]
+            ) != workers:
                 print(
                     f"🏭 Overriding num_workers from {config['optim']['num_workers']}",
                     f"to {workers} to match the machine's CPUs.",
@@ -955,9 +1005,9 @@ def load_config(config_str):
     model_conf = yaml.safe_load(model_conf_path.read_text())
     task_conf = yaml.safe_load(task_conf_path.read_text())
 
-    assert "default" in model_conf
-    assert task in model_conf
-    assert split in model_conf[task]
+    assert "default" in model_conf, f"Missing 'default' in {model_conf_path}"
+    assert task in model_conf, f"Missing '{task}' in {model_conf_path}"
+    assert split in model_conf[task], f"Missing '{split}' in {model_conf_path}"
 
     assert "default" in task_conf
     assert split in task_conf
@@ -973,7 +1023,7 @@ def load_config(config_str):
     return config
 
 
-def build_config(args, args_override=[], silent=False):
+def build_config(args, args_override=[], silent=None):
     config, overrides, loaded_config = {}, {}, {}
 
     if hasattr(args, "config_yml") and args.config_yml:
@@ -997,10 +1047,11 @@ def build_config(args, args_override=[], silent=False):
             if args.continue_from_dir
             else resolve(args.restart_from_dir)
         )
+        already_ckpt = load_dir.exists() and load_dir.is_file()
         # find configs: from checkpoints first, from the dropped config file
         # otherwise
         ckpts = list(load_dir.glob("checkpoints/checkpoint-*.pt"))
-        if not ckpts:
+        if not ckpts and not already_ckpt:
             print(f"💥 Could not find checkpoints in {str(load_dir)}.")
             configs = list(load_dir.glob("config-*.y*ml"))
             if not configs:
@@ -1011,11 +1062,14 @@ def build_config(args, args_override=[], silent=False):
             loaded_config = yaml.safe_load(configs[0].read_text())
             load_path = str(configs[0])
         else:
-            latest_ckpt = str(
-                sorted(ckpts, key=lambda c: float(c.stem.split("-")[-1]))[-1]
-            )
+            if already_ckpt:
+                latest_ckpt = load_dir
+            else:
+                latest_ckpt = str(
+                    sorted(ckpts, key=lambda c: float(c.stem.split("-")[-1]))[-1]
+                )
             load_path = latest_ckpt
-            loaded_config = torch.load((latest_ckpt), map_location="cpu")["config"]
+            loaded_config = torch.load(latest_ckpt, map_location="cpu")["config"]
 
         # config has been found. We need to prune/modify it depending on whether
         # we're restarting or continuing.
@@ -1172,6 +1226,7 @@ def build_config(args, args_override=[], silent=False):
     config = set_cpus_to_workers(config, silent)
     config = set_qm9_target_stats(config)
     config = set_qm7x_target_stats(config)
+    config = set_deup_samples_path(config)
     config = override_drac_paths(config)
     config = continue_from_slurm_job_id(config)
     config = read_slurm_env(config)
@@ -1694,7 +1749,7 @@ def make_script_trainer(str_args=[], overrides={}, silent=False, mode="train"):
     return trainer
 
 
-def make_trainer_from_dir(path, mode, overrides={}):
+def make_trainer_from_dir(path, mode, overrides={}, silent=None):
     path = resolve(path)
     assert path.exists()
     assert mode in {
@@ -1715,11 +1770,35 @@ def make_trainer_from_dir(path, mode, overrides={}):
     else:
         default_args.restart_from_dir = str(path)
 
-    config = build_config(default_args)
+    config = build_config(default_args, silent=silent)
     config = merge_dicts(config, overrides)
 
     setup_imports()
     return registry.get_trainer_class(config["trainer"])(**config)
+
+
+def make_trainer_from_conf_str(conf_str, overrides={}):
+    assert isinstance(
+        overrides, dict
+    ), f"Overrides must be a dict. Received {overrides}"
+
+    config = make_config_from_conf_str(conf_str)
+    config = merge_dicts(config, overrides)
+    return registry.get_trainer_class(config["trainer"])(**config)
+
+
+def make_config_from_conf_str(conf_str):
+    argv = deepcopy(sys.argv)
+    sys.argv[1:] = []
+    default_args = Flags().get_parser().parse_args()
+    sys.argv = argv
+
+    default_args.config = conf_str
+
+    config = build_config(default_args)
+
+    setup_imports()
+    return config
 
 
 def get_commit_hash():
@@ -1743,18 +1822,13 @@ def get_commit_hash():
     return commit_hash
 
 
-def base_config(config, overrides={}):
+def base_config(config, overrides={}, args_list=["--logger=dummy"]):
     from ocpmodels.common.flags import flags
 
     setup_imports()
 
     conf = build_config(
-        *flags.get_parser().parse_known_args(
-            [
-                f"--config={config}",
-                "--logger=dummy",
-            ]
-        )
+        *flags.get_parser().parse_known_args([f"--config={config}"] + args_list)
     )
     conf["cpu"] = not torch.cuda.is_available()
 

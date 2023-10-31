@@ -21,6 +21,29 @@ class BaseModel(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
 
+    def set_deup_inference(self, deup_inference):
+        self.deup_inference = deup_inference
+
+        def _sdi(module):
+            if isinstance(module, nn.Module):
+                module.deup_inference = deup_inference
+
+        self.apply(_sdi)
+
+    def set_dropouts(self, dropout):
+        def _sds(module):
+            if hasattr(module, "dropout_lin"):
+                module.dropout_lin = dropout
+            if hasattr(module, "dropout_edge"):
+                module.dropout_edge = dropout
+
+        self.apply(_sds)
+
+    @staticmethod
+    def freeze_layer(layer):
+        for param in layer.parameters():
+            param.requires_grad = False
+
     def reset_parameters(self):
         for child in self.children():
             if hasattr(child, "reset_parameters"):
@@ -39,7 +62,7 @@ class BaseModel(nn.Module):
     def forces_forward(self, preds):
         raise NotImplementedError
 
-    def forward(self, data, mode="train", regress_forces=None):
+    def forward(self, data, mode="train", regress_forces=None, q=None):
         grad_forces = forces = None
 
         # Fine tune on gradients
@@ -51,7 +74,7 @@ class BaseModel(nn.Module):
             data.pos.requires_grad_(True)
 
         # predict energy
-        preds = self.energy_forward(data)
+        preds = self.energy_forward(data, q=q)
 
         if self.regress_forces:
             if self.regress_forces in {"direct", "direct_with_gradient_target"}:

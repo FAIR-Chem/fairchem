@@ -42,7 +42,8 @@ if __name__ == "__main__":
     if all("config" not in arg for arg in str_args):
         str_args.append("--is_debug")
         # str_args.append("--config=faenet-is2re-all")
-        str_args.append("--config=forcenet-s2ef-2M")
+        str_args.append("--config=schnet-is2re-2M")
+
         # str_args.append("--silent=0")
         warnings.warn(
             "No model / mode is given; chosen as default" + f"Using: {str_args[-1]}"

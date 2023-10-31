@@ -1,11 +1,11 @@
 default:
   model:
-    name: faenet
+    name: deup_faenet
     act: swish
     dropout_lin: 0.0
     dropout_edge: 0.0
     dropout_lowest_layer: output # lowest layer where `dropout_lin` is applied. Can be `inter-{i}` or `output`. Defaults to `output`.
-    first_trainable_layer: "" # lowest layer to NOT freeze. All previous layers will be frozen. Can be ``, `embed`, `inter-{i}`, `output`, or `dropout`.
+    first_trainable_layer: dropout # lowest layer to NOT freeze. All previous layers will be frozen. Can be ``, `embed`, `inter-{i}`, `output`, or `dropout`.
                             # if it is `` then no layer is frozen. If it is `dropout` then it will be set to the layer before `dropout_lowest_layer`.
                             # Defaults to ``.
     hidden_channels: 128
@@ -43,6 +43,7 @@ default:
       res_updown:
         hidden_channels: 128
         norm: batch1d # batch1d, layer or null
+    deup_features: [s, energy_pred_std]
   optim:
     batch_size: 64
     eval_batch_size: 64
@@ -54,7 +55,6 @@ default:
     energy_grad_coefficient: 5
     force_coefficient: 30
     energy_coefficient: 1
-    epoch_fine_tune: 4
 
   frame_averaging: False # 2D, 3D, da, False
   fa_frames: False # can be {None, full, random, det, e3, e3-random, e3-det}
@@ -63,11 +63,7 @@ default:
 # -----  IS2RE  -----
 # -------------------
 
-is2re:
-  # *** Important note ***
-  #   The total number of gpus used for this run was 1.
-  #   If the global batch size (num_gpus * batch_size) is modified
-  #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+deup_is2re: # was: is2re
   10k:
     optim:
       lr_initial: 0.005
@@ -184,7 +180,7 @@ qm9:
       es_warmup_epochs: 600
       eval_batch_size: 64
       factor: 0.9
-      lr_initial: 0.0003
+      initial_lr: 0.0003
       loss_energy: mse
       lr_gamma: 0.1
       lr_initial: 0.001

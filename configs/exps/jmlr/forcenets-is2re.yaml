@@ -1,0 +1,68 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-3
+  git_checkout: d6186f7c6a7443a5cef9a8ffbe066c671bb7412e # as per https://wandb.ai/mila-ocp/ocp-3/runs/3040748-gemnet_oc-is2re-all
+
+default:
+  test_ri: False
+  mode: train
+  graph_rewiring: ""
+  model:
+    phys_embeds: False
+    tag_hidden_channels: 0
+    pg_hidden_channels: 0  # shall have been 32
+  optim:
+    es_patience: 5
+  cp_data_to_tmpdir: True
+  inference_time_loops: 3
+
+runs:
+  # ----------------------
+  # -----  FroceNet  -----
+  # ----------------------
+
+  # Baseline
+
+  - config: forcenet-is2re-all
+    seed: 1
+    note: 'FroceNet IS2RE baseline 1 GPU seed 1'
+
+  - config: forcenet-is2re-all
+    seed: 2
+    note: 'FroceNet IS2RE baseline 1 GPU seed 2'
+
+  - config: forcenet-is2re-all
+    seed: 3
+    note: 'FroceNet IS2RE baseline 1 GPU seed 3'
+
+  # PhAST
+
+  - config: forcenet-is2re-all
+    seed: 1
+    note: 'FroceNet IS2RE PhAST 1 GPU seed 1'
+    graph_rewiring: remove-tag-0
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+
+  - config: forcenet-is2re-all
+    seed: 2
+    note: 'FroceNet IS2RE PhAST 1 GPU seed 2'
+    graph_rewiring: remove-tag-0
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+
+  - config: forcenet-is2re-all
+    seed: 3
+    note: 'FroceNet IS2RE PhAST 1 GPU seed 3'
+    graph_rewiring: remove-tag-0
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32

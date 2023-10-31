@@ -80,6 +80,7 @@ if __name__ == "__main__":
     orion_race_condition = False
     hparams = {}
 
+    print()
     setup_logging()
 
     parser = flags.get_parser()

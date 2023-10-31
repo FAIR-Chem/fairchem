@@ -13,7 +13,7 @@ import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from copy import deepcopy
-
+from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
@@ -48,7 +48,7 @@ from ocpmodels.modules.scheduler import EarlyStopper, LRScheduler
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
-    def __init__(self, **kwargs):
+    def __init__(self, load=True, **kwargs):
         run_dir = kwargs["run_dir"]
         model_name = kwargs["model"].pop(
             "name", kwargs.get("model_name", "Unknown - base_trainer issue")
@@ -116,6 +116,13 @@ class BaseTrainer(ABC):
             )
 
         self.config["dataset"] = kwargs["dataset"]
+        deup_norm_key = [
+            k for k in self.config["dataset"] if "deup" in k and "train" in k
+        ]
+        if deup_norm_key:
+            self.train_dataset_name = deup_norm_key[0]
+        else:
+            self.train_dataset_name = "train"
 
         self.normalizer = kwargs["normalizer"]
         # This supports the legacy way of providing norm parameters in dataset
@@ -123,7 +130,7 @@ class BaseTrainer(ABC):
             self.config.get("dataset", None) is not None
             and kwargs["normalizer"] is None
         ):
-            self.normalizer = self.config["dataset"]["train"]
+            self.normalizer = self.config["dataset"][self.train_dataset_name]
 
         if not self.is_debug and dist_utils.is_master() and not self.is_hpo:
             os.makedirs(self.config["checkpoint_dir"], exist_ok=True)
@@ -150,7 +157,9 @@ class BaseTrainer(ABC):
                 "to stop the training after the next validation\n",
             )
             (run_dir / f"config-{JOB_ID}.yaml").write_text(yaml.dump(self.config))
-        self.load()
+
+        if load:
+            self.load()
 
         self.evaluator = Evaluator(
             task=self.task_name,
@@ -239,12 +248,17 @@ class BaseTrainer(ABC):
             if split == "default_val":
                 continue
 
-            self.datasets[split] = registry.get_dataset_class(
-                self.config["task"]["dataset"]
-            )(ds_conf, transform=transform)
+            if "deup" in split:
+                self.datasets[split] = registry.get_dataset_class("deup_lmdb")(
+                    self.config["dataset"], split, transform=transform
+                )
+            else:
+                self.datasets[split] = registry.get_dataset_class(
+                    self.config["task"]["dataset"]
+                )(ds_conf, transform=transform)
 
             shuffle = False
-            if split == "train":
+            if "train" in split:
                 shuffle = True
                 n_train = len(self.datasets[split])
 
@@ -369,6 +383,8 @@ class BaseTrainer(ABC):
         self.model = registry.get_model_class(self.config["model_name"])(
             **model_config
         ).to(self.device)
+        self.model.reset_parameters()
+        self.model.set_deup_inference(False)
 
         if dist_utils.is_master() and not self.silent:
             logging.info(
@@ -389,14 +405,19 @@ class BaseTrainer(ABC):
                 self.model, device_ids=[self.device], output_device=self.device
             )
 
-    def load_checkpoint(self, checkpoint_path):
-        if not os.path.isfile(checkpoint_path):
+    def load_checkpoint(self, checkpoint_path, silent=False):
+        if Path(checkpoint_path).is_dir():
+            checkpoint_path = str(
+                Path(checkpoint_path) / "checkpoints" / "best_checkpoint.pt"
+            )
+        if not Path(checkpoint_path).exists():
             raise FileNotFoundError(
                 errno.ENOENT, "Checkpoint file not found", checkpoint_path
             )
 
         map_location = torch.device("cpu") if self.cpu else self.device
-        print(f"Loading checkpoint from: {checkpoint_path} onto {map_location}")
+        if not silent:
+            print(f"Loading checkpoint from: {checkpoint_path} onto {map_location}")
         checkpoint = torch.load(checkpoint_path, map_location=map_location)
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
@@ -405,20 +426,33 @@ class BaseTrainer(ABC):
         # if trained with ddp and want to load in non-ddp, modify keys from
         # module.module.. -> module..
         first_key = next(iter(checkpoint["state_dict"]))
+        strict = "deup" not in self.config["config"]
+        missing, unexpected = None, None
         if not dist_utils.initialized() and first_key.split(".")[1] == "module":
             # No need for OrderedDict since dictionaries are technically ordered
             # since Python 3.6 and officially ordered since Python 3.7
             new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
-            self.model.load_state_dict(new_dict)
+            missing, unexpected = self.model.load_state_dict(new_dict, strict)
         elif dist_utils.initialized() and first_key.split(".")[1] != "module":
             new_dict = {f"module.{k}": v for k, v in checkpoint["state_dict"].items()}
-            self.model.load_state_dict(new_dict)
+            missing, unexpected = self.model.load_state_dict(new_dict, strict)
         else:
-            self.model.load_state_dict(checkpoint["state_dict"])
+            missing, unexpected = self.model.load_state_dict(
+                checkpoint["state_dict"], strict
+            )
 
-        if "optimizer" in checkpoint:
+        if missing or unexpected:
+            print("Warning: Model did not load correctly.")
+            print(f"Missing keys: {missing}")
+            print(f"Unexpected keys: {unexpected}")
+
+        if "optimizer" in checkpoint and hasattr(self, "optimizer"):
             self.optimizer.load_state_dict(checkpoint["optimizer"])
-        if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
+        if (
+            "scheduler" in checkpoint
+            and checkpoint["scheduler"] is not None
+            and hasattr(self, "scheduler")
+        ):
             self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
         if (
             checkpoint.get("warmup_scheduler") is not None
@@ -427,7 +461,11 @@ class BaseTrainer(ABC):
             self.scheduler.warmup_scheduler.load_state_dict(
                 checkpoint["warmup_scheduler"]
             )
-        if "ema" in checkpoint and checkpoint["ema"] is not None:
+        if (
+            "ema" in checkpoint
+            and checkpoint["ema"] is not None
+            and hasattr(self, "ema")
+        ):
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
@@ -442,17 +480,17 @@ class BaseTrainer(ABC):
             if "job_ids" in checkpoint["config"] and JOB_ID not in checkpoint["config"]:
                 self.config["job_ids"] = checkpoint["config"]["job_ids"] + f", {JOB_ID}"
 
-    def load_loss(self):
+    def load_loss(self, reduction="mean"):
         self.loss_fn = {}
         self.loss_fn["energy"] = self.config["optim"].get("loss_energy", "mae")
         self.loss_fn["force"] = self.config["optim"].get("loss_force", "mae")
         for loss, loss_name in self.loss_fn.items():
             if loss_name in ["l1", "mae"]:
-                self.loss_fn[loss] = nn.L1Loss()
+                self.loss_fn[loss] = nn.L1Loss(reduction=reduction)
             elif loss_name == "mse":
-                self.loss_fn[loss] = nn.MSELoss()
+                self.loss_fn[loss] = nn.MSELoss(reduction=reduction)
             elif loss_name == "l2mae":
-                self.loss_fn[loss] = L2MAELoss()
+                self.loss_fn[loss] = L2MAELoss(reduction=reduction)
             else:
                 raise NotImplementedError(f"Unknown loss function name: {loss_name}")
             if dist_utils.initialized():
@@ -1047,7 +1085,6 @@ class BaseTrainer(ABC):
         )
         self.model.eval()
         timer = Times(gpu=torch.cuda.is_available())
-
 
         # average inference over multiple loops
         for _ in range(loops):
