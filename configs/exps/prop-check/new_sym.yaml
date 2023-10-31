@@ -32,29 +32,60 @@ default:
     eval_batch_size: 256
 
 runs:
+  # - config: faenet-is2re-all
+  #   note: '2D all'
+  #   frame_averaging: "2D"
+  #   fa_frames: all
+  # - config: faenet-is2re-all
+  #   note: '3D all'
+  #   frame_averaging: "3D"
+  #   fa_frames: all
+  # - config: faenet-is2re-all
+  #   note: '3D se3-all'
+  #   frame_averaging: "3D"
+  #   fa_frames: se3-all
+  # - config: faenet-is2re-all
+  #   note: '2D se3-all'
+  #   frame_averaging: "2D"
+  #   fa_frames: se3-all
+  # - config: faenet-is2re-all
+  #   note: '2D random'
+  #   frame_averaging: "2D"
+  #   fa_frames: random
+  # - config: faenet-is2re-all
+  #   note: '2D random'
+  #   frame_averaging: "DA"
+  # - config: faenet-is2re-all
+  #   note: 'No FA/DA'
+  #   frame_averaging: ""
+  #   fa_frames: ""
+  # - config: faenet-is2re-all
+  #   note: 'No FA/DA No Train'
+  #   optim:
+  #     max_epochs: 0
+  #   frame_averaging: ""
+  #   fa_frames: ""
+  # - config: faenet-is2re-all
+  #   note: 'No Train'
+  #   optim:
+  #     max_epochs: 0
+  #   frame_averaging: "2D"
+  #   fa_frames: "random"
   - config: faenet-is2re-all
-    note: '2D all'
+    note: 'No Train'
+    optim:
+      max_epochs: 0
     frame_averaging: "2D"
-    fa_frames: all
+    fa_frames: "all"
   - config: faenet-is2re-all
-    note: '3D all'
-    frame_averaging: "3D"
-    fa_frames: all
-  - config: faenet-is2re-all
-    note: '3D se3-all'
-    frame_averaging: "3D"
-    fa_frames: se3-all
-  - config: faenet-is2re-all
-    note: '2D se3-all'
+    note: 'FA 1 epoch train'
+    optim:
+      max_epochs: 4
     frame_averaging: "2D"
-    fa_frames: se3-all
+    fa_frames: "random"
   - config: faenet-is2re-all
-    note: '2D random'
-    frame_averaging: "2D"
-    fa_frames: random
-  - config: faenet-is2re-all
-    note: '2D random'
-    frame_averaging: "DA"
-  - config: faenet-is2re-all
-    note: 'No FA/DA'
+    note: 'No FA 1 epoch train'
+    optim:
+      max_epochs: 4
     frame_averaging: ""
+    fa_frames: ""

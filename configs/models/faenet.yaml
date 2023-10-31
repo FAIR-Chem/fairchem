@@ -54,6 +54,7 @@ default:
     energy_grad_coefficient: 5
     force_coefficient: 30
     energy_coefficient: 1
+    epoch_fine_tune: 4
 
   frame_averaging: False # 2D, 3D, da, False
   fa_frames: False # can be {None, full, random, det, e3, e3-random, e3-det}

@@ -243,13 +243,20 @@ class SingleTrainer(BaseTrainer):
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
             if self.config["grad_fine_tune"]:
-                if epoch_int < 3:
+                if epoch_int < self.config["optim"].get("epoch_fine_tune", 1):
                     self.config["model"]["regress_forces"] = "direct"
+                elif self.config["model"].get("exact_ec_pred", False):
+                    self.config["model"][
+                        "regress_forces"
+                    ] = "from_energy"
+#                     self.config["optim"]["force_coefficient"] = 0
                 else:
                     self.config["model"][
                         "regress_forces"
                     ] = "direct_with_gradient_target"
                     self.config["optim"]["force_coefficient"] = 0
+                    # self.config["optim"]["energy_coefficient"] = 0
+                    # print('Fine tuning gradients: change energy/force coefficients')
 
             start_time = time.time()
             if not self.silent:
@@ -435,6 +442,10 @@ class SingleTrainer(BaseTrainer):
 
         # End of training.
         if not is_test_env:
+            if self.config["model"].get("exact_ec_pred", False):
+                self.config["model"][
+                    "regress_forces"
+                ] = "from_energy"
             return self.end_of_training(
                 epoch_int, debug_batches, model_run_time, epoch_times
             )
