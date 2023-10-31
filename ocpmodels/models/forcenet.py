@@ -24,6 +24,11 @@ from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
+from ocpmodels.models.force_decoder import ForceDecoder
+
+NUM_CLUSTERS = 20
+NUM_POOLING_LAYERS = 1
+
 
 class FNDecoder(nn.Module):
     def __init__(self, decoder_type, decoder_activation_str, output_dim):
@@ -453,13 +458,17 @@ class ForceNet(BaseModel):
         )
         self.activation = Act(kwargs["activation_str"])
 
-        if "direct" in self.regress_forces:
-            # ForceNet decoder
-            self.decoder = FNDecoder(
-                kwargs["decoder_type"],
-                kwargs["decoder_activation_str"],
+        # Force head
+        self.decoder = (
+            ForceDecoder(
+                kwargs["force_decoder_type"],
                 kwargs["decoder_hidden_channels"],
+                kwargs["force_decoder_model_config"],
+                self.activation,
             )
+            if "direct" in self.regress_forces
+            else None
+        )
 
         #  weighted average blocks
         if self.energy_head in {

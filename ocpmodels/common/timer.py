@@ -1,7 +1,9 @@
 import torch
-from time import time, sleep
+from time import time
 from collections import defaultdict
 import numpy as np
+
+from ocpmodels.common.dist_utils import synchronize
 
 
 class Timer:
@@ -28,6 +30,7 @@ class Timer:
         if self.gpu:
             self.end.record()
             torch.cuda.synchronize()
+            synchronize()
             self.duration = self.start.elapsed_time(self.end) / 1000
         else:
             self.end = time()

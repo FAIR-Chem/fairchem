@@ -175,10 +175,15 @@ if __name__ == "__main__":
     n_jobs = None
     args = resolved_args()
     assert "exp" in args
-    regex = args.get("match", ".*")
+
+    regex = args.pop("match", ".*")
+    exp_name = args.pop("exp").replace(".yml", "").replace(".yaml", "")
+    no_confirm = args.pop("no_confirm", False)
+
+    sbatch_overrides = args.to_dict()
+
     ts = now()
 
-    exp_name = args.exp.replace(".yml", "").replace(".yaml", "")
     exp_file = find_exp(exp_name)
 
     exp = safe_load(exp_file.open("r"))
@@ -231,6 +236,8 @@ if __name__ == "__main__":
         else:
             params["wandb_tags"] = exp_name
 
+        job = merge_dicts(job, sbatch_overrides)
+
         py_args = f'py_args="{cli_arg(params).strip()}"'
 
         sbatch_args = " ".join(
@@ -253,7 +260,7 @@ if __name__ == "__main__":
     text += "\n<><><> Experiment config:\n\n-----" + exp_file.read_text() + "-----"
     text += "\n<><><> Experiment runs:\n\n • " + "\n\n  • ".join(commands) + separator
 
-    confirm = args.no_confirm or "y" in input("\n🚦 Confirm? [y/n] : ")
+    confirm = no_confirm or "y" in input("\n🚦 Confirm? [y/n] : ")
 
     if confirm:
         try:
@@ -267,6 +274,10 @@ if __name__ == "__main__":
             for c, command in enumerate(commands):
                 print(f"Launching job {c+1:3}", end="\r")
                 outputs.append(os.popen(command).read().strip())
+                if "Aborting" in outputs[-1]:
+                    print("\nError submitting job", c + 1, ":", command)
+                    print(outputs[-1].replace("Error while launching job:\n", ""))
+                    print("\n")
                 if " verbose=true" in command.lower():
                     print(outputs[-1])
         except KeyboardInterrupt:
@@ -283,6 +294,8 @@ if __name__ == "__main__":
 
         if is_interrupted:
             print("\n💀 Interrupted. Kill jobs with:\n$ scancel" + " ".join(jobs))
+        elif not jobs:
+            print("\n❌ No jobs launched")
         else:
             text += f"{separator}All jobs launched: {' '.join(jobs)}"
             with outfile.open("w") as f:

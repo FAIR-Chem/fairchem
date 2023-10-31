@@ -5,10 +5,10 @@ This repository contains the code used to *train* the models reported in [FAENet
 ![pipeline](assets/pipeline.png)
 
 To re-use components of this work, we recommend using the associated python package:
-* 🔥 [**`faenet`**](https://github.com/vict0rsch/faenet) 
+* 🔥 [**`faenet`**](https://github.com/vict0rsch/faenet)
   * `faenet.FAENet` implements our efficient GNN model (FAENet)
   * `faenet.FrameAveraging` and `faenet.model_forward` implement (Stochastic) Frame Averaging data transforms and a utility function to average predictions over frames.
-This package contains everything you need to re-use FAENet for your specific use-case. 
+This package contains everything you need to re-use FAENet for your specific use-case.
 Additionnally, we also recommend looking at the folllowing package, which contains handy implementations to define atom embeddings and to rewire OC20 graphs:
 * ⚡ [**`phast`**](https://github.com/vict0rsch/phast), from [PhAST: Physics-Aware, Scalable, and Task-specific GNNs for Accelerated Catalyst Design](https://arxiv.org/abs/2211.12020)
   * `phast.PhysEmbedding` that allows one to create an embedding vector from atomic numbers that is the concatenation of:
@@ -86,7 +86,7 @@ $ git clone https://github.com/icanswim/cosmosis.git cosmosis # For the QM7X dat
   * `\modules`: Miscellaneous components (e.g., loss functions, evaluators, normalizers).
   * `\preprocessing`: Key data processing functions (e.g., graph rewiring, frame averaging).
 
-* 🖇 `\configs`: This directory contains hyperparameters. 
+* 🖇 `\configs`: This directory contains hyperparameters.
   * `\models`: Default model parameters.
   * `\exps`: Examples of runs that we have launched.
 
@@ -105,7 +105,7 @@ $ git clone https://github.com/icanswim/cosmosis.git cosmosis # For the QM7X dat
 * Run on login node of your cluster: `sbatch scripts/submit_example.sh`, making sure to replace relevant components. You can also check `scripts/submit.sh` for a more general script.
 
 To launch multiple jobs at the same time, we have used the following scripts, adapted to our Mila cluster:
-  * `python mila/launch_exp.py exp=test_models`, where the various run configs are specified in `configs/exps/test_models.yaml`. 
+  * `python mila/launch_exp.py exp=test_models`, where the various run configs are specified in `configs/exps/test_models.yaml`.
   * `python mila/sbatch.py mem=48GB cpus=4 gres=gpu:1 job_name=jmlr exp_name=jmlr/last-runs py_args=--test_ri=True --cp_data_to_tmp_dir=True --mode='train' --wandb_tags='test-run' --optim.force_coefficient=50 --config='faenet-s2ef-2M' --note='FAENet baseline' --model.regress_forces='direct'` where the run configs are specified in the folder `configs/exps/test.yaml`.
 
-❗️ Before running the scripts, make sure to (1) install the required dependencies (2) follow TL;DR instructions (3) target the right compute environement (gpu, cluster) (4) you have taken care of loggers. Also, remember that you could use the FAENet package directly to utilise the model and frame averaging directly. 
+❗️ Before running the scripts, make sure to (1) install the required dependencies (2) follow TL;DR instructions (3) target the right compute environement (gpu, cluster) (4) you have taken care of loggers. Also, remember that you could use the FAENet package directly to utilise the model and frame averaging directly.

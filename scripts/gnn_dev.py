@@ -16,12 +16,25 @@ from ocpmodels.trainers import SingleTrainer
 if __name__ == "__main__":
     config = {}
     # Customize args
-    config["graph_rewiring"] = "remove-tag-0"
-    config["frame_averaging"] = "2D"
+    # config["optim"]["eval_every"] = 1
+    # config["grad_fine_tune"] = True
+    # config["model"]["cosine_sim"] = 3
+    # config["optim"]["epoch_fine_tune"] = 3
+    config["fa_frames"] = "random"  # "random"
     config["fa_method"] = "random"  # "random"
-    config["test_ri"] = False
-    config["optim"] = {"max_epochs": 1}
+    config["frame_averaging"] = "2D"
+    config["graph_rewiring"] = "remove-tag-0"
     config["model"] = {"use_pbc": True}
+    config["model"]["complex_mp"] = True
+    config["model"]["edge_embed_type"] = "all_rij"
+    config["model"]["graph_norm"] = True
+    config["model"]["mp_type"] = "base"
+    config["model"]["regress_forces"] = "direct_with_gradient_target"
+    config["model"]["skip_co"] = "concat"  # add, concat,
+    config["optim"] = {"max_epochs": 1}
+    config["optim"]["batch_size"] = 6
+    config["optim"]["eval_batch_size"] = 6
+    config["test_ri"] = True
 
     checkpoint_path = None
     # "checkpoints/2022-04-28-11-42-56-dimenetplusplus/" + "best_checkpoint.pt"

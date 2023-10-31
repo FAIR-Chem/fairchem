@@ -1,0 +1,133 @@
+job:
+  mem: 48GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  mode: train
+  wandb_tags: jmlr
+
+runs:
+  - config: schnet-s2ef-2M
+    note: 'With Tag 0 Schnet From energy'
+    graph_rewiring: False
+    model:
+      regress_forces: "from_energy"
+  - config: dpp-s2ef-2M
+    note: 'With Tag 0 D++ From energy'
+    graph_rewiring: False
+    model:
+      regress_forces: "from_energy"
+  - config: dpp-s2ef-2M
+    note: 'With Tag more epochs 0 D++ From energy'
+    graph_rewiring: False
+    model:
+      regress_forces: "from_energy"
+    optim:
+      max_epochs: 5
+  - config: forcenet-s2ef-2M
+    note: 'With Tag 0 Forcenet From energy'
+    graph_rewiring: False
+    model:
+      regress_forces: "from_energy"
+  - config: forcenet-s2ef-2M
+    note: 'With Tag 0 smaller batch Forcenet From energy'
+    graph_rewiring: False
+    model:
+      regress_forces: "from_energy"
+    optim:
+      batch_size: 16
+      eval_batch_size: 16
+  - config: forcenet-s2ef-2M
+    note: 'With Tag 0 smaller lr Forcenet From energy'
+    graph_rewiring: False
+    model:
+      regress_forces: "from_energy"
+    optim:
+      lr_initial: 0.0002
+      max_epochs: 4
+
+
+  - config: schnet-s2ef-2M
+    note: 'PhAST Schnet From energy'
+    graph_rewiring: remove-tag-0
+    model:
+      regress_forces: "from_energy"
+      tag_hidden_channels: 32 # 32
+      pg_hidden_channels: 32 # 32 -> period & group embedding hidden channels
+      phys_embeds: True # True
+      phys_hidden_channels: 0
+      energy_head: weighted-av-final-embeds  # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds
+      
+
+  - config: schnet-s2ef-2M
+    note: 'Remove-tag-0 Schnet From energy'
+    graph_rewiring: remove-tag-0
+    model:
+      regress_forces: "from_energy"
+    
+  - config: dpp-s2ef-2M
+    note: 'PhAST D++ From energy'
+    graph_rewiring: remove-tag-0
+    model:
+      regress_forces: "from_energy"
+      tag_hidden_channels: 32 # 32
+      pg_hidden_channels: 32 # 32 -> period & group embedding hidden channels
+      phys_embeds: True # True
+      phys_hidden_channels: 0
+      energy_head: weighted-av-final-embeds  # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds
+      
+  - config: dpp-s2ef-2M
+    note: 'PhAST more epochs 0 D++ From energy'
+    graph_rewiring: remove-tag-0
+    model:
+      regress_forces: "from_energy"
+      tag_hidden_channels: 32 # 32
+      pg_hidden_channels: 32 # 32 -> period & group embedding hidden channels
+      phys_embeds: True # True
+      phys_hidden_channels: 0
+      energy_head: weighted-av-final-embeds  # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds
+    optim:
+      max_epochs: 4
+
+  - config: forcenet-s2ef-2M
+    note: 'PhAST Forcenet From energy'
+    graph_rewiring: remove-tag-0
+    model:
+      regress_forces: "from_energy"
+      tag_hidden_channels: 32 # 32
+      pg_hidden_channels: 32 # 32 -> period & group embedding hidden channels
+      phys_embeds: True # True
+      phys_hidden_channels: 0
+      energy_head: weighted-av-final-embeds  # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds
+      
+  - config: forcenet-s2ef-2M
+    note: 'PhAST smaller batch Forcenet From energy'
+    graph_rewiring: remove-tag-0
+    model:
+      regress_forces: "from_energy"
+      tag_hidden_channels: 32 # 32
+      pg_hidden_channels: 32 # 32 -> period & group embedding hidden channels
+      phys_embeds: True # True
+      phys_hidden_channels: 0
+      energy_head: weighted-av-final-embeds  # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds
+    optim:
+      batch_size: 16
+      eval_batch_size: 16
+
+  - config: forcenet-s2ef-2M
+    note: 'PhAST smaller lr Forcenet From energy'
+    graph_rewiring: remove-tag-0
+    model:
+      regress_forces: "from_energy"
+      tag_hidden_channels: 32 # 32
+      pg_hidden_channels: 32 # 32 -> period & group embedding hidden channels
+      phys_embeds: True # True
+      phys_hidden_channels: 0
+      energy_head: weighted-av-final-embeds  # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds
+    optim:
+      lr_initial: 0.0002
+      max_epochs: 4

@@ -19,6 +19,7 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.models.base_model import BaseModel
+from ocpmodels.models.force_decoder import ForceDecoder
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 
@@ -152,6 +153,10 @@ class SchNet(BaseModel):
         atomref (torch.Tensor, optional): The reference of single-atom
             properties.
             Expects a vector of shape :obj:`(max_atomic_number, )`.
+        force_decoder_model_config (dict): config of the force decoder model.
+            keys: "model_type", "hidden_channels", "num_layers", "num_heads",
+        force_decoder_type (str): type of the force decoder model.
+            (options: "mlp", "simple", "res", "res_updown")
     """
 
     url = "http://www.quantum-machine.org/datasets/trained_schnet_models.zip"
@@ -263,6 +268,18 @@ class SchNet(BaseModel):
         }:
             self.w_lin = Linear(self.hidden_channels, 1)
 
+        # Force head
+        self.decoder = (
+            ForceDecoder(
+                kwargs["force_decoder_type"],
+                kwargs["hidden_channels"],
+                kwargs["force_decoder_model_config"],
+                self.act,
+            )
+            if "direct" in self.regress_forces
+            else None
+        )
+
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -303,7 +320,7 @@ class SchNet(BaseModel):
 
     @conditional_grad(torch.enable_grad())
     def forces_forward(self, preds):
-        return
+        return self.decoder(preds["hidden_state"])
 
     @conditional_grad(torch.enable_grad())
     def energy_forward(self, data):
@@ -385,6 +402,10 @@ class SchNet(BaseModel):
         for interaction in self.interactions:
             h = h + interaction(h, edge_index, edge_weight, edge_attr)
 
+        hidden_state = h  # store hidden rep for force head
+
+        pooling_loss = None  # deal with pooling loss
+
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
 
@@ -410,4 +431,6 @@ class SchNet(BaseModel):
 
         return {
             "energy": out,
+            "pooling_loss": pooling_loss,
+            "hidden_state": hidden_state,
         }

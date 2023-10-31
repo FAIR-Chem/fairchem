@@ -242,13 +242,19 @@ class Flags:
             ],
         )
         self.parser.add_argument(
+            "--grad_fine_tune",
+            type=bool,
+            default=False,
+            help="Fine tune on gradient",
+        )
+        self.parser.add_argument(
             "--eval_on_test",
             type=bool,
             help="Evaluate on test set",
         )
         self.parser.add_argument(
             "--cp_data_to_tmpdir",
-            type=bool,
+            type=lambda s: s.lower() in ["true", "1"],
             default=False,
             help="Don't copy LMDB data to $SLURM_TMPDIR and work from there",
         )

@@ -1,0 +1,60 @@
+job:
+  mem: 48GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  graph_rewiring: remove-tag-0
+  mode: train
+  wandb_tags: jmlr
+  model: 
+    tag_hidden_channels: 32 # 32
+    pg_hidden_channels: 32 # 32 -> period & group embedding hidden channels
+    phys_embeds: True # True
+    phys_hidden_channels: 0
+    energy_head: weighted-av-final-embeds  # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds
+    exact_ec_pred: True
+  optim: 
+    energy_coefficient: 1
+    energy_grad_coefficient: 5
+
+runs:
+  - config: schnet-s2ef-2M
+    note: 'Test exact-ec-pred no train'
+    model:
+      regress_forces: "direct"
+    optim:
+      max_epochs: 0
+  - config: schnet-s2ef-2M
+    note: 'Test exact-ec-pred fine tune'
+    model:
+      regress_forces: "direct_with_gradient_target"
+    optim: 
+      epoch_fine_tune: 1
+      max_epochs: 2
+    grad_fine_tune: True
+
+  - config: schnet-s2ef-2M
+    note: 'exact-ec-pred direct'
+    model:
+      regress_forces: "direct"
+
+  - config: schnet-s2ef-2M
+    note: 'exact-ec-pred direct fine tune'
+    model:
+      regress_forces: "direct"
+    grad_fine_tune: True
+
+  - config: schnet-s2ef-2M
+    note: 'exact-ec-pred direct-with-grad'
+    model:
+      regress_forces: "direct"
+
+  - config: schnet-s2ef-2M
+    note: 'exact-ec-pred direct-with-grad fine tune'
+    model:
+      regress_forces: "direct"
+    grad_fine_tune: True

@@ -21,6 +21,29 @@ class BaseModel(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
 
+    def set_deup_inference(self, deup_inference):
+        self.deup_inference = deup_inference
+
+        def _sdi(module):
+            if isinstance(module, nn.Module):
+                module.deup_inference = deup_inference
+
+        self.apply(_sdi)
+
+    def set_dropouts(self, dropout):
+        def _sds(module):
+            if hasattr(module, "dropout_lin"):
+                module.dropout_lin = dropout
+            if hasattr(module, "dropout_edge"):
+                module.dropout_edge = dropout
+
+        self.apply(_sds)
+
+    @staticmethod
+    def freeze_layer(layer):
+        for param in layer.parameters():
+            param.requires_grad = False
+
     def reset_parameters(self):
         """Resets all learnable parameters of the module."""
         for child in self.children():
@@ -42,16 +65,19 @@ class BaseModel(nn.Module):
         """Forward pass for force prediction."""
         raise NotImplementedError
 
-    def forward(self, data, mode="train"):
-        """Main Forward pass."""
+    def forward(self, data, mode="train", regress_forces=None, q=None):
         grad_forces = forces = None
+
+        # Fine tune on gradients
+        if regress_forces:
+            self.regress_forces = regress_forces
 
         # energy gradient w.r.t. positions will be computed
         if mode == "train" or self.regress_forces == "from_energy":
             data.pos.requires_grad_(True)
 
         # predict energy
-        preds = self.energy_forward(data)
+        preds = self.energy_forward(data, q=q)
 
         if self.regress_forces:
             if self.regress_forces in {"direct", "direct_with_gradient_target"}:
@@ -59,12 +85,7 @@ class BaseModel(nn.Module):
                 forces = self.forces_forward(preds)
 
             if mode == "train" or self.regress_forces == "from_energy":
-                if "gemnet" in self.__class__.__name__.lower():
-                    # gemnet forces are already computed
-                    grad_forces = forces
-                else:
-                    # compute forces from energy gradient
-                    grad_forces = self.forces_as_energy_grad(data.pos, preds["energy"])
+                grad_forces = self.forces_as_energy_grad(data.pos, preds["energy"])
 
             if self.regress_forces == "from_energy":
                 # predicted forces are the energy gradient
@@ -87,12 +108,12 @@ class BaseModel(nn.Module):
         """Computes forces from energy gradient
 
         Args:
-            pos (tensor): atom positions 
+            pos (tensor): atom positions
             energy (tensor): predicted energy
 
         Returns:
             forces (tensor): gradient of energy w.r.t. atom positions
-        """        
+        """
 
         return -1 * (
             torch.autograd.grad(

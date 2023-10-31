@@ -22,11 +22,11 @@ from tqdm import tqdm
 from ocpmodels.common import dist_utils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import OCP_TASKS, check_traj_files
+from ocpmodels.common.timer import Times
+from ocpmodels.common.utils import OCP_AND_DEUP_TASKS, check_traj_files
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.trainers.base_trainer import BaseTrainer
-from ocpmodels.common.timer import Times
 
 is_test_env = os.environ.get("ocp_test_env", False)
 
@@ -84,8 +84,8 @@ class SingleTrainer(BaseTrainer):
                             "regress_forces and normalize_labels are true.",
                         )
                     self.normalizers["grad_target"] = Normalizer(
-                        tensor=self.datasets["train"].data.y[
-                            self.datasets["train"].__indices__
+                        tensor=self.datasets[self.train_dataset_name].data.y[
+                            self.datasets[self.train_dataset_name].__indices__
                         ],
                         device=self.device,
                     )
@@ -195,8 +195,16 @@ class SingleTrainer(BaseTrainer):
 
         return predictions
 
-    def train(self, disable_eval_tqdm=True, debug_batches=-1):
-        n_train = len(self.loaders["train"])
+    def train(
+        self, disable_eval_tqdm=True, debug_batches=-1, save_best_ckpt_only=False
+    ):
+        if not torch.is_grad_enabled():
+            print("\nWarning: torch grad is disabled. Enabling.\n")
+            torch.set_grad_enabled(True)
+        n_train = min(
+            len(self.loaders[self.train_dataset_name]),
+            self.config["optim"]["max_steps"],
+        )
         epoch_int = 0
         eval_every = self.config["optim"].get("eval_every", n_train) or n_train
         if eval_every < 1:
@@ -214,29 +222,50 @@ class SingleTrainer(BaseTrainer):
         current_val_metric = None
         first_eval = True
         log_train_every = self.config["log_train_every"]
+        if log_train_every < 0:
+            log_train_every = n_train
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // n_train
+        max_epochs = self.config["optim"]["max_epochs"]
         timer = Times()
         epoch_times = []
         model_run_time = 0
 
         if not self.silent:
             print(f"\n--- 🔄 Beginning of Training @ {self.now} ---\n")
-            print(f"\nLogging  train metrics every {log_train_every} steps")
+            print(f"Staring from epoch {start_epoch} and step {self.step}")
+            print(f"Will train for {max_epochs} epochs of {n_train} steps each")
+            print(f"Logging  train metrics every {log_train_every} steps")
             print(f"Printing train metrics every {self.config['print_every']} steps")
-            print(f"\nEvaluating every {eval_every} steps\n")
+            print(f"Evaluating every {eval_every} steps\n")
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
+            if self.config["grad_fine_tune"]:
+                if epoch_int < self.config["optim"].get("epoch_fine_tune", 1):
+                    self.config["model"]["regress_forces"] = "direct"
+                elif self.config["model"].get("exact_ec_pred", False):
+                    self.config["model"][
+                        "regress_forces"
+                    ] = "from_energy"
+#                     self.config["optim"]["force_coefficient"] = 0
+                else:
+                    self.config["model"][
+                        "regress_forces"
+                    ] = "direct_with_gradient_target"
+                    self.config["optim"]["force_coefficient"] = 0
+                    # self.config["optim"]["energy_coefficient"] = 0
+                    # print('Fine tuning gradients: change energy/force coefficients')
+
             start_time = time.time()
             if not self.silent:
                 print()
                 logging.info(f"Epoch: {epoch_int}")
 
-            self.samplers["train"].set_epoch(epoch_int)
+            self.samplers[self.train_dataset_name].set_epoch(epoch_int)
             skip_steps = self.step % n_train
-            train_loader_iter = iter(self.loaders["train"])
+            train_loader_iter = iter(self.loaders[self.train_dataset_name])
             self.model.train()
             i_for_epoch = 0
 
@@ -325,10 +354,11 @@ class SingleTrainer(BaseTrainer):
 
                 # Evaluate on val set after every `eval_every` iterations.
                 if should_validate:
-                    self.save(
-                        checkpoint_file=f"checkpoint-{str(self.step).zfill(7)}.pt",
-                        training_state=True,
-                    )
+                    if not save_best_ckpt_only:
+                        self.save(
+                            checkpoint_file=f"checkpoint-{str(self.step).zfill(7)}.pt",
+                            training_state=True,
+                        )
 
                     val_metrics = self.validate(
                         split=self.config["dataset"]["default_val"],
@@ -344,7 +374,7 @@ class SingleTrainer(BaseTrainer):
                     current_val_metric = val_metrics[primary_metric]["metric"]
 
                     if (
-                        primary_metric in {"energy_mae", "forces_mae"}
+                        primary_metric in {"energy_mae", "forces_mae", "energy_mse"}
                         and current_val_metric < self.best_val_metric
                     ) or (
                         "energy_force_within_threshold" in primary_metric
@@ -409,6 +439,10 @@ class SingleTrainer(BaseTrainer):
 
         # End of training.
         if not is_test_env:
+            if self.config["model"].get("exact_ec_pred", False):
+                self.config["model"][
+                    "regress_forces"
+                ] = "from_energy"
             return self.end_of_training(
                 epoch_int, debug_batches, model_run_time, epoch_times
             )
@@ -447,7 +481,10 @@ class SingleTrainer(BaseTrainer):
             self.model_forward(batch)
             self.logger.log({"Batch time": time.time() - start_time})
             self.logger.log(
-                {"Model run time": model_run_time / len(self.loaders["train"])}
+                {
+                    "Model run time": model_run_time
+                    / len(self.loaders[self.train_dataset_name])
+                }
             )
             if log_epoch_times:
                 self.logger.log({"Epoch time": np.mean(epoch_times)})
@@ -467,26 +504,31 @@ class SingleTrainer(BaseTrainer):
             for ds in self.datasets.values():
                 ds.close_db()
 
-    def model_forward(self, batch_list, mode="train"):
-        """ Perform a forward pass of the model when frame averaging is applied. 
+    def model_forward(self, batch_list, mode="train", q=None):
+        """ Perform a forward pass of the model when frame averaging is applied.
         Returns:
-            (dict): model predictions tensor for "energy" and "forces". 
+            (dict): model predictions tensor for "energy" and "forces".
         """
         # Distinguish frame averaging from base case.
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
-            if self.task_name in OCP_TASKS:
+            if self.task_name in OCP_AND_DEUP_TASKS:
                 original_cell = batch_list[0].cell
             e_all, f_all, gt_all = [], [], []
 
             # Compute model prediction for each frame
             for i in range(len(batch_list[0].fa_pos)):
                 batch_list[0].pos = batch_list[0].fa_pos[i]
-                if self.task_name in OCP_TASKS:
+                if self.task_name in OCP_AND_DEUP_TASKS:
                     batch_list[0].cell = batch_list[0].fa_cell[i]
 
                 # forward pass
-                preds = self.model(deepcopy(batch_list), mode=mode)
+                preds = self.model(
+                    deepcopy(batch_list),
+                    mode=mode,
+                    regress_forces=self.config["model"]["regress_forces"],
+                    q=q,
+                )
                 e_all.append(preds["energy"])
 
                 fa_rot = None
@@ -522,7 +564,7 @@ class SingleTrainer(BaseTrainer):
                     gt_all.append(g_grad_target)
 
             batch_list[0].pos = original_pos
-            if self.task_name in OCP_TASKS:
+            if self.task_name in OCP_AND_DEUP_TASKS:
                 batch_list[0].cell = original_cell
 
             # Average predictions over frames
@@ -547,6 +589,8 @@ class SingleTrainer(BaseTrainer):
             [
                 batch.y_relaxed.to(self.device)
                 if self.task_name == "is2re"
+                else batch.deup_loss.to(self.device)
+                if self.task_name == "deup_is2re"
                 else batch.y.to(self.device)
                 for batch in batch_list
             ],
@@ -624,9 +668,15 @@ class SingleTrainer(BaseTrainer):
                 loss["total_loss"].append(force_mult * loss["force_loss"])
                 if "forces_grad_target" in preds:
                     grad_target = preds["forces_grad_target"]
-                    loss["energy_grad_loss"] = self.loss_fn["force"](
-                        preds["forces"][mask], grad_target[mask]
-                    )
+                    if self.config["model"].get("cosine_sim", False):
+                        cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
+                        loss["energy_grad_loss"] = -torch.mean(
+                            cos(preds["forces"][mask], grad_target[mask])
+                        )
+                    else:
+                        loss["energy_grad_loss"] = self.loss_fn["force"](
+                            preds["forces"][mask], grad_target[mask]
+                        )
                     if (
                         self.config["model"].get("regress_forces")
                         == "direct_with_gradient_target"
@@ -656,6 +706,8 @@ class SingleTrainer(BaseTrainer):
                 [
                     batch.y_relaxed.to(self.device)
                     if self.task_name == "is2re"
+                    else batch.deup_loss.to(self.device)
+                    if self.task_name == "deup_is2re"
                     else batch.y.to(self.device)
                     for batch in batch_list
                 ],
@@ -675,7 +727,7 @@ class SingleTrainer(BaseTrainer):
 
             if (
                 self.config["task"].get("eval_on_free_atoms", False)
-                and self.task_name in OCP_TASKS
+                and self.task_name in OCP_AND_DEUP_TASKS
             ):
                 fixed = torch.cat([batch.fixed.to(self.device) for batch in batch_list])
                 mask = fixed == 0

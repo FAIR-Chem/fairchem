@@ -24,13 +24,13 @@ template = """\
 # git commit: {git_commit}
 # cwd: {cwd}
 
-{git_checkout}
 {sbatch_py_vars}
 
 export MASTER_PORT=$(expr 10000 + $(echo -n $SLURM_JOBID | tail -c 4))
 echo "Master port $MASTER_PORT"
 
 cd {code_loc}
+{git_checkout}
 
 {modules}
 
@@ -41,7 +41,7 @@ else
     conda activate {env}
 fi
 {wandb_offline}
-srun --output={output} {python_command}
+srun --gpus-per-task=1 --output={output} {python_command}
 """
 
 
@@ -247,7 +247,6 @@ def load_sbatch_args_from_dir(dir):
         "cpus": int(sbatch_args["cpus-per-task"]),
         "mem": sbatch_args["mem"],
         "gres": sbatch_args["gres"],
-        "output": sbatch_args["output"],
     }
     return args
 
@@ -417,7 +416,17 @@ if __name__ == "__main__":
         print("\nDev mode: not actually executing the command 🤓\n")
     else:
         # not dev mode: run the command, make directories
-        out = subprocess.check_output(command.split(" ")).decode("utf-8").strip()
+        try:
+            out = (
+                subprocess.check_output(command.split(" "), stderr=subprocess.STDOUT)
+                .decode("utf-8")
+                .strip()
+            )
+        except subprocess.CalledProcessError as error:
+            print("Error while launching job:\n```")
+            print(error.output.decode("utf-8").strip())
+            print("```\nAborting...")
+            sys.exit(1)
         jobid = out.split(" job ")[-1].strip()
         success = out.startswith("Submitted batch job")
 

@@ -38,13 +38,17 @@ class LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None, fa_method=None):
-        super(LmdbDataset, self).__init__()
+    def __init__(self, config, transform=None, fa_frames=None, lmdb_glob=None):
+        super().__init__()
         self.config = config
 
         self.path = Path(self.config["src"])
         if not self.path.is_file():
             db_paths = sorted(self.path.glob("*.lmdb"))
+            if lmdb_glob:
+                db_paths = [
+                    p for p in db_paths if any(lg in p.stem for lg in lmdb_glob)
+                ]
             assert len(db_paths) > 0, f"No LMDBs found in '{self.path}'"
 
             self.metadata_path = self.path / "metadata.npz"
@@ -72,13 +76,12 @@ class LmdbDataset(Dataset):
             self.num_samples = len(self._keys)
 
         self.transform = transform
-        self.fa_method = fa_method
+        self.fa_method = fa_frames
 
     def __len__(self):
         return self.num_samples
 
-    def __getitem__(self, idx):
-        t0 = time.time_ns()
+    def get_pickled_from_db(self, idx):
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
             db_idx = bisect.bisect(self._keylen_cumulative, idx)
@@ -89,16 +92,22 @@ class LmdbDataset(Dataset):
             assert el_idx >= 0
 
             # Return features.
-            datapoint_pickled = (
+            return (
+                f"{db_idx}_{el_idx}",
                 self.envs[db_idx]
                 .begin()
-                .get(f"{self._keys[db_idx][el_idx]}".encode("ascii"))
+                .get(f"{self._keys[db_idx][el_idx]}".encode("ascii")),
             )
-            data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
-            data_object.id = f"{db_idx}_{el_idx}"
-        else:
-            datapoint_pickled = self.env.begin().get(self._keys[idx])
-            data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
+
+        return None, self.env.begin().get(self._keys[idx])
+
+    def __getitem__(self, idx):
+        t0 = time.time_ns()
+
+        el_id, datapoint_pickled = self.get_pickled_from_db(idx)
+        data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
+        if el_id:
+            data_object.id = el_id
 
         t1 = time.time_ns()
         if self.transform is not None:
@@ -112,6 +121,7 @@ class LmdbDataset(Dataset):
         data_object.load_time = load_time
         data_object.transform_time = transform_time
         data_object.total_get_time = total_get_time
+        data_object.idx_in_dataset = idx
 
         return data_object
 
@@ -135,6 +145,27 @@ class LmdbDataset(Dataset):
                 env.close()
         else:
             self.env.close()
+
+
+@registry.register_dataset("deup_lmdb")
+class DeupDataset(LmdbDataset):
+    def __init__(self, all_datasets_configs, deup_split, transform=None):
+        super().__init__(
+            all_datasets_configs[deup_split],
+            lmdb_glob=deup_split.replace("deup-", "").split("-"),
+        )
+        ocp_splits = deup_split.split("-")[1:]
+        self.ocp_datasets = {
+            d: LmdbDataset(all_datasets_configs[d], transform) for d in ocp_splits
+        }
+
+    def __getitem__(self, idx):
+        _, datapoint_pickled = self.get_pickled_from_db(idx)
+        deup_sample = pickle.loads(datapoint_pickled)
+        ocp_sample = self.ocp_datasets[deup_sample["ds"]][deup_sample["idx_in_dataset"]]
+        for k, v in deup_sample.items():
+            setattr(ocp_sample, f"deup_{k}", v)
+        return ocp_sample
 
 
 class SinglePointLmdbDataset(LmdbDataset):
