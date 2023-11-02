@@ -1,0 +1,103 @@
+trainer: equiformerv2_forces
+
+dataset:
+  train:
+    src: data/oc22/s2ef/train
+    normalize_labels: True
+    target_mean: 0.0
+    target_std: 25.119809935106424
+    grad_target_mean: 0.0
+    grad_target_std: 0.14759646356105804
+    lin_ref:  configs/oc22/linref/oc22_linfit_coeffs.npz
+  val:
+    src: data/oc22/s2ef/val_id
+    lin_ref: configs/oc22/linref/oc22_linfit_coeffs.npz
+
+logger:
+  name: wandb
+
+task:
+  dataset: oc22_lmdb
+  primary_metric: energy_mae
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+  prediction_dtype: float32
+
+model:
+  name: equiformer_v2
+
+  use_pbc:                  True
+  regress_forces:           True
+  otf_graph:                True
+
+  enforce_max_neighbors_strictly: False
+
+  max_neighbors:            20
+  max_radius:               12.0
+  max_num_elements:         90
+
+  num_layers:               18
+  sphere_channels:          128
+  attn_hidden_channels:     64                # [64, 96] This determines the hidden size of message passing. Do not necessarily use 96.
+  num_heads:                8
+  attn_alpha_channels:      64                # Not used when `use_s2_act_attn` is True.
+  attn_value_channels:      16
+  ffn_hidden_channels:      128
+  norm_type:                'layer_norm_sh'   # ['rms_norm_sh', 'layer_norm', 'layer_norm_sh']
+
+  lmax_list:                [6]
+  mmax_list:                [2]
+  grid_resolution:          18                # [18, 16, 14, None] For `None`, simply comment this line.
+
+  num_sphere_samples:       128
+
+  edge_channels:              128
+  use_atom_edge_embedding:    True
+  share_atom_edge_embedding:  False           # If `True`, `use_atom_edge_embedding` must be `True` and the atom edge embedding will be shared across all blocks.
+  use_m_share_rad:            False
+  distance_function:          'gaussian'
+  num_distance_basis:         512     # not used
+
+  attn_activation:          'silu'
+  use_s2_act_attn:          False     # [False, True] Switch between attention after S2 activation or the original EquiformerV1 attention.
+  use_attn_renorm:          True      # Attention re-normalization. Used for ablation study.
+  ffn_activation:           'silu'    # ['silu', 'swiglu']
+  use_gate_act:             False     # [True, False] Switch between gate activation and S2 activation
+  use_grid_mlp:             True      # [False, True] If `True`, use projecting to grids and performing MLPs for FFNs.
+  use_sep_s2_act:           True      # Separable S2 activation. Used for ablation study.
+
+  alpha_drop:               0.1         # [0.0, 0.1]
+  drop_path_rate:           0.1         # [0.0, 0.05]
+  proj_drop:                0.0
+
+  weight_init:              'uniform'    # ['uniform', 'normal']
+
+  load_energy_lin_ref:      True        # Set to `True` for the test set or when loading a checkpoint that has `energy_lin_ref` parameters, `False` for training and val.
+  use_energy_lin_ref:       True        # Set to `True` for the test set, `False` for training and val.
+
+optim:
+  batch_size:               4
+  eval_batch_size:          4
+  load_balancing:           atoms
+  num_workers:              8
+  lr_initial:               0.0002
+
+  optimizer:                AdamW
+  optimizer_params:
+    weight_decay:           0.001
+  scheduler:                LambdaLR
+  scheduler_params:
+    lambda_type:            cosine
+    warmup_factor:          0.2
+    warmup_epochs:          0.1
+    lr_min_factor:          0.01
+
+  max_epochs:               6
+  energy_coefficient:       4
+  force_coefficient:        100
+  clip_grad_norm:           50
+  ema_decay:                0.999
+  loss_energy:              mae
+  loss_force:               l2mae
+
+  eval_every:               5000

@@ -7,7 +7,7 @@ class RadialFunction(nn.Module):
     Contruct a radial function (linear layers + layer normalization + SiLU) given a list of channels
     """
 
-    def __init__(self, channels_list):
+    def __init__(self, channels_list) -> None:
         super().__init__()
         modules = []
         input_channels = channels_list[0]

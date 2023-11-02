@@ -13,7 +13,6 @@ from torch_geometric.nn import radius_graph
 
 from ocpmodels.common.utils import (
     compute_neighbors,
-    conditional_grad,
     get_pbc_distances,
     radius_graph_pbc,
 )

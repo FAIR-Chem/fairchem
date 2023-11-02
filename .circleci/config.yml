@@ -28,7 +28,6 @@ commands:
               # Conda configuration
               conda config --set always_yes yes --set auto_update_conda false
               # Update conda
-              conda update conda
               conda install mamba -n base -c conda-forge
               # Install ocp conda env
               conda create --name ocp-models --clone base
@@ -78,13 +77,16 @@ jobs:
       - checkout
       - run:
           name: setup
-          command: pip install black==22.3.0 isort
+          command: pip install black==22.3.0 isort autoflake
       - run:
           name: run black
           command: black . --check
       - run:
           name: run isort
           command: isort . --check-only
+      - run:
+          name: run autoflake (unused imports check)
+          command: autoflake . --remove-all-unused-imports --check
 
   test_ubuntu:
     docker:

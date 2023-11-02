@@ -9,10 +9,9 @@ import errno
 import logging
 import os
 import random
-import subprocess
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, Optional, cast
+from typing import Any, DefaultDict, Dict, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -25,7 +24,6 @@ from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-import ocpmodels
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
@@ -37,7 +35,6 @@ from ocpmodels.common.typing import assert_is_instance as aii
 from ocpmodels.common.typing import none_throws
 from ocpmodels.common.utils import (
     cg_decomp_mat,
-    check_traj_files,
     get_commit_hash,
     get_loss_module,
     irreps_sum,
@@ -63,7 +60,6 @@ class BaseTrainer(ABC):
     test_loader: DataLoader[Any]
     device: torch.device
     output_targets: Dict[str, Any]
-    normalizers: Dict[str, Any]
     ema: Optional[ExponentialMovingAverage]
     clip_grad_norm: float
     ema_decay: float
@@ -96,15 +92,18 @@ class BaseTrainer(ABC):
         self.epoch = 0
         self.step = 0
 
+        self.device: torch.device
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
         else:
             self.device = torch.device("cpu")
             self.cpu = True  # handle case when `--cpu` isn't specified
             # but there are no gpu devices available
+
         if run_dir is None:
             run_dir = os.getcwd()
 
+        self.timestamp_id: str
         if timestamp_id is None:
             timestamp_id = self._get_timestamp(self.device, identifier)
 
@@ -182,7 +181,7 @@ class BaseTrainer(ABC):
         self.is_debug = is_debug
 
         if distutils.is_master():
-            print(yaml.dump(self.config, default_flow_style=False))
+            logging.info(yaml.dump(self.config, default_flow_style=False))
 
         ### backwards compatability with OCP v<2.0
         if self.name != "ocp":
@@ -281,9 +280,6 @@ class BaseTrainer(ABC):
         return loader
 
     def load_datasets(self) -> None:
-        logging.info(
-            f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
-        )
         self.parallel_collater = ParallelCollater(
             0 if self.cpu else 1,
             self.config["model_attributes"].get("otf_graph", False),
@@ -294,7 +290,11 @@ class BaseTrainer(ABC):
         self.test_loader = None
 
         # load train, val, test datasets
-        if self.config.get("dataset", None):
+        if self.config["dataset"].get("src", None):
+            logging.info(
+                f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
+            )
+
             self.train_dataset = registry.get_dataset_class(
                 self.config["dataset"].get("format", "lmdb")
             )(self.config["dataset"])
@@ -472,15 +472,21 @@ class BaseTrainer(ABC):
             module = module.module
         return module
 
-    def load_checkpoint(self, checkpoint_path: str) -> None:
-        if not os.path.isfile(checkpoint_path):
-            raise FileNotFoundError(
-                errno.ENOENT, "Checkpoint file not found", checkpoint_path
-            )
+    def load_checkpoint(
+        self, checkpoint_path: str, checkpoint: Dict = {}
+    ) -> None:
+        if not checkpoint:
+            if not os.path.isfile(checkpoint_path):
+                raise FileNotFoundError(
+                    errno.ENOENT, "Checkpoint file not found", checkpoint_path
+                )
+            else:
+                logging.info(f"Loading checkpoint from: {checkpoint_path}")
+                map_location = torch.device("cpu") if self.cpu else self.device
+                checkpoint = torch.load(
+                    checkpoint_path, map_location=map_location
+                )
 
-        logging.info(f"Loading checkpoint from: {checkpoint_path}")
-        map_location = torch.device("cpu") if self.cpu else self.device
-        checkpoint = torch.load(checkpoint_path, map_location=map_location)
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
         self.best_val_metric = checkpoint.get("best_val_metric", None)
@@ -597,7 +603,7 @@ class BaseTrainer(ABC):
     def load_extras(self) -> None:
         self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
         self.clip_grad_norm = aii(
-            self.config["optim"].get("clip_grad_norm"), (int, float)
+            self.config["optim"].get("clip_grad_norm", None), (int, float)
         )
         self.ema_decay = aii(self.config["optim"].get("ema_decay"), float)
         if self.ema_decay:
@@ -1104,26 +1110,10 @@ class BaseTrainer(ABC):
             desc="device {}".format(rank),
             disable=disable_tqdm,
         ):
-            batch_size = batch_list[0].natoms.numel()
-
-            ### Get unique system identifiers
-            sids = batch_list[0].sid.tolist()
-            ## Support naming structure for OC20 S2EF
-            if "fid" in batch_list[0]:
-                fids = batch_list[0].fid.tolist()
-                systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
-            else:
-                systemids = [f"{sid}" for sid in sids]
-
-            try:
-                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                    out = self._forward(batch_list)
-            except RuntimeError:
-                print(f"oom'd on sid {sids} ({batch_list[0].natoms.item()} atoms)")
-                continue
 
             predictions["ids"].extend(systemids)
 
+            batch_size = batch_list[0].natoms.numel()
             for target_key in self.config["outputs"]:
                 ### Target property is a direct output of the model
                 if target_key in out:
@@ -1191,52 +1181,71 @@ class BaseTrainer(ABC):
 
                 pred = pred.cpu().detach().to(dtype)
 
-                ### Split predictions into per-image predictions
-                if (
-                    self.config["outputs"][target_key].get("level", "system")
-                    == "atom"
-                ):
-                    batch_natoms = torch.cat(
-                        [batch.natoms for batch in batch_list]
-                    )
-                    batch_fixed = torch.cat(
-                        [batch.fixed for batch in batch_list]
-                    )
-                    per_image_pred = torch.split(pred, batch_natoms.tolist())
-
-                    ### Save out only free atom, EvalAI does not need fixed atoms
-                    _per_image_fixed = torch.split(
-                        batch_fixed, batch_natoms.tolist()
-                    )
-                    _per_image_free_preds = [
-                        _pred[(fixed == 0).tolist()].numpy()
-                        for _pred, fixed in zip(
-                            per_image_pred, _per_image_fixed
+                if per_image:
+                    ### Split predictions into per-image predictions
+                    if (
+                        self.config["outputs"][target_key].get(
+                            "level", "system"
                         )
-                    ]
-                    _chunk_idx = np.array(
-                        [
-                            free_pred.shape[0]
-                            for free_pred in _per_image_free_preds
+                        == "atom"
+                    ):
+                        batch_natoms = torch.cat(
+                            [batch.natoms for batch in batch_list]
+                        )
+                        batch_fixed = torch.cat(
+                            [batch.fixed for batch in batch_list]
+                        )
+                        per_image_pred = torch.split(
+                            pred, batch_natoms.tolist()
+                        )
+
+                        ### Save out only free atom, EvalAI does not need fixed atoms
+                        _per_image_fixed = torch.split(
+                            batch_fixed, batch_natoms.tolist()
+                        )
+                        _per_image_free_preds = [
+                            _pred[(fixed == 0).tolist()].numpy()
+                            for _pred, fixed in zip(
+                                per_image_pred, _per_image_fixed
+                            )
                         ]
-                    )
-                    per_image_pred = _per_image_free_preds
-                ### Assumes system level properties are of the same dimension
-                else:
-                    per_image_pred = pred.numpy()
-                    _chunk_idx = None
-
-                predictions[f"{target_key}"].extend(per_image_pred.reshape((-1, 9)))
-                # todo: fix chunking for matrix outputs
-
-                ### Backwards compatibility, retain 'chunk_idx' for forces.
-                if _chunk_idx is not None:
-                    if target_key == "forces":
-                        predictions["chunk_idx"].extend(_chunk_idx)
-                    else:
-                        predictions[f"{target_key}_chunk_idx"].extend(
-                            _chunk_idx
+                        _chunk_idx = np.array(
+                            [
+                                free_pred.shape[0]
+                                for free_pred in _per_image_free_preds
+                            ]
                         )
+                        per_image_pred = _per_image_free_preds
+                    ### Assumes system level properties are of the same dimension
+                    else:
+                        per_image_pred = pred.numpy()
+                        _chunk_idx = None
+
+                    predictions[f"{target_key}"].extend(per_image_pred)
+                    ### Backwards compatibility, retain 'chunk_idx' for forces.
+                    if _chunk_idx is not None:
+                        if target_key == "forces":
+                            predictions["chunk_idx"].extend(_chunk_idx)
+                        else:
+                            predictions[f"{target_key}_chunk_idx"].extend(
+                                _chunk_idx
+                            )
+                else:
+                    predictions[f"{target_key}"] = pred.detach()
+
+            if not per_image:
+                return predictions
+
+            ### Get unique system identifiers
+            sids = batch_list[0].sid.tolist()
+            ## Support naming structure for OC20 S2EF
+            if "fid" in batch_list[0]:
+                fids = batch_list[0].fid.tolist()
+                systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
+            else:
+                systemids = [f"{sid}" for sid in sids]
+
+            predictions["ids"].extend(systemids)
 
         for key in predictions:
             predictions[key] = np.array(predictions[key])
@@ -1293,7 +1302,9 @@ class BaseTrainer(ABC):
             for k in keys:
                 if "chunk_idx" in k:
                     gather_results[k] = np.cumsum(
-                        np.array(gather_results[k])[idx]
+                        np.array(
+                            gather_results[k],
+                        )[idx]
                     )[:-1]
                 else:
                     if f"{k}_chunk_idx" in keys or k == "forces":

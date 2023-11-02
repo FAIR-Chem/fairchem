@@ -92,7 +92,7 @@ class Complete:
         return data
 
 
-def warmup_lr_lambda(current_step, optim_config):
+def warmup_lr_lambda(current_step: int, optim_config):
     """Returns a learning rate multiplier.
     Till `warmup_steps`, learning rate linearly increases to `initial_lr`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
@@ -212,9 +212,9 @@ def collate(data_list):
 def add_edge_distance_to_graph(
     batch,
     device="cpu",
-    dmin=0.0,
-    dmax=6.0,
-    num_gaussians=50,
+    dmin: float = 0.0,
+    dmax: float = 6.0,
+    num_gaussians: int = 50,
 ):
     # Make sure x has positions.
     if not all(batch.pos[0][:] == batch.x[0][-3:]):
@@ -458,7 +458,7 @@ def build_config(args, args_override):
     return config
 
 
-def create_grid(base_config, sweep_file):
+def create_grid(base_config, sweep_file: str):
     def _flatten_sweeps(sweeps, root_key: str = "", sep: str = "."):
         flat_sweeps = []
         for key, value in sweeps.items():
@@ -516,8 +516,8 @@ def get_pbc_distances(
     cell,
     cell_offsets,
     neighbors,
-    return_offsets=False,
-    return_distance_vec=False,
+    return_offsets: bool = False,
+    return_distance_vec: bool = False,
 ):
     row, col = edge_index
 
@@ -557,7 +557,7 @@ def radius_graph_pbc(
     data,
     radius,
     max_num_neighbors_threshold,
-    enforce_max_neighbors_strictly=False,
+    enforce_max_neighbors_strictly: bool = False,
     pbc=[True, True, True],
 ):
     device = data.pos.device
@@ -735,8 +735,8 @@ def get_max_neighbors_mask(
     index,
     atom_distance,
     max_num_neighbors_threshold,
-    degeneracy_tolerance=0.01,
-    enforce_max_strictly=False,
+    degeneracy_tolerance: float = 0.01,
+    enforce_max_strictly: bool = False,
 ):
     """
     Give a mask that filters out edges so that each atom has at most
@@ -912,12 +912,12 @@ def merge_dicts(dict1: dict, dict2: dict):
 
 
 class SeverityLevelBetween(logging.Filter):
-    def __init__(self, min_level, max_level) -> None:
+    def __init__(self, min_level: int, max_level: int) -> None:
         super().__init__()
         self.min_level = min_level
         self.max_level = max_level
 
-    def filter(self, record):
+    def filter(self, record) -> bool:
         return self.min_level <= record.levelno < self.max_level
 
 
@@ -1197,7 +1197,11 @@ def irreps_sum(l):
 
 def update_old_config(config):
     ### Read task based off config structure, similar to OCPCalculator.
-    if config["task"]["dataset"] == "trajectory_lmdb":
+    if config["task"]["dataset"] in [
+        "trajectory_lmdb",
+        "lmdb",
+        "trajectory_lmdb_v2",
+    ]:
         task = "s2ef"
     elif config["task"]["dataset"] == "single_point_lmdb":
         task = "is2re"

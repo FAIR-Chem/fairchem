@@ -278,7 +278,7 @@ def inner_product_normalized(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return torch.sum(x * y, dim=-1).clamp(min=-1, max=1)
 
 
-def mask_neighbors(neighbors, edge_mask):
+def mask_neighbors(neighbors: torch.Tensor, edge_mask: torch.Tensor):
     neighbors_old_indptr = torch.cat([neighbors.new_zeros(1), neighbors])
     neighbors_old_indptr = torch.cumsum(neighbors_old_indptr, dim=0)
     neighbors = segment_csr(edge_mask.long(), neighbors_old_indptr)

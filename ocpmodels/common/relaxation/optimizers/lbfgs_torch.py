@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 import logging
 from collections import deque
 from pathlib import Path
-from typing import Deque, Optional
+from typing import Optional
 
 import ase
 import torch

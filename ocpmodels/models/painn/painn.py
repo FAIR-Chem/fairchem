@@ -29,23 +29,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import logging
 import math
-import os
 from typing import Dict, Optional, Tuple, Union
 
 import torch
 from torch import nn
-from torch_geometric.nn import MessagePassing, radius_graph
+from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter, segment_coo
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    compute_neighbors,
-    conditional_grad,
-    get_pbc_distances,
-    radius_graph_pbc,
-)
+from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.gemnet.layers.base_layers import ScaledSiLU
 from ocpmodels.models.gemnet.layers.embedding_block import AtomEmbedding
@@ -419,11 +412,11 @@ class PaiNN(BaseModel):
 
         per_atom_energy = self.out_energy(x).squeeze(1)
         energy = scatter(per_atom_energy, batch, dim=0)
+        outputs = {"energy": energy}
 
         if self.regress_forces:
             if self.direct_forces:
                 forces = self.out_forces(x, vec)
-                return energy, forces
             else:
                 forces = (
                     -1
@@ -434,9 +427,9 @@ class PaiNN(BaseModel):
                         create_graph=True,
                     )[0]
                 )
-                return energy, forces
-        else:
-            return energy
+            outputs["forces"] = forces
+
+        return outputs
 
     @property
     def num_params(self) -> int:

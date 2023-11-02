@@ -1,29 +1,20 @@
 import logging
 import math
-import time
+from typing import List, Optional
 
-import numpy as np
 import torch
 import torch.nn as nn
-from pyexpat.model import XML_CQUANT_OPT
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
-from ocpmodels.models.scn.sampling import CalcSpherePoints
-from ocpmodels.models.scn.smearing import (
-    GaussianSmearing,
-    LinearSigmoidSmearing,
-    SigmoidSmearing,
-    SiLUSmearing,
-)
+from ocpmodels.models.scn.smearing import GaussianSmearing
 
 try:
-    from e3nn import o3
+    pass
 except ImportError:
     pass
 
-from torch.nn import Linear
 
 from .edge_rot_mat import init_edge_rot_mat
 from .gaussian_rbf import GaussianRadialBasisLayer
@@ -37,7 +28,6 @@ from .layer_norm import (
 )
 from .module_list import ModuleListInfo
 from .radial_function import RadialFunction
-from .so2_ops import SO2_Convolution
 from .so3 import (
     CoefficientMappingModule,
     SO3_Embedding,
@@ -105,48 +95,63 @@ class EquiformerV2_OC20(BaseModel):
         proj_drop (float):          Dropout rate for outputs of attention and FFN in Transformer blocks
 
         weight_init (str):          ['normal', 'uniform'] initialization of weights of linear layers except those in radial functions
+        enforce_max_neighbors_strictly (bool):      When edges are subselected based on the `max_neighbors` arg, arbitrarily select amongst equidistant / degenerate edges to have exactly the correct number.
+        avg_num_nodes (float):      Average number of nodes per graph
+        avg_degree (float):         Average degree of nodes in the graph
+
+        use_energy_lin_ref (bool):  Whether to add the per-atom energy references during prediction.
+                                    During training and validation, this should be kept `False` since we use the `lin_ref` parameter in the OC22 dataloader to subtract the per-atom linear references from the energy targets.
+                                    During prediction (where we don't have energy targets), this can be set to `True` to add the per-atom linear references to the predicted energies.
+        load_energy_lin_ref (bool): Whether to add nn.Parameters for the per-element energy references.
+                                    This additional flag is there to ensure compatibility when strict-loading checkpoints, since the `use_energy_lin_ref` flag can be either True or False even if the model is trained with linear references.
+                                    You can't have use_energy_lin_ref = True and load_energy_lin_ref = False, since the model will not have the parameters for the linear references. All other combinations are fine.
     """
 
     def __init__(
         self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,  # not used
-        use_pbc=True,
-        regress_forces=True,
-        otf_graph=True,
-        max_neighbors=500,
-        max_radius=5.0,
-        max_num_elements=90,
-        num_layers=12,
-        sphere_channels=128,
-        attn_hidden_channels=128,
-        num_heads=8,
-        attn_alpha_channels=32,
-        attn_value_channels=16,
-        ffn_hidden_channels=512,
-        norm_type="rms_norm_sh",
-        lmax_list=[6],
-        mmax_list=[2],
-        grid_resolution=None,
-        num_sphere_samples=128,
-        edge_channels=128,
-        use_atom_edge_embedding=True,
-        share_atom_edge_embedding=False,
-        use_m_share_rad=False,
-        distance_function="gaussian",
-        num_distance_basis=512,
-        attn_activation="scaled_silu",
-        use_s2_act_attn=False,
-        use_attn_renorm=True,
-        ffn_activation="scaled_silu",
-        use_gate_act=False,
-        use_grid_mlp=False,
-        use_sep_s2_act=True,
-        alpha_drop=0.1,
-        drop_path_rate=0.05,
-        proj_drop=0.0,
-        weight_init="normal",
+        num_atoms: int,  # not used
+        bond_feat_dim: int,  # not used
+        num_targets: int,  # not used
+        use_pbc: bool = True,
+        regress_forces: bool = True,
+        otf_graph: bool = True,
+        max_neighbors: int = 500,
+        max_radius: float = 5.0,
+        max_num_elements: int = 90,
+        num_layers: int = 12,
+        sphere_channels: int = 128,
+        attn_hidden_channels: int = 128,
+        num_heads: int = 8,
+        attn_alpha_channels: int = 32,
+        attn_value_channels: int = 16,
+        ffn_hidden_channels: int = 512,
+        norm_type: str = "rms_norm_sh",
+        lmax_list: List[int] = [6],
+        mmax_list: List[int] = [2],
+        grid_resolution: Optional[int] = None,
+        num_sphere_samples: int = 128,
+        edge_channels: int = 128,
+        use_atom_edge_embedding: bool = True,
+        share_atom_edge_embedding: bool = False,
+        use_m_share_rad: bool = False,
+        distance_function: str = "gaussian",
+        num_distance_basis: int = 512,
+        attn_activation: str = "scaled_silu",
+        use_s2_act_attn: bool = False,
+        use_attn_renorm: bool = True,
+        ffn_activation: str = "scaled_silu",
+        use_gate_act: bool = False,
+        use_grid_mlp: bool = False,
+        use_sep_s2_act: bool = True,
+        alpha_drop: float = 0.1,
+        drop_path_rate: float = 0.05,
+        proj_drop: float = 0.0,
+        weight_init: str = "normal",
+        enforce_max_neighbors_strictly: bool = True,
+        avg_num_nodes: Optional[float] = None,
+        avg_degree: Optional[float] = None,
+        use_energy_lin_ref: Optional[bool] = False,
+        load_energy_lin_ref: Optional[bool] = False,
     ):
         super().__init__()
 
@@ -205,14 +210,27 @@ class EquiformerV2_OC20(BaseModel):
         self.drop_path_rate = drop_path_rate
         self.proj_drop = proj_drop
 
+        self.avg_num_nodes = avg_num_nodes or _AVG_NUM_NODES
+        self.avg_degree = avg_degree or _AVG_DEGREE
+
+        self.use_energy_lin_ref = use_energy_lin_ref
+        self.load_energy_lin_ref = load_energy_lin_ref
+        assert not (
+            self.use_energy_lin_ref and not self.load_energy_lin_ref
+        ), "You can't have use_energy_lin_ref = True and load_energy_lin_ref = False, since the model will not have the parameters for the linear references. All other combinations are fine."
+
         self.weight_init = weight_init
         assert self.weight_init in ["normal", "uniform"]
+
+        self.enforce_max_neighbors_strictly = enforce_max_neighbors_strictly
 
         self.device = "cpu"  # torch.cuda.current_device()
 
         self.grad_forces = False
-        self.num_resolutions = len(self.lmax_list)
-        self.sphere_channels_all = self.num_resolutions * self.sphere_channels
+        self.num_resolutions: int = len(self.lmax_list)
+        self.sphere_channels_all: int = (
+            self.num_resolutions * self.sphere_channels
+        )
 
         # Weights for message initialization
         self.sphere_embedding = nn.Embedding(
@@ -267,12 +285,12 @@ class EquiformerV2_OC20(BaseModel):
         self.SO3_grid = ModuleListInfo(
             "({}, {})".format(max(self.lmax_list), max(self.lmax_list))
         )
-        for l in range(max(self.lmax_list) + 1):
+        for lval in range(max(self.lmax_list) + 1):
             SO3_m_grid = nn.ModuleList()
             for m in range(max(self.lmax_list) + 1):
                 SO3_m_grid.append(
                     SO3_Grid(
-                        l,
+                        lval,
                         m,
                         resolution=self.grid_resolution,
                         normalization="component",
@@ -290,7 +308,7 @@ class EquiformerV2_OC20(BaseModel):
             self.max_num_elements,
             self.edge_channels_list,
             self.block_use_atom_edge_embedding,
-            rescale_factor=_AVG_DEGREE,
+            rescale_factor=self.avg_degree,
         )
 
         # Initialize the blocks for each layer of EquiformerV2
@@ -370,6 +388,12 @@ class EquiformerV2_OC20(BaseModel):
                 alpha_drop=0.0,
             )
 
+        if self.load_energy_lin_ref:
+            self.energy_lin_ref = nn.Parameter(
+                torch.zeros(self.max_num_elements),
+                requires_grad=False,
+            )
+
         self.apply(self._init_weights)
         self.apply(self._uniform_init_rad_func_linear_weights)
 
@@ -389,7 +413,10 @@ class EquiformerV2_OC20(BaseModel):
             cell_offsets,
             _,  # cell offset distances
             neighbors,
-        ) = self.generate_graph(data)
+        ) = self.generate_graph(
+            data,
+            enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
+        )
 
         ###############################################################
         # Initialize data structures
@@ -481,8 +508,32 @@ class EquiformerV2_OC20(BaseModel):
             dtype=node_energy.dtype,
         )
         energy.index_add_(0, data.batch, node_energy.view(-1))
-        energy = energy / _AVG_NUM_NODES
+        energy = energy / self.avg_num_nodes
 
+        # Add the per-atom linear references to the energy.
+        if self.use_energy_lin_ref and self.load_energy_lin_ref:
+            # During training, target E = (E_DFT - E_ref - E_mean) / E_std, and
+            # during inference, \hat{E_DFT} = \hat{E} * E_std + E_ref + E_mean
+            # where
+            #
+            # E_DFT = raw DFT energy,
+            # E_ref = reference energy,
+            # E_mean = normalizer mean,
+            # E_std = normalizer std,
+            # \hat{E} = predicted energy,
+            # \hat{E_DFT} = predicted DFT energy.
+            #
+            # We can also write this as
+            # \hat{E_DFT} = E_std * (\hat{E} + E_ref / E_std) + E_mean,
+            # which is why we save E_ref / E_std as the linear reference.
+            with torch.cuda.amp.autocast(False):
+                energy = energy.to(self.energy_lin_ref.dtype).index_add(
+                    0,
+                    data.batch,
+                    self.energy_lin_ref[atomic_numbers],
+                )
+
+        outputs = {"energy": energy}
         ###############################################################
         # Force estimation
         ###############################################################
@@ -492,14 +543,9 @@ class EquiformerV2_OC20(BaseModel):
             )
             forces = forces.embedding.narrow(1, 1, 3)
             forces = forces.view(-1, 3)
+            outputs["forces"] = forces
 
-        if not self.regress_forces:
-            return {"energy": energy}
-        else:
-            return {
-                "energy": energy,
-                "forces": forces,
-            }
+        return outputs
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):

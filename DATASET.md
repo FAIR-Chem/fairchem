@@ -165,7 +165,7 @@ Adsorbate+catalyst trajectories on a per adsorbate basis are provided [here](./D
 
 
 ### Bader charge data
-We provide Bader charge data for all final frames of our train + validation systems in OC20 (for both S2EF and IS2RE/RS tasks). A `.tar.gz` file, when downloaded and uncompressed will contain several directories with unique system-ids (of the format `random<XYZ>` where `XYZ` is an integer). Each directory will contain raw Bader charge analysis outputs. For more details on the Bader charge analysis, see https://theory.cm.utexas.edu/henkelman/research/bader/. 
+We provide Bader charge data for all final frames of our train + validation systems in OC20 (for both S2EF and IS2RE/RS tasks). A `.tar.gz` file, when downloaded and uncompressed will contain several directories with unique system-ids (of the format `random<XYZ>` where `XYZ` is an integer). Each directory will contain raw Bader charge analysis outputs. For more details on the Bader charge analysis, see https://theory.cm.utexas.edu/henkelman/research/bader/.
 
 Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_bader_data.tar (MD5 checksum: `aecc5e23542de49beceb4b7e44c153b9`)
 
@@ -447,7 +447,7 @@ An example slab entry:
 #### OC20 reference information
 
 
-In order to train OC20 on total energy, we provide a Python pickle file containing the energy necessary to convert adsorption energy values to total energy. Loading the pickle file will load a Python dictionary. The keys of this dictionary are the system-ids (of the format `random<XYZ>`  where `XYZ` is an integer, corresponding to the `sid` in the LMDB Data object), and the corresponding value of each key is the energy to be added to OC20 energy values. To train on total energies for OC20, specify the path to this pickle file in your training configs.
+In order to train models on OC20 total energy, we provide a Python pickle file containing the energy necessary to convert adsorption energy values to total energy. Loading the pickle file will load a Python dictionary. The keys of this dictionary are the system-ids (of the format `random<XYZ>`  where `XYZ` is an integer, corresponding to the `sid` in the LMDB Data object), and the corresponding value of each key is the energy to be added to OC20 energy values. To train on total energies for OC20, specify the path to this pickle file in your training configs.
 
 Downloadable link:  https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl (MD5 checksum: `043e1e0b0cce64c62f01a8563dbc3178`)
 ####

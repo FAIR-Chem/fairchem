@@ -138,16 +138,27 @@ class EquiformerV2ForcesTrainer(OCPTrainer):
         ]
 
         # convert epochs into number of steps
-        n_iter_per_epoch = len(self.train_loader)
-        scheduler_params = self.config["optim"]["scheduler_params"]
-        for k in scheduler_params.keys():
-            if "epochs" in k:
-                if isinstance(scheduler_params[k], (int, float, list)):
-                    scheduler_params[k] = multiply(
-                        scheduler_params[k], n_iter_per_epoch
-                    )
+        if self.train_loader is None:
+            logging.warning("Skipping scheduler setup. No training set found.")
+            self.scheduler = None
+        else:
+            n_iter_per_epoch = len(self.train_loader)
+            scheduler_params = self.config["optim"]["scheduler_params"]
+            for k in scheduler_params.keys():
+                if "epochs" in k:
+                    if isinstance(scheduler_params[k], (int, float)):
+                        scheduler_params[k] = int(
+                            multiply(scheduler_params[k], n_iter_per_epoch)
+                        )
+                    elif isinstance(scheduler_params[k], list):
+                        scheduler_params[k] = [
+                            int(x)
+                            for x in multiply(
+                                scheduler_params[k], n_iter_per_epoch
+                            )
+                        ]
+            self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
 
-        self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
         self.clip_grad_norm = self.config["optim"].get("clip_grad_norm")
         self.ema_decay = self.config["optim"].get("ema_decay")
         if self.ema_decay:
