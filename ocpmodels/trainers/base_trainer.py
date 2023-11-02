@@ -1111,7 +1111,12 @@ class BaseTrainer(ABC):
             disable=disable_tqdm,
         ):
 
-            predictions["ids"].extend(systemids)
+            try:
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    out = self._forward(batch_list)
+            except RuntimeError:
+                print(f"oom'd on sid {sids} ({batch_list[0].natoms.item()} atoms)")
+                continue
 
             batch_size = batch_list[0].natoms.numel()
             for target_key in self.config["outputs"]:
@@ -1221,7 +1226,9 @@ class BaseTrainer(ABC):
                         per_image_pred = pred.numpy()
                         _chunk_idx = None
 
-                    predictions[f"{target_key}"].extend(per_image_pred)
+                    predictions[f"{target_key}"].extend(per_image_pred.reshape((-1, 9)))
+                    # TODO: fix chunking for matrix outputs
+
                     ### Backwards compatibility, retain 'chunk_idx' for forces.
                     if _chunk_idx is not None:
                         if target_key == "forces":
