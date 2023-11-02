@@ -165,9 +165,9 @@ Please consider citing the following paper in any research manuscript using the 
 
 ```
 @article{odac23_dataset,
-    author = {},
-    title = {},
+    author = {Anuroop Sriram and Sihoon Choi and Xiaohan Yu and Logan M. Brabson and Abhishek Das and Zachary Ulissi and Matt Uyttendaele and Andrew J. Medford and David S. Sholl},
+    title = {The Open DAC 2023 Dataset and Challenges for Sorbent Discovery in Direct Air Capture},
     year = {2023},
-    journal={arXiv preprint arXiv:},
+    journal={arXiv preprint arXiv:2311.00341},
 }
 ```
