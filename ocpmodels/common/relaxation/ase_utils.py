@@ -20,7 +20,12 @@ from ase.calculators.singlepoint import SinglePointCalculator as sp
 from ase.constraints import FixAtoms
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import load_config, setup_imports, setup_logging
+from ocpmodels.common.utils import (
+    load_config,
+    setup_imports,
+    setup_logging,
+    update_old_config,
+)
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
@@ -123,19 +128,8 @@ class OCPCalculator(Calculator):
                 checkpoint_path, map_location=torch.device("cpu")
             )
             config = checkpoint["config"]
-        if trainer is not None:  # passing the arg overrides everything else
-            config["trainer"] = trainer
-        else:
-            if "trainer" not in config:  # older checkpoint
-                if config["task"]["dataset"] == "trajectory_lmdb":
-                    config["trainer"] = "forces"
-                elif config["task"]["dataset"] == "single_point_lmdb":
-                    config["trainer"] = "energy"
-                else:
-                    logging.warning(
-                        "Unable to identify OCP trainer, defaulting to `forces`. Specify the `trainer` argument into OCPCalculator if otherwise."
-                    )
-                    config["trainer"] = "forces"
+
+        config["trainer"] = "ocp"
 
         if "model_attributes" in config:
             config["model_attributes"]["name"] = config.pop("model")
@@ -150,20 +144,20 @@ class OCPCalculator(Calculator):
         config["model"]["otf_graph"] = True
 
         # Save config so obj can be transported over network (pkl)
+        update_old_config(config)
         self.config = copy.deepcopy(config)
         self.config["checkpoint"] = checkpoint_path
-
-        if "normalizer" not in config:
-            del config["dataset"]["src"]
-            config["normalizer"] = config["dataset"]
+        del config["dataset"]["src"]
 
         self.trainer = registry.get_trainer_class(
-            config.get("trainer", "energy")
+            config.get("trainer", "ocp")
         )(
             task=config["task"],
             model=config["model"],
-            dataset=None,
-            normalizer=config["normalizer"],
+            dataset=[config["dataset"]],
+            outputs=config["outputs"],
+            loss_fns=config["loss_fns"],
+            eval_metrics=config["eval_metrics"],
             optimizer=config["optim"],
             identifier="",
             slurm=config.get("slurm", {}),
@@ -211,9 +205,8 @@ class OCPCalculator(Calculator):
         predictions = self.trainer.predict(
             batch, per_image=False, disable_tqdm=True
         )
-        if self.trainer.name == "s2ef":
-            self.results["energy"] = predictions["energy"].item()
-            self.results["forces"] = predictions["forces"].cpu().numpy()
 
-        elif self.trainer.name == "is2re":
-            self.results["energy"] = predictions["energy"].item()
+        for key in predictions:
+            _pred = predictions[key]
+            _pred = _pred.item() if _pred.numel() == 1 else _pred.cpu().numpy()
+            self.results[key] = _pred

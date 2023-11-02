@@ -60,7 +60,6 @@ class BaseTrainer(ABC):
     test_loader: DataLoader[Any]
     device: torch.device
     output_targets: Dict[str, Any]
-    normalizers: Dict[str, Any]
     ema: Optional[ExponentialMovingAverage]
     clip_grad_norm: float
     ema_decay: float
@@ -281,9 +280,6 @@ class BaseTrainer(ABC):
         return loader
 
     def load_datasets(self) -> None:
-        logging.info(
-            f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
-        )
         self.parallel_collater = ParallelCollater(
             0 if self.cpu else 1,
             self.config["model_attributes"].get("otf_graph", False),
@@ -294,7 +290,11 @@ class BaseTrainer(ABC):
         self.test_loader = None
 
         # load train, val, test datasets
-        if self.config.get("dataset", None):
+        if self.config["dataset"].get("src", None):
+            logging.info(
+                f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
+            )
+
             self.train_dataset = registry.get_dataset_class(
                 self.config["dataset"].get("format", "lmdb")
             )(self.config["dataset"])
@@ -1097,22 +1097,11 @@ class BaseTrainer(ABC):
             desc="device {}".format(rank),
             disable=disable_tqdm,
         ):
-            batch_size = batch_list[0].natoms.numel()
-
-            ### Get unique system identifiers
-            sids = batch_list[0].sid.tolist()
-            ## Support naming structure for OC20 S2EF
-            if "fid" in batch_list[0]:
-                fids = batch_list[0].fid.tolist()
-                systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
-            else:
-                systemids = [f"{sid}" for sid in sids]
-
-            predictions["ids"].extend(systemids)
 
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch_list)
 
+            batch_size = batch_list[0].natoms.numel()
             for target_key in self.config["outputs"]:
                 ### Target property is a direct output of the model
                 if target_key in out:
@@ -1180,50 +1169,71 @@ class BaseTrainer(ABC):
 
                 pred = pred.cpu().detach().to(dtype)
 
-                ### Split predictions into per-image predictions
-                if (
-                    self.config["outputs"][target_key].get("level", "system")
-                    == "atom"
-                ):
-                    batch_natoms = torch.cat(
-                        [batch.natoms for batch in batch_list]
-                    )
-                    batch_fixed = torch.cat(
-                        [batch.fixed for batch in batch_list]
-                    )
-                    per_image_pred = torch.split(pred, batch_natoms.tolist())
-
-                    ### Save out only free atom, EvalAI does not need fixed atoms
-                    _per_image_fixed = torch.split(
-                        batch_fixed, batch_natoms.tolist()
-                    )
-                    _per_image_free_preds = [
-                        _pred[(fixed == 0).tolist()].numpy()
-                        for _pred, fixed in zip(
-                            per_image_pred, _per_image_fixed
+                if per_image:
+                    ### Split predictions into per-image predictions
+                    if (
+                        self.config["outputs"][target_key].get(
+                            "level", "system"
                         )
-                    ]
-                    _chunk_idx = np.array(
-                        [
-                            free_pred.shape[0]
-                            for free_pred in _per_image_free_preds
+                        == "atom"
+                    ):
+                        batch_natoms = torch.cat(
+                            [batch.natoms for batch in batch_list]
+                        )
+                        batch_fixed = torch.cat(
+                            [batch.fixed for batch in batch_list]
+                        )
+                        per_image_pred = torch.split(
+                            pred, batch_natoms.tolist()
+                        )
+
+                        ### Save out only free atom, EvalAI does not need fixed atoms
+                        _per_image_fixed = torch.split(
+                            batch_fixed, batch_natoms.tolist()
+                        )
+                        _per_image_free_preds = [
+                            _pred[(fixed == 0).tolist()].numpy()
+                            for _pred, fixed in zip(
+                                per_image_pred, _per_image_fixed
+                            )
                         ]
-                    )
-                    per_image_pred = _per_image_free_preds
-                ### Assumes system level properties are of the same dimension
-                else:
-                    per_image_pred = pred.numpy()
-                    _chunk_idx = None
-
-                predictions[f"{target_key}"].extend(per_image_pred)
-                ### Backwards compatibility, retain 'chunk_idx' for forces.
-                if _chunk_idx is not None:
-                    if target_key == "forces":
-                        predictions["chunk_idx"].extend(_chunk_idx)
-                    else:
-                        predictions[f"{target_key}_chunk_idx"].extend(
-                            _chunk_idx
+                        _chunk_idx = np.array(
+                            [
+                                free_pred.shape[0]
+                                for free_pred in _per_image_free_preds
+                            ]
                         )
+                        per_image_pred = _per_image_free_preds
+                    ### Assumes system level properties are of the same dimension
+                    else:
+                        per_image_pred = pred.numpy()
+                        _chunk_idx = None
+
+                    predictions[f"{target_key}"].extend(per_image_pred)
+                    ### Backwards compatibility, retain 'chunk_idx' for forces.
+                    if _chunk_idx is not None:
+                        if target_key == "forces":
+                            predictions["chunk_idx"].extend(_chunk_idx)
+                        else:
+                            predictions[f"{target_key}_chunk_idx"].extend(
+                                _chunk_idx
+                            )
+                else:
+                    predictions[f"{target_key}"] = pred.detach()
+
+            if not per_image:
+                return predictions
+
+            ### Get unique system identifiers
+            sids = batch_list[0].sid.tolist()
+            ## Support naming structure for OC20 S2EF
+            if "fid" in batch_list[0]:
+                fids = batch_list[0].fid.tolist()
+                systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
+            else:
+                systemids = [f"{sid}" for sid in sids]
+
+            predictions["ids"].extend(systemids)
 
         for key in predictions:
             predictions[key] = np.array(predictions[key])

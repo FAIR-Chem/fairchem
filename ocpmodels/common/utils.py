@@ -1197,7 +1197,11 @@ def irreps_sum(l):
 
 def update_old_config(config):
     ### Read task based off config structure, similar to OCPCalculator.
-    if config["task"]["dataset"] == "trajectory_lmdb":
+    if config["task"]["dataset"] in [
+        "trajectory_lmdb",
+        "lmdb",
+        "trajectory_lmdb_v2",
+    ]:
         task = "s2ef"
     elif config["task"]["dataset"] == "single_point_lmdb":
         task = "is2re"
