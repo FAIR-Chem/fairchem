@@ -15,6 +15,7 @@ chemical structures as input to predict energies / forces / positions, and can
 be used as a base scaffold for research projects. For an overview of tasks, data, and metrics, please read our papers:
  - [OC20](https://arxiv.org/abs/2010.09990)
  - [OC22](https://arxiv.org/abs/2206.08917)
+ - [ODAC23](https://arxiv.org/abs/2311.00341)
 
 Projects developed on `ocp`:
 
