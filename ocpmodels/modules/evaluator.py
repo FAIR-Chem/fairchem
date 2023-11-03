@@ -10,8 +10,6 @@ from typing import Dict, Union
 import numpy as np
 import torch
 
-from ocpmodels.common.utils import cg_decomp_mat
-
 """
 An evaluation module for use with the OCP dataset and suite of tasks. It should
 be possible to import this independently of the rest of the codebase, e.g:
@@ -263,35 +261,6 @@ def average_distance_within_threshold(
     total = len(mean_distance) * len(intv)
 
     return {"metric": success / total, "total": success, "numel": total}
-
-
-def stress_mae_from_decomposition(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
-    key=None,
-):
-    device = prediction["isotropic_stress"].device
-    cg_matrix = cg_decomp_mat(2, device)
-
-    zero_vectors = torch.zeros(
-        (prediction["isotropic_stress"].shape[0], 3),
-        device=device,
-    )
-    prediction_irreps = torch.concat(
-        [
-            prediction["isotropic_stress"].reshape(-1, 1),
-            zero_vectors,
-            prediction["anisotropic_stress"].reshape(-1, 5),
-        ],
-        dim=1,
-    )
-    prediction_stress = torch.einsum(
-        "ba, cb->ca", cg_matrix, prediction_irreps
-    ).reshape(-1)
-
-    target_stress = target["stress"].reshape(-1)
-
-    return mae(prediction_stress, target_stress)
 
 
 def min_diff(

@@ -11,7 +11,6 @@ import torch.optim as optim
 from torch.nn.parallel.distributed import DistributedDataParallel
 
 from ocpmodels.common import distutils
-from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.registry import registry
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
@@ -93,11 +92,7 @@ class EquiformerV2ForcesTrainer(OCPTrainer):
         if self.logger is not None:
             self.logger.watch(self.model)
 
-        self.model = OCPDataParallel(
-            self.model,
-            output_device=self.device,
-            num_gpus=1 if not self.cpu else 0,
-        )
+        self.model.to(self.device)
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(
                 self.model, device_ids=[self.device]

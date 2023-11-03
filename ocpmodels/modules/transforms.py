@@ -1,7 +1,7 @@
 import torch
 from torch_geometric.data import Data
 
-from ocpmodels.common.utils import cg_decomp_mat, irreps_sum
+from ocpmodels.common.utils import cg_change_mat, irreps_sum
 
 
 class DataTransforms:
@@ -32,7 +32,7 @@ def decompose_tensor(data_object, config) -> Data:
 
     tensor_decomposition = torch.einsum(
         "ab, cb->ca",
-        cg_decomp_mat(rank),
+        cg_change_mat(rank),
         data_object[tensor_key].reshape(1, irreps_sum(rank)),
     )
 

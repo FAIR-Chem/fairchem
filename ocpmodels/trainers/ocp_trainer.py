@@ -7,21 +7,17 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
-import pathlib
 from collections import defaultdict
-from pathlib import Path
 
 import numpy as np
 import torch
-import torch_geometric
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import cg_decomp_mat, check_traj_files, irreps_sum
+from ocpmodels.common.utils import check_traj_files
 from ocpmodels.modules.evaluator import Evaluator
-from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
