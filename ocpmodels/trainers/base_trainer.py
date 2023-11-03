@@ -269,7 +269,6 @@ class BaseTrainer(ABC):
     def get_dataloader(self, dataset, sampler) -> DataLoader:
         loader = DataLoader(
             dataset,
-            # collate_fn=self.parallel_collater,
             collate_fn=data_list_collater,
             num_workers=self.config["optim"]["num_workers"],
             pin_memory=True,
@@ -278,11 +277,6 @@ class BaseTrainer(ABC):
         return loader
 
     def load_datasets(self) -> None:
-        # self.parallel_collater = ParallelCollater(
-        # 0 if self.cpu else 1,
-        # self.config["model_attributes"].get("otf_graph", False),
-        # )
-
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
@@ -1121,7 +1115,6 @@ class BaseTrainer(ABC):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
 
-            batch_size = batch.natoms.numel()
             for target_key in self.config["outputs"]:
                 pred = out[target_key]
                 if self.normalizers.get(target_key, False):
