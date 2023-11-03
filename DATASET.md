@@ -480,7 +480,7 @@ We provide precomputed LMDBs for train, validation, and the various test sets th
 
 |Splits    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
 |---    |---    |---    |---    |
-|Train + Validation + Test (all splits)    |  172G  |  476G  | [162f0660b2f1c9209c5b57f7b9e545a7](https://dl.fbaipublicfiles.com/dac/datasets/odac23_s2ef.tar.gz )  |
+|Train + Validation + Test (all splits)    |  172G  |  476G  | [162f0660b2f1c9209c5b57f7b9e545a7](https://dl.fbaipublicfiles.com/large_objects/dac/datasets/odac23_s2ef.tar.gz )  |
 |    |    |    |    |
 
 
