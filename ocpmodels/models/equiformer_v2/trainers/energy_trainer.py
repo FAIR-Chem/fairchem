@@ -11,12 +11,11 @@ import torch.optim as optim
 from torch.nn.parallel.distributed import DistributedDataParallel
 
 from ocpmodels.common import distutils
-from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.registry import registry
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
 )
-from ocpmodels.trainers import EnergyTrainer
+from ocpmodels.trainers import OCPTrainer
 
 from .lr_scheduler import LRScheduler
 
@@ -49,7 +48,7 @@ def add_weight_decay(model, weight_decay, skip_list=()):
 
 
 @registry.register_trainer("equiformerv2_energy")
-class EquiformerV2EnergyTrainer(EnergyTrainer):
+class EquiformerV2EnergyTrainer(OCPTrainer):
     # This trainer does a few things differently from the parent energy trainer:
     # - When loading the model, it has a different way of setting up the params
     #   with no weight decay.
@@ -95,11 +94,7 @@ class EquiformerV2EnergyTrainer(EnergyTrainer):
         if self.logger is not None:
             self.logger.watch(self.model)
 
-        self.model = OCPDataParallel(
-            self.model,
-            output_device=self.device,
-            num_gpus=1 if not self.cpu else 0,
-        )
+        self.model.to(self.device)
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(
                 self.model, device_ids=[self.device]
