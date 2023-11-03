@@ -25,23 +25,20 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ocpmodels.common import distutils, gp_utils
-from ocpmodels.common.data_parallel import (
-    BalancedBatchSampler,
-    OCPDataParallel,
-    ParallelCollater,
-)
+from ocpmodels.common.data_parallel import BalancedBatchSampler
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance as aii
 from ocpmodels.common.typing import none_throws
 from ocpmodels.common.utils import (
-    cg_decomp_mat,
+    cg_change_mat,
     get_commit_hash,
     get_loss_module,
     irreps_sum,
     load_state_dict,
     save_checkpoint,
-    update_old_config,
+    update_config,
 )
+from ocpmodels.datasets import data_list_collater
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
@@ -87,12 +84,13 @@ class BaseTrainer(ABC):
         slurm={},
         noddp: bool = False,
     ) -> None:
+
         self.name = name
+        self.is_debug = is_debug
         self.cpu = cpu
         self.epoch = 0
         self.step = 0
 
-        self.device: torch.device
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
         else:
@@ -159,6 +157,7 @@ class BaseTrainer(ABC):
                 "folder"
             ].replace("%j", self.config["slurm"]["job_id"])
 
+        # Define datasets
         if isinstance(dataset, list):
             if len(dataset) > 0:
                 self.config["dataset"] = dataset[0]
@@ -178,17 +177,15 @@ class BaseTrainer(ABC):
             os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
-        self.is_debug = is_debug
-
-        if distutils.is_master():
-            logging.info(yaml.dump(self.config, default_flow_style=False))
-
         ### backwards compatability with OCP v<2.0
         if self.name != "ocp":
             logging.warning(
                 "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
             )
-            update_old_config(self.config)
+            self.config = update_config(self.config)
+
+        if distutils.is_master():
+            logging.info(yaml.dump(self.config, default_flow_style=False))
 
         self.load()
 
@@ -272,7 +269,8 @@ class BaseTrainer(ABC):
     def get_dataloader(self, dataset, sampler) -> DataLoader:
         loader = DataLoader(
             dataset,
-            collate_fn=self.parallel_collater,
+            # collate_fn=self.parallel_collater,
+            collate_fn=data_list_collater,
             num_workers=self.config["optim"]["num_workers"],
             pin_memory=True,
             batch_sampler=sampler,
@@ -280,10 +278,10 @@ class BaseTrainer(ABC):
         return loader
 
     def load_datasets(self) -> None:
-        self.parallel_collater = ParallelCollater(
-            0 if self.cpu else 1,
-            self.config["model_attributes"].get("otf_graph", False),
-        )
+        # self.parallel_collater = ParallelCollater(
+        # 0 if self.cpu else 1,
+        # self.config["model_attributes"].get("otf_graph", False),
+        # )
 
         self.train_loader = None
         self.val_loader = None
@@ -455,11 +453,7 @@ class BaseTrainer(ABC):
         if self.logger is not None:
             self.logger.watch(self.model)
 
-        self.model = OCPDataParallel(
-            self.model,
-            output_device=self.device,
-            num_gpus=1 if not self.cpu else 0,
-        )
+        self.model.to(self.device)
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(
                 self.model, device_ids=[self.device]
@@ -468,7 +462,7 @@ class BaseTrainer(ABC):
     @property
     def _unwrapped_model(self):
         module = self.model
-        while isinstance(module, (OCPDataParallel, DistributedDataParallel)):
+        while isinstance(module, DistributedDataParallel):
             module = module.module
         return module
 
@@ -834,19 +828,60 @@ class BaseTrainer(ABC):
         if self.config.get("test_dataset", False):
             self.test_dataset.close_db()
 
-    def _forward(self, batch_list):
-        return self.model(batch_list)
+    def _forward(self, batch):
+        out = self.model(batch.to(self.device))
 
-    def _compute_loss(self, out, batch_list):
-        natoms = torch.cat(
-            [batch.natoms.to(self.device) for batch in batch_list], dim=0
-        )
+        ### TOOD: Move into BaseModel in OCP 2.0
+        outputs = {}
+        batch_size = batch.natoms.numel()
+        for target_key in self.config["outputs"]:
+            ### Target property is a direct output of the model
+            if target_key in out:
+                pred = out[target_key]
+            ## Target property is a derived output of the model. Construct the
+            ## parent property
+            else:
+                _max_rank = 0
+                for subtarget_key in self.config["outputs"][target_key][
+                    "decomposition"
+                ]:
+                    _max_rank = max(
+                        _max_rank,
+                        self.output_targets[subtarget_key]["irrep_dim"],
+                    )
+
+                pred_irreps = torch.zeros(
+                    (batch_size, irreps_sum(_max_rank)), device=self.device
+                )
+
+                for subtarget_key in self.config["outputs"][target_key][
+                    "decomposition"
+                ]:
+                    irreps = self.output_targets[subtarget_key]["irrep_dim"]
+                    _pred = out[subtarget_key]
+
+                    ## Fill in the corresponding irreps prediction
+                    pred_irreps[
+                        :,
+                        max(0, irreps_sum(irreps - 1)) : irreps_sum(irreps),
+                    ] = _pred
+
+                pred = torch.einsum(
+                    "ba, cb->ca",
+                    cg_change_mat(_max_rank, self.device),
+                    pred_irreps,
+                )
+
+            outputs[target_key] = pred
+
+        return outputs
+
+    def _compute_loss(self, out, batch):
+        natoms = batch.natoms.to(self.device)
         batch_size = natoms.numel()
         natoms = torch.repeat_interleave(natoms, natoms)
 
-        fixed = torch.cat(
-            [batch.fixed.to(self.device) for batch in batch_list]
-        )
+        fixed = batch.fixed.to(self.device)
         mask = fixed == 0
 
         loss = []
@@ -854,10 +889,7 @@ class BaseTrainer(ABC):
         for loss_fn in self.loss_fns:
             target_name, loss_info = loss_fn
 
-            target = torch.cat(
-                [batch[target_name].to(self.device) for batch in batch_list],
-                dim=0,
-            )
+            target = batch[target_name].to(self.device)
             pred = out[target_name]
 
             if self.output_targets[target_name].get(
@@ -891,15 +923,11 @@ class BaseTrainer(ABC):
         loss = sum(loss)
         return loss
 
-    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
-        natoms = torch.cat(
-            [batch.natoms.to(self.device) for batch in batch_list], dim=0
-        )
+    def _compute_metrics(self, out, batch, evaluator, metrics={}):
+        natoms = batch.natoms.to(self.device)
 
         ### Retrieve free atoms
-        fixed = torch.cat(
-            [batch.fixed.to(self.device) for batch in batch_list]
-        )
+        fixed = batch.fixed.to(self.device)
         mask = fixed == 0
 
         s_idx = 0
@@ -911,22 +939,13 @@ class BaseTrainer(ABC):
 
         targets = {}
         for target_name in self.output_targets:
-            target = torch.cat(
-                [batch[target_name].to(self.device) for batch in batch_list],
-                dim=0,
-            )
+            target = batch[target_name].to(self.device)
             # Add parent target to targets
             if "parent" in self.output_targets[target_name]:
                 parent_target_name = self.output_targets[target_name]["parent"]
 
                 if parent_target_name not in targets:
-                    parent_target = torch.cat(
-                        [
-                            batch[parent_target_name].to(self.device)
-                            for batch in batch_list
-                        ],
-                        dim=0,
-                    )
+                    parent_target = batch[parent_target_name].to(self.device)
                     targets[parent_target_name] = parent_target
 
             if self.output_targets[target_name].get(
@@ -982,6 +1001,7 @@ class BaseTrainer(ABC):
         ):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                batch.to(self.device)
                 out = self._forward(batch)
             loss = self._compute_loss(out, batch)
 
@@ -1027,8 +1047,8 @@ class BaseTrainer(ABC):
         self.optimizer.zero_grad()
         loss.backward()
         # Scale down the gradients of shared parameters
-        if hasattr(self.model.module, "shared_parameters"):
-            for p, factor in self.model.module.shared_parameters:
+        if hasattr(self.model, "shared_parameters"):
+            for p, factor in self.model.shared_parameters:
                 if hasattr(p, "grad") and p.grad is not None:
                     p.grad.detach().div_(factor)
                 else:
@@ -1081,7 +1101,7 @@ class BaseTrainer(ABC):
         rank = distutils.get_rank()
 
         if isinstance(data_loader, torch_geometric.data.Batch):
-            data_loader = [[data_loader]]
+            data_loader = [data_loader]
 
         self.model.eval()
         if self.ema is not None:
@@ -1090,7 +1110,7 @@ class BaseTrainer(ABC):
 
         predictions = defaultdict(list)
 
-        for i, batch_list in tqdm(
+        for i, batch in tqdm(
             enumerate(data_loader),
             total=len(data_loader),
             position=rank,
@@ -1099,77 +1119,33 @@ class BaseTrainer(ABC):
         ):
 
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch_list)
+                out = self._forward(batch)
 
-            batch_size = batch_list[0].natoms.numel()
+            batch_size = batch.natoms.numel()
             for target_key in self.config["outputs"]:
-                ### Target property is a direct output of the model
-                if target_key in out:
-                    pred = out[target_key]
-                    ### Denormalize predictions if needed
-                    if self.normalizers.get(target_key, False):
-                        pred = self.normalizers[target_key].denorm(pred)
-                ## Target property is a derived output of the model
-                else:
-                    _max_rank = 0
-                    for subtarget_key in self.config["outputs"][target_key][
-                        "decomposition"
-                    ]:
-                        _max_rank = max(
-                            _max_rank,
-                            self.output_targets[subtarget_key]["irrep_dim"],
-                        )
-
-                    pred_irreps = torch.zeros(
-                        (batch_size, irreps_sum(_max_rank)), device=self.device
-                    )
-
-                    for subtarget_key in self.config["outputs"][target_key][
-                        "decomposition"
-                    ]:
-                        irreps = self.output_targets[subtarget_key][
-                            "irrep_dim"
-                        ]
-                        _pred = out[subtarget_key]
-
-                        ### Denormalize predictions if needed
-                        if self.normalizers.get(subtarget_key, False):
-                            _pred = self.normalizers[subtarget_key].denorm(
-                                _pred
-                            )
-
-                        ## Fill in the corresponding irreps prediction
-                        pred_irreps[
-                            :,
-                            max(0, irreps_sum(irreps - 1)) : irreps_sum(
-                                irreps
-                            ),
-                        ] = _pred
-
-                    pred = torch.einsum(
-                        "ba, cb->ca",
-                        cg_decomp_mat(_max_rank, self.device),
-                        pred_irreps,
-                    )
-
-                ### Save outputs in desired precision, default float16
-                if (
-                    self.config["outputs"][target_key].get(
-                        "prediction_dtype", "float16"
-                    )
-                    == "float32"
-                    or self.config["task"].get("prediction_dtype", "float16")
-                    == "float32"
-                    or self.config["task"].get("dataset", "lmdb")
-                    == "oc22_lmdb"
-                ):
-                    dtype = torch.float32
-                else:
-                    dtype = torch.float16
-
-                pred = pred.cpu().detach().to(dtype)
+                pred = out[target_key]
+                if self.normalizers.get(target_key, False):
+                    pred = self.normalizers[target_key].denorm(pred)
 
                 if per_image:
+                    ### Save outputs in desired precision, default float16
+                    if (
+                        self.config["outputs"][target_key].get(
+                            "prediction_dtype", "float16"
+                        )
+                        == "float32"
+                        or self.config["task"].get(
+                            "prediction_dtype", "float16"
+                        )
+                        == "float32"
+                        or self.config["task"].get("dataset", "lmdb")
+                        == "oc22_lmdb"
+                    ):
+                        dtype = torch.float32
+                    else:
+                        dtype = torch.float16
+
+                    pred = pred.cpu().detach().to(dtype)
                     ### Split predictions into per-image predictions
                     if (
                         self.config["outputs"][target_key].get(
@@ -1177,12 +1153,8 @@ class BaseTrainer(ABC):
                         )
                         == "atom"
                     ):
-                        batch_natoms = torch.cat(
-                            [batch.natoms for batch in batch_list]
-                        )
-                        batch_fixed = torch.cat(
-                            [batch.fixed for batch in batch_list]
-                        )
+                        batch_natoms = batch.natoms
+                        batch_fixed = batch.fixed
                         per_image_pred = torch.split(
                             pred, batch_natoms.tolist()
                         )
@@ -1225,10 +1197,10 @@ class BaseTrainer(ABC):
                 return predictions
 
             ### Get unique system identifiers
-            sids = batch_list[0].sid.tolist()
+            sids = batch.sid.tolist()
             ## Support naming structure for OC20 S2EF
-            if "fid" in batch_list[0]:
-                fids = batch_list[0].fid.tolist()
+            if "fid" in batch:
+                fids = batch.fid.tolist()
                 systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
             else:
                 systemids = [f"{sid}" for sid in sids]

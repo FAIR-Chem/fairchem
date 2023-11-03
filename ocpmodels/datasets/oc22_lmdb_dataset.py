@@ -17,6 +17,7 @@ from torch.utils.data import Dataset
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance as aii
 from ocpmodels.common.utils import pyg2_data_transform
+from ocpmodels.modules.transforms import DataTransforms
 
 
 @registry.register_dataset("oc22_lmdb")
@@ -100,7 +101,9 @@ class OC22LmdbDataset(Dataset):
             self._keys = list(range(num_entries))
             self.num_samples = num_entries
 
-        self.transform = transform
+        self.key_mapping = self.config.get("key_mapping", None)
+        self.transforms = DataTransforms(self.config.get("transforms", {}))
+
         self.lin_ref = self.oc20_ref = False
         # only needed for oc20 datasets, oc22 is total by default
         self.train_on_oc20_total_energies = self.config.get(

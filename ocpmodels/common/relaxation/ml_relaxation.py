@@ -45,7 +45,7 @@ def ml_relax(
         save_full_traj: bool
             Whether to save out the full ASE trajectory. If False, only save out initial and final frames.
     """
-    batches = deque([batch[0]])
+    batches = deque([batch])
     relaxed_batches = []
     while batches:
         batch = batches.popleft()

@@ -24,7 +24,7 @@ from ocpmodels.common.utils import (
     load_config,
     setup_imports,
     setup_logging,
-    update_old_config,
+    update_config,
 )
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
@@ -144,7 +144,7 @@ class OCPCalculator(Calculator):
         config["model"]["otf_graph"] = True
 
         # Save config so obj can be transported over network (pkl)
-        update_old_config(config)
+        config = update_config(config)
         self.config = copy.deepcopy(config)
         self.config["checkpoint"] = checkpoint_path
         del config["dataset"]["src"]

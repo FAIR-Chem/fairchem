@@ -1154,7 +1154,7 @@ def get_commit_hash():
     return commit_hash
 
 
-def cg_decomp_mat(l, device="cpu"):
+def cg_change_mat(l, device="cpu"):
     if l not in [2]:
         raise NotImplementedError
 
@@ -1188,6 +1188,9 @@ def cg_decomp_mat(l, device="cpu"):
 
 
 def irreps_sum(l):
+    """
+    Returns the sum of the dimensions of the irreps up to the specified l.
+    """
     total = 0
     for i in range(l + 1):
         total += 2 * i + 1
@@ -1195,7 +1198,12 @@ def irreps_sum(l):
     return total
 
 
-def update_old_config(config):
+def update_config(base_config):
+    """
+    Configs created prior to OCP 2.0 are organized a little different than they
+    are now. Update old configs to fit the new expected structure.
+    """
+    config = copy.deepcopy(base_config)
     ### Read task based off config structure, similar to OCPCalculator.
     if config["task"]["dataset"] in [
         "trajectory_lmdb",
@@ -1238,13 +1246,15 @@ def update_old_config(config):
                         "energy_coefficient", 1
                     ),
                 },
+            },
+            {
                 "forces": {
                     "fn": config["optim"].get("loss_forces", "l2mae"),
                     "coefficient": config["optim"].get(
                         "force_coefficient", 30
                     ),
                 },
-            }
+            },
         ]
         ### Define evaluation metrics
         _eval_metrics = {
@@ -1296,6 +1306,8 @@ def update_old_config(config):
     config.update({"loss_fns": _loss_fns})
     config.update({"eval_metrics": _eval_metrics})
     config.update({"outputs": _outputs})
+
+    return config
 
 
 def get_loss_module(loss_name):
