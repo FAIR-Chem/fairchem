@@ -129,7 +129,10 @@ class OCPCalculator(Calculator):
             )
             config = checkpoint["config"]
 
-        config["trainer"] = "ocp"
+        if trainer is not None:
+            config["trainer"] = trainer
+        else:
+            config["trainer"] = config.get("trainer", "ocp")
 
         if "model_attributes" in config:
             config["model_attributes"]["name"] = config.pop("model")
@@ -149,9 +152,7 @@ class OCPCalculator(Calculator):
         self.config["checkpoint"] = checkpoint_path
         del config["dataset"]["src"]
 
-        self.trainer = registry.get_trainer_class(
-            config.get("trainer", "ocp")
-        )(
+        self.trainer = registry.get_trainer_class(config["trainer"])(
             task=config["task"],
             model=config["model"],
             dataset=[config["dataset"]],

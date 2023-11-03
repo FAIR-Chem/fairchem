@@ -178,7 +178,8 @@ class BaseTrainer(ABC):
             os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
         ### backwards compatability with OCP v<2.0
-        if self.name != "ocp":
+        ### TODO: better format check for older configs
+        if not self.config.get("loss_fns"):
             logging.warning(
                 "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
             )
