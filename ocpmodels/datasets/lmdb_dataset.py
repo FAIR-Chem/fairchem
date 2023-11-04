@@ -37,6 +37,12 @@ class LmdbDataset(Dataset):
             config (dict): Dataset configuration
             transform (callable, optional): Data transform function.
                     (default: :obj:`None`)
+            fa_frames (str, optional): type of frame averaging method applied, if any.
+            adsorbates (str, optional): comma-separated list of adsorbates to filter.
+                    If None or "all", no filtering is applied.
+                    (default: None)
+            adsorbates_ref_dir: where metadata files for adsorbates are stored.
+                    (default: "/network/scratch/s/schmidtv/ocp/datasets/ocp/per_ads")
     """
 
     def __init__(
