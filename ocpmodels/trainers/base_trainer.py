@@ -258,8 +258,8 @@ class BaseTrainer(ABC):
                 )(
                     ds_conf,
                     transform=transform,
-                    adsorbates=self.config["task"].get("adsorbates"),
-                    adsorbates_ref_dir=self.config["task"].get("adsorbates_ref_dir"),
+                    adsorbates=self.config.get("adsorbates"),
+                    adsorbates_ref_dir=self.config.get("adsorbates_ref_dir"),
                 )
 
             shuffle = False
