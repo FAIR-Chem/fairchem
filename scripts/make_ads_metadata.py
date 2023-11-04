@@ -37,6 +37,9 @@ def download_tar(target_path, ads):
 
 def download_pkl(target_path, url):
     if not target_path.exists():
+        # create the relevant folder if it does not exist
+        if not target_path.parent.exists():
+            target_path.parent.mkdir(parents=True)
         print("Downloading...", flush=True, end="")
         response = requests.get(url, stream=True)
         if response.status_code == 200:
