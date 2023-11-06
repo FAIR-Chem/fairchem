@@ -1235,7 +1235,9 @@ def update_config(base_config):
         if "primary_metric" in config["task"]:
             _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
         ### Define outputs
-        _outputs = {"energy": {"shape": 1, "level": "system"}}
+        _outputs = {"energy": {"level": "system"}}
+        ### Define key mapping
+        config["dataset"]["key_mapping"] = {"y_relaxed": "energy"}
     elif task == "s2ef":
         ### Define loss functions
         _loss_fns = [
@@ -1275,9 +1277,8 @@ def update_config(base_config):
             _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
         ### Define outputs
         _outputs = {
-            "energy": {"shape": 1, "level": "system"},
+            "energy": {"level": "system"},
             "forces": {
-                "shape": 3,
                 "level": "atom",
                 "train_on_free_atoms": (
                     config["task"].get("train_on_free_atoms", False)
@@ -1287,21 +1288,22 @@ def update_config(base_config):
                 ),
             },
         }
+        ### Define key mapping
+        config["dataset"]["key_mapping"] = {"y": "energy", "force": "forces"}
 
     if config["dataset"].get("normalize_labels", False):
         normalizer = {
             "energy": {
-                "mean": config["dataset"]["target_mean"],
-                "stdev": config["dataset"]["target_std"],
+                "mean": config["dataset"].get("target_mean", 0),
+                "stdev": config["dataset"].get("target_std", 1),
             },
             "forces": {
-                "mean": config["dataset"]["grad_target_mean"],
-                "stdev": config["dataset"]["grad_target_std"],
+                "mean": config["dataset"].get("grad_target_mean", 0),
+                "stdev": config["dataset"].get("grad_target_std", 1),
             },
         }
         config["dataset"]["normalizer"] = normalizer
 
-    config["dataset"]["key_mapping"] = {"y": "energy", "force": "forces"}
     ### Update config
     config.update({"loss_fns": _loss_fns})
     config.update({"eval_metrics": _eval_metrics})

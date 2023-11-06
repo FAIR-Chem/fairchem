@@ -867,6 +867,10 @@ class BaseTrainer(ABC):
                     pred_irreps,
                 )
 
+            ### not all models are consistent with the output shape
+            if len(pred.shape) > 1:
+                pred = pred.squeeze(1)
+
             outputs[target_key] = pred
 
         return outputs
