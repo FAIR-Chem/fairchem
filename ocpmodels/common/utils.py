@@ -1000,9 +1000,9 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         setup_imports(config)
         trainer_name = config.get("trainer", "ocp")
         # backwards compatibility for older configs
-        if trainer_name == "forces":
+        if trainer_name in ["forces", "equiformerv2_forces"]:
             task_name = "s2ef"
-        elif trainer_name == "energy":
+        elif trainer_name in ["energy", "equiformerv2_energy"]:
             task_name = "is2re"
         else:
             task_name = "ocp"

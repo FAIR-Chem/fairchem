@@ -1209,7 +1209,6 @@ class BaseTrainer(ABC):
             predictions[key] = np.array(predictions[key])
 
         self.save_results(predictions, results_file)
-        # TODO relaxation support
 
         if self.ema:
             self.ema.restore()

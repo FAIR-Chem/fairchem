@@ -159,7 +159,7 @@ class LmdbDataset(Dataset[T_co]):
                         data_object[new_property] = data_object[_property]
                         del data_object[_property]
 
-        self.transforms(data_object)
+        data_object = self.transforms(data_object)
 
         return data_object
 
