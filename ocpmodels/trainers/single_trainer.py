@@ -246,10 +246,8 @@ class SingleTrainer(BaseTrainer):
                 if epoch_int < self.config["optim"].get("epoch_fine_tune", 1):
                     self.config["model"]["regress_forces"] = "direct"
                 elif self.config["model"].get("exact_ec_pred", False):
-                    self.config["model"][
-                        "regress_forces"
-                    ] = "from_energy"
-#                     self.config["optim"]["force_coefficient"] = 0
+                    self.config["model"]["regress_forces"] = "from_energy"
+                    # self.config["optim"]["force_coefficient"] = 0
                 else:
                     self.config["model"][
                         "regress_forces"
@@ -440,9 +438,7 @@ class SingleTrainer(BaseTrainer):
         # End of training.
         if not is_test_env:
             if self.config["model"].get("exact_ec_pred", False):
-                self.config["model"][
-                    "regress_forces"
-                ] = "from_energy"
+                self.config["model"]["regress_forces"] = "from_energy"
             return self.end_of_training(
                 epoch_int, debug_batches, model_run_time, epoch_times
             )
@@ -505,7 +501,7 @@ class SingleTrainer(BaseTrainer):
                 ds.close_db()
 
     def model_forward(self, batch_list, mode="train", q=None):
-        """ Perform a forward pass of the model when frame averaging is applied.
+        """Perform a forward pass of the model when frame averaging is applied.
         Returns:
             (dict): model predictions tensor for "energy" and "forces".
         """
