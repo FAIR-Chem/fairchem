@@ -104,6 +104,10 @@ class LmdbDataset(Dataset):
         if not self.adsorbates or self.adsorbates == "all":
             return
 
+        # val_ood_ads and val_ood_both don't have targeted adsorbates
+        if self.config["src"].split("/")[-2] in {"val_ood_ads", "val_ood_both"}:
+            return
+
         # make set of adsorbates from a list or a string. If a string, split on comma.
         ads = []
         if isinstance(self.adsorbates, str):
@@ -153,7 +157,7 @@ class LmdbDataset(Dataset):
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
             self.num_samples = sum(keylens)
-
+        
         assert self.num_samples > 0, f"No samples found for adsorbates {ads}."
 
     def __len__(self):
