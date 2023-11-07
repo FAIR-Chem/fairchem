@@ -245,7 +245,7 @@ class OCPTrainer(BaseTrainer):
         ### TOOD: Move into BaseModel in OCP 2.0
         outputs = {}
         batch_size = batch.natoms.numel()
-        for target_key in self.config["outputs"]:
+        for target_key in self.output_targets:
             ### Target property is a direct output of the model
             if target_key in out:
                 pred = out[target_key]
@@ -253,7 +253,7 @@ class OCPTrainer(BaseTrainer):
             ## parent property
             else:
                 _max_rank = 0
-                for subtarget_key in self.config["outputs"][target_key][
+                for subtarget_key in self.output_targets[target_key][
                     "decomposition"
                 ]:
                     _max_rank = max(
@@ -265,7 +265,7 @@ class OCPTrainer(BaseTrainer):
                     (batch_size, irreps_sum(_max_rank)), device=self.device
                 )
 
-                for subtarget_key in self.config["outputs"][target_key][
+                for subtarget_key in self.output_targets[target_key][
                     "decomposition"
                 ]:
                     irreps = self.output_targets[subtarget_key]["irrep_dim"]
@@ -284,6 +284,7 @@ class OCPTrainer(BaseTrainer):
                 )
 
             ### not all models are consistent with the output shape
+            # TODO: Verify not an issue for high order predictions
             if len(pred.shape) > 1:
                 pred = pred.squeeze(1)
 
