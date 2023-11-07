@@ -371,11 +371,10 @@ class BaseTrainer(ABC):
 
         self.output_targets = {}
         for target_name in self.config["outputs"]:
-            if "decomposition" not in self.config["outputs"][target_name]:
-                self.output_targets[target_name] = self.config["outputs"][
-                    target_name
-                ]
-            else:
+            self.output_targets[target_name] = self.config["outputs"][
+                target_name
+            ]
+            if "decomposition" in self.config["outputs"][target_name]:
                 for subtarget in self.config["outputs"][target_name][
                     "decomposition"
                 ]:
@@ -407,7 +406,7 @@ class BaseTrainer(ABC):
                             "eval_on_free_atoms", True
                         )
 
-        # TODO: Assert that all targets, loss fn, metrics defined and consistent
+        # TODO: Assert that all targets, loss fn, metrics defined are consistent
         self.evaluation_metrics = self.config.get("eval_metrics", {})
         self.evaluator = Evaluator(
             task=self.name,
