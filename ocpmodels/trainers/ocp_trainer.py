@@ -8,9 +8,11 @@ LICENSE file in the root directory of this source tree.
 import logging
 import os
 from collections import defaultdict
+from typing import Optional
 
 import numpy as np
 import torch
+import torch_geometric
 from tqdm import tqdm
 
 from ocpmodels.common import distutils
@@ -245,6 +247,7 @@ class OCPTrainer(BaseTrainer):
         ### TOOD: Move into BaseModel in OCP 2.0
         outputs = {}
         batch_size = batch.natoms.numel()
+        num_atoms_in_batch = batch.natoms.sum()
         for target_key in self.output_targets:
             ### Target property is a direct output of the model
             if target_key in out:
@@ -272,10 +275,11 @@ class OCPTrainer(BaseTrainer):
                     _pred = out[subtarget_key]
 
                     ## Fill in the corresponding irreps prediction
+                    ## Reshape irrep prediction to (batch_size, irrep_dim)
                     pred_irreps[
                         :,
                         max(0, irreps_sum(irreps - 1)) : irreps_sum(irreps),
-                    ] = _pred
+                    ] = _pred.view(batch_size, -1)
 
                 pred = torch.einsum(
                     "ba, cb->ca",
@@ -284,44 +288,49 @@ class OCPTrainer(BaseTrainer):
                 )
 
             ### not all models are consistent with the output shape
-            # TODO: Verify not an issue for high order predictions
-            if len(pred.shape) > 1:
-                pred = pred.squeeze(1)
+            ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
+            if self.output_targets[target_key]["level"] == "atom":
+                pred = pred.view(num_atoms_in_batch, -1)
+            else:
+                pred = pred.view(batch_size, -1)
 
             outputs[target_key] = pred
 
         return outputs
 
     def _compute_loss(self, out, batch):
-        natoms = batch.natoms.to(self.device)
-        batch_size = natoms.numel()
-        natoms = torch.repeat_interleave(natoms, natoms)
-
-        fixed = batch.fixed.to(self.device)
+        batch_size = batch.natoms.numel()
+        fixed = batch.fixed
         mask = fixed == 0
 
         loss = []
-
         for loss_fn in self.loss_fns:
             target_name, loss_info = loss_fn
 
-            target = batch[target_name].to(self.device)
+            target = batch[target_name]
             pred = out[target_name]
+            natoms = batch.natoms
+            natoms = torch.repeat_interleave(natoms, natoms)
 
-            if self.output_targets[target_name].get(
-                "level", "system"
-            ) == "atom" and self.output_targets[target_name].get(
-                "train_on_free_atoms", True
+            if (
+                self.output_targets[target_name]["level"] == "atom"
+                and self.output_targets[target_name]["train_on_free_atoms"]
             ):
                 target = target[mask]
                 pred = pred[mask]
                 natoms = natoms[mask]
 
+            num_atoms_in_batch = natoms.numel()
             if self.normalizers.get(target_name, False):
                 target = self.normalizers[target_name].norm(target)
 
-            mult = loss_info["coefficient"]
+            ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
+            if self.output_targets[target_name]["level"] == "atom":
+                target = target.view(num_atoms_in_batch, -1)
+            else:
+                target = target.view(batch_size, -1)
 
+            mult = loss_info["coefficient"]
             loss.append(
                 mult
                 * loss_info["fn"](
@@ -340,10 +349,11 @@ class OCPTrainer(BaseTrainer):
         return loss
 
     def _compute_metrics(self, out, batch, evaluator, metrics={}):
-        natoms = batch.natoms.to(self.device)
+        natoms = batch.natoms
+        batch_size = natoms.numel()
 
         ### Retrieve free atoms
-        fixed = batch.fixed.to(self.device)
+        fixed = batch.fixed
         mask = fixed == 0
 
         s_idx = 0
@@ -355,22 +365,22 @@ class OCPTrainer(BaseTrainer):
 
         targets = {}
         for target_name in self.output_targets:
-            target = batch[target_name].to(self.device)
-            # Add parent target to targets
-            if "parent" in self.output_targets[target_name]:
-                parent_target_name = self.output_targets[target_name]["parent"]
+            target = batch[target_name]
+            num_atoms_in_batch = batch.natoms.sum()
 
-                if parent_target_name not in targets:
-                    parent_target = batch[parent_target_name].to(self.device)
-                    targets[parent_target_name] = parent_target
-
-            if self.output_targets[target_name].get(
-                "level", "system"
-            ) == "atom" and self.output_targets[target_name].get(
-                "eval_on_free_atoms", True
+            if (
+                self.output_targets[target_name]["level"] == "atom"
+                and self.output_targets[target_name]["eval_on_free_atoms"]
             ):
                 target = target[mask]
                 out[target_name] = out[target_name][mask]
+                num_atoms_in_batch = natoms.sum()
+
+            ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
+            if self.output_targets[target_name]["level"] == "atom":
+                target = target.view(num_atoms_in_batch, -1)
+            else:
+                target = target.view(batch_size, -1)
 
             targets[target_name] = target
             if self.normalizers.get(target_name, False):
@@ -383,6 +393,139 @@ class OCPTrainer(BaseTrainer):
 
         metrics = evaluator.eval(out, targets, prev_metrics=metrics)
         return metrics
+
+    # Takes in a new data source and generates predictions on it.
+    @torch.no_grad()
+    def predict(
+        self,
+        data_loader,
+        per_image: bool = True,
+        results_file: Optional[str] = None,
+        disable_tqdm: bool = False,
+    ):
+        ensure_fitted(self._unwrapped_model, warn=True)
+
+        if distutils.is_master() and not disable_tqdm:
+            logging.info("Predicting on test.")
+        assert isinstance(
+            data_loader,
+            (
+                torch.utils.data.dataloader.DataLoader,
+                torch_geometric.data.Batch,
+            ),
+        )
+        rank = distutils.get_rank()
+
+        if isinstance(data_loader, torch_geometric.data.Batch):
+            data_loader = [data_loader]
+
+        self.model.eval()
+        if self.ema is not None:
+            self.ema.store()
+            self.ema.copy_to()
+
+        predictions = defaultdict(list)
+
+        for i, batch in tqdm(
+            enumerate(data_loader),
+            total=len(data_loader),
+            position=rank,
+            desc="device {}".format(rank),
+            disable=disable_tqdm,
+        ):
+
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch)
+
+            for target_key in self.config["outputs"]:
+                pred = out[target_key]
+                if self.normalizers.get(target_key, False):
+                    pred = self.normalizers[target_key].denorm(pred)
+
+                if per_image:
+                    ### Save outputs in desired precision, default float16
+                    if (
+                        self.config["outputs"][target_key].get(
+                            "prediction_dtype", "float16"
+                        )
+                        == "float32"
+                        or self.config["task"].get(
+                            "prediction_dtype", "float16"
+                        )
+                        == "float32"
+                        or self.config["task"].get("dataset", "lmdb")
+                        == "oc22_lmdb"
+                    ):
+                        dtype = torch.float32
+                    else:
+                        dtype = torch.float16
+
+                    pred = pred.cpu().detach().to(dtype)
+                    ### Split predictions into per-image predictions
+                    if self.config["outputs"][target_key]["level"] == "atom":
+                        batch_natoms = batch.natoms
+                        batch_fixed = batch.fixed
+                        per_image_pred = torch.split(
+                            pred, batch_natoms.tolist()
+                        )
+
+                        ### Save out only free atom, EvalAI does not need fixed atoms
+                        _per_image_fixed = torch.split(
+                            batch_fixed, batch_natoms.tolist()
+                        )
+                        _per_image_free_preds = [
+                            _pred[(fixed == 0).tolist()].numpy()
+                            for _pred, fixed in zip(
+                                per_image_pred, _per_image_fixed
+                            )
+                        ]
+                        _chunk_idx = np.array(
+                            [
+                                free_pred.shape[0]
+                                for free_pred in _per_image_free_preds
+                            ]
+                        )
+                        per_image_pred = _per_image_free_preds
+                    ### Assumes system level properties are of the same dimension
+                    else:
+                        per_image_pred = pred.numpy()
+                        _chunk_idx = None
+
+                    predictions[f"{target_key}"].extend(per_image_pred)
+                    ### Backwards compatibility, retain 'chunk_idx' for forces.
+                    if _chunk_idx is not None:
+                        if target_key == "forces":
+                            predictions["chunk_idx"].extend(_chunk_idx)
+                        else:
+                            predictions[f"{target_key}_chunk_idx"].extend(
+                                _chunk_idx
+                            )
+                else:
+                    predictions[f"{target_key}"] = pred.detach()
+
+            if not per_image:
+                return predictions
+
+            ### Get unique system identifiers
+            sids = batch.sid.tolist()
+            ## Support naming structure for OC20 S2EF
+            if "fid" in batch:
+                fids = batch.fid.tolist()
+                systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
+            else:
+                systemids = [f"{sid}" for sid in sids]
+
+            predictions["ids"].extend(systemids)
+
+        for key in predictions:
+            predictions[key] = np.array(predictions[key])
+
+        self.save_results(predictions, results_file)
+
+        if self.ema:
+            self.ema.restore()
+
+        return predictions
 
     def run_relaxations(self, split="val"):
         ensure_fitted(self._unwrapped_model)
