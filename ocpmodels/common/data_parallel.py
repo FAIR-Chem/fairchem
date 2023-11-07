@@ -15,8 +15,19 @@ import numpy as np
 import numpy.typing as npt
 import torch
 from torch.utils.data import BatchSampler, DistributedSampler, Sampler
+from torch_geometric.data import Batch, Data
 
 from ocpmodels.common import distutils, gp_utils
+from ocpmodels.datasets import data_list_collater
+
+
+class OCPCollater:
+    def __init__(self, otf_graph: bool = False) -> None:
+        self.otf_graph = otf_graph
+
+    def __call__(self, data_list: List[Data]) -> Batch:
+        batch = data_list_collater(data_list, otf_graph=self.otf_graph)
+        return batch
 
 
 @numba.njit
