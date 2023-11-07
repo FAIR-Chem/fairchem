@@ -149,8 +149,6 @@ class OC22LmdbDataset(Dataset):
             )
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
 
-        if self.transform is not None:
-            data_object = self.transform(data_object)
         # make types consistent
         sid = data_object.sid
         if isinstance(sid, torch.Tensor):
@@ -168,7 +166,7 @@ class OC22LmdbDataset(Dataset):
             attr = "y"
         # if targets are not available, test data is being used
         else:
-            return data_object
+            return self.transforms(data_object)
 
         # convert s2ef energies to raw energies
         if attr == "y":
@@ -199,6 +197,14 @@ class OC22LmdbDataset(Dataset):
             lin_energy = sum(self.lin_ref[data_object.atomic_numbers.long()])
             data_object[attr] -= lin_energy
 
+        if self.key_mapping is not None:
+            for _property in self.key_mapping:
+                if _property in data_object:
+                    new_property = self.key_mapping[_property]
+                    if new_property not in data_object:
+                        data_object[new_property] = data_object[_property]
+                        del data_object[_property]
+
         # to jointly train on oc22+oc20, need to delete these oc20-only attributes
         # ensure otf_graph=1 in your model configuration
         if "edge_index" in data_object:
@@ -207,6 +213,8 @@ class OC22LmdbDataset(Dataset):
             del data_object.cell_offsets
         if "distances" in data_object:
             del data_object.distances
+
+        data_object = self.transforms(data_object)
 
         return data_object
 

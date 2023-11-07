@@ -13,7 +13,8 @@ class DataTransforms:
             return data_object
 
         for transform_fn in self.config:
-            # TODO move normalizer into dataset
+            # TODO: Normalization information used in the trainers. Ignore here
+            # for now.
             if transform_fn == "normalizer":
                 continue
             data_object = eval(transform_fn)(
@@ -26,6 +27,8 @@ class DataTransforms:
 def decompose_tensor(data_object, config) -> Data:
     tensor_key = config["tensor"]
     rank = config["rank"]
+
+    assert tensor_key in data_object
 
     if rank != 2:
         raise NotImplementedError
