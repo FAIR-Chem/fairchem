@@ -25,7 +25,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ocpmodels.common import distutils, gp_utils
-from ocpmodels.common.data_parallel import BalancedBatchSampler
+from ocpmodels.common.data_parallel import BalancedBatchSampler, OCPCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance as aii
 from ocpmodels.common.typing import none_throws
@@ -38,7 +38,6 @@ from ocpmodels.common.utils import (
     save_checkpoint,
     update_config,
 )
-from ocpmodels.datasets import data_list_collater
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
@@ -270,7 +269,7 @@ class BaseTrainer(ABC):
     def get_dataloader(self, dataset, sampler) -> DataLoader:
         loader = DataLoader(
             dataset,
-            collate_fn=data_list_collater,
+            collate_fn=self.ocp_collater,
             num_workers=self.config["optim"]["num_workers"],
             pin_memory=True,
             batch_sampler=sampler,
@@ -278,6 +277,9 @@ class BaseTrainer(ABC):
         return loader
 
     def load_datasets(self) -> None:
+        self.ocp_collater = OCPCollater(
+            self.config["model_attributes"].get("otf_graph", False)
+        )
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
