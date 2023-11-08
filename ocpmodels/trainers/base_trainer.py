@@ -11,7 +11,7 @@ import os
 import random
 from abc import ABC
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, Optional
+from typing import DefaultDict, Dict, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -48,15 +48,6 @@ from ocpmodels.modules.scheduler import LRScheduler
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
-    train_loader: DataLoader[Any]
-    val_loader: DataLoader[Any]
-    test_loader: DataLoader[Any]
-    device: torch.device
-    output_targets: Dict[str, Any]
-    ema: Optional[ExponentialMovingAverage]
-    clip_grad_norm: float
-    ema_decay: float
-
     def __init__(
         self,
         task,
