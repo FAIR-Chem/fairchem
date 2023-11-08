@@ -7,7 +7,7 @@ dataset:
     target_std: 2.279365062713623
   - src: data/is2re/all/val_id/data.lmdb
 
-logger: wandb
+logger: tensorboard
 
 task:
   dataset: single_point_lmdb
