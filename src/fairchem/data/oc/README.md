@@ -11,7 +11,7 @@ The easiest way to install prerequisites is via [conda](https://conda.io/docs/in
 
 * Create a new environment: `conda create -n ocp python=3.9`
 * Activate the newly created environment: `conda activate ocp`
-* Install specific versions of Pymatgen and ASE: `pip install pymatgen==2023.1.20 ase==3.22.1`
+* Install specific versions of Pymatgen and ASE: `pip install pymatgen==2023.5.10 ase==3.22.1`
 * Clone this repo and install with: `pip install -e .`
 
 ## Workflow

@@ -27,12 +27,11 @@ commands:
               # Conda configuration
               conda config --set always_yes yes --set auto_update_conda false
               # Update conda
-              conda update conda
               conda create -n ocp python=3.9
               # Install ocp conda env
               source /home/circleci/miniconda/etc/profile.d/conda.sh
               conda activate ocp
-              pip install pymatgen==2023.1.20 ase==3.22.1 black==22.3.0
+              pip install ase==3.22.1 black==22.3.0 pymatgen==2023.5.10
               pip install pytest-cov==4.0.0 pre-commit==2.10.*
             fi
       - save_cache:
