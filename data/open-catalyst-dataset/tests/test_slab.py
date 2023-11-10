@@ -30,6 +30,6 @@ class TestSlab:
         bulk = Bulk(bulk_id_from_db=100)
         slab = Slab.from_bulk_get_random_slab(bulk)
 
-        assert slab.atoms.get_chemical_formula() == "Sn36"
-        assert slab.millers == (1, 0, 0)
-        assert slab.shift == 0.25
+        assert slab.atoms.get_chemical_formula() == "Sn48"
+        assert slab.millers == (2, 1, 0)
+        assert slab.shift == 0.0833333333333334
