@@ -118,7 +118,8 @@ class StructureGenerator:
             )
 
         # write files
-        write_surface(self.args, self.slab, self.bulk_index, self.surface_index)
+        if not args.skip_surface_inputs:
+            write_surface(self.args, self.slab, self.bulk_index, self.surface_index)
         if self.heur_adslabs:
             self._write_adslabs(self.heur_adslabs, "heur")
         if self.rand_adslabs:
@@ -314,6 +315,12 @@ def parse_args():
         action="store_true",
         default=False,
         help="Do not write out POTCAR/INCAR/KPOINTS for adslabs",
+    )
+    parser.add_argument(
+        "--skip_surface_inputs",
+        action="store_true",
+        default=False,
+        help="Skip writing DFT surface inputs",
     )
     parser.add_argument(
         "--verbose", action="store_true", default=False, help="Log detailed info"
