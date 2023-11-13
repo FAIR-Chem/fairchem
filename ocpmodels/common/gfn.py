@@ -279,6 +279,9 @@ def prepare_for_gfn(ckpt_paths: dict, release: str) -> tuple:
 
 
 if __name__ == "__main__":
+    # for instance in ipython:
+    # In [1]: run ocpmodels/common/gfn.py
+    #
     from ocpmodels.common.gfn import prepare_for_gfn
 
     ckpt_paths = {"mila": "/path/to/releases_dir"}
@@ -289,5 +292,6 @@ if __name__ == "__main__":
     }
     release = None
     wrapper, loaders = prepare_for_gfn(ckpt_paths, release)
-    batch = next(iter(loaders["train"]))
-    preds = wrapper(batch[0])
+    data_gen = iter(loaders["train"])
+    batch = next(data_gen)
+    preds = wrapper(batch)
