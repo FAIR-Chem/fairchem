@@ -1,12 +1,14 @@
 from copy import deepcopy
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Union, List
 
 import os
 
 import torch.nn as nn
+from torch_geometric.data.data import Data
+from torch_geometric.data.batch import Batch
 
-from ocpmodels.common.utils import make_trainer_from_dir, merge_dicts, resolve
+from ocpmodels.common.utils import make_trainer_from_dir, resolve
 from ocpmodels.models.faenet import FAENet
 from ocpmodels.datasets.data_transforms import get_transforms
 
@@ -37,20 +39,54 @@ class FAENetWrapper(nn.Module):
         self.frame_averaging = frame_averaging
         self.trainer_config = trainer_config
 
-    def preprocess(self, batch):
+    def preprocess(self, batch: Union[Batch, Data, List[Data], List[Batch]]):
         """
-        Preprocess the batch for the model. Currently only applies the data transforms.
+        Preprocess a batch of graphs using the data transform.
+
+        * if batch is a list with one element:
+            * it could be a batch from the FAENet data loader which produces
+                lists of Batch with 1 element (because of multi-GPU features)
+            * if the single element is a Batch, extract it (`batch=batch[0]`)
+        * if batch is a Data instance, it is a single graph and we turn
+            it back into a list of 1 element (`batch=[batch]`)
+        * if it is a Batch instance, it is a collection of graphs and we turn it
+            into a list of Data graphs (`batch=batch.to_data_list()`)
+
+        Finally we transform the list of Data graphs with the pre-processing transforms
+        and collate them into a Batch.
+
+        .. code-block:: python
+
+            In [7]: %timeit wrapper.preprocess(batch)
+            The slowest run took 4.94 times longer than the fastest.
+            This could mean that an intermediate result is being cached.
+            67.1 ms ± 58.3 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+            In [8]: %timeit wrapper.preprocess(batch)
+            43.8 ms ± 1.66 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
         Args:
-            batch (torch_geometric.DataBatch): The batch of graphs to transform
+            batch (List?[Data, Batch]): The batch of graphs to transform
 
         Returns:
-            torch_geometric.DataBatch: The transformed batch. If frame averaging is
+            torch_geometric.Batch: The transformed batch. If frame averaging is
                 disabled, this is the same as the input batch.
         """
-        return self.transform(batch)
+        if isinstance(batch, list):
+            if len(batch) == 1 and isinstance(batch[0], Batch):
+                batch = batch[0]
+        if isinstance(batch, Data):
+            batch = [batch]
+        if isinstance(batch, Batch):
+            batch = batch.to_data_list()
 
-    def forward(self, batch, preprocess=True):
+        return Batch.from_data_list([self.transform(b) for b in batch])
+
+    def forward(
+        self,
+        batch: Union[Batch, Data, List[Data], List[Batch]],
+        preprocess: bool = True,
+    ):
         """Perform a forward pass of the model when frame averaging is applied.
 
         Adapted from
@@ -60,7 +96,7 @@ class FAENetWrapper(nn.Module):
         frame-averages this prediction.
 
         Args:
-            batch (torch_geometric.DataBatch): The batch of graphs to predict on.
+            batch (List?[Data, Batch]): The batch of graphs to predict on.
             preprocess (bool, optional): Whether or not to apply the data transforms.
                 Defaults to True.
 
