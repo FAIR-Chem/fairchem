@@ -38,6 +38,27 @@ class FAENetWrapper(nn.Module):
         self.transform = transform
         self.frame_averaging = frame_averaging
         self.trainer_config = trainer_config
+        self._is_frozen = None
+
+    @property
+    def frozen(self):
+        """
+        Returns whether or not the model is frozen. A model is frozen if all of its
+        parameters are set to not require gradients.
+
+        This is a lazy property, meaning that it is only computed once and then cached.
+
+        Returns:
+            bool: Whether or not the model is frozen.
+        """
+        if self._is_frozen is None:
+            frozen = True
+            for param in self.parameters():
+                if param.requires_grad:
+                    frozen = False
+                    break
+            self._is_frozen = frozen
+        return self._is_frozen
 
     def preprocess(self, batch: Union[Batch, Data, List[Data], List[Batch]]):
         """
@@ -105,6 +126,11 @@ class FAENetWrapper(nn.Module):
         """
         if preprocess:
             batch = self.preprocess(batch)
+        if not self.frozen:
+            raise RuntimeError(
+                "FAENetWrapper must be frozen before calling forward."
+                + " Use .freeze() to freeze it."
+            )
         # Distinguish frame averaging from base case.
         if self.frame_averaging and self.frame_averaging != "DA":
             original_pos = batch[0].pos
