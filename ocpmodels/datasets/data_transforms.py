@@ -117,10 +117,11 @@ class GraphRewiring(Transform):
     def __call__(self, data):
         if self.inactive:
             return data
-
-        data.batch = torch.zeros(data.num_nodes, dtype=torch.long)
-        data.natoms = torch.tensor([data.natoms])
-        data.ptr = torch.tensor([0, data.natoms])
+            data.batch = torch.zeros(data.num_nodes, dtype=torch.long)
+        if isinstance(data.natoms, int) or data.natoms.ndim == 0:
+            data.natoms = torch.tensor([data.natoms])
+        if not hasattr(data, "ptr") or data.ptr is None:
+            data.ptr = torch.tensor([0, data.natoms])
 
         return self.rewiring_func(data)
 
