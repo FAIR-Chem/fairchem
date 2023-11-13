@@ -928,6 +928,8 @@ def load_config_legacy(path: str, previous_includes: list = []):
 
 
 def set_cpus_to_workers(config, silent=None):
+    if silent is None:
+        silent = config.get("silent", False)
     if not config.get("no_cpus_to_workers"):
         cpus = count_cpus()
         gpus = count_gpus()
@@ -936,9 +938,7 @@ def set_cpus_to_workers(config, silent=None):
                 workers = cpus - 1
             else:
                 workers = cpus // gpus
-            if (silent is False or not config["silent"]) and (
-                config["optim"]["num_workers"]
-            ) != workers:
+            if not silent and config["optim"]["num_workers"] != workers:
                 print(
                     f"🏭 Overriding num_workers from {config['optim']['num_workers']}",
                     f"to {workers} to match the machine's CPUs.",
