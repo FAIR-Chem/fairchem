@@ -100,21 +100,9 @@ s2ef:
   200k: {}
 
   2M:
-    model:
-      hidden_channels: 364
-      decoder_hidden_channels: 364
     optim:
-      batch_size: 64
-      eval_batch_size: 64
-      force_coefficient: 50
-      energy_coefficient: 1
-      energy_grad_coefficient: 5
-      max_epochs: 3
-      lr_initial: 0.0004
-      lr_milestones:
-        - 20000
-        - 30000
-        - 40000
+      batch_size: 32
+      eval_batch_size: 32
 
   20M: {}
 
