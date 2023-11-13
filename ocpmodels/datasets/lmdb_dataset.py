@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import bisect
+import json
 import logging
 import pickle
 import time
@@ -36,11 +37,27 @@ class LmdbDataset(Dataset):
             config (dict): Dataset configuration
             transform (callable, optional): Data transform function.
                     (default: :obj:`None`)
+            fa_frames (str, optional): type of frame averaging method applied, if any.
+            adsorbates (str, optional): comma-separated list of adsorbates to filter.
+                    If None or "all", no filtering is applied.
+                    (default: None)
+            adsorbates_ref_dir: where metadata files for adsorbates are stored.
+                    (default: "/network/scratch/s/schmidtv/ocp/datasets/ocp/per_ads")
     """
 
-    def __init__(self, config, transform=None, fa_frames=None, lmdb_glob=None):
+    def __init__(
+        self,
+        config,
+        transform=None,
+        fa_frames=None,
+        lmdb_glob=None,
+        adsorbates=None,
+        adsorbates_ref_dir=None,
+    ):
         super().__init__()
         self.config = config
+        self.adsorbates = adsorbates
+        self.adsorbates_ref_dir = adsorbates_ref_dir
 
         self.path = Path(self.config["src"])
         if not self.path.is_file():
@@ -62,7 +79,7 @@ class LmdbDataset(Dataset):
                 else:
                     length = self.envs[-1].stat()["entries"]
                 assert length is not None, f"Could not find length of LMDB {db_path}"
-                self._keys.append(list(range(length)))
+                self._keys.append([str(i).encode("ascii") for i in range(length)])
 
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
@@ -75,8 +92,73 @@ class LmdbDataset(Dataset):
             ]
             self.num_samples = len(self._keys)
 
+        self.filter_per_adsorbates()
         self.transform = transform
         self.fa_method = fa_frames
+
+    def filter_per_adsorbates(self):
+        """Filter the dataset to only include structures with a specific
+        adsorbate.
+        """
+        # no adsorbates specified, or asked for all: return
+        if not self.adsorbates or self.adsorbates == "all":
+            return
+
+        # val_ood_ads and val_ood_both don't have targeted adsorbates
+        if self.config["src"].split("/")[-2] in {"val_ood_ads", "val_ood_both"}:
+            return
+
+        # make set of adsorbates from a list or a string. If a string, split on comma.
+        ads = []
+        if isinstance(self.adsorbates, str):
+            if "," in self.adsorbates:
+                ads = [a.strip() for a in self.adsorbates.split(",")]
+            else:
+                ads = [self.adsorbates]
+        else:
+            ads = self.adsorbates
+        ads = set(ads)
+
+        # find reference file for this dataset
+        ref_path = self.adsorbates_ref_dir
+        if not ref_path:
+            print("No adsorbate reference directory provided as `adsorbate_ref_dir`.")
+            return
+        ref_path = Path(ref_path)
+        if not ref_path.is_dir():
+            print(f"Adsorbate reference directory {ref_path} does not exist.")
+            return
+        pattern = "-".join(self.path.parts[-3:])
+        candidates = list(ref_path.glob(f"*{pattern}*.json"))
+        if not candidates:
+            print(f"No adsorbate reference files found for {self.path.name}.")
+            return
+        if len(candidates) > 1:
+            print(
+                f"Multiple adsorbate reference files found for {self.path.name}."
+                "Using the first one."
+            )
+        ref = json.loads(candidates[0].read_text())
+
+        # find dataset indices with the appropriate adsorbates
+        allowed_idxs = set(
+            str(i).encode("ascii")
+            for i, a in zip(ref["ds_idx"], ref["ads_symbols"])
+            if a in ads
+        )
+
+        # filter the dataset indices
+        if isinstance(self._keys[0], bytes):
+            self._keys = [i for i in self._keys if i in allowed_idxs]
+            self.num_samples = len(self._keys)
+        else:
+            assert isinstance(self._keys[0], list)
+            self._keys = [[i for i in k if i in allowed_idxs] for k in self._keys]
+            keylens = [len(k) for k in self._keys]
+            self._keylen_cumulative = np.cumsum(keylens).tolist()
+            self.num_samples = sum(keylens)
+        
+        assert self.num_samples > 0, f"No samples found for adsorbates {ads}."
 
     def __len__(self):
         return self.num_samples
@@ -94,9 +176,7 @@ class LmdbDataset(Dataset):
             # Return features.
             return (
                 f"{db_idx}_{el_idx}",
-                self.envs[db_idx]
-                .begin()
-                .get(f"{self._keys[db_idx][el_idx]}".encode("ascii")),
+                self.envs[db_idx].begin().get(self._keys[db_idx][el_idx]),
             )
 
         return None, self.env.begin().get(self._keys[idx])
