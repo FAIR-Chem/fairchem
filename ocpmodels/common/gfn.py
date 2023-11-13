@@ -1,6 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
-from typing import Union
+from typing import Callable
 
 import os
 
@@ -8,73 +8,69 @@ import torch.nn as nn
 
 from ocpmodels.common.utils import make_trainer_from_dir, merge_dicts, resolve
 from ocpmodels.models.faenet import FAENet
+from ocpmodels.datasets.data_transforms import get_transforms
 
 
 class FAENetWrapper(nn.Module):
     def __init__(
         self,
-        config: dict = {},
-        config_path: str = None,
-        overrides: dict = {},
-        silent=True,
+        faenet: FAENet,
+        transform: Callable = None,
+        frame_averaging: str = None,
+        trainer_config: dict = None,
     ):
         """
         `FAENetWrapper` is a wrapper class for the FAENet model. It is used to perform
         a forward pass of the model when frame averaging is applied.
 
-        You must provide exactly one of `config` or `config_path`. If `config` is
-        provided, it must contain a `frame_averaging` key and a `model` section. If
-        `config_path` is provided, it must point to either a single `.ckpt` file or to
-        a directory with checkpoints as `checkpoints/checkpoint-*.pt`.
-
-
         Args:
-            config (dict, optional): Wrapper and model config, akin to a Trainer's
-                config. In particular it must contain a `frame_averaging` key and a
-                `model` section. Defaults to {}.
-            config_path (str, optional): Path to either a single `.ckpt` file or to
-                a directory with checkpoints as `checkpoints/checkpoint-*.pt`. Defaults
-                to None.
-            overrides (dict, optional): A dictionary to override configs before loading
-                the model. Defaults to {}.
-            silent (bool, optional): Whether or not loading should be silent, i.e. not
-                print anything. Defaults to True.
+            faenet (FAENet, optional): The FAENet model to use. Defaults to None.
+            transform (Transform, optional): The data transform to use. Defaults to None.
+            frame_averaging (str, optional): The frame averaging method to use.
+            trainer_config (dict, optional): The trainer config used to create the model.
+                Defaults to None.
         """
-        assert config_path or config, "Either config or config_path must be provided."
-        assert not (
-            config_path and config
-        ), "Only one of config or config_path must be provided."
-
         super().__init__()
 
-        if not config:
-            trainer = make_trainer_from_dir(
-                config_path,
-                mode="continue",
-                overrides=overrides,
-                silent=silent,
-            )
-            config = trainer.config
-        else:
-            config = merge_dicts(config, overrides)
+        self.faenet = faenet
+        self.transform = transform
+        self.frame_averaging = frame_averaging
+        self.trainer_config = trainer_config
 
-        self.config = config
-        assert "model" in self.config, "Config must contain a model section."
+    def preprocess(self, batch):
+        """
+        Preprocess the batch for the model. Currently only applies the data transforms.
 
-    def setup_model(self):
-        self.faenet = FAENet(**self.config["model"])
+        Args:
+            batch (torch_geometric.DataBatch): The batch of graphs to transform
 
-    def forward(self, batch, mode="inference", q=None):
+        Returns:
+            torch_geometric.DataBatch: The transformed batch. If frame averaging is
+                disabled, this is the same as the input batch.
+        """
+        return self.transform(batch)
+
+    def forward(self, batch, preprocess=True):
         """Perform a forward pass of the model when frame averaging is applied.
 
         Adapted from
-        ocmpodels.trainers.single_point_trainer.SingleTrainer.model_forward raz rza
+        ocmpodels.trainers.single_point_trainer.SingleTrainer.model_forward
+
+        This implementation assumes only the energy is being predicted, and only
+        frame-averages this prediction.
+
+        Args:
+            batch (torch_geometric.DataBatch): The batch of graphs to predict on.
+            preprocess (bool, optional): Whether or not to apply the data transforms.
+                Defaults to True.
 
         Returns:
             (dict): model predictions tensor for "energy" and "forces".
         """
+        if preprocess:
+            batch = self.preprocess(batch)
         # Distinguish frame averaging from base case.
-        if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
+        if self.frame_averaging and self.frame_averaging != "DA":
             original_pos = batch[0].pos
             original_cell = batch[0].cell
             e_all = []
@@ -87,9 +83,9 @@ class FAENetWrapper(nn.Module):
                 # forward pass
                 preds = self.faenet(
                     deepcopy(batch),
-                    mode=mode,
+                    mode="inference",
                     regress_forces=False,
-                    q=q,
+                    q=None,
                 )
                 e_all.append(preds["energy"])
 
@@ -104,7 +100,12 @@ class FAENetWrapper(nn.Module):
         if preds["energy"].shape[-1] == 1:
             preds["energy"] = preds["energy"].view(-1)
 
-        return preds
+        return preds["energy"]
+
+    def freeze(self):
+        """Freeze the model parameters."""
+        for param in self.parameters():
+            param.requires_grad = False
 
 
 def parse_loc() -> str:
@@ -181,6 +182,8 @@ def prepare_for_gfn(ckpt_paths: dict, release: str) -> tuple:
         "laptop": "/path/to/releases_dir",
     }
 
+    The loaded model is frozen (all parameters are set to not require gradients).
+
     Args:
         ckpt_paths (dict): Where to look for the checkpoints as {loc: path}.
         release (str): Which release to load.
@@ -193,11 +196,34 @@ def prepare_for_gfn(ckpt_paths: dict, release: str) -> tuple:
     trainer = make_trainer_from_dir(
         ckpt_path,
         mode="continue",
-        overrides={},
+        overrides={
+            "is_debug": True,
+            "silent": True,
+            "cp_data_to_tmpdir": False,
+        },
         silent=True,
     )
 
-    model = FAENetWrapper(config=trainer.config)
+    wrapper = FAENetWrapper(
+        faenet=trainer.model,
+        transform=get_transforms(trainer.config),
+        frame_averaging=trainer.config.get("frame_averaging", ""),
+        trainer_config=trainer.config,
+    )
+    wrapper.freeze()
     loaders = trainer.loaders
 
-    return model, loaders
+    return wrapper, loaders
+
+
+if __name__ == "__main__":
+    from ocpmodels.common.gfn import prepare_for_gfn
+
+    ckpt_paths = {"mila": "/path/to/releases_dir"}
+    release = "v2.3_graph_phys"
+    # or
+    ckpt_paths = {
+        "mila": "/network/scratch/s/schmidtv/ocp/runs/3789733/checkpoints/best_checkpoint.pt"
+    }
+    release = None
+    wrapper, loaders = prepare_for_gfn(ckpt_paths, release)
