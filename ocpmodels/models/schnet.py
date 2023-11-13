@@ -404,8 +404,6 @@ class SchNet(BaseModel):
 
         hidden_state = h  # store hidden rep for force head
 
-        pooling_loss = None  # deal with pooling loss
-
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
 
@@ -431,6 +429,5 @@ class SchNet(BaseModel):
 
         return {
             "energy": out,
-            "pooling_loss": pooling_loss,
             "hidden_state": hidden_state,
         }

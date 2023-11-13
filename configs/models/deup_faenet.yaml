@@ -20,7 +20,7 @@ default:
     pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
     phys_embeds: False # True
     phys_hidden_channels: 0
-    energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds, pooling, graclus, random}
+    energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds}
     # faenet new features
     skip_co: False # output skip connections {False, "add", "concat"}
     second_layer_MLP: False # in EmbeddingBlock
@@ -180,10 +180,9 @@ qm9:
       es_warmup_epochs: 600
       eval_batch_size: 64
       factor: 0.9
-      initial_lr: 0.0003
       loss_energy: mse
       lr_gamma: 0.1
-      lr_initial: 0.001
+      lr_initial: 0.0003
       max_epochs: 1500
       min_lr: 1.0e-06
       mode: min

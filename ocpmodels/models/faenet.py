@@ -19,9 +19,6 @@ from ocpmodels.models.utils.activations import swish
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.common.utils import get_pbc_distances, conditional_grad
 
-NUM_CLUSTERS = 20
-NUM_POOLING_LAYERS = 1
-
 
 class GaussianSmearing(nn.Module):
     r"""Smears a distance distribution by a Gaussian function."""
@@ -652,6 +649,7 @@ class FAENet(BaseModel):
     @conditional_grad(torch.enable_grad())
     def energy_forward(self, data, q=None):
         """Predicts any graph-level properties (e.g. energy) for 3D atomic systems.
+
         Args:
             data (data.Batch): Batch of graphs datapoints.
         Returns:
@@ -662,7 +660,6 @@ class FAENet(BaseModel):
         pos = data.pos
         batch = data.batch
         energy_skip_co = []
-        pooling_loss = None
 
         # Use periodic boundary conditions
         if self.use_pbc and hasattr(data, "cell"):
@@ -765,7 +762,6 @@ class FAENet(BaseModel):
 
         preds = {
             "energy": energy,
-            "pooling_loss": pooling_loss,
             "hidden_state": h,
             "q": q,
         }
