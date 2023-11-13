@@ -19,7 +19,9 @@ plot:
         architectures:
             SchNet: "o"
             D++: "s"
-            ForceNet: "^"
+            ForceNet: "h"
+            GemNet: "^"
+            GemNet-OC: "p"
     colors:
         val:
             palette: mako
@@ -39,6 +41,10 @@ data:
           name: D++
         - key: forcenet
           name: ForceNet
+        - key: gemnet
+          name: GemNet
+        - key: gemnetoc
+          name: GemNet-OC
     val_splits:
         - key: "eval/val_id-energy_mae"
           short: id
