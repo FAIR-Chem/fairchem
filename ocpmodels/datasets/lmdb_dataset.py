@@ -157,7 +157,7 @@ class LmdbDataset(Dataset):
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
             self.num_samples = sum(keylens)
-        
+
         assert self.num_samples > 0, f"No samples found for adsorbates {ads}."
 
     def __len__(self):

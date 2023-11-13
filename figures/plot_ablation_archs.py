@@ -52,7 +52,7 @@ dict_methods = OrderedDict(
         ("sn-atom-type", "sn-atom-type"),
         ("w-init", "w-init"),
         ("w-final", "w-final"),
-#         ("graclus", "graclus"),
+        #         ("graclus", "graclus"),
         ("hoscpool", "hoscpool"),
     ]
 )
@@ -68,7 +68,7 @@ dict_methods_family = OrderedDict(
         ("sn-atom-type", "graph-creation"),
         ("w-init", "energy-head"),
         ("w-final", "energy-head"),
-#         ("graclus", "energy-head"),
+        #         ("graclus", "energy-head"),
         ("hoscpool", "energy-head"),
     ]
 )
@@ -176,6 +176,7 @@ def parsed_args():
 
 def min_max_errorbar(a):
     return (np.min(a), np.max(a))
+
 
 def trim_mean_wrapper(a):
     return trim_mean(a, proportiontocut=0.2)
@@ -285,25 +286,29 @@ if __name__ == "__main__":
                 time_phast_fraction_arr,
             ):
                 dfaux = pd.DataFrame.from_dict(
-                    [{
-                        "architecture": arch,
-                        "method": method,
-                        "method-family": df_method_val["method-family"].values[0],
-                        "model": "baseline",
-                        "time": time_baseline,
-                        "phast_fraction": 0.0,
-                    }]
+                    [
+                        {
+                            "architecture": arch,
+                            "method": method,
+                            "method-family": df_method_val["method-family"].values[0],
+                            "model": "baseline",
+                            "time": time_baseline,
+                            "phast_fraction": 0.0,
+                        }
+                    ]
                 )
                 df_time = pd.concat([df_time, dfaux], axis=0, ignore_index=True)
                 dfaux = pd.DataFrame.from_dict(
-                    [{
-                        "architecture": arch,
-                        "method": method,
-                        "method-family": df_method_val["method-family"].values[0],
-                        "model": "phast",
-                        "time": time_phast,
-                        "phast_fraction": time_phast_fraction,
-                    }]
+                    [
+                        {
+                            "architecture": arch,
+                            "method": method,
+                            "method-family": df_method_val["method-family"].values[0],
+                            "model": "phast",
+                            "time": time_phast,
+                            "phast_fraction": time_phast_fraction,
+                        }
+                    ]
                 )
                 df_time = pd.concat([df_time, dfaux], axis=0, ignore_index=True)
 
@@ -351,7 +356,7 @@ if __name__ == "__main__":
         dodge=0.5,
         palette=palette_val,
         errwidth=1.5,
-        scale=0.0 ,
+        scale=0.0,
         join=False,
     )
     leg_handles, leg_labels = ax.get_legend_handles_labels()
@@ -370,13 +375,13 @@ if __name__ == "__main__":
             dodge=0.5,
             palette=palette_val,
             errwidth=0.0,
-            scale=0.6 ,
+            scale=0.6,
             join=False,
         )
     # Legend
     leg_labels = dict_archs.values()
     leg = ax.legend(
-            handles=leg_handles[:3],
+        handles=leg_handles[:3],
         labels=leg_labels,
         loc="center",
         title="",
@@ -388,7 +393,10 @@ if __name__ == "__main__":
     )
     # Plot Baseline
     df_mae_baseline = pd.DataFrame(
-            {"method": dict_methods.keys(), "mae_phast_impr": [0.0 for _ in dict_methods.keys()]}
+        {
+            "method": dict_methods.keys(),
+            "mae_phast_impr": [0.0 for _ in dict_methods.keys()],
+        }
     )
     ax = sns.pointplot(
         ax=axes[0],
@@ -443,7 +451,6 @@ if __name__ == "__main__":
     ax.set_xlim(left=0.0, right=ax.get_xlim()[1])
 
     for ax in axes:
-
         # Change spines
         sns.despine(left=True, bottom=True)
 

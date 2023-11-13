@@ -36,7 +36,7 @@ if __name__ == "__main__":
         )
 
     trainer: SingleTrainer = make_script_trainer(str_args=str_args, overrides=config)
-    
+
     n_train = min(
         len(trainer.loaders[trainer.train_dataset_name]),
         trainer.config["optim"]["max_steps"],
@@ -50,6 +50,8 @@ if __name__ == "__main__":
         i_for_epoch += 1
         # Get a batch.
         batch = next(train_loader_iter)
-        assert set(batch[0].atomic_numbers[batch[0].tags == 2].unique().tolist()).issubset({1, 8})
+        assert set(
+            batch[0].atomic_numbers[batch[0].tags == 2].unique().tolist()
+        ).issubset({1, 8})
 
     print("DONE: only selected adsorbates are present in the dataset.")
