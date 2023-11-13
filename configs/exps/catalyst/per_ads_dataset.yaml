@@ -1,0 +1,97 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:1
+  partition: long
+  time: 15:00:00
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  model:
+    edge_embed_type: all_rij
+  wandb_tags: "per-ads-data"
+  optim:
+    batch_size: 256
+    eval_batch_size: 256
+  cp_data_to_tmpdir: True
+
+runs:
+  - config: faenet-is2re-all # 2700544
+    note: "Selected adsorbates diff archi"
+    adsorbates: {'*O', '*OH', '*OH2', '*H'}
+
+  - config: faenet-is2re-all # 2700544
+    note: "Selected adsorbates"
+    adsorbates: {'*O', '*OH', '*OH2', '*H'}
+    frame_averaging: 2D
+    fa_method: se3-random
+    model:
+      mp_type: updownscale_base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      num_filters: 480
+      num_gaussians: 104
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 6.0
+    optim:
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 12
+      eval_every: 0.25
+
+  - config: faenet-is2re-all # 2700544
+    note: "All adsorbates"
+    adsorbates: all
+    frame_averaging: 2D
+    fa_method: se3-random
+    model:
+      mp_type: updownscale_base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      num_filters: 480
+      num_gaussians: 104
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 6.0
+    optim:
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 12
+      eval_every: 0.25
+
+  - config: faenet-is2re-all # 2700544
+    note: "Baseline"
+    frame_averaging: 2D
+    fa_method: se3-random
+    model:
+      mp_type: updownscale_base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      num_filters: 480
+      num_gaussians: 104
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 6.0
+    optim:
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 12
+      eval_every: 0.25

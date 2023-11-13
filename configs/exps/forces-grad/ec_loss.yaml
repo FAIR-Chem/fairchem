@@ -1,0 +1,25 @@
+job:
+  mem: 48GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  mode: train
+  graph_rewiring: remove-tag-0 
+  wandb_tags: force-grad, ec_loss
+  grad_fine_tune: True
+  optim:
+      max_epochs: 6
+
+runs:
+  - config: schnet-s2ef-2M
+    note: 'Schnet Direct fine tune with cosine similarity loss'
+    model:
+      regress_forces: "direct_with_gradient_target"
+  - config: schnet-s2ef-2M
+    note: 'Schnet direct fine tune baseline'
+    model:
+      regress_forces: "direct"

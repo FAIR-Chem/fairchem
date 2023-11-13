@@ -1,0 +1,61 @@
+default:
+  trainer: single
+  logger: wandb
+  eval_on_test: True
+
+  model:
+    otf_graph: False
+    max_num_neighbors: 40
+    use_pbc: False
+    force_decoder_type: null
+
+  optim:
+    optimizer: AdamW
+
+  task:
+    dataset: qm9
+    description: "QM9 U0 internal energy at 0K prediction from structure structure."
+    type: regression
+    metric: mae
+    labels:
+      - internal energy at 0K
+
+  normalizer: null
+  # https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.datasets.QM9.html
+  mode: train
+  dataset:
+    default_val: val
+    train:
+      src: /network/projects/ocp/qm9
+      target: 7
+      seed: 123
+      normalize_labels: True # mean and std of target will be set by qm9.py if this is True
+      lse_shift: true
+      indices:
+        start: 0
+        end: 110000
+    val:
+      src: /network/projects/ocp/qm9
+      target: 7
+      seed: 123
+      lse_shift: true
+      indices:
+        start: 110000
+        end: 120000
+    test:
+      src: /network/projects/ocp/qm9
+      target: 7
+      seed: 123
+      lse_shift: true
+      indices:
+        start: 120000
+        end: -1
+
+10k:
+  dataset:
+    train:
+      indices:
+        start: 0
+        end: 10000
+
+all: {}

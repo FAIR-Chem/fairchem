@@ -1,0 +1,84 @@
+job:
+  mem: 48GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  mode: train
+  graph_rewiring: remove-tag-0  
+
+runs:  
+  # - config: schnet-s2ef-2M
+  #   note: 'Cosine similarity loss fine-tune'
+  #   grad_fine_tune: True
+  #   model:
+  #     cosine_sim: True
+  # - config: schnet-s2ef-2M
+  #   note: 'Cosine similarity loss'
+  #   grad_fine_tune: False
+  #   model:
+  #     cosine_sim: True
+  # - config: schnet-s2ef-2M
+  #   note: 'Direct Grad loss'
+  #   grad_fine_tune: False
+  #   model:
+  #     cosine_sim: False
+  # - config: schnet-s2ef-2M
+  #   note: 'Direct Grad loss fine-tune'
+  #   grad_fine_tune: True
+  #   model:
+  #     cosine_sim: False
+  # - config: schnet-s2ef-2M
+  #   note: 'from_energy loss'
+  #   grad_fine_tune: False
+  #   model:
+  #     cosine_sim: False
+  #     regress_forces: from_energy
+
+  - config: schnet-s2ef-2M
+    note: 'Direct'
+    model:
+      regress_forces: direct
+    optim:  
+      max_epochs: 6
+  - config: schnet-s2ef-2M
+    note: 'From energy'
+    model:
+      regress_forces: from_energy
+    optim:  
+      max_epochs: 6
+  - config: schnet-s2ef-2M
+    note: 'Direct with grad target'
+    model:
+      regress_forces: direct_with_gradient_target
+    optim:  
+      max_epochs: 6
+  - config: schnet-s2ef-2M
+    note: 'Cosine similarity fine-tune'
+    grad_fine_tune: True
+    model:
+      cosine_sim: True
+      regress_forces: direct_with_gradient_target
+    optim:  
+      max_epochs: 6
+  - config: schnet-s2ef-2M
+    note: 'Grad loss fine-tune'
+    grad_fine_tune: True
+    model:
+      regress_forces: direct_with_gradient_target
+      cosine_sim: False
+    optim:  
+      max_epochs: 6
+  - config: schnet-s2ef-2M
+    note: 'Cosine similarity loss'
+    grad_fine_tune: False
+    model:
+      regress_forces: direct_with_gradient_target
+      cosine_sim: True
+    optim:  
+      max_epochs: 6
+
+

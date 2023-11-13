@@ -6,12 +6,12 @@ LICENSE file in the root directory of this source tree.
 """
 
 import torch
-from torch import nn
-from torch_geometric.nn import DimeNet, radius_graph
+from torch_geometric.nn import DimeNet as PYGDimeNet, radius_graph
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
 
 from ocpmodels.common.registry import registry
+from ocpmodels.models.base_model import BaseModel
 from ocpmodels.common.utils import (
     conditional_grad,
     get_pbc_distances,
@@ -20,7 +20,39 @@ from ocpmodels.common.utils import (
 
 
 @registry.register_model("dimenet")
-class DimeNetWrap(DimeNet):
+class DimeNet(BaseModel):
+    def __init__(self, **kwargs) -> None:
+        super().__init__()
+        self.regress_forces = bool(kwargs.get("regress_forces"))
+        self.dimenet = PYGDimeNet(
+            hidden_channels=kwargs.get("hidden_channels"),
+            out_channels=kwargs.get("out_channels"),
+            num_blocks=kwargs.get("num_blocks"),
+            num_bilinear=kwargs.get("num_bilinear"),
+            num_spherical=kwargs.get("num_spherical"),
+            num_radial=kwargs.get("num_radial"),
+            cutoff=kwargs.get("cutoff"),
+            max_num_neighbors=kwargs.get("max_num_neighbors"),
+            envelope_exponent=kwargs.get("envelope_exponent"),
+            num_before_skip=kwargs.get("num_before_skip"),
+            num_after_skip=kwargs.get("num_after_skip"),
+            num_output_layers=kwargs.get("num_output_layers"),
+            act=kwargs.get("act"),
+        )
+
+    @conditional_grad(torch.enable_grad())
+    def energy_forward(self, data):
+        return {
+            "energy": self.dimenet.forward(data.atomic_numbers, data.pos, data.batch)
+        }
+
+    @conditional_grad(torch.enable_grad())
+    def forces_forward(self, preds):
+        return
+
+
+@registry.register_model("old_dimenet")
+class OldDimeNetWrap(PYGDimeNet):
     r"""Wrapper around the directional message passing neural network (DimeNet) from the
     `"Directional Message Passing for Molecular Graphs"
     <https://arxiv.org/abs/2003.03123>`_ paper.
@@ -32,10 +64,10 @@ class DimeNetWrap(DimeNet):
         num_atoms (int): Unused argument
         bond_feat_dim (int): Unused argument
         num_targets (int): Number of targets to predict.
-        use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
-            (default: :obj:`True`)
-        regress_forces (bool, optional): If set to :obj:`True`, predict forces by differentiating
-            energy with respect to positions.
+        use_pbc (bool, optional): If set to :obj:`True`, account for periodic
+            boundary conditions. (default: :obj:`True`)
+        regress_forces (bool, optional): If set to :obj:`True`, predict forces by
+            differentiating energy with respect to positions.
             (default: :obj:`True`)
         hidden_channels (int, optional): Number of hidden channels.
             (default: :obj:`128`)
@@ -47,8 +79,8 @@ class DimeNetWrap(DimeNet):
             (default: :obj:`7`)
         num_radial (int, optional): Number of radial basis functions.
             (default: :obj:`6`)
-        otf_graph (bool, optional): If set to :obj:`True`, compute graph edges on the fly.
-            (default: :obj:`False`)
+        otf_graph (bool, optional): If set to :obj:`True`, compute graph edges on
+            the fly. (default: :obj:`False`)
         cutoff (float, optional): Cutoff distance for interatomic interactions.
             (default: :obj:`10.0`)
         envelope_exponent (int, optional): Shape of the smooth cutoff.
@@ -69,7 +101,6 @@ class DimeNetWrap(DimeNet):
         num_atoms,
         bond_feat_dim,  # not used
         num_targets,
-        new_gnn=True,
         use_pbc=True,
         regress_forces=True,
         hidden_channels=128,

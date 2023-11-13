@@ -20,7 +20,6 @@ from .activations import Act
 
 class Sine(nn.Module):
     def __init__(self, w0: float = 30.0):
-
         super(Sine, self).__init__()
         self.w0 = w0
 
@@ -38,7 +37,6 @@ class SIREN(nn.Module):
         initializer: str = "siren",
         c: float = 6,
     ):
-
         super(SIREN, self).__init__()
         self.layers = [nn.Linear(in_features, layers[0]), Sine(w0=w0)]
 
@@ -66,7 +64,6 @@ class SIREN(nn.Module):
 
 class SINESmearing(nn.Module):
     def __init__(self, in_features, num_freqs=40, use_cosine=False):
-
         super(SINESmearing, self).__init__()
 
         self.num_freqs = num_freqs
@@ -109,7 +106,6 @@ class GaussianSmearing(nn.Module):
 
 class FourierSmearing(nn.Module):
     def __init__(self, in_features, num_freqs=40, use_cosine=False):
-
         super(FourierSmearing, self).__init__()
 
         self.num_freqs = num_freqs
@@ -141,7 +137,7 @@ class Basis(nn.Module):
         act="ssp",
         sph=None,
     ):
-        super(Basis, self).__init__()
+        super().__init__()
 
         self.num_freqs = num_freqs
         self.basis_type = basis_type
@@ -226,7 +222,7 @@ class Basis(nn.Module):
 
 class SphericalSmearing(nn.Module):
     def __init__(self, max_n=10, option="all"):
-        super(SphericalSmearing, self).__init__()
+        super().__init__()
 
         self.max_n = max_n
 
@@ -261,8 +257,8 @@ class SphericalSmearing(nn.Module):
         phi = torch.acos(xyz[:, 2])
         theta = torch.atan2(-xyz[:, 1], -xyz[:, 0]) + math.pi
 
-        phi = phi.cpu().numpy()
-        theta = theta.cpu().numpy()
+        phi = phi.detach().cpu().numpy()
+        theta = theta.detach().cpu().numpy()
 
         m_tile = np.tile(self.m, (len(xyz), 1))
         n_tile = np.tile(self.n, (len(xyz), 1))

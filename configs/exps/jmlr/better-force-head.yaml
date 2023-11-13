@@ -1,0 +1,87 @@
+job:
+  mem: 48GB
+  cpus: 4
+  gres: gpu:1
+  partition: long
+
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  graph_rewiring: remove-tag-0
+  mode: train
+  wandb_tags: jmlr
+  model: 
+    tag_hidden_channels: 32 # 32
+    pg_hidden_channels: 32 # 32 -> period & group embedding hidden channels
+    phys_embeds: True # True
+    phys_hidden_channels: 0
+    energy_head: weighted-av-final-embeds  # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds
+  optim: 
+    force_coefficient: 50
+    energy_coefficient: 1
+    energy_grad_coefficient: 5
+
+runs:
+  - config: schnet-s2ef-2M
+    note: 'Better force head res Schnet'
+    model:
+      regress_forces: "direct"
+      force_decoder_type: res
+
+  - config: schnet-s2ef-2M
+    note: 'Better force head res-updown Schnet'
+    model:
+      regress_forces: "direct"
+      force_decoder_type: res_updown
+
+  - config: schnet-s2ef-2M
+    note: 'Better force head simple Schnet'
+    model:
+      regress_forces: "direct"
+      force_decoder_type: simple
+
+  - config: schnet-s2ef-2M
+    note: 'Better force head res bigger hidden Schnet'
+    model:
+      regress_forces: "direct"
+      force_decoder_type: res
+      force_decoder_model_config:
+        res:
+          hidden_channels: 256
+
+  - config: dpp-s2ef-2M
+    note: 'Better force head res dpp'
+    model:
+      regress_forces: "direct"
+      force_decoder_type: res
+
+  - config: dpp-s2ef-2M
+    note: 'Better force head res-updown dpp'
+    model:
+      regress_forces: "direct"
+      force_decoder_type: res_updown
+
+  - config: dpp-s2ef-2M
+    note: 'Better force head simple dpp'
+    model:
+      regress_forces: "direct"
+      force_decoder_type: simple
+
+
+  - config: forcenet-s2ef-2M
+    note: 'Better force head res forcenet'
+    model:
+      regress_forces: "direct"
+      force_decoder_type: res
+
+  - config: forcenet-s2ef-2M
+    note: 'Better force head res_updown forcenet'
+    model:
+      regress_forces: "direct"
+      force_decoder_type: res_updown
+
+  - config: forcenet-s2ef-2M
+    note: 'Better force head simple forcenet'
+    model:
+      regress_forces: "direct"
+      force_decoder_type: simple

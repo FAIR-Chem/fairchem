@@ -1,0 +1,107 @@
+# trainset has 4068193 samples
+job:
+  mem: 32GB
+  cpus: 5
+  gres: gpu:16gb:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-3
+  env: ocp-a100
+
+default:
+  config: faenet-qm7x-all
+  wandb_project: ocp-qm
+  mode: train
+  test_ri: true
+  wandb_tags: qm7x
+  cp_data_to_tmpdir: true
+  note:
+    task: name
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, regress_forces
+    optim: batch_size, lr_initial, energy_coefficient, force_coefficient, energy_grad_coefficient
+  log_train_every: 250
+  energy_head: False
+  frame_averaging: 3D
+  fa_method: random
+  optim:
+    batch_size: 100
+    max_steps: 2000000
+    warmup_steps: 3000
+    lr_initial: 0.00025
+    eval_every: 0.201
+    energy_coefficient: 1
+    energy_grad_coefficient: 0
+    force_coefficient: 100
+    # parameters EMA
+    ema_decay: 0.999
+    loss_energy: mae
+    loss_force: mse
+    # all below is for the scheduler
+    scheduler: ReduceLROnPlateau
+    mode: min
+    factor: 0.75
+    threshold: 0.001
+    threshold_mode: abs
+    min_lr: 0.000001
+    verbose: true
+  model:
+    att_heads: 1
+    complex_mp: false
+    cutoff: 5.0
+    edge_embed_type: all_rij
+    energy_head: false
+    force_decoder_type: mlp
+    graph_norm: false
+    hidden_channels: 128
+    max_num_neighbors: 40
+    mp_type: updownscale_base
+    num_filters: 128
+    num_gaussians: 20
+    num_interactions: 4
+    pg_hidden_channels: 32
+    phys_embeds: true
+    regress_forces: direct
+    second_layer_MLP: false
+    skip_co: false
+    tag_hidden_channels: 0
+  dataset:
+    train:
+      rescale_with_hof: False
+      lse_shift: True
+    val_id:
+      lse_shift: True
+    test:
+      lse_shift: True
+  orion_mult_factor:
+    value: 25
+    targets: num_filters, num_gaussians, force_coefficient
+
+orion:
+  # Remember to change the experiment name if you change anything in the search space
+  n_jobs: 50
+
+  unique_exp_name: faenet-qm7x-v1.0.1
+
+  space:
+    optim/max_steps: fidelity(100000, 2000000, base=2)
+    optim/lr_initial: loguniform(1e-4, 1e-3, precision=3)
+    optim/energy_grad_coefficient: uniform(1, 25, discrete=True)
+    optim/force_coefficient: uniform(3, 5, discrete=True)
+
+    model/complex_mp: choices([True, False])
+    model/cutoff: uniform(4.5, 6.5, precision=1)
+    model/graph_norm: choices([True, False])
+    model/hidden_channels: choices([100, 200, 300, 400, 500, 1000])
+    model/max_num_neighbors: choices([30, 40, 50])
+    model/num_filters: uniform(7, 16, discrete=True)
+    model/num_gaussians: uniform(1, 5, discrete=True)
+    model/num_interactions: uniform(3, 7, discrete=True)
+    model/phys_embeds: choices([True, False])
+    model/regress_forces: choices(['direct', 'direct_with_gradient_target'])
+    model/second_layer_MLP: choices([True, False])
+    model/skip_co: choices([True, False])
+
+  algorithms:
+    asha:
+      seed: 123
+      num_rungs: 8
+      num_brackets: 2

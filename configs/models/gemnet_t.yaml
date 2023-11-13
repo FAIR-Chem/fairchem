@@ -1,0 +1,113 @@
+# From OCP original repo -> https://github.com/Open-Catalyst-Project/ocp/blob/d16de9ee6f26d8661be5b9171e8c73c80237a82f/configs/oc22/is2re/gemnet-dT/gemnet-dT.yml
+# Run this on 1 GPU -- so with an effective batch size of 8.
+
+default:
+  model:
+    name: gemnet_t
+    use_pbc: true
+    num_spherical: 7
+    num_radial: 64
+    num_blocks: 5
+    emb_size_atom: 256
+    emb_size_edge: 512
+    emb_size_trip: 64
+    emb_size_rbf: 64
+    emb_size_cbf: 16
+    emb_size_bil_trip: 64
+    num_before_skip: 1
+    num_after_skip: 2
+    num_concat: 1
+    num_atom: 3
+    cutoff: 6.0
+    max_neighbors: 50
+    rbf:
+      name: gaussian
+    envelope:
+      name: polynomial
+      exponent: 5
+    cbf:
+      name: spherical_harmonics
+    extensive: True
+    otf_graph: False
+    output_init: HeOrthogonal
+    activation: silu
+    scale_file: configs/models/scaling_factors/gemnet-dT_c12.json
+    regress_forces: False
+    # PhAST
+    tag_hidden_channels: 0 # 64
+    pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
+    phys_hidden_channels: 0 # 32 -> physical properties embedding hidden channels
+    phys_embeds: False # True
+  optim:
+    batch_size: 8
+    eval_batch_size: 8
+    num_workers: 2
+    lr_initial: 1.e-4
+    optimizer: AdamW
+    optimizer_params: { "amsgrad": True }
+    scheduler: ReduceLROnPlateau
+    mode: min
+    factor: 0.8
+    patience: 3
+    max_epochs: 100
+    energy_coefficient: 1
+    ema_decay: 0.999
+    clip_grad_norm: 10
+    loss_energy: mae
+
+# -------------------
+# -----  IS2RE  -----
+# -------------------
+
+is2re:
+  10k: {}
+
+  100k: {}
+
+  all: {}
+# ------------------
+# -----  S2EF  -----
+# ------------------
+
+s2ef:
+  default:
+    model:
+      cutoff: 6.0
+      scale_file: configs/models/scaling_factors/gemnet-dT.json
+      regress_forces: "direct"
+      otf_graph: False
+      max_neighbors: 50
+      num_radial: 128
+      num_blocks: 3
+      emb_size_atom: 512
+      emb_size_trip: 64
+      emb_size_rbf: 16
+    optim:
+      clip_grad_norm: 10
+      loss_force: l2mae
+      batch_size: 32
+      eval_batch_size: 32
+      lr_initial: 5.e-4
+      max_epochs: 80
+      force_coefficient: 100
+      energy_coefficient: 1
+
+  200k: {}
+
+  2M: {}
+
+  20M: {}
+
+  all: {}
+
+qm9:
+  default: {}
+
+  10k: {}
+  all: {}
+
+qm7x:
+  default: {}
+
+  all: {}
+  1k: {}

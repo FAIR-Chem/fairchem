@@ -1,0 +1,68 @@
+# more epochs, larger batch size, explore faenet: larger model & skip-co & mlp_rij
+job:
+  mem: 8GB
+  cpus: 4
+  gres: gpu:1
+  time: 02:50:00
+  partition: long
+
+default:
+  wandb_project: ocp-qm
+  config: faenet-qm9-all
+  mode: train
+  test_ri: true
+  wandb_tags: qm9, orion
+  log_train_every: 100
+  optim:
+    warmup_steps: 3000
+    # parameters EMA
+    ema_decay: 0.999
+    loss_energy: mse
+    # early stopping
+    es_patience: 20
+    es_min_abs_change: 0.000001
+    es_warmup_epochs: 800
+    # all below is for the scheduler
+    scheduler: ReduceLROnPlateau
+    mode: min
+    factor: 0.75
+    threshold: 0.0001
+    threshold_mode: abs
+    min_lr: 0.000001
+    verbose: true
+  note:
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm
+    optim: batch_size, lr_initial
+    _root_: frame_averaging, fa_method
+  orion_mult_factor:
+    value: 32
+    targets: hidden_channels, num_filters, pg_hidden_channels, phys_hidden_channels, batch_size
+  frame_averaging: 3D
+  fa_method: random
+  model:
+    edge_embed_type: all_rij
+
+orion:
+  # Remember to change the experiment name if you change anything in the search space
+  n_jobs: 20
+
+  unique_exp_name: faenet-qm9-v3.0.0
+
+  space:
+    optim/max_epochs: fidelity(150, 2000, base=5)
+    optim/batch_size: uniform(1, 4, discrete=True)
+    optim/lr_initial: loguniform(1e-4, 1e-3, precision=3)
+    model/graph_norm: choices([True, False])
+    model/energy_head: choices(["", "weighted-av-final-embeds", "weighted-av-initial-embeds"])
+    model/hidden_channels: uniform(5, 16, discrete=True)
+    model/mp_type: choices(["simple", "base", "sfarinet", "updownscale", "updownscale_base", "base_with_att", "att", "local_env", "updown_local_env"])
+    model/num_filters: uniform(3, 16, discrete=True)
+    model/num_gaussians: uniform(20, 150, discrete=True)
+    model/num_interactions: uniform(2, 7, discrete=True)
+    model/pg_hidden_channels: uniform(0, 1, discrete=True)
+    model/phys_embeds: choices([True, False])
+  algorithms:
+    asha:
+      seed: 123
+      num_rungs: 4
+      num_brackets: 2

@@ -7,9 +7,13 @@ LICENSE file in the root directory of this source tree.
 
 import logging
 import os
+from pathlib import Path
+
+import torch
 
 from ocpmodels.common.registry import registry
-from ocpmodels.trainers.forces_trainer import ForcesTrainer
+from ocpmodels.common.utils import set_deup_samples_path
+from ocpmodels.datasets.deup_dataset_creator import DeupDatasetCreator
 
 
 class BaseTask:
@@ -18,12 +22,14 @@ class BaseTask:
 
     def setup(self, trainer):
         self.trainer = trainer
-        if self.config["checkpoint"] is not None:
+        if self.config.get("checkpoint") is not None:
+            print("\n🔵 Resuming:\n  • ", end="", flush=True)
             self.trainer.load_checkpoint(self.config["checkpoint"])
+            print()
 
         # save checkpoint path to runner state for slurm resubmissions
         self.chkpt_path = os.path.join(
-            self.trainer.config["cmd"]["checkpoint_dir"], "checkpoint.pt"
+            self.trainer.config["checkpoint_dir"], "checkpoint.pt"
         )
 
     def run(self):
@@ -45,54 +51,58 @@ class TrainTask(BaseTask):
                         + "Consider removing it from the model."
                     )
 
+    @torch.no_grad()
+    def create_deup_dataset(self):
+        dds = self.config["deup_dataset"]
+        ddc = DeupDatasetCreator(
+            trainers_conf={
+                "checkpoints": (
+                    Path(self.config["checkpoint_dir"]) / "best_checkpoint.pt"
+                ),
+                "dropout": self.config["model"].get("dropout_lin") or 0.7,
+            },
+            overrides={"logger": "dummy"},
+        )
+
+        output_path = ddc.create_deup_dataset(
+            output_path=(
+                dds.get("output_path") or Path(self.config["run_dir"]) / "deup_dataset"
+            ),
+            dataset_strs=dds["dataset_strs"],
+            n_samples=dds["n_samples"],
+            max_samples=-1,
+            batch_size=128,
+        )
+        print("\n🤠 DEUP Dataset created in:", str(output_path))
+        return output_path
+
     def run(self):
+        self.config = self.trainer.config
         try:
-            self.trainer.train(
-                disable_eval_tqdm=self.config.get("hide_eval_progressbar", False)
+            if self.config.get("deup_dataset", {}).get("create") == "before":
+                output_path = self.create_deup_dataset()
+                # self.trainer must be an EnsembleTrainer at this point
+                self.trainer.config["deup_samples_path"] = str(output_path)
+                self.trainer.config = set_deup_samples_path(self.trainer.config)
+                self.trainer.load()
+
+            loops = self.config.get("inference_time_loops", 5)
+            if loops > 0:
+                print("----------------------------------------")
+                print("⏱️  Measuring inference time.")
+                self.trainer.measure_inference_time(loops=loops)
+                print("----------------------------------------\n")
+            torch.set_grad_enabled(True)
+            training_signal = self.trainer.train(
+                disable_eval_tqdm=self.config.get("show_eval_progressbar", True),
+                debug_batches=self.config.get("debug_batches", -1),
             )
+            if training_signal == "SIGTERM":
+                return
+
+            if self.config.get("deup_dataset", {}).get("create") == "after":
+                self.create_deup_dataset()
+
         except RuntimeError as e:
             self._process_error(e)
             raise e
-
-
-@registry.register_task("predict")
-class PredictTask(BaseTask):
-    def run(self):
-        assert (
-            self.trainer.test_loader is not None
-        ), "Test dataset is required for making predictions"
-        assert self.config["checkpoint"]
-        results_file = "predictions"
-        self.trainer.predict(
-            self.trainer.test_loader,
-            results_file=results_file,
-            disable_tqdm=self.config.get("hide_eval_progressbar", False),
-        )
-
-
-@registry.register_task("validate")
-class ValidateTask(BaseTask):
-    def run(self):
-        # Note that the results won't be precise on multi GPUs due to
-        # padding of extra images (although the difference should be minor)
-        assert (
-            self.trainer.val_loader is not None
-        ), "Val dataset is required for making predictions"
-        assert self.config["checkpoint"]
-        self.trainer.validate(
-            split="val",
-            disable_tqdm=self.config.get("hide_eval_progressbar", False),
-        )
-
-
-@registry.register_task("run-relaxations")
-class RelxationTask(BaseTask):
-    def run(self):
-        assert isinstance(
-            self.trainer, ForcesTrainer
-        ), "Relaxations are only possible for ForcesTrainer"
-        assert (
-            self.trainer.relax_dataset is not None
-        ), "Relax dataset is required for making predictions"
-        assert self.config["checkpoint"]
-        self.trainer.run_relaxations()

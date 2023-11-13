@@ -7,6 +7,7 @@ logs
 experimental
 *.pkl
 .ntfy.conf
+cosmosis/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

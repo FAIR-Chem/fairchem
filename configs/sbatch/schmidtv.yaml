@@ -1,8 +1,5 @@
 # Overwrites defaults.yaml for user `schmidtv`.
 # Create your own $USER.yaml in order to overwrite defaults.yaml systematically to your own taste.
 
-cpus: 8
-mem: 128GB
-env: ocp-env
-gres: gpu:rtx8000:4
-partition: long
+env: ocp-11.6
+modules: anaconda/3, cuda/11.6
