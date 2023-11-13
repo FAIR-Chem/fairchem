@@ -45,7 +45,7 @@ class DeupOutputBlock(OutputBlock):
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
 
-        # MLP
+        # OutputBlock to get final atom rep 
         h = self.lin1(h)
         h = self.act(h)
         if self.deup_extra_dim <= 0:
@@ -57,7 +57,7 @@ class DeupOutputBlock(OutputBlock):
         }:
             h = h * alpha
 
-        # Global pooling
+        # Global pooling -- get final graph rep
         out = scatter(
             h,
             batch,
@@ -65,6 +65,8 @@ class DeupOutputBlock(OutputBlock):
             reduce="mean" if self.deup_extra_dim > 0 else "add",
         )
 
+        # Concat graph representation with deup features (s, kde(q), std)
+        # and apply MLPs
         if self.deup_extra_dim > 0:
             assert data is not None
             data_keys = set(data.to_dict().keys())

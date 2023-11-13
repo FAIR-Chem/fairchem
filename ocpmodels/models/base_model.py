@@ -45,6 +45,7 @@ class BaseModel(nn.Module):
             param.requires_grad = False
 
     def reset_parameters(self):
+        """Resets all learnable parameters of the module."""
         for child in self.children():
             if hasattr(child, "reset_parameters"):
                 assert isinstance(child, nn.Module)
@@ -57,9 +58,11 @@ class BaseModel(nn.Module):
                     child.bias.data.fill_(0)
 
     def energy_forward(self, data):
+        """Forward pass for energy prediction."""
         raise NotImplementedError
 
     def forces_forward(self, preds):
+        """Forward pass for force prediction."""
         raise NotImplementedError
 
     def forward(self, data, mode="train", regress_forces=None, q=None):
@@ -91,8 +94,8 @@ class BaseModel(nn.Module):
                 # predicted forces are the model's direct forces
                 preds["forces"] = forces
                 if mode == "train":
-                    # store the energy gradient as the target. Used for metrics
-                    # only in "direct" mode.
+                    # Store the energy gradient as target for "direct_with_gradient_target"
+                    # Use it as a metric only in "direct" mode.
                     preds["forces_grad_target"] = grad_forces.detach()
             else:
                 raise ValueError(
@@ -102,6 +105,16 @@ class BaseModel(nn.Module):
         return preds
 
     def forces_as_energy_grad(self, pos, energy):
+        """Computes forces from energy gradient
+
+        Args:
+            pos (tensor): atom positions
+            energy (tensor): predicted energy
+
+        Returns:
+            forces (tensor): gradient of energy w.r.t. atom positions
+        """
+
         return -1 * (
             torch.autograd.grad(
                 energy,

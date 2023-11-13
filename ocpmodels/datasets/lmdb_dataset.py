@@ -94,7 +94,7 @@ class LmdbDataset(Dataset):
 
         self.filter_per_adsorbates()
         self.transform = transform
-        self.fa_frames = fa_frames
+        self.fa_method = fa_frames
 
     def filter_per_adsorbates(self):
         """Filter the dataset to only include structures with a specific

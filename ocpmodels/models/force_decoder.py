@@ -17,7 +17,9 @@ class ForceDecoder(nn.Module):
 
         Args:
             type (str): Type of force decoder to use
-            model_config (dict): Dictionary of config parameters for the decoder's model
+            input_channels (int): Number of input channels
+            model_configs (dict): Dictionary of config parameters for the
+                decoder's model
             act (callable): Activation function (NOT a module)
 
         Raises:

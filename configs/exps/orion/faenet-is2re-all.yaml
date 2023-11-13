@@ -1,0 +1,59 @@
+# more epochs, larger batch size, explore faenet: larger model & skip-co & mlp_rij
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  time: 10:00:00
+  partition: long
+
+default:
+  wandb_project: ocp-3
+  config: faenet-is2re-all
+  mode: train
+  test_ri: true
+  wandb_tags: is2re-all, orion
+  cp_data_to_tmpdir: true
+  graph_rewiring: remove-tag-0
+  model:
+    edge_embed_type: all_rij
+  frame_averaging: 2D
+  fa_method: random
+  optim:
+    scheduler: LinearWarmupCosineAnnealingLR
+  note:
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm, complex_mp, att_heads, second_layer_MLP, skip_co
+    optim: lr_initial, warmup_steps
+    _root_: frame_averaging, fa_method
+  orion_mult_factor:
+    value: 32
+    targets: hidden_channels, num_filters, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels
+
+orion:
+  # Remember to change the experiment name if you change anything in the search space
+  n_jobs: 166
+
+  unique_exp_name: faenet-is2re-all-v1
+
+  space:
+    optim/max_epochs: fidelity(8, 30, base=6)
+    optim/lr_initial: loguniform(1e-4, 5e-3, precision=2)
+    model/graph_norm: choices([True, False])
+    model/energy_head: choices(["", "weighted-av-final-embeds", "weighted-av-initial-embeds"])
+    model/hidden_channels: uniform(5, 18, discrete=True)
+    model/mp_type: choices(["simple", "base", "sfarinet", "updownscale", "updownscale_base", "base_with_att", "att", "local_env", "updown_local_env"])
+    model/num_filters: uniform(2, 16, discrete=True)
+    model/num_gaussians: uniform(30, 150, discrete=True)
+    model/num_interactions: uniform(1, 6, discrete=True)
+    model/pg_hidden_channels: uniform(0, 2, discrete=True)
+    model/phys_embeds: choices([True, False])
+    model/tag_hidden_channels: uniform(0, 2, discrete=True)
+    model/complex_mp: choices([True, False])
+    model/att_heads: choices([1,2,3,4])
+    model/second_layer_MLP: choices([True, False])
+    model/skip_co: choices(["add", "concat", False])
+    model/cutoff: choices([4.0, 6.0, 10.0])
+  algorithms:
+    asha:
+      seed: 123
+      num_rungs: 4
+      num_brackets: 2

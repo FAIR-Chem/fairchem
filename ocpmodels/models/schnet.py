@@ -22,10 +22,6 @@ from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.force_decoder import ForceDecoder
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
-from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-
-NUM_CLUSTERS = 20
-NUM_POOLING_LAYERS = 1
 
 
 class InteractionBlock(torch.nn.Module):
@@ -266,17 +262,7 @@ class SchNet(BaseModel):
         self.lin2 = Linear(self.hidden_channels // 2, 1)
 
         # weighted average & pooling
-        if self.energy_head in {"pooling", "random"}:
-            self.hierarchical_pooling = Hierarchical_Pooling(
-                self.hidden_channels,
-                self.act,
-                NUM_POOLING_LAYERS,
-                NUM_CLUSTERS,
-                self.energy_head,
-            )
-        elif self.energy_head == "graclus":
-            self.graclus = Graclus(self.hidden_channels, self.act)
-        elif self.energy_head in {
+        if self.energy_head in {
             "weighted-av-initial-embeds",
             "weighted-av-final-embeds",
         }:
@@ -423,14 +409,6 @@ class SchNet(BaseModel):
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
 
-        elif self.energy_head == "graclus":
-            h, batch = self.graclus(h, edge_index, edge_weight, batch)
-
-        if self.energy_head in {"pooling", "random"}:
-            h, batch, pooling_loss = self.hierarchical_pooling(
-                h, edge_index, edge_weight, batch
-            )
-
         # MLP
         h = self.lin1(h)
         h = self.act(h)
@@ -451,4 +429,8 @@ class SchNet(BaseModel):
         if self.scale is not None:
             out = self.scale * out
 
-        return {"energy": out, "pooling_loss": pooling_loss, "hidden_state": hidden_state}
+        return {
+            "energy": out,
+            "pooling_loss": pooling_loss,
+            "hidden_state": hidden_state,
+        }

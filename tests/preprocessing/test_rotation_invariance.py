@@ -25,9 +25,9 @@ def test_rotation_invariance(graph, rotation="z", dim="2D"):
     """
     # Frame averaging for original graph
     if dim == "2D":
-        graph, _ = frame_averaging_2D(graph, fa_frames="random")
+        graph, _ = frame_averaging_2D(graph, fa_method="random")
     else:
-        graph, _ = frame_averaging_3D(graph, fa_frames="random")
+        graph, _ = frame_averaging_3D(graph, fa_method="random")
 
     # Rotate graph
     rotated_graph = deepcopy(graph)

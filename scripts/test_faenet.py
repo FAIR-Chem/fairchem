@@ -137,19 +137,11 @@ if __name__ == "__main__":
         },
     }
     models = [
-        ["--config=dpp-is2re-10k"],
         ["--config=faenet-is2re-10k"],
-        ["--config=faenet-qm9-10k"],
+        ["--config=faenet-qm9-all"],
+        ["--config=faenet-qm7x-all"],
         ["--config=faenet-s2ef-2M"],
-        ["--config=forcenet-is2re-10k"],
-        ["--config=forcenet-s2ef-2M"],
-        ["--config=schnet-is2re-10k"],
-        ["--config=schnet-qm9-10k"],
-        ["--config=sfarinet-is2re-10k"],
-        ["--config=sfarinet-qm9-10k"],
-        ["--config=sfarinet-s2ef-2M"],
-        ["--config=sfarinet-qm7x-1k"],
-        ["--config=schnet-qm7x-1k"],
+        ["--config=faenet-is2re-all"],
     ]
 
     features = [
@@ -161,31 +153,23 @@ if __name__ == "__main__":
         "--frame_averaging=2D --fa_method=se3-random",
         "--frame_averaging=3D --fa_method=random",
         "--frame_averaging=3D --fa_method=all --test_ri=True",
-        "--graph_rewiring=remove-tag-0 --frame_averaging=DA",
+        "--frame_averaging=DA --graph_rewiring=remove-tag-0",
+        "--frame_averaging=DA --graph_rewiring=remove-tag-0",
         "--frame_averaging=2D --fa_method=random --graph_rewiring=remove-tag-0",
+        "--use_pbc=False --second_layer_MLP=True --complex_mp=False",
+        "--skip_co=False --second_layer_MLP=True --phys_embeds=False",
+        "--skip_co=False --force_decoder_type=res --mp_type=updownscale",
     ]
 
     singles = [
-        "--config=schnet-s2ef-2M --regress_forces=from_energy",
-        "--config=dpp-s2ef-2M --regress_forces=from_energy",
-        "--config=forcenet-s2ef-2M --regress_forces=from_energy",
-        "--config=sfarinet-s2ef-2M --regress_forces=from_energy",
         "--config=faenet-s2ef-2M --regress_forces=from_energy",
-        "--config=forcenet-s2ef-2M --regress_forces=direct",
-        "--config=sfarinet-s2ef-2M --regress_forces=direct",
         "--config=faenet-s2ef-2M --regress_forces=direct",
-        "--config=forcenet-s2ef-2M --regress_forces=direct_with_gradient_target",
-        "--config=sfarinet-s2ef-2M --regress_forces=direct_with_gradient_target",
         "--config=faenet-s2ef-2M --regress_forces=direct_with_gradient_target",
-        "--config=sfarinet-qm7x-1k --regress_forces=direct",
-        "--config=sfarinet-qm7x-1k --regress_forces=direct_with_gradient_target",
-        "--config=sfarinet-qm7x-1k --regress_forces=from_energy",
-        "--config=faenet-is2re-10k --model.edge_embed_type=rij --model.mp_type=base",
-        "--config=faenet-is2re-10k --model.edge_embed_type=all --model.mp_type=simple",
-        "--config=faenet-is2re-10k --model.edge_embed_type=sh --model.mp_type=updownscale",
-        # "--config=faenet-is2re-10k --model.edge_embed_type=all_rij --model.mp_type=local_env",
-        # "--config=faenet-is2re-10k --model.mp_type=att",
-        # "--config=faenet-is2re-10k --model.mp_type=base_with_att",
+        "--config=faenet-qm7x-all --regress_forces=from_energy",
+        "--config=faenet-qm7x-all --regress_forces=direct_with_gradient_target",
+        "--config=faenet-qm9-all",
+        "--config=faenet-is2re-10k",
+        "--config=faenet-is2re-all",
     ]
     singles = [s.split() for s in singles]
 

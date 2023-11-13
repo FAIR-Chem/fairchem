@@ -24,13 +24,7 @@ from ocpmodels.models.utils.activations import Act
 from ocpmodels.models.utils.basis import Basis, SphericalSmearing
 from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
-from ocpmodels.modules.pooling import Graclus, Hierarchical_Pooling
-from ocpmodels.preprocessing import (
-    one_supernode_per_atom_type,
-    one_supernode_per_atom_type_dist,
-    one_supernode_per_graph,
-    remove_tag0_nodes,
-)
+from ocpmodels.models.force_decoder import ForceDecoder
 
 NUM_CLUSTERS = 20
 NUM_POOLING_LAYERS = 1
@@ -464,26 +458,20 @@ class ForceNet(BaseModel):
         )
         self.activation = Act(kwargs["activation_str"])
 
-        if "direct" in self.regress_forces:
-            # ForceNet decoder
-            self.decoder = FNDecoder(
-                kwargs["decoder_type"],
-                kwargs["decoder_activation_str"],
+        # Force head
+        self.decoder = (
+            ForceDecoder(
+                kwargs["force_decoder_type"],
                 kwargs["decoder_hidden_channels"],
-            )
-
-        # Pooling & weighted average blocks
-        if self.energy_head in {"pooling", "random"}:
-            self.hierarchical_pooling = Hierarchical_Pooling(
-                kwargs["hidden_channels"],
+                kwargs["force_decoder_model_config"],
                 self.activation,
-                NUM_POOLING_LAYERS,
-                NUM_CLUSTERS,
-                self.energy_head,
             )
-        elif self.energy_head == "graclus":
-            self.graclus = Graclus(kwargs["hidden_channels"], self.activation)
-        elif self.energy_head in {
+            if "direct" in self.regress_forces
+            else None
+        )
+
+        #  weighted average blocks
+        if self.energy_head in {
             "weighted-av-initial-embeds",
             "weighted-av-final-embeds",
         }:
@@ -614,18 +602,8 @@ class ForceNet(BaseModel):
         for i, interaction in enumerate(self.interactions):
             h = h + interaction(h, edge_index, edge_attr, edge_weight)
 
-        pooling_loss = None  # deal with pooling loss
-
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
-
-        elif self.energy_head == "graclus":
-            h, batch = self.graclus(h, edge_index, edge_weight, batch)
-
-        if self.energy_head in {"pooling", "random"}:
-            h, batch, pooling_loss = self.hierarchical_pooling(
-                h, edge_index, edge_weight, batch
-            )
 
         # MLPs
         h = self.lin(h)
@@ -642,7 +620,7 @@ class ForceNet(BaseModel):
 
         energy = self.energy_mlp(out)
 
-        preds = {"energy": energy, "pooling_loss": pooling_loss, "hidden_state": h}
+        preds = {"energy": energy, "hidden_state": h}
 
         return preds
 

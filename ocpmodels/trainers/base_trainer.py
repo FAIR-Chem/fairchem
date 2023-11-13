@@ -703,9 +703,6 @@ class BaseTrainer(ABC):
                         preds = self.model_forward(batch)
                     loss = self.compute_loss(preds, batch)
 
-                if preds.get("pooling_loss") is not None:
-                    loss["total_loss"] += preds["pooling_loss"]
-
                 # Compute metrics.
                 metrics = self.compute_metrics(preds, batch, evaluator, metrics)
                 for k, v in loss.items():
@@ -1007,7 +1004,7 @@ class BaseTrainer(ABC):
 
             g_list = batch_rotated.to_data_list()
             fa_transform = FrameAveraging(
-                self.config["frame_averaging"], self.config["fa_frames"]
+                self.config["frame_averaging"], self.config["fa_method"]
             )
             for g in g_list:
                 g = fa_transform(g)
@@ -1044,7 +1041,7 @@ class BaseTrainer(ABC):
             delattr(batch_reflected, "fa_rot")  # delete it otherwise can't iterate
             g_list = batch_reflected.to_data_list()
             fa_transform = FrameAveraging(
-                self.config["frame_averaging"], self.config["fa_frames"]
+                self.config["frame_averaging"], self.config["fa_method"]
             )
             for g in g_list:
                 g = fa_transform(g)

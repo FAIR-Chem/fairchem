@@ -243,13 +243,20 @@ class SingleTrainer(BaseTrainer):
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
             if self.config["grad_fine_tune"]:
-                if epoch_int < 3:
+                if epoch_int < self.config["optim"].get("epoch_fine_tune", 1):
                     self.config["model"]["regress_forces"] = "direct"
+                elif self.config["model"].get("exact_ec_pred", False):
+                    self.config["model"][
+                        "regress_forces"
+                    ] = "from_energy"
+#                     self.config["optim"]["force_coefficient"] = 0
                 else:
                     self.config["model"][
                         "regress_forces"
                     ] = "direct_with_gradient_target"
                     self.config["optim"]["force_coefficient"] = 0
+                    # self.config["optim"]["energy_coefficient"] = 0
+                    # print('Fine tuning gradients: change energy/force coefficients')
 
             start_time = time.time()
             if not self.silent:
@@ -282,9 +289,6 @@ class SingleTrainer(BaseTrainer):
                     with timer.next("train_forward", ignore=epoch_int > 0):
                         preds = self.model_forward(batch)
                     loss = self.compute_loss(preds, batch)
-                    if preds.get("pooling_loss") is not None:
-                        coeff = self.config["optim"].get("pooling_coefficient", 1)
-                        loss["total_loss"] += preds["pooling_loss"] * coeff
 
                 if epoch_int == 1:
                     model_run_time += time.time() - s
@@ -435,6 +439,10 @@ class SingleTrainer(BaseTrainer):
 
         # End of training.
         if not is_test_env:
+            if self.config["model"].get("exact_ec_pred", False):
+                self.config["model"][
+                    "regress_forces"
+                ] = "from_energy"
             return self.end_of_training(
                 epoch_int, debug_batches, model_run_time, epoch_times
             )
@@ -497,12 +505,16 @@ class SingleTrainer(BaseTrainer):
                 ds.close_db()
 
     def model_forward(self, batch_list, mode="train", q=None):
+        """ Perform a forward pass of the model when frame averaging is applied.
+        Returns:
+            (dict): model predictions tensor for "energy" and "forces".
+        """
         # Distinguish frame averaging from base case.
         if self.config["frame_averaging"] and self.config["frame_averaging"] != "DA":
             original_pos = batch_list[0].pos
             if self.task_name in OCP_AND_DEUP_TASKS:
                 original_cell = batch_list[0].cell
-            e_all, p_all, f_all, gt_all = [], [], [], []
+            e_all, f_all, gt_all = [], [], []
 
             # Compute model prediction for each frame
             for i in range(len(batch_list[0].fa_pos)):
@@ -521,8 +533,6 @@ class SingleTrainer(BaseTrainer):
 
                 fa_rot = None
 
-                if preds.get("pooling_loss") is not None:
-                    p_all.append(preds["pooling_loss"])
                 if preds.get("forces") is not None:
                     # Transform forces to guarantee equivariance of FA method
                     fa_rot = torch.repeat_interleave(
@@ -559,8 +569,6 @@ class SingleTrainer(BaseTrainer):
 
             # Average predictions over frames
             preds["energy"] = sum(e_all) / len(e_all)
-            if len(p_all) > 0 and all(y is not None for y in p_all):
-                preds["pooling_loss"] = sum(p_all) / len(p_all)
             if len(f_all) > 0 and all(y is not None for y in f_all):
                 preds["forces"] = sum(f_all) / len(f_all)
             if len(gt_all) > 0 and all(y is not None for y in gt_all):

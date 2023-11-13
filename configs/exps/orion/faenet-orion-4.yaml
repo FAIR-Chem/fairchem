@@ -1,0 +1,60 @@
+# more epochs, larger batch size, explore faenet: larger model & skip-co & mlp_rij
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  time: 12:00:00
+  partition: long
+
+default:
+  wandb_project: ocp-3
+  config: faenet-is2re-all
+  mode: train
+  test_ri: True
+  wandb_tags: is2re-all, orion-3
+  cp_data_to_tmpdir: true
+  graph_rewiring: remove-tag-0
+  model:
+    graph_norm: True
+  frame_averaging: 2D
+  optim:
+    scheduler: LinearWarmupCosineAnnealingLR
+    eval_every: 0.5
+    lr_initial: 0.002
+  note:
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm, complex_mp, att_heads, second_layer_MLP, skip_co
+    optim: lr_initial, warmup_steps
+    _root_: frame_averaging, fa_method
+  orion_mult_factor:
+    value: 32
+    targets: hidden_channels, num_filters, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels
+
+orion:
+  # Remember to change the experiment name if you change anything in the search space
+  n_jobs: 25
+
+  unique_exp_name: faenet-is2re-all-v4
+
+  space:
+    model/complex_mp: choices([True, False])
+    model/cutoff: choices([4.0, 6.0])
+    model/edge_embed_type: choices(["all_rij"])
+    model/energy_head: choices(["weighted-av-final-embeds"])
+    model/fa_method: choices(["random", "se3-random"])
+    model/hidden_channels: uniform(9, 17, discrete=True)
+    model/max_num_neighbors: choices([30, 40, 50])
+    model/mp_type: choices(["base", "updownscale", "updownscale_base", "updown_local_env"])
+    model/num_filters: uniform(4, 15, discrete=True)
+    model/num_gaussians: uniform(40, 140, discrete=True)
+    model/num_interactions: uniform(4, 8, discrete=True)
+    model/pg_hidden_channels: uniform(1, 3, discrete=True)
+    model/phys_embeds: choices([True, False])
+    model/second_layer_MLP: choices([True, False])
+    model/skip_co: choices(["concat", False, "concat-atom"])
+    model/tag_hidden_channels: uniform(1, 2, discrete=True)
+    optim/max_epochs: fidelity(6, 12, base=6)
+  algorithms:
+    asha:
+      seed: 123
+      num_rungs: 4
+      num_brackets: 1

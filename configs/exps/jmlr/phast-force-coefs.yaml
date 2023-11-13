@@ -1,0 +1,53 @@
+job:
+  mem: 48GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+
+default:
+  test_ri: True
+  cp_data_to_tmp_dir: True
+  graph_rewiring: remove-tag-0
+  mode: train
+  wandb_tags: jmlr
+  model: 
+    tag_hidden_channels: 32 # 32
+    pg_hidden_channels: 32 # 32 -> period & group embedding hidden channels
+    phys_embeds: True # True
+    phys_hidden_channels: 0
+    energy_head: weighted-av-final-embeds  # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds
+  optim: 
+    energy_coefficient: 1
+    energy_grad_coefficient: 5
+
+runs:
+  - config: schnet-s2ef-2M
+    note: 'PhAST Direct Schnet bigger force coef'
+    model:
+      regress_forces: "direct"
+    optim: 
+      force_coefficient: 100
+
+  - config: schnet-s2ef-2M
+    note: 'PhAST Direct Grad Schnet bigger energy grad coef'
+    model:
+      regress_forces: "direct_with_gradient_target"
+    optim: 
+      energy_grad_coefficient: 15
+
+  - config: schnet-s2ef-2M
+    note: 'PhAST Direct Grad fine tune Schnet bigger energy grad coef'
+    model:
+      regress_forces: "direct_with_gradient_target"
+    grad_fine_tune: True
+    optim: 
+      energy_grad_coefficient: 15
+
+  - config: schnet-s2ef-2M
+    note: 'PhAST Direct cos-sim tune Schnet smaller energy grad coef'
+    model:
+      regress_forces: "direct_with_gradient_target"
+      cosine_sim: True
+    grad_fine_tune: True
+    optim: 
+      energy_grad_coefficient: 1

@@ -1,0 +1,62 @@
+# more epochs, larger batch size, explore faenet: larger model & skip-co & mlp_rij
+job:
+  mem: 8GB
+  cpus: 4
+  gres: gpu:1
+  time: 30:00
+  partition: main
+  # code_loc: /home/mila/s/schmidtv/ocp-project/ocp-drlab
+  # env: ocp-a100
+
+default:
+  wandb_project: ocp-4
+  config: faenet-is2re-10k
+  mode: train
+  test_ri: true
+  wandb_tags: is2re-10k, orion
+  cp_data_to_tmpdir: false
+  graph_rewiring: remove-tag-0
+  log_train_every: 20
+  optim:
+    warmup_steps: 100
+    # parameters EMA
+    ema_decay: 0.999
+    decay_steps: max_steps
+    scheduler: LinearWarmupCosineAnnealingLR
+    batch_size: 64
+  note:
+    model: name, num_gaussians, hidden_channels, num_filters, num_interactions, phys_embeds, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels, energy_head, edge_embed_type, mp_type, graph_norm
+    optim: batch_size, lr_initial
+    _root_: frame_averaging, fa_method
+  orion_mult_factor:
+    value: 32
+    targets: hidden_channels, num_filters, pg_hidden_channels, phys_hidden_channels, tag_hidden_channels
+
+orion:
+  # Remember to change the experiment name if you change anything in the search space
+  n_jobs: 20
+
+  unique_exp_name: faenet-is2re-10k-v1.3.0
+
+  space:
+    optim/max_epochs: fidelity(20, 100, base=4)
+    optim/lr_initial: loguniform(1e-4, 5e-3, precision=2)
+    model/graph_norm: choices([True, False])
+    model/edge_embed_type: choices(["rij", "all_rij", "sh", "all"])
+    model/energy_head: choices(["", "weighted-av-final-embeds", "weighted-av-initial-embeds"])
+    model/hidden_channels: uniform(4, 16, discrete=True)
+    model/mp_type: choices(["simple", "base", "sfarinet", "updownscale", "updownscale_base", "base_with_att", "att", "local_env", "updown_local_env"])
+    model/num_filters: uniform(1, 16, discrete=True)
+    model/num_gaussians: uniform(20, 150, discrete=True)
+    model/num_interactions: uniform(1, 7, discrete=True)
+    model/pg_hidden_channels: uniform(0, 2, discrete=True)
+    model/phys_embeds: choices([True, False])
+    model/phys_hidden_channels: uniform(0, 2, discrete=True)
+    model/tag_hidden_channels: uniform(0, 2, discrete=True)
+    frame_averaging: choices(["", "2D", "3D", "DA"])
+    fa_method: choices(["", "random", "det", "all", "se3-all", "se3-random", "se3-det", "multiple", "se3-multiple"])
+  algorithms:
+    asha:
+      seed: 123
+      num_rungs: 5
+      num_brackets: 1
