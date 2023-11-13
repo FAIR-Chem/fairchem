@@ -1,0 +1,25 @@
+architecture,baseline,val,mae,inf. time
+SchNet,True,id,0.637,15.04
+SchNet,True,ad,0.734,15.04
+SchNet,True,cat,0.661,15.04
+SchNet,True,both,0.703,15.04
+SchNet,False,id,0.625,5.26
+SchNet,False,ad,0.690,5.26
+SchNet,False,cat,0.623,5.26
+SchNet,False,both,0.626,5.26
+D++,True,id,0.571,110.11
+D++,True,ad,0.722,110.11
+D++,True,cat,0.561,110.11
+D++,True,both,0.661,110.11
+D++,False,id,0.568,20.49
+D++,False,ad,0.654,20.49
+D++,False,cat,0.560,20.49
+D++,False,both,0.597,20.49
+ForceNet,True,id,0.658,167.08
+ForceNet,True,ad,0.701,167.08
+ForceNet,True,cat,0.632,167.08
+ForceNet,True,both,0.628,167.08
+ForceNet,False,id,0.625,33.18
+ForceNet,False,ad,0.679,33.18
+ForceNet,False,cat,0.601,33.18
+ForceNet,False,both,0.607,33.18

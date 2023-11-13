@@ -1,0 +1,72 @@
+io: 
+  input_csv: s2ef-ablation.csv
+  output_dir: output
+  output_filename: ablation-s2ef.pdf
+plot:
+    dpi: 150
+    dodge: 0.6
+    scale: 0.75
+    errwidth: 1.5
+    bs_n: 1000
+    bs_seed: 17
+    plot_baseline: False
+    shade_alpha: 0.1
+    markers:
+        val_splits:
+            energy: "o"
+            force: "s"
+        models:
+            baseline: "d"
+            phast: "*"
+        architectures:
+            SchNet: "o"
+            D++: "s"
+            ForceNet: "^"
+    colors:
+        val:
+            palette: mako
+        models:
+            palette: vlag
+        methods_family:
+            palette: magma
+data:
+    seeds:
+        - 0
+        - 1
+        - 2
+    architectures:
+        - key: schnet
+          name: SchNet
+        - key: dpp
+          name: D++
+        - key: forcenet
+          name: ForceNet
+    val_splits:
+        - key: "energy"
+          short: energy
+          name: Energy
+        - key: "force"
+          short: force
+          name: Force
+    models:
+        - key: baseline
+          name: Baseline
+        - key: phast
+          name: PhAST
+    methods:
+        - key: "PhAST"
+          name: "phast"
+          final: False
+        - key: "Direct"
+          name: "Direct"
+          final: False
+        - key: "Grad"
+          name: "Grad"
+          final: True
+        - key: "cos"
+          name: "cos"
+          final: False
+    methods_family:
+        - key: "s2ef"
+          name: "s2ef"
+          short: "s2ef"
