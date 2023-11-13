@@ -100,7 +100,7 @@ class FAENetWrapper(nn.Module):
         if preds["energy"].shape[-1] == 1:
             preds["energy"] = preds["energy"].view(-1)
 
-        return preds["energy"]
+        return preds["energy"]  # denormalize?
 
     def freeze(self):
         """Freeze the model parameters."""
@@ -227,3 +227,5 @@ if __name__ == "__main__":
     }
     release = None
     wrapper, loaders = prepare_for_gfn(ckpt_paths, release)
+    batch = next(iter(loaders["train"]))
+    preds = wrapper(batch[0])
