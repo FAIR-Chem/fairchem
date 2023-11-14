@@ -350,9 +350,11 @@ class BaseTrainer(ABC):
 
     def load_task(self):
         # Normalizer for the dataset.
+        normalizer = (
+            self.config["dataset"].get("transforms", {}).get("normalizer", {})
+        )
         self.normalizers = {}
-        if "normalizer" in self.config["dataset"]:
-            normalizer = self.config["dataset"]["normalizer"]
+        if normalizer:
             for target in normalizer:
                 self.normalizers[target] = Normalizer(
                     mean=normalizer[target].get("mean", 0),
