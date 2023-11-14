@@ -40,10 +40,11 @@ for p in ax.patches:
     )
 
 plt.title(
-    f"Adsorbates: {', '.join(ads)} ( {sum(ads_counter[a] for a in ads)} / {sum(ads_counter.values())})" + " in is2re train (all)"
+    f"Adsorbates: {', '.join(ads)} ( {sum(ads_counter[a] for a in ads)} / {sum(ads_counter.values())})"
+    + " in is2re train (all)"
 )
 plt.tight_layout()
 plt.show()
 print("Done")
-plt.savefig('my_seaborn_figure.png')
+plt.savefig("my_seaborn_figure.png")
 # print("Image saved to: ", base_path / "ads.png")

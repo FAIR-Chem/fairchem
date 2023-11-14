@@ -45,7 +45,7 @@ class DeupOutputBlock(OutputBlock):
         if self.energy_head == "weighted-av-final-embeds":
             alpha = self.w_lin(h)
 
-        # OutputBlock to get final atom rep 
+        # OutputBlock to get final atom rep
         h = self.lin1(h)
         h = self.act(h)
         if self.deup_extra_dim <= 0:

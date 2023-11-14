@@ -723,7 +723,6 @@ class DimeNetPlusPlus(BaseModel):
 
         return {
             "energy": energy,
-            "pooling_loss": pooling_loss,
             "hidden_state": scatter(x, i, dim=0, dim_size=pos.size(0)),
         }
 

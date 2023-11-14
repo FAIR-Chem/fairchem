@@ -26,9 +26,6 @@ from ocpmodels.models.utils.pos_encodings import PositionalEncoding
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
 from ocpmodels.models.force_decoder import ForceDecoder
 
-NUM_CLUSTERS = 20
-NUM_POOLING_LAYERS = 1
-
 
 class FNDecoder(nn.Module):
     def __init__(self, decoder_type, decoder_activation_str, output_dim):
