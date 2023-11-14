@@ -244,7 +244,7 @@ class OCPTrainer(BaseTrainer):
     def _forward(self, batch):
         out = self.model(batch.to(self.device))
 
-        ### TOOD: Move into BaseModel in OCP 2.0
+        ### TODO: Move into BaseModel in OCP 2.0
         outputs = {}
         batch_size = batch.natoms.numel()
         num_atoms_in_batch = batch.natoms.sum()
@@ -273,6 +273,9 @@ class OCPTrainer(BaseTrainer):
                 ]:
                     irreps = self.output_targets[subtarget_key]["irrep_dim"]
                     _pred = out[subtarget_key]
+
+                    if self.normalizers.get(subtarget_key, False):
+                        _pred = self.normalizers[subtarget_key].denorm(_pred)
 
                     ## Fill in the corresponding irreps prediction
                     ## Reshape irrep prediction to (batch_size, irrep_dim)
