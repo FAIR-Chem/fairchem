@@ -2,7 +2,7 @@ import copy
 from collections import abc
 from functools import cache
 from logging import getLogger
-from typing import Any, Callable, cast
+from typing import Any, Callable, Mapping, cast
 
 import numpy as np
 import torch
@@ -161,7 +161,7 @@ def sample_n_transform(dataset: TDataset, n: int, seed: int) -> TDataset:
 
 def referencing_transform(
     dataset: TDataset,
-    refs: dict[
+    refs: Mapping[
         str, list[float] | dict[int, float] | np.ndarray | torch.Tensor
     ],
 ) -> TDataset:

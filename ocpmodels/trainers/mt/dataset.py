@@ -159,7 +159,7 @@ def _apply_transforms(
             ), f"Referencing must be a dict, got {type(referencing)}"
         else:
             referencing = config.referencing
-        dataset = DT.referencing_transform(dataset, cast(Any, referencing))
+        dataset = DT.referencing_transform(dataset, referencing)
 
     # Normalization transform
     if task_config.normalization:

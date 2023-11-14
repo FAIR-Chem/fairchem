@@ -1,3 +1,4 @@
+from collections import abc
 from contextlib import contextmanager
 
 import torch
@@ -34,6 +35,15 @@ def normalizer_transform(config: dict[str, NormalizerTargetConfig]):
     return transform
 
 
+def _batch_keys(batch: Batch):
+    keys = getattr(batch, "keys")
+    if isinstance(keys, abc.Iterable):
+        return list[str](keys)
+
+    assert callable(keys), "Invalid batch keys."
+    return list[str](keys())
+
+
 @contextmanager
 def denormalize_context(
     batch_list: list[Batch],
@@ -45,7 +55,9 @@ def denormalize_context(
         d.copy() for d in task_level_additional_tensors
     ]
 
-    keys: set[str] = set([k for batch in batch_list for k in batch.keys])  # type: ignore
+    keys: set[str] = set(
+        [k for batch in batch_list for k in _batch_keys(batch)]
+    )
 
     # find all keys that have a norm_mean and norm_std
     norm_keys: set[str] = {

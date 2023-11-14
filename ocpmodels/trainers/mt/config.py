@@ -144,7 +144,13 @@ class SplitDatasetConfig(TypedConfig):
             )
 
 
-ReferencingConfig = Annotated[Union[Path, dict[str, dict[int, str]]], Field()]
+ReferencingConfig = Annotated[
+    Union[
+        Path,
+        dict[str, Union[list[float], dict[int, float]]],
+    ],
+    Field(),
+]
 
 
 class TaskDatasetConfig(TypedConfig):

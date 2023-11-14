@@ -204,10 +204,20 @@
                         },
                         {
                             "additionalProperties": {
-                                "additionalProperties": {
-                                    "type": "string"
-                                },
-                                "type": "object"
+                                "anyOf": [
+                                    {
+                                        "items": {
+                                            "type": "number"
+                                        },
+                                        "type": "array"
+                                    },
+                                    {
+                                        "additionalProperties": {
+                                            "type": "number"
+                                        },
+                                        "type": "object"
+                                    }
+                                ]
                             },
                             "type": "object"
                         },

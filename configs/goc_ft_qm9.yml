@@ -6,7 +6,7 @@ logger: wandb
 task:
   ft:
     base_checkpoint:
-      src: /checkpoint/nimashoghi/gemnet_oc_large_mt_oc20.pt
+      src: /mnt/shared/checkpoints/fm_gemnet_oc_large_mt_ocp.pt
       ignore_keys_patterns: ["*module_dict.*"]
 
 dataset:
@@ -18,14 +18,92 @@ dataset:
   train:
     config:
       format: lmdb
-      src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/train
+      src: /mnt/shared/datasets/qm9/lmdb/train
   val:
     - config:
-        src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/val
+        src: /mnt/shared/datasets/qm9/lmdb/val
   test:
     - config:
-        src: /checkpoint/nimashoghi/fm_datasets/qm9/lmdb/test
-  referencing: /checkpoint/nimashoghi/qm9/linref/linref.pkl
+        src: /mnt/shared/datasets/qm9/lmdb/test
+  referencing:
+    ZPVE:
+      [
+        0.0000e+00,
+        3.1213e-01,
+        -1.0408e-17,
+        2.7756e-17,
+        -1.3878e-17,
+        0.0000e+00,
+        1.3694e-01,
+        1.3955e-01,
+        1.1424e-01,
+        9.3038e-02,
+      ]
+    U_0:
+      [
+        0.0000e+00,
+        -1.6430e+01,
+        1.1369e-13,
+        -4.5475e-13,
+        0.0000e+00,
+        0.0000e+00,
+        -1.0360e+03,
+        -1.4898e+03,
+        -2.0470e+03,
+        -2.7175e+03,
+      ]
+    U:
+      [
+        0.0000e+00,
+        -1.6419e+01,
+        2.2737e-13,
+        -4.5475e-13,
+        0.0000e+00,
+        0.0000e+00,
+        -1.0360e+03,
+        -1.4898e+03,
+        -2.0470e+03,
+        -2.7175e+03,
+      ]
+    H:
+      [
+        0.0000e+00,
+        -1.6419e+01,
+        3.4106e-13,
+        -4.5475e-13,
+        0.0000e+00,
+        0.0000e+00,
+        -1.0360e+03,
+        -1.4898e+03,
+        -2.0470e+03,
+        -2.7175e+03,
+      ]
+    G:
+      [
+        0.0000e+00,
+        -1.6443e+01,
+        3.4106e-13,
+        -4.5475e-13,
+        0.0000e+00,
+        0.0000e+00,
+        -1.0361e+03,
+        -1.4899e+03,
+        -2.0471e+03,
+        -2.7176e+03,
+      ]
+    c_v:
+      [
+        0.0000e+00,
+        1.2409e+00,
+        -3.3307e-16,
+        4.4409e-16,
+        -1.1102e-16,
+        0.0000e+00,
+        2.0350e+00,
+        2.7877e+00,
+        3.0860e+00,
+        3.3401e+00,
+      ]
 
 loss_functions:
   - U_0:
@@ -87,7 +165,7 @@ model:
   extensive: True
   output_init: HeOrthogonal
   activation: silu
-  scale_file: /private/home/nimashoghi/workspaces/ocp/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc-large.pt
+  scale_file: /workspaces/fm/fm/pretrain_large_runs/scale_files/large.pt
 
   regress_forces: True
   direct_forces: True
