@@ -25,6 +25,7 @@ DOWNLOAD_LINKS = {
         "md": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_md.tar",
     },
     "is2re": "https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_test_lmdbs.tar.gz",
+    "dense": "oc20_dense_data.tar.gz",
 }
 
 S2EF_COUNTS = {
@@ -56,6 +57,9 @@ def get_data(datadir, task, split, del_intmd_files, inputdir):
         download_link = DOWNLOAD_LINKS[task][split]
 
     elif task == "is2re":
+        download_link = DOWNLOAD_LINKS[task]
+
+    elif task == "dense":
         download_link = DOWNLOAD_LINKS[task]
 
     if inputdir is None:
