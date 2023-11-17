@@ -1304,7 +1304,10 @@ def update_config(base_config):
                 "stdev": config["dataset"].get("grad_target_std", 1),
             },
         }
-        config["dataset"]["normalizer"] = normalizer
+
+        transforms = config["dataset"].get("transforms", {})
+        transforms["normalizer"] = normalizer
+        config["dataset"]["transforms"] = transforms
 
     ### Update config
     config.update({"loss_fns": _loss_fns})

@@ -515,12 +515,21 @@ class BaseTrainer(ABC):
             load_scales_compat(self._unwrapped_model, scale_dict)
 
         for key in checkpoint["normalizers"]:
-            if key in self.normalizers:
-                self.normalizers[key].load_state_dict(
+            ### Convert old normalizer keys to new target keys
+            if key == "target":
+                target_key = "energy"
+            elif key == "grad_target":
+                target_key = "forces"
+            else:
+                target_key = key
+
+            if target_key in self.normalizers:
+                self.normalizers[target_key].load_state_dict(
                     checkpoint["normalizers"][key]
                 )
-            if self.scaler and checkpoint["amp"]:
-                self.scaler.load_state_dict(checkpoint["amp"])
+
+        if self.scaler and checkpoint["amp"]:
+            self.scaler.load_state_dict(checkpoint["amp"])
 
     def load_loss(self) -> None:
         self.loss_fns = []
