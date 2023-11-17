@@ -45,12 +45,12 @@ model:
 
   weight_init:              'uniform'    # ['uniform', 'normal']
 
-  norm_scale_nodes: 192.561
-  norm_scale_degree: 21.024127419363214  # Radius = 12, MaxNbrs =  20
+  avg_num_nodes:            192.561
+  avg_degree:               21.024127419363214
 
 optim:
-  batch_size:                   6         # 6
-  eval_batch_size:              4        # 6
+  batch_size:                   1
+  eval_batch_size:              1
   grad_accumulation_steps:      1         # gradient accumulation: effective batch size = `grad_accumulation_steps` * `batch_size` * (num of GPUs)
   load_balancing: atoms
   num_workers: 8
@@ -58,20 +58,20 @@ optim:
 
   optimizer: AdamW
   optimizer_params:
-    weight_decay: 0.2
+    weight_decay: 0.3
   scheduler: LambdaLR
   scheduler_params:
     lambda_type: cosine
     warmup_factor: 0.2
     warmup_epochs: 0.01
-    lr_min_factor: 0.01 
+    lr_min_factor: 0.01
 
-  max_epochs: 1
-  force_coefficient: 100
-  energy_coefficient: 4
+  max_epochs: 3
+  force_coefficient: 200
+  energy_coefficient: 1
   clip_grad_norm: 100
   ema_decay: 0.999
   loss_energy: mae
   loss_force: l2mae
 
-  eval_every: 2500  # 5000
+  eval_every: 5000
