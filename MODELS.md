@@ -93,7 +93,7 @@ The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attr
 Please consider citing the following paper in any research manuscript using the
 OC20 dataset or pretrained models, as well as the original paper for each model:
 
-```
+```bibtex
 @article{ocp_dataset,
     author = {Chanussot*, Lowik and Das*, Abhishek and Goyal*, Siddharth and Lavril*, Thibaut and Shuaibi*, Muhammed and Riviere, Morgane and Tran, Kevin and Heras-Domingo, Javier and Ho, Caleb and Hu, Weihua and Palizhati, Aini and Sriram, Anuroop and Wood, Brandon and Yoon, Junwoong and Parikh, Devi and Zitnick, C. Lawrence and Ulissi, Zachary},
     title = {Open Catalyst 2020 (OC20) Dataset and Community Challenges},
@@ -126,12 +126,12 @@ The Open Catalyst 2022 (OC22) dataset is licensed under a [Creative Commons Attr
 Please consider citing the following paper in any research manuscript using the
 OC22 dataset or pretrained models, as well as the original paper for each model:
 
-```
+```bibtex
 @article{oc22_dataset,
     author = {Tran*, Richard and Lan*, Janice and Shuaibi*, Muhammed and Wood*, Brandon and Goyal*, Siddharth and Das, Abhishek and Heras-Domingo, Javier and Kolluru, Adeesh and Rizvi, Ammar and Shoghi, Nima and Sriram, Anuroop and Ulissi, Zachary and Zitnick, C. Lawrence},
-    title = {The Open Catalyst 2022 (OC22) Dataset and Challenges for Oxide Electrocatalysis},
-    year = {2022},
-    journal = {arXiv preprint arXiv:2206.08917},
+    title = {The Open Catalyst 2022 (OC22) dataset and challenges for oxide electrocatalysts},
+    journal = {ACS Catalysis},
+    year={2023},
 }
 ```
 
@@ -143,14 +143,14 @@ OC22 dataset or pretrained models, as well as the original paper for each model:
 
 |Model	|Checkpoint	| Config |
 |---	|---	|---	|
-|Schnet | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Schnet.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/schnet.yml) |
-|Dimenet++ | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/DimenetPP.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/dpp.yml) |
+|SchNet | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Schnet.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/schnet.yml) |
+|DimeNet++ | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/DimenetPP.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/dpp.yml) |
 |PaiNN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/PaiNN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/painn.yml) |
-|Gemnet-OC | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/gemnet-oc.yml) |
+|GemNet-OC | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/gemnet-oc.yml) |
 |eSCN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eSCN.yml) |
-|EquiformerV2 | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_31M.yml) |
+|EquiformerV2 | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231116/eqv2_31M.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_31M.yml) |
 |EquiformerV2 (Large) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Large.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_153M.yml) |
- 
+
 ## IS2RE Direct models
 
 |Model	|Checkpoint	| Config |
@@ -163,7 +163,7 @@ The Open DAC 2023 (ODAC23) dataset is licensed under a [Creative Commons Attribu
 
 Please consider citing the following paper in any research manuscript using the ODAC23 dataset:
 
-```
+```bibtex
 @article{odac23_dataset,
     author = {Anuroop Sriram and Sihoon Choi and Xiaohan Yu and Logan M. Brabson and Abhishek Das and Zachary Ulissi and Matt Uyttendaele and Andrew J. Medford and David S. Sholl},
     title = {The Open DAC 2023 Dataset and Challenges for Sorbent Discovery in Direct Air Capture},
