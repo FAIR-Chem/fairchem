@@ -13,13 +13,7 @@ logger:
   name: wandb
 
 task:
-  dataset: trajectory_lmdb
-  description: "Regressing to energies and forces for DFT trajectories from ODAC"
-  type: regression
-  metric: mae
-  labels:
-    - potential energy
-  grad_input: atomic forces
+  dataset: lmdb
   train_on_free_atoms: True
   eval_on_free_atoms: True
   primary_metric: forces_mae
