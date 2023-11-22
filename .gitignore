@@ -5,6 +5,7 @@ results
 logs
 *.traj
 experimental
+cosmosis/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
