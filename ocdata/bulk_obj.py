@@ -1,15 +1,16 @@
 import math
-import numpy as np
 import os
 import pickle
 
+import numpy as np
 from pymatgen.core.surface import (
     SlabGenerator,
     get_symmetrically_distinct_miller_indices,
 )
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from .constants import MAX_MILLER, COVALENT_MATERIALS_MPIDS
+
+from .constants import COVALENT_MATERIALS_MPIDS, MAX_MILLER
 
 
 class Bulk:
@@ -170,7 +171,9 @@ class Bulk:
             surfaces_info = pickle.load(f)
         return surfaces_info
 
-    def enumerate_surfaces(self, max_miller=MAX_MILLER):
+    def enumerate_surfaces(
+        self, miller_indices=None, sample_miller_indices=False, max_miller=MAX_MILLER
+    ):
         """
         Enumerate all the symmetrically distinct surfaces of a bulk structure. It
         will not enumerate surfaces with Miller indices above the `max_miller`
@@ -181,6 +184,9 @@ class Bulk:
         Args:
             bulk_atoms  `ase.Atoms` object of the bulk you want to enumerate
                         surfaces from.
+            miller_indices:  A tuple of Miller indices as tuples you want to enumerate. (victor)
+            sample_miller_indices: whether to select a Miller indices tuple from
+                get_symmetrically_distinct_miller_indices (victor)
             max_miller  An integer indicating the maximum Miller index of the surfaces
                         you are willing to enumerate. Increasing this argument will
                         increase the number of surfaces, but the surfaces will
@@ -192,10 +198,25 @@ class Bulk:
         """
         bulk_struct = self.standardize_bulk(self.bulk_atoms)
 
+        all_millers = []
+
+        if miller_indices:
+            assert isinstance(miller_indices, tuple)
+            assert len(miller_indices) == 3
+            if sample_miller_indices:
+                print(
+                    "Warning: sample_miller_indices is True, but miller_indices is not None. Ignoring sample_miller_indices."
+                )
+            all_millers = [miller_indices]
+        else:
+            all_millers = get_symmetrically_distinct_miller_indices(
+                bulk_struct, MAX_MILLER
+            )
+            if sample_miller_indices:
+                all_millers = [np.random.choice(all_millers)]
+
         all_slabs_info = []
-        for millers in get_symmetrically_distinct_miller_indices(
-            bulk_struct, MAX_MILLER
-        ):
+        for millers in all_millers:
             slab_gen = SlabGenerator(
                 initial_structure=bulk_struct,
                 miller_index=millers,

@@ -1,17 +1,32 @@
+"""
+Procedure to sample and construct an adslab graph.
+
+
+Nota Benes:
+
+- The atoms in the slab will have tags set to the layer number: First layer atoms will have tag=1, second layer atoms will have tag=2, and so on. Adsorbates get tag=0:
+    https://wiki.fysik.dtu.dk/ase/ase/build/surface.html
+
+
+- GFN miller indices action space should be constrained by get_symmetrically_distinct_miller_indices
+    (cf bulk_obj.enumerate_surfaces())
+
+"""
+
 from ocdata.loader import Loader
 
 with Loader("Imports"):
     import pickle
-    from pathlib import Path
     from collections import defaultdict
+    from pathlib import Path
 
     import numpy as np
     from minydra import resolved_args
 
     from ocdata.adsorbates import Adsorbate
     from ocdata.bulk_obj import Bulk
-    from ocdata.surfaces import Surface
     from ocdata.combined import Combined
+    from ocdata.surfaces import Surface
     from ocpmodels.preprocessing.atoms_to_graphs import AtomsToGraphs
 
 # ----------------------------
@@ -160,7 +175,6 @@ def select_adsorbate(ads_dict, smiles):
 
 if __name__ == "__main__":
     with Loader("Full procedure", animate=False):
-
         # -------------------
         # -----  Setup  -----
         # -------------------
@@ -169,6 +183,12 @@ if __name__ == "__main__":
         root = Path(__file__).resolve().parent
         # load default args then overwrite from command-line
         args = resolved_args(defaults=root / "configs" / "sample" / "defaults.yaml")
+
+        if isinstance(
+            args.actions.binding_site_index, str
+        ) and args.actions.binding_site_index.lower() in {"null", "none"}:
+            args.actions.binding_site_index = None
+
         # print parsed arguments
         if args.verbose > 0:
             args.pretty_print()
@@ -209,13 +229,11 @@ if __name__ == "__main__":
         # ------------------
 
         for i in range(args.nruns):
-
             print_header(i, args.nruns)
 
             with Loader(
                 f"Actions to Data {i+1}/{args.nruns}", animate=False, out=out_times
             ):
-
                 # -----------------------
                 # -----  Adsorbate  -----
                 # -----------------------
@@ -253,7 +271,6 @@ if __name__ == "__main__":
                     ignore=args.no_loader,
                     out=out_times,
                 ):
-
                     # select bulk_id if None
                     if args.actions.bulk_id is None:
                         bulk_id = np.random.choice(len(bulk_db_list))
@@ -288,6 +305,10 @@ if __name__ == "__main__":
                     out=out_times,
                 ):
                     possible_surfaces = bulk.get_possible_surfaces()
+
+                if len(possible_surfaces) == 0:
+                    print("No surface found. ABORTING")
+                    continue
 
                 with Loader(
                     "Make Surface object",
@@ -336,10 +357,13 @@ if __name__ == "__main__":
                             surface_obj,
                             enumerate_all_configs=False,
                             no_loader=args.no_loader,
+                            index=args.actions.binding_site_index,
                         )
                     except Exception as e:
-                        print(str(e))
-                        print("ABORTING")
+                        import traceback
+
+                        traceback.print_exc()
+                        print("\n\nABORTING")
                         continue
                     atoms_object = adslab.constrained_adsorbed_surfaces[0]
 

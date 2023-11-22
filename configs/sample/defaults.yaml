@@ -37,6 +37,10 @@ actions:
   # null -> sample uniformly
   surface_id: null
 
+  # index of the adsorption site to select for a given surface
+  # can be -1 (=all), a list of ints or a single int
+  binding_site_index: -1
+
 
 # whether or not to use pre-computed surfaces.
 # if not they will be computed on the fly but it takes

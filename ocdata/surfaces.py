@@ -1,15 +1,16 @@
 import math
-import numpy as np
 import os
 import pickle
+from collections import defaultdict
 
+import numpy as np
 from ase import neighborlist
 from ase.constraints import FixAtoms
-from collections import defaultdict
-from pymatgen import Composition
+from pymatgen.analysis.local_env import VoronoiNN
+from pymatgen.core import Composition
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pymatgen.analysis.local_env import VoronoiNN
+
 from .constants import MIN_XY
 from .loader import Loader
 
@@ -187,11 +188,9 @@ class Surface:
         tags = []
         print("Tagging atoms. Voronoi surface_struct length", len(surface_struct))
         for idx, site in enumerate(surface_struct):
-
             # Tag as surface atom only if it's above the center of mass
             if site.frac_coords[2] > center_of_mass[2]:
                 try:
-
                     # Tag as surface if atom is under-coordinated
                     cn = voronoi_nn.get_cn(surface_struct, idx, use_weights=True)
                     cn = round(cn, 5)
