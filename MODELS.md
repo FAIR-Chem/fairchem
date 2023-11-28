@@ -159,6 +159,12 @@ OC22 dataset or pretrained models, as well as the original paper for each model:
 |eSCN (Direct) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eSCN.yml) |
 |EquiformerV2 (Direct) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eqv2_31M.yml) |
 
+The models in the table above were trained to predict relaxed energy directly. Relaxed energies can also be predicted by running structural relaxations using the S2EF models from the previous section.
+
+## IS2RS
+
+The IS2RS is solved by running structural relaxations using the S2EF models from the prior section.
+
 The Open DAC 2023 (ODAC23) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
 
 Please consider citing the following paper in any research manuscript using the ODAC23 dataset:
