@@ -16,6 +16,8 @@ default:
     otf_graph: False
     max_num_neighbors: 40
   mode: train
+  adsorbates: all   # {"*O", "*OH", "*OH2", "*H"}
+  adsorbates_ref_dir: /network/scratch/s/schmidtv/ocp/datasets/ocp/per_ads
   dataset:
     default_val: val_id
     train:

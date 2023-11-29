@@ -61,9 +61,6 @@ default:
       - 37000
     epoch_fine_tune: 4
 
-  frame_averaging: False # 2D, 3D, da, False
-  fa_frames: False # can be {None, full, random, det, e3, e3-random, e3-det}
-
 # -------------------
 # --- OC20 IS2RE ---
 # -------------------
@@ -176,14 +173,15 @@ qm9:
       # early stopping
       # parameters EMA
       batch_size: 64
-      es_min_abs_change: 1.0e-06
+      ema_decay: 0.999
+      es_min_abs_change: 0.000001
       es_patience: 20
       es_warmup_epochs: 600
       eval_batch_size: 64
       factor: 0.9
       loss_energy: mse
       lr_gamma: 0.1
-      lr_initial: 0.0003
+      lr_initial: 0.001
       max_epochs: 1500
       min_lr: 0.000001
       mode: min

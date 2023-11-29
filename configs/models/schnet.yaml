@@ -120,8 +120,8 @@ s2ef:
         - 83333
         - 104166
       warmup_steps: 31250
-      max_epochs: 8
-      force_coefficient: 50
+      max_epochs: 15
+      force_coefficient: 100
       energy_coefficient: 1
       energy_grad_coefficient: 5
 
