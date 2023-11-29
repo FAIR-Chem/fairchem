@@ -247,7 +247,7 @@ class SingleTrainer(BaseTrainer):
                     self.config["model"]["regress_forces"] = "direct"
                 elif self.config["model"].get("exact_ec_pred", False):
                     self.config["model"]["regress_forces"] = "from_energy"
-                #                     self.config["optim"]["force_coefficient"] = 0
+                    # self.config["optim"]["force_coefficient"] = 0
                 else:
                     self.config["model"][
                         "regress_forces"

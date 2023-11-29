@@ -441,7 +441,7 @@ class FAENet(BaseModel):
         force_decoder_model_config: Optional[dict] = {"hidden_channels": 128},
         **kwargs,
     ):
-        super(FAENet, self).__init__()
+        super().__init__()
 
         self.act = act
         self.complex_mp = complex_mp
@@ -518,7 +518,7 @@ class FAENet(BaseModel):
                     self.graph_norm,
                     (
                         print(
-                            "🗑️ Setting dropout_lin for interaction block ",
+                            f"🗑️ Setting dropout_lin for interaction block to {self.dropout_lin} ",
                             f"{i} / {self.num_interactions}",
                         )
                         or self.dropout_lin
@@ -536,7 +536,10 @@ class FAENet(BaseModel):
             self.energy_head,
             self.hidden_channels,
             self.act,
-            (print("🗑️ Setting dropout_lin for output block") or self.dropout_lin)
+            (
+                print(f"🗑️ Setting dropout_lin for output block to {self.dropout_lin}")
+                or self.dropout_lin
+            )
             if (
                 "inter" in self.dropout_lowest_layer
                 or "output" in self.dropout_lowest_layer

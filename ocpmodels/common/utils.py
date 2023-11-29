@@ -928,6 +928,8 @@ def load_config_legacy(path: str, previous_includes: list = []):
 
 
 def set_cpus_to_workers(config, silent=None):
+    if silent is None:
+        silent = config.get("silent", False)
     if not config.get("no_cpus_to_workers"):
         cpus = count_cpus()
         gpus = count_gpus()
@@ -936,9 +938,7 @@ def set_cpus_to_workers(config, silent=None):
                 workers = cpus - 1
             else:
                 workers = cpus // gpus
-            if (silent is False or not config["silent"]) and (
-                config["optim"]["num_workers"]
-            ) != workers:
+            if not silent and config["optim"]["num_workers"] != workers:
                 print(
                     f"🏭 Overriding num_workers from {config['optim']['num_workers']}",
                     f"to {workers} to match the machine's CPUs.",
@@ -1764,7 +1764,20 @@ def make_script_trainer(str_args=[], overrides={}, silent=False, mode="train"):
     return trainer
 
 
-def make_trainer_from_dir(path, mode, overrides={}, silent=None):
+def make_config_from_dir(path, mode, overrides={}, silent=None):
+    """
+    Make a config from a directory. This is useful when restarting or continuing from a
+    previous run.
+
+    Args:
+        path (str): Where to load the config from. mode (str): Either 'continue' or
+        'restart'. overrides (dict, optional): Dictionary to update the config with .
+        Defaults to {}. silent (bool, optional): Whether or not to print loading
+        status. Defaults to None.
+
+    Returns:
+        dict: The loaded and overridden config.
+    """
     path = resolve(path)
     assert path.exists()
     assert mode in {
@@ -1789,6 +1802,26 @@ def make_trainer_from_dir(path, mode, overrides={}, silent=None):
     config = merge_dicts(config, overrides)
 
     setup_imports()
+    return config
+
+
+def make_trainer_from_dir(path, mode, overrides={}, silent=None):
+    """
+    Make a trainer from a directory.
+
+    Load a config with `make_config_from_dir` and then make a trainer from it.
+
+    Args:
+        path (str): Where to load the config from.
+        mode (str): Either 'continue' or 'restart'.
+        overrides (dict, optional): Dictionary to update the config with.
+            Defaults to {}.
+        silent (bool, optional): _description_. Defaults to None.
+
+    Returns:
+        Trainer: The loaded trainer.
+    """
+    config = make_config_from_dir(path, mode, overrides, silent)
     return registry.get_trainer_class(config["trainer"])(**config)
 
 

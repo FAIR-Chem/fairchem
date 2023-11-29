@@ -60,7 +60,6 @@ class BaseTrainer(ABC):
             **kwargs,
             "model_name": model_name,
             "gpus": dist_utils.get_world_size() if not kwargs["cpu"] else 0,
-            "commit": get_commit_hash(),
             "checkpoint_dir": str(resolve(run_dir) / "checkpoints"),
             "results_dir": str(resolve(run_dir) / "results"),
             "logs_dir": str(resolve(run_dir) / "logs"),
@@ -88,6 +87,15 @@ class BaseTrainer(ABC):
             min_lr=self.config["optim"].get("min_lr", -1),
             warmup_epochs=self.config["optim"].get("es_warmup_epochs") or -1,
         )
+        self.config["commit"] = self.config.get("commit", get_commit_hash())
+
+        if self.is_debug:
+            del self.config["checkpoint_dir"]
+            del self.config["results_dir"]
+            del self.config["logdir"]
+            del self.config["logs_dir"]
+            del self.config["run_dir"]
+            del self.config["early_stopping_file"]
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device("cuda:0")
