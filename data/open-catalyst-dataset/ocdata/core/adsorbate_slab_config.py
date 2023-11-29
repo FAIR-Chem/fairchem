@@ -1,7 +1,5 @@
 import copy
 import logging
-import random
-import warnings
 from itertools import product
 
 import ase
@@ -184,22 +182,23 @@ class AdsorbateSlabConfig:
 
     def place_adsorbate_on_site(
         self,
+        adsorbate: Adsorbate,
         site: np.ndarray,
         interstitial_gap: float = 0.1,
     ):
         """
         Place the adsorbate at the given binding site.
         """
-        adsorbate_c = self.adsorbate.atoms.copy()
+        adsorbate_c = adsorbate.atoms.copy()
         slab_c = self.slab.atoms.copy()
 
         binding_idx = None
         if self.mode in ["heuristic", "random_site_heuristic_placement"]:
-            binding_idx = random.choice(self.adsorbate.binding_indices)
+            binding_idx = np.random.choice(adsorbate.binding_indices)
 
         # Rotate adsorbate along xyz, only if adsorbate has more than 1 atom.
         sampled_angles = np.array([0, 0, 0])
-        if len(self.adsorbate.atoms) > 1:
+        if len(adsorbate.atoms) > 1:
             adsorbate_c, sampled_angles = randomly_rotate_adsorbate(
                 adsorbate_c,
                 mode=self.mode,
@@ -256,7 +255,7 @@ class AdsorbateSlabConfig:
         for site in sites:
             for _ in range(num_augmentations_per_site):
                 atoms, sampled_angles = self.place_adsorbate_on_site(
-                    site, interstitial_gap
+                    self.adsorbate, site, interstitial_gap
                 )
                 atoms_list.append(atoms)
                 metadata_list.append({"site": site, "xyz_angles": sampled_angles})
