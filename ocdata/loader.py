@@ -30,6 +30,7 @@ class Loader:
         self.timer = timer
         self.erase = erase
         self.out = out
+        self.duration = None
 
         self._thread = Thread(target=self._animate, daemon=True)
         self.steps = ["⢿", "⣻", "⣽", "⣾", "⣷", "⣯", "⣟", "⡿"]
@@ -50,6 +51,7 @@ class Loader:
 
     def __enter__(self):
         self.start()
+        return self
 
     def stop(self):
         if self.ignore:
@@ -64,12 +66,12 @@ class Loader:
 
         if self.timer:
             end_time = time()
-            duration = end_time - self._start_time
+            self.duration = end_time - self._start_time
             if isinstance(self.out, list):
-                self.out.append(duration)
+                self.out.append(self.duration)
             elif isinstance(self.out, dict):
-                self.out[self.desc].append(duration)
-            end += f" ({duration:.2f}s)"
+                self.out[self.desc].append(self.duration)
+            end += f" ({self.duration:.2f}s)"
 
         print("\r" + " " * cols, end="\r", flush=True)
         print(end, flush=True)

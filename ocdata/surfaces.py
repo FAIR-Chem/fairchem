@@ -146,10 +146,11 @@ class Surface:
             "  [surface][tag_surface_atoms] _find_surface_atoms_with_voronoi",
             animate=False,
             ignore=self.no_loader,
-        ):
+        ) as loader:
             voronoi_tags = self._find_surface_atoms_with_voronoi(
                 bulk_atoms, surface_atoms
             )
+        print(f"  {loader.duration / len(surface_atoms):.3f} s/surface_atom(n={len(surface_atoms)})")
 
         height_tags = self._find_surface_atoms_by_height(surface_atoms)
         # If either of the methods consider an atom a "surface atom", then tag it as such.

@@ -48,6 +48,7 @@ class Combined:
         animate=False,
         no_loader=False,
         index=-1,
+        early_init=False,
     ):
         """
         Adds adsorbate to surface, does the constraining, and aggregates all data necessary to write out.
@@ -58,6 +59,7 @@ class Combined:
             surface: the `Surface` object
             enumerate_all_configs: whether to enumerate all adslab placements instead of choosing one random
             index: list of adsorbstion site indices (-1, list or int) (victor)
+            early_init: whether to skip the actual work and just initialize the class
         """
         self.adsorbate = adsorbate
         self.surface = surface
@@ -65,6 +67,10 @@ class Combined:
         self.no_loader = no_loader
         self.enumerate_all_configs = enumerate_all_configs
         self.index = index
+        self.early_init = early_init
+
+        if early_init:
+            return
 
         self.add_adsorbate_onto_surface(
             self.adsorbate.atoms,

@@ -196,7 +196,7 @@ if __name__ == "__main__":
         out_times = defaultdict(list)
 
         # set seed
-        np.random.seed(args.seed)
+        seed = args.seed or 0
 
         with Loader(
             "Reading bulk_db_flat",
@@ -229,6 +229,7 @@ if __name__ == "__main__":
         # ------------------
 
         for i in range(args.nruns):
+            np.random.seed(seed + i)
             print_header(i, args.nruns)
 
             with Loader(
