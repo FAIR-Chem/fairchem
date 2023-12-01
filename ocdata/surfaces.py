@@ -150,7 +150,6 @@ class Surface:
             voronoi_tags = self._find_surface_atoms_with_voronoi(
                 bulk_atoms, surface_atoms
             )
-        print(f"  {loader.duration / len(surface_atoms):.3f} s/surface_atom(n={len(surface_atoms)})")
 
         height_tags = self._find_surface_atoms_by_height(surface_atoms)
         # If either of the methods consider an atom a "surface atom", then tag it as such.
@@ -187,7 +186,6 @@ class Surface:
         voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
 
         tags = []
-        print("Tagging atoms. Voronoi surface_struct length", len(surface_struct))
         for idx, site in enumerate(surface_struct):
             # Tag as surface atom only if it's above the center of mass
             if site.frac_coords[2] > center_of_mass[2]:
