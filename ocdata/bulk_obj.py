@@ -42,7 +42,7 @@ class Bulk:
     """
 
     def __init__(
-        self, bulk_database, precomputed_structures=None, bulk_index=None, max_elems=3
+        self, bulk_database=None, precomputed_structures=None, bulk_index=None, max_elems=3
     ):
         """
         Initializes the object by choosing or sampling from the bulk database
@@ -55,7 +55,8 @@ class Bulk:
             max_elems: max number of elements for any bulk
         """
         self.precomputed_structures = precomputed_structures
-        self.choose_bulk_pkl(bulk_database, bulk_index, max_elems)
+        if bulk_database is not None:
+            self.choose_bulk_pkl(bulk_database, bulk_index, max_elems)
 
     def choose_bulk_pkl(self, bulk_db, bulk_index, max_elems):
         """
