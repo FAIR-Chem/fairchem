@@ -184,23 +184,46 @@ class Surface:
         center_of_mass = self.calculate_center_of_mass(surface_struct)
         bulk_cn_dict = self.calculate_coordination_of_bulk_atoms(bulk_atoms)
         voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
+        default_cutoff = voronoi_nn.cutoff
 
         tags = []
         for idx, site in enumerate(surface_struct):
             # Tag as surface atom only if it's above the center of mass
             if site.frac_coords[2] > center_of_mass[2]:
-                try:
-                    # Tag as surface if atom is under-coordinated
-                    cn = voronoi_nn.get_cn(surface_struct, idx, use_weights=True)
-                    cn = round(cn, 5)
-                    if cn < min(bulk_cn_dict[site.species_string]):
-                        tags.append(1)
-                    else:
-                        tags.append(0)
+                # Run the voronoi tesselation with increasing cutoffs until it's
+                # possible to compute the coordination number
+                cutoff = default_cutoff
+                max_cutoff = (
+                    surface_struct.lattice.a**2
+                    + surface_struct.lattice.b**2
+                    + surface_struct.lattice.c**2
+                ) ** 0.5
+                while True:
+                    try:
+                        # Tag as surface if atom is under-coordinated
+                        voronoi_nn.cutoff = cutoff
+                        cn = voronoi_nn.get_cn(surface_struct, idx, use_weights=True)
+                        cn = round(cn, 5)
+                        if cn < min(bulk_cn_dict[site.species_string]):
+                            tags.append(1)
+                        else:
+                            tags.append(0)
+                        break
 
-                # Tag as surface if we get a pathological error
-                except RuntimeError:
-                    tags.append(1)
+                    # Tag as surface if we get a pathological error
+                    except RuntimeError:
+                        tags.append(1)
+                        break
+
+                    # A ValueError can occur if the cutoff is too small.
+                    except ValueError:
+                        # Increase cutoff if max_cutoff has not been reached. Tag atom
+                        # at surface otherwise
+                        if cutoff < max_cutoff:
+                            cutoff = min(cutoff * 2, max_cutoff)
+                        else:
+                            tags.append(1)
+                            break
 
             # Tag as bulk otherwise
             else:
@@ -231,6 +254,7 @@ class Surface:
                             coordination numbers of that element.
         """
         voronoi_nn = VoronoiNN(tol=0.1)  # 0.1 chosen for better detection
+        default_cutoff = voronoi_nn.cutoff
 
         # Object type conversion so we can use Voronoi
         bulk_struct = AseAtomsAdaptor.get_structure(bulk_atoms)
@@ -241,8 +265,30 @@ class Surface:
         bulk_cn_dict = defaultdict(set)
         for idx in sym_struct.equivalent_indices:
             site = sym_struct[idx[0]]
-            cn = voronoi_nn.get_cn(sym_struct, idx[0], use_weights=True)
-            cn = round(cn, 5)
+
+            # Run the voronoi tesselation with increasing cutoffs until it's
+            # possible to compute the coordination number
+            cutoff = default_cutoff
+            max_cutoff = (
+                bulk_struct.lattice.a**2
+                + bulk_struct.lattice.b**2
+                + bulk_struct.lattice.c**2
+            ) ** 0.5
+            while True:
+                try:
+                    voronoi_nn.cutoff = cutoff
+                    cn = voronoi_nn.get_cn(bulk_struct, idx[0], use_weights=True)
+                    cn = round(cn, 5)
+                    break
+
+                # A ValueError can occur if the cutoff is too small.
+                except ValueError:
+                    # Increase cutoff if max_cutoff has not been reached.
+                    if cutoff < max_cutoff:
+                        cutoff = min(cutoff * 2, max_cutoff)
+                    else:
+                        raise RuntimeError("No neighbor found even with max cutoff.")
+
             bulk_cn_dict[site.species_string].add(cn)
         return bulk_cn_dict
 
