@@ -30,12 +30,12 @@ def batch_to_atoms(batch):
     natoms = batch.natoms.tolist()
     numbers = torch.split(batch.atomic_numbers, natoms)
     fixed = torch.split(batch.fixed, natoms)
-    forces = torch.split(batch.force, natoms)
+    forces = torch.split(batch.force, natoms) if "force" in batch else None
     positions = torch.split(batch.pos, natoms)
     tags = torch.split(batch.tags, natoms)
     cells = batch.cell
-    energies = batch.y.tolist()
-
+    energies = batch.y.tolist() if "y" in batch else batch.y_init.tolist()
+ 
     atoms_objects = []
     for idx in range(n_systems):
         atoms = Atoms(
