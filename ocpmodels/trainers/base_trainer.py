@@ -17,7 +17,6 @@ import numpy as np
 import numpy.typing as npt
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
@@ -71,7 +70,6 @@ class BaseTrainer(ABC):
         slurm={},
         noddp: bool = False,
     ) -> None:
-
         self.name = name
         self.is_debug = is_debug
         self.cpu = cpu
@@ -553,40 +551,54 @@ class BaseTrainer(ABC):
                 )
 
     def load_optimizer(self) -> None:
-        optimizer = self.config["optim"].get("optimizer", "AdamW")
-        optimizer = getattr(optim, optimizer)
+        optimizer = getattr(
+            torch.optim, self.config["optim"].get("optimizer", "AdamW")
+        )
+        optimizer_params = self.config["optim"].get("optimizer_params", {})
 
-        if self.config["optim"].get("weight_decay", 0) > 0:
-            # Do not regularize bias etc.
-            params_decay = []
-            params_no_decay = []
+        weight_decay = optimizer_params.get("weight_decay", 0)
+        assert (
+            "weight_decay" not in self.config["optim"]
+        ), "`weight_decay` should be specified in `optim.optimizer_params`."
+
+        if weight_decay > 0:
+            self.model_params_no_wd = {}
+            if hasattr(self._unwrapped_model, "no_weight_decay"):
+                self.model_params_no_wd = (
+                    self._unwrapped_model.no_weight_decay()
+                )
+
+            params_decay, params_no_decay, name_no_decay = [], [], []
             for name, param in self.model.named_parameters():
-                if param.requires_grad:
-                    if "embedding" in name:
-                        params_no_decay += [param]
-                    elif "frequencies" in name:
-                        params_no_decay += [param]
-                    elif "bias" in name:
-                        params_no_decay += [param]
-                    else:
-                        params_decay += [param]
+                if not param.requires_grad:
+                    continue
+
+                if any(
+                    name.endswith(skip_name)
+                    for skip_name in self.model_params_no_wd
+                ):
+                    params_no_decay.append(param)
+                    name_no_decay.append(name)
+                else:
+                    params_decay.append(param)
+
+            if distutils.is_master():
+                logging.info("Parameters without weight decay:")
+                logging.info(name_no_decay)
 
             self.optimizer = optimizer(
-                [
+                params=[
                     {"params": params_no_decay, "weight_decay": 0},
-                    {
-                        "params": params_decay,
-                        "weight_decay": self.config["optim"]["weight_decay"],
-                    },
+                    {"params": params_decay, "weight_decay": weight_decay},
                 ],
                 lr=self.config["optim"]["lr_initial"],
-                **self.config["optim"].get("optimizer_params", {}),
+                **optimizer_params,
             )
         else:
             self.optimizer = optimizer(
                 params=self.model.parameters(),
                 lr=self.config["optim"]["lr_initial"],
-                **self.config["optim"].get("optimizer_params", {}),
+                **optimizer_params,
             )
 
     def load_extras(self) -> None:
@@ -803,7 +815,6 @@ class BaseTrainer(ABC):
     def save_results(
         self, predictions, results_file: Optional[str], keys=None
     ) -> None:
-
         if results_file is None:
             return
         if keys is None:
