@@ -65,16 +65,15 @@ optim:
   num_workers: 2
   lr_initial: 5.e-4
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True}
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0.
   scheduler: ReduceLROnPlateau
   mode: min
   factor: 0.8
   patience: 3
   max_epochs: 80
-  force_coefficient: 100
-  energy_coefficient: 1
   ema_decay: 0.999
   clip_grad_norm: 10
   loss_energy: mae
   loss_force: l2mae
-  weight_decay: 0

@@ -26,7 +26,9 @@ optim:
   num_workers: 8
   lr_initial: 0.0008
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True}
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0.1
   eval_every: 5000
   max_epochs: 24
   force_coefficient: 100
@@ -35,6 +37,5 @@ optim:
   ema_decay: 0.999
   loss_energy: mae
   loss_force: l2mae
-  weight_decay: 0.1
   scheduler: CosineAnnealingLR
   T_max: 2000000
