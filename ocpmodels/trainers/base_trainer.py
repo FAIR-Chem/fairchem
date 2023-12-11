@@ -557,9 +557,13 @@ class BaseTrainer(ABC):
         optimizer_params = self.config["optim"].get("optimizer_params", {})
 
         weight_decay = optimizer_params.get("weight_decay", 0)
-        assert (
-            "weight_decay" not in self.config["optim"]
-        ), "`weight_decay` should be specified in `optim.optimizer_params`."
+        if "weight_decay" in self.config["optim"]:
+            weight_decay = self.config["optim"]["weight_decay"]
+            logging.warning(
+                "Using `weight_decay` from `optim` instead of `optim.optimizer_params`."
+                "Please update your config to use `optim.optimizer_params.weight_decay`."
+                "`optim.weight_decay` will soon be deprecated."
+            )
 
         if weight_decay > 0:
             self.model_params_no_wd = {}
