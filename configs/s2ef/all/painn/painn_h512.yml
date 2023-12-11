@@ -20,7 +20,9 @@ optim:
   eval_every: 5000
   num_workers: 2
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True}
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0.  # 2e-6 (TF weight decay) / 1e-4 (lr) = 2e-2
   lr_initial: 1.e-4
   lr_gamma: 0.8
   scheduler: ReduceLROnPlateau
@@ -34,4 +36,3 @@ optim:
   clip_grad_norm: 10
   loss_energy: mae
   loss_force: l2mae
-  weight_decay: 0  # 2e-6 (TF weight decay) / 1e-4 (lr) = 2e-2

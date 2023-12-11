@@ -20,7 +20,9 @@ optim:
   load_balancing: atoms
   num_workers: 2
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True}
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0  # 2e-6 (TF weight decay) / 1e-4 (lr) = 2e-2
   lr_initial: 1.e-4
   scheduler: ReduceLROnPlateau
   mode: min
@@ -31,4 +33,3 @@ optim:
   ema_decay: 0.999
   clip_grad_norm: 10
   loss_energy: mae
-  weight_decay: 0  # 2e-6 (TF weight decay) / 1e-4 (lr) = 2e-2
