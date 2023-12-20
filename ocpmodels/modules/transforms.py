@@ -28,7 +28,8 @@ def decompose_tensor(data_object, config) -> Data:
     tensor_key = config["tensor"]
     rank = config["rank"]
 
-    assert tensor_key in data_object
+    if tensor_key not in data_object:
+        return data_object
 
     if rank != 2:
         raise NotImplementedError
