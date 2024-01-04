@@ -1,0 +1,255 @@
+# Example config for training models for arbitrary outputs.
+
+trainer: ocp
+
+dataset:
+  train:
+    # The code currently supports 'lmdb' and 'oc22_lmdb'.
+
+    # To train models on adsorption energy (as in OC20) or other properties directly contained in the lmdb, use `lmdb`.
+    # To train models on total DFT energy, use `oc22_lmdb`.
+    #
+    # Can use 'single_point_lmdb' or 'trajectory_lmdb' for backward compatibility.
+    # 'single_point_lmdb' was for training IS2RE models, and 'trajectory_lmdb' was
+    # for training S2EF models.
+    format: lmdb                                                                 # 'lmdb' or 'oc22_lmdb'
+    # Directory containing training set LMDBs
+    src: data/s2ef/all/train/
+    # If we want to rename a target value stored in the data object, specify the mapping here.
+    # e.g. data.energy = data.y
+    key_mapping:
+      y: energy
+      force: forces
+      stress: stress
+    # Transformations we want to apply to the dataset. If transforms are not specified for the val
+    # and test set, train transforms will be used by default.
+    transforms:
+      # If wanting to decompose rank-2 tensors into its irreps for training, specify the property and
+      # irrep forms here. Not relevant for energy+force only training.
+      decompose_tensor:
+        tensor: stress
+        rank: 2
+        decomposition:
+          isotropic_stress:
+            irrep_dim: 0
+          anisotropic_stress:
+            irrep_dim: 2
+    # If we want to normalize targets, i.e. subtract the mean and
+    # divide by standard deviation, then specify the 'mean' and 'stdev' here.
+    # Statistics will by default be applied to the validation and test set.
+    normalizer:
+      energy:
+        mean: -0.7554450631141663
+        stdev: 2.887317180633545
+      forces:
+        mean: 0
+        stdev: 2.887317180633545
+      isotropic_stress:
+        mean: 43.27065
+        stdev: 674.1657344451734
+      anisotropic_stress:
+        stdev: 143.72764771869745
+    # If we want to train OC20 on total energy, a path to OC20 reference
+    # energies `oc20_ref` must be specified to unreference existing OC20 data.
+    # download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
+    # Also, train_on_oc20_total_energies must be set to True
+    # OC22 defaults to total energy, so these flags are not necessary.
+    train_on_oc20_total_energies: False                                         # True or False
+    oc20_ref: None                                                              # path to oc20_ref
+    # If we want to train on total energies and use a linear reference
+    # normalization scheme, we must specify the path to the per-element
+    # coefficients in a `.npz` format.
+    lin_ref: False                                                              # True or False
+  val:
+    # Directory containing val set LMDBs
+    src: data/s2ef/all/val_id/
+    # If we want to run validation with OC20 total energy val set, `oc20_ref` must be specified and
+    # train_on_oc20_total_energies set to True
+    # OC22 defaults to total energy, so these flags are not necessary.
+    train_on_oc20_total_energies: False                                         # True or False
+    oc20_ref: None                                                              # path to oc20_ref
+  test:
+    # Directory containing test set LMDBs
+    src: data/s2ef/all/test_id/
+
+task:
+  # This is an argument used for checkpoint loading. By default it is True and loads
+  # checkpoint as it is. If False, it could partially load the checkpoint without giving
+  # any errors
+  strict_load: True                                                             # True or False
+  # The following args in the 'task' tree are for running relaxations with an
+  # S2EF model during training (as additional validation) or testing.
+  # Totally optional if you're only looking to train an S2EF model.
+  #
+  # Whether to evaluate val relaxations when training S2EF models on the
+  # energy_mae and average_distance_within_threshold metrics.
+  eval_relaxations: False                                                       # True or False
+  # No. of batches to run relaxations on. Defaults to the full 'relax_dataset'.
+  num_relaxation_batches: 5
+  # Max no. of steps to run relaxations for.
+  relaxation_steps: 300
+  # Whether to save out the positions.
+  write_pos: True                                                               # True or False
+  # Path to initial structures to run relaxations on. Same as the IS2RE set.
+  relax_dataset:
+    src: data/is2re/all/test_id/data.lmdb
+    # To shard a dataset into smaller subsets, define the total_shards desired
+    # and the shard a particular process to see.
+    total_shards: 1                                                             # int (optional)
+    shard: 0                                                                    # int (optional)
+  relax_opt:
+    name: lbfgs
+    maxstep: 0.04
+    memory: 50
+    damping: 1.0
+    alpha: 70.0
+    # Directory to save out trajectories (.traj files) in.
+    traj_dir: path/to/traj/directory
+  # Whether to save out the full trajectory or just the initial+final frames
+  save_full_traj: True                                                          # True or False
+  # When set to true, uses "deterministic" CUDA scatter ops if available,
+  # i.e. given the same input, leads to the same results. Default is false
+  # since this can be significantly slower.
+  set_deterministic_scatter: False                                              # True or False
+
+logger: tensorboard                                                             # 'wandb' or 'tensorboard'
+
+loss_functions:
+# Specify the different terms in the loss function. For each term, the target property must
+# be specified, the loss function to be used (`fn`), and the coefficient to weigh that term by.
+  - energy:
+      fn: mae
+	  coefficient: 1
+  # Loss function to use for forces.
+  #
+  # 'l2mae' has been working well for us with a force to energy coefficient
+  # ratio of 100:1.
+  #
+  # When training on raw DFT energies, 'atomwisel2' might be a better default
+  # with a force to energy coefficient ratio of 1:1. 'atomwisel2' scales L2 loss
+  # for forces by the no. of atoms in the structure.
+  - forces:
+      fn: l2mae
+      coefficient: 100
+  - isotropic_stress:
+      fn: mae
+  - anisotropic_stress:
+      fn: mae
+
+evaluation_metrics:
+  # Evaluation metrics to be reported are specified here. For each target property,
+  # specify the evaluation metrics to be reported for that property. A list of possible
+  # metrics can be found in modules/evaluator.py.
+  metrics:
+    energy:
+      - mae
+      - mse
+      - energy_within_threshold
+    forces:
+      - mae
+      - cosine_similarity
+    isotropic_stress:
+      - mae
+    anisotropic_stress:
+      - mae
+    stress:
+      - stress_mae_from_decomposition
+    misc:
+      - energy_forces_within_threshold
+  # Define the primary metric to be used for checkpointing and learning rate scheduler.
+  primary_metric: forces_mae
+
+outputs:
+  # Models in OCP return a dictionary with target properties as keys and predictions as their values.
+  # Here we must specify what our model will return. The target properties defined here must be consistent
+  # with the `loss_functions` and `evaluation_metrics`.
+  energy:
+	# Specify whether this is a system or atom level property.
+    level: system
+	# Specify the desired precision to be saved out.
+	prediction_dtype: float16
+  forces:
+    level: atom
+	# Sometimes we only care to train and evaluate on free atoms. We can control those settings here for a desired property.
+	train_on_free_atoms: True                                                               # True or False
+	eval_on_free_atoms: True                                                                # True or False
+  stress:
+    level: system
+	# If our model is predicting a decomposition of a rank-2 tensor, we must specify that information here.
+    decomposition:
+      isotropic_stress:
+        irrep_dim: 0
+      anisotropic_stress:
+        irrep_dim: 2
+
+model:
+  name: gemnet_t
+  # Model attributes go here, e.g. no. of layers, no. of hidden channels,
+  # embedding functions, cutoff radius, no. of neighbors, etc.
+  # This list of params will look different depending on the model.
+  #
+  # 'otf_graph' specifies whether graph edges should be computed on the fly
+  # or they already exist in the preprocessed LMDBs. If unsure, set it to True.
+  otf_graph: True                                                               # True or False
+  # All models in OCP can be used to predict just energies, or both energies and
+  # forces. For S2EF, we need both, so 'regress_forces' is True.
+  regress_forces: True                                                          # True or False
+  # Whether forces are predicted directly via an independent network (when set
+  # to True), or as negative gradients of energy wrt positions (when False)
+  direct_forces: True
+
+optim:
+  # Batch size per GPU for training.
+  # Note that effective batch size will be 'batch_size' x no. of GPUs.
+  batch_size: 8
+  # Batch size per GPU for evaluation.
+  # Note that effective batch size will be 'eval_batch_size' x no. of GPUs.
+  eval_batch_size: 8
+  # Whether to load balance across GPUs based on no. of 'atoms' or 'neighbors'.
+  load_balancing: atoms                                                         # 'atoms' or 'neighbors'
+  # No. of subprocesses to use for dataloading, pass as an arg to
+  # https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader.
+  num_workers: 2
+  # After how many updates to run evaluation on val during training.
+  # If unspecified, defaults to 1 epoch.
+  eval_every: 5000
+  # Optimizer to use from torch.optim.
+  # Default is https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html.
+  optimizer: AdamW
+  # Learning rate. Passed as an `lr` argument when initializing the optimizer.
+  lr_initial: 1.e-4
+  # Additional args needed to initialize the optimizer.
+  optimizer_params:
+    amsgrad: True
+    # Weight decay to use. Passed as an argument when initializing the optimizer.
+    weight_decay: 0
+  # Learning rate scheduler. Should work for any scheduler specified in
+  # in torch.optim.lr_scheduler: https://pytorch.org/docs/stable/optim.html
+  # as long as the relevant args are specified here.
+  #
+  # For example, for ReduceLROnPlateau, we specify `mode`, `factor`, `patience`.
+  # https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.ReduceLROnPlateau.html
+  #
+  # Note that if task.primary_metric specified earlier in the config is a metric
+  # where higher is better (e.g. 'energy_force_within_threshold' or
+  # 'average_distance_within_threshold'), `mode` should be 'max' since we'd want
+  # to step LR when the metric has stopped increasing. Vice versa for energy_mae
+  # or forces_mae or loss.
+  #
+  # If you don't want to use a scheduler, set it to 'Null' (yes type that out).
+  # This is for legacy reasons. If scheduler is unspecified, it defaults to
+  # 'LambdaLR': warming up the learning rate to 'lr_initial' and then stepping
+  # it at pre-defined set of steps. See the DimeNet++ config for how to do this.
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.8
+  patience: 3
+  # No. of epochs to train for.
+  max_epochs: 100
+  # Exponential moving average of parameters. 'ema_decay' is the decay factor.
+  ema_decay: 0.999
+  # Max norm of gradients for clipping. Uses torch.nn.utils.clip_grad_norm_.
+  clip_grad_norm: 10
+
+slurm:
+  constraint: "rtx_6000"
