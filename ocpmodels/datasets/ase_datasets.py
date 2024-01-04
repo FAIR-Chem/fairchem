@@ -116,6 +116,7 @@ class AseAtomsDataset(Dataset, ABC):
         # Convert to data object
         data_object = self.a2g.convert(atoms, sid)
         data_object.fid = fid
+        data_object.natoms = len(atoms)
 
         # Transform data object
         if self.transform is not None:

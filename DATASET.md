@@ -496,6 +496,16 @@ For IS2RE / IS2RS training, validation and test sets, we provide precomputed LMD
 |Train + Validation + Test (all splits)    |  809M | 2.2G |  [f7f2f58669a30abae8cb9ba1b7f2bcd2](https://dl.fbaipublicfiles.com/dac/datasets/odac23_is2r.tar.gz )  |
 |    |    |    |    |
 
+### DDEC Charges
+
+We provide DDEC charges computed for all MOFs in the ODAC23 dataset. A small number of MOFs (~2%) are missing these charges because the DDEC calcuations failed for them.
+
+|Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
+|---    |---    |---    |
+|  147M | 534M |  [81927b78d9e4184cc3c398e79760126a](https://dl.fbaipublicfiles.com/dac/datasets/ddec.tar.gz )  |
+|    |    |    |
+
+
 ### Citing ODAC23
 
 The OpenDAC 2023 (ODAC23) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
