@@ -143,12 +143,12 @@ OC22 dataset or pretrained models, as well as the original paper for each model:
 
 |Model	|Checkpoint	| Config |
 |---	|---	|---	|
-|Schnet | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Schnet.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/schnet.yml) |
-|Dimenet++ | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/DimenetPP.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/dpp.yml) |
+|SchNet | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Schnet.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/schnet.yml) |
+|DimeNet++ | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/DimenetPP.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/dpp.yml) |
 |PaiNN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/PaiNN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/painn.yml) |
-|Gemnet-OC | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/gemnet-oc.yml) |
+|GemNet-OC | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/gemnet-oc.yml) |
 |eSCN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eSCN.yml) |
-|EquiformerV2 | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_31M.yml) |
+|EquiformerV2 | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231116/eqv2_31M.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_31M.yml) |
 |EquiformerV2 (Large) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Large.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_153M.yml) |
 
 ## IS2RE Direct models
@@ -158,6 +158,12 @@ OC22 dataset or pretrained models, as well as the original paper for each model:
 |Gemnet-OC (Direct) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/gemnet-oc.yml) |
 |eSCN (Direct) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eSCN.yml) |
 |EquiformerV2 (Direct) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eqv2_31M.yml) |
+
+The models in the table above were trained to predict relaxed energy directly. Relaxed energies can also be predicted by running structural relaxations using the S2EF models from the previous section.
+
+## IS2RS
+
+The IS2RS is solved by running structural relaxations using the S2EF models from the prior section.
 
 The Open DAC 2023 (ODAC23) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
 
