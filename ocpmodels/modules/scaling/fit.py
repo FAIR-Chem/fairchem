@@ -76,9 +76,7 @@ def main(*, num_batches: int = 16) -> None:
         # region reoad scale file contents if necessary
         # unwrap module from DP/DDP
         unwrapped_model = model
-        while isinstance(
-            unwrapped_model, DistributedDataParallel
-        ):
+        while isinstance(unwrapped_model, DistributedDataParallel):
             unwrapped_model = unwrapped_model.module
         assert isinstance(
             unwrapped_model, nn.Module
