@@ -8,10 +8,9 @@ LICENSE file in the root directory of this source tree.
 import logging
 import os
 from collections import defaultdict
-from typing import Dict, Optional
+from typing import Optional
 
 import numpy as np
-import numpy.typing as npt
 import torch
 import torch_geometric
 from tqdm import tqdm
@@ -19,15 +18,16 @@ from tqdm import tqdm
 from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import check_traj_files
+from ocpmodels.common.utils import cg_change_mat, check_traj_files, irreps_sum
 from ocpmodels.modules.evaluator import Evaluator
-from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.trainers.base_trainer import BaseTrainer
 
 
+@registry.register_trainer("ocp")
+@registry.register_trainer("energy")
 @registry.register_trainer("forces")
-class ForcesTrainer(BaseTrainer):
+class OCPTrainer(BaseTrainer):
     """
     Trainer class for the Structure to Energy & Force (S2EF) and Initial State to
     Relaxed State (IS2RS) tasks.
@@ -48,8 +48,6 @@ class ForcesTrainer(BaseTrainer):
             (default: :obj:`None`)
         is_debug (bool, optional): Run in debug mode.
             (default: :obj:`False`)
-        is_hpo (bool, optional): Run hyperparameter optimization with Ray Tune.
-            (default: :obj:`False`)
         print_every (int, optional): Frequency of printing logs.
             (default: :obj:`100`)
         seed (int, optional): Random number seed.
@@ -68,239 +66,47 @@ class ForcesTrainer(BaseTrainer):
         self,
         task,
         model,
+        outputs,
         dataset,
         optimizer,
+        loss_fns,
+        eval_metrics,
         identifier,
-        normalizer=None,
-        timestamp_id: Optional[str] = None,
-        run_dir: Optional[str] = None,
-        is_debug: bool = False,
-        is_hpo: bool = False,
-        print_every: int = 100,
-        seed: Optional[int] = None,
-        logger: str = "tensorboard",
-        local_rank: int = 0,
-        amp: bool = False,
-        cpu: bool = False,
+        timestamp_id=None,
+        run_dir=None,
+        is_debug=False,
+        print_every=100,
+        seed=None,
+        logger="tensorboard",
+        local_rank=0,
+        amp=False,
+        cpu=False,
         slurm={},
-        noddp: bool = False,
-    ) -> None:
+        noddp=False,
+        name="ocp",
+    ):
         super().__init__(
             task=task,
             model=model,
+            outputs=outputs,
             dataset=dataset,
             optimizer=optimizer,
+            loss_fns=loss_fns,
+            eval_metrics=eval_metrics,
             identifier=identifier,
-            normalizer=normalizer,
             timestamp_id=timestamp_id,
             run_dir=run_dir,
             is_debug=is_debug,
-            is_hpo=is_hpo,
             print_every=print_every,
             seed=seed,
             logger=logger,
             local_rank=local_rank,
             amp=amp,
             cpu=cpu,
-            name="s2ef",
             slurm=slurm,
             noddp=noddp,
+            name=name,
         )
-
-    def load_task(self) -> None:
-        logging.info(f"Loading dataset: {self.config['task']['dataset']}")
-
-        if "relax_dataset" in self.config["task"]:
-            self.relax_dataset = registry.get_dataset_class("lmdb")(
-                self.config["task"]["relax_dataset"]
-            )
-            self.relax_sampler = self.get_sampler(
-                self.relax_dataset,
-                self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
-                ),
-                shuffle=False,
-            )
-            self.relax_loader = self.get_dataloader(
-                self.relax_dataset,
-                self.relax_sampler,
-            )
-
-        self.num_targets = 1
-
-        # If we're computing gradients wrt input, set mean of normalizer to 0 --
-        # since it is lost when compute dy / dx -- and std to forward target std
-        if self.config["model_attributes"].get("regress_forces", True):
-            if self.normalizer.get("normalize_labels", False):
-                if "grad_target_mean" in self.normalizer:
-                    self.normalizers["grad_target"] = Normalizer(
-                        mean=self.normalizer["grad_target_mean"],
-                        std=self.normalizer["grad_target_std"],
-                        device=self.device,
-                    )
-                else:
-                    self.normalizers["grad_target"] = Normalizer(
-                        tensor=self.train_loader.dataset.data.y[
-                            self.train_loader.dataset.__indices__
-                        ],
-                        device=self.device,
-                    )
-                    self.normalizers["grad_target"].mean.fill_(0)
-
-    # Takes in a new data source and generates predictions on it.
-    @torch.no_grad()
-    def predict(
-        self,
-        data_loader,
-        per_image: bool = True,
-        results_file=None,
-        disable_tqdm: bool = False,
-    ) -> Dict[str, npt.NDArray[np.float_]]:
-        ensure_fitted(self._unwrapped_model, warn=True)
-
-        if distutils.is_master() and not disable_tqdm:
-            logging.info("Predicting on test.")
-        assert isinstance(
-            data_loader,
-            (
-                torch.utils.data.dataloader.DataLoader,
-                torch_geometric.data.Batch,
-            ),
-        )
-        rank = distutils.get_rank()
-
-        if isinstance(data_loader, torch_geometric.data.Batch):
-            data_loader = [[data_loader]]
-
-        self.model.eval()
-        if self.ema:
-            self.ema.store()
-            self.ema.copy_to()
-
-        if self.normalizers is not None and "target" in self.normalizers:
-            self.normalizers["target"].to(self.device)
-            self.normalizers["grad_target"].to(self.device)
-
-        predictions = {"id": [], "energy": [], "forces": [], "chunk_idx": []}
-
-        for i, batch_list in tqdm(
-            enumerate(data_loader),
-            total=len(data_loader),
-            position=rank,
-            desc="device {}".format(rank),
-            disable=disable_tqdm,
-        ):
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch_list)
-
-            if self.normalizers is not None and "target" in self.normalizers:
-                out["energy"] = self.normalizers["target"].denorm(
-                    out["energy"]
-                )
-                out["forces"] = self.normalizers["grad_target"].denorm(
-                    out["forces"]
-                )
-            if per_image:
-                systemids = [
-                    str(i) + "_" + str(j)
-                    for i, j in zip(
-                        batch_list[0].sid.tolist(), batch_list[0].fid.tolist()
-                    )
-                ]
-                predictions["id"].extend(systemids)
-                batch_natoms = torch.cat(
-                    [batch.natoms for batch in batch_list]
-                )
-                batch_fixed = torch.cat([batch.fixed for batch in batch_list])
-                # total energy target requires predictions to be saved in float32
-                # default is float16
-                if (
-                    self.config["task"].get("prediction_dtype", "float16")
-                    == "float32"
-                    or self.config["task"]["dataset"] == "oc22_lmdb"
-                ):
-                    predictions["energy"].extend(
-                        out["energy"].cpu().detach().to(torch.float32).numpy()
-                    )
-                    forces = out["forces"].cpu().detach().to(torch.float32)
-                else:
-                    predictions["energy"].extend(
-                        out["energy"].cpu().detach().to(torch.float16).numpy()
-                    )
-                    forces = out["forces"].cpu().detach().to(torch.float16)
-                per_image_forces = torch.split(forces, batch_natoms.tolist())
-                per_image_forces = [
-                    force.numpy() for force in per_image_forces
-                ]
-                # evalAI only requires forces on free atoms
-                if results_file is not None:
-                    _per_image_fixed = torch.split(
-                        batch_fixed, batch_natoms.tolist()
-                    )
-                    _per_image_free_forces = [
-                        force[(fixed == 0).tolist()]
-                        for force, fixed in zip(
-                            per_image_forces, _per_image_fixed
-                        )
-                    ]
-                    _chunk_idx = np.array(
-                        [
-                            free_force.shape[0]
-                            for free_force in _per_image_free_forces
-                        ]
-                    )
-                    per_image_forces = _per_image_free_forces
-                    predictions["chunk_idx"].extend(_chunk_idx)
-                predictions["forces"].extend(per_image_forces)
-            else:
-                predictions["energy"] = out["energy"].detach()
-                predictions["forces"] = out["forces"].detach()
-                if self.ema:
-                    self.ema.restore()
-                return predictions
-
-        predictions["forces"] = np.array(predictions["forces"], dtype=object)
-        predictions["chunk_idx"] = np.array(
-            predictions["chunk_idx"],
-        )
-        predictions["energy"] = np.array(predictions["energy"])
-        predictions["id"] = np.array(
-            predictions["id"],
-        )
-        self.save_results(
-            predictions, results_file, keys=["energy", "forces", "chunk_idx"]
-        )
-
-        if self.ema:
-            self.ema.restore()
-
-        return predictions
-
-    def update_best(
-        self,
-        primary_metric,
-        val_metrics,
-        disable_eval_tqdm: bool = True,
-    ) -> None:
-        if (
-            "mae" in primary_metric
-            and val_metrics[primary_metric]["metric"] < self.best_val_metric
-        ) or (
-            "mae" not in primary_metric
-            and val_metrics[primary_metric]["metric"] > self.best_val_metric
-        ):
-            self.best_val_metric = val_metrics[primary_metric]["metric"]
-            self.save(
-                metrics=val_metrics,
-                checkpoint_file="best_checkpoint.pt",
-                training_state=False,
-            )
-            if self.test_loader is not None:
-                self.predict(
-                    self.test_loader,
-                    results_file="predictions",
-                    disable_tqdm=disable_eval_tqdm,
-                )
 
     def train(self, disable_eval_tqdm: bool = False) -> None:
         ensure_fitted(self._unwrapped_model, warn=True)
@@ -311,7 +117,7 @@ class ForcesTrainer(BaseTrainer):
         checkpoint_every = self.config["optim"].get(
             "checkpoint_every", eval_every
         )
-        primary_metric = self.config["task"].get(
+        primary_metric = self.evaluation_metrics.get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
         if (
@@ -373,7 +179,6 @@ class ForcesTrainer(BaseTrainer):
                 if (
                     self.step % self.config["cmd"]["print_every"] == 0
                     and distutils.is_master()
-                    and not self.is_hpo
                 ):
                     log_str = [
                         "{}: {:.2e}".format(k, v) for k, v in log_dict.items()
@@ -408,13 +213,6 @@ class ForcesTrainer(BaseTrainer):
                             val_metrics,
                             disable_eval_tqdm=disable_eval_tqdm,
                         )
-                        if self.is_hpo:
-                            self.hpo_update(
-                                self.epoch,
-                                self.step,
-                                self.metrics,
-                                val_metrics,
-                            )
 
                     if self.config["task"].get("eval_relaxations", False):
                         if "relax_dataset" not in self.config["task"]:
@@ -443,142 +241,108 @@ class ForcesTrainer(BaseTrainer):
         if self.config.get("test_dataset", False):
             self.test_dataset.close_db()
 
-    def _forward(self, batch_list):
-        # forward pass.
-        if self.config["model_attributes"].get("regress_forces", True):
-            out_energy, out_forces = self.model(batch_list)
-        else:
-            out_energy = self.model(batch_list)
+    def _forward(self, batch):
+        out = self.model(batch.to(self.device))
 
-        if out_energy.shape[-1] == 1:
-            out_energy = out_energy.view(-1)
-
-        out = {
-            "energy": out_energy,
-        }
-
-        if self.config["model_attributes"].get("regress_forces", True):
-            out["forces"] = out_forces
-
-        return out
-
-    def _compute_loss(self, out, batch_list) -> int:
-        loss = []
-
-        # Energy loss.
-        energy_target = torch.cat(
-            [batch.y.to(self.device) for batch in batch_list], dim=0
-        )
-        if self.normalizer.get("normalize_labels", False):
-            energy_target = self.normalizers["target"].norm(energy_target)
-        energy_mult = self.config["optim"].get("energy_coefficient", 1)
-        loss.append(
-            energy_mult * self.loss_fn["energy"](out["energy"], energy_target)
-        )
-
-        # Force loss.
-        if self.config["model_attributes"].get("regress_forces", True):
-            force_target = torch.cat(
-                [batch.force.to(self.device) for batch in batch_list], dim=0
-            )
-            if self.normalizer.get("normalize_labels", False):
-                force_target = self.normalizers["grad_target"].norm(
-                    force_target
-                )
-
-            tag_specific_weights = self.config["task"].get(
-                "tag_specific_weights", []
-            )
-            if tag_specific_weights != []:
-                # handle tag specific weights as introduced in forcenet
-                assert len(tag_specific_weights) == 3
-
-                batch_tags = torch.cat(
-                    [
-                        batch.tags.float().to(self.device)
-                        for batch in batch_list
-                    ],
-                    dim=0,
-                )
-                weight = torch.zeros_like(batch_tags)
-                weight[batch_tags == 0] = tag_specific_weights[0]
-                weight[batch_tags == 1] = tag_specific_weights[1]
-                weight[batch_tags == 2] = tag_specific_weights[2]
-
-                if self.config["optim"].get("loss_force", "l2mae") == "l2mae":
-                    # zero out nans, if any
-                    found_nans_or_infs = not torch.all(
-                        out["forces"].isfinite()
-                    )
-                    if found_nans_or_infs is True:
-                        logging.warning("Found nans while computing loss")
-                        out["forces"] = torch.nan_to_num(
-                            out["forces"], nan=0.0
-                        )
-
-                    dists = torch.norm(
-                        out["forces"] - force_target, p=2, dim=-1
-                    )
-                    weighted_dists_sum = (dists * weight).sum()
-
-                    num_samples = out["forces"].shape[0]
-                    num_samples = distutils.all_reduce(
-                        num_samples, device=self.device
-                    )
-                    weighted_dists_sum = (
-                        weighted_dists_sum
-                        * distutils.get_world_size()
-                        / num_samples
-                    )
-
-                    force_mult = self.config["optim"].get(
-                        "force_coefficient", 30
-                    )
-                    loss.append(force_mult * weighted_dists_sum)
-                else:
-                    raise NotImplementedError
+        ### TODO: Move into BaseModel in OCP 2.0
+        outputs = {}
+        batch_size = batch.natoms.numel()
+        num_atoms_in_batch = batch.natoms.sum()
+        for target_key in self.output_targets:
+            ### Target property is a direct output of the model
+            if target_key in out:
+                pred = out[target_key]
+            ## Target property is a derived output of the model. Construct the
+            ## parent property
             else:
-                # Force coefficient = 30 has been working well for us.
-                force_mult = self.config["optim"].get("force_coefficient", 30)
-                if self.config["task"].get("train_on_free_atoms", False):
-                    fixed = torch.cat(
-                        [batch.fixed.to(self.device) for batch in batch_list]
+                _max_rank = 0
+                for subtarget_key in self.output_targets[target_key][
+                    "decomposition"
+                ]:
+                    _max_rank = max(
+                        _max_rank,
+                        self.output_targets[subtarget_key]["irrep_dim"],
                     )
-                    mask = fixed == 0
-                    if (
-                        self.config["optim"]
-                        .get("loss_force", "mae")
-                        .startswith("atomwise")
-                    ):
-                        force_mult = self.config["optim"].get(
-                            "force_coefficient", 1
-                        )
-                        natoms = torch.cat(
-                            [
-                                batch.natoms.to(self.device)
-                                for batch in batch_list
-                            ]
-                        )
-                        natoms = torch.repeat_interleave(natoms, natoms)
-                        force_loss = force_mult * self.loss_fn["force"](
-                            out["forces"][mask],
-                            force_target[mask],
-                            natoms=natoms[mask],
-                            batch_size=batch_list[0].natoms.shape[0],
-                        )
-                        loss.append(force_loss)
-                    else:
-                        loss.append(
-                            force_mult
-                            * self.loss_fn["force"](
-                                out["forces"][mask], force_target[mask]
-                            )
-                        )
-                else:
-                    loss.append(
-                        force_mult
-                        * self.loss_fn["force"](out["forces"], force_target)
-                    )
+
+                pred_irreps = torch.zeros(
+                    (batch_size, irreps_sum(_max_rank)), device=self.device
+                )
+
+                for subtarget_key in self.output_targets[target_key][
+                    "decomposition"
+                ]:
+                    irreps = self.output_targets[subtarget_key]["irrep_dim"]
+                    _pred = out[subtarget_key]
+
+                    if self.normalizers.get(subtarget_key, False):
+                        _pred = self.normalizers[subtarget_key].denorm(_pred)
+
+                    ## Fill in the corresponding irreps prediction
+                    ## Reshape irrep prediction to (batch_size, irrep_dim)
+                    pred_irreps[
+                        :,
+                        max(0, irreps_sum(irreps - 1)) : irreps_sum(irreps),
+                    ] = _pred.view(batch_size, -1)
+
+                pred = torch.einsum(
+                    "ba, cb->ca",
+                    cg_change_mat(_max_rank, self.device),
+                    pred_irreps,
+                )
+
+            ### not all models are consistent with the output shape
+            ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
+            if self.output_targets[target_key]["level"] == "atom":
+                pred = pred.view(num_atoms_in_batch, -1)
+            else:
+                pred = pred.view(batch_size, -1)
+
+            outputs[target_key] = pred
+
+        return outputs
+
+    def _compute_loss(self, out, batch):
+        batch_size = batch.natoms.numel()
+        fixed = batch.fixed
+        mask = fixed == 0
+
+        loss = []
+        for loss_fn in self.loss_fns:
+            target_name, loss_info = loss_fn
+
+            target = batch[target_name]
+            pred = out[target_name]
+            natoms = batch.natoms
+            natoms = torch.repeat_interleave(natoms, natoms)
+
+            if (
+                self.output_targets[target_name]["level"] == "atom"
+                and self.output_targets[target_name]["train_on_free_atoms"]
+            ):
+                target = target[mask]
+                pred = pred[mask]
+                natoms = natoms[mask]
+
+            num_atoms_in_batch = natoms.numel()
+            if self.normalizers.get(target_name, False):
+                target = self.normalizers[target_name].norm(target)
+
+            ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
+            if self.output_targets[target_name]["level"] == "atom":
+                target = target.view(num_atoms_in_batch, -1)
+            else:
+                target = target.view(batch_size, -1)
+
+            mult = loss_info["coefficient"]
+            loss.append(
+                mult
+                * loss_info["fn"](
+                    pred,
+                    target,
+                    natoms=natoms,
+                    batch_size=batch_size,
+                )
+            )
 
         # Sanity check to make sure the compute graph is correct.
         for lc in loss:
@@ -587,51 +351,186 @@ class ForcesTrainer(BaseTrainer):
         loss = sum(loss)
         return loss
 
-    def _compute_metrics(self, out, batch_list, evaluator, metrics={}):
-        natoms = torch.cat(
-            [batch.natoms.to(self.device) for batch in batch_list], dim=0
-        )
+    def _compute_metrics(self, out, batch, evaluator, metrics={}):
+        natoms = batch.natoms
+        batch_size = natoms.numel()
 
-        target = {
-            "energy": torch.cat(
-                [batch.y.to(self.device) for batch in batch_list], dim=0
-            ),
-            "forces": torch.cat(
-                [batch.force.to(self.device) for batch in batch_list], dim=0
-            ),
-            "natoms": natoms,
-        }
+        ### Retrieve free atoms
+        fixed = batch.fixed
+        mask = fixed == 0
 
+        s_idx = 0
+        natoms_free = []
+        for _natoms in natoms:
+            natoms_free.append(torch.sum(mask[s_idx : s_idx + _natoms]).item())
+            s_idx += _natoms
+        natoms = torch.LongTensor(natoms_free).to(self.device)
+
+        targets = {}
+        for target_name in self.output_targets:
+            target = batch[target_name]
+            num_atoms_in_batch = batch.natoms.sum()
+
+            if (
+                self.output_targets[target_name]["level"] == "atom"
+                and self.output_targets[target_name]["eval_on_free_atoms"]
+            ):
+                target = target[mask]
+                out[target_name] = out[target_name][mask]
+                num_atoms_in_batch = natoms.sum()
+
+            ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
+            if self.output_targets[target_name]["level"] == "atom":
+                target = target.view(num_atoms_in_batch, -1)
+            else:
+                target = target.view(batch_size, -1)
+
+            targets[target_name] = target
+            if self.normalizers.get(target_name, False):
+                out[target_name] = self.normalizers[target_name].denorm(
+                    out[target_name]
+                )
+
+        targets["natoms"] = natoms
         out["natoms"] = natoms
 
-        if self.config["task"].get("eval_on_free_atoms", True):
-            fixed = torch.cat(
-                [batch.fixed.to(self.device) for batch in batch_list]
-            )
-            mask = fixed == 0
-            out["forces"] = out["forces"][mask]
-            target["forces"] = target["forces"][mask]
-
-            s_idx = 0
-            natoms_free = []
-            for natoms in target["natoms"]:
-                natoms_free.append(
-                    torch.sum(mask[s_idx : s_idx + natoms]).item()
-                )
-                s_idx += natoms
-            target["natoms"] = torch.LongTensor(natoms_free).to(self.device)
-            out["natoms"] = torch.LongTensor(natoms_free).to(self.device)
-
-        if self.normalizer.get("normalize_labels", False):
-            out["energy"] = self.normalizers["target"].denorm(out["energy"])
-            out["forces"] = self.normalizers["grad_target"].denorm(
-                out["forces"]
-            )
-
-        metrics = evaluator.eval(out, target, prev_metrics=metrics)
+        metrics = evaluator.eval(out, targets, prev_metrics=metrics)
         return metrics
 
-    def run_relaxations(self, split: str = "val") -> None:
+    # Takes in a new data source and generates predictions on it.
+    @torch.no_grad()
+    def predict(
+        self,
+        data_loader,
+        per_image: bool = True,
+        results_file: Optional[str] = None,
+        disable_tqdm: bool = False,
+    ):
+        ensure_fitted(self._unwrapped_model, warn=True)
+
+        if distutils.is_master() and not disable_tqdm:
+            logging.info("Predicting on test.")
+        assert isinstance(
+            data_loader,
+            (
+                torch.utils.data.dataloader.DataLoader,
+                torch_geometric.data.Batch,
+            ),
+        )
+        rank = distutils.get_rank()
+
+        if isinstance(data_loader, torch_geometric.data.Batch):
+            data_loader = [data_loader]
+
+        self.model.eval()
+        if self.ema is not None:
+            self.ema.store()
+            self.ema.copy_to()
+
+        predictions = defaultdict(list)
+
+        for i, batch in tqdm(
+            enumerate(data_loader),
+            total=len(data_loader),
+            position=rank,
+            desc="device {}".format(rank),
+            disable=disable_tqdm,
+        ):
+
+            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                out = self._forward(batch)
+
+            for target_key in self.config["outputs"]:
+                pred = out[target_key]
+                if self.normalizers.get(target_key, False):
+                    pred = self.normalizers[target_key].denorm(pred)
+
+                if per_image:
+                    ### Save outputs in desired precision, default float16
+                    if (
+                        self.config["outputs"][target_key].get(
+                            "prediction_dtype", "float16"
+                        )
+                        == "float32"
+                        or self.config["task"].get(
+                            "prediction_dtype", "float16"
+                        )
+                        == "float32"
+                        or self.config["task"].get("dataset", "lmdb")
+                        == "oc22_lmdb"
+                    ):
+                        dtype = torch.float32
+                    else:
+                        dtype = torch.float16
+
+                    pred = pred.cpu().detach().to(dtype)
+                    ### Split predictions into per-image predictions
+                    if self.config["outputs"][target_key]["level"] == "atom":
+                        batch_natoms = batch.natoms
+                        batch_fixed = batch.fixed
+                        per_image_pred = torch.split(
+                            pred, batch_natoms.tolist()
+                        )
+
+                        ### Save out only free atom, EvalAI does not need fixed atoms
+                        _per_image_fixed = torch.split(
+                            batch_fixed, batch_natoms.tolist()
+                        )
+                        _per_image_free_preds = [
+                            _pred[(fixed == 0).tolist()].numpy()
+                            for _pred, fixed in zip(
+                                per_image_pred, _per_image_fixed
+                            )
+                        ]
+                        _chunk_idx = np.array(
+                            [
+                                free_pred.shape[0]
+                                for free_pred in _per_image_free_preds
+                            ]
+                        )
+                        per_image_pred = _per_image_free_preds
+                    ### Assumes system level properties are of the same dimension
+                    else:
+                        per_image_pred = pred.numpy()
+                        _chunk_idx = None
+
+                    predictions[f"{target_key}"].extend(per_image_pred)
+                    ### Backwards compatibility, retain 'chunk_idx' for forces.
+                    if _chunk_idx is not None:
+                        if target_key == "forces":
+                            predictions["chunk_idx"].extend(_chunk_idx)
+                        else:
+                            predictions[f"{target_key}_chunk_idx"].extend(
+                                _chunk_idx
+                            )
+                else:
+                    predictions[f"{target_key}"] = pred.detach()
+
+            if not per_image:
+                return predictions
+
+            ### Get unique system identifiers
+            sids = batch.sid.tolist()
+            ## Support naming structure for OC20 S2EF
+            if "fid" in batch:
+                fids = batch.fid.tolist()
+                systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
+            else:
+                systemids = [f"{sid}" for sid in sids]
+
+            predictions["ids"].extend(systemids)
+
+        for key in predictions:
+            predictions[key] = np.array(predictions[key])
+
+        self.save_results(predictions, results_file)
+
+        if self.ema:
+            self.ema.restore()
+
+        return predictions
+
+    def run_relaxations(self, split="val"):
         ensure_fitted(self._unwrapped_model)
 
         # When set to true, uses deterministic CUDA scatter ops, if available.

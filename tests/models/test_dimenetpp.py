@@ -72,10 +72,10 @@ class TestDimeNet:
         out = self.model(batch)
 
         # Compare predicted energies and forces (after inv-rotation).
-        energies = out[0].detach()
+        energies = out["energy"].detach()
         np.testing.assert_almost_equal(energies[0], energies[1], decimal=5)
 
-        forces = out[1].detach()
+        forces = out["forces"].detach()
         logging.info(forces)
         np.testing.assert_array_almost_equal(
             forces[: forces.shape[0] // 2],
@@ -88,7 +88,8 @@ class TestDimeNet:
         data = self.data
 
         # Pass it through the model.
-        energy, forces = self.model(data_list_collater([data]))
+        outputs = self.model(data_list_collater([data]))
+        energy, forces = outputs["energy"], outputs["forces"]
 
         assert snapshot == energy.shape
         assert snapshot == pytest.approx(energy.detach())

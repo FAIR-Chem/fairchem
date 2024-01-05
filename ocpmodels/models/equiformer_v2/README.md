@@ -60,7 +60,6 @@ the training / validation scripts provided in the [official EquiformerV2 codebas
 might be easier to get started.
 * We provide a [slightly modified trainer](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/equiformer_v2/trainers/forces_trainer.py) and LR scheduler. The differences
 from the parent `forces` trainer are the following:
-    - Different way of setting up model parameters with no weight decay.
     - Support for cosine LR scheduler.
     - When using the LR scheduler, it first converts the epochs into number of
       steps and then passes it to the scheduler. That way in the config
