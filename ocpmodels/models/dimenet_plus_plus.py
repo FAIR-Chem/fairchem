@@ -446,6 +446,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         if self.regress_forces:
             data.pos.requires_grad_(True)
         energy = self._forward(data)
+        outputs = {"energy": energy}
 
         if self.regress_forces:
             forces = -1 * (
@@ -456,9 +457,9 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
                     create_graph=True,
                 )[0]
             )
-            return energy, forces
-        else:
-            return energy
+            outputs["forces"] = forces
+
+        return outputs
 
     @property
     def num_params(self) -> int:

@@ -65,7 +65,9 @@ optim:
   num_workers: 2
   lr_initial: 1.e-4
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True}
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0  # 2e-6 (TF weight decay) / 1e-4 (lr) = 2e-2
   warmup_steps: -1 # don't warm-up the learning rate
   # warmup_factor: 0.2
   lr_gamma: 0.8
@@ -94,7 +96,6 @@ optim:
   max_epochs: 15
   ema_decay: 0.999
   clip_grad_norm: 10
-  weight_decay: 0  # 2e-6 (TF weight decay) / 1e-4 (lr) = 2e-2
   loss_energy: mae
   loss_force: l2mae
   force_coefficient: 100

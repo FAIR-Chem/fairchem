@@ -1323,6 +1323,8 @@ class GemNetOC(BaseModel):
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
             )  # (nMolecules, num_targets)
 
+        E_t = E_t.squeeze(1)  # (num_molecules)
+        outputs = {"energy": E_t}
         if self.regress_forces:
             if self.direct_forces:
                 if self.forces_coupled:  # enforce F_st = F_ts
@@ -1354,12 +1356,11 @@ class GemNetOC(BaseModel):
             else:
                 F_t = self.force_scaler.calc_forces_and_update(E_t, pos)
 
-            E_t = E_t.squeeze(1)  # (num_molecules)
             F_t = F_t.squeeze(1)  # (num_atoms, 3)
-            return E_t, F_t
-        else:
-            E_t = E_t.squeeze(1)  # (num_molecules)
-            return E_t
+
+            outputs["forces"] = F_t
+
+        return outputs
 
     @property
     def num_params(self) -> int:
