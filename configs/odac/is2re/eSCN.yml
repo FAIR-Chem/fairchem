@@ -18,7 +18,7 @@ model:
   use_pbc: True
   basis_width_scalar: 2.0
   otf_graph: True
-  
+
   max_num_elements: 100
 
 optim:
@@ -27,7 +27,9 @@ optim:
   num_workers: 8
   lr_initial: 0.0008
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True}
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0.2
   eval_every: 5000
   lr_gamma: 0.3
   lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
@@ -42,4 +44,3 @@ optim:
   ema_decay: 0.999
   loss_energy: mae
   loss_force: l2mae
-  weight_decay: 0.2

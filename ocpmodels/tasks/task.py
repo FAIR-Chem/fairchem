@@ -9,7 +9,7 @@ import logging
 import os
 
 from ocpmodels.common.registry import registry
-from ocpmodels.trainers.forces_trainer import ForcesTrainer
+from ocpmodels.trainers import OCPTrainer
 
 
 class BaseTask:
@@ -91,7 +91,7 @@ class ValidateTask(BaseTask):
 class RelxationTask(BaseTask):
     def run(self) -> None:
         assert isinstance(
-            self.trainer, ForcesTrainer
+            self.trainer, OCPTrainer
         ), "Relaxations are only possible for ForcesTrainer"
         assert (
             self.trainer.relax_dataset is not None
