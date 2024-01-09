@@ -41,8 +41,11 @@ class OCPTrainer(BaseTrainer):
     Args:
         task (dict): Task configuration.
         model (dict): Model configuration.
+        outputs (dict): Output property configuration.
         dataset (dict): Dataset configuration. The dataset needs to be a SinglePointLMDB dataset.
         optimizer (dict): Optimizer configuration.
+        loss_fns (dict): Loss function configuration.
+        eval_metrics (dict): Evaluation metrics configuration.
         identifier (str): Experiment identifier that is appended to log directory.
         run_dir (str, optional): Path to the run directory where logs are to be saved.
             (default: :obj:`None`)
@@ -60,6 +63,7 @@ class OCPTrainer(BaseTrainer):
             (default: :obj:`False`)
         slurm (dict): Slurm configuration. Currently just for keeping track.
             (default: :obj:`{}`)
+        noddp (bool, optional): Run model without DDP.
     """
 
     def __init__(
