@@ -9,9 +9,9 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 import torch
+import wandb
 from torch.utils.tensorboard import SummaryWriter
 
-import wandb
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import CLUSTER, JOB_ID
 

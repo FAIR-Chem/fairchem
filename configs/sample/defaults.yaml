@@ -1,0 +1,115 @@
+# --------------------------------------------------------------
+# -----  minydra default args values for sample_adslab.py  -----
+# --------------------------------------------------------------
+
+# ------------------
+# -----  Data  -----
+# ------------------
+paths:
+  # path to the bulk_db_flat pickle file
+  bulk_db_flat: /network/projects/_groups/ocp/oc20/dataset-creation/bulk_db_flat_2021sep20.pkl
+
+  # path to the adsorbate_db pickle file
+  adsorbate_db: /network/projects/_groups/ocp/oc20/dataset-creation/adsorbate_db_2021apr28.pkl
+
+  # path to the precomputed_structures pickle file with all surfaces
+  precomputed_structures: /network/projects/_groups/ocp/oc20/dataset-creation/precomputed_surfaces_2021Sep20
+# ------------------------------------
+# -----  Adslab parametrization  -----
+# ------------------------------------
+
+# random seed
+seed: 123
+
+# number of runs
+nruns: 1
+
+actions:
+  # adsorbate smiles representation (see end of this file for reference)
+  # null -> sample uniformly
+  adsorbate_smiles: null # H2O
+
+  # index of the bulk in bulk_db_flat.
+  # null -> sample uniformly
+  bulk_id: null
+
+  # index of the surface to select for a given bulk
+  # null -> sample uniformly
+  surface_id: null
+
+  # index of the adsorption site to select for a given surface
+  # can be -1 (=all), a list of ints or a single int
+  binding_site_index: -1
+
+
+# whether or not to use pre-computed surfaces.
+# if not they will be computed on the fly but it takes
+use_precomputed_surfaces: true
+
+# Loader animation
+animate: false
+# Ignore loader prints
+no_loader: false
+
+# prints
+verbose: 0
+
+# avaliable adsorbates smiles (82):
+# {chemical_formula: smiles}
+# {  'O': ['*O'],
+#    'H': ['*H'],
+#    'HO': ['*OH'],
+#    'H2O': ['*OH2'],
+#    'C': ['*C'],
+#    'CO': ['*CO'],
+#    'CH': ['*CH'],
+#    'CHO': ['*CHO', '*COH'],
+#    'CH2': ['*CH2'],
+#    'CH2O': ['*CH2*O', '*CHOH'],
+#    'CH3': ['*CH3'],
+#    'CH3O': ['*OCH3', '*CH2OH'],
+#    'CH4': ['*CH4'],
+#    'CH4O': ['*OHCH3'],
+#    'C2': ['*C*C'],
+#    'C2O': ['*CCO'],
+#    'C2H': ['*CCH'],
+#    'C2HO': ['*CHCO', '*CCHO'],
+#    'C2HO2': ['*COCHO'],
+#    'C2H2O': ['*CCHOH', 'CH2*CO', '*CHCHO', 'CH*COH'],
+#    'C2H2': ['*CCH2', '*CH*CH'],
+#    'C2H2O2': ['*COCH2O', '*CHO*CHO', '*COHCHO', '*COHCOH'],
+#    'C2H3': ['*CCH3', '*CHCH2'],
+#    'C2H3O': ['*COCH3', '*OCHCH2', '*COHCH2', '*CHCHOH', '*CCH2OH'],
+#    'C2H3O2': ['*CHOCHOH', '*COCH2OH', '*COHCHOH'],
+#    'C2H4': ['*CH2*CH2'],
+#    'C2H4O': ['*OCHCH3', '*COHCH3', '*CHOHCH2', '*CHCH2OH'],
+#    'C2H4O2': ['*OCH2CHOH', '*CHOCH2OH', '*COHCH2OH', '*CHOHCHOH'],
+#    'C2H5': ['*CH2CH3'],
+#    'C2H5O': ['*OCH2CH3', '*CHOHCH3', '*CH2CH2OH'],
+#    'C2H5O2': ['*CHOHCH2OH'],
+#    'C2H6O': ['*OHCH2CH3'],
+#    'C2H8N2': ['*NH2N(CH3)2'],
+#    'C2H6N2O': ['*ONN(CH3)2'],
+#    'CH4N2O': ['*OHNNCH3'],
+#    'CH3N2': ['*NNCH3'],
+#    'HNO': ['*ONH'],
+#    'H2N2': ['*NHNH'],
+#    'H4N2': ['*NHN2'],
+#    'HN2': ['*N*NH'],
+#    'N2O3': ['*ONNO2'],
+#    'N2O4': ['*NO2NO2'],
+#    'N2O': ['*N*NO'],
+#    'N2': ['*N2'],
+#    'H2N2O': ['*ONNH2'],
+#    'H2N': ['*NH2'],
+#    'H3N': ['*NH3'],
+#    'HN2O': ['*NONH'],
+#    'HN': ['*NH'],
+#    'NO2': ['*NO2'],
+#    'NO': ['*NO'],
+#    'N': ['*N'],
+#    'NO3': ['*NO3'],
+#    'H3NO': ['*OHNH2'],
+#    'HNO2': ['*ONOH'],
+#    'CN': ['*CN']
+# }
