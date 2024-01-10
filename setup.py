@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="ocpmodels",
-    version="mila-0.1.0",
+    version="0.1.0",
     description="Machine learning models for use in catalysis as part of the Open Catalyst Project",
     url="https://github.com/Open-Catalyst-Project/ocp",
     packages=["ocdata", "ocpmodels"],
