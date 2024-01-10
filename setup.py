@@ -23,6 +23,7 @@ def make_ocpmodels_package_dict():
 
 pkg_dict = make_ocpmodels_package_dict()
 pkg_dict["ocdata"] = convert_path("ocdata")
+print("pkg_dict: ", pkg_dict)
 
 setup(
     name="ocpmodels",
