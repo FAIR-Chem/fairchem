@@ -34,21 +34,21 @@ dataset:
             irrep_dim: 0
           anisotropic_stress:
             irrep_dim: 2
-    # If we want to normalize targets, i.e. subtract the mean and
-    # divide by standard deviation, then specify the 'mean' and 'stdev' here.
-    # Statistics will by default be applied to the validation and test set.
-    normalizer:
-      energy:
-        mean: -0.7554450631141663
-        stdev: 2.887317180633545
-      forces:
-        mean: 0
-        stdev: 2.887317180633545
-      isotropic_stress:
-        mean: 43.27065
-        stdev: 674.1657344451734
-      anisotropic_stress:
-        stdev: 143.72764771869745
+      # If we want to normalize targets, i.e. subtract the mean and
+      # divide by standard deviation, then specify the 'mean' and 'stdev' here.
+      # Statistics will by default be applied to the validation and test set.
+      normalizer:
+        energy:
+          mean: -0.7554450631141663
+          stdev: 2.887317180633545
+        forces:
+          mean: 0
+          stdev: 2.887317180633545
+        isotropic_stress:
+          mean: 43.27065
+          stdev: 674.1657344451734
+        anisotropic_stress:
+          stdev: 143.72764771869745
     # If we want to train OC20 on total energy, a path to OC20 reference
     # energies `oc20_ref` must be specified to unreference existing OC20 data.
     # download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
