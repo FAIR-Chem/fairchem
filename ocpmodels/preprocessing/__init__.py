@@ -6,3 +6,4 @@ LICENSE file in the root directory of this source tree.
 """
 
 from .atoms_to_graphs import AtomsToGraphs
+from .graph_rewiring import *

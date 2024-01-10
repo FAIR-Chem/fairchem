@@ -1,0 +1,129 @@
+default:
+  model:
+    name: forcenet
+    decoder_type: mlp
+    num_freqs: 50
+    training: true
+    predict_forces: false
+    num_interactions: 5
+    cutoff: 6.0
+    basis: "sphallmul"
+    ablation: "none"
+    depth_mlp_edge: 2
+    depth_mlp_node: 1
+    activation_str: "swish"
+    decoder_activation_str: "swish"
+    feat: "full"
+    hidden_channels: 512
+    decoder_hidden_channels: 512
+    regress_forces: False
+    max_n: 3
+    use_pbc: True
+    # drlab attributes:
+    tag_hidden_channels: 0 # 64
+    pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
+    phys_embeds: False # True
+    phys_hidden_channels: 0
+    energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds}
+  optim:
+    batch_size: 8
+    eval_batch_size: 8
+    num_workers: 8
+    warmup_factor: 0.2
+    warmup_steps: 9375
+    lr_gamma: 0.1
+    lr_initial: 0.0005
+    max_epochs: 20
+    epoch_fine_tune: 2
+    lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+      - 15625
+      - 25000
+      - 31250
+
+# -------------------
+# -----  IS2RE  -----
+# -------------------
+
+is2re:
+  # *** Important note ***
+  #   The total number of gpus used for this run was 1.
+  #   If the global batch size (num_gpus * batch_size) is modified
+  #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+  10k:
+    optim:
+      max_epochs: 20
+  100k:
+    optim:
+      max_epochs: 20
+  all:
+    model:
+      num_interactions: 5
+      hidden_channels: 512
+      decoder_hidden_channels: 512
+      pg_hidden_channels: 32
+      phys_embeds: True
+    optim:
+      max_epochs: 8  #15
+      batch_size: 32
+      eval_batch_size: 32
+      lr_initial: 0.0005
+
+
+# ------------------
+# -----  S2EF  -----
+# ------------------
+
+s2ef:
+  # *** Important note ***
+  #   The total number of gpus used for this run was 1.
+  #   If the global batch size (num_gpus * batch_size) is modified
+  #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+  default:
+    model:
+      regress_forces: "direct"
+      force_coefficient: 30
+      energy_grad_coefficient: 10
+      force_decoder_type: "mlp" # can be {"" or "simple"} | only used if regress_forces is True
+      force_decoder_model_config:
+        simple:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        mlp:
+          hidden_channels: 256
+          norm: batch1d # batch1d, layer or null
+        res:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        res_updown:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+  200k: {}
+
+  2M:
+    optim:
+      batch_size: 32
+      eval_batch_size: 32
+
+  20M: {}
+
+  all: {}
+
+qm9:
+  default:
+    model:
+      num_interactions: 4
+    optim:
+      max_epochs: 8 # 20
+
+  10k: {}
+  all: {}
+
+qm7x:
+  default:
+    model:
+      num_interactions: 4
+    optim:
+      max_epochs: 20
+
+  all: {}
+  1k: {}

@@ -1,0 +1,107 @@
+# this file overrides paths for data on drac clusters
+# it can be discarded otherwise
+drac_base_path:
+  narval: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data
+  beluga: /scratch/vsch/ocp-data
+
+is2re:
+  10k:
+    val_id:
+      src: _base_/oc20/is2re/all/val_id/data.lmdb
+    val_ood_cat:
+      src: _base_/oc20/is2re/all/val_ood_cat/data.lmdb
+    val_ood_ads:
+      src: _base_/oc20/is2re/all/val_ood_ads/data.lmdb
+    val_ood_both:
+      src: _base_/oc20/is2re/all/val_ood_both/data.lmdb
+    train:
+      src: _base_/oc20/is2re/10k/train/data.lmdb
+  100k:
+    val_id:
+      src: _base_/oc20/is2re/all/val_id/data.lmdb
+    val_ood_cat:
+      src: _base_/oc20/is2re/all/val_ood_cat/data.lmdb
+    val_ood_ads:
+      src: _base_/oc20/is2re/all/val_ood_ads/data.lmdb
+    val_ood_both:
+      src: _base_/oc20/is2re/all/val_ood_both/data.lmdb
+    train:
+      src: _base_/oc20/is2re/100k/train/data.lmdb
+
+  all:
+    val_id:
+      src: _base_/oc20/is2re/all/val_id/data.lmdb
+    val_ood_cat:
+      src: _base_/oc20/is2re/all/val_ood_cat/data.lmdb
+    val_ood_ads:
+      src: _base_/oc20/is2re/all/val_ood_ads/data.lmdb
+    val_ood_both:
+      src: _base_/oc20/is2re/all/val_ood_both/data.lmdb
+    train:
+      src: _base_/oc20/is2re/all/train/data.lmdb
+s2ef:
+  200k:
+    val_id:
+      src: _base_/oc20/s2ef/all/val_id
+    val_ood_cat:
+      src: _base_/oc20/s2ef/all/val_ood_cat
+    val_ood_ads:
+      src: _base_/oc20/s2ef/all/val_ood_ads
+    val_ood_both:
+      src: _base_/oc20/s2ef/all/val_ood_both
+    train:
+      src: _base_/oc20/s2ef/200k/train
+
+  2M:
+    val_id:
+      src: _base_/oc20/s2ef/all/val_id
+    val_ood_cat:
+      src: _base_/oc20/s2ef/all/val_ood_cat
+    val_ood_ads:
+      src: _base_/oc20/s2ef/all/val_ood_ads
+    val_ood_both:
+      src: _base_/oc20/s2ef/all/val_ood_both
+    train:
+      src: _base_/oc20/s2ef/2M/train/
+
+  20M:
+    val_id:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/all/val_id
+    val_ood_cat:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/all/val_ood_cat
+    val_ood_ads:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/all/val_ood_ads
+    val_ood_both:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/all/val_ood_both
+    train:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/20M/train/
+
+  all:
+    val_id:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/all/val_id
+    val_ood_cat:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/all/val_ood_cat
+    val_ood_ads:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/all/val_ood_ads
+    val_ood_both:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/all/val_ood_both
+    train:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/oc20/s2ef/all/train/
+
+qm9:
+  all:
+    train:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm9
+    val:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm9
+    test:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm9
+
+qm7x:
+  all:
+    train:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm7x/processed
+    val_id:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm7x/processed
+    test:
+      src: /home/vsch/projects/rrg-bengioy-ad/vsch/ocp-data/qm7x/processed

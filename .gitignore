@@ -5,6 +5,8 @@ results
 logs
 *.traj
 experimental
+*.pkl
+.ntfy.conf
 cosmosis/
 
 # Byte-compiled / optimized / DLL files

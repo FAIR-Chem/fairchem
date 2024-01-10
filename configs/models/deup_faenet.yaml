@@ -1,0 +1,271 @@
+default:
+  model:
+    name: deup_faenet
+    act: swish
+    dropout_lin: 0.0
+    dropout_edge: 0.0
+    dropout_lowest_layer: output # lowest layer where `dropout_lin` is applied. Can be `inter-{i}` or `output`. Defaults to `output`.
+    first_trainable_layer: dropout # lowest layer to NOT freeze. All previous layers will be frozen. Can be ``, `embed`, `inter-{i}`, `output`, or `dropout`.
+                            # if it is `` then no layer is frozen. If it is `dropout` then it will be set to the layer before `dropout_lowest_layer`.
+                            # Defaults to ``.
+    hidden_channels: 128
+    num_filters: 100
+    num_interactions: 3
+    num_gaussians: 100
+    cutoff: 6.0
+    use_pbc: True
+    regress_forces: False
+    # drlab attributes:
+    tag_hidden_channels: 0 # 32
+    pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
+    phys_embeds: False # True
+    phys_hidden_channels: 0
+    energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds}
+    # faenet new features
+    skip_co: False # output skip connections {False, "add", "concat"}
+    second_layer_MLP: False # in EmbeddingBlock
+    complex_mp: False
+    edge_embed_type: rij # {'rij','all_rij','sh', 'all'})
+    mp_type: base # {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'}
+    graph_norm: False  # bool
+    att_heads: 1  # int
+    force_decoder_type: "mlp" # can be {"" or "simple"} | only used if regress_forces is True
+    force_decoder_model_config:
+      simple:
+        hidden_channels: 128
+        norm: batch1d # batch1d, layer or null
+      mlp:
+        hidden_channels: 256
+        norm: batch1d # batch1d, layer or null
+      res:
+        hidden_channels: 128
+        norm: batch1d # batch1d, layer or null
+      res_updown:
+        hidden_channels: 128
+        norm: batch1d # batch1d, layer or null
+    deup_features: [s, energy_pred_std]
+  optim:
+    batch_size: 64
+    eval_batch_size: 64
+    num_workers: 4
+    lr_gamma: 0.1
+    lr_initial: 0.001
+    warmup_factor: 0.2
+    max_epochs: 20
+    energy_grad_coefficient: 5
+    force_coefficient: 30
+    energy_coefficient: 1
+
+  frame_averaging: False # 2D, 3D, da, False
+  fa_frames: False # can be {None, full, random, det, e3, e3-random, e3-det}
+
+# -------------------
+# -----  IS2RE  -----
+# -------------------
+
+deup_is2re: # was: is2re
+  10k:
+    optim:
+      lr_initial: 0.005
+      lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+        - 1562
+        - 2343
+        - 3125
+      warmup_steps: 468
+      max_epochs: 20
+
+  100k:
+    model:
+      hidden_channels: 256
+    optim:
+      lr_initial: 0.005
+      lr_milestones: # epochs at which lr_initial <- lr_initial * lr_gamma
+        - 1562
+        - 2343
+        - 3125
+      warmup_steps: 468
+      max_epochs: 20
+
+  all:
+    model:
+      hidden_channels: 384
+      num_interactions: 4
+    optim:
+      batch_size: 256
+      eval_batch_size: 256
+      lr_initial: 0.001
+      lr_gamma: 0.1
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 18000
+        - 27000
+        - 37000
+      warmup_steps: 6000
+      max_epochs: 20
+
+# ------------------
+# -----  S2EF  -----
+# ------------------
+
+# For 2 GPUs
+
+s2ef:
+  default:
+    model:
+      num_interactions: 4
+      hidden_channels: 750
+      num_gaussians: 200
+      num_filters: 256
+      regress_forces: "direct"
+    optim:
+      batch_size: 96
+      eval_batch_size: 96
+      warmup_factor: 0.2
+      lr_gamma: 0.1
+      lr_initial: 0.0001
+      max_epochs: 15
+      warmup_steps: 30000
+      lr_milestones:
+        - 55000
+        - 75000
+        - 10000
+
+  200k: {}
+
+  # 1 gpus
+  2M:
+    model:
+      num_interactions: 5
+      hidden_channels: 1024
+      num_gaussians: 200
+      num_filters: 256
+    optim:
+      batch_size: 192
+      eval_batch_size: 192
+
+  20M: {}
+
+  all: {}
+
+qm9:
+  default:
+    model:
+      act: swish
+      att_heads: 1
+      complex_mp: true
+      cutoff: 6.0
+      edge_embed_type: all_rij
+      energy_head: ''
+      graph_norm: true
+      graph_rewiring: null
+      hidden_channels: 400
+      max_num_neighbors: 30
+      mp_type: updownscale_base
+      num_filters: 480
+      num_gaussians: 100
+      num_interactions: 5
+      otf_graph: false
+      pg_hidden_channels: 32
+      phys_embeds: false
+      phys_hidden_channels: 0
+      regress_forces: ''
+      second_layer_MLP: true
+      skip_co: true
+      tag_hidden_channels: 0
+      use_pbc: false
+
+    optim:
+      batch_size: 64
+      es_min_abs_change: 1.0e-06
+      es_patience: 20
+      es_warmup_epochs: 600
+      eval_batch_size: 64
+      factor: 0.9
+      loss_energy: mse
+      lr_gamma: 0.1
+      lr_initial: 0.0003
+      max_epochs: 1500
+      min_lr: 1.0e-06
+      mode: min
+      optimizer: AdamW
+      patience: 15
+      scheduler: ReduceLROnPlateau
+      threshold: 0.0001
+      threshold_mode: abs
+      verbose: true
+      warmup_factor: 0.2
+      warmup_steps: 3000
+
+  10k: {}
+  all: {}
+
+qm7x:
+  default:
+    model: # SOTA settings
+      act: swish
+      att_heads: 1
+      complex_mp: true
+      cutoff: 5.0
+      edge_embed_type: all_rij
+      energy_head: false
+      force_decoder_model_config:
+        mlp:
+          hidden_channels: 256
+          norm: batch1d
+        res:
+          hidden_channels: 128
+          norm: batch1d
+        res_updown:
+          hidden_channels: 128
+          norm: layer
+        simple:
+          hidden_channels: 128
+          norm: batch1d
+      force_decoder_type: res_updown
+      graph_norm: false
+      hidden_channels: 500
+      max_num_neighbors: 40
+      mp_type: updownscale_base
+      num_filters: 400
+      num_gaussians: 50
+      num_interactions: 5
+      otf_graph: false
+      pg_hidden_channels: 32
+      phys_embeds: true
+      phys_hidden_channels: 0
+      regress_forces: direct_with_gradient_target
+      second_layer_MLP: true
+      skip_co: false
+      tag_hidden_channels: 0
+      use_pbc: false
+
+    optim:
+      batch_size: 100
+      energy_grad_coefficient: 5
+      eval_batch_size: 100
+      eval_every: 0.34
+      factor: 0.75
+      force_coefficient: 75
+      loss_energy: mae
+      loss_force: mse
+      lr_gamma: 0.1
+      lr_initial: 0.000193
+      max_steps: 4000000
+      min_lr: 1.0e-06
+      mode: min
+      optimizer: AdamW
+      scheduler: ReduceLROnPlateau
+      threshold: 0.001
+      threshold_mode: abs
+      verbose: true
+      warmup_factor: 0.2
+      warmup_steps: 3000
+
+  all: {}
+  1k: {}
+
+qm9:
+  default:
+    model:
+      use_pbc: False
+  all: {}
+  10k: {}

@@ -17,7 +17,7 @@ from ocpmodels.common.utils import (
     radius_graph_pbc,
 )
 from ocpmodels.datasets.embeddings import KHOT_EMBEDDINGS, QMOF_KHOT_EMBEDDINGS
-from ocpmodels.models.base import BaseModel
+from ocpmodels.models.base_model import BaseModel
 
 
 @registry.register_model("cgcnn")

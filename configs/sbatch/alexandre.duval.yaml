@@ -1,0 +1,4 @@
+mem: 32GB
+env: ocp
+partition: long
+modules: anaconda/3

@@ -1,0 +1,243 @@
+default:
+  model:
+    name: schnet
+    num_filters: 128
+    num_gaussians: 100
+    hidden_channels: 256
+    num_interactions: 3
+    cutoff: 6.0
+    use_pbc: True
+    regress_forces: False
+    readout: add
+    atomref: null
+    # drlab attributes:
+    tag_hidden_channels: 0 # 32
+    pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
+    phys_embeds: False # True
+    phys_hidden_channels: 0
+    energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds, random}
+  optim:
+    batch_size: 64
+    eval_batch_size: 64
+    num_workers: 4
+    lr_gamma: 0.1
+    warmup_factor: 0.2
+    epoch_fine_tune: 5
+
+# -------------------
+# -----  IS2RE  -----
+# -------------------
+
+is2re:
+  # *** Important note ***
+  #   The total number of gpus used for this run was 1.
+  #   If the global batch size (num_gpus * batch_size) is modified
+  #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+  10k:
+    model:
+      hidden_channels: 256
+      num_interactions: 3
+    optim:
+      lr_initial: 0.005
+      max_epochs: 20
+      lr_milestones:
+        - 1562
+        - 2343
+        - 3125
+      warmup_steps: 468
+      batch_size: 256
+      eval_batch_size: 256
+
+  100k:
+    model:
+      hidden_channels: 384
+      num_interactions: 4
+    optim:
+      lr_initial: 0.0005
+      max_epochs: 25
+      lr_milestones:
+        - 15625
+        - 31250
+        - 46875
+      warmup_steps: 9375
+      batch_size: 256
+      eval_batch_size: 256
+
+  all:
+    model:
+      hidden_channels: 384
+      num_interactions: 4
+    optim:
+      lr_initial: 0.001
+      max_epochs: 17
+      lr_gamma: 0.1
+      lr_milestones:
+        - 17981
+        - 26972
+        - 35963
+      warmup_steps: 5394
+      batch_size: 256
+      eval_batch_size: 256
+
+# ------------------
+# -----  S2EF  -----
+# ------------------
+
+s2ef:
+  default:
+    model:
+      regress_forces: "from_energy"
+      hidden_channels: 1024
+      num_filters: 256
+      num_interactions: 5
+      num_gaussians: 200
+      force_decoder_type: "mlp" # can be {"" or "simple"} | only used if regress_forces is True
+      force_decoder_model_config:
+        simple:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        mlp:
+          hidden_channels: 256
+          norm: batch1d # batch1d, layer or null
+        res:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        res_updown:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 1.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      batch_size: 192
+      eval_batch_size: 192
+      num_workers: 16
+      lr_initial: 0.0001
+      lr_gamma: 0.1
+      lr_milestones:
+        - 52083
+        - 83333
+        - 104166
+      warmup_steps: 31250
+      max_epochs: 15
+      force_coefficient: 100
+      energy_coefficient: 1
+      energy_grad_coefficient: 5
+
+
+  200k:
+    model:
+      hidden_channels: 1024
+      num_filters: 256
+      num_interactions: 3
+      num_gaussians: 200
+    optim:
+      batch_size: 128
+      eval_batch_size: 128
+      num_workers: 16
+      lr_initial: 0.0005
+      lr_gamma: 0.1
+      lr_milestones:
+        - 7812
+        - 12500
+        - 15625
+      warmup_steps: 4687
+      max_epochs: 30
+      force_coefficient: 100
+
+  2M: {}
+
+  20M:
+    model:
+      hidden_channels: 1024
+      num_filters: 256
+      num_interactions: 5
+      num_gaussians: 200
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 48.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      batch_size: 24
+      eval_batch_size: 24
+      num_workers: 16
+      lr_initial: 0.0001
+      lr_gamma: 0.1
+      lr_milestones:
+        - 86805
+        - 138888
+        - 173611
+      warmup_steps: 52083
+      max_epochs: 30
+      force_coefficient: 50
+
+  all:
+    model:
+      hidden_channels: 1024
+      num_filters: 256
+      num_interactions: 5
+      num_gaussians: 200
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 64.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      batch_size: 20
+      eval_batch_size: 20
+      num_workers: 16
+      lr_initial: 0.0001
+      lr_gamma: 0.1
+      lr_milestones:
+        - 313907
+        - 523179
+        - 732451
+      warmup_steps: 209271
+      max_epochs: 15
+      force_coefficient: 30
+
+qm9:
+  default:
+    model:
+      hidden_channels: 128
+      num_gaussians: 100
+      num_filters: 128
+      num_interactions: 6
+      cutoff: 5.0
+    optim:
+      batch_size: 1024
+      lr_initial: 0.001
+      max_epochs: 1000
+      decay_steps: 125000
+      decay_rate: 0.01
+      ema_decay: 0.999
+      lr_gamma: 0.25
+      lr_milestones:
+        - 17981
+        - 26972
+        - 35963
+        - 52000
+        - 100000
+      warmup_steps: 1000
+
+  10k: {}
+  all: {}
+
+qm7x:
+  default:
+    model:
+      hidden_channels: 384
+      num_interactions: 4
+    optim:
+      batch_size: 128
+      lr_initial: 0.001
+      max_epochs: 25
+      lr_gamma: 0.1
+      lr_milestones:
+        - 17981
+        - 26972
+        - 35963
+      warmup_steps: 15000
+
+  all: {}
+  1k: {}

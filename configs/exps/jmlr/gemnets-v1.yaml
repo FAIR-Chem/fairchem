@@ -1,0 +1,153 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-3
+  git_checkout: d6186f7c6a7443a5cef9a8ffbe066c671bb7412e # as per https://wandb.ai/mila-ocp/ocp-3/runs/3040748-gemnet_oc-is2re-all
+
+default:
+  test_ri: False
+  mode: train
+  graph_rewiring: ""
+  model:
+    phys_embeds: False
+    tag_hidden_channels: 0
+    pg_hidden_channels: 0  # shall have been 32
+    num_blocks: 4
+  optim:
+    max_epochs: 30
+    es_patience: 5
+  cp_data_to_tmpdir: True
+  inference_time_loops: 3
+
+runs:
+  # ----------------------
+  # -----  Gemnet-T  -----
+  # ----------------------
+
+  # Baseline
+
+  - config: gemnet_t-is2re-all
+    seed: 1
+    note: 'Gemnet-T IS2RE baseline 1 GPU seed 1'
+    optim:
+      batch_size: 12
+      eval_batch_size: 12
+
+  - config: gemnet_t-is2re-all
+    seed: 2
+    note: 'Gemnet-T IS2RE baseline 1 GPU seed 2'
+    optim:
+      batch_size: 12
+      eval_batch_size: 12
+
+  - config: gemnet_t-is2re-all
+    seed: 3
+    note: 'Gemnet-T IS2RE baseline 1 GPU seed 3'
+    optim:
+      batch_size: 12
+      eval_batch_size: 12
+
+  # PhAST
+
+  - config: gemnet_t-is2re-all
+    seed: 1
+    note: 'Gemnet-T IS2RE PhAST 1 GPU seed 1'
+    graph_rewiring: remove-tag-0
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+    optim:
+      batch_size: 32
+      eval_batch_size: 32
+
+  - config: gemnet_t-is2re-all
+    seed: 2
+    note: 'Gemnet-T IS2RE PhAST 1 GPU seed 2'
+    graph_rewiring: remove-tag-0
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+    optim:
+      batch_size: 32
+      eval_batch_size: 32
+
+  - config: gemnet_t-is2re-all
+    seed: 3
+    note: 'Gemnet-T IS2RE PhAST 1 GPU seed 3'
+    graph_rewiring: remove-tag-0
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+    optim:
+      batch_size: 32
+      eval_batch_size: 32
+
+  # -----------------------
+  # -----  Gemnet-OC  -----
+  # -----------------------
+
+  # Baseline
+
+  - config: gemnet_oc-is2re-all
+    seed: 1
+    note: 'Gemnet-OC IS2RE baseline 1 GPU seed 1'
+    optim:
+      batch_size: 6
+      eval_batch_size: 6
+
+  - config: gemnet_oc-is2re-all
+    seed: 2
+    note: 'Gemnet-OC IS2RE baseline 1 GPU seed 2'
+    optim:
+      batch_size: 6
+      eval_batch_size: 6
+
+  - config: gemnet_oc-is2re-all
+    seed: 3
+    note: 'Gemnet-OC IS2RE baseline 1 GPU seed 3'
+    optim:
+      batch_size: 6
+      eval_batch_size: 6
+
+  # PhAST
+
+  - config: gemnet_oc-is2re-all
+    seed: 1
+    note: 'Gemnet-OC IS2RE PhAST 1 GPU seed 1'
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+    graph_rewiring: remove-tag-0
+    optim:
+      batch_size: 32
+      eval_batch_size: 32
+
+  - config: gemnet_oc-is2re-all
+    seed: 2
+    note: 'Gemnet-OC IS2RE PhAST 1 GPU seed 2'
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+    graph_rewiring: remove-tag-0
+    optim:
+      batch_size: 32
+      eval_batch_size: 32
+
+  - config: gemnet_oc-is2re-all
+    seed: 3
+    note: 'Gemnet-OC IS2RE PhAST 1 GPU seed 3'
+    model:
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 32
+    graph_rewiring: remove-tag-0
+    optim:
+      batch_size: 32
+      eval_batch_size: 32

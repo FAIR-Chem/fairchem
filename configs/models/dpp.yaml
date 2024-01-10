@@ -1,0 +1,233 @@
+default:
+  model:
+    name: dpp
+    hidden_channels: 256
+    out_emb_channels: 192
+    num_blocks: 3
+    cutoff: 6.0
+    num_radial: 6
+    num_spherical: 7
+    num_before_skip: 1
+    num_after_skip: 2
+    num_output_layers: 3
+    regress_forces: False
+    use_pbc: True
+    basis_emb_size: 8
+    envelope_exponent: 5
+    act: swish
+    int_emb_size: 64
+    # drlab attributes:
+    tag_hidden_channels: 0 # 64
+    pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
+    phys_embeds: False # True
+    phys_hidden_channels: 0
+    energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds}
+  optim:
+    batch_size: 4
+    eval_batch_size: 4
+    num_workers: 4
+    lr_gamma: 0.1
+    warmup_factor: 0.2
+    epoch_fine_tune: 2
+
+# -------------------
+# -----  IS2RE  -----
+# -------------------
+
+is2re:
+  # *** Important note ***
+  #   The total number of gpus used for this run was 1.
+  #   If the global batch size (num_gpus * batch_size) is modified
+  #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+  10k:
+    optim:
+      lr_initial: 0.0001
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 20000
+        - 40000
+        - 60000
+      warmup_steps: 10000
+      max_epochs: 20
+      batch_size: 16
+      eval_batch_size: 16
+
+  100k:
+    optim:
+      lr_initial: 0.0001
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 200000
+        - 400000
+        - 600000
+      warmup_steps: 100000
+      max_epochs: 15
+      batch_size: 16
+      eval_batch_size: 16
+
+  all:
+    optim:
+      lr_initial: 0.0001
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 115082
+        - 230164
+        - 345246
+      warmup_steps: 57541
+      max_epochs: 8
+      batch_size: 16
+      eval_batch_size: 16
+
+# ------------------
+# -----  S2EF  -----
+# ------------------
+
+s2ef:
+  default:
+    model:
+      regress_forces: "from_energy"
+      force_decoder_type: "mlp" # can be {"" or "simple"} | only used if regress_forces is True
+      force_decoder_model_config:
+        simple:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        mlp:
+          hidden_channels: 256
+          norm: batch1d # batch1d, layer or null
+        res:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        res_updown:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+    optim:
+      num_workers: 8
+      eval_every: 10000
+      force_coefficient: 50
+      energy_coefficient: 1
+      energy_grad_coefficient: 5
+
+  200k:
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 4.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      batch_size: 48
+      eval_batch_size: 48
+      lr_initial: 0.00001
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 5208
+        - 8333
+        - 10416
+      warmup_steps: 3125
+      max_epochs: 10
+      force_coefficient: 50
+
+  2M:
+    # *** Important note ***
+    #   The total number of gpus used for this run was 1.
+    #   If the global batch size (num_gpus * batch_size) is modified
+    #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+    optim:
+      batch_size: 96
+      eval_batch_size: 96
+      eval_every: 10000
+      num_workers: 8
+      lr_initial: 0.0001
+      lr_gamma: 0.1
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 20833
+        - 31250
+        - 41666
+      warmup_steps: 10416
+      warmup_factor: 0.2
+      max_epochs: 3
+      force_coefficient: 50
+      energy_coefficient: 1
+      energy_grad_coefficient: 5
+    model:
+      hidden_channels: 192
+      out_emb_channels: 192
+      num_blocks: 3
+      cutoff: 6.0
+      num_radial: 6
+      num_spherical: 7
+      num_before_skip: 1
+      num_after_skip: 2
+      num_output_layers: 3
+      regress_forces: True
+      use_pbc: True
+
+  20M:
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 64.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      batch_size: 12
+      eval_batch_size: 12
+      lr_initial: 0.0001
+      lr_gamma: 0.1
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 78125
+        - 130208
+        - 208333
+      warmup_steps: 52083
+      max_epochs: 15
+      force_coefficient: 50
+
+  all:
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 256.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      batch_size: 8
+      eval_batch_size: 8
+      lr_initial: 0.0001
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 130794
+        - 196192
+        - 261589
+      warmup_steps: 130794
+      max_epochs: 7
+      force_coefficient: 50
+
+qm9:
+  default:
+    model:
+      num_blocks: 6
+      hidden_channels: 128
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 4.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      lr_initial: 0.001
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 2000000
+        - 4000000
+        - 6000000
+      warmup_steps: 3000
+      lr_gamma: 0.1
+      batch_size: 128
+      max_epochs: 600
+
+  10k: {}
+  all: {}
+
+qm7x:
+  default:
+    optim:
+      # *** Important note ***
+      #   The total number of gpus used for this run was 4.
+      #   If the global batch size (num_gpus * batch_size) is modified
+      #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+      lr_initial: 0.0001
+      lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+        - 115082
+        - 230164
+        - 345246
+      warmup_steps: 57541
+      max_epochs: 8
+
+  all: {}
+  1k: {}

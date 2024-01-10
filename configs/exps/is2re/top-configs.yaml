@@ -1,0 +1,120 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  time: 15:00:00
+
+default:
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  model:
+    edge_embed_type: all_rij
+  wandb_tags: "best-config"
+  optim:
+    batch_size: 256
+    eval_batch_size: 256
+  cp_data_to_tmpdir: True
+
+runs:
+  - config: faenet-is2re-all # 2700544
+    note: "top-runs"
+    frame_averaging: 2D
+    fa_method: se3-random
+    model:
+      mp_type: updownscale_base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 384
+      num_filters: 480
+      num_gaussians: 104
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 6.0
+    optim:
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 12
+      eval_every: 0.25
+
+  - config: faenet-is2re-all # 2700544
+    note: "top-runs"
+    frame_averaging: 2D
+    fa_method: random
+    model:
+      mp_type: base
+      phys_embeds: True
+      tag_hidden_channels: 64
+      pg_hidden_channels: 64
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 384
+      num_filters: 480
+      num_gaussians: 104
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concatai
+      cutoff: 6.0
+      max_num_neighbors: 40
+    optim:
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 12
+      eval_every: 0.25
+
+  - config: faenet-is2re-all # 2700544
+    note: "top-run eval every epoch"
+    frame_averaging: 2D
+    fa_method: se3-random
+    model:
+      mp_type: updownscale_base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 352
+      num_filters: 288
+      num_gaussians: 68
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 4.0
+    optim:
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 12
+      eval_every: 1
+
+  - config: faenet-is2re-all # 2700544
+    note: "top-run"
+    frame_averaging: 2D
+    fa_method: se3-random
+    model:
+      mp_type: updownscale_base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 352
+      num_filters: 288
+      num_gaussians: 68
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concat
+      cutoff: 4.0
+    optim:
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 9
+      eval_every: 0.4

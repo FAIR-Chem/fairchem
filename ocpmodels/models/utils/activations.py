@@ -41,3 +41,6 @@ class Act(torch.nn.Module):
             return torch.sigmoid(input) * input
         else:
             raise RuntimeError(f"Undefined activation called {self.act}")
+
+
+swish = Act("swish")

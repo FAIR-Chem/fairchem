@@ -1,0 +1,5 @@
+# Overwrites defaults.yaml for user `schmidtv`.
+# Create your own $USER.yaml in order to overwrite defaults.yaml systematically to your own taste.
+virtualenv: True
+env: /home/mila/a/alex.hernandez-garcia/.virtualenvs/ocp-torch1121cuda112
+modules: cuda/11.2, python/3.8

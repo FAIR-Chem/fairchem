@@ -1,0 +1,3 @@
+input_csv: s2ef-ablation.csv
+output_dir: output
+output_filename: ablation-s2ef.pdf

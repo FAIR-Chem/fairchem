@@ -1,0 +1,265 @@
+default:
+  frame_averaging: "" # {"2D", "3D", "DA", ""}
+  fa_method: "" # {"", all, randon, det, se3-all, se3-randon, se3-det}
+  model:
+    name: faenet
+    act: swish
+    hidden_channels: 384
+    num_filters: 480
+    num_interactions: 5
+    num_gaussians: 104
+    dropout_lin: 0.0
+    dropout_edge: 0.0
+    dropout_lowest_layer: output # lowest layer where `dropout_lin` is applied. Can be `inter-{i}` or `output`. Defaults to `output`.
+    first_trainable_layer: "" # lowest layer to NOT freeze. All previous layers will be frozen. Can be ``, `embed`, `inter-{i}`, `output`, or `dropout`.
+                            # if it is `` then no layer is frozen. If it is `dropout` then it will be set to the layer before `dropout_lowest_layer`.
+                            # Defaults to ``.
+    cutoff: 6.0
+    use_pbc: True
+    regress_forces: False
+    tag_hidden_channels: 64 # only for OC20
+    pg_hidden_channels: 64 # period & group embedding hidden channels
+    phys_embeds: True # physics-aware embeddings for atoms
+    phys_hidden_channels: 0
+    energy_head: weighted-av-final-embeds # Energy head: {False, weighted-av-initial-embeds, weighted-av-final-embeds}
+    skip_co: concat # Skip connections {False, "add", "concat"}
+    second_layer_MLP: False # in EmbeddingBlock
+    complex_mp: True # 2-layer MLP in Interaction blocks
+    mp_type: base # Message Passing type {'base', 'simple', 'updownscale', 'updownscale_base'}
+    graph_norm: True # graph normalization layer
+    force_decoder_type: "mlp" # force head (`"simple"`, `"mlp"`, `"res"`, `"res_updown"`)
+    force_decoder_model_config:
+      simple:
+        hidden_channels: 128
+        norm: batch1d # batch1d, layer or null
+      mlp:
+        hidden_channels: 256
+        norm: batch1d # batch1d, layer or null
+      res:
+        hidden_channels: 128
+        norm: batch1d # batch1d, layer or null
+      res_updown:
+        hidden_channels: 128
+        norm: batch1d # batch1d, layer or null
+  optim:
+    batch_size: 256
+    eval_batch_size: 256
+    max_epochs: 12
+    scheduler: LinearWarmupCosineAnnealingLR
+    optimizer: AdamW
+    num_workers: 4
+    warmup_steps: 6000
+    warmup_factor: 0.2
+    lr_initial: 0.002
+    lr_gamma: 0.1
+    energy_grad_coefficient: 10
+    force_coefficient: 30
+    energy_coefficient: 1
+    lr_milestones:
+      - 18000
+      - 27000
+      - 37000
+    epoch_fine_tune: 4
+
+# -------------------
+# --- OC20 IS2RE ---
+# -------------------
+
+is2re:
+  default:
+    graph_rewiring: remove-tag-0
+    frame_averaging: "2D" # {"2D", "3D", "DA", ""}
+    fa_method: "se3-random" # {"", all, randon, det, se3-all, se3-randon, se3-det}
+  # *** Important note ***
+  #   The total number of gpus used for this run was 1.
+  #   If the global batch size (num_gpus * batch_size) is modified
+  #   the lr_milestones and warmup_steps need to be adjusted accordingly.
+  10k:
+    optim:
+      lr_initial: 0.005
+      lr_milestones:
+        - 1562
+        - 2343
+        - 3125
+      warmup_steps: 468
+      max_epochs: 20
+
+  100k:
+    model:
+      hidden_channels: 256
+    optim:
+      lr_initial: 0.005
+      lr_milestones:
+        - 1562
+        - 2343
+        - 3125
+      warmup_steps: 468
+      max_epochs: 20
+
+  all: {}
+
+# ------------------
+# ----- OC20 S2EF  -----
+# ------------------
+
+# 1 GPU, specific to 2M S2EF dataset split
+
+s2ef:
+  default:
+    frame_averaging: 2D
+    fa_method: random
+    graph_rewiring: remove-tag-0
+    model:
+      hidden_channels: 256
+      num_interactions: 7
+      num_gaussians: 136
+      regress_forces: direct_with_gradient_target
+      max_num_neighbors: 30
+      tag_hidden_channels: 32
+      phys_embeds: False
+      skip_co: False
+      mp_type: updownscale_base
+    optim:
+      batch_size: 192
+      eval_batch_size: 192
+      lr_initial: 0.00025
+      max_epochs: 12
+      warmup_steps: 30000
+      lr_milestones:
+        - 55000
+        - 75000
+        - 10000
+
+  200k: {}
+
+  2M: {}
+
+  20M: {}
+
+  all: {}
+
+# ------------------
+# ----- QM9  -----
+# ------------------
+
+qm9:
+  default:
+    mode: train
+    frame_averaging: 3D # {"2D", "3D", "DA", ""}
+    fa_method: random # {"", all, random, det, se3-all, se3-random, se3-det}
+    dataset:
+      train:
+        lse_shift: true
+      val:
+        lse_shift: true
+      test:
+        lse_shift: true
+    model:
+      use_pbc: false
+      otf_graph: false
+      energy_head: ""
+      max_num_neighbors: 30
+      hidden_channels: 400
+      num_gaussians: 100
+      pg_hidden_channels: 32
+      mp_type: updownscale_base
+      phys_embeds: false
+      regress_forces: ""
+      second_layer_MLP: true
+      skip_co: False
+      tag_hidden_channels: 0
+    optim:
+      # all below is for the ReduceLROnPlateau scheduler
+      # early stopping
+      # parameters EMA
+      batch_size: 64
+      ema_decay: 0.999
+      es_min_abs_change: 0.000001
+      es_patience: 20
+      es_warmup_epochs: 600
+      eval_batch_size: 64
+      factor: 0.9
+      loss_energy: mse
+      lr_gamma: 0.1
+      lr_initial: 0.001
+      max_epochs: 1500
+      min_lr: 0.000001
+      mode: min
+      patience: 15
+      scheduler: ReduceLROnPlateau
+      threshold_mode: abs
+      threshold: 0.0001
+      verbose: true
+      warmup_steps: 3000
+
+  10k: {}
+  all: {}
+
+# ------------------
+# ----- QM7-X  -----
+# ------------------
+
+qm7x:
+  default:
+    frame_averaging: 3D # {"2D", "3D", "DA", ""}
+    fa_method: random # {"", all, random, det, se3-all, se3-random, se3-det}
+    model:
+      act: swish
+      max_num_neighbors: 40
+      use_pbc: False
+      regress_forces: direct_with_gradient_target
+      hidden_channels: 500
+      num_filters: 400
+      num_interactions: 5
+      num_gaussians: 50
+      cutoff: 5.0
+      tag_hidden_channels: 0 # only for OC20
+      pg_hidden_channels: 32 # period & group embedding hidden channels
+      phys_embeds: True # physics-aware embeddings for atoms
+      phys_hidden_channels: 0
+      energy_head: False # Energy head: {False, weighted-av-initial-embeds, weighted-av-final-embeds}
+      skip_co: concat # Skip connections {False, "add", "concat"}
+      second_layer_MLP: True # in EmbeddingBlock
+      complex_mp: True # 2-layer MLP in Interaction blocks
+      mp_type: updownscale_base # Message Passing type {'base', 'simple', 'updownscale', 'updownscale_base'}
+      graph_norm: False # graph normalization layer
+      force_decoder_type: "res_updown" # force head (`"simple"`, `"mlp"`, `"res"`, `"res_updown"`)
+      force_decoder_model_config:
+        simple:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        mlp:
+          hidden_channels: 256
+          norm: batch1d # batch1d, layer or null
+        res:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+        res_updown:
+          hidden_channels: 128
+          norm: batch1d # batch1d, layer or null
+    optim:
+      batch_size: 100
+      eval_batch_size: 100
+      ema_decay: 0.999
+      fidelity_max_steps: 2000000
+      max_steps: 3500000
+      scheduler: ReduceLROnPlateau
+      optimizer: AdamW
+      warmup_steps: 3000
+      warmup_factor: 0.2
+      threshold: 0.001
+      threshold_mode: abs
+      lr_initial: 0.000193
+      min_lr: 0.000001
+      lr_gamma: 0.1
+      lr_milestones:
+        - 17981
+        - 26972
+        - 35963
+      force_coefficient: 75
+      energy_coefficient: 1
+      loss_energy: "mae"
+      loss_force: "mse"
+
+  all: {}
+  1k: {}

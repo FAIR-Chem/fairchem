@@ -1,0 +1,173 @@
+default:
+  model:
+    name: sfarinet
+    act: swish
+    num_filters: 128
+    num_gaussians: 100
+    cutoff: 6.0
+    use_pbc: True
+    regress_forces: False # can be in {"from_energy", "direct", "direct_with_gradient_target"}
+    # drlab attributes:
+    hidden_channels: 256
+    num_interactions: 3
+    tag_hidden_channels: 0 # 32
+    pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
+    phys_embeds: False # True
+    phys_hidden_channels: 0
+    energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds}
+    edge_embed_type: ""
+    force_decoder_type: "mlp" # can be {"" or "simple"} | only used if regress_forces is True
+    force_decoder_model_config:
+      simple:
+        hidden_channels: 128
+      mlp:
+        hidden_channels: 256
+  optim:
+    warmup_factor: 0.2
+    batch_size: 64
+    eval_batch_size: 64
+    num_workers: 4
+    lr_gamma: 0.1
+    lr_initial: 0.001
+    max_epochs: 20
+    energy_grad_coefficient: 10
+    force_coefficient: 30
+    energy_coefficient: 1
+  frame_averaging: False # 2D, 3D, da, False
+  fa_method: False # can be {None, full, random, det, e3-full, e3-random, e3-det}
+
+# -------------------
+# -----  IS2RE  -----
+# -------------------
+
+is2re:
+  default:
+    model:
+      force_decoder_type: null
+  10k:
+    model:
+      num_interactions: 3
+      hidden_channels: 256
+    optim:
+      lr_initial: 0.005
+      lr_milestones:
+        - 1562
+        - 2343
+        - 3125
+      warmup_steps: 468
+      max_epochs: 20
+
+  100k:
+    model:
+      hidden_channels: 256
+      num_interactions: 3
+
+    optim:
+      lr_initial: 0.005
+      lr_milestones:
+        - 1562
+        - 2343
+        - 3125
+      warmup_steps: 468
+      max_epochs: 20
+
+  all:
+    model:
+      hidden_channels: 384
+      num_interactions: 4
+      num_filters: 128
+      num_gaussians: 100
+    optim:
+      lr_initial: 0.001
+      lr_milestones:
+        - 17981
+        - 26972
+        - 35963
+      warmup_steps: 6000
+      max_epochs: 20
+
+# ------------------
+# -----  S2EF  -----
+# ------------------
+
+# For 1 GPUs
+
+s2ef:
+  default:
+    model:
+      num_interactions: 4
+      hidden_channels: 750
+      num_gaussians: 200
+      num_filters: 256
+      regress_forces: "direct"
+      force_coefficient: 30
+      energy_grad_coefficient: 10
+    optim:
+      batch_size: 192
+      eval_batch_size: 192
+      warmup_steps: 30000
+      warmup_factor: 0.2
+      lr_gamma: 0.1
+      lr_initial: 0.0002
+      max_epochs: 20
+      lr_milestones:
+        - 55000
+        - 80000
+        - 105000
+
+  200k: {}
+
+  2M: {}
+
+  20M: {}
+
+  all: {}
+
+# ------------------
+# -----  QM9  -----
+# ------------------
+
+qm9:
+  default:
+    model:
+      hidden_channels: 150
+      num_gaussians: 100
+      num_filters: 128
+      num_interactions: 6
+      cutoff: 5.0
+    optim:
+      batch_size: 1024
+      lr_initial: 0.001
+      max_epochs: 1000
+      decay_steps: 125000
+      decay_rate: 0.01
+      ema_decay: 0.999
+      lr_gamma: 0.25
+      lr_milestones:
+        - 17981
+        - 26972
+        - 35963
+        - 52000
+        - 100000
+      warmup_steps: 1000
+
+  10k: {}
+  all: {}
+
+qm7x:
+  default:
+    model:
+      hidden_channels: 384
+      num_interactions: 4
+
+    optim:
+      lr_initial: 0.001
+      lr_milestones:
+        - 17981
+        - 26972
+        - 35963
+      warmup_steps: 5394
+      max_epochs: 17
+
+  all: {}
+  1k: {}

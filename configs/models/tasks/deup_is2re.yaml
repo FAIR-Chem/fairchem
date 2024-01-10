@@ -1,0 +1,57 @@
+default:
+  trainer: single
+  logger: wandb
+
+  task:
+    dataset: lmdb # NOT deup_lmdb, this is done in BaseTrainer.load_datasets()
+    description: "IS2RE Uncertainty estimation"
+    type: regression
+    metric: mae
+    labels:
+      - relaxed energy
+  normalizer: null
+  model:
+    otf_graph: False
+    max_num_neighbors: 40
+  mode: train
+  dataset:
+    default_val: deup-val_ood_cat-val_ood_ads
+    deup-train-val_id:
+      src: /network/scratch/s/schmidtv/ocp/runs/3264530/deup_dataset
+      normalize_labels: True
+      target_mean: auto # Automatically changed if deup dataset is created
+      target_std: auto # Automatically changed if deup dataset is created
+    deup-val_ood_cat-val_ood_ads:
+      src: /network/scratch/s/schmidtv/ocp/runs/3264530/deup_dataset
+    train:
+      src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/all/train/
+    val_id:
+      src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/all/val_id/
+    val_ood_cat:
+      src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/all/val_ood_cat/
+    val_ood_ads:
+      src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/all/val_ood_ads/
+    val_ood_both:
+      src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/all/val_ood_both/
+
+  # DEUP
+  deup_dataset:
+    create: False # "before" -> created before training (for deup) "after" -> created after training (for is2re) "" - not created
+    dataset_strs: ["train", "val_id", "val_ood_cat", "val_ood_ads"]
+    n_samples: 7
+
+  ensemble_checkpoints: /network/scratch/a/alexandre.duval/ocp/runs/2935198
+  ensemble_dropout: 0.7
+
+
+10k:
+  dataset:
+    train:
+      src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/10k/train
+
+100k:
+  dataset:
+    train:
+      src: /network/scratch/s/schmidtv/ocp/datasets/ocp/is2re/100k/train
+
+all: {}

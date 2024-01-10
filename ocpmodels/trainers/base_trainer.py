@@ -9,173 +9,143 @@ import errno
 import logging
 import os
 import random
-import subprocess
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from copy import deepcopy
 from pathlib import Path
-
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
+from rich.console import Console
+from rich.table import Table
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
+from torch_geometric.data import Batch
 from tqdm import tqdm
-
-import ocpmodels
-from ocpmodels.common import distutils
+from uuid import uuid4
+from ocpmodels.common import dist_utils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
     OCPDataParallel,
     ParallelCollater,
 )
+from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import save_checkpoint
+from ocpmodels.common.timer import Times
+from ocpmodels.common.utils import JOB_ID, get_commit_hash, save_checkpoint, resolve
+from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
-from ocpmodels.modules.exponential_moving_average import ExponentialMovingAverage
+from ocpmodels.modules.exponential_moving_average import (
+    ExponentialMovingAverage,
+)
 from ocpmodels.modules.loss import DDPLoss, L2MAELoss
 from ocpmodels.modules.normalizer import Normalizer
-from ocpmodels.modules.scheduler import LRScheduler
+from ocpmodels.modules.scheduler import EarlyStopper, LRScheduler
 
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
-    def __init__(
-        self,
-        task,
-        model_attributes,
-        dataset,
-        optimizer,
-        identifier,
-        normalizer=None,
-        timestamp_id=None,
-        run_dir=None,
-        is_debug=False,
-        is_hpo=False,
-        print_every=100,
-        seed=None,
-        logger="tensorboard",
-        local_rank=0,
-        amp=False,
-        cpu=False,
-        name="base_trainer",
-        slurm={},
-        new_gnn=True,
-        data_split=None,
-        note="",
-    ):
-        self.name = name
-        self.cpu = cpu
+    def __init__(self, load=True, **kwargs):
+        run_dir = kwargs["run_dir"]
+        model_name = kwargs["model"].pop(
+            "name", kwargs.get("model_name", "Unknown - base_trainer issue")
+        )
+        self.early_stopping_file = resolve(run_dir) / f"{str(uuid4())}.stop"
+        kwargs["model"]["graph_rewiring"] = kwargs.get("graph_rewiring")
+
+        self.config = {
+            **kwargs,
+            "model_name": model_name,
+            "gpus": dist_utils.get_world_size() if not kwargs["cpu"] else 0,
+            "checkpoint_dir": str(resolve(run_dir) / "checkpoints"),
+            "results_dir": str(resolve(run_dir) / "results"),
+            "logs_dir": str(resolve(run_dir) / "logs"),
+            "early_stopping_file": str(self.early_stopping_file),
+        }
+
+        self.sigterm = False
+        self.objective = None
         self.epoch = 0
         self.step = 0
-        self.new_gnn = new_gnn
+        self.cpu = self.config["cpu"]
+        self.task_name = self.config["task"].get("name", self.config.get("name"))
+        assert self.task_name, "Specify task name (got {})".format(self.task_name)
+        self.test_ri = self.config["test_ri"]
+        self.is_debug = self.config["is_debug"]
+        self.is_hpo = self.config["is_hpo"]
+        self.eval_on_test = bool(self.config.get("eval_on_test"))
+        self.silent = self.config["silent"]
+        self.datasets = {}
+        self.samplers = {}
+        self.loaders = {}
+        self.early_stopper = EarlyStopper(
+            patience=self.config["optim"].get("es_patience") or 15,
+            min_abs_change=self.config["optim"].get("es_min_abs_change") or 1e-5,
+            min_lr=self.config["optim"].get("min_lr", -1),
+            warmup_epochs=self.config["optim"].get("es_warmup_epochs") or -1,
+        )
+        self.config["commit"] = self.config.get("commit", get_commit_hash())
+
+        if self.is_debug:
+            del self.config["checkpoint_dir"]
+            del self.config["results_dir"]
+            del self.config["logdir"]
+            del self.config["logs_dir"]
+            del self.config["run_dir"]
+            del self.config["early_stopping_file"]
 
         if torch.cuda.is_available() and not self.cpu:
-            self.device = torch.device(f"cuda:{local_rank}")
+            self.device = torch.device("cuda:0")
         else:
             self.device = torch.device("cpu")
             self.cpu = True  # handle case when `--cpu` isn't specified
             # but there are no gpu devices available
-        if run_dir is None:
-            run_dir = os.getcwd()
 
-        if timestamp_id is None:
-            timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(
-                self.device
-            )
-            # create directories from master rank only
-            distutils.broadcast(timestamp, 0)
-            timestamp = datetime.datetime.fromtimestamp(timestamp.int()).strftime(
-                "%Y-%m-%d-%H-%M-%S"
-            )
-            if identifier:
-                self.timestamp_id = f"{timestamp}-{identifier}"
-            else:
-                self.timestamp_id = timestamp
-        else:
-            self.timestamp_id = timestamp_id
+        timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(self.device)
+        # create directories from master rank only
+        dist_utils.broadcast(timestamp, 0)
+        timestamp = datetime.datetime.fromtimestamp(timestamp.int()).strftime(
+            "%Y-%m-%d-%H-%M-%S"
+        )
+        self.timestamp_id = timestamp
 
-        try:
-            commit_hash = (
-                subprocess.check_output(
-                    [
-                        "git",
-                        "-C",
-                        ocpmodels.__path__[0],
-                        "describe",
-                        "--always",
-                    ]
-                )
-                .strip()
-                .decode("ascii")
-            )
-        # catch instances where code is not being run from a git repo
-        except Exception:
-            commit_hash = None
+        self.config["timestamp_id"] = self.timestamp_id
 
-        # logger_name = logger if isinstance(logger, str) else logger["name"]
-        model_name = model_attributes.pop("name")
-        self.config = {
-            "task": task,
-            "data_split": data_split,
-            "model": model_name,
-            "model_attributes": model_attributes,
-            "optim": optimizer,
-            "logger": logger,
-            "amp": amp,
-            "run_dir": run_dir,
-            "gpus": distutils.get_world_size() if not self.cpu else 0,
-            "cmd": {
-                "identifier": identifier,
-                "print_every": print_every,
-                "seed": seed,
-                "timestamp_id": self.timestamp_id,
-                "commit": commit_hash,
-                "checkpoint_dir": str(Path(run_dir) / "checkpoints"),
-                "results_dir": str(Path(run_dir) / "results"),
-                "logs_dir": str(Path(run_dir) / "logs"),
-            },
-            "slurm": slurm,
-            "note": note,
-        }
         # AMP Scaler
-        self.scaler = torch.cuda.amp.GradScaler() if amp else None
+        self.scaler = torch.cuda.amp.GradScaler() if self.config["amp"] else None
 
-        if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
-            self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
+        if JOB_ID and "folder" in self.config["slurm"]:
+            self.config["slurm"]["job_id"] = JOB_ID
             self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
                 "%j", self.config["slurm"]["job_id"]
             )
-        if isinstance(dataset, list):
-            if len(dataset) > 0:
-                self.config["dataset"] = dataset[0]
-            if len(dataset) > 1:
-                self.config["val_dataset"] = dataset[1]
-            if len(dataset) > 2:
-                self.config["test_dataset"] = dataset[2]
-        elif isinstance(dataset, dict):
-            self.config["dataset"] = dataset.get("train", None)
-            self.config["val_dataset"] = dataset.get("val", None)
-            self.config["test_dataset"] = dataset.get("test", None)
+
+        self.config["dataset"] = kwargs["dataset"]
+        deup_norm_key = [
+            k for k in self.config["dataset"] if "deup" in k and "train" in k
+        ]
+        if deup_norm_key:
+            self.train_dataset_name = deup_norm_key[0]
         else:
-            self.config["dataset"] = dataset
+            self.train_dataset_name = "train"
 
-        self.normalizer = normalizer
+        self.normalizer = kwargs["normalizer"]
         # This supports the legacy way of providing norm parameters in dataset
-        if self.config.get("dataset", None) is not None and normalizer is None:
-            self.normalizer = self.config["dataset"]
+        if (
+            self.config.get("dataset", None) is not None
+            and kwargs["normalizer"] is None
+        ):
+            self.normalizer = self.config["dataset"][self.train_dataset_name]
 
-        if not is_debug and distutils.is_master() and not is_hpo:
-            os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
-            os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
-            os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
+        if not self.is_debug and dist_utils.is_master() and not self.is_hpo:
+            os.makedirs(self.config["checkpoint_dir"], exist_ok=True)
+            os.makedirs(self.config["results_dir"], exist_ok=True)
+            os.makedirs(self.config["logs_dir"], exist_ok=True)
             # TODO: do not create all three directory depending on mode
             # "Predict" -> result, "Train" -> checkpoint and logs.
-
-        self.is_debug = is_debug
-        self.is_hpo = is_hpo
 
         if self.is_hpo:
             # conditional import is necessary for checkpointing
@@ -187,11 +157,22 @@ class BaseTrainer(ABC):
             # default is no checkpointing
             self.hpo_checkpoint_every = self.config["optim"].get("checkpoint_every", -1)
 
-        if distutils.is_master():
-            print(yaml.dump(self.config, default_flow_style=False))
-        self.load()
+        if dist_utils.is_master() and not self.silent and not self.is_debug:
+            print(f"\n🧰 Trainer config:\n{'-'*18}\n")
+            print(yaml.dump(self.config), end="\n\n")
+            print(
+                f"\n\n🚦  Create {str(self.early_stopping_file)}",
+                "to stop the training after the next validation\n",
+            )
+            (run_dir / f"config-{JOB_ID}.yaml").write_text(yaml.dump(self.config))
 
-        self.evaluator = Evaluator(task=name)
+        if load:
+            self.load()
+
+        self.evaluator = Evaluator(
+            task=self.task_name,
+            model_regresses_forces=self.config["model"].get("regress_forces", ""),
+        )
 
     def load(self):
         self.load_seed_from_config()
@@ -205,20 +186,21 @@ class BaseTrainer(ABC):
 
     def load_seed_from_config(self):
         # https://pytorch.org/docs/stable/notes/randomness.html
-        seed = self.config["cmd"]["seed"]
+        seed = self.config["seed"]
         if seed is None:
             return
 
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+        if "cpu" not in str(self.device):
+            torch.cuda.manual_seed_all(seed)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
     def load_logger(self):
         self.logger = None
-        if not self.is_debug and distutils.is_master() and not self.is_hpo:
+        if not self.is_debug and dist_utils.is_master() and not self.is_hpo:
             assert self.config["logger"] is not None, "Specify logger in config"
 
             logger = self.config["logger"]
@@ -238,8 +220,8 @@ class BaseTrainer(ABC):
         sampler = BalancedBatchSampler(
             dataset,
             batch_size=batch_size,
-            num_replicas=distutils.get_world_size(),
-            rank=distutils.get_rank(),
+            num_replicas=dist_utils.get_world_size(),
+            rank=dist_utils.get_rank(),
             device=self.device,
             mode=balancing_mode,
             shuffle=shuffle,
@@ -260,56 +242,105 @@ class BaseTrainer(ABC):
     def load_datasets(self):
         self.parallel_collater = ParallelCollater(
             0 if self.cpu else 1,
-            self.config["model_attributes"].get("otf_graph", False),
+            self.config["model"].get("otf_graph", False),
         )
 
-        self.train_loader = self.val_loader = self.test_loader = None
+        transform = get_transforms(self.config)  # TODO: train/val/test behavior
+        batch_size = self.config["optim"]["batch_size"]
 
-        if self.config.get("dataset", None):
-            self.train_dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
-            )(self.config["dataset"])
-            self.train_sampler = self.get_sampler(
-                self.train_dataset,
-                self.config["optim"]["batch_size"],
-                shuffle=True,
-            )
-            self.train_loader = self.get_dataloader(
-                self.train_dataset,
-                self.train_sampler,
-            )
+        max_epochs = self.config["optim"].get("max_epochs", -1)
+        max_steps = self.config["optim"].get("max_steps", -1)
+        max_samples = self.config["optim"].get("max_samples", -1)
 
-            if self.config.get("val_dataset", None):
-                self.val_dataset = registry.get_dataset_class(
+        for split, ds_conf in self.config["dataset"].items():
+            if split == "default_val":
+                continue
+
+            if "deup" in split:
+                self.datasets[split] = registry.get_dataset_class("deup_lmdb")(
+                    self.config["dataset"], split, transform=transform
+                )
+            else:
+                self.datasets[split] = registry.get_dataset_class(
                     self.config["task"]["dataset"]
-                )(self.config["val_dataset"])
-                self.val_sampler = self.get_sampler(
-                    self.val_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.val_loader = self.get_dataloader(
-                    self.val_dataset,
-                    self.val_sampler,
+                )(
+                    ds_conf,
+                    transform=transform,
+                    adsorbates=self.config.get("adsorbates"),
+                    adsorbates_ref_dir=self.config.get("adsorbates_ref_dir"),
                 )
 
-            if self.config.get("test_dataset", None):
-                self.test_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["test_dataset"])
-                self.test_sampler = self.get_sampler(
-                    self.test_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.test_loader = self.get_dataloader(
-                    self.test_dataset,
-                    self.test_sampler,
-                )
+            shuffle = False
+            if "train" in split:
+                shuffle = True
+                n_train = len(self.datasets[split])
+
+                if "fidelity_max_epochs" in self.config["optim"]:
+                    self.config["optim"]["fidelity_max_steps"] = int(
+                        np.ceil(
+                            self.config["optim"]["fidelity_max_epochs"]
+                            * (n_train / batch_size)
+                        )
+                    )
+                    if not self.silent:
+                        print(
+                            "Setting fidelity_max_steps to {}".format(
+                                self.config["optim"]["fidelity_max_steps"]
+                            )
+                        )
+
+                if max_samples > 0:
+                    if max_epochs > 0 and not self.silent:
+                        print(
+                            "\nWARNING: Both max_samples and max_epochs are set.",
+                            "Using max_samples.",
+                        )
+                    if max_steps > 0 and not self.silent:
+                        print(
+                            "WARNING: Both max_samples and max_steps are set.",
+                            "Using max_samples.\n",
+                        )
+                    self.config["optim"]["max_epochs"] = int(
+                        np.ceil(max_samples / n_train)
+                    )
+                    self.config["optim"]["max_steps"] = int(
+                        np.ceil(max_samples / batch_size)
+                    )
+                elif max_steps > 0:
+                    if max_epochs > 0 and not self.silent:
+                        print(
+                            "\nWARNING: Both max_steps and max_epochs are set.",
+                            "Using max_steps.\n",
+                        )
+                    self.config["optim"]["max_epochs"] = int(
+                        np.ceil(max_steps / (n_train / batch_size))
+                    )
+                    if not self.silent:
+                        print(
+                            "Setting max_epochs to",
+                            self.config["optim"]["max_epochs"],
+                            f"from max_steps ({max_steps}),",
+                            f"dataset length ({n_train}),",
+                            f"and batch_size ({batch_size})\n",
+                        )
+                else:
+                    self.config["optim"]["max_steps"] = int(
+                        np.ceil(max_epochs * (n_train / batch_size))
+                    )
+                    if not self.silent:
+                        print(
+                            "Setting max_steps to ",
+                            f"{self.config['optim']['max_steps']} from",
+                            f"max_epochs ({max_epochs}), dataset length",
+                            f"({n_train}), and batch_size ({batch_size})\n",
+                        )
+
+            self.samplers[split] = self.get_sampler(
+                self.datasets[split], batch_size, shuffle=shuffle
+            )
+            self.loaders[split] = self.get_dataloader(
+                self.datasets[split], self.samplers[split]
+            )
 
         # Normalizer for the dataset.
         # Compute mean, std of training set labels.
@@ -321,10 +352,14 @@ class BaseTrainer(ABC):
                     std=self.normalizer["target_std"],
                     device=self.device,
                 )
+                if "hof_stats" in self.normalizer:
+                    self.normalizers["target"].set_hof_rescales(
+                        self.normalizer["hof_stats"]
+                    )
             else:
                 self.normalizers["target"] = Normalizer(
-                    tensor=self.train_loader.dataset.data.y[
-                        self.train_loader.dataset.__indices__
+                    tensor=self.datasets["train"].data.y[
+                        self.datasets["train"].__indices__
                     ],
                     device=self.device,
                 )
@@ -338,54 +373,64 @@ class BaseTrainer(ABC):
         pass
 
     def load_model(self):
-        # Build model
-        if distutils.is_master():
-            logging.info(f"Loading model: {self.config['model']}")
-
-        # TODO: depreicated, remove.
         bond_feat_dim = None
-        bond_feat_dim = self.config["model_attributes"].get("num_gaussians", 50)
+        bond_feat_dim = self.config["model"].get("num_gaussians", 50)
 
-        loader = self.train_loader or self.val_loader or self.test_loader
-        self.model = registry.get_model_class(self.config["model"])(
-            num_atoms=loader.dataset[0].x.shape[-1]
-            if loader
-            and hasattr(loader.dataset[0], "x")
-            and loader.dataset[0].x is not None
-            else None,
-            bond_feat_dim=bond_feat_dim,
-            num_targets=self.num_targets,
-            new_gnn=self.new_gnn,
-            **self.config["model_attributes"],
+        loader = list(self.loaders.values())[0] if self.loaders else None
+        num_atoms = None
+        if loader:
+            sample = loader.dataset[0]
+            if hasattr(sample, "x") and hasattr(sample.x, "shape"):
+                num_atoms = sample.x.shape[-1]
+
+        model_config = {
+            **{
+                "num_atoms": num_atoms,
+                "bond_feat_dim": bond_feat_dim,
+                "num_targets": self.num_targets,
+                "task_name": self.task_name,
+            },
+            **self.config["model"],
+        }
+
+        self.model = registry.get_model_class(self.config["model_name"])(
+            **model_config
         ).to(self.device)
+        self.model.reset_parameters()
+        self.model.set_deup_inference(False)
 
-        if distutils.is_master():
+        if dist_utils.is_master() and not self.silent:
             logging.info(
                 f"Loaded {self.model.__class__.__name__} with "
                 f"{self.model.num_params} parameters."
             )
 
-        if self.logger is not None:
-            self.logger.watch(self.model)
+        # if self.logger is not None:
+        #     self.logger.watch(self.model)
 
         self.model = OCPDataParallel(
             self.model,
             output_device=self.device,
             num_gpus=1 if not self.cpu else 0,
         )
-        if distutils.initialized():
+        if dist_utils.initialized():
             self.model = DistributedDataParallel(
                 self.model, device_ids=[self.device], output_device=self.device
             )
 
-    def load_checkpoint(self, checkpoint_path):
-        if not os.path.isfile(checkpoint_path):
+    def load_checkpoint(self, checkpoint_path, silent=False):
+        if Path(checkpoint_path).is_dir():
+            checkpoint_path = str(
+                Path(checkpoint_path) / "checkpoints" / "best_checkpoint.pt"
+            )
+        if not Path(checkpoint_path).exists():
             raise FileNotFoundError(
                 errno.ENOENT, "Checkpoint file not found", checkpoint_path
             )
 
-        logging.info(f"Loading checkpoint from: {checkpoint_path}")
         map_location = torch.device("cpu") if self.cpu else self.device
+        if not silent:
+            print(f"Loading checkpoint from: {checkpoint_path} onto {map_location}")
         checkpoint = torch.load(checkpoint_path, map_location=map_location)
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
@@ -394,22 +439,46 @@ class BaseTrainer(ABC):
         # if trained with ddp and want to load in non-ddp, modify keys from
         # module.module.. -> module..
         first_key = next(iter(checkpoint["state_dict"]))
-        if not distutils.initialized() and first_key.split(".")[1] == "module":
+        strict = "deup" not in self.config["config"]
+        missing, unexpected = None, None
+        if not dist_utils.initialized() and first_key.split(".")[1] == "module":
             # No need for OrderedDict since dictionaries are technically ordered
             # since Python 3.6 and officially ordered since Python 3.7
             new_dict = {k[7:]: v for k, v in checkpoint["state_dict"].items()}
-            self.model.load_state_dict(new_dict)
-        elif distutils.initialized() and first_key.split(".")[1] != "module":
+            missing, unexpected = self.model.load_state_dict(new_dict, strict)
+        elif dist_utils.initialized() and first_key.split(".")[1] != "module":
             new_dict = {f"module.{k}": v for k, v in checkpoint["state_dict"].items()}
-            self.model.load_state_dict(new_dict)
+            missing, unexpected = self.model.load_state_dict(new_dict, strict)
         else:
-            self.model.load_state_dict(checkpoint["state_dict"])
+            missing, unexpected = self.model.load_state_dict(
+                checkpoint["state_dict"], strict
+            )
 
-        if "optimizer" in checkpoint:
+        if missing or unexpected:
+            print("Warning: Model did not load correctly.")
+            print(f"Missing keys: {missing}")
+            print(f"Unexpected keys: {unexpected}")
+
+        if "optimizer" in checkpoint and hasattr(self, "optimizer"):
             self.optimizer.load_state_dict(checkpoint["optimizer"])
-        if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
+        if (
+            "scheduler" in checkpoint
+            and checkpoint["scheduler"] is not None
+            and hasattr(self, "scheduler")
+        ):
             self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
-        if "ema" in checkpoint and checkpoint["ema"] is not None:
+        if (
+            checkpoint.get("warmup_scheduler") is not None
+            and self.scheduler.warmup_scheduler is not None
+        ):
+            self.scheduler.warmup_scheduler.load_state_dict(
+                checkpoint["warmup_scheduler"]
+            )
+        if (
+            "ema" in checkpoint
+            and checkpoint["ema"] is not None
+            and hasattr(self, "ema")
+        ):
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
@@ -420,28 +489,38 @@ class BaseTrainer(ABC):
             if self.scaler and checkpoint["amp"]:
                 self.scaler.load_state_dict(checkpoint["amp"])
 
-    def load_loss(self):
+        if "config" in checkpoint:
+            if "job_ids" in checkpoint["config"] and JOB_ID not in checkpoint["config"]:
+                self.config["job_ids"] = checkpoint["config"]["job_ids"] + f", {JOB_ID}"
+
+    def load_loss(self, reduction="mean"):
         self.loss_fn = {}
         self.loss_fn["energy"] = self.config["optim"].get("loss_energy", "mae")
         self.loss_fn["force"] = self.config["optim"].get("loss_force", "mae")
         for loss, loss_name in self.loss_fn.items():
             if loss_name in ["l1", "mae"]:
-                self.loss_fn[loss] = nn.L1Loss()
+                self.loss_fn[loss] = nn.L1Loss(reduction=reduction)
             elif loss_name == "mse":
-                self.loss_fn[loss] = nn.MSELoss()
+                self.loss_fn[loss] = nn.MSELoss(reduction=reduction)
             elif loss_name == "l2mae":
-                self.loss_fn[loss] = L2MAELoss()
+                self.loss_fn[loss] = L2MAELoss(reduction=reduction)
             else:
                 raise NotImplementedError(f"Unknown loss function name: {loss_name}")
-            if distutils.initialized():
+            if dist_utils.initialized():
                 self.loss_fn[loss] = DDPLoss(self.loss_fn[loss])
 
     def load_optimizer(self):
         optimizer = self.config["optim"].get("optimizer", "AdamW")
+
+        if optimizer.lower() == "amsgrad":
+            optimizer = "Adam"
+            if "optimizer_params" not in self.config["optim"]:
+                self.config["optim"]["optimizer_params"] = {}
+            self.config["optim"]["optimizer_params"]["amsgrad"] = True
+
         optimizer = getattr(optim, optimizer)
 
         if self.config["optim"].get("weight_decay", 0) > 0:
-
             # Do not regularize bias etc.
             params_decay = []
             params_no_decay = []
@@ -475,7 +554,11 @@ class BaseTrainer(ABC):
             )
 
     def load_extras(self):
-        self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
+        self.scheduler = LRScheduler(
+            self.optimizer,
+            self.config["optim"],
+            silent=self.silent,
+        )
         self.clip_grad_norm = self.config["optim"].get("clip_grad_norm")
         self.ema_decay = self.config["optim"].get("ema_decay")
         if self.ema_decay:
@@ -492,27 +575,33 @@ class BaseTrainer(ABC):
         checkpoint_file="checkpoint.pt",
         training_state=True,
     ):
-        if not self.is_debug and distutils.is_master():
+        if not self.is_debug and dist_utils.is_master():
             if training_state:
-                save_checkpoint(
-                    {
-                        "epoch": self.epoch,
-                        "step": self.step,
-                        "state_dict": self.model.state_dict(),
-                        "optimizer": self.optimizer.state_dict(),
-                        "scheduler": self.scheduler.scheduler.state_dict()
-                        if self.scheduler.scheduler_type != "Null"
-                        else None,
-                        "normalizers": {
-                            key: value.state_dict()
-                            for key, value in self.normalizers.items()
-                        },
-                        "config": self.config,
-                        "val_metrics": metrics,
-                        "ema": self.ema.state_dict() if self.ema else None,
-                        "amp": self.scaler.state_dict() if self.scaler else None,
+                ckpt_dict = {
+                    "epoch": self.epoch,
+                    "step": self.step,
+                    "state_dict": self.model.state_dict(),
+                    "optimizer": self.optimizer.state_dict(),
+                    "scheduler": self.scheduler.scheduler.state_dict()
+                    if self.scheduler.scheduler_type != "Null"
+                    else None,
+                    "normalizers": {
+                        key: value.state_dict()
+                        for key, value in self.normalizers.items()
                     },
-                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
+                    "config": self.config,
+                    "val_metrics": metrics,
+                    "ema": self.ema.state_dict() if self.ema else None,
+                    "amp": self.scaler.state_dict() if self.scaler else None,
+                }
+                if self.scheduler.warmup_scheduler is not None:
+                    ckpt_dict[
+                        "warmup_scheduler"
+                    ] = self.scheduler.warmup_scheduler.state_dict()
+
+                save_checkpoint(
+                    ckpt_dict,
+                    checkpoint_dir=self.config["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
             else:
@@ -530,11 +619,12 @@ class BaseTrainer(ABC):
                         "val_metrics": metrics,
                         "amp": self.scaler.state_dict() if self.scaler else None,
                     },
-                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
+                    checkpoint_dir=self.config["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
                 if self.ema:
                     self.ema.restore()
+        dist_utils.synchronize()
 
     def save_hpo(self, epoch, step, metrics, checkpoint_every):
         # default is no checkpointing
@@ -575,11 +665,20 @@ class BaseTrainer(ABC):
         """Derived classes should implement this function."""
         pass
 
-    @torch.no_grad()
-    def validate(self, split="val", disable_tqdm=False, name_split=None):
-        if distutils.is_master():
-            if not name_split:
-                logging.info(f"Evaluating on {split}.")
+    def validate(
+        self,
+        split="val",
+        disable_tqdm=True,
+        debug_batches=-1,
+        is_final=False,
+        is_first=False,
+    ):
+        # Compute energy gradient (just for a metric)
+        torch.set_grad_enabled(bool(self.config["model"].get("regress_forces", "")))
+
+        if dist_utils.is_master() and not self.silent:
+            print()
+            logging.info(f"\n >>> 🧐 Evaluating on {split}.")
         if self.is_hpo:
             disable_tqdm = True
 
@@ -588,34 +687,48 @@ class BaseTrainer(ABC):
             self.ema.store()
             self.ema.copy_to()
 
-        evaluator, metrics = Evaluator(task=self.name), {}
-        rank = distutils.get_rank()
+        evaluator = Evaluator(
+            task=self.task_name,
+            model_regresses_forces=self.config["model"].get("regress_forces", ""),
+        )
+        metrics = {}
+        desc = "device[rank={}]".format(dist_utils.get_rank())
 
-        loader = self.val_loader if split[:3] in {"val", "eva"} else self.test_loader
+        loader = self.loaders[split]
+        times = Times(gpu=True)
 
-        for i, batch in tqdm(
-            enumerate(loader),
-            total=len(loader),
-            position=rank,
-            desc="device {}".format(rank),
-            disable=disable_tqdm,
-        ):
-            # Forward.
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch)
-            loss = self._compute_loss(out, batch)
+        with times.next("validation_loop"):
+            for i, batch in enumerate(tqdm(loader, desc=desc, disable=disable_tqdm)):
+                if self.sigterm:
+                    return "SIGTERM"
 
-            # Compute metrics.
-            metrics = self._compute_metrics(out, batch, evaluator, metrics)
-            metrics = evaluator.update("loss", loss.item(), metrics)
+                if debug_batches > 0 and i == debug_batches:
+                    break
+
+                # Forward.
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    with times.next("val_forward", ignore=not is_first):
+                        preds = self.model_forward(batch)
+                    loss = self.compute_loss(preds, batch)
+
+                # Compute metrics.
+                metrics = self.compute_metrics(preds, batch, evaluator, metrics)
+                for k, v in loss.items():
+                    metrics = evaluator.update(k, v.item(), metrics)
+
+        mean_val_times, std_val_times = times.prepare_for_logging(
+            map_funcs={
+                "val_forward": lambda x: x / self.config["optim"]["batch_size"],
+            }
+        )
 
         aggregated_metrics = {}
         for k in metrics:
             aggregated_metrics[k] = {
-                "total": distutils.all_reduce(
+                "total": dist_utils.all_reduce(
                     metrics[k]["total"], average=False, device=self.device
                 ),
-                "numel": distutils.all_reduce(
+                "numel": dist_utils.all_reduce(
                     metrics[k]["numel"], average=False, device=self.device
                 ),
             }
@@ -625,41 +738,48 @@ class BaseTrainer(ABC):
         metrics = aggregated_metrics
 
         log_dict = {k: metrics[k]["metric"] for k in metrics}
-        log_dict.update({"epoch": self.epoch})
-        if distutils.is_master():
+        log_dict["epoch"] = self.epoch
+        log_dict[f"{split}_time"] = mean_val_times["validation_loop"]
+        if is_first:
+            log_dict["val_forward_time_mean"] = mean_val_times["val_forward"]
+            log_dict["val_forward_time_std"] = std_val_times["val_forward"]
+
+        if dist_utils.is_master() and not self.silent:
             log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
-            logging.info(", ".join(log_str))
+            print(("\n  > ".join([""] + log_str))[1:])
+            print()
 
         # Make plots.
         if self.logger is not None:
-            if split == "eval":
-                log_dict = {f"{name_split}-{k}": v for k, v in log_dict.items()}
+            log_dict = {f"{split}/{k}": v for k, v in log_dict.items()}
+            if is_final:
                 self.logger.log(
                     log_dict,
-                    split=split,
+                    split="eval",
                 )
             else:
                 self.logger.log(
                     log_dict,
                     step=self.step,
-                    split=split,
+                    split="val",
                 )
         if self.ema:
             self.ema.restore()
 
+        torch.set_grad_enabled(True)
         return metrics
 
     @abstractmethod
-    def _forward(self, batch_list):
+    def model_forward(self, batch_list):
         """Derived classes should implement this function."""
 
     @abstractmethod
-    def _compute_loss(self, out, batch_list):
+    def compute_loss(self, out, batch_list):
         """Derived classes should implement this function."""
 
     def _backward(self, loss):
         self.optimizer.zero_grad()
-        loss.backward()
+        loss["total_loss"].backward()
         # Scale down the gradients of shared parameters
         if hasattr(self.model.module, "shared_parameters"):
             for p, factor in self.model.module.shared_parameters:
@@ -680,7 +800,9 @@ class BaseTrainer(ABC):
                 self.model.parameters(),
                 max_norm=self.clip_grad_norm,
             )
-            if self.logger is not None:
+            if self.logger is not None and (
+                self.step % self.config.get("log_train_every", 1) == 0
+            ):
                 self.logger.log({"grad_norm": grad_norm}, step=self.step, split="train")
         if self.scaler:
             self.scaler.step(self.optimizer)
@@ -695,8 +817,8 @@ class BaseTrainer(ABC):
             return
 
         results_file_path = os.path.join(
-            self.config["cmd"]["results_dir"],
-            f"{self.name}_{results_file}_{distutils.get_rank()}.npz",
+            self.config["results_dir"],
+            f"{self.task_name}_{results_file}_{dist_utils.get_rank()}.npz",
         )
         np.savez_compressed(
             results_file_path,
@@ -704,18 +826,18 @@ class BaseTrainer(ABC):
             **{key: predictions[key] for key in keys},
         )
 
-        distutils.synchronize()
-        if distutils.is_master():
+        dist_utils.synchronize()
+        if dist_utils.is_master():
             gather_results = defaultdict(list)
             full_path = os.path.join(
-                self.config["cmd"]["results_dir"],
-                f"{self.name}_{results_file}.npz",
+                self.config["results_dir"],
+                f"{self.task_name}_{results_file}.npz",
             )
 
-            for i in range(distutils.get_world_size()):
+            for i in range(dist_utils.get_world_size()):
                 rank_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
-                    f"{self.name}_{results_file}_{i}.npz",
+                    self.config["results_dir"],
+                    f"{self.task_name}_{results_file}_{i}.npz",
                 )
                 rank_results = np.load(rank_path, allow_pickle=True)
                 gather_results["ids"].extend(rank_results["ids"])
@@ -738,61 +860,275 @@ class BaseTrainer(ABC):
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)
 
-    def eval_all_val_splits(self, final=False):
+    def eval_all_splits(
+        self, final=True, disable_tqdm=True, debug_batches=-1, epoch=-1, from_ckpt=None
+    ):
         """Evaluate model on all four validation splits"""
 
-        if final:
-            # Load current best checkpoint
+        cumulated_time = 0
+        cumulated_energy_mae = 0
+        cumulated_forces_mae = 0
+        metrics_dict = {}
+        # store all non-train splits: all vals and test
+        all_splits = [s for s in self.config["dataset"] if s.startswith("val")]
+
+        if not self.silent:
+            print()
+            logging.info(f"Evaluating on {len(all_splits)} val splits.")
+
+        # Load current best checkpoint for final evaluation
+        if from_ckpt:
+            self.load_checkpoint(checkpoint_path=from_ckpt)
+        elif final and epoch != 0:
             checkpoint_path = os.path.join(
-                self.config["cmd"]["checkpoint_dir"], "best_checkpoint.pt"
+                self.config["checkpoint_dir"], "best_checkpoint.pt"
             )
             self.load_checkpoint(checkpoint_path=checkpoint_path)
 
-        # Compute performance metrics on all four validation splits
-        start_time = time.time()
-        metrics_dict = {}
-        logging.info("Evaluating on 4 val splits.")
-        for i, s in enumerate(["val_ood_ads", "val_ood_cat", "val_ood_both", "val_id"]):
+        silent = self.silent
+        self.silent = True
+        metrics_names = None
 
-            # Update the val. dataset we look at
-            self.config["val_dataset"] = {
-                "src": "/network/projects/_groups/ocp/oc20/is2re/all/"
-                + s
-                + "/data.lmdb"
+        # evaluate on all splits
+        for split in all_splits:
+            start_time = time.time()
+            self.metrics = self.validate(
+                split=split,
+                disable_tqdm=disable_tqdm,
+                debug_batches=debug_batches,
+                is_final=final,
+            )
+
+            if self.metrics == "SIGTERM":
+                return "SIGTERM"
+
+            metrics_dict[split] = self.metrics
+            cumulated_energy_mae += self.metrics["energy_mae"]["metric"]
+            if self.config["model"].get("regress_forces", False):
+                cumulated_forces_mae += self.metrics["forces_mae"]["metric"]
+            cumulated_time += time.time() - start_time
+            if metrics_names is None:
+                metrics_names = list(self.metrics.keys())
+
+        self.silent = silent
+
+        # Average metrics over all val splits
+        metrics_dict["overall"] = {
+            m: {
+                "metric": sum([metrics_dict[s][m]["metric"] for s in all_splits])
+                / len(all_splits)
             }
+            for m in metrics_names
+        }
 
-            # Load val dataset
-            if self.config.get("val_dataset", None):
-                self.val_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["val_dataset"])
-                self.val_sampler = self.get_sampler(
-                    self.val_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
+        # Log specific metrics
+        if final and self.config["logger"] == "wandb" and dist_utils.is_master():
+            overall_energy_mae = cumulated_energy_mae / len(all_splits)
+            self.logger.log({"Eval time": cumulated_time})
+            self.objective = overall_energy_mae
+            self.logger.log({"Eval time": cumulated_time})
+            self.logger.log({"Overall MAE": overall_energy_mae})
+            if self.config["model"].get("regress_forces", False):
+                overall_forces_mae = cumulated_forces_mae / len(all_splits)
+                self.logger.log({"Overall Forces MAE": overall_forces_mae})
+                self.objective = (overall_energy_mae + overall_forces_mae) / 2
+            self.logger.log({"Objective": self.objective})
+
+        # Run on test split
+        if final and "test" in self.config["dataset"] and self.eval_on_test:
+            test_metrics = self.validate(
+                split="test",
+                disable_tqdm=disable_tqdm,
+                debug_batches=debug_batches,
+                is_final=final,
+            )
+
+            if test_metrics == "SIGTERM":
+                return "SIGTERM"
+
+            metrics_dict["test"] = test_metrics
+            all_splits += ["test"]
+
+        # Print results
+        if not self.silent:
+            if final:
+                table = Table(title="Final results")
+            elif epoch >= 0:
+                table = Table(title=f"Results at epoch {epoch}")
+            else:
+                table = Table(title="Results")
+            for c, col in enumerate(["Metric / Split"] + all_splits):
+                table.add_column(col, justify="left" if c == 0 else "right")
+
+            highlights = set()  # {"energy_mae", "forces_mae", "total_loss"}
+            smn = sorted([m if "loss" not in m else f"z_{m}" for m in metrics_names])
+            for metric in smn:
+                metric = metric[2:] if metric.startswith("z_") else metric
+                row = [metric] + [
+                    f"{metrics_dict[split][metric]['metric']:.5f}"
+                    for split in all_splits
+                ]
+                table.add_row(*row, style="on white" if metric in highlights else "")
+
+            logging.info(f"eval_all_splits time: {time.time() - start_time:.2f}s")
+            print()
+            console = Console()
+            console.print(table)
+            print()
+            print("\n• Trainer objective set to:", self.objective, end="\n\n")
+
+    def rotate_graph(self, batch, rotation=None):
+        """Rotate all graphs in a batch
+
+        Args:
+            batch (data.Batch): batch of graphs
+            rotation (str, optional): type of rotation applied. Defaults to None.
+
+        Returns:
+            data.Batch: rotated batch
+        """
+        if isinstance(batch, list):
+            batch = batch[0]
+
+        # Sampling a random rotation within [-180, 180] for all axes.
+        if rotation == "z":
+            transform = RandomRotate([-180, 180], [2])
+        elif rotation == "x":
+            transform = RandomRotate([-180, 180], [0])
+        elif rotation == "y":
+            transform = RandomRotate([-180, 180], [1])
+        else:
+            transform = RandomRotate([-180, 180], [0, 1, 2])
+
+        # Rotate graph
+        batch_rotated, rot, inv_rot = transform(deepcopy(batch))
+        assert not torch.allclose(batch.pos, batch_rotated.pos, atol=1e-05)
+
+        # Recompute fa-pos for batch_rotated
+        if hasattr(batch, "fa_pos"):
+            delattr(batch_rotated, "fa_pos")  # delete it otherwise can't iterate
+            delattr(batch_rotated, "fa_cell")  # delete it otherwise can't iterate
+            delattr(batch_rotated, "fa_rot")  # delete it otherwise can't iterate
+
+            g_list = batch_rotated.to_data_list()
+            fa_transform = FrameAveraging(
+                self.config["frame_averaging"], self.config["fa_method"]
+            )
+            for g in g_list:
+                g = fa_transform(g)
+            batch_rotated = Batch.from_data_list(g_list)
+            if hasattr(batch, "neighbors"):
+                batch_rotated.neighbors = batch.neighbors
+
+        return {"batch_list": [batch_rotated], "rot": rot}
+
+    def reflect_graph(self, batch, reflection=None):
+        """Rotate all graphs in a batch
+
+        Args:
+            batch (data.Batch): batch of graphs
+            rotation (str, optional): type of rotation applied. Defaults to None.
+
+        Returns:
+            data.Batch: rotated batch
+        """
+        if isinstance(batch, list):
+            batch = batch[0]
+
+        # Sampling a random rotation within [-180, 180] for all axes.
+        transform = RandomReflect()
+
+        # Reflect batch
+        batch_reflected, rot, inv_rot = transform(deepcopy(batch))
+        assert not torch.allclose(batch.pos, batch_reflected.pos, atol=1e-05)
+
+        # Recompute fa-pos for batch_rotated
+        if hasattr(batch, "fa_pos"):
+            delattr(batch_reflected, "fa_pos")  # delete it otherwise can't iterate
+            delattr(batch_reflected, "fa_cell")  # delete it otherwise can't iterate
+            delattr(batch_reflected, "fa_rot")  # delete it otherwise can't iterate
+            g_list = batch_reflected.to_data_list()
+            fa_transform = FrameAveraging(
+                self.config["frame_averaging"], self.config["fa_method"]
+            )
+            for g in g_list:
+                g = fa_transform(g)
+            batch_reflected = Batch.from_data_list(g_list)
+            if hasattr(batch, "neighbors"):
+                batch_reflected.neighbors = batch.neighbors
+
+        return {"batch_list": [batch_reflected], "rot": rot}
+
+    def scheduler_step(self, eval_every, metrics):
+        if self.scheduler.scheduler_type == "ReduceLROnPlateau":
+            if self.step % eval_every == 0:
+                self.scheduler.step(
+                    metrics=metrics,
                 )
-                self.val_loader = self.get_dataloader(
-                    self.val_dataset,
-                    self.val_sampler,
-                )
+        else:
+            self.scheduler.step()
 
-            # Call validate function
-            self.metrics = self.validate(split="eval", disable_tqdm=True, name_split=s)
-            metrics_dict[s] = self.metrics
+    def handle_sigterm(self, signum, _):
+        """
+        Handle SIGTERM signal received.
 
-            # Log results
-            if self.config["logger"] == "wandb":
-                self.logger.log({"Val. time": time.time() - start_time})
+        Args:
+            signum (int): Signal number
+        """
+        if signum == 15 and not self.sigterm:
+            print("\nHandling SIGTERM signal received.\n")
+            self.sigterm = True
 
-        if final:
-            # Print results
-            print("----- FINAL RESULTS -----")
-            print("Total time taken: ", time.time() - start_time)
-            print(self.metrics.keys())
-            for k, v in metrics_dict.items():
-                store = []
-                for _, val in v.items():
-                    store.append(round(val["metric"], 4))
-                print(k, store)
+    def close_datasets(self):
+        try:
+            for ds in self.datasets.values():
+                if hasattr(ds, "close_db") and callable(ds.close_db):
+                    ds.close_db()
+        except Exception as e:
+            print("Error closing datasets: ", str(e))
+
+    def measure_inference_time(self, loops=1):
+        # keep grads if the model computes forces from energy
+        enabled = torch.is_grad_enabled()
+        torch.set_grad_enabled(
+            self.config["model"].get("regress_forces") == "from_energy"
+        )
+        self.model.eval()
+        timer = Times(gpu=torch.cuda.is_available())
+
+        # average inference over multiple loops
+        for _ in range(loops):
+            with timer.next("val_loop"):
+                # iterate over default val set batches
+                for b in self.loaders[self.config["dataset"]["default_val"]]:
+                    with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                        # time forward pass
+                        with timer.next("forward"):
+                            _ = self.model_forward(b, mode="inference")
+
+        # divide times by batch size
+        mean, std = timer.prepare_for_logging(
+            map_funcs={
+                "forward": lambda t: self.config["optim"]["eval_batch_size"] / t,
+            }
+        )
+
+        # log throughput to wandb as a summary metric
+        if self.logger:
+            if hasattr(self.logger, "run"):
+                self.logger.run.summary["throughput_mean"] = mean["forward"]
+                self.logger.run.summary["throughput_std"] = std["forward"]
+                self.logger.run.summary["val_loop_time_mean"] = mean["val_loop"]
+                self.logger.run.summary["val_loop_time_std"] = std["val_loop"]
+
+        # print throughput to console
+        if not self.silent:
+            print(
+                "Mean throughput:",
+                f"{mean['forward']:.1f} +- {std['forward']:.1f} samples/s",
+            )
+            print(
+                "Val loop time (around data-loader):",
+                f"{mean['val_loop']:.3f} +- {std['val_loop']:.3f} s",
+            )
+        torch.set_grad_enabled(enabled)

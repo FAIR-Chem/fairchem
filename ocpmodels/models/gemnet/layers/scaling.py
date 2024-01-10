@@ -31,7 +31,6 @@ class AutomaticFit:
 
         # first instance created
         if AutomaticFit.fitting_mode and not self._fitted:
-
             # if first layer set to active
             if AutomaticFit.activeVar is None:
                 AutomaticFit.activeVar = self

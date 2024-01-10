@@ -1,0 +1,34 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  code_loc: /home/mila/s/schmidtv/ocp-project/run-repos/ocp-3
+
+default:
+  config: deup_faenet-deup_is2re-all
+
+  wandb_project: ocp-deup
+  wandb_tags: base-model, MC-D, 3264530
+  test_ri: True
+  mode: train
+  model:
+    dropout_lowest_layer: null
+    first_trainable_layer: output
+    dropout_lin: 0.7
+  cp_data_to_tmpdir: false
+  inference_time_loops: 1
+  restart_from_dir: /network/scratch/s/schmidtv/ocp/runs/3264530
+  checkpoint: /network/scratch/s/schmidtv/ocp/runs/3264530
+  dataset: # mandatory if restart_from_dir is set
+    default_val: deup-val_ood_cat-val_ood_ads
+    deup-train-val_id:
+      src: /network/scratch/s/schmidtv/ocp/runs/3264530/deup_dataset
+    deup-val_ood_cat-val_ood_ads:
+      src: /network/scratch/s/schmidtv/ocp/runs/3264530/deup_dataset
+  deup_dataset:
+    create: False
+
+runs:
+  - optim:
+      max_epochs: 12

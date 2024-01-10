@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 import numpy as np
 import torch
 
+from ocpmodels.common.utils import Units
 
 """
 An evaluation module for use with the OCP dataset and suite of tasks. It should
@@ -20,7 +21,7 @@ evaluator = Evaluator(task="is2re")
 perf = evaluator.eval(prediction, target)
 ```
 
-task: "s2ef", "is2rs", "is2re".
+task: "s2ef", "is2rs", "is2re", "qm9".
 
 We specify a default set of metrics for each task, but should be easy to extend
 to add more metrics. `evaluator.eval` takes as input two dictionaries, one for
@@ -40,37 +41,85 @@ class Evaluator:
             "forces_magnitude",
             "energy_mae",
             "energy_force_within_threshold",
+            "energy_within_threshold",
         ],
         "is2rs": [
             "average_distance_within_threshold",
             "positions_mae",
             "positions_mse",
         ],
-        "is2re": ["energy_mae", "energy_mse", "energy_within_threshold"],
+        "is2re": [
+            "energy_mae",
+            "energy_mse",
+            "energy_within_threshold",
+        ],
+        "qm9": [
+            "energy_mae",
+            "energy_mse",
+        ],
+        "qm7x": [
+            "energy_mae",
+            "energy_mse",
+        ],
+        "deup_is2re": [
+            "energy_mae",
+            "energy_mse",
+            "energy_within_threshold",
+        ],
     }
 
     task_attributes = {
         "s2ef": ["energy", "forces", "natoms"],
         "is2rs": ["positions", "cell", "pbc", "natoms"],
         "is2re": ["energy"],
+        "qm9": ["energy"],
+        "qm7x": ["energy"],
+        "deup_is2re": ["energy"],
     }
 
     task_primary_metric = {
         "s2ef": "energy_force_within_threshold",
         "is2rs": "average_distance_within_threshold",
         "is2re": "energy_mae",
+        "qm9": "energy_mae",
+        "qm7x": "energy_mae",
+        "deup_is2re": "energy_mse",
     }
 
-    def __init__(self, task=None):
-        assert task in ["s2ef", "is2rs", "is2re"]
+    def __init__(self, task=None, model_regresses_forces=""):
+        assert task in ["s2ef", "is2rs", "is2re", "qm9", "qm7x", "deup_is2re"]
         self.task = task
+
         self.metric_fn = self.task_metrics[task]
+        self.expect_forces_grad_target = (
+            model_regresses_forces == "direct_with_gradient_target"
+        )
+        if model_regresses_forces and task == "qm7x":
+            self.task_metrics["qm7x"].extend(
+                [
+                    "forcesx_mae",
+                    "forcesy_mae",
+                    "forcesz_mae",
+                    "forces_mae",
+                    "forces_cos",
+                    "forces_magnitude",
+                ]
+            )
+            self.task_attributes["qm7x"].append("forces")
+            self.task_primary_metric["qm7x"] = "forces_mae"
+        # if self.expect_forces_grad_target:
+        #     self.task_attributes[task].append("forces_grad_target")
+        #     self.task_metrics["s2ef"].append("forces_grad_mae")
+        #     self.task_metrics["qm7x"].append("forces_grad_mae")
 
     def eval(self, prediction, target, prev_metrics={}):
         for attr in self.task_attributes[self.task]:
-            assert attr in prediction
-            assert attr in target
-            assert prediction[attr].shape == target[attr].shape
+            assert attr in prediction, f"Expected {attr} in prediction."
+            assert attr in target, f"Expected {attr} in target."
+            assert prediction[attr].shape == target[attr].shape, (
+                f"Expected {attr} to have shape {target[attr].shape},"
+                + f" got {prediction[attr].shape}."
+            )
 
         metrics = prev_metrics
 
@@ -106,6 +155,14 @@ class Evaluator:
 
 def energy_mae(prediction, target):
     return absolute_error(prediction["energy"], target["energy"])
+
+
+def energy_mae_kcalmol(prediction, target):
+    """Energy MAE in kcal/mol instead of eV."""
+    return absolute_error(
+        Units.ev_to_kcalmol(prediction["energy"]),
+        Units.ev_to_kcalmol(target["energy"]),
+    )
 
 
 def energy_mse(prediction, target):
@@ -158,6 +215,10 @@ def positions_mae(prediction, target):
 
 def positions_mse(prediction, target):
     return squared_error(prediction["positions"], target["positions"])
+
+
+def forces_grad_mae(prediction, target):
+    return absolute_error(prediction["forces"], target["forces_grad_target"])
 
 
 def energy_force_within_threshold(prediction, target):
