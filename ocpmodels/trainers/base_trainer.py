@@ -293,9 +293,11 @@ class BaseTrainer(ABC):
                 if self.config["val_dataset"].get("use_train_settings", True):
                     val_config = self.config["dataset"].copy()
                     val_config.update(self.config["val_dataset"])
+                else:
+                    val_config = self.config["val_dataset"]
 
                 self.val_dataset = registry.get_dataset_class(
-                    self.config["val_dataset"].get("format", "lmdb")
+                    val_config.get("format", "lmdb")
                 )(val_config)
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
@@ -313,9 +315,11 @@ class BaseTrainer(ABC):
                 if self.config["test_dataset"].get("use_train_settings", True):
                     test_config = self.config["dataset"].copy()
                     test_config.update(self.config["test_dataset"])
+                else:
+                    test_config = self.config["test_dataset"]
 
                 self.test_dataset = registry.get_dataset_class(
-                    self.config["test_dataset"].get("format", "lmdb")
+                    test_config.get("format", "lmdb")
                 )(test_config)
                 self.test_sampler = self.get_sampler(
                     self.test_dataset,
