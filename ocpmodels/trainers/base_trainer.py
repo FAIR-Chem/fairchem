@@ -14,6 +14,8 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
+from uuid import uuid4
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -25,7 +27,7 @@ from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch
 from tqdm import tqdm
-from uuid import uuid4
+
 from ocpmodels.common import dist_utils
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
@@ -35,7 +37,12 @@ from ocpmodels.common.data_parallel import (
 from ocpmodels.common.graph_transforms import RandomReflect, RandomRotate
 from ocpmodels.common.registry import registry
 from ocpmodels.common.timer import Times
-from ocpmodels.common.utils import JOB_ID, get_commit_hash, save_checkpoint, resolve
+from ocpmodels.common.utils import (
+    JOB_ID,
+    get_commit_hash,
+    resolve,
+    save_checkpoint,
+)
 from ocpmodels.datasets.data_transforms import FrameAveraging, get_transforms
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
@@ -258,7 +265,10 @@ class BaseTrainer(ABC):
 
             if "deup" in split:
                 self.datasets[split] = registry.get_dataset_class("deup_lmdb")(
-                    self.config["dataset"], split, transform=transform
+                    self.config["dataset"],
+                    split,
+                    transform=transform,
+                    silent=self.silent,
                 )
             else:
                 self.datasets[split] = registry.get_dataset_class(
@@ -268,6 +278,7 @@ class BaseTrainer(ABC):
                     transform=transform,
                     adsorbates=self.config.get("adsorbates"),
                     adsorbates_ref_dir=self.config.get("adsorbates_ref_dir"),
+                    silent=self.silent,
                 )
 
             shuffle = False

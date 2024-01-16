@@ -53,11 +53,13 @@ class LmdbDataset(Dataset):
         lmdb_glob=None,
         adsorbates=None,
         adsorbates_ref_dir=None,
+        silent=False,
     ):
         super().__init__()
         self.config = config
         self.adsorbates = adsorbates
         self.adsorbates_ref_dir = adsorbates_ref_dir
+        self.silent = silent
 
         self.path = Path(self.config["src"])
         if not self.path.is_file():
@@ -128,10 +130,23 @@ class LmdbDataset(Dataset):
         if not ref_path.is_dir():
             print(f"Adsorbate reference directory {ref_path} does not exist.")
             return
-        pattern = "-".join(self.path.parts[-3:])
+        pattern = f"{self.config['split']}-{self.path.parts[-1]}"
         candidates = list(ref_path.glob(f"*{pattern}*.json"))
         if not candidates:
-            print(f"No adsorbate reference files found for {self.path.name}.")
+            print(
+                f"No adsorbate reference files found for {self.path.name}.:"
+                + "\n".join(
+                    [
+                        str(p)
+                        for p in [
+                            ref_path,
+                            pattern,
+                            list(ref_path.glob(f"*{pattern}*.json")),
+                            list(ref_path.glob("*")),
+                        ]
+                    ]
+                )
+            )
             return
         if len(candidates) > 1:
             print(
@@ -147,6 +162,8 @@ class LmdbDataset(Dataset):
             if a in ads
         )
 
+        previous_samples = self.num_samples
+
         # filter the dataset indices
         if isinstance(self._keys[0], bytes):
             self._keys = [i for i in self._keys if i in allowed_idxs]
@@ -157,6 +174,12 @@ class LmdbDataset(Dataset):
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
             self.num_samples = sum(keylens)
+
+        if not self.silent:
+            print(
+                f"Filtered dataset {pattern} from {previous_samples} to",
+                f"{self.num_samples} samples. (adsorbates: {ads})",
+            )
 
         assert self.num_samples > 0, f"No samples found for adsorbates {ads}."
 
@@ -229,14 +252,17 @@ class LmdbDataset(Dataset):
 
 @registry.register_dataset("deup_lmdb")
 class DeupDataset(LmdbDataset):
-    def __init__(self, all_datasets_configs, deup_split, transform=None):
+    def __init__(self, all_datasets_configs, deup_split, transform=None, silent=False):
+        # ! WARNING: this does not (yet?) handle adsorbate filtering
         super().__init__(
             all_datasets_configs[deup_split],
             lmdb_glob=deup_split.replace("deup-", "").split("-"),
+            silent=silent,
         )
         ocp_splits = deup_split.split("-")[1:]
         self.ocp_datasets = {
-            d: LmdbDataset(all_datasets_configs[d], transform) for d in ocp_splits
+            d: LmdbDataset(all_datasets_configs[d], transform, silent=silent)
+            for d in ocp_splits
         }
 
     def __getitem__(self, idx):

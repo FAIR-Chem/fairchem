@@ -948,6 +948,37 @@ def set_cpus_to_workers(config, silent=None):
     return config
 
 
+def set_dataset_split(config):
+    """
+    Set the split for all datasets in the config to the one specified in the
+    config's name.
+
+    Resulting dict:
+    {
+        "dataset": {
+            "train": {
+                "split": "all"
+                ...
+            },
+            ...
+        }
+    }
+
+    Args:
+        config (dict): The full trainer config dict
+
+    Returns:
+        dict: The updated config dict
+    """
+    split = config["config"].split("-")[-1]
+    for d, dataset in config["dataset"].items():
+        if d == "default_val":
+            continue
+        assert isinstance(dataset, dict)
+        config["dataset"][d]["split"] = split
+    return config
+
+
 def check_regress_forces(config):
     if "regress_forces" in config["model"]:
         if config["model"]["regress_forces"] == "":
@@ -1231,6 +1262,7 @@ def build_config(args, args_override=[], dict_overrides={}, silent=None):
     config = override_drac_paths(config)
     config = continue_from_slurm_job_id(config)
     config = read_slurm_env(config)
+    config = set_dataset_split(config)
     config["optim"]["eval_batch_size"] = config["optim"]["batch_size"]
     dist_utils.setup(config)
 

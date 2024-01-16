@@ -1,3 +1,4 @@
+import copy
 import os
 import re
 import subprocess
@@ -5,10 +6,8 @@ import sys
 from pathlib import Path
 
 from minydra import resolved_args
-from yaml import safe_load, dump
-
 from sbatch import now
-import copy
+from yaml import dump, safe_load
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -143,14 +142,16 @@ def cli_arg(args, key=""):
             s += cli_arg(v, key=f"{parent}{k}")
         else:
             if " " in str(v) or "," in str(v) or isinstance(v, str):
-                if "'" in str(v) and '"' in str(v):
-                    v = str(v).replace("'", "\\'")
+                if '"' in str(v):
+                    v = str(v).replace('"', '\\"')
                     v = f"'{v}'"
                 elif "'" in str(v):
-                    v = f'"{v}"'
+                    v = f'\\"{v}\\"'
                 else:
                     v = f"'{v}'"
             s += f" --{parent}{k}={v}"
+            if "ads" in k:
+                print(s.split(" --")[-1])
     return s
 
 
