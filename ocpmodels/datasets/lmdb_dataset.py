@@ -248,6 +248,41 @@ class DeupDataset(LmdbDataset):
         return ocp_sample
 
 
+@registry.register_dataset("stats_lmdb")
+class StatsDataset(LmdbDataset):
+    def to_reduced_formula(self, list_of_z):
+        from collections import Counter
+
+        from pymatgen.core.composition import Composition
+        from pymatgen.core.periodic_table import Element
+
+        return Composition.from_dict(
+            Counter([Element.from_Z(i).symbol for i in list_of_z])
+        ).reduced_formula
+
+    def __getitem__(self, idx):
+        data_object = super().__getitem__(idx)
+        data_object.stats = {
+            "atomic_numbers_bulk": data_object.atomic_numbers[data_object["tags"] < 2]
+            .int()
+            .tolist(),
+            "atomic_numbers_ads": data_object.atomic_numbers[data_object["tags"] == 2]
+            .int()
+            .tolist(),
+            "composition_bulk": self.to_reduced_formula(
+                data_object.atomic_numbers[data_object["tags"] < 2].int()
+            ),
+            "composition_ads": self.to_reduced_formula(
+                data_object.atomic_numbers[data_object["tags"] == 2].int()
+            ),
+            "idx_in_dataset": [data_object.idx_in_dataset],
+            "sid": [data_object.sid],
+            "y_relaxed": [data_object.y_relaxed],
+            "y_init": [data_object.y_init],
+        }
+        return data_object
+
+
 class SinglePointLmdbDataset(LmdbDataset):
     def __init__(self, config, transform=None):
         super(SinglePointLmdbDataset, self).__init__(config, transform)
