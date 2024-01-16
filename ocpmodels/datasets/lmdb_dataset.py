@@ -107,7 +107,7 @@ class LmdbDataset(Dataset):
             return
 
         # val_ood_ads and val_ood_both don't have targeted adsorbates
-        if self.config["src"].split("/")[-2] in {"val_ood_ads", "val_ood_both"}:
+        if Path(self.config["src"]).parts[-1] in {"val_ood_ads", "val_ood_both"}:
             return
 
         # make set of adsorbates from a list or a string. If a string, split on comma.
