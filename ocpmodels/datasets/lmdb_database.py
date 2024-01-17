@@ -8,8 +8,10 @@ The ASE notice for the LGPL2.1 license is available here:
 https://gitlab.com/ase/ase/-/blob/master/LICENSE
 """
 
+from __future__ import annotations
 
 import os
+import typing
 import zlib
 from typing import Optional
 
@@ -18,6 +20,11 @@ import numpy as np
 import orjson
 from ase.db.core import Database, now, ops
 from ase.db.row import AtomsRow
+from typing_extensions import Self
+
+if typing.TYPE_CHECKING:
+    from ase import Atoms
+
 
 # These are special keys in the ASE LMDB that hold
 # metadata and other info
@@ -25,9 +32,6 @@ RESERVED_KEYS = ["nextid", "metadata", "deleted_ids"]
 
 
 class LMDBDatabase(Database):
-    def __enter__(self) -> "LMDBDatabase":
-        return self
-
     def __init__(
         self,
         filename: Optional[str] = None,
@@ -79,7 +83,8 @@ class LMDBDatabase(Database):
         # Load all ids based on keys in the DB.
         self._load_ids()
 
-        return
+    def __enter__(self) -> Self:
+        return self
 
     def __exit__(self, exc_type, exc_value, tb) -> None:
         self.close()
@@ -89,7 +94,13 @@ class LMDBDatabase(Database):
         self.txn.commit()
         self.env.close()
 
-    def _write(self, atoms, key_value_pairs, data, id):
+    def _write(
+        self,
+        atoms: Atoms | AtomsRow,
+        key_value_pairs: dict,
+        data: Optional[dict],
+        idx: Optional[int] = None,
+    ) -> None:
         Database._write(self, atoms, key_value_pairs, data)
 
         mtime = now()
@@ -121,25 +132,24 @@ class LMDBDatabase(Database):
                 constraint.todict() for constraint in constraints
             ]
 
-        # json doesn't like Cell objects, so make it a cell
+        # json doesn't like Cell objects, so make it an array
         dct["cell"] = np.asarray(dct["cell"])
 
-        if id is None:
-            nextid = self._get_nextid()
-            id = nextid
-            nextid += 1
+        if idx is None:
+            idx = self._get_nextid()
+            nextid = idx + 1
         else:
             data = self.txn.get("{id}".encode("ascii"))
             assert data is not None
 
         # Add the new entry, then add the id and write the nextid
         self.txn.put(
-            f"{id}".encode("ascii"),
+            f"{idx}".encode("ascii"),
             zlib.compress(
                 orjson.dumps(dct, option=orjson.OPT_SERIALIZE_NUMPY)
             ),
         )
-        self.ids.append(id)
+        self.ids.append(idx)
         self.txn.put(
             "nextid".encode("ascii"),
             zlib.compress(
@@ -147,12 +157,12 @@ class LMDBDatabase(Database):
             ),
         )
 
-        return id
+        return idx
 
-    def delete(self, ids) -> None:
-        for id in ids:
-            self.txn.delete(f"{id}".encode("ascii"))
-            self.ids.remove(id)
+    def delete(self, ids: list[int]) -> None:
+        for idx in ids:
+            self.txn.delete(f"{idx}".encode("ascii"))
+            self.ids.remove(idx)
 
         self.deleted_ids += ids
         self.txn.put(
@@ -164,21 +174,21 @@ class LMDBDatabase(Database):
             ),
         )
 
-    def _get_row(self, id, include_data: bool = True):
-        if id is None:
+    def _get_row(self, idx: int, include_data: bool = True):
+        if idx is None:
             assert len(self.ids) == 1
-            id = self.ids[0]
-        data = self.txn.get(f"{id}".encode("ascii"))
+            idx = self.ids[0]
+        data = self.txn.get(f"{idx}".encode("ascii"))
 
         if data is not None:
             dct = orjson.loads(zlib.decompress(data))
         else:
-            raise KeyError(f"Id {id} missing from the database!")
+            raise KeyError(f"Id {idx} missing from the database!")
 
         if not include_data:
             dct.pop("data", None)
 
-        dct["id"] = id
+        dct["id"] = idx
         return AtomsRow(dct)
 
     def _get_row_by_index(self, index: int, include_data: bool = True):
@@ -202,12 +212,12 @@ class LMDBDatabase(Database):
     def _select(
         self,
         keys,
-        cmps,
+        cmps: list[tuple[str, str, str]],
         explain: bool = False,
         verbosity: int = 0,
-        limit=None,
+        limit: Optional[int] = None,
         offset: int = 0,
-        sort=None,
+        sort: Optional[str] = None,
         include_data: bool = True,
         columns: str = "all",
     ):
@@ -215,15 +225,12 @@ class LMDBDatabase(Database):
             yield {"explain": (0, 0, 0, "scan table")}
             return
 
-        if sort:
+        if sort is not None:
             if sort[0] == "-":
                 reverse = True
                 sort = sort[1:]
             else:
                 reverse = False
-
-            def f(row):
-                return row.get(sort, missing)
 
             rows = []
             missing = []
@@ -248,10 +255,10 @@ class LMDBDatabase(Database):
 
         cmps = [(key, ops[op], val) for key, op, val in cmps]
         n = 0
-        for id in self.ids:
+        for idx in self.ids:
             if n - offset == limit:
                 return
-            row = self._get_row(id, include_data=False)
+            row = self._get_row(idx, include_data=include_data)
 
             for key in keys:
                 if key not in row:
