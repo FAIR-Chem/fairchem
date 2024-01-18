@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import bisect
 import copy
 import functools
@@ -7,7 +9,7 @@ import os
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List
+from typing import Any, Callable, Optional
 
 import ase
 import numpy as np
@@ -18,6 +20,7 @@ from tqdm import tqdm
 from ocpmodels.common.registry import registry
 from ocpmodels.datasets.lmdb_database import LMDBDatabase
 from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
+from ocpmodels.modules.transforms import DataTransforms
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -65,19 +68,24 @@ class AseAtomsDataset(Dataset, ABC):
     """
 
     def __init__(
-        self, config, transform=None, atoms_transform=apply_one_tags
+        self,
+        config: dict,
+        atoms_transform: Callable[
+            [ase.Atoms, Any], ase.Atoms
+        ] = apply_one_tags,
+        transform=None,
     ) -> None:
         self.config = config
 
         a2g_args = config.get("a2g_args", {})
-        if a2g_args is None:
-            a2g_args = {}
 
         # Make sure we always include PBC info in the resulting atoms objects
         a2g_args["r_pbc"] = True
         self.a2g = AtomsToGraphs(**a2g_args)
 
-        self.transform = transform
+        self.key_mapping = self.config.get("key_mapping", None)
+        self.transforms = DataTransforms(self.config.get("transforms", {}))
+
         self.atoms_transform = atoms_transform
 
         if self.config.get("keep_in_memory", False):
@@ -91,7 +99,7 @@ class AseAtomsDataset(Dataset, ABC):
     def __getitem__(self, idx):
         # Handle slicing
         if isinstance(idx, slice):
-            return [self[i] for i in range(*idx.indices(len(self.ids)))]
+            return [self[i] for i in range(*idx.indices(len(self)))]
 
         # Get atoms object via derived class method
         atoms = self.get_atoms_object(self.ids[idx])
@@ -105,10 +113,10 @@ class AseAtomsDataset(Dataset, ABC):
         sid = atoms.info.get("sid", self.ids[idx])
         try:
             sid = tensor([sid])
+        except (RuntimeError, ValueError, TypeError):
             warnings.warn(
                 "Supplied sid is not numeric (or missing). Using dataset indices instead."
             )
-        except:
             sid = tensor([idx])
 
         fid = atoms.info.get("fid", tensor([0]))
@@ -118,11 +126,17 @@ class AseAtomsDataset(Dataset, ABC):
         data_object.fid = fid
         data_object.natoms = len(atoms)
 
+        if self.key_mapping is not None:
+            for _property in self.key_mapping:
+                # catch for test data not containing labels
+                if _property in data_object:
+                    new_property = self.key_mapping[_property]
+                    if new_property not in data_object:
+                        data_object[new_property] = data_object[_property]
+                        del data_object[_property]
+
         # Transform data object
-        if self.transform is not None:
-            data_object = self.transform(
-                data_object, **self.config.get("transform_args", {})
-            )
+        data_object = self.transforms(data_object)
 
         if self.config.get("include_relaxed_energy", False):
             data_object.y_relaxed = self.get_relaxed_energy(self.ids[idx])
@@ -220,7 +234,7 @@ class AseReadDataset(AseAtomsDataset):
 
     """
 
-    def load_dataset_get_ids(self, config) -> List[Path]:
+    def load_dataset_get_ids(self, config) -> list[Path]:
         self.ase_read_args = config.get("ase_read_args", {})
 
         if ":" in self.ase_read_args.get("index", ""):
@@ -374,32 +388,6 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
         return relaxed_atoms.get_potential_energy(apply_constraint=False)
 
 
-class dummy_list(list):
-    def __init__(self, max) -> None:
-        self.max = max
-        return
-
-    def __len__(self):
-        return self.max
-
-    def __getitem__(self, idx):
-        # Handle slicing
-        if isinstance(idx, slice):
-            return [self[i] for i in range(*idx.indices(self.max))]
-
-        # Cast idx as int since it could be a tensor index
-        idx = int(idx)
-
-        # Handle negative indices (referenced from end)
-        if idx < 0:
-            idx += self.max
-
-        if 0 <= idx < self.max:
-            return idx
-        else:
-            raise IndexError
-
-
 @registry.register_dataset("ase_db")
 class AseDBDataset(AseAtomsDataset):
     """
@@ -444,15 +432,16 @@ class AseDBDataset(AseAtomsDataset):
 
             atoms_transform_args (dict): Additional keyword arguments for the atoms_transform callable
 
-            transform_args (dict): Additional keyword arguments for the transform callable
+            transforms (dict[str, dict]): Dictionary specifying data transforms as {transform_function: config}
+                    where config is a dictionary specifying arguments to the transform_function
 
         atoms_transform (callable, optional): Additional preprocessing function applied to the Atoms
                     object. Useful for applying tags, for example.
 
-        transform (callable, optional): Additional preprocessing function for the Data object
+        transform (callable, optional): deprecated?
     """
 
-    def load_dataset_get_ids(self, config) -> dummy_list:
+    def load_dataset_get_ids(self, config) -> list[int]:
         if isinstance(config["src"], list):
             filepaths = config["src"]
         elif os.path.isfile(config["src"]):
@@ -495,7 +484,7 @@ class AseDBDataset(AseAtomsDataset):
         idlens = [len(ids) for ids in self.db_ids]
         self._idlen_cumulative = np.cumsum(idlens).tolist()
 
-        return dummy_list(sum(idlens))
+        return list(range(sum(idlens)))
 
     def get_atoms_object(self, idx):
         # Figure out which db this should be indexed from.
@@ -515,7 +504,7 @@ class AseDBDataset(AseAtomsDataset):
 
         return atoms
 
-    def connect_db(self, address, connect_args={}):
+    def connect_db(self, address, connect_args: Optional[dict] = None):
         if connect_args is None:
             connect_args = {}
         db_type = connect_args.get("type", "extract_from_name")
