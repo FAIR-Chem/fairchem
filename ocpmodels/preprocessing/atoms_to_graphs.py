@@ -129,7 +129,7 @@ class AtomsToGraphs:
         return edge_index, edge_distances, cell_offsets
 
     def convert(self, atoms: ase.Atoms, sid=None):
-        """Convert a single atomic stucture to a graph.
+        """Convert a single atomic structure to a graph.
 
         Args:
             atoms (ase.atoms.Atoms): An ASE atoms object.
