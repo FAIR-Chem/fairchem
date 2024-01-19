@@ -71,9 +71,9 @@ class AseAtomsDataset(Dataset, ABC):
         self,
         config: dict,
         atoms_transform: Callable[
-            [ase.Atoms, Any], ase.Atoms
+            [ase.Atoms, Any, ...], ase.Atoms
         ] = apply_one_tags,
-        transform=None,
+        transform=None,  # is this deprecated?
     ) -> None:
         self.config = config
 
@@ -227,6 +227,10 @@ class AseReadDataset(AseAtomsDataset):
 
             transform_args (dict): Additional keyword arguments for the transform callable
 
+            key_mapping (dict[str, str]): Dictionary specifying a mapping between the name of a property used
+                in the model with the corresponding property as it was named in the dataset. Only need to use if
+                the name is different.
+
         atoms_transform (callable, optional): Additional preprocessing function applied to the Atoms
                     object. Useful for applying tags, for example.
 
@@ -318,6 +322,10 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             atoms_transform_args (dict): Additional keyword arguments for the atoms_transform callable
 
             transform_args (dict): Additional keyword arguments for the transform callable
+
+            key_mapping (dict[str, str]): Dictionary specifying a mapping between the name of a property used
+                in the model with the corresponding property as it was named in the dataset. Only need to use if
+                the name is different.
 
         atoms_transform (callable, optional): Additional preprocessing function applied to the Atoms
             object. Useful for applying tags, for example.
@@ -435,6 +443,10 @@ class AseDBDataset(AseAtomsDataset):
             transforms (dict[str, dict]): Dictionary specifying data transforms as {transform_function: config}
                     where config is a dictionary specifying arguments to the transform_function
 
+            key_mapping (dict[str, str]): Dictionary specifying a mapping between the name of a property used
+                in the model with the corresponding property as it was named in the dataset. Only need to use if
+                the name is different.
+
         atoms_transform (callable, optional): Additional preprocessing function applied to the Atoms
                     object. Useful for applying tags, for example.
 
@@ -477,6 +489,7 @@ class AseDBDataset(AseAtomsDataset):
             if hasattr(db, "ids") and self.select_args == {}:
                 self.db_ids.append(db.ids)
             else:
+                # this is the slow alternative
                 self.db_ids.append(
                     [row.id for row in db.select(**self.select_args)]
                 )
