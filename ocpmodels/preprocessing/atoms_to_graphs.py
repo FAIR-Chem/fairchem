@@ -45,6 +45,7 @@ class AtomsToGraphs:
         radius (int or float): Cutoff radius in Angstroms to search for neighbors.
         r_energy (bool): Return the energy with other properties. Default is False, so the energy will not be returned.
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
+        r_forces (bool): Return the stress with other properties. Default is False, so the stress will not be returned.
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
         r_edges (bool): Return interatomic edges with other properties. Default is True, so edges will be returned.
@@ -58,6 +59,7 @@ class AtomsToGraphs:
         radius (int or float): Cutoff radius in Angstoms to search for neighbors.
         r_energy (bool): Return the energy with other properties. Default is False, so the energy will not be returned.
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
+        r_stress (bool): Return the stress with other properties. Default is False, so the stress will not be returned.
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
         r_edges (bool): Return interatomic edges with other properties. Default is True, so edges will be returned.
@@ -78,11 +80,13 @@ class AtomsToGraphs:
         r_edges: bool = True,
         r_fixed: bool = True,
         r_pbc: bool = False,
+        r_stress: bool = False,
     ) -> None:
         self.max_neigh = max_neigh
         self.radius = radius
         self.r_energy = r_energy
         self.r_forces = r_forces
+        self.r_stress = r_stress
         self.r_distances = r_distances
         self.r_fixed = r_fixed
         self.r_edges = r_edges
@@ -181,6 +185,11 @@ class AtomsToGraphs:
         if self.r_forces:
             forces = torch.Tensor(atoms.get_forces(apply_constraint=False))
             data.force = forces
+        if self.r_stress:
+            stress = torch.Tensor(
+                atoms.get_stress(apply_constraint=False, voigt=False)
+            )
+            data.stress = stress
         if self.r_distances and self.r_edges:
             data.distances = edge_distances
         if self.r_fixed:

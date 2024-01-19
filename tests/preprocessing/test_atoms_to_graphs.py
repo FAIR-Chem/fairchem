@@ -27,6 +27,7 @@ def atoms_to_graphs_internals(request) -> None:
         radius=6,
         r_energy=True,
         r_forces=True,
+        r_stress=True,
         r_distances=True,
     )
     request.cls.atg = test_object
@@ -106,6 +107,10 @@ class TestAtomsToGraphs:
         act_forces = self.atoms.get_forces(apply_constraint=False)
         forces = data.force.numpy()
         np.testing.assert_allclose(act_forces, forces)
+        # stress
+        act_stress = self.atoms.get_stress(apply_constraint=False, voigt=False)
+        stress = data.stress.numpy()
+        np.testing.assert_allclose(act_stress, stress)
 
     def test_convert_all(self) -> None:
         # run convert_all on a list with one atoms object
@@ -129,3 +134,7 @@ class TestAtomsToGraphs:
         act_forces = self.atoms.get_forces(apply_constraint=False)
         forces = data_list[0].force.numpy()
         np.testing.assert_allclose(act_forces, forces)
+        # stress
+        act_stress = self.atoms.get_stress(apply_constraint=False, voigt=False)
+        stress = data_list[0].stress.numpy()
+        np.testing.assert_allclose(act_stress, stress)
