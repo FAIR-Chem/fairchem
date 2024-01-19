@@ -5,7 +5,9 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional
+from __future__ import annotations
+
+from typing import Optional, Sequence
 
 import ase.db.sqlite
 import ase.io.trajectory
@@ -53,6 +55,8 @@ class AtomsToGraphs:
         Default is True, so the fixed indices will be returned.
         r_pbc (bool): Return the periodic boundary conditions with other properties.
         Default is False, so the periodic boundary conditions will not be returned.
+        r_data_keys (sequence of str, optional): Return values corresponding to given keys in atoms.data with other
+        properties. Default is None, so no data will be returned as properties.
 
     Attributes:
         max_neigh (int): Maximum number of neighbors to consider.
@@ -67,7 +71,8 @@ class AtomsToGraphs:
         Default is True, so the fixed indices will be returned.
         r_pbc (bool): Return the periodic boundary conditions with other properties.
         Default is False, so the periodic boundary conditions will not be returned.
-
+        r_data_keys (sequence of str, optional): Return values corresponding to given keys in atoms.data with other
+        properties. Default is None, so no data will be returned as properties.
     """
 
     def __init__(
@@ -81,6 +86,7 @@ class AtomsToGraphs:
         r_fixed: bool = True,
         r_pbc: bool = False,
         r_stress: bool = False,
+        r_data_keys: Optional[Sequence[str]] = None,
     ) -> None:
         self.max_neigh = max_neigh
         self.radius = radius
@@ -91,6 +97,7 @@ class AtomsToGraphs:
         self.r_fixed = r_fixed
         self.r_edges = r_edges
         self.r_pbc = r_pbc
+        self.r_data_keys = r_data_keys
 
     def _get_neighbors_pymatgen(self, atoms: ase.Atoms):
         """Preforms nearest neighbor search and returns edge index, distances,
@@ -203,6 +210,11 @@ class AtomsToGraphs:
             data.fixed = fixed_idx
         if self.r_pbc:
             data.pbc = torch.tensor(atoms.pbc)
+        if self.r_data_keys is not None:
+            for (
+                data_key
+            ) in self.r_data_keys:  # if key is not present let it raise error
+                data[data_key] = torch.Tensor(atoms.info[data_key])
 
         return data
 

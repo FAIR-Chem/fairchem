@@ -210,7 +210,7 @@ class AseReadDataset(AseAtomsDataset):
                     default options will work for most users
 
                     If you are using this for a training dataset, set
-                    "r_energy":True and/or "r_forces":True as appropriate
+                    "r_energy":True, "r_forces":True, and/or "r_stress":True as appropriate
                     In that case, energy/forces must be in the files you read (ex. OUTCAR)
 
             ase_read_args (dict): Keyword arguments for ase.io.read()
@@ -304,7 +304,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
                     default options will work for most users
 
                     If you are using this for a training dataset, set
-                    "r_energy":True and/or "r_forces":True as appropriate
+                    "r_energy":True, "r_forces":True, and/or "r_stress":True as appropriate
                     In that case, energy/forces must be in the files you read (ex. OUTCAR)
 
             ase_read_args (dict): Keyword arguments for ase.io.read()
@@ -431,7 +431,7 @@ class AseDBDataset(AseAtomsDataset):
                     default options will work for most users
 
                     If you are using this for a training dataset, set
-                    "r_energy":True and/or "r_forces":True as appropriate
+                    "r_energy":True, "r_forces":True, and/or "r_stress":True as appropriate
                     In that case, energy/forces must be in the database
 
             keep_in_memory (bool): Store data in memory. This helps avoid random reads if you need
