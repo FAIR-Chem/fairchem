@@ -512,6 +512,7 @@ class AseDBDataset(AseAtomsDataset):
         atoms_row = self.dbs[db_idx]._get_row(self.db_ids[db_idx][el_idx])
         atoms = atoms_row.toatoms()
 
+        # put data back into atoms info
         if isinstance(atoms_row.data, dict):
             atoms.info.update(atoms_row.data)
 

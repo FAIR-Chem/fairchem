@@ -55,7 +55,7 @@ class AtomsToGraphs:
         Default is True, so the fixed indices will be returned.
         r_pbc (bool): Return the periodic boundary conditions with other properties.
         Default is False, so the periodic boundary conditions will not be returned.
-        r_data_keys (sequence of str, optional): Return values corresponding to given keys in atoms.data with other
+        r_data_keys (sequence of str, optional): Return values corresponding to given keys in atoms.info data with other
         properties. Default is None, so no data will be returned as properties.
 
     Attributes:
@@ -71,7 +71,7 @@ class AtomsToGraphs:
         Default is True, so the fixed indices will be returned.
         r_pbc (bool): Return the periodic boundary conditions with other properties.
         Default is False, so the periodic boundary conditions will not be returned.
-        r_data_keys (sequence of str, optional): Return values corresponding to given keys in atoms.data with other
+        r_data_keys (sequence of str, optional): Return values corresponding to given keys in atoms.info data with other
         properties. Default is None, so no data will be returned as properties.
     """
 
