@@ -18,9 +18,15 @@ structures = [
     build.fcc111("Pt", size=[2, 2, 3], vacuum=8, periodic=True),
 ]
 for atoms in structures:
-    calc = SinglePointCalculator(atoms, energy=1, forces=atoms.positions)
+    calc = SinglePointCalculator(
+        atoms,
+        energy=1,
+        forces=atoms.positions,
+        stress=np.random.random((3, 3)),
+    )
     atoms.calc = calc
-    atoms.info["test_extensive_property"] = 3 * len(atoms)
+    atoms.info["extensive_property"] = 3 * len(atoms)
+    atoms.info["tensor_property"] = np.random.random((6, 6))
 
 structures[2].set_pbc(True)
 
@@ -55,38 +61,17 @@ def test_ase_read_dataset() -> None:
         )
 
 
-def test_ase_db_dataset() -> None:
-    try:
-        os.remove(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb.db"
-            )
-        )
-    except FileNotFoundError:
-        pass
-
-    with db.connect(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.db")
-    ) as database:
+def test_ase_db_dataset(tmp_path) -> None:
+    with db.connect(tmp_path / "asedb.db") as database:
         for i, structure in enumerate(structures):
             database.write(structure)
 
-    dataset = AseDBDataset(
-        config={
-            "src": os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb.db"
-            ),
-        }
-    )
+    dataset = AseDBDataset(config={"src": str(tmp_path / "asedb.db")})
 
     assert len(dataset) == len(structures)
     data = dataset[0]
 
     del data
-
-    os.remove(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.db")
-    )
 
 
 def test_ase_db_dataset_folder() -> None:
@@ -259,16 +244,22 @@ def test_lmdb_metadata_guesser() -> None:
     assert metadata["targets"]["forces"]["extensive"] is True
     assert metadata["targets"]["forces"]["type"] == "per-atom"
 
-    # Confirm forces metadata guessed properly
+    # Confirm stress metadata guessed properly
+    assert metadata["targets"]["stress"]["shape"] == (3, 3)
+    assert metadata["targets"]["stress"]["extensive"] is False
+    assert metadata["targets"]["stress"]["type"] == "per-image"
+
+    # Confirm extensive_property metadata guessed properly
+    assert metadata["targets"]["info.extensive_property"]["extensive"] is True
+    assert metadata["targets"]["info.extensive_property"]["shape"] == ()
     assert (
-        metadata["targets"]["info.test_extensive_property"]["extensive"]
-        is True
+        metadata["targets"]["info.extensive_property"]["type"] == "per-image"
     )
-    assert metadata["targets"]["info.test_extensive_property"]["shape"] == ()
-    assert (
-        metadata["targets"]["info.test_extensive_property"]["type"]
-        == "per-image"
-    )
+
+    # Confirm tensor_property metadata guessed properly
+    assert metadata["targets"]["info.tensor_property"]["extensive"] is False
+    assert metadata["targets"]["info.tensor_property"]["shape"] == (6, 6)
+    assert metadata["targets"]["info.tensor_property"]["type"] == "per-image"
 
     os.remove(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb")
@@ -312,14 +303,10 @@ def test_ase_metadata_guesser() -> None:
     assert metadata["targets"]["forces"]["type"] == "per-atom"
 
     # Confirm forces metadata guessed properly
+    assert metadata["targets"]["info.extensive_property"]["extensive"] is True
+    assert metadata["targets"]["info.extensive_property"]["shape"] == ()
     assert (
-        metadata["targets"]["info.test_extensive_property"]["extensive"]
-        is True
-    )
-    assert metadata["targets"]["info.test_extensive_property"]["shape"] == ()
-    assert (
-        metadata["targets"]["info.test_extensive_property"]["type"]
-        == "per-image"
+        metadata["targets"]["info.extensive_property"]["type"] == "per-image"
     )
 
     dataset = AseDBDataset(
