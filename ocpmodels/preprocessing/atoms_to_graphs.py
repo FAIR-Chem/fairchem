@@ -214,7 +214,11 @@ class AtomsToGraphs:
             for (
                 data_key
             ) in self.r_data_keys:  # if key is not present let it raise error
-                data[data_key] = torch.Tensor(atoms.info[data_key])
+                data[data_key] = (
+                    atoms.info[data_key]
+                    if isinstance(atoms.info[data_key], (int, float))
+                    else torch.Tensor(atoms.info[data_key])
+                )
 
         return data
 
