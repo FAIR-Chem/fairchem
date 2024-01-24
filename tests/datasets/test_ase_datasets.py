@@ -1,6 +1,5 @@
-import os
-
 import numpy as np
+import pytest
 from ase import build, db
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.io import Trajectory, write
@@ -22,7 +21,9 @@ for atoms in structures:
         atoms,
         energy=1,
         forces=atoms.positions,
-        stress=np.random.random((3, 3)),
+        # there is an issue with ASE db when writing a db with 3x3 stress it is flattened to (9,) and then
+        # errors when trying to read it
+        stress=np.random.random((6,)),
     )
     atoms.calc = calc
     atoms.info["extensive_property"] = 3 * len(atoms)
@@ -31,18 +32,80 @@ for atoms in structures:
 structures[2].set_pbc(True)
 
 
-def test_ase_read_dataset() -> None:
-    for i, structure in enumerate(structures):
-        write(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), f"{i}.cif"
-            ),
-            structure,
+@pytest.fixture(
+    scope="function",
+    params=[
+        "db_dataset",
+        "db_dataset_folder",
+        "db_dataset_list",
+        "lmdb_dataset",
+    ],
+)
+def ase_dataset(request, tmp_path_factory):
+    tmp_path = tmp_path_factory.mktemp("dataset")
+    mult = 1
+    a2g_args = {
+        "r_energy": True,
+        "r_forces": True,
+        "r_stress": True,
+        "r_data_keys": ["extensive_property", "tensor_property"],
+    }
+    if request.param == "db_dataset":
+        with db.connect(tmp_path / "asedb.db") as database:
+            for i, atoms in enumerate(structures):
+                database.write(atoms, data=atoms.info)
+        dataset = AseDBDataset(
+            config={"src": str(tmp_path / "asedb.db"), "a2g_args": a2g_args}
         )
+    elif (
+        request.param == "db_dataset_folder"
+        or request.param == "db_dataset_list"
+    ):
+        with db.connect(tmp_path / "asedb1.db") as database:
+            for i, atoms in enumerate(structures):
+                database.write(atoms, data=atoms.info)
+        with db.connect(tmp_path / "asedb2.db") as database:
+            for i, atoms in enumerate(structures):
+                database.write(atoms, data=atoms.info)
+        mult = 2
+        src = (
+            str(tmp_path)
+            if request.param == "db_dataset_folder"
+            else [str(tmp_path / "asedb1.db"), str(tmp_path / "asedb2.db")]
+        )
+        dataset = AseDBDataset(config={"src": src, "a2g_args": a2g_args})
+    else:  # "lmbd_dataset"
+        with LMDBDatabase(str(tmp_path / "asedb.lmdb")) as database:
+            for i, atoms in enumerate(structures):
+                database.write(atoms, data=atoms.info)
+
+        dataset = AseDBDataset(
+            config={"src": str(tmp_path / "asedb.lmdb"), "a2g_args": a2g_args}
+        )
+
+    return dataset, mult
+
+
+def test_ase_dataset(ase_dataset):
+    dataset, mult = ase_dataset
+    assert len(dataset) == mult * len(structures)
+    for data in dataset:
+        assert hasattr(data, "y")
+        assert data.force.shape == (data.natoms, 3)
+        assert data.stress.shape == (3, 3)
+        assert data.tensor_property.shape == (6, 6)
+        assert isinstance(data.extensive_property, int)
+
+
+def test_ase_read_dataset(tmp_path) -> None:
+    # unfortunately there is currently no clean (already implemented) way to save atoms.info when saving
+    # individual structures - so test separately
+    for i, structure in enumerate(structures):
+        write(tmp_path / f"{i}.cif", structure)
 
     dataset = AseReadDataset(
         config={
-            "src": os.path.join(os.path.dirname(os.path.abspath(__file__))),
+            "src": str(tmp_path),
             "pattern": "*.cif",
         }
     )
@@ -50,187 +113,11 @@ def test_ase_read_dataset() -> None:
     assert len(dataset) == len(structures)
     data = dataset[0]
     del data
-
     dataset.close_db()
 
-    for i in range(len(structures)):
-        os.remove(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), f"{i}.cif"
-            )
-        )
 
-
-def test_ase_db_dataset(tmp_path) -> None:
-    with db.connect(tmp_path / "asedb.db") as database:
-        for i, structure in enumerate(structures):
-            database.write(structure)
-
-    dataset = AseDBDataset(config={"src": str(tmp_path / "asedb.db")})
-
-    assert len(dataset) == len(structures)
-    data = dataset[0]
-
-    del data
-
-
-def test_ase_db_dataset_folder() -> None:
-    try:
-        os.remove(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb1.db"
-            )
-        )
-        os.remove(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb2.db"
-            )
-        )
-    except FileNotFoundError:
-        pass
-
-    with db.connect(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb1.db")
-    ) as database:
-        for i, structure in enumerate(structures):
-            database.write(structure)
-
-    with db.connect(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb2.db")
-    ) as database:
-        for i, structure in enumerate(structures):
-            database.write(structure)
-
-    dataset = AseDBDataset(
-        config={
-            "src": os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "./"
-            ),
-        }
-    )
-
-    assert len(dataset) == len(structures) * 2
-    data = dataset[0]
-    del data
-
-    os.remove(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb1.db")
-    )
-    os.remove(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb2.db")
-    )
-
-
-def test_ase_db_dataset_list() -> None:
-    try:
-        os.remove(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb1.db"
-            )
-        )
-        os.remove(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb2.db"
-            )
-        )
-    except FileNotFoundError:
-        pass
-
-    with db.connect(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb1.db")
-    ) as database:
-        for i, structure in enumerate(structures):
-            database.write(structure)
-
-    with db.connect(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb2.db")
-    ) as database:
-        for i, structure in enumerate(structures):
-            database.write(structure)
-
-    dataset = AseDBDataset(
-        config={
-            "src": [
-                os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)), "asedb1.db"
-                ),
-                os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)), "asedb2.db"
-                ),
-            ]
-        }
-    )
-
-    assert len(dataset) == len(structures) * 2
-    data = dataset[0]
-    del data
-
-    os.remove(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb1.db")
-    )
-    os.remove(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb2.db")
-    )
-
-
-def test_ase_lmdb_dataset() -> None:
-    try:
-        os.remove(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb"
-            )
-        )
-    except FileNotFoundError:
-        pass
-
-    with LMDBDatabase(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb")
-    ) as database:
-        for i, structure in enumerate(structures):
-            database.write(structure)
-
-    dataset = AseDBDataset(
-        config={
-            "src": os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb"
-            ),
-        }
-    )
-
-    assert len(dataset) == len(structures)
-    data = dataset[0]
-    del data
-
-    os.remove(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb")
-    )
-
-
-def test_lmdb_metadata_guesser() -> None:
-    # Cleanup old lmdb in case it's left over from previous tests
-    try:
-        os.remove(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb"
-            )
-        )
-    except FileNotFoundError:
-        pass
-
-    # Write an LMDB
-    with LMDBDatabase(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb")
-    ) as database:
-        for i, structure in enumerate(structures):
-            database.write(structure, data=structure.info)
-
-    dataset = AseDBDataset(
-        config={
-            "src": os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb"
-            ),
-        }
-    )
+def test_ase_metadata_guesser(ase_dataset) -> None:
+    dataset, _ = ase_dataset
 
     metadata = dataset.get_metadata()
 
@@ -261,61 +148,15 @@ def test_lmdb_metadata_guesser() -> None:
     assert metadata["targets"]["info.tensor_property"]["shape"] == (6, 6)
     assert metadata["targets"]["info.tensor_property"]["type"] == "per-image"
 
-    os.remove(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.lmdb")
-    )
 
+def test_db_add_delete(tmp_path) -> None:
+    database = db.connect(tmp_path / "asedb.db")
+    for i, atoms in enumerate(structures):
+        database.write(atoms, data=atoms.info)
 
-def test_ase_metadata_guesser() -> None:
-    try:
-        os.remove(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb.db"
-            )
-        )
-    except FileNotFoundError:
-        pass
-
-    with db.connect(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.db")
-    ) as database:
-        for i, structure in enumerate(structures):
-            database.write(structure, data=structure.info)
-
-    dataset = AseDBDataset(
-        config={
-            "src": os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb.db"
-            ),
-        }
-    )
-
-    metadata = dataset.get_metadata()
-
-    # Confirm energy metadata guessed properly
-    assert metadata["targets"]["energy"]["extensive"] is False
-    assert metadata["targets"]["energy"]["shape"] == ()
-    assert metadata["targets"]["energy"]["type"] == "per-image"
-
-    # Confirm forces metadata guessed properly
-    assert metadata["targets"]["forces"]["shape"] == (3,)
-    assert metadata["targets"]["forces"]["extensive"] is True
-    assert metadata["targets"]["forces"]["type"] == "per-atom"
-
-    # Confirm forces metadata guessed properly
-    assert metadata["targets"]["info.extensive_property"]["extensive"] is True
-    assert metadata["targets"]["info.extensive_property"]["shape"] == ()
-    assert (
-        metadata["targets"]["info.extensive_property"]["type"] == "per-image"
-    )
-
-    dataset = AseDBDataset(
-        config={
-            "src": os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb.db"
-            ),
-        }
-    )
+    dataset = AseDBDataset(config={"src": str(tmp_path / "asedb.db")})
+    assert len(dataset) == len(structures)
+    orig_len = len(dataset)
 
     database.delete([1])
 
@@ -324,55 +165,20 @@ def test_ase_metadata_guesser() -> None:
         build.bulk("Al"),
     ]
 
-    for i, structure in enumerate(new_structures):
-        database.write(structure)
+    for i, atoms in enumerate(new_structures):
+        database.write(atoms, data=atoms.info)
 
-    dataset = AseDBDataset(
-        config={
-            "src": os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "asedb.db"
-            ),
-        }
-    )
-
-    assert len(dataset) == len(structures) + len(new_structures) - 1
-    data = dataset[:]
-    assert data
-
-    os.remove(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "asedb.db")
-    )
-
+    dataset = AseDBDataset(config={"src": str(tmp_path / "asedb.db")})
+    assert len(dataset) == orig_len + len(new_structures) - 1
     dataset.close_db()
 
 
-def test_ase_multiread_dataset() -> None:
-    try:
-        os.remove(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "test.traj"
-            )
-        )
-    except FileNotFoundError:
-        pass
-
-    try:
-        os.remove(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "test_index_file"
-            )
-        )
-    except FileNotFoundError:
-        pass
-
+def test_ase_multiread_dataset(tmp_path) -> None:
     atoms_objects = [build.bulk("Cu", a=a) for a in np.linspace(3.5, 3.7, 10)]
 
     energies = np.linspace(1, 0, len(atoms_objects))
 
-    traj = Trajectory(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "test.traj"),
-        mode="w",
-    )
+    traj = Trajectory(tmp_path / "test.traj", mode="w")
 
     for atoms, energy in zip(atoms_objects, energies):
         calc = SinglePointCalculator(
@@ -383,7 +189,7 @@ def test_ase_multiread_dataset() -> None:
 
     dataset = AseReadMultiStructureDataset(
         config={
-            "src": os.path.join(os.path.dirname(os.path.abspath(__file__))),
+            "src": str(tmp_path),
             "pattern": "*.traj",
             "keep_in_memory": True,
             "atoms_transform_args": {
@@ -393,35 +199,19 @@ def test_ase_multiread_dataset() -> None:
     )
 
     assert len(dataset) == len(atoms_objects)
-    [dataset[:]]
 
-    f = open(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "test_index_file"
-        ),
-        "w",
-    )
-    f.write(
-        f"{os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test.traj')} {len(atoms_objects)}"
-    )
-    f.close()
+    with open(tmp_path / "test_index_file", "w") as f:
+        f.write(f"{tmp_path / 'test.traj'} {len(atoms_objects)}")
 
     dataset = AseReadMultiStructureDataset(
-        config={
-            "index_file": os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "test_index_file"
-            )
-        },
+        config={"index_file": str(tmp_path / "test_index_file")},
     )
 
     assert len(dataset) == len(atoms_objects)
-    [dataset[:]]
 
     dataset = AseReadMultiStructureDataset(
         config={
-            "index_file": os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "test_index_file"
-            ),
+            "index_file": str(tmp_path / "test_index_file"),
             "a2g_args": {
                 "r_energy": True,
                 "r_forces": True,
@@ -431,7 +221,6 @@ def test_ase_multiread_dataset() -> None:
     )
 
     assert len(dataset) == len(atoms_objects)
-    [dataset[:]]
 
     assert hasattr(dataset[0], "y_relaxed")
     assert dataset[0].y_relaxed != dataset[0].y
@@ -439,7 +228,7 @@ def test_ase_multiread_dataset() -> None:
 
     dataset = AseReadDataset(
         config={
-            "src": os.path.join(os.path.dirname(os.path.abspath(__file__))),
+            "src": str(tmp_path),
             "pattern": "*.traj",
             "ase_read_args": {
                 "index": "0",
@@ -452,16 +241,5 @@ def test_ase_multiread_dataset() -> None:
         }
     )
 
-    [dataset[:]]
-
     assert hasattr(dataset[0], "y_relaxed")
     assert dataset[0].y_relaxed != dataset[0].y
-
-    os.remove(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "test.traj")
-    )
-    os.remove(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "test_index_file"
-        )
-    )
