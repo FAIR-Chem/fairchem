@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 import typing
 import zlib
+from pathlib import Path
 from typing import Optional
 
 import lmdb
@@ -34,7 +35,7 @@ RESERVED_KEYS = ["nextid", "metadata", "deleted_ids"]
 class LMDBDatabase(Database):
     def __init__(
         self,
-        filename: Optional[str] = None,
+        filename: Optional[str | Path] = None,
         create_indices: bool = True,
         use_lock_file: bool = False,
         serial: bool = False,
@@ -47,7 +48,12 @@ class LMDBDatabase(Database):
         arguments, except that we add a readonly flag.
         """
         super().__init__(
-            filename, create_indices, use_lock_file, serial, *args, **kwargs
+            Path(filename),
+            create_indices,
+            use_lock_file,
+            serial,
+            *args,
+            **kwargs,
         )
 
         # Add a readonly mode for when we're only training
@@ -57,7 +63,7 @@ class LMDBDatabase(Database):
         if self.readonly:
             # Open a new env
             self.env = lmdb.open(
-                self.filename,
+                str(self.filename),
                 subdir=False,
                 meminit=False,
                 map_async=True,
@@ -71,7 +77,7 @@ class LMDBDatabase(Database):
         else:
             # Open a new env with write access
             self.env = lmdb.open(
-                self.filename,
+                str(self.filename),
                 map_size=1099511627776 * 2,
                 subdir=False,
                 meminit=False,
@@ -81,6 +87,8 @@ class LMDBDatabase(Database):
             self.txn = self.env.begin(write=True)
 
         # Load all ids based on keys in the DB.
+        self.ids = []
+        self.deleted_ids = []
         self._load_ids()
 
     def __enter__(self) -> Self:
@@ -136,35 +144,49 @@ class LMDBDatabase(Database):
         dct["cell"] = np.asarray(dct["cell"])
 
         if idx is None:
-            idx = self._get_nextid()
+            idx = self._nextid
             nextid = idx + 1
         else:
-            data = self.txn.get("{id}".encode("ascii"))
+            data = self.txn.get(f"{idx}".encode("ascii"))
             assert data is not None
 
-        # Add the new entry, then add the id and write the nextid
+        # Add the new entry
         self.txn.put(
             f"{idx}".encode("ascii"),
             zlib.compress(
                 orjson.dumps(dct, option=orjson.OPT_SERIALIZE_NUMPY)
             ),
         )
-        self.ids.append(idx)
-        self.txn.put(
-            "nextid".encode("ascii"),
-            zlib.compress(
-                orjson.dumps(nextid, option=orjson.OPT_SERIALIZE_NUMPY)
-            ),
-        )
+        # only append if idx is not in ids
+        if idx not in self.ids:
+            self.ids.append(idx)
+            self.txn.put(
+                "nextid".encode("ascii"),
+                zlib.compress(
+                    orjson.dumps(nextid, option=orjson.OPT_SERIALIZE_NUMPY)
+                ),
+            )
+        # check if id is in removed ids and remove accordingly
+        if idx in self.deleted_ids:
+            self.deleted_ids.remove(idx)
+            self._write_deleted_ids()
 
         return idx
 
-    def delete(self, ids: list[int]) -> None:
-        for idx in ids:
-            self.txn.delete(f"{idx}".encode("ascii"))
-            self.ids.remove(idx)
+    def _update(
+        self,
+        idx: int,
+        key_value_pairs: Optional[dict] = None,
+        data: Optional[dict] = None,
+    ):
+        # hack this to play nicely with ASE code
+        row = self._get_row(idx, include_data=True)
+        if data is not None or key_value_pairs is not None:
+            self._write(
+                atoms=row, idx=idx, key_value_pairs=key_value_pairs, data=data
+            )
 
-        self.deleted_ids += ids
+    def _write_deleted_ids(self):
         self.txn.put(
             "deleted_ids".encode("ascii"),
             zlib.compress(
@@ -173,6 +195,14 @@ class LMDBDatabase(Database):
                 )
             ),
         )
+
+    def delete(self, ids: list[int]) -> None:
+        for idx in ids:
+            self.txn.delete(f"{idx}".encode("ascii"))
+            self.ids.remove(idx)
+
+        self.deleted_ids += ids
+        self._write_deleted_ids()
 
     def _get_row(self, idx: int, include_data: bool = True):
         if idx is None:
@@ -195,8 +225,7 @@ class LMDBDatabase(Database):
         """Auxiliary function to get the ith entry, rather than
         a specific id
         """
-        id = self.ids[index]
-        data = self.txn.get(f"{id}".encode("ascii"))
+        data = self.txn.get(f"{self.ids[index]}".encode("ascii"))
 
         if data is not None:
             dct = orjson.loads(zlib.decompress(data))
@@ -303,16 +332,14 @@ class LMDBDatabase(Database):
             ),
         )
 
-    def _get_nextid(self):
+    @property
+    def _nextid(self):
         """Get the id of the next row to be written"""
         # Get the nextid
         nextid_data = self.txn.get("nextid".encode("ascii"))
-        if nextid_data is not None:
-            nextid = orjson.loads(zlib.decompress(nextid_data))
-        else:
-            # This db is empty; start at 1!
-            nextid = 1
-
+        nextid = (
+            orjson.loads(zlib.decompress(nextid_data)) if nextid_data else 1
+        )
         return nextid
 
     def count(self, selection=None, **kwargs) -> int:
@@ -341,14 +368,10 @@ class LMDBDatabase(Database):
 
         # Load the deleted ids
         deleted_ids_data = self.txn.get("deleted_ids".encode("ascii"))
-        if deleted_ids_data is None:
-            self.deleted_ids = []
-        else:
+        if deleted_ids_data is not None:
             self.deleted_ids = orjson.loads(zlib.decompress(deleted_ids_data))
 
         # Reconstruct the full id list
         self.ids = [
-            i
-            for i in range(1, self._get_nextid())
-            if i not in set(self.deleted_ids)
+            i for i in range(1, self._nextid) if i not in set(self.deleted_ids)
         ]
