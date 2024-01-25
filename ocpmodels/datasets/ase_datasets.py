@@ -91,7 +91,7 @@ class AseAtomsDataset(Dataset, ABC):
         if self.config.get("keep_in_memory", False):
             self.__getitem__ = functools.cache(self.__getitem__)
 
-        self.ids = self.load_dataset_get_ids(config)
+        self.ids = self._load_dataset_get_ids(config)
 
     def __len__(self) -> int:
         return len(self.ids)
@@ -151,7 +151,7 @@ class AseAtomsDataset(Dataset, ABC):
         )
 
     @abstractmethod
-    def load_dataset_get_ids(self, config):
+    def _load_dataset_get_ids(self, config):
         # This function should return a list of ids that can be used to index into the database
         raise NotImplementedError(
             "Every ASE dataset needs to declare a function to load the dataset and return a list of ids."
@@ -161,7 +161,7 @@ class AseAtomsDataset(Dataset, ABC):
         # This method is sometimes called by a trainer
         pass
 
-    def guess_target_metadata(self, num_samples: int = 100):
+    def get_metadata(self, num_samples: int = 100):
         metadata = {}
 
         if num_samples < len(self):
@@ -182,9 +182,6 @@ class AseAtomsDataset(Dataset, ABC):
             )
 
         return metadata
-
-    def get_metadata(self):
-        return self.guess_target_metadata()
 
 
 @registry.register_dataset("ase_read")
@@ -238,7 +235,7 @@ class AseReadDataset(AseAtomsDataset):
 
     """
 
-    def load_dataset_get_ids(self, config) -> list[Path]:
+    def _load_dataset_get_ids(self, config) -> list[Path]:
         self.ase_read_args = config.get("ase_read_args", {})
 
         if ":" in self.ase_read_args.get("index", ""):
@@ -333,7 +330,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
         transform (callable, optional): Additional preprocessing function for the Data object
     """
 
-    def load_dataset_get_ids(self, config):
+    def _load_dataset_get_ids(self, config):
         self.ase_read_args = config.get("ase_read_args", {})
         if not hasattr(self.ase_read_args, "index"):
             self.ase_read_args["index"] = ":"
@@ -453,7 +450,7 @@ class AseDBDataset(AseAtomsDataset):
         transform (callable, optional): deprecated?
     """
 
-    def load_dataset_get_ids(self, config) -> list[int]:
+    def _load_dataset_get_ids(self, config: dict) -> list[int]:
         if isinstance(config["src"], list):
             filepaths = config["src"]
         elif os.path.isfile(config["src"]):
@@ -499,7 +496,14 @@ class AseDBDataset(AseAtomsDataset):
 
         return list(range(sum(idlens)))
 
-    def get_atoms_object(self, idx):
+    def get_atoms_object(self, idx: int) -> ase.Atoms:
+        """Get atoms object corresponding to datapoint idx. Useful to read other properties not in data object.
+        Args:
+            idx (int): index in dataset
+
+        Returns:
+            atoms: ASE atoms corresponding to datapoint idx
+        """
         # Figure out which db this should be indexed from.
         db_idx = bisect.bisect(self._idlen_cumulative, idx)
 
@@ -519,13 +523,15 @@ class AseDBDataset(AseAtomsDataset):
         return atoms
 
     @staticmethod
-    def connect_db(address, connect_args: Optional[dict] = None):
+    def connect_db(
+        address: str | Path, connect_args: Optional[dict] = None
+    ) -> ase.db.core.Database:
         if connect_args is None:
             connect_args = {}
         db_type = connect_args.get("type", "extract_from_name")
         if db_type in ("lmdb", "aselmdb") or (
             db_type == "extract_from_name"
-            and address.split(".")[-1] in ("lmdb", "aselmdb")
+            and str(address).split(".")[-1] in ("lmdb", "aselmdb")
         ):
             return LMDBDatabase(address, readonly=True, **connect_args)
         else:
@@ -536,12 +542,12 @@ class AseDBDataset(AseAtomsDataset):
             if hasattr(db, "close"):
                 db.close()
 
-    def get_metadata(self):
+    def get_metadata(self, num_samples: int = 100) -> dict:
         logging.warning(
             "You specific a folder of ASE dbs, so it's impossible to know which metadata to use. Using the first!"
         )
         if self.dbs[0].metadata == {}:
-            return self.guess_target_metadata()
+            return super().get_metadata(num_samples)
         else:
             return copy.deepcopy(self.dbs[0].metadata)
 

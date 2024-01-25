@@ -222,9 +222,7 @@ class LMDBDatabase(Database):
         return AtomsRow(dct)
 
     def _get_row_by_index(self, index: int, include_data: bool = True):
-        """Auxiliary function to get the ith entry, rather than
-        a specific id
-        """
+        """Auxiliary function to get the ith entry, rather than a specific id"""
         data = self.txn.get(f"{self.ids[index]}".encode("ascii"))
 
         if data is not None:
