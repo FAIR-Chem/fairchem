@@ -522,8 +522,9 @@ class AseDBDataset(AseAtomsDataset):
         if connect_args is None:
             connect_args = {}
         db_type = connect_args.get("type", "extract_from_name")
-        if db_type == "lmdb" or (
-            db_type == "extract_from_name" and address.split(".")[-1] == "lmdb"
+        if db_type in ("lmdb", "aselmdb") or (
+            db_type == "extract_from_name"
+            and address.split(".")[-1] in ("lmdb", "aselmdb")
         ):
             return LMDBDatabase(address, readonly=True, **connect_args)
         else:

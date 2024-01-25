@@ -39,6 +39,7 @@ structures[2].set_pbc(True)
         "db_dataset_folder",
         "db_dataset_list",
         "lmdb_dataset",
+        "aselmdb_dataset",
     ],
 )
 def ase_dataset(request, tmp_path_factory):
@@ -74,7 +75,15 @@ def ase_dataset(request, tmp_path_factory):
             else [str(tmp_path / "asedb1.db"), str(tmp_path / "asedb2.db")]
         )
         dataset = AseDBDataset(config={"src": src, "a2g_args": a2g_args})
-    else:  # "lmbd_dataset"
+    elif request.param == "lmbd_dataset":
+        with LMDBDatabase(str(tmp_path / "asedb.lmdb")) as database:
+            for i, atoms in enumerate(structures):
+                database.write(atoms, data=atoms.info)
+
+        dataset = AseDBDataset(
+            config={"src": str(tmp_path / "asedb.lmdb"), "a2g_args": a2g_args}
+        )
+    else:  # "aselmbd_dataset" with .aselmdb file extension
         with LMDBDatabase(str(tmp_path / "asedb.lmdb")) as database:
             for i, atoms in enumerate(structures):
                 database.write(atoms, data=atoms.info)
