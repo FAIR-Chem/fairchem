@@ -509,7 +509,7 @@ class AseDBDataset(AseAtomsDataset):
             el_idx = idx - self._idlen_cumulative[db_idx - 1]
         assert el_idx >= 0
 
-        atoms_row = self.dbs[db_idx]._get_row(self.db_ids[db_idx][el_idx])
+        atoms_row = self.dbs[db_idx].get(self.db_ids[db_idx][el_idx])
         atoms = atoms_row.toatoms()
 
         # put data back into atoms info
@@ -518,7 +518,8 @@ class AseDBDataset(AseAtomsDataset):
 
         return atoms
 
-    def connect_db(self, address, connect_args: Optional[dict] = None):
+    @staticmethod
+    def connect_db(address, connect_args: Optional[dict] = None):
         if connect_args is None:
             connect_args = {}
         db_type = connect_args.get("type", "extract_from_name")
