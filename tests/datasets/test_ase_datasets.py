@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pytest
 from ase import build, db
@@ -38,7 +40,7 @@ structures[2].set_pbc(True)
         "db_dataset",
         "db_dataset_folder",
         "db_dataset_list",
-        "lmdb_dataset",
+        "db_dataset_path_list" "lmdb_dataset",
         "aselmdb_dataset",
     ],
 )
@@ -62,12 +64,10 @@ def ase_dataset(request, tmp_path_factory):
         request.param == "db_dataset_folder"
         or request.param == "db_dataset_list"
     ):
-        with db.connect(tmp_path / "asedb1.db") as database:
-            for i, atoms in enumerate(structures):
-                database.write(atoms, data=atoms.info)
-        with db.connect(tmp_path / "asedb2.db") as database:
-            for i, atoms in enumerate(structures):
-                database.write(atoms, data=atoms.info)
+        for db_name in ("asedb1.db", "asedb2.db"):
+            with db.connect(tmp_path / db_name) as database:
+                for i, atoms in enumerate(structures):
+                    database.write(atoms, data=atoms.info)
         mult = 2
         src = (
             str(tmp_path)
@@ -75,6 +75,23 @@ def ase_dataset(request, tmp_path_factory):
             else [str(tmp_path / "asedb1.db"), str(tmp_path / "asedb2.db")]
         )
         dataset = AseDBDataset(config={"src": src, "a2g_args": a2g_args})
+    elif request.param == "db_dataset_path_list":
+        os.mkdir(tmp_path / "dir1")
+        os.mkdir(tmp_path / "dir2")
+
+        for dir_name in ("dir1", "dir2"):
+            for db_name in ("asedb1.db", "asedb2.db"):
+                with db.connect(tmp_path / dir_name / db_name) as database:
+                    for i, atoms in enumerate(structures):
+                        database.write(atoms, data=atoms.info)
+        mult = 4
+        dataset = AseDBDataset(
+            config={
+                "src": [str(tmp_path / "dir1"), str(tmp_path / "dir2")],
+                "a2g_args": a2g_args,
+            }
+        )
+        print(len(dataset.dbs))
     elif request.param == "lmbd_dataset":
         with LMDBDatabase(str(tmp_path / "asedb.lmdb")) as database:
             for i, atoms in enumerate(structures):

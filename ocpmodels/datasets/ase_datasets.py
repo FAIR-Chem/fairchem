@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import bisect
 import copy
-import functools
-import glob
 import logging
 import os
 import warnings
 from abc import ABC, abstractmethod
+from functools import cache, reduce
+from glob import glob
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -89,7 +89,7 @@ class AseAtomsDataset(Dataset, ABC):
         self.atoms_transform = atoms_transform
 
         if self.config.get("keep_in_memory", False):
-            self.__getitem__ = functools.cache(self.__getitem__)
+            self.__getitem__ = cache(self.__getitem__)
 
         self.ids = self._load_dataset_get_ids(config)
 
@@ -452,13 +452,19 @@ class AseDBDataset(AseAtomsDataset):
 
     def _load_dataset_get_ids(self, config: dict) -> list[int]:
         if isinstance(config["src"], list):
-            filepaths = config["src"]
+            if os.path.isdir(config["src"][0]):
+                filepaths = reduce(
+                    lambda x, y: x + y,
+                    (glob(f"{path}/*db") for path in config["src"]),
+                )
+            else:
+                filepaths = config["src"]
         elif os.path.isfile(config["src"]):
             filepaths = [config["src"]]
         elif os.path.isdir(config["src"]):
-            filepaths = glob.glob(f'{config["src"]}/*')
+            filepaths = glob(f'{config["src"]}/*db')
         else:
-            filepaths = glob.glob(config["src"])
+            filepaths = glob(config["src"])
 
         self.dbs = []
 
