@@ -91,7 +91,6 @@ def ase_dataset(request, tmp_path_factory):
                 "a2g_args": a2g_args,
             }
         )
-        print(len(dataset.dbs))
     elif request.param == "lmbd_dataset":
         with LMDBDatabase(str(tmp_path / "asedb.lmdb")) as database:
             for i, atoms in enumerate(structures):
