@@ -15,7 +15,7 @@ from e3nn import o3
 from torch_geometric.nn import radius_graph
 
 from ocpmodels.common.utils import (
-    cg_decomp_mat,
+    cg_change_mat,
     compute_neighbors,
     get_pbc_distances,
     irreps_sum,
@@ -183,7 +183,7 @@ class BaseModel(nn.Module):
         # Construct parent tensors from predicted irreps
         for parent_target in parent_construction:
             rank = max(parent_construction[parent_target].keys())
-            cg_matrix = cg_decomp_mat(rank, self.device)
+            cg_matrix = cg_change_mat(rank, self.device)
 
             # TODO: handle per-atom vs per-system properties
             prediction_irreps = torch.zeros(
