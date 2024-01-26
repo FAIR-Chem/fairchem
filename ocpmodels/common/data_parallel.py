@@ -7,119 +7,37 @@ LICENSE file in the root directory of this source tree.
 
 import heapq
 import logging
-from itertools import chain
 from pathlib import Path
-from typing import List, Literal, Protocol, Union, runtime_checkable
+from typing import List, Literal, Protocol, Tuple, Union, runtime_checkable
 
 import numba
 import numpy as np
+import numpy.typing as npt
 import torch
 from torch.utils.data import BatchSampler, DistributedSampler, Sampler
+from torch_geometric.data import Batch, Data
 
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.datasets import data_list_collater
 
 
-class OCPDataParallel(torch.nn.DataParallel):
-    def __init__(self, module, output_device, num_gpus: int) -> None:
-        if num_gpus < 0:
-            raise ValueError("# GPUs must be positive.")
-        if num_gpus > torch.cuda.device_count():
-            raise ValueError("# GPUs specified larger than available")
-
-        self.src_device = torch.device(output_device)
-
-        self.cpu = False
-        if num_gpus == 0:
-            self.cpu = True
-        elif num_gpus == 1:
-            device_ids = [self.src_device]
-        else:
-            if (
-                self.src_device.type == "cuda"
-                and self.src_device.index >= num_gpus
-            ):
-                raise ValueError("Main device must be less than # of GPUs")
-            device_ids = list(range(num_gpus))
-
-        if self.cpu:
-            super(torch.nn.DataParallel, self).__init__()
-            self.module = module
-
-        else:
-            super(OCPDataParallel, self).__init__(
-                module=module,
-                device_ids=device_ids,
-                output_device=self.src_device,
-            )
-
-    def forward(self, batch_list, **kwargs):
-        if self.cpu:
-            return self.module(batch_list[0])
-
-        if len(self.device_ids) == 1:
-            return self.module(
-                batch_list[0].to(f"cuda:{self.device_ids[0]}"), **kwargs
-            )
-
-        for t in chain(self.module.parameters(), self.module.buffers()):
-            if t.device != self.src_device:
-                raise RuntimeError(
-                    (
-                        "Module must have its parameters and buffers on device "
-                        "{} but found one of them on device {}."
-                    ).format(self.src_device, t.device)
-                )
-
-        inputs = [
-            batch.to(f"cuda:{self.device_ids[i]}")
-            for i, batch in enumerate(batch_list)
-        ]
-        replicas = self.replicate(self.module, self.device_ids[: len(inputs)])
-        outputs = self.parallel_apply(replicas, inputs, kwargs)
-        return self.gather(outputs, self.output_device)
-
-
-class ParallelCollater:
-    def __init__(self, num_gpus: int, otf_graph: bool = False) -> None:
-        self.num_gpus = num_gpus
+class OCPCollater:
+    def __init__(self, otf_graph: bool = True) -> None:
         self.otf_graph = otf_graph
 
-    def __call__(self, data_list):
-        if self.num_gpus in [0, 1]:  # adds cpu-only case
-            batch = data_list_collater(data_list, otf_graph=self.otf_graph)
-            return [batch]
-
-        else:
-            num_devices = min(self.num_gpus, len(data_list))
-
-            count = torch.tensor([data.num_nodes for data in data_list])
-            cumsum = count.cumsum(0)
-            cumsum = torch.cat([cumsum.new_zeros(1), cumsum], dim=0)
-            device_id = (
-                num_devices * cumsum.to(torch.float) / cumsum[-1].item()
-            )
-            device_id = (device_id[:-1] + device_id[1:]) / 2.0
-            device_id = device_id.to(torch.long)
-            split = device_id.bincount().cumsum(0)
-            split = torch.cat([split.new_zeros(1), split], dim=0)
-            split = torch.unique(split, sorted=True)
-            split = split.tolist()
-
-            return [
-                data_list_collater(data_list[split[i] : split[i + 1]])
-                for i in range(len(split) - 1)
-            ]
+    def __call__(self, data_list: List[Data]) -> Batch:
+        batch = data_list_collater(data_list, otf_graph=self.otf_graph)
+        return batch
 
 
 @numba.njit
-def balanced_partition(sizes, num_parts: int):
+def balanced_partition(sizes: npt.NDArray[np.int_], num_parts: int):
     """
     Greedily partition the given set by always inserting
     the largest element into the smallest partition.
     """
     sort_idx = np.argsort(-sizes)  # Sort in descending order
-    heap = []
+    heap: List[Tuple[List[int], List[int]]] = []
     for idx in sort_idx[:num_parts]:
         heap.append((sizes[idx], [idx]))
     heapq.heapify(heap)
@@ -164,7 +82,7 @@ class BalancedBatchSampler(Sampler):
         batch_size: int,
         num_replicas: int,
         rank: int,
-        device,
+        device: torch.device,
         mode: Union[str, bool] = "atoms",
         shuffle: bool = True,
         drop_last: bool = False,

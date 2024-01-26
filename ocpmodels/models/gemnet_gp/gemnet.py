@@ -9,18 +9,12 @@ from typing import Optional
 
 import numpy as np
 import torch
-from torch_cluster import radius_graph
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
 
-from ocpmodels.common import distutils, gp_utils
+from ocpmodels.common import gp_utils
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    compute_neighbors,
-    conditional_grad,
-    get_pbc_distances,
-    radius_graph_pbc,
-)
+from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 from ocpmodels.modules.scaling.compat import load_scales_compat
 
@@ -302,7 +296,9 @@ class GraphParallelGemNetT(BaseModel):
 
         return id3_ba, id3_ca, id3_ragged_idx
 
-    def select_symmetric_edges(self, tensor, mask, reorder_idx, inverse_neg):
+    def select_symmetric_edges(
+        self, tensor: torch.Tensor, mask, reorder_idx, inverse_neg
+    ) -> torch.Tensor:
         # Mask out counter-edges
         tensor_directed = tensor[mask]
         # Concatenate counter-edges after normal edges
@@ -609,6 +605,7 @@ class GraphParallelGemNetT(BaseModel):
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
             )  # (nMolecules, num_targets)
 
+        outputs = {"energy": E_t}
         if self.regress_forces:
             if self.direct_forces:
                 # map forces in edge directions
@@ -640,9 +637,9 @@ class GraphParallelGemNetT(BaseModel):
                     )[0]
                     # (nAtoms, 3)
 
-            return E_t, F_t  # (nMolecules, num_targets), (nAtoms, 3)
-        else:
-            return E_t
+            outputs["forces"] = F_t
+
+        return outputs
 
     @property
     def num_params(self):

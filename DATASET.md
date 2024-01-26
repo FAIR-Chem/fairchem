@@ -15,6 +15,9 @@
     * [Relaxation Trajectories](#relaxation-trajectories-1)
     * [OC22 metadata](#oc22-mappings)
     * [License and bibtex](#citing-oc22)
+* [Open Direct Air Capture 2023 (ODAC23)](#open-direct-air-capture-2023-odac23)
+    * [Structure to Energy and Forces (S2EF) task](#structure-to-energy-and-forces-s2ef-task)
+    * [Initial Structure to Relaxed Structure (IS2RS) / Relaxed Energy (IS2RE) tasks](#initial-structure-to-relaxed-structure-is2rs--relaxed-energy-is2re-tasks)
 
 * * *
 
@@ -165,7 +168,7 @@ Adsorbate+catalyst trajectories on a per adsorbate basis are provided [here](./D
 
 
 ### Bader charge data
-We provide Bader charge data for all final frames of our train + validation systems in OC20 (for both S2EF and IS2RE/RS tasks). A `.tar.gz` file, when downloaded and uncompressed will contain several directories with unique system-ids (of the format `random<XYZ>` where `XYZ` is an integer). Each directory will contain raw Bader charge analysis outputs. For more details on the Bader charge analysis, see https://theory.cm.utexas.edu/henkelman/research/bader/. 
+We provide Bader charge data for all final frames of our train + validation systems in OC20 (for both S2EF and IS2RE/RS tasks). A `.tar.gz` file, when downloaded and uncompressed will contain several directories with unique system-ids (of the format `random<XYZ>` where `XYZ` is an integer). Each directory will contain raw Bader charge analysis outputs. For more details on the Bader charge analysis, see https://theory.cm.utexas.edu/henkelman/research/bader/.
 
 Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_bader_data.tar (MD5 checksum: `aecc5e23542de49beceb4b7e44c153b9`)
 
@@ -337,7 +340,7 @@ Please consider citing the following paper in any research manuscript using the 
 
 
 
-```
+```bibtex
 @article{ocp_dataset,
     author = {Chanussot*, Lowik and Das*, Abhishek and Goyal*, Siddharth and Lavril*, Thibaut and Shuaibi*, Muhammed and Riviere, Morgane and Tran, Kevin and Heras-Domingo, Javier and Ho, Caleb and Hu, Weihua and Palizhati, Aini and Sriram, Anuroop and Wood, Brandon and Yoon, Junwoong and Parikh, Devi and Zitnick, C. Lawrence and Ulissi, Zachary},
     title = {Open Catalyst 2020 (OC20) Dataset and Community Challenges},
@@ -447,7 +450,7 @@ An example slab entry:
 #### OC20 reference information
 
 
-In order to train OC20 on total energy, we provide a Python pickle file containing the energy necessary to convert adsorption energy values to total energy. Loading the pickle file will load a Python dictionary. The keys of this dictionary are the system-ids (of the format `random<XYZ>`  where `XYZ` is an integer, corresponding to the `sid` in the LMDB Data object), and the corresponding value of each key is the energy to be added to OC20 energy values. To train on total energies for OC20, specify the path to this pickle file in your training configs.
+In order to train models on OC20 total energy, we provide a Python pickle file containing the energy necessary to convert adsorption energy values to total energy. Loading the pickle file will load a Python dictionary. The keys of this dictionary are the system-ids (of the format `random<XYZ>`  where `XYZ` is an integer, corresponding to the `sid` in the LMDB Data object), and the corresponding value of each key is the energy to be added to OC20 energy values. To train on total energies for OC20, specify the path to this pickle file in your training configs.
 
 Downloadable link:  https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl (MD5 checksum: `043e1e0b0cce64c62f01a8563dbc3178`)
 ####
@@ -459,11 +462,62 @@ The Open Catalyst 2022 (OC22) dataset is licensed under a [Creative Commons Attr
 Please consider citing the following paper in any research manuscript using the OC22 dataset:
 
 
-```
+```bibtex
 @article{oc22_dataset,
     author = {Tran*, Richard and Lan*, Janice and Shuaibi*, Muhammed and Wood*, Brandon and Goyal*, Siddharth and Das, Abhishek and Heras-Domingo, Javier and Kolluru, Adeesh and Rizvi, Ammar and Shoghi, Nima and Sriram, Anuroop and Ulissi, Zachary and Zitnick, C. Lawrence},
-    title = {The Open Catalyst 2022 (OC22) Dataset and Challenges for Oxide Electrocatalysis},
-    year = {2022},
-    journal={arXiv preprint arXiv:2206.08917},
+    title = {The Open Catalyst 2022 (OC22) dataset and challenges for oxide electrocatalysts},
+    journal = {ACS Catalysis},
+    year={2023},
+}
+```
+
+
+## Open Direct Air Capture 2023 (ODAC23)
+
+### Structure to Energy and Forces (S2EF) task
+
+We provide precomputed LMDBs for train, validation, and the various test sets that can be used directly with the dataloaders provided in our code. The LMDBs contain input structures from all points in relaxation trajectories along with the energy of the structure and the atomic forces. The dataset contains an in-domain test set and 4 out-of-domain test sets (ood-large, ood-linker, ood-topology, and ood-linker & topology). All LMDbs  are compressed into a single `.tar.gz` file.
+
+|Splits    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
+|---    |---    |---    |---    |
+|Train + Validation + Test (all splits)    |  172G  |  476G  | [162f0660b2f1c9209c5b57f7b9e545a7](https://dl.fbaipublicfiles.com/large_objects/dac/datasets/odac23_s2ef.tar.gz )  |
+|    |    |    |    |
+
+
+
+
+### Initial Structure to Relaxed Structure (IS2RS) / Relaxed Energy (IS2RE) tasks
+
+For IS2RE / IS2RS training, validation and test sets, we provide precomputed LMDBs that can be directly used with dataloaders provided in our code. The LMDBs contain input initial structures and the output relaxed structures and energies. The dataset contains an in-domain test set and 4 out-of-domain test sets (ood-large, ood-linker, ood-topology, and ood-linker & topology). All LMDBs are compressed into a single `.tar.gz` file.
+
+
+|Splits    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
+|---    |---    |---    |---    |
+|Train + Validation + Test (all splits)    |  809M | 2.2G |  [f7f2f58669a30abae8cb9ba1b7f2bcd2](https://dl.fbaipublicfiles.com/dac/datasets/odac23_is2r.tar.gz )  |
+|    |    |    |    |
+
+### DDEC Charges
+
+We provide DDEC charges computed for all MOFs in the ODAC23 dataset. A small number of MOFs (~2%) are missing these charges because the DDEC calcuations failed for them.
+
+|Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
+|---    |---    |---    |
+|  147M | 534M |  [81927b78d9e4184cc3c398e79760126a](https://dl.fbaipublicfiles.com/dac/datasets/ddec.tar.gz )  |
+|    |    |    |
+
+
+### Citing ODAC23
+
+The OpenDAC 2023 (ODAC23) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
+
+Please consider citing the following paper in any research manuscript using the ODAC23 dataset:
+
+
+```bibtex
+@article{odac23_dataset,
+    author = {Anuroop Sriram and Sihoon Choi and Xiaohan Yu and Logan M. Brabson and Abhishek Das and Zachary Ulissi and Matt Uyttendaele and Andrew J. Medford and David S. Sholl},
+    title = {The Open DAC 2023 Dataset and Challenges for Sorbent Discovery in Direct Air Capture},
+    year = {2023},
+    journal={arXiv preprint arXiv:2311.00341},
 }
 ```

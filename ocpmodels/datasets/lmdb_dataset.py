@@ -6,12 +6,10 @@ LICENSE file in the root directory of this source tree.
 
 import bisect
 import logging
-import math
 import pickle
-import random
 import warnings
 from pathlib import Path
-from typing import Optional, TypeVar
+from typing import List, Optional, TypeVar
 
 import lmdb
 import numpy as np
@@ -20,12 +18,10 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Batch
 from torch_geometric.data.data import BaseData
 
-from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance
 from ocpmodels.common.utils import pyg2_data_transform
 from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
-from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.transforms import DataTransforms
 
 T_co = TypeVar("T_co", covariant=True)
@@ -35,6 +31,9 @@ T_co = TypeVar("T_co", covariant=True)
 @registry.register_dataset("single_point_lmdb")
 @registry.register_dataset("trajectory_lmdb")
 class LmdbDataset(Dataset[T_co]):
+    metadata_path: Path
+    sharded: bool
+
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
     Useful for Structure to Energy & Force (S2EF), Initial State to
@@ -119,12 +118,12 @@ class LmdbDataset(Dataset[T_co]):
             self.num_samples = len(self.available_indices)
 
         self.key_mapping = self.config.get("key_mapping", None)
-        self.transforms = DataTransforms(self.config.get("transforms", []))
+        self.transforms = DataTransforms(self.config.get("transforms", {}))
 
     def __len__(self) -> int:
         return self.num_samples
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> T_co:
         # if sharding, remap idx to appropriate idx of the sharded set
         if self.sharded:
             idx = self.available_indices[idx]
@@ -160,11 +159,11 @@ class LmdbDataset(Dataset[T_co]):
                         data_object[new_property] = data_object[_property]
                         del data_object[_property]
 
-        self.transforms(data_object)
+        data_object = self.transforms(data_object)
 
         return data_object
 
-    def connect_db(self, lmdb_path: Optional[Path] = None):
+    def connect_db(self, lmdb_path: Optional[Path] = None) -> lmdb.Environment:
         env = lmdb.open(
             str(lmdb_path),
             subdir=False,
@@ -226,7 +225,7 @@ class LmdbDataset(Dataset[T_co]):
         return metadata
 
 
-class SinglePointLmdbDataset(LmdbDataset):
+class SinglePointLmdbDataset(LmdbDataset[BaseData]):
     def __init__(self, config, transform=None) -> None:
         super(SinglePointLmdbDataset, self).__init__(config, transform)
         warnings.warn(
@@ -236,7 +235,7 @@ class SinglePointLmdbDataset(LmdbDataset):
         )
 
 
-class TrajectoryLmdbDataset(LmdbDataset):
+class TrajectoryLmdbDataset(LmdbDataset[BaseData]):
     def __init__(self, config, transform=None) -> None:
         super(TrajectoryLmdbDataset, self).__init__(config, transform)
         warnings.warn(
@@ -246,7 +245,9 @@ class TrajectoryLmdbDataset(LmdbDataset):
         )
 
 
-def data_list_collater(data_list, otf_graph: bool = False) -> BaseData:
+def data_list_collater(
+    data_list: List[BaseData], otf_graph: bool = True
+) -> BaseData:
     batch = Batch.from_data_list(data_list)
 
     if not otf_graph:

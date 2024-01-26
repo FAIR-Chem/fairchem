@@ -107,9 +107,8 @@ class TestEquiformerV2:
         data = self.data
 
         # Pass it through the model.
-        out = self.model(data_list_collater([data]))
-        energy = out["energy"]
-        forces = out["forces"]
+        outputs = self.model(data_list_collater([data]))
+        energy, forces = outputs["energy"], outputs["forces"]
 
         assert snapshot == energy.shape
         assert snapshot == pytest.approx(energy.detach())

@@ -6,9 +6,9 @@ LICENSE file in the root directory of this source tree.
 """
 
 import os
+from typing import List
 
 import torch
-import torch.nn as nn
 
 try:
     from e3nn import o3
@@ -34,8 +34,8 @@ class CoefficientMapping:
 
     def __init__(
         self,
-        lmax_list,
-        mmax_list,
+        lmax_list: List[int],
+        mmax_list: List[int],
         device,
     ) -> None:
         super().__init__()
@@ -57,15 +57,15 @@ class CoefficientMapping:
         ).long()
         offset = 0
         for i in range(self.num_resolutions):
-            for l in range(0, self.lmax_list[i] + 1):
-                mmax = min(self.mmax_list[i], l)
+            for lval in range(0, self.lmax_list[i] + 1):
+                mmax = min(self.mmax_list[i], lval)
                 m = torch.arange(-mmax, mmax + 1, device=self.device).long()
                 self.m_complex = torch.cat([self.m_complex, m], dim=0)
                 self.m_harmonic = torch.cat(
                     [self.m_harmonic, torch.abs(m).long()], dim=0
                 )
                 self.l_harmonic = torch.cat(
-                    [self.l_harmonic, m.fill_(l).long()], dim=0
+                    [self.l_harmonic, m.fill_(lval).long()], dim=0
                 )
             self.res_size[i] = len(self.l_harmonic) - offset
             offset = len(self.l_harmonic)
@@ -118,7 +118,7 @@ class CoefficientMapping:
         return mask_idx_r, mask_idx_i
 
     # Return mask containing coefficients less than or equal to degree (l) and order (m)
-    def coefficient_idx(self, lmax, mmax) -> torch.Tensor:
+    def coefficient_idx(self, lmax: int, mmax: int) -> torch.Tensor:
         mask = torch.bitwise_and(
             self.l_harmonic.le(lmax), self.m_harmonic.le(mmax)
         )
@@ -141,11 +141,11 @@ class SO3_Embedding(torch.nn.Module):
 
     def __init__(
         self,
-        length,
-        lmax_list,
-        num_channels,
-        device,
-        dtype,
+        length: int,
+        lmax_list: List[int],
+        num_channels: int,
+        device: torch.device,
+        dtype: torch.dtype,
     ) -> None:
         super().__init__()
         self.num_channels = num_channels
@@ -389,14 +389,12 @@ class SO3_Rotation(torch.nn.Module):
 
     def __init__(
         self,
-        rot_mat3x3,
-        lmax,
+        rot_mat3x3: torch.Tensor,
+        lmax: List[int],
     ) -> None:
         super().__init__()
         self.device = rot_mat3x3.device
         self.dtype = rot_mat3x3.dtype
-
-        length = len(rot_mat3x3)
 
         self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, 0, lmax)
         self.wigner_inv = torch.transpose(self.wigner, 1, 2).contiguous()
@@ -428,8 +426,8 @@ class SO3_Rotation(torch.nn.Module):
 
     # Compute Wigner matrices from rotation matrix
     def RotationToWignerDMatrix(
-        self, edge_rot_mat, start_lmax: int, end_lmax: int
-    ):
+        self, edge_rot_mat: torch.Tensor, start_lmax: int, end_lmax: int
+    ) -> torch.Tensor:
         x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
         alpha, beta = o3.xyz_to_angles(x)
         R = (
@@ -456,25 +454,25 @@ class SO3_Rotation(torch.nn.Module):
     #
     # In 0.5.0, e3nn shifted to torch.matrix_exp which is significantly slower:
     # https://github.com/e3nn/e3nn/blob/0.5.0/e3nn/o3/_wigner.py#L92
-    def wigner_D(self, l, alpha, beta, gamma):
-        if not l < len(_Jd):
+    def wigner_D(self, lval, alpha, beta, gamma):
+        if not lval < len(_Jd):
             raise NotImplementedError(
                 f"wigner D maximum l implemented is {len(_Jd) - 1}, send us an email to ask for more"
             )
 
         alpha, beta, gamma = torch.broadcast_tensors(alpha, beta, gamma)
-        J = _Jd[l].to(dtype=alpha.dtype, device=alpha.device)
-        Xa = self._z_rot_mat(alpha, l)
-        Xb = self._z_rot_mat(beta, l)
-        Xc = self._z_rot_mat(gamma, l)
+        J = _Jd[lval].to(dtype=alpha.dtype, device=alpha.device)
+        Xa = self._z_rot_mat(alpha, lval)
+        Xb = self._z_rot_mat(beta, lval)
+        Xc = self._z_rot_mat(gamma, lval)
         return Xa @ J @ Xb @ J @ Xc
 
-    def _z_rot_mat(self, angle, l):
+    def _z_rot_mat(self, angle: torch.Tensor, lv: int) -> torch.Tensor:
         shape, device, dtype = angle.shape, angle.device, angle.dtype
-        M = angle.new_zeros((*shape, 2 * l + 1, 2 * l + 1))
-        inds = torch.arange(0, 2 * l + 1, 1, device=device)
-        reversed_inds = torch.arange(2 * l, -1, -1, device=device)
-        frequencies = torch.arange(l, -l - 1, -1, dtype=dtype, device=device)
+        M = angle.new_zeros((*shape, 2 * lv + 1, 2 * lv + 1))
+        inds = torch.arange(0, 2 * lv + 1, 1, device=device)
+        reversed_inds = torch.arange(2 * lv, -1, -1, device=device)
+        frequencies = torch.arange(lv, -lv - 1, -1, dtype=dtype, device=device)
         M[..., inds, reversed_inds] = torch.sin(frequencies * angle[..., None])
         M[..., inds, inds] = torch.cos(frequencies * angle[..., None])
         return M
@@ -505,7 +503,7 @@ class SO3_Grid(torch.nn.Module):
 
         self.initialized = False
 
-    def _initialize(self, device) -> None:
+    def _initialize(self, device: torch.device) -> None:
         if self.initialized is True:
             return
         self.mapping = CoefficientMapping([self.lmax], [self.lmax], device)
@@ -541,17 +539,19 @@ class SO3_Grid(torch.nn.Module):
         self.initialized = True
 
     # Compute matrices to transform irreps to grid
-    def get_to_grid_mat(self, device):
+    def get_to_grid_mat(self, device: torch.device):
         self._initialize(device)
         return self.to_grid_mat
 
     # Compute matrices to transform grid to irreps
-    def get_from_grid_mat(self, device):
+    def get_from_grid_mat(self, device: torch.device):
         self._initialize(device)
         return self.from_grid_mat
 
     # Compute grid from irreps representation
-    def to_grid(self, embedding, lmax, mmax) -> torch.Tensor:
+    def to_grid(
+        self, embedding: torch.Tensor, lmax: int, mmax: int
+    ) -> torch.Tensor:
         self._initialize(embedding.device)
         to_grid_mat = self.to_grid_mat[
             :, :, self.mapping.coefficient_idx(lmax, mmax)
@@ -560,7 +560,9 @@ class SO3_Grid(torch.nn.Module):
         return grid
 
     # Compute irreps from grid representation
-    def from_grid(self, grid, lmax, mmax) -> torch.Tensor:
+    def from_grid(
+        self, grid: torch.Tensor, lmax: int, mmax: int
+    ) -> torch.Tensor:
         self._initialize(grid.device)
         from_grid_mat = self.from_grid_mat[
             :, :, self.mapping.coefficient_idx(lmax, mmax)

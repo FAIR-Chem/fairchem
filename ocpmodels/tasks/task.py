@@ -9,6 +9,7 @@ import logging
 import os
 
 from ocpmodels.common.registry import registry
+from ocpmodels.trainers import OCPTrainer
 
 
 class BaseTask:
@@ -18,7 +19,9 @@ class BaseTask:
     def setup(self, trainer) -> None:
         self.trainer = trainer
         if self.config["checkpoint"] is not None:
-            self.trainer.load_checkpoint(self.config["checkpoint"])
+            self.trainer.load_checkpoint(
+                checkpoint_path=self.config["checkpoint"]
+            )
 
         # save checkpoint path to runner state for slurm resubmissions
         self.chkpt_path = os.path.join(
@@ -88,8 +91,8 @@ class ValidateTask(BaseTask):
 class RelxationTask(BaseTask):
     def run(self) -> None:
         assert isinstance(
-            self.trainer, ForcesTrainer
-        ), "Relaxations are only possible for ForcesTrainer"
+            self.trainer, OCPTrainer
+        ), "Relaxations are only possible for OCPTrainer"
         assert (
             self.trainer.relax_dataset is not None
         ), "Relax dataset is required for making predictions"

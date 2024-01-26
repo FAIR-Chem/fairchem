@@ -24,7 +24,7 @@ def _standardize(kernel):
     return kernel
 
 
-def he_orthogonal_init(tensor):
+def he_orthogonal_init(tensor: torch.Tensor) -> torch.Tensor:
     """
     Generate a weight matrix with variance according to He (Kaiming) initialization.
     Based on a random (semi-)orthogonal matrix neural networks

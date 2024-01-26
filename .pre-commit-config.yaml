@@ -16,3 +16,8 @@ repos:
     hooks:
     -   id: isort
         args: ["--profile", "black", "--filter-files"]
+-   repo: https://github.com/PyCQA/autoflake.git
+    rev: v2.2.0
+    hooks:
+    -   id: autoflake
+        args: ["--remove-all-unused-imports", "--in-place"]

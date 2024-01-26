@@ -92,7 +92,7 @@ class Complete:
         return data
 
 
-def warmup_lr_lambda(current_step, optim_config):
+def warmup_lr_lambda(current_step: int, optim_config):
     """Returns a learning rate multiplier.
     Till `warmup_steps`, learning rate linearly increases to `initial_lr`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
@@ -212,9 +212,9 @@ def collate(data_list):
 def add_edge_distance_to_graph(
     batch,
     device="cpu",
-    dmin=0.0,
-    dmax=6.0,
-    num_gaussians=50,
+    dmin: float = 0.0,
+    dmax: float = 6.0,
+    num_gaussians: int = 50,
 ):
     # Make sure x has positions.
     if not all(batch.pos[0][:] == batch.x[0][-3:]):
@@ -458,7 +458,7 @@ def build_config(args, args_override):
     return config
 
 
-def create_grid(base_config, sweep_file):
+def create_grid(base_config, sweep_file: str):
     def _flatten_sweeps(sweeps, root_key: str = "", sep: str = "."):
         flat_sweeps = []
         for key, value in sweeps.items():
@@ -516,8 +516,8 @@ def get_pbc_distances(
     cell,
     cell_offsets,
     neighbors,
-    return_offsets=False,
-    return_distance_vec=False,
+    return_offsets: bool = False,
+    return_distance_vec: bool = False,
 ):
     row, col = edge_index
 
@@ -557,7 +557,7 @@ def radius_graph_pbc(
     data,
     radius,
     max_num_neighbors_threshold,
-    enforce_max_neighbors_strictly=False,
+    enforce_max_neighbors_strictly: bool = False,
     pbc=[True, True, True],
 ):
     device = data.pos.device
@@ -735,8 +735,8 @@ def get_max_neighbors_mask(
     index,
     atom_distance,
     max_num_neighbors_threshold,
-    degeneracy_tolerance=0.01,
-    enforce_max_strictly=False,
+    degeneracy_tolerance: float = 0.01,
+    enforce_max_strictly: bool = False,
 ):
     """
     Give a mask that filters out edges so that each atom has at most
@@ -912,12 +912,12 @@ def merge_dicts(dict1: dict, dict2: dict):
 
 
 class SeverityLevelBetween(logging.Filter):
-    def __init__(self, min_level, max_level) -> None:
+    def __init__(self, min_level: int, max_level: int) -> None:
         super().__init__()
         self.min_level = min_level
         self.max_level = max_level
 
-    def filter(self, record):
+    def filter(self, record) -> bool:
         return self.min_level <= record.levelno < self.max_level
 
 
@@ -1002,7 +1002,7 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         # backwards compatibility for older configs
         if trainer_name in ["forces", "equiformerv2_forces"]:
             task_name = "s2ef"
-        elif trainer_name == "energy":
+        elif trainer_name in ["energy", "equiformerv2_energy"]:
             task_name = "is2re"
         else:
             task_name = "ocp"
@@ -1154,7 +1154,7 @@ def get_commit_hash():
     return commit_hash
 
 
-def cg_decomp_mat(l, device="cpu"):
+def cg_change_mat(l, device="cpu"):
     if l not in [2]:
         raise NotImplementedError
 
@@ -1188,6 +1188,9 @@ def cg_decomp_mat(l, device="cpu"):
 
 
 def irreps_sum(l):
+    """
+    Returns the sum of the dimensions of the irreps up to the specified l.
+    """
     total = 0
     for i in range(l + 1):
         total += 2 * i + 1
@@ -1195,9 +1198,20 @@ def irreps_sum(l):
     return total
 
 
-def update_old_config(config):
+def update_config(base_config):
+    """
+    Configs created prior to OCP 2.0 are organized a little different than they
+    are now. Update old configs to fit the new expected structure.
+    """
+    config = copy.deepcopy(base_config)
+    config["dataset"]["format"] = config["task"].get("dataset", "lmdb")
     ### Read task based off config structure, similar to OCPCalculator.
-    if config["task"]["dataset"] in ["trajectory_lmdb", "lmdb"]:
+    if config["task"]["dataset"] in [
+        "trajectory_lmdb",
+        "lmdb",
+        "trajectory_lmdb_v2",
+        "oc22_lmdb",
+    ]:
         task = "s2ef"
     elif config["task"]["dataset"] == "single_point_lmdb":
         task = "is2re"
@@ -1223,7 +1237,9 @@ def update_old_config(config):
         if "primary_metric" in config["task"]:
             _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
         ### Define outputs
-        _outputs = {"energy": {"shape": 1, "level": "system"}}
+        _outputs = {"energy": {"level": "system"}}
+        ### Define key mapping
+        config["dataset"]["key_mapping"] = {"y_relaxed": "energy"}
     elif task == "s2ef":
         ### Define loss functions
         _loss_fns = [
@@ -1234,13 +1250,15 @@ def update_old_config(config):
                         "energy_coefficient", 1
                     ),
                 },
+            },
+            {
                 "forces": {
                     "fn": config["optim"].get("loss_forces", "l2mae"),
                     "coefficient": config["optim"].get(
                         "force_coefficient", 30
                     ),
                 },
-            }
+            },
         ]
         ### Define evaluation metrics
         _eval_metrics = {
@@ -1261,9 +1279,8 @@ def update_old_config(config):
             _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
         ### Define outputs
         _outputs = {
-            "energy": {"shape": 1, "level": "system"},
+            "energy": {"level": "system"},
             "forces": {
-                "shape": 3,
                 "level": "atom",
                 "train_on_free_atoms": (
                     config["task"].get("train_on_free_atoms", False)
@@ -1273,25 +1290,31 @@ def update_old_config(config):
                 ),
             },
         }
+        ### Define key mapping
+        config["dataset"]["key_mapping"] = {"y": "energy", "force": "forces"}
 
     if config["dataset"].get("normalize_labels", False):
         normalizer = {
             "energy": {
-                "mean": config["dataset"]["target_mean"],
-                "stdev": config["dataset"]["target_std"],
+                "mean": config["dataset"].get("target_mean", 0),
+                "stdev": config["dataset"].get("target_std", 1),
             },
             "forces": {
-                "mean": config["dataset"]["grad_target_mean"],
-                "stdev": config["dataset"]["grad_target_std"],
+                "mean": config["dataset"].get("grad_target_mean", 0),
+                "stdev": config["dataset"].get("grad_target_std", 1),
             },
         }
-        config["dataset"]["normalizer"] = normalizer
 
-    config["dataset"]["key_mapping"] = {"y": "energy", "force": "forces"}
+        transforms = config["dataset"].get("transforms", {})
+        transforms["normalizer"] = normalizer
+        config["dataset"]["transforms"] = transforms
+
     ### Update config
     config.update({"loss_fns": _loss_fns})
     config.update({"eval_metrics": _eval_metrics})
     config.update({"outputs": _outputs})
+
+    return config
 
 
 def get_loss_module(loss_name):

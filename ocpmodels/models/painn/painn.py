@@ -29,23 +29,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import logging
 import math
-import os
 from typing import Dict, Optional, Tuple, Union
 
 import torch
 from torch import nn
-from torch_geometric.nn import MessagePassing, radius_graph
+from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter, segment_coo
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    compute_neighbors,
-    conditional_grad,
-    get_pbc_distances,
-    radius_graph_pbc,
-)
+from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.gemnet.layers.base_layers import ScaledSiLU
 from ocpmodels.models.gemnet.layers.embedding_block import AtomEmbedding

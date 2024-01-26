@@ -176,6 +176,7 @@ if __name__ == "__main__":
         help="Specify path to save dataset. Defaults to 'ocpmodels/data'",
     )
 
+    args: argparse.Namespace
     args, _ = parser.parse_known_args()
     get_data(
         datadir=args.data_path,

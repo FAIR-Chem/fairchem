@@ -5,21 +5,16 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
-import os
 from typing import Dict, Optional, Union
 
 import numpy as np
 import torch
-from torch_geometric.nn import radius_graph
-from torch_scatter import scatter, segment_coo
+from torch_scatter import segment_coo
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
-    compute_neighbors,
     conditional_grad,
     get_max_neighbors_mask,
-    get_pbc_distances,
-    radius_graph_pbc,
     scatter_det,
 )
 from ocpmodels.models.base import BaseModel
@@ -702,7 +697,13 @@ class GemNetOC(BaseModel):
 
         return cosφ_cab, cosφ_abd, angle_cabd
 
-    def select_symmetric_edges(self, tensor, mask, reorder_idx, opposite_neg):
+    def select_symmetric_edges(
+        self,
+        tensor: torch.Tensor,
+        mask: torch.Tensor,
+        reorder_idx: torch.Tensor,
+        opposite_neg,
+    ) -> torch.Tensor:
         """Use a mask to remove values of removed edges and then
         duplicate the values for the correct edge direction.
 
@@ -1326,7 +1327,6 @@ class GemNetOC(BaseModel):
                 E_t = scatter_det(
                     E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
                 )  # (nMolecules, 1)
-
             E_t = E_t.squeeze(1)  # (num_molecules)
             outputs["energy"] = E_t
 
