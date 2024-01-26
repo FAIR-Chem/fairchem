@@ -10,8 +10,6 @@ from typing import Dict, Union
 import numpy as np
 import torch
 
-from ocpmodels.common.utils import cg_decomp_mat
-
 """
 An evaluation module for use with the OCP dataset and suite of tasks. It should
 be possible to import this independently of the rest of the codebase, e.g:
