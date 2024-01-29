@@ -40,7 +40,8 @@ structures[2].set_pbc(True)
         "db_dataset",
         "db_dataset_folder",
         "db_dataset_list",
-        "db_dataset_path_list" "lmdb_dataset",
+        "db_dataset_path_list",
+        "lmdb_dataset",
         "aselmdb_dataset",
     ],
 )
