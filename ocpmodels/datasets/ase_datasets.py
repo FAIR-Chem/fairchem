@@ -79,6 +79,10 @@ class AseAtomsDataset(Dataset, ABC):
 
         a2g_args = config.get("a2g_args", {})
 
+        # set default to False if not set by user, assuming otf_graph will be used
+        if "r_edges" not in a2g_args:
+            a2g_args["r_edges"] = False
+
         # Make sure we always include PBC info in the resulting atoms objects
         a2g_args["r_pbc"] = True
         self.a2g = AtomsToGraphs(**a2g_args)
