@@ -47,7 +47,7 @@ class AtomsToGraphs:
         radius (int or float): Cutoff radius in Angstroms to search for neighbors.
         r_energy (bool): Return the energy with other properties. Default is False, so the energy will not be returned.
         r_forces (bool): Return the forces with other properties. Default is False, so the forces will not be returned.
-        r_forces (bool): Return the stress with other properties. Default is False, so the stress will not be returned.
+        r_stress (bool): Return the stress with other properties. Default is False, so the stress will not be returned.
         r_distances (bool): Return the distances with other properties.
         Default is False, so the distances will not be returned.
         r_edges (bool): Return interatomic edges with other properties. Default is True, so edges will be returned.
