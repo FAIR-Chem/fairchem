@@ -44,11 +44,9 @@ class LmdbDataset(Dataset[T_co]):
     folder, but lmdb lengths are now calculated directly from the number of keys.
     Args:
             config (dict): Dataset configuration
-            transform (callable, optional): Data transform function.
-                    (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None) -> None:
+    def __init__(self, config) -> None:
         super(LmdbDataset, self).__init__()
         self.config = config
 

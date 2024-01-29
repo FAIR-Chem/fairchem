@@ -73,7 +73,6 @@ class AseAtomsDataset(Dataset, ABC):
         atoms_transform: Callable[
             [ase.Atoms, Any, ...], ase.Atoms
         ] = apply_one_tags,
-        transform=None,  # is this deprecated?
     ) -> None:
         self.config = config
 
@@ -230,9 +229,6 @@ class AseReadDataset(AseAtomsDataset):
 
         atoms_transform (callable, optional): Additional preprocessing function applied to the Atoms
                     object. Useful for applying tags, for example.
-
-        transform (callable, optional): Additional preprocessing function for the Data object
-
     """
 
     def _load_dataset_get_ids(self, config) -> list[Path]:
