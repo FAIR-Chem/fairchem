@@ -18,6 +18,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from ocpmodels.common.registry import registry
+from ocpmodels.datasets._utils import rename_data_object_keys
 from ocpmodels.datasets.lmdb_database import LMDBDatabase
 from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
 from ocpmodels.modules.transforms import DataTransforms
@@ -126,13 +127,9 @@ class AseAtomsDataset(Dataset, ABC):
         data_object.natoms = len(atoms)
 
         if self.key_mapping is not None:
-            for _property in self.key_mapping:
-                # catch for test data not containing labels
-                if _property in data_object:
-                    new_property = self.key_mapping[_property]
-                    if new_property not in data_object:
-                        data_object[new_property] = data_object[_property]
-                        del data_object[_property]
+            data_object = rename_data_object_keys(
+                data_object, self.key_mapping
+            )
 
         # Transform data object
         data_object = self.transforms(data_object)
