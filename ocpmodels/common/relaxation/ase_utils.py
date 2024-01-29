@@ -12,7 +12,6 @@ Environment (ASE)
 import copy
 import logging
 from typing import Dict, Optional
-from ocpmodels.common.model_registry import model_name_to_local_file
 
 import torch
 from ase import Atoms
@@ -20,6 +19,7 @@ from ase.calculators.calculator import Calculator
 from ase.calculators.singlepoint import SinglePointCalculator as sp
 from ase.constraints import FixAtoms
 
+from ocpmodels.common.model_registry import model_name_to_local_file
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     load_config,

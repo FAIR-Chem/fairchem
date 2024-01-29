@@ -1,9 +1,7 @@
-import os
-from typing import Optional
-
 import logging
-import urllib3
+import os
 import shutil
+from typing import Optional
 
 import urllib3
 
@@ -85,21 +83,22 @@ def model_name_to_local_file(
     if model_name not in model_registry:
         logging.error(f"Not a valid model name '{model_name}'")
         return None
-    if not os.path.isfile(local_cache):
+    if not os.path.exists(local_cache):
         os.makedirs(local_cache, exist_ok=True)
-    if not os.path.isfile(local_cache):
+    if not os.path.exists(local_cache):
         logging.error(f"Failed to create local cache folder '{local_cache}'")
         return None
     model_url = model_registry[model_name]
     local_path = os.path.join(local_cache, os.path.basename(model_url))
 
+    # download the file
     if not os.path.isfile(local_path):
-        local_path_tmp = os.path.join(
-            local_path, ".tmp"
+        local_path_tmp = (
+            local_path + ".tmp"
         )  # download to a tmp file in case we fail
-    http = urllib3.PoolManager()
-    with open(local_path_tmp, "wb") as out:
-        r = http.request("GET", model_url, preload_content=False)
-        shutil.copyfileobj(r, out)
-    shutil.move(local_path_tmp, local_path)
+        http = urllib3.PoolManager()
+        with open(local_path_tmp, "wb") as out:
+            r = http.request("GET", model_url, preload_content=False)
+            shutil.copyfileobj(r, out)
+        shutil.move(local_path_tmp, local_path)
     return local_path
