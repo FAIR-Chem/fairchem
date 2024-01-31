@@ -1305,6 +1305,7 @@ class GemNetOC(BaseModel):
             xs_F.append(x_F)
 
         nMolecules = torch.max(batch) + 1
+        x_E = self.out_mlp_E(torch.cat(xs_E, dim=-1))
 
         outputs = {
             "edge_idx": idx_t,
@@ -1315,7 +1316,6 @@ class GemNetOC(BaseModel):
 
         # Global output block for final predictions
         if "energy" in self.output_targets:
-            x_E = self.out_mlp_E(torch.cat(xs_E, dim=-1))
             with torch.cuda.amp.autocast(False):
                 E_t = self.out_energy(x_E.float())
 

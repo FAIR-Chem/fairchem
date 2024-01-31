@@ -111,6 +111,7 @@ class BaseModel(nn.Module):
 
         self.construct_parent_tensor(results)
 
+        breakpoint()
         return results
 
     def forward_irrep(self, out, target):
@@ -145,6 +146,7 @@ class BaseModel(nn.Module):
             pred = pred.sum(dim=1) / num_sphere_samples
 
         ### Compute spherical harmonics based on edge vectors
+        ### GemNet-OC style
         else:
             assert "edge_vec" in out
             assert "edge_idx" in out
@@ -157,11 +159,11 @@ class BaseModel(nn.Module):
             sphharm = o3.spherical_harmonics(irrep, edge_vec, True).detach()
             # (nedges, 1)
             pred = self.module_dict[target](out["edge_embedding"])
-            # (nedges, 2*irrep-dim+1)
+            # (nedges, 2*irrep_dim+1)
             pred = pred * sphharm
 
             # aggregate edges per node
-            # (nnodes, 2*irrep-dim+1)
+            # (nnodes, 2*irrep_dim+1)
             pred = scatter_det(
                 pred, edge_idx, dim=0, dim_size=self.num_atoms, reduce="add"
             )
