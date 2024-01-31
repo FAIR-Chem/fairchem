@@ -516,7 +516,7 @@ class AseDBDataset(AseAtomsDataset):
             el_idx = idx - self._idlen_cumulative[db_idx - 1]
         assert el_idx >= 0
 
-        atoms_row = self.dbs[db_idx].get(self.db_ids[db_idx][el_idx])
+        atoms_row = self.dbs[db_idx]._get_row(self.db_ids[db_idx][el_idx])
         atoms = atoms_row.toatoms()
 
         # put data back into atoms info
