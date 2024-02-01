@@ -115,14 +115,6 @@ class AseAtomsDataset(Dataset, ABC):
             )
 
         sid = atoms.info.get("sid", self.ids[idx])
-        try:
-            sid = tensor([sid])
-        except (RuntimeError, ValueError, TypeError):
-            warnings.warn(
-                "Supplied sid is not numeric (or missing). Using dataset indices instead."
-            )
-            sid = tensor([idx])
-
         fid = atoms.info.get("fid", tensor([0]))
 
         # Convert to data object

@@ -514,10 +514,10 @@ class OCPTrainer(BaseTrainer):
                 return predictions
 
             ### Get unique system identifiers
-            sids = batch.sid.tolist()
+            sids = list(batch.sid)
             ## Support naming structure for OC20 S2EF
             if "fid" in batch:
-                fids = batch.fid.tolist()
+                fids = list(batch.fid)
                 systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
             else:
                 systemids = [f"{sid}" for sid in sids]
