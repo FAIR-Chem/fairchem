@@ -19,8 +19,8 @@ from ocpmodels.common.utils import collate
 
 try:
     from pymatgen.io.ase import AseAtomsAdaptor
-except Exception:
-    pass
+except ImportError:
+    AseAtomsAdaptor = None
 
 
 try:
@@ -102,6 +102,11 @@ class AtomsToGraphs:
     def _get_neighbors_pymatgen(self, atoms: ase.Atoms):
         """Preforms nearest neighbor search and returns edge index, distances,
         and cell offsets"""
+        if AseAtomsAdaptor is None:
+            raise RuntimeError(
+                "Unable to import pymatgen.io.ase.AseAtomsAdaptor. Make sure pymatgen is properly installed."
+            )
+
         struct = AseAtomsAdaptor.get_structure(atoms)
         _c_index, _n_index, _offsets, n_distance = struct.get_neighbor_list(
             r=self.radius, numerical_tol=0, exclude_self=True
