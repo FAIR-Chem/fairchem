@@ -444,14 +444,15 @@ class AseDBDataset(AseAtomsDataset):
             if os.path.isdir(config["src"][0]):
                 filepaths = reduce(
                     lambda x, y: x + y,
-                    (glob(f"{path}/*db") for path in config["src"]),
+                    (glob(f"{path}/*") for path in config["src"]),
                 )
             else:
                 filepaths = config["src"]
         elif os.path.isfile(config["src"]):
             filepaths = [config["src"]]
         elif os.path.isdir(config["src"]):
-            filepaths = glob(f'{config["src"]}/*db')
+            filepaths = glob(f'{config["src"]}/*')
+            print(filepaths)
         else:
             filepaths = glob(config["src"])
 
