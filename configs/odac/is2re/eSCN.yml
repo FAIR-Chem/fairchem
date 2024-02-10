@@ -1,5 +1,5 @@
 includes:
-  - odac/configs/is2re/base.yml
+  - configs/odac/is2re/base.yml
 
 trainer: energy
 
@@ -18,7 +18,7 @@ model:
   use_pbc: True
   basis_width_scalar: 2.0
   otf_graph: True
-  
+
   max_num_elements: 100
 
 optim:
