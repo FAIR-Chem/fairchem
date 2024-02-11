@@ -4,7 +4,7 @@ _T = TypeVar("_T")
 
 
 def assert_is_instance(obj: object, cls: Type[_T]) -> _T:
-    if not isinstance(obj, cls):
+    if obj and not isinstance(obj, cls):
         raise TypeError(f"obj is not an instance of cls: obj={obj}, cls={cls}")
     return obj
 

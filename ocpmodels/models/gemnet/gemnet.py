@@ -561,6 +561,8 @@ class GemNetT(BaseModel):
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
             )  # (nMolecules, num_targets)
 
+        outputs = {"energy": E_t}
+
         if self.regress_forces:
             if self.direct_forces:
                 # map forces in edge directions
@@ -592,9 +594,9 @@ class GemNetT(BaseModel):
                     )[0]
                     # (nAtoms, 3)
 
-            return E_t, F_t  # (nMolecules, num_targets), (nAtoms, 3)
-        else:
-            return E_t
+            outputs["forces"] = F_t
+
+        return outputs
 
     @property
     def num_params(self):

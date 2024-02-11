@@ -13,6 +13,7 @@ import itertools
 import json
 import logging
 import os
+import subprocess
 import sys
 import time
 from argparse import Namespace
@@ -34,6 +35,9 @@ from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import scatter, segment_coo, segment_csr
+
+import ocpmodels
+from ocpmodels.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
     from torch.nn.modules.module import _IncompatibleKeys
@@ -994,15 +998,25 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
             gp_utils.setup_gp(config)
     try:
         setup_imports(config)
-        trainer_cls = registry.get_trainer_class(
-            config.get("trainer", "energy")
-        )
+        trainer_name = config.get("trainer", "ocp")
+        # backwards compatibility for older configs
+        if trainer_name in ["forces", "equiformerv2_forces"]:
+            task_name = "s2ef"
+        elif trainer_name in ["energy", "equiformerv2_energy"]:
+            task_name = "is2re"
+        else:
+            task_name = "ocp"
+
+        trainer_cls = registry.get_trainer_class(trainer_name)
         assert trainer_cls is not None, "Trainer not found"
         trainer = trainer_cls(
-            task=config["task"],
+            task=config.get("task", {}),
             model=config["model"],
+            outputs=config.get("outputs", {}),
             dataset=config["dataset"],
             optimizer=config["optim"],
+            loss_fns=config.get("loss_functions", {}),
+            eval_metrics=config.get("evaluation_metrics", {}),
             identifier=config["identifier"],
             timestamp_id=config.get("timestamp_id", None),
             run_dir=config.get("run_dir", "./"),
@@ -1015,6 +1029,7 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
             cpu=config.get("cpu", False),
             slurm=config.get("slurm", {}),
             noddp=config.get("noddp", False),
+            name=task_name,
         )
 
         task_cls = registry.get_task_class(config["mode"])
@@ -1121,3 +1136,197 @@ def scatter_det(*args, **kwargs):
         torch.use_deterministic_algorithms(mode=False)
 
     return out
+
+
+def get_commit_hash():
+    try:
+        commit_hash = (
+            subprocess.check_output(
+                ["git", "-C", ocpmodels.__path__[0], "describe", "--always"]
+            )
+            .strip()
+            .decode("ascii")
+        )
+    # catch instances where code is not being run from a git repo
+    except Exception:
+        commit_hash = None
+
+    return commit_hash
+
+
+def cg_change_mat(l, device="cpu"):
+    if l not in [2]:
+        raise NotImplementedError
+
+    if l == 2:
+        change_mat = torch.tensor(
+            [
+                [3 ** (-0.5), 0, 0, 0, 3 ** (-0.5), 0, 0, 0, 3 ** (-0.5)],
+                [0, 0, 0, 0, 0, 2 ** (-0.5), 0, -(2 ** (-0.5)), 0],
+                [0, 0, -(2 ** (-0.5)), 0, 0, 0, 2 ** (-0.5), 0, 0],
+                [0, 2 ** (-0.5), 0, -(2 ** (-0.5)), 0, 0, 0, 0, 0],
+                [0, 0, 0.5**0.5, 0, 0, 0, 0.5**0.5, 0, 0],
+                [0, 2 ** (-0.5), 0, 2 ** (-0.5), 0, 0, 0, 0, 0],
+                [
+                    -(6 ** (-0.5)),
+                    0,
+                    0,
+                    0,
+                    2 * 6 ** (-0.5),
+                    0,
+                    0,
+                    0,
+                    -(6 ** (-0.5)),
+                ],
+                [0, 0, 0, 0, 0, 2 ** (-0.5), 0, 2 ** (-0.5), 0],
+                [-(2 ** (-0.5)), 0, 0, 0, 0, 0, 0, 0, 2 ** (-0.5)],
+            ],
+            device=device,
+        ).detach()
+
+    return change_mat
+
+
+def irreps_sum(l):
+    """
+    Returns the sum of the dimensions of the irreps up to the specified l.
+    """
+    total = 0
+    for i in range(l + 1):
+        total += 2 * i + 1
+
+    return total
+
+
+def update_config(base_config):
+    """
+    Configs created prior to OCP 2.0 are organized a little different than they
+    are now. Update old configs to fit the new expected structure.
+    """
+    config = copy.deepcopy(base_config)
+    config["dataset"]["format"] = config["task"].get("dataset", "lmdb")
+    ### Read task based off config structure, similar to OCPCalculator.
+    if config["task"]["dataset"] in [
+        "trajectory_lmdb",
+        "lmdb",
+        "trajectory_lmdb_v2",
+        "oc22_lmdb",
+    ]:
+        task = "s2ef"
+    elif config["task"]["dataset"] == "single_point_lmdb":
+        task = "is2re"
+    else:
+        raise NotImplementedError
+
+    if task == "is2re":
+        ### Define loss functions
+        _loss_fns = [
+            {
+                "energy": {
+                    "fn": config["optim"].get("loss_energy", "mae"),
+                    "coefficient": config["optim"].get(
+                        "energy_coefficient", 1
+                    ),
+                },
+            }
+        ]
+        ### Define evaluation metrics
+        _eval_metrics = {
+            "metrics": {"energy": ["mae", "mse", "energy_within_threshold"]},
+        }
+        if "primary_metric" in config["task"]:
+            _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
+        ### Define outputs
+        _outputs = {"energy": {"level": "system"}}
+        ### Define key mapping
+        config["dataset"]["key_mapping"] = {"y_relaxed": "energy"}
+    elif task == "s2ef":
+        ### Define loss functions
+        _loss_fns = [
+            {
+                "energy": {
+                    "fn": config["optim"].get("loss_energy", "mae"),
+                    "coefficient": config["optim"].get(
+                        "energy_coefficient", 1
+                    ),
+                },
+            },
+            {
+                "forces": {
+                    "fn": config["optim"].get("loss_forces", "l2mae"),
+                    "coefficient": config["optim"].get(
+                        "force_coefficient", 30
+                    ),
+                },
+            },
+        ]
+        ### Define evaluation metrics
+        _eval_metrics = {
+            "metrics": {
+                "misc": ["energy_forces_within_threshold"],
+                "energy": ["mae"],
+                "forces": [
+                    "forcesx_mae",
+                    "forcesy_mae",
+                    "forcesz_mae",
+                    "mae",
+                    "cosine_similarity",
+                    "magnitude_error",
+                ],
+            },
+        }
+        if "primary_metric" in config["task"]:
+            _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
+        ### Define outputs
+        _outputs = {
+            "energy": {"level": "system"},
+            "forces": {
+                "level": "atom",
+                "train_on_free_atoms": (
+                    config["task"].get("train_on_free_atoms", False)
+                ),
+                "eval_on_free_atoms": (
+                    config["task"].get("eval_on_free_atoms", True)
+                ),
+            },
+        }
+        ### Define key mapping
+        config["dataset"]["key_mapping"] = {"y": "energy", "force": "forces"}
+
+    if config["dataset"].get("normalize_labels", False):
+        normalizer = {
+            "energy": {
+                "mean": config["dataset"].get("target_mean", 0),
+                "stdev": config["dataset"].get("target_std", 1),
+            },
+            "forces": {
+                "mean": config["dataset"].get("grad_target_mean", 0),
+                "stdev": config["dataset"].get("grad_target_std", 1),
+            },
+        }
+
+        transforms = config["dataset"].get("transforms", {})
+        transforms["normalizer"] = normalizer
+        config["dataset"]["transforms"] = transforms
+
+    ### Update config
+    config.update({"loss_fns": _loss_fns})
+    config.update({"eval_metrics": _eval_metrics})
+    config.update({"outputs": _outputs})
+
+    return config
+
+
+def get_loss_module(loss_name):
+    if loss_name in ["l1", "mae"]:
+        loss_fn = nn.L1Loss()
+    elif loss_name == "mse":
+        loss_fn = nn.MSELoss()
+    elif loss_name == "l2mae":
+        loss_fn = L2MAELoss()
+    elif loss_name == "atomwisel2":
+        loss_fn = AtomwiseL2Loss()
+    else:
+        raise NotImplementedError(f"Unknown loss function name: {loss_name}")
+
+    return loss_fn

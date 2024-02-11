@@ -23,7 +23,9 @@ optim:
   eval_every: 5000
   num_workers: 2
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True}
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0.3
   lr_initial: 1.e-4
   lr_gamma: 0.8
   mode: min
@@ -36,7 +38,6 @@ optim:
   clip_grad_norm: 10
   loss_energy: mae
   loss_force: l2mae
-  weight_decay: 0.3
 
   scheduler: CosineAnnealingLR
   T_max: 1000000

@@ -70,7 +70,9 @@ optim:
   num_workers: 8
   lr_initial: 5.e-4
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True}
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0.1
   mode: min
   max_epochs: 80
   force_coefficient: 50
@@ -79,7 +81,6 @@ optim:
   clip_grad_norm: 10
   loss_energy: mae
   loss_force: l2mae
-  weight_decay: 0.1
 
   scheduler: CosineAnnealingLR
   T_max: 2000000

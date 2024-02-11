@@ -5,10 +5,8 @@
 
 __all__ = [
     "BaseTrainer",
-    "ForcesTrainer",
-    "EnergyTrainer",
+    "OCPTrainer",
 ]
 
 from .base_trainer import BaseTrainer
-from .energy_trainer import EnergyTrainer
-from .forces_trainer import ForcesTrainer
+from .ocp_trainer import OCPTrainer

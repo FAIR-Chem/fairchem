@@ -18,6 +18,8 @@ optim:
   eval_batch_size: 8
   eval_every: 5000
   num_workers: 8
+  optimizer_params:
+    weight_decay: 0.2
   lr_initial: 0.0001
   lr_gamma: 0.1
   lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
@@ -28,4 +30,3 @@ optim:
   warmup_factor: 0.2
   max_epochs: 15
   force_coefficient: 30
-  weight_decay: 0.2
