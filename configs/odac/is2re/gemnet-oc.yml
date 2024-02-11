@@ -69,7 +69,9 @@ optim:
   num_workers: 8
   lr_initial: 5.e-4
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True}
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0.2
   scheduler: ReduceLROnPlateau
   mode: min
   factor: 0.8
@@ -79,4 +81,3 @@ optim:
   ema_decay: 0.999
   clip_grad_norm: 10
   loss_energy: mae
-  weight_decay: 0.2

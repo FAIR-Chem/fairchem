@@ -533,6 +533,7 @@ class EquiformerV2_OC20(BaseModel):
                     self.energy_lin_ref[atomic_numbers],
                 )
 
+        outputs = {"energy": energy}
         ###############################################################
         # Force estimation
         ###############################################################
@@ -542,11 +543,9 @@ class EquiformerV2_OC20(BaseModel):
             )
             forces = forces.embedding.narrow(1, 1, 3)
             forces = forces.view(-1, 3)
+            outputs["forces"] = forces
 
-        if not self.regress_forces:
-            return energy
-        else:
-            return energy, forces
+        return outputs
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
@@ -580,33 +579,29 @@ class EquiformerV2_OC20(BaseModel):
             torch.nn.init.uniform_(m.weight, -std, std)
 
     @torch.jit.ignore
-    def no_weight_decay(self):
+    def no_weight_decay(self) -> set:
         no_wd_list = []
         named_parameters_list = [name for name, _ in self.named_parameters()]
         for module_name, module in self.named_modules():
-            if (
-                isinstance(module, torch.nn.Linear)
-                or isinstance(module, SO3_LinearV2)
-                or isinstance(module, torch.nn.LayerNorm)
-                or isinstance(module, EquivariantLayerNormArray)
-                or isinstance(
-                    module, EquivariantLayerNormArraySphericalHarmonics
-                )
-                or isinstance(
-                    module, EquivariantRMSNormArraySphericalHarmonics
-                )
-                or isinstance(
-                    module, EquivariantRMSNormArraySphericalHarmonicsV2
-                )
-                or isinstance(module, GaussianRadialBasisLayer)
+            if isinstance(
+                module,
+                (
+                    torch.nn.Linear,
+                    SO3_LinearV2,
+                    torch.nn.LayerNorm,
+                    EquivariantLayerNormArray,
+                    EquivariantLayerNormArraySphericalHarmonics,
+                    EquivariantRMSNormArraySphericalHarmonics,
+                    EquivariantRMSNormArraySphericalHarmonicsV2,
+                    GaussianRadialBasisLayer,
+                ),
             ):
                 for parameter_name, _ in module.named_parameters():
-                    if isinstance(module, torch.nn.Linear) or isinstance(
-                        module, SO3_LinearV2
-                    ):
+                    if isinstance(module, (torch.nn.Linear, SO3_LinearV2)):
                         if "weight" in parameter_name:
                             continue
                     global_parameter_name = module_name + "." + parameter_name
                     assert global_parameter_name in named_parameters_list
                     no_wd_list.append(global_parameter_name)
+
         return set(no_wd_list)

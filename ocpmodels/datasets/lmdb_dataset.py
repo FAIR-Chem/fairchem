@@ -22,6 +22,7 @@ from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance
 from ocpmodels.common.utils import pyg2_data_transform
 from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
+from ocpmodels.modules.transforms import DataTransforms
 
 T_co = TypeVar("T_co", covariant=True)
 
@@ -116,7 +117,8 @@ class LmdbDataset(Dataset[T_co]):
             self.available_indices = self.shards[self.config.get("shard", 0)]
             self.num_samples = len(self.available_indices)
 
-        self.transform = transform
+        self.key_mapping = self.config.get("key_mapping", None)
+        self.transforms = DataTransforms(self.config.get("transforms", {}))
 
     def __len__(self) -> int:
         return self.num_samples
@@ -148,8 +150,16 @@ class LmdbDataset(Dataset[T_co]):
             )
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
 
-        if self.transform is not None:
-            data_object = self.transform(data_object)
+        if self.key_mapping is not None:
+            for _property in self.key_mapping:
+                # catch for test data not containing labels
+                if _property in data_object:
+                    new_property = self.key_mapping[_property]
+                    if new_property not in data_object:
+                        data_object[new_property] = data_object[_property]
+                        del data_object[_property]
+
+        data_object = self.transforms(data_object)
 
         return data_object
 

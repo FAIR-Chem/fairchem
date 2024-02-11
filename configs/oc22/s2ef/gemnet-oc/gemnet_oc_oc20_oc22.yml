@@ -65,7 +65,9 @@ optim:
   num_workers: 2
   lr_initial: 5.e-4
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True}
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0  # 2e-6 (TF weight decay) / 1e-4 (lr) = 2e-2
   scheduler: ReduceLROnPlateau
   mode: min
   factor: 0.8
@@ -73,7 +75,6 @@ optim:
   max_epochs: 80
   ema_decay: 0.999
   clip_grad_norm: 10
-  weight_decay: 0  # 2e-6 (TF weight decay) / 1e-4 (lr) = 2e-2
   loss_energy: mae
   loss_force: atomwisel2
   force_coefficient: 1
