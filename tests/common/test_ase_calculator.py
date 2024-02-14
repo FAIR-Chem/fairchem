@@ -25,6 +25,20 @@ def load_data(request) -> None:
     request.cls.atoms = atoms
 
 
+def get_with_retry(url, retries=10):
+    retry = 0
+    while retry < retries:
+        try:
+            r = requests.get(url, timeout=10)
+            r.raise_for_status()
+            return r
+        except ConnectionError as e:
+            retry += 1
+            if retry == retries:
+                raise e
+    raise ConnectionError
+
+
 # First let's just make sure all checkpoints are being loaded without any
 # errors as part of the ASE calculator setup.
 @pytest.mark.parametrize(
@@ -32,7 +46,7 @@ def load_data(request) -> None:
     [
         # SchNet
         "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/schnet_all_large.pt",
-        # DieNet++
+        # DimeNet++
         "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_all.pt",
         # GemNet-dT
         "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/gemnet_t_direct_h512_all.pt",
@@ -48,14 +62,15 @@ def load_data(request) -> None:
         # "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l6_m3_lay20_all_md_s2ef.pt",
     ],
 )
-def test_calculator_setup(model_url):
-    r = requests.get(model_url)
-    r.raise_for_status()
-    _ = OCPCalculator(checkpoint_path=io.BytesIO(r.content), cpu=True)
+class TestCalculatorLoading:
+    def test_calculator_setup(self, model_url):
+        with get_with_retry(model_url) as r:
+            r.raise_for_status()
+            _ = OCPCalculator(checkpoint_path=io.BytesIO(r.content), cpu=True)
 
 
 @pytest.mark.usefixtures("load_data")
-class TestCalculator:
+class TestCalculatorRelaxation:
     # Run an adslab relaxation using the ASE calculator and ase.optimize.BFGS
     # with one model and compare the final energy.
     def test_relaxation_final_energy(self, snapshot) -> None:
@@ -63,9 +78,12 @@ class TestCalculator:
         torch.manual_seed(1)
 
         equiformerv2_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_153M_ec4_allmd.pt"
-        r = requests.get(equiformerv2_url, stream=True)
-        r.raise_for_status()
-        calc = OCPCalculator(checkpoint_path=io.BytesIO(r.content), cpu=True)
+
+        with get_with_retry(equiformerv2_url) as r:
+            r.raise_for_status()
+            calc = OCPCalculator(
+                checkpoint_path=io.BytesIO(r.content), cpu=True
+            )
 
         atoms = self.atoms
         atoms.set_calculator(calc)
@@ -74,26 +92,34 @@ class TestCalculator:
 
         assert snapshot == round(atoms.get_potential_energy(), 2)
 
-    def test_random_seed_final_energy(self, snapshot):
-        escn_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l6_m3_lay20_all_md_s2ef.pt"
-        r = requests.get(escn_url, stream=True)
-        r.raise_for_status()
+
+@pytest.mark.usefixtures("load_data")
+class TestCalculatoreSCNSeeds:
+    def test_random_seed_final_energy(self):
+        # to big to run on CircleCI on github
+        # escn_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l6_m3_lay20_all_md_s2ef.pt"
+        escn_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l4_m2_lay12_2M_s2ef.pt"
         seeds = [100, 200, 100]
         results_by_seed = {}
         # compute the value for each seed , make sure repeated seeds have the exact same output
-        for seed in seeds:
-            calc = OCPCalculator(
-                checkpoint_path=io.BytesIO(r.content), cpu=True, seed=seed
-            )
-            slab = fcc111("Pt", size=(2, 2, 5), vacuum=10.0)
-            add_adsorbate(slab, "O", height=1.2, position="fcc")
-            slab.set_calculator(calc)
-            energy = slab.get_potential_energy()
-            if seed in results_by_seed:
-                assert results_by_seed[seed] == energy
-            else:
-                results_by_seed[seed] = energy
-        # make sure different seeds give slightly different results , expected due to discretization error in grid
-        for seed_a in set(seeds):
-            for seed_b in set(seeds) - set([seed_a]):
-                assert results_by_seed[seed_a] != results_by_seed[seed_b]
+
+        with get_with_retry(escn_url) as r:
+            for seed in seeds:
+                calc = OCPCalculator(
+                    checkpoint_path=io.BytesIO(r.content),
+                    cpu=True,
+                    seed=seed,
+                )
+
+                atoms = self.atoms
+                atoms.set_calculator(calc)
+
+                energy = atoms.get_potential_energy()
+                if seed in results_by_seed:
+                    assert results_by_seed[seed] == energy
+                else:
+                    results_by_seed[seed] = energy
+            # make sure different seeds give slightly different results , expected due to discretization error in grid
+            for seed_a in set(seeds):
+                for seed_b in set(seeds) - set([seed_a]):
+                    assert results_by_seed[seed_a] != results_by_seed[seed_b]
