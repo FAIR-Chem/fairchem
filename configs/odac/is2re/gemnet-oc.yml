@@ -1,5 +1,5 @@
 includes:
-  - odac/configs/is2re/base.yml
+  - configs/odac/is2re/base.yml
 
 trainer: energy
 
@@ -44,7 +44,6 @@ model:
   extensive: True
   output_init: HeOrthogonal
   activation: silu
-  scale_file: odac/is2re/scaling_factors/gemnet-oc.pt
 
   regress_forces: False
   direct_forces: False
