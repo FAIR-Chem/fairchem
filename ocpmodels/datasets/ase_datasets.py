@@ -452,7 +452,6 @@ class AseDBDataset(AseAtomsDataset):
             filepaths = [config["src"]]
         elif os.path.isdir(config["src"]):
             filepaths = glob(f'{config["src"]}/*')
-            print(filepaths)
         else:
             filepaths = glob(config["src"])
 
@@ -464,7 +463,7 @@ class AseDBDataset(AseAtomsDataset):
                     self.connect_db(path, config.get("connect_args", {}))
                 )
             except ValueError:
-                logging.warning(
+                logging.info(
                     f"Tried to connect to {path} but it's not an ASE database!"
                 )
 
