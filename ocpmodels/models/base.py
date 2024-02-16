@@ -111,7 +111,6 @@ class BaseModel(nn.Module):
 
         self.construct_parent_tensor(results)
 
-        breakpoint()
         return results
 
     def forward_irrep(self, out, target):
