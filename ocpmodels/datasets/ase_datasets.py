@@ -463,7 +463,7 @@ class AseDBDataset(AseAtomsDataset):
                     self.connect_db(path, config.get("connect_args", {}))
                 )
             except ValueError:
-                logging.info(
+                logging.debug(
                     f"Tried to connect to {path} but it's not an ASE database!"
                 )
 
