@@ -73,6 +73,7 @@ class OCPCalculator(Calculator):
         cutoff: int = 6,
         max_neighbors: int = 50,
         cpu: bool = True,
+        seed: Optional[int] = None,
     ) -> None:
         """
         OCP-ASE Calculator
@@ -172,6 +173,14 @@ class OCPCalculator(Calculator):
             self.load_checkpoint(
                 checkpoint_path=checkpoint_path, checkpoint=checkpoint
             )
+
+        seed = seed if seed is not None else self.trainer.config["cmd"]["seed"]
+        if seed is None:
+            logging.warning(
+                "No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run"
+            )
+        else:
+            self.trainer.set_seed(seed)
 
         self.a2g = AtomsToGraphs(
             max_neigh=max_neighbors,
