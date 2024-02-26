@@ -104,7 +104,7 @@ class TestAtomsToGraphs:
         np.testing.assert_equal(act_energy, test_energy)
         # forces
         act_forces = self.atoms.get_forces(apply_constraint=False)
-        forces = data.force.numpy()
+        forces = data.forces.numpy()
         np.testing.assert_allclose(act_forces, forces)
 
     def test_convert_all(self) -> None:
@@ -127,5 +127,5 @@ class TestAtomsToGraphs:
         np.testing.assert_equal(act_energy, test_energy)
         # forces
         act_forces = self.atoms.get_forces(apply_constraint=False)
-        forces = data_list[0].force.numpy()
+        forces = data_list[0].forces.numpy()
         np.testing.assert_allclose(act_forces, forces)
