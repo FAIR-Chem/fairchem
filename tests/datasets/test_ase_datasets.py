@@ -1,4 +1,4 @@
-import os
+gyimport os
 
 import numpy as np
 from ase import build, db
@@ -447,8 +447,8 @@ def test_ase_multiread_dataset() -> None:
     [dataset[:]]
 
     assert hasattr(dataset[0], "y_relaxed")
-    assert dataset[0].y_relaxed != dataset[0].y
-    assert dataset[-1].y_relaxed == dataset[-1].y
+    assert dataset[0].y_relaxed != dataset[0].energy
+    assert dataset[-1].y_relaxed == dataset[-1].energy
 
     dataset = AseReadDataset(
         config={
@@ -468,7 +468,7 @@ def test_ase_multiread_dataset() -> None:
     [dataset[:]]
 
     assert hasattr(dataset[0], "y_relaxed")
-    assert dataset[0].y_relaxed != dataset[0].y
+    assert dataset[0].y_relaxed != dataset[0].energy
 
     os.remove(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "test.traj")
