@@ -100,7 +100,7 @@ class TestAtomsToGraphs:
         np.testing.assert_allclose(act_positions, positions)
         # check energy value
         act_energy = self.atoms.get_potential_energy(apply_constraint=False)
-        test_energy = data.y
+        test_energy = data.energy
         np.testing.assert_equal(act_energy, test_energy)
         # forces
         act_forces = self.atoms.get_forces(apply_constraint=False)
@@ -123,7 +123,7 @@ class TestAtomsToGraphs:
         np.testing.assert_allclose(act_positions, positions)
         # check energy value
         act_energy = self.atoms.get_potential_energy(apply_constraint=False)
-        test_energy = data_list[0].y
+        test_energy = data_list[0].energy
         np.testing.assert_equal(act_energy, test_energy)
         # forces
         act_forces = self.atoms.get_forces(apply_constraint=False)
