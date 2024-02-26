@@ -382,10 +382,8 @@ If your data is already in an [ASE Database](https://databases.fysik.dtu.dk/ase/
 To use this dataset, we will just have to change our config files to use the ASE DB Dataset rather than the LMDB Dataset:
 
 ```yaml
-task:
-  dataset: ase_db
-
 dataset:
+  format: ase_db
   train:
     src: # The path/address to your ASE DB
     connect_args:
@@ -420,10 +418,8 @@ It is possible to train/predict directly on ASE-readable files. This is only rec
 This dataset assumes a single structure will be obtained from each file:
 
 ```yaml
-task:
-  dataset: ase_read
-
 dataset:
+  format: ase_read
   train:
     src: # The folder that contains ASE-readable files
     pattern: # Pattern matching each file you want to read (e.g. "*/POSCAR"). Search recursively with two wildcards: "**/*.cif".
@@ -443,10 +439,8 @@ dataset:
 This dataset supports reading files that each contain multiple structure (for example, an ASE .traj file). Using an index file, which tells the dataset how many structures each file contains, is recommended. Otherwise, the dataset is forced to load every file at startup and count the number of structures!
 
 ```yaml
-task:
-  dataset: ase_read_multi
-
 dataset:
+  format: ase_read_multi
   train:
     index_file: Filepath to an index file which contains each filename and the number of structures in each file. e.g.:
             /path/to/relaxation1.traj 200
