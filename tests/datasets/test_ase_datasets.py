@@ -1,4 +1,4 @@
-gyimport os
+import os
 
 import numpy as np
 from ase import build, db
