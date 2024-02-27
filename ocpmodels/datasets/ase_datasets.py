@@ -77,7 +77,7 @@ class AseAtomsDataset(Dataset, ABC):
     ) -> None:
         self.config = config
 
-        a2g_args = config.get("a2g_args", {})
+        a2g_args = config.get("a2g_args", {}) or {}
 
         # set default to False if not set by user, assuming otf_graph will be used
         if "r_edges" not in a2g_args:
