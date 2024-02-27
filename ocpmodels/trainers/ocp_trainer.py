@@ -525,7 +525,9 @@ class OCPTrainer(BaseTrainer):
             predictions["ids"].extend(systemids)
 
         for key in predictions:
-            predictions[key] = np.array(predictions[key])
+            # allow for lists of 'zero dim' arrays
+            axis = 0 if isinstance(predictions[key][0], np.ndarray) else None
+            predictions[key] = np.concatenate(predictions[key], axis=axis)
 
         self.save_results(predictions, results_file)
 
