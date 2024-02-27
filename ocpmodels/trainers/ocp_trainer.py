@@ -527,7 +527,16 @@ class OCPTrainer(BaseTrainer):
         for key in predictions:
             predictions[key] = np.array(predictions[key])
 
-        self.save_results(predictions, results_file)
+        if self.is_debug:
+            try:
+                self.save_results(predictions, results_file)
+            except FileNotFoundError:
+                logging.warning(
+                    "Predictions npz file not found. " + \
+                    "This file was not written since the trainer was running in debug mode."
+                )
+        else:
+            self.save_results(predictions, results_file)
 
         if self.ema:
             self.ema.restore()
