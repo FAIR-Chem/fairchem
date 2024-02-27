@@ -1207,7 +1207,8 @@ def update_config(base_config):
 
     # If config["dataset"]["format"] is missing, get it from the task (legacy location).
     # If it is not there either, default to LMDB.
-    config["dataset"]["format"] = config["dataset"].get("format", config["task"].get("dataset", "lmdb"))
+    config["dataset"]["format"] = config["dataset"].get(
+        "format", config["task"].get("dataset", "lmdb"))
     
     ### Read task based off config structure, similar to OCPCalculator.
     if config["task"]["dataset"] in [
