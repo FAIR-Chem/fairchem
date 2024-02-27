@@ -216,14 +216,13 @@ class AtomsToGraphs:
         if self.r_pbc:
             data.pbc = torch.tensor(atoms.pbc)
         if self.r_data_keys is not None:
-            for (
-                data_key
-            ) in self.r_data_keys:  # if key is not present let it raise error
-                data[data_key] = (
-                    atoms.info[data_key]
-                    if isinstance(atoms.info[data_key], (int, float))
-                    else torch.Tensor(atoms.info[data_key])
-                )
+            for data_key in self.r_data_keys:
+                if data_key in atoms.info:
+                    data[data_key] = (
+                        atoms.info[data_key]
+                        if isinstance(atoms.info[data_key], (int, float))
+                        else torch.Tensor(atoms.info[data_key])
+                    )
 
         return data
 
