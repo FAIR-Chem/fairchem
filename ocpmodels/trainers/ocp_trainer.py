@@ -533,7 +533,7 @@ class OCPTrainer(BaseTrainer):
             except FileNotFoundError:
                 logging.warning(
                     "Predictions npz file not found. " + \
-                    "This file was not written since the trainer was running in debug mode."
+                    "This file was not written since the trainer is running in debug mode."
                 )
         else:
             self.save_results(predictions, results_file)
