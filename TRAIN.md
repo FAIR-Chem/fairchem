@@ -204,11 +204,11 @@ To train and validate an OC20 IS2RE/S2EF model on total energies instead of adso
 
 ```yaml
 task:
-  dataset: oc22_lmdb
   prediction_dtype: float32
   ...
 
 dataset:
+  format: oc22_lmdb
   train:
     src: data/oc20/s2ef/train
     normalize_labels: False
@@ -308,8 +308,8 @@ For the IS2RE-Total task, the model takes the initial structure as input and pre
 ```yaml
 trainer: energy # Use the EnergyTrainer
 
-task:
-  dataset: oc22_lmdb # Use the OC22LmdbDataset
+dataset:
+  format: oc22_lmdb # Use the OC22LmdbDataset
   ...
 ```
 You can find examples configuration files in [`configs/oc22/is2re`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/oc22/is2re).
@@ -321,8 +321,8 @@ The S2EF-Total task takes a structure and predicts the total DFT energy and per-
 ```yaml
 trainer: forces  # Use the ForcesTrainer
 
-task:
-  dataset: oc22_lmdb # Use the OC22LmdbDataset
+dataset:
+  format: oc22_lmdb # Use the OC22LmdbDataset
   ...
 ```
 You can find examples configuration files in [`configs/oc22/s2ef`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/oc22/s2ef).
@@ -332,8 +332,8 @@ You can find examples configuration files in [`configs/oc22/s2ef`](https://githu
 Training on OC20 total energies whether independently or jointly with OC22 requires a path to the `oc20_ref` (download link provided below) to be specified in the configuration file. These are necessary to convert OC20 adsorption energies into their corresponding total energies. The following changes in the configuration file capture these changes:
 
 ```yaml
-task:
-  dataset: oc22_lmdb
+dataset:
+  format: oc22_lmdb
   ...
 
 dataset:
