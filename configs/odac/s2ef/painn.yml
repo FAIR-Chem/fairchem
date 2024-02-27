@@ -10,7 +10,6 @@ model:
   num_rbf: 128
   cutoff: 8.0
   max_neighbors: 50
-  scale_file: odac/configs/s2ef/scaling_factors/painn.pt
   regress_forces: True
   direct_forces: True
   use_pbc: True

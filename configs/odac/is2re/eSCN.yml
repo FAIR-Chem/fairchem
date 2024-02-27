@@ -1,5 +1,5 @@
 includes:
-  - odac/configs/is2re/base.yml
+  - configs/odac/is2re/base.yml
 
 trainer: energy
 
