@@ -173,6 +173,10 @@ To preview what adsorbates are available, view the corresponding mapping between
 - [OC20](https://arxiv.org/abs/2010.09990) was generated with an older version of the bulks and this repository. If you would like to exactly reproduce that work, see [`README_legacy_OC20.md`](https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset/blob/main/README_legacy_OC20.md).
 - [OC22](https://arxiv.org/abs/2206.08917) was generated from the [`OC22_dataset`](https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset/tree/OC22_dataset/ocdata/oc22_dataset) branch of this repository.
 
+## License
+`ocdata` is released under the [MIT](https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset/blob/main/LICENSE.md) license.
+
+
 ## Citation
 
 If you use this codebase in your work, please consider citing:
