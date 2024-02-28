@@ -117,7 +117,7 @@ def test_ase_dataset(ase_dataset):
     assert len(dataset) == mult * len(structures)
     for data in dataset:
         assert hasattr(data, "y")
-        assert data.force.shape == (data.natoms, 3)
+        assert data.forces.shape == (data.natoms, 3)
         assert data.stress.shape == (3, 3)
         assert data.tensor_property.shape == (6, 6)
         assert isinstance(data.extensive_property, int)
