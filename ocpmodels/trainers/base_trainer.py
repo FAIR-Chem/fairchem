@@ -198,18 +198,20 @@ class BaseTrainer(ABC):
         self.load_optimizer()
         self.load_extras()
 
-    def load_seed_from_config(self) -> None:
+    def set_seed(self, seed) -> None:
         # https://pytorch.org/docs/stable/notes/randomness.html
-        seed = self.config["cmd"]["seed"]
-        if seed is None:
-            return
-
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
+    def load_seed_from_config(self) -> None:
+        # https://pytorch.org/docs/stable/notes/randomness.html
+        if self.config["cmd"]["seed"] is None:
+            return
+        self.set_seed(self.config["cmd"]["seed"])
 
     def load_logger(self) -> None:
         self.logger = None

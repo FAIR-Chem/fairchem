@@ -483,8 +483,13 @@ We provide precomputed LMDBs for train, validation, and the various test sets th
 |Train + Validation + Test (all splits)    |  172G  |  476G  | [162f0660b2f1c9209c5b57f7b9e545a7](https://dl.fbaipublicfiles.com/large_objects/dac/datasets/odac23_s2ef.tar.gz )  |
 |    |    |    |    |
 
+The train and val splits are also available in `extxyz` formats. Each trajectory is in stored in a different `extxyz` file.
 
-
+|Splits    |Size of compressed version (in bytes)    |Size of uncompressed version (in bytes)    | MD5 checksum (download link)    |
+|---    |---    |---    |---    |
+|Train    |  232G  |  781G  | [381e72fd8b9c055065fd3afff6b0945b](https://dl.fbaipublicfiles.com/large_objects/dac/datasets/extxyz_train.tar.gz )  |
+|Val    |  5.1G  |  18G  | [09913759c6e0f8d649f7ec9dff9e0e8b](https://dl.fbaipublicfiles.com/dac/datasets/extxyz_val.tar.gz )  |
+|    |    |    |    |
 
 ### Initial Structure to Relaxed Structure (IS2RS) / Relaxed Energy (IS2RE) tasks
 
