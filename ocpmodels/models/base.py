@@ -120,52 +120,26 @@ class BaseModel(nn.Module):
         """
         irrep = self.output_targets[target]["irrep_dim"]
 
-        ### leverage spherical harmonic embeddings directly
-        if self.output_targets[target].get("use_sphere_s2", False):
-            assert "sphere_values" in out
-            assert "sphere_points" in out
-
-            # (sphere_points, num_channels)
-            sphere_values = out["sphere_values"]
-            # (sphere_sample, 3)
-            sphere_points = out["sphere_points"]
-            num_sphere_samples = sphere_points.shape[0]
-
-            # (sphere_sample, 2*l+1)
-            sphharm = o3.spherical_harmonics(
-                irrep, sphere_points, True
-            ).detach()
-
-            # (sphere_sample, 1)
-            pred = self.module_dict[target](sphere_values)
-            # (nnodes, num_sphere_samples, 1)
-            pred = pred.view(-1, num_sphere_samples, 1)
-            # (nnodes, num_sphere_samples, 2*l+1)
-            pred = pred * sphharm
-            pred = pred.sum(dim=1) / num_sphere_samples
-
         ### Compute spherical harmonics based on edge vectors
-        ### GemNet-OC style
-        else:
-            assert "edge_vec" in out
-            assert "edge_idx" in out
-            assert "edge_embedding" in out
+        assert "edge_vec" in out
+        assert "edge_idx" in out
+        assert "edge_embedding" in out
 
-            edge_vec = out["edge_vec"]
-            edge_idx = out["edge_idx"]
+        edge_vec = out["edge_vec"]
+        edge_idx = out["edge_idx"]
 
-            # (nedges, (2*irrep_dim+1))
-            sphharm = o3.spherical_harmonics(irrep, edge_vec, True).detach()
-            # (nedges, 1)
-            pred = self.module_dict[target](out["edge_embedding"])
-            # (nedges, 2*irrep_dim+1)
-            pred = pred * sphharm
+        # (nedges, (2*irrep_dim+1))
+        sphharm = o3.spherical_harmonics(irrep, edge_vec, True).detach()
+        # (nedges, 1)
+        pred = self.module_dict[target](out["edge_embedding"])
+        # (nedges, 2*irrep_dim+1)
+        pred = pred * sphharm
 
-            # aggregate edges per node
-            # (nnodes, 2*irrep_dim+1)
-            pred = scatter_det(
-                pred, edge_idx, dim=0, dim_size=self.num_atoms, reduce="add"
-            )
+        # aggregate edges per node
+        # (nnodes, 2*irrep_dim+1)
+        pred = scatter_det(
+            pred, edge_idx, dim=0, dim_size=self.num_atoms, reduce="add"
+        )
 
         return pred
 

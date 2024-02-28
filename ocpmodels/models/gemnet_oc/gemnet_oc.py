@@ -376,8 +376,6 @@ class GemNetOC(BaseModel):
             self.out_forces = Dense(
                 emb_size_edge, 1, bias=False, activation=None
             )
-
-        if direct_forces:
             self.out_forces.reset_parameters(out_initializer)
 
         load_scales_compat(self, scale_file)
