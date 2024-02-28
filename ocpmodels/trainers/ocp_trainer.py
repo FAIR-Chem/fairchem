@@ -514,10 +514,10 @@ class OCPTrainer(BaseTrainer):
                 return predictions
 
             ### Get unique system identifiers
-            sids = batch.sid.tolist()
+            sids = list(batch.sid)
             ## Support naming structure for OC20 S2EF
             if "fid" in batch:
-                fids = batch.fid.tolist()
+                fids = list(batch.fid)
                 systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
             else:
                 systemids = [f"{sid}" for sid in sids]
@@ -525,7 +525,9 @@ class OCPTrainer(BaseTrainer):
             predictions["ids"].extend(systemids)
 
         for key in predictions:
-            predictions[key] = np.array(predictions[key])
+            # allow for lists of 'zero dim' arrays
+            axis = 0 if isinstance(predictions[key][0], np.ndarray) else None
+            predictions[key] = np.concatenate(predictions[key], axis=axis)
 
         if self.is_debug:
             try:

@@ -22,12 +22,25 @@ def atoms_to_graphs_internals(request) -> None:
         index=0,
         format="json",
     )
+    atoms.info["stiffness_tensor"] = np.array(
+        [
+            [293, 121, 121, 0, 0, 0],
+            [121, 293, 121, 0, 0, 0],
+            [121, 121, 293, 0, 0, 0],
+            [0, 0, 0, 146, 0, 0],
+            [0, 0, 0, 0, 146, 0],
+            [0, 0, 0, 0, 0, 146],
+        ],
+        dtype=float,
+    )
     test_object = AtomsToGraphs(
         max_neigh=200,
         radius=6,
         r_energy=True,
         r_forces=True,
+        r_stress=True,
         r_distances=True,
+        r_data_keys=["stiffness_tensor"],
     )
     request.cls.atg = test_object
     request.cls.atoms = atoms
@@ -106,6 +119,15 @@ class TestAtomsToGraphs:
         act_forces = self.atoms.get_forces(apply_constraint=False)
         forces = data.forces.numpy()
         np.testing.assert_allclose(act_forces, forces)
+        # stress
+        act_stress = self.atoms.get_stress(apply_constraint=False, voigt=False)
+        stress = data.stress.numpy()
+        np.testing.assert_allclose(act_stress, stress)
+        # additional data (ie stiffness_tensor)
+        stiffness_tensor = data.stiffness_tensor.numpy()
+        np.testing.assert_allclose(
+            self.atoms.info["stiffness_tensor"], stiffness_tensor
+        )
 
     def test_convert_all(self) -> None:
         # run convert_all on a list with one atoms object
@@ -129,3 +151,12 @@ class TestAtomsToGraphs:
         act_forces = self.atoms.get_forces(apply_constraint=False)
         forces = data_list[0].forces.numpy()
         np.testing.assert_allclose(act_forces, forces)
+        # stress
+        act_stress = self.atoms.get_stress(apply_constraint=False, voigt=False)
+        stress = data_list[0].stress.numpy()
+        np.testing.assert_allclose(act_stress, stress)
+        # additional data (ie stiffness_tensor)
+        stiffness_tensor = data_list[0].stiffness_tensor.numpy()
+        np.testing.assert_allclose(
+            self.atoms.info["stiffness_tensor"], stiffness_tensor
+        )
