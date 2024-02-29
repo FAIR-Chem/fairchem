@@ -31,8 +31,10 @@ class BaseModel(nn.Module):
         output_targets={},
         node_embedding_dim=None,
         edge_embedding_dim=None,
+        _torch_initialized=False,
     ) -> None:
-        super().__init__()
+        if not _torch_initialized:
+            super().__init__()
 
         self.output_targets = output_targets
         self.num_targets = len(output_targets)
