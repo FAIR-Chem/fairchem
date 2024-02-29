@@ -76,12 +76,12 @@ class SchNetWrap(BaseModel, SchNet):
             cutoff=cutoff,
             readout=readout,
         )
-
         BaseModel.__init__(
             self,
             output_targets=output_targets,
             node_embedding_dim=hidden_channels,
             edge_embedding_dim=hidden_channels,
+            _torch_initialized=True,
         )
 
     @conditional_grad(torch.enable_grad())

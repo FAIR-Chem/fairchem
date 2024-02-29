@@ -156,9 +156,6 @@ class OCPTrainer(BaseTrainer):
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
                     loss = self._compute_loss(out, batch)
-                loss = self.scaler.scale(loss) if self.scaler else loss
-                self._backward(loss)
-                scale = self.scaler.get_scale() if self.scaler else 1.0
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
@@ -168,8 +165,11 @@ class OCPTrainer(BaseTrainer):
                     self.metrics,
                 )
                 self.metrics = self.evaluator.update(
-                    "loss", loss.item() / scale, self.metrics
+                    "loss", loss.item(), self.metrics
                 )
+
+                loss = self.scaler.scale(loss) if self.scaler else loss
+                self._backward(loss)
 
                 # Log metrics.
                 log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
