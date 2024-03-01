@@ -1,10 +1,10 @@
 import logging
 import math
-from e3nn import o3
 from typing import Optional
 
 import torch
 import torch.nn as nn
+from e3nn import o3
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import conditional_grad
@@ -516,7 +516,7 @@ class EquiformerV2_OC20(BaseModel):
         x_edge = torch.einsum("abc, ab->ac", x_edge, sphharm_weights_edge)
 
         outputs = {
-            "edge_idx": edge_index[1], # only need target node
+            "edge_idx": edge_index[1],  # only need target node
             "edge_vec": edge_distance_vec,
             "edge_embedding": x_edge,
             "node_embedding": x.embedding,
