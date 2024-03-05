@@ -529,7 +529,16 @@ class OCPTrainer(BaseTrainer):
             axis = 0 if isinstance(predictions[key][0], np.ndarray) else None
             predictions[key] = np.concatenate(predictions[key], axis=axis)
 
-        self.save_results(predictions, results_file)
+        if self.is_debug:
+            try:
+                self.save_results(predictions, results_file)
+            except FileNotFoundError:
+                logging.warning(
+                    "Predictions npz file not found. "
+                    + "This file was not written since the trainer is running in debug mode."
+                )
+        else:
+            self.save_results(predictions, results_file)
 
         if self.ema:
             self.ema.restore()
@@ -582,7 +591,7 @@ class OCPTrainer(BaseTrainer):
             if check_traj_files(
                 batch, self.config["task"]["relax_opt"].get("traj_dir", None)
             ):
-                logging.info(f"Skipping batch: {batch[0].sid.tolist()}")
+                logging.info(f"Skipping batch: {list(batch[0].sid)}")
                 continue
 
             relaxed_batch = ml_relax(
@@ -597,7 +606,7 @@ class OCPTrainer(BaseTrainer):
             )
 
             if self.config["task"].get("write_pos", False):
-                systemids = [str(i) for i in relaxed_batch.sid.tolist()]
+                systemids = [str(i) for i in list(relaxed_batch.sid)]
                 natoms = relaxed_batch.natoms.tolist()
                 positions = torch.split(relaxed_batch.pos, natoms)
                 batch_relaxed_positions = [pos.tolist() for pos in positions]

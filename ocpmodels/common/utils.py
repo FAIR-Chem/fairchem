@@ -1204,13 +1204,22 @@ def update_config(base_config):
     are now. Update old configs to fit the new expected structure.
     """
     config = copy.deepcopy(base_config)
-    config["dataset"]["format"] = config["task"].get("dataset", "lmdb")
+
+    # If config["dataset"]["format"] is missing, get it from the task (legacy location).
+    # If it is not there either, default to LMDB.
+    config["dataset"]["format"] = config["dataset"].get(
+        "format", config["task"].get("dataset", "lmdb")
+    )
+
     ### Read task based off config structure, similar to OCPCalculator.
     if config["task"]["dataset"] in [
         "trajectory_lmdb",
         "lmdb",
         "trajectory_lmdb_v2",
         "oc22_lmdb",
+        "ase_read",
+        "ase_read_multi",
+        "ase_db",
     ]:
         task = "s2ef"
     elif config["task"]["dataset"] == "single_point_lmdb":

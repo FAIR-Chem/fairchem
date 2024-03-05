@@ -193,10 +193,10 @@ class AtomsToGraphs:
             data.cell_offsets = cell_offsets
         if self.r_energy:
             energy = atoms.get_potential_energy(apply_constraint=False)
-            data.y = energy
+            data.energy = energy
         if self.r_forces:
             forces = torch.Tensor(atoms.get_forces(apply_constraint=False))
-            data.force = forces
+            data.forces = forces
         if self.r_stress:
             stress = torch.Tensor(
                 atoms.get_stress(apply_constraint=False, voigt=False)

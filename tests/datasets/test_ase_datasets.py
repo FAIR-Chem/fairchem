@@ -117,7 +117,7 @@ def test_ase_dataset(ase_dataset):
     assert len(dataset) == mult * len(structures)
     for data in dataset:
         assert hasattr(data, "y")
-        assert data.force.shape == (data.natoms, 3)
+        assert data.forces.shape == (data.natoms, 3)
         assert data.stress.shape == (3, 3)
         assert data.tensor_property.shape == (6, 6)
         assert isinstance(data.extensive_property, int)
@@ -249,8 +249,8 @@ def test_ase_multiread_dataset(tmp_path) -> None:
     assert len(dataset) == len(atoms_objects)
 
     assert hasattr(dataset[0], "y_relaxed")
-    assert dataset[0].y_relaxed != dataset[0].y
-    assert dataset[-1].y_relaxed == dataset[-1].y
+    assert dataset[0].y_relaxed != dataset[0].energy
+    assert dataset[-1].y_relaxed == dataset[-1].energy
 
     dataset = AseReadDataset(
         config={
@@ -268,4 +268,4 @@ def test_ase_multiread_dataset(tmp_path) -> None:
     )
 
     assert hasattr(dataset[0], "y_relaxed")
-    assert dataset[0].y_relaxed != dataset[0].y
+    assert dataset[0].y_relaxed != dataset[0].energy
