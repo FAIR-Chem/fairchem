@@ -591,7 +591,7 @@ class OCPTrainer(BaseTrainer):
             if check_traj_files(
                 batch, self.config["task"]["relax_opt"].get("traj_dir", None)
             ):
-                logging.info(f"Skipping batch: {batch[0].sid.tolist()}")
+                logging.info(f"Skipping batch: {list(batch[0].sid)}")
                 continue
 
             relaxed_batch = ml_relax(
@@ -606,7 +606,7 @@ class OCPTrainer(BaseTrainer):
             )
 
             if self.config["task"].get("write_pos", False):
-                systemids = [str(i) for i in relaxed_batch.sid.tolist()]
+                systemids = [str(i) for i in list(relaxed_batch.sid)]
                 natoms = relaxed_batch.natoms.tolist()
                 positions = torch.split(relaxed_batch.pos, natoms)
                 batch_relaxed_positions = [pos.tolist() for pos in positions]
