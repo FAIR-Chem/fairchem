@@ -526,8 +526,7 @@ class OCPTrainer(BaseTrainer):
 
         for key in predictions:
             # allow for lists of 'zero dim' arrays
-            axis = 0 if isinstance(predictions[key][0], np.ndarray) else None
-            predictions[key] = np.concatenate(predictions[key], axis=axis)
+            predictions[key] = np.vstack(predictions[key]).squeeze()
 
         if self.is_debug:
             try:
