@@ -2,6 +2,7 @@ import logging
 import math
 from typing import List, Optional
 
+from torch.cuda import nvtx
 import torch
 import torch.nn as nn
 
@@ -152,6 +153,7 @@ class EquiformerV2_OC20(BaseModel):
         avg_degree: Optional[float] = None,
         use_energy_lin_ref: Optional[bool] = False,
         load_energy_lin_ref: Optional[bool] = False,
+        nvtx_profile: bool = True,
     ):
         super().__init__()
 
@@ -399,13 +401,14 @@ class EquiformerV2_OC20(BaseModel):
 
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
+        nvtx.range_push("equiformer forward")
         self.batch_size = len(data.natoms)
         self.dtype = data.pos.dtype
         self.device = data.pos.device
-
         atomic_numbers = data.atomic_numbers.long()
         num_atoms = len(atomic_numbers)
 
+        nvtx.range_push("equiformer generate graph")
         (
             edge_index,
             edge_distance,
@@ -417,24 +420,29 @@ class EquiformerV2_OC20(BaseModel):
             data,
             enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
         )
+        nvtx.range_pop()
 
         ###############################################################
         # Initialize data structures
         ###############################################################
+        nvtx.range_push("equiformer init _init_edge_rot_mat")
 
         # Compute 3x3 rotation matrix per edge
         edge_rot_mat = self._init_edge_rot_mat(
             data, edge_index, edge_distance_vec
         )
+        nvtx.range_pop()
+        nvtx.range_push("equiformer init set_wigner")
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         for i in range(self.num_resolutions):
             self.SO3_rotation[i].set_wigner(edge_rot_mat)
+        nvtx.range_pop()
 
         ###############################################################
         # Initialize node embeddings
         ###############################################################
-
+        nvtx.range_push(f"equiformer node embeddings")
         # Init per node representations using an atomic number based embedding
         offset = 0
         x = SO3_Embedding(
@@ -459,8 +467,10 @@ class EquiformerV2_OC20(BaseModel):
                 )[:, offset : offset + self.sphere_channels]
             offset = offset + self.sphere_channels
             offset_res = offset_res + int((self.lmax_list[i] + 1) ** 2)
+        nvtx.range_pop()
 
         # Edge encoding (distance and atom edge)
+        nvtx.range_push(f"equiformer edge encoding")
         edge_distance = self.distance_expansion(edge_distance)
         if self.share_atom_edge_embedding and self.use_atom_edge_embedding:
             source_element = atomic_numbers[
@@ -480,12 +490,14 @@ class EquiformerV2_OC20(BaseModel):
             atomic_numbers, edge_distance, edge_index
         )
         x.embedding = x.embedding + edge_degree.embedding
+        nvtx.range_pop()
 
         ###############################################################
         # Update spherical node embeddings
         ###############################################################
 
         for i in range(self.num_layers):
+            nvtx.range_push(f"equiformer spherical embedding {i}")
             x = self.blocks[i](
                 x,  # SO3_Embedding
                 atomic_numbers,
@@ -493,6 +505,7 @@ class EquiformerV2_OC20(BaseModel):
                 edge_index,
                 batch=data.batch,  # for GraphDropPath
             )
+            nvtx.range_pop()
 
         # Final layer norm
         x.embedding = self.norm(x.embedding)
@@ -500,6 +513,7 @@ class EquiformerV2_OC20(BaseModel):
         ###############################################################
         # Energy estimation
         ###############################################################
+        nvtx.range_push(f"equiformer energy estimate")
         node_energy = self.energy_block(x)
         node_energy = node_energy.embedding.narrow(1, 0, 1)
         energy = torch.zeros(
@@ -544,7 +558,9 @@ class EquiformerV2_OC20(BaseModel):
             forces = forces.embedding.narrow(1, 1, 3)
             forces = forces.view(-1, 3)
             outputs["forces"] = forces
+        nvtx.range_pop()
 
+        nvtx.range_pop()
         return outputs
 
     # Initialize the edge rotation matrics

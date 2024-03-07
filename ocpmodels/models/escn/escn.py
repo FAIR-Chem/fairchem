@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from torch.cuda import nvtx
+
 import logging
 import time
 from typing import List
@@ -225,6 +227,7 @@ class eSCN(BaseModel):
 
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
+        nvtx.range_push("eSCN forward")
         device = data.pos.device
         self.batch_size = len(data.natoms)
         self.dtype = data.pos.dtype
@@ -291,7 +294,9 @@ class eSCN(BaseModel):
         # Update spherical node embeddings
         ###############################################################
 
+        nvtx.range_push("eSCN forward spherical embeddings")
         for i in range(self.num_layers):
+            nvtx.range_push("eSCN forward spherical embeddings {i}")
             if i > 0:
                 x_message = self.layer_blocks[i](
                     x,
@@ -315,6 +320,8 @@ class eSCN(BaseModel):
                     self.SO3_edge_rot,
                     mappingReduced,
                 )
+            nvtx.range_pop()
+        nvtx.range_pop()
 
         # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
         # These values are fed into the output blocks.
@@ -367,6 +374,7 @@ class eSCN(BaseModel):
             )
 
         self.counter = self.counter + 1
+        nvtx.range_pop()
 
         return outputs
 

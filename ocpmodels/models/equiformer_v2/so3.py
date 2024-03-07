@@ -11,10 +11,13 @@ TODO:
     3. Move some functions outside classes and to separate files.
 """
 
+from functools import cache
 import math
 from typing import List, Optional
 
 import torch
+
+from torch.cuda import nvtx
 
 try:
     from e3nn import o3
@@ -25,6 +28,31 @@ except ImportError:
 from torch.nn import Linear
 
 from .wigner import wigner_D
+
+
+def RotationToWignerDMatrix(
+    edge_rot_mat, start_lmax: int, end_lmax: int, device
+) -> torch.Tensor:
+    x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
+    alpha, beta = o3.xyz_to_angles(x)
+    R = (
+        o3.angles_to_matrix(alpha, beta, torch.zeros_like(alpha)).transpose(
+            -1, -2
+        )
+        @ edge_rot_mat
+    )
+    gamma = torch.atan2(R[..., 0, 2], R[..., 0, 0])
+
+    size = (end_lmax + 1) ** 2 - (start_lmax) ** 2
+    wigner = torch.zeros(len(alpha), size, size, device=device)
+    start = 0
+    for lmax in range(start_lmax, end_lmax + 1):
+        block = wigner_D(lmax, alpha, beta, gamma)
+        end = start + block.size()[1]
+        wigner[:, start:end, start:end] = block
+        start = end
+
+    return wigner.detach()
 
 
 class CoefficientMappingModule(torch.nn.Module):
@@ -483,8 +511,11 @@ class SO3_Rotation(torch.nn.Module):
         self.mapping = CoefficientMappingModule([self.lmax], [self.lmax])
 
     def set_wigner(self, rot_mat3x3):
+
         self.device, self.dtype = rot_mat3x3.device, rot_mat3x3.dtype
-        self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, 0, self.lmax)
+        self.wigner = RotationToWignerDMatrix(
+            rot_mat3x3, 0, self.lmax, self.device
+        )
         self.wigner_inv = torch.transpose(self.wigner, 1, 2).contiguous()
         self.wigner = self.wigner.detach()
         self.wigner_inv = self.wigner_inv.detach()
@@ -504,31 +535,6 @@ class SO3_Rotation(torch.nn.Module):
         )
         wigner_inv = wigner_inv * wigner_inv_rescale
         return torch.bmm(wigner_inv, embedding)
-
-    # Compute Wigner matrices from rotation matrix
-    def RotationToWignerDMatrix(
-        self, edge_rot_mat, start_lmax: int, end_lmax: int
-    ) -> torch.Tensor:
-        x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
-        alpha, beta = o3.xyz_to_angles(x)
-        R = (
-            o3.angles_to_matrix(
-                alpha, beta, torch.zeros_like(alpha)
-            ).transpose(-1, -2)
-            @ edge_rot_mat
-        )
-        gamma = torch.atan2(R[..., 0, 2], R[..., 0, 0])
-
-        size = (end_lmax + 1) ** 2 - (start_lmax) ** 2
-        wigner = torch.zeros(len(alpha), size, size, device=self.device)
-        start = 0
-        for lmax in range(start_lmax, end_lmax + 1):
-            block = wigner_D(lmax, alpha, beta, gamma)
-            end = start + block.size()[1]
-            wigner[:, start:end, start:end] = block
-            start = end
-
-        return wigner.detach()
 
 
 class SO3_Grid(torch.nn.Module):

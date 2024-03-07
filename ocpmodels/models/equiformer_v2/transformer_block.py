@@ -5,6 +5,7 @@ from typing import List
 import torch
 import torch.nn as nn
 import torch_geometric
+from torch.cuda import nvtx
 
 from .activation import (
     GateActivation,
@@ -233,6 +234,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
 
         # Compute edge scalar features (invariant to rotations)
         # Uses atomic numbers and edge distance as inputs
+        nvtx.range_push("SO2EquivariantGraphAttention block embeddings")
         if self.use_atom_edge_embedding:
             source_element = atomic_numbers[
                 edge_index[0]
@@ -248,14 +250,23 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         else:
             x_edge = edge_distance
 
+        nvtx.range_pop()
+
+        nvtx.range_push("SO2EquivariantGraphAttention so3 embed 1")
         x_source = x.clone()
         x_target = x.clone()
+        nvtx.range_pop()
+        nvtx.range_push("SO2EquivariantGraphAttention so3 embed 1b")
         x_source._expand_edge(edge_index[0, :])
         x_target._expand_edge(edge_index[1, :])
+        nvtx.range_pop()
+        nvtx.range_push("SO2EquivariantGraphAttention so3 embed 2")
 
         x_message_data = torch.cat(
             (x_source.embedding, x_target.embedding), dim=2
         )
+        nvtx.range_pop()
+        nvtx.range_push("SO2EquivariantGraphAttention so3 embed 3")
         x_message = SO3_Embedding(
             0,
             x_target.lmax_list.copy(),
@@ -265,7 +276,9 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         )
         x_message.set_embedding(x_message_data)
         x_message.set_lmax_mmax(self.lmax_list.copy(), self.mmax_list.copy())
+        nvtx.range_pop()
 
+        nvtx.range_push("SO2EquivariantGraphAttention shrare rad")
         # radial function (scale all m components within a type-L vector of one channel with the same weight)
         if self.use_m_share_rad:
             x_edge_weight = self.rad_func(x_edge)
@@ -277,32 +290,48 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
             )  # [E, (L_max + 1) ** 2, C]
             x_message.embedding = x_message.embedding * x_edge_weight
 
-        # Rotate the irreps to align with the edge
-        x_message._rotate(self.SO3_rotation, self.lmax_list, self.mmax_list)
+        nvtx.range_pop()
 
+        # Rotate the irreps to align with the edge
+        nvtx.range_push("SO2EquivariantGraphAttention rotate")
+        x_message._rotate(self.SO3_rotation, self.lmax_list, self.mmax_list)
+        nvtx.range_pop()
+
+        nvtx.range_push("SO2EquivariantGraphAttention first so2 conv")
         # First SO(2)-convolution
         if self.use_s2_act_attn:
             x_message = self.so2_conv_1(x_message, x_edge)
         else:
             x_message, x_0_extra = self.so2_conv_1(x_message, x_edge)
 
+        nvtx.range_pop()
+
         # Activation
+        nvtx.range_push("SO2EquivariantGraphAttention first so2 actb")
         x_alpha_num_channels = self.num_heads * self.attn_alpha_channels
         if self.use_gate_act:
             # Gate activation
+            nvtx.range_push("p1")
             x_0_gating = x_0_extra.narrow(
                 1,
                 x_alpha_num_channels,
                 x_0_extra.shape[1] - x_alpha_num_channels,
             )  # for activation
+            nvtx.range_pop()
+            nvtx.range_push("p2")
             x_0_alpha = x_0_extra.narrow(
                 1, 0, x_alpha_num_channels
             )  # for attention weights
+            nvtx.range_pop()
+            nvtx.range_push("p3")
             x_message.embedding = self.gate_act(
                 x_0_gating, x_message.embedding
             )
+            nvtx.range_pop()
         else:
+            nvtx.range_push("non gate act")
             if self.use_sep_s2_act:
+                nvtx.range_push("p1")
                 x_0_gating = x_0_extra.narrow(
                     1,
                     x_alpha_num_channels,
@@ -311,22 +340,34 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
                 x_0_alpha = x_0_extra.narrow(
                     1, 0, x_alpha_num_channels
                 )  # for attention weights
+                nvtx.range_pop()
+                nvtx.range_push("p2")
                 x_message.embedding = self.s2_act(
                     x_0_gating, x_message.embedding, self.SO3_grid
                 )
+                nvtx.range_pop()
             else:
+                nvtx.range_push("p1")
                 x_0_alpha = x_0_extra
                 x_message.embedding = self.s2_act(
                     x_message.embedding, self.SO3_grid
                 )
+                nvtx.range_pop()
+
+            nvtx.range_pop()
             # x_message._grid_act(self.SO3_grid, self.value_act, self.mappingReduced)
 
+        nvtx.range_pop()
+
+        nvtx.range_push("SO2EquivariantGraphAttention second so2 act")
         # Second SO(2)-convolution
         if self.use_s2_act_attn:
             x_message, x_0_extra = self.so2_conv_2(x_message, x_edge)
         else:
             x_message = self.so2_conv_2(x_message, x_edge)
+        nvtx.range_pop()
 
+        nvtx.range_push("SO2EquivariantGraphAttention attn")
         # Attention weights
         if self.use_s2_act_attn:
             alpha = x_0_extra
@@ -341,7 +382,9 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         alpha = alpha.reshape(alpha.shape[0], 1, self.num_heads, 1)
         if self.alpha_dropout is not None:
             alpha = self.alpha_dropout(alpha)
+        nvtx.range_pop()
 
+        nvtx.range_push("SO2EquivariantGraphAttention attn by nonlinear")
         # Attention weights * non-linear messages
         attn = x_message.embedding
         attn = attn.reshape(
@@ -357,15 +400,22 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
             self.num_heads * self.attn_value_channels,
         )
         x_message.embedding = attn
+        nvtx.range_pop()
 
+        nvtx.range_push("SO2EquivariantGraphAttention rotate back")
         # Rotate back the irreps
         x_message._rotate_inv(self.SO3_rotation, self.mappingReduced)
+        nvtx.range_pop()
 
+        nvtx.range_push("SO2EquivariantGraphAttention reduce")
         # Compute the sum of the incoming neighboring messages for each target node
         x_message._reduce_edge(edge_index[1], len(x.embedding))
+        nvtx.range_pop()
 
         # Project
+        nvtx.range_push("SO2EquivariantGraphAttention proj")
         out_embedding = self.proj(x_message)
+        nvtx.range_pop()
 
         return out_embedding
 
@@ -675,14 +725,19 @@ class TransBlockV2(torch.nn.Module):
         batch,  # for GraphDropPath
     ):
 
+        nvtx.range_push("tformer norm1")
         output_embedding = x
 
         x_res = output_embedding.embedding
         output_embedding.embedding = self.norm_1(output_embedding.embedding)
+        nvtx.range_pop()
+        nvtx.range_push("tformer ga")
         output_embedding = self.ga(
             output_embedding, atomic_numbers, edge_distance, edge_index
         )
+        nvtx.range_pop()
 
+        nvtx.range_push("tformer drop path")
         if self.drop_path is not None:
             output_embedding.embedding = self.drop_path(
                 output_embedding.embedding, batch
@@ -691,13 +746,19 @@ class TransBlockV2(torch.nn.Module):
             output_embedding.embedding = self.proj_drop(
                 output_embedding.embedding, batch
             )
+        nvtx.range_pop()
 
         output_embedding.embedding = output_embedding.embedding + x_res
 
         x_res = output_embedding.embedding
+        nvtx.range_push("tformer norm2")
         output_embedding.embedding = self.norm_2(output_embedding.embedding)
+        nvtx.range_pop()
+        nvtx.range_push("tformer ffn")
         output_embedding = self.ffn(output_embedding)
+        nvtx.range_pop()
 
+        nvtx.range_push("tformer drop 2")
         if self.drop_path is not None:
             output_embedding.embedding = self.drop_path(
                 output_embedding.embedding, batch
@@ -706,7 +767,9 @@ class TransBlockV2(torch.nn.Module):
             output_embedding.embedding = self.proj_drop(
                 output_embedding.embedding, batch
             )
+        nvtx.range_pop()
 
+        nvtx.range_push("tformer ffn shortcut")
         if self.ffn_shortcut is not None:
             shortcut_embedding = SO3_Embedding(
                 0,
@@ -723,6 +786,7 @@ class TransBlockV2(torch.nn.Module):
             shortcut_embedding = self.ffn_shortcut(shortcut_embedding)
             x_res = shortcut_embedding.embedding
 
+        nvtx.range_pop()
         output_embedding.embedding = output_embedding.embedding + x_res
 
         return output_embedding

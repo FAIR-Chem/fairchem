@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+
+from torch.cuda import nvtx
 import logging
 import os
 from collections import defaultdict
@@ -145,6 +147,7 @@ class OCPTrainer(BaseTrainer):
             train_loader_iter = iter(self.train_loader)
 
             for i in range(skip_steps, len(self.train_loader)):
+                nvtx.range_push("train step")
                 self.epoch = epoch_int + (i + 1) / len(self.train_loader)
                 self.step = epoch_int * len(self.train_loader) + i + 1
                 self.model.train()
@@ -154,8 +157,13 @@ class OCPTrainer(BaseTrainer):
 
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    nvtx.range_push("ocp trainer train forward")
                     out = self._forward(batch)
+                    nvtx.range_pop()
+
+                    nvtx.range_push("ocp trainer compute loss")
                     loss = self._compute_loss(out, batch)
+                    nvtx.range_pop()
 
                 # Compute metrics.
                 self.metrics = self._compute_metrics(
@@ -169,7 +177,9 @@ class OCPTrainer(BaseTrainer):
                 )
 
                 loss = self.scaler.scale(loss) if self.scaler else loss
+                nvtx.range_push("ocp trainer backward")
                 self._backward(loss)
+                nvtx.range_pop()
 
                 # Log metrics.
                 log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
@@ -233,6 +243,7 @@ class OCPTrainer(BaseTrainer):
                         )
                 else:
                     self.scheduler.step()
+                nvtx.range_pop()
 
             torch.cuda.empty_cache()
 

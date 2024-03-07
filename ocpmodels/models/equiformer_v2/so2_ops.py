@@ -10,6 +10,9 @@ from .radial_function import RadialFunction
 from .so3 import SO3_Embedding
 
 
+from torch.cuda import nvtx
+
+
 class SO2_m_Convolution(torch.nn.Module):
     """
     SO(2) Conv: Perform an SO(2) convolution on features corresponding to +- m
@@ -58,6 +61,7 @@ class SO2_m_Convolution(torch.nn.Module):
         )
         self.fc.weight.data.mul_(1 / math.sqrt(2))
 
+    # TODO LOOK at this and see if we can get some boost, this deals with complex numbers
     def forward(self, x_m):
         x_m = self.fc(x_m)
         x_r = x_m.narrow(2, 0, self.fc.out_features // 2)
@@ -157,6 +161,7 @@ class SO2_Convolution(torch.nn.Module):
 
     def forward(self, x, x_edge):
 
+        nvtx.range_push("so2 conv1")
         num_edges = len(x_edge)
         out = []
 
@@ -167,13 +172,15 @@ class SO2_Convolution(torch.nn.Module):
         if self.rad_func is not None:
             x_edge = self.rad_func(x_edge)
         offset_rad = 0
-
+        nvtx.range_pop()
+        nvtx.range_push("so2 conv2")
         # Compute m=0 coefficients separately since they only have real values (no imaginary)
-        x_0 = x.embedding.narrow(1, 0, self.mappingReduced.m_size[0])
-        x_0 = x_0.reshape(num_edges, -1)
+        x_0 = x.embedding.narrow(1, 0, self.mappingReduced.m_size[0]).reshape(
+            num_edges, -1
+        )  # m0 coeffs
+
         if self.rad_func is not None:
-            x_edge_0 = x_edge.narrow(1, 0, self.fc_m0.in_features)
-            x_0 = x_0 * x_edge_0
+            x_0 *= x_edge.narrow(1, 0, self.fc_m0.in_features)
         x_0 = self.fc_m0(x_0)
 
         x_0_extra = None
@@ -186,6 +193,8 @@ class SO2_Convolution(torch.nn.Module):
                 (self.fc_m0.out_features - self.extra_m0_output_channels),
             )
 
+        nvtx.range_pop()
+        nvtx.range_push("so2 conv3")
         x_0 = x_0.view(num_edges, -1, self.m_output_channels)
         # x.embedding[:, 0 : self.mappingReduced.m_size[0]] = x_0
         out.append(x_0)
@@ -193,12 +202,17 @@ class SO2_Convolution(torch.nn.Module):
 
         # Compute the values for the m > 0 coefficients
         offset = self.mappingReduced.m_size[0]
-        for m in range(1, max(self.mmax_list) + 1):
+
+        # TODO pad with 0's
+        for m in range(
+            1, max(self.mmax_list) + 1
+        ):  # for small values range is more efficien
             # Get the m order coefficients
             x_m = x.embedding.narrow(
                 1, offset, 2 * self.mappingReduced.m_size[m]
             )
             x_m = x_m.reshape(num_edges, 2, -1)
+            # pull out the 2*|m| ceoffs (-m,+m) and reshape them to be indexed by (0->-m,1->+m)
 
             # Perform SO(2) convolution
             if self.rad_func is not None:
@@ -213,9 +227,12 @@ class SO2_Convolution(torch.nn.Module):
             x_m = x_m.view(num_edges, -1, self.m_output_channels)
             # x.embedding[:, offset : offset + 2 * self.mappingReduced.m_size[m]] = x_m
             out.append(x_m)
+            breakpoint()
+            a = 1
             offset = offset + 2 * self.mappingReduced.m_size[m]
             offset_rad = offset_rad + self.so2_m_conv[m - 1].fc.in_features
 
+        nvtx.range_pop()
         out = torch.cat(out, dim=1)
         out_embedding = SO3_Embedding(
             0,
@@ -229,9 +246,11 @@ class SO2_Convolution(torch.nn.Module):
             self.lmax_list.copy(), self.mmax_list.copy()
         )
 
+        nvtx.range_push("so2 conv5")
         # Reshape the spherical harmonics based on l (degree)
         out_embedding._l_primary(self.mappingReduced)
 
+        nvtx.range_pop()
         if self.extra_m0_output_channels is not None:
             return out_embedding, x_0_extra
         else:
@@ -333,8 +352,7 @@ class SO2_Linear(torch.nn.Module):
         x_0 = x.embedding.narrow(1, 0, self.mappingReduced.m_size[0])
         x_0 = x_0.reshape(batch_size, -1)
         if self.rad_func is not None:
-            x_edge_0 = x_edge.narrow(1, 0, self.fc_m0.in_features)
-            x_0 = x_0 * x_edge_0
+            x_0 = x_0 * x_edge.narrow(1, 0, self.fc_m0.in_features)
         x_0 = self.fc_m0(x_0)
         x_0 = x_0.view(batch_size, -1, self.m_output_channels)
         out.append(x_0)
