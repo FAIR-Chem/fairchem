@@ -277,9 +277,15 @@ def setup_experimental_imports(project_root: Path) -> None:
         with open(ignore_file, "r") as f:
             for line in f.read().splitlines():
                 for ignored_file in (experimental_folder / line).rglob("*.py"):
-                    experimental_files.remove(
+                    if (
                         ignored_file.resolve().absolute()
-                    )
+                        not in experimental_files
+                    ):
+                        continue
+                    else:
+                        experimental_files.remove(
+                            ignored_file.resolve().absolute()
+                        )
 
     for f in experimental_files:
         _import_local_file(f, project_root=project_root)
@@ -1004,33 +1010,58 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
             task_name = "s2ef"
         elif trainer_name in ["energy", "equiformerv2_energy"]:
             task_name = "is2re"
+        elif "multitask" in trainer_name.lower():
+            task_name = "multitask"
         else:
             task_name = "ocp"
 
         trainer_cls = registry.get_trainer_class(trainer_name)
         assert trainer_cls is not None, "Trainer not found"
-        trainer = trainer_cls(
-            task=config.get("task", {}),
-            model=config["model"],
-            outputs=config.get("outputs", {}),
-            dataset=config["dataset"],
-            optimizer=config["optim"],
-            loss_fns=config.get("loss_functions", {}),
-            eval_metrics=config.get("evaluation_metrics", {}),
-            identifier=config["identifier"],
-            timestamp_id=config.get("timestamp_id", None),
-            run_dir=config.get("run_dir", "./"),
-            is_debug=config.get("is_debug", False),
-            print_every=config.get("print_every", 10),
-            seed=config.get("seed", 0),
-            logger=config.get("logger", "tensorboard"),
-            local_rank=config["local_rank"],
-            amp=config.get("amp", False),
-            cpu=config.get("cpu", False),
-            slurm=config.get("slurm", {}),
-            noddp=config.get("noddp", False),
-            name=task_name,
-        )
+
+        if task_name == "multitask":
+            trainer = trainer_cls(
+                tasks=config.get("tasks", {}),
+                dataset=config["dataset"],
+                model=config["model"],
+                optimizer=config["optim"],
+                evaluation=config.get("evaluation", {}),
+                identifier=config["identifier"],
+                timestamp_id=config.get("timestamp_id", None),
+                run_dir=config.get("run_dir", "./"),
+                is_debug=config.get("is_debug", False),
+                print_every=config.get("print_every", 10),
+                seed=config.get("seed", 0),
+                logger=config.get("logger", "tensorboard"),
+                local_rank=config["local_rank"],
+                amp=config.get("amp", False),
+                cpu=config.get("cpu", False),
+                slurm=config.get("slurm", {}),
+                noddp=config.get("noddp", False),
+                name=task_name,
+            )
+        else:
+            trainer = trainer_cls(
+                task=config.get("task", {}),
+                model=config["model"],
+                outputs=config.get("outputs", {}),
+                dataset=config["dataset"],
+                optimizer=config["optim"],
+                loss_fns=config.get("loss_functions", {}),
+                eval_metrics=config.get("evaluation_metrics", {}),
+                identifier=config["identifier"],
+                timestamp_id=config.get("timestamp_id", None),
+                run_dir=config.get("run_dir", "./"),
+                is_debug=config.get("is_debug", False),
+                print_every=config.get("print_every", 10),
+                seed=config.get("seed", 0),
+                logger=config.get("logger", "tensorboard"),
+                local_rank=config["local_rank"],
+                amp=config.get("amp", False),
+                cpu=config.get("cpu", False),
+                slurm=config.get("slurm", {}),
+                noddp=config.get("noddp", False),
+                name=task_name,
+            )
 
         task_cls = registry.get_task_class(config["mode"])
         assert task_cls is not None, "Task not found"
