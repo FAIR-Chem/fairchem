@@ -269,3 +269,12 @@ def test_ase_multiread_dataset(tmp_path) -> None:
 
     assert hasattr(dataset[0], "y_relaxed")
     assert dataset[0].y_relaxed != dataset[0].energy
+
+
+def test_empty_dataset(tmp_path):
+    # raises error on empty dataset
+    with pytest.raises(ValueError):
+        AseReadMultiStructureDataset(config={"src": str(tmp_path)})
+
+    with pytest.raises(ValueError):
+        AseDBDataset(config={"src": str(tmp_path)})

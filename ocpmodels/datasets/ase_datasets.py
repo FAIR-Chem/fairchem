@@ -97,6 +97,12 @@ class AseAtomsDataset(Dataset, ABC):
 
         self.ids = self._load_dataset_get_ids(config)
 
+        if len(self.ids) == 0:
+            raise ValueError(
+                rf"No valid ase data found!"
+                f"Double check that the src path and/or glob search pattern gives ASE compatible data: {config['src']}"
+            )
+
     def __len__(self) -> int:
         return len(self.ids)
 
@@ -240,7 +246,7 @@ class AseReadDataset(AseAtomsDataset):
             self.relaxed_ase_read_args = copy.deepcopy(self.ase_read_args)
             self.relaxed_ase_read_args["index"] = "-1"
 
-        return list(self.path.glob(f'{config["pattern"]}'))
+        return list(self.path.glob(f'{config.get("pattern", "*")}'))
 
     def get_atoms_object(self, identifier):
         try:
@@ -339,7 +345,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
         self.path = Path(config["src"])
         if self.path.is_file():
             raise Exception("The specified src is not a directory")
-        filenames = list(self.path.glob(f'{config["pattern"]}'))
+        filenames = list(self.path.glob(f'{config.get("pattern", "*")}'))
 
         ids = []
 
@@ -397,6 +403,7 @@ class AseDBDataset(AseAtomsDataset):
                     - the path an ASE DB,
                     - the connection address of an ASE DB,
                     - a folder with multiple ASE DBs,
+                    - a list of folders with ASE DBs
                     - a glob string to use to find ASE DBs, or
                     - a list of ASE db paths/addresses.
                     If a folder, every file will be attempted as an ASE DB, and warnings
