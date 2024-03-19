@@ -119,7 +119,7 @@ class AseAtomsDataset(Dataset, ABC):
             return [self[i] for i in range(*idx.indices(len(self)))]
 
         # Get atoms object via derived class method
-        atoms = self.get_atoms_object(self.ids[idx])
+        atoms = self.get_atoms(self.ids[idx])
 
         # Transform atoms object
         if self.atoms_transform is not None:
@@ -149,7 +149,7 @@ class AseAtomsDataset(Dataset, ABC):
         return data_object
 
     @abstractmethod
-    def get_atoms_object(self, idx: str | int):
+    def get_atoms(self, idx: str | int) -> ase.Atoms:
         # This function should return an ASE atoms object.
         raise NotImplementedError(
             "Returns an ASE atoms object. Derived classes should implement this function."
@@ -172,13 +172,13 @@ class AseAtomsDataset(Dataset, ABC):
         # This method is sometimes called by a trainer
         pass
 
-    def get_metadata(self, num_samples: int = 100):
+    def get_metadata(self, num_samples: int = 100) -> dict:
         metadata = {}
 
         if num_samples < len(self):
             metadata["targets"] = guess_property_metadata(
                 [
-                    self.get_atoms_object(self.ids[idx])
+                    self.get_atoms(self.ids[idx])
                     for idx in np.random.choice(
                         len(self), size=(num_samples,), replace=False
                     )
@@ -186,10 +186,7 @@ class AseAtomsDataset(Dataset, ABC):
             )
         else:
             metadata["targets"] = guess_property_metadata(
-                [
-                    self.get_atoms_object(self.ids[idx])
-                    for idx in range(len(self))
-                ]
+                [self.get_atoms(self.ids[idx]) for idx in range(len(self))]
             )
 
         return metadata
@@ -263,7 +260,7 @@ class AseReadDataset(AseAtomsDataset):
 
         return list(self.path.glob(f'{config.get("pattern", "*")}'))
 
-    def get_atoms_object(self, idx):
+    def get_atoms(self, idx: str | int) -> ase.Atoms:
         try:
             atoms = ase.io.read(idx, **self.ase_read_args)
         except Exception as err:
@@ -272,7 +269,7 @@ class AseReadDataset(AseAtomsDataset):
 
         return atoms
 
-    def get_relaxed_energy(self, identifier):
+    def get_relaxed_energy(self, identifier) -> float:
         relaxed_atoms = ase.io.read(identifier, **self.relaxed_ase_read_args)
         return relaxed_atoms.get_potential_energy(apply_constraint=False)
 
@@ -340,7 +337,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
         transform (callable, optional): Additional preprocessing function for the Data object
     """
 
-    def _load_dataset_get_ids(self, config):
+    def _load_dataset_get_ids(self, config) -> list[str]:
         self.ase_read_args = config.get("ase_read_args", {})
         if not hasattr(self.ase_read_args, "index"):
             self.ase_read_args["index"] = ":"
@@ -380,7 +377,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
 
         return ids
 
-    def get_atoms_object(self, idx):
+    def get_atoms(self, idx: str) -> ase.Atoms:
         try:
             identifiers = idx.split(" ")
             atoms = ase.io.read(
@@ -397,10 +394,10 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
 
         return atoms
 
-    def get_metadata(self, num_samples: int = 100):
+    def get_metadata(self, num_samples: int = 100) -> dict:
         return {}
 
-    def get_relaxed_energy(self, identifier):
+    def get_relaxed_energy(self, identifier) -> float:
         relaxed_atoms = ase.io.read(
             "".join(identifier.split(" ")[:-1]), **self.ase_read_args
         )[-1]
@@ -517,7 +514,7 @@ class AseDBDataset(AseAtomsDataset):
 
         return list(range(sum(idlens)))
 
-    def get_atoms_object(self, idx: int) -> ase.Atoms:
+    def get_atoms(self, idx: int) -> ase.Atoms:
         """Get atoms object corresponding to datapoint idx. Useful to read other properties not in data object.
         Args:
             idx (int): index in dataset
