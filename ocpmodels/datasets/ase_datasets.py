@@ -1,3 +1,10 @@
+"""
+Copyright (c) Meta, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+
 from __future__ import annotations
 
 import bisect
@@ -142,7 +149,7 @@ class AseAtomsDataset(Dataset, ABC):
         return data_object
 
     @abstractmethod
-    def get_atoms_object(self, identifier):
+    def get_atoms_object(self, idx: str | int):
         # This function should return an ASE atoms object.
         raise NotImplementedError(
             "Returns an ASE atoms object. Derived classes should implement this function."
@@ -153,6 +160,12 @@ class AseAtomsDataset(Dataset, ABC):
         # This function should return a list of ids that can be used to index into the database
         raise NotImplementedError(
             "Every ASE dataset needs to declare a function to load the dataset and return a list of ids."
+        )
+
+    @abstractmethod
+    def get_relaxed_energy(self, identifier):
+        raise NotImplementedError(
+            "IS2RE-Direct is not implemented with this dataset."
         )
 
     def close_db(self) -> None:
@@ -240,7 +253,7 @@ class AseReadDataset(AseAtomsDataset):
 
         self.path = Path(config["src"])
         if self.path.is_file():
-            ValueError(
+            raise ValueError(
                 f"The specified src is not a directory: {self.config['src']}"
             )
 
@@ -250,11 +263,11 @@ class AseReadDataset(AseAtomsDataset):
 
         return list(self.path.glob(f'{config.get("pattern", "*")}'))
 
-    def get_atoms_object(self, identifier):
+    def get_atoms_object(self, idx):
         try:
-            atoms = ase.io.read(identifier, **self.ase_read_args)
+            atoms = ase.io.read(idx, **self.ase_read_args)
         except Exception as err:
-            warnings.warn(f"{err} occured for: {identifier}")
+            warnings.warn(f"{err} occured for: {idx}", stacklevel=2)
             raise err
 
         return atoms
@@ -333,12 +346,12 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             self.ase_read_args["index"] = ":"
 
         if config.get("index_file", None) is not None:
-            f = open(config["index_file"], "r")
-            index = f.readlines()
+            with open(config["index_file"], "r") as f:
+                index = f.readlines()
 
             ids = []
             for line in index:
-                filename = line.split(" ")[0]
+                filename = line.split(" ", maxsplit=1)[0]
                 for i in range(int(line.split(" ")[1])):
                     ids.append(f"{filename} {i}")
 
@@ -360,30 +373,31 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             try:
                 structures = ase.io.read(filename, **self.ase_read_args)
             except Exception as err:
-                warnings.warn(f"{err} occured for: {filename}")
+                warnings.warn(f"{err} occured for: {filename}", stacklevel=2)
             else:
-                for i, structure in enumerate(structures):
+                for i, _ in enumerate(structures):
                     ids.append(f"{filename} {i}")
 
         return ids
 
-    def get_atoms_object(self, identifier):
+    def get_atoms_object(self, idx):
         try:
+            identifiers = idx.split(" ")
             atoms = ase.io.read(
-                "".join(identifier.split(" ")[:-1]), **self.ase_read_args
-            )[int(identifier.split(" ")[-1])]
+                "".join(identifiers[:-1]), **self.ase_read_args
+            )[int(identifiers[-1])]
         except Exception as err:
-            warnings.warn(f"{err} occured for: {identifier}")
+            warnings.warn(f"{err} occured for: {idx}", stacklevel=2)
             raise err
 
         if "sid" not in atoms.info:
-            atoms.info["sid"] = "".join(identifier.split(" ")[:-1])
+            atoms.info["sid"] = "".join(identifiers[:-1])
         if "fid" not in atoms.info:
-            atoms.info["fid"] = int(identifier.split(" ")[-1])
+            atoms.info["fid"] = int(identifiers[-1])
 
         return atoms
 
-    def get_metadata(self):
+    def get_metadata(self, num_samples: int = 100):
         return {}
 
     def get_relaxed_energy(self, identifier):
@@ -538,11 +552,11 @@ class AseDBDataset(AseAtomsDataset):
         db_type = connect_args.get("type", "extract_from_name")
         if db_type in ("lmdb", "aselmdb") or (
             db_type == "extract_from_name"
-            and str(address).split(".")[-1] in ("lmdb", "aselmdb")
+            and str(address).rsplit(".", maxsplit=1)[-1] in ("lmdb", "aselmdb")
         ):
             return LMDBDatabase(address, readonly=True, **connect_args)
-        else:
-            return ase.db.connect(address, **connect_args)
+
+        return ase.db.connect(address, **connect_args)
 
     def close_db(self) -> None:
         for db in self.dbs:
@@ -555,8 +569,8 @@ class AseDBDataset(AseAtomsDataset):
         )
         if self.dbs[0].metadata == {}:
             return super().get_metadata(num_samples)
-        else:
-            return copy.deepcopy(self.dbs[0].metadata)
+
+        return copy.deepcopy(self.dbs[0].metadata)
 
     def get_relaxed_energy(self, identifier):
         raise NotImplementedError(
