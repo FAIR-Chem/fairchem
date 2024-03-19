@@ -240,7 +240,9 @@ class AseReadDataset(AseAtomsDataset):
 
         self.path = Path(config["src"])
         if self.path.is_file():
-            raise Exception("The specified src is not a directory")
+            ValueError(
+                f"The specified src is not a directory: {self.config['src']}"
+            )
 
         if self.config.get("include_relaxed_energy", False):
             self.relaxed_ase_read_args = copy.deepcopy(self.ase_read_args)
@@ -344,7 +346,10 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
 
         self.path = Path(config["src"])
         if self.path.is_file():
-            raise Exception("The specified src is not a directory")
+            raise ValueError(
+                f"The specified src is not a directory: {self.config['src']}"
+            )
+
         filenames = list(self.path.glob(f'{config.get("pattern", "*")}'))
 
         ids = []
