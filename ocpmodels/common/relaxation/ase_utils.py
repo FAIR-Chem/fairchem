@@ -9,8 +9,11 @@ LICENSE file in the root directory of this source tree.
 Utilities to interface OCP models/trainers with the Atomic Simulation
 Environment (ASE)
 """
+from __future__ import annotations
+
 import copy
 import logging
+import warnings
 from typing import Dict, Optional
 
 import torch
@@ -70,10 +73,10 @@ class OCPCalculator(Calculator):
         config_yml: Optional[str] = None,
         checkpoint_path: Optional[str] = None,
         trainer: Optional[str] = None,
-        cutoff: int = 6,
-        max_neighbors: int = 50,
         cpu: bool = True,
         seed: Optional[int] = None,
+        cutoff: int | None = None,
+        max_neighbors: int | None = None,
     ) -> None:
         """
         OCP-ASE Calculator
@@ -85,16 +88,18 @@ class OCPCalculator(Calculator):
                 Path to trained checkpoint.
             trainer (str):
                 OCP trainer to be used. "forces" for S2EF, "energy" for IS2RE.
-            cutoff (int):
-                Cutoff radius to be used for data preprocessing.
-            max_neighbors (int):
-                Maximum amount of neighbors to store for a given atom.
             cpu (bool):
                 Whether to load and run the model on CPU. Set `False` for GPU.
         """
         setup_imports()
         setup_logging()
         Calculator.__init__(self)
+
+        if cutoff is None or max_neighbors is None:
+            warnings.warn(
+                "Setting cutoff and max_neighbors is deprecated. The values are taken from the checkpoint.",
+                DeprecationWarning,
+            )
 
         # Either the config path or the checkpoint path needs to be provided
         assert config_yml or checkpoint_path is not None
@@ -183,12 +188,9 @@ class OCPCalculator(Calculator):
             self.trainer.set_seed(seed)
 
         self.a2g = AtomsToGraphs(
-            max_neigh=max_neighbors,
-            radius=cutoff,
             r_energy=False,
             r_forces=False,
             r_distances=False,
-            r_edges=False,
             r_pbc=True,
         )
 
