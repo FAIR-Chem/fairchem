@@ -205,7 +205,7 @@ class AtomsToGraphs:
         if self.r_distances and self.r_edges:
             data.distances = edge_distances
         if self.r_fixed:
-            fixed_idx = torch.zeros(natoms)
+            fixed_idx = torch.zeros(natoms, dtype=torch.int)
             if hasattr(atoms, "constraints"):
                 from ase.constraints import FixAtoms
 
@@ -217,12 +217,11 @@ class AtomsToGraphs:
             data.pbc = torch.tensor(atoms.pbc)
         if self.r_data_keys is not None:
             for data_key in self.r_data_keys:
-                if data_key in atoms.info:
-                    data[data_key] = (
-                        atoms.info[data_key]
-                        if isinstance(atoms.info[data_key], (int, float))
-                        else torch.Tensor(atoms.info[data_key])
-                    )
+                data[data_key] = (
+                    atoms.info[data_key]
+                    if isinstance(atoms.info[data_key], (int, float))
+                    else torch.Tensor(atoms.info[data_key])
+                )
 
         return data
 
