@@ -753,5 +753,4 @@ class OCPTrainer(BaseTrainer):
         if self.ema:
             self.ema.restore()
 
-        breakpoint()
         registry.unregister("set_deterministic_scatter")

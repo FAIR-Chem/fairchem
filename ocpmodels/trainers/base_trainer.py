@@ -317,6 +317,19 @@ class BaseTrainer(ABC):
                 if self.config["test_dataset"].get("use_train_settings", True):
                     test_config = self.config["dataset"].copy()
                     test_config.update(self.config["test_dataset"])
+                    # if a2g_args are used remove keys for labels
+                    if "a2g_args" in test_config["dataset"]:
+                        test_config["dataset"]["a2g_args"] = {
+                            k: v
+                            for k, v in test_config["dataset"]["a2g_args"]
+                            if k
+                            not in (
+                                "r_energy",
+                                "r_forces",
+                                "r_stress",
+                                "r_data_keys",
+                            )
+                        }
                 else:
                     test_config = self.config["test_dataset"]
 
