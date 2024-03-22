@@ -316,6 +316,7 @@ class OCPTrainer(BaseTrainer):
 
             target = batch[target_name]
             pred = out[target_name]
+
             natoms = batch.natoms
             natoms = torch.repeat_interleave(natoms, natoms)
 
@@ -590,7 +591,7 @@ class OCPTrainer(BaseTrainer):
             if check_traj_files(
                 batch, self.config["task"]["relax_opt"].get("traj_dir", None)
             ):
-                logging.info(f"Skipping batch: {list(batch[0].sid)}")
+                logging.info(f"Skipping batch: {list(batch.sid)}")
                 continue
 
             relaxed_batch = ml_relax(
