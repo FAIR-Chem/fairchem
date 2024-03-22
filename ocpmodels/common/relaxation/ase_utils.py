@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import copy
 import logging
-import warnings
 
 import torch
 from ase import Atoms
@@ -74,8 +73,6 @@ class OCPCalculator(Calculator):
         trainer: str | None = None,
         cpu: bool = True,
         seed: int | None = None,
-        cutoff: int | None = None,
-        max_neighbors: int | None = None,
     ) -> None:
         """
         OCP-ASE Calculator
@@ -92,13 +89,7 @@ class OCPCalculator(Calculator):
         """
         setup_imports()
         setup_logging()
-        Calculator.__init__(self)
-
-        if cutoff is None or max_neighbors is None:
-            warnings.warn(
-                "Setting cutoff and max_neighbors is deprecated. The values are taken from the checkpoint.",
-                DeprecationWarning,
-            )
+        super().__init__()
 
         # Either the config path or the checkpoint path needs to be provided
         assert config_yml or checkpoint_path is not None
