@@ -14,7 +14,6 @@ from __future__ import annotations
 import copy
 import logging
 import warnings
-from typing import Dict, Optional
 
 import torch
 from ase import Atoms
@@ -70,11 +69,11 @@ class OCPCalculator(Calculator):
 
     def __init__(
         self,
-        config_yml: Optional[str] = None,
-        checkpoint_path: Optional[str] = None,
-        trainer: Optional[str] = None,
+        config_yml: str | None = None,
+        checkpoint_path: str | None = None,
+        trainer: str | None = None,
         cpu: bool = True,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         cutoff: int | None = None,
         max_neighbors: int | None = None,
     ) -> None:
@@ -195,7 +194,7 @@ class OCPCalculator(Calculator):
         )
 
     def load_checkpoint(
-        self, checkpoint_path: str, checkpoint: Dict = {}
+        self, checkpoint_path: str, checkpoint: dict | None = None
     ) -> None:
         """
         Load existing trained model
@@ -203,7 +202,10 @@ class OCPCalculator(Calculator):
         Args:
             checkpoint_path: string
                 Path to trained model
+            checkpoint: dict
+                A pretrained checkpoint dict
         """
+        checkpoint = checkpoint or {}
         try:
             self.trainer.load_checkpoint(checkpoint_path, checkpoint)
         except NotImplementedError:
