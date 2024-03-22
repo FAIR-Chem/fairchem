@@ -515,10 +515,18 @@ class OCPTrainer(BaseTrainer):
                 return predictions
 
             ### Get unique system identifiers
-            sids = list(batch.sid)
+            sids = (
+                batch.sid.tolist()
+                if isinstance(batch.sid, torch.Tensor)
+                else list(batch.sid)
+            )
             ## Support naming structure for OC20 S2EF
             if "fid" in batch:
-                fids = list(batch.fid)
+                fids = (
+                    batch.fid.tolist()
+                    if isinstance(batch.fid, torch.Tensor)
+                    else list(batch.fid)
+                )
                 systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
             else:
                 systemids = [f"{sid}" for sid in sids]
@@ -606,7 +614,12 @@ class OCPTrainer(BaseTrainer):
             )
 
             if self.config["task"].get("write_pos", False):
-                systemids = [str(i) for i in list(relaxed_batch.sid)]
+                sid_list = (
+                    relaxed_batch.sid.tolist()
+                    if isinstance(relaxed_batch.sid, torch.Tensor)
+                    else list(relaxed_batch.sid)
+                )
+                systemids = [str(sid) for sid in sid_list]
                 natoms = relaxed_batch.natoms.tolist()
                 positions = torch.split(relaxed_batch.pos, natoms)
                 batch_relaxed_positions = [pos.tolist() for pos in positions]
@@ -689,9 +702,8 @@ class OCPTrainer(BaseTrainer):
                 # might be repeated to make no. of samples even across GPUs.
                 _, idx = np.unique(gather_results["ids"], return_index=True)
                 gather_results["ids"] = np.array(gather_results["ids"])[idx]
-                gather_results["pos"] = np.concatenate(
-                    np.array(gather_results["pos"])[idx]
-                )
+
+                gather_results["pos"] = np.vstack(gather_results["pos"])[idx]
                 gather_results["chunk_idx"] = np.cumsum(
                     np.array(gather_results["chunk_idx"])[idx]
                 )[
@@ -741,4 +753,5 @@ class OCPTrainer(BaseTrainer):
         if self.ema:
             self.ema.restore()
 
+        breakpoint()
         registry.unregister("set_deterministic_scatter")
