@@ -318,7 +318,7 @@ class BaseTrainer(ABC):
                     test_config = self.config["dataset"].copy()
                     test_config.update(self.config["test_dataset"])
                     # if a2g_args are used remove keys for labels
-                    if "a2g_args" in test_config["test_dataset"]:
+                    if "a2g_args" in test_config:
                         test_config["dataset"]["a2g_args"] = {
                             k: v
                             for k, v in test_config["test_dataset"]["a2g_args"]
