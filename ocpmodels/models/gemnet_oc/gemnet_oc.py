@@ -247,6 +247,14 @@ class GemNetOC(BaseModel):
         self.num_blocks = num_blocks
         self.extensive = extensive
 
+        self.use_model_energy_head = (
+            "energy" in self.output_targets
+            and not self.output_targets["energy"].get("custom_head", False)
+        )
+        self.use_model_forces_head = (
+            "forces" in self.output_targets
+            and not self.output_targets["forces"].get("custom_head", False)
+        )
         self.atom_edge_interaction = atom_edge_interaction
         self.edge_atom_interaction = edge_atom_interaction
         self.atom_interaction = atom_interaction
@@ -352,13 +360,13 @@ class GemNetOC(BaseModel):
         self.out_mlp_E = torch.nn.Sequential(*out_mlp_E)
         # backwards compatibility
         out_initializer = get_initializer(output_init)
-        if "energy" in self.output_targets:
+        if self.use_model_energy_head:
             self.out_energy = Dense(
                 emb_size_atom, 1, bias=False, activation=None
             )
             self.out_energy.reset_parameters(out_initializer)
 
-        if "forces" in self.output_targets and direct_forces:
+        if self.direct_forces:
             out_mlp_F = [
                 Dense(
                     emb_size_edge * (num_blocks + 1),
@@ -373,6 +381,7 @@ class GemNetOC(BaseModel):
                 for _ in range(num_global_out_layers)
             ]
             self.out_mlp_F = torch.nn.Sequential(*out_mlp_F)
+        if self.use_model_forces_head:
             self.out_forces = Dense(
                 emb_size_edge, 1, bias=False, activation=None
             )
@@ -1304,6 +1313,8 @@ class GemNetOC(BaseModel):
 
         nMolecules = torch.max(batch) + 1
         x_E = self.out_mlp_E(torch.cat(xs_E, dim=-1))
+        if self.direct_forces:
+            x_F = self.out_mlp_F(torch.cat(xs_F, dim=-1))
 
         outputs = {
             "edge_idx": idx_t,
@@ -1313,7 +1324,7 @@ class GemNetOC(BaseModel):
         }
 
         # Global output block for final predictions
-        if "energy" in self.output_targets:
+        if self.use_model_energy_head:
             with torch.cuda.amp.autocast(False):
                 E_t = self.out_energy(x_E.float())
 
@@ -1328,10 +1339,9 @@ class GemNetOC(BaseModel):
             E_t = E_t.squeeze(1)  # (num_molecules)
             outputs["energy"] = E_t
 
-        if "forces" in self.output_targets:
+        if self.use_model_forces_head:
             if self.regress_forces:
                 if self.direct_forces:
-                    x_F = self.out_mlp_F(torch.cat(xs_F, dim=-1))
                     with torch.cuda.amp.autocast(False):
                         F_st = self.out_forces(x_F.float())
 
