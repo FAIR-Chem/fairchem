@@ -45,6 +45,25 @@ from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.modules.scheduler import LRScheduler
 
 
+class CompiledOptimizer(torch.optim.Optimizer):
+    def __init__(self, optimizer: torch.optim.Optimizer):
+        self.__dict__["_optimizer"] = optimizer
+
+    @torch.compile(fullgraph=False)
+    def step(self):
+        self._optimizer.step()
+
+    def __getattr__(self, __name: str):
+        print("NAME", __name)
+        return getattr(self._optimizer, __name)
+
+    def __setattr__(self, __name: str, __value) -> None:
+        setattr(self._optimizer, __name, __value)
+
+    def __delattr__(self, __name: str) -> None:
+        delattr(self._optimizer, __name)
+
+
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
     def __init__(
@@ -607,6 +626,8 @@ class BaseTrainer(ABC):
                 lr=self.config["optim"]["lr_initial"],
                 **optimizer_params,
             )
+        if self.config["optim"].get("compiled_optimizer", False):
+            self.optimizer = CompiledOptimizer(self.optimizer)
 
     def load_extras(self) -> None:
         self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
@@ -816,8 +837,27 @@ class BaseTrainer(ABC):
             self.scaler.update()
         else:
             self.optimizer.step()
-        if self.ema:
-            self.ema.update()
+        # if self.config["optim"].get("compiled_optimizer", False):
+        #     self.compiled_optimizer_step()
+        # else:
+        #     self.optimizer_step()
+        # if self.ema:
+        #     self.ema.update()
+
+    # def optimizer_step(self):
+    #     if self.scaler:
+    #         self.scaler.step(self.optimizer)
+    #         self.scaler.update()
+    #     else:
+    #         self.optimizer.step()
+
+    # @torch.compile(fullgraph=False)
+    # def compiled_optimizer_step(self):
+    #     if self.scaler:
+    #         self.scaler.step(self.optimizer)
+    #         self.scaler.update()
+    #     else:
+    #         self.optimizer.step()
 
     def save_results(
         self, predictions, results_file: Optional[str], keys=None

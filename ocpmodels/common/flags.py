@@ -90,7 +90,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--slurm-partition",
-            default="ocp",
+            default="ocp,ocp_high",
             type=str,
             help="Name of partition",
         )

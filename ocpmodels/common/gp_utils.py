@@ -6,7 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 import logging
 import math
-from typing import Any, Optional
+from typing import Any, Optional, List
 
 import torch
 from torch import distributed as dist
@@ -21,7 +21,7 @@ https://github.com/facebookresearch/fairscale/blob/main/fairscale/nn/model_paral
 
 _GRAPH_PARALLEL_GROUP = None
 _DATA_PARALLEL_GROUP = None
-
+_PIPELINE_PARALLEL_GROUP = None
 
 def ensure_div(a: int, b: int) -> None:
     assert a % b == 0
@@ -87,12 +87,20 @@ def get_gp_group():
     return _GRAPH_PARALLEL_GROUP
 
 
+def _get_pp_group():
+    return _PIPELINE_PARALLEL_GROUP
+
+
 def get_dp_rank() -> int:
     return dist.get_rank(group=get_dp_group())
 
 
 def get_gp_rank() -> int:
     return dist.get_rank(group=get_gp_group())
+
+
+def get_pp_rank() -> int:
+    return dist.get_rank(group=_get_pp_group())
 
 
 def get_dp_world_size() -> int:
@@ -103,6 +111,21 @@ def get_gp_world_size() -> int:
     return (
         1 if not initialized() else dist.get_world_size(group=get_gp_group())
     )
+
+
+def get_pp_world_size() -> int:
+    return (
+        1 if _get_pp_group() is None else dist.get_world_size(group=_get_pp_group())
+    )
+
+
+def get_pp_worker_names() -> List[str]:
+    world_size = get_pp_world_size()
+    # master = f"master_{get_dp_rank()}_{get_pp_rank()}_{get_gp_rank()}"
+    # workers = [f"worker_{get_dp_rank()}_{rank}_{get_gp_rank()}" for rank in range(1, world_size)]
+    # return [master] + workers
+    master = f"master_{get_dp_rank()}_0_{get_gp_rank()}"
+    return [master]
 
 
 ########## DIST METHODS ##########
@@ -140,6 +163,8 @@ def trim_tensor(
         tensor = tensor[:trim_size]
     elif dim == 1:
         tensor = tensor[:, :trim_size]
+    elif dim == 2:
+        tensor = tensor[:, :, :trim_size]
     else:
         raise ValueError
     if sizes is not None:
@@ -230,6 +255,10 @@ def _gather_with_padding(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
     elif dim == 1:
         tensor_list = [
             tensor[:, :size] for tensor, size in zip(tensor_list, size_list)
+        ]
+    elif dim == 2:
+        tensor_list = [
+            tensor[:, :, :size] for tensor, size in zip(tensor_list, size_list)
         ]
     else:
         raise ValueError
