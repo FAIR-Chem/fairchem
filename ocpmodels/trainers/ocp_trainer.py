@@ -411,6 +411,11 @@ class OCPTrainer(BaseTrainer):
         results_file: Optional[str] = None,
         disable_tqdm: bool = False,
     ):
+        if self.is_debug and per_image:
+            raise FileNotFoundError(
+                "Predictions require debug mode to be turned off."
+            )
+
         ensure_fitted(self._unwrapped_model, warn=True)
 
         if distutils.is_master() and not disable_tqdm:
@@ -537,16 +542,7 @@ class OCPTrainer(BaseTrainer):
             # allow for lists of 'zero dim' arrays
             predictions[key] = np.vstack(predictions[key]).squeeze()
 
-        if self.is_debug:
-            try:
-                self.save_results(predictions, results_file)
-            except FileNotFoundError:
-                logging.warning(
-                    "Predictions npz file not found. "
-                    + "This file was not written since the trainer is running in debug mode."
-                )
-        else:
-            self.save_results(predictions, results_file)
+        self.save_results(predictions, results_file)
 
         if self.ema:
             self.ema.restore()
