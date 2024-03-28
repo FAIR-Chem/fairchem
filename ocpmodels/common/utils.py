@@ -972,7 +972,7 @@ def check_traj_files(batch, traj_dir) -> bool:
     sid_list = (
         batch.sid.tolist()
         if isinstance(batch.sid, torch.Tensor)
-        else list(batch.sid)
+        else batch.sid
     )
     traj_files = [traj_dir / f"{sid}.traj" for sid in sid_list]
     return all(fl.exists() for fl in traj_files)

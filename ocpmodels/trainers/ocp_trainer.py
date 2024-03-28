@@ -523,14 +523,14 @@ class OCPTrainer(BaseTrainer):
             sids = (
                 batch.sid.tolist()
                 if isinstance(batch.sid, torch.Tensor)
-                else list(batch.sid)
+                else batch.sid
             )
             ## Support naming structure for OC20 S2EF
             if "fid" in batch:
                 fids = (
                     batch.fid.tolist()
                     if isinstance(batch.fid, torch.Tensor)
-                    else list(batch.fid)
+                    else batch.fid
                 )
                 systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
             else:
@@ -612,7 +612,7 @@ class OCPTrainer(BaseTrainer):
                 sid_list = (
                     relaxed_batch.sid.tolist()
                     if isinstance(relaxed_batch.sid, torch.Tensor)
-                    else list(relaxed_batch.sid)
+                    else relaxed_batch.sid
                 )
                 systemids = [str(sid) for sid in sid_list]
                 natoms = relaxed_batch.natoms.tolist()
