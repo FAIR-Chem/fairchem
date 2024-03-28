@@ -698,7 +698,9 @@ class OCPTrainer(BaseTrainer):
                 _, idx = np.unique(gather_results["ids"], return_index=True)
                 gather_results["ids"] = np.array(gather_results["ids"])[idx]
 
-                gather_results["pos"] = np.vstack(gather_results["pos"])[idx]
+                gather_results["pos"] = np.concatenate(
+                    np.array(gather_results["pos"])[idx]
+                )
                 gather_results["chunk_idx"] = np.cumsum(
                     np.array(gather_results["chunk_idx"])[idx]
                 )[
