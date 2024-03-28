@@ -539,8 +539,7 @@ class OCPTrainer(BaseTrainer):
             predictions["ids"].extend(systemids)
 
         for key in predictions:
-            # allow for lists of 'zero dim' arrays
-            predictions[key] = np.vstack(predictions[key]).squeeze()
+            predictions[key] = np.array(predictions[key], dtype=object)
 
         self.save_results(predictions, results_file)
 

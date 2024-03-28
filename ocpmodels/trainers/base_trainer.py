@@ -871,7 +871,7 @@ class BaseTrainer(ABC):
                 else:
                     if f"{k}_chunk_idx" in keys or k == "forces":
                         gather_results[k] = np.concatenate(
-                            np.array(gather_results[k])[idx]
+                            np.array(gather_results[k], dtype=object)[idx]
                         )
                     else:
                         gather_results[k] = np.array(gather_results[k])[idx]
