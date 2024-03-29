@@ -594,7 +594,9 @@ class OCPTrainer(BaseTrainer):
             if check_traj_files(
                 batch, self.config["task"]["relax_opt"].get("traj_dir", None)
             ):
-                logging.info(f"Skipping batch: {list(batch.sid)}")
+                logging.info(
+                    f"Skipping batch: {batch.sid.tolist() if isinstance(batch.sid, torch.Tensor) else batch.sid}"
+                )
                 continue
 
             relaxed_batch = ml_relax(
