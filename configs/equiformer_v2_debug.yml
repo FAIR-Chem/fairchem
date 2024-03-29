@@ -22,7 +22,7 @@ dataset:
 
 logger: 
   name: wandb
-  project: is2dt_v4
+  project: refactor_testing
 
 loss_functions:
   - energy:

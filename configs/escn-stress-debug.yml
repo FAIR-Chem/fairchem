@@ -73,16 +73,16 @@ outputs:
   energy:
     shape: 1
     level: system
-    custom_head: False
+    default_head: False
   forces:
     level: atom
     irrep_dim: 1
     train_on_free_atoms: True
     eval_on_free_atoms: True
-    custom_head: False
+    default_head: False
   stress:
     level: system
-    custom_head: True
+    default_head: True
     use_sphere_s2: True
     reduce: mean
     decomposition:

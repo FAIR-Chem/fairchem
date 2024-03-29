@@ -249,11 +249,11 @@ class GemNetOC(BaseModel):
 
         self.use_model_energy_head = (
             "energy" in self.output_targets
-            and not self.output_targets["energy"].get("custom_head", False)
+            and not self.output_targets["energy"].get("default_head", False)
         )
         self.use_model_forces_head = (
             "forces" in self.output_targets
-            and not self.output_targets["forces"].get("custom_head", False)
+            and not self.output_targets["forces"].get("default_head", False)
         )
         self.atom_edge_interaction = atom_edge_interaction
         self.edge_atom_interaction = edge_atom_interaction
