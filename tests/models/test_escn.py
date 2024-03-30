@@ -56,7 +56,6 @@ def escn_args():
 
 
 class TestTrainESCN:
-
     def _run_with_args_and_get_events(self, args):
         config = build_config(args, [])
         Runner(args)(config)

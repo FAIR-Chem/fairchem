@@ -1211,7 +1211,7 @@ def update_config(base_config):
         "lmdb",
         "trajectory_lmdb_v2",
         "oc22_lmdb",
-        "pickle"
+        "pickle",
     ]:
         task = "s2ef"
     elif config["task"]["dataset"] == "single_point_lmdb":
