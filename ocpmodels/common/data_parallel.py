@@ -53,8 +53,7 @@ def balanced_partition(sizes: npt.NDArray[np.int_], num_parts: int):
 @runtime_checkable
 class _HasMetadata(Protocol):
     @property
-    def metadata_path(self) -> Path:
-        ...
+    def metadata_path(self) -> Path: ...
 
 
 # mostly from https://github.com/facebookresearch/vissl/blob/09270ed25a6c2cf71263d955b64cbe076d34ac45/vissl/data/data_helper.py#L93
@@ -101,9 +100,12 @@ class StatefulDistributedSampler(DistributedSampler):
         g = torch.Generator()
         g.manual_seed(self.epoch + self.seed)
         shuffling = torch.randperm(num_samples, generator=g).tolist()
-        indices = np.arange(start_idx, start_idx + num_samples)[
-            shuffling
-        ].tolist()
+        if self.shuffle:
+            indices = np.arange(start_idx, start_idx + num_samples)[
+                shuffling
+            ].tolist()
+        else:
+            indices = np.arange(start_idx, start_idx + num_samples).tolist()
         # make sure we have correct number of samples per replica
         assert len(indices) == num_samples
 

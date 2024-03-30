@@ -244,6 +244,20 @@ def test_single_node(valid_path_dataset) -> None:
     assert sampler.balance_batches is False
 
 
+def test_stateful_distributed_sampler_noshuffle(valid_path_dataset) -> None:
+    for batch_size in range(1, 4):
+        sampler = StatefulDistributedSampler(
+            dataset=valid_path_dataset,
+            batch_size=batch_size,
+            rank=0,
+            num_replicas=1,
+            seed=0,
+            shuffle=False,
+        )
+        full_list = list(sampler)
+        assert full_list == list(range(len(full_list)))
+
+
 def test_stateful_distributed_sampler(valid_path_dataset) -> None:
     for batch_size in range(1, 4):
         sampler = StatefulDistributedSampler(
