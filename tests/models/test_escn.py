@@ -55,6 +55,11 @@ def escn_args():
     )
 
 
+@pytest.fixture
+def escn_config():
+    return Path("tests/models/test_configs/test_escn.yml")
+
+
 class TestTrainESCN:
     def _run_with_args_and_get_events(self, args):
         config = build_config(args, [])
@@ -70,21 +75,21 @@ class TestTrainESCN:
         return acc
 
     # train for 300ish steps on a tiny dataset and confirm overfitting
-    def test_train_basic(self, escn_args):
+    def test_train_basic(self, escn_args, escn_config):
         with tempfile.TemporaryDirectory() as tempdirname:
             tempdir = Path(tempdirname)
             escn_args["run_dir"] = tempdir
             escn_args["logdir"] = escn_args["run_dir"] / "logs"
-            escn_args["config_yml"] = Path("test_configs/test_escn.yml")
+            escn_args["config_yml"] = escn_config
             acc = self._run_with_args_and_get_events(escn_args)
             assert acc.Scalars("train/energy_mae")[-1].value < 20
 
     # train for a few steps and confirm same seeds get same results
-    def test_different_seeds(self, escn_args):
+    def test_different_seeds(self, escn_args, escn_config):
 
         with tempfile.TemporaryDirectory() as tempdirname:
             root_tempdir = Path(tempdirname)
-            with open("test_configs/test_escn.yml", "r") as escn_yaml_file:
+            with open(escn_config, "r") as escn_yaml_file:
                 yaml_config = yaml.safe_load(escn_yaml_file)
 
             yaml_config["optim"]["max_epochs"] = 2

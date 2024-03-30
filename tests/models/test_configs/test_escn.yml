@@ -2,7 +2,7 @@ trainer: forces
 
 dataset:
   train:
-    src: test_data/oc22_pickle16_train.pkl
+    src: tests/models/test_data/oc22_pickle16_train.pkl
     normalize_labels: True
     target_mean: 0.0
     target_std: 25.119809935106424
@@ -11,7 +11,7 @@ dataset:
     lin_ref:  configs/oc22/linref/oc22_linfit_coeffs.npz
   val:
     format: pickle
-    src: test_data/oc22_pickle16_val.pkl
+    src: tests/models/test_data/oc22_pickle16_val.pkl
     lin_ref: configs/oc22/linref/oc22_linfit_coeffs.npz
 
 logger:
