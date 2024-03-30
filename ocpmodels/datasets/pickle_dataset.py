@@ -10,11 +10,9 @@ from typing import TypeVar
 
 import numpy as np
 
-from ocpmodels.datasets.lmdb_dataset import LmdbDataset
 from ocpmodels.common.registry import registry
-from experimental.foundation_models.multi_task_dataloader.transforms.data_obejct import (
-    DataTransforms,
-)
+from ocpmodels.datasets.lmdb_dataset import LmdbDataset
+from ocpmodels.modules.transforms import DataTransforms
 
 T_co = TypeVar("T_co", covariant=True)
 
