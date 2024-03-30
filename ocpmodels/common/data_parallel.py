@@ -53,7 +53,8 @@ def balanced_partition(sizes: npt.NDArray[np.int_], num_parts: int):
 @runtime_checkable
 class _HasMetadata(Protocol):
     @property
-    def metadata_path(self) -> Path: ...
+    def metadata_path(self) -> Path:
+        ...
 
 
 # mostly from https://github.com/facebookresearch/vissl/blob/09270ed25a6c2cf71263d955b64cbe076d34ac45/vissl/data/data_helper.py#L93
