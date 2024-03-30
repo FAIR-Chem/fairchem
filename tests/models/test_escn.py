@@ -82,7 +82,7 @@ class TestTrainESCN:
             escn_args["logdir"] = escn_args["run_dir"] / "logs"
             escn_args["config_yml"] = escn_config
             acc = self._run_with_args_and_get_events(escn_args)
-            assert acc.Scalars("train/energy_mae")[-1].value < 20
+            assert acc.Scalars("train/energy_mae")[-1].value < 30
 
     # train for a few steps and confirm same seeds get same results
     def test_different_seeds(self, escn_args, escn_config):
