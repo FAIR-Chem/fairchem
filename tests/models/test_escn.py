@@ -1,7 +1,124 @@
-import torch
+import glob
+import tempfile
+from pathlib import Path, PosixPath
 
+import numpy as np
+import pytest
+import torch
+import yaml
+from tensorboard.backend.event_processing.event_accumulator import (
+    EventAccumulator,
+)
+
+from main import Runner
+from ocpmodels.common.utils import build_config
 from ocpmodels.models.escn.so3 import CoefficientMapping
 from ocpmodels.models.escn.so3 import SO3_Embedding as escn_SO3_Embedding
+
+
+class DotDict(dict):
+    __getattr__ = dict.__getitem__
+
+
+@pytest.fixture
+def escn_args():
+    return DotDict(
+        {
+            "mode": "train",
+            "identifier": "",
+            "debug": False,
+            "run_dir": "./",
+            "print_every": 10,
+            "seed": 100,
+            "amp": False,
+            "checkpoint": None,
+            "timestamp_id": None,
+            "sweep_yml": None,
+            "distributed": False,
+            "submit": False,
+            "summit": False,
+            "logdir": PosixPath("logs"),
+            "slurm_partition": "ocp",
+            "slurm_mem": 80,
+            "slurm_timeout": 72,
+            "local_rank": 0,
+            "distributed_port": 0,
+            "world_size": 1,
+            "noddp": False,
+            "gp_gpus": 0,
+            "cpu": True,
+            "num_nodes": 0,
+            "num_gpus": 0,
+            "distributed_backend": "nccl",
+            "no_ddp": False,
+        }
+    )
+
+
+class TestTrainESCN:
+
+    def _run_with_args_and_get_events(self, args):
+        config = build_config(args, [])
+        Runner(args)(config)
+
+        tf_event_files = glob.glob(
+            f"{str(args.logdir / 'tensorboard' / '*' / 'events.out*')}"
+        )
+        assert len(tf_event_files) == 1
+        tf_event_file = tf_event_files[0]
+        acc = EventAccumulator(tf_event_file)
+        acc.Reload()
+        return acc
+
+    # train for 300ish steps on a tiny dataset and confirm overfitting
+    def test_train_basic(self, escn_args):
+        with tempfile.TemporaryDirectory() as tempdirname:
+            tempdir = Path(tempdirname)
+            escn_args["run_dir"] = tempdir
+            escn_args["logdir"] = escn_args["run_dir"] / "logs"
+            escn_args["config_yml"] = Path("test_configs/test_escn.yml")
+            acc = self._run_with_args_and_get_events(escn_args)
+            assert acc.Scalars("train/energy_mae")[-1].value < 20
+
+    # train for a few steps and confirm same seeds get same results
+    def test_different_seeds(self, escn_args):
+
+        with tempfile.TemporaryDirectory() as tempdirname:
+            root_tempdir = Path(tempdirname)
+            with open("test_configs/test_escn.yml", "r") as escn_yaml_file:
+                yaml_config = yaml.safe_load(escn_yaml_file)
+
+            yaml_config["optim"]["max_epochs"] = 2
+
+            two_epoch_run_yml = root_tempdir / "twoepoch_run.yml"
+            with open(str(two_epoch_run_yml), "w") as escn_yaml_file:
+                yaml.dump(yaml_config, escn_yaml_file)
+
+            escn_args["config_yml"] = str(two_epoch_run_yml)
+
+            escn_args["seed"] = 0
+            escn_args["run_dir"] = root_tempdir / "seed0_take1"
+            escn_args["logdir"] = escn_args["run_dir"] / "logs"
+            seed0_take1_acc = self._run_with_args_and_get_events(escn_args)
+
+            escn_args["seed"] = 1000
+            escn_args["run_dir"] = root_tempdir / "seed1000"
+            escn_args["logdir"] = escn_args["run_dir"] / "logs"
+            seed1000_acc = self._run_with_args_and_get_events(escn_args)
+
+            escn_args["seed"] = 0
+            escn_args["run_dir"] = root_tempdir / "seed0_take2"
+            escn_args["logdir"] = escn_args["run_dir"] / "logs"
+            seed0_take2_acc = self._run_with_args_and_get_events(escn_args)
+
+            assert not np.isclose(
+                seed0_take1_acc.Scalars("train/energy_mae")[-1].value,
+                seed1000_acc.Scalars("train/energy_mae")[-1].value,
+            )
+            assert np.isclose(
+                seed0_take1_acc.Scalars("train/energy_mae")[-1].value,
+                seed0_take2_acc.Scalars("train/energy_mae")[-1].value,
+            )
 
 
 class TestMPrimaryLPrimary:

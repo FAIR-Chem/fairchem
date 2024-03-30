@@ -1,0 +1,58 @@
+trainer: forces
+
+dataset:
+  train:
+    src: test_data/oc22_pickle16_train.pkl
+    normalize_labels: True
+    target_mean: 0.0
+    target_std: 25.119809935106424
+    grad_target_mean: 0.0
+    grad_target_std: 0.14759646356105804
+    lin_ref:  configs/oc22/linref/oc22_linfit_coeffs.npz
+  val:
+    format: pickle
+    src: test_data/oc22_pickle16_val.pkl
+    lin_ref: configs/oc22/linref/oc22_linfit_coeffs.npz
+
+logger:
+  name: tensorboard
+
+task:
+  dataset: pickle
+  primary_metric: energy_mae
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+  prediction_dtype: float32
+
+model:
+  name: escn
+  num_layers: 1
+  max_neighbors: 2
+  cutoff: 12.0
+  sphere_channels: 2
+  hidden_channels: 3
+  lmax_list: [1]
+  mmax_list: [1]
+  num_sphere_samples: 128
+  distance_function: "gaussian"
+  regress_forces: True
+  use_pbc: True
+  basis_width_scalar: 2.0
+  otf_graph: True
+
+optim:
+  batch_size: 2
+  eval_batch_size: 2
+  num_workers: 0
+  lr_initial: 0.01
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True,weight_decay: 0.0}
+  eval_every: 380
+  max_epochs: 50
+  force_coefficient: 0
+  scheduler: "Null"
+  energy_coefficient: 4
+  clip_grad_norm: 2000
+  ema_decay: 0.999
+  loss_energy: mae
+  loss_force: l2mae
