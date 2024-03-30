@@ -258,6 +258,31 @@ def test_stateful_distributed_sampler_noshuffle(valid_path_dataset) -> None:
         assert full_list == list(range(len(full_list)))
 
 
+def test_stateful_distributed_sampler_vs_distributed_sampler(
+    valid_path_dataset,
+) -> None:
+    for seed in [0, 100, 200]:
+        for batch_size in range(1, 4):
+            stateful_sampler = StatefulDistributedSampler(
+                dataset=valid_path_dataset,
+                batch_size=batch_size,
+                rank=0,
+                num_replicas=2,
+                seed=seed,
+                shuffle=True,
+                drop_last=True,
+            )
+            sampler = DistributedSampler(
+                dataset=valid_path_dataset,
+                rank=0,
+                num_replicas=2,
+                seed=seed,
+                shuffle=True,
+                drop_last=True,
+            )
+            assert list(stateful_sampler) == list(sampler)
+
+
 def test_stateful_distributed_sampler(valid_path_dataset) -> None:
     for batch_size in range(1, 4):
         sampler = StatefulDistributedSampler(
@@ -294,31 +319,35 @@ def test_stateful_distributed_sampler(valid_path_dataset) -> None:
 
 def test_stateful_distributed_sampler_numreplicas(valid_path_dataset) -> None:
     fullset = set(range(len(valid_path_dataset)))
-    for num_replicas in range(1, 4):
-        for batch_size in range(1, 4):
-            samplers = [
-                StatefulDistributedSampler(
-                    dataset=valid_path_dataset,
-                    batch_size=batch_size,
-                    rank=rank,
-                    seed=0,
-                    num_replicas=num_replicas,
+    for drop_last in [True, False]:
+        for num_replicas in range(1, 4):
+            for batch_size in [1]:
+                samplers = [
+                    StatefulDistributedSampler(
+                        dataset=valid_path_dataset,
+                        batch_size=batch_size,
+                        rank=rank,
+                        seed=0,
+                        drop_last=drop_last,
+                        num_replicas=num_replicas,
+                    )
+                    for rank in range(num_replicas)
+                ]
+
+                # make sure each subset only differs by at most one element in size
+                len_samplers = np.array(
+                    [len(list(sampler)) for sampler in samplers]
                 )
-                for rank in range(num_replicas)
-            ]
+                assert ((len_samplers - len_samplers.min()) <= 1).all()
 
-            # make sure each subset only differs by at most one element in size
-            len_samplers = np.array(
-                [len(list(sampler)) for sampler in samplers]
-            )
-            assert ((len_samplers - len_samplers.min()) <= 1).all()
-
-            # make sure each subset is mutually exclusive and union covers the fullset
-            concat_idxs = functools.reduce(
-                lambda x, y: x + y, [list(sampler) for sampler in samplers]
-            )
-            assert len(concat_idxs) == len(np.unique(concat_idxs))
-            assert set(concat_idxs) == fullset
+                concat_idxs = functools.reduce(
+                    lambda x, y: x + y, [list(sampler) for sampler in samplers]
+                )
+                if drop_last:
+                    # make sure each subset is mutually exclusive and union covers the fullset
+                    assert len(concat_idxs) == len(np.unique(concat_idxs))
+                else:
+                    assert set(concat_idxs) == fullset
 
 
 def test_stateful_distributed_sampler_numreplicas_drop_last(
