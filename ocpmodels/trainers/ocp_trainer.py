@@ -316,6 +316,7 @@ class OCPTrainer(BaseTrainer):
 
             target = batch[target_name]
             pred = out[target_name]
+
             natoms = batch.natoms
             natoms = torch.repeat_interleave(natoms, natoms)
 
@@ -410,6 +411,11 @@ class OCPTrainer(BaseTrainer):
         results_file: Optional[str] = None,
         disable_tqdm: bool = False,
     ):
+        if self.is_debug and per_image:
+            raise FileNotFoundError(
+                "Predictions require debug mode to be turned off."
+            )
+
         ensure_fitted(self._unwrapped_model, warn=True)
 
         if distutils.is_master() and not disable_tqdm:
@@ -514,10 +520,18 @@ class OCPTrainer(BaseTrainer):
                 return predictions
 
             ### Get unique system identifiers
-            sids = batch.sid.tolist()
+            sids = (
+                batch.sid.tolist()
+                if isinstance(batch.sid, torch.Tensor)
+                else batch.sid
+            )
             ## Support naming structure for OC20 S2EF
             if "fid" in batch:
-                fids = batch.fid.tolist()
+                fids = (
+                    batch.fid.tolist()
+                    if isinstance(batch.fid, torch.Tensor)
+                    else batch.fid
+                )
                 systemids = [f"{sid}_{fid}" for sid, fid in zip(sids, fids)]
             else:
                 systemids = [f"{sid}" for sid in sids]
@@ -580,7 +594,9 @@ class OCPTrainer(BaseTrainer):
             if check_traj_files(
                 batch, self.config["task"]["relax_opt"].get("traj_dir", None)
             ):
-                logging.info(f"Skipping batch: {batch[0].sid.tolist()}")
+                logging.info(
+                    f"Skipping batch: {batch.sid.tolist() if isinstance(batch.sid, torch.Tensor) else batch.sid}"
+                )
                 continue
 
             relaxed_batch = ml_relax(
@@ -595,7 +611,12 @@ class OCPTrainer(BaseTrainer):
             )
 
             if self.config["task"].get("write_pos", False):
-                systemids = [str(i) for i in relaxed_batch.sid.tolist()]
+                sid_list = (
+                    relaxed_batch.sid.tolist()
+                    if isinstance(relaxed_batch.sid, torch.Tensor)
+                    else relaxed_batch.sid
+                )
+                systemids = [str(sid) for sid in sid_list]
                 natoms = relaxed_batch.natoms.tolist()
                 positions = torch.split(relaxed_batch.pos, natoms)
                 batch_relaxed_positions = [pos.tolist() for pos in positions]
@@ -678,6 +699,7 @@ class OCPTrainer(BaseTrainer):
                 # might be repeated to make no. of samples even across GPUs.
                 _, idx = np.unique(gather_results["ids"], return_index=True)
                 gather_results["ids"] = np.array(gather_results["ids"])[idx]
+
                 gather_results["pos"] = np.concatenate(
                     np.array(gather_results["pos"])[idx]
                 )
