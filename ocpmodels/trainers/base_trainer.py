@@ -402,6 +402,11 @@ class BaseTrainer(ABC):
                         ] = self.config["outputs"][target_name].get(
                             "eval_on_free_atoms", True
                         )
+                    # default head is marked in parent. propagate it to decompositions
+                    if "default_head" in self.config["outputs"][target_name]:
+                        self.output_targets[subtarget][
+                            "default_head"
+                        ] = self.config["outputs"][target_name]["default_head"]
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
         self.evaluation_metrics = self.config.get("eval_metrics", {})

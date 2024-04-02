@@ -42,6 +42,10 @@ class BaseModel(nn.Module):
         self.module_dict = nn.ModuleDict({})
         for target in output_targets:
             if self.output_targets[target].get("default_head", False):
+                if "decomposition" in self.output_targets[target]:
+                    # If decomposed, we only need heads for the individual components
+                    continue
+
                 if "irrep_dim" in self.output_targets[target]:
                     if edge_embedding_dim is None:
                         raise NotImplementedError(
@@ -81,6 +85,10 @@ class BaseModel(nn.Module):
         results = {}
 
         for target in self.output_targets:
+            # Skip parent decomposed targets. The components should exist separately
+            if "decomposition" in self.output_targets[target]:
+                continue
+
             ### for models that directly return desired property, add directly
             if target not in self.module_dict:
                 pred = out[target]
