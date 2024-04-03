@@ -168,8 +168,14 @@ class EquiformerV2_OC20(BaseModel):
             raise ImportError
 
         self.use_pbc = use_pbc
-        self.regress_energy = regress_energy
-        self.regress_forces = regress_forces
+        self.regress_energy = (
+            "energy" in self.output_targets
+            and not self.output_targets["energy"].get("default_head", False)
+        )
+        self.regress_forces = (
+            "forces" in self.output_targets
+            and not self.output_targets["forces"].get("default_head", False)
+        )
         self.otf_graph = otf_graph
         self.max_neighbors = max_neighbors
         self.max_radius = max_radius
@@ -519,7 +525,7 @@ class EquiformerV2_OC20(BaseModel):
             "edge_idx": edge_index[1],  # only need target node
             "edge_vec": edge_distance_vec,
             "edge_embedding": x_edge,
-            "node_embedding": x.embedding,
+            "node_embedding": x.embedding.narrow(1, 0, 1),
         }
 
         ###############################################################

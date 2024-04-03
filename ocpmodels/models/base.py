@@ -99,6 +99,10 @@ class BaseModel(nn.Module):
                 results[target] = pred
                 continue
 
+            assert (
+                target not in out
+            ), f"{target} is explicitly returned, but also has a default head"
+
             # equivariant prediction
             if "irrep_dim" in self.output_targets[target]:
                 pred = self.forward_irrep(out, target)
