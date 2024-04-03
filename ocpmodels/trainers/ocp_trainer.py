@@ -144,6 +144,7 @@ class OCPTrainer(BaseTrainer):
             self.train_sampler.set_epoch_and_start_iteration(
                 epoch_int, skip_steps
             )
+
             train_loader_iter = iter(self.train_loader)
 
             for i in range(skip_steps, len(self.train_loader)):

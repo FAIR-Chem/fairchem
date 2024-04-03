@@ -91,10 +91,12 @@ class StatefulDistributedSampler(DistributedSampler):
         # samples in a single epoch, and manipulate this list directly. A better way
         # of doing this would be to keep this sequence strictly as an iterator
         # that stores the current state (instead of the full sequence)
-        distributed_sampler_sequence = list(super().__iter__())
-        return iter(
-            distributed_sampler_sequence[self.start_iter * self.batch_size :]
-        )
+        distributed_sampler_sequence = super().__iter__()
+        if self.start_iter > 0:
+            for i, _ in enumerate(distributed_sampler_sequence):
+                if i == self.start_iter * self.batch_size - 1:
+                    break
+        return distributed_sampler_sequence
 
     def set_epoch_and_start_iteration(self, epoch, start_iter):
         self.set_epoch(epoch)
@@ -209,9 +211,16 @@ class BalancedBatchSampler(Sampler):
     def set_epoch_and_start_iteration(
         self, epoch: int, start_iteration: int
     ) -> None:
-        self.single_sampler.set_epoch_and_start_iteration(
-            epoch, start_iteration
-        )
+        if not hasattr(self.single_sampler, "set_epoch_and_start_iteration"):
+            if start_iteration != 0:
+                raise NotImplementedError(
+                    f"{type(self.single_sampler)} does not support resuming from a nonzero step."
+                )
+            self.single_sampler.set_epoch(epoch)
+        else:
+            self.single_sampler.set_epoch_and_start_iteration(
+                epoch, start_iteration
+            )
 
     def __iter__(self):
         if not self.balance_batches:
