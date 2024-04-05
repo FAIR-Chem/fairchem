@@ -66,6 +66,21 @@ def save_checkpoint(
     return filename
 
 
+multitask_required_keys = set(
+    [
+        "tasks",
+        "datasets",
+        "combined_dataset",
+        "model",
+        "optim",
+    ]
+)
+
+
+class MissingConfigKeyError(KeyError):
+    pass
+
+
 class Complete:
     def __call__(self, data):
         device = data.edge_index.device
@@ -1019,12 +1034,25 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         assert trainer_cls is not None, "Trainer not found"
 
         if task_name == "multitask":
+            missing_keys = multitask_required_keys - set(
+                [
+                    required_key
+                    for required_key in multitask_required_keys
+                    if required_key in config.keys()
+                ]
+            )
+            if len(missing_keys) > 0:
+                logging.error(
+                    f"Required key missing from config: {str(missing_keys)}"
+                )
+                raise MissingConfigKeyError
             trainer = trainer_cls(
                 tasks=config.get("tasks", {}),
-                dataset=config["dataset"],
+                datasets=config["datasets"],
+                combined_dataset_config=config.get("combined_dataset", {}),
                 model=config["model"],
                 optimizer=config["optim"],
-                evaluation=config.get("evaluation", {}),
+                evaluations=config.get("evaluations", {}),
                 identifier=config["identifier"],
                 timestamp_id=config.get("timestamp_id", None),
                 run_dir=config.get("run_dir", "./"),
@@ -1242,6 +1270,7 @@ def update_config(base_config):
         "lmdb",
         "trajectory_lmdb_v2",
         "oc22_lmdb",
+        "pickle",
     ]:
         task = "s2ef"
     elif config["task"]["dataset"] == "single_point_lmdb":
@@ -1361,3 +1390,68 @@ def get_loss_module(loss_name):
         raise NotImplementedError(f"Unknown loss function name: {loss_name}")
 
     return loss_fn
+
+
+"""Calculate mean of a new population given means and sample size of two
+existing populations
+
+Args:
+    a: size of population a
+    b: size of population b
+    u_a: mean of population a
+    u_b: mean of population b
+"""
+
+
+def combine_mean(size_a, size_b, mean_a, mean_b):
+    return (size_a * mean_a + size_b * mean_b) / (size_a + size_b)
+
+
+"""Calculate variance of a new population given means and sample size of two
+existing populations
+
+Args:
+    size_a: size of population a
+    size_b: size of population b
+    mean_a: mean of population a
+    mean_b: mean of population b
+    ddof: 0 (biased), 1 (unbiased)
+"""
+
+
+def combine_variance(size_a, size_b, var_a, var_b, mean_a, mean_b, ddof=0):
+    return ((size_a - ddof) * var_a + (size_b - ddof) * var_b) / (
+        size_a + size_b - ddof
+    ) + (size_a * size_b * (mean_a - mean_b) ** 2) / (
+        (size_a + size_b) * (size_a + size_b - ddof)
+    )
+
+
+"""Calculate mean and variance of a new population given means and sample size 
+of n existing populations
+
+Args:
+    pop_sizes: list of sizes for each population
+    pop_variances: list of variance for each population
+    pop_means: list of mean for each population
+    ddof: 0 (biased), 1 (unbiased)
+"""
+
+
+def combine_means_and_variances(pop_sizes, pop_variances, pop_means, ddof=0):
+    samples_so_far = pop_sizes[0]
+    s2 = pop_variances[0]
+    u = pop_means[0]
+    for idx in range(1, len(pop_sizes)):
+        s2 = combine_variance(
+            size_a=samples_so_far,
+            size_b=pop_sizes[idx],
+            var_a=s2,
+            var_b=pop_variances[idx],
+            mean_a=u,
+            mean_b=pop_means[idx],
+            ddof=ddof,
+        )
+        u = combine_mean(samples_so_far, pop_sizes[idx], u, pop_means[idx])
+        samples_so_far += pop_sizes[idx]
+    return u, s2

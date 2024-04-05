@@ -23,11 +23,12 @@ from ocpmodels.common.utils import (
 
 
 class Runner(submitit.helpers.Checkpointable):
-    def __init__(self) -> None:
+    def __init__(self,args) -> None:
         self.config = None
+        self.args = args
 
     def __call__(self, config) -> None:
-        with new_trainer_context(args=args, config=config) as ctx:
+        with new_trainer_context(args=self.args, config=config) as ctx:
             self.config = ctx.config
             self.task = ctx.task
             self.trainer = ctx.trainer
@@ -81,7 +82,7 @@ if __name__ == "__main__":
         for config in configs:
             config["slurm"] = copy.deepcopy(executor.parameters)
             config["slurm"]["folder"] = str(executor.folder)
-        jobs = executor.map_array(Runner(), configs)
+        jobs = executor.map_array(Runner(args), configs)
         logging.info(
             f"Submitted jobs: {', '.join([job.job_id for job in jobs])}"
         )
@@ -89,4 +90,4 @@ if __name__ == "__main__":
         logging.info(f"Experiment log saved to: {log_file}")
 
     else:  # Run locally
-        Runner()(config)
+        Runner(args)(config)
