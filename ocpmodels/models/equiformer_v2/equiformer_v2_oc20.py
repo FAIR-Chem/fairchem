@@ -19,12 +19,6 @@ from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.scn.smearing import GaussianSmearing
 
-try:
-    pass
-except ImportError:
-    pass
-
-
 from .edge_rot_mat import init_edge_rot_mat
 from .gaussian_rbf import GaussianRadialBasisLayer
 from .input_block import EdgeDegreeEmbedding
