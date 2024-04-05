@@ -4,6 +4,7 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+from __future__ import annotations
 
 import logging
 from abc import abstractmethod
@@ -28,7 +29,7 @@ from ocpmodels.models.gemnet_oc.layers.base_layers import Dense
 class BaseModel(nn.Module):
     def __init__(
         self,
-        output_targets={},
+        output_targets: dict | None = None,
         node_embedding_dim=None,
         edge_embedding_dim=None,
         _torch_initialized=False,
@@ -36,7 +37,7 @@ class BaseModel(nn.Module):
         if not _torch_initialized:
             super().__init__()
 
-        self.output_targets = output_targets
+        self.output_targets = output_targets or {}
         self.num_targets = len(output_targets)
 
         self.module_dict = nn.ModuleDict({})
