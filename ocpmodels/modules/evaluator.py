@@ -1,11 +1,12 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+from __future__ import annotations
 
-from typing import Dict, Union
+from typing import Union
 
 import numpy as np
 import torch
@@ -67,7 +68,9 @@ class Evaluator:
         "ocp": None,
     }
 
-    def __init__(self, task: str = None, eval_metrics: dict = {}) -> None:
+    def __init__(
+        self, task: str = None, eval_metrics: dict | None = None
+    ) -> None:
         self.task = task
         self.target_metrics = (
             eval_metrics if eval_metrics else self.task_metrics.get(task, {})
@@ -75,10 +78,11 @@ class Evaluator:
 
     def eval(
         self,
-        prediction: Dict[str, torch.Tensor],
-        target: Dict[str, torch.Tensor],
-        prev_metrics={},
+        prediction: dict[str, torch.Tensor],
+        target: dict[str, torch.Tensor],
+        prev_metrics: dict | None = None,
     ):
+        prev_metrics = prev_metrics or {}
 
         metrics = prev_metrics
 
@@ -123,58 +127,58 @@ class Evaluator:
 
 
 def forcesx_mae(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=None,
 ):
     return mae(prediction["forces"][:, 0], target["forces"][:, 0])
 
 
 def forcesx_mse(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=None,
 ):
     return mse(prediction["forces"][:, 0], target["forces"][:, 0])
 
 
 def forcesy_mae(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=None,
 ):
     return mae(prediction["forces"][:, 1], target["forces"][:, 1])
 
 
 def forcesy_mse(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=None,
 ):
     return mse(prediction["forces"][:, 1], target["forces"][:, 1])
 
 
 def forcesz_mae(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=None,
 ):
     return mae(prediction["forces"][:, 2], target["forces"][:, 2])
 
 
 def forcesz_mse(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=None,
 ):
     return mse(prediction["forces"][:, 2], target["forces"][:, 2])
 
 
 def energy_forces_within_threshold(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=None,
-) -> Dict[str, Union[float, int]]:
+) -> dict[str, Union[float, int]]:
     # Note that this natoms should be the count of free atoms we evaluate over.
     assert target["natoms"].sum() == prediction["forces"].size(0)
     assert target["natoms"].size(0) == prediction["energy"].size(0)
@@ -208,10 +212,10 @@ def energy_forces_within_threshold(
 
 
 def energy_within_threshold(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=None,
-) -> Dict[str, Union[float, int]]:
+) -> dict[str, Union[float, int]]:
     # compute absolute error on energy per system.
     # then count the no. of systems where max energy error is < 0.02.
     e_thresh = 0.02
@@ -228,10 +232,10 @@ def energy_within_threshold(
 
 
 def average_distance_within_threshold(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=None,
-) -> Dict[str, Union[float, int]]:
+) -> dict[str, Union[float, int]]:
     pred_pos = torch.split(
         prediction["positions"], prediction["natoms"].tolist()
     )
@@ -284,8 +288,8 @@ def min_diff(
 
 
 def cosine_similarity(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=slice(None),
 ):
     error = torch.cosine_similarity(prediction[key], target[key])
@@ -297,10 +301,10 @@ def cosine_similarity(
 
 
 def mae(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=slice(None),
-) -> Dict[str, Union[float, int]]:
+) -> dict[str, Union[float, int]]:
     error = torch.abs(target[key] - prediction[key])
     return {
         "metric": torch.mean(error).item(),
@@ -310,10 +314,10 @@ def mae(
 
 
 def mse(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=slice(None),
-) -> Dict[str, Union[float, int]]:
+) -> dict[str, Union[float, int]]:
     error = (target[key] - prediction[key]) ** 2
     return {
         "metric": torch.mean(error).item(),
@@ -323,11 +327,11 @@ def mse(
 
 
 def magnitude_error(
-    prediction: Dict[str, torch.Tensor],
-    target: Dict[str, torch.Tensor],
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
     key=slice(None),
     p: int = 2,
-) -> Dict[str, Union[float, int]]:
+) -> dict[str, Union[float, int]]:
     assert prediction[key].shape[1] > 1
     error = torch.abs(
         torch.norm(prediction[key], p=p, dim=-1)

@@ -1,10 +1,18 @@
+"""
+Copyright (c) Meta, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+from __future__ import annotations
+
 import logging
 import math
 import readline
 import sys
 from itertools import islice
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Literal
+from typing import TYPE_CHECKING, Literal
 
 import torch
 import torch.nn as nn
@@ -87,7 +95,7 @@ def main(*, num_batches: int = 16) -> None:
         model.eval()
 
         # recursively go through the submodules and get the ScaleFactor modules
-        scale_factors: Dict[str, ScaleFactor] = {
+        scale_factors: dict[str, ScaleFactor] = {
             name: module
             for name, module in model.named_modules()
             if isinstance(module, ScaleFactor)
@@ -166,7 +174,7 @@ def main(*, num_batches: int = 16) -> None:
         # endregion
 
         # region we do a single pass through the network to get the correct execution order of the scale factors
-        scale_factor_indices: Dict[str, int] = {}
+        scale_factor_indices: dict[str, int] = {}
         max_idx = 0
 
         # initialize all scale factors

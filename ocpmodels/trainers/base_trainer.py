@@ -1,9 +1,11 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+from __future__ import annotations
+
 import datetime
 import errno
 import logging
@@ -11,7 +13,7 @@ import os
 import random
 from abc import ABC
 from collections import defaultdict
-from typing import DefaultDict, Dict, Optional
+from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -449,7 +451,7 @@ class BaseTrainer(ABC):
         return module
 
     def load_checkpoint(
-        self, checkpoint_path: str, checkpoint: Dict = {}
+        self, checkpoint_path: str, checkpoint: dict | None = {}
     ) -> None:
         if not checkpoint:
             if not os.path.isfile(checkpoint_path):
@@ -833,7 +835,7 @@ class BaseTrainer(ABC):
 
         distutils.synchronize()
         if distutils.is_master():
-            gather_results: DefaultDict[
+            gather_results: defaultdict[
                 str, npt.NDArray[np.float_]
             ] = defaultdict(list)
             full_path = os.path.join(
