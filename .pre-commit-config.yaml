@@ -10,11 +10,6 @@ repos:
     - id: ruff
       args: [ --fix ]
     - id: ruff-format
-- repo: https://github.com/ambv/black
-  rev: 22.3.0
-  hooks:
-  - id: black
-    additional_dependencies: ['click==8.0.4']
 - repo: https://github.com/adamchainz/blacken-docs
   rev: 1.16.0
   hooks:

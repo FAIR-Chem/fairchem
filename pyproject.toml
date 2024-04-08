@@ -68,24 +68,8 @@ use_parentheses = true
 line_length = 88
 
 
-[tool.black]
-line-length = 79
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
-
 [tool.ruff]
+line-length = 88
 lint.select = [
   "B",      # flake8-bugbear
   "C4",     # flake8-comprehensions
@@ -136,6 +120,6 @@ lint.unfixable = [
   "T20",  # Removes print statements
   "F841", # Removes unused variables
 ]
-lint.pydocstyle.convention = "numpy"
-lint.isort.known-first-party = ["quacc"]
+lint.pydocstyle.convention = "google"
+lint.isort.known-first-party = ["ocpmodels"]
 lint.isort.required-imports = ["from __future__ import annotations"]
