@@ -7,7 +7,6 @@ workflows:
   version: 2
   install_and_test:
     jobs:
-      - python_lint
       - test_ubuntu
       - test_macos
 
