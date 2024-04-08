@@ -47,7 +47,7 @@ home = "https://opencatalystproject.org/"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts  =  "-p no:warnings --import-mode=importlib -x --durations = 30 --quiet -rxXs --color = yes"
+addopts  =  "-p no:warnings --import-mode=importlib -x --quiet -rxXs --color = yes"
 filterwarnings  = [
     'ignore::UserWarning',
     'ignore::FutureWarning',
