@@ -44,7 +44,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-optional.txt ]; then pip install -r requirements.txt; fi
           pip install -e .[dev]
-          pip install torch-sparse
+          pip install torch-geometric torch-scatter torch-sparse
 
       - name: Test with pytest
         run: |
