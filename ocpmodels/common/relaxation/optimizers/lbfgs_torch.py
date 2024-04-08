@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import logging
 from collections import deque
 from pathlib import Path
@@ -23,7 +25,7 @@ class LBFGS:
     def __init__(
         self,
         batch: Batch,
-        model: "TorchCalc",
+        model: TorchCalc,
         maxstep: float = 0.01,
         memory: int = 100,
         damping: float = 0.25,
@@ -58,9 +60,7 @@ class LBFGS:
             self.model.update_graph(self.batch)
 
     def get_energy_and_forces(self, apply_constraint: bool = True):
-        energy, forces = self.model.get_energy_and_forces(
-            self.batch, apply_constraint
-        )
+        energy, forces = self.model.get_energy_and_forces(self.batch, apply_constraint)
         return energy, forces
 
     def set_positions(self, update, update_mask) -> None:
@@ -80,8 +80,7 @@ class LBFGS:
             (forces**2).sum(axis=1).sqrt(), self.batch.batch, reduce="max"
         )
         logging.info(
-            f"{iteration} "
-            + " ".join(f"{x:0.3f}" for x in max_forces_.tolist())
+            f"{iteration} " + " ".join(f"{x:0.3f}" for x in max_forces_.tolist())
         )
 
         # (batch_size) -> (nAtoms)
@@ -150,9 +149,7 @@ class LBFGS:
     ) -> None:
         def determine_step(dr):
             steplengths = torch.norm(dr, dim=1)
-            longest_steps = scatter(
-                steplengths, self.batch.batch, reduce="max"
-            )
+            longest_steps = scatter(steplengths, self.batch.batch, reduce="max")
             longest_steps = longest_steps[self.batch.batch]
             maxstep = longest_steps.new_tensor(self.maxstep)
             scale = (longest_steps + 1e-7).reciprocal() * torch.min(
@@ -205,9 +202,7 @@ class LBFGS:
         self.batch.y, self.batch.force = energy, forces
         atoms_objects = batch_to_atoms(self.batch)
         update_mask_ = torch.split(update_mask, self.batch.natoms.tolist())
-        for atm, traj, mask in zip(
-            atoms_objects, self.trajectories, update_mask_
-        ):
+        for atm, traj, mask in zip(atoms_objects, self.trajectories, update_mask_):
             if mask[0] or not self.save_full:
                 traj.write(atm)
 
@@ -218,9 +213,7 @@ class TorchCalc:
         self.transform = transform
 
     def get_energy_and_forces(self, atoms, apply_constraint: bool = True):
-        predictions = self.model.predict(
-            atoms, per_image=False, disable_tqdm=True
-        )
+        predictions = self.model.predict(atoms, per_image=False, disable_tqdm=True)
         energy = predictions["energy"]
         forces = predictions["forces"]
         if apply_constraint:
@@ -229,9 +222,7 @@ class TorchCalc:
         return energy, forces
 
     def update_graph(self, atoms):
-        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(
-            atoms, 6, 50
-        )
+        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(atoms, 6, 50)
         atoms.edge_index = edge_index
         atoms.cell_offsets = cell_offsets
         atoms.neighbors = num_neighbors

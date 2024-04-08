@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import torch
 import torch.nn.functional as F
 
@@ -32,11 +34,7 @@ class Act(torch.nn.Module):
         elif self.act == "ssp":
             return F.softplus(input, beta=1) - self.shift
         elif self.act == "leaky_ssp":
-            return (
-                F.softplus(input, beta=1)
-                - self.slope * F.relu(-input)
-                - self.shift
-            )
+            return F.softplus(input, beta=1) - self.slope * F.relu(-input) - self.shift
         elif self.act == "tanh":
             return torch.tanh(input)
         elif self.act == "leaky_tanh":

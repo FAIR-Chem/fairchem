@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import logging
 from pathlib import Path
@@ -34,7 +36,7 @@ def _load_scale_dict(scale_file: Optional[Union[str, ScaleDict]]):
     if path.suffix == ".pt":
         scale_dict = torch.load(path)
     elif path.suffix == ".json":
-        with open(path, "r") as f:
+        with open(path) as f:
             scale_dict = json.load(f)
 
         if isinstance(scale_dict, dict):
@@ -70,7 +72,5 @@ def load_scales_compat(
             continue
 
         scale_module, module_name = scale_factors[name]
-        logging.debug(
-            f"Loading scale factor {scale} for ({name} => {module_name})"
-        )
+        logging.debug(f"Loading scale factor {scale} for ({name} => {module_name})")
         scale_module.set_(scale)

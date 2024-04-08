@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import os
 
 import pytest
@@ -103,9 +105,7 @@ class TestRadiusGraphPBC:
             pbc=[False, False, False],
         )
 
-        assert check_features_match(
-            data.edge_index, data.cell_offsets, out[0], out[1]
-        )
+        assert check_features_match(data.edge_index, data.cell_offsets, out[0], out[1])
 
         # [True, False, False]
         structure.cell[0] /= radius
@@ -118,9 +118,7 @@ class TestRadiusGraphPBC:
             max_num_neighbors_threshold=max_neigh,
             pbc=[True, False, False],
         )
-        assert check_features_match(
-            data.edge_index, data.cell_offsets, out[0], out[1]
-        )
+        assert check_features_match(data.edge_index, data.cell_offsets, out[0], out[1])
 
         # [True, True, False]
         structure.cell[1] /= radius
@@ -133,9 +131,7 @@ class TestRadiusGraphPBC:
             max_num_neighbors_threshold=max_neigh,
             pbc=[True, True, False],
         )
-        assert check_features_match(
-            data.edge_index, data.cell_offsets, out[0], out[1]
-        )
+        assert check_features_match(data.edge_index, data.cell_offsets, out[0], out[1])
 
         # [False, True, False]
         structure.cell[0] *= radius
@@ -148,9 +144,7 @@ class TestRadiusGraphPBC:
             max_num_neighbors_threshold=max_neigh,
             pbc=[False, True, False],
         )
-        assert check_features_match(
-            data.edge_index, data.cell_offsets, out[0], out[1]
-        )
+        assert check_features_match(data.edge_index, data.cell_offsets, out[0], out[1])
 
         # [False, True, True]
         structure.cell[2] /= radius
@@ -163,9 +157,7 @@ class TestRadiusGraphPBC:
             max_num_neighbors_threshold=max_neigh,
             pbc=[False, True, True],
         )
-        assert check_features_match(
-            data.edge_index, data.cell_offsets, out[0], out[1]
-        )
+        assert check_features_match(data.edge_index, data.cell_offsets, out[0], out[1])
 
         # [False, False, True]
         structure.cell[1] *= radius
@@ -178,9 +170,7 @@ class TestRadiusGraphPBC:
             max_num_neighbors_threshold=max_neigh,
             pbc=[False, False, True],
         )
-        assert check_features_match(
-            data.edge_index, data.cell_offsets, out[0], out[1]
-        )
+        assert check_features_match(data.edge_index, data.cell_offsets, out[0], out[1])
 
         # [True, False, True]
         structure.cell[0] /= radius
@@ -193,9 +183,7 @@ class TestRadiusGraphPBC:
             max_num_neighbors_threshold=max_neigh,
             pbc=[True, False, True],
         )
-        assert check_features_match(
-            data.edge_index, data.cell_offsets, out[0], out[1]
-        )
+        assert check_features_match(data.edge_index, data.cell_offsets, out[0], out[1])
 
         # [True, True, True]
         structure.cell[1] /= radius
@@ -209,9 +197,7 @@ class TestRadiusGraphPBC:
             pbc=[True, True, True],
         )
 
-        assert check_features_match(
-            data.edge_index, data.cell_offsets, out[0], out[1]
-        )
+        assert check_features_match(data.edge_index, data.cell_offsets, out[0], out[1])
 
         # Ensure edges are actually found
         assert non_pbc > 0
@@ -235,9 +221,7 @@ class TestRadiusGraphPBC:
             max_num_neighbors_threshold=max_neigh,
             pbc=[False, False, False],
         )
-        assert (
-            sort_edge_index(out[0]) == sort_edge_index(radgraph.edge_index)
-        ).all()
+        assert (sort_edge_index(out[0]) == sort_edge_index(radgraph.edge_index)).all()
 
     def test_molecule(self) -> None:
         radius = 6
@@ -254,6 +238,4 @@ class TestRadiusGraphPBC:
             pbc=[False, False, False],
         )
 
-        assert check_features_match(
-            data.edge_index, data.cell_offsets, out[0], out[1]
-        )
+        assert check_features_match(data.edge_index, data.cell_offsets, out[0], out[1])

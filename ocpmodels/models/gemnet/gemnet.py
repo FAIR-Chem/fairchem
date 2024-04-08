@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 from typing import Optional
 
 import numpy as np
@@ -24,12 +26,7 @@ from .layers.embedding_block import AtomEmbedding, EdgeEmbedding
 from .layers.interaction_block import InteractionBlockTripletsOnly
 from .layers.radial_basis import RadialBasis
 from .layers.spherical_basis import CircularBasisLayer
-from .utils import (
-    inner_product_normalized,
-    mask_neighbors,
-    ragged_range,
-    repeat_blocks,
-)
+from .utils import inner_product_normalized, mask_neighbors, ragged_range, repeat_blocks
 
 
 @registry.register_model("gemnet_t")
@@ -270,9 +267,7 @@ class GemNetT(BaseModel):
         """
         idx_s, idx_t = edge_index  # c->a (source=c, target=a)
 
-        value = torch.arange(
-            idx_s.size(0), device=idx_s.device, dtype=idx_s.dtype
-        )
+        value = torch.arange(idx_s.size(0), device=idx_s.device, dtype=idx_s.dtype)
         # Possibly contains multiple copies of the same edge (for periodic interactions)
         adj = SparseTensor(
             row=idx_t,
@@ -364,9 +359,7 @@ class GemNetT(BaseModel):
             neighbors,
         )
         batch_edge = batch_edge[mask]
-        neighbors_new = 2 * torch.bincount(
-            batch_edge, minlength=neighbors.size(0)
-        )
+        neighbors_new = 2 * torch.bincount(batch_edge, minlength=neighbors.size(0))
 
         # Create indexing array
         edge_reorder_idx = repeat_blocks(
@@ -443,7 +436,13 @@ class GemNetT(BaseModel):
             select_cutoff = None
         else:
             select_cutoff = self.cutoff
-        (edge_index, cell_offsets, neighbors, D_st, V_st,) = self.select_edges(
+        (
+            edge_index,
+            cell_offsets,
+            neighbors,
+            D_st,
+            V_st,
+        ) = self.select_edges(
             data=data,
             edge_index=edge_index,
             cell_offsets=cell_offsets,
@@ -589,9 +588,7 @@ class GemNetT(BaseModel):
                     F_t = torch.stack(forces, dim=1)
                     # (nAtoms, num_targets, 3)
                 else:
-                    F_t = -torch.autograd.grad(
-                        E_t.sum(), pos, create_graph=True
-                    )[0]
+                    F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
                     # (nAtoms, 3)
 
             outputs["forces"] = F_t

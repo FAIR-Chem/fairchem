@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import math
 from bisect import bisect
@@ -141,9 +143,7 @@ class LRScheduler:
             self.scheduler_params["lr_lambda"] = scheduler_lambda_fn
 
         if self.scheduler_type != "Null":
-            self.scheduler = getattr(
-                torch.optim.lr_scheduler, self.scheduler_type
-            )
+            self.scheduler = getattr(torch.optim.lr_scheduler, self.scheduler_type)
             scheduler_args = self.filter_kwargs(self.scheduler_params)
             self.scheduler = self.scheduler(optimizer, **scheduler_args)
 
@@ -152,9 +152,7 @@ class LRScheduler:
             return
         if self.scheduler_type == "ReduceLROnPlateau":
             if metrics is None:
-                raise Exception(
-                    "Validation set required for ReduceLROnPlateau."
-                )
+                raise Exception("Validation set required for ReduceLROnPlateau.")
             self.scheduler.step(metrics)
         else:
             self.scheduler.step()
@@ -168,9 +166,7 @@ class LRScheduler:
             if param.kind == param.POSITIONAL_OR_KEYWORD
         ]
         filter_keys.remove("optimizer")
-        scheduler_args = {
-            arg: config[arg] for arg in config if arg in filter_keys
-        }
+        scheduler_args = {arg: config[arg] for arg in config if arg in filter_keys}
         return scheduler_args
 
     def get_lr(self) -> Optional[float]:

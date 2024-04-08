@@ -4,6 +4,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 from typing import Optional
 
 import torch
@@ -115,16 +117,12 @@ class BasisEmbedding(torch.nn.Module):
             else:
                 Kmax = torch.max(idx_rad_inner) + 1
 
-            rad_W1_padded = rad_W1.new_zeros(
-                [num_atoms, Kmax] + list(rad_W1.shape[1:])
-            )
+            rad_W1_padded = rad_W1.new_zeros([num_atoms, Kmax] + list(rad_W1.shape[1:]))
             rad_W1_padded[idx_rad_outer, idx_rad_inner] = rad_W1
             # (num_atoms, Kmax, emb_size_interm, ...)
             rad_W1_padded = torch.transpose(rad_W1_padded, 1, 2)
             # (num_atoms, emb_size_interm, Kmax, ...)
-            rad_W1_padded = rad_W1_padded.reshape(
-                num_atoms, rad_W1.shape[1], -1
-            )
+            rad_W1_padded = rad_W1_padded.reshape(num_atoms, rad_W1.shape[1], -1)
             # (num_atoms, emb_size_interm, Kmax2 * ...)
             rad_W1 = rad_W1_padded
 
@@ -249,9 +247,7 @@ class EfficientInteractionBilinear(torch.nn.Module):
             )
             sph_m_padded[idx_agg2_outer, idx_agg2_inner] = sph_m
             # (num_atoms, Kmax2, num_spherical, emb_size_in)
-            sph_m_padded = sph_m_padded.reshape(
-                agg2_out_size, -1, sph_m.shape[-1]
-            )
+            sph_m_padded = sph_m_padded.reshape(agg2_out_size, -1, sph_m.shape[-1])
             # (num_atoms, Kmax2 * num_spherical, emb_size_in)
 
             rad_W1_sph_m = rad_W1 @ sph_m_padded
@@ -262,9 +258,7 @@ class EfficientInteractionBilinear(torch.nn.Module):
             # (num_edges, emb_size_interm, emb_size_in)
 
         # Bilinear: Sum over emb_size_interm and emb_size_in
-        m_ca = self.bilinear(
-            rad_W1_sph_m.reshape(-1, rad_W1_sph_m.shape[1:].numel())
-        )
+        m_ca = self.bilinear(rad_W1_sph_m.reshape(-1, rad_W1_sph_m.shape[1:].numel()))
         # (num_edges/num_atoms, emb_size_out)
 
         return m_ca

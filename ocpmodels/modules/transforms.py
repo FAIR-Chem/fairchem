@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 from torch_geometric.data import Data
 
@@ -17,9 +19,7 @@ class DataTransforms:
             # for now.
             if transform_fn == "normalizer":
                 continue
-            data_object = eval(transform_fn)(
-                data_object, self.config[transform_fn]
-            )
+            data_object = eval(transform_fn)(data_object, self.config[transform_fn])
 
         return data_object
 

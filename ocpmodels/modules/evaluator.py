@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 from typing import Dict, Union
 
 import numpy as np
@@ -79,7 +81,6 @@ class Evaluator:
         target: Dict[str, torch.Tensor],
         prev_metrics={},
     ):
-
         metrics = prev_metrics
 
         for target_property in self.target_metrics:
@@ -106,16 +107,12 @@ class Evaluator:
             # If dictionary, we expect it to have `metric`, `total`, `numel`.
             metrics[key]["total"] += stat["total"]
             metrics[key]["numel"] += stat["numel"]
-            metrics[key]["metric"] = (
-                metrics[key]["total"] / metrics[key]["numel"]
-            )
+            metrics[key]["metric"] = metrics[key]["total"] / metrics[key]["numel"]
         elif isinstance(stat, float) or isinstance(stat, int):
             # If float or int, just add to the total and increment numel by 1.
             metrics[key]["total"] += stat
             metrics[key]["numel"] += 1
-            metrics[key]["metric"] = (
-                metrics[key]["total"] / metrics[key]["numel"]
-            )
+            metrics[key]["metric"] = metrics[key]["total"] / metrics[key]["numel"]
         elif torch.is_tensor(stat):
             raise NotImplementedError
 
@@ -232,9 +229,7 @@ def average_distance_within_threshold(
     target: Dict[str, torch.Tensor],
     key=None,
 ) -> Dict[str, Union[float, int]]:
-    pred_pos = torch.split(
-        prediction["positions"], prediction["natoms"].tolist()
-    )
+    pred_pos = torch.split(prediction["positions"], prediction["natoms"].tolist())
     target_pos = torch.split(target["positions"], target["natoms"].tolist())
 
     mean_distance = []
@@ -330,8 +325,7 @@ def magnitude_error(
 ) -> Dict[str, Union[float, int]]:
     assert prediction[key].shape[1] > 1
     error = torch.abs(
-        torch.norm(prediction[key], p=p, dim=-1)
-        - torch.norm(target[key], p=p, dim=-1)
+        torch.norm(prediction[key], p=p, dim=-1) - torch.norm(target[key], p=p, dim=-1)
     )
     return {
         "metric": torch.mean(error).item(),

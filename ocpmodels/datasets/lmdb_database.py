@@ -136,9 +136,7 @@ class LMDBDatabase(Database):
 
         constraints = row.get("constraints")
         if constraints:
-            dct["constraints"] = [
-                constraint.todict() for constraint in constraints
-            ]
+            dct["constraints"] = [constraint.todict() for constraint in constraints]
 
         # json doesn't like Cell objects, so make it an array
         dct["cell"] = np.asarray(dct["cell"])
@@ -153,18 +151,14 @@ class LMDBDatabase(Database):
         # Add the new entry
         self.txn.put(
             f"{idx}".encode("ascii"),
-            zlib.compress(
-                orjson.dumps(dct, option=orjson.OPT_SERIALIZE_NUMPY)
-            ),
+            zlib.compress(orjson.dumps(dct, option=orjson.OPT_SERIALIZE_NUMPY)),
         )
         # only append if idx is not in ids
         if idx not in self.ids:
             self.ids.append(idx)
             self.txn.put(
                 "nextid".encode("ascii"),
-                zlib.compress(
-                    orjson.dumps(nextid, option=orjson.OPT_SERIALIZE_NUMPY)
-                ),
+                zlib.compress(orjson.dumps(nextid, option=orjson.OPT_SERIALIZE_NUMPY)),
             )
         # check if id is in removed ids and remove accordingly
         if idx in self.deleted_ids:
@@ -182,17 +176,13 @@ class LMDBDatabase(Database):
         # hack this to play nicely with ASE code
         row = self._get_row(idx, include_data=True)
         if data is not None or key_value_pairs is not None:
-            self._write(
-                atoms=row, idx=idx, key_value_pairs=key_value_pairs, data=data
-            )
+            self._write(atoms=row, idx=idx, key_value_pairs=key_value_pairs, data=data)
 
     def _write_deleted_ids(self):
         self.txn.put(
             "deleted_ids".encode("ascii"),
             zlib.compress(
-                orjson.dumps(
-                    self.deleted_ids, option=orjson.OPT_SERIALIZE_NUMPY
-                )
+                orjson.dumps(self.deleted_ids, option=orjson.OPT_SERIALIZE_NUMPY)
             ),
         )
 
@@ -325,9 +315,7 @@ class LMDBDatabase(Database):
         # Put the updated metadata dictionary
         self.txn.put(
             "metadata".encode("ascii"),
-            zlib.compress(
-                orjson.dumps(dct, option=orjson.OPT_SERIALIZE_NUMPY)
-            ),
+            zlib.compress(orjson.dumps(dct, option=orjson.OPT_SERIALIZE_NUMPY)),
         )
 
     @property
@@ -335,9 +323,7 @@ class LMDBDatabase(Database):
         """Get the id of the next row to be written"""
         # Get the nextid
         nextid_data = self.txn.get("nextid".encode("ascii"))
-        nextid = (
-            orjson.loads(zlib.decompress(nextid_data)) if nextid_data else 1
-        )
+        nextid = orjson.loads(zlib.decompress(nextid_data)) if nextid_data else 1
         return nextid
 
     def count(self, selection=None, **kwargs) -> int:
@@ -370,6 +356,4 @@ class LMDBDatabase(Database):
             self.deleted_ids = orjson.loads(zlib.decompress(deleted_ids_data))
 
         # Reconstruct the full id list
-        self.ids = [
-            i for i in range(1, self._nextid) if i not in set(self.deleted_ids)
-        ]
+        self.ids = [i for i in range(1, self._nextid) if i not in set(self.deleted_ids)]

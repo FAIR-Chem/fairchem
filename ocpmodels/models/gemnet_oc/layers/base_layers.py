@@ -4,6 +4,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import math
 from typing import Optional
 
@@ -94,12 +96,7 @@ class ResidualLayer(torch.nn.Module):
         super().__init__()
         self.dense_mlp = torch.nn.Sequential(
             *[
-                layer(
-                    in_features=units,
-                    out_features=units,
-                    bias=False,
-                    **layer_kwargs
-                )
+                layer(in_features=units, out_features=units, bias=False, **layer_kwargs)
                 for _ in range(nLayers)
             ]
         )

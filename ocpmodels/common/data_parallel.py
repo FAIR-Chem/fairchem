@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import heapq
 import logging
 from pathlib import Path
@@ -53,8 +55,7 @@ def balanced_partition(sizes: npt.NDArray[np.int_], num_parts: int):
 @runtime_checkable
 class _HasMetadata(Protocol):
     @property
-    def metadata_path(self) -> Path:
-        ...
+    def metadata_path(self) -> Path: ...
 
 
 class StatefulDistributedSampler(DistributedSampler):
@@ -92,9 +93,7 @@ class StatefulDistributedSampler(DistributedSampler):
         # of doing this would be to keep this sequence strictly as an iterator
         # that stores the current state (instead of the full sequence)
         distributed_sampler_sequence = list(super().__iter__())
-        return iter(
-            distributed_sampler_sequence[self.start_iter * self.batch_size :]
-        )
+        return iter(distributed_sampler_sequence[self.start_iter * self.batch_size :])
 
     def set_epoch_and_start_iteration(self, epoch, start_iter):
         self.set_epoch(epoch)
@@ -105,14 +104,10 @@ class BalancedBatchSampler(Sampler):
     def _load_dataset(self, dataset, mode: Literal["atoms", "neighbors"]):
         errors: List[str] = []
         if not isinstance(dataset, _HasMetadata):
-            errors.append(
-                f"Dataset {dataset} does not have a metadata_path attribute."
-            )
+            errors.append(f"Dataset {dataset} does not have a metadata_path attribute.")
             return None, errors
         if not dataset.metadata_path.exists():
-            errors.append(
-                f"Metadata file {dataset.metadata_path} does not exist."
-            )
+            errors.append(f"Metadata file {dataset.metadata_path} does not exist.")
             return None, errors
 
         key = {"atoms": "natoms", "neighbors": "neighbors"}[mode]
@@ -170,9 +165,7 @@ class BalancedBatchSampler(Sampler):
         self.balance_batches = False
 
         if self.num_replicas <= 1:
-            logging.info(
-                "Batch balancing is disabled for single GPU training."
-            )
+            logging.info("Batch balancing is disabled for single GPU training.")
             return
 
         if self.mode is False:
@@ -206,12 +199,8 @@ class BalancedBatchSampler(Sampler):
     def __len__(self) -> int:
         return len(self.batch_sampler)
 
-    def set_epoch_and_start_iteration(
-        self, epoch: int, start_iteration: int
-    ) -> None:
-        self.single_sampler.set_epoch_and_start_iteration(
-            epoch, start_iteration
-        )
+    def set_epoch_and_start_iteration(self, epoch: int, start_iteration: int) -> None:
+        self.single_sampler.set_epoch_and_start_iteration(epoch, start_iteration)
 
     def __iter__(self):
         if not self.balance_batches:
@@ -234,9 +223,7 @@ class BalancedBatchSampler(Sampler):
             else:
                 sizes = [self.sizes[idx] for idx in batch_idx]
 
-            idx_sizes = torch.stack(
-                [torch.tensor(batch_idx), torch.tensor(sizes)]
-            )
+            idx_sizes = torch.stack([torch.tensor(batch_idx), torch.tensor(sizes)])
             idx_sizes_all = distutils.all_gather(idx_sizes, device=self.device)
             idx_sizes_all = torch.cat(idx_sizes_all, dim=-1).cpu()
             if gp_utils.initialized():

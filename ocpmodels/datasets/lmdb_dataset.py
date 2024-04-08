@@ -4,6 +4,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import bisect
 import logging
 import pickle
@@ -94,9 +96,7 @@ class LmdbDataset(Dataset[T_co]):
             else:
                 # Get the number of stores data from the number of entries
                 # in the LMDB
-                num_entries = assert_is_instance(
-                    self.env.stat()["entries"], int
-                )
+                num_entries = assert_is_instance(self.env.stat()["entries"], int)
 
             self._keys = list(range(num_entries))
             self.num_samples = num_entries
@@ -150,9 +150,7 @@ class LmdbDataset(Dataset[T_co]):
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
 
         if self.key_mapping is not None:
-            data_object = rename_data_object_keys(
-                data_object, self.key_mapping
-            )
+            data_object = rename_data_object_keys(data_object, self.key_mapping)
 
         data_object = self.transforms(data_object)
 
@@ -240,9 +238,7 @@ class TrajectoryLmdbDataset(LmdbDataset[BaseData]):
         )
 
 
-def data_list_collater(
-    data_list: List[BaseData], otf_graph: bool = False
-) -> BaseData:
+def data_list_collater(data_list: List[BaseData], otf_graph: bool = False) -> BaseData:
     batch = Batch.from_data_list(data_list)
 
     if not otf_graph:

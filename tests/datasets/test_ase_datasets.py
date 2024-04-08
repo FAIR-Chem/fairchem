@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 import numpy as np
@@ -61,10 +63,7 @@ def ase_dataset(request, tmp_path_factory):
         dataset = AseDBDataset(
             config={"src": str(tmp_path / "asedb.db"), "a2g_args": a2g_args}
         )
-    elif (
-        request.param == "db_dataset_folder"
-        or request.param == "db_dataset_list"
-    ):
+    elif request.param == "db_dataset_folder" or request.param == "db_dataset_list":
         for db_name in ("asedb1.db", "asedb2.db"):
             with db.connect(tmp_path / db_name) as database:
                 for i, atoms in enumerate(structures):
@@ -165,9 +164,7 @@ def test_ase_metadata_guesser(ase_dataset) -> None:
     # Confirm extensive_property metadata guessed properly
     assert metadata["targets"]["info.extensive_property"]["extensive"] is True
     assert metadata["targets"]["info.extensive_property"]["shape"] == ()
-    assert (
-        metadata["targets"]["info.extensive_property"]["type"] == "per-image"
-    )
+    assert metadata["targets"]["info.extensive_property"]["type"] == "per-image"
 
     # Confirm tensor_property metadata guessed properly
     assert metadata["targets"]["info.tensor_property"]["extensive"] is False
@@ -207,9 +204,7 @@ def test_ase_multiread_dataset(tmp_path) -> None:
     traj = Trajectory(tmp_path / "test.traj", mode="w")
 
     for atoms, energy in zip(atoms_objects, energies):
-        calc = SinglePointCalculator(
-            atoms, energy=energy, forces=atoms.positions
-        )
+        calc = SinglePointCalculator(atoms, energy=energy, forces=atoms.positions)
         atoms.calc = calc
         traj.write(atoms)
 

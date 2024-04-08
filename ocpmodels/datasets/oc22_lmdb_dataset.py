@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import bisect
 import pickle
 from pathlib import Path
@@ -114,9 +116,7 @@ class OC22LmdbDataset(Dataset):
             self.oc20_ref = pickle.load(open(config["oc20_ref"], "rb"))
         if self.config.get("lin_ref", False):
             coeff = np.load(self.config["lin_ref"], allow_pickle=True)["coeff"]
-            self.lin_ref = torch.nn.Parameter(
-                torch.tensor(coeff), requires_grad=False
-            )
+            self.lin_ref = torch.nn.Parameter(torch.tensor(coeff), requires_grad=False)
         self.subsample = aii(self.config.get("subsample", False), bool)
 
     def __len__(self) -> int:
@@ -199,9 +199,7 @@ class OC22LmdbDataset(Dataset):
             data_object[attr] -= lin_energy
 
         if self.key_mapping is not None:
-            data_object = rename_data_object_keys(
-                data_object, self.key_mapping
-            )
+            data_object = rename_data_object_keys(data_object, self.key_mapping)
 
         # to jointly train on oc22+oc20, need to delete these oc20-only attributes
         # ensure otf_graph=1 in your model configuration

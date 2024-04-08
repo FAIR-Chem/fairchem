@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import json
 from typing import Tuple, Union
 
@@ -17,7 +19,7 @@ def read_json(path: str):
     if not path.endswith(".json"):
         raise UserWarning(f"Path {path} is not a json-path.")
 
-    with open(path, "r") as f:
+    with open(path) as f:
         content = json.load(f)
     return content
 
@@ -152,9 +154,7 @@ def repeat_blocks(
         insert_dummy = False
 
     # Get repeats for each group using group lengths/sizes
-    r1 = torch.repeat_interleave(
-        torch.arange(len(sizes), device=sizes.device), repeats
-    )
+    r1 = torch.repeat_interleave(torch.arange(len(sizes), device=sizes.device), repeats)
 
     # Get total size of output array, as needed to initialize output indexing array
     N = int((sizes * repeats).sum())
@@ -178,9 +178,7 @@ def repeat_blocks(
 
         # Add block increments
         if isinstance(block_inc, torch.Tensor):
-            insert_val += segment_csr(
-                block_inc[: r1[-1]], indptr, reduce="sum"
-            )
+            insert_val += segment_csr(block_inc[: r1[-1]], indptr, reduce="sum")
         else:
             insert_val += block_inc * (indptr[1:] - indptr[:-1])
             if insert_dummy:
@@ -279,9 +277,7 @@ def inner_product_normalized(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return torch.sum(x * y, dim=-1).clamp(min=-1, max=1)
 
 
-def mask_neighbors(
-    neighbors: torch.Tensor, edge_mask: torch.Tensor
-) -> torch.Tensor:
+def mask_neighbors(neighbors: torch.Tensor, edge_mask: torch.Tensor) -> torch.Tensor:
     neighbors_old_indptr = torch.cat([neighbors.new_zeros(1), neighbors])
     neighbors_old_indptr = torch.cumsum(neighbors_old_indptr, dim=0)
     neighbors = segment_csr(edge_mask.long(), neighbors_old_indptr)

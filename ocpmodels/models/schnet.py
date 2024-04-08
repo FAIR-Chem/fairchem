@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import torch
 from torch_geometric.nn import SchNet
 from torch_scatter import scatter
@@ -122,13 +124,16 @@ class SchNetWrap(SchNet, BaseModel):
         outputs = {"energy": energy}
 
         if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    data.pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
+            forces = (
+                -1
+                * (
+                    torch.autograd.grad(
+                        energy,
+                        data.pos,
+                        grad_outputs=torch.ones_like(energy),
+                        create_graph=True,
+                    )[0]
+                )
             )
             outputs["forces"] = forces
 

@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import sympy as sym
 import torch
 from torch_geometric.nn.models.schnet import GaussianSmearing
@@ -52,9 +54,7 @@ class CircularBasisLayer(torch.nn.Module):
                 start=-1, stop=1, num_gaussians=num_spherical, **cbf_hparams
             )
         elif cbf_name == "spherical_harmonics":
-            Y_lm = real_sph_harm(
-                num_spherical, use_theta=False, zero_m_only=True
-            )
+            Y_lm = real_sph_harm(num_spherical, use_theta=False, zero_m_only=True)
             sph_funcs = []  # (num_spherical,)
 
             # convert to tensorflow functions
@@ -65,12 +65,8 @@ class CircularBasisLayer(torch.nn.Module):
                 if (
                     l_degree == 0
                 ):  # Y_00 is only a constant -> function returns value and not tensor
-                    first_sph = sym.lambdify(
-                        [z], Y_lm[l_degree][m_order], modules
-                    )
-                    sph_funcs.append(
-                        lambda z: torch.zeros_like(z) + first_sph(z)
-                    )
+                    first_sph = sym.lambdify([z], Y_lm[l_degree][m_order], modules)
+                    sph_funcs.append(lambda z: torch.zeros_like(z) + first_sph(z))
                 else:
                     sph_funcs.append(
                         sym.lambdify([z], Y_lm[l_degree][m_order], modules)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,7 +15,7 @@ class ScaledSiLU(nn.Module):
         return F.silu(inputs, inplace=self.inplace) * self.scale_factor
 
     def extra_repr(self):
-        str = "scale_factor={}".format(self.scale_factor)
+        str = f"scale_factor={self.scale_factor}"
         if self.inplace:
             str = str + ", inplace=True"
         return str
@@ -21,9 +23,7 @@ class ScaledSiLU(nn.Module):
 
 # Reference: https://github.com/facebookresearch/llama/blob/main/llama/model.py#L175
 class ScaledSwiGLU(nn.Module):
-    def __init__(
-        self, in_channels: int, out_channels: int, bias: bool = True
-    ) -> None:
+    def __init__(self, in_channels: int, out_channels: int, bias: bool = True) -> None:
         super(ScaledSwiGLU, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -41,9 +41,7 @@ class ScaledSwiGLU(nn.Module):
 
 # Reference: https://github.com/facebookresearch/llama/blob/main/llama/model.py#L175
 class SwiGLU(nn.Module):
-    def __init__(
-        self, in_channels: int, out_channels: int, bias: bool = True
-    ) -> None:
+    def __init__(self, in_channels: int, out_channels: int, bias: bool = True) -> None:
         super(SwiGLU, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -70,7 +68,7 @@ class SmoothLeakyReLU(torch.nn.Module):
         return x1 + x2
 
     def extra_repr(self):
-        return "negative_slope={}".format(self.alpha)
+        return f"negative_slope={self.alpha}"
 
 
 class ScaledSmoothLeakyReLU(torch.nn.Module):
@@ -83,9 +81,7 @@ class ScaledSmoothLeakyReLU(torch.nn.Module):
         return self.act(x) * self.scale_factor
 
     def extra_repr(self):
-        return "negative_slope={}, scale_factor={}".format(
-            self.act.alpha, self.scale_factor
-        )
+        return f"negative_slope={self.act.alpha}, scale_factor={self.scale_factor}"
 
 
 class ScaledSigmoid(torch.nn.Module):
@@ -140,9 +136,7 @@ class GateActivation(torch.nn.Module):
         input_tensors_scalars = input_tensors.narrow(1, 0, 1)
         input_tensors_scalars = self.scalar_act(input_tensors_scalars)
 
-        input_tensors_vectors = input_tensors.narrow(
-            1, 1, input_tensors.shape[1] - 1
-        )
+        input_tensors_vectors = input_tensors.narrow(1, 1, input_tensors.shape[1] - 1)
         input_tensors_vectors = input_tensors_vectors * gating_scalars
 
         output_tensors = torch.cat(
@@ -167,9 +161,7 @@ class S2Activation(torch.nn.Module):
         to_grid_mat = SO3_grid[self.lmax][self.mmax].get_to_grid_mat(
             device=None
         )  # `device` is not used
-        from_grid_mat = SO3_grid[self.lmax][self.mmax].get_from_grid_mat(
-            device=None
-        )
+        from_grid_mat = SO3_grid[self.lmax][self.mmax].get_from_grid_mat(device=None)
         x_grid = torch.einsum("bai, zic -> zbac", to_grid_mat, inputs)
         x_grid = self.act(x_grid)
         outputs = torch.einsum("bai, zbac -> zic", from_grid_mat, x_grid)

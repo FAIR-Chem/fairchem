@@ -4,6 +4,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 from typing import Optional
 
 import numpy as np
@@ -28,9 +30,7 @@ class AtomEmbedding(torch.nn.Module):
 
         self.embeddings = torch.nn.Embedding(num_elements, emb_size)
         # init by uniform distribution
-        torch.nn.init.uniform_(
-            self.embeddings.weight, a=-np.sqrt(3), b=np.sqrt(3)
-        )
+        torch.nn.init.uniform_(self.embeddings.weight, a=-np.sqrt(3), b=np.sqrt(3))
 
     def forward(self, Z) -> torch.Tensor:
         """
@@ -69,9 +69,7 @@ class EdgeEmbedding(torch.nn.Module):
     ) -> None:
         super().__init__()
         in_features = 2 * atom_features + edge_features
-        self.dense = Dense(
-            in_features, out_features, activation=activation, bias=False
-        )
+        self.dense = Dense(in_features, out_features, activation=activation, bias=False)
 
     def forward(
         self,
@@ -96,8 +94,6 @@ class EdgeEmbedding(torch.nn.Module):
         h_s = h[edge_index[0]]  # shape=(nEdges, emb_size)
         h_t = h[edge_index[1]]  # shape=(nEdges, emb_size)
 
-        m_st = torch.cat(
-            [h_s, h_t, m], dim=-1
-        )  # (nEdges, 2*emb_size+nFeatures)
+        m_st = torch.cat([h_s, h_t, m], dim=-1)  # (nEdges, 2*emb_size+nFeatures)
         m_st = self.dense(m_st)  # (nEdges, emb_size)
         return m_st

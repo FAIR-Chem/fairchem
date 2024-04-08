@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import Optional
 
@@ -87,13 +89,9 @@ class DDPLoss(nn.Module):
 
         if self.reduction == "mean":
             num_samples = (
-                batch_size
-                if self.loss_name.startswith("atomwise")
-                else input.shape[0]
+                batch_size if self.loss_name.startswith("atomwise") else input.shape[0]
             )
-            num_samples = distutils.all_reduce(
-                num_samples, device=input.device
-            )
+            num_samples = distutils.all_reduce(num_samples, device=input.device)
             # Multiply by world size since gradients are averaged
             # across DDP replicas
             return loss * distutils.get_world_size() / num_samples

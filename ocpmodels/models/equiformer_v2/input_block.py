@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 from typing import List
 
@@ -73,22 +75,15 @@ class EdgeDegreeEmbedding(torch.nn.Module):
             self.source_embedding, self.target_embedding = None, None
 
         # Embedding function of distance
-        self.edge_channels_list.append(
-            self.m_0_num_coefficients * self.sphere_channels
-        )
+        self.edge_channels_list.append(self.m_0_num_coefficients * self.sphere_channels)
         self.rad_func = RadialFunction(self.edge_channels_list)
 
         self.rescale_factor = rescale_factor
 
     def forward(self, atomic_numbers, edge_distance, edge_index):
-
         if self.use_atom_edge_embedding:
-            source_element = atomic_numbers[
-                edge_index[0]
-            ]  # Source atom atomic number
-            target_element = atomic_numbers[
-                edge_index[1]
-            ]  # Target atom atomic number
+            source_element = atomic_numbers[edge_index[0]]  # Source atom atomic number
+            target_element = atomic_numbers[edge_index[1]]  # Target atom atomic number
             source_embedding = self.source_embedding(source_element)
             target_embedding = self.target_embedding(target_element)
             x_edge = torch.cat(
@@ -119,9 +114,7 @@ class EdgeDegreeEmbedding(torch.nn.Module):
             dtype=x_edge_m_all.dtype,
         )
         x_edge_embedding.set_embedding(x_edge_m_all)
-        x_edge_embedding.set_lmax_mmax(
-            self.lmax_list.copy(), self.mmax_list.copy()
-        )
+        x_edge_embedding.set_lmax_mmax(self.lmax_list.copy(), self.mmax_list.copy())
 
         # Reshape the spherical harmonics based on l (degree)
         x_edge_embedding._l_primary(self.mappingReduced)
@@ -131,8 +124,6 @@ class EdgeDegreeEmbedding(torch.nn.Module):
 
         # Compute the sum of the incoming neighboring messages for each target node
         x_edge_embedding._reduce_edge(edge_index[1], atomic_numbers.shape[0])
-        x_edge_embedding.embedding = (
-            x_edge_embedding.embedding / self.rescale_factor
-        )
+        x_edge_embedding.embedding = x_edge_embedding.embedding / self.rescale_factor
 
         return x_edge_embedding

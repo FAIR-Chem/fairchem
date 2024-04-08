@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import math
 from typing import Optional
 
@@ -36,9 +38,7 @@ class Dense(torch.nn.Module):
     ) -> None:
         super().__init__()
 
-        self.linear = torch.nn.Linear(
-            num_in_features, num_out_features, bias=bias
-        )
+        self.linear = torch.nn.Linear(num_in_features, num_out_features, bias=bias)
         self.reset_parameters()
 
         if isinstance(activation, str):
@@ -108,7 +108,7 @@ class ResidualLayer(torch.nn.Module):
                     num_in_features=units,
                     num_out_features=units,
                     bias=False,
-                    **layer_kwargs
+                    **layer_kwargs,
                 )
                 for _ in range(nLayers)
             ]

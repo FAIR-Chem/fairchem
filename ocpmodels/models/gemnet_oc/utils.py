@@ -4,6 +4,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import numpy as np
 import torch
 from torch_scatter import segment_coo, segment_csr
@@ -110,9 +112,7 @@ def repeat_blocks(
         insert_dummy = False
 
     # Get repeats for each group using group lengths/sizes
-    r1 = torch.repeat_interleave(
-        torch.arange(len(sizes), device=sizes.device), repeats
-    )
+    r1 = torch.repeat_interleave(torch.arange(len(sizes), device=sizes.device), repeats)
 
     # Get total size of output array, as needed to initialize output indexing array
     N = (sizes * repeats).sum()
@@ -136,9 +136,7 @@ def repeat_blocks(
 
         # Add block increments
         if isinstance(block_inc, torch.Tensor):
-            insert_val += segment_csr(
-                block_inc[: r1[-1]], indptr, reduce="sum"
-            )
+            insert_val += segment_csr(block_inc[: r1[-1]], indptr, reduce="sum")
         else:
             insert_val += block_inc * (indptr[1:] - indptr[:-1])
             if insert_dummy:
@@ -192,9 +190,7 @@ def masked_select_sparsetensor_flat(src, mask) -> SparseTensor:
     row = row[mask]
     col = col[mask]
     value = value[mask]
-    return SparseTensor(
-        row=row, col=col, value=value, sparse_sizes=src.sparse_sizes()
-    )
+    return SparseTensor(row=row, col=col, value=value, sparse_sizes=src.sparse_sizes())
 
 
 def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
@@ -356,9 +352,7 @@ def get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor:
 
     # Create a tensor of size [num_atoms, max_num_neighbors] to sort the distances of the neighbors.
     # Fill with infinity so we can easily remove unused distances later.
-    distance_sort = torch.full(
-        [num_atoms * max_num_neighbors], np.inf, device=device
-    )
+    distance_sort = torch.full([num_atoms * max_num_neighbors], np.inf, device=device)
 
     # Create an index map to map distances from atom_distance to distance_sort
     index_neighbor_offset = torch.cumsum(num_neighbors, dim=0) - num_neighbors
@@ -385,9 +379,9 @@ def get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor:
     index_sort = torch.masked_select(index_sort, mask_finite)
 
     # Create indices specifying the order in index_sort
-    order_peratom = torch.arange(max_num_neighbors, device=device)[
-        None, :
-    ].expand_as(mask_finite)
+    order_peratom = torch.arange(max_num_neighbors, device=device)[None, :].expand_as(
+        mask_finite
+    )
     order_peratom = torch.masked_select(order_peratom, mask_finite)
 
     # Re-index to obtain order value of each neighbor in index_sorted
@@ -413,10 +407,7 @@ def get_inner_idx(idx, dim_size):
 def get_edge_id(edge_idx, cell_offsets, num_atoms: int):
     cell_basis = cell_offsets.max() - cell_offsets.min() + 1
     cell_id = (
-        (
-            cell_offsets
-            * cell_offsets.new_tensor([[1, cell_basis, cell_basis**2]])
-        )
+        (cell_offsets * cell_offsets.new_tensor([[1, cell_basis, cell_basis**2]]))
         .sum(-1)
         .long()
     )

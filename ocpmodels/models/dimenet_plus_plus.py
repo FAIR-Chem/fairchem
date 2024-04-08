@@ -32,6 +32,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from __future__ import annotations
+
 from typing import Optional
 
 import torch
@@ -91,17 +93,11 @@ class InteractionPPBlock(torch.nn.Module):
 
         # Residual layers before and after skip connection.
         self.layers_before_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_before_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_before_skip)]
         )
         self.lin = nn.Linear(hidden_channels, hidden_channels)
         self.layers_after_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_after_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_after_skip)]
         )
 
         self.reset_parameters()
@@ -449,13 +445,16 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         outputs = {"energy": energy}
 
         if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    data.pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
+            forces = (
+                -1
+                * (
+                    torch.autograd.grad(
+                        energy,
+                        data.pos,
+                        grad_outputs=torch.ones_like(energy),
+                        create_graph=True,
+                    )[0]
+                )
             )
             outputs["forces"] = forces
 

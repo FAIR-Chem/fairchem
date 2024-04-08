@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import math
 from typing import Dict, Union
 
@@ -54,9 +56,7 @@ class ExponentialEnvelope(torch.nn.Module):
         super().__init__()
 
     def forward(self, d_scaled: torch.Tensor) -> torch.Tensor:
-        env_val = torch.exp(
-            -(d_scaled**2) / ((1 - d_scaled) * (1 + d_scaled))
-        )
+        env_val = torch.exp(-(d_scaled**2) / ((1 - d_scaled) * (1 + d_scaled)))
         return torch.where(d_scaled < 1, env_val, torch.zeros_like(d_scaled))
 
 
@@ -83,9 +83,7 @@ class SphericalBesselBasis(torch.nn.Module):
 
         # Initialize frequencies at canonical positions
         self.frequencies = torch.nn.Parameter(
-            data=torch.tensor(
-                np.pi * np.arange(1, num_radial + 1, dtype=np.float32)
-            ),
+            data=torch.tensor(np.pi * np.arange(1, num_radial + 1, dtype=np.float32)),
             requires_grad=True,
         )
 
@@ -141,9 +139,7 @@ class BernsteinBasis(torch.nn.Module):
     def forward(self, d_scaled: torch.Tensor) -> torch.Tensor:
         gamma = self.softplus(self.pregamma)  # constrain to positive
         exp_d = torch.exp(-gamma * d_scaled)[:, None]
-        return (
-            self.prefactor * (exp_d**self.exp1) * ((1 - exp_d) ** self.exp2)
-        )
+        return self.prefactor * (exp_d**self.exp1) * ((1 - exp_d) ** self.exp2)
 
 
 class RadialBasis(torch.nn.Module):

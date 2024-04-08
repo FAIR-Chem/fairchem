@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
 
@@ -21,9 +23,7 @@ class GaussianSmearing(torch.nn.Module):
         super(GaussianSmearing, self).__init__()
         self.num_output = num_gaussians
         offset = torch.linspace(start, stop, num_gaussians)
-        self.coeff = (
-            -0.5 / (basis_width_scalar * (offset[1] - offset[0])).item() ** 2
-        )
+        self.coeff = -0.5 / (basis_width_scalar * (offset[1] - offset[0])).item() ** 2
         self.register_buffer("offset", offset)
 
     def forward(self, dist) -> torch.Tensor:

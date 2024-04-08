@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 import logging
 import math
@@ -117,9 +119,7 @@ class ScaleFactor(nn.Module):
         for k, v in self.stats.items():
             assert v > 0, f"{k} is {v}"
 
-        self.stats["variance_in"] = (
-            self.stats["variance_in"] / self.stats["n_samples"]
-        )
+        self.stats["variance_in"] = self.stats["variance_in"] / self.stats["n_samples"]
         self.stats["variance_out"] = (
             self.stats["variance_out"] / self.stats["n_samples"]
         )
@@ -134,17 +134,13 @@ class ScaleFactor(nn.Module):
 
     @torch.no_grad()
     @torch.jit.unused
-    def _observe(
-        self, x: torch.Tensor, ref: Optional[torch.Tensor] = None
-    ) -> None:
+    def _observe(self, x: torch.Tensor, ref: Optional[torch.Tensor] = None) -> None:
         if self.stats is None:
             logging.debug("Observer not initialized but self.observe() called")
             return
 
         n_samples = x.shape[0]
-        self.stats["variance_out"] += (
-            torch.mean(torch.var(x, dim=0)).item() * n_samples
-        )
+        self.stats["variance_out"] += torch.mean(torch.var(x, dim=0)).item() * n_samples
 
         if ref is None:
             self.stats["variance_in"] += n_samples
