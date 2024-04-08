@@ -20,6 +20,7 @@ dependencies = [
     "tensorboard",
     "wandb",
     "torch_geometric==2.2.0",
+    "torch_sparse",
     "numba",
     "e3nn",
     "urllib3",
