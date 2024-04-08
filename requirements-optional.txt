@@ -1,3 +1,3 @@
-torch_geometric
-torch_scatter
-torch_sparse
+torch_geometric==2.3.0
+torch_scatter==2.1.2
+torch_sparse==0.6.18
