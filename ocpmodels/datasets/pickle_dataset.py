@@ -35,9 +35,6 @@ class PickleDataset(LmdbDataset[T_co]):
         # super(PickleDataset, self).__init__()
         self.config = config
 
-        assert not self.config.get(
-            "train_on_oc20_total_energies", False
-        ), "For training on total energies set dataset=oc22_lmdb"
         self.path = Path(self.config["src"])
         self._data_list = pickle.load(open(self.config["src"], "rb"))
         self.num_samples = len(self._data_list)
