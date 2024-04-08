@@ -10,6 +10,9 @@ license = {text = "MIT License"}
 dynamic = ["version"]
 requires-python = ">=3.9, <3.13"
 dependencies = [
+    "torch",
+    "torch_geometric==2.3",
+    "torch-scatter",
     "numpy==1.23.5",
     "lmdb",
     "syrupy==3.0.6",
@@ -19,8 +22,6 @@ dependencies = [
     "pyyaml",
     "tensorboard",
     "wandb",
-    "torch_geometric==2.2.0",
-    "torch_sparse",
     "numba",
     "e3nn",
     "urllib3",
