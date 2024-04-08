@@ -360,6 +360,10 @@ class OCPTrainer(BaseTrainer):
         return loss
 
     def _compute_metrics(self, out, batch, evaluator, metrics={}):
+        # this function changes the values in the out dictionary,
+        # make a copy instead of changing them in the callers version
+        out = {k: v.clone() for k, v in out.items()}
+
         natoms = batch.natoms
         batch_size = natoms.numel()
 
