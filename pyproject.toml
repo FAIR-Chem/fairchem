@@ -1,6 +1,67 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=69", "setuptools-scm[toml]>=8"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "ocp-models"
+description = "Machine learning models for use in catalysis as part of the Open Catalyst Project"
+readme = "README.md"
+license = {text = "MIT License"}
+dynamic = ["version"]
+requires-python = ">=3.9, <3.13"
+dependencies = [
+    "numpy==1.23.5",
+    "lmdb",
+    "syrupy==3.0.6",
+    "ase==3.22.1",
+    "pymatgen", #==2023.5.10"  let this be determined based on numpy version for now
+    "fastapi<1.0",
+    "pyyaml",
+    "tensorboard",
+    "wandb",
+    "torch_geometric==2.2.0",
+    "numba",
+    "e3nn",
+    "urllib3",
+    "orjson",
+    "tqdm"
+]
+
+[project.optional-dependencies]  # add optional dependencies to be installed as pip install ocpmodels[dev]
+dev = ["pre-commit", "black", "isort", "flake8", "pylint", "pydocstyle", "flake8-pyproject"]
+tests = ["pytest", "pytest-cov", "coverage"]
+# docs = []
+
+[tool.setuptools]  # need to set this since we have multiple top level packates (should consider using a src layout!)
+packages = ["ocpmodels"]
+
+[tool.setuptools_scm]  # for version instrospection based on tags + commit
+
+[project.urls]
+repository = "https://github.com/Open-Catalyst-Project/ocp"
+home = "https://opencatalystproject.org/"
+# documentation = ""
+
+# include package data
+# [tool.setuptools.package-data]
+# someModule = ["*.csv"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts  =  "-p no:warnings --import-mode=importlib -x --durations = 30 --quiet -rxXs --color = yes"
+filterwarnings  = [
+    'ignore::UserWarning',
+    'ignore::FutureWarning',
+    'ignore::RuntimeWarning'
+    ]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["ocpmodels"]
+
+[tool.isort]
+profile = 'black'
+skip_gitignore = true
 
 [tool.black]
 line-length = 79
