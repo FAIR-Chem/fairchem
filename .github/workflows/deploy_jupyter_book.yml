@@ -19,13 +19,17 @@ jobs:
         os: [ubuntu-latest]
         python-version: [3.9]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+
+    - name: Install pandoc
+      run: sudo apt-get install pandoc
 
     # Install dependencies
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install dependencies
       run: |
         pip install jupyter-book jupytext sphinx
