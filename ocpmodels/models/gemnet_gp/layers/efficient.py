@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import Tuple
+
 import torch
 
 from ..initializers import he_orthogonal_init
@@ -27,7 +29,7 @@ class EfficientInteractionDownProjection(torch.nn.Module):
         num_spherical: int,
         num_radial: int,
         emb_size_interm: int,
-    ):
+    ) -> None:
         super().__init__()
 
         self.num_spherical = num_spherical
@@ -36,7 +38,7 @@ class EfficientInteractionDownProjection(torch.nn.Module):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         self.weight = torch.nn.Parameter(
             torch.empty(
                 (self.num_spherical, self.num_radial, self.emb_size_interm)
@@ -45,7 +47,14 @@ class EfficientInteractionDownProjection(torch.nn.Module):
         )
         he_orthogonal_init(self.weight)
 
-    def forward(self, rbf, sph, id_ca, id_ragged_idx, Kmax):
+    def forward(
+        self,
+        rbf: torch.Tensor,
+        sph: torch.Tensor,
+        id_ca,
+        id_ragged_idx,
+        Kmax: int,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
 
         Arguments
@@ -100,7 +109,7 @@ class EfficientInteractionBilinear(torch.nn.Module):
         emb_size: int,
         emb_size_interm: int,
         units_out: int,
-    ):
+    ) -> None:
         super().__init__()
         self.emb_size = emb_size
         self.emb_size_interm = emb_size_interm
@@ -108,7 +117,7 @@ class EfficientInteractionBilinear(torch.nn.Module):
 
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         self.weight = torch.nn.Parameter(
             torch.empty(
                 (self.emb_size, self.emb_size_interm, self.units_out),
@@ -117,7 +126,15 @@ class EfficientInteractionBilinear(torch.nn.Module):
         )
         he_orthogonal_init(self.weight)
 
-    def forward(self, basis, m, id_reduce, id_ragged_idx, edge_offset, Kmax):
+    def forward(
+        self,
+        basis: Tuple[torch.Tensor, torch.Tensor],
+        m,
+        id_reduce,
+        id_ragged_idx,
+        edge_offset,
+        Kmax: int,
+    ) -> torch.Tensor:
         """
 
         Arguments

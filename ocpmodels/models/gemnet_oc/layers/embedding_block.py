@@ -4,6 +4,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from typing import Optional
+
 import numpy as np
 import torch
 
@@ -20,7 +22,7 @@ class AtomEmbedding(torch.nn.Module):
         Atom embeddings size
     """
 
-    def __init__(self, emb_size, num_elements):
+    def __init__(self, emb_size: int, num_elements: int) -> None:
         super().__init__()
         self.emb_size = emb_size
 
@@ -30,7 +32,7 @@ class AtomEmbedding(torch.nn.Module):
             self.embeddings.weight, a=-np.sqrt(3), b=np.sqrt(3)
         )
 
-    def forward(self, Z):
+    def forward(self, Z) -> torch.Tensor:
         """
         Returns
         -------
@@ -60,11 +62,11 @@ class EdgeEmbedding(torch.nn.Module):
 
     def __init__(
         self,
-        atom_features,
-        edge_features,
-        out_features,
-        activation=None,
-    ):
+        atom_features: int,
+        edge_features: int,
+        out_features: int,
+        activation: Optional[str] = None,
+    ) -> None:
         super().__init__()
         in_features = 2 * atom_features + edge_features
         self.dense = Dense(
@@ -73,10 +75,10 @@ class EdgeEmbedding(torch.nn.Module):
 
     def forward(
         self,
-        h,
-        m,
+        h: torch.Tensor,
+        m: torch.Tensor,
         edge_index,
-    ):
+    ) -> torch.Tensor:
         """
         Arguments
         ---------

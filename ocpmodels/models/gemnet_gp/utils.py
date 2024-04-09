@@ -6,12 +6,13 @@ LICENSE file in the root directory of this source tree.
 """
 
 import json
+from typing import Optional, Tuple
 
 import torch
 from torch_scatter import segment_csr
 
 
-def read_json(path):
+def read_json(path: str):
     """"""
     if not path.endswith(".json"):
         raise UserWarning(f"Path {path} is not a json-path.")
@@ -21,7 +22,7 @@ def read_json(path):
     return content
 
 
-def update_json(path, data):
+def update_json(path: str, data) -> None:
     """"""
     if not path.endswith(".json"):
         raise UserWarning(f"Path {path} is not a json-path.")
@@ -31,7 +32,7 @@ def update_json(path, data):
     write_json(path, content)
 
 
-def write_json(path, data):
+def write_json(path: str, data) -> None:
     """"""
     if not path.endswith(".json"):
         raise UserWarning(f"Path {path} is not a json-path.")
@@ -40,7 +41,7 @@ def write_json(path, data):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-def read_value_json(path, key):
+def read_value_json(path: str, key):
     """"""
     content = read_json(path)
 
@@ -83,13 +84,13 @@ def ragged_range(sizes):
 
 
 def repeat_blocks(
-    sizes,
+    sizes: torch.Tensor,
     repeats,
-    continuous_indexing=True,
-    start_idx=0,
-    block_inc=0,
-    repeat_inc=0,
-):
+    continuous_indexing: bool = True,
+    start_idx: int = 0,
+    block_inc: int = 0,
+    repeat_inc: int = 0,
+) -> torch.Tensor:
     """Repeat blocks of indices.
     Adapted from https://stackoverflow.com/questions/51154989/numpy-vectorized-function-to-repeat-blocks-of-consecutive-elements
 
@@ -155,7 +156,7 @@ def repeat_blocks(
     )
 
     # Get total size of output array, as needed to initialize output indexing array
-    N = (sizes * repeats).sum()
+    N = int((sizes * repeats).sum().item())
 
     # Initialize indexing array with ones as we need to setup incremental indexing
     # within each group when cumulatively summed at the final stage.
@@ -227,7 +228,12 @@ def repeat_blocks(
     return res
 
 
-def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
+def calculate_interatomic_vectors(
+    R: torch.Tensor,
+    id_s: torch.Tensor,
+    id_t: torch.Tensor,
+    offsets_st: Optional[torch.Tensor],
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Calculate the vectors connecting the given atom pairs,
     considering offsets from periodic boundary conditions (PBC).
@@ -264,7 +270,7 @@ def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
     return D_st, V_st
 
 
-def inner_product_normalized(x, y):
+def inner_product_normalized(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """
     Calculate the inner product between the given normalized vectors,
     giving a result between -1 and 1.
@@ -272,7 +278,7 @@ def inner_product_normalized(x, y):
     return torch.sum(x * y, dim=-1).clamp(min=-1, max=1)
 
 
-def mask_neighbors(neighbors, edge_mask):
+def mask_neighbors(neighbors: torch.Tensor, edge_mask: torch.Tensor):
     neighbors_old_indptr = torch.cat([neighbors.new_zeros(1), neighbors])
     neighbors_old_indptr = torch.cumsum(neighbors_old_indptr, dim=0)
     neighbors = segment_csr(edge_mask.long(), neighbors_old_indptr)

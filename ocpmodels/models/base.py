@@ -13,14 +13,15 @@ from torch_geometric.nn import radius_graph
 
 from ocpmodels.common.utils import (
     compute_neighbors,
-    conditional_grad,
     get_pbc_distances,
     radius_graph_pbc,
 )
 
 
 class BaseModel(nn.Module):
-    def __init__(self, num_atoms=None, bond_feat_dim=None, num_targets=None):
+    def __init__(
+        self, num_atoms=None, bond_feat_dim=None, num_targets=None
+    ) -> None:
         super(BaseModel, self).__init__()
         self.num_atoms = num_atoms
         self.bond_feat_dim = bond_feat_dim
@@ -122,5 +123,14 @@ class BaseModel(nn.Module):
         )
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
+
+    @torch.jit.ignore
+    def no_weight_decay(self) -> list:
+        """Returns a list of parameters with no weight decay."""
+        no_wd_list = []
+        for name, _ in self.named_parameters():
+            if "embedding" in name or "frequencies" in name or "bias" in name:
+                no_wd_list.append(name)
+        return no_wd_list

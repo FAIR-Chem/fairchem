@@ -12,14 +12,9 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
-from torch_geometric.nn import radius_graph
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    conditional_grad,
-    get_pbc_distances,
-    radius_graph_pbc,
-)
+from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.scn.sampling import CalcSpherePoints
 from ocpmodels.models.scn.smearing import (
@@ -31,7 +26,6 @@ from ocpmodels.models.scn.smearing import (
 from ocpmodels.models.scn.spherical_harmonics import SphericalHarmonicsHelper
 
 try:
-    import e3nn
     from e3nn import o3
 except ImportError:
     pass
@@ -71,44 +65,47 @@ class SphericalChannelNetwork(BaseModel):
         show_timing_info (bool): Show timing and memory info
     """
 
+    energy_fc1: nn.Linear
+    energy_fc2: nn.Linear
+    energy_fc3: nn.Linear
+    force_fc1: nn.Linear
+    force_fc2: nn.Linear
+    force_fc3: nn.Linear
+
     def __init__(
         self,
-        num_atoms,  # not used
-        bond_feat_dim,  # not used
-        num_targets,  # not used
-        use_pbc=True,
-        regress_forces=True,
-        otf_graph=False,
-        max_num_neighbors=20,
-        cutoff=8.0,
-        max_num_elements=90,
-        num_interactions=8,
-        lmax=6,
-        mmax=1,
-        num_resolutions=2,
-        sphere_channels=128,
-        sphere_channels_reduce=128,
-        hidden_channels=256,
-        num_taps=-1,
-        use_grid=True,
-        num_bands=1,
-        num_sphere_samples=128,
-        num_basis_functions=128,
-        distance_function="gaussian",
-        basis_width_scalar=1.0,
-        distance_resolution=0.02,
-        show_timing_info=False,
-        direct_forces=True,
-    ):
+        num_atoms: int,  # not used
+        bond_feat_dim: int,  # not used
+        num_targets: int,  # not used
+        use_pbc: bool = True,
+        regress_forces: bool = True,
+        otf_graph: bool = False,
+        max_num_neighbors: int = 20,
+        cutoff: float = 8.0,
+        max_num_elements: int = 90,
+        num_interactions: int = 8,
+        lmax: int = 6,
+        mmax: int = 1,
+        num_resolutions: int = 2,
+        sphere_channels: int = 128,
+        sphere_channels_reduce: int = 128,
+        hidden_channels: int = 256,
+        num_taps: int = -1,
+        use_grid: bool = True,
+        num_bands: int = 1,
+        num_sphere_samples: int = 128,
+        num_basis_functions: int = 128,
+        distance_function: str = "gaussian",
+        basis_width_scalar: float = 1.0,
+        distance_resolution: float = 0.02,
+        show_timing_info: bool = False,
+        direct_forces: bool = True,
+    ) -> None:
         super().__init__()
 
         if "e3nn" not in sys.modules:
-            logging.error(
-                "You need to install e3nn v0.2.6 to use the SCN model"
-            )
+            logging.error("You need to install e3nn==0.2.6 to use SCN.")
             raise ImportError
-
-        assert e3nn.__version__ == "0.2.6"
 
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
@@ -259,7 +256,7 @@ class SphericalChannelNetwork(BaseModel):
 
         if self.show_timing_info is True:
             torch.cuda.synchronize()
-            print(
+            logging.info(
                 "{} Time: {}\tMemory: {}\t{}".format(
                     self.counter,
                     time.time() - start_time,
@@ -407,6 +404,8 @@ class SphericalChannelNetwork(BaseModel):
         energy = torch.zeros(len(data.natoms), device=pos.device)
         energy.index_add_(0, data.batch, node_energy.view(-1))
 
+        outputs = {"energy": energy}
+
         # Force estimation
         if self.regress_forces:
             forces = torch.einsum(
@@ -419,24 +418,22 @@ class SphericalChannelNetwork(BaseModel):
             forces = forces.view(-1, self.num_sphere_samples, 1)
             forces = forces * sphere_points.view(1, self.num_sphere_samples, 3)
             forces = torch.sum(forces, dim=1) / self.num_sphere_samples
+            outputs["forces"] = forces
 
-        if not self.regress_forces:
-            return energy
-        else:
-            return energy, forces
+        return outputs
 
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
         edge_vec_0 = edge_distance_vec
         edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 
         if torch.min(edge_vec_0_distance) < 0.0001:
-            print(
+            logging.error(
                 "Error edge_vec_0_distance: {}".format(
                     torch.min(edge_vec_0_distance)
                 )
             )
             (minval, minidx) = torch.min(edge_vec_0_distance, 0)
-            print(
+            logging.error(
                 "Error edge_vec_0_distance: {} {} {} {} {}".format(
                     minidx,
                     edge_index[0, minidx],
@@ -502,8 +499,8 @@ class SphericalChannelNetwork(BaseModel):
         return edge_rot_mat.detach()
 
     def _rank_edge_distances(
-        self, edge_distance, edge_index, max_num_neighbors
-    ):
+        self, edge_distance, edge_index, max_num_neighbors: int
+    ) -> torch.Tensor:
         device = edge_distance.device
         # Create an index map to map distances from atom_distance to distance_sort
         # index_sort_map assumes index to be sorted
@@ -521,7 +518,7 @@ class SphericalChannelNetwork(BaseModel):
             - index_neighbor_offset_expand
         )
 
-        num_atoms = torch.max(edge_index) + 1
+        num_atoms = int(torch.max(edge_index)) + 1
         distance_sort = torch.full(
             [num_atoms * max_num_neighbors], np.inf, device=device
         )
@@ -548,26 +545,26 @@ class SphericalChannelNetwork(BaseModel):
         return edge_rank
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
 
 class EdgeBlock(torch.nn.Module):
     def __init__(
         self,
-        num_resolutions,
+        num_resolutions: int,
         sphere_channels_reduce,
         hidden_channels_list,
         cutoff_list,
         sphharm_list,
         sphere_channels,
         distance_expansion,
-        max_num_elements,
-        num_basis_functions,
-        num_gaussians,
-        use_grid,
+        max_num_elements: int,
+        num_basis_functions: int,
+        num_gaussians: int,
+        use_grid: bool,
         act,
-    ):
+    ) -> None:
         super(EdgeBlock, self).__init__()
         self.num_resolutions = num_resolutions
         self.act = act
@@ -648,7 +645,6 @@ class EdgeBlock(torch.nn.Module):
         edge_index,
         cutoff_index,
     ):
-
         ###############################################################
         # Update spherical node embeddings
         ###############################################################
@@ -729,7 +725,7 @@ class MessageBlock(torch.nn.Module):
         num_basis_functions,
         sphharm,
         act,
-    ):
+    ) -> None:
         super(MessageBlock, self).__init__()
         self.act = act
         self.hidden_channels = hidden_channels
@@ -757,7 +753,6 @@ class MessageBlock(torch.nn.Module):
         x_edge,
         edge_index,
     ):
-
         ###############################################################
         # Compute messages
         ###############################################################
@@ -797,11 +792,11 @@ class DistanceBlock(torch.nn.Module):
     def __init__(
         self,
         in_channels,
-        num_basis_functions,
+        num_basis_functions: int,
         distance_expansion,
-        max_num_elements,
+        max_num_elements: int,
         act,
-    ):
+    ) -> None:
         super(DistanceBlock, self).__init__()
         self.in_channels = in_channels
         self.distance_expansion = distance_expansion

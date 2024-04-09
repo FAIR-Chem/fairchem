@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import math
+from typing import Optional
 
 import torch
 
@@ -51,19 +52,19 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
 
     def __init__(
         self,
-        emb_size_atom,
-        emb_size_edge,
-        emb_size_trip,
-        emb_size_rbf,
-        emb_size_cbf,
-        emb_size_bil_trip,
-        num_before_skip,
-        num_after_skip,
-        num_concat,
-        num_atom,
-        activation=None,
-        name="Interaction",
-    ):
+        emb_size_atom: int,
+        emb_size_edge: int,
+        emb_size_trip: int,
+        emb_size_rbf: int,
+        emb_size_cbf: int,
+        emb_size_bil_trip: int,
+        num_before_skip: int,
+        num_after_skip: int,
+        num_concat: int,
+        num_atom: int,
+        activation: Optional[str] = None,
+        name: str = "Interaction",
+    ) -> None:
         super().__init__()
         self.name = name
 
@@ -97,7 +98,7 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
                     emb_size_edge,
                     activation=activation,
                 )
-                for i in range(num_before_skip)
+                for _ in range(num_before_skip)
             ]
         )
 
@@ -140,8 +141,8 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
 
     def forward(
         self,
-        h,
-        m,
+        h: torch.Tensor,
+        m: torch.Tensor,
         rbf3,
         cbf3,
         id3_ragged_idx,
@@ -180,7 +181,7 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
 
         ## ---------------------------------------- Update Edge Embeddings --------------------------------------- ##
         # Transformations before skip connection
-        for i, layer in enumerate(self.layers_before_skip):
+        for _, layer in enumerate(self.layers_before_skip):
             x = layer(x)  # (nEdges, emb_size_edge)
 
         # Skip connection
@@ -188,7 +189,7 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
         m = m * self.inv_sqrt_2
 
         # Transformations after skip connection
-        for i, layer in enumerate(self.layers_after_skip):
+        for _, layer in enumerate(self.layers_after_skip):
             m = layer(m)  # (nEdges, emb_size_edge)
 
         ## ---------------------------------------- Update Atom Embeddings --------------------------------------- ##
@@ -201,7 +202,7 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
         ## ----------------------------- Update Edge Embeddings with Atom Embeddings ----------------------------- ##
         m2 = self.concat_layer(h, m, idx_s, idx_t)  # (nEdges, emb_size_edge)
 
-        for i, layer in enumerate(self.residual_m):
+        for _, layer in enumerate(self.residual_m):
             m2 = layer(m2)  # (nEdges, emb_size_edge)
 
         # Skip connection
@@ -233,15 +234,15 @@ class TripletInteraction(torch.nn.Module):
 
     def __init__(
         self,
-        emb_size_edge,
-        emb_size_trip,
-        emb_size_bilinear,
-        emb_size_rbf,
-        emb_size_cbf,
-        activation=None,
-        name="TripletInteraction",
+        emb_size_edge: int,
+        emb_size_trip: int,
+        emb_size_bilinear: int,
+        emb_size_rbf: int,
+        emb_size_cbf: int,
+        activation: Optional[str] = None,
+        name: str = "TripletInteraction",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__()
         self.name = name
 
@@ -293,7 +294,7 @@ class TripletInteraction(torch.nn.Module):
 
     def forward(
         self,
-        m,
+        m: torch.Tensor,
         rbf3,
         cbf3,
         id3_ragged_idx,

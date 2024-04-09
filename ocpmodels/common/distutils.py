@@ -8,12 +8,21 @@ LICENSE file in the root directory of this source tree.
 import logging
 import os
 import subprocess
+from typing import List
 
 import torch
 import torch.distributed as dist
 
+from ocpmodels.common.typing import none_throws
 
-def setup(config):
+
+def os_environ_get_or_throw(x: str) -> str:
+    if x not in os.environ:
+        raise RuntimeError(f"Could not find {x} in ENV variables")
+    return none_throws(os.environ.get(x))
+
+
+def setup(config) -> None:
     if config["submit"]:
         node_list = os.environ.get("SLURM_STEP_NODELIST")
         if node_list is None:
@@ -27,25 +36,29 @@ def setup(config):
                     host=hostnames.split()[0].decode("utf-8"),
                     port=config["distributed_port"],
                 )
-                nnodes = int(os.environ.get("SLURM_NNODES"))
+                nnodes = int(os_environ_get_or_throw("SLURM_NNODES"))
                 ntasks_per_node = os.environ.get("SLURM_NTASKS_PER_NODE")
                 if ntasks_per_node is not None:
                     ntasks_per_node = int(ntasks_per_node)
                 else:
-                    ntasks = int(os.environ.get("SLURM_NTASKS"))
-                    nnodes = int(os.environ.get("SLURM_NNODES"))
+                    ntasks = int(os_environ_get_or_throw("SLURM_NTASKS"))
+                    nnodes = int(os_environ_get_or_throw("SLURM_NNODES"))
                     assert ntasks % nnodes == 0
                     ntasks_per_node = int(ntasks / nnodes)
                 if ntasks_per_node == 1:
                     assert config["world_size"] % nnodes == 0
                     gpus_per_node = config["world_size"] // nnodes
-                    node_id = int(os.environ.get("SLURM_NODEID"))
+                    node_id = int(os_environ_get_or_throw("SLURM_NODEID"))
                     config["rank"] = node_id * gpus_per_node
                     config["local_rank"] = 0
                 else:
                     assert ntasks_per_node == config["world_size"] // nnodes
-                    config["rank"] = int(os.environ.get("SLURM_PROCID"))
-                    config["local_rank"] = int(os.environ.get("SLURM_LOCALID"))
+                    config["rank"] = int(
+                        os_environ_get_or_throw("SLURM_PROCID")
+                    )
+                    config["local_rank"] = int(
+                        os_environ_get_or_throw("SLURM_LOCALID")
+                    )
 
                 logging.info(
                     f"Init: {config['init_method']}, {config['world_size']}, {config['rank']}"
@@ -90,39 +103,43 @@ def setup(config):
     # TODO: SLURM
 
 
-def cleanup():
+def cleanup() -> None:
     dist.destroy_process_group()
 
 
-def initialized():
+def initialized() -> bool:
     return dist.is_available() and dist.is_initialized()
 
 
-def get_rank():
+def get_rank() -> int:
     return dist.get_rank() if initialized() else 0
 
 
-def get_world_size():
+def get_world_size() -> int:
     return dist.get_world_size() if initialized() else 1
 
 
-def is_master():
+def is_master() -> bool:
     return get_rank() == 0
 
 
-def synchronize():
+def synchronize() -> None:
     if get_world_size() == 1:
         return
     dist.barrier()
 
 
-def broadcast(tensor, src, group=dist.group.WORLD, async_op=False):
+def broadcast(
+    tensor: torch.Tensor, src, group=dist.group.WORLD, async_op: bool = False
+) -> None:
     if get_world_size() == 1:
         return
     dist.broadcast(tensor, src, group, async_op)
 
 
-def all_reduce(data, group=dist.group.WORLD, average=False, device=None):
+def all_reduce(
+    data, group=dist.group.WORLD, average: bool = False, device=None
+) -> torch.Tensor:
     if get_world_size() == 1:
         return data
     tensor = data
@@ -140,7 +157,9 @@ def all_reduce(data, group=dist.group.WORLD, average=False, device=None):
     return result
 
 
-def all_gather(data, group=dist.group.WORLD, device=None):
+def all_gather(
+    data, group=dist.group.WORLD, device=None
+) -> List[torch.Tensor]:
     if get_world_size() == 1:
         return data
     tensor = data

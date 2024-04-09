@@ -11,13 +11,14 @@ LICENSE file in the root directory of this source tree.
 import math
 import numbers
 import random
+from typing import List
 
 import torch
 import torch_geometric
 from torch_geometric.transforms import LinearTransformation
 
 
-class RandomRotate(object):
+class RandomRotate:
     r"""Rotates node positions around a specific axis by a randomly sampled
     factor within a given interval.
 
@@ -29,7 +30,7 @@ class RandomRotate(object):
         axes (int, optional): The rotation axes. (default: `[0, 1, 2]`)
     """
 
-    def __init__(self, degrees, axes=[0, 1, 2]):
+    def __init__(self, degrees, axes: List[int] = [0, 1, 2]) -> None:
         if isinstance(degrees, numbers.Number):
             degrees = (-abs(degrees), abs(degrees))
         assert isinstance(degrees, (tuple, list)) and len(degrees) == 2
@@ -72,7 +73,7 @@ class RandomRotate(object):
             torch.inverse(matrix),
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "{}({}, axis={})".format(
             self.__class__.__name__, self.degrees, self.axis
         )

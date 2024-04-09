@@ -16,11 +16,11 @@ class LRScheduler:
         specify scheduler: "Null" in the optim section of the config.
 
     Args:
-        config (dict): Optim dict from the input config
         optimizer (obj): torch optim object
+        config (dict): Optim dict from the input config
     """
 
-    def __init__(self, optimizer, config):
+    def __init__(self, optimizer, config) -> None:
         self.optimizer = optimizer
         self.config = config.copy()
         if "scheduler" in self.config:
@@ -35,7 +35,7 @@ class LRScheduler:
             scheduler_args = self.filter_kwargs(config)
             self.scheduler = self.scheduler(optimizer, **scheduler_args)
 
-    def step(self, metrics=None, epoch=None):
+    def step(self, metrics=None, epoch=None) -> None:
         if self.scheduler_type == "Null":
             return
         if self.scheduler_type == "ReduceLROnPlateau":

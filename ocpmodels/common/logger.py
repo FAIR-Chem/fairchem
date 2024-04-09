@@ -19,7 +19,7 @@ class Logger(ABC):
     tensorboard, etc.
     """
 
-    def __init__(self, config):
+    def __init__(self, config) -> None:
         self.config = config
 
     @abstractmethod
@@ -27,9 +27,8 @@ class Logger(ABC):
         """
         Monitor parameters and gradients.
         """
-        pass
 
-    def log(self, update_dict, step=None, split=""):
+    def log(self, update_dict, step: int, split: str = ""):
         """
         Log some values.
         """
@@ -42,17 +41,17 @@ class Logger(ABC):
         return update_dict
 
     @abstractmethod
-    def log_plots(self, plots):
+    def log_plots(self, plots) -> None:
         pass
 
     @abstractmethod
-    def mark_preempting(self):
+    def mark_preempting(self) -> None:
         pass
 
 
 @registry.register_logger("wandb")
 class WandBLogger(Logger):
-    def __init__(self, config):
+    def __init__(self, config) -> None:
         super().__init__(config)
         project = (
             self.config["logger"].get("project", None)
@@ -69,36 +68,36 @@ class WandBLogger(Logger):
             resume="allow",
         )
 
-    def watch(self, model):
+    def watch(self, model) -> None:
         wandb.watch(model)
 
-    def log(self, update_dict, step=None, split=""):
+    def log(self, update_dict, step: int, split: str = "") -> None:
         update_dict = super().log(update_dict, step, split)
         wandb.log(update_dict, step=int(step))
 
-    def log_plots(self, plots, caption=""):
+    def log_plots(self, plots, caption: str = "") -> None:
         assert isinstance(plots, list)
         plots = [wandb.Image(x, caption=caption) for x in plots]
         wandb.log({"data": plots})
 
-    def mark_preempting(self):
+    def mark_preempting(self) -> None:
         wandb.mark_preempting()
 
 
 @registry.register_logger("tensorboard")
 class TensorboardLogger(Logger):
-    def __init__(self, config):
+    def __init__(self, config) -> None:
         super().__init__(config)
         self.writer = SummaryWriter(self.config["cmd"]["logs_dir"])
 
     # TODO: add a model hook for watching gradients.
-    def watch(self, model):
+    def watch(self, model) -> bool:
         logging.warning(
             "Model gradient logging to tensorboard not yet supported."
         )
         return False
 
-    def log(self, update_dict, step=None, split=""):
+    def log(self, update_dict, step: int, split: str = ""):
         update_dict = super().log(update_dict, step, split)
         for key in update_dict:
             if torch.is_tensor(update_dict[key]):
@@ -109,8 +108,8 @@ class TensorboardLogger(Logger):
                 )
                 self.writer.add_scalar(key, update_dict[key], step)
 
-    def mark_preempting(self):
+    def mark_preempting(self) -> None:
         pass
 
-    def log_plots(self, plots):
+    def log_plots(self, plots) -> None:
         pass

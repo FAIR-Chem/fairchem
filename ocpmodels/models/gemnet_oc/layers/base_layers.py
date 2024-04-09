@@ -5,6 +5,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 import math
+from typing import Optional
 
 import torch
 
@@ -27,7 +28,13 @@ class Dense(torch.nn.Module):
         Name of the activation function to use.
     """
 
-    def __init__(self, in_features, out_features, bias=False, activation=None):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        bias: bool = False,
+        activation: Optional[str] = None,
+    ) -> None:
         super().__init__()
 
         self.linear = torch.nn.Linear(in_features, out_features, bias=bias)
@@ -44,7 +51,7 @@ class Dense(torch.nn.Module):
                 "Activation function not implemented for GemNet (yet)."
             )
 
-    def reset_parameters(self, initializer=he_orthogonal_init):
+    def reset_parameters(self, initializer=he_orthogonal_init) -> None:
         initializer(self.linear.weight)
         if self.linear.bias is not None:
             self.linear.bias.data.fill_(0)
@@ -56,7 +63,7 @@ class Dense(torch.nn.Module):
 
 
 class ScaledSiLU(torch.nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.scale_factor = 1 / 0.6
         self._activation = torch.nn.SiLU()
@@ -83,7 +90,7 @@ class ResidualLayer(torch.nn.Module):
 
     def __init__(
         self, units: int, nLayers: int = 2, layer=Dense, **layer_kwargs
-    ):
+    ) -> None:
         super().__init__()
         self.dense_mlp = torch.nn.Sequential(
             *[

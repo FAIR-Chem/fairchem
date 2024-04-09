@@ -18,13 +18,13 @@ class ForceScaler:
 
     def __init__(
         self,
-        init_scale=2.0**8,
-        growth_factor=2.0,
-        backoff_factor=0.5,
-        growth_interval=2000,
-        max_force_iters=50,
-        enabled=True,
-    ):
+        init_scale: float = 2.0**8,
+        growth_factor: float = 2.0,
+        backoff_factor: float = 0.5,
+        growth_interval: int = 2000,
+        max_force_iters: int = 50,
+        enabled: bool = True,
+    ) -> None:
         self.scale_factor = init_scale
         self.growth_factor = growth_factor
         self.backoff_factor = backoff_factor
@@ -82,7 +82,7 @@ class ForceScaler:
             forces = self.calc_forces(energy, pos)
         return forces
 
-    def update(self):
+    def update(self) -> None:
         if self.finite_force_results == 0:
             self.scale_factor *= self.backoff_factor
 

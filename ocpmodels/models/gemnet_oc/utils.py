@@ -45,11 +45,11 @@ def ragged_range(sizes):
 def repeat_blocks(
     sizes,
     repeats,
-    continuous_indexing=True,
-    start_idx=0,
-    block_inc=0,
-    repeat_inc=0,
-):
+    continuous_indexing: bool = True,
+    start_idx: int = 0,
+    block_inc: int = 0,
+    repeat_inc: int = 0,
+) -> torch.Tensor:
     """Repeat blocks of indices.
     Adapted from https://stackoverflow.com/questions/51154989/numpy-vectorized-function-to-repeat-blocks-of-consecutive-elements
 
@@ -187,7 +187,7 @@ def repeat_blocks(
     return res
 
 
-def masked_select_sparsetensor_flat(src, mask):
+def masked_select_sparsetensor_flat(src, mask) -> SparseTensor:
     row, col, value = src.coo()
     row = row[mask]
     col = col[mask]
@@ -234,7 +234,7 @@ def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
     return D_st, V_st
 
 
-def inner_product_clamped(x, y):
+def inner_product_clamped(x, y) -> torch.Tensor:
     """
     Calculate the inner product between the given normalized vectors,
     giving a result between -1 and 1.
@@ -242,7 +242,7 @@ def inner_product_clamped(x, y):
     return torch.sum(x * y, dim=-1).clamp(min=-1, max=1)
 
 
-def get_angle(R_ac, R_ab):
+def get_angle(R_ac, R_ab) -> torch.Tensor:
     """Calculate angles between atoms c -> a <- b.
 
     Arguments
@@ -288,7 +288,7 @@ def vector_rejection(R_ab, P_n):
     return R_ab - (a_x_b / b_x_b)[:, None] * P_n
 
 
-def get_projected_angle(R_ab, P_n, eps=1e-4):
+def get_projected_angle(R_ab, P_n, eps: float = 1e-4) -> torch.Tensor:
     """
     Project the vector R_ab onto a plane with normal vector P_n,
     then calculate the angle w.r.t. the (x [cross] P_n),
@@ -337,7 +337,7 @@ def mask_neighbors(neighbors, edge_mask):
     return neighbors
 
 
-def get_neighbor_order(num_atoms, index, atom_distance):
+def get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor:
     """
     Give a mask that filters out edges so that each atom has at most
     `max_num_neighbors_threshold` neighbors.
@@ -410,7 +410,7 @@ def get_inner_idx(idx, dim_size):
     return inner_idx
 
 
-def get_edge_id(edge_idx, cell_offsets, num_atoms):
+def get_edge_id(edge_idx, cell_offsets, num_atoms: int):
     cell_basis = cell_offsets.max() - cell_offsets.min() + 1
     cell_id = (
         (

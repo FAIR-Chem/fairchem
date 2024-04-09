@@ -1,4 +1,3 @@
-import logging
 import os
 
 import ray
@@ -12,7 +11,7 @@ from ocpmodels.common.utils import build_config, setup_imports
 
 
 # this function is general and should work for any ocp trainer
-def ocp_trainable(config, checkpoint_dir=None):
+def ocp_trainable(config, checkpoint_dir=None) -> None:
     setup_imports()
     # update config for PBT learning rate
     config["optim"].update(lr_initial=config["lr"])
@@ -46,7 +45,7 @@ def ocp_trainable(config, checkpoint_dir=None):
 
 
 # this section defines all the Ray Tune run parameters
-def main():
+def main() -> None:
     # parse config
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()

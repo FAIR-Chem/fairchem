@@ -16,18 +16,31 @@ from ocpmodels.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")
-def atoms_to_graphs_internals(request):
+def atoms_to_graphs_internals(request) -> None:
     atoms = read(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "atoms.json"),
         index=0,
         format="json",
+    )
+    atoms.info["stiffness_tensor"] = np.array(
+        [
+            [293, 121, 121, 0, 0, 0],
+            [121, 293, 121, 0, 0, 0],
+            [121, 121, 293, 0, 0, 0],
+            [0, 0, 0, 146, 0, 0],
+            [0, 0, 0, 0, 146, 0],
+            [0, 0, 0, 0, 0, 146],
+        ],
+        dtype=float,
     )
     test_object = AtomsToGraphs(
         max_neigh=200,
         radius=6,
         r_energy=True,
         r_forces=True,
+        r_stress=True,
         r_distances=True,
+        r_data_keys=["stiffness_tensor"],
     )
     request.cls.atg = test_object
     request.cls.atoms = atoms
@@ -35,7 +48,7 @@ def atoms_to_graphs_internals(request):
 
 @pytest.mark.usefixtures("atoms_to_graphs_internals")
 class TestAtomsToGraphs:
-    def test_gen_neighbors_pymatgen(self):
+    def test_gen_neighbors_pymatgen(self) -> None:
         # call the internal function
         (
             c_index,
@@ -87,7 +100,7 @@ class TestAtomsToGraphs:
         np.testing.assert_allclose(act_dist, test_dist)
         np.testing.assert_array_equal(act_index, test_index)
 
-    def test_convert(self):
+    def test_convert(self) -> None:
         # run convert on a single atoms obj
         data = self.atg.convert(self.atoms)
         # atomic numbers
@@ -100,14 +113,23 @@ class TestAtomsToGraphs:
         np.testing.assert_allclose(act_positions, positions)
         # check energy value
         act_energy = self.atoms.get_potential_energy(apply_constraint=False)
-        test_energy = data.y
+        test_energy = data.energy
         np.testing.assert_equal(act_energy, test_energy)
         # forces
         act_forces = self.atoms.get_forces(apply_constraint=False)
-        forces = data.force.numpy()
+        forces = data.forces.numpy()
         np.testing.assert_allclose(act_forces, forces)
+        # stress
+        act_stress = self.atoms.get_stress(apply_constraint=False, voigt=False)
+        stress = data.stress.numpy()
+        np.testing.assert_allclose(act_stress, stress)
+        # additional data (ie stiffness_tensor)
+        stiffness_tensor = data.stiffness_tensor.numpy()
+        np.testing.assert_allclose(
+            self.atoms.info["stiffness_tensor"], stiffness_tensor
+        )
 
-    def test_convert_all(self):
+    def test_convert_all(self) -> None:
         # run convert_all on a list with one atoms object
         # this does not test the atoms.db functionality
         atoms_list = [self.atoms]
@@ -123,9 +145,18 @@ class TestAtomsToGraphs:
         np.testing.assert_allclose(act_positions, positions)
         # check energy value
         act_energy = self.atoms.get_potential_energy(apply_constraint=False)
-        test_energy = data_list[0].y
+        test_energy = data_list[0].energy
         np.testing.assert_equal(act_energy, test_energy)
         # forces
         act_forces = self.atoms.get_forces(apply_constraint=False)
-        forces = data_list[0].force.numpy()
+        forces = data_list[0].forces.numpy()
         np.testing.assert_allclose(act_forces, forces)
+        # stress
+        act_stress = self.atoms.get_stress(apply_constraint=False, voigt=False)
+        stress = data_list[0].stress.numpy()
+        np.testing.assert_allclose(act_stress, stress)
+        # additional data (ie stiffness_tensor)
+        stiffness_tensor = data_list[0].stiffness_tensor.numpy()
+        np.testing.assert_allclose(
+            self.atoms.info["stiffness_tensor"], stiffness_tensor
+        )

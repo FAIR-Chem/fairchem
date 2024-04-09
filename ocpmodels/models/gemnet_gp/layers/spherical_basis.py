@@ -9,6 +9,8 @@ import sympy as sym
 import torch
 from torch_geometric.nn.models.schnet import GaussianSmearing
 
+from ocpmodels.common.typing import assert_is_instance
+
 from .basis_utils import real_sph_harm
 from .radial_basis import RadialBasis
 
@@ -33,15 +35,15 @@ class CircularBasisLayer(torch.nn.Module):
         self,
         num_spherical: int,
         radial_basis: RadialBasis,
-        cbf: str,
+        cbf,
         efficient: bool = False,
-    ):
+    ) -> None:
         super().__init__()
 
         self.radial_basis = radial_basis
         self.efficient = efficient
 
-        cbf_name = cbf["name"].lower()
+        cbf_name = assert_is_instance(cbf["name"], str).lower()
         cbf_hparams = cbf.copy()
         del cbf_hparams["name"]
 

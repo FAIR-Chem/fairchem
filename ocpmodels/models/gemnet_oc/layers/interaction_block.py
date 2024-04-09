@@ -72,28 +72,28 @@ class InteractionBlock(torch.nn.Module):
 
     def __init__(
         self,
-        emb_size_atom,
-        emb_size_edge,
-        emb_size_trip_in,
-        emb_size_trip_out,
-        emb_size_quad_in,
-        emb_size_quad_out,
-        emb_size_a2a_in,
-        emb_size_a2a_out,
-        emb_size_rbf,
-        emb_size_cbf,
-        emb_size_sbf,
-        num_before_skip,
-        num_after_skip,
-        num_concat,
-        num_atom,
-        num_atom_emb_layers=0,
-        quad_interaction=False,
-        atom_edge_interaction=False,
-        edge_atom_interaction=False,
-        atom_interaction=False,
+        emb_size_atom: int,
+        emb_size_edge: int,
+        emb_size_trip_in: int,
+        emb_size_trip_out: int,
+        emb_size_quad_in: int,
+        emb_size_quad_out: int,
+        emb_size_a2a_in: int,
+        emb_size_a2a_out: int,
+        emb_size_rbf: int,
+        emb_size_cbf: int,
+        emb_size_sbf: int,
+        num_before_skip: int,
+        num_after_skip: int,
+        num_concat: int,
+        num_atom: int,
+        num_atom_emb_layers: int = 0,
+        quad_interaction: bool = False,
+        atom_edge_interaction: bool = False,
+        edge_atom_interaction: bool = False,
+        atom_interaction: bool = False,
         activation=None,
-    ):
+    ) -> None:
         super().__init__()
 
         ## ------------------------ Message Passing ----------------------- ##
@@ -322,7 +322,7 @@ class InteractionBlock(torch.nn.Module):
 
         ## -------------------- Update Edge Embeddings -------------------- ##
         # Transformations before skip connection
-        for i, layer in enumerate(self.layers_before_skip):
+        for _, layer in enumerate(self.layers_before_skip):
             x = layer(x)  # (nEdges, emb_size_edge)
 
         # Skip connection
@@ -330,7 +330,7 @@ class InteractionBlock(torch.nn.Module):
         m = m * self.inv_sqrt_2
 
         # Transformations after skip connection
-        for i, layer in enumerate(self.layers_after_skip):
+        for _, layer in enumerate(self.layers_after_skip):
             m = layer(m)  # (nEdges, emb_size_edge)
 
         ## -------------------- Update Atom Embeddings -------------------- ##
@@ -347,7 +347,7 @@ class InteractionBlock(torch.nn.Module):
         m2 = self.concat_layer(h, m, edge_index_main)
         # (nEdges, emb_size_edge)
 
-        for i, layer in enumerate(self.residual_m):
+        for _, layer in enumerate(self.residual_m):
             m2 = layer(m2)  # (nEdges, emb_size_edge)
 
         # Skip connection
@@ -393,7 +393,7 @@ class QuadrupletInteraction(torch.nn.Module):
         emb_size_sbf,
         symmetric_mp=True,
         activation=None,
-    ):
+    ) -> None:
         super().__init__()
         self.symmetric_mp = symmetric_mp
 
@@ -542,16 +542,16 @@ class TripletInteraction(torch.nn.Module):
 
     def __init__(
         self,
-        emb_size_in,
-        emb_size_out,
-        emb_size_trip_in,
-        emb_size_trip_out,
-        emb_size_rbf,
-        emb_size_cbf,
-        symmetric_mp=True,
-        swap_output=True,
+        emb_size_in: int,
+        emb_size_out: int,
+        emb_size_trip_in: int,
+        emb_size_trip_out: int,
+        emb_size_rbf: int,
+        emb_size_cbf: int,
+        symmetric_mp: bool = True,
+        swap_output: bool = True,
         activation=None,
-    ):
+    ) -> None:
         super().__init__()
         self.symmetric_mp = symmetric_mp
         self.swap_output = swap_output
@@ -695,7 +695,7 @@ class PairInteraction(torch.nn.Module):
         emb_size_pair_out,
         emb_size_rbf,
         activation=None,
-    ):
+    ) -> None:
         super().__init__()
 
         # Bilinear layer and scaling factor

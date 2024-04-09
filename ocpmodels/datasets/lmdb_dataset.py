@@ -1,46 +1,53 @@
 """
 Copyright (c) Facebook, Inc. and its affiliates.
-
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
 import bisect
 import logging
-import math
 import pickle
-import random
 import warnings
 from pathlib import Path
+from typing import List, Optional, TypeVar
 
 import lmdb
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 from torch_geometric.data import Batch
+from torch_geometric.data.data import BaseData
 
-from ocpmodels.common import distutils
 from ocpmodels.common.registry import registry
+from ocpmodels.common.typing import assert_is_instance
 from ocpmodels.common.utils import pyg2_data_transform
+from ocpmodels.datasets._utils import rename_data_object_keys
+from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
+from ocpmodels.modules.transforms import DataTransforms
+
+T_co = TypeVar("T_co", covariant=True)
 
 
 @registry.register_dataset("lmdb")
 @registry.register_dataset("single_point_lmdb")
 @registry.register_dataset("trajectory_lmdb")
-class LmdbDataset(Dataset):
+class LmdbDataset(Dataset[T_co]):
+    metadata_path: Path
+    sharded: bool
+
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
-
     Useful for Structure to Energy & Force (S2EF), Initial State to
     Relaxed State (IS2RS), and Initial State to Relaxed Energy (IS2RE) tasks.
-
+    The keys in the LMDB must be integers (stored as ascii objects) starting
+    from 0 through the length of the LMDB. For historical reasons any key named
+    "length" is ignored since that was used to infer length of many lmdbs in the same
+    folder, but lmdb lengths are now calculated directly from the number of keys.
     Args:
             config (dict): Dataset configuration
-            transform (callable, optional): Data transform function.
-                    (default: :obj:`None`)
     """
 
-    def __init__(self, config, transform=None):
+    def __init__(self, config) -> None:
         super(LmdbDataset, self).__init__()
         self.config = config
 
@@ -55,13 +62,23 @@ class LmdbDataset(Dataset):
 
             self.metadata_path = self.path / "metadata.npz"
 
-            self._keys, self.envs = [], []
+            self._keys = []
+            self.envs = []
             for db_path in db_paths:
-                self.envs.append(self.connect_db(db_path))
-                length = pickle.loads(
-                    self.envs[-1].begin().get("length".encode("ascii"))
-                )
-                self._keys.append(list(range(length)))
+                cur_env = self.connect_db(db_path)
+                self.envs.append(cur_env)
+
+                # If "length" encoded as ascii is present, use that
+                length_entry = cur_env.begin().get("length".encode("ascii"))
+                if length_entry is not None:
+                    num_entries = pickle.loads(length_entry)
+                else:
+                    # Get the number of stores data from the number of entries
+                    # in the LMDB
+                    num_entries = cur_env.stat()["entries"]
+
+                # Append the keys (0->num_entries) as a list
+                self._keys.append(list(range(num_entries)))
 
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
@@ -69,11 +86,20 @@ class LmdbDataset(Dataset):
         else:
             self.metadata_path = self.path.parent / "metadata.npz"
             self.env = self.connect_db(self.path)
-            self._keys = [
-                f"{j}".encode("ascii")
-                for j in range(self.env.stat()["entries"])
-            ]
-            self.num_samples = len(self._keys)
+
+            # If "length" encoded as ascii is present, use that
+            length_entry = self.env.begin().get("length".encode("ascii"))
+            if length_entry is not None:
+                num_entries = pickle.loads(length_entry)
+            else:
+                # Get the number of stores data from the number of entries
+                # in the LMDB
+                num_entries = assert_is_instance(
+                    self.env.stat()["entries"], int
+                )
+
+            self._keys = list(range(num_entries))
+            self.num_samples = num_entries
 
         # If specified, limit dataset to only a portion of the entire dataset
         # total_shards: defines total chunks to partition dataset
@@ -90,12 +116,13 @@ class LmdbDataset(Dataset):
             self.available_indices = self.shards[self.config.get("shard", 0)]
             self.num_samples = len(self.available_indices)
 
-        self.transform = transform
+        self.key_mapping = self.config.get("key_mapping", None)
+        self.transforms = DataTransforms(self.config.get("transforms", {}))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.num_samples
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> T_co:
         # if sharding, remap idx to appropriate idx of the sharded set
         if self.sharded:
             idx = self.available_indices[idx]
@@ -117,36 +144,84 @@ class LmdbDataset(Dataset):
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
             data_object.id = f"{db_idx}_{el_idx}"
         else:
-            datapoint_pickled = self.env.begin().get(self._keys[idx])
+            datapoint_pickled = self.env.begin().get(
+                f"{self._keys[idx]}".encode("ascii")
+            )
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
 
-        if self.transform is not None:
-            data_object = self.transform(data_object)
+        if self.key_mapping is not None:
+            data_object = rename_data_object_keys(
+                data_object, self.key_mapping
+            )
+
+        data_object = self.transforms(data_object)
 
         return data_object
 
-    def connect_db(self, lmdb_path=None):
+    def connect_db(self, lmdb_path: Optional[Path] = None) -> lmdb.Environment:
         env = lmdb.open(
             str(lmdb_path),
             subdir=False,
             readonly=True,
             lock=False,
-            readahead=False,
+            readahead=True,
             meminit=False,
             max_readers=1,
         )
         return env
 
-    def close_db(self):
+    def close_db(self) -> None:
         if not self.path.is_file():
             for env in self.envs:
                 env.close()
         else:
             self.env.close()
 
+    def get_metadata(self, num_samples: int = 100):
+        # This will interogate the classic OCP LMDB format to determine
+        # which properties are present and attempt to guess their shapes
+        # and whether they are intensive or extensive.
 
-class SinglePointLmdbDataset(LmdbDataset):
-    def __init__(self, config, transform=None):
+        # Grab an example data point
+        example_pyg_data = self.__getitem__(0)
+
+        # Check for all properties we've used for OCP datasets in the past
+        props = []
+        for potential_prop in [
+            "y",
+            "y_relaxed",
+            "stress",
+            "stresses",
+            "force",
+            "forces",
+        ]:
+            if hasattr(example_pyg_data, potential_prop):
+                props.append(potential_prop)
+
+        # Get a bunch of random data samples and the number of atoms
+        sample_pyg = [
+            self[i]
+            for i in np.random.choice(
+                self.__len__(), size=(num_samples,), replace=False
+            )
+        ]
+        atoms_lens = [data.natoms for data in sample_pyg]
+
+        # Guess the metadata for targets for each found property
+        metadata = {
+            "targets": {
+                prop: guess_property_metadata(
+                    atoms_lens, [getattr(data, prop) for data in sample_pyg]
+                )
+                for prop in props
+            }
+        }
+
+        return metadata
+
+
+class SinglePointLmdbDataset(LmdbDataset[BaseData]):
+    def __init__(self, config, transform=None) -> None:
         super(SinglePointLmdbDataset, self).__init__(config, transform)
         warnings.warn(
             "SinglePointLmdbDataset is deprecated and will be removed in the future."
@@ -155,8 +230,8 @@ class SinglePointLmdbDataset(LmdbDataset):
         )
 
 
-class TrajectoryLmdbDataset(LmdbDataset):
-    def __init__(self, config, transform=None):
+class TrajectoryLmdbDataset(LmdbDataset[BaseData]):
+    def __init__(self, config, transform=None) -> None:
         super(TrajectoryLmdbDataset, self).__init__(config, transform)
         warnings.warn(
             "TrajectoryLmdbDataset is deprecated and will be removed in the future."
@@ -165,13 +240,15 @@ class TrajectoryLmdbDataset(LmdbDataset):
         )
 
 
-def data_list_collater(data_list, otf_graph=False):
+def data_list_collater(
+    data_list: List[BaseData], otf_graph: bool = False
+) -> BaseData:
     batch = Batch.from_data_list(data_list)
 
     if not otf_graph:
         try:
             n_neighbors = []
-            for i, data in enumerate(data_list):
+            for _, data in enumerate(data_list):
                 n_index = data.edge_index[1, :]
                 n_neighbors.append(n_index.shape[0])
             batch.neighbors = torch.tensor(n_neighbors)

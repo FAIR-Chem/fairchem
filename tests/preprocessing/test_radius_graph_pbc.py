@@ -7,24 +7,21 @@ LICENSE file in the root directory of this source tree.
 
 import os
 
-import ase
-import numpy as np
 import pytest
 import torch
+from ase.build import molecule
 from ase.io import read
 from ase.lattice.cubic import FaceCenteredCubic
-from ase.build import molecule
-from pymatgen.io.ase import AseAtomsAdaptor
 from torch_geometric.transforms.radius_graph import RadiusGraph
 from torch_geometric.utils.sort_edge_index import sort_edge_index
 
-from ocpmodels.common.utils import get_pbc_distances, radius_graph_pbc
+from ocpmodels.common.utils import radius_graph_pbc
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")
-def load_data(request):
+def load_data(request) -> None:
     atoms = read(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "atoms.json"),
         index=0,
@@ -43,45 +40,43 @@ def load_data(request):
 
 def check_features_match(
     edge_index_1, cell_offsets_1, edge_index_2, cell_offsets_2
-):
+) -> bool:
     # Combine both edge indices and offsets to one tensor
     features_1 = torch.cat((edge_index_1, cell_offsets_1.T), dim=0).T
     features_2 = torch.cat((edge_index_2, cell_offsets_2.T), dim=0).T.long()
 
     # Convert rows of tensors to sets. The order of edges is not guaranteed
-    features_1 = {tuple(x.tolist()) for x in features_1}
-    features_2 = {tuple(x.tolist()) for x in features_2}
+    features_1_set = {tuple(x.tolist()) for x in features_1}
+    features_2_set = {tuple(x.tolist()) for x in features_2}
 
     # Ensure sets are not empty
-    assert len(features_1) > 0
-    assert len(features_2) > 0
+    assert len(features_1_set) > 0
+    assert len(features_2_set) > 0
 
     # Ensure sets are the same
-    assert features_1 == features_2
+    assert features_1_set == features_2_set
 
     return True
 
 
 @pytest.mark.usefixtures("load_data")
 class TestRadiusGraphPBC:
-    def test_radius_graph_pbc(self):
+    def test_radius_graph_pbc(self) -> None:
         data = self.data
         batch = data_list_collater([data] * 5)
 
-        out = radius_graph_pbc(
+        edge_index, cell_offsets, neighbors = radius_graph_pbc(
             batch,
             radius=6,
             max_num_neighbors_threshold=2000,
             pbc=[True, True, False],
         )
 
-        edge_index, cell_offsets, neighbors = out
-
         assert check_features_match(
-            batch.edge_index, batch.cell_offsets, out[0], out[1]
+            batch.edge_index, batch.cell_offsets, edge_index, cell_offsets
         )
 
-    def test_bulk(self):
+    def test_bulk(self) -> None:
         radius = 10
 
         # Must be sufficiently large to ensure all edges are retained
@@ -244,7 +239,7 @@ class TestRadiusGraphPBC:
             sort_edge_index(out[0]) == sort_edge_index(radgraph.edge_index)
         ).all()
 
-    def test_molecule(self):
+    def test_molecule(self) -> None:
         radius = 6
         max_neigh = 1000
         a2g = AtomsToGraphs(radius=radius, max_neigh=max_neigh)

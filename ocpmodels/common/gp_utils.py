@@ -4,8 +4,9 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+import logging
 import math
-from typing import Any, List
+from typing import Any, Optional
 
 import torch
 from torch import distributed as dist
@@ -22,16 +23,16 @@ _GRAPH_PARALLEL_GROUP = None
 _DATA_PARALLEL_GROUP = None
 
 
-def ensure_div(a, b):
+def ensure_div(a: int, b: int) -> None:
     assert a % b == 0
 
 
-def divide_and_check_no_remainder(a: int, b: int):
+def divide_and_check_no_remainder(a: int, b: int) -> int:
     ensure_div(a, b)
     return a // b
 
 
-def setup_gp(config):
+def setup_gp(config) -> None:
     gp_size = config["gp_gpus"]
     backend = config["distributed_backend"]
     assert torch.distributed.is_initialized()
@@ -43,8 +44,10 @@ def setup_gp(config):
     rank = dist.get_rank()
 
     if rank == 0:
-        print("> initializing graph parallel with size {}".format(gp_size))
-        print("> initializing ddp with size {}".format(dp_size))
+        logging.info(
+            "> initializing graph parallel with size {}".format(gp_size)
+        )
+        logging.info("> initializing ddp with size {}".format(dp_size))
 
     groups = torch.arange(world_size).reshape(dp_size, gp_size)
     found = [x.item() for x in torch.where(groups == rank)]
@@ -67,12 +70,12 @@ def setup_gp(config):
             _GRAPH_PARALLEL_GROUP = group
 
 
-def cleanup_gp():
+def cleanup_gp() -> None:
     dist.destroy_process_group(_DATA_PARALLEL_GROUP)
     dist.destroy_process_group(_GRAPH_PARALLEL_GROUP)
 
 
-def initialized():
+def initialized() -> bool:
     return _GRAPH_PARALLEL_GROUP is not None
 
 
@@ -84,19 +87,19 @@ def get_gp_group():
     return _GRAPH_PARALLEL_GROUP
 
 
-def get_dp_rank():
+def get_dp_rank() -> int:
     return dist.get_rank(group=get_dp_group())
 
 
-def get_gp_rank():
+def get_gp_rank() -> int:
     return dist.get_rank(group=get_gp_group())
 
 
-def get_dp_world_size():
+def get_dp_world_size() -> int:
     return dist.get_world_size(group=get_dp_group())
 
 
-def get_gp_world_size():
+def get_gp_world_size() -> int:
     return (
         1 if not initialized() else dist.get_world_size(group=get_gp_group())
     )
@@ -105,7 +108,9 @@ def get_gp_world_size():
 ########## DIST METHODS ##########
 
 
-def pad_tensor(tensor: torch.Tensor, dim: int = -1, target_size: int = None):
+def pad_tensor(
+    tensor: torch.Tensor, dim: int = -1, target_size: Optional[int] = None
+) -> torch.Tensor:
     size = tensor.size(dim)
     if target_size is None:
         world_size = get_gp_world_size()
@@ -124,7 +129,7 @@ def pad_tensor(tensor: torch.Tensor, dim: int = -1, target_size: int = None):
 
 
 def trim_tensor(
-    tensor: torch.Tensor, sizes: torch.Tensor = None, dim: int = 0
+    tensor: torch.Tensor, sizes: Optional[torch.Tensor] = None, dim: int = 0
 ):
     size = tensor.size(dim)
     world_size = get_gp_world_size()
@@ -187,7 +192,7 @@ def _gather(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
     return torch.cat(tensor_list, dim=dim).contiguous()
 
 
-def _gather_with_padding(input: torch.Tensor, dim: int = -1):
+def _gather_with_padding(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
     group = get_gp_group()
     rank = get_gp_rank()
     world_size = dist.get_world_size(group=group)
@@ -206,7 +211,7 @@ def _gather_with_padding(input: torch.Tensor, dim: int = -1):
     dist.all_gather(size_list, size, group=group)
 
     # Gather the inputs
-    max_size = max([size.item() for size in size_list])
+    max_size = int(max([size.item() for size in size_list]))
     input = pad_tensor(input, dim, max_size)
     shape = list(input.shape)
     shape[dim] = max_size
@@ -233,28 +238,28 @@ def _gather_with_padding(input: torch.Tensor, dim: int = -1):
 
 class CopyToModelParallelRegion(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input: torch.Tensor):
+    def forward(ctx, input: torch.Tensor) -> torch.Tensor:
         return input
 
     @staticmethod
-    def backward(ctx, grad_output: torch.Tensor):
+    def backward(ctx, grad_output: torch.Tensor) -> torch.Tensor:
         return _reduce(None, grad_output)
 
 
 class ReduceFromModelParallelRegion(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input: torch.Tensor):
+    def forward(ctx, input: torch.Tensor) -> torch.Tensor:
         return _reduce(ctx, input)
 
     @staticmethod
-    def backward(ctx, grad_output: torch.Tensor):
+    def backward(ctx, grad_output: torch.Tensor) -> torch.Tensor:
         world_size = 1
         return grad_output.mul_(world_size)
 
 
 class ScatterToModelParallelRegion(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input: torch.Tensor, dim: int = -1):
+    def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
         result = _split(input, dim)
         ctx.save_for_backward(torch.tensor(dim))
         return result
@@ -271,7 +276,7 @@ class ScatterToModelParallelRegion(torch.autograd.Function):
 
 class GatherFromModelParallelRegion(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input: torch.Tensor, dim: int = -1):
+    def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
         ctx.save_for_backward(torch.tensor(dim))
         result = _gather_with_padding(input, dim)
         return result

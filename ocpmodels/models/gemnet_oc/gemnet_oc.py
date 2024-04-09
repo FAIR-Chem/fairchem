@@ -5,21 +5,16 @@ LICENSE file in the root directory of this source tree.
 """
 
 import logging
-import os
-from typing import Optional
+from typing import Dict, Optional, Union
 
 import numpy as np
 import torch
-from torch_geometric.nn import radius_graph
-from torch_scatter import scatter, segment_coo
+from torch_scatter import segment_coo
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
-    compute_neighbors,
     conditional_grad,
     get_max_neighbors_mask,
-    get_pbc_distances,
-    radius_graph_pbc,
     scatter_det,
 )
 from ocpmodels.models.base import BaseModel
@@ -224,11 +219,14 @@ class GemNetOC(BaseModel):
         max_neighbors_aeaint: Optional[int] = None,
         max_neighbors_aint: Optional[int] = None,
         enforce_max_neighbors_strictly: bool = True,
-        rbf: dict = {"name": "gaussian"},
+        rbf: Dict[str, str] = {"name": "gaussian"},
         rbf_spherical: Optional[dict] = None,
-        envelope: dict = {"name": "polynomial", "exponent": 5},
-        cbf: dict = {"name": "spherical_harmonics"},
-        sbf: dict = {"name": "spherical_harmonics"},
+        envelope: Dict[str, Union[str, int]] = {
+            "name": "polynomial",
+            "exponent": 5,
+        },
+        cbf: Dict[str, str] = {"name": "spherical_harmonics"},
+        sbf: Dict[str, str] = {"name": "spherical_harmonics"},
         extensive: bool = True,
         forces_coupled: bool = False,
         output_init: str = "HeOrthogonal",
@@ -243,7 +241,7 @@ class GemNetOC(BaseModel):
         otf_graph: bool = False,
         scale_file: Optional[str] = None,
         **kwargs,  # backwards compatibility with deprecated arguments
-    ):
+    ) -> None:
         super().__init__()
         if len(kwargs) > 0:
             logging.warning(f"Unrecognized arguments: {list(kwargs.keys())}")
@@ -347,8 +345,7 @@ class GemNetOC(BaseModel):
                 emb_size_atom,
                 activation=activation,
             )
-        ]
-        out_mlp_E += [
+        ] + [
             ResidualLayer(
                 emb_size_atom,
                 activation=activation,
@@ -366,8 +363,7 @@ class GemNetOC(BaseModel):
                     emb_size_edge,
                     activation=activation,
                 )
-            ]
-            out_mlp_F += [
+            ] + [
                 ResidualLayer(
                     emb_size_edge,
                     activation=activation,
@@ -701,7 +697,13 @@ class GemNetOC(BaseModel):
 
         return cosφ_cab, cosφ_abd, angle_cabd
 
-    def select_symmetric_edges(self, tensor, mask, reorder_idx, opposite_neg):
+    def select_symmetric_edges(
+        self,
+        tensor: torch.Tensor,
+        mask: torch.Tensor,
+        reorder_idx: torch.Tensor,
+        opposite_neg,
+    ) -> torch.Tensor:
         """Use a mask to remove values of removed edges and then
         duplicate the values for the correct edge direction.
 
@@ -1321,6 +1323,8 @@ class GemNetOC(BaseModel):
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
             )  # (nMolecules, num_targets)
 
+        E_t = E_t.squeeze(1)  # (num_molecules)
+        outputs = {"energy": E_t}
         if self.regress_forces:
             if self.direct_forces:
                 if self.forces_coupled:  # enforce F_st = F_ts
@@ -1352,13 +1356,12 @@ class GemNetOC(BaseModel):
             else:
                 F_t = self.force_scaler.calc_forces_and_update(E_t, pos)
 
-            E_t = E_t.squeeze(1)  # (num_molecules)
             F_t = F_t.squeeze(1)  # (num_atoms, 3)
-            return E_t, F_t
-        else:
-            E_t = E_t.squeeze(1)  # (num_molecules)
-            return E_t
+
+            outputs["forces"] = F_t
+
+        return outputs
 
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())

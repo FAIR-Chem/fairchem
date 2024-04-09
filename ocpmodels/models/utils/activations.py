@@ -10,13 +10,13 @@ import torch.nn.functional as F
 
 
 class Act(torch.nn.Module):
-    def __init__(self, act, slope=0.05):
+    def __init__(self, act: str, slope: float = 0.05) -> None:
         super(Act, self).__init__()
         self.act = act
         self.slope = slope
         self.shift = torch.log(torch.tensor(2.0)).item()
 
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         if self.act == "relu":
             return F.relu(input)
         elif self.act == "leaky_relu":

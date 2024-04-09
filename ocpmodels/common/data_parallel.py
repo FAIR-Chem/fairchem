@@ -7,119 +7,37 @@ LICENSE file in the root directory of this source tree.
 
 import heapq
 import logging
-from itertools import chain
 from pathlib import Path
-from typing import List, Literal, Protocol, Union, runtime_checkable
+from typing import List, Literal, Protocol, Tuple, Union, runtime_checkable
 
 import numba
 import numpy as np
+import numpy.typing as npt
 import torch
 from torch.utils.data import BatchSampler, DistributedSampler, Sampler
+from torch_geometric.data import Batch, Data
 
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.datasets import data_list_collater
 
 
-class OCPDataParallel(torch.nn.DataParallel):
-    def __init__(self, module, output_device, num_gpus):
-        if num_gpus < 0:
-            raise ValueError("# GPUs must be positive.")
-        if num_gpus > torch.cuda.device_count():
-            raise ValueError("# GPUs specified larger than available")
-
-        self.src_device = torch.device(output_device)
-
-        self.cpu = False
-        if num_gpus == 0:
-            self.cpu = True
-        elif num_gpus == 1:
-            device_ids = [self.src_device]
-        else:
-            if (
-                self.src_device.type == "cuda"
-                and self.src_device.index >= num_gpus
-            ):
-                raise ValueError("Main device must be less than # of GPUs")
-            device_ids = list(range(num_gpus))
-
-        if self.cpu:
-            super(torch.nn.DataParallel, self).__init__()
-            self.module = module
-
-        else:
-            super(OCPDataParallel, self).__init__(
-                module=module,
-                device_ids=device_ids,
-                output_device=self.src_device,
-            )
-
-    def forward(self, batch_list, **kwargs):
-        if self.cpu:
-            return self.module(batch_list[0])
-
-        if len(self.device_ids) == 1:
-            return self.module(
-                batch_list[0].to(f"cuda:{self.device_ids[0]}"), **kwargs
-            )
-
-        for t in chain(self.module.parameters(), self.module.buffers()):
-            if t.device != self.src_device:
-                raise RuntimeError(
-                    (
-                        "Module must have its parameters and buffers on device "
-                        "{} but found one of them on device {}."
-                    ).format(self.src_device, t.device)
-                )
-
-        inputs = [
-            batch.to(f"cuda:{self.device_ids[i]}")
-            for i, batch in enumerate(batch_list)
-        ]
-        replicas = self.replicate(self.module, self.device_ids[: len(inputs)])
-        outputs = self.parallel_apply(replicas, inputs, kwargs)
-        return self.gather(outputs, self.output_device)
-
-
-class ParallelCollater:
-    def __init__(self, num_gpus, otf_graph=False):
-        self.num_gpus = num_gpus
+class OCPCollater:
+    def __init__(self, otf_graph: bool = False) -> None:
         self.otf_graph = otf_graph
 
-    def __call__(self, data_list):
-        if self.num_gpus in [0, 1]:  # adds cpu-only case
-            batch = data_list_collater(data_list, otf_graph=self.otf_graph)
-            return [batch]
-
-        else:
-            num_devices = min(self.num_gpus, len(data_list))
-
-            count = torch.tensor([data.num_nodes for data in data_list])
-            cumsum = count.cumsum(0)
-            cumsum = torch.cat([cumsum.new_zeros(1), cumsum], dim=0)
-            device_id = (
-                num_devices * cumsum.to(torch.float) / cumsum[-1].item()
-            )
-            device_id = (device_id[:-1] + device_id[1:]) / 2.0
-            device_id = device_id.to(torch.long)
-            split = device_id.bincount().cumsum(0)
-            split = torch.cat([split.new_zeros(1), split], dim=0)
-            split = torch.unique(split, sorted=True)
-            split = split.tolist()
-
-            return [
-                data_list_collater(data_list[split[i] : split[i + 1]])
-                for i in range(len(split) - 1)
-            ]
+    def __call__(self, data_list: List[Data]) -> Batch:
+        batch = data_list_collater(data_list, otf_graph=self.otf_graph)
+        return batch
 
 
 @numba.njit
-def balanced_partition(sizes, num_parts):
+def balanced_partition(sizes: npt.NDArray[np.int_], num_parts: int):
     """
     Greedily partition the given set by always inserting
     the largest element into the smallest partition.
     """
     sort_idx = np.argsort(-sizes)  # Sort in descending order
-    heap = []
+    heap: List[Tuple[List[int], List[int]]] = []
     for idx in sort_idx[:num_parts]:
         heap.append((sizes[idx], [idx]))
     heapq.heapify(heap)
@@ -137,6 +55,52 @@ class _HasMetadata(Protocol):
     @property
     def metadata_path(self) -> Path:
         ...
+
+
+class StatefulDistributedSampler(DistributedSampler):
+    """
+    More fine-grained state DataSampler that uses training iteration and epoch
+    both for shuffling data. PyTorch DistributedSampler only uses epoch
+    for the shuffling and starts sampling data from the start. In case of training
+    on very large data, we train for one epoch only and when we resume training,
+    we want to resume the data sampler from the training iteration.
+    """
+
+    def __init__(self, dataset, batch_size, **kwargs):
+        """
+        Initializes the instance of StatefulDistributedSampler. Random seed is set
+        for the epoch set and data is shuffled. For starting the sampling, use
+        the start_iter (set to 0 or set by checkpointing resuming) to
+        sample data from the remaining images.
+
+        Args:
+            dataset (Dataset): Pytorch dataset that sampler will shuffle
+            batch_size (int): batch size we want the sampler to sample
+            seed (int): Seed for the torch generator.
+        """
+        super().__init__(dataset=dataset, **kwargs)
+
+        self.start_iter = 0
+        self.batch_size = batch_size
+        assert self.batch_size > 0, "batch_size not set for the sampler"
+        logging.info(f"rank: {self.rank}: Sampler created...")
+
+    def __iter__(self):
+        # TODO: For very large datasets, even virtual datasets this might slow down
+        # or not work correctly. The issue is that we enumerate the full list of all
+        # samples in a single epoch, and manipulate this list directly. A better way
+        # of doing this would be to keep this sequence strictly as an iterator
+        # that stores the current state (instead of the full sequence)
+        distributed_sampler_sequence = super().__iter__()
+        if self.start_iter > 0:
+            for i, _ in enumerate(distributed_sampler_sequence):
+                if i == self.start_iter * self.batch_size - 1:
+                    break
+        return distributed_sampler_sequence
+
+    def set_epoch_and_start_iteration(self, epoch, start_iter):
+        self.set_epoch(epoch)
+        self.start_iter = start_iter
 
 
 class BalancedBatchSampler(Sampler):
@@ -161,16 +125,16 @@ class BalancedBatchSampler(Sampler):
     def __init__(
         self,
         dataset,
-        batch_size,
-        num_replicas,
-        rank,
-        device,
+        batch_size: int,
+        num_replicas: int,
+        rank: int,
+        device: torch.device,
         mode: Union[str, bool] = "atoms",
-        shuffle=True,
-        drop_last=False,
-        force_balancing=False,
-        throw_on_error=False,
-    ):
+        shuffle: bool = True,
+        drop_last: bool = False,
+        force_balancing: bool = False,
+        throw_on_error: bool = False,
+    ) -> None:
         if mode is True:
             mode = "atoms"
 
@@ -190,12 +154,13 @@ class BalancedBatchSampler(Sampler):
         self.shuffle = shuffle
         self.drop_last = drop_last
 
-        self.single_sampler = DistributedSampler(
+        self.single_sampler = StatefulDistributedSampler(
             self.dataset,
             num_replicas=num_replicas,
             rank=rank,
             shuffle=shuffle,
             drop_last=drop_last,
+            batch_size=batch_size,
         )
         self.batch_sampler = BatchSampler(
             self.single_sampler,
@@ -240,11 +205,22 @@ class BalancedBatchSampler(Sampler):
             else:
                 logging.warning(msg)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.batch_sampler)
 
-    def set_epoch(self, epoch):
-        self.single_sampler.set_epoch(epoch)
+    def set_epoch_and_start_iteration(
+        self, epoch: int, start_iteration: int
+    ) -> None:
+        if not hasattr(self.single_sampler, "set_epoch_and_start_iteration"):
+            if start_iteration != 0:
+                raise NotImplementedError(
+                    f"{type(self.single_sampler)} does not support resuming from a nonzero step."
+                )
+            self.single_sampler.set_epoch(epoch)
+        else:
+            self.single_sampler.set_epoch_and_start_iteration(
+                epoch, start_iteration
+            )
 
     def __iter__(self):
         if not self.balance_batches:

@@ -5,20 +5,22 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import math
+
 import numpy as np
 import sympy as sym
 from scipy import special as sp
 from scipy.optimize import brentq
 
 
-def Jn(r, n):
+def Jn(r: float, n: int):
     """
     numerical spherical bessel functions of order n
     """
     return sp.spherical_jn(n, r)
 
 
-def Jn_zeros(n, k):
+def Jn_zeros(n: int, k: int):
     """
     Compute the first k zeros of the spherical bessel functions up to order n (excluded)
     """
@@ -36,7 +38,7 @@ def Jn_zeros(n, k):
     return zerosj
 
 
-def spherical_bessel_formulas(n):
+def spherical_bessel_formulas(n: int):
     """
     Computes the sympy formulas for the spherical bessel functions up to order n (excluded)
     """
@@ -51,7 +53,7 @@ def spherical_bessel_formulas(n):
     return j
 
 
-def bessel_basis(n, k):
+def bessel_basis(n: int, k: int):
     """
     Compute the sympy formulas for the normalized and rescaled spherical bessel functions up to
     order n (excluded) and maximum frequency k (excluded).
@@ -88,7 +90,7 @@ def bessel_basis(n, k):
     return bess_basis
 
 
-def sph_harm_prefactor(l_degree, m_order):
+def sph_harm_prefactor(l_degree: int, m_order: int):
     """Computes the constant pre-factor for the spherical harmonic of degree l and order m.
 
     Parameters
@@ -107,13 +109,13 @@ def sph_harm_prefactor(l_degree, m_order):
     return (
         (2 * l_degree + 1)
         / (4 * np.pi)
-        * np.math.factorial(l_degree - abs(m_order))
-        / np.math.factorial(l_degree + abs(m_order))
+        * math.factorial(l_degree - abs(m_order))
+        / math.factorial(l_degree + abs(m_order))
     ) ** 0.5
 
 
 def associated_legendre_polynomials(
-    L_maxdegree, zero_m_only=True, pos_m_only=True
+    L_maxdegree: int, zero_m_only: bool = True, pos_m_only: bool = True
 ):
     """Computes string formulas of the associated legendre polynomials up to degree L (excluded).
 
@@ -186,15 +188,20 @@ def associated_legendre_polynomials(
                     ):  # P_1(-1), P_2(-1) P_2(-2)
                         P_l_m[l_degree][-m_order] = sym.simplify(
                             (-1) ** m_order
-                            * np.math.factorial(l_degree - m_order)
-                            / np.math.factorial(l_degree + m_order)
+                            * math.factorial(l_degree - m_order)
+                            / math.factorial(l_degree + m_order)
                             * P_l_m[l_degree][m_order]
                         )
 
             return P_l_m
 
 
-def real_sph_harm(L_maxdegree, use_theta, use_phi=True, zero_m_only=True):
+def real_sph_harm(
+    L_maxdegree: int,
+    use_theta: bool,
+    use_phi: bool = True,
+    zero_m_only: bool = True,
+):
     """
     Computes formula strings of the the real part of the spherical harmonics up to degree L (excluded).
     Variables are either spherical coordinates phi and theta (or cartesian coordinates x,y,z) on the UNIT SPHERE.

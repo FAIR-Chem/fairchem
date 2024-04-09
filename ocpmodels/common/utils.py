@@ -13,6 +13,7 @@ import itertools
 import json
 import logging
 import os
+import subprocess
 import sys
 import time
 from argparse import Namespace
@@ -22,7 +23,7 @@ from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
 
 import numpy as np
 import torch
@@ -34,6 +35,9 @@ from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import scatter, segment_coo, segment_csr
+
+import ocpmodels
+from ocpmodels.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
     from torch.nn.modules.module import _IncompatibleKeys
@@ -53,14 +57,16 @@ def pyg2_data_transform(data: Data):
 
 
 def save_checkpoint(
-    state, checkpoint_dir="checkpoints/", checkpoint_file="checkpoint.pt"
-):
+    state,
+    checkpoint_dir: str = "checkpoints/",
+    checkpoint_file: str = "checkpoint.pt",
+) -> str:
     filename = os.path.join(checkpoint_dir, checkpoint_file)
     torch.save(state, filename)
     return filename
 
 
-class Complete(object):
+class Complete:
     def __call__(self, data):
         device = data.edge_index.device
 
@@ -86,7 +92,7 @@ class Complete(object):
         return data
 
 
-def warmup_lr_lambda(current_step, optim_config):
+def warmup_lr_lambda(current_step: int, optim_config):
     """Returns a learning rate multiplier.
     Till `warmup_steps`, learning rate linearly increases to `initial_lr`,
     and then gets multiplied by `lr_gamma` every time a milestone is crossed.
@@ -110,7 +116,7 @@ def warmup_lr_lambda(current_step, optim_config):
         return pow(optim_config["lr_gamma"], idx)
 
 
-def print_cuda_usage():
+def print_cuda_usage() -> None:
     print("Memory Allocated:", torch.cuda.memory_allocated() / (1024 * 1024))
     print(
         "Max Memory Allocated:",
@@ -122,6 +128,7 @@ def print_cuda_usage():
 
 def conditional_grad(dec):
     "Decorator to enable/disable grad depending on whether force/energy predictions are being made"
+
     # Adapted from https://stackoverflow.com/questions/60907323/accessing-class-property-as-decorator-argument
     def decorator(func):
         @wraps(func)
@@ -136,7 +143,7 @@ def conditional_grad(dec):
     return decorator
 
 
-def plot_histogram(data, xlabel="", ylabel="", title=""):
+def plot_histogram(data, xlabel: str = "", ylabel: str = "", title: str = ""):
     assert isinstance(data, list)
 
     # Preset
@@ -205,9 +212,9 @@ def collate(data_list):
 def add_edge_distance_to_graph(
     batch,
     device="cpu",
-    dmin=0.0,
-    dmax=6.0,
-    num_gaussians=50,
+    dmin: float = 0.0,
+    dmax: float = 6.0,
+    num_gaussians: int = 50,
 ):
     # Make sure x has positions.
     if not all(batch.pos[0][:] == batch.x[0][-3:]):
@@ -233,7 +240,7 @@ def add_edge_distance_to_graph(
     return batch
 
 
-def _import_local_file(path: Path, *, project_root: Path):
+def _import_local_file(path: Path, *, project_root: Path) -> None:
     """
     Imports a Python file as a module
 
@@ -256,7 +263,7 @@ def _import_local_file(path: Path, *, project_root: Path):
     importlib.import_module(module_name)
 
 
-def setup_experimental_imports(project_root: Path):
+def setup_experimental_imports(project_root: Path) -> None:
     experimental_folder = (project_root / "experimental").resolve()
     if not experimental_folder.exists() or not experimental_folder.is_dir():
         return
@@ -278,7 +285,7 @@ def setup_experimental_imports(project_root: Path):
         _import_local_file(f, project_root=project_root)
 
 
-def _get_project_root():
+def _get_project_root() -> Path:
     """
     Gets the root folder of the project (the "ocp" folder)
     :return: The absolute path to the project root.
@@ -302,7 +309,7 @@ def _get_project_root():
 
 
 # Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
-def setup_imports(config: Optional[dict] = None):
+def setup_imports(config: Optional[dict] = None) -> None:
     from ocpmodels.common.registry import registry
 
     skip_experimental_imports = (config or {}).get(
@@ -330,7 +337,7 @@ def setup_imports(config: Optional[dict] = None):
         registry.register("imports_setup", True)
 
 
-def dict_set_recursively(dictionary, key_sequence, val):
+def dict_set_recursively(dictionary, key_sequence, val) -> None:
     top_key = key_sequence.pop(0)
     if len(key_sequence) == 0:
         dictionary[top_key] = val
@@ -451,8 +458,8 @@ def build_config(args, args_override):
     return config
 
 
-def create_grid(base_config, sweep_file):
-    def _flatten_sweeps(sweeps, root_key="", sep="."):
+def create_grid(base_config, sweep_file: str):
+    def _flatten_sweeps(sweeps, root_key: str = "", sep: str = "."):
         flat_sweeps = []
         for key, value in sweeps.items():
             new_key = root_key + sep + key if root_key else key
@@ -462,7 +469,7 @@ def create_grid(base_config, sweep_file):
                 flat_sweeps.append((new_key, value))
         return collections.OrderedDict(flat_sweeps)
 
-    def _update_config(config, keys, override_vals, sep="."):
+    def _update_config(config, keys, override_vals, sep: str = "."):
         for key, value in zip(keys, override_vals):
             key_path = key.split(sep)
             child_config = config
@@ -509,8 +516,8 @@ def get_pbc_distances(
     cell,
     cell_offsets,
     neighbors,
-    return_offsets=False,
-    return_distance_vec=False,
+    return_offsets: bool = False,
+    return_distance_vec: bool = False,
 ):
     row, col = edge_index
 
@@ -550,7 +557,7 @@ def radius_graph_pbc(
     data,
     radius,
     max_num_neighbors_threshold,
-    enforce_max_neighbors_strictly=False,
+    enforce_max_neighbors_strictly: bool = False,
     pbc=[True, True, True],
 ):
     device = data.pos.device
@@ -728,8 +735,8 @@ def get_max_neighbors_mask(
     index,
     atom_distance,
     max_num_neighbors_threshold,
-    degeneracy_tolerance=0.01,
-    enforce_max_strictly=False,
+    degeneracy_tolerance: float = 0.01,
+    enforce_max_strictly: bool = False,
 ):
     """
     Give a mask that filters out edges so that each atom has at most
@@ -846,20 +853,20 @@ def get_max_neighbors_mask(
     return mask_num_neighbors, num_neighbors_image
 
 
-def get_pruned_edge_idx(edge_index, num_atoms=None, max_neigh=1e9):
-    assert num_atoms is not None
+def get_pruned_edge_idx(
+    edge_index, num_atoms: int, max_neigh: float = 1e9
+) -> torch.Tensor:
+    assert num_atoms is not None  # TODO: Shouldn't be necessary
 
     # removes neighbors > max_neigh
     # assumes neighbors are sorted in increasing distance
-    _nonmax_idx = []
+    _nonmax_idx_list = []
     for i in range(num_atoms):
         idx_i = torch.arange(len(edge_index[1]))[(edge_index[1] == i)][
             :max_neigh
         ]
-        _nonmax_idx.append(idx_i)
-    _nonmax_idx = torch.cat(_nonmax_idx)
-
-    return _nonmax_idx
+        _nonmax_idx_list.append(idx_i)
+    return torch.cat(_nonmax_idx_list)
 
 
 def merge_dicts(dict1: dict, dict2: dict):
@@ -905,16 +912,16 @@ def merge_dicts(dict1: dict, dict2: dict):
 
 
 class SeverityLevelBetween(logging.Filter):
-    def __init__(self, min_level, max_level):
+    def __init__(self, min_level: int, max_level: int) -> None:
         super().__init__()
         self.min_level = min_level
         self.max_level = max_level
 
-    def filter(self, record):
+    def filter(self, record) -> bool:
         return self.min_level <= record.levelno < self.max_level
 
 
-def setup_logging():
+def setup_logging() -> None:
     root = logging.getLogger()
 
     # Perform setup only if logging has not been configured
@@ -958,11 +965,16 @@ def compute_neighbors(data, edge_index):
     return neighbors
 
 
-def check_traj_files(batch, traj_dir):
+def check_traj_files(batch, traj_dir) -> bool:
     if traj_dir is None:
         return False
     traj_dir = Path(traj_dir)
-    traj_files = [traj_dir / f"{id}.traj" for id in batch[0].sid.tolist()]
+    sid_list = (
+        batch.sid.tolist()
+        if isinstance(batch.sid, torch.Tensor)
+        else batch.sid
+    )
+    traj_files = [traj_dir / f"{sid}.traj" for sid in sid_list]
     return all(fl.exists() for fl in traj_files)
 
 
@@ -991,15 +1003,25 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
             gp_utils.setup_gp(config)
     try:
         setup_imports(config)
-        trainer_cls = registry.get_trainer_class(
-            config.get("trainer", "energy")
-        )
+        trainer_name = config.get("trainer", "ocp")
+        # backwards compatibility for older configs
+        if trainer_name in ["forces", "equiformerv2_forces"]:
+            task_name = "s2ef"
+        elif trainer_name in ["energy", "equiformerv2_energy"]:
+            task_name = "is2re"
+        else:
+            task_name = "ocp"
+
+        trainer_cls = registry.get_trainer_class(trainer_name)
         assert trainer_cls is not None, "Trainer not found"
         trainer = trainer_cls(
-            task=config["task"],
+            task=config.get("task", {}),
             model=config["model"],
+            outputs=config.get("outputs", {}),
             dataset=config["dataset"],
             optimizer=config["optim"],
+            loss_fns=config.get("loss_functions", {}),
+            eval_metrics=config.get("evaluation_metrics", {}),
             identifier=config["identifier"],
             timestamp_id=config.get("timestamp_id", None),
             run_dir=config.get("run_dir", "./"),
@@ -1012,6 +1034,7 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
             cpu=config.get("cpu", False),
             slurm=config.get("slurm", {}),
             noddp=config.get("noddp", False),
+            name=task_name,
         )
 
         task_cls = registry.get_task_class(config["mode"])
@@ -1046,7 +1069,7 @@ def _report_incompat_keys(
     model: nn.Module,
     keys: "_IncompatibleKeys",
     strict: bool = False,
-):
+) -> Tuple[List[str], List[str]]:
     # filter out the missing scale factor keys for the new scaling factor module
     missing_keys: List[str] = []
     for full_key_name in keys.missing_keys:
@@ -1101,7 +1124,7 @@ def load_state_dict(
     module: nn.Module,
     state_dict: Mapping[str, torch.Tensor],
     strict: bool = True,
-):
+) -> Tuple[List[str], List[str]]:
     incompat_keys = module.load_state_dict(state_dict, strict=False)  # type: ignore
     return _report_incompat_keys(module, incompat_keys, strict=strict)
 
@@ -1118,3 +1141,206 @@ def scatter_det(*args, **kwargs):
         torch.use_deterministic_algorithms(mode=False)
 
     return out
+
+
+def get_commit_hash():
+    try:
+        commit_hash = (
+            subprocess.check_output(
+                ["git", "-C", ocpmodels.__path__[0], "describe", "--always"]
+            )
+            .strip()
+            .decode("ascii")
+        )
+    # catch instances where code is not being run from a git repo
+    except Exception:
+        commit_hash = None
+
+    return commit_hash
+
+
+def cg_change_mat(l, device="cpu"):
+    if l not in [2]:
+        raise NotImplementedError
+
+    if l == 2:
+        change_mat = torch.tensor(
+            [
+                [3 ** (-0.5), 0, 0, 0, 3 ** (-0.5), 0, 0, 0, 3 ** (-0.5)],
+                [0, 0, 0, 0, 0, 2 ** (-0.5), 0, -(2 ** (-0.5)), 0],
+                [0, 0, -(2 ** (-0.5)), 0, 0, 0, 2 ** (-0.5), 0, 0],
+                [0, 2 ** (-0.5), 0, -(2 ** (-0.5)), 0, 0, 0, 0, 0],
+                [0, 0, 0.5**0.5, 0, 0, 0, 0.5**0.5, 0, 0],
+                [0, 2 ** (-0.5), 0, 2 ** (-0.5), 0, 0, 0, 0, 0],
+                [
+                    -(6 ** (-0.5)),
+                    0,
+                    0,
+                    0,
+                    2 * 6 ** (-0.5),
+                    0,
+                    0,
+                    0,
+                    -(6 ** (-0.5)),
+                ],
+                [0, 0, 0, 0, 0, 2 ** (-0.5), 0, 2 ** (-0.5), 0],
+                [-(2 ** (-0.5)), 0, 0, 0, 0, 0, 0, 0, 2 ** (-0.5)],
+            ],
+            device=device,
+        ).detach()
+
+    return change_mat
+
+
+def irreps_sum(l):
+    """
+    Returns the sum of the dimensions of the irreps up to the specified l.
+    """
+    total = 0
+    for i in range(l + 1):
+        total += 2 * i + 1
+
+    return total
+
+
+def update_config(base_config):
+    """
+    Configs created prior to OCP 2.0 are organized a little different than they
+    are now. Update old configs to fit the new expected structure.
+    """
+    config = copy.deepcopy(base_config)
+
+    # If config["dataset"]["format"] is missing, get it from the task (legacy location).
+    # If it is not there either, default to LMDB.
+    config["dataset"]["format"] = config["dataset"].get(
+        "format", config["task"].get("dataset", "lmdb")
+    )
+
+    ### Read task based off config structure, similar to OCPCalculator.
+    if config["task"]["dataset"] in [
+        "trajectory_lmdb",
+        "lmdb",
+        "trajectory_lmdb_v2",
+        "oc22_lmdb",
+        "ase_read",
+        "ase_read_multi",
+        "ase_db",
+    ]:
+        task = "s2ef"
+    elif config["task"]["dataset"] == "single_point_lmdb":
+        task = "is2re"
+    else:
+        raise NotImplementedError
+
+    if task == "is2re":
+        ### Define loss functions
+        _loss_fns = [
+            {
+                "energy": {
+                    "fn": config["optim"].get("loss_energy", "mae"),
+                    "coefficient": config["optim"].get(
+                        "energy_coefficient", 1
+                    ),
+                },
+            }
+        ]
+        ### Define evaluation metrics
+        _eval_metrics = {
+            "metrics": {"energy": ["mae", "mse", "energy_within_threshold"]},
+        }
+        if "primary_metric" in config["task"]:
+            _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
+        ### Define outputs
+        _outputs = {"energy": {"level": "system"}}
+        ### Define key mapping
+        config["dataset"]["key_mapping"] = {"y_relaxed": "energy"}
+    elif task == "s2ef":
+        ### Define loss functions
+        _loss_fns = [
+            {
+                "energy": {
+                    "fn": config["optim"].get("loss_energy", "mae"),
+                    "coefficient": config["optim"].get(
+                        "energy_coefficient", 1
+                    ),
+                },
+            },
+            {
+                "forces": {
+                    "fn": config["optim"].get("loss_forces", "l2mae"),
+                    "coefficient": config["optim"].get(
+                        "force_coefficient", 30
+                    ),
+                },
+            },
+        ]
+        ### Define evaluation metrics
+        _eval_metrics = {
+            "metrics": {
+                "misc": ["energy_forces_within_threshold"],
+                "energy": ["mae"],
+                "forces": [
+                    "forcesx_mae",
+                    "forcesy_mae",
+                    "forcesz_mae",
+                    "mae",
+                    "cosine_similarity",
+                    "magnitude_error",
+                ],
+            },
+        }
+        if "primary_metric" in config["task"]:
+            _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
+        ### Define outputs
+        _outputs = {
+            "energy": {"level": "system"},
+            "forces": {
+                "level": "atom",
+                "train_on_free_atoms": (
+                    config["task"].get("train_on_free_atoms", False)
+                ),
+                "eval_on_free_atoms": (
+                    config["task"].get("eval_on_free_atoms", True)
+                ),
+            },
+        }
+        ### Define key mapping
+        config["dataset"]["key_mapping"] = {"y": "energy", "force": "forces"}
+
+    if config["dataset"].get("normalize_labels", False):
+        normalizer = {
+            "energy": {
+                "mean": config["dataset"].get("target_mean", 0),
+                "stdev": config["dataset"].get("target_std", 1),
+            },
+            "forces": {
+                "mean": config["dataset"].get("grad_target_mean", 0),
+                "stdev": config["dataset"].get("grad_target_std", 1),
+            },
+        }
+
+        transforms = config["dataset"].get("transforms", {})
+        transforms["normalizer"] = normalizer
+        config["dataset"]["transforms"] = transforms
+
+    ### Update config
+    config.update({"loss_fns": _loss_fns})
+    config.update({"eval_metrics": _eval_metrics})
+    config.update({"outputs": _outputs})
+
+    return config
+
+
+def get_loss_module(loss_name):
+    if loss_name in ["l1", "mae"]:
+        loss_fn = nn.L1Loss()
+    elif loss_name == "mse":
+        loss_fn = nn.MSELoss()
+    elif loss_name == "l2mae":
+        loss_fn = L2MAELoss()
+    elif loss_name == "atomwisel2":
+        loss_fn = AtomwiseL2Loss()
+    else:
+        raise NotImplementedError(f"Unknown loss function name: {loss_name}")
+
+    return loss_fn

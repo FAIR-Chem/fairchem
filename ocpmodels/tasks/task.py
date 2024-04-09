@@ -9,17 +9,19 @@ import logging
 import os
 
 from ocpmodels.common.registry import registry
-from ocpmodels.trainers.forces_trainer import ForcesTrainer
+from ocpmodels.trainers import OCPTrainer
 
 
 class BaseTask:
-    def __init__(self, config):
+    def __init__(self, config) -> None:
         self.config = config
 
-    def setup(self, trainer):
+    def setup(self, trainer) -> None:
         self.trainer = trainer
         if self.config["checkpoint"] is not None:
-            self.trainer.load_checkpoint(self.config["checkpoint"])
+            self.trainer.load_checkpoint(
+                checkpoint_path=self.config["checkpoint"]
+            )
 
         # save checkpoint path to runner state for slurm resubmissions
         self.chkpt_path = os.path.join(
@@ -32,7 +34,7 @@ class BaseTask:
 
 @registry.register_task("train")
 class TrainTask(BaseTask):
-    def _process_error(self, e: RuntimeError):
+    def _process_error(self, e: RuntimeError) -> None:
         e_str = str(e)
         if (
             "find_unused_parameters" in e_str
@@ -44,7 +46,7 @@ class TrainTask(BaseTask):
                         f"Parameter {name} has no gradient. Consider removing it from the model."
                     )
 
-    def run(self):
+    def run(self) -> None:
         try:
             self.trainer.train(
                 disable_eval_tqdm=self.config.get(
@@ -58,7 +60,7 @@ class TrainTask(BaseTask):
 
 @registry.register_task("predict")
 class PredictTask(BaseTask):
-    def run(self):
+    def run(self) -> None:
         assert (
             self.trainer.test_loader is not None
         ), "Test dataset is required for making predictions"
@@ -73,7 +75,7 @@ class PredictTask(BaseTask):
 
 @registry.register_task("validate")
 class ValidateTask(BaseTask):
-    def run(self):
+    def run(self) -> None:
         # Note that the results won't be precise on multi GPUs due to padding of extra images (although the difference should be minor)
         assert (
             self.trainer.val_loader is not None
@@ -87,9 +89,9 @@ class ValidateTask(BaseTask):
 
 @registry.register_task("run-relaxations")
 class RelxationTask(BaseTask):
-    def run(self):
+    def run(self) -> None:
         assert isinstance(
-            self.trainer, ForcesTrainer
+            self.trainer, OCPTrainer
         ), "Relaxations are only possible for ForcesTrainer"
         assert (
             self.trainer.relax_dataset is not None

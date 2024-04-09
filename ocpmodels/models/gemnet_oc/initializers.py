@@ -25,7 +25,7 @@ def _standardize(kernel):
     return kernel
 
 
-def he_orthogonal_init(tensor):
+def he_orthogonal_init(tensor: torch.Tensor) -> torch.Tensor:
     """
     Generate a weight matrix with variance according to He (Kaiming) initialization.
     Based on a random (semi-)orthogonal matrix neural networks
@@ -48,7 +48,9 @@ def he_orthogonal_init(tensor):
     return tensor
 
 
-def grid_init(tensor, start=-1, end=1):
+def grid_init(
+    tensor: torch.Tensor, start: int = -1, end: int = 1
+) -> torch.Tensor:
     """
     Generate a weight matrix so that each input value corresponds to one value on a regular grid between start and end.
     """
@@ -63,7 +65,9 @@ def grid_init(tensor, start=-1, end=1):
     return tensor
 
 
-def log_grid_init(tensor, start=-4, end=0):
+def log_grid_init(
+    tensor: torch.Tensor, start: int = -4, end: int = 0
+) -> torch.Tensor:
     """
     Generate a weight matrix so that each input value corresponds to one value on a regular logarithmic grid between 10^start and 10^end.
     """

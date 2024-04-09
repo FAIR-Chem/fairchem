@@ -10,16 +10,16 @@ from pathlib import Path
 
 
 class Flags:
-    def __init__(self):
+    def __init__(self) -> None:
         self.parser = argparse.ArgumentParser(
             description="Graph Networks for Electrocatalyst Design"
         )
         self.add_core_args()
 
-    def get_parser(self):
+    def get_parser(self) -> argparse.ArgumentParser:
         return self.parser
 
-    def add_core_args(self):
+    def add_core_args(self) -> None:
         self.parser.add_argument_group("Core Arguments")
         self.parser.add_argument(
             "--mode",
