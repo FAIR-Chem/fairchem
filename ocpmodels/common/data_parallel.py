@@ -41,9 +41,9 @@ def balanced_partition(sizes: npt.NDArray[np.int_], num_parts: int):
     the largest element into the smallest partition.
     """
     sort_idx = np.argsort(-sizes)  # Sort in descending order
-    heap: list[tuple[list[int], list[int]]] = []
-    for idx in sort_idx[:num_parts]:
-        heap.append((sizes[idx], [idx]))
+    heap: list[tuple[list[int], list[int]]] = [
+        (sizes[idx], [idx]) for idx in sort_idx[:num_parts]
+    ]
     heapq.heapify(heap)
     for idx in sort_idx[num_parts:]:
         smallest_part = heapq.heappop(heap)

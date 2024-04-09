@@ -104,9 +104,7 @@ class TensorboardLogger(Logger):
             if torch.is_tensor(update_dict[key]):
                 self.writer.add_scalar(key, update_dict[key].item(), step)
             else:
-                assert isinstance(update_dict[key], int) or isinstance(
-                    update_dict[key], float
-                )
+                assert isinstance(update_dict[key], (int, float))
                 self.writer.add_scalar(key, update_dict[key], step)
 
     def mark_preempting(self) -> None:

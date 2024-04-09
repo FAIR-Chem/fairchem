@@ -15,6 +15,5 @@ def none_throws(x: _T | None, msg: str | None = None) -> _T:
     if x is None:
         if msg:
             raise ValueError(msg)
-        else:
-            raise ValueError("x cannot be None")
+        raise ValueError("x cannot be None")
     return x

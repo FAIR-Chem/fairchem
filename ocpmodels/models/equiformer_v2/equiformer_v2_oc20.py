@@ -309,7 +309,7 @@ class EquiformerV2_OC20(BaseModel):
 
         # Initialize the blocks for each layer of EquiformerV2
         self.blocks = nn.ModuleList()
-        for i in range(self.num_layers):
+        for _ in range(self.num_layers):
             block = TransBlockV2(
                 self.sphere_channels,
                 self.attn_hidden_channels,
@@ -583,9 +583,11 @@ class EquiformerV2_OC20(BaseModel):
                 ),
             ):
                 for parameter_name, _ in module.named_parameters():
-                    if isinstance(module, (torch.nn.Linear, SO3_LinearV2)):
-                        if "weight" in parameter_name:
-                            continue
+                    if (
+                        isinstance(module, (torch.nn.Linear, SO3_LinearV2))
+                        and "weight" in parameter_name
+                    ):
+                        continue
                     global_parameter_name = module_name + "." + parameter_name
                     assert global_parameter_name in named_parameters_list
                     no_wd_list.append(global_parameter_name)

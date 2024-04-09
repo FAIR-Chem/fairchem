@@ -24,7 +24,7 @@ Various decorators for registry different kind of classes with unique keys
 from __future__ import annotations
 
 import importlib
-from typing import Any, Callable, TypeVar, Union
+from typing import Any, Callable, ClassVar, TypeVar, Union
 
 R = TypeVar("R")
 NestedDict = dict[str, Union[str, Callable[..., Any], "NestedDict"]]
@@ -57,7 +57,7 @@ def _get_absolute_mapping(name: str):
 class Registry:
     r"""Class for registry object which acts as central source of truth."""
 
-    mapping: NestedDict = {
+    mapping: ClassVar[NestedDict] = {
         # Mappings to respective classes.
         "task_name_mapping": {},
         "dataset_name_mapping": {},

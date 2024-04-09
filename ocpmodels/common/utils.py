@@ -182,7 +182,7 @@ def collate(data_list):
         data[key].append(item[key])
         if torch.is_tensor(item[key]):
             s = slices[key][-1] + item[key].size(item.__cat_dim__(key, item[key]))
-        elif isinstance(item[key], int) or isinstance(item[key], float):
+        elif isinstance(item[key], (int, float)):
             s = slices[key][-1] + 1
         else:
             raise ValueError("Unsupported attribute type")
@@ -352,8 +352,7 @@ def create_dict_from_args(args: list, sep: str = "."):
     """
     return_dict = {}
     for arg in args:
-        arg = arg.strip("--")
-        keys_concat, val = arg.split("=")
+        keys_concat, val = arg.removeprefix("--").split("=")
         val = parse_value(val)
         key_sequence = keys_concat.split(sep)
         dict_set_recursively(return_dict, key_sequence, val)
@@ -370,7 +369,8 @@ def load_config(path: str, previous_includes: list | None = None):
         )
     previous_includes = [*previous_includes, path]
 
-    direct_config = yaml.safe_load(open(path))
+    with open(path) as fp:
+        direct_config = yaml.safe_load(fp)
 
     # Load config from included files.
     includes = direct_config.pop("includes") if "includes" in direct_config else []
@@ -462,7 +462,9 @@ def create_grid(base_config, sweep_file: str):
             child_config[key_path[-1]] = value
         return config
 
-    sweeps = yaml.safe_load(open(sweep_file))
+    with open(sweep_file) as fp:
+        sweeps = yaml.safe_load(fp)
+
     flat_sweeps = _flatten_sweeps(sweeps)
     keys = list(flat_sweeps.keys())
     values = list(itertools.product(*flat_sweeps.values()))
@@ -1055,8 +1057,7 @@ def _report_incompat_keys(
         )
         if strict:
             raise RuntimeError(error_msg)
-        else:
-            logging.warning(error_msg)
+        logging.warning(error_msg)
 
     return missing_keys, unexpected_keys
 

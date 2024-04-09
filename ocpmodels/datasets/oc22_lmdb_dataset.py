@@ -80,14 +80,13 @@ class OC22LmdbDataset(Dataset):
                 index = 0
                 self.indices = []
                 for txt_path in txt_paths:
-                    lines = open(txt_path).read().splitlines()
+                    with open(txt_path) as fp:
+                        lines = fp.read().splitlines()
                     for line in lines:
-                        if self.data2train == "adslabs":
-                            if "clean" not in line:
-                                self.indices.append(index)
-                        if self.data2train == "slabs":
-                            if "clean" in line:
-                                self.indices.append(index)
+                        if self.data2train == "adslabs" and "clean" not in line:
+                            self.indices.append(index)
+                        if self.data2train == "slabs" and "clean" in line:
+                            self.indices.append(index)
                         index += 1
                 self.num_samples = len(self.indices)
         else:
@@ -113,7 +112,8 @@ class OC22LmdbDataset(Dataset):
             "train_on_oc20_total_energies", False
         )
         if self.train_on_oc20_total_energies:
-            self.oc20_ref = pickle.load(open(config["oc20_ref"], "rb"))
+            with open(config["oc20_ref"], "rb") as fp:
+                self.oc20_ref = pickle.load(fp)
         if self.config.get("lin_ref", False):
             coeff = np.load(self.config["lin_ref"], allow_pickle=True)["coeff"]
             self.lin_ref = torch.nn.Parameter(torch.tensor(coeff), requires_grad=False)

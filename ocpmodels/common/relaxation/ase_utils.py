@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import copy
 import logging
+from typing import ClassVar
 
 import torch
 from ase import Atoms
@@ -66,7 +67,7 @@ def batch_to_atoms(batch):
 
 
 class OCPCalculator(Calculator):
-    implemented_properties = ["energy", "forces"]
+    implemented_properties: ClassVar[list[str]] = ["energy", "forces"]
 
     def __init__(
         self,
