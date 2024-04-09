@@ -45,8 +45,12 @@ parse:
     
 sphinx:
   extra_extensions:
-  - 'sphinx.ext.autodoc'
-  - 'sphinx.ext.autosummary'
+  # - 'sphinx.ext.autodoc'
+  # - 'sphinx.ext.autosummary'
+  #- 'sphinx.ext.autoapi'
   - 'sphinx.ext.napoleon'
+  - 'autoapi.extension'
   config:
     autosummary_generate: True
+    autoapi_dirs: ['../ocpmodels']
+    # autoapi_root: '_api'

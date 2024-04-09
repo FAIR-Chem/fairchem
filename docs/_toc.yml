@@ -34,7 +34,6 @@ parts:
     sections:
     - file: tutorial/NRR/NRR_example
     - file: tutorial/NRR/NRR_example-gemnet
-
 - caption: ocpmodels documentation
   chapters:
-  - file: api.rst
+  - file: autoapi/index
