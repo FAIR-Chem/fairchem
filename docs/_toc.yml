@@ -4,16 +4,16 @@
 format: jb-book
 root: core/README
 parts:
-- caption: Installation
+- caption: Installation & License
   chapters:
   - file: core/INSTALL
+  - file: core/LICENSE
 - caption: Released Datasets & Models
   chapters:
   - file: core/datasets/oc20
   - file: core/datasets/oc22
   - file: core/datasets/odac
   - file: core/MODELS
-  - file: core/LICENSE
 - caption: Training your own models
   chapters:
   - file: core/TRAIN
