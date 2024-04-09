@@ -62,7 +62,7 @@ class BaseTrainer(ABC):
         is_debug: bool = False,
         print_every: int = 100,
         seed: Optional[int] = None,
-        logger: str = "tensorboard",
+        logger: str = "wandb",
         local_rank: int = 0,
         amp: bool = False,
         cpu: bool = False,
