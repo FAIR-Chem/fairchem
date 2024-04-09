@@ -31,8 +31,9 @@ dependencies = [
 dev = ["pre-commit", "black", "isort", "pytest", "pytest-cov", "coverage", "ruff"]
 # docs = []
 
-[tool.setuptools]  # need to set this since we have multiple top level packates (should consider using a src layout!)
-packages = ["ocpmodels"]
+[tool.setuptools.packages.find]
+include = ["ocpmodels", "experimental"]  # alternatively: `exclude = ["additional*"]`
+namespaces = false
 
 [tool.setuptools_scm]  # for version instrospection based on tags + commit
 
@@ -123,3 +124,8 @@ lint.unfixable = [
 lint.pydocstyle.convention = "google"
 lint.isort.known-first-party = ["ocpmodels"]
 lint.isort.required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore `E402` (import violations) in all `__init__.py` files, and in `path/to/file.py`.
+"__init__.py" = ["I002"]
+"conf.py" = ["I002"]
