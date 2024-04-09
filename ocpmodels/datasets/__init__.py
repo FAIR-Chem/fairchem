@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from .ase_datasets import AseDBDataset, AseReadDataset, AseReadMultiStructureDataset
+from .lmdb_database import LMDBDatabase
 from .lmdb_dataset import (
     LmdbDataset,
     SinglePointLmdbDataset,
@@ -22,4 +23,5 @@ __all__ = [
     "TrajectoryLmdbDataset",
     "data_list_collater",
     "OC22LmdbDataset",
+    "LMDBDatabase",
 ]
