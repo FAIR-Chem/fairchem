@@ -33,6 +33,7 @@ ocpmodels.common
    ocpmodels.common.gp_utils
    ocpmodels.common.hpo_utils
    ocpmodels.common.logger
+   ocpmodels.common.model_registry
    ocpmodels.common.registry
    ocpmodels.common.relaxation
    ocpmodels.common.transforms
