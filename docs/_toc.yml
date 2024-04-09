@@ -38,6 +38,14 @@ parts:
     sections:
     - file: tutorials/NRR/NRR_example
     - file: tutorials/NRR/NRR_example-gemnet
+- caption: Legacy Tutorials
+  chapters:
+  - file: legacy_tutorials/legacy_tutorials
+    sections:
+    - file: legacy_tutorials/OCP_Tutorial
+    - file: legacy_tutorials/data_preprocessing
+    - file: legacy_tutorials/data_visualization
+    - file: legacy_tutorials/lmdb_dataset_creation
 - caption: ocpmodels documentation
   chapters:
   - file: autoapi/index
