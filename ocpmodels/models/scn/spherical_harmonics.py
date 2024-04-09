@@ -83,7 +83,7 @@ class SphericalHarmonicsHelper:
         self.to_grid_sha = torch.tensor([], device=self.device)
 
         for b in range(self.num_bands):
-            l = self.lmax - b  # noqa: E741
+            l = self.lmax - b
             togrid = ToS2Grid(
                 l,
                 (self.grid_res, self.grid_res + 1),
@@ -142,7 +142,7 @@ class SphericalHarmonicsHelper:
             basis_out = torch.tensor([], device=self.device)
             start_l = 0
             end_l = self.lmax + 1
-            for l in range(start_l, end_l):  # noqa: E741
+            for l in range(start_l, end_l):
                 offset = l**2
                 basis_in = torch.cat(
                     [
@@ -206,7 +206,7 @@ class SphericalHarmonicsHelper:
                 )
 
                 # m = 0
-                for l in range(self.lmax + 1):  # noqa: E741
+                for l in range(self.lmax + 1):
                     offset = (l - 1) * 3 + 2
                     if l == 0:
                         offset = 0
@@ -216,7 +216,7 @@ class SphericalHarmonicsHelper:
                         )
 
                 # m = -1
-                for l in range(1, self.lmax + 1):  # noqa: E741
+                for l in range(1, self.lmax + 1):
                     offset = (l - 1) * 3 + 1
                     for y in range(num_y_rotations):
                         mapping_y_rot[offset + y * self.sphere_basis_reduce, offset] = (
@@ -227,7 +227,7 @@ class SphericalHarmonicsHelper:
                         ] = math.sin(y_rotations[y]) / num_y_rotations
 
                 # m = 1
-                for l in range(1, self.lmax + 1):  # noqa: E741
+                for l in range(1, self.lmax + 1):
                     offset = (l - 1) * 3 + 3
                     for y in range(num_y_rotations):
                         mapping_y_rot[offset + y * self.sphere_basis_reduce, offset] = (

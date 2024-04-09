@@ -113,7 +113,9 @@ lint.ignore = [
   "PT004",  # Fixture does not return anthing
   "B017",   # pytest.raises
   "PT011",  # pytest.raises
-  "PT012",  # pytest.raises
+  "PT012",  # pytest.raises"
+    "E741",  # ambigous variable naming, i.e. one letter
+    "FBT003",  # boolean positional variable in function call
 ]
 lint.typing-modules = ["mypackage._compat.typing"]
 src = ["src"]
@@ -129,3 +131,4 @@ lint.isort.required-imports = ["from __future__ import annotations"]
 # Ignore `E402` (import violations) in all `__init__.py` files, and in `path/to/file.py`.
 "__init__.py" = ["I002"]
 "conf.py" = ["I002"]
+"ocpmodels/common/data_parallel.py" = ["PLW0603"]

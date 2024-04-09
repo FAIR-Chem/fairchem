@@ -370,7 +370,7 @@ class SphericalChannelNetwork(BaseModel):
         # Create a roughly evenly distributed point sampling of the sphere
         sphere_points = CalcSpherePoints(self.num_sphere_samples, x.device).detach()
         sphharm_weights = o3.spherical_harmonics(
-            torch.arange(0, self.lmax + 1).tolist(), sphere_points, False
+            torch.arange(0, self.lmax + 1).tolist(), sphere_points, normalize=False
         ).detach()
 
         # Energy estimation

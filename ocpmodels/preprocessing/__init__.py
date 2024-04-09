@@ -8,3 +8,5 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 from .atoms_to_graphs import AtomsToGraphs
+
+__all__ = ["AtomsToGraphs"]

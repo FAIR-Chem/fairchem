@@ -194,8 +194,8 @@ class BalancedBatchSampler(Sampler):
             msg = "BalancedBatchSampler: " + " ".join(errors)
             if throw_on_error:
                 raise RuntimeError(msg)
-            else:
-                logging.warning(msg)
+
+            logging.warning(msg)
 
     def __len__(self) -> int:
         return len(self.batch_sampler)

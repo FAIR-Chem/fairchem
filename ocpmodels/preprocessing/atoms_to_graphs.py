@@ -269,9 +269,9 @@ class AtomsToGraphs:
             disable=disable_tqdm,
         ):
             # check if atoms is an ASE Atoms object this for the ase.db case
-            if not isinstance(atoms, ase.atoms.Atoms):
-                atoms = atoms.toatoms()
-            data = self.convert(atoms)
+            data = self.convert(
+                atoms if isinstance(atoms, ase.atoms.Atoms) else atoms.toatoms()
+            )
             data_list.append(data)
 
         if collate_and_save:

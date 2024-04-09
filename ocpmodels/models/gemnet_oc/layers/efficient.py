@@ -110,11 +110,8 @@ class BasisEmbedding(torch.nn.Module):
         if idx_rad_inner is not None:
             # Zero padded dense matrix
             # maximum number of neighbors
-            if idx_rad_outer.shape[0] == 0:
-                # catch empty idx_rad_outer
-                Kmax = 0
-            else:
-                Kmax = torch.max(idx_rad_inner) + 1
+
+            Kmax = 0 if idx_rad_outer.shape[0] == 0 else torch.max(idx_rad_inner) + 1
 
             rad_W1_padded = rad_W1.new_zeros([num_atoms, Kmax, *list(rad_W1.shape[1:])])
             rad_W1_padded[idx_rad_outer, idx_rad_inner] = rad_W1
@@ -128,11 +125,7 @@ class BasisEmbedding(torch.nn.Module):
         if idx_sph_inner is not None:
             # Zero padded dense matrix
             # maximum number of neighbors
-            if idx_sph_outer.shape[0] == 0:
-                # catch empty idx_sph_outer
-                Kmax = 0
-            else:
-                Kmax = torch.max(idx_sph_inner) + 1
+            Kmax = 0 if idx_sph_outer.shape[0] == 0 else torch.max(idx_sph_inner) + 1
 
             sph2 = sph_basis.new_zeros(num_edges, Kmax, sph_basis.shape[-1])
             sph2[idx_sph_outer, idx_sph_inner] = sph_basis

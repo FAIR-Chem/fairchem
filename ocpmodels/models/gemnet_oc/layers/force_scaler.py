@@ -73,9 +73,9 @@ class ForceScaler:
                             "Breaking scaling loop."
                         )
                         break
-                    else:
-                        # Delete graph to save memory
-                        del forces
+
+                    # Delete graph to save memory
+                    del forces
                 else:
                     self.finite_force_results += 1
                 self.update()
