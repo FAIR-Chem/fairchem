@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-Utilizing large, graph-based, pre-trained  machine learned potentials in atomistic simulations 
+Intro and background on OCP and DFT
 ----------
 
 # Abstract
@@ -38,26 +38,13 @@ The [Open Catalyst Project (OCP)](https://github.com/Open-Catalyst-Project) is a
 
 ## Models
 
-OCP provides several [models](https://github.com/Open-Catalyst-Project/ocp/blob/main/MODELS.md). Each model represents a different approach to featurization, and a different machine learning architecture. The models can be used for different tasks, and you will find different checkpoints associated with different datasets and tasks. 
-
-- CGCNN [[`arXiv`](https://arxiv.org/abs/1710.10324)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/cgcnn.py)]
-- SchNet [[`arXiv`](https://arxiv.org/abs/1706.08566)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/schnet.py)]
-- DimeNet [[`arXiv`](https://arxiv.org/abs/2003.03123)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/dimenet.py)]
-- ForceNet [[`arXiv`](https://arxiv.org/abs/2103.01436)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/forcenet.py)]
-- DimeNet++ [[`arXiv`](https://arxiv.org/abs/2011.14115)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/dimenet_plus_plus.py)]
-- SpinConv [[`arXiv`](https://arxiv.org/abs/2106.09575)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/spinconv.py)]
-- GemNet-dT [[`arXiv`](https://arxiv.org/abs/2106.08903)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/gemnet)]
-- PaiNN [[`arXiv`](https://arxiv.org/abs/2102.03150)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/painn)]
-- Graph Parallelism [[`arXiv`](https://arxiv.org/abs/2203.09697)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/gemnet_gp)]
-- GemNet-OC [[`arXiv`](https://arxiv.org/abs/2204.02782)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/gemnet_oc)]
-- SCN [[`arXiv`](https://arxiv.org/abs/2206.14331)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/scn)]
-- eSCN [[`arXiv`](https://arxiv.org/abs/2302.03655)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/escn)]
+OCP provides several [models](../core/MODELS). Each model represents a different approach to featurization, and a different machine learning architecture. The models can be used for different tasks, and you will find different checkpoints associated with different datasets and tasks. 
 
 +++
 
 ## Datasets / Tasks
 
-OCP provides several different [datasets](https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md) that correspond to different tasks that range from predicting energy and forces from structures to Bader charges, relaxation energies, and others.
+OCP provides several different datasets like [OC20](../core/datasets/oc20) that correspond to different tasks that range from predicting energy and forces from structures to Bader charges, relaxation energies, and others.
 
 +++
 
