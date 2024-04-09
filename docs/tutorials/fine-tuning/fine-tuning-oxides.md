@@ -27,8 +27,9 @@ First we get the checkpoint that we want. According to the [MODELS](../../core/M
 We get this checkpoint here.
 
 ```{code-cell} ipython3
-%run ../ocp-tutorial.ipynb  # load some helper functions
-checkpoint = get_checkpoint('GemNet-OC OC20+OC22')
+from ocpmodels.common.model_registry import model_name_to_local_file
+
+checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 ```
 
 The data we need is provided in `supporting-information.json`. That file is embedded in the supporting information for the article, and is provided here in the tutorial. We load this data and explore it a little. The json file provides a dictionary with the structure:
@@ -74,7 +75,7 @@ Next, we will create an OCP calculator that we can use to get predictions from.
 
 ```{code-cell} ipython3
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint=checkpoint, trainer='forces', cpu=False)
+calc = OCPCalculator(checkpoint=checkpoint_path, trainer='forces', cpu=False)
 ```
 
 Now, we loop through each structure and accumulate the OCP predictions. Then, we plot the parity results.
@@ -188,6 +189,7 @@ We provide some helper functions in [../ocp-tutorial.ipynb](../ocp-tutorial) to 
 
 ```{code-cell} ipython3
 ! rm -fr train.db test.db val.db
+
 train, test, val = train_test_val_split('oxides.db')
 train, test, val
 ```

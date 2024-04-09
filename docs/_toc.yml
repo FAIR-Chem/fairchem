@@ -19,21 +19,25 @@ parts:
   - file: core/TRAIN
   - file: core/FAQ
   - file: tutorial/gotchas
+- caption: Videos and Talks
+  chapters:
+  - file: videos/intro_series
+  - file: videos/technical_talks
 - caption: Catalysis Tutorials
   chapters:
-  - file: tutorial/intro
-  - file: tutorial/OCP-introduction
-  - file: tutorial/fine-tuning/fine-tuning-oxides
-  - file: tutorial/advanced/fine-tuning-toc
+  - file: tutorials/intro
+  - file: tutorials/OCP-introduction
+  - file: tutorials/fine-tuning/fine-tuning-oxides
+  - file: tutorials/advanced/fine-tuning-toc
     sections:
-    - file: tutorial/advanced/fine-tuning-in-python
-    - file: tutorial/advanced/embedding-monkeypatch
-    - file: tutorial/advanced/embeddings
-    - file: tutorial/advanced/mass-inference
-  - file: tutorial/NRR/NRR_toc
+    - file: tutorials/advanced/fine-tuning-in-python
+    - file: tutorials/advanced/embedding-monkeypatch
+    - file: tutorials/advanced/embeddings
+    - file: tutorials/advanced/mass-inference
+  - file: tutorials/NRR/NRR_toc
     sections:
-    - file: tutorial/NRR/NRR_example
-    - file: tutorial/NRR/NRR_example-gemnet
+    - file: tutorials/NRR/NRR_example
+    - file: tutorials/NRR/NRR_example-gemnet
 - caption: ocpmodels documentation
   chapters:
   - file: autoapi/index

@@ -114,3 +114,4 @@ Local
 
 docs/_autosummary/
 env.yml
+*.db

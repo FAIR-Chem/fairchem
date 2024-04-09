@@ -84,3 +84,7 @@ describe_ocp()
 ```
 
 Let's get started! Click here to open the [next notebook](./OCP-introduction).
+
+# Recorded walkthrough of the catalysis tutorials!
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/0wb0FTa7SV0?si=6gPgj0Pv9jfNT8Go" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
