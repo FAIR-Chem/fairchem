@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import math
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -31,7 +31,7 @@ class Sine(nn.Module):
 class SIREN(nn.Module):
     def __init__(
         self,
-        layers: List[int],
+        layers: list[int],
         num_in_features: int,
         out_features: int,
         w0: float = 30.0,
@@ -258,8 +258,8 @@ class SphericalSmearing(nn.Module):
 
         self.max_n = max_n
 
-        m_list: List[int] = []
-        n_list: List[int] = []
+        m_list: list[int] = []
+        n_list: list[int] = []
         for i in range(max_n):
             for j in range(i + 1):
                 m_list.append(j)

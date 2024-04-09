@@ -14,7 +14,7 @@ TODO:
 from __future__ import annotations
 
 import math
-from typing import List, Optional
+from typing import Optional
 
 import torch
 
@@ -40,8 +40,8 @@ class CoefficientMappingModule(torch.nn.Module):
 
     def __init__(
         self,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
     ):
         super().__init__()
 
@@ -191,7 +191,7 @@ class SO3_Embedding:
     def __init__(
         self,
         length: int,
-        lmax_list: List[int],
+        lmax_list: list[int],
         num_channels: int,
         device: torch.device,
         dtype: torch.dtype,
@@ -235,7 +235,7 @@ class SO3_Embedding:
         self.embedding = embedding
 
     # Set the maximum order to be the maximum degree
-    def set_lmax_mmax(self, lmax_list: List[int], mmax_list: List[int]) -> None:
+    def set_lmax_mmax(self, lmax_list: list[int], mmax_list: list[int]) -> None:
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
 
@@ -277,7 +277,7 @@ class SO3_Embedding:
         self.embedding = torch.einsum("nac, ab -> nbc", self.embedding, mapping.to_m)
 
     # Rotate the embedding
-    def _rotate(self, SO3_rotation, lmax_list: List[int], mmax_list: List[int]):
+    def _rotate(self, SO3_rotation, lmax_list: list[int], mmax_list: list[int]):
         if self.num_resolutions == 1:
             embedding_rotate = SO3_rotation[0].rotate(
                 self.embedding, lmax_list[0], mmax_list[0]

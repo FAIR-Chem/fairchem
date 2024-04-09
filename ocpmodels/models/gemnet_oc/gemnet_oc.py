@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import logging
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -213,14 +213,14 @@ class GemNetOC(BaseModel):
         max_neighbors_aeaint: Optional[int] = None,
         max_neighbors_aint: Optional[int] = None,
         enforce_max_neighbors_strictly: bool = True,
-        rbf: Dict[str, str] = {"name": "gaussian"},
+        rbf: dict[str, str] = {"name": "gaussian"},
         rbf_spherical: Optional[dict] = None,
-        envelope: Dict[str, Union[str, int]] = {
+        envelope: dict[str, Union[str, int]] = {
             "name": "polynomial",
             "exponent": 5,
         },
-        cbf: Dict[str, str] = {"name": "spherical_harmonics"},
-        sbf: Dict[str, str] = {"name": "spherical_harmonics"},
+        cbf: dict[str, str] = {"name": "spherical_harmonics"},
+        sbf: dict[str, str] = {"name": "spherical_harmonics"},
         extensive: bool = True,
         forces_coupled: bool = False,
         output_init: str = "HeOrthogonal",

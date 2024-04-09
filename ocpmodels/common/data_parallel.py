@@ -10,7 +10,7 @@ from __future__ import annotations
 import heapq
 import logging
 from pathlib import Path
-from typing import List, Literal, Protocol, Tuple, Union, runtime_checkable
+from typing import Literal, Protocol, Tuple, Union, runtime_checkable
 
 import numba
 import numpy as np
@@ -27,7 +27,7 @@ class OCPCollater:
     def __init__(self, otf_graph: bool = False) -> None:
         self.otf_graph = otf_graph
 
-    def __call__(self, data_list: List[Data]) -> Batch:
+    def __call__(self, data_list: list[Data]) -> Batch:
         batch = data_list_collater(data_list, otf_graph=self.otf_graph)
         return batch
 
@@ -39,7 +39,7 @@ def balanced_partition(sizes: npt.NDArray[np.int_], num_parts: int):
     the largest element into the smallest partition.
     """
     sort_idx = np.argsort(-sizes)  # Sort in descending order
-    heap: List[Tuple[List[int], List[int]]] = []
+    heap: list[Tuple[list[int], list[int]]] = []
     for idx in sort_idx[:num_parts]:
         heap.append((sizes[idx], [idx]))
     heapq.heapify(heap)
@@ -102,7 +102,7 @@ class StatefulDistributedSampler(DistributedSampler):
 
 class BalancedBatchSampler(Sampler):
     def _load_dataset(self, dataset, mode: Literal["atoms", "neighbors"]):
-        errors: List[str] = []
+        errors: list[str] = []
         if not isinstance(dataset, _HasMetadata):
             errors.append(f"Dataset {dataset} does not have a metadata_path attribute.")
             return None, errors

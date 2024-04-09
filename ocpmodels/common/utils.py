@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 import numpy as np
 import torch
@@ -929,7 +929,7 @@ def check_traj_files(batch, traj_dir) -> bool:
 
 
 @contextmanager
-def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
+def new_trainer_context(*, config: dict[str, Any], args: Namespace):
     from ocpmodels.common import distutils, gp_utils
     from ocpmodels.common.registry import registry
 
@@ -939,7 +939,7 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
 
     @dataclass
     class _TrainingContext:
-        config: Dict[str, Any]
+        config: dict[str, Any]
         task: BaseTask
         trainer: BaseTrainer
 
@@ -1017,9 +1017,9 @@ def _report_incompat_keys(
     model: nn.Module,
     keys: _IncompatibleKeys,
     strict: bool = False,
-) -> Tuple[List[str], List[str]]:
+) -> Tuple[list[str], list[str]]:
     # filter out the missing scale factor keys for the new scaling factor module
-    missing_keys: List[str] = []
+    missing_keys: list[str] = []
     for full_key_name in keys.missing_keys:
         parent_module_name, _ = full_key_name.rsplit(".", 1)
         scale_factor = _resolve_scale_factor_submodule(model, parent_module_name)
@@ -1028,7 +1028,7 @@ def _report_incompat_keys(
         missing_keys.append(full_key_name)
 
     # filter out unexpected scale factor keys that remain from the old scaling modules
-    unexpected_keys: List[str] = []
+    unexpected_keys: list[str] = []
     for full_key_name in keys.unexpected_keys:
         parent_module_name, _ = full_key_name.rsplit(".", 1)
         scale_factor = _resolve_scale_factor_submodule(model, parent_module_name)
@@ -1068,7 +1068,7 @@ def load_state_dict(
     module: nn.Module,
     state_dict: Mapping[str, torch.Tensor],
     strict: bool = True,
-) -> Tuple[List[str], List[str]]:
+) -> Tuple[list[str], list[str]]:
     incompat_keys = module.load_state_dict(state_dict, strict=False)  # type: ignore
     return _report_incompat_keys(module, incompat_keys, strict=strict)
 

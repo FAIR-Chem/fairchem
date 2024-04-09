@@ -14,7 +14,7 @@ import os
 import random
 from abc import ABC
 from collections import defaultdict
-from typing import DefaultDict, Dict, Optional
+from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -436,7 +436,7 @@ class BaseTrainer(ABC):
             module = module.module
         return module
 
-    def load_checkpoint(self, checkpoint_path: str, checkpoint: Dict = {}) -> None:
+    def load_checkpoint(self, checkpoint_path: str, checkpoint: dict = {}) -> None:
         if not checkpoint:
             if not os.path.isfile(checkpoint_path):
                 raise FileNotFoundError(
@@ -804,7 +804,7 @@ class BaseTrainer(ABC):
 
         distutils.synchronize()
         if distutils.is_master():
-            gather_results: DefaultDict[str, npt.NDArray[np.float_]] = defaultdict(list)
+            gather_results: defaultdict[str, npt.NDArray[np.float_]] = defaultdict(list)
             full_path = os.path.join(
                 self.config["cmd"]["results_dir"],
                 f"{self.name}_{results_file}.npz",

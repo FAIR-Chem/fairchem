@@ -3,14 +3,14 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 import torch
 import torch.nn as nn
 
 from .scale_factor import ScaleFactor
 
-ScaleDict = Union[Dict[str, float], Dict[str, torch.Tensor]]
+ScaleDict = Union[dict[str, float], dict[str, torch.Tensor]]
 
 
 def _load_scale_dict(scale_file: Optional[Union[str, ScaleDict]]):

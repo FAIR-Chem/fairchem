@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import math
 
 from ray import tune
@@ -50,6 +52,6 @@ def tune_reporter(
 def label_metric_dict(metric_dict, split):
     new_dict = {}
     for key in metric_dict:
-        new_dict["{}_{}".format(split, key)] = metric_dict[key]
+        new_dict[f"{split}_{key}"] = metric_dict[key]
     metric_dict = new_dict
     return metric_dict

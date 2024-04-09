@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import copy
 import math
-from typing import List
 
 import torch
 import torch.nn as nn
@@ -64,8 +63,8 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         attn_alpha_channels: int,
         attn_value_channels: int,
         output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         SO3_rotation,
         mappingReduced,
         SO3_grid,
@@ -382,8 +381,8 @@ class FeedForwardNetwork(torch.nn.Module):
         sphere_channels: int,
         hidden_channels: int,
         output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         SO3_grid,
         activation: str = "scaled_silu",
         use_gate_act: bool = False,
@@ -557,13 +556,13 @@ class TransBlockV2(torch.nn.Module):
         attn_value_channels: int,
         ffn_hidden_channels: int,
         output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         SO3_rotation,
         mappingReduced,
         SO3_grid,
         max_num_elements: int,
-        edge_channels_list: List[int],
+        edge_channels_list: list[int],
         use_atom_edge_embedding: bool = True,
         use_m_share_rad: bool = False,
         attn_activation: str = "silu",

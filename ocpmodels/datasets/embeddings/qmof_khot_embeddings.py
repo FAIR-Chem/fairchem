@@ -10,6 +10,8 @@ https://github.com/txie-93/cgcnn/issues/2
 https://github.com/arosen93/QMOF/issues/18
 """
 
+from __future__ import annotations
+
 QMOF_KHOT_EMBEDDINGS = {
     1: [
         1,

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import List
 
 import torch
 import torch.nn as nn
@@ -76,8 +75,8 @@ class eSCN(BaseModel):
         cutoff: float = 8.0,
         max_num_elements: int = 90,
         num_layers: int = 8,
-        lmax_list: List[int] = [6],
-        mmax_list: List[int] = [2],
+        lmax_list: list[int] = [6],
+        mmax_list: list[int] = [2],
         sphere_channels: int = 128,
         hidden_channels: int = 256,
         edge_channels: int = 128,
@@ -207,7 +206,7 @@ class eSCN(BaseModel):
         )
 
         # For each spherical point, compute the spherical harmonic coefficient weights
-        sphharm_weights: List[nn.Parameter] = []
+        sphharm_weights: list[nn.Parameter] = []
         for i in range(self.num_resolutions):
             sphharm_weights.append(
                 nn.Parameter(
@@ -442,8 +441,8 @@ class LayerBlock(torch.nn.Module):
         sphere_channels: int,
         hidden_channels: int,
         edge_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         distance_expansion,
         max_num_elements: int,
         SO3_grid: SO3_Grid,
@@ -548,8 +547,8 @@ class MessageBlock(torch.nn.Module):
         sphere_channels: int,
         hidden_channels: int,
         edge_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         distance_expansion,
         max_num_elements: int,
         SO3_grid: SO3_Grid,
@@ -660,8 +659,8 @@ class SO2Block(torch.nn.Module):
         sphere_channels: int,
         hidden_channels: int,
         edge_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         act,
     ) -> None:
         super(SO2Block, self).__init__()
@@ -764,8 +763,8 @@ class SO2Conv(torch.nn.Module):
         sphere_channels: int,
         hidden_channels: int,
         edge_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         act,
     ) -> None:
         super(SO2Conv, self).__init__()

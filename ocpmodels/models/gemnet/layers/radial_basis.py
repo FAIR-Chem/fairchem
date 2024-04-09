@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import math
-from typing import Dict, Union
+from typing import Union
 
 import numpy as np
 import torch
@@ -161,8 +161,8 @@ class RadialBasis(torch.nn.Module):
         self,
         num_radial: int,
         cutoff: float,
-        rbf: Dict[str, str] = {"name": "gaussian"},
-        envelope: Dict[str, Union[str, int]] = {
+        rbf: dict[str, str] = {"name": "gaussian"},
+        envelope: dict[str, Union[str, int]] = {
             "name": "polynomial",
             "exponent": 5,
         },

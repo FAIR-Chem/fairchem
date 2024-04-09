@@ -8,7 +8,7 @@ from __future__ import annotations
 import copy
 import weakref
 from collections.abc import Iterable
-from typing import List, Optional
+from typing import Optional
 
 import torch
 
@@ -41,7 +41,7 @@ class ExponentialMovingAverage:
         self.num_updates: Optional[int] = 0 if use_num_updates else None
         parameters = list(parameters)
         self.shadow_params = [p.clone().detach() for p in parameters if p.requires_grad]
-        self.collected_params: List[torch.nn.Parameter] = []
+        self.collected_params: list[torch.nn.Parameter] = []
         # By maintaining only a weakref to each parameter,
         # we maintain the old GC behaviour of ExponentialMovingAverage:
         # if the model goes out of scope but the ExponentialMovingAverage

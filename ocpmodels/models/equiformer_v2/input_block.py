@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-from typing import List
 
 import torch
 import torch.nn as nn
@@ -33,8 +32,8 @@ class EdgeDegreeEmbedding(torch.nn.Module):
     def __init__(
         self,
         sphere_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         SO3_rotation,
         mappingReduced,
         max_num_elements: int,

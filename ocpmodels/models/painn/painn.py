@@ -32,7 +32,7 @@ SOFTWARE.
 from __future__ import annotations
 
 import math
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import torch
 from torch import nn
@@ -68,8 +68,8 @@ class PaiNN(BaseModel):
         num_rbf: int = 128,
         cutoff: float = 12.0,
         max_neighbors: int = 50,
-        rbf: Dict[str, str] = {"name": "gaussian"},
-        envelope: Dict[str, Union[str, int]] = {
+        rbf: dict[str, str] = {"name": "gaussian"},
+        envelope: dict[str, Union[str, int]] = {
             "name": "polynomial",
             "exponent": 5,
         },

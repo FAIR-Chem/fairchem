@@ -8,7 +8,6 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import os
-from typing import List
 
 import torch
 
@@ -36,8 +35,8 @@ class CoefficientMapping:
 
     def __init__(
         self,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         device,
     ) -> None:
         super().__init__()
@@ -134,7 +133,7 @@ class SO3_Embedding(torch.nn.Module):
     def __init__(
         self,
         length: int,
-        lmax_list: List[int],
+        lmax_list: list[int],
         num_channels: int,
         device: torch.device,
         dtype: torch.dtype,
@@ -360,7 +359,7 @@ class SO3_Rotation(torch.nn.Module):
     def __init__(
         self,
         rot_mat3x3: torch.Tensor,
-        lmax: List[int],
+        lmax: list[int],
     ) -> None:
         super().__init__()
         self.device = rot_mat3x3.device

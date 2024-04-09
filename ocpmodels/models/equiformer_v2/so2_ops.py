@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 import math
-from typing import List, Optional
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -29,8 +29,8 @@ class SO2_m_Convolution(torch.nn.Module):
         m: int,
         sphere_channels: int,
         m_output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
     ) -> None:
         super(SO2_m_Convolution, self).__init__()
 
@@ -86,11 +86,11 @@ class SO2_Convolution(torch.nn.Module):
         self,
         sphere_channels: int,
         m_output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         mappingReduced,
         internal_weights: bool = True,
-        edge_channels_list: Optional[List[int]] = None,
+        edge_channels_list: Optional[list[int]] = None,
         extra_m0_output_channels: Optional[int] = None,
     ):
         super(SO2_Convolution, self).__init__()
@@ -237,11 +237,11 @@ class SO2_Linear(torch.nn.Module):
         self,
         sphere_channels: int,
         m_output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         mappingReduced,
         internal_weights: bool = False,
-        edge_channels_list: Optional[List[int]] = None,
+        edge_channels_list: Optional[list[int]] = None,
     ):
         super(SO2_Linear, self).__init__()
         self.sphere_channels = sphere_channels

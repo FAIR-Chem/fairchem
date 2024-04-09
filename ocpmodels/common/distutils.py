@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
-from typing import List
 
 import torch
 import torch.distributed as dist
@@ -155,7 +154,7 @@ def all_reduce(
     return result
 
 
-def all_gather(data, group=dist.group.WORLD, device=None) -> List[torch.Tensor]:
+def all_gather(data, group=dist.group.WORLD, device=None) -> list[torch.Tensor]:
     if get_world_size() == 1:
         return data
     tensor = data

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import List, Optional
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -126,8 +126,8 @@ class EquiformerV2_OC20(BaseModel):
         attn_value_channels: int = 16,
         ffn_hidden_channels: int = 512,
         norm_type: str = "rms_norm_sh",
-        lmax_list: List[int] = [6],
-        mmax_list: List[int] = [2],
+        lmax_list: list[int] = [6],
+        mmax_list: list[int] = [2],
         grid_resolution: Optional[int] = None,
         num_sphere_samples: int = 128,
         edge_channels: int = 128,

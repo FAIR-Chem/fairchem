@@ -3,11 +3,10 @@ Copyright (c) Facebook, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
-"""
 
 # Copyright (c) Facebook, Inc. and its affiliates.
 # Borrowed from https://github.com/facebookresearch/pythia/blob/master/pythia/common/registry.py.
-"""
+
 Registry is central source of truth. Inspired from Redux's concept of
 global store, Registry maintains mappings of various information to unique
 keys. Special functions in registry can be used as decorators to register
@@ -21,13 +20,14 @@ Various decorators for registry different kind of classes with unique keys
 
 - Register a model: ``@registry.register_model``
 """
+
 from __future__ import annotations
 
 import importlib
-from typing import Any, Callable, Dict, List, TypeVar, Union
+from typing import Any, Callable, TypeVar, Union
 
 R = TypeVar("R")
-NestedDict = Dict[str, Union[str, Callable[..., Any], "NestedDict"]]
+NestedDict = dict[str, Union[str, Callable[..., Any], "NestedDict"]]
 
 
 def _get_absolute_mapping(name: str):
@@ -206,7 +206,7 @@ class Registry:
     def __import_error(cls, name: str, mapping_name: str) -> RuntimeError:
         kind = mapping_name[: -len("_name_mapping")]
         mapping = cls.mapping.get(mapping_name, {})
-        existing_keys: List[str] = list(mapping.keys())
+        existing_keys: list[str] = list(mapping.keys())
 
         if len(existing_keys) == 0:
             raise RuntimeError(

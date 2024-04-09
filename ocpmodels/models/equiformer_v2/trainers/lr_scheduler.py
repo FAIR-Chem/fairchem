@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 import math
 from bisect import bisect
-from typing import List, Optional
+from typing import Optional
 
 import torch
 
@@ -62,7 +62,7 @@ class CosineLRLambda:
 def multistep_lr_lambda(current_step: int, scheduler_params) -> float:
     warmup_epochs = aii(scheduler_params["warmup_epochs"], int)
     lr_warmup_factor = aii(scheduler_params["warmup_factor"], float)
-    lr_decay_epochs: List[int] = scheduler_params["decay_epochs"]
+    lr_decay_epochs: list[int] = scheduler_params["decay_epochs"]
     lr_gamma = aii(scheduler_params["decay_rate"], float)
 
     if current_step <= warmup_epochs:
