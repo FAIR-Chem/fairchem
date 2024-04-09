@@ -1,0 +1,23 @@
+version: 2
+updates:
+
+# Maintain dependencies for GitHub Actions
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: weekly
+
+# Python dependencies
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: weekly
+  allow:
+  - dependency-type: direct
+  - dependency-type: indirect
+
+# to ignore certain dependencies
+#ignore:
+#  - dependency-name: pymatgen
+#    versions:
+#      -
