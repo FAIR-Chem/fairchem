@@ -11,7 +11,7 @@ import logging
 import pickle
 import warnings
 from pathlib import Path
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 import lmdb
 import numpy as np
@@ -50,7 +50,7 @@ class LmdbDataset(Dataset[T_co]):
     """
 
     def __init__(self, config) -> None:
-        super(LmdbDataset, self).__init__()
+        super().__init__()
         self.config = config
 
         assert not self.config.get(
@@ -152,12 +152,10 @@ class LmdbDataset(Dataset[T_co]):
         if self.key_mapping is not None:
             data_object = rename_data_object_keys(data_object, self.key_mapping)
 
-        data_object = self.transforms(data_object)
+        return self.transforms(data_object)
 
-        return data_object
-
-    def connect_db(self, lmdb_path: Optional[Path] = None) -> lmdb.Environment:
-        env = lmdb.open(
+    def connect_db(self, lmdb_path: Path | None = None) -> lmdb.Environment:
+        return lmdb.open(
             str(lmdb_path),
             subdir=False,
             readonly=True,
@@ -166,7 +164,6 @@ class LmdbDataset(Dataset[T_co]):
             meminit=False,
             max_readers=1,
         )
-        return env
 
     def close_db(self) -> None:
         if not self.path.is_file():
@@ -206,7 +203,7 @@ class LmdbDataset(Dataset[T_co]):
         atoms_lens = [data.natoms for data in sample_pyg]
 
         # Guess the metadata for targets for each found property
-        metadata = {
+        return {
             "targets": {
                 prop: guess_property_metadata(
                     atoms_lens, [getattr(data, prop) for data in sample_pyg]
@@ -215,12 +212,10 @@ class LmdbDataset(Dataset[T_co]):
             }
         }
 
-        return metadata
-
 
 class SinglePointLmdbDataset(LmdbDataset[BaseData]):
     def __init__(self, config, transform=None) -> None:
-        super(SinglePointLmdbDataset, self).__init__(config, transform)
+        super().__init__(config, transform)
         warnings.warn(
             "SinglePointLmdbDataset is deprecated and will be removed in the future."
             "Please use 'LmdbDataset' instead.",
@@ -230,7 +225,7 @@ class SinglePointLmdbDataset(LmdbDataset[BaseData]):
 
 class TrajectoryLmdbDataset(LmdbDataset[BaseData]):
     def __init__(self, config, transform=None) -> None:
-        super(TrajectoryLmdbDataset, self).__init__(config, transform)
+        super().__init__(config, transform)
         warnings.warn(
             "TrajectoryLmdbDataset is deprecated and will be removed in the future."
             "Please use 'LmdbDataset' instead.",

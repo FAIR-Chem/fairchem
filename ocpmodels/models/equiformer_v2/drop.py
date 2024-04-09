@@ -29,15 +29,14 @@ def drop_path(
     )  # work with diff dim tensors, not just 2D ConvNets
     random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
     random_tensor.floor_()  # binarize
-    output = x.div(keep_prob) * random_tensor
-    return output
+    return x.div(keep_prob) * random_tensor
 
 
 class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks)."""
 
     def __init__(self, drop_prob: float) -> None:
-        super(DropPath, self).__init__()
+        super().__init__()
         self.drop_prob = drop_prob
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -53,7 +52,7 @@ class GraphDropPath(nn.Module):
     """
 
     def __init__(self, drop_prob: float) -> None:
-        super(GraphDropPath, self).__init__()
+        super().__init__()
         self.drop_prob = drop_prob
 
     def forward(self, x: torch.Tensor, batch) -> torch.Tensor:
@@ -63,8 +62,7 @@ class GraphDropPath(nn.Module):
         )  # work with diff dim tensors, not just 2D ConvNets
         ones = torch.ones(shape, dtype=x.dtype, device=x.device)
         drop = drop_path(ones, self.drop_prob, self.training)
-        out = x * drop[batch]
-        return out
+        return x * drop[batch]
 
     def extra_repr(self) -> str:
         return f"drop_prob={self.drop_prob}"
@@ -72,7 +70,7 @@ class GraphDropPath(nn.Module):
 
 class EquivariantDropout(nn.Module):
     def __init__(self, irreps, drop_prob: float) -> None:
-        super(EquivariantDropout, self).__init__()
+        super().__init__()
         self.irreps = irreps
         self.num_irreps = irreps.num_irreps
         self.drop_prob = drop_prob
@@ -87,13 +85,12 @@ class EquivariantDropout(nn.Module):
         shape = (x.shape[0], self.num_irreps)
         mask = torch.ones(shape, dtype=x.dtype, device=x.device)
         mask = self.drop(mask)
-        out = self.mul(x, mask)
-        return out
+        return self.mul(x, mask)
 
 
 class EquivariantScalarsDropout(nn.Module):
     def __init__(self, irreps, drop_prob: float) -> None:
-        super(EquivariantScalarsDropout, self).__init__()
+        super().__init__()
         self.irreps = irreps
         self.drop_prob = drop_prob
 
@@ -108,8 +105,7 @@ class EquivariantScalarsDropout(nn.Module):
             if ir.is_scalar():
                 temp = F.dropout(temp, p=self.drop_prob, training=self.training)
             out.append(temp)
-        out = torch.cat(out, dim=-1)
-        return out
+        return torch.cat(out, dim=-1)
 
     def extra_repr(self) -> str:
         return f"irreps={self.irreps}, drop_prob={self.drop_prob}"
@@ -117,7 +113,7 @@ class EquivariantScalarsDropout(nn.Module):
 
 class EquivariantDropoutArraySphericalHarmonics(nn.Module):
     def __init__(self, drop_prob: float, drop_graph: bool = False) -> None:
-        super(EquivariantDropoutArraySphericalHarmonics, self).__init__()
+        super().__init__()
         self.drop_prob = drop_prob
         self.drop = torch.nn.Dropout(drop_prob, True)
         self.drop_graph = drop_graph

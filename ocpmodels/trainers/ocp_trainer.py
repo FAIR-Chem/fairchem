@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 import os
 from collections import defaultdict
-from typing import Optional
 
 import numpy as np
 import torch
@@ -87,10 +86,12 @@ class OCPTrainer(BaseTrainer):
         local_rank=0,
         amp=False,
         cpu=False,
-        slurm={},
+        slurm=None,
         noddp=False,
         name="ocp",
     ):
+        if slurm is None:
+            slurm = {}
         super().__init__(
             task=task,
             model=model,
@@ -333,10 +334,11 @@ class OCPTrainer(BaseTrainer):
         for lc in loss:
             assert hasattr(lc, "grad_fn")
 
-        loss = sum(loss)
-        return loss
+        return sum(loss)
 
-    def _compute_metrics(self, out, batch, evaluator, metrics={}):
+    def _compute_metrics(self, out, batch, evaluator, metrics=None):
+        if metrics is None:
+            metrics = {}
         natoms = batch.natoms
         batch_size = natoms.numel()
 
@@ -379,8 +381,7 @@ class OCPTrainer(BaseTrainer):
         targets["natoms"] = natoms
         out["natoms"] = natoms
 
-        metrics = evaluator.eval(out, targets, prev_metrics=metrics)
-        return metrics
+        return evaluator.eval(out, targets, prev_metrics=metrics)
 
     # Takes in a new data source and generates predictions on it.
     @torch.no_grad()
@@ -388,7 +389,7 @@ class OCPTrainer(BaseTrainer):
         self,
         data_loader,
         per_image: bool = True,
-        results_file: Optional[str] = None,
+        results_file: str | None = None,
         disable_tqdm: bool = False,
     ):
         if self.is_debug and per_image:
@@ -417,7 +418,7 @@ class OCPTrainer(BaseTrainer):
 
         predictions = defaultdict(list)
 
-        for i, batch in tqdm(
+        for _i, batch in tqdm(
             enumerate(data_loader),
             total=len(data_loader),
             position=rank,

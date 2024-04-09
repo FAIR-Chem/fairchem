@@ -7,8 +7,6 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import torch
 
 
@@ -17,7 +15,7 @@ class Normalizer:
 
     def __init__(
         self,
-        tensor: Optional[torch.Tensor] = None,
+        tensor: torch.Tensor | None = None,
         mean=None,
         std=None,
         device=None,

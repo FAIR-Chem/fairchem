@@ -7,8 +7,6 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import torch
 
@@ -43,8 +41,7 @@ class AtomEmbedding(torch.nn.Module):
             h: torch.Tensor, shape=(nAtoms, emb_size)
                 Atom embeddings.
         """
-        h = self.embeddings(Z - 1)  # -1 because Z.min()=1 (==Hydrogen)
-        return h
+        return self.embeddings(Z - 1)  # -1 because Z.min()=1 (==Hydrogen)
 
 
 class EdgeEmbedding(torch.nn.Module):
@@ -64,7 +61,7 @@ class EdgeEmbedding(torch.nn.Module):
         atom_features: int,
         edge_features: int,
         num_out_features: int,
-        activation: Optional[str] = None,
+        activation: str | None = None,
     ) -> None:
         super().__init__()
         in_features = 2 * atom_features + edge_features
@@ -99,5 +96,4 @@ class EdgeEmbedding(torch.nn.Module):
         h_t = h[idx_t]  # shape=(nEdges, emb_size)
 
         m_st = torch.cat([h_s, h_t, m_rbf], dim=-1)  # (nEdges, 2*emb_size+nFeatures)
-        m_st = self.dense(m_st)  # (nEdges, emb_size)
-        return m_st
+        return self.dense(m_st)  # (nEdges, emb_size)

@@ -7,8 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import ase.db.sqlite
 import ase.io.trajectory
@@ -17,6 +16,9 @@ import torch
 from torch_geometric.data import Data
 
 from ocpmodels.common.utils import collate
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 try:
     from pymatgen.io.ase import AseAtomsAdaptor
@@ -87,7 +89,7 @@ class AtomsToGraphs:
         r_fixed: bool = True,
         r_pbc: bool = False,
         r_stress: bool = False,
-        r_data_keys: Optional[Sequence[str]] = None,
+        r_data_keys: Sequence[str] | None = None,
     ) -> None:
         self.max_neigh = max_neigh
         self.radius = radius
@@ -227,7 +229,7 @@ class AtomsToGraphs:
     def convert_all(
         self,
         atoms_collection,
-        processed_file_path: Optional[str] = None,
+        processed_file_path: str | None = None,
         collate_and_save=False,
         disable_tqdm=False,
     ):
@@ -252,8 +254,9 @@ class AtomsToGraphs:
         elif isinstance(atoms_collection, ase.db.sqlite.SQLite3Database):
             atoms_iter = atoms_collection.select()
         elif isinstance(
-            atoms_collection, ase.io.trajectory.SlicedTrajectory
-        ) or isinstance(atoms_collection, ase.io.trajectory.TrajectoryReader):
+            atoms_collection,
+            (ase.io.trajectory.SlicedTrajectory, ase.io.trajectory.TrajectoryReader),
+        ):
             atoms_iter = atoms_collection
         else:
             raise NotImplementedError

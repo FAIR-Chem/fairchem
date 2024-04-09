@@ -16,7 +16,7 @@ def uniform_atoms_lengths(atoms_lens) -> bool:
 def target_constant_shape(atoms_lens, target_samples) -> bool:
     # Given a bunch of atoms lengths, and the corresponding samples for the target,
     # determine whether the shape is always the same regardless of atom size
-    return len(set([sample.shape for sample in target_samples])) == 1
+    return len({sample.shape for sample in target_samples}) == 1
 
 
 def target_per_atom(atoms_lens, target_samples) -> bool:
@@ -28,23 +28,18 @@ def target_per_atom(atoms_lens, target_samples) -> bool:
         return False
 
     first_dim_proportional = all(
-        [
-            np.array(sample).shape[0] == alen
-            for alen, sample in zip(atoms_lens, target_samples)
-        ]
+        np.array(sample).shape[0] == alen
+        for alen, sample in zip(atoms_lens, target_samples)
     )
 
     if len(np.array(target_samples[0]).shape) == 1:
         other_dim_constant = True
     else:
         other_dim_constant = (
-            len(set([np.array(sample).shape[1:] for sample in target_samples])) == 1
+            len({np.array(sample).shape[1:] for sample in target_samples}) == 1
         )
 
-    if first_dim_proportional and other_dim_constant:
-        return True
-    else:
-        return False
+    return bool(first_dim_proportional and other_dim_constant)
 
 
 def target_extensive(atoms_lens, target_samples, threshold: float = 0.2):
@@ -78,13 +73,12 @@ def target_extensive(atoms_lens, target_samples, threshold: float = 0.2):
     )
     if extensive_guess.shape == ():
         return extensive_guess
-    elif (
-        target_samples_normalized.std(axis=0)
-        < (threshold * target_samples_normalized.mean(axis=0))
-    ).all():
-        return True
-    else:
-        return False
+    return bool(
+        (
+            target_samples_normalized.std(axis=0)
+            < threshold * target_samples_normalized.mean(axis=0)
+        ).all()
+    )
 
 
 def guess_target_metadata(atoms_len, target_samples):

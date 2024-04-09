@@ -74,7 +74,7 @@ class SchNetWrap(SchNet, BaseModel):
         self.otf_graph = otf_graph
         self.max_neighbors = 50
         self.reduce = readout
-        super(SchNetWrap, self).__init__(
+        super().__init__(
             hidden_channels=hidden_channels,
             num_filters=num_filters,
             num_interactions=num_interactions,
@@ -99,7 +99,8 @@ class SchNetWrap(SchNet, BaseModel):
         ) = self.generate_graph(data)
 
         if self.use_pbc:
-            assert z.dim() == 1 and z.dtype == torch.long
+            assert z.dim() == 1
+            assert z.dtype == torch.long
 
             edge_attr = self.distance_expansion(edge_weight)
 
@@ -114,7 +115,7 @@ class SchNetWrap(SchNet, BaseModel):
             batch = torch.zeros_like(z) if batch is None else batch
             energy = scatter(h, batch, dim=0, reduce=self.reduce)
         else:
-            energy = super(SchNetWrap, self).forward(z, pos, batch)
+            energy = super().forward(z, pos, batch)
         return energy
 
     def forward(self, data):

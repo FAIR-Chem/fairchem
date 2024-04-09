@@ -7,8 +7,6 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import torch
 from torch_scatter import scatter
@@ -96,7 +94,7 @@ class GemNetT(BaseModel):
 
     def __init__(
         self,
-        num_atoms: Optional[int],
+        num_atoms: int | None,
         bond_feat_dim: int,
         num_targets: int,
         num_spherical: int,
@@ -116,17 +114,23 @@ class GemNetT(BaseModel):
         direct_forces: bool = False,
         cutoff: float = 6.0,
         max_neighbors: int = 50,
-        rbf: dict = {"name": "gaussian"},
-        envelope: dict = {"name": "polynomial", "exponent": 5},
-        cbf: dict = {"name": "spherical_harmonics"},
+        rbf: dict | None = None,
+        envelope: dict | None = None,
+        cbf: dict | None = None,
         extensive: bool = True,
         otf_graph: bool = False,
         use_pbc: bool = True,
         output_init: str = "HeOrthogonal",
         activation: str = "swish",
         num_elements: int = 83,
-        scale_file: Optional[str] = None,
+        scale_file: str | None = None,
     ):
+        if cbf is None:
+            cbf = {"name": "spherical_harmonics"}
+        if envelope is None:
+            envelope = {"name": "polynomial", "exponent": 5}
+        if rbf is None:
+            rbf = {"name": "gaussian"}
         super().__init__()
         self.num_targets = num_targets
         assert num_blocks > 0
@@ -307,8 +311,7 @@ class GemNetT(BaseModel):
         sign = 1 - 2 * inverse_neg
         tensor_cat = torch.cat([tensor_directed, sign * tensor_directed])
         # Reorder everything so the edges of every image are consecutive
-        tensor_ordered = tensor_cat[reorder_idx]
-        return tensor_ordered
+        return tensor_cat[reorder_idx]
 
     def reorder_symmetric_edges(
         self, edge_index, cell_offsets, neighbors, edge_dist, edge_vector

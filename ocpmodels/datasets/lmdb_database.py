@@ -14,7 +14,6 @@ import os
 import typing
 import zlib
 from pathlib import Path
-from typing import Optional
 
 import lmdb
 import numpy as np
@@ -35,7 +34,7 @@ RESERVED_KEYS = ["nextid", "metadata", "deleted_ids"]
 class LMDBDatabase(Database):
     def __init__(
         self,
-        filename: Optional[str | Path] = None,
+        filename: str | Path | None = None,
         create_indices: bool = True,
         use_lock_file: bool = False,
         serial: bool = False,
@@ -106,8 +105,8 @@ class LMDBDatabase(Database):
         self,
         atoms: Atoms | AtomsRow,
         key_value_pairs: dict,
-        data: Optional[dict],
-        idx: Optional[int] = None,
+        data: dict | None,
+        idx: int | None = None,
     ) -> None:
         Database._write(self, atoms, key_value_pairs, data)
 
@@ -170,8 +169,8 @@ class LMDBDatabase(Database):
     def _update(
         self,
         idx: int,
-        key_value_pairs: Optional[dict] = None,
-        data: Optional[dict] = None,
+        key_value_pairs: dict | None = None,
+        data: dict | None = None,
     ):
         # hack this to play nicely with ASE code
         row = self._get_row(idx, include_data=True)
@@ -232,9 +231,9 @@ class LMDBDatabase(Database):
         cmps: list[tuple[str, str, str]],
         explain: bool = False,
         verbosity: int = 0,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         offset: int = 0,
-        sort: Optional[str] = None,
+        sort: str | None = None,
         include_data: bool = True,
         columns: str = "all",
     ):
@@ -323,8 +322,7 @@ class LMDBDatabase(Database):
         """Get the id of the next row to be written"""
         # Get the nextid
         nextid_data = self.txn.get("nextid".encode("ascii"))
-        nextid = orjson.loads(zlib.decompress(nextid_data)) if nextid_data else 1
-        return nextid
+        return orjson.loads(zlib.decompress(nextid_data)) if nextid_data else 1
 
     def count(self, selection=None, **kwargs) -> int:
         """Count rows.
@@ -334,7 +332,7 @@ class LMDBDatabase(Database):
         """
         if selection is not None:
             n = 0
-            for row in self.select(selection, **kwargs):
+            for _row in self.select(selection, **kwargs):
                 n += 1
             return n
         else:

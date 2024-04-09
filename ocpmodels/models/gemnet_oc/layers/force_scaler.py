@@ -50,8 +50,7 @@ class ForceScaler:
             create_graph=True,
         )[0]
         # (nAtoms, 3)
-        forces = self.unscale(forces_scaled)
-        return forces
+        return self.unscale(forces_scaled)
 
     def calc_forces_and_update(self, energy, pos):
         if self.enabled:

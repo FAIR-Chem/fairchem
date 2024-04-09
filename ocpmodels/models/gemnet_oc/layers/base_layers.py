@@ -7,11 +7,10 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 import torch
 
-from ..initializers import he_orthogonal_init
+from ocpmodels.models.gemnet_oc.initializers import he_orthogonal_init
 
 
 class Dense(torch.nn.Module):
@@ -35,7 +34,7 @@ class Dense(torch.nn.Module):
         in_features: int,
         out_features: int,
         bias: bool = False,
-        activation: Optional[str] = None,
+        activation: str | None = None,
     ) -> None:
         super().__init__()
 
@@ -60,8 +59,7 @@ class Dense(torch.nn.Module):
 
     def forward(self, x):
         x = self.linear(x)
-        x = self._activation(x)
-        return x
+        return self._activation(x)
 
 
 class ScaledSiLU(torch.nn.Module):
@@ -105,5 +103,4 @@ class ResidualLayer(torch.nn.Module):
     def forward(self, input):
         x = self.dense_mlp(input)
         x = input + x
-        x = x * self.inv_sqrt_2
-        return x
+        return x * self.inv_sqrt_2

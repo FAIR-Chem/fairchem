@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import time
 
@@ -30,10 +31,8 @@ from ocpmodels.models.scn.smearing import (
     SiLUSmearing,
 )
 
-try:
+with contextlib.suppress(ImportError):
     from e3nn import o3
-except ImportError:
-    pass
 
 
 @registry.register_model("escn")
@@ -75,8 +74,8 @@ class eSCN(BaseModel):
         cutoff: float = 8.0,
         max_num_elements: int = 90,
         num_layers: int = 8,
-        lmax_list: list[int] = [6],
-        mmax_list: list[int] = [2],
+        lmax_list: list[int] | None = None,
+        mmax_list: list[int] | None = None,
         sphere_channels: int = 128,
         hidden_channels: int = 256,
         edge_channels: int = 128,
@@ -87,6 +86,10 @@ class eSCN(BaseModel):
         distance_resolution: float = 0.02,
         show_timing_info: bool = False,
     ) -> None:
+        if mmax_list is None:
+            mmax_list = [2]
+        if lmax_list is None:
+            lmax_list = [6]
         super().__init__()
 
         import sys
@@ -448,7 +451,7 @@ class LayerBlock(torch.nn.Module):
         SO3_grid: SO3_Grid,
         act,
     ) -> None:
-        super(LayerBlock, self).__init__()
+        super().__init__()
         self.layer_idx = layer_idx
         self.act = act
         self.lmax_list = lmax_list
@@ -554,7 +557,7 @@ class MessageBlock(torch.nn.Module):
         SO3_grid: SO3_Grid,
         act,
     ) -> None:
-        super(MessageBlock, self).__init__()
+        super().__init__()
         self.layer_idx = layer_idx
         self.act = act
         self.hidden_channels = hidden_channels
@@ -663,7 +666,7 @@ class SO2Block(torch.nn.Module):
         mmax_list: list[int],
         act,
     ) -> None:
-        super(SO2Block, self).__init__()
+        super().__init__()
         self.sphere_channels = sphere_channels
         self.hidden_channels = hidden_channels
         self.lmax_list = lmax_list
@@ -767,7 +770,7 @@ class SO2Conv(torch.nn.Module):
         mmax_list: list[int],
         act,
     ) -> None:
-        super(SO2Conv, self).__init__()
+        super().__init__()
         self.hidden_channels = hidden_channels
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
@@ -835,7 +838,7 @@ class EdgeBlock(torch.nn.Module):
         max_num_elements,
         act,
     ) -> None:
-        super(EdgeBlock, self).__init__()
+        super().__init__()
         self.in_channels = distance_expansion.num_output
         self.distance_expansion = distance_expansion
         self.act = act
@@ -868,9 +871,7 @@ class EdgeBlock(torch.nn.Module):
 
         # Compute invariant edge embedding
         x_edge = self.act(source_embedding + target_embedding + x_dist)
-        x_edge = self.act(self.fc1_edge_attr(x_edge))
-
-        return x_edge
+        return self.act(self.fc1_edge_attr(x_edge))
 
 
 class EnergyBlock(torch.nn.Module):
@@ -889,7 +890,7 @@ class EnergyBlock(torch.nn.Module):
         num_sphere_samples: int,
         act,
     ) -> None:
-        super(EnergyBlock, self).__init__()
+        super().__init__()
         self.num_channels = num_channels
         self.num_sphere_samples = num_sphere_samples
         self.act = act
@@ -904,9 +905,7 @@ class EnergyBlock(torch.nn.Module):
         x_pt = self.act(self.fc2(x_pt))
         x_pt = self.fc3(x_pt)
         x_pt = x_pt.view(-1, self.num_sphere_samples, 1)
-        node_energy = torch.sum(x_pt, dim=1) / self.num_sphere_samples
-
-        return node_energy
+        return torch.sum(x_pt, dim=1) / self.num_sphere_samples
 
 
 class ForceBlock(torch.nn.Module):
@@ -925,7 +924,7 @@ class ForceBlock(torch.nn.Module):
         num_sphere_samples: int,
         act,
     ) -> None:
-        super(ForceBlock, self).__init__()
+        super().__init__()
         self.num_channels = num_channels
         self.num_sphere_samples = num_sphere_samples
         self.act = act
@@ -941,6 +940,4 @@ class ForceBlock(torch.nn.Module):
         x_pt = self.fc3(x_pt)
         x_pt = x_pt.view(-1, self.num_sphere_samples, 1)
         forces = x_pt * sphere_points.view(1, self.num_sphere_samples, 3)
-        forces = torch.sum(forces, dim=1) / self.num_sphere_samples
-
-        return forces
+        return torch.sum(forces, dim=1) / self.num_sphere_samples

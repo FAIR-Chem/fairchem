@@ -199,6 +199,7 @@ def associated_legendre_polynomials(
                         )
 
             return P_l_m
+    return None
 
 
 def real_sph_harm(

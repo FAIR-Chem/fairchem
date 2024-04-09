@@ -10,15 +10,17 @@ from __future__ import annotations
 import logging
 from collections import deque
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import ase
 import torch
-from torch_geometric.data import Batch
 from torch_scatter import scatter
 
 from ocpmodels.common.relaxation.ase_utils import batch_to_atoms
 from ocpmodels.common.utils import radius_graph_pbc
+
+if TYPE_CHECKING:
+    from torch_geometric.data import Batch
 
 
 class LBFGS:
@@ -33,7 +35,7 @@ class LBFGS:
         force_consistent=None,
         device: str = "cuda:0",
         save_full_traj: bool = True,
-        traj_dir: Optional[Path] = None,
+        traj_dir: Path | None = None,
         traj_names=None,
         early_stop_batch: bool = False,
     ) -> None:
@@ -111,14 +113,10 @@ class LBFGS:
             update_mask, energy, forces = self.check_convergence(iteration)
             converged = torch.all(torch.logical_not(update_mask))
 
-            if self.trajectories is not None:
-                if (
-                    self.save_full
-                    or converged
-                    or iteration == steps - 1
-                    or iteration == 0
-                ):
-                    self.write(energy, forces, update_mask)
+            if self.trajectories is not None and (
+                self.save_full or converged or iteration == steps - 1 or iteration == 0
+            ):
+                self.write(energy, forces, update_mask)
 
             if not converged and iteration < steps - 1:
                 self.step(iteration, forces, update_mask)
@@ -144,7 +142,7 @@ class LBFGS:
     def step(
         self,
         iteration: int,
-        forces: Optional[torch.Tensor],
+        forces: torch.Tensor | None,
         update_mask: torch.Tensor,
     ) -> None:
         def determine_step(dr):

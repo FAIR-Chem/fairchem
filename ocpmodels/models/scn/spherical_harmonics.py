@@ -244,22 +244,19 @@ class SphericalHarmonicsHelper:
         x = x.view(-1, self.sphere_basis, channels)
         x_grid = torch.einsum("mbi,zic->zbmc", self.to_grid_shb, x)
         x_grid = torch.einsum("am,zbmc->zbac", self.to_grid_sha, x_grid).contiguous()
-        x_grid = x_grid.view(-1, self.num_bands * channels)
-        return x_grid
+        return x_grid.view(-1, self.num_bands * channels)
 
     # Simplified version of function from e3nn
     def FromGrid(self, x_grid, channels) -> torch.Tensor:
         x_grid = x_grid.view(-1, self.grid_res, (self.grid_res + 1), channels)
         x = torch.einsum("am,zbac->zbmc", self.from_grid.sha, x_grid)
         x = torch.einsum("mbi,zbmc->zic", self.from_grid.shb, x).contiguous()
-        x = x.view(-1, channels)
-        return x
+        return x.view(-1, channels)
 
     def CombineYRotations(self, x) -> torch.Tensor:
         num_channels = x.size()[-1]
         x = x.view(-1, self.num_y_rotations * self.sphere_basis_reduce, num_channels)
-        x = torch.einsum("abc, bd->adc", x, self.mapping_y_rot).contiguous()
-        return x
+        return torch.einsum("abc, bd->adc", x, self.mapping_y_rot).contiguous()
 
     def Rotate(self, x) -> torch.Tensor:
         num_channels = x.size()[2]
@@ -269,8 +266,7 @@ class SphericalHarmonicsHelper:
         x = x.view(-1, self.sphere_basis, num_channels)
         # print('{} {}'.format(self.wigner.size(), x.size()))
         x_rot = torch.bmm(self.wigner, x)
-        x_rot = x_rot.view(-1, self.sphere_basis_reduce * num_channels)
-        return x_rot
+        return x_rot.view(-1, self.sphere_basis_reduce * num_channels)
 
     def FlipGrid(self, grid, num_channels: int) -> torch.Tensor:
         # lat long
@@ -281,12 +277,10 @@ class SphericalHarmonicsHelper:
         return flip_grid.view(-1, num_channels)
 
     def RotateInv(self, x) -> torch.Tensor:
-        x_rot = torch.bmm(self.wigner_inv, x)
-        return x_rot
+        return torch.bmm(self.wigner_inv, x)
 
     def RotateWigner(self, x, wigner) -> torch.Tensor:
-        x_rot = torch.bmm(wigner, x)
-        return x_rot
+        return torch.bmm(wigner, x)
 
     def RotationMatrix(self, rot_x: float, rot_y: float, rot_z: float) -> torch.Tensor:
         m1, m2, m3 = (
@@ -314,9 +308,7 @@ class SphericalHarmonicsHelper:
             )
 
         matrix = torch.mm(torch.mm(m1, m2), m3)
-        matrix = matrix.view(1, 3, 3)
-
-        return matrix
+        return matrix.view(1, 3, 3)
 
     def RotationToWignerDMatrix(self, edge_rot_mat, start_lmax, end_lmax):
         x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])

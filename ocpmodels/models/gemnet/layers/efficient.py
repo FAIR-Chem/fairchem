@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import torch
 
-from ..initializers import he_orthogonal_init
+from ocpmodels.models.gemnet.initializers import he_orthogonal_init
 
 
 class EfficientInteractionDownProjection(torch.nn.Module):
@@ -167,7 +167,5 @@ class EfficientInteractionBilinear(torch.nn.Module):
         # Bilinear: Sum over emb_size_interm and emb_size
         m_ca = torch.matmul(rbf_W1_sum_k.permute(2, 0, 1), self.weight)
         # (emb_size, nEdges, units_out)
-        m_ca = torch.sum(m_ca, dim=0)
+        return torch.sum(m_ca, dim=0)
         # (nEdges, units_out)
-
-        return m_ca

@@ -115,9 +115,7 @@ class EquivariantLayerNormArray(nn.Module):
 
             out.append(feature)
 
-        out = torch.cat(out, dim=1)
-
-        return out
+        return torch.cat(out, dim=1)
 
 
 class EquivariantLayerNormArraySphericalHarmonics(nn.Module):
@@ -225,8 +223,7 @@ class EquivariantLayerNormArraySphericalHarmonics(nn.Module):
                 feature = feature * feature_scale
                 out.append(feature)
 
-        out = torch.cat(out, dim=1)
-        return out
+        return torch.cat(out, dim=1)
 
 
 class EquivariantRMSNormArraySphericalHarmonics(nn.Module):
@@ -294,8 +291,7 @@ class EquivariantRMSNormArraySphericalHarmonics(nn.Module):
             feature = feature * feature_scale
             out.append(feature)
 
-        out = torch.cat(out, dim=1)
-        return out
+        return torch.cat(out, dim=1)
 
 
 class EquivariantRMSNormArraySphericalHarmonicsV2(nn.Module):
@@ -439,5 +435,4 @@ class EquivariantDegreeLayerScale(nn.Module):
         weight = torch.index_select(
             self.affine_weight, dim=1, index=self.expand_index
         )  # [1, (L_max + 1)**2, C]
-        node_input = node_input * weight  # [N, (L_max + 1)**2, C]
-        return node_input
+        return node_input * weight  # [N, (L_max + 1)**2, C]

@@ -7,16 +7,14 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import torch
 from torch_scatter import scatter
 from torch_scatter.utils import broadcast
 
 from ocpmodels.common import gp_utils
+from ocpmodels.models.gemnet_gp.initializers import he_orthogonal_init
 from ocpmodels.modules.scaling import ScaleFactor
 
-from ..initializers import he_orthogonal_init
 from .base_layers import Dense, ResidualLayer
 
 
@@ -24,8 +22,8 @@ def scatter_sum(
     src: torch.Tensor,
     index: torch.Tensor,
     dim: int = -1,
-    out: Optional[torch.Tensor] = None,
-    dim_size: Optional[int] = None,
+    out: torch.Tensor | None = None,
+    dim_size: int | None = None,
 ) -> torch.Tensor:
     """
     Clone of torch_scatter.scatter_sum but without in-place operations
@@ -68,7 +66,7 @@ class AtomUpdateBlock(torch.nn.Module):
         emb_size_edge: int,
         emb_size_rbf: int,
         nHidden: int,
-        activation: Optional[str] = None,
+        activation: str | None = None,
         name: str = "atom_update",
     ) -> None:
         super().__init__()
@@ -84,7 +82,7 @@ class AtomUpdateBlock(torch.nn.Module):
         units_in: int,
         units: int,
         nHidden: int,
-        activation: Optional[str],
+        activation: str | None,
     ):
         dense1 = Dense(units_in, units, activation=activation, bias=False)
         mlp = [dense1]
@@ -154,7 +152,7 @@ class OutputBlock(AtomUpdateBlock):
         emb_size_rbf: int,
         nHidden: int,
         num_targets: int,
-        activation: Optional[str] = None,
+        activation: str | None = None,
         direct_forces: bool = True,
         output_init: str = "HeOrthogonal",
         name: str = "output",

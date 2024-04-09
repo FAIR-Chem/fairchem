@@ -8,7 +8,6 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import math
-from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -21,7 +20,7 @@ from .activations import Act
 
 class Sine(nn.Module):
     def __init__(self, w0: float = 30.0) -> None:
-        super(Sine, self).__init__()
+        super().__init__()
         self.w0 = w0
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -35,10 +34,10 @@ class SIREN(nn.Module):
         num_in_features: int,
         out_features: int,
         w0: float = 30.0,
-        initializer: Optional[str] = "siren",
+        initializer: str | None = "siren",
         c: float = 6,
     ) -> None:
-        super(SIREN, self).__init__()
+        super().__init__()
         self.layers = [nn.Linear(num_in_features, layers[0]), Sine(w0=w0)]
 
         for index in range(len(layers) - 1):
@@ -70,7 +69,7 @@ class SINESmearing(nn.Module):
         num_freqs: int = 40,
         use_cosine: bool = False,
     ) -> None:
-        super(SINESmearing, self).__init__()
+        super().__init__()
 
         self.num_freqs = num_freqs
         self.out_dim: int = num_in_features * self.num_freqs
@@ -101,7 +100,7 @@ class GaussianSmearing(nn.Module):
         end: int = 1,
         num_freqs: int = 50,
     ) -> None:
-        super(GaussianSmearing, self).__init__()
+        super().__init__()
         self.num_freqs = num_freqs
         offset = torch.linspace(start, end, num_freqs)
         self.coeff: float = -0.5 / (offset[1] - offset[0]).item() ** 2
@@ -123,7 +122,7 @@ class FourierSmearing(nn.Module):
         num_freqs: int = 40,
         use_cosine: bool = False,
     ) -> None:
-        super(FourierSmearing, self).__init__()
+        super().__init__()
 
         self.num_freqs = num_freqs
         self.out_dim: int = num_in_features * self.num_freqs
@@ -146,13 +145,7 @@ class FourierSmearing(nn.Module):
 
 
 class Basis(nn.Module):
-    smearing: Union[
-        SINESmearing,
-        SINESmearing,
-        FourierSmearing,
-        GaussianSmearing,
-        torch.nn.Sequential,
-    ]
+    smearing: SINESmearing | FourierSmearing | GaussianSmearing | torch.nn.Sequential
 
     def __init__(
         self,
@@ -160,9 +153,9 @@ class Basis(nn.Module):
         num_freqs: int = 50,
         basis_type: str = "powersine",
         act: str = "ssp",
-        sph: Optional[SphericalSmearing] = None,
+        sph: SphericalSmearing | None = None,
     ) -> None:
-        super(Basis, self).__init__()
+        super().__init__()
 
         self.num_freqs = num_freqs
         self.basis_type = basis_type
@@ -220,7 +213,7 @@ class Basis(nn.Module):
         else:
             raise RuntimeError("Undefined basis type.")
 
-    def forward(self, x: torch.Tensor, edge_attr_sph: Optional[torch.Tensor] = None):
+    def forward(self, x: torch.Tensor, edge_attr_sph: torch.Tensor | None = None):
         if "sph" in self.basis_type:
             if "nosine" not in self.basis_type:
                 x_sine = self.smearing_sine(
@@ -254,7 +247,7 @@ class SphericalSmearing(nn.Module):
     n: npt.NDArray[np.int_]
 
     def __init__(self, max_n: int = 10, option: str = "all") -> None:
-        super(SphericalSmearing, self).__init__()
+        super().__init__()
 
         self.max_n = max_n
 

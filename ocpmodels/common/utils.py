@@ -18,15 +18,13 @@ import os
 import subprocess
 import sys
 import time
-from argparse import Namespace
 from bisect import bisect
-from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
@@ -43,6 +41,9 @@ import ocpmodels
 from ocpmodels.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
+    from argparse import Namespace
+    from collections.abc import Mapping
+
     from torch.nn.modules.module import _IncompatibleKeys
 
 
@@ -165,11 +166,7 @@ def plot_histogram(data, xlabel: str = "", ylabel: str = "", title: str = ""):
     # Return numpy array
     canvas.draw()
     image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-    image_from_plot = image_from_plot.reshape(
-        fig.canvas.get_width_height()[::-1] + (3,)
-    )
-
-    return image_from_plot
+    return image_from_plot.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
 
 # Override the collation method in `pytorch_geometric.data.InMemoryDataset`
@@ -301,7 +298,7 @@ def _get_project_root() -> Path:
 
 
 # Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
-def setup_imports(config: Optional[dict] = None) -> None:
+def setup_imports(config: dict | None = None) -> None:
     from ocpmodels.common.registry import registry
 
     skip_experimental_imports = (config or {}).get("skip_experimental_imports", None)
@@ -363,21 +360,20 @@ def create_dict_from_args(args: list, sep: str = "."):
     return return_dict
 
 
-def load_config(path: str, previous_includes: list = []):
+def load_config(path: str, previous_includes: list | None = None):
+    if previous_includes is None:
+        previous_includes = []
     path = Path(path)
     if path in previous_includes:
         raise ValueError(
             f"Cyclic config include detected. {path} included in sequence {previous_includes}."
         )
-    previous_includes = previous_includes + [path]
+    previous_includes = [*previous_includes, path]
 
     direct_config = yaml.safe_load(open(path))
 
     # Load config from included files.
-    if "includes" in direct_config:
-        includes = direct_config.pop("includes")
-    else:
-        includes = []
+    includes = direct_config.pop("includes") if "includes" in direct_config else []
     if not isinstance(includes, list):
         raise AttributeError(f"Includes must be a list, '{type(includes)}' provided")
 
@@ -544,8 +540,10 @@ def radius_graph_pbc(
     radius,
     max_num_neighbors_threshold,
     enforce_max_neighbors_strictly: bool = False,
-    pbc=[True, True, True],
+    pbc=None,
 ):
+    if pbc is None:
+        pbc = [True, True, True]
     device = data.pos.device
     batch_size = len(data.natoms)
 
@@ -915,8 +913,7 @@ def compute_neighbors(data, edge_index):
         data.natoms.shape[0] + 1, device=data.pos.device, dtype=torch.long
     )
     image_indptr[1:] = torch.cumsum(data.natoms, dim=0)
-    neighbors = segment_csr(num_neighbors, image_indptr)
-    return neighbors
+    return segment_csr(num_neighbors, image_indptr)
 
 
 def check_traj_files(batch, traj_dir) -> bool:
@@ -1017,7 +1014,7 @@ def _report_incompat_keys(
     model: nn.Module,
     keys: _IncompatibleKeys,
     strict: bool = False,
-) -> Tuple[list[str], list[str]]:
+) -> tuple[list[str], list[str]]:
     # filter out the missing scale factor keys for the new scaling factor module
     missing_keys: list[str] = []
     for full_key_name in keys.missing_keys:
@@ -1068,7 +1065,7 @@ def load_state_dict(
     module: nn.Module,
     state_dict: Mapping[str, torch.Tensor],
     strict: bool = True,
-) -> Tuple[list[str], list[str]]:
+) -> tuple[list[str], list[str]]:
     incompat_keys = module.load_state_dict(state_dict, strict=False)  # type: ignore
     return _report_incompat_keys(module, incompat_keys, strict=strict)
 

@@ -4,7 +4,7 @@ import itertools
 import logging
 import math
 from contextlib import contextmanager
-from typing import Callable, Optional, TypedDict, Union
+from typing import Callable, TypedDict
 
 import torch
 import torch.nn as nn
@@ -31,13 +31,13 @@ def _check_consistency(old: torch.Tensor, new: torch.Tensor, key: str) -> None:
 class ScaleFactor(nn.Module):
     scale_factor: torch.Tensor
 
-    name: Optional[str] = None
-    index_fn: Optional[IndexFn] = None
-    stats: Optional[_Stats] = None
+    name: str | None = None
+    index_fn: IndexFn | None = None
+    stats: _Stats | None = None
 
     def __init__(
         self,
-        name: Optional[str] = None,
+        name: str | None = None,
         enforce_consistency: bool = True,
     ) -> None:
         super().__init__()
@@ -92,7 +92,7 @@ class ScaleFactor(nn.Module):
         self.scale_factor.zero_()
 
     @torch.jit.unused
-    def set_(self, scale: Union[float, torch.Tensor]) -> None:
+    def set_(self, scale: float | torch.Tensor) -> None:
         if self.fitted:
             _check_consistency(
                 old=self.scale_factor,
@@ -102,7 +102,7 @@ class ScaleFactor(nn.Module):
         self.scale_factor.fill_(scale)
 
     @torch.jit.unused
-    def initialize_(self, *, index_fn: Optional[IndexFn] = None) -> None:
+    def initialize_(self, *, index_fn: IndexFn | None = None) -> None:
         self.index_fn = index_fn
 
     @contextmanager
@@ -134,7 +134,7 @@ class ScaleFactor(nn.Module):
 
     @torch.no_grad()
     @torch.jit.unused
-    def _observe(self, x: torch.Tensor, ref: Optional[torch.Tensor] = None) -> None:
+    def _observe(self, x: torch.Tensor, ref: torch.Tensor | None = None) -> None:
         if self.stats is None:
             logging.debug("Observer not initialized but self.observe() called")
             return
@@ -154,7 +154,7 @@ class ScaleFactor(nn.Module):
         self,
         x: torch.Tensor,
         *,
-        ref: Optional[torch.Tensor] = None,
+        ref: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if self.index_fn is not None:
             self.index_fn()

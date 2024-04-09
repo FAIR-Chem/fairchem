@@ -3,7 +3,6 @@ from __future__ import annotations
 import inspect
 import math
 from bisect import bisect
-from typing import Optional
 
 import torch
 
@@ -32,10 +31,9 @@ def cosine_lr_lambda(current_step: int, scheduler_params):
     else:
         if current_step >= max_epochs:
             return lr_min_factor
-        lr_scale = lr_min_factor + 0.5 * (1 - lr_min_factor) * (
+        return lr_min_factor + 0.5 * (1 - lr_min_factor) * (
             1 + math.cos(math.pi * (current_step / max_epochs))
         )
-        return lr_scale
 
 
 class CosineLRLambda:
@@ -53,10 +51,9 @@ class CosineLRLambda:
         else:
             if current_step >= self.max_epochs:
                 return self.lr_min_factor
-            lr_scale = self.lr_min_factor + 0.5 * (1 - self.lr_min_factor) * (
+            return self.lr_min_factor + 0.5 * (1 - self.lr_min_factor) * (
                 1 + math.cos(math.pi * (current_step / self.max_epochs))
             )
-            return lr_scale
 
 
 def multistep_lr_lambda(current_step: int, scheduler_params) -> float:
@@ -124,8 +121,8 @@ class LRScheduler:
         self.optimizer = optimizer
         self.config = config.copy()
 
-        assert "scheduler" in self.config.keys()
-        assert "scheduler_params" in self.config.keys()
+        assert "scheduler" in self.config
+        assert "scheduler_params" in self.config
         self.scheduler_type = aii(self.config["scheduler"], str)
         self.scheduler_params = self.config["scheduler_params"].copy()
 
@@ -166,9 +163,9 @@ class LRScheduler:
             if param.kind == param.POSITIONAL_OR_KEYWORD
         ]
         filter_keys.remove("optimizer")
-        scheduler_args = {arg: config[arg] for arg in config if arg in filter_keys}
-        return scheduler_args
+        return {arg: config[arg] for arg in config if arg in filter_keys}
 
-    def get_lr(self) -> Optional[float]:
+    def get_lr(self) -> float | None:
         for group in self.optimizer.param_groups:
             return aii(group["lr"], float)
+        return None

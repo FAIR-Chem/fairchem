@@ -41,10 +41,7 @@ def tune_reporter(
             val[metric_to_opt] = 100000.0
         if min_max == "max":
             val[metric_to_opt] = 0.0
-    if test_metrics:
-        test = label_metric_dict(test_metrics, "test")
-    else:
-        test = {}
+    test = label_metric_dict(test_metrics, "test") if test_metrics else {}
     # report results to Ray Tune
     tune.report(**iters, **train, **val, **test)
 
@@ -53,5 +50,4 @@ def label_metric_dict(metric_dict, split):
     new_dict = {}
     for key in metric_dict:
         new_dict[f"{split}_{key}"] = metric_dict[key]
-    metric_dict = new_dict
-    return metric_dict
+    return new_dict

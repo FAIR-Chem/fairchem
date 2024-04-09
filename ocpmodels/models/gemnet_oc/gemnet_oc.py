@@ -7,7 +7,6 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import logging
-from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -176,7 +175,7 @@ class GemNetOC(BaseModel):
 
     def __init__(
         self,
-        num_atoms: Optional[int],
+        num_atoms: int | None,
         bond_feat_dim: int,
         num_targets: int,
         num_spherical: int,
@@ -205,22 +204,19 @@ class GemNetOC(BaseModel):
         use_pbc: bool = True,
         scale_backprop_forces: bool = False,
         cutoff: float = 6.0,
-        cutoff_qint: Optional[float] = None,
-        cutoff_aeaint: Optional[float] = None,
-        cutoff_aint: Optional[float] = None,
+        cutoff_qint: float | None = None,
+        cutoff_aeaint: float | None = None,
+        cutoff_aint: float | None = None,
         max_neighbors: int = 50,
-        max_neighbors_qint: Optional[int] = None,
-        max_neighbors_aeaint: Optional[int] = None,
-        max_neighbors_aint: Optional[int] = None,
+        max_neighbors_qint: int | None = None,
+        max_neighbors_aeaint: int | None = None,
+        max_neighbors_aint: int | None = None,
         enforce_max_neighbors_strictly: bool = True,
-        rbf: dict[str, str] = {"name": "gaussian"},
-        rbf_spherical: Optional[dict] = None,
-        envelope: dict[str, Union[str, int]] = {
-            "name": "polynomial",
-            "exponent": 5,
-        },
-        cbf: dict[str, str] = {"name": "spherical_harmonics"},
-        sbf: dict[str, str] = {"name": "spherical_harmonics"},
+        rbf: dict[str, str] | None = None,
+        rbf_spherical: dict | None = None,
+        envelope: dict[str, str | int] | None = None,
+        cbf: dict[str, str] | None = None,
+        sbf: dict[str, str] | None = None,
         extensive: bool = True,
         forces_coupled: bool = False,
         output_init: str = "HeOrthogonal",
@@ -230,12 +226,22 @@ class GemNetOC(BaseModel):
         edge_atom_interaction: bool = False,
         atom_interaction: bool = False,
         scale_basis: bool = False,
-        qint_tags: list = [0, 1, 2],
+        qint_tags: list | None = None,
         num_elements: int = 83,
         otf_graph: bool = False,
-        scale_file: Optional[str] = None,
+        scale_file: str | None = None,
         **kwargs,  # backwards compatibility with deprecated arguments
     ) -> None:
+        if qint_tags is None:
+            qint_tags = [0, 1, 2]
+        if sbf is None:
+            sbf = {"name": "spherical_harmonics"}
+        if cbf is None:
+            cbf = {"name": "spherical_harmonics"}
+        if envelope is None:
+            envelope = {"name": "polynomial", "exponent": 5}
+        if rbf is None:
+            rbf = {"name": "gaussian"}
         super().__init__()
         if len(kwargs) > 0:
             logging.warning(f"Unrecognized arguments: {list(kwargs.keys())}")
@@ -715,8 +721,7 @@ class GemNetOC(BaseModel):
         sign = 1 - 2 * opposite_neg
         tensor_cat = torch.cat([tensor_directed, sign * tensor_directed])
         # Reorder everything so the edges of every image are consecutive
-        tensor_ordered = tensor_cat[reorder_idx]
-        return tensor_ordered
+        return tensor_cat[reorder_idx]
 
     def symmetrize_edges(
         self,
@@ -892,22 +897,14 @@ class GemNetOC(BaseModel):
         }
 
         # Mask interaction edges if required
-        if otf_graph or np.isclose(cutoff, 6):
-            select_cutoff = None
-        else:
-            select_cutoff = cutoff
-        if otf_graph or max_neighbors == 50:
-            select_neighbors = None
-        else:
-            select_neighbors = max_neighbors
-        graph = self.subselect_edges(
+        select_cutoff = None if otf_graph or np.isclose(cutoff, 6) else cutoff
+        select_neighbors = None if otf_graph or max_neighbors == 50 else max_neighbors
+        return self.subselect_edges(
             data=data,
             graph=graph,
             cutoff=select_cutoff,
             max_neighbors=select_neighbors,
         )
-
-        return graph
 
     def subselect_graph(
         self,
@@ -922,10 +919,7 @@ class GemNetOC(BaseModel):
         subselect the edges of a given graph.
         """
         # Check if embedding edges are different from interaction edges
-        if np.isclose(cutoff, cutoff_orig):
-            select_cutoff = None
-        else:
-            select_cutoff = cutoff
+        select_cutoff = None if np.isclose(cutoff, cutoff_orig) else cutoff
         if max_neighbors == max_neighbors_orig:
             select_neighbors = None
         else:

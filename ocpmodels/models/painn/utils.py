@@ -148,8 +148,7 @@ def repeat_blocks(
     id_ar[0] += start_idx
 
     # Finally index into input array for the group repeated o/p
-    res = id_ar.cumsum(0)
-    return res
+    return id_ar.cumsum(0)
 
 
 def get_edge_id(edge_idx, cell_offsets, num_atoms: int):
@@ -159,5 +158,4 @@ def get_edge_id(edge_idx, cell_offsets, num_atoms: int):
         .sum(-1)
         .long()
     )
-    edge_id = edge_idx[0] + edge_idx[1] * num_atoms + cell_id * num_atoms**2
-    return edge_id
+    return edge_idx[0] + edge_idx[1] * num_atoms + cell_id * num_atoms**2

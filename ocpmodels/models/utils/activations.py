@@ -13,7 +13,7 @@ import torch.nn.functional as F
 
 class Act(torch.nn.Module):
     def __init__(self, act: str, slope: float = 0.05) -> None:
-        super(Act, self).__init__()
+        super().__init__()
         self.act = act
         self.slope = slope
         self.shift = torch.log(torch.tensor(2.0)).item()

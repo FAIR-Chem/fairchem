@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 from collections import deque
 from pathlib import Path
-from typing import Optional
 
 import torch
 from torch_geometric.data import Batch
@@ -71,7 +70,7 @@ def ml_relax(
             early_stop_batch=early_stop_batch,
         )
 
-        e: Optional[RuntimeError] = None
+        e: RuntimeError | None = None
         try:
             relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
             relaxed_batches.append(relaxed_batch)
@@ -92,5 +91,4 @@ def ml_relax(
             batches.appendleft(data_list_collater(data_list[:mid]))
             batches.appendleft(data_list_collater(data_list[mid:]))
 
-    relaxed_batch = Batch.from_data_list(relaxed_batches)
-    return relaxed_batch
+    return Batch.from_data_list(relaxed_batches)

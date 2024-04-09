@@ -8,7 +8,6 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import math
-from typing import Union
 
 import numpy as np
 import torch
@@ -161,12 +160,13 @@ class RadialBasis(torch.nn.Module):
         self,
         num_radial: int,
         cutoff: float,
-        rbf: dict[str, str] = {"name": "gaussian"},
-        envelope: dict[str, Union[str, int]] = {
-            "name": "polynomial",
-            "exponent": 5,
-        },
+        rbf: dict[str, str] | None = None,
+        envelope: dict[str, str | int] | None = None,
     ) -> None:
+        if envelope is None:
+            envelope = {"name": "polynomial", "exponent": 5}
+        if rbf is None:
+            rbf = {"name": "gaussian"}
         super().__init__()
         self.inv_cutoff = 1 / cutoff
 
@@ -174,7 +174,7 @@ class RadialBasis(torch.nn.Module):
         env_hparams = envelope.copy()
         del env_hparams["name"]
 
-        self.envelope: Union[PolynomialEnvelope, ExponentialEnvelope]
+        self.envelope: PolynomialEnvelope | ExponentialEnvelope
         if env_name == "polynomial":
             self.envelope = PolynomialEnvelope(**env_hparams)
         elif env_name == "exponential":

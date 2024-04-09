@@ -7,7 +7,6 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 import torch
 
@@ -116,7 +115,7 @@ class OutputBlock(AtomUpdateBlock):
         emb_size_rbf: int,
         nHidden: int,
         nHidden_afteratom: int,
-        activation: Optional[str] = None,
+        activation: str | None = None,
         direct_forces: bool = True,
     ) -> None:
         super().__init__(

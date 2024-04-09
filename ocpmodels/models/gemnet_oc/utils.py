@@ -40,8 +40,7 @@ def ragged_range(sizes):
     id_steps[insert_index] = insert_val
 
     # Finally index into input array for the group repeated o/p
-    res = id_steps.cumsum(0)
-    return res
+    return id_steps.cumsum(0)
 
 
 def repeat_blocks(
@@ -181,8 +180,7 @@ def repeat_blocks(
     id_ar[0] += start_idx
 
     # Finally index into input array for the group repeated o/p
-    res = id_ar.cumsum(0)
-    return res
+    return id_ar.cumsum(0)
 
 
 def masked_select_sparsetensor_flat(src, mask) -> SparseTensor:
@@ -259,8 +257,7 @@ def get_angle(R_ac, R_ab) -> torch.Tensor:
     y = torch.cross(R_ac, R_ab, dim=-1).norm(dim=-1)  # shape = (N,)
     y = y.clamp(min=1e-9)  # Avoid NaN gradient for y = (0,0,0)
 
-    angle = torch.atan2(y, x)
-    return angle
+    return torch.atan2(y, x)
 
 
 def vector_rejection(R_ab, P_n):
@@ -329,8 +326,7 @@ def get_projected_angle(R_ab, P_n, eps: float = 1e-4) -> torch.Tensor:
 def mask_neighbors(neighbors, edge_mask):
     neighbors_old_indptr = torch.cat([neighbors.new_zeros(1), neighbors])
     neighbors_old_indptr = torch.cumsum(neighbors_old_indptr, dim=0)
-    neighbors = segment_csr(edge_mask.long(), neighbors_old_indptr)
-    return neighbors
+    return segment_csr(edge_mask.long(), neighbors_old_indptr)
 
 
 def get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor:
@@ -400,8 +396,7 @@ def get_inner_idx(idx, dim_size):
     """
     ones = idx.new_ones(1).expand_as(idx)
     num_neighbors = segment_coo(ones, idx, dim_size=dim_size)
-    inner_idx = ragged_range(num_neighbors)
-    return inner_idx
+    return ragged_range(num_neighbors)
 
 
 def get_edge_id(edge_idx, cell_offsets, num_atoms: int):
@@ -411,5 +406,4 @@ def get_edge_id(edge_idx, cell_offsets, num_atoms: int):
         .sum(-1)
         .long()
     )
-    edge_id = edge_idx[0] + edge_idx[1] * num_atoms + cell_id * num_atoms**2
-    return edge_id
+    return edge_idx[0] + edge_idx[1] * num_atoms + cell_id * num_atoms**2

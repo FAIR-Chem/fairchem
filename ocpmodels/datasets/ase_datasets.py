@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from functools import cache, reduce
 from glob import glob
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 import ase
 import numpy as np
@@ -532,7 +532,7 @@ class AseDBDataset(AseAtomsDataset):
 
     @staticmethod
     def connect_db(
-        address: str | Path, connect_args: Optional[dict] = None
+        address: str | Path, connect_args: dict | None = None
     ) -> ase.db.core.Database:
         if connect_args is None:
             connect_args = {}

@@ -43,7 +43,7 @@ class OC22LmdbDataset(Dataset):
     """
 
     def __init__(self, config, transform=None) -> None:
-        super(OC22LmdbDataset, self).__init__()
+        super().__init__()
         self.config = config
 
         self.path = Path(self.config["src"])
@@ -210,12 +210,10 @@ class OC22LmdbDataset(Dataset):
         if "distances" in data_object:
             del data_object.distances
 
-        data_object = self.transforms(data_object)
-
-        return data_object
+        return self.transforms(data_object)
 
     def connect_db(self, lmdb_path=None):
-        env = lmdb.open(
+        return lmdb.open(
             str(lmdb_path),
             subdir=False,
             readonly=True,
@@ -224,7 +222,6 @@ class OC22LmdbDataset(Dataset):
             meminit=False,
             max_readers=1,
         )
-        return env
 
     def close_db(self) -> None:
         if not self.path.is_file():

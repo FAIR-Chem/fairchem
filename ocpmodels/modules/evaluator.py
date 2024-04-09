@@ -7,8 +7,6 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import Union
-
 import numpy as np
 import torch
 
@@ -69,7 +67,11 @@ class Evaluator:
         "ocp": None,
     }
 
-    def __init__(self, task: str = None, eval_metrics: dict = {}) -> None:
+    def __init__(
+        self, task: str | None = None, eval_metrics: dict | None = None
+    ) -> None:
+        if eval_metrics is None:
+            eval_metrics = {}
         self.task = task
         self.target_metrics = (
             eval_metrics if eval_metrics else self.task_metrics.get(task, {})
@@ -79,8 +81,10 @@ class Evaluator:
         self,
         prediction: dict[str, torch.Tensor],
         target: dict[str, torch.Tensor],
-        prev_metrics={},
+        prev_metrics=None,
     ):
+        if prev_metrics is None:
+            prev_metrics = {}
         metrics = prev_metrics
 
         for target_property in self.target_metrics:
@@ -108,7 +112,7 @@ class Evaluator:
             metrics[key]["total"] += stat["total"]
             metrics[key]["numel"] += stat["numel"]
             metrics[key]["metric"] = metrics[key]["total"] / metrics[key]["numel"]
-        elif isinstance(stat, float) or isinstance(stat, int):
+        elif isinstance(stat, (float, int)):
             # If float or int, just add to the total and increment numel by 1.
             metrics[key]["total"] += stat
             metrics[key]["numel"] += 1
@@ -171,7 +175,7 @@ def energy_forces_within_threshold(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
     key=None,
-) -> dict[str, Union[float, int]]:
+) -> dict[str, float | int]:
     # Note that this natoms should be the count of free atoms we evaluate over.
     assert target["natoms"].sum() == prediction["forces"].size(0)
     assert target["natoms"].size(0) == prediction["energy"].size(0)
@@ -208,7 +212,7 @@ def energy_within_threshold(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
     key=None,
-) -> dict[str, Union[float, int]]:
+) -> dict[str, float | int]:
     # compute absolute error on energy per system.
     # then count the no. of systems where max energy error is < 0.02.
     e_thresh = 0.02
@@ -228,7 +232,7 @@ def average_distance_within_threshold(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
     key=None,
-) -> dict[str, Union[float, int]]:
+) -> dict[str, float | int]:
     pred_pos = torch.split(prediction["positions"], prediction["natoms"].tolist())
     target_pos = torch.split(target["positions"], target["natoms"].tolist())
 
@@ -295,7 +299,7 @@ def mae(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
     key=slice(None),
-) -> dict[str, Union[float, int]]:
+) -> dict[str, float | int]:
     error = torch.abs(target[key] - prediction[key])
     return {
         "metric": torch.mean(error).item(),
@@ -308,7 +312,7 @@ def mse(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
     key=slice(None),
-) -> dict[str, Union[float, int]]:
+) -> dict[str, float | int]:
     error = (target[key] - prediction[key]) ** 2
     return {
         "metric": torch.mean(error).item(),
@@ -322,7 +326,7 @@ def magnitude_error(
     target: dict[str, torch.Tensor],
     key=slice(None),
     p: int = 2,
-) -> dict[str, Union[float, int]]:
+) -> dict[str, float | int]:
     assert prediction[key].shape[1] > 1
     error = torch.abs(
         torch.norm(prediction[key], p=p, dim=-1) - torch.norm(target[key], p=p, dim=-1)

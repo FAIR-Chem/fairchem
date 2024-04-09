@@ -39,7 +39,7 @@ class EquiformerV2EnergyTrainer(OCPTrainer):
         # convert epochs into number of steps
         n_iter_per_epoch = len(self.train_loader)
         scheduler_params = self.config["optim"]["scheduler_params"]
-        for k in scheduler_params.keys():
+        for k in scheduler_params:
             if "epochs" in k:
                 if isinstance(scheduler_params[k], (int, float, list)):
                     scheduler_params[k] = multiply(

@@ -8,7 +8,6 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import json
-from typing import Optional, Tuple
 
 import torch
 from torch_scatter import segment_csr
@@ -20,8 +19,7 @@ def read_json(path: str):
         raise UserWarning(f"Path {path} is not a json-path.")
 
     with open(path) as f:
-        content = json.load(f)
-    return content
+        return json.load(f)
 
 
 def update_json(path: str, data) -> None:
@@ -47,7 +45,7 @@ def read_value_json(path: str, key):
     """"""
     content = read_json(path)
 
-    if key in content.keys():
+    if key in content:
         return content[key]
     else:
         return None
@@ -81,8 +79,7 @@ def ragged_range(sizes):
     id_steps[insert_index] = insert_val
 
     # Finally index into input array for the group repeated o/p
-    res = id_steps.cumsum(0)
-    return res
+    return id_steps.cumsum(0)
 
 
 def repeat_blocks(
@@ -222,16 +219,15 @@ def repeat_blocks(
     id_ar[0] += start_idx
 
     # Finally index into input array for the group repeated o/p
-    res = id_ar.cumsum(0)
-    return res
+    return id_ar.cumsum(0)
 
 
 def calculate_interatomic_vectors(
     R: torch.Tensor,
     id_s: torch.Tensor,
     id_t: torch.Tensor,
-    offsets_st: Optional[torch.Tensor],
-) -> Tuple[torch.Tensor, torch.Tensor]:
+    offsets_st: torch.Tensor | None,
+) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Calculate the vectors connecting the given atom pairs,
     considering offsets from periodic boundary conditions (PBC).
@@ -279,5 +275,4 @@ def inner_product_normalized(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 def mask_neighbors(neighbors: torch.Tensor, edge_mask: torch.Tensor):
     neighbors_old_indptr = torch.cat([neighbors.new_zeros(1), neighbors])
     neighbors_old_indptr = torch.cumsum(neighbors_old_indptr, dim=0)
-    neighbors = segment_csr(edge_mask.long(), neighbors_old_indptr)
-    return neighbors
+    return segment_csr(edge_mask.long(), neighbors_old_indptr)

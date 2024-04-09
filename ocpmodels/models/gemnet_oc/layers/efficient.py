@@ -6,11 +6,10 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import torch
 
-from ..initializers import he_orthogonal_init
+from ocpmodels.models.gemnet_oc.initializers import he_orthogonal_init
+
 from .base_layers import Dense
 
 
@@ -35,7 +34,7 @@ class BasisEmbedding(torch.nn.Module):
         self,
         num_radial: int,
         emb_size_interm: int,
-        num_spherical: Optional[int] = None,
+        num_spherical: int | None = None,
     ) -> None:
         super().__init__()
         self.num_radial = num_radial
@@ -117,7 +116,7 @@ class BasisEmbedding(torch.nn.Module):
             else:
                 Kmax = torch.max(idx_rad_inner) + 1
 
-            rad_W1_padded = rad_W1.new_zeros([num_atoms, Kmax] + list(rad_W1.shape[1:]))
+            rad_W1_padded = rad_W1.new_zeros([num_atoms, Kmax, *list(rad_W1.shape[1:])])
             rad_W1_padded[idx_rad_outer, idx_rad_inner] = rad_W1
             # (num_atoms, Kmax, emb_size_interm, ...)
             rad_W1_padded = torch.transpose(rad_W1_padded, 1, 2)
@@ -258,7 +257,5 @@ class EfficientInteractionBilinear(torch.nn.Module):
             # (num_edges, emb_size_interm, emb_size_in)
 
         # Bilinear: Sum over emb_size_interm and emb_size_in
-        m_ca = self.bilinear(rad_W1_sph_m.reshape(-1, rad_W1_sph_m.shape[1:].numel()))
+        return self.bilinear(rad_W1_sph_m.reshape(-1, rad_W1_sph_m.shape[1:].numel()))
         # (num_edges/num_atoms, emb_size_out)
-
-        return m_ca

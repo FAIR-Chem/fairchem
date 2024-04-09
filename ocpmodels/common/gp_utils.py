@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Any, Optional
+from typing import Any
 
 import torch
 from torch import distributed as dist
@@ -104,15 +104,12 @@ def get_gp_world_size() -> int:
 
 
 def pad_tensor(
-    tensor: torch.Tensor, dim: int = -1, target_size: Optional[int] = None
+    tensor: torch.Tensor, dim: int = -1, target_size: int | None = None
 ) -> torch.Tensor:
     size = tensor.size(dim)
     if target_size is None:
         world_size = get_gp_world_size()
-        if size % world_size == 0:
-            pad_size = 0
-        else:
-            pad_size = world_size - size % world_size
+        pad_size = 0 if size % world_size == 0 else world_size - size % world_size
     else:
         pad_size = target_size - size
     if pad_size == 0:
@@ -123,9 +120,7 @@ def pad_tensor(
     return torch.cat([tensor, padding], dim=dim)
 
 
-def trim_tensor(
-    tensor: torch.Tensor, sizes: Optional[torch.Tensor] = None, dim: int = 0
-):
+def trim_tensor(tensor: torch.Tensor, sizes: torch.Tensor | None = None, dim: int = 0):
     size = tensor.size(dim)
     world_size = get_gp_world_size()
     if size % world_size == 0:
@@ -266,8 +261,7 @@ class GatherFromModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
         ctx.save_for_backward(torch.tensor(dim))
-        result = _gather_with_padding(input, dim)
-        return result
+        return _gather_with_padding(input, dim)
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):

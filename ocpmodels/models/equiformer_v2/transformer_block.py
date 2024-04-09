@@ -79,7 +79,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         use_sep_s2_act: bool = True,
         alpha_drop: float = 0.0,
     ):
-        super(SO2EquivariantGraphAttention, self).__init__()
+        super().__init__()
 
         self.sphere_channels = sphere_channels
         self.hidden_channels = hidden_channels
@@ -140,8 +140,9 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
                     )
 
         if self.use_m_share_rad:
-            self.edge_channels_list = self.edge_channels_list + [
-                2 * self.sphere_channels * (max(self.lmax_list) + 1)
+            self.edge_channels_list = [
+                *self.edge_channels_list,
+                2 * self.sphere_channels * (max(self.lmax_list) + 1),
             ]
             self.rad_func = RadialFunction(self.edge_channels_list)
             expand_index = torch.zeros([(max(self.lmax_list) + 1) ** 2]).long()
@@ -157,7 +158,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
             self.lmax_list,
             self.mmax_list,
             self.mappingReduced,
-            internal_weights=(False if not self.use_m_share_rad else True),
+            internal_weights=(bool(self.use_m_share_rad)),
             edge_channels_list=(
                 self.edge_channels_list if not self.use_m_share_rad else None
             ),
@@ -351,9 +352,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         x_message._reduce_edge(edge_index[1], len(x.embedding))
 
         # Project
-        out_embedding = self.proj(x_message)
-
-        return out_embedding
+        return self.proj(x_message)
 
 
 class FeedForwardNetwork(torch.nn.Module):
@@ -389,7 +388,7 @@ class FeedForwardNetwork(torch.nn.Module):
         use_grid_mlp: bool = False,
         use_sep_s2_act: bool = True,
     ):
-        super(FeedForwardNetwork, self).__init__()
+        super().__init__()
         self.sphere_channels = sphere_channels
         self.hidden_channels = hidden_channels
         self.output_channels = output_channels
@@ -502,9 +501,7 @@ class FeedForwardNetwork(torch.nn.Module):
                         input_embedding.embedding, self.SO3_grid
                     )
 
-        input_embedding = self.so3_linear_2(input_embedding)
-
-        return input_embedding
+        return self.so3_linear_2(input_embedding)
 
 
 class TransBlockV2(torch.nn.Module):
@@ -577,7 +574,7 @@ class TransBlockV2(torch.nn.Module):
         drop_path_rate: float = 0.0,
         proj_drop: float = 0.0,
     ) -> None:
-        super(TransBlockV2, self).__init__()
+        super().__init__()
 
         max_lmax = max(lmax_list)
         self.norm_1 = get_normalization_layer(

@@ -7,6 +7,8 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import sympy as sym
 import torch
 from torch_geometric.nn.models.schnet import GaussianSmearing
@@ -14,7 +16,9 @@ from torch_geometric.nn.models.schnet import GaussianSmearing
 from ocpmodels.common.typing import assert_is_instance
 
 from .basis_utils import real_sph_harm
-from .radial_basis import RadialBasis
+
+if TYPE_CHECKING:
+    from .radial_basis import RadialBasis
 
 
 class CircularBasisLayer(torch.nn.Module):

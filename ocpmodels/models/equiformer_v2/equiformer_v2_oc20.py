@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import math
-from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -12,9 +12,7 @@ from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.scn.smearing import GaussianSmearing
 
-try:
-    pass
-except ImportError:
+with contextlib.suppress(ImportError):
     pass
 
 
@@ -126,9 +124,9 @@ class EquiformerV2_OC20(BaseModel):
         attn_value_channels: int = 16,
         ffn_hidden_channels: int = 512,
         norm_type: str = "rms_norm_sh",
-        lmax_list: list[int] = [6],
-        mmax_list: list[int] = [2],
-        grid_resolution: Optional[int] = None,
+        lmax_list: list[int] | None = None,
+        mmax_list: list[int] | None = None,
+        grid_resolution: int | None = None,
         num_sphere_samples: int = 128,
         edge_channels: int = 128,
         use_atom_edge_embedding: bool = True,
@@ -148,11 +146,15 @@ class EquiformerV2_OC20(BaseModel):
         proj_drop: float = 0.0,
         weight_init: str = "normal",
         enforce_max_neighbors_strictly: bool = True,
-        avg_num_nodes: Optional[float] = None,
-        avg_degree: Optional[float] = None,
-        use_energy_lin_ref: Optional[bool] = False,
-        load_energy_lin_ref: Optional[bool] = False,
+        avg_num_nodes: float | None = None,
+        avg_degree: float | None = None,
+        use_energy_lin_ref: bool | None = False,
+        load_energy_lin_ref: bool | None = False,
     ):
+        if mmax_list is None:
+            mmax_list = [2]
+        if lmax_list is None:
+            lmax_list = [6]
         super().__init__()
 
         import sys
@@ -540,7 +542,7 @@ class EquiformerV2_OC20(BaseModel):
         return sum(p.numel() for p in self.parameters())
 
     def _init_weights(self, m):
-        if isinstance(m, torch.nn.Linear) or isinstance(m, SO3_LinearV2):
+        if isinstance(m, (torch.nn.Linear, SO3_LinearV2)):
             if m.bias is not None:
                 torch.nn.init.constant_(m.bias, 0)
             if self.weight_init == "normal":

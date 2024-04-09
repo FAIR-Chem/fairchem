@@ -9,18 +9,21 @@ from __future__ import annotations
 
 import heapq
 import logging
-from pathlib import Path
-from typing import Literal, Protocol, Tuple, Union, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 import numba
 import numpy as np
 import numpy.typing as npt
 import torch
 from torch.utils.data import BatchSampler, DistributedSampler, Sampler
-from torch_geometric.data import Batch, Data
 
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.datasets import data_list_collater
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from torch_geometric.data import Batch, Data
 
 
 class OCPCollater:
@@ -28,8 +31,7 @@ class OCPCollater:
         self.otf_graph = otf_graph
 
     def __call__(self, data_list: list[Data]) -> Batch:
-        batch = data_list_collater(data_list, otf_graph=self.otf_graph)
-        return batch
+        return data_list_collater(data_list, otf_graph=self.otf_graph)
 
 
 @numba.njit
@@ -39,7 +41,7 @@ def balanced_partition(sizes: npt.NDArray[np.int_], num_parts: int):
     the largest element into the smallest partition.
     """
     sort_idx = np.argsort(-sizes)  # Sort in descending order
-    heap: list[Tuple[list[int], list[int]]] = []
+    heap: list[tuple[list[int], list[int]]] = []
     for idx in sort_idx[:num_parts]:
         heap.append((sizes[idx], [idx]))
     heapq.heapify(heap)
@@ -48,8 +50,7 @@ def balanced_partition(sizes: npt.NDArray[np.int_], num_parts: int):
         new_size = smallest_part[0] + sizes[idx]
         new_idx = smallest_part[1] + [idx]
         heapq.heappush(heap, (new_size, new_idx))
-    idx_balanced = [part[1] for part in heap]
-    return idx_balanced
+    return [part[1] for part in heap]
 
 
 @runtime_checkable
@@ -122,7 +123,7 @@ class BalancedBatchSampler(Sampler):
         num_replicas: int,
         rank: int,
         device: torch.device,
-        mode: Union[str, bool] = "atoms",
+        mode: str | bool = "atoms",
         shuffle: bool = True,
         drop_last: bool = False,
         force_balancing: bool = False,

@@ -131,10 +131,7 @@ def get_mixed_triplets(
         value=value_in,
         sparse_sizes=(num_atoms, num_atoms),
     )
-    if to_outedge:
-        adj_edges = adj_in[idx_out_s]
-    else:
-        adj_edges = adj_in[idx_out_t]
+    adj_edges = adj_in[idx_out_s] if to_outedge else adj_in[idx_out_t]
 
     # Edge indices (b->a, c->a) for triplets.
     idx_in = adj_edges.storage.value()

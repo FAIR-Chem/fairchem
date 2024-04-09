@@ -37,8 +37,7 @@ class GaussianRadialBasisLayer(torch.nn.Module):
         x = x.expand(-1, self.num_basis)
         mean = self.mean
         std = self.std.abs() + 1e-5
-        x = gaussian(x, mean, std)
-        return x
+        return gaussian(x, mean, std)
 
     def extra_repr(self):
         return f"mean_init_max={self.mean_init_max}, mean_init_min={self.mean_init_min}, std_init_max={self.std_init_max}, std_init_min={self.std_init_min}"

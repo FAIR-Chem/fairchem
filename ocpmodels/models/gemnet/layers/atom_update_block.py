@@ -10,9 +10,9 @@ from __future__ import annotations
 import torch
 from torch_scatter import scatter
 
+from ocpmodels.models.gemnet.initializers import he_orthogonal_init
 from ocpmodels.modules.scaling import ScaleFactor
 
-from ..initializers import he_orthogonal_init
 from .base_layers import Dense, ResidualLayer
 
 
@@ -186,7 +186,7 @@ class OutputBlock(AtomUpdateBlock):
         # --------------------------------------- Force Prediction -------------------------------------- #
         if self.direct_forces:
             x_F = m
-            for i, layer in enumerate(self.seq_forces):
+            for _i, layer in enumerate(self.seq_forces):
                 x_F = layer(x_F)  # (nEdges, emb_size_edge)
 
             rbf_emb_F = self.dense_rbf_F(rbf)  # (nEdges, emb_size_edge)

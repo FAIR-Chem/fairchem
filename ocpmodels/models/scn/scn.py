@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import sys
 import time
@@ -27,10 +28,8 @@ from ocpmodels.models.scn.smearing import (
 )
 from ocpmodels.models.scn.spherical_harmonics import SphericalHarmonicsHelper
 
-try:
+with contextlib.suppress(ImportError):
     from e3nn import o3
-except ImportError:
-    pass
 
 
 @registry.register_model("scn")
@@ -495,9 +494,7 @@ class SphericalChannelNetwork(BaseModel):
         edge_rank = edge_rank.view(num_atoms, max_num_neighbors)
 
         index_sort_mask = distance_sort.lt(1000.0)
-        edge_rank = torch.masked_select(edge_rank, index_sort_mask)
-
-        return edge_rank
+        return torch.masked_select(edge_rank, index_sort_mask)
 
     @property
     def num_params(self) -> int:
@@ -520,7 +517,7 @@ class EdgeBlock(torch.nn.Module):
         use_grid: bool,
         act,
     ) -> None:
-        super(EdgeBlock, self).__init__()
+        super().__init__()
         self.num_resolutions = num_resolutions
         self.act = act
         self.hidden_channels_list = hidden_channels_list
@@ -653,9 +650,7 @@ class EdgeBlock(torch.nn.Module):
         if self.sphere_channels != self.sphere_channels_reduce:
             x_new = x_new.view(-1, self.sphere_channels_reduce)
             x_new = self.upsample(x_new)
-        x_new = x_new.view(-1, self.sphharm_list[0].sphere_basis, self.sphere_channels)
-
-        return x_new
+        return x_new.view(-1, self.sphharm_list[0].sphere_basis, self.sphere_channels)
 
 
 class MessageBlock(torch.nn.Module):
@@ -667,7 +662,7 @@ class MessageBlock(torch.nn.Module):
         sphharm,
         act,
     ) -> None:
-        super(MessageBlock, self).__init__()
+        super().__init__()
         self.act = act
         self.hidden_channels = hidden_channels
         self.sphere_channels_reduce = sphere_channels_reduce
@@ -722,9 +717,7 @@ class MessageBlock(torch.nn.Module):
         x_message = self.sphharm.CombineYRotations(x_message)
 
         # Rotate the spherical harmonic basis functions back to global coordinate frame
-        x_message = self.sphharm.RotateInv(x_message)
-
-        return x_message
+        return self.sphharm.RotateInv(x_message)
 
 
 class DistanceBlock(torch.nn.Module):
@@ -736,7 +729,7 @@ class DistanceBlock(torch.nn.Module):
         max_num_elements: int,
         act,
     ) -> None:
-        super(DistanceBlock, self).__init__()
+        super().__init__()
         self.in_channels = in_channels
         self.distance_expansion = distance_expansion
         self.act = act
@@ -768,6 +761,4 @@ class DistanceBlock(torch.nn.Module):
         target_embedding = self.target_embedding(target_element)
 
         x_edge = self.act(source_embedding + target_embedding + x_dist)
-        x_edge = self.act(self.fc1_edge_attr(x_edge))
-
-        return x_edge
+        return self.act(self.fc1_edge_attr(x_edge))

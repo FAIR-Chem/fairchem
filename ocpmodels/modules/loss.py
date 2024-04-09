@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import torch
 from torch import nn
@@ -21,6 +20,7 @@ class L2MAELoss(nn.Module):
             return torch.mean(dists)
         elif self.reduction == "sum":
             return torch.sum(dists)
+        return None
 
 
 class AtomwiseL2Loss(nn.Module):
@@ -45,6 +45,7 @@ class AtomwiseL2Loss(nn.Module):
             return torch.mean(loss)
         elif self.reduction == "sum":
             return torch.sum(loss)
+        return None
 
 
 class DDPLoss(nn.Module):
@@ -68,8 +69,8 @@ class DDPLoss(nn.Module):
         self,
         input: torch.Tensor,
         target: torch.Tensor,
-        natoms: Optional[torch.Tensor] = None,
-        batch_size: Optional[int] = None,
+        natoms: torch.Tensor | None = None,
+        batch_size: int | None = None,
     ):
         # ensure torch doesn't do any unwanted broadcasting
         assert (

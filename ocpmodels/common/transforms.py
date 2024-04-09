@@ -30,10 +30,13 @@ class RandomRotate:
         axes (int, optional): The rotation axes. (default: `[0, 1, 2]`)
     """
 
-    def __init__(self, degrees, axes: list[int] = [0, 1, 2]) -> None:
+    def __init__(self, degrees, axes: list[int] | None = None) -> None:
+        if axes is None:
+            axes = [0, 1, 2]
         if isinstance(degrees, numbers.Number):
             degrees = (-abs(degrees), abs(degrees))
-        assert isinstance(degrees, (tuple, list)) and len(degrees) == 2
+        assert isinstance(degrees, (tuple, list))
+        assert len(degrees) == 2
         self.degrees = degrees
         self.axes = axes
 

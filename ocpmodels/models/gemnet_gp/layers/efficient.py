@@ -7,11 +7,9 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import Tuple
-
 import torch
 
-from ..initializers import he_orthogonal_init
+from ocpmodels.models.gemnet_gp.initializers import he_orthogonal_init
 
 
 class EfficientInteractionDownProjection(torch.nn.Module):
@@ -54,7 +52,7 @@ class EfficientInteractionDownProjection(torch.nn.Module):
         id_ca,
         id_ragged_idx,
         Kmax: int,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
 
         Arguments
@@ -128,7 +126,7 @@ class EfficientInteractionBilinear(torch.nn.Module):
 
     def forward(
         self,
-        basis: Tuple[torch.Tensor, torch.Tensor],
+        basis: tuple[torch.Tensor, torch.Tensor],
         m,
         id_reduce,
         id_ragged_idx,
@@ -169,7 +167,5 @@ class EfficientInteractionBilinear(torch.nn.Module):
         # Bilinear: Sum over emb_size_interm and emb_size
         m_ca = torch.matmul(rbf_W1_sum_k.permute(2, 0, 1), self.weight)
         # (emb_size, nEdges, units_out)
-        m_ca = torch.sum(m_ca, dim=0)
+        return torch.sum(m_ca, dim=0)
         # (nEdges, units_out)
-
-        return m_ca

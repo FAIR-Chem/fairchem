@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
-
-import torch.nn as nn
+from typing import TYPE_CHECKING
 
 from .scale_factor import ScaleFactor
+
+if TYPE_CHECKING:
+    import torch.nn as nn
 
 
 def ensure_fitted(module: nn.Module, warn: bool = False) -> None:

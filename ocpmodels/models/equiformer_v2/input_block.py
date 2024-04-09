@@ -41,7 +41,7 @@ class EdgeDegreeEmbedding(torch.nn.Module):
         use_atom_edge_embedding: bool,
         rescale_factor,
     ):
-        super(EdgeDegreeEmbedding, self).__init__()
+        super().__init__()
         self.sphere_channels = sphere_channels
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list

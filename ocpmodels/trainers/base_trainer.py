@@ -14,7 +14,6 @@ import os
 import random
 from abc import ABC
 from collections import defaultdict
-from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -58,19 +57,21 @@ class BaseTrainer(ABC):
         loss_fns,
         eval_metrics,
         identifier: str,
-        timestamp_id: Optional[str] = None,
-        run_dir: Optional[str] = None,
+        timestamp_id: str | None = None,
+        run_dir: str | None = None,
         is_debug: bool = False,
         print_every: int = 100,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         logger: str = "tensorboard",
         local_rank: int = 0,
         amp: bool = False,
         cpu: bool = False,
         name: str = "ocp",
-        slurm={},
+        slurm=None,
         noddp: bool = False,
     ) -> None:
+        if slurm is None:
+            slurm = {}
         self.name = name
         self.is_debug = is_debug
         self.cpu = cpu
@@ -131,7 +132,7 @@ class BaseTrainer(ABC):
         # Fill in SLURM information in config, if applicable
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
             if "SLURM_ARRAY_JOB_ID" in os.environ:
-                self.config["slurm"]["job_id"] = "%s_%s" % (
+                self.config["slurm"]["job_id"] = "{}_{}".format(
                     os.environ["SLURM_ARRAY_JOB_ID"],
                     os.environ["SLURM_ARRAY_TASK_ID"],
                 )
@@ -175,7 +176,7 @@ class BaseTrainer(ABC):
         self.load()
 
     @staticmethod
-    def _get_timestamp(device: torch.device, suffix: Optional[str]) -> str:
+    def _get_timestamp(device: torch.device, suffix: str | None) -> str:
         now = datetime.datetime.now().timestamp()
         timestamp_tensor = torch.tensor(now).to(device)
         # create directories from master rank only
@@ -239,7 +240,7 @@ class BaseTrainer(ABC):
         else:
             num_replicas = distutils.get_world_size()
             rank = distutils.get_rank()
-        sampler = BalancedBatchSampler(
+        return BalancedBatchSampler(
             dataset,
             batch_size=batch_size,
             num_replicas=num_replicas,
@@ -249,17 +250,15 @@ class BaseTrainer(ABC):
             shuffle=shuffle,
             force_balancing=force_balancing,
         )
-        return sampler
 
     def get_dataloader(self, dataset, sampler) -> DataLoader:
-        loader = DataLoader(
+        return DataLoader(
             dataset,
             collate_fn=self.ocp_collater,
             num_workers=self.config["optim"]["num_workers"],
             pin_memory=True,
             batch_sampler=sampler,
         )
-        return loader
 
     def load_datasets(self) -> None:
         self.ocp_collater = OCPCollater(
@@ -436,8 +435,10 @@ class BaseTrainer(ABC):
             module = module.module
         return module
 
-    def load_checkpoint(self, checkpoint_path: str, checkpoint: dict = {}) -> None:
-        if not checkpoint:
+    def load_checkpoint(
+        self, checkpoint_path: str, checkpoint: dict | None = None
+    ) -> None:
+        if checkpoint is None:
             if not os.path.isfile(checkpoint_path):
                 raise FileNotFoundError(
                     errno.ENOENT, "Checkpoint file not found", checkpoint_path
@@ -513,7 +514,7 @@ class BaseTrainer(ABC):
 
     def load_loss(self) -> None:
         self.loss_fns = []
-        for idx, loss in enumerate(self.config["loss_fns"]):
+        for _idx, loss in enumerate(self.config["loss_fns"]):
             for target in loss:
                 loss_name = loss[target].get("fn", "mae")
                 coefficient = loss[target].get("coefficient", 1)
@@ -601,7 +602,7 @@ class BaseTrainer(ABC):
         metrics=None,
         checkpoint_file: str = "checkpoint.pt",
         training_state: bool = True,
-    ) -> Optional[str]:
+    ) -> str | None:
         if not self.is_debug and distutils.is_master():
             if training_state:
                 return save_checkpoint(
@@ -703,7 +704,7 @@ class BaseTrainer(ABC):
 
         loader = self.val_loader if split == "val" else self.test_loader
 
-        for i, batch in tqdm(
+        for _i, batch in tqdm(
             enumerate(loader),
             total=len(loader),
             position=rank,
@@ -787,7 +788,7 @@ class BaseTrainer(ABC):
         if self.ema:
             self.ema.update()
 
-    def save_results(self, predictions, results_file: Optional[str], keys=None) -> None:
+    def save_results(self, predictions, results_file: str | None, keys=None) -> None:
         if results_file is None:
             return
         if keys is None:

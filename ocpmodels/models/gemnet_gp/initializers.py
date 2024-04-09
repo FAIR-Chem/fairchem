@@ -22,8 +22,7 @@ def _standardize(kernel):
         axis = 1
 
     var, mean = torch.var_mean(kernel, dim=axis, unbiased=True, keepdim=True)
-    kernel = (kernel - mean) / (var + eps) ** 0.5
-    return kernel
+    return (kernel - mean) / (var + eps) ** 0.5
 
 
 def he_orthogonal_init(tensor: torch.Tensor) -> torch.Tensor:
@@ -37,10 +36,7 @@ def he_orthogonal_init(tensor: torch.Tensor) -> torch.Tensor:
     """
     tensor = torch.nn.init.orthogonal_(tensor)
 
-    if len(tensor.shape) == 3:
-        fan_in = tensor.shape[:-1].numel()
-    else:
-        fan_in = tensor.shape[1]
+    fan_in = tensor.shape[:-1].numel() if len(tensor.shape) == 3 else tensor.shape[1]
 
     with torch.no_grad():
         tensor.data = _standardize(tensor.data)

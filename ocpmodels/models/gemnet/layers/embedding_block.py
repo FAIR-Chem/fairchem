@@ -38,8 +38,7 @@ class AtomEmbedding(torch.nn.Module):
             h: torch.Tensor, shape=(nAtoms, emb_size)
                 Atom embeddings.
         """
-        h = self.embeddings(Z - 1)  # -1 because Z.min()=1 (==Hydrogen)
-        return h
+        return self.embeddings(Z - 1)  # -1 because Z.min()=1 (==Hydrogen)
 
 
 class EdgeEmbedding(torch.nn.Module):
@@ -91,5 +90,4 @@ class EdgeEmbedding(torch.nn.Module):
         h_t = h[idx_t]  # shape=(nEdges, emb_size)
 
         m_st = torch.cat([h_s, h_t, m_rbf], dim=-1)  # (nEdges, 2*emb_size+nFeatures)
-        m_st = self.dense(m_st)  # (nEdges, emb_size)
-        return m_st
+        return self.dense(m_st)  # (nEdges, emb_size)
