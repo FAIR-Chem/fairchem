@@ -111,3 +111,6 @@ Local
 
 # VS Code
 .vscode/
+
+docs/_autosummary/
+env.yml
